@@ -16,23 +16,19 @@
  */
 package com.l2jmobius.log.formatter;
 
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.logging.Formatter;
 import java.util.logging.LogRecord;
 
 import com.l2jmobius.Config;
-import com.l2jmobius.util.StringUtil;
 
-public class OlympiadFormatter extends Formatter
+public class OlympiadFormatter extends AbstractFormatter
 {
-	private final SimpleDateFormat dateFmt = new SimpleDateFormat("dd/MM/yyyy H:mm:ss");
-	
 	@Override
 	public String format(LogRecord record)
 	{
 		final Object[] params = record.getParameters();
-		final StringBuilder output = StringUtil.startAppend(30 + record.getMessage().length() + (params == null ? 0 : params.length * 10), dateFmt.format(new Date(record.getMillis())), ",", record.getMessage());
+		final StringBuilder output = new StringBuilder(32 + record.getMessage().length() + (params != null ? 10 * params.length : 0));
+		output.append(super.format(record));
+		
 		if (params != null)
 		{
 			for (Object p : params)
@@ -41,7 +37,8 @@ public class OlympiadFormatter extends Formatter
 				{
 					continue;
 				}
-				StringUtil.append(output, ",", p.toString());
+				output.append(",");
+				output.append(p);
 			}
 		}
 		output.append(Config.EOL);
