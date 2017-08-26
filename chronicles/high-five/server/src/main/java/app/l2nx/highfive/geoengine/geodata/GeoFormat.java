@@ -14,22 +14,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.geodata.pathfinding;
+package com.l2jmobius.gameserver.geoengine.geodata;
 
 /**
- * @author -Nemesiss-
+ * @author Hasha
  */
-public abstract class AbstractNodeLoc
+public enum GeoFormat
 {
-	public abstract int getX();
+	L2J("%d_%d.l2j"),
+	L2OFF("%d_%d_conv.dat"),
+	L2D("%d_%d.l2d");
 	
-	public abstract int getY();
+	private final String _filename;
 	
-	public abstract int getZ();
+	private GeoFormat(String filename)
+	{
+		_filename = filename;
+	}
 	
-	public abstract void setZ(short z);
-	
-	public abstract int getNodeX();
-	
-	public abstract int getNodeY();
+	public String getFilename()
+	{
+		return _filename;
+	}
 }

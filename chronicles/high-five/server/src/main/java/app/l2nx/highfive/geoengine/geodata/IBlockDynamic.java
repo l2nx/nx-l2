@@ -14,29 +14,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.geodata.geodriver;
+package com.l2jmobius.gameserver.geoengine.geodata;
 
 /**
- * @author HorridoJoho
+ * @author Hasha
  */
-public interface IBlock
+public interface IBlockDynamic
 {
-	int TYPE_FLAT = 0;
-	int TYPE_COMPLEX = 1;
-	int TYPE_MULTILAYER = 2;
+	/**
+	 * Adds {@link IGeoObject} to the {@link ABlock}. The block will update geodata according the object.
+	 * @param object : {@link IGeoObject} to be added.
+	 */
+	public void addGeoObject(IGeoObject object);
 	
-	/** Cells in a block on the x axis */
-	int BLOCK_CELLS_X = 8;
-	/** Cells in a block on the y axis */
-	int BLOCK_CELLS_Y = 8;
-	/** Cells in a block */
-	int BLOCK_CELLS = BLOCK_CELLS_X * BLOCK_CELLS_Y;
-	
-	boolean checkNearestNswe(int geoX, int geoY, int worldZ, int nswe);
-	
-	int getNearestZ(int geoX, int geoY, int worldZ);
-	
-	int getNextLowerZ(int geoX, int geoY, int worldZ);
-	
-	int getNextHigherZ(int geoX, int geoY, int worldZ);
+	/**
+	 * Removes {@link IGeoObject} from the {@link ABlock}. The block will update geodata according the object.
+	 * @param object : {@link IGeoObject} to be removed.
+	 */
+	public void removeGeoObject(IGeoObject object);
 }
