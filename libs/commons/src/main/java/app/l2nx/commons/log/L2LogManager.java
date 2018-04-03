@@ -14,21 +14,28 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.util.file.filter;
+package com.l2jmobius.log;
 
-import java.io.File;
-import java.io.FileFilter;
+import java.util.logging.LogManager;
 
 /**
- * Specialized {@link FileFilter} class.<br>
- * Accepts <b>files</b> starting with "Pledge_" only.
- * @author Zoey76
+ * Specialized {@link LogManager} class.<br>
+ * Prevents log devices to close before shutdown sequence so the shutdown sequence can make logging.
  */
-public class OldPledgeFilter implements FileFilter
+public class L2LogManager extends LogManager
 {
-	@Override
-	public boolean accept(File f)
+	public L2LogManager()
 	{
-		return (f != null) && f.isFile() && f.getName().startsWith("Pledge_");
+	}
+	
+	@Override
+	public void reset()
+	{
+		// do nothing
+	}
+	
+	public void doReset()
+	{
+		super.reset();
 	}
 }
