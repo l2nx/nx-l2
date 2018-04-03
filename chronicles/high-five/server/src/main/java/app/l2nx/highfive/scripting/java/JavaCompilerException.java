@@ -21,8 +21,6 @@ package com.l2jmobius.gameserver.scripting.java;
  */
 public final class JavaCompilerException extends RuntimeException
 {
-	private static final long serialVersionUID = -8330513514176036095L;
-	
 	public JavaCompilerException(String diagnostics)
 	{
 		super(diagnostics);
