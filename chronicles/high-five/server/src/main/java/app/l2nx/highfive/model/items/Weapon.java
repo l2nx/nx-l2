@@ -14,23 +14,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.model.items;
+package org.l2jmobius.gameserver.model.items;
 
-import com.l2jmobius.gameserver.model.StatsSet;
-import com.l2jmobius.gameserver.model.World;
-import com.l2jmobius.gameserver.model.actor.Creature;
-import com.l2jmobius.gameserver.model.actor.Npc;
-import com.l2jmobius.gameserver.model.conditions.Condition;
-import com.l2jmobius.gameserver.model.conditions.ConditionGameChance;
-import com.l2jmobius.gameserver.model.events.EventDispatcher;
-import com.l2jmobius.gameserver.model.events.impl.creature.npc.OnNpcSkillSee;
-import com.l2jmobius.gameserver.model.holders.SkillHolder;
-import com.l2jmobius.gameserver.model.items.type.WeaponType;
-import com.l2jmobius.gameserver.model.skills.Skill;
-import com.l2jmobius.gameserver.model.stats.Formulas;
-import com.l2jmobius.gameserver.network.SystemMessageId;
-import com.l2jmobius.gameserver.network.serverpackets.SystemMessage;
-import com.l2jmobius.gameserver.util.Util;
+import org.l2jmobius.gameserver.model.StatsSet;
+import org.l2jmobius.gameserver.model.World;
+import org.l2jmobius.gameserver.model.actor.Creature;
+import org.l2jmobius.gameserver.model.actor.Npc;
+import org.l2jmobius.gameserver.model.conditions.Condition;
+import org.l2jmobius.gameserver.model.conditions.ConditionGameChance;
+import org.l2jmobius.gameserver.model.events.EventDispatcher;
+import org.l2jmobius.gameserver.model.events.impl.creature.npc.OnNpcSkillSee;
+import org.l2jmobius.gameserver.model.holders.SkillHolder;
+import org.l2jmobius.gameserver.model.items.type.WeaponType;
+import org.l2jmobius.gameserver.model.skills.Skill;
+import org.l2jmobius.gameserver.model.stats.Formulas;
+import org.l2jmobius.gameserver.network.SystemMessageId;
+import org.l2jmobius.gameserver.network.serverpackets.SystemMessage;
+import org.l2jmobius.gameserver.util.Util;
 
 /**
  * This class is dedicated to the management of weapons.

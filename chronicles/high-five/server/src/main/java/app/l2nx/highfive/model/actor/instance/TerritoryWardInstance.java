@@ -14,17 +14,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.model.actor.instance;
+package org.l2jmobius.gameserver.model.actor.instance;
 
-import com.l2jmobius.gameserver.ai.CtrlIntention;
-import com.l2jmobius.gameserver.instancemanager.TerritoryWarManager;
-import com.l2jmobius.gameserver.model.actor.Attackable;
-import com.l2jmobius.gameserver.model.actor.Creature;
-import com.l2jmobius.gameserver.model.actor.templates.NpcTemplate;
-import com.l2jmobius.gameserver.model.skills.Skill;
-import com.l2jmobius.gameserver.network.SystemMessageId;
-import com.l2jmobius.gameserver.network.serverpackets.ActionFailed;
-import com.l2jmobius.gameserver.network.serverpackets.SystemMessage;
+import org.l2jmobius.gameserver.ai.CtrlIntention;
+import org.l2jmobius.gameserver.instancemanager.TerritoryWarManager;
+import org.l2jmobius.gameserver.model.actor.Attackable;
+import org.l2jmobius.gameserver.model.actor.Creature;
+import org.l2jmobius.gameserver.model.actor.templates.NpcTemplate;
+import org.l2jmobius.gameserver.model.skills.Skill;
+import org.l2jmobius.gameserver.network.SystemMessageId;
+import org.l2jmobius.gameserver.network.serverpackets.ActionFailed;
+import org.l2jmobius.gameserver.network.serverpackets.SystemMessage;
 
 public final class TerritoryWardInstance extends Attackable
 {

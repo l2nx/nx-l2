@@ -14,16 +14,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.model.multisell;
+package org.l2jmobius.gameserver.model.multisell;
 
 import java.util.ArrayList;
 import java.util.LinkedList;
 
-import com.l2jmobius.gameserver.model.actor.Npc;
-import com.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
-import com.l2jmobius.gameserver.model.items.Armor;
-import com.l2jmobius.gameserver.model.items.Weapon;
-import com.l2jmobius.gameserver.model.items.instance.ItemInstance;
+import org.l2jmobius.gameserver.model.actor.Npc;
+import org.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
+import org.l2jmobius.gameserver.model.items.Armor;
+import org.l2jmobius.gameserver.model.items.Weapon;
+import org.l2jmobius.gameserver.model.items.instance.ItemInstance;
 
 public class PreparedListContainer extends ListContainer
 {

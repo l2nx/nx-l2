@@ -14,26 +14,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.network.clientpackets;
+package org.l2jmobius.gameserver.network.clientpackets;
 
-import com.l2jmobius.commons.concurrent.ThreadPool;
-import com.l2jmobius.commons.network.PacketReader;
-import com.l2jmobius.gameserver.instancemanager.CHSiegeManager;
-import com.l2jmobius.gameserver.instancemanager.CastleManager;
-import com.l2jmobius.gameserver.instancemanager.ClanHallManager;
-import com.l2jmobius.gameserver.instancemanager.FortManager;
-import com.l2jmobius.gameserver.instancemanager.MapRegionManager;
-import com.l2jmobius.gameserver.instancemanager.TerritoryWarManager;
-import com.l2jmobius.gameserver.model.Location;
-import com.l2jmobius.gameserver.model.SiegeClan;
-import com.l2jmobius.gameserver.model.TeleportWhereType;
-import com.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
-import com.l2jmobius.gameserver.model.actor.instance.SiegeFlagInstance;
-import com.l2jmobius.gameserver.model.entity.Castle;
-import com.l2jmobius.gameserver.model.entity.ClanHall;
-import com.l2jmobius.gameserver.model.entity.Fort;
-import com.l2jmobius.gameserver.model.entity.clanhall.SiegableHall;
-import com.l2jmobius.gameserver.network.GameClient;
+import org.l2jmobius.commons.concurrent.ThreadPool;
+import org.l2jmobius.commons.network.PacketReader;
+import org.l2jmobius.gameserver.instancemanager.CHSiegeManager;
+import org.l2jmobius.gameserver.instancemanager.CastleManager;
+import org.l2jmobius.gameserver.instancemanager.ClanHallManager;
+import org.l2jmobius.gameserver.instancemanager.FortManager;
+import org.l2jmobius.gameserver.instancemanager.MapRegionManager;
+import org.l2jmobius.gameserver.instancemanager.TerritoryWarManager;
+import org.l2jmobius.gameserver.model.Location;
+import org.l2jmobius.gameserver.model.SiegeClan;
+import org.l2jmobius.gameserver.model.TeleportWhereType;
+import org.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
+import org.l2jmobius.gameserver.model.actor.instance.SiegeFlagInstance;
+import org.l2jmobius.gameserver.model.entity.Castle;
+import org.l2jmobius.gameserver.model.entity.ClanHall;
+import org.l2jmobius.gameserver.model.entity.Fort;
+import org.l2jmobius.gameserver.model.entity.clanhall.SiegableHall;
+import org.l2jmobius.gameserver.network.GameClient;
 
 /**
  * @version $Revision: 1.7.2.3.2.6 $ $Date: 2005/03/27 15:29:30 $

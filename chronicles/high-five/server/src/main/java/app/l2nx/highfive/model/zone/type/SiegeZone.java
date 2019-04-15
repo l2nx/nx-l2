@@ -14,29 +14,29 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.model.zone.type;
+package org.l2jmobius.gameserver.model.zone.type;
 
-import com.l2jmobius.Config;
-import com.l2jmobius.gameserver.data.xml.impl.SkillData;
-import com.l2jmobius.gameserver.enums.MountType;
-import com.l2jmobius.gameserver.instancemanager.CHSiegeManager;
-import com.l2jmobius.gameserver.instancemanager.FortManager;
-import com.l2jmobius.gameserver.instancemanager.FortSiegeManager;
-import com.l2jmobius.gameserver.instancemanager.ZoneManager;
-import com.l2jmobius.gameserver.model.TeleportWhereType;
-import com.l2jmobius.gameserver.model.actor.Creature;
-import com.l2jmobius.gameserver.model.actor.Summon;
-import com.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
-import com.l2jmobius.gameserver.model.entity.Fort;
-import com.l2jmobius.gameserver.model.entity.FortSiege;
-import com.l2jmobius.gameserver.model.entity.Siegable;
-import com.l2jmobius.gameserver.model.entity.clanhall.SiegableHall;
-import com.l2jmobius.gameserver.model.skills.BuffInfo;
-import com.l2jmobius.gameserver.model.skills.Skill;
-import com.l2jmobius.gameserver.model.zone.AbstractZoneSettings;
-import com.l2jmobius.gameserver.model.zone.ZoneId;
-import com.l2jmobius.gameserver.model.zone.ZoneType;
-import com.l2jmobius.gameserver.network.SystemMessageId;
+import org.l2jmobius.Config;
+import org.l2jmobius.gameserver.data.xml.impl.SkillData;
+import org.l2jmobius.gameserver.enums.MountType;
+import org.l2jmobius.gameserver.instancemanager.CHSiegeManager;
+import org.l2jmobius.gameserver.instancemanager.FortManager;
+import org.l2jmobius.gameserver.instancemanager.FortSiegeManager;
+import org.l2jmobius.gameserver.instancemanager.ZoneManager;
+import org.l2jmobius.gameserver.model.TeleportWhereType;
+import org.l2jmobius.gameserver.model.actor.Creature;
+import org.l2jmobius.gameserver.model.actor.Summon;
+import org.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
+import org.l2jmobius.gameserver.model.entity.Fort;
+import org.l2jmobius.gameserver.model.entity.FortSiege;
+import org.l2jmobius.gameserver.model.entity.Siegable;
+import org.l2jmobius.gameserver.model.entity.clanhall.SiegableHall;
+import org.l2jmobius.gameserver.model.skills.BuffInfo;
+import org.l2jmobius.gameserver.model.skills.Skill;
+import org.l2jmobius.gameserver.model.zone.AbstractZoneSettings;
+import org.l2jmobius.gameserver.model.zone.ZoneId;
+import org.l2jmobius.gameserver.model.zone.ZoneType;
+import org.l2jmobius.gameserver.network.SystemMessageId;
 
 /**
  * A siege zone

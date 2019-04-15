@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.model.quest;
+package org.l2jmobius.gameserver.model.quest;
 
 import java.io.File;
 import java.sql.Connection;
@@ -33,19 +33,19 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 
-import com.l2jmobius.commons.concurrent.ThreadPool;
-import com.l2jmobius.commons.database.DatabaseFactory;
-import com.l2jmobius.gameserver.data.sql.impl.AnnouncementsTable;
-import com.l2jmobius.gameserver.data.xml.impl.NpcData;
-import com.l2jmobius.gameserver.datatables.EventDroplist;
-import com.l2jmobius.gameserver.datatables.ItemTable;
-import com.l2jmobius.gameserver.model.Location;
-import com.l2jmobius.gameserver.model.World;
-import com.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
-import com.l2jmobius.gameserver.model.announce.EventAnnouncement;
-import com.l2jmobius.gameserver.model.holders.DropHolder;
-import com.l2jmobius.gameserver.script.DateRange;
-import com.l2jmobius.gameserver.util.Broadcast;
+import org.l2jmobius.commons.concurrent.ThreadPool;
+import org.l2jmobius.commons.database.DatabaseFactory;
+import org.l2jmobius.gameserver.data.sql.impl.AnnouncementsTable;
+import org.l2jmobius.gameserver.data.xml.impl.NpcData;
+import org.l2jmobius.gameserver.datatables.EventDroplist;
+import org.l2jmobius.gameserver.datatables.ItemTable;
+import org.l2jmobius.gameserver.model.Location;
+import org.l2jmobius.gameserver.model.World;
+import org.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
+import org.l2jmobius.gameserver.model.announce.EventAnnouncement;
+import org.l2jmobius.gameserver.model.holders.DropHolder;
+import org.l2jmobius.gameserver.script.DateRange;
+import org.l2jmobius.gameserver.util.Broadcast;
 
 /**
  * Parent class for long time events.<br>

@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.scripting;
+package org.l2jmobius.gameserver.scripting;
 
 import java.io.File;
 import java.io.IOException;
@@ -35,10 +35,10 @@ import java.util.logging.Logger;
 
 import org.w3c.dom.Document;
 
-import com.l2jmobius.Config;
-import com.l2jmobius.commons.util.IXmlReader;
-import com.l2jmobius.gameserver.scripting.java.JavaExecutionContext;
-import com.l2jmobius.gameserver.scripting.java.JavaScriptingEngine;
+import org.l2jmobius.Config;
+import org.l2jmobius.commons.util.IXmlReader;
+import org.l2jmobius.gameserver.scripting.java.JavaExecutionContext;
+import org.l2jmobius.gameserver.scripting.java.JavaScriptingEngine;
 
 /**
  * @author Mobius

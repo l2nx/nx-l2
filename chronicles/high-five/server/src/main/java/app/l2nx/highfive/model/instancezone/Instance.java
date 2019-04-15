@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.model.instancezone;
+package org.l2jmobius.gameserver.model.instancezone;
 
 import java.io.File;
 import java.io.IOException;
@@ -35,29 +35,29 @@ import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 
-import com.l2jmobius.Config;
-import com.l2jmobius.commons.concurrent.ThreadPool;
-import com.l2jmobius.gameserver.data.xml.impl.DoorData;
-import com.l2jmobius.gameserver.enums.ChatType;
-import com.l2jmobius.gameserver.enums.InstanceReenterType;
-import com.l2jmobius.gameserver.enums.InstanceRemoveBuffType;
-import com.l2jmobius.gameserver.instancemanager.InstanceManager;
-import com.l2jmobius.gameserver.model.Location;
-import com.l2jmobius.gameserver.model.Spawn;
-import com.l2jmobius.gameserver.model.StatsSet;
-import com.l2jmobius.gameserver.model.TeleportWhereType;
-import com.l2jmobius.gameserver.model.World;
-import com.l2jmobius.gameserver.model.WorldRegion;
-import com.l2jmobius.gameserver.model.actor.Attackable;
-import com.l2jmobius.gameserver.model.actor.Npc;
-import com.l2jmobius.gameserver.model.actor.instance.DoorInstance;
-import com.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
-import com.l2jmobius.gameserver.model.actor.templates.DoorTemplate;
-import com.l2jmobius.gameserver.model.holders.InstanceReenterTimeHolder;
-import com.l2jmobius.gameserver.network.SystemMessageId;
-import com.l2jmobius.gameserver.network.serverpackets.CreatureSay;
-import com.l2jmobius.gameserver.network.serverpackets.SystemMessage;
-import com.l2jmobius.gameserver.util.Broadcast;
+import org.l2jmobius.Config;
+import org.l2jmobius.commons.concurrent.ThreadPool;
+import org.l2jmobius.gameserver.data.xml.impl.DoorData;
+import org.l2jmobius.gameserver.enums.ChatType;
+import org.l2jmobius.gameserver.enums.InstanceReenterType;
+import org.l2jmobius.gameserver.enums.InstanceRemoveBuffType;
+import org.l2jmobius.gameserver.instancemanager.InstanceManager;
+import org.l2jmobius.gameserver.model.Location;
+import org.l2jmobius.gameserver.model.Spawn;
+import org.l2jmobius.gameserver.model.StatsSet;
+import org.l2jmobius.gameserver.model.TeleportWhereType;
+import org.l2jmobius.gameserver.model.World;
+import org.l2jmobius.gameserver.model.WorldRegion;
+import org.l2jmobius.gameserver.model.actor.Attackable;
+import org.l2jmobius.gameserver.model.actor.Npc;
+import org.l2jmobius.gameserver.model.actor.instance.DoorInstance;
+import org.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
+import org.l2jmobius.gameserver.model.actor.templates.DoorTemplate;
+import org.l2jmobius.gameserver.model.holders.InstanceReenterTimeHolder;
+import org.l2jmobius.gameserver.network.SystemMessageId;
+import org.l2jmobius.gameserver.network.serverpackets.CreatureSay;
+import org.l2jmobius.gameserver.network.serverpackets.SystemMessage;
+import org.l2jmobius.gameserver.util.Broadcast;
 
 /**
  * Main class for game instances.

@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.instancemanager;
+package org.l2jmobius.gameserver.instancemanager;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -25,15 +25,15 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import com.l2jmobius.commons.database.DatabaseFactory;
-import com.l2jmobius.gameserver.data.sql.impl.ClanTable;
-import com.l2jmobius.gameserver.model.StatsSet;
-import com.l2jmobius.gameserver.model.WorldObject;
-import com.l2jmobius.gameserver.model.clan.Clan;
-import com.l2jmobius.gameserver.model.entity.ClanHall;
-import com.l2jmobius.gameserver.model.entity.clanhall.AuctionableHall;
-import com.l2jmobius.gameserver.model.entity.clanhall.SiegableHall;
-import com.l2jmobius.gameserver.model.zone.type.ClanHallZone;
+import org.l2jmobius.commons.database.DatabaseFactory;
+import org.l2jmobius.gameserver.data.sql.impl.ClanTable;
+import org.l2jmobius.gameserver.model.StatsSet;
+import org.l2jmobius.gameserver.model.WorldObject;
+import org.l2jmobius.gameserver.model.clan.Clan;
+import org.l2jmobius.gameserver.model.entity.ClanHall;
+import org.l2jmobius.gameserver.model.entity.clanhall.AuctionableHall;
+import org.l2jmobius.gameserver.model.entity.clanhall.SiegableHall;
+import org.l2jmobius.gameserver.model.zone.type.ClanHallZone;
 
 /**
  * @author Steuf

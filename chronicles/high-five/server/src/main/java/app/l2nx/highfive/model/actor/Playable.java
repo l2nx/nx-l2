@@ -14,26 +14,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.model.actor;
+package org.l2jmobius.gameserver.model.actor;
 
-import com.l2jmobius.gameserver.ai.CtrlEvent;
-import com.l2jmobius.gameserver.enums.InstanceType;
-import com.l2jmobius.gameserver.instancemanager.InstanceManager;
-import com.l2jmobius.gameserver.instancemanager.ZoneManager;
-import com.l2jmobius.gameserver.model.WorldObject;
-import com.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
-import com.l2jmobius.gameserver.model.actor.stat.PlayableStat;
-import com.l2jmobius.gameserver.model.actor.status.PlayableStatus;
-import com.l2jmobius.gameserver.model.actor.templates.CreatureTemplate;
-import com.l2jmobius.gameserver.model.effects.EffectFlag;
-import com.l2jmobius.gameserver.model.effects.EffectType;
-import com.l2jmobius.gameserver.model.events.EventDispatcher;
-import com.l2jmobius.gameserver.model.events.impl.creature.OnCreatureKill;
-import com.l2jmobius.gameserver.model.events.returns.TerminateReturn;
-import com.l2jmobius.gameserver.model.instancezone.Instance;
-import com.l2jmobius.gameserver.model.quest.QuestState;
-import com.l2jmobius.gameserver.model.skills.Skill;
-import com.l2jmobius.gameserver.network.serverpackets.EtcStatusUpdate;
+import org.l2jmobius.gameserver.ai.CtrlEvent;
+import org.l2jmobius.gameserver.enums.InstanceType;
+import org.l2jmobius.gameserver.instancemanager.InstanceManager;
+import org.l2jmobius.gameserver.instancemanager.ZoneManager;
+import org.l2jmobius.gameserver.model.WorldObject;
+import org.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
+import org.l2jmobius.gameserver.model.actor.stat.PlayableStat;
+import org.l2jmobius.gameserver.model.actor.status.PlayableStatus;
+import org.l2jmobius.gameserver.model.actor.templates.CreatureTemplate;
+import org.l2jmobius.gameserver.model.effects.EffectFlag;
+import org.l2jmobius.gameserver.model.effects.EffectType;
+import org.l2jmobius.gameserver.model.events.EventDispatcher;
+import org.l2jmobius.gameserver.model.events.impl.creature.OnCreatureKill;
+import org.l2jmobius.gameserver.model.events.returns.TerminateReturn;
+import org.l2jmobius.gameserver.model.instancezone.Instance;
+import org.l2jmobius.gameserver.model.quest.QuestState;
+import org.l2jmobius.gameserver.model.skills.Skill;
+import org.l2jmobius.gameserver.network.serverpackets.EtcStatusUpdate;
 
 /**
  * This class represents all Playable characters in the world.<br>

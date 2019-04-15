@@ -14,15 +14,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver;
+package org.l2jmobius.gameserver;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import com.l2jmobius.commons.util.Rnd;
-import com.l2jmobius.gameserver.data.xml.impl.NpcData;
-import com.l2jmobius.gameserver.model.actor.Npc;
-import com.l2jmobius.gameserver.model.actor.templates.NpcTemplate;
+import org.l2jmobius.commons.util.Rnd;
+import org.l2jmobius.gameserver.data.xml.impl.NpcData;
+import org.l2jmobius.gameserver.model.actor.Npc;
+import org.l2jmobius.gameserver.model.actor.templates.NpcTemplate;
 
 public class MonsterRace
 {
@@ -65,7 +65,7 @@ public class MonsterRace
 			try
 			{
 				final NpcTemplate template = NpcData.getInstance().getTemplate(id + random);
-				_monsters[i] = (Npc) Class.forName("com.l2jmobius.gameserver.model.actor.instance." + template.getType() + "Instance").getConstructors()[0].newInstance(template);
+				_monsters[i] = (Npc) Class.forName("org.l2jmobius.gameserver.model.actor.instance." + template.getType() + "Instance").getConstructors()[0].newInstance(template);
 			}
 			catch (Exception e)
 			{

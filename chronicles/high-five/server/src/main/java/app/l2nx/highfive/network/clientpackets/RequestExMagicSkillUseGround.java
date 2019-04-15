@@ -14,18 +14,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.network.clientpackets;
+package org.l2jmobius.gameserver.network.clientpackets;
 
-import com.l2jmobius.commons.network.PacketReader;
-import com.l2jmobius.gameserver.data.xml.impl.SkillData;
-import com.l2jmobius.gameserver.model.Location;
-import com.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
-import com.l2jmobius.gameserver.model.skills.Skill;
-import com.l2jmobius.gameserver.network.GameClient;
-import com.l2jmobius.gameserver.network.serverpackets.ActionFailed;
-import com.l2jmobius.gameserver.network.serverpackets.ValidateLocation;
-import com.l2jmobius.gameserver.util.Broadcast;
-import com.l2jmobius.gameserver.util.Util;
+import org.l2jmobius.commons.network.PacketReader;
+import org.l2jmobius.gameserver.data.xml.impl.SkillData;
+import org.l2jmobius.gameserver.model.Location;
+import org.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
+import org.l2jmobius.gameserver.model.skills.Skill;
+import org.l2jmobius.gameserver.network.GameClient;
+import org.l2jmobius.gameserver.network.serverpackets.ActionFailed;
+import org.l2jmobius.gameserver.network.serverpackets.ValidateLocation;
+import org.l2jmobius.gameserver.util.Broadcast;
+import org.l2jmobius.gameserver.util.Util;
 
 /**
  * Fromat:(ch) dddddc

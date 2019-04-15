@@ -14,19 +14,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.model.actor.instance;
+package org.l2jmobius.gameserver.model.actor.instance;
 
-import com.l2jmobius.gameserver.ai.AirShipAI;
-import com.l2jmobius.gameserver.enums.InstanceType;
-import com.l2jmobius.gameserver.instancemanager.AirShipManager;
-import com.l2jmobius.gameserver.model.Location;
-import com.l2jmobius.gameserver.model.actor.Vehicle;
-import com.l2jmobius.gameserver.model.actor.templates.CreatureTemplate;
-import com.l2jmobius.gameserver.network.serverpackets.ExAirShipInfo;
-import com.l2jmobius.gameserver.network.serverpackets.ExGetOffAirShip;
-import com.l2jmobius.gameserver.network.serverpackets.ExGetOnAirShip;
-import com.l2jmobius.gameserver.network.serverpackets.ExMoveToLocationAirShip;
-import com.l2jmobius.gameserver.network.serverpackets.ExStopMoveAirShip;
+import org.l2jmobius.gameserver.ai.AirShipAI;
+import org.l2jmobius.gameserver.enums.InstanceType;
+import org.l2jmobius.gameserver.instancemanager.AirShipManager;
+import org.l2jmobius.gameserver.model.Location;
+import org.l2jmobius.gameserver.model.actor.Vehicle;
+import org.l2jmobius.gameserver.model.actor.templates.CreatureTemplate;
+import org.l2jmobius.gameserver.network.serverpackets.ExAirShipInfo;
+import org.l2jmobius.gameserver.network.serverpackets.ExGetOffAirShip;
+import org.l2jmobius.gameserver.network.serverpackets.ExGetOnAirShip;
+import org.l2jmobius.gameserver.network.serverpackets.ExMoveToLocationAirShip;
+import org.l2jmobius.gameserver.network.serverpackets.ExStopMoveAirShip;
 
 /**
  * Flying airships. Very similar to Maktakien boats (see BoatInstance) but these do fly :P

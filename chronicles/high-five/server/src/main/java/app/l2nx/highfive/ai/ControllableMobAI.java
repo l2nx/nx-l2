@@ -14,26 +14,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.ai;
+package org.l2jmobius.gameserver.ai;
 
-import static com.l2jmobius.gameserver.ai.CtrlIntention.AI_INTENTION_ACTIVE;
-import static com.l2jmobius.gameserver.ai.CtrlIntention.AI_INTENTION_ATTACK;
+import static org.l2jmobius.gameserver.ai.CtrlIntention.AI_INTENTION_ACTIVE;
+import static org.l2jmobius.gameserver.ai.CtrlIntention.AI_INTENTION_ATTACK;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import com.l2jmobius.commons.util.Rnd;
-import com.l2jmobius.gameserver.model.MobGroup;
-import com.l2jmobius.gameserver.model.MobGroupTable;
-import com.l2jmobius.gameserver.model.World;
-import com.l2jmobius.gameserver.model.actor.Attackable;
-import com.l2jmobius.gameserver.model.actor.Creature;
-import com.l2jmobius.gameserver.model.actor.Npc;
-import com.l2jmobius.gameserver.model.actor.Playable;
-import com.l2jmobius.gameserver.model.actor.instance.ControllableMobInstance;
-import com.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
-import com.l2jmobius.gameserver.model.skills.Skill;
-import com.l2jmobius.gameserver.util.Util;
+import org.l2jmobius.commons.util.Rnd;
+import org.l2jmobius.gameserver.model.MobGroup;
+import org.l2jmobius.gameserver.model.MobGroupTable;
+import org.l2jmobius.gameserver.model.World;
+import org.l2jmobius.gameserver.model.actor.Attackable;
+import org.l2jmobius.gameserver.model.actor.Creature;
+import org.l2jmobius.gameserver.model.actor.Npc;
+import org.l2jmobius.gameserver.model.actor.Playable;
+import org.l2jmobius.gameserver.model.actor.instance.ControllableMobInstance;
+import org.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
+import org.l2jmobius.gameserver.model.skills.Skill;
+import org.l2jmobius.gameserver.util.Util;
 
 /**
  * AI for controllable mobs

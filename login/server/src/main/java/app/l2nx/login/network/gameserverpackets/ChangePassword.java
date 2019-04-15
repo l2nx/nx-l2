@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.loginserver.network.gameserverpackets;
+package org.l2jmobius.loginserver.network.gameserverpackets;
 
 import java.security.MessageDigest;
 import java.sql.Connection;
@@ -24,11 +24,11 @@ import java.util.Base64;
 import java.util.Collection;
 import java.util.logging.Logger;
 
-import com.l2jmobius.commons.database.DatabaseFactory;
-import com.l2jmobius.commons.network.BaseRecievePacket;
-import com.l2jmobius.loginserver.GameServerTable;
-import com.l2jmobius.loginserver.GameServerTable.GameServerInfo;
-import com.l2jmobius.loginserver.GameServerThread;
+import org.l2jmobius.commons.database.DatabaseFactory;
+import org.l2jmobius.commons.network.BaseRecievePacket;
+import org.l2jmobius.loginserver.GameServerTable;
+import org.l2jmobius.loginserver.GameServerTable.GameServerInfo;
+import org.l2jmobius.loginserver.GameServerThread;
 
 /**
  * @author Nik

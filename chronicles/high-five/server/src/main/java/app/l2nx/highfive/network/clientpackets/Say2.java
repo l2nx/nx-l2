@@ -14,28 +14,28 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.network.clientpackets;
+package org.l2jmobius.gameserver.network.clientpackets;
 
 import java.util.logging.Logger;
 
-import com.l2jmobius.Config;
-import com.l2jmobius.commons.network.PacketReader;
-import com.l2jmobius.gameserver.enums.ChatType;
-import com.l2jmobius.gameserver.handler.ChatHandler;
-import com.l2jmobius.gameserver.handler.IChatHandler;
-import com.l2jmobius.gameserver.model.World;
-import com.l2jmobius.gameserver.model.WorldObject;
-import com.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
-import com.l2jmobius.gameserver.model.effects.EffectType;
-import com.l2jmobius.gameserver.model.events.EventDispatcher;
-import com.l2jmobius.gameserver.model.events.impl.creature.player.OnPlayerChat;
-import com.l2jmobius.gameserver.model.events.returns.ChatFilterReturn;
-import com.l2jmobius.gameserver.model.items.instance.ItemInstance;
-import com.l2jmobius.gameserver.network.Disconnection;
-import com.l2jmobius.gameserver.network.GameClient;
-import com.l2jmobius.gameserver.network.SystemMessageId;
-import com.l2jmobius.gameserver.network.serverpackets.ActionFailed;
-import com.l2jmobius.gameserver.util.Util;
+import org.l2jmobius.Config;
+import org.l2jmobius.commons.network.PacketReader;
+import org.l2jmobius.gameserver.enums.ChatType;
+import org.l2jmobius.gameserver.handler.ChatHandler;
+import org.l2jmobius.gameserver.handler.IChatHandler;
+import org.l2jmobius.gameserver.model.World;
+import org.l2jmobius.gameserver.model.WorldObject;
+import org.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
+import org.l2jmobius.gameserver.model.effects.EffectType;
+import org.l2jmobius.gameserver.model.events.EventDispatcher;
+import org.l2jmobius.gameserver.model.events.impl.creature.player.OnPlayerChat;
+import org.l2jmobius.gameserver.model.events.returns.ChatFilterReturn;
+import org.l2jmobius.gameserver.model.items.instance.ItemInstance;
+import org.l2jmobius.gameserver.network.Disconnection;
+import org.l2jmobius.gameserver.network.GameClient;
+import org.l2jmobius.gameserver.network.SystemMessageId;
+import org.l2jmobius.gameserver.network.serverpackets.ActionFailed;
+import org.l2jmobius.gameserver.util.Util;
 
 /**
  * @version $Revision: 1.16.2.12.2.7 $ $Date: 2005/04/11 10:06:11 $

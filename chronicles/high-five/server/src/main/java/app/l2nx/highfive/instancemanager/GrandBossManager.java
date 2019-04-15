@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.instancemanager;
+package org.l2jmobius.gameserver.instancemanager;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -31,18 +31,18 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import com.l2jmobius.commons.concurrent.ThreadPool;
-import com.l2jmobius.commons.database.DatabaseFactory;
-import com.l2jmobius.gameserver.data.xml.impl.NpcData;
-import com.l2jmobius.gameserver.instancemanager.tasks.GrandBossManagerStoreTask;
-import com.l2jmobius.gameserver.model.Location;
-import com.l2jmobius.gameserver.model.StatsSet;
-import com.l2jmobius.gameserver.model.WorldObject;
-import com.l2jmobius.gameserver.model.actor.Creature;
-import com.l2jmobius.gameserver.model.actor.instance.GrandBossInstance;
-import com.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
-import com.l2jmobius.gameserver.model.interfaces.IStorable;
-import com.l2jmobius.gameserver.model.zone.type.BossZone;
+import org.l2jmobius.commons.concurrent.ThreadPool;
+import org.l2jmobius.commons.database.DatabaseFactory;
+import org.l2jmobius.gameserver.data.xml.impl.NpcData;
+import org.l2jmobius.gameserver.instancemanager.tasks.GrandBossManagerStoreTask;
+import org.l2jmobius.gameserver.model.Location;
+import org.l2jmobius.gameserver.model.StatsSet;
+import org.l2jmobius.gameserver.model.WorldObject;
+import org.l2jmobius.gameserver.model.actor.Creature;
+import org.l2jmobius.gameserver.model.actor.instance.GrandBossInstance;
+import org.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
+import org.l2jmobius.gameserver.model.interfaces.IStorable;
+import org.l2jmobius.gameserver.model.zone.type.BossZone;
 
 /**
  * Grand Boss manager.

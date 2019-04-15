@@ -14,20 +14,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.model.actor.tasks.cubics;
+package org.l2jmobius.gameserver.model.actor.tasks.cubics;
 
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import com.l2jmobius.commons.util.Rnd;
-import com.l2jmobius.gameserver.model.actor.Creature;
-import com.l2jmobius.gameserver.model.actor.instance.CubicInstance;
-import com.l2jmobius.gameserver.model.effects.EffectType;
-import com.l2jmobius.gameserver.model.skills.BuffInfo;
-import com.l2jmobius.gameserver.model.skills.Skill;
-import com.l2jmobius.gameserver.network.serverpackets.MagicSkillUse;
-import com.l2jmobius.gameserver.taskmanager.AttackStanceTaskManager;
+import org.l2jmobius.commons.util.Rnd;
+import org.l2jmobius.gameserver.model.actor.Creature;
+import org.l2jmobius.gameserver.model.actor.instance.CubicInstance;
+import org.l2jmobius.gameserver.model.effects.EffectType;
+import org.l2jmobius.gameserver.model.skills.BuffInfo;
+import org.l2jmobius.gameserver.model.skills.Skill;
+import org.l2jmobius.gameserver.network.serverpackets.MagicSkillUse;
+import org.l2jmobius.gameserver.taskmanager.AttackStanceTaskManager;
 
 /**
  * Cubic action task.

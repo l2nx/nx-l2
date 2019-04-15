@@ -14,14 +14,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.loginserver;
+package org.l2jmobius.loginserver;
 
 import java.io.IOException;
 import java.net.Socket;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import com.l2jmobius.Config;
+import org.l2jmobius.Config;
 
 /**
  * @author KenM

@@ -14,16 +14,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.model.stats.functions;
+package org.l2jmobius.gameserver.model.stats.functions;
 
-import com.l2jmobius.Config;
-import com.l2jmobius.gameserver.model.actor.Creature;
-import com.l2jmobius.gameserver.model.conditions.Condition;
-import com.l2jmobius.gameserver.model.items.Item;
-import com.l2jmobius.gameserver.model.items.instance.ItemInstance;
-import com.l2jmobius.gameserver.model.items.type.WeaponType;
-import com.l2jmobius.gameserver.model.skills.Skill;
-import com.l2jmobius.gameserver.model.stats.Stats;
+import org.l2jmobius.Config;
+import org.l2jmobius.gameserver.model.actor.Creature;
+import org.l2jmobius.gameserver.model.conditions.Condition;
+import org.l2jmobius.gameserver.model.items.Item;
+import org.l2jmobius.gameserver.model.items.instance.ItemInstance;
+import org.l2jmobius.gameserver.model.items.type.WeaponType;
+import org.l2jmobius.gameserver.model.skills.Skill;
+import org.l2jmobius.gameserver.model.stats.Stats;
 
 public class FuncEnchant extends AbstractFunction
 {

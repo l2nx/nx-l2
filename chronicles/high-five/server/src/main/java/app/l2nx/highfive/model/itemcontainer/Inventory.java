@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.model.itemcontainer;
+package org.l2jmobius.gameserver.model.itemcontainer;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -24,24 +24,24 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import com.l2jmobius.Config;
-import com.l2jmobius.commons.database.DatabaseFactory;
-import com.l2jmobius.commons.util.CommonUtil;
-import com.l2jmobius.gameserver.data.xml.impl.ArmorSetsData;
-import com.l2jmobius.gameserver.datatables.ItemTable;
-import com.l2jmobius.gameserver.enums.ItemLocation;
-import com.l2jmobius.gameserver.enums.PrivateStoreType;
-import com.l2jmobius.gameserver.model.ArmorSet;
-import com.l2jmobius.gameserver.model.PlayerCondOverride;
-import com.l2jmobius.gameserver.model.World;
-import com.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
-import com.l2jmobius.gameserver.model.holders.SkillHolder;
-import com.l2jmobius.gameserver.model.items.Item;
-import com.l2jmobius.gameserver.model.items.instance.ItemInstance;
-import com.l2jmobius.gameserver.model.items.type.EtcItemType;
-import com.l2jmobius.gameserver.model.items.type.WeaponType;
-import com.l2jmobius.gameserver.model.skills.Skill;
-import com.l2jmobius.gameserver.network.serverpackets.SkillCoolTime;
+import org.l2jmobius.Config;
+import org.l2jmobius.commons.database.DatabaseFactory;
+import org.l2jmobius.commons.util.CommonUtil;
+import org.l2jmobius.gameserver.data.xml.impl.ArmorSetsData;
+import org.l2jmobius.gameserver.datatables.ItemTable;
+import org.l2jmobius.gameserver.enums.ItemLocation;
+import org.l2jmobius.gameserver.enums.PrivateStoreType;
+import org.l2jmobius.gameserver.model.ArmorSet;
+import org.l2jmobius.gameserver.model.PlayerCondOverride;
+import org.l2jmobius.gameserver.model.World;
+import org.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
+import org.l2jmobius.gameserver.model.holders.SkillHolder;
+import org.l2jmobius.gameserver.model.items.Item;
+import org.l2jmobius.gameserver.model.items.instance.ItemInstance;
+import org.l2jmobius.gameserver.model.items.type.EtcItemType;
+import org.l2jmobius.gameserver.model.items.type.WeaponType;
+import org.l2jmobius.gameserver.model.skills.Skill;
+import org.l2jmobius.gameserver.network.serverpackets.SkillCoolTime;
 
 /**
  * This class manages inventory

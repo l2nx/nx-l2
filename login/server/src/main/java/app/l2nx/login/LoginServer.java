@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.loginserver;
+package org.l2jmobius.loginserver;
 
 import java.awt.GraphicsEnvironment;
 import java.io.File;
@@ -29,13 +29,13 @@ import java.util.logging.Level;
 import java.util.logging.LogManager;
 import java.util.logging.Logger;
 
-import com.l2jmobius.Config;
-import com.l2jmobius.Server;
-import com.l2jmobius.commons.database.DatabaseBackup;
-import com.l2jmobius.commons.database.DatabaseFactory;
-import com.l2jmobius.gameserver.network.loginserverpackets.game.ServerStatus;
-import com.l2jmobius.loginserver.network.ClientNetworkManager;
-import com.l2jmobius.loginserver.ui.Gui;
+import org.l2jmobius.Config;
+import org.l2jmobius.Server;
+import org.l2jmobius.commons.database.DatabaseBackup;
+import org.l2jmobius.commons.database.DatabaseFactory;
+import org.l2jmobius.gameserver.network.loginserverpackets.game.ServerStatus;
+import org.l2jmobius.loginserver.network.ClientNetworkManager;
+import org.l2jmobius.loginserver.ui.Gui;
 
 /**
  * @author KenM

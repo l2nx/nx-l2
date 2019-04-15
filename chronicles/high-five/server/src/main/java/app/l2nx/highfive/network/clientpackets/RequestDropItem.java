@@ -14,27 +14,27 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.network.clientpackets;
+package org.l2jmobius.gameserver.network.clientpackets;
 
-import com.l2jmobius.Config;
-import com.l2jmobius.commons.network.PacketReader;
-import com.l2jmobius.gameserver.data.xml.impl.AdminData;
-import com.l2jmobius.gameserver.enums.PrivateStoreType;
-import com.l2jmobius.gameserver.model.PlayerCondOverride;
-import com.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
-import com.l2jmobius.gameserver.model.holders.SkillUseHolder;
-import com.l2jmobius.gameserver.model.itemcontainer.Inventory;
-import com.l2jmobius.gameserver.model.items.Item;
-import com.l2jmobius.gameserver.model.items.instance.ItemInstance;
-import com.l2jmobius.gameserver.model.items.type.EtcItemType;
-import com.l2jmobius.gameserver.model.skills.Skill;
-import com.l2jmobius.gameserver.model.zone.ZoneId;
-import com.l2jmobius.gameserver.network.GameClient;
-import com.l2jmobius.gameserver.network.SystemMessageId;
-import com.l2jmobius.gameserver.network.serverpackets.InventoryUpdate;
-import com.l2jmobius.gameserver.network.serverpackets.ItemList;
-import com.l2jmobius.gameserver.util.GMAudit;
-import com.l2jmobius.gameserver.util.Util;
+import org.l2jmobius.Config;
+import org.l2jmobius.commons.network.PacketReader;
+import org.l2jmobius.gameserver.data.xml.impl.AdminData;
+import org.l2jmobius.gameserver.enums.PrivateStoreType;
+import org.l2jmobius.gameserver.model.PlayerCondOverride;
+import org.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
+import org.l2jmobius.gameserver.model.holders.SkillUseHolder;
+import org.l2jmobius.gameserver.model.itemcontainer.Inventory;
+import org.l2jmobius.gameserver.model.items.Item;
+import org.l2jmobius.gameserver.model.items.instance.ItemInstance;
+import org.l2jmobius.gameserver.model.items.type.EtcItemType;
+import org.l2jmobius.gameserver.model.skills.Skill;
+import org.l2jmobius.gameserver.model.zone.ZoneId;
+import org.l2jmobius.gameserver.network.GameClient;
+import org.l2jmobius.gameserver.network.SystemMessageId;
+import org.l2jmobius.gameserver.network.serverpackets.InventoryUpdate;
+import org.l2jmobius.gameserver.network.serverpackets.ItemList;
+import org.l2jmobius.gameserver.util.GMAudit;
+import org.l2jmobius.gameserver.util.Util;
 
 /**
  * @version $Revision: 1.11.2.1.2.7 $ $Date: 2005/04/02 21:25:21 $

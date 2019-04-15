@@ -14,21 +14,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.model;
+package org.l2jmobius.gameserver.model;
 
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import com.l2jmobius.gameserver.enums.PetitionState;
-import com.l2jmobius.gameserver.enums.PetitionType;
-import com.l2jmobius.gameserver.idfactory.IdFactory;
-import com.l2jmobius.gameserver.instancemanager.PetitionManager;
-import com.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
-import com.l2jmobius.gameserver.network.SystemMessageId;
-import com.l2jmobius.gameserver.network.serverpackets.CreatureSay;
-import com.l2jmobius.gameserver.network.serverpackets.IClientOutgoingPacket;
-import com.l2jmobius.gameserver.network.serverpackets.PetitionVotePacket;
-import com.l2jmobius.gameserver.network.serverpackets.SystemMessage;
+import org.l2jmobius.gameserver.enums.PetitionState;
+import org.l2jmobius.gameserver.enums.PetitionType;
+import org.l2jmobius.gameserver.idfactory.IdFactory;
+import org.l2jmobius.gameserver.instancemanager.PetitionManager;
+import org.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
+import org.l2jmobius.gameserver.network.SystemMessageId;
+import org.l2jmobius.gameserver.network.serverpackets.CreatureSay;
+import org.l2jmobius.gameserver.network.serverpackets.IClientOutgoingPacket;
+import org.l2jmobius.gameserver.network.serverpackets.PetitionVotePacket;
+import org.l2jmobius.gameserver.network.serverpackets.SystemMessage;
 
 /**
  * Petition

@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.model.actor.instance;
+package org.l2jmobius.gameserver.model.actor.instance;
 
 import java.util.Iterator;
 import java.util.List;
@@ -23,39 +23,39 @@ import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
-import com.l2jmobius.Config;
-import com.l2jmobius.gameserver.data.sql.impl.ClanTable;
-import com.l2jmobius.gameserver.data.xml.impl.ClassListData;
-import com.l2jmobius.gameserver.data.xml.impl.SkillTreesData;
-import com.l2jmobius.gameserver.enums.InstanceType;
-import com.l2jmobius.gameserver.enums.Race;
-import com.l2jmobius.gameserver.instancemanager.CastleManager;
-import com.l2jmobius.gameserver.instancemanager.FortManager;
-import com.l2jmobius.gameserver.instancemanager.FortSiegeManager;
-import com.l2jmobius.gameserver.instancemanager.SiegeManager;
-import com.l2jmobius.gameserver.model.SkillLearn;
-import com.l2jmobius.gameserver.model.actor.templates.NpcTemplate;
-import com.l2jmobius.gameserver.model.base.AcquireSkillType;
-import com.l2jmobius.gameserver.model.base.ClassId;
-import com.l2jmobius.gameserver.model.base.PlayerClass;
-import com.l2jmobius.gameserver.model.base.SubClass;
-import com.l2jmobius.gameserver.model.clan.Clan;
-import com.l2jmobius.gameserver.model.clan.Clan.SubPledge;
-import com.l2jmobius.gameserver.model.clan.ClanMember;
-import com.l2jmobius.gameserver.model.entity.Castle;
-import com.l2jmobius.gameserver.model.entity.Fort;
-import com.l2jmobius.gameserver.model.quest.QuestState;
-import com.l2jmobius.gameserver.model.zone.ZoneId;
-import com.l2jmobius.gameserver.network.SystemMessageId;
-import com.l2jmobius.gameserver.network.serverpackets.AcquireSkillList;
-import com.l2jmobius.gameserver.network.serverpackets.ActionFailed;
-import com.l2jmobius.gameserver.network.serverpackets.ExBrExtraUserInfo;
-import com.l2jmobius.gameserver.network.serverpackets.MagicSkillLaunched;
-import com.l2jmobius.gameserver.network.serverpackets.MagicSkillUse;
-import com.l2jmobius.gameserver.network.serverpackets.NpcHtmlMessage;
-import com.l2jmobius.gameserver.network.serverpackets.SystemMessage;
-import com.l2jmobius.gameserver.network.serverpackets.UserInfo;
-import com.l2jmobius.gameserver.util.Util;
+import org.l2jmobius.Config;
+import org.l2jmobius.gameserver.data.sql.impl.ClanTable;
+import org.l2jmobius.gameserver.data.xml.impl.ClassListData;
+import org.l2jmobius.gameserver.data.xml.impl.SkillTreesData;
+import org.l2jmobius.gameserver.enums.InstanceType;
+import org.l2jmobius.gameserver.enums.Race;
+import org.l2jmobius.gameserver.instancemanager.CastleManager;
+import org.l2jmobius.gameserver.instancemanager.FortManager;
+import org.l2jmobius.gameserver.instancemanager.FortSiegeManager;
+import org.l2jmobius.gameserver.instancemanager.SiegeManager;
+import org.l2jmobius.gameserver.model.SkillLearn;
+import org.l2jmobius.gameserver.model.actor.templates.NpcTemplate;
+import org.l2jmobius.gameserver.model.base.AcquireSkillType;
+import org.l2jmobius.gameserver.model.base.ClassId;
+import org.l2jmobius.gameserver.model.base.PlayerClass;
+import org.l2jmobius.gameserver.model.base.SubClass;
+import org.l2jmobius.gameserver.model.clan.Clan;
+import org.l2jmobius.gameserver.model.clan.Clan.SubPledge;
+import org.l2jmobius.gameserver.model.clan.ClanMember;
+import org.l2jmobius.gameserver.model.entity.Castle;
+import org.l2jmobius.gameserver.model.entity.Fort;
+import org.l2jmobius.gameserver.model.quest.QuestState;
+import org.l2jmobius.gameserver.model.zone.ZoneId;
+import org.l2jmobius.gameserver.network.SystemMessageId;
+import org.l2jmobius.gameserver.network.serverpackets.AcquireSkillList;
+import org.l2jmobius.gameserver.network.serverpackets.ActionFailed;
+import org.l2jmobius.gameserver.network.serverpackets.ExBrExtraUserInfo;
+import org.l2jmobius.gameserver.network.serverpackets.MagicSkillLaunched;
+import org.l2jmobius.gameserver.network.serverpackets.MagicSkillUse;
+import org.l2jmobius.gameserver.network.serverpackets.NpcHtmlMessage;
+import org.l2jmobius.gameserver.network.serverpackets.SystemMessage;
+import org.l2jmobius.gameserver.network.serverpackets.UserInfo;
+import org.l2jmobius.gameserver.util.Util;
 
 /**
  * @version $Revision: 1.4.2.3.2.8 $ $Date: 2005/03/29 23:15:15 $

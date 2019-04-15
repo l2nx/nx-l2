@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.instancemanager;
+package org.l2jmobius.gameserver.instancemanager;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -24,11 +24,11 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import com.l2jmobius.commons.database.DatabaseFactory;
-import com.l2jmobius.gameserver.model.holders.PunishmentHolder;
-import com.l2jmobius.gameserver.model.punishment.PunishmentAffect;
-import com.l2jmobius.gameserver.model.punishment.PunishmentTask;
-import com.l2jmobius.gameserver.model.punishment.PunishmentType;
+import org.l2jmobius.commons.database.DatabaseFactory;
+import org.l2jmobius.gameserver.model.holders.PunishmentHolder;
+import org.l2jmobius.gameserver.model.punishment.PunishmentAffect;
+import org.l2jmobius.gameserver.model.punishment.PunishmentTask;
+import org.l2jmobius.gameserver.model.punishment.PunishmentType;
 
 /**
  * @author UnAfraid

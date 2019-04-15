@@ -14,34 +14,34 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.network.clientpackets;
+package org.l2jmobius.gameserver.network.clientpackets;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Level;
 
-import com.l2jmobius.Config;
-import com.l2jmobius.commons.concurrent.ThreadPool;
-import com.l2jmobius.commons.network.PacketReader;
-import com.l2jmobius.gameserver.data.xml.impl.BuyListData;
-import com.l2jmobius.gameserver.model.WorldObject;
-import com.l2jmobius.gameserver.model.actor.Npc;
-import com.l2jmobius.gameserver.model.actor.instance.MerchantInstance;
-import com.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
-import com.l2jmobius.gameserver.model.buylist.BuyListHolder;
-import com.l2jmobius.gameserver.model.buylist.Product;
-import com.l2jmobius.gameserver.model.itemcontainer.Inventory;
-import com.l2jmobius.gameserver.model.items.Armor;
-import com.l2jmobius.gameserver.model.items.Item;
-import com.l2jmobius.gameserver.model.items.Weapon;
-import com.l2jmobius.gameserver.model.items.type.ArmorType;
-import com.l2jmobius.gameserver.model.items.type.WeaponType;
-import com.l2jmobius.gameserver.network.GameClient;
-import com.l2jmobius.gameserver.network.SystemMessageId;
-import com.l2jmobius.gameserver.network.serverpackets.ActionFailed;
-import com.l2jmobius.gameserver.network.serverpackets.ShopPreviewInfo;
-import com.l2jmobius.gameserver.network.serverpackets.UserInfo;
-import com.l2jmobius.gameserver.util.Util;
+import org.l2jmobius.Config;
+import org.l2jmobius.commons.concurrent.ThreadPool;
+import org.l2jmobius.commons.network.PacketReader;
+import org.l2jmobius.gameserver.data.xml.impl.BuyListData;
+import org.l2jmobius.gameserver.model.WorldObject;
+import org.l2jmobius.gameserver.model.actor.Npc;
+import org.l2jmobius.gameserver.model.actor.instance.MerchantInstance;
+import org.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
+import org.l2jmobius.gameserver.model.buylist.BuyListHolder;
+import org.l2jmobius.gameserver.model.buylist.Product;
+import org.l2jmobius.gameserver.model.itemcontainer.Inventory;
+import org.l2jmobius.gameserver.model.items.Armor;
+import org.l2jmobius.gameserver.model.items.Item;
+import org.l2jmobius.gameserver.model.items.Weapon;
+import org.l2jmobius.gameserver.model.items.type.ArmorType;
+import org.l2jmobius.gameserver.model.items.type.WeaponType;
+import org.l2jmobius.gameserver.network.GameClient;
+import org.l2jmobius.gameserver.network.SystemMessageId;
+import org.l2jmobius.gameserver.network.serverpackets.ActionFailed;
+import org.l2jmobius.gameserver.network.serverpackets.ShopPreviewInfo;
+import org.l2jmobius.gameserver.network.serverpackets.UserInfo;
+import org.l2jmobius.gameserver.util.Util;
 
 /**
  ** @author Gnacik

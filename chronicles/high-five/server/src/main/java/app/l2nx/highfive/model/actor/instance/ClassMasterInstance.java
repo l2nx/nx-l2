@@ -14,23 +14,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.model.actor.instance;
+package org.l2jmobius.gameserver.model.actor.instance;
 
-import com.l2jmobius.Config;
-import com.l2jmobius.gameserver.cache.HtmCache;
-import com.l2jmobius.gameserver.data.xml.impl.ClassListData;
-import com.l2jmobius.gameserver.datatables.ItemTable;
-import com.l2jmobius.gameserver.enums.InstanceType;
-import com.l2jmobius.gameserver.model.actor.templates.NpcTemplate;
-import com.l2jmobius.gameserver.model.base.ClassId;
-import com.l2jmobius.gameserver.model.holders.ItemHolder;
-import com.l2jmobius.gameserver.network.SystemMessageId;
-import com.l2jmobius.gameserver.network.serverpackets.ExBrExtraUserInfo;
-import com.l2jmobius.gameserver.network.serverpackets.NpcHtmlMessage;
-import com.l2jmobius.gameserver.network.serverpackets.TutorialCloseHtml;
-import com.l2jmobius.gameserver.network.serverpackets.TutorialShowHtml;
-import com.l2jmobius.gameserver.network.serverpackets.TutorialShowQuestionMark;
-import com.l2jmobius.gameserver.network.serverpackets.UserInfo;
+import org.l2jmobius.Config;
+import org.l2jmobius.gameserver.cache.HtmCache;
+import org.l2jmobius.gameserver.data.xml.impl.ClassListData;
+import org.l2jmobius.gameserver.datatables.ItemTable;
+import org.l2jmobius.gameserver.enums.InstanceType;
+import org.l2jmobius.gameserver.model.actor.templates.NpcTemplate;
+import org.l2jmobius.gameserver.model.base.ClassId;
+import org.l2jmobius.gameserver.model.holders.ItemHolder;
+import org.l2jmobius.gameserver.network.SystemMessageId;
+import org.l2jmobius.gameserver.network.serverpackets.ExBrExtraUserInfo;
+import org.l2jmobius.gameserver.network.serverpackets.NpcHtmlMessage;
+import org.l2jmobius.gameserver.network.serverpackets.TutorialCloseHtml;
+import org.l2jmobius.gameserver.network.serverpackets.TutorialShowHtml;
+import org.l2jmobius.gameserver.network.serverpackets.TutorialShowQuestionMark;
+import org.l2jmobius.gameserver.network.serverpackets.UserInfo;
 
 /**
  * @version $Revision: 1.4.2.1.2.7 $ $Date: 2005/03/27 15:29:32 $

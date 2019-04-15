@@ -14,22 +14,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.model.fishing;
+package org.l2jmobius.gameserver.model.fishing;
 
 import java.util.concurrent.Future;
 
-import com.l2jmobius.commons.concurrent.ThreadPool;
-import com.l2jmobius.commons.util.Rnd;
-import com.l2jmobius.gameserver.data.xml.impl.FishingMonstersData;
-import com.l2jmobius.gameserver.instancemanager.FishingChampionshipManager;
-import com.l2jmobius.gameserver.model.actor.Npc;
-import com.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
-import com.l2jmobius.gameserver.model.events.AbstractScript;
-import com.l2jmobius.gameserver.network.SystemMessageId;
-import com.l2jmobius.gameserver.network.serverpackets.ExFishingHpRegen;
-import com.l2jmobius.gameserver.network.serverpackets.ExFishingStartCombat;
-import com.l2jmobius.gameserver.network.serverpackets.PlaySound;
-import com.l2jmobius.gameserver.network.serverpackets.SystemMessage;
+import org.l2jmobius.commons.concurrent.ThreadPool;
+import org.l2jmobius.commons.util.Rnd;
+import org.l2jmobius.gameserver.data.xml.impl.FishingMonstersData;
+import org.l2jmobius.gameserver.instancemanager.FishingChampionshipManager;
+import org.l2jmobius.gameserver.model.actor.Npc;
+import org.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
+import org.l2jmobius.gameserver.model.events.AbstractScript;
+import org.l2jmobius.gameserver.network.SystemMessageId;
+import org.l2jmobius.gameserver.network.serverpackets.ExFishingHpRegen;
+import org.l2jmobius.gameserver.network.serverpackets.ExFishingStartCombat;
+import org.l2jmobius.gameserver.network.serverpackets.PlaySound;
+import org.l2jmobius.gameserver.network.serverpackets.SystemMessage;
 
 public class Fishing implements Runnable
 {

@@ -14,27 +14,27 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.network.clientpackets;
+package org.l2jmobius.gameserver.network.clientpackets;
 
-import com.l2jmobius.Config;
-import com.l2jmobius.commons.network.PacketReader;
-import com.l2jmobius.gameserver.enums.ItemLocation;
-import com.l2jmobius.gameserver.enums.PrivateStoreType;
-import com.l2jmobius.gameserver.instancemanager.MailManager;
-import com.l2jmobius.gameserver.model.World;
-import com.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
-import com.l2jmobius.gameserver.model.entity.Message;
-import com.l2jmobius.gameserver.model.itemcontainer.ItemContainer;
-import com.l2jmobius.gameserver.model.items.instance.ItemInstance;
-import com.l2jmobius.gameserver.model.zone.ZoneId;
-import com.l2jmobius.gameserver.network.GameClient;
-import com.l2jmobius.gameserver.network.SystemMessageId;
-import com.l2jmobius.gameserver.network.serverpackets.ExChangePostState;
-import com.l2jmobius.gameserver.network.serverpackets.InventoryUpdate;
-import com.l2jmobius.gameserver.network.serverpackets.ItemList;
-import com.l2jmobius.gameserver.network.serverpackets.StatusUpdate;
-import com.l2jmobius.gameserver.network.serverpackets.SystemMessage;
-import com.l2jmobius.gameserver.util.Util;
+import org.l2jmobius.Config;
+import org.l2jmobius.commons.network.PacketReader;
+import org.l2jmobius.gameserver.enums.ItemLocation;
+import org.l2jmobius.gameserver.enums.PrivateStoreType;
+import org.l2jmobius.gameserver.instancemanager.MailManager;
+import org.l2jmobius.gameserver.model.World;
+import org.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
+import org.l2jmobius.gameserver.model.entity.Message;
+import org.l2jmobius.gameserver.model.itemcontainer.ItemContainer;
+import org.l2jmobius.gameserver.model.items.instance.ItemInstance;
+import org.l2jmobius.gameserver.model.zone.ZoneId;
+import org.l2jmobius.gameserver.network.GameClient;
+import org.l2jmobius.gameserver.network.SystemMessageId;
+import org.l2jmobius.gameserver.network.serverpackets.ExChangePostState;
+import org.l2jmobius.gameserver.network.serverpackets.InventoryUpdate;
+import org.l2jmobius.gameserver.network.serverpackets.ItemList;
+import org.l2jmobius.gameserver.network.serverpackets.StatusUpdate;
+import org.l2jmobius.gameserver.network.serverpackets.SystemMessage;
+import org.l2jmobius.gameserver.util.Util;
 
 /**
  * @author Migi, DS

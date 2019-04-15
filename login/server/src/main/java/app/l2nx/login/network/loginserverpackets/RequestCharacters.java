@@ -14,9 +14,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.loginserver.network.loginserverpackets;
+package org.l2jmobius.loginserver.network.loginserverpackets;
 
-import com.l2jmobius.commons.network.BaseSendablePacket;
+import org.l2jmobius.commons.network.BaseSendablePacket;
 
 /**
  * @author mrTJO

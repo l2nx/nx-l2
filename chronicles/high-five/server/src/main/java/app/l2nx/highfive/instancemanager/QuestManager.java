@@ -14,17 +14,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.instancemanager;
+package org.l2jmobius.gameserver.instancemanager;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import com.l2jmobius.Config;
-import com.l2jmobius.commons.util.CommonUtil;
-import com.l2jmobius.gameserver.model.quest.Quest;
-import com.l2jmobius.gameserver.scripting.ScriptEngineManager;
+import org.l2jmobius.Config;
+import org.l2jmobius.commons.util.CommonUtil;
+import org.l2jmobius.gameserver.model.quest.Quest;
+import org.l2jmobius.gameserver.scripting.ScriptEngineManager;
 
 /**
  * Quests and scripts manager.

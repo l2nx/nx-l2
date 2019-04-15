@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.tools.dbinstaller.util.mysql;
+package org.l2jmobius.tools.dbinstaller.util.mysql;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -28,8 +28,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.l2jmobius.tools.dbinstaller.DBOutputInterface;
-import com.l2jmobius.tools.dbinstaller.util.FileWriterStdout;
+import org.l2jmobius.tools.dbinstaller.DBOutputInterface;
+import org.l2jmobius.tools.dbinstaller.util.FileWriterStdout;
 
 /**
  * @author mrTJO

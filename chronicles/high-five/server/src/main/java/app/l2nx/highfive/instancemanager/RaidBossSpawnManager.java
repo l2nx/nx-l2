@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.instancemanager;
+package org.l2jmobius.gameserver.instancemanager;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -28,14 +28,14 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import com.l2jmobius.Config;
-import com.l2jmobius.commons.concurrent.ThreadPool;
-import com.l2jmobius.commons.database.DatabaseFactory;
-import com.l2jmobius.commons.util.Rnd;
-import com.l2jmobius.gameserver.datatables.SpawnTable;
-import com.l2jmobius.gameserver.model.Spawn;
-import com.l2jmobius.gameserver.model.StatsSet;
-import com.l2jmobius.gameserver.model.actor.instance.RaidBossInstance;
+import org.l2jmobius.Config;
+import org.l2jmobius.commons.concurrent.ThreadPool;
+import org.l2jmobius.commons.database.DatabaseFactory;
+import org.l2jmobius.commons.util.Rnd;
+import org.l2jmobius.gameserver.datatables.SpawnTable;
+import org.l2jmobius.gameserver.model.Spawn;
+import org.l2jmobius.gameserver.model.StatsSet;
+import org.l2jmobius.gameserver.model.actor.instance.RaidBossInstance;
 
 /**
  * Raid Boss spawn manager.

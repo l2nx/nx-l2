@@ -14,17 +14,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.model.actor.instance;
+package org.l2jmobius.gameserver.model.actor.instance;
 
-import com.l2jmobius.gameserver.data.xml.impl.BuyListData;
-import com.l2jmobius.gameserver.datatables.MerchantPriceConfigTable;
-import com.l2jmobius.gameserver.datatables.MerchantPriceConfigTable.MerchantPriceConfig;
-import com.l2jmobius.gameserver.enums.InstanceType;
-import com.l2jmobius.gameserver.model.actor.templates.NpcTemplate;
-import com.l2jmobius.gameserver.model.buylist.BuyListHolder;
-import com.l2jmobius.gameserver.network.serverpackets.ActionFailed;
-import com.l2jmobius.gameserver.network.serverpackets.BuyList;
-import com.l2jmobius.gameserver.network.serverpackets.ExBuySellList;
+import org.l2jmobius.gameserver.data.xml.impl.BuyListData;
+import org.l2jmobius.gameserver.datatables.MerchantPriceConfigTable;
+import org.l2jmobius.gameserver.datatables.MerchantPriceConfigTable.MerchantPriceConfig;
+import org.l2jmobius.gameserver.enums.InstanceType;
+import org.l2jmobius.gameserver.model.actor.templates.NpcTemplate;
+import org.l2jmobius.gameserver.model.buylist.BuyListHolder;
+import org.l2jmobius.gameserver.network.serverpackets.ActionFailed;
+import org.l2jmobius.gameserver.network.serverpackets.BuyList;
+import org.l2jmobius.gameserver.network.serverpackets.ExBuySellList;
 
 /**
  * @version $Revision: 1.10.4.9 $ $Date: 2005/04/11 10:06:08 $

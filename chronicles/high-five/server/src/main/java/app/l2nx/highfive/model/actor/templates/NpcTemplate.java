@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.model.actor.templates;
+package org.l2jmobius.gameserver.model.actor.templates;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -24,25 +24,25 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import com.l2jmobius.Config;
-import com.l2jmobius.commons.util.Rnd;
-import com.l2jmobius.gameserver.data.xml.impl.NpcData;
-import com.l2jmobius.gameserver.datatables.ItemTable;
-import com.l2jmobius.gameserver.enums.AISkillScope;
-import com.l2jmobius.gameserver.enums.AIType;
-import com.l2jmobius.gameserver.enums.DropType;
-import com.l2jmobius.gameserver.enums.Race;
-import com.l2jmobius.gameserver.enums.Sex;
-import com.l2jmobius.gameserver.model.StatsSet;
-import com.l2jmobius.gameserver.model.actor.Creature;
-import com.l2jmobius.gameserver.model.base.ClassId;
-import com.l2jmobius.gameserver.model.holders.DropHolder;
-import com.l2jmobius.gameserver.model.holders.ItemHolder;
-import com.l2jmobius.gameserver.model.interfaces.IIdentifiable;
-import com.l2jmobius.gameserver.model.itemcontainer.Inventory;
-import com.l2jmobius.gameserver.model.items.Item;
-import com.l2jmobius.gameserver.model.skills.Skill;
-import com.l2jmobius.gameserver.util.Util;
+import org.l2jmobius.Config;
+import org.l2jmobius.commons.util.Rnd;
+import org.l2jmobius.gameserver.data.xml.impl.NpcData;
+import org.l2jmobius.gameserver.datatables.ItemTable;
+import org.l2jmobius.gameserver.enums.AISkillScope;
+import org.l2jmobius.gameserver.enums.AIType;
+import org.l2jmobius.gameserver.enums.DropType;
+import org.l2jmobius.gameserver.enums.Race;
+import org.l2jmobius.gameserver.enums.Sex;
+import org.l2jmobius.gameserver.model.StatsSet;
+import org.l2jmobius.gameserver.model.actor.Creature;
+import org.l2jmobius.gameserver.model.base.ClassId;
+import org.l2jmobius.gameserver.model.holders.DropHolder;
+import org.l2jmobius.gameserver.model.holders.ItemHolder;
+import org.l2jmobius.gameserver.model.interfaces.IIdentifiable;
+import org.l2jmobius.gameserver.model.itemcontainer.Inventory;
+import org.l2jmobius.gameserver.model.items.Item;
+import org.l2jmobius.gameserver.model.skills.Skill;
+import org.l2jmobius.gameserver.util.Util;
 
 /**
  * NPC template.

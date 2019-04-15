@@ -14,24 +14,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.loginserver.network;
+package org.l2jmobius.loginserver.network;
 
 import java.util.logging.Logger;
 
-import com.l2jmobius.commons.network.BaseRecievePacket;
-import com.l2jmobius.loginserver.GameServerThread;
-import com.l2jmobius.loginserver.network.gameserverpackets.BlowFishKey;
-import com.l2jmobius.loginserver.network.gameserverpackets.ChangeAccessLevel;
-import com.l2jmobius.loginserver.network.gameserverpackets.ChangePassword;
-import com.l2jmobius.loginserver.network.gameserverpackets.GameServerAuth;
-import com.l2jmobius.loginserver.network.gameserverpackets.PlayerAuthRequest;
-import com.l2jmobius.loginserver.network.gameserverpackets.PlayerInGame;
-import com.l2jmobius.loginserver.network.gameserverpackets.PlayerLogout;
-import com.l2jmobius.loginserver.network.gameserverpackets.PlayerTracert;
-import com.l2jmobius.loginserver.network.gameserverpackets.ReplyCharacters;
-import com.l2jmobius.loginserver.network.gameserverpackets.RequestTempBan;
-import com.l2jmobius.loginserver.network.gameserverpackets.ServerStatus;
-import com.l2jmobius.loginserver.network.loginserverpackets.LoginServerFail;
+import org.l2jmobius.commons.network.BaseRecievePacket;
+import org.l2jmobius.loginserver.GameServerThread;
+import org.l2jmobius.loginserver.network.gameserverpackets.BlowFishKey;
+import org.l2jmobius.loginserver.network.gameserverpackets.ChangeAccessLevel;
+import org.l2jmobius.loginserver.network.gameserverpackets.ChangePassword;
+import org.l2jmobius.loginserver.network.gameserverpackets.GameServerAuth;
+import org.l2jmobius.loginserver.network.gameserverpackets.PlayerAuthRequest;
+import org.l2jmobius.loginserver.network.gameserverpackets.PlayerInGame;
+import org.l2jmobius.loginserver.network.gameserverpackets.PlayerLogout;
+import org.l2jmobius.loginserver.network.gameserverpackets.PlayerTracert;
+import org.l2jmobius.loginserver.network.gameserverpackets.ReplyCharacters;
+import org.l2jmobius.loginserver.network.gameserverpackets.RequestTempBan;
+import org.l2jmobius.loginserver.network.gameserverpackets.ServerStatus;
+import org.l2jmobius.loginserver.network.loginserverpackets.LoginServerFail;
 
 /**
  * @author mrTJO

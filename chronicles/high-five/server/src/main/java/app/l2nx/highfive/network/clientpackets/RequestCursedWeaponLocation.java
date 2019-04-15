@@ -14,19 +14,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.network.clientpackets;
+package org.l2jmobius.gameserver.network.clientpackets;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import com.l2jmobius.commons.network.PacketReader;
-import com.l2jmobius.gameserver.instancemanager.CursedWeaponsManager;
-import com.l2jmobius.gameserver.model.CursedWeapon;
-import com.l2jmobius.gameserver.model.Location;
-import com.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
-import com.l2jmobius.gameserver.network.GameClient;
-import com.l2jmobius.gameserver.network.serverpackets.ExCursedWeaponLocation;
-import com.l2jmobius.gameserver.network.serverpackets.ExCursedWeaponLocation.CursedWeaponInfo;
+import org.l2jmobius.commons.network.PacketReader;
+import org.l2jmobius.gameserver.instancemanager.CursedWeaponsManager;
+import org.l2jmobius.gameserver.model.CursedWeapon;
+import org.l2jmobius.gameserver.model.Location;
+import org.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
+import org.l2jmobius.gameserver.network.GameClient;
+import org.l2jmobius.gameserver.network.serverpackets.ExCursedWeaponLocation;
+import org.l2jmobius.gameserver.network.serverpackets.ExCursedWeaponLocation.CursedWeaponInfo;
 
 /**
  * Format: (ch)

@@ -14,19 +14,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.model.items.enchant;
+package org.l2jmobius.gameserver.model.items.enchant;
 
 import java.util.HashSet;
 import java.util.Set;
 import java.util.logging.Level;
 
-import com.l2jmobius.commons.util.Rnd;
-import com.l2jmobius.gameserver.data.xml.impl.EnchantItemGroupsData;
-import com.l2jmobius.gameserver.model.StatsSet;
-import com.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
-import com.l2jmobius.gameserver.model.items.instance.ItemInstance;
-import com.l2jmobius.gameserver.model.items.type.EtcItemType;
-import com.l2jmobius.gameserver.model.items.type.ItemType;
+import org.l2jmobius.commons.util.Rnd;
+import org.l2jmobius.gameserver.data.xml.impl.EnchantItemGroupsData;
+import org.l2jmobius.gameserver.model.StatsSet;
+import org.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
+import org.l2jmobius.gameserver.model.items.instance.ItemInstance;
+import org.l2jmobius.gameserver.model.items.type.EtcItemType;
+import org.l2jmobius.gameserver.model.items.type.ItemType;
 
 /**
  * @author UnAfraid

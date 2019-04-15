@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.model.entity;
+package org.l2jmobius.gameserver.model.entity;
 
 import java.util.List;
 import java.util.Map;
@@ -25,30 +25,30 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import com.l2jmobius.commons.concurrent.ThreadPool;
-import com.l2jmobius.commons.util.Rnd;
-import com.l2jmobius.gameserver.data.xml.impl.SkillData;
-import com.l2jmobius.gameserver.datatables.SpawnTable;
-import com.l2jmobius.gameserver.enums.Team;
-import com.l2jmobius.gameserver.instancemanager.HandysBlockCheckerManager;
-import com.l2jmobius.gameserver.model.ArenaParticipantsHolder;
-import com.l2jmobius.gameserver.model.Spawn;
-import com.l2jmobius.gameserver.model.World;
-import com.l2jmobius.gameserver.model.actor.instance.BlockInstance;
-import com.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
-import com.l2jmobius.gameserver.model.itemcontainer.PlayerInventory;
-import com.l2jmobius.gameserver.model.items.instance.ItemInstance;
-import com.l2jmobius.gameserver.model.skills.Skill;
-import com.l2jmobius.gameserver.model.zone.ZoneId;
-import com.l2jmobius.gameserver.network.SystemMessageId;
-import com.l2jmobius.gameserver.network.serverpackets.ActionFailed;
-import com.l2jmobius.gameserver.network.serverpackets.ExBasicActionList;
-import com.l2jmobius.gameserver.network.serverpackets.ExCubeGameChangePoints;
-import com.l2jmobius.gameserver.network.serverpackets.ExCubeGameCloseUI;
-import com.l2jmobius.gameserver.network.serverpackets.ExCubeGameEnd;
-import com.l2jmobius.gameserver.network.serverpackets.ExCubeGameExtendedChangePoints;
-import com.l2jmobius.gameserver.network.serverpackets.RelationChanged;
-import com.l2jmobius.gameserver.network.serverpackets.SystemMessage;
+import org.l2jmobius.commons.concurrent.ThreadPool;
+import org.l2jmobius.commons.util.Rnd;
+import org.l2jmobius.gameserver.data.xml.impl.SkillData;
+import org.l2jmobius.gameserver.datatables.SpawnTable;
+import org.l2jmobius.gameserver.enums.Team;
+import org.l2jmobius.gameserver.instancemanager.HandysBlockCheckerManager;
+import org.l2jmobius.gameserver.model.ArenaParticipantsHolder;
+import org.l2jmobius.gameserver.model.Spawn;
+import org.l2jmobius.gameserver.model.World;
+import org.l2jmobius.gameserver.model.actor.instance.BlockInstance;
+import org.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
+import org.l2jmobius.gameserver.model.itemcontainer.PlayerInventory;
+import org.l2jmobius.gameserver.model.items.instance.ItemInstance;
+import org.l2jmobius.gameserver.model.skills.Skill;
+import org.l2jmobius.gameserver.model.zone.ZoneId;
+import org.l2jmobius.gameserver.network.SystemMessageId;
+import org.l2jmobius.gameserver.network.serverpackets.ActionFailed;
+import org.l2jmobius.gameserver.network.serverpackets.ExBasicActionList;
+import org.l2jmobius.gameserver.network.serverpackets.ExCubeGameChangePoints;
+import org.l2jmobius.gameserver.network.serverpackets.ExCubeGameCloseUI;
+import org.l2jmobius.gameserver.network.serverpackets.ExCubeGameEnd;
+import org.l2jmobius.gameserver.network.serverpackets.ExCubeGameExtendedChangePoints;
+import org.l2jmobius.gameserver.network.serverpackets.RelationChanged;
+import org.l2jmobius.gameserver.network.serverpackets.SystemMessage;
 
 /**
  * @author BiggBoss

@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.communitybbs.Manager;
+package org.l2jmobius.gameserver.communitybbs.Manager;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -24,9 +24,9 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import com.l2jmobius.commons.database.DatabaseFactory;
-import com.l2jmobius.gameserver.communitybbs.BB.Forum;
-import com.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
+import org.l2jmobius.commons.database.DatabaseFactory;
+import org.l2jmobius.gameserver.communitybbs.BB.Forum;
+import org.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
 
 public class ForumsBBSManager extends BaseBBSManager
 {

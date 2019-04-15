@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.script;
+package org.l2jmobius.gameserver.script;
 
 import java.util.Hashtable;
 
@@ -32,7 +32,7 @@ public class ScriptEngine
 		{
 			try
 			{
-				Class.forName("com.l2jmobius.gameserver.script." + name);
+				Class.forName("org.l2jmobius.gameserver.script." + name);
 				// By now the static block with no function would
 				// have been executed if the shape was found.
 				// the shape is expected to have put its factory

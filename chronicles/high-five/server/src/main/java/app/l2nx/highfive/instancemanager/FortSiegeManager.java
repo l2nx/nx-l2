@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.instancemanager;
+package org.l2jmobius.gameserver.instancemanager;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -31,19 +31,19 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import com.l2jmobius.Config;
-import com.l2jmobius.commons.database.DatabaseFactory;
-import com.l2jmobius.gameserver.model.CombatFlag;
-import com.l2jmobius.gameserver.model.FortSiegeSpawn;
-import com.l2jmobius.gameserver.model.WorldObject;
-import com.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
-import com.l2jmobius.gameserver.model.clan.Clan;
-import com.l2jmobius.gameserver.model.entity.Fort;
-import com.l2jmobius.gameserver.model.entity.FortSiege;
-import com.l2jmobius.gameserver.model.items.instance.ItemInstance;
-import com.l2jmobius.gameserver.model.skills.CommonSkill;
-import com.l2jmobius.gameserver.network.SystemMessageId;
-import com.l2jmobius.gameserver.network.serverpackets.SystemMessage;
+import org.l2jmobius.Config;
+import org.l2jmobius.commons.database.DatabaseFactory;
+import org.l2jmobius.gameserver.model.CombatFlag;
+import org.l2jmobius.gameserver.model.FortSiegeSpawn;
+import org.l2jmobius.gameserver.model.WorldObject;
+import org.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
+import org.l2jmobius.gameserver.model.clan.Clan;
+import org.l2jmobius.gameserver.model.entity.Fort;
+import org.l2jmobius.gameserver.model.entity.FortSiege;
+import org.l2jmobius.gameserver.model.items.instance.ItemInstance;
+import org.l2jmobius.gameserver.model.skills.CommonSkill;
+import org.l2jmobius.gameserver.network.SystemMessageId;
+import org.l2jmobius.gameserver.network.serverpackets.SystemMessage;
 
 public final class FortSiegeManager
 {

@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.model.quest;
+package org.l2jmobius.gameserver.model.quest;
 
 import java.nio.file.Path;
 import java.sql.Connection;
@@ -33,42 +33,42 @@ import java.util.concurrent.locks.ReentrantReadWriteLock.WriteLock;
 import java.util.function.Predicate;
 import java.util.logging.Level;
 
-import com.l2jmobius.Config;
-import com.l2jmobius.commons.database.DatabaseFactory;
-import com.l2jmobius.commons.util.CommonUtil;
-import com.l2jmobius.commons.util.Rnd;
-import com.l2jmobius.gameserver.cache.HtmCache;
-import com.l2jmobius.gameserver.datatables.ItemTable;
-import com.l2jmobius.gameserver.enums.CategoryType;
-import com.l2jmobius.gameserver.enums.Race;
-import com.l2jmobius.gameserver.enums.TrapAction;
-import com.l2jmobius.gameserver.instancemanager.QuestManager;
-import com.l2jmobius.gameserver.model.Party;
-import com.l2jmobius.gameserver.model.WorldObject;
-import com.l2jmobius.gameserver.model.actor.Attackable;
-import com.l2jmobius.gameserver.model.actor.Creature;
-import com.l2jmobius.gameserver.model.actor.Npc;
-import com.l2jmobius.gameserver.model.actor.Summon;
-import com.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
-import com.l2jmobius.gameserver.model.actor.instance.TrapInstance;
-import com.l2jmobius.gameserver.model.base.AcquireSkillType;
-import com.l2jmobius.gameserver.model.base.ClassId;
-import com.l2jmobius.gameserver.model.events.AbstractScript;
-import com.l2jmobius.gameserver.model.events.EventType;
-import com.l2jmobius.gameserver.model.events.listeners.AbstractEventListener;
-import com.l2jmobius.gameserver.model.events.returns.TerminateReturn;
-import com.l2jmobius.gameserver.model.interfaces.IIdentifiable;
-import com.l2jmobius.gameserver.model.items.Item;
-import com.l2jmobius.gameserver.model.items.instance.ItemInstance;
-import com.l2jmobius.gameserver.model.olympiad.CompetitionType;
-import com.l2jmobius.gameserver.model.olympiad.Participant;
-import com.l2jmobius.gameserver.model.skills.Skill;
-import com.l2jmobius.gameserver.model.zone.ZoneType;
-import com.l2jmobius.gameserver.network.serverpackets.ActionFailed;
-import com.l2jmobius.gameserver.network.serverpackets.NpcHtmlMessage;
-import com.l2jmobius.gameserver.network.serverpackets.NpcQuestHtmlMessage;
-import com.l2jmobius.gameserver.scripting.ScriptEngineManager;
-import com.l2jmobius.gameserver.util.Util;
+import org.l2jmobius.Config;
+import org.l2jmobius.commons.database.DatabaseFactory;
+import org.l2jmobius.commons.util.CommonUtil;
+import org.l2jmobius.commons.util.Rnd;
+import org.l2jmobius.gameserver.cache.HtmCache;
+import org.l2jmobius.gameserver.datatables.ItemTable;
+import org.l2jmobius.gameserver.enums.CategoryType;
+import org.l2jmobius.gameserver.enums.Race;
+import org.l2jmobius.gameserver.enums.TrapAction;
+import org.l2jmobius.gameserver.instancemanager.QuestManager;
+import org.l2jmobius.gameserver.model.Party;
+import org.l2jmobius.gameserver.model.WorldObject;
+import org.l2jmobius.gameserver.model.actor.Attackable;
+import org.l2jmobius.gameserver.model.actor.Creature;
+import org.l2jmobius.gameserver.model.actor.Npc;
+import org.l2jmobius.gameserver.model.actor.Summon;
+import org.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
+import org.l2jmobius.gameserver.model.actor.instance.TrapInstance;
+import org.l2jmobius.gameserver.model.base.AcquireSkillType;
+import org.l2jmobius.gameserver.model.base.ClassId;
+import org.l2jmobius.gameserver.model.events.AbstractScript;
+import org.l2jmobius.gameserver.model.events.EventType;
+import org.l2jmobius.gameserver.model.events.listeners.AbstractEventListener;
+import org.l2jmobius.gameserver.model.events.returns.TerminateReturn;
+import org.l2jmobius.gameserver.model.interfaces.IIdentifiable;
+import org.l2jmobius.gameserver.model.items.Item;
+import org.l2jmobius.gameserver.model.items.instance.ItemInstance;
+import org.l2jmobius.gameserver.model.olympiad.CompetitionType;
+import org.l2jmobius.gameserver.model.olympiad.Participant;
+import org.l2jmobius.gameserver.model.skills.Skill;
+import org.l2jmobius.gameserver.model.zone.ZoneType;
+import org.l2jmobius.gameserver.network.serverpackets.ActionFailed;
+import org.l2jmobius.gameserver.network.serverpackets.NpcHtmlMessage;
+import org.l2jmobius.gameserver.network.serverpackets.NpcQuestHtmlMessage;
+import org.l2jmobius.gameserver.scripting.ScriptEngineManager;
+import org.l2jmobius.gameserver.util.Util;
 
 /**
  * Quest main class.

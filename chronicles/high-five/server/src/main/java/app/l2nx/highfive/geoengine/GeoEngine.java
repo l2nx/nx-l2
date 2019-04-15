@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.geoengine;
+package org.l2jmobius.gameserver.geoengine;
 
 import java.io.File;
 import java.io.RandomAccessFile;
@@ -24,22 +24,22 @@ import java.nio.channels.FileChannel;
 import java.util.List;
 import java.util.logging.Logger;
 
-import com.l2jmobius.Config;
-import com.l2jmobius.gameserver.data.xml.impl.DoorData;
-import com.l2jmobius.gameserver.data.xml.impl.FenceData;
-import com.l2jmobius.gameserver.geoengine.geodata.ABlock;
-import com.l2jmobius.gameserver.geoengine.geodata.BlockComplex;
-import com.l2jmobius.gameserver.geoengine.geodata.BlockFlat;
-import com.l2jmobius.gameserver.geoengine.geodata.BlockMultilayer;
-import com.l2jmobius.gameserver.geoengine.geodata.BlockNull;
-import com.l2jmobius.gameserver.geoengine.geodata.GeoFormat;
-import com.l2jmobius.gameserver.geoengine.geodata.GeoLocation;
-import com.l2jmobius.gameserver.geoengine.geodata.GeoStructure;
-import com.l2jmobius.gameserver.model.Location;
-import com.l2jmobius.gameserver.model.World;
-import com.l2jmobius.gameserver.model.WorldObject;
-import com.l2jmobius.gameserver.model.actor.Creature;
-import com.l2jmobius.gameserver.util.MathUtil;
+import org.l2jmobius.Config;
+import org.l2jmobius.gameserver.data.xml.impl.DoorData;
+import org.l2jmobius.gameserver.data.xml.impl.FenceData;
+import org.l2jmobius.gameserver.geoengine.geodata.ABlock;
+import org.l2jmobius.gameserver.geoengine.geodata.BlockComplex;
+import org.l2jmobius.gameserver.geoengine.geodata.BlockFlat;
+import org.l2jmobius.gameserver.geoengine.geodata.BlockMultilayer;
+import org.l2jmobius.gameserver.geoengine.geodata.BlockNull;
+import org.l2jmobius.gameserver.geoengine.geodata.GeoFormat;
+import org.l2jmobius.gameserver.geoengine.geodata.GeoLocation;
+import org.l2jmobius.gameserver.geoengine.geodata.GeoStructure;
+import org.l2jmobius.gameserver.model.Location;
+import org.l2jmobius.gameserver.model.World;
+import org.l2jmobius.gameserver.model.WorldObject;
+import org.l2jmobius.gameserver.model.actor.Creature;
+import org.l2jmobius.gameserver.util.MathUtil;
 
 /**
  * @author Hasha

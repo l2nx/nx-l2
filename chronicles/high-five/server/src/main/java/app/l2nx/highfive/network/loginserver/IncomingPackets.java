@@ -14,16 +14,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.network.loginserver;
+package org.l2jmobius.gameserver.network.loginserver;
 
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Supplier;
 
-import com.l2jmobius.commons.network.IConnectionState;
-import com.l2jmobius.commons.network.IIncomingPacket;
-import com.l2jmobius.commons.network.IIncomingPackets;
+import org.l2jmobius.commons.network.IConnectionState;
+import org.l2jmobius.commons.network.IIncomingPacket;
+import org.l2jmobius.commons.network.IIncomingPackets;
 
 /**
  * @author NosBit

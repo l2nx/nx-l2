@@ -14,15 +14,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.network.clientpackets;
+package org.l2jmobius.gameserver.network.clientpackets;
 
-import com.l2jmobius.commons.network.PacketReader;
-import com.l2jmobius.gameserver.RecipeController;
-import com.l2jmobius.gameserver.enums.PrivateStoreType;
-import com.l2jmobius.gameserver.model.World;
-import com.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
-import com.l2jmobius.gameserver.network.GameClient;
-import com.l2jmobius.gameserver.util.Util;
+import org.l2jmobius.commons.network.PacketReader;
+import org.l2jmobius.gameserver.RecipeController;
+import org.l2jmobius.gameserver.enums.PrivateStoreType;
+import org.l2jmobius.gameserver.model.World;
+import org.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
+import org.l2jmobius.gameserver.network.GameClient;
+import org.l2jmobius.gameserver.util.Util;
 
 /**
  * @author Administrator

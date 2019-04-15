@@ -14,11 +14,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.taskmanager.tasks;
+package org.l2jmobius.gameserver.taskmanager.tasks;
 
-import com.l2jmobius.gameserver.Shutdown;
-import com.l2jmobius.gameserver.taskmanager.Task;
-import com.l2jmobius.gameserver.taskmanager.TaskManager.ExecutedTask;
+import org.l2jmobius.gameserver.Shutdown;
+import org.l2jmobius.gameserver.taskmanager.Task;
+import org.l2jmobius.gameserver.taskmanager.TaskManager.ExecutedTask;
 
 /**
  * @author Layane

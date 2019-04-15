@@ -14,11 +14,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.model.olympiad;
+package org.l2jmobius.gameserver.model.olympiad;
 
 import java.util.List;
 
-import com.l2jmobius.Config;
+import org.l2jmobius.Config;
 
 /**
  * @author DS

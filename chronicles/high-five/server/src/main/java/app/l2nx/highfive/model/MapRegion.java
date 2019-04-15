@@ -14,16 +14,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.model;
+package org.l2jmobius.gameserver.model;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.l2jmobius.Config;
-import com.l2jmobius.commons.util.Rnd;
-import com.l2jmobius.gameserver.enums.Race;
+import org.l2jmobius.Config;
+import org.l2jmobius.commons.util.Rnd;
+import org.l2jmobius.gameserver.enums.Race;
 
 /**
  * @author Nyaran

@@ -14,18 +14,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.model.conditions;
+package org.l2jmobius.gameserver.model.conditions;
 
-import com.l2jmobius.gameserver.SevenSigns;
-import com.l2jmobius.gameserver.instancemanager.CastleManager;
-import com.l2jmobius.gameserver.instancemanager.FortManager;
-import com.l2jmobius.gameserver.model.actor.Creature;
-import com.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
-import com.l2jmobius.gameserver.model.entity.Castle;
-import com.l2jmobius.gameserver.model.entity.Fort;
-import com.l2jmobius.gameserver.model.items.Item;
-import com.l2jmobius.gameserver.model.skills.Skill;
-import com.l2jmobius.gameserver.network.SystemMessageId;
+import org.l2jmobius.gameserver.SevenSigns;
+import org.l2jmobius.gameserver.instancemanager.CastleManager;
+import org.l2jmobius.gameserver.instancemanager.FortManager;
+import org.l2jmobius.gameserver.model.actor.Creature;
+import org.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
+import org.l2jmobius.gameserver.model.entity.Castle;
+import org.l2jmobius.gameserver.model.entity.Fort;
+import org.l2jmobius.gameserver.model.items.Item;
+import org.l2jmobius.gameserver.model.skills.Skill;
+import org.l2jmobius.gameserver.network.SystemMessageId;
 
 /**
  * Player Can Summon Siege Golem implementation.

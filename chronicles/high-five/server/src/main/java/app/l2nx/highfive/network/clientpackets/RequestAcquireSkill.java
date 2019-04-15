@@ -14,43 +14,43 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.network.clientpackets;
+package org.l2jmobius.gameserver.network.clientpackets;
 
 import java.util.List;
 
-import com.l2jmobius.Config;
-import com.l2jmobius.commons.network.PacketReader;
-import com.l2jmobius.gameserver.data.xml.impl.SkillData;
-import com.l2jmobius.gameserver.data.xml.impl.SkillTreesData;
-import com.l2jmobius.gameserver.enums.IllegalActionPunishmentType;
-import com.l2jmobius.gameserver.instancemanager.QuestManager;
-import com.l2jmobius.gameserver.model.SkillLearn;
-import com.l2jmobius.gameserver.model.actor.Npc;
-import com.l2jmobius.gameserver.model.actor.instance.FishermanInstance;
-import com.l2jmobius.gameserver.model.actor.instance.NpcInstance;
-import com.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
-import com.l2jmobius.gameserver.model.actor.instance.VillageMasterInstance;
-import com.l2jmobius.gameserver.model.base.AcquireSkillType;
-import com.l2jmobius.gameserver.model.clan.Clan;
-import com.l2jmobius.gameserver.model.clan.ClanPrivilege;
-import com.l2jmobius.gameserver.model.events.EventDispatcher;
-import com.l2jmobius.gameserver.model.events.impl.creature.player.OnPlayerSkillLearn;
-import com.l2jmobius.gameserver.model.holders.ItemHolder;
-import com.l2jmobius.gameserver.model.holders.SkillHolder;
-import com.l2jmobius.gameserver.model.items.instance.ItemInstance;
-import com.l2jmobius.gameserver.model.quest.Quest;
-import com.l2jmobius.gameserver.model.quest.QuestState;
-import com.l2jmobius.gameserver.model.skills.CommonSkill;
-import com.l2jmobius.gameserver.model.skills.Skill;
-import com.l2jmobius.gameserver.network.GameClient;
-import com.l2jmobius.gameserver.network.SystemMessageId;
-import com.l2jmobius.gameserver.network.serverpackets.AcquireSkillDone;
-import com.l2jmobius.gameserver.network.serverpackets.AcquireSkillList;
-import com.l2jmobius.gameserver.network.serverpackets.ExStorageMaxCount;
-import com.l2jmobius.gameserver.network.serverpackets.PledgeSkillList;
-import com.l2jmobius.gameserver.network.serverpackets.StatusUpdate;
-import com.l2jmobius.gameserver.network.serverpackets.SystemMessage;
-import com.l2jmobius.gameserver.util.Util;
+import org.l2jmobius.Config;
+import org.l2jmobius.commons.network.PacketReader;
+import org.l2jmobius.gameserver.data.xml.impl.SkillData;
+import org.l2jmobius.gameserver.data.xml.impl.SkillTreesData;
+import org.l2jmobius.gameserver.enums.IllegalActionPunishmentType;
+import org.l2jmobius.gameserver.instancemanager.QuestManager;
+import org.l2jmobius.gameserver.model.SkillLearn;
+import org.l2jmobius.gameserver.model.actor.Npc;
+import org.l2jmobius.gameserver.model.actor.instance.FishermanInstance;
+import org.l2jmobius.gameserver.model.actor.instance.NpcInstance;
+import org.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
+import org.l2jmobius.gameserver.model.actor.instance.VillageMasterInstance;
+import org.l2jmobius.gameserver.model.base.AcquireSkillType;
+import org.l2jmobius.gameserver.model.clan.Clan;
+import org.l2jmobius.gameserver.model.clan.ClanPrivilege;
+import org.l2jmobius.gameserver.model.events.EventDispatcher;
+import org.l2jmobius.gameserver.model.events.impl.creature.player.OnPlayerSkillLearn;
+import org.l2jmobius.gameserver.model.holders.ItemHolder;
+import org.l2jmobius.gameserver.model.holders.SkillHolder;
+import org.l2jmobius.gameserver.model.items.instance.ItemInstance;
+import org.l2jmobius.gameserver.model.quest.Quest;
+import org.l2jmobius.gameserver.model.quest.QuestState;
+import org.l2jmobius.gameserver.model.skills.CommonSkill;
+import org.l2jmobius.gameserver.model.skills.Skill;
+import org.l2jmobius.gameserver.network.GameClient;
+import org.l2jmobius.gameserver.network.SystemMessageId;
+import org.l2jmobius.gameserver.network.serverpackets.AcquireSkillDone;
+import org.l2jmobius.gameserver.network.serverpackets.AcquireSkillList;
+import org.l2jmobius.gameserver.network.serverpackets.ExStorageMaxCount;
+import org.l2jmobius.gameserver.network.serverpackets.PledgeSkillList;
+import org.l2jmobius.gameserver.network.serverpackets.StatusUpdate;
+import org.l2jmobius.gameserver.network.serverpackets.SystemMessage;
+import org.l2jmobius.gameserver.util.Util;
 
 /**
  * Request Acquire Skill client packet implementation.

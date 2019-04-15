@@ -14,11 +14,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.model.actor.templates;
+package org.l2jmobius.gameserver.model.actor.templates;
 
-import com.l2jmobius.gameserver.model.StatsSet;
-import com.l2jmobius.gameserver.model.actor.instance.DoorInstance;
-import com.l2jmobius.gameserver.model.interfaces.IIdentifiable;
+import org.l2jmobius.gameserver.model.StatsSet;
+import org.l2jmobius.gameserver.model.actor.instance.DoorInstance;
+import org.l2jmobius.gameserver.model.interfaces.IIdentifiable;
 
 /**
  * Doors template.

@@ -14,24 +14,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.model.zone.type;
+package org.l2jmobius.gameserver.model.zone.type;
 
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 
-import com.l2jmobius.commons.concurrent.ThreadPool;
-import com.l2jmobius.commons.util.Rnd;
-import com.l2jmobius.gameserver.data.xml.impl.SkillData;
-import com.l2jmobius.gameserver.enums.InstanceType;
-import com.l2jmobius.gameserver.instancemanager.ZoneManager;
-import com.l2jmobius.gameserver.model.actor.Creature;
-import com.l2jmobius.gameserver.model.skills.Skill;
-import com.l2jmobius.gameserver.model.zone.AbstractZoneSettings;
-import com.l2jmobius.gameserver.model.zone.TaskZoneSettings;
-import com.l2jmobius.gameserver.model.zone.ZoneId;
-import com.l2jmobius.gameserver.model.zone.ZoneType;
-import com.l2jmobius.gameserver.network.serverpackets.EtcStatusUpdate;
+import org.l2jmobius.commons.concurrent.ThreadPool;
+import org.l2jmobius.commons.util.Rnd;
+import org.l2jmobius.gameserver.data.xml.impl.SkillData;
+import org.l2jmobius.gameserver.enums.InstanceType;
+import org.l2jmobius.gameserver.instancemanager.ZoneManager;
+import org.l2jmobius.gameserver.model.actor.Creature;
+import org.l2jmobius.gameserver.model.skills.Skill;
+import org.l2jmobius.gameserver.model.zone.AbstractZoneSettings;
+import org.l2jmobius.gameserver.model.zone.TaskZoneSettings;
+import org.l2jmobius.gameserver.model.zone.ZoneId;
+import org.l2jmobius.gameserver.model.zone.ZoneType;
+import org.l2jmobius.gameserver.network.serverpackets.EtcStatusUpdate;
 
 /**
  * another type of damage zone with skills

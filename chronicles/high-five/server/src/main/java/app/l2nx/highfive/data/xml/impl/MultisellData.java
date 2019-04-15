@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.data.xml.impl;
+package org.l2jmobius.gameserver.data.xml.impl;
 
 import java.io.File;
 import java.io.FileFilter;
@@ -28,22 +28,22 @@ import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 
-import com.l2jmobius.Config;
-import com.l2jmobius.commons.util.IXmlReader;
-import com.l2jmobius.commons.util.file.filter.NumericNameFilter;
-import com.l2jmobius.gameserver.model.StatsSet;
-import com.l2jmobius.gameserver.model.actor.Npc;
-import com.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
-import com.l2jmobius.gameserver.model.multisell.Entry;
-import com.l2jmobius.gameserver.model.multisell.Ingredient;
-import com.l2jmobius.gameserver.model.multisell.ListContainer;
-import com.l2jmobius.gameserver.model.multisell.PreparedListContainer;
-import com.l2jmobius.gameserver.network.SystemMessageId;
-import com.l2jmobius.gameserver.network.serverpackets.ExBrExtraUserInfo;
-import com.l2jmobius.gameserver.network.serverpackets.MultiSellList;
-import com.l2jmobius.gameserver.network.serverpackets.SystemMessage;
-import com.l2jmobius.gameserver.network.serverpackets.UserInfo;
-import com.l2jmobius.gameserver.util.Util;
+import org.l2jmobius.Config;
+import org.l2jmobius.commons.util.IXmlReader;
+import org.l2jmobius.commons.util.file.filter.NumericNameFilter;
+import org.l2jmobius.gameserver.model.StatsSet;
+import org.l2jmobius.gameserver.model.actor.Npc;
+import org.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
+import org.l2jmobius.gameserver.model.multisell.Entry;
+import org.l2jmobius.gameserver.model.multisell.Ingredient;
+import org.l2jmobius.gameserver.model.multisell.ListContainer;
+import org.l2jmobius.gameserver.model.multisell.PreparedListContainer;
+import org.l2jmobius.gameserver.network.SystemMessageId;
+import org.l2jmobius.gameserver.network.serverpackets.ExBrExtraUserInfo;
+import org.l2jmobius.gameserver.network.serverpackets.MultiSellList;
+import org.l2jmobius.gameserver.network.serverpackets.SystemMessage;
+import org.l2jmobius.gameserver.network.serverpackets.UserInfo;
+import org.l2jmobius.gameserver.util.Util;
 
 public final class MultisellData implements IXmlReader
 {

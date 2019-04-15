@@ -14,33 +14,33 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.ai;
+package org.l2jmobius.gameserver.ai;
 
-import static com.l2jmobius.gameserver.ai.CtrlIntention.AI_INTENTION_ATTACK;
-import static com.l2jmobius.gameserver.ai.CtrlIntention.AI_INTENTION_FOLLOW;
-import static com.l2jmobius.gameserver.ai.CtrlIntention.AI_INTENTION_IDLE;
+import static org.l2jmobius.gameserver.ai.CtrlIntention.AI_INTENTION_ATTACK;
+import static org.l2jmobius.gameserver.ai.CtrlIntention.AI_INTENTION_FOLLOW;
+import static org.l2jmobius.gameserver.ai.CtrlIntention.AI_INTENTION_IDLE;
 
 import java.util.concurrent.Future;
 import java.util.logging.Logger;
 
-import com.l2jmobius.commons.concurrent.ThreadPool;
-import com.l2jmobius.gameserver.GameTimeController;
-import com.l2jmobius.gameserver.model.Location;
-import com.l2jmobius.gameserver.model.WorldObject;
-import com.l2jmobius.gameserver.model.actor.Creature;
-import com.l2jmobius.gameserver.model.actor.Summon;
-import com.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
-import com.l2jmobius.gameserver.model.interfaces.ILocational;
-import com.l2jmobius.gameserver.model.skills.Skill;
-import com.l2jmobius.gameserver.network.serverpackets.ActionFailed;
-import com.l2jmobius.gameserver.network.serverpackets.AutoAttackStart;
-import com.l2jmobius.gameserver.network.serverpackets.AutoAttackStop;
-import com.l2jmobius.gameserver.network.serverpackets.Die;
-import com.l2jmobius.gameserver.network.serverpackets.MoveToLocation;
-import com.l2jmobius.gameserver.network.serverpackets.MoveToPawn;
-import com.l2jmobius.gameserver.network.serverpackets.StopMove;
-import com.l2jmobius.gameserver.network.serverpackets.StopRotation;
-import com.l2jmobius.gameserver.taskmanager.AttackStanceTaskManager;
+import org.l2jmobius.commons.concurrent.ThreadPool;
+import org.l2jmobius.gameserver.GameTimeController;
+import org.l2jmobius.gameserver.model.Location;
+import org.l2jmobius.gameserver.model.WorldObject;
+import org.l2jmobius.gameserver.model.actor.Creature;
+import org.l2jmobius.gameserver.model.actor.Summon;
+import org.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
+import org.l2jmobius.gameserver.model.interfaces.ILocational;
+import org.l2jmobius.gameserver.model.skills.Skill;
+import org.l2jmobius.gameserver.network.serverpackets.ActionFailed;
+import org.l2jmobius.gameserver.network.serverpackets.AutoAttackStart;
+import org.l2jmobius.gameserver.network.serverpackets.AutoAttackStop;
+import org.l2jmobius.gameserver.network.serverpackets.Die;
+import org.l2jmobius.gameserver.network.serverpackets.MoveToLocation;
+import org.l2jmobius.gameserver.network.serverpackets.MoveToPawn;
+import org.l2jmobius.gameserver.network.serverpackets.StopMove;
+import org.l2jmobius.gameserver.network.serverpackets.StopRotation;
+import org.l2jmobius.gameserver.taskmanager.AttackStanceTaskManager;
 
 /**
  * Mother class of all objects AI in the world.<br>

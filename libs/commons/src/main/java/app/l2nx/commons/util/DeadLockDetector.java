@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.commons.util;
+package org.l2jmobius.commons.util;
 
 import java.lang.management.LockInfo;
 import java.lang.management.ManagementFactory;
@@ -25,7 +25,7 @@ import java.time.Duration;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import com.l2jmobius.Config;
+import org.l2jmobius.Config;
 
 /**
  * Thread to check for deadlocked threads.

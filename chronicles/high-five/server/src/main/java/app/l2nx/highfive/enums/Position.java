@@ -14,9 +14,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.enums;
+package org.l2jmobius.gameserver.enums;
 
-import com.l2jmobius.gameserver.model.interfaces.ILocational;
+import org.l2jmobius.gameserver.model.interfaces.ILocational;
 
 /**
  * @author Sdw

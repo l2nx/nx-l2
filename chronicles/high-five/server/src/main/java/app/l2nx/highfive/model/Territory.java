@@ -14,13 +14,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.model;
+package org.l2jmobius.gameserver.model;
 
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.logging.Logger;
 
-import com.l2jmobius.commons.util.Rnd;
+import org.l2jmobius.commons.util.Rnd;
 
 /**
  * @version 0.1, 2005-03-12

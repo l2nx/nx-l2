@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.data.sql.impl;
+package org.l2jmobius.gameserver.data.sql.impl;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -23,11 +23,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import com.l2jmobius.gameserver.model.actor.Summon;
-import com.l2jmobius.gameserver.model.actor.instance.PetInstance;
-import com.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
-import com.l2jmobius.gameserver.model.actor.instance.ServitorInstance;
-import com.l2jmobius.gameserver.model.skills.Skill;
+import org.l2jmobius.gameserver.model.actor.Summon;
+import org.l2jmobius.gameserver.model.actor.instance.PetInstance;
+import org.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
+import org.l2jmobius.gameserver.model.actor.instance.ServitorInstance;
+import org.l2jmobius.gameserver.model.skills.Skill;
 
 /**
  * @author Nyaran

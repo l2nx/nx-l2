@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.ui;
+package org.l2jmobius.gameserver.ui;
 
 import java.awt.BorderLayout;
 import java.awt.Dimension;
@@ -43,17 +43,17 @@ import javax.swing.JTextArea;
 import javax.swing.SwingUtilities;
 import javax.swing.WindowConstants;
 
-import com.l2jmobius.Config;
-import com.l2jmobius.commons.util.LimitLinesDocumentListener;
-import com.l2jmobius.commons.util.SplashScreen;
-import com.l2jmobius.gameserver.Shutdown;
-import com.l2jmobius.gameserver.cache.HtmCache;
-import com.l2jmobius.gameserver.data.xml.impl.AdminData;
-import com.l2jmobius.gameserver.data.xml.impl.BuyListData;
-import com.l2jmobius.gameserver.data.xml.impl.MultisellData;
-import com.l2jmobius.gameserver.data.xml.impl.PrimeShopData;
-import com.l2jmobius.gameserver.util.Broadcast;
-import com.l2jmobius.gameserver.util.Util;
+import org.l2jmobius.Config;
+import org.l2jmobius.commons.util.LimitLinesDocumentListener;
+import org.l2jmobius.commons.util.SplashScreen;
+import org.l2jmobius.gameserver.Shutdown;
+import org.l2jmobius.gameserver.cache.HtmCache;
+import org.l2jmobius.gameserver.data.xml.impl.AdminData;
+import org.l2jmobius.gameserver.data.xml.impl.BuyListData;
+import org.l2jmobius.gameserver.data.xml.impl.MultisellData;
+import org.l2jmobius.gameserver.data.xml.impl.PrimeShopData;
+import org.l2jmobius.gameserver.util.Broadcast;
+import org.l2jmobius.gameserver.util.Util;
 
 /**
  * @author Mobius

@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.loginserver.network;
+package org.l2jmobius.loginserver.network;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -24,18 +24,18 @@ import java.util.logging.Logger;
 
 import javax.crypto.SecretKey;
 
-import com.l2jmobius.commons.network.ChannelInboundHandler;
-import com.l2jmobius.commons.network.IIncomingPacket;
-import com.l2jmobius.commons.network.IOutgoingPacket;
-import com.l2jmobius.commons.util.Rnd;
-import com.l2jmobius.commons.util.crypt.ScrambledKeyPair;
-import com.l2jmobius.loginserver.LoginController;
-import com.l2jmobius.loginserver.SessionKey;
-import com.l2jmobius.loginserver.network.serverpackets.Init;
-import com.l2jmobius.loginserver.network.serverpackets.LoginFail;
-import com.l2jmobius.loginserver.network.serverpackets.LoginFail.LoginFailReason;
-import com.l2jmobius.loginserver.network.serverpackets.PlayFail;
-import com.l2jmobius.loginserver.network.serverpackets.PlayFail.PlayFailReason;
+import org.l2jmobius.commons.network.ChannelInboundHandler;
+import org.l2jmobius.commons.network.IIncomingPacket;
+import org.l2jmobius.commons.network.IOutgoingPacket;
+import org.l2jmobius.commons.util.Rnd;
+import org.l2jmobius.commons.util.crypt.ScrambledKeyPair;
+import org.l2jmobius.loginserver.LoginController;
+import org.l2jmobius.loginserver.SessionKey;
+import org.l2jmobius.loginserver.network.serverpackets.Init;
+import org.l2jmobius.loginserver.network.serverpackets.LoginFail;
+import org.l2jmobius.loginserver.network.serverpackets.LoginFail.LoginFailReason;
+import org.l2jmobius.loginserver.network.serverpackets.PlayFail;
+import org.l2jmobius.loginserver.network.serverpackets.PlayFail.PlayFailReason;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;

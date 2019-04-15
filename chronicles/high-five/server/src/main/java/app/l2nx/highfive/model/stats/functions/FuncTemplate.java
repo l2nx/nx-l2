@@ -14,17 +14,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.model.stats.functions;
+package org.l2jmobius.gameserver.model.stats.functions;
 
 import java.lang.reflect.Constructor;
 import java.util.logging.Logger;
 
-import com.l2jmobius.gameserver.enums.StatFunction;
-import com.l2jmobius.gameserver.model.actor.Creature;
-import com.l2jmobius.gameserver.model.conditions.Condition;
-import com.l2jmobius.gameserver.model.items.instance.ItemInstance;
-import com.l2jmobius.gameserver.model.skills.Skill;
-import com.l2jmobius.gameserver.model.stats.Stats;
+import org.l2jmobius.gameserver.enums.StatFunction;
+import org.l2jmobius.gameserver.model.actor.Creature;
+import org.l2jmobius.gameserver.model.conditions.Condition;
+import org.l2jmobius.gameserver.model.items.instance.ItemInstance;
+import org.l2jmobius.gameserver.model.skills.Skill;
+import org.l2jmobius.gameserver.model.stats.Stats;
 
 /**
  * Function template.
@@ -60,7 +60,7 @@ public final class FuncTemplate
 		
 		try
 		{
-			final Class<?> functionClass = Class.forName("com.l2jmobius.gameserver.model.stats.functions.Func" + function.getName());
+			final Class<?> functionClass = Class.forName("org.l2jmobius.gameserver.model.stats.functions.Func" + function.getName());
 			_constructor = functionClass.getConstructor(Stats.class, // Stats to update
 				Integer.TYPE, // Order of execution
 				Object.class, // Owner

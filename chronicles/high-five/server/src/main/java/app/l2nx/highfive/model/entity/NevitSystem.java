@@ -14,26 +14,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.model.entity;
+package org.l2jmobius.gameserver.model.entity;
 
 import java.util.Calendar;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
-import com.l2jmobius.Config;
-import com.l2jmobius.commons.concurrent.ThreadPool;
-import com.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
-import com.l2jmobius.gameserver.model.events.EventType;
-import com.l2jmobius.gameserver.model.events.annotations.RegisterEvent;
-import com.l2jmobius.gameserver.model.events.impl.creature.player.OnPlayerLogin;
-import com.l2jmobius.gameserver.model.events.impl.creature.player.OnPlayerLogout;
-import com.l2jmobius.gameserver.model.events.listeners.ConsumerEventListener;
-import com.l2jmobius.gameserver.model.interfaces.IUniqueId;
-import com.l2jmobius.gameserver.model.skills.AbnormalVisualEffect;
-import com.l2jmobius.gameserver.network.SystemMessageId;
-import com.l2jmobius.gameserver.network.serverpackets.ExNevitAdventEffect;
-import com.l2jmobius.gameserver.network.serverpackets.ExNevitAdventPointInfoPacket;
-import com.l2jmobius.gameserver.network.serverpackets.ExNevitAdventTimeChange;
+import org.l2jmobius.Config;
+import org.l2jmobius.commons.concurrent.ThreadPool;
+import org.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
+import org.l2jmobius.gameserver.model.events.EventType;
+import org.l2jmobius.gameserver.model.events.annotations.RegisterEvent;
+import org.l2jmobius.gameserver.model.events.impl.creature.player.OnPlayerLogin;
+import org.l2jmobius.gameserver.model.events.impl.creature.player.OnPlayerLogout;
+import org.l2jmobius.gameserver.model.events.listeners.ConsumerEventListener;
+import org.l2jmobius.gameserver.model.interfaces.IUniqueId;
+import org.l2jmobius.gameserver.model.skills.AbnormalVisualEffect;
+import org.l2jmobius.gameserver.network.SystemMessageId;
+import org.l2jmobius.gameserver.network.serverpackets.ExNevitAdventEffect;
+import org.l2jmobius.gameserver.network.serverpackets.ExNevitAdventPointInfoPacket;
+import org.l2jmobius.gameserver.network.serverpackets.ExNevitAdventTimeChange;
 
 /**
  * Nevit's Blessing handler.

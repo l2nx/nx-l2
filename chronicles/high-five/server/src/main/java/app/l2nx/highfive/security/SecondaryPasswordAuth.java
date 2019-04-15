@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.security;
+package org.l2jmobius.gameserver.security;
 
 import java.io.UnsupportedEncodingException;
 import java.security.MessageDigest;
@@ -26,15 +26,15 @@ import java.util.Base64;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import com.l2jmobius.commons.database.DatabaseFactory;
-import com.l2jmobius.gameserver.LoginServerThread;
-import com.l2jmobius.gameserver.data.xml.impl.SecondaryAuthData;
-import com.l2jmobius.gameserver.network.Disconnection;
-import com.l2jmobius.gameserver.network.GameClient;
-import com.l2jmobius.gameserver.network.serverpackets.Ex2ndPasswordAck;
-import com.l2jmobius.gameserver.network.serverpackets.Ex2ndPasswordCheck;
-import com.l2jmobius.gameserver.network.serverpackets.Ex2ndPasswordVerify;
-import com.l2jmobius.gameserver.util.Util;
+import org.l2jmobius.commons.database.DatabaseFactory;
+import org.l2jmobius.gameserver.LoginServerThread;
+import org.l2jmobius.gameserver.data.xml.impl.SecondaryAuthData;
+import org.l2jmobius.gameserver.network.Disconnection;
+import org.l2jmobius.gameserver.network.GameClient;
+import org.l2jmobius.gameserver.network.serverpackets.Ex2ndPasswordAck;
+import org.l2jmobius.gameserver.network.serverpackets.Ex2ndPasswordCheck;
+import org.l2jmobius.gameserver.network.serverpackets.Ex2ndPasswordVerify;
+import org.l2jmobius.gameserver.util.Util;
 
 /**
  * @author mrTJO

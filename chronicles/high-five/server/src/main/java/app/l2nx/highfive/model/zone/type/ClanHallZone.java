@@ -14,14 +14,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.model.zone.type;
+package org.l2jmobius.gameserver.model.zone.type;
 
-import com.l2jmobius.gameserver.instancemanager.ClanHallManager;
-import com.l2jmobius.gameserver.model.actor.Creature;
-import com.l2jmobius.gameserver.model.entity.ClanHall;
-import com.l2jmobius.gameserver.model.entity.clanhall.AuctionableHall;
-import com.l2jmobius.gameserver.model.zone.ZoneId;
-import com.l2jmobius.gameserver.network.serverpackets.AgitDecoInfo;
+import org.l2jmobius.gameserver.instancemanager.ClanHallManager;
+import org.l2jmobius.gameserver.model.actor.Creature;
+import org.l2jmobius.gameserver.model.entity.ClanHall;
+import org.l2jmobius.gameserver.model.entity.clanhall.AuctionableHall;
+import org.l2jmobius.gameserver.model.zone.ZoneId;
+import org.l2jmobius.gameserver.network.serverpackets.AgitDecoInfo;
 
 /**
  * A clan hall zone

@@ -14,12 +14,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.network.loginserver;
+package org.l2jmobius.gameserver.network.loginserver;
 
 import java.util.logging.Logger;
 
-import com.l2jmobius.Config;
-import com.l2jmobius.gameserver.network.EventLoopGroupManager;
+import org.l2jmobius.Config;
+import org.l2jmobius.gameserver.network.EventLoopGroupManager;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelFuture;

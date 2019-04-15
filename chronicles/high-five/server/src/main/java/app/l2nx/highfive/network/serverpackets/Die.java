@@ -14,24 +14,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.network.serverpackets;
+package org.l2jmobius.gameserver.network.serverpackets;
 
-import com.l2jmobius.commons.network.PacketWriter;
-import com.l2jmobius.gameserver.data.xml.impl.AdminData;
-import com.l2jmobius.gameserver.instancemanager.CHSiegeManager;
-import com.l2jmobius.gameserver.instancemanager.CastleManager;
-import com.l2jmobius.gameserver.instancemanager.FortManager;
-import com.l2jmobius.gameserver.instancemanager.TerritoryWarManager;
-import com.l2jmobius.gameserver.model.AccessLevel;
-import com.l2jmobius.gameserver.model.SiegeClan;
-import com.l2jmobius.gameserver.model.actor.Creature;
-import com.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
-import com.l2jmobius.gameserver.model.clan.Clan;
-import com.l2jmobius.gameserver.model.entity.Castle;
-import com.l2jmobius.gameserver.model.entity.Fort;
-import com.l2jmobius.gameserver.model.entity.clanhall.SiegableHall;
-import com.l2jmobius.gameserver.model.olympiad.OlympiadManager;
-import com.l2jmobius.gameserver.network.OutgoingPackets;
+import org.l2jmobius.commons.network.PacketWriter;
+import org.l2jmobius.gameserver.data.xml.impl.AdminData;
+import org.l2jmobius.gameserver.instancemanager.CHSiegeManager;
+import org.l2jmobius.gameserver.instancemanager.CastleManager;
+import org.l2jmobius.gameserver.instancemanager.FortManager;
+import org.l2jmobius.gameserver.instancemanager.TerritoryWarManager;
+import org.l2jmobius.gameserver.model.AccessLevel;
+import org.l2jmobius.gameserver.model.SiegeClan;
+import org.l2jmobius.gameserver.model.actor.Creature;
+import org.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
+import org.l2jmobius.gameserver.model.clan.Clan;
+import org.l2jmobius.gameserver.model.entity.Castle;
+import org.l2jmobius.gameserver.model.entity.Fort;
+import org.l2jmobius.gameserver.model.entity.clanhall.SiegableHall;
+import org.l2jmobius.gameserver.model.olympiad.OlympiadManager;
+import org.l2jmobius.gameserver.network.OutgoingPackets;
 
 public class Die implements IClientOutgoingPacket
 {

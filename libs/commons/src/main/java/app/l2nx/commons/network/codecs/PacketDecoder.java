@@ -14,15 +14,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.commons.network.codecs;
+package org.l2jmobius.commons.network.codecs;
 
 import java.util.List;
 import java.util.logging.Logger;
 
-import com.l2jmobius.commons.network.IConnectionState;
-import com.l2jmobius.commons.network.IIncomingPacket;
-import com.l2jmobius.commons.network.IIncomingPackets;
-import com.l2jmobius.commons.network.PacketReader;
+import org.l2jmobius.commons.network.IConnectionState;
+import org.l2jmobius.commons.network.IIncomingPacket;
+import org.l2jmobius.commons.network.IIncomingPackets;
+import org.l2jmobius.commons.network.PacketReader;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;

@@ -14,14 +14,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.network.serverpackets;
+package org.l2jmobius.gameserver.network.serverpackets;
 
 import java.util.logging.Level;
 
-import com.l2jmobius.gameserver.cache.HtmCache;
-import com.l2jmobius.gameserver.enums.HtmlActionScope;
-import com.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
-import com.l2jmobius.gameserver.util.Util;
+import org.l2jmobius.gameserver.cache.HtmCache;
+import org.l2jmobius.gameserver.enums.HtmlActionScope;
+import org.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
+import org.l2jmobius.gameserver.util.Util;
 
 /**
  * @author HorridoJoho

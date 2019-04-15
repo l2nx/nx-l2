@@ -14,18 +14,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.model.actor.tasks.player;
+package org.l2jmobius.gameserver.model.actor.tasks.player;
 
 import java.util.logging.Logger;
 
-import com.l2jmobius.Config;
-import com.l2jmobius.gameserver.enums.IllegalActionPunishmentType;
-import com.l2jmobius.gameserver.instancemanager.PunishmentManager;
-import com.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
-import com.l2jmobius.gameserver.model.punishment.PunishmentAffect;
-import com.l2jmobius.gameserver.model.punishment.PunishmentTask;
-import com.l2jmobius.gameserver.model.punishment.PunishmentType;
-import com.l2jmobius.gameserver.network.Disconnection;
+import org.l2jmobius.Config;
+import org.l2jmobius.gameserver.enums.IllegalActionPunishmentType;
+import org.l2jmobius.gameserver.instancemanager.PunishmentManager;
+import org.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
+import org.l2jmobius.gameserver.model.punishment.PunishmentAffect;
+import org.l2jmobius.gameserver.model.punishment.PunishmentTask;
+import org.l2jmobius.gameserver.model.punishment.PunishmentType;
+import org.l2jmobius.gameserver.network.Disconnection;
 
 /**
  * Task that handles illegal player actions.

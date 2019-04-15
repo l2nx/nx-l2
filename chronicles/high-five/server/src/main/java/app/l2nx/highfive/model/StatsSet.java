@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.model;
+package org.l2jmobius.gameserver.model;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -25,10 +25,10 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-import com.l2jmobius.gameserver.model.holders.MinionHolder;
-import com.l2jmobius.gameserver.model.holders.SkillHolder;
-import com.l2jmobius.gameserver.model.interfaces.IParserAdvUtils;
-import com.l2jmobius.gameserver.util.Util;
+import org.l2jmobius.gameserver.model.holders.MinionHolder;
+import org.l2jmobius.gameserver.model.holders.SkillHolder;
+import org.l2jmobius.gameserver.model.interfaces.IParserAdvUtils;
+import org.l2jmobius.gameserver.util.Util;
 
 /**
  * This class is meant to hold a set of (key,value) pairs.<br>

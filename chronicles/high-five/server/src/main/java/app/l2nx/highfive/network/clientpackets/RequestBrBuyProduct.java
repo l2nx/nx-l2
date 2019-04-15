@@ -14,24 +14,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.network.clientpackets;
+package org.l2jmobius.gameserver.network.clientpackets;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.util.logging.Level;
 
-import com.l2jmobius.Config;
-import com.l2jmobius.commons.database.DatabaseFactory;
-import com.l2jmobius.commons.network.PacketReader;
-import com.l2jmobius.gameserver.data.xml.impl.PrimeShopData;
-import com.l2jmobius.gameserver.datatables.ItemTable;
-import com.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
-import com.l2jmobius.gameserver.model.holders.PrimeShopProductHolder;
-import com.l2jmobius.gameserver.model.items.Item;
-import com.l2jmobius.gameserver.network.GameClient;
-import com.l2jmobius.gameserver.network.serverpackets.ExBrBuyProduct;
-import com.l2jmobius.gameserver.network.serverpackets.ExBrGamePoint;
-import com.l2jmobius.gameserver.network.serverpackets.StatusUpdate;
+import org.l2jmobius.Config;
+import org.l2jmobius.commons.database.DatabaseFactory;
+import org.l2jmobius.commons.network.PacketReader;
+import org.l2jmobius.gameserver.data.xml.impl.PrimeShopData;
+import org.l2jmobius.gameserver.datatables.ItemTable;
+import org.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
+import org.l2jmobius.gameserver.model.holders.PrimeShopProductHolder;
+import org.l2jmobius.gameserver.model.items.Item;
+import org.l2jmobius.gameserver.network.GameClient;
+import org.l2jmobius.gameserver.network.serverpackets.ExBrBuyProduct;
+import org.l2jmobius.gameserver.network.serverpackets.ExBrGamePoint;
+import org.l2jmobius.gameserver.network.serverpackets.StatusUpdate;
 
 /**
  * @author Mobius

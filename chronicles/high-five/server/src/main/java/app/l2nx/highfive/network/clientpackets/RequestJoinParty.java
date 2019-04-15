@@ -14,19 +14,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.network.clientpackets;
+package org.l2jmobius.gameserver.network.clientpackets;
 
-import com.l2jmobius.commons.network.PacketReader;
-import com.l2jmobius.gameserver.enums.PartyDistributionType;
-import com.l2jmobius.gameserver.model.BlockList;
-import com.l2jmobius.gameserver.model.Party;
-import com.l2jmobius.gameserver.model.World;
-import com.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
-import com.l2jmobius.gameserver.network.GameClient;
-import com.l2jmobius.gameserver.network.SystemMessageId;
-import com.l2jmobius.gameserver.network.serverpackets.ActionFailed;
-import com.l2jmobius.gameserver.network.serverpackets.AskJoinParty;
-import com.l2jmobius.gameserver.network.serverpackets.SystemMessage;
+import org.l2jmobius.commons.network.PacketReader;
+import org.l2jmobius.gameserver.enums.PartyDistributionType;
+import org.l2jmobius.gameserver.model.BlockList;
+import org.l2jmobius.gameserver.model.Party;
+import org.l2jmobius.gameserver.model.World;
+import org.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
+import org.l2jmobius.gameserver.network.GameClient;
+import org.l2jmobius.gameserver.network.SystemMessageId;
+import org.l2jmobius.gameserver.network.serverpackets.ActionFailed;
+import org.l2jmobius.gameserver.network.serverpackets.AskJoinParty;
+import org.l2jmobius.gameserver.network.serverpackets.SystemMessage;
 
 /**
  * sample 29 42 00 00 10 01 00 00 00 format cdd

@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.communitybbs.Manager;
+package org.l2jmobius.gameserver.communitybbs.Manager;
 
 import java.text.DateFormat;
 import java.util.Calendar;
@@ -25,12 +25,12 @@ import java.util.StringTokenizer;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import com.l2jmobius.gameserver.communitybbs.BB.Forum;
-import com.l2jmobius.gameserver.communitybbs.BB.Post;
-import com.l2jmobius.gameserver.communitybbs.BB.Topic;
-import com.l2jmobius.gameserver.data.sql.impl.ClanTable;
-import com.l2jmobius.gameserver.handler.CommunityBoardHandler;
-import com.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
+import org.l2jmobius.gameserver.communitybbs.BB.Forum;
+import org.l2jmobius.gameserver.communitybbs.BB.Post;
+import org.l2jmobius.gameserver.communitybbs.BB.Topic;
+import org.l2jmobius.gameserver.data.sql.impl.ClanTable;
+import org.l2jmobius.gameserver.handler.CommunityBoardHandler;
+import org.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
 
 public class TopicBBSManager extends BaseBBSManager
 {

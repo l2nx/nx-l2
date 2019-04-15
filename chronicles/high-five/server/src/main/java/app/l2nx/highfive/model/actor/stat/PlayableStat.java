@@ -14,23 +14,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.model.actor.stat;
+package org.l2jmobius.gameserver.model.actor.stat;
 
 import java.util.logging.Logger;
 
-import com.l2jmobius.Config;
-import com.l2jmobius.gameserver.data.xml.impl.ExperienceData;
-import com.l2jmobius.gameserver.data.xml.impl.PetDataTable;
-import com.l2jmobius.gameserver.instancemanager.ZoneManager;
-import com.l2jmobius.gameserver.model.actor.Playable;
-import com.l2jmobius.gameserver.model.actor.instance.PetInstance;
-import com.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
-import com.l2jmobius.gameserver.model.events.EventDispatcher;
-import com.l2jmobius.gameserver.model.events.impl.creature.playable.OnPlayableExpChanged;
-import com.l2jmobius.gameserver.model.events.returns.TerminateReturn;
-import com.l2jmobius.gameserver.model.items.Weapon;
-import com.l2jmobius.gameserver.model.zone.ZoneId;
-import com.l2jmobius.gameserver.model.zone.type.SwampZone;
+import org.l2jmobius.Config;
+import org.l2jmobius.gameserver.data.xml.impl.ExperienceData;
+import org.l2jmobius.gameserver.data.xml.impl.PetDataTable;
+import org.l2jmobius.gameserver.instancemanager.ZoneManager;
+import org.l2jmobius.gameserver.model.actor.Playable;
+import org.l2jmobius.gameserver.model.actor.instance.PetInstance;
+import org.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
+import org.l2jmobius.gameserver.model.events.EventDispatcher;
+import org.l2jmobius.gameserver.model.events.impl.creature.playable.OnPlayableExpChanged;
+import org.l2jmobius.gameserver.model.events.returns.TerminateReturn;
+import org.l2jmobius.gameserver.model.items.Weapon;
+import org.l2jmobius.gameserver.model.zone.ZoneId;
+import org.l2jmobius.gameserver.model.zone.type.SwampZone;
 
 public class PlayableStat extends CreatureStat
 {

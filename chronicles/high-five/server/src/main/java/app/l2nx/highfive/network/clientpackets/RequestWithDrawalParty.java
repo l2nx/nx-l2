@@ -14,18 +14,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.network.clientpackets;
+package org.l2jmobius.gameserver.network.clientpackets;
 
-import com.l2jmobius.commons.network.PacketReader;
-import com.l2jmobius.gameserver.model.Party;
-import com.l2jmobius.gameserver.model.Party.MessageType;
-import com.l2jmobius.gameserver.model.PartyMatchRoom;
-import com.l2jmobius.gameserver.model.PartyMatchRoomList;
-import com.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
-import com.l2jmobius.gameserver.network.GameClient;
-import com.l2jmobius.gameserver.network.serverpackets.ExClosePartyRoom;
-import com.l2jmobius.gameserver.network.serverpackets.ExPartyRoomMember;
-import com.l2jmobius.gameserver.network.serverpackets.PartyMatchDetail;
+import org.l2jmobius.commons.network.PacketReader;
+import org.l2jmobius.gameserver.model.Party;
+import org.l2jmobius.gameserver.model.Party.MessageType;
+import org.l2jmobius.gameserver.model.PartyMatchRoom;
+import org.l2jmobius.gameserver.model.PartyMatchRoomList;
+import org.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
+import org.l2jmobius.gameserver.network.GameClient;
+import org.l2jmobius.gameserver.network.serverpackets.ExClosePartyRoom;
+import org.l2jmobius.gameserver.network.serverpackets.ExPartyRoomMember;
+import org.l2jmobius.gameserver.network.serverpackets.PartyMatchDetail;
 
 /**
  * @version $Revision: 1.3.4.2 $ $Date: 2005/03/27 15:29:30 $

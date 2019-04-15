@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.model.entity;
+package org.l2jmobius.gameserver.model.entity;
 
 import java.util.HashMap;
 import java.util.List;
@@ -23,37 +23,37 @@ import java.util.Map.Entry;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import com.l2jmobius.Config;
-import com.l2jmobius.commons.util.Rnd;
-import com.l2jmobius.gameserver.cache.HtmCache;
-import com.l2jmobius.gameserver.data.xml.impl.DoorData;
-import com.l2jmobius.gameserver.data.xml.impl.SkillData;
-import com.l2jmobius.gameserver.datatables.ItemTable;
-import com.l2jmobius.gameserver.datatables.SpawnTable;
-import com.l2jmobius.gameserver.enums.ChatType;
-import com.l2jmobius.gameserver.instancemanager.AntiFeedManager;
-import com.l2jmobius.gameserver.instancemanager.InstanceManager;
-import com.l2jmobius.gameserver.model.Spawn;
-import com.l2jmobius.gameserver.model.World;
-import com.l2jmobius.gameserver.model.actor.Creature;
-import com.l2jmobius.gameserver.model.actor.Npc;
-import com.l2jmobius.gameserver.model.actor.Summon;
-import com.l2jmobius.gameserver.model.actor.instance.DoorInstance;
-import com.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
-import com.l2jmobius.gameserver.model.events.EventDispatcher;
-import com.l2jmobius.gameserver.model.events.impl.events.OnTvTEventFinish;
-import com.l2jmobius.gameserver.model.events.impl.events.OnTvTEventKill;
-import com.l2jmobius.gameserver.model.events.impl.events.OnTvTEventRegistrationStart;
-import com.l2jmobius.gameserver.model.events.impl.events.OnTvTEventStart;
-import com.l2jmobius.gameserver.model.instancezone.Instance;
-import com.l2jmobius.gameserver.model.itemcontainer.PlayerInventory;
-import com.l2jmobius.gameserver.model.skills.Skill;
-import com.l2jmobius.gameserver.network.SystemMessageId;
-import com.l2jmobius.gameserver.network.serverpackets.CreatureSay;
-import com.l2jmobius.gameserver.network.serverpackets.MagicSkillUse;
-import com.l2jmobius.gameserver.network.serverpackets.NpcHtmlMessage;
-import com.l2jmobius.gameserver.network.serverpackets.StatusUpdate;
-import com.l2jmobius.gameserver.network.serverpackets.SystemMessage;
+import org.l2jmobius.Config;
+import org.l2jmobius.commons.util.Rnd;
+import org.l2jmobius.gameserver.cache.HtmCache;
+import org.l2jmobius.gameserver.data.xml.impl.DoorData;
+import org.l2jmobius.gameserver.data.xml.impl.SkillData;
+import org.l2jmobius.gameserver.datatables.ItemTable;
+import org.l2jmobius.gameserver.datatables.SpawnTable;
+import org.l2jmobius.gameserver.enums.ChatType;
+import org.l2jmobius.gameserver.instancemanager.AntiFeedManager;
+import org.l2jmobius.gameserver.instancemanager.InstanceManager;
+import org.l2jmobius.gameserver.model.Spawn;
+import org.l2jmobius.gameserver.model.World;
+import org.l2jmobius.gameserver.model.actor.Creature;
+import org.l2jmobius.gameserver.model.actor.Npc;
+import org.l2jmobius.gameserver.model.actor.Summon;
+import org.l2jmobius.gameserver.model.actor.instance.DoorInstance;
+import org.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
+import org.l2jmobius.gameserver.model.events.EventDispatcher;
+import org.l2jmobius.gameserver.model.events.impl.events.OnTvTEventFinish;
+import org.l2jmobius.gameserver.model.events.impl.events.OnTvTEventKill;
+import org.l2jmobius.gameserver.model.events.impl.events.OnTvTEventRegistrationStart;
+import org.l2jmobius.gameserver.model.events.impl.events.OnTvTEventStart;
+import org.l2jmobius.gameserver.model.instancezone.Instance;
+import org.l2jmobius.gameserver.model.itemcontainer.PlayerInventory;
+import org.l2jmobius.gameserver.model.skills.Skill;
+import org.l2jmobius.gameserver.network.SystemMessageId;
+import org.l2jmobius.gameserver.network.serverpackets.CreatureSay;
+import org.l2jmobius.gameserver.network.serverpackets.MagicSkillUse;
+import org.l2jmobius.gameserver.network.serverpackets.NpcHtmlMessage;
+import org.l2jmobius.gameserver.network.serverpackets.StatusUpdate;
+import org.l2jmobius.gameserver.network.serverpackets.SystemMessage;
 
 /**
  * @author HorridoJoho

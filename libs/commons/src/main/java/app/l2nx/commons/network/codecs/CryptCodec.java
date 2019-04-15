@@ -14,11 +14,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.commons.network.codecs;
+package org.l2jmobius.commons.network.codecs;
 
 import java.util.List;
 
-import com.l2jmobius.commons.network.ICrypt;
+import org.l2jmobius.commons.network.ICrypt;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;

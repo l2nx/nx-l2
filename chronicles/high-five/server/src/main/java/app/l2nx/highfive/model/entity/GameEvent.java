@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.model.entity;
+package org.l2jmobius.gameserver.model.entity;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -31,18 +31,18 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import com.l2jmobius.Config;
-import com.l2jmobius.gameserver.cache.HtmCache;
-import com.l2jmobius.gameserver.data.xml.impl.NpcData;
-import com.l2jmobius.gameserver.datatables.SpawnTable;
-import com.l2jmobius.gameserver.instancemanager.AntiFeedManager;
-import com.l2jmobius.gameserver.model.Spawn;
-import com.l2jmobius.gameserver.model.World;
-import com.l2jmobius.gameserver.model.actor.Npc;
-import com.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
-import com.l2jmobius.gameserver.model.holders.PlayerEventHolder;
-import com.l2jmobius.gameserver.network.serverpackets.MagicSkillUse;
-import com.l2jmobius.gameserver.network.serverpackets.NpcHtmlMessage;
+import org.l2jmobius.Config;
+import org.l2jmobius.gameserver.cache.HtmCache;
+import org.l2jmobius.gameserver.data.xml.impl.NpcData;
+import org.l2jmobius.gameserver.datatables.SpawnTable;
+import org.l2jmobius.gameserver.instancemanager.AntiFeedManager;
+import org.l2jmobius.gameserver.model.Spawn;
+import org.l2jmobius.gameserver.model.World;
+import org.l2jmobius.gameserver.model.actor.Npc;
+import org.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
+import org.l2jmobius.gameserver.model.holders.PlayerEventHolder;
+import org.l2jmobius.gameserver.network.serverpackets.MagicSkillUse;
+import org.l2jmobius.gameserver.network.serverpackets.NpcHtmlMessage;
 
 /**
  * @author Nik

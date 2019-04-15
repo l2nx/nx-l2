@@ -14,18 +14,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.geoengine;
+package org.l2jmobius.gameserver.geoengine;
 
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
 
-import com.l2jmobius.Config;
-import com.l2jmobius.gameserver.geoengine.geodata.GeoLocation;
-import com.l2jmobius.gameserver.geoengine.pathfinding.Node;
-import com.l2jmobius.gameserver.geoengine.pathfinding.NodeBuffer;
-import com.l2jmobius.gameserver.model.Location;
+import org.l2jmobius.Config;
+import org.l2jmobius.gameserver.geoengine.geodata.GeoLocation;
+import org.l2jmobius.gameserver.geoengine.pathfinding.Node;
+import org.l2jmobius.gameserver.geoengine.pathfinding.NodeBuffer;
+import org.l2jmobius.gameserver.model.Location;
 
 /**
  * @author Hasha

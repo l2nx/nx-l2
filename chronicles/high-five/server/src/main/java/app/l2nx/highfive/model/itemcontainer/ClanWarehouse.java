@@ -14,17 +14,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.model.itemcontainer;
+package org.l2jmobius.gameserver.model.itemcontainer;
 
-import com.l2jmobius.Config;
-import com.l2jmobius.gameserver.enums.ItemLocation;
-import com.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
-import com.l2jmobius.gameserver.model.clan.Clan;
-import com.l2jmobius.gameserver.model.events.EventDispatcher;
-import com.l2jmobius.gameserver.model.events.impl.creature.player.clanwh.OnPlayerClanWHItemAdd;
-import com.l2jmobius.gameserver.model.events.impl.creature.player.clanwh.OnPlayerClanWHItemDestroy;
-import com.l2jmobius.gameserver.model.events.impl.creature.player.clanwh.OnPlayerClanWHItemTransfer;
-import com.l2jmobius.gameserver.model.items.instance.ItemInstance;
+import org.l2jmobius.Config;
+import org.l2jmobius.gameserver.enums.ItemLocation;
+import org.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
+import org.l2jmobius.gameserver.model.clan.Clan;
+import org.l2jmobius.gameserver.model.events.EventDispatcher;
+import org.l2jmobius.gameserver.model.events.impl.creature.player.clanwh.OnPlayerClanWHItemAdd;
+import org.l2jmobius.gameserver.model.events.impl.creature.player.clanwh.OnPlayerClanWHItemDestroy;
+import org.l2jmobius.gameserver.model.events.impl.creature.player.clanwh.OnPlayerClanWHItemTransfer;
+import org.l2jmobius.gameserver.model.items.instance.ItemInstance;
 
 public final class ClanWarehouse extends Warehouse
 {

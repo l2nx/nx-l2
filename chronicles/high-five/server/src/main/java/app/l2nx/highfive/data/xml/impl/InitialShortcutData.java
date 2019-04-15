@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.data.xml.impl;
+package org.l2jmobius.gameserver.data.xml.impl;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -26,16 +26,16 @@ import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 
-import com.l2jmobius.commons.util.IXmlReader;
-import com.l2jmobius.gameserver.enums.MacroType;
-import com.l2jmobius.gameserver.enums.ShortcutType;
-import com.l2jmobius.gameserver.model.Macro;
-import com.l2jmobius.gameserver.model.MacroCmd;
-import com.l2jmobius.gameserver.model.Shortcut;
-import com.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
-import com.l2jmobius.gameserver.model.base.ClassId;
-import com.l2jmobius.gameserver.model.items.instance.ItemInstance;
-import com.l2jmobius.gameserver.network.serverpackets.ShortCutRegister;
+import org.l2jmobius.commons.util.IXmlReader;
+import org.l2jmobius.gameserver.enums.MacroType;
+import org.l2jmobius.gameserver.enums.ShortcutType;
+import org.l2jmobius.gameserver.model.Macro;
+import org.l2jmobius.gameserver.model.MacroCmd;
+import org.l2jmobius.gameserver.model.Shortcut;
+import org.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
+import org.l2jmobius.gameserver.model.base.ClassId;
+import org.l2jmobius.gameserver.model.items.instance.ItemInstance;
+import org.l2jmobius.gameserver.network.serverpackets.ShortCutRegister;
 
 /**
  * This class holds the Initial Shortcuts information.<br>

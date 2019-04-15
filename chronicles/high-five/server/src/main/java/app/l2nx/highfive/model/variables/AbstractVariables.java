@@ -14,13 +14,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.model.variables;
+package org.l2jmobius.gameserver.model.variables;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import com.l2jmobius.gameserver.model.StatsSet;
-import com.l2jmobius.gameserver.model.interfaces.IRestorable;
-import com.l2jmobius.gameserver.model.interfaces.IStorable;
+import org.l2jmobius.gameserver.model.StatsSet;
+import org.l2jmobius.gameserver.model.interfaces.IRestorable;
+import org.l2jmobius.gameserver.model.interfaces.IStorable;
 
 /**
  * @author UnAfraid

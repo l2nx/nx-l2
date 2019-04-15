@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.model.skills;
+package org.l2jmobius.gameserver.model.skills;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -27,42 +27,42 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import com.l2jmobius.Config;
-import com.l2jmobius.commons.util.Rnd;
-import com.l2jmobius.gameserver.data.xml.impl.SkillData;
-import com.l2jmobius.gameserver.data.xml.impl.SkillTreesData;
-import com.l2jmobius.gameserver.enums.ShotType;
-import com.l2jmobius.gameserver.geoengine.GeoEngine;
-import com.l2jmobius.gameserver.handler.ITargetTypeHandler;
-import com.l2jmobius.gameserver.handler.TargetHandler;
-import com.l2jmobius.gameserver.instancemanager.HandysBlockCheckerManager;
-import com.l2jmobius.gameserver.model.ArenaParticipantsHolder;
-import com.l2jmobius.gameserver.model.ExtractableProductItem;
-import com.l2jmobius.gameserver.model.ExtractableSkill;
-import com.l2jmobius.gameserver.model.PlayerCondOverride;
-import com.l2jmobius.gameserver.model.StatsSet;
-import com.l2jmobius.gameserver.model.WorldObject;
-import com.l2jmobius.gameserver.model.actor.Creature;
-import com.l2jmobius.gameserver.model.actor.instance.BlockInstance;
-import com.l2jmobius.gameserver.model.actor.instance.CubicInstance;
-import com.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
-import com.l2jmobius.gameserver.model.conditions.Condition;
-import com.l2jmobius.gameserver.model.effects.AbstractEffect;
-import com.l2jmobius.gameserver.model.effects.EffectType;
-import com.l2jmobius.gameserver.model.entity.TvTEvent;
-import com.l2jmobius.gameserver.model.holders.ItemHolder;
-import com.l2jmobius.gameserver.model.interfaces.IIdentifiable;
-import com.l2jmobius.gameserver.model.skills.targets.TargetType;
-import com.l2jmobius.gameserver.model.stats.BaseStats;
-import com.l2jmobius.gameserver.model.stats.Formulas;
-import com.l2jmobius.gameserver.model.stats.TraitType;
-import com.l2jmobius.gameserver.model.stats.functions.AbstractFunction;
-import com.l2jmobius.gameserver.model.stats.functions.FuncTemplate;
-import com.l2jmobius.gameserver.model.zone.ZoneId;
-import com.l2jmobius.gameserver.network.SystemMessageId;
-import com.l2jmobius.gameserver.network.serverpackets.FlyToLocation.FlyType;
-import com.l2jmobius.gameserver.network.serverpackets.SystemMessage;
-import com.l2jmobius.gameserver.util.Util;
+import org.l2jmobius.Config;
+import org.l2jmobius.commons.util.Rnd;
+import org.l2jmobius.gameserver.data.xml.impl.SkillData;
+import org.l2jmobius.gameserver.data.xml.impl.SkillTreesData;
+import org.l2jmobius.gameserver.enums.ShotType;
+import org.l2jmobius.gameserver.geoengine.GeoEngine;
+import org.l2jmobius.gameserver.handler.ITargetTypeHandler;
+import org.l2jmobius.gameserver.handler.TargetHandler;
+import org.l2jmobius.gameserver.instancemanager.HandysBlockCheckerManager;
+import org.l2jmobius.gameserver.model.ArenaParticipantsHolder;
+import org.l2jmobius.gameserver.model.ExtractableProductItem;
+import org.l2jmobius.gameserver.model.ExtractableSkill;
+import org.l2jmobius.gameserver.model.PlayerCondOverride;
+import org.l2jmobius.gameserver.model.StatsSet;
+import org.l2jmobius.gameserver.model.WorldObject;
+import org.l2jmobius.gameserver.model.actor.Creature;
+import org.l2jmobius.gameserver.model.actor.instance.BlockInstance;
+import org.l2jmobius.gameserver.model.actor.instance.CubicInstance;
+import org.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
+import org.l2jmobius.gameserver.model.conditions.Condition;
+import org.l2jmobius.gameserver.model.effects.AbstractEffect;
+import org.l2jmobius.gameserver.model.effects.EffectType;
+import org.l2jmobius.gameserver.model.entity.TvTEvent;
+import org.l2jmobius.gameserver.model.holders.ItemHolder;
+import org.l2jmobius.gameserver.model.interfaces.IIdentifiable;
+import org.l2jmobius.gameserver.model.skills.targets.TargetType;
+import org.l2jmobius.gameserver.model.stats.BaseStats;
+import org.l2jmobius.gameserver.model.stats.Formulas;
+import org.l2jmobius.gameserver.model.stats.TraitType;
+import org.l2jmobius.gameserver.model.stats.functions.AbstractFunction;
+import org.l2jmobius.gameserver.model.stats.functions.FuncTemplate;
+import org.l2jmobius.gameserver.model.zone.ZoneId;
+import org.l2jmobius.gameserver.network.SystemMessageId;
+import org.l2jmobius.gameserver.network.serverpackets.FlyToLocation.FlyType;
+import org.l2jmobius.gameserver.network.serverpackets.SystemMessage;
+import org.l2jmobius.gameserver.util.Util;
 
 public final class Skill implements IIdentifiable
 {

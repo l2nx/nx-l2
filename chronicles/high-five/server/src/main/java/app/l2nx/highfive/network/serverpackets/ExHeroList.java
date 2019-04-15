@@ -14,15 +14,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.network.serverpackets;
+package org.l2jmobius.gameserver.network.serverpackets;
 
 import java.util.Map;
 
-import com.l2jmobius.commons.network.PacketWriter;
-import com.l2jmobius.gameserver.model.StatsSet;
-import com.l2jmobius.gameserver.model.entity.Hero;
-import com.l2jmobius.gameserver.model.olympiad.Olympiad;
-import com.l2jmobius.gameserver.network.OutgoingPackets;
+import org.l2jmobius.commons.network.PacketWriter;
+import org.l2jmobius.gameserver.model.StatsSet;
+import org.l2jmobius.gameserver.model.entity.Hero;
+import org.l2jmobius.gameserver.model.olympiad.Olympiad;
+import org.l2jmobius.gameserver.network.OutgoingPackets;
 
 /**
  * @author -Wooden-, KenM, godson

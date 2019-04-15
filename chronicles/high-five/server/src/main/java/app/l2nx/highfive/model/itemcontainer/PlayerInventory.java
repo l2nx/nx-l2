@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.model.itemcontainer;
+package org.l2jmobius.gameserver.model.itemcontainer;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -24,25 +24,25 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import com.l2jmobius.Config;
-import com.l2jmobius.commons.database.DatabaseFactory;
-import com.l2jmobius.commons.util.CommonUtil;
-import com.l2jmobius.gameserver.datatables.ItemTable;
-import com.l2jmobius.gameserver.enums.ItemLocation;
-import com.l2jmobius.gameserver.model.TradeItem;
-import com.l2jmobius.gameserver.model.TradeList;
-import com.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
-import com.l2jmobius.gameserver.model.events.EventDispatcher;
-import com.l2jmobius.gameserver.model.events.impl.creature.player.inventory.OnPlayerItemAdd;
-import com.l2jmobius.gameserver.model.events.impl.creature.player.inventory.OnPlayerItemDestroy;
-import com.l2jmobius.gameserver.model.events.impl.creature.player.inventory.OnPlayerItemDrop;
-import com.l2jmobius.gameserver.model.events.impl.creature.player.inventory.OnPlayerItemTransfer;
-import com.l2jmobius.gameserver.model.items.Item;
-import com.l2jmobius.gameserver.model.items.instance.ItemInstance;
-import com.l2jmobius.gameserver.network.SystemMessageId;
-import com.l2jmobius.gameserver.network.serverpackets.InventoryUpdate;
-import com.l2jmobius.gameserver.network.serverpackets.ItemList;
-import com.l2jmobius.gameserver.network.serverpackets.StatusUpdate;
+import org.l2jmobius.Config;
+import org.l2jmobius.commons.database.DatabaseFactory;
+import org.l2jmobius.commons.util.CommonUtil;
+import org.l2jmobius.gameserver.datatables.ItemTable;
+import org.l2jmobius.gameserver.enums.ItemLocation;
+import org.l2jmobius.gameserver.model.TradeItem;
+import org.l2jmobius.gameserver.model.TradeList;
+import org.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
+import org.l2jmobius.gameserver.model.events.EventDispatcher;
+import org.l2jmobius.gameserver.model.events.impl.creature.player.inventory.OnPlayerItemAdd;
+import org.l2jmobius.gameserver.model.events.impl.creature.player.inventory.OnPlayerItemDestroy;
+import org.l2jmobius.gameserver.model.events.impl.creature.player.inventory.OnPlayerItemDrop;
+import org.l2jmobius.gameserver.model.events.impl.creature.player.inventory.OnPlayerItemTransfer;
+import org.l2jmobius.gameserver.model.items.Item;
+import org.l2jmobius.gameserver.model.items.instance.ItemInstance;
+import org.l2jmobius.gameserver.network.SystemMessageId;
+import org.l2jmobius.gameserver.network.serverpackets.InventoryUpdate;
+import org.l2jmobius.gameserver.network.serverpackets.ItemList;
+import org.l2jmobius.gameserver.network.serverpackets.StatusUpdate;
 
 public class PlayerInventory extends Inventory
 {

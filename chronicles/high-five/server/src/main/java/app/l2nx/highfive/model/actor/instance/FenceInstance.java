@@ -14,16 +14,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.model.actor.instance;
+package org.l2jmobius.gameserver.model.actor.instance;
 
-import com.l2jmobius.gameserver.data.xml.impl.FenceData;
-import com.l2jmobius.gameserver.enums.FenceState;
-import com.l2jmobius.gameserver.idfactory.IdFactory;
-import com.l2jmobius.gameserver.model.World;
-import com.l2jmobius.gameserver.model.WorldObject;
-import com.l2jmobius.gameserver.model.actor.Creature;
-import com.l2jmobius.gameserver.network.serverpackets.DeleteObject;
-import com.l2jmobius.gameserver.network.serverpackets.ExColosseumFenceInfo;
+import org.l2jmobius.gameserver.data.xml.impl.FenceData;
+import org.l2jmobius.gameserver.enums.FenceState;
+import org.l2jmobius.gameserver.idfactory.IdFactory;
+import org.l2jmobius.gameserver.model.World;
+import org.l2jmobius.gameserver.model.WorldObject;
+import org.l2jmobius.gameserver.model.actor.Creature;
+import org.l2jmobius.gameserver.network.serverpackets.DeleteObject;
+import org.l2jmobius.gameserver.network.serverpackets.ExColosseumFenceInfo;
 
 /**
  * @author HoridoJoho / FBIagent

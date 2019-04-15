@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.datatables;
+package org.l2jmobius.gameserver.datatables;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -30,15 +30,15 @@ import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 
-import com.l2jmobius.Config;
-import com.l2jmobius.commons.util.Rnd;
-import com.l2jmobius.gameserver.data.xml.impl.OptionData;
-import com.l2jmobius.gameserver.model.Augmentation;
-import com.l2jmobius.gameserver.model.holders.SkillHolder;
-import com.l2jmobius.gameserver.model.items.Item;
-import com.l2jmobius.gameserver.model.items.instance.ItemInstance;
-import com.l2jmobius.gameserver.model.options.Options;
-import com.l2jmobius.gameserver.network.clientpackets.AbstractRefinePacket;
+import org.l2jmobius.Config;
+import org.l2jmobius.commons.util.Rnd;
+import org.l2jmobius.gameserver.data.xml.impl.OptionData;
+import org.l2jmobius.gameserver.model.Augmentation;
+import org.l2jmobius.gameserver.model.holders.SkillHolder;
+import org.l2jmobius.gameserver.model.items.Item;
+import org.l2jmobius.gameserver.model.items.instance.ItemInstance;
+import org.l2jmobius.gameserver.model.options.Options;
+import org.l2jmobius.gameserver.network.clientpackets.AbstractRefinePacket;
 
 /**
  * Loads augmentation bonuses and skills.

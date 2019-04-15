@@ -14,12 +14,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.model.events.impl.creature.player.clan;
+package org.l2jmobius.gameserver.model.events.impl.creature.player.clan;
 
-import com.l2jmobius.gameserver.model.clan.Clan;
-import com.l2jmobius.gameserver.model.clan.ClanMember;
-import com.l2jmobius.gameserver.model.events.EventType;
-import com.l2jmobius.gameserver.model.events.impl.IBaseEvent;
+import org.l2jmobius.gameserver.model.clan.Clan;
+import org.l2jmobius.gameserver.model.clan.ClanMember;
+import org.l2jmobius.gameserver.model.events.EventType;
+import org.l2jmobius.gameserver.model.events.impl.IBaseEvent;
 
 /**
  * @author UnAfraid

@@ -14,12 +14,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.taskmanager;
+package org.l2jmobius.gameserver.taskmanager;
 
 import java.util.concurrent.ScheduledFuture;
 import java.util.logging.Logger;
 
-import com.l2jmobius.gameserver.taskmanager.TaskManager.ExecutedTask;
+import org.l2jmobius.gameserver.taskmanager.TaskManager.ExecutedTask;
 
 /**
  * @author Layane

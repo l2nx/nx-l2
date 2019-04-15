@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.network;
+package org.l2jmobius.gameserver.network;
 
 import java.io.File;
 import java.lang.reflect.Field;
@@ -32,9 +32,9 @@ import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 
-import com.l2jmobius.Config;
-import com.l2jmobius.gameserver.model.clientstrings.Builder;
-import com.l2jmobius.gameserver.network.serverpackets.SystemMessage;
+import org.l2jmobius.Config;
+import org.l2jmobius.gameserver.model.clientstrings.Builder;
+import org.l2jmobius.gameserver.network.serverpackets.SystemMessage;
 
 public final class SystemMessageId
 {

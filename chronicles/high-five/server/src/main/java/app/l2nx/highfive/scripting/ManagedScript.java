@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.scripting;
+package org.l2jmobius.gameserver.scripting;
 
 import java.nio.file.Path;
 import java.util.logging.Level;

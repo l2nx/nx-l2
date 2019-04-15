@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.model.punishment;
+package org.l2jmobius.gameserver.model.punishment;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -25,11 +25,11 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import com.l2jmobius.commons.concurrent.ThreadPool;
-import com.l2jmobius.commons.database.DatabaseFactory;
-import com.l2jmobius.gameserver.handler.IPunishmentHandler;
-import com.l2jmobius.gameserver.handler.PunishmentHandler;
-import com.l2jmobius.gameserver.instancemanager.PunishmentManager;
+import org.l2jmobius.commons.concurrent.ThreadPool;
+import org.l2jmobius.commons.database.DatabaseFactory;
+import org.l2jmobius.gameserver.handler.IPunishmentHandler;
+import org.l2jmobius.gameserver.handler.PunishmentHandler;
+import org.l2jmobius.gameserver.instancemanager.PunishmentManager;
 
 /**
  * @author UnAfraid

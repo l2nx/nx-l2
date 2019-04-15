@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.commons.concurrent;
+package org.l2jmobius.commons.concurrent;
 
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ScheduledFuture;
@@ -23,7 +23,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
-import com.l2jmobius.Config;
+import org.l2jmobius.Config;
 
 /**
  * This class handles thread pooling system. It relies on two ThreadPoolExecutor arrays, which poolers number is generated using config.

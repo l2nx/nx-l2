@@ -14,17 +14,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.model;
+package org.l2jmobius.gameserver.model;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import com.l2jmobius.Config;
-import com.l2jmobius.gameserver.enums.Race;
-import com.l2jmobius.gameserver.model.base.ClassId;
-import com.l2jmobius.gameserver.model.base.SocialClass;
-import com.l2jmobius.gameserver.model.holders.ItemHolder;
-import com.l2jmobius.gameserver.model.holders.SkillHolder;
+import org.l2jmobius.Config;
+import org.l2jmobius.gameserver.enums.Race;
+import org.l2jmobius.gameserver.model.base.ClassId;
+import org.l2jmobius.gameserver.model.base.SocialClass;
+import org.l2jmobius.gameserver.model.holders.ItemHolder;
+import org.l2jmobius.gameserver.model.holders.SkillHolder;
 
 /**
  * @author Zoey76

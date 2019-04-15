@@ -14,11 +14,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.model.effects;
+package org.l2jmobius.gameserver.model.effects;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-import com.l2jmobius.gameserver.model.skills.BuffInfo;
+import org.l2jmobius.gameserver.model.skills.BuffInfo;
 
 /**
  * Effect tick task.

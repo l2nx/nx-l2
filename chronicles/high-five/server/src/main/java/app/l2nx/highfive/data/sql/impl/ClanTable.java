@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.data.sql.impl;
+package org.l2jmobius.gameserver.data.sql.impl;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -28,39 +28,39 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import com.l2jmobius.Config;
-import com.l2jmobius.commons.concurrent.ThreadPool;
-import com.l2jmobius.commons.database.DatabaseFactory;
-import com.l2jmobius.gameserver.communitybbs.Manager.ForumsBBSManager;
-import com.l2jmobius.gameserver.idfactory.IdFactory;
-import com.l2jmobius.gameserver.instancemanager.CHSiegeManager;
-import com.l2jmobius.gameserver.instancemanager.ClanHallAuctionManager;
-import com.l2jmobius.gameserver.instancemanager.FortManager;
-import com.l2jmobius.gameserver.instancemanager.FortSiegeManager;
-import com.l2jmobius.gameserver.instancemanager.SiegeManager;
-import com.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
-import com.l2jmobius.gameserver.model.clan.Clan;
-import com.l2jmobius.gameserver.model.clan.ClanMember;
-import com.l2jmobius.gameserver.model.clan.ClanPrivilege;
-import com.l2jmobius.gameserver.model.entity.Auction;
-import com.l2jmobius.gameserver.model.entity.Fort;
-import com.l2jmobius.gameserver.model.entity.FortSiege;
-import com.l2jmobius.gameserver.model.entity.Siege;
-import com.l2jmobius.gameserver.model.entity.clanhall.SiegableHall;
-import com.l2jmobius.gameserver.model.events.EventDispatcher;
-import com.l2jmobius.gameserver.model.events.impl.clan.OnClanWarFinish;
-import com.l2jmobius.gameserver.model.events.impl.clan.OnClanWarStart;
-import com.l2jmobius.gameserver.model.events.impl.creature.player.clan.OnPlayerClanCreate;
-import com.l2jmobius.gameserver.model.events.impl.creature.player.clan.OnPlayerClanDestroy;
-import com.l2jmobius.gameserver.network.SystemMessageId;
-import com.l2jmobius.gameserver.network.serverpackets.ExBrExtraUserInfo;
-import com.l2jmobius.gameserver.network.serverpackets.PledgeShowInfoUpdate;
-import com.l2jmobius.gameserver.network.serverpackets.PledgeShowMemberListAll;
-import com.l2jmobius.gameserver.network.serverpackets.PledgeShowMemberListUpdate;
-import com.l2jmobius.gameserver.network.serverpackets.SystemMessage;
-import com.l2jmobius.gameserver.network.serverpackets.UserInfo;
-import com.l2jmobius.gameserver.util.EnumIntBitmask;
-import com.l2jmobius.gameserver.util.Util;
+import org.l2jmobius.Config;
+import org.l2jmobius.commons.concurrent.ThreadPool;
+import org.l2jmobius.commons.database.DatabaseFactory;
+import org.l2jmobius.gameserver.communitybbs.Manager.ForumsBBSManager;
+import org.l2jmobius.gameserver.idfactory.IdFactory;
+import org.l2jmobius.gameserver.instancemanager.CHSiegeManager;
+import org.l2jmobius.gameserver.instancemanager.ClanHallAuctionManager;
+import org.l2jmobius.gameserver.instancemanager.FortManager;
+import org.l2jmobius.gameserver.instancemanager.FortSiegeManager;
+import org.l2jmobius.gameserver.instancemanager.SiegeManager;
+import org.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
+import org.l2jmobius.gameserver.model.clan.Clan;
+import org.l2jmobius.gameserver.model.clan.ClanMember;
+import org.l2jmobius.gameserver.model.clan.ClanPrivilege;
+import org.l2jmobius.gameserver.model.entity.Auction;
+import org.l2jmobius.gameserver.model.entity.Fort;
+import org.l2jmobius.gameserver.model.entity.FortSiege;
+import org.l2jmobius.gameserver.model.entity.Siege;
+import org.l2jmobius.gameserver.model.entity.clanhall.SiegableHall;
+import org.l2jmobius.gameserver.model.events.EventDispatcher;
+import org.l2jmobius.gameserver.model.events.impl.clan.OnClanWarFinish;
+import org.l2jmobius.gameserver.model.events.impl.clan.OnClanWarStart;
+import org.l2jmobius.gameserver.model.events.impl.creature.player.clan.OnPlayerClanCreate;
+import org.l2jmobius.gameserver.model.events.impl.creature.player.clan.OnPlayerClanDestroy;
+import org.l2jmobius.gameserver.network.SystemMessageId;
+import org.l2jmobius.gameserver.network.serverpackets.ExBrExtraUserInfo;
+import org.l2jmobius.gameserver.network.serverpackets.PledgeShowInfoUpdate;
+import org.l2jmobius.gameserver.network.serverpackets.PledgeShowMemberListAll;
+import org.l2jmobius.gameserver.network.serverpackets.PledgeShowMemberListUpdate;
+import org.l2jmobius.gameserver.network.serverpackets.SystemMessage;
+import org.l2jmobius.gameserver.network.serverpackets.UserInfo;
+import org.l2jmobius.gameserver.util.EnumIntBitmask;
+import org.l2jmobius.gameserver.util.Util;
 
 /**
  * This class loads the clan related data.

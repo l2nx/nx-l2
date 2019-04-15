@@ -14,14 +14,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.util;
+package org.l2jmobius.gameserver.util;
 
 import java.awt.Color;
 
-import com.l2jmobius.gameserver.geoengine.GeoEngine;
-import com.l2jmobius.gameserver.geoengine.geodata.GeoStructure;
-import com.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
-import com.l2jmobius.gameserver.network.serverpackets.ExServerPrimitive;
+import org.l2jmobius.gameserver.geoengine.GeoEngine;
+import org.l2jmobius.gameserver.geoengine.geodata.GeoStructure;
+import org.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
+import org.l2jmobius.gameserver.network.serverpackets.ExServerPrimitive;
 
 /**
  * @author HorridoJoho

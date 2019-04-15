@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.model.entity;
+package org.l2jmobius.gameserver.model.entity;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -29,42 +29,42 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import com.l2jmobius.Config;
-import com.l2jmobius.commons.concurrent.ThreadPool;
-import com.l2jmobius.commons.database.DatabaseFactory;
-import com.l2jmobius.gameserver.data.sql.impl.ClanTable;
-import com.l2jmobius.gameserver.data.xml.impl.SiegeScheduleData;
-import com.l2jmobius.gameserver.enums.SiegeTeleportWhoType;
-import com.l2jmobius.gameserver.instancemanager.CastleManager;
-import com.l2jmobius.gameserver.instancemanager.MercTicketManager;
-import com.l2jmobius.gameserver.instancemanager.SiegeGuardManager;
-import com.l2jmobius.gameserver.instancemanager.SiegeManager;
-import com.l2jmobius.gameserver.model.PlayerCondOverride;
-import com.l2jmobius.gameserver.model.SiegeClan;
-import com.l2jmobius.gameserver.model.SiegeClan.SiegeClanType;
-import com.l2jmobius.gameserver.model.SiegeScheduleDate;
-import com.l2jmobius.gameserver.model.Spawn;
-import com.l2jmobius.gameserver.model.TeleportWhereType;
-import com.l2jmobius.gameserver.model.TowerSpawn;
-import com.l2jmobius.gameserver.model.World;
-import com.l2jmobius.gameserver.model.WorldObject;
-import com.l2jmobius.gameserver.model.actor.Npc;
-import com.l2jmobius.gameserver.model.actor.instance.ControlTowerInstance;
-import com.l2jmobius.gameserver.model.actor.instance.FlameTowerInstance;
-import com.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
-import com.l2jmobius.gameserver.model.clan.Clan;
-import com.l2jmobius.gameserver.model.clan.ClanMember;
-import com.l2jmobius.gameserver.model.events.EventDispatcher;
-import com.l2jmobius.gameserver.model.events.impl.sieges.castle.OnCastleSiegeFinish;
-import com.l2jmobius.gameserver.model.events.impl.sieges.castle.OnCastleSiegeOwnerChange;
-import com.l2jmobius.gameserver.model.events.impl.sieges.castle.OnCastleSiegeStart;
-import com.l2jmobius.gameserver.network.SystemMessageId;
-import com.l2jmobius.gameserver.network.serverpackets.ExBrExtraUserInfo;
-import com.l2jmobius.gameserver.network.serverpackets.RelationChanged;
-import com.l2jmobius.gameserver.network.serverpackets.SiegeInfo;
-import com.l2jmobius.gameserver.network.serverpackets.SystemMessage;
-import com.l2jmobius.gameserver.network.serverpackets.UserInfo;
-import com.l2jmobius.gameserver.util.Broadcast;
+import org.l2jmobius.Config;
+import org.l2jmobius.commons.concurrent.ThreadPool;
+import org.l2jmobius.commons.database.DatabaseFactory;
+import org.l2jmobius.gameserver.data.sql.impl.ClanTable;
+import org.l2jmobius.gameserver.data.xml.impl.SiegeScheduleData;
+import org.l2jmobius.gameserver.enums.SiegeTeleportWhoType;
+import org.l2jmobius.gameserver.instancemanager.CastleManager;
+import org.l2jmobius.gameserver.instancemanager.MercTicketManager;
+import org.l2jmobius.gameserver.instancemanager.SiegeGuardManager;
+import org.l2jmobius.gameserver.instancemanager.SiegeManager;
+import org.l2jmobius.gameserver.model.PlayerCondOverride;
+import org.l2jmobius.gameserver.model.SiegeClan;
+import org.l2jmobius.gameserver.model.SiegeClan.SiegeClanType;
+import org.l2jmobius.gameserver.model.SiegeScheduleDate;
+import org.l2jmobius.gameserver.model.Spawn;
+import org.l2jmobius.gameserver.model.TeleportWhereType;
+import org.l2jmobius.gameserver.model.TowerSpawn;
+import org.l2jmobius.gameserver.model.World;
+import org.l2jmobius.gameserver.model.WorldObject;
+import org.l2jmobius.gameserver.model.actor.Npc;
+import org.l2jmobius.gameserver.model.actor.instance.ControlTowerInstance;
+import org.l2jmobius.gameserver.model.actor.instance.FlameTowerInstance;
+import org.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
+import org.l2jmobius.gameserver.model.clan.Clan;
+import org.l2jmobius.gameserver.model.clan.ClanMember;
+import org.l2jmobius.gameserver.model.events.EventDispatcher;
+import org.l2jmobius.gameserver.model.events.impl.sieges.castle.OnCastleSiegeFinish;
+import org.l2jmobius.gameserver.model.events.impl.sieges.castle.OnCastleSiegeOwnerChange;
+import org.l2jmobius.gameserver.model.events.impl.sieges.castle.OnCastleSiegeStart;
+import org.l2jmobius.gameserver.network.SystemMessageId;
+import org.l2jmobius.gameserver.network.serverpackets.ExBrExtraUserInfo;
+import org.l2jmobius.gameserver.network.serverpackets.RelationChanged;
+import org.l2jmobius.gameserver.network.serverpackets.SiegeInfo;
+import org.l2jmobius.gameserver.network.serverpackets.SystemMessage;
+import org.l2jmobius.gameserver.network.serverpackets.UserInfo;
+import org.l2jmobius.gameserver.util.Broadcast;
 
 public class Siege implements Siegable
 {

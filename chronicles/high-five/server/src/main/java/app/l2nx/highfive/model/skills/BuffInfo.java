@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.model.skills;
+package org.l2jmobius.gameserver.model.skills;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -22,18 +22,18 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
 
-import com.l2jmobius.Config;
-import com.l2jmobius.commons.concurrent.ThreadPool;
-import com.l2jmobius.gameserver.GameTimeController;
-import com.l2jmobius.gameserver.model.EffectList;
-import com.l2jmobius.gameserver.model.actor.Creature;
-import com.l2jmobius.gameserver.model.actor.Summon;
-import com.l2jmobius.gameserver.model.effects.AbstractEffect;
-import com.l2jmobius.gameserver.model.effects.EffectTaskInfo;
-import com.l2jmobius.gameserver.model.effects.EffectTickTask;
-import com.l2jmobius.gameserver.model.stats.Formulas;
-import com.l2jmobius.gameserver.network.SystemMessageId;
-import com.l2jmobius.gameserver.network.serverpackets.SystemMessage;
+import org.l2jmobius.Config;
+import org.l2jmobius.commons.concurrent.ThreadPool;
+import org.l2jmobius.gameserver.GameTimeController;
+import org.l2jmobius.gameserver.model.EffectList;
+import org.l2jmobius.gameserver.model.actor.Creature;
+import org.l2jmobius.gameserver.model.actor.Summon;
+import org.l2jmobius.gameserver.model.effects.AbstractEffect;
+import org.l2jmobius.gameserver.model.effects.EffectTaskInfo;
+import org.l2jmobius.gameserver.model.effects.EffectTickTask;
+import org.l2jmobius.gameserver.model.stats.Formulas;
+import org.l2jmobius.gameserver.network.SystemMessageId;
+import org.l2jmobius.gameserver.network.serverpackets.SystemMessage;
 
 /**
  * Buff Info.<br>

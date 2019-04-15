@@ -14,19 +14,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.network.serverpackets;
+package org.l2jmobius.gameserver.network.serverpackets;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import com.l2jmobius.commons.network.PacketWriter;
-import com.l2jmobius.gameserver.model.olympiad.AbstractOlympiadGame;
-import com.l2jmobius.gameserver.model.olympiad.OlympiadGameClassed;
-import com.l2jmobius.gameserver.model.olympiad.OlympiadGameManager;
-import com.l2jmobius.gameserver.model.olympiad.OlympiadGameNonClassed;
-import com.l2jmobius.gameserver.model.olympiad.OlympiadGameTask;
-import com.l2jmobius.gameserver.model.olympiad.OlympiadGameTeams;
-import com.l2jmobius.gameserver.network.OutgoingPackets;
+import org.l2jmobius.commons.network.PacketWriter;
+import org.l2jmobius.gameserver.model.olympiad.AbstractOlympiadGame;
+import org.l2jmobius.gameserver.model.olympiad.OlympiadGameClassed;
+import org.l2jmobius.gameserver.model.olympiad.OlympiadGameManager;
+import org.l2jmobius.gameserver.model.olympiad.OlympiadGameNonClassed;
+import org.l2jmobius.gameserver.model.olympiad.OlympiadGameTask;
+import org.l2jmobius.gameserver.model.olympiad.OlympiadGameTeams;
+import org.l2jmobius.gameserver.network.OutgoingPackets;
 
 /**
  * @author mrTJO

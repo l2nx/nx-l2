@@ -14,12 +14,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.model.zone.type;
+package org.l2jmobius.gameserver.model.zone.type;
 
 import java.util.List;
 
-import com.l2jmobius.gameserver.model.Location;
-import com.l2jmobius.gameserver.model.zone.ZoneForm;
+import org.l2jmobius.gameserver.model.Location;
+import org.l2jmobius.gameserver.model.zone.ZoneForm;
 
 /**
  * Just dummy zone, needs only for geometry calculations

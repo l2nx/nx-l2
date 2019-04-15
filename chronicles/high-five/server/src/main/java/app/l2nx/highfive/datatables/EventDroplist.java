@@ -14,15 +14,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.datatables;
+package org.l2jmobius.gameserver.datatables;
 
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import com.l2jmobius.gameserver.script.DateRange;
-import com.l2jmobius.gameserver.script.EventDrop;
+import org.l2jmobius.gameserver.script.DateRange;
+import org.l2jmobius.gameserver.script.EventDrop;
 
 /**
  * This class manage drop of Special Events created by GM for a defined period.<br>

@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.model.events;
+package org.l2jmobius.gameserver.model.events;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
@@ -32,103 +32,103 @@ import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import com.l2jmobius.Config;
-import com.l2jmobius.commons.util.Rnd;
-import com.l2jmobius.gameserver.GameTimeController;
-import com.l2jmobius.gameserver.ai.CtrlIntention;
-import com.l2jmobius.gameserver.data.xml.impl.NpcData;
-import com.l2jmobius.gameserver.datatables.ItemTable;
-import com.l2jmobius.gameserver.enums.Movie;
-import com.l2jmobius.gameserver.enums.QuestSound;
-import com.l2jmobius.gameserver.instancemanager.CastleManager;
-import com.l2jmobius.gameserver.instancemanager.FortManager;
-import com.l2jmobius.gameserver.instancemanager.ZoneManager;
-import com.l2jmobius.gameserver.model.Location;
-import com.l2jmobius.gameserver.model.Spawn;
-import com.l2jmobius.gameserver.model.actor.Attackable;
-import com.l2jmobius.gameserver.model.actor.Creature;
-import com.l2jmobius.gameserver.model.actor.Npc;
-import com.l2jmobius.gameserver.model.actor.Playable;
-import com.l2jmobius.gameserver.model.actor.instance.MonsterInstance;
-import com.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
-import com.l2jmobius.gameserver.model.actor.instance.TrapInstance;
-import com.l2jmobius.gameserver.model.actor.templates.NpcTemplate;
-import com.l2jmobius.gameserver.model.entity.Castle;
-import com.l2jmobius.gameserver.model.entity.Fort;
-import com.l2jmobius.gameserver.model.events.annotations.Id;
-import com.l2jmobius.gameserver.model.events.annotations.Ids;
-import com.l2jmobius.gameserver.model.events.annotations.NpcLevelRange;
-import com.l2jmobius.gameserver.model.events.annotations.NpcLevelRanges;
-import com.l2jmobius.gameserver.model.events.annotations.Priority;
-import com.l2jmobius.gameserver.model.events.annotations.Range;
-import com.l2jmobius.gameserver.model.events.annotations.Ranges;
-import com.l2jmobius.gameserver.model.events.annotations.RegisterEvent;
-import com.l2jmobius.gameserver.model.events.annotations.RegisterType;
-import com.l2jmobius.gameserver.model.events.impl.IBaseEvent;
-import com.l2jmobius.gameserver.model.events.impl.creature.OnCreatureKill;
-import com.l2jmobius.gameserver.model.events.impl.creature.OnCreatureZoneEnter;
-import com.l2jmobius.gameserver.model.events.impl.creature.OnCreatureZoneExit;
-import com.l2jmobius.gameserver.model.events.impl.creature.npc.OnNpcCanBeSeen;
-import com.l2jmobius.gameserver.model.events.impl.creature.npc.OnNpcCreatureSee;
-import com.l2jmobius.gameserver.model.events.impl.creature.npc.OnNpcEventReceived;
-import com.l2jmobius.gameserver.model.events.impl.creature.npc.OnNpcFirstTalk;
-import com.l2jmobius.gameserver.model.events.impl.creature.npc.OnNpcMoveFinished;
-import com.l2jmobius.gameserver.model.events.impl.creature.npc.OnNpcMoveNodeArrived;
-import com.l2jmobius.gameserver.model.events.impl.creature.npc.OnNpcMoveRouteFinished;
-import com.l2jmobius.gameserver.model.events.impl.creature.npc.OnNpcSkillFinished;
-import com.l2jmobius.gameserver.model.events.impl.creature.npc.OnNpcSkillSee;
-import com.l2jmobius.gameserver.model.events.impl.creature.npc.OnNpcSpawn;
-import com.l2jmobius.gameserver.model.events.impl.creature.npc.OnNpcTeleport;
-import com.l2jmobius.gameserver.model.events.impl.creature.npc.attackable.OnAttackableAggroRangeEnter;
-import com.l2jmobius.gameserver.model.events.impl.creature.npc.attackable.OnAttackableAttack;
-import com.l2jmobius.gameserver.model.events.impl.creature.npc.attackable.OnAttackableFactionCall;
-import com.l2jmobius.gameserver.model.events.impl.creature.npc.attackable.OnAttackableHate;
-import com.l2jmobius.gameserver.model.events.impl.creature.npc.attackable.OnAttackableKill;
-import com.l2jmobius.gameserver.model.events.impl.creature.player.OnPlayerLogin;
-import com.l2jmobius.gameserver.model.events.impl.creature.player.OnPlayerLogout;
-import com.l2jmobius.gameserver.model.events.impl.creature.player.OnPlayerProfessionCancel;
-import com.l2jmobius.gameserver.model.events.impl.creature.player.OnPlayerProfessionChange;
-import com.l2jmobius.gameserver.model.events.impl.creature.player.OnPlayerSkillLearn;
-import com.l2jmobius.gameserver.model.events.impl.creature.player.OnPlayerSummonSpawn;
-import com.l2jmobius.gameserver.model.events.impl.creature.player.OnPlayerSummonTalk;
-import com.l2jmobius.gameserver.model.events.impl.creature.trap.OnTrapAction;
-import com.l2jmobius.gameserver.model.events.impl.item.OnItemBypassEvent;
-import com.l2jmobius.gameserver.model.events.impl.item.OnItemTalk;
-import com.l2jmobius.gameserver.model.events.impl.olympiad.OnOlympiadMatchResult;
-import com.l2jmobius.gameserver.model.events.impl.sieges.castle.OnCastleSiegeFinish;
-import com.l2jmobius.gameserver.model.events.impl.sieges.castle.OnCastleSiegeOwnerChange;
-import com.l2jmobius.gameserver.model.events.impl.sieges.castle.OnCastleSiegeStart;
-import com.l2jmobius.gameserver.model.events.listeners.AbstractEventListener;
-import com.l2jmobius.gameserver.model.events.listeners.AnnotationEventListener;
-import com.l2jmobius.gameserver.model.events.listeners.ConsumerEventListener;
-import com.l2jmobius.gameserver.model.events.listeners.DummyEventListener;
-import com.l2jmobius.gameserver.model.events.listeners.FunctionEventListener;
-import com.l2jmobius.gameserver.model.events.listeners.RunnableEventListener;
-import com.l2jmobius.gameserver.model.events.returns.AbstractEventReturn;
-import com.l2jmobius.gameserver.model.events.returns.TerminateReturn;
-import com.l2jmobius.gameserver.model.holders.ItemHolder;
-import com.l2jmobius.gameserver.model.holders.MovieHolder;
-import com.l2jmobius.gameserver.model.holders.SkillHolder;
-import com.l2jmobius.gameserver.model.instancezone.InstanceWorld;
-import com.l2jmobius.gameserver.model.interfaces.IPositionable;
-import com.l2jmobius.gameserver.model.itemcontainer.Inventory;
-import com.l2jmobius.gameserver.model.itemcontainer.PlayerInventory;
-import com.l2jmobius.gameserver.model.items.EtcItem;
-import com.l2jmobius.gameserver.model.items.Item;
-import com.l2jmobius.gameserver.model.items.instance.ItemInstance;
-import com.l2jmobius.gameserver.model.olympiad.Olympiad;
-import com.l2jmobius.gameserver.model.skills.Skill;
-import com.l2jmobius.gameserver.model.stats.Stats;
-import com.l2jmobius.gameserver.model.zone.ZoneType;
-import com.l2jmobius.gameserver.network.NpcStringId;
-import com.l2jmobius.gameserver.network.SystemMessageId;
-import com.l2jmobius.gameserver.network.serverpackets.ExShowScreenMessage;
-import com.l2jmobius.gameserver.network.serverpackets.InventoryUpdate;
-import com.l2jmobius.gameserver.network.serverpackets.SpecialCamera;
-import com.l2jmobius.gameserver.network.serverpackets.StatusUpdate;
-import com.l2jmobius.gameserver.network.serverpackets.SystemMessage;
-import com.l2jmobius.gameserver.scripting.ManagedScript;
-import com.l2jmobius.gameserver.util.MinionList;
+import org.l2jmobius.Config;
+import org.l2jmobius.commons.util.Rnd;
+import org.l2jmobius.gameserver.GameTimeController;
+import org.l2jmobius.gameserver.ai.CtrlIntention;
+import org.l2jmobius.gameserver.data.xml.impl.NpcData;
+import org.l2jmobius.gameserver.datatables.ItemTable;
+import org.l2jmobius.gameserver.enums.Movie;
+import org.l2jmobius.gameserver.enums.QuestSound;
+import org.l2jmobius.gameserver.instancemanager.CastleManager;
+import org.l2jmobius.gameserver.instancemanager.FortManager;
+import org.l2jmobius.gameserver.instancemanager.ZoneManager;
+import org.l2jmobius.gameserver.model.Location;
+import org.l2jmobius.gameserver.model.Spawn;
+import org.l2jmobius.gameserver.model.actor.Attackable;
+import org.l2jmobius.gameserver.model.actor.Creature;
+import org.l2jmobius.gameserver.model.actor.Npc;
+import org.l2jmobius.gameserver.model.actor.Playable;
+import org.l2jmobius.gameserver.model.actor.instance.MonsterInstance;
+import org.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
+import org.l2jmobius.gameserver.model.actor.instance.TrapInstance;
+import org.l2jmobius.gameserver.model.actor.templates.NpcTemplate;
+import org.l2jmobius.gameserver.model.entity.Castle;
+import org.l2jmobius.gameserver.model.entity.Fort;
+import org.l2jmobius.gameserver.model.events.annotations.Id;
+import org.l2jmobius.gameserver.model.events.annotations.Ids;
+import org.l2jmobius.gameserver.model.events.annotations.NpcLevelRange;
+import org.l2jmobius.gameserver.model.events.annotations.NpcLevelRanges;
+import org.l2jmobius.gameserver.model.events.annotations.Priority;
+import org.l2jmobius.gameserver.model.events.annotations.Range;
+import org.l2jmobius.gameserver.model.events.annotations.Ranges;
+import org.l2jmobius.gameserver.model.events.annotations.RegisterEvent;
+import org.l2jmobius.gameserver.model.events.annotations.RegisterType;
+import org.l2jmobius.gameserver.model.events.impl.IBaseEvent;
+import org.l2jmobius.gameserver.model.events.impl.creature.OnCreatureKill;
+import org.l2jmobius.gameserver.model.events.impl.creature.OnCreatureZoneEnter;
+import org.l2jmobius.gameserver.model.events.impl.creature.OnCreatureZoneExit;
+import org.l2jmobius.gameserver.model.events.impl.creature.npc.OnNpcCanBeSeen;
+import org.l2jmobius.gameserver.model.events.impl.creature.npc.OnNpcCreatureSee;
+import org.l2jmobius.gameserver.model.events.impl.creature.npc.OnNpcEventReceived;
+import org.l2jmobius.gameserver.model.events.impl.creature.npc.OnNpcFirstTalk;
+import org.l2jmobius.gameserver.model.events.impl.creature.npc.OnNpcMoveFinished;
+import org.l2jmobius.gameserver.model.events.impl.creature.npc.OnNpcMoveNodeArrived;
+import org.l2jmobius.gameserver.model.events.impl.creature.npc.OnNpcMoveRouteFinished;
+import org.l2jmobius.gameserver.model.events.impl.creature.npc.OnNpcSkillFinished;
+import org.l2jmobius.gameserver.model.events.impl.creature.npc.OnNpcSkillSee;
+import org.l2jmobius.gameserver.model.events.impl.creature.npc.OnNpcSpawn;
+import org.l2jmobius.gameserver.model.events.impl.creature.npc.OnNpcTeleport;
+import org.l2jmobius.gameserver.model.events.impl.creature.npc.attackable.OnAttackableAggroRangeEnter;
+import org.l2jmobius.gameserver.model.events.impl.creature.npc.attackable.OnAttackableAttack;
+import org.l2jmobius.gameserver.model.events.impl.creature.npc.attackable.OnAttackableFactionCall;
+import org.l2jmobius.gameserver.model.events.impl.creature.npc.attackable.OnAttackableHate;
+import org.l2jmobius.gameserver.model.events.impl.creature.npc.attackable.OnAttackableKill;
+import org.l2jmobius.gameserver.model.events.impl.creature.player.OnPlayerLogin;
+import org.l2jmobius.gameserver.model.events.impl.creature.player.OnPlayerLogout;
+import org.l2jmobius.gameserver.model.events.impl.creature.player.OnPlayerProfessionCancel;
+import org.l2jmobius.gameserver.model.events.impl.creature.player.OnPlayerProfessionChange;
+import org.l2jmobius.gameserver.model.events.impl.creature.player.OnPlayerSkillLearn;
+import org.l2jmobius.gameserver.model.events.impl.creature.player.OnPlayerSummonSpawn;
+import org.l2jmobius.gameserver.model.events.impl.creature.player.OnPlayerSummonTalk;
+import org.l2jmobius.gameserver.model.events.impl.creature.trap.OnTrapAction;
+import org.l2jmobius.gameserver.model.events.impl.item.OnItemBypassEvent;
+import org.l2jmobius.gameserver.model.events.impl.item.OnItemTalk;
+import org.l2jmobius.gameserver.model.events.impl.olympiad.OnOlympiadMatchResult;
+import org.l2jmobius.gameserver.model.events.impl.sieges.castle.OnCastleSiegeFinish;
+import org.l2jmobius.gameserver.model.events.impl.sieges.castle.OnCastleSiegeOwnerChange;
+import org.l2jmobius.gameserver.model.events.impl.sieges.castle.OnCastleSiegeStart;
+import org.l2jmobius.gameserver.model.events.listeners.AbstractEventListener;
+import org.l2jmobius.gameserver.model.events.listeners.AnnotationEventListener;
+import org.l2jmobius.gameserver.model.events.listeners.ConsumerEventListener;
+import org.l2jmobius.gameserver.model.events.listeners.DummyEventListener;
+import org.l2jmobius.gameserver.model.events.listeners.FunctionEventListener;
+import org.l2jmobius.gameserver.model.events.listeners.RunnableEventListener;
+import org.l2jmobius.gameserver.model.events.returns.AbstractEventReturn;
+import org.l2jmobius.gameserver.model.events.returns.TerminateReturn;
+import org.l2jmobius.gameserver.model.holders.ItemHolder;
+import org.l2jmobius.gameserver.model.holders.MovieHolder;
+import org.l2jmobius.gameserver.model.holders.SkillHolder;
+import org.l2jmobius.gameserver.model.instancezone.InstanceWorld;
+import org.l2jmobius.gameserver.model.interfaces.IPositionable;
+import org.l2jmobius.gameserver.model.itemcontainer.Inventory;
+import org.l2jmobius.gameserver.model.itemcontainer.PlayerInventory;
+import org.l2jmobius.gameserver.model.items.EtcItem;
+import org.l2jmobius.gameserver.model.items.Item;
+import org.l2jmobius.gameserver.model.items.instance.ItemInstance;
+import org.l2jmobius.gameserver.model.olympiad.Olympiad;
+import org.l2jmobius.gameserver.model.skills.Skill;
+import org.l2jmobius.gameserver.model.stats.Stats;
+import org.l2jmobius.gameserver.model.zone.ZoneType;
+import org.l2jmobius.gameserver.network.NpcStringId;
+import org.l2jmobius.gameserver.network.SystemMessageId;
+import org.l2jmobius.gameserver.network.serverpackets.ExShowScreenMessage;
+import org.l2jmobius.gameserver.network.serverpackets.InventoryUpdate;
+import org.l2jmobius.gameserver.network.serverpackets.SpecialCamera;
+import org.l2jmobius.gameserver.network.serverpackets.StatusUpdate;
+import org.l2jmobius.gameserver.network.serverpackets.SystemMessage;
+import org.l2jmobius.gameserver.scripting.ManagedScript;
+import org.l2jmobius.gameserver.util.MinionList;
 
 /**
  * @author UnAfraid
@@ -301,7 +301,7 @@ public abstract class AbstractScript extends ManagedScript
 	// ---------------------------------------------------------------------------------------------------------------------------
 	
 	/**
-	 * Provides delayed (Depending on {@link com.l2jmobius.gameserver.model.actor.Attackable#getOnKillDelay()}) callback operation when Attackable dies from a player.
+	 * Provides delayed (Depending on {@link org.l2jmobius.gameserver.model.actor.Attackable#getOnKillDelay()}) callback operation when Attackable dies from a player.
 	 * @param callback
 	 * @param npcIds
 	 * @return
@@ -319,7 +319,7 @@ public abstract class AbstractScript extends ManagedScript
 	}
 	
 	/**
-	 * Provides delayed (Depending on {@link com.l2jmobius.gameserver.model.actor.Attackable#getOnKillDelay()}) callback operation when Attackable dies from a player.
+	 * Provides delayed (Depending on {@link org.l2jmobius.gameserver.model.actor.Attackable#getOnKillDelay()}) callback operation when Attackable dies from a player.
 	 * @param callback
 	 * @param npcIds
 	 * @return
@@ -1016,7 +1016,7 @@ public abstract class AbstractScript extends ManagedScript
 	// ---------------------------------------------------------------------------------------------------------------------------
 	
 	/**
-	 * Provides instant callback operation when {@link com.l2jmobius.gameserver.model.actor.Creature} Enters on a {@link ZoneType}.
+	 * Provides instant callback operation when {@link org.l2jmobius.gameserver.model.actor.Creature} Enters on a {@link ZoneType}.
 	 * @param callback
 	 * @param npcIds
 	 * @return
@@ -1027,7 +1027,7 @@ public abstract class AbstractScript extends ManagedScript
 	}
 	
 	/**
-	 * Provides instant callback operation when {@link com.l2jmobius.gameserver.model.actor.Creature} Enters on a {@link ZoneType}.
+	 * Provides instant callback operation when {@link org.l2jmobius.gameserver.model.actor.Creature} Enters on a {@link ZoneType}.
 	 * @param callback
 	 * @param npcIds
 	 * @return
@@ -1040,7 +1040,7 @@ public abstract class AbstractScript extends ManagedScript
 	// ---------------------------------------------------------------------------------------------------------------------------
 	
 	/**
-	 * Provides instant callback operation when {@link com.l2jmobius.gameserver.model.actor.Creature} Exits on a {@link ZoneType}.
+	 * Provides instant callback operation when {@link org.l2jmobius.gameserver.model.actor.Creature} Exits on a {@link ZoneType}.
 	 * @param callback
 	 * @param npcIds
 	 * @return
@@ -1051,7 +1051,7 @@ public abstract class AbstractScript extends ManagedScript
 	}
 	
 	/**
-	 * Provides instant callback operation when {@link com.l2jmobius.gameserver.model.actor.Creature} Exits on a {@link ZoneType}.
+	 * Provides instant callback operation when {@link org.l2jmobius.gameserver.model.actor.Creature} Exits on a {@link ZoneType}.
 	 * @param callback
 	 * @param npcIds
 	 * @return
@@ -1064,7 +1064,7 @@ public abstract class AbstractScript extends ManagedScript
 	// ---------------------------------------------------------------------------------------------------------------------------
 	
 	/**
-	 * Provides instant callback operation when {@link com.l2jmobius.gameserver.model.actor.instance.TrapInstance} acts.
+	 * Provides instant callback operation when {@link org.l2jmobius.gameserver.model.actor.instance.TrapInstance} acts.
 	 * @param callback
 	 * @param npcIds
 	 * @return
@@ -1075,7 +1075,7 @@ public abstract class AbstractScript extends ManagedScript
 	}
 	
 	/**
-	 * Provides instant callback operation when {@link com.l2jmobius.gameserver.model.actor.instance.TrapInstance} acts.
+	 * Provides instant callback operation when {@link org.l2jmobius.gameserver.model.actor.instance.TrapInstance} acts.
 	 * @param callback
 	 * @param npcIds
 	 * @return
@@ -2586,7 +2586,7 @@ public abstract class AbstractScript extends ManagedScript
 	
 	/**
 	 * Get a random integer from 0 (inclusive) to {@code max} (exclusive).<br>
-	 * Use this method instead of importing {@link com.l2jmobius.commons.util.Rnd} utility.
+	 * Use this method instead of importing {@link org.l2jmobius.commons.util.Rnd} utility.
 	 * @param max the maximum value for randomization
 	 * @return a random integer number from 0 to {@code max - 1}
 	 */
@@ -2597,7 +2597,7 @@ public abstract class AbstractScript extends ManagedScript
 	
 	/**
 	 * Get a random integer from {@code min} (inclusive) to {@code max} (inclusive).<br>
-	 * Use this method instead of importing {@link com.l2jmobius.commons.util.Rnd} utility.
+	 * Use this method instead of importing {@link org.l2jmobius.commons.util.Rnd} utility.
 	 * @param min the minimum value for randomization
 	 * @param max the maximum value for randomization
 	 * @return a random integer number from {@code min} to {@code max}
@@ -2609,7 +2609,7 @@ public abstract class AbstractScript extends ManagedScript
 	
 	/**
 	 * Get a random boolean.<br>
-	 * Use this method instead of importing {@link com.l2jmobius.commons.util.Rnd} utility.
+	 * Use this method instead of importing {@link org.l2jmobius.commons.util.Rnd} utility.
 	 * @return {@code true} or {@code false} randomly
 	 */
 	public static boolean getRandomBoolean()
@@ -2629,7 +2629,7 @@ public abstract class AbstractScript extends ManagedScript
 	}
 	
 	/**
-	 * @return the number of ticks from the {@link com.l2jmobius.gameserver.GameTimeController}.
+	 * @return the number of ticks from the {@link org.l2jmobius.gameserver.GameTimeController}.
 	 */
 	public static int getGameTicks()
 	{

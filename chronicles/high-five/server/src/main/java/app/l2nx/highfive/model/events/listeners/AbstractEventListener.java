@@ -14,12 +14,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.model.events.listeners;
+package org.l2jmobius.gameserver.model.events.listeners;
 
-import com.l2jmobius.gameserver.model.events.EventType;
-import com.l2jmobius.gameserver.model.events.ListenersContainer;
-import com.l2jmobius.gameserver.model.events.impl.IBaseEvent;
-import com.l2jmobius.gameserver.model.events.returns.AbstractEventReturn;
+import org.l2jmobius.gameserver.model.events.EventType;
+import org.l2jmobius.gameserver.model.events.ListenersContainer;
+import org.l2jmobius.gameserver.model.events.impl.IBaseEvent;
+import org.l2jmobius.gameserver.model.events.returns.AbstractEventReturn;
 
 /**
  * @author UnAfraid

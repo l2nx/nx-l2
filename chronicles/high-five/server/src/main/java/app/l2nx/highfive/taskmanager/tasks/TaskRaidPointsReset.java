@@ -14,20 +14,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.taskmanager.tasks;
+package org.l2jmobius.gameserver.taskmanager.tasks;
 
 import java.util.Calendar;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import com.l2jmobius.Config;
-import com.l2jmobius.gameserver.data.sql.impl.ClanTable;
-import com.l2jmobius.gameserver.instancemanager.RaidBossPointsManager;
-import com.l2jmobius.gameserver.model.clan.Clan;
-import com.l2jmobius.gameserver.taskmanager.Task;
-import com.l2jmobius.gameserver.taskmanager.TaskManager;
-import com.l2jmobius.gameserver.taskmanager.TaskManager.ExecutedTask;
-import com.l2jmobius.gameserver.taskmanager.TaskTypes;
+import org.l2jmobius.Config;
+import org.l2jmobius.gameserver.data.sql.impl.ClanTable;
+import org.l2jmobius.gameserver.instancemanager.RaidBossPointsManager;
+import org.l2jmobius.gameserver.model.clan.Clan;
+import org.l2jmobius.gameserver.taskmanager.Task;
+import org.l2jmobius.gameserver.taskmanager.TaskManager;
+import org.l2jmobius.gameserver.taskmanager.TaskManager.ExecutedTask;
+import org.l2jmobius.gameserver.taskmanager.TaskTypes;
 
 public class TaskRaidPointsReset extends Task
 {

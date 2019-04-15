@@ -14,13 +14,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.instancemanager.tasks;
+package org.l2jmobius.gameserver.instancemanager.tasks;
 
 import java.util.Calendar;
 import java.util.concurrent.ScheduledFuture;
 
-import com.l2jmobius.commons.concurrent.ThreadPool;
-import com.l2jmobius.gameserver.instancemanager.FourSepulchersManager;
+import org.l2jmobius.commons.concurrent.ThreadPool;
+import org.l2jmobius.gameserver.instancemanager.FourSepulchersManager;
 
 /**
  * Four Sepulchers change cool down time task.

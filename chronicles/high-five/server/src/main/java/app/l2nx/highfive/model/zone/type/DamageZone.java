@@ -14,19 +14,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.model.zone.type;
+package org.l2jmobius.gameserver.model.zone.type;
 
-import com.l2jmobius.commons.concurrent.ThreadPool;
-import com.l2jmobius.gameserver.enums.InstanceType;
-import com.l2jmobius.gameserver.instancemanager.CastleManager;
-import com.l2jmobius.gameserver.instancemanager.ZoneManager;
-import com.l2jmobius.gameserver.model.actor.Creature;
-import com.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
-import com.l2jmobius.gameserver.model.entity.Castle;
-import com.l2jmobius.gameserver.model.stats.Stats;
-import com.l2jmobius.gameserver.model.zone.AbstractZoneSettings;
-import com.l2jmobius.gameserver.model.zone.TaskZoneSettings;
-import com.l2jmobius.gameserver.model.zone.ZoneType;
+import org.l2jmobius.commons.concurrent.ThreadPool;
+import org.l2jmobius.gameserver.enums.InstanceType;
+import org.l2jmobius.gameserver.instancemanager.CastleManager;
+import org.l2jmobius.gameserver.instancemanager.ZoneManager;
+import org.l2jmobius.gameserver.model.actor.Creature;
+import org.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
+import org.l2jmobius.gameserver.model.entity.Castle;
+import org.l2jmobius.gameserver.model.stats.Stats;
+import org.l2jmobius.gameserver.model.zone.AbstractZoneSettings;
+import org.l2jmobius.gameserver.model.zone.TaskZoneSettings;
+import org.l2jmobius.gameserver.model.zone.ZoneType;
 
 /**
  * A damage zone

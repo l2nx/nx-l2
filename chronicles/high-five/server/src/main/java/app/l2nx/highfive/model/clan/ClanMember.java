@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.model.clan;
+package org.l2jmobius.gameserver.model.clan;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -23,9 +23,9 @@ import java.sql.SQLException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import com.l2jmobius.commons.database.DatabaseFactory;
-import com.l2jmobius.gameserver.instancemanager.SiegeManager;
-import com.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
+import org.l2jmobius.commons.database.DatabaseFactory;
+import org.l2jmobius.gameserver.instancemanager.SiegeManager;
+import org.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
 
 /**
  * This class holds the clan members data.

@@ -14,9 +14,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.model.actor.instance;
+package org.l2jmobius.gameserver.model.actor.instance;
 
-import static com.l2jmobius.gameserver.model.itemcontainer.Inventory.MAX_ADENA;
+import static org.l2jmobius.gameserver.model.itemcontainer.Inventory.MAX_ADENA;
 
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -25,17 +25,17 @@ import java.util.Map;
 import java.util.StringTokenizer;
 import java.util.concurrent.ConcurrentHashMap;
 
-import com.l2jmobius.gameserver.enums.InstanceType;
-import com.l2jmobius.gameserver.instancemanager.ClanHallAuctionManager;
-import com.l2jmobius.gameserver.instancemanager.ClanHallManager;
-import com.l2jmobius.gameserver.instancemanager.MapRegionManager;
-import com.l2jmobius.gameserver.model.actor.Npc;
-import com.l2jmobius.gameserver.model.actor.templates.NpcTemplate;
-import com.l2jmobius.gameserver.model.clan.ClanPrivilege;
-import com.l2jmobius.gameserver.model.entity.Auction;
-import com.l2jmobius.gameserver.model.entity.Auction.Bidder;
-import com.l2jmobius.gameserver.network.SystemMessageId;
-import com.l2jmobius.gameserver.network.serverpackets.NpcHtmlMessage;
+import org.l2jmobius.gameserver.enums.InstanceType;
+import org.l2jmobius.gameserver.instancemanager.ClanHallAuctionManager;
+import org.l2jmobius.gameserver.instancemanager.ClanHallManager;
+import org.l2jmobius.gameserver.instancemanager.MapRegionManager;
+import org.l2jmobius.gameserver.model.actor.Npc;
+import org.l2jmobius.gameserver.model.actor.templates.NpcTemplate;
+import org.l2jmobius.gameserver.model.clan.ClanPrivilege;
+import org.l2jmobius.gameserver.model.entity.Auction;
+import org.l2jmobius.gameserver.model.entity.Auction.Bidder;
+import org.l2jmobius.gameserver.network.SystemMessageId;
+import org.l2jmobius.gameserver.network.serverpackets.NpcHtmlMessage;
 
 public final class AuctioneerInstance extends Npc
 {

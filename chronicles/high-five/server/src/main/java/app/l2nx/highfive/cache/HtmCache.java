@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.cache;
+package org.l2jmobius.gameserver.cache;
 
 import java.io.BufferedInputStream;
 import java.io.File;
@@ -25,10 +25,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import com.l2jmobius.Config;
-import com.l2jmobius.commons.util.file.filter.HTMLFilter;
-import com.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
-import com.l2jmobius.gameserver.util.BuilderUtil;
+import org.l2jmobius.Config;
+import org.l2jmobius.commons.util.file.filter.HTMLFilter;
+import org.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
+import org.l2jmobius.gameserver.util.BuilderUtil;
 
 /**
  * @author Layane

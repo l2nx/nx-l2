@@ -14,12 +14,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.model.items;
+package org.l2jmobius.gameserver.model.items;
 
-import com.l2jmobius.gameserver.model.StatsSet;
-import com.l2jmobius.gameserver.model.holders.SkillHolder;
-import com.l2jmobius.gameserver.model.items.type.ArmorType;
-import com.l2jmobius.gameserver.model.skills.Skill;
+import org.l2jmobius.gameserver.model.StatsSet;
+import org.l2jmobius.gameserver.model.holders.SkillHolder;
+import org.l2jmobius.gameserver.model.items.type.ArmorType;
+import org.l2jmobius.gameserver.model.skills.Skill;
 
 /**
  * This class is dedicated to the management of armors.

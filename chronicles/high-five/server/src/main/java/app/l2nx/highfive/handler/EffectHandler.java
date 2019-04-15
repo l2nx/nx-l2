@@ -14,13 +14,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.handler;
+package org.l2jmobius.gameserver.handler;
 
 import java.util.HashMap;
 import java.util.Map;
 
-import com.l2jmobius.gameserver.model.effects.AbstractEffect;
-import com.l2jmobius.gameserver.scripting.ScriptEngineManager;
+import org.l2jmobius.gameserver.model.effects.AbstractEffect;
+import org.l2jmobius.gameserver.scripting.ScriptEngineManager;
 
 /**
  * @author BiggBoss, UnAfraid

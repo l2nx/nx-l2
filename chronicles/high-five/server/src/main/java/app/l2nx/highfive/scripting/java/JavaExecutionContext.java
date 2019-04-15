@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.scripting.java;
+package org.l2jmobius.gameserver.scripting.java;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -34,7 +34,7 @@ import org.openjavac.tools.Diagnostic;
 import org.openjavac.tools.DiagnosticCollector;
 import org.openjavac.tools.JavaFileObject;
 
-import com.l2jmobius.gameserver.scripting.annotations.Disabled;
+import org.l2jmobius.gameserver.scripting.annotations.Disabled;
 
 /**
  * @author HorridoJoho

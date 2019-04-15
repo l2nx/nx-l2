@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.loginserver.ui;
+package org.l2jmobius.loginserver.ui;
 
 import java.awt.BorderLayout;
 import java.awt.Dimension;
@@ -42,13 +42,13 @@ import javax.swing.JTextArea;
 import javax.swing.SwingUtilities;
 import javax.swing.WindowConstants;
 
-import com.l2jmobius.commons.util.LimitLinesDocumentListener;
-import com.l2jmobius.commons.util.SplashScreen;
-import com.l2jmobius.loginserver.GameServerTable;
-import com.l2jmobius.loginserver.GameServerTable.GameServerInfo;
-import com.l2jmobius.loginserver.LoginController;
-import com.l2jmobius.loginserver.LoginServer;
-import com.l2jmobius.loginserver.network.gameserverpackets.ServerStatus;
+import org.l2jmobius.commons.util.LimitLinesDocumentListener;
+import org.l2jmobius.commons.util.SplashScreen;
+import org.l2jmobius.loginserver.GameServerTable;
+import org.l2jmobius.loginserver.GameServerTable.GameServerInfo;
+import org.l2jmobius.loginserver.LoginController;
+import org.l2jmobius.loginserver.LoginServer;
+import org.l2jmobius.loginserver.network.gameserverpackets.ServerStatus;
 
 /**
  * @author Mobius

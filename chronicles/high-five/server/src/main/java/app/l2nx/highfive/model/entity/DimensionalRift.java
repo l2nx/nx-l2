@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.model.entity;
+package org.l2jmobius.gameserver.model.entity;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -23,18 +23,18 @@ import java.util.TimerTask;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Future;
 
-import com.l2jmobius.Config;
-import com.l2jmobius.commons.concurrent.ThreadPool;
-import com.l2jmobius.commons.util.Rnd;
-import com.l2jmobius.gameserver.instancemanager.DimensionalRiftManager;
-import com.l2jmobius.gameserver.instancemanager.QuestManager;
-import com.l2jmobius.gameserver.model.Location;
-import com.l2jmobius.gameserver.model.Party;
-import com.l2jmobius.gameserver.model.actor.Npc;
-import com.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
-import com.l2jmobius.gameserver.model.quest.Quest;
-import com.l2jmobius.gameserver.model.quest.QuestState;
-import com.l2jmobius.gameserver.network.serverpackets.Earthquake;
+import org.l2jmobius.Config;
+import org.l2jmobius.commons.concurrent.ThreadPool;
+import org.l2jmobius.commons.util.Rnd;
+import org.l2jmobius.gameserver.instancemanager.DimensionalRiftManager;
+import org.l2jmobius.gameserver.instancemanager.QuestManager;
+import org.l2jmobius.gameserver.model.Location;
+import org.l2jmobius.gameserver.model.Party;
+import org.l2jmobius.gameserver.model.actor.Npc;
+import org.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
+import org.l2jmobius.gameserver.model.quest.Quest;
+import org.l2jmobius.gameserver.model.quest.QuestState;
+import org.l2jmobius.gameserver.network.serverpackets.Earthquake;
 
 /**
  * Thanks to Fortress and balancer.ru - kombat

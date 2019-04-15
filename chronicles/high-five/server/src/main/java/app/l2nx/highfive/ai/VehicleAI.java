@@ -14,12 +14,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.ai;
+package org.l2jmobius.gameserver.ai;
 
-import com.l2jmobius.gameserver.model.WorldObject;
-import com.l2jmobius.gameserver.model.actor.Creature;
-import com.l2jmobius.gameserver.model.actor.Vehicle;
-import com.l2jmobius.gameserver.model.skills.Skill;
+import org.l2jmobius.gameserver.model.WorldObject;
+import org.l2jmobius.gameserver.model.actor.Creature;
+import org.l2jmobius.gameserver.model.actor.Vehicle;
+import org.l2jmobius.gameserver.model.skills.Skill;
 
 /**
  * @author DS

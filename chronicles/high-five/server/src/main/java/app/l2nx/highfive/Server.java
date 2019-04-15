@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius;
+package org.l2jmobius;
 
 /**
  * This class used to be the starter class, since LS/GS split, it only retains server mode

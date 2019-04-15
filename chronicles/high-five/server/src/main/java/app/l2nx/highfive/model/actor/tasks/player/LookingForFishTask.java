@@ -14,10 +14,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.model.actor.tasks.player;
+package org.l2jmobius.gameserver.model.actor.tasks.player;
 
-import com.l2jmobius.commons.util.Rnd;
-import com.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
+import org.l2jmobius.commons.util.Rnd;
+import org.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
 
 /**
  * Task dedicated for looking for fishes.

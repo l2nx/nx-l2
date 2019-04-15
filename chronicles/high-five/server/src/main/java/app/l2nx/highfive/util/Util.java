@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.util;
+package org.l2jmobius.gameserver.util;
 
 import java.io.File;
 import java.text.DecimalFormat;
@@ -32,20 +32,20 @@ import java.util.StringTokenizer;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-import com.l2jmobius.Config;
-import com.l2jmobius.commons.concurrent.ThreadPool;
-import com.l2jmobius.commons.util.file.filter.ExtFilter;
-import com.l2jmobius.gameserver.enums.HtmlActionScope;
-import com.l2jmobius.gameserver.enums.IllegalActionPunishmentType;
-import com.l2jmobius.gameserver.model.World;
-import com.l2jmobius.gameserver.model.WorldObject;
-import com.l2jmobius.gameserver.model.actor.Creature;
-import com.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
-import com.l2jmobius.gameserver.model.actor.tasks.player.IllegalPlayerActionTask;
-import com.l2jmobius.gameserver.model.interfaces.ILocational;
-import com.l2jmobius.gameserver.network.serverpackets.AbstractHtmlPacket;
-import com.l2jmobius.gameserver.network.serverpackets.NpcHtmlMessage;
-import com.l2jmobius.gameserver.network.serverpackets.ShowBoard;
+import org.l2jmobius.Config;
+import org.l2jmobius.commons.concurrent.ThreadPool;
+import org.l2jmobius.commons.util.file.filter.ExtFilter;
+import org.l2jmobius.gameserver.enums.HtmlActionScope;
+import org.l2jmobius.gameserver.enums.IllegalActionPunishmentType;
+import org.l2jmobius.gameserver.model.World;
+import org.l2jmobius.gameserver.model.WorldObject;
+import org.l2jmobius.gameserver.model.actor.Creature;
+import org.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
+import org.l2jmobius.gameserver.model.actor.tasks.player.IllegalPlayerActionTask;
+import org.l2jmobius.gameserver.model.interfaces.ILocational;
+import org.l2jmobius.gameserver.network.serverpackets.AbstractHtmlPacket;
+import org.l2jmobius.gameserver.network.serverpackets.NpcHtmlMessage;
+import org.l2jmobius.gameserver.network.serverpackets.ShowBoard;
 
 /**
  * General Utility functions related to game server.

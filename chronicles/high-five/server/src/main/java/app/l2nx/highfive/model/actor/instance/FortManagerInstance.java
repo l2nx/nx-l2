@@ -14,28 +14,28 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.model.actor.instance;
+package org.l2jmobius.gameserver.model.actor.instance;
 
 import java.text.SimpleDateFormat;
 import java.util.StringTokenizer;
 
-import com.l2jmobius.Config;
-import com.l2jmobius.gameserver.cache.HtmCache;
-import com.l2jmobius.gameserver.data.sql.impl.TeleportLocationTable;
-import com.l2jmobius.gameserver.data.xml.impl.SkillData;
-import com.l2jmobius.gameserver.enums.InstanceType;
-import com.l2jmobius.gameserver.model.TeleportLocation;
-import com.l2jmobius.gameserver.model.actor.templates.NpcTemplate;
-import com.l2jmobius.gameserver.model.clan.ClanPrivilege;
-import com.l2jmobius.gameserver.model.effects.EffectType;
-import com.l2jmobius.gameserver.model.entity.Fort;
-import com.l2jmobius.gameserver.model.skills.Skill;
-import com.l2jmobius.gameserver.network.serverpackets.ActionFailed;
-import com.l2jmobius.gameserver.network.serverpackets.NpcHtmlMessage;
-import com.l2jmobius.gameserver.network.serverpackets.SortedWareHouseWithdrawalList;
-import com.l2jmobius.gameserver.network.serverpackets.SortedWareHouseWithdrawalList.WarehouseListType;
-import com.l2jmobius.gameserver.network.serverpackets.WareHouseDepositList;
-import com.l2jmobius.gameserver.network.serverpackets.WareHouseWithdrawalList;
+import org.l2jmobius.Config;
+import org.l2jmobius.gameserver.cache.HtmCache;
+import org.l2jmobius.gameserver.data.sql.impl.TeleportLocationTable;
+import org.l2jmobius.gameserver.data.xml.impl.SkillData;
+import org.l2jmobius.gameserver.enums.InstanceType;
+import org.l2jmobius.gameserver.model.TeleportLocation;
+import org.l2jmobius.gameserver.model.actor.templates.NpcTemplate;
+import org.l2jmobius.gameserver.model.clan.ClanPrivilege;
+import org.l2jmobius.gameserver.model.effects.EffectType;
+import org.l2jmobius.gameserver.model.entity.Fort;
+import org.l2jmobius.gameserver.model.skills.Skill;
+import org.l2jmobius.gameserver.network.serverpackets.ActionFailed;
+import org.l2jmobius.gameserver.network.serverpackets.NpcHtmlMessage;
+import org.l2jmobius.gameserver.network.serverpackets.SortedWareHouseWithdrawalList;
+import org.l2jmobius.gameserver.network.serverpackets.SortedWareHouseWithdrawalList.WarehouseListType;
+import org.l2jmobius.gameserver.network.serverpackets.WareHouseDepositList;
+import org.l2jmobius.gameserver.network.serverpackets.WareHouseWithdrawalList;
 
 /**
  * Fortress Foreman implementation used for: Area Teleports, Support Magic, Clan Warehouse, Exp Loss Reduction

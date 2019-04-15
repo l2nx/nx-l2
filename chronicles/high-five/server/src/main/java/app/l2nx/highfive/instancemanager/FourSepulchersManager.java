@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.instancemanager;
+package org.l2jmobius.gameserver.instancemanager;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -32,29 +32,29 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import com.l2jmobius.Config;
-import com.l2jmobius.commons.concurrent.ThreadPool;
-import com.l2jmobius.commons.database.DatabaseFactory;
-import com.l2jmobius.commons.util.Rnd;
-import com.l2jmobius.gameserver.data.xml.impl.DoorData;
-import com.l2jmobius.gameserver.datatables.SpawnTable;
-import com.l2jmobius.gameserver.instancemanager.tasks.FourSepulchersChangeAttackTimeTask;
-import com.l2jmobius.gameserver.instancemanager.tasks.FourSepulchersChangeCoolDownTimeTask;
-import com.l2jmobius.gameserver.instancemanager.tasks.FourSepulchersChangeEntryTimeTask;
-import com.l2jmobius.gameserver.instancemanager.tasks.FourSepulchersChangeWarmUpTimeTask;
-import com.l2jmobius.gameserver.model.Spawn;
-import com.l2jmobius.gameserver.model.actor.Npc;
-import com.l2jmobius.gameserver.model.actor.instance.DoorInstance;
-import com.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
-import com.l2jmobius.gameserver.model.actor.instance.SepulcherMonsterInstance;
-import com.l2jmobius.gameserver.model.actor.instance.SepulcherNpcInstance;
-import com.l2jmobius.gameserver.model.items.instance.ItemInstance;
-import com.l2jmobius.gameserver.model.quest.Quest;
-import com.l2jmobius.gameserver.model.quest.QuestState;
-import com.l2jmobius.gameserver.network.NpcStringId;
-import com.l2jmobius.gameserver.network.SystemMessageId;
-import com.l2jmobius.gameserver.network.serverpackets.NpcHtmlMessage;
-import com.l2jmobius.gameserver.util.Util;
+import org.l2jmobius.Config;
+import org.l2jmobius.commons.concurrent.ThreadPool;
+import org.l2jmobius.commons.database.DatabaseFactory;
+import org.l2jmobius.commons.util.Rnd;
+import org.l2jmobius.gameserver.data.xml.impl.DoorData;
+import org.l2jmobius.gameserver.datatables.SpawnTable;
+import org.l2jmobius.gameserver.instancemanager.tasks.FourSepulchersChangeAttackTimeTask;
+import org.l2jmobius.gameserver.instancemanager.tasks.FourSepulchersChangeCoolDownTimeTask;
+import org.l2jmobius.gameserver.instancemanager.tasks.FourSepulchersChangeEntryTimeTask;
+import org.l2jmobius.gameserver.instancemanager.tasks.FourSepulchersChangeWarmUpTimeTask;
+import org.l2jmobius.gameserver.model.Spawn;
+import org.l2jmobius.gameserver.model.actor.Npc;
+import org.l2jmobius.gameserver.model.actor.instance.DoorInstance;
+import org.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
+import org.l2jmobius.gameserver.model.actor.instance.SepulcherMonsterInstance;
+import org.l2jmobius.gameserver.model.actor.instance.SepulcherNpcInstance;
+import org.l2jmobius.gameserver.model.items.instance.ItemInstance;
+import org.l2jmobius.gameserver.model.quest.Quest;
+import org.l2jmobius.gameserver.model.quest.QuestState;
+import org.l2jmobius.gameserver.network.NpcStringId;
+import org.l2jmobius.gameserver.network.SystemMessageId;
+import org.l2jmobius.gameserver.network.serverpackets.NpcHtmlMessage;
+import org.l2jmobius.gameserver.util.Util;
 
 /**
  * Zoey76: TODO: Use Location DTO instead of array of int.

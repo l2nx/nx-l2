@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver;
+package org.l2jmobius.gameserver;
 
 import java.io.BufferedOutputStream;
 import java.io.IOException;
@@ -42,38 +42,38 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-import com.l2jmobius.Config;
-import com.l2jmobius.commons.database.DatabaseFactory;
-import com.l2jmobius.commons.network.BaseSendablePacket;
-import com.l2jmobius.commons.util.CommonUtil;
-import com.l2jmobius.commons.util.crypt.NewCrypt;
-import com.l2jmobius.gameserver.model.World;
-import com.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
-import com.l2jmobius.gameserver.network.ConnectionState;
-import com.l2jmobius.gameserver.network.GameClient;
-import com.l2jmobius.gameserver.network.SystemMessageId;
-import com.l2jmobius.gameserver.network.loginserverpackets.game.AuthRequest;
-import com.l2jmobius.gameserver.network.loginserverpackets.game.BlowFishKey;
-import com.l2jmobius.gameserver.network.loginserverpackets.game.ChangeAccessLevel;
-import com.l2jmobius.gameserver.network.loginserverpackets.game.ChangePassword;
-import com.l2jmobius.gameserver.network.loginserverpackets.game.PlayerAuthRequest;
-import com.l2jmobius.gameserver.network.loginserverpackets.game.PlayerInGame;
-import com.l2jmobius.gameserver.network.loginserverpackets.game.PlayerLogout;
-import com.l2jmobius.gameserver.network.loginserverpackets.game.PlayerTracert;
-import com.l2jmobius.gameserver.network.loginserverpackets.game.ReplyCharacters;
-import com.l2jmobius.gameserver.network.loginserverpackets.game.SendMail;
-import com.l2jmobius.gameserver.network.loginserverpackets.game.ServerStatus;
-import com.l2jmobius.gameserver.network.loginserverpackets.game.TempBan;
-import com.l2jmobius.gameserver.network.loginserverpackets.login.AuthResponse;
-import com.l2jmobius.gameserver.network.loginserverpackets.login.ChangePasswordResponse;
-import com.l2jmobius.gameserver.network.loginserverpackets.login.InitLS;
-import com.l2jmobius.gameserver.network.loginserverpackets.login.KickPlayer;
-import com.l2jmobius.gameserver.network.loginserverpackets.login.LoginServerFail;
-import com.l2jmobius.gameserver.network.loginserverpackets.login.PlayerAuthResponse;
-import com.l2jmobius.gameserver.network.loginserverpackets.login.RequestCharacters;
-import com.l2jmobius.gameserver.network.serverpackets.CharSelectionInfo;
-import com.l2jmobius.gameserver.network.serverpackets.LoginFail;
-import com.l2jmobius.gameserver.network.serverpackets.SystemMessage;
+import org.l2jmobius.Config;
+import org.l2jmobius.commons.database.DatabaseFactory;
+import org.l2jmobius.commons.network.BaseSendablePacket;
+import org.l2jmobius.commons.util.CommonUtil;
+import org.l2jmobius.commons.util.crypt.NewCrypt;
+import org.l2jmobius.gameserver.model.World;
+import org.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
+import org.l2jmobius.gameserver.network.ConnectionState;
+import org.l2jmobius.gameserver.network.GameClient;
+import org.l2jmobius.gameserver.network.SystemMessageId;
+import org.l2jmobius.gameserver.network.loginserverpackets.game.AuthRequest;
+import org.l2jmobius.gameserver.network.loginserverpackets.game.BlowFishKey;
+import org.l2jmobius.gameserver.network.loginserverpackets.game.ChangeAccessLevel;
+import org.l2jmobius.gameserver.network.loginserverpackets.game.ChangePassword;
+import org.l2jmobius.gameserver.network.loginserverpackets.game.PlayerAuthRequest;
+import org.l2jmobius.gameserver.network.loginserverpackets.game.PlayerInGame;
+import org.l2jmobius.gameserver.network.loginserverpackets.game.PlayerLogout;
+import org.l2jmobius.gameserver.network.loginserverpackets.game.PlayerTracert;
+import org.l2jmobius.gameserver.network.loginserverpackets.game.ReplyCharacters;
+import org.l2jmobius.gameserver.network.loginserverpackets.game.SendMail;
+import org.l2jmobius.gameserver.network.loginserverpackets.game.ServerStatus;
+import org.l2jmobius.gameserver.network.loginserverpackets.game.TempBan;
+import org.l2jmobius.gameserver.network.loginserverpackets.login.AuthResponse;
+import org.l2jmobius.gameserver.network.loginserverpackets.login.ChangePasswordResponse;
+import org.l2jmobius.gameserver.network.loginserverpackets.login.InitLS;
+import org.l2jmobius.gameserver.network.loginserverpackets.login.KickPlayer;
+import org.l2jmobius.gameserver.network.loginserverpackets.login.LoginServerFail;
+import org.l2jmobius.gameserver.network.loginserverpackets.login.PlayerAuthResponse;
+import org.l2jmobius.gameserver.network.loginserverpackets.login.RequestCharacters;
+import org.l2jmobius.gameserver.network.serverpackets.CharSelectionInfo;
+import org.l2jmobius.gameserver.network.serverpackets.LoginFail;
+import org.l2jmobius.gameserver.network.serverpackets.SystemMessage;
 
 public class LoginServerThread extends Thread
 {
@@ -81,7 +81,7 @@ public class LoginServerThread extends Thread
 	protected static final Logger ACCOUNTING_LOGGER = Logger.getLogger("accounting");
 	
 	/**
-	 * @see com.l2jmobius.loginserver.LoginServer#PROTOCOL_REV
+	 * @see org.l2jmobius.loginserver.LoginServer#PROTOCOL_REV
 	 */
 	private static final int REVISION = 0x0106;
 	private final String _hostname;

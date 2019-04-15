@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.tools.dbinstaller.gui;
+package org.l2jmobius.tools.dbinstaller.gui;
 
 import java.awt.Dimension;
 import java.awt.Image;
@@ -35,10 +35,10 @@ import javax.swing.SpringLayout;
 import javax.swing.SwingConstants;
 import javax.swing.WindowConstants;
 
-import com.l2jmobius.commons.util.SplashScreen;
-import com.l2jmobius.tools.dbinstaller.RunTasks;
-import com.l2jmobius.tools.dbinstaller.util.mysql.MySqlConnect;
-import com.l2jmobius.tools.dbinstaller.util.swing.SpringUtilities;
+import org.l2jmobius.commons.util.SplashScreen;
+import org.l2jmobius.tools.dbinstaller.RunTasks;
+import org.l2jmobius.tools.dbinstaller.util.mysql.MySqlConnect;
+import org.l2jmobius.tools.dbinstaller.util.swing.SpringUtilities;
 
 /**
  * @author mrTJO

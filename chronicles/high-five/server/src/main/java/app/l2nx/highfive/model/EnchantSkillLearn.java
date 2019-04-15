@@ -14,13 +14,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.model;
+package org.l2jmobius.gameserver.model;
 
 import java.util.Set;
 import java.util.TreeMap;
 
-import com.l2jmobius.gameserver.data.xml.impl.EnchantSkillGroupsData;
-import com.l2jmobius.gameserver.model.EnchantSkillGroup.EnchantSkillHolder;
+import org.l2jmobius.gameserver.data.xml.impl.EnchantSkillGroupsData;
+import org.l2jmobius.gameserver.model.EnchantSkillGroup.EnchantSkillHolder;
 
 public final class EnchantSkillLearn
 {

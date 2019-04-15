@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.idfactory;
+package org.l2jmobius.gameserver.idfactory;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -27,8 +27,8 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import com.l2jmobius.Config;
-import com.l2jmobius.commons.database.DatabaseFactory;
+import org.l2jmobius.Config;
+import org.l2jmobius.commons.database.DatabaseFactory;
 
 /**
  * @version $Revision: 1.3.2.1.2.7 $ $Date: 2005/04/11 10:06:12 $

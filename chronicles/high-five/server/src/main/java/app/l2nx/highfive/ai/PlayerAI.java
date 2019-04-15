@@ -14,26 +14,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.ai;
+package org.l2jmobius.gameserver.ai;
 
-import static com.l2jmobius.gameserver.ai.CtrlIntention.AI_INTENTION_ATTACK;
-import static com.l2jmobius.gameserver.ai.CtrlIntention.AI_INTENTION_CAST;
-import static com.l2jmobius.gameserver.ai.CtrlIntention.AI_INTENTION_IDLE;
-import static com.l2jmobius.gameserver.ai.CtrlIntention.AI_INTENTION_INTERACT;
-import static com.l2jmobius.gameserver.ai.CtrlIntention.AI_INTENTION_MOVE_TO;
-import static com.l2jmobius.gameserver.ai.CtrlIntention.AI_INTENTION_PICK_UP;
-import static com.l2jmobius.gameserver.ai.CtrlIntention.AI_INTENTION_REST;
+import static org.l2jmobius.gameserver.ai.CtrlIntention.AI_INTENTION_ATTACK;
+import static org.l2jmobius.gameserver.ai.CtrlIntention.AI_INTENTION_CAST;
+import static org.l2jmobius.gameserver.ai.CtrlIntention.AI_INTENTION_IDLE;
+import static org.l2jmobius.gameserver.ai.CtrlIntention.AI_INTENTION_INTERACT;
+import static org.l2jmobius.gameserver.ai.CtrlIntention.AI_INTENTION_MOVE_TO;
+import static org.l2jmobius.gameserver.ai.CtrlIntention.AI_INTENTION_PICK_UP;
+import static org.l2jmobius.gameserver.ai.CtrlIntention.AI_INTENTION_REST;
 
-import com.l2jmobius.gameserver.model.Location;
-import com.l2jmobius.gameserver.model.WorldObject;
-import com.l2jmobius.gameserver.model.actor.Creature;
-import com.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
-import com.l2jmobius.gameserver.model.actor.instance.StaticObjectInstance;
-import com.l2jmobius.gameserver.model.entity.Duel;
-import com.l2jmobius.gameserver.model.skills.Skill;
-import com.l2jmobius.gameserver.model.skills.targets.TargetType;
-import com.l2jmobius.gameserver.network.SystemMessageId;
-import com.l2jmobius.gameserver.network.serverpackets.SystemMessage;
+import org.l2jmobius.gameserver.model.Location;
+import org.l2jmobius.gameserver.model.WorldObject;
+import org.l2jmobius.gameserver.model.actor.Creature;
+import org.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
+import org.l2jmobius.gameserver.model.actor.instance.StaticObjectInstance;
+import org.l2jmobius.gameserver.model.entity.Duel;
+import org.l2jmobius.gameserver.model.skills.Skill;
+import org.l2jmobius.gameserver.model.skills.targets.TargetType;
+import org.l2jmobius.gameserver.network.SystemMessageId;
+import org.l2jmobius.gameserver.network.serverpackets.SystemMessage;
 
 public class PlayerAI extends PlayableAI
 {

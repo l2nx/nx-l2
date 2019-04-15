@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.loginserver.network.clientpackets;
+package org.l2jmobius.loginserver.network.clientpackets;
 
 import java.net.InetAddress;
 import java.security.GeneralSecurityException;
@@ -23,20 +23,20 @@ import java.util.logging.Logger;
 
 import javax.crypto.Cipher;
 
-import com.l2jmobius.Config;
-import com.l2jmobius.commons.network.IIncomingPacket;
-import com.l2jmobius.commons.network.PacketReader;
-import com.l2jmobius.loginserver.GameServerTable.GameServerInfo;
-import com.l2jmobius.loginserver.LoginController;
-import com.l2jmobius.loginserver.LoginController.AuthLoginResult;
-import com.l2jmobius.loginserver.model.data.AccountInfo;
-import com.l2jmobius.loginserver.network.ConnectionState;
-import com.l2jmobius.loginserver.network.LoginClient;
-import com.l2jmobius.loginserver.network.serverpackets.AccountKicked;
-import com.l2jmobius.loginserver.network.serverpackets.AccountKicked.AccountKickedReason;
-import com.l2jmobius.loginserver.network.serverpackets.LoginFail.LoginFailReason;
-import com.l2jmobius.loginserver.network.serverpackets.LoginOk;
-import com.l2jmobius.loginserver.network.serverpackets.ServerList;
+import org.l2jmobius.Config;
+import org.l2jmobius.commons.network.IIncomingPacket;
+import org.l2jmobius.commons.network.PacketReader;
+import org.l2jmobius.loginserver.GameServerTable.GameServerInfo;
+import org.l2jmobius.loginserver.LoginController;
+import org.l2jmobius.loginserver.LoginController.AuthLoginResult;
+import org.l2jmobius.loginserver.model.data.AccountInfo;
+import org.l2jmobius.loginserver.network.ConnectionState;
+import org.l2jmobius.loginserver.network.LoginClient;
+import org.l2jmobius.loginserver.network.serverpackets.AccountKicked;
+import org.l2jmobius.loginserver.network.serverpackets.AccountKicked.AccountKickedReason;
+import org.l2jmobius.loginserver.network.serverpackets.LoginFail.LoginFailReason;
+import org.l2jmobius.loginserver.network.serverpackets.LoginOk;
+import org.l2jmobius.loginserver.network.serverpackets.ServerList;
 
 /**
  * <pre>

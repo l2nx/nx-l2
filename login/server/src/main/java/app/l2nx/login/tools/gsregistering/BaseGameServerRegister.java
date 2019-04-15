@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.tools.gsregistering;
+package org.l2jmobius.tools.gsregistering;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -29,11 +29,11 @@ import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.ResourceBundle;
 
-import com.l2jmobius.Config;
-import com.l2jmobius.Server;
-import com.l2jmobius.commons.database.DatabaseFactory;
-import com.l2jmobius.commons.util.CommonUtil;
-import com.l2jmobius.loginserver.GameServerTable;
+import org.l2jmobius.Config;
+import org.l2jmobius.Server;
+import org.l2jmobius.commons.database.DatabaseFactory;
+import org.l2jmobius.commons.util.CommonUtil;
+import org.l2jmobius.loginserver.GameServerTable;
 
 /**
  * The Class BaseGameServerRegister.

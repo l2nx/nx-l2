@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.datatables;
+package org.l2jmobius.gameserver.datatables;
 
 import java.io.File;
 import java.sql.Connection;
@@ -36,9 +36,9 @@ import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 
-import com.l2jmobius.Config;
-import com.l2jmobius.commons.database.DatabaseFactory;
-import com.l2jmobius.gameserver.model.holders.BuffSkillHolder;
+import org.l2jmobius.Config;
+import org.l2jmobius.commons.database.DatabaseFactory;
+import org.l2jmobius.gameserver.model.holders.BuffSkillHolder;
 
 /**
  * This class loads available skills and stores players' buff schemes into _schemesTable.

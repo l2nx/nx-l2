@@ -14,23 +14,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.model.base;
+package org.l2jmobius.gameserver.model.base;
 
-import static com.l2jmobius.gameserver.model.base.ClassLevel.FIRST;
-import static com.l2jmobius.gameserver.model.base.ClassLevel.FOURTH;
-import static com.l2jmobius.gameserver.model.base.ClassLevel.SECOND;
-import static com.l2jmobius.gameserver.model.base.ClassLevel.THIRD;
-import static com.l2jmobius.gameserver.model.base.ClassType.Fighter;
-import static com.l2jmobius.gameserver.model.base.ClassType.Mystic;
-import static com.l2jmobius.gameserver.model.base.ClassType.Priest;
+import static org.l2jmobius.gameserver.model.base.ClassLevel.FIRST;
+import static org.l2jmobius.gameserver.model.base.ClassLevel.FOURTH;
+import static org.l2jmobius.gameserver.model.base.ClassLevel.SECOND;
+import static org.l2jmobius.gameserver.model.base.ClassLevel.THIRD;
+import static org.l2jmobius.gameserver.model.base.ClassType.Fighter;
+import static org.l2jmobius.gameserver.model.base.ClassType.Mystic;
+import static org.l2jmobius.gameserver.model.base.ClassType.Priest;
 
 import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.Set;
 
-import com.l2jmobius.Config;
-import com.l2jmobius.gameserver.enums.Race;
-import com.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
+import org.l2jmobius.Config;
+import org.l2jmobius.gameserver.enums.Race;
+import org.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
 
 /**
  * @author luisantonioa

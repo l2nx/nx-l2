@@ -14,15 +14,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.model;
+package org.l2jmobius.gameserver.model;
 
 import java.util.concurrent.ScheduledFuture;
 
-import com.l2jmobius.commons.util.Rnd;
-import com.l2jmobius.gameserver.instancemanager.WalkingManager;
-import com.l2jmobius.gameserver.model.actor.Npc;
-import com.l2jmobius.gameserver.model.events.EventDispatcher;
-import com.l2jmobius.gameserver.model.events.impl.creature.npc.OnNpcMoveRouteFinished;
+import org.l2jmobius.commons.util.Rnd;
+import org.l2jmobius.gameserver.instancemanager.WalkingManager;
+import org.l2jmobius.gameserver.model.actor.Npc;
+import org.l2jmobius.gameserver.model.events.EventDispatcher;
+import org.l2jmobius.gameserver.model.events.impl.creature.npc.OnNpcMoveRouteFinished;
 
 /**
  * Holds info about current walk progress.

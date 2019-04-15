@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.engines.skills;
+package org.l2jmobius.gameserver.engines.skills;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -25,12 +25,12 @@ import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 
-import com.l2jmobius.gameserver.data.xml.impl.EnchantSkillGroupsData;
-import com.l2jmobius.gameserver.engines.DocumentBase;
-import com.l2jmobius.gameserver.model.StatsSet;
-import com.l2jmobius.gameserver.model.conditions.Condition;
-import com.l2jmobius.gameserver.model.skills.EffectScope;
-import com.l2jmobius.gameserver.model.skills.Skill;
+import org.l2jmobius.gameserver.data.xml.impl.EnchantSkillGroupsData;
+import org.l2jmobius.gameserver.engines.DocumentBase;
+import org.l2jmobius.gameserver.model.StatsSet;
+import org.l2jmobius.gameserver.model.conditions.Condition;
+import org.l2jmobius.gameserver.model.skills.EffectScope;
+import org.l2jmobius.gameserver.model.skills.Skill;
 
 /**
  * @author mkizub

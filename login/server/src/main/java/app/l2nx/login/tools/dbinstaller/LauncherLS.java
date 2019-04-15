@@ -14,14 +14,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.tools.dbinstaller;
+package org.l2jmobius.tools.dbinstaller;
 
 import java.awt.HeadlessException;
 
 import javax.swing.UIManager;
 
-import com.l2jmobius.tools.dbinstaller.console.DBInstallerConsole;
-import com.l2jmobius.tools.dbinstaller.gui.DBConfigGUI;
+import org.l2jmobius.tools.dbinstaller.console.DBInstallerConsole;
+import org.l2jmobius.tools.dbinstaller.gui.DBConfigGUI;
 
 /**
  * Contains main class for Database Installer If system doesn't support the graphical UI, start the installer in console mode.

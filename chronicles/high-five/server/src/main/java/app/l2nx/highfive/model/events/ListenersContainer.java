@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.model.events;
+package org.l2jmobius.gameserver.model.events;
 
 import java.util.Map;
 import java.util.Queue;
@@ -22,8 +22,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.function.Predicate;
 
-import com.l2jmobius.commons.util.EmptyQueue;
-import com.l2jmobius.gameserver.model.events.listeners.AbstractEventListener;
+import org.l2jmobius.commons.util.EmptyQueue;
+import org.l2jmobius.gameserver.model.events.listeners.AbstractEventListener;
 
 /**
  * @author UnAfraid

@@ -14,17 +14,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver;
+package org.l2jmobius.gameserver;
 
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
-import com.l2jmobius.Config;
-import com.l2jmobius.commons.concurrent.ThreadPool;
-import com.l2jmobius.gameserver.enums.ItemLocation;
-import com.l2jmobius.gameserver.instancemanager.ItemsOnGroundManager;
-import com.l2jmobius.gameserver.model.items.instance.ItemInstance;
+import org.l2jmobius.Config;
+import org.l2jmobius.commons.concurrent.ThreadPool;
+import org.l2jmobius.gameserver.enums.ItemLocation;
+import org.l2jmobius.gameserver.instancemanager.ItemsOnGroundManager;
+import org.l2jmobius.gameserver.model.items.instance.ItemInstance;
 
 public final class ItemsAutoDestroy
 {

@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.tools.accountmanager;
+package org.l2jmobius.tools.accountmanager;
 
 import java.security.MessageDigest;
 import java.sql.Connection;
@@ -24,9 +24,9 @@ import java.sql.SQLException;
 import java.util.Base64;
 import java.util.Scanner;
 
-import com.l2jmobius.Config;
-import com.l2jmobius.Server;
-import com.l2jmobius.commons.database.DatabaseFactory;
+import org.l2jmobius.Config;
+import org.l2jmobius.Server;
+import org.l2jmobius.commons.database.DatabaseFactory;
 
 /**
  * This class SQL Account Manager

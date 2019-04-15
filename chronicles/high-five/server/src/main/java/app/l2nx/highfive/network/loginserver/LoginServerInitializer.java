@@ -14,13 +14,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.network.loginserver;
+package org.l2jmobius.gameserver.network.loginserver;
 
 import java.nio.ByteOrder;
 
-import com.l2jmobius.commons.network.codecs.LengthFieldBasedFrameEncoder;
-import com.l2jmobius.commons.network.codecs.PacketDecoder;
-import com.l2jmobius.commons.network.codecs.PacketEncoder;
+import org.l2jmobius.commons.network.codecs.LengthFieldBasedFrameEncoder;
+import org.l2jmobius.commons.network.codecs.PacketDecoder;
+import org.l2jmobius.commons.network.codecs.PacketEncoder;
 
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.socket.SocketChannel;

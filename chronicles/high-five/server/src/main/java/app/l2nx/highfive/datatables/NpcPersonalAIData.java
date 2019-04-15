@@ -14,14 +14,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.datatables;
+package org.l2jmobius.gameserver.datatables;
 
 import java.util.HashMap;
 import java.util.Map;
 
-import com.l2jmobius.commons.util.Rnd;
-import com.l2jmobius.gameserver.model.Spawn;
-import com.l2jmobius.gameserver.model.actor.Npc;
+import org.l2jmobius.commons.util.Rnd;
+import org.l2jmobius.gameserver.model.Spawn;
+import org.l2jmobius.gameserver.model.actor.Npc;
 
 /**
  * This class holds parameter, specific to certain NPCs.<br>

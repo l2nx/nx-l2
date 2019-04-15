@@ -14,24 +14,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.model.entity.clanhall;
+package org.l2jmobius.gameserver.model.entity.clanhall;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.util.Calendar;
 import java.util.logging.Level;
 
-import com.l2jmobius.commons.database.DatabaseFactory;
-import com.l2jmobius.gameserver.model.SiegeClan;
-import com.l2jmobius.gameserver.model.SiegeClan.SiegeClanType;
-import com.l2jmobius.gameserver.model.StatsSet;
-import com.l2jmobius.gameserver.model.actor.instance.DoorInstance;
-import com.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
-import com.l2jmobius.gameserver.model.clan.Clan;
-import com.l2jmobius.gameserver.model.entity.ClanHall;
-import com.l2jmobius.gameserver.model.zone.type.SiegableHallZone;
-import com.l2jmobius.gameserver.model.zone.type.SiegeZone;
-import com.l2jmobius.gameserver.network.serverpackets.SiegeInfo;
+import org.l2jmobius.commons.database.DatabaseFactory;
+import org.l2jmobius.gameserver.model.SiegeClan;
+import org.l2jmobius.gameserver.model.SiegeClan.SiegeClanType;
+import org.l2jmobius.gameserver.model.StatsSet;
+import org.l2jmobius.gameserver.model.actor.instance.DoorInstance;
+import org.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
+import org.l2jmobius.gameserver.model.clan.Clan;
+import org.l2jmobius.gameserver.model.entity.ClanHall;
+import org.l2jmobius.gameserver.model.zone.type.SiegableHallZone;
+import org.l2jmobius.gameserver.model.zone.type.SiegeZone;
+import org.l2jmobius.gameserver.network.serverpackets.SiegeInfo;
 
 /**
  * @author BiggBoss

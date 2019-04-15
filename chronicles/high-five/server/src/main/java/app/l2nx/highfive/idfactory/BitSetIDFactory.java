@@ -14,13 +14,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.idfactory;
+package org.l2jmobius.gameserver.idfactory;
 
 import java.util.BitSet;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import com.l2jmobius.commons.concurrent.ThreadPool;
-import com.l2jmobius.gameserver.util.PrimeFinder;
+import org.l2jmobius.commons.concurrent.ThreadPool;
+import org.l2jmobius.gameserver.util.PrimeFinder;
 
 /**
  * This class ..

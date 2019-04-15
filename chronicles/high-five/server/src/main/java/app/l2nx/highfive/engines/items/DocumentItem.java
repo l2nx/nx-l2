@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.engines.items;
+package org.l2jmobius.gameserver.engines.items;
 
 import java.io.File;
 import java.lang.reflect.Constructor;
@@ -26,10 +26,10 @@ import java.util.logging.Level;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 
-import com.l2jmobius.gameserver.engines.DocumentBase;
-import com.l2jmobius.gameserver.model.StatsSet;
-import com.l2jmobius.gameserver.model.conditions.Condition;
-import com.l2jmobius.gameserver.model.items.Item;
+import org.l2jmobius.gameserver.engines.DocumentBase;
+import org.l2jmobius.gameserver.model.StatsSet;
+import org.l2jmobius.gameserver.model.conditions.Condition;
+import org.l2jmobius.gameserver.model.items.Item;
 
 /**
  * @author mkizub, JIV
@@ -167,7 +167,7 @@ public final class DocumentItem extends DocumentBase
 		
 		try
 		{
-			final Constructor<?> itemClass = Class.forName("com.l2jmobius.gameserver.model.items." + _currentItem.type).getConstructor(StatsSet.class);
+			final Constructor<?> itemClass = Class.forName("org.l2jmobius.gameserver.model.items." + _currentItem.type).getConstructor(StatsSet.class);
 			_currentItem.item = (Item) itemClass.newInstance(_currentItem.set);
 		}
 		catch (Exception e)

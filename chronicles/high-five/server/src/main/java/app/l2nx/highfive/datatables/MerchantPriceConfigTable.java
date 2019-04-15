@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.datatables;
+package org.l2jmobius.gameserver.datatables;
 
 import java.io.File;
 import java.io.IOException;
@@ -30,12 +30,12 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.xml.sax.SAXException;
 
-import com.l2jmobius.Config;
-import com.l2jmobius.gameserver.InstanceListManager;
-import com.l2jmobius.gameserver.instancemanager.CastleManager;
-import com.l2jmobius.gameserver.instancemanager.ZoneManager;
-import com.l2jmobius.gameserver.model.actor.instance.MerchantInstance;
-import com.l2jmobius.gameserver.model.entity.Castle;
+import org.l2jmobius.Config;
+import org.l2jmobius.gameserver.InstanceListManager;
+import org.l2jmobius.gameserver.instancemanager.CastleManager;
+import org.l2jmobius.gameserver.instancemanager.ZoneManager;
+import org.l2jmobius.gameserver.model.actor.instance.MerchantInstance;
+import org.l2jmobius.gameserver.model.entity.Castle;
 
 /**
  * @author KenM

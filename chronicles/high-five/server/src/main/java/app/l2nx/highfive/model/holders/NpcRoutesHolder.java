@@ -14,14 +14,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.model.holders;
+package org.l2jmobius.gameserver.model.holders;
 
 import java.util.HashMap;
 import java.util.Map;
 
-import com.l2jmobius.gameserver.model.Location;
-import com.l2jmobius.gameserver.model.actor.Npc;
-import com.l2jmobius.gameserver.model.interfaces.ILocational;
+import org.l2jmobius.gameserver.model.Location;
+import org.l2jmobius.gameserver.model.actor.Npc;
+import org.l2jmobius.gameserver.model.interfaces.ILocational;
 
 /**
  * Holds depending between NPC's spawn point and route

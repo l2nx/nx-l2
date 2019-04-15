@@ -14,16 +14,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.tools.dbinstaller.console;
+package org.l2jmobius.tools.dbinstaller.console;
 
 import java.sql.Connection;
 import java.util.Scanner;
 import java.util.prefs.Preferences;
 
-import com.l2jmobius.tools.dbinstaller.DBOutputInterface;
-import com.l2jmobius.tools.dbinstaller.RunTasks;
-import com.l2jmobius.tools.dbinstaller.util.CloseShieldedInputStream;
-import com.l2jmobius.tools.dbinstaller.util.mysql.MySqlConnect;
+import org.l2jmobius.tools.dbinstaller.DBOutputInterface;
+import org.l2jmobius.tools.dbinstaller.RunTasks;
+import org.l2jmobius.tools.dbinstaller.util.CloseShieldedInputStream;
+import org.l2jmobius.tools.dbinstaller.util.mysql.MySqlConnect;
 
 /**
  * @author mrTJO

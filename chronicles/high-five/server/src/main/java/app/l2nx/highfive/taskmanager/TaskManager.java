@@ -14,11 +14,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.taskmanager;
+package org.l2jmobius.gameserver.taskmanager;
 
-import static com.l2jmobius.gameserver.taskmanager.TaskTypes.TYPE_NONE;
-import static com.l2jmobius.gameserver.taskmanager.TaskTypes.TYPE_SHEDULED;
-import static com.l2jmobius.gameserver.taskmanager.TaskTypes.TYPE_TIME;
+import static org.l2jmobius.gameserver.taskmanager.TaskTypes.TYPE_NONE;
+import static org.l2jmobius.gameserver.taskmanager.TaskTypes.TYPE_SHEDULED;
+import static org.l2jmobius.gameserver.taskmanager.TaskTypes.TYPE_TIME;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -35,20 +35,20 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import com.l2jmobius.commons.concurrent.ThreadPool;
-import com.l2jmobius.commons.database.DatabaseFactory;
-import com.l2jmobius.gameserver.taskmanager.tasks.TaskBirthday;
-import com.l2jmobius.gameserver.taskmanager.tasks.TaskClanLeaderApply;
-import com.l2jmobius.gameserver.taskmanager.tasks.TaskCleanUp;
-import com.l2jmobius.gameserver.taskmanager.tasks.TaskDailySkillReuseClean;
-import com.l2jmobius.gameserver.taskmanager.tasks.TaskGlobalVariablesSave;
-import com.l2jmobius.gameserver.taskmanager.tasks.TaskNevit;
-import com.l2jmobius.gameserver.taskmanager.tasks.TaskOlympiadSave;
-import com.l2jmobius.gameserver.taskmanager.tasks.TaskRaidPointsReset;
-import com.l2jmobius.gameserver.taskmanager.tasks.TaskRecom;
-import com.l2jmobius.gameserver.taskmanager.tasks.TaskRestart;
-import com.l2jmobius.gameserver.taskmanager.tasks.TaskSevenSignsUpdate;
-import com.l2jmobius.gameserver.taskmanager.tasks.TaskShutdown;
+import org.l2jmobius.commons.concurrent.ThreadPool;
+import org.l2jmobius.commons.database.DatabaseFactory;
+import org.l2jmobius.gameserver.taskmanager.tasks.TaskBirthday;
+import org.l2jmobius.gameserver.taskmanager.tasks.TaskClanLeaderApply;
+import org.l2jmobius.gameserver.taskmanager.tasks.TaskCleanUp;
+import org.l2jmobius.gameserver.taskmanager.tasks.TaskDailySkillReuseClean;
+import org.l2jmobius.gameserver.taskmanager.tasks.TaskGlobalVariablesSave;
+import org.l2jmobius.gameserver.taskmanager.tasks.TaskNevit;
+import org.l2jmobius.gameserver.taskmanager.tasks.TaskOlympiadSave;
+import org.l2jmobius.gameserver.taskmanager.tasks.TaskRaidPointsReset;
+import org.l2jmobius.gameserver.taskmanager.tasks.TaskRecom;
+import org.l2jmobius.gameserver.taskmanager.tasks.TaskRestart;
+import org.l2jmobius.gameserver.taskmanager.tasks.TaskSevenSignsUpdate;
+import org.l2jmobius.gameserver.taskmanager.tasks.TaskShutdown;
 
 /**
  * @author Layane

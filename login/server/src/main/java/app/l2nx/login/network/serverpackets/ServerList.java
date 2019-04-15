@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.loginserver.network.serverpackets;
+package org.l2jmobius.loginserver.network.serverpackets;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -23,13 +23,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 
-import com.l2jmobius.commons.network.IOutgoingPacket;
-import com.l2jmobius.commons.network.PacketWriter;
-import com.l2jmobius.loginserver.GameServerTable;
-import com.l2jmobius.loginserver.GameServerTable.GameServerInfo;
-import com.l2jmobius.loginserver.network.LoginClient;
-import com.l2jmobius.loginserver.network.OutgoingPackets;
-import com.l2jmobius.loginserver.network.gameserverpackets.ServerStatus;
+import org.l2jmobius.commons.network.IOutgoingPacket;
+import org.l2jmobius.commons.network.PacketWriter;
+import org.l2jmobius.loginserver.GameServerTable;
+import org.l2jmobius.loginserver.GameServerTable.GameServerInfo;
+import org.l2jmobius.loginserver.network.LoginClient;
+import org.l2jmobius.loginserver.network.OutgoingPackets;
+import org.l2jmobius.loginserver.network.gameserverpackets.ServerStatus;
 
 /**
  * ServerList

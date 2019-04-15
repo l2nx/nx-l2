@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.tools.geodataconverter;
+package org.l2jmobius.tools.geodataconverter;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -25,15 +25,15 @@ import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.Scanner;
 
-import com.l2jmobius.Config;
-import com.l2jmobius.commons.util.PropertiesParser;
-import com.l2jmobius.gameserver.geoengine.geodata.ABlock;
-import com.l2jmobius.gameserver.geoengine.geodata.BlockComplex;
-import com.l2jmobius.gameserver.geoengine.geodata.BlockFlat;
-import com.l2jmobius.gameserver.geoengine.geodata.BlockMultilayer;
-import com.l2jmobius.gameserver.geoengine.geodata.GeoFormat;
-import com.l2jmobius.gameserver.geoengine.geodata.GeoStructure;
-import com.l2jmobius.gameserver.model.World;
+import org.l2jmobius.Config;
+import org.l2jmobius.commons.util.PropertiesParser;
+import org.l2jmobius.gameserver.geoengine.geodata.ABlock;
+import org.l2jmobius.gameserver.geoengine.geodata.BlockComplex;
+import org.l2jmobius.gameserver.geoengine.geodata.BlockFlat;
+import org.l2jmobius.gameserver.geoengine.geodata.BlockMultilayer;
+import org.l2jmobius.gameserver.geoengine.geodata.GeoFormat;
+import org.l2jmobius.gameserver.geoengine.geodata.GeoStructure;
+import org.l2jmobius.gameserver.model.World;
 
 /**
  * @author Hasha

@@ -14,12 +14,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.model.itemauction;
+package org.l2jmobius.gameserver.model.itemauction;
 
 import java.util.Calendar;
 import java.util.concurrent.TimeUnit;
 
-import com.l2jmobius.gameserver.model.StatsSet;
+import org.l2jmobius.gameserver.model.StatsSet;
 
 /**
  * @author Forsaiken

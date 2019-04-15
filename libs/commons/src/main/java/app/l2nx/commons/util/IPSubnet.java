@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.commons.util;
+package org.l2jmobius.commons.util;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;

@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.ui;
+package org.l2jmobius.gameserver.ui;
 
 import java.awt.Desktop;
 import java.awt.Font;
@@ -31,7 +31,7 @@ import javax.swing.JLabel;
 import javax.swing.SwingConstants;
 import javax.swing.WindowConstants;
 
-import com.l2jmobius.Config;
+import org.l2jmobius.Config;
 
 /**
  * @author Mobius
@@ -39,7 +39,7 @@ import com.l2jmobius.Config;
 public class frmAbout
 {
 	private JFrame frmAbout;
-	private static final String URL = "www.l2jmobius.com";
+	private static final String URL = "www.l2jmobius.org";
 	final URI uri;
 	
 	public frmAbout()

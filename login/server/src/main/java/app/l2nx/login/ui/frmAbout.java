@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.loginserver.ui;
+package org.l2jmobius.loginserver.ui;
 
 import java.awt.Desktop;
 import java.awt.Font;
@@ -37,7 +37,7 @@ import javax.swing.WindowConstants;
 public class frmAbout
 {
 	private JFrame frmAbout;
-	private static final String URL = "www.l2jmobius.com";
+	private static final String URL = "www.l2jmobius.org";
 	final URI uri;
 	
 	public frmAbout()

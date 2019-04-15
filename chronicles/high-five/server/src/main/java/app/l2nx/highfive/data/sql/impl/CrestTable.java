@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.data.sql.impl;
+package org.l2jmobius.gameserver.data.sql.impl;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -29,10 +29,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import com.l2jmobius.commons.database.DatabaseFactory;
-import com.l2jmobius.gameserver.model.Crest;
-import com.l2jmobius.gameserver.model.Crest.CrestType;
-import com.l2jmobius.gameserver.model.clan.Clan;
+import org.l2jmobius.commons.database.DatabaseFactory;
+import org.l2jmobius.gameserver.model.Crest;
+import org.l2jmobius.gameserver.model.Crest.CrestType;
+import org.l2jmobius.gameserver.model.clan.Clan;
 
 /**
  * Loads and saves crests from database.

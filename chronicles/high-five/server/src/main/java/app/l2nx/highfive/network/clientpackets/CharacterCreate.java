@@ -14,43 +14,43 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.network.clientpackets;
+package org.l2jmobius.gameserver.network.clientpackets;
 
 import java.util.List;
 import java.util.logging.Logger;
 
-import com.l2jmobius.Config;
-import com.l2jmobius.commons.network.PacketReader;
-import com.l2jmobius.gameserver.data.sql.impl.CharNameTable;
-import com.l2jmobius.gameserver.data.xml.impl.FakePlayerData;
-import com.l2jmobius.gameserver.data.xml.impl.InitialEquipmentData;
-import com.l2jmobius.gameserver.data.xml.impl.InitialShortcutData;
-import com.l2jmobius.gameserver.data.xml.impl.PlayerTemplateData;
-import com.l2jmobius.gameserver.data.xml.impl.SkillData;
-import com.l2jmobius.gameserver.data.xml.impl.SkillTreesData;
-import com.l2jmobius.gameserver.instancemanager.QuestManager;
-import com.l2jmobius.gameserver.model.Location;
-import com.l2jmobius.gameserver.model.SkillLearn;
-import com.l2jmobius.gameserver.model.World;
-import com.l2jmobius.gameserver.model.actor.appearance.PlayerAppearance;
-import com.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
-import com.l2jmobius.gameserver.model.actor.stat.PlayerStat;
-import com.l2jmobius.gameserver.model.actor.templates.PlayerTemplate;
-import com.l2jmobius.gameserver.model.base.ClassId;
-import com.l2jmobius.gameserver.model.events.Containers;
-import com.l2jmobius.gameserver.model.events.EventDispatcher;
-import com.l2jmobius.gameserver.model.events.impl.creature.player.OnPlayerCreate;
-import com.l2jmobius.gameserver.model.items.PlayerItemTemplate;
-import com.l2jmobius.gameserver.model.items.instance.ItemInstance;
-import com.l2jmobius.gameserver.model.quest.Quest;
-import com.l2jmobius.gameserver.model.quest.QuestState;
-import com.l2jmobius.gameserver.model.quest.State;
-import com.l2jmobius.gameserver.network.Disconnection;
-import com.l2jmobius.gameserver.network.GameClient;
-import com.l2jmobius.gameserver.network.serverpackets.CharCreateFail;
-import com.l2jmobius.gameserver.network.serverpackets.CharCreateOk;
-import com.l2jmobius.gameserver.network.serverpackets.CharSelectionInfo;
-import com.l2jmobius.gameserver.util.Util;
+import org.l2jmobius.Config;
+import org.l2jmobius.commons.network.PacketReader;
+import org.l2jmobius.gameserver.data.sql.impl.CharNameTable;
+import org.l2jmobius.gameserver.data.xml.impl.FakePlayerData;
+import org.l2jmobius.gameserver.data.xml.impl.InitialEquipmentData;
+import org.l2jmobius.gameserver.data.xml.impl.InitialShortcutData;
+import org.l2jmobius.gameserver.data.xml.impl.PlayerTemplateData;
+import org.l2jmobius.gameserver.data.xml.impl.SkillData;
+import org.l2jmobius.gameserver.data.xml.impl.SkillTreesData;
+import org.l2jmobius.gameserver.instancemanager.QuestManager;
+import org.l2jmobius.gameserver.model.Location;
+import org.l2jmobius.gameserver.model.SkillLearn;
+import org.l2jmobius.gameserver.model.World;
+import org.l2jmobius.gameserver.model.actor.appearance.PlayerAppearance;
+import org.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
+import org.l2jmobius.gameserver.model.actor.stat.PlayerStat;
+import org.l2jmobius.gameserver.model.actor.templates.PlayerTemplate;
+import org.l2jmobius.gameserver.model.base.ClassId;
+import org.l2jmobius.gameserver.model.events.Containers;
+import org.l2jmobius.gameserver.model.events.EventDispatcher;
+import org.l2jmobius.gameserver.model.events.impl.creature.player.OnPlayerCreate;
+import org.l2jmobius.gameserver.model.items.PlayerItemTemplate;
+import org.l2jmobius.gameserver.model.items.instance.ItemInstance;
+import org.l2jmobius.gameserver.model.quest.Quest;
+import org.l2jmobius.gameserver.model.quest.QuestState;
+import org.l2jmobius.gameserver.model.quest.State;
+import org.l2jmobius.gameserver.network.Disconnection;
+import org.l2jmobius.gameserver.network.GameClient;
+import org.l2jmobius.gameserver.network.serverpackets.CharCreateFail;
+import org.l2jmobius.gameserver.network.serverpackets.CharCreateOk;
+import org.l2jmobius.gameserver.network.serverpackets.CharSelectionInfo;
+import org.l2jmobius.gameserver.util.Util;
 
 public final class CharacterCreate implements IClientIncomingPacket
 {

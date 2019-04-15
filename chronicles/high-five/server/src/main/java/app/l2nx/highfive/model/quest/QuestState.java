@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.model.quest;
+package org.l2jmobius.gameserver.model.quest;
 
 import java.util.Calendar;
 import java.util.HashMap;
@@ -22,19 +22,19 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import com.l2jmobius.gameserver.cache.HtmCache;
-import com.l2jmobius.gameserver.enums.QuestSound;
-import com.l2jmobius.gameserver.enums.QuestType;
-import com.l2jmobius.gameserver.instancemanager.QuestManager;
-import com.l2jmobius.gameserver.model.actor.Creature;
-import com.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
-import com.l2jmobius.gameserver.network.serverpackets.ExShowQuestMark;
-import com.l2jmobius.gameserver.network.serverpackets.PlaySound;
-import com.l2jmobius.gameserver.network.serverpackets.QuestList;
-import com.l2jmobius.gameserver.network.serverpackets.TutorialCloseHtml;
-import com.l2jmobius.gameserver.network.serverpackets.TutorialEnableClientEvent;
-import com.l2jmobius.gameserver.network.serverpackets.TutorialShowHtml;
-import com.l2jmobius.gameserver.network.serverpackets.TutorialShowQuestionMark;
+import org.l2jmobius.gameserver.cache.HtmCache;
+import org.l2jmobius.gameserver.enums.QuestSound;
+import org.l2jmobius.gameserver.enums.QuestType;
+import org.l2jmobius.gameserver.instancemanager.QuestManager;
+import org.l2jmobius.gameserver.model.actor.Creature;
+import org.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
+import org.l2jmobius.gameserver.network.serverpackets.ExShowQuestMark;
+import org.l2jmobius.gameserver.network.serverpackets.PlaySound;
+import org.l2jmobius.gameserver.network.serverpackets.QuestList;
+import org.l2jmobius.gameserver.network.serverpackets.TutorialCloseHtml;
+import org.l2jmobius.gameserver.network.serverpackets.TutorialEnableClientEvent;
+import org.l2jmobius.gameserver.network.serverpackets.TutorialShowHtml;
+import org.l2jmobius.gameserver.network.serverpackets.TutorialShowQuestionMark;
 
 /**
  * Quest state class.
@@ -102,7 +102,7 @@ public final class QuestState
 	
 	/**
 	 * @return the current State of this QuestState
-	 * @see com.l2jmobius.gameserver.model.quest.State
+	 * @see org.l2jmobius.gameserver.model.quest.State
 	 */
 	public byte getState()
 	{
@@ -111,7 +111,7 @@ public final class QuestState
 	
 	/**
 	 * @return {@code true} if the State of this QuestState is CREATED, {@code false} otherwise
-	 * @see com.l2jmobius.gameserver.model.quest.State
+	 * @see org.l2jmobius.gameserver.model.quest.State
 	 */
 	public boolean isCreated()
 	{
@@ -120,7 +120,7 @@ public final class QuestState
 	
 	/**
 	 * @return {@code true} if the State of this QuestState is STARTED, {@code false} otherwise
-	 * @see com.l2jmobius.gameserver.model.quest.State
+	 * @see org.l2jmobius.gameserver.model.quest.State
 	 */
 	public boolean isStarted()
 	{
@@ -129,7 +129,7 @@ public final class QuestState
 	
 	/**
 	 * @return {@code true} if the State of this QuestState is COMPLETED, {@code false} otherwise
-	 * @see com.l2jmobius.gameserver.model.quest.State
+	 * @see org.l2jmobius.gameserver.model.quest.State
 	 */
 	public boolean isCompleted()
 	{
@@ -140,7 +140,7 @@ public final class QuestState
 	 * @param state the new state of the quest to set
 	 * @return {@code true} if state was changed, {@code false} otherwise
 	 * @see #setState(byte state, boolean saveInDb)
-	 * @see com.l2jmobius.gameserver.model.quest.State
+	 * @see org.l2jmobius.gameserver.model.quest.State
 	 */
 	public boolean setState(byte state)
 	{
@@ -152,7 +152,7 @@ public final class QuestState
 	 * @param state the new state of the quest to set
 	 * @param saveInDb if {@code true}, will save the state change in the database
 	 * @return {@code true} if state was changed, {@code false} otherwise
-	 * @see com.l2jmobius.gameserver.model.quest.State
+	 * @see org.l2jmobius.gameserver.model.quest.State
 	 */
 	public boolean setState(byte state, boolean saveInDb)
 	{

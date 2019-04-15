@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.model.zone;
+package org.l2jmobius.gameserver.model.zone;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -23,18 +23,18 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
 
-import com.l2jmobius.gameserver.enums.InstanceType;
-import com.l2jmobius.gameserver.instancemanager.InstanceManager;
-import com.l2jmobius.gameserver.model.WorldObject;
-import com.l2jmobius.gameserver.model.actor.Creature;
-import com.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
-import com.l2jmobius.gameserver.model.events.EventDispatcher;
-import com.l2jmobius.gameserver.model.events.ListenersContainer;
-import com.l2jmobius.gameserver.model.events.impl.creature.OnCreatureZoneEnter;
-import com.l2jmobius.gameserver.model.events.impl.creature.OnCreatureZoneExit;
-import com.l2jmobius.gameserver.model.instancezone.InstanceWorld;
-import com.l2jmobius.gameserver.model.interfaces.ILocational;
-import com.l2jmobius.gameserver.network.serverpackets.IClientOutgoingPacket;
+import org.l2jmobius.gameserver.enums.InstanceType;
+import org.l2jmobius.gameserver.instancemanager.InstanceManager;
+import org.l2jmobius.gameserver.model.WorldObject;
+import org.l2jmobius.gameserver.model.actor.Creature;
+import org.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
+import org.l2jmobius.gameserver.model.events.EventDispatcher;
+import org.l2jmobius.gameserver.model.events.ListenersContainer;
+import org.l2jmobius.gameserver.model.events.impl.creature.OnCreatureZoneEnter;
+import org.l2jmobius.gameserver.model.events.impl.creature.OnCreatureZoneExit;
+import org.l2jmobius.gameserver.model.instancezone.InstanceWorld;
+import org.l2jmobius.gameserver.model.interfaces.ILocational;
+import org.l2jmobius.gameserver.network.serverpackets.IClientOutgoingPacket;
 
 /**
  * Abstract base class for any zone type handles basic operations.

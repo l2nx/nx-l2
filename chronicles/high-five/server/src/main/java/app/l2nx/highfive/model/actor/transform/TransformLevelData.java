@@ -14,13 +14,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.model.actor.transform;
+package org.l2jmobius.gameserver.model.actor.transform;
 
 import java.util.HashMap;
 import java.util.Map;
 
-import com.l2jmobius.gameserver.model.StatsSet;
-import com.l2jmobius.gameserver.model.stats.Stats;
+import org.l2jmobius.gameserver.model.StatsSet;
+import org.l2jmobius.gameserver.model.stats.Stats;
 
 /**
  * @author UnAfraid

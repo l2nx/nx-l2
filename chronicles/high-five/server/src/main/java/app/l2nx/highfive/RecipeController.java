@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver;
+package org.l2jmobius.gameserver;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -23,35 +23,35 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
 
-import com.l2jmobius.Config;
-import com.l2jmobius.commons.concurrent.ThreadPool;
-import com.l2jmobius.commons.util.Rnd;
-import com.l2jmobius.gameserver.data.xml.impl.RecipeData;
-import com.l2jmobius.gameserver.datatables.ItemTable;
-import com.l2jmobius.gameserver.enums.StatType;
-import com.l2jmobius.gameserver.model.ManufactureItem;
-import com.l2jmobius.gameserver.model.RecipeInstance;
-import com.l2jmobius.gameserver.model.RecipeList;
-import com.l2jmobius.gameserver.model.RecipeStatInstance;
-import com.l2jmobius.gameserver.model.TempItem;
-import com.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
-import com.l2jmobius.gameserver.model.itemcontainer.Inventory;
-import com.l2jmobius.gameserver.model.items.Item;
-import com.l2jmobius.gameserver.model.items.instance.ItemInstance;
-import com.l2jmobius.gameserver.model.skills.CommonSkill;
-import com.l2jmobius.gameserver.model.skills.Skill;
-import com.l2jmobius.gameserver.model.stats.Stats;
-import com.l2jmobius.gameserver.network.SystemMessageId;
-import com.l2jmobius.gameserver.network.serverpackets.ActionFailed;
-import com.l2jmobius.gameserver.network.serverpackets.ItemList;
-import com.l2jmobius.gameserver.network.serverpackets.MagicSkillUse;
-import com.l2jmobius.gameserver.network.serverpackets.RecipeBookItemList;
-import com.l2jmobius.gameserver.network.serverpackets.RecipeItemMakeInfo;
-import com.l2jmobius.gameserver.network.serverpackets.RecipeShopItemInfo;
-import com.l2jmobius.gameserver.network.serverpackets.SetupGauge;
-import com.l2jmobius.gameserver.network.serverpackets.StatusUpdate;
-import com.l2jmobius.gameserver.network.serverpackets.SystemMessage;
-import com.l2jmobius.gameserver.util.Util;
+import org.l2jmobius.Config;
+import org.l2jmobius.commons.concurrent.ThreadPool;
+import org.l2jmobius.commons.util.Rnd;
+import org.l2jmobius.gameserver.data.xml.impl.RecipeData;
+import org.l2jmobius.gameserver.datatables.ItemTable;
+import org.l2jmobius.gameserver.enums.StatType;
+import org.l2jmobius.gameserver.model.ManufactureItem;
+import org.l2jmobius.gameserver.model.RecipeInstance;
+import org.l2jmobius.gameserver.model.RecipeList;
+import org.l2jmobius.gameserver.model.RecipeStatInstance;
+import org.l2jmobius.gameserver.model.TempItem;
+import org.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
+import org.l2jmobius.gameserver.model.itemcontainer.Inventory;
+import org.l2jmobius.gameserver.model.items.Item;
+import org.l2jmobius.gameserver.model.items.instance.ItemInstance;
+import org.l2jmobius.gameserver.model.skills.CommonSkill;
+import org.l2jmobius.gameserver.model.skills.Skill;
+import org.l2jmobius.gameserver.model.stats.Stats;
+import org.l2jmobius.gameserver.network.SystemMessageId;
+import org.l2jmobius.gameserver.network.serverpackets.ActionFailed;
+import org.l2jmobius.gameserver.network.serverpackets.ItemList;
+import org.l2jmobius.gameserver.network.serverpackets.MagicSkillUse;
+import org.l2jmobius.gameserver.network.serverpackets.RecipeBookItemList;
+import org.l2jmobius.gameserver.network.serverpackets.RecipeItemMakeInfo;
+import org.l2jmobius.gameserver.network.serverpackets.RecipeShopItemInfo;
+import org.l2jmobius.gameserver.network.serverpackets.SetupGauge;
+import org.l2jmobius.gameserver.network.serverpackets.StatusUpdate;
+import org.l2jmobius.gameserver.network.serverpackets.SystemMessage;
+import org.l2jmobius.gameserver.util.Util;
 
 public class RecipeController
 {

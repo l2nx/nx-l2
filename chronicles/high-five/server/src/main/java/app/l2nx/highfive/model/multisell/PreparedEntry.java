@@ -14,13 +14,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.model.multisell;
+package org.l2jmobius.gameserver.model.multisell;
 
-import static com.l2jmobius.gameserver.model.itemcontainer.Inventory.ADENA_ID;
+import static org.l2jmobius.gameserver.model.itemcontainer.Inventory.ADENA_ID;
 
 import java.util.ArrayList;
 
-import com.l2jmobius.gameserver.model.items.instance.ItemInstance;
+import org.l2jmobius.gameserver.model.items.instance.ItemInstance;
 
 /**
  * @author DS

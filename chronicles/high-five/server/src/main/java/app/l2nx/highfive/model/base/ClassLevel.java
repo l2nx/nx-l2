@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.model.base;
+package org.l2jmobius.gameserver.model.base;
 
 /**
  * @version $Revision: 1.2 $ $Date: 2004/06/27 08:12:59 $

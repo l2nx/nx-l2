@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.network.serverpackets;
+package org.l2jmobius.gameserver.network.serverpackets;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -23,12 +23,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 
-import com.l2jmobius.commons.database.DatabaseFactory;
-import com.l2jmobius.commons.network.PacketWriter;
-import com.l2jmobius.gameserver.data.xml.impl.PrimeShopData;
-import com.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
-import com.l2jmobius.gameserver.model.holders.PrimeShopProductHolder;
-import com.l2jmobius.gameserver.network.OutgoingPackets;
+import org.l2jmobius.commons.database.DatabaseFactory;
+import org.l2jmobius.commons.network.PacketWriter;
+import org.l2jmobius.gameserver.data.xml.impl.PrimeShopData;
+import org.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
+import org.l2jmobius.gameserver.model.holders.PrimeShopProductHolder;
+import org.l2jmobius.gameserver.network.OutgoingPackets;
 
 /**
  * @author Mobius

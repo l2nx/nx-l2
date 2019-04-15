@@ -14,21 +14,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.network.clientpackets;
+package org.l2jmobius.gameserver.network.clientpackets;
 
-import com.l2jmobius.commons.network.PacketReader;
-import com.l2jmobius.gameserver.data.sql.impl.ClanTable;
-import com.l2jmobius.gameserver.model.World;
-import com.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
-import com.l2jmobius.gameserver.model.clan.Clan;
-import com.l2jmobius.gameserver.network.GameClient;
-import com.l2jmobius.gameserver.network.serverpackets.GMHennaInfo;
-import com.l2jmobius.gameserver.network.serverpackets.GMViewCharacterInfo;
-import com.l2jmobius.gameserver.network.serverpackets.GMViewItemList;
-import com.l2jmobius.gameserver.network.serverpackets.GMViewPledgeInfo;
-import com.l2jmobius.gameserver.network.serverpackets.GMViewSkillInfo;
-import com.l2jmobius.gameserver.network.serverpackets.GMViewWarehouseWithdrawList;
-import com.l2jmobius.gameserver.network.serverpackets.GmViewQuestInfo;
+import org.l2jmobius.commons.network.PacketReader;
+import org.l2jmobius.gameserver.data.sql.impl.ClanTable;
+import org.l2jmobius.gameserver.model.World;
+import org.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
+import org.l2jmobius.gameserver.model.clan.Clan;
+import org.l2jmobius.gameserver.network.GameClient;
+import org.l2jmobius.gameserver.network.serverpackets.GMHennaInfo;
+import org.l2jmobius.gameserver.network.serverpackets.GMViewCharacterInfo;
+import org.l2jmobius.gameserver.network.serverpackets.GMViewItemList;
+import org.l2jmobius.gameserver.network.serverpackets.GMViewPledgeInfo;
+import org.l2jmobius.gameserver.network.serverpackets.GMViewSkillInfo;
+import org.l2jmobius.gameserver.network.serverpackets.GMViewWarehouseWithdrawList;
+import org.l2jmobius.gameserver.network.serverpackets.GmViewQuestInfo;
 
 /**
  * @version $Revision: 1.1.2.2.2.2 $ $Date: 2005/03/27 15:29:30 $

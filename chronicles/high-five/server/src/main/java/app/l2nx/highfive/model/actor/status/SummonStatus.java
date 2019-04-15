@@ -14,14 +14,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.model.actor.status;
+package org.l2jmobius.gameserver.model.actor.status;
 
-import com.l2jmobius.gameserver.model.actor.Creature;
-import com.l2jmobius.gameserver.model.actor.Summon;
-import com.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
-import com.l2jmobius.gameserver.model.entity.Duel;
-import com.l2jmobius.gameserver.model.stats.Stats;
-import com.l2jmobius.gameserver.util.Util;
+import org.l2jmobius.gameserver.model.actor.Creature;
+import org.l2jmobius.gameserver.model.actor.Summon;
+import org.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
+import org.l2jmobius.gameserver.model.entity.Duel;
+import org.l2jmobius.gameserver.model.stats.Stats;
+import org.l2jmobius.gameserver.util.Util;
 
 public class SummonStatus extends PlayableStatus
 {

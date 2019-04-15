@@ -14,15 +14,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.model.items;
+package org.l2jmobius.gameserver.model.items;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import com.l2jmobius.gameserver.model.ExtractableProduct;
-import com.l2jmobius.gameserver.model.StatsSet;
-import com.l2jmobius.gameserver.model.itemcontainer.Inventory;
-import com.l2jmobius.gameserver.model.items.type.EtcItemType;
+import org.l2jmobius.gameserver.model.ExtractableProduct;
+import org.l2jmobius.gameserver.model.StatsSet;
+import org.l2jmobius.gameserver.model.itemcontainer.Inventory;
+import org.l2jmobius.gameserver.model.items.type.EtcItemType;
 
 /**
  * This class is dedicated to the management of EtcItem.

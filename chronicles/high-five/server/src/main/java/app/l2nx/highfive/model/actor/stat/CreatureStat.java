@@ -14,22 +14,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.model.actor.stat;
+package org.l2jmobius.gameserver.model.actor.stat;
 
 import java.util.Arrays;
 
-import com.l2jmobius.Config;
-import com.l2jmobius.gameserver.model.Elementals;
-import com.l2jmobius.gameserver.model.PlayerCondOverride;
-import com.l2jmobius.gameserver.model.actor.Creature;
-import com.l2jmobius.gameserver.model.items.Weapon;
-import com.l2jmobius.gameserver.model.items.instance.ItemInstance;
-import com.l2jmobius.gameserver.model.skills.Skill;
-import com.l2jmobius.gameserver.model.stats.Calculator;
-import com.l2jmobius.gameserver.model.stats.MoveType;
-import com.l2jmobius.gameserver.model.stats.Stats;
-import com.l2jmobius.gameserver.model.stats.TraitType;
-import com.l2jmobius.gameserver.model.zone.ZoneId;
+import org.l2jmobius.Config;
+import org.l2jmobius.gameserver.model.Elementals;
+import org.l2jmobius.gameserver.model.PlayerCondOverride;
+import org.l2jmobius.gameserver.model.actor.Creature;
+import org.l2jmobius.gameserver.model.items.Weapon;
+import org.l2jmobius.gameserver.model.items.instance.ItemInstance;
+import org.l2jmobius.gameserver.model.skills.Skill;
+import org.l2jmobius.gameserver.model.stats.Calculator;
+import org.l2jmobius.gameserver.model.stats.MoveType;
+import org.l2jmobius.gameserver.model.stats.Stats;
+import org.l2jmobius.gameserver.model.stats.TraitType;
+import org.l2jmobius.gameserver.model.zone.ZoneId;
 
 public class CreatureStat
 {

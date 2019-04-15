@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.model;
+package org.l2jmobius.gameserver.model;
 
 import java.lang.reflect.Constructor;
 import java.util.Deque;
@@ -24,20 +24,20 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import com.l2jmobius.Config;
-import com.l2jmobius.commons.concurrent.ThreadPool;
-import com.l2jmobius.commons.util.Rnd;
-import com.l2jmobius.gameserver.data.xml.impl.NpcData;
-import com.l2jmobius.gameserver.datatables.NpcPersonalAIData;
-import com.l2jmobius.gameserver.geoengine.GeoEngine;
-import com.l2jmobius.gameserver.model.actor.Attackable;
-import com.l2jmobius.gameserver.model.actor.Npc;
-import com.l2jmobius.gameserver.model.actor.instance.MonsterInstance;
-import com.l2jmobius.gameserver.model.actor.templates.NpcTemplate;
-import com.l2jmobius.gameserver.model.interfaces.IIdentifiable;
-import com.l2jmobius.gameserver.model.interfaces.INamable;
-import com.l2jmobius.gameserver.model.zone.ZoneId;
-import com.l2jmobius.gameserver.model.zone.type.NpcSpawnTerritory;
+import org.l2jmobius.Config;
+import org.l2jmobius.commons.concurrent.ThreadPool;
+import org.l2jmobius.commons.util.Rnd;
+import org.l2jmobius.gameserver.data.xml.impl.NpcData;
+import org.l2jmobius.gameserver.datatables.NpcPersonalAIData;
+import org.l2jmobius.gameserver.geoengine.GeoEngine;
+import org.l2jmobius.gameserver.model.actor.Attackable;
+import org.l2jmobius.gameserver.model.actor.Npc;
+import org.l2jmobius.gameserver.model.actor.instance.MonsterInstance;
+import org.l2jmobius.gameserver.model.actor.templates.NpcTemplate;
+import org.l2jmobius.gameserver.model.interfaces.IIdentifiable;
+import org.l2jmobius.gameserver.model.interfaces.INamable;
+import org.l2jmobius.gameserver.model.zone.ZoneId;
+import org.l2jmobius.gameserver.model.zone.type.NpcSpawnTerritory;
 
 /**
  * This class manages the spawn and respawn of a group of NpcInstance that are in the same are and have the same type.<br>
@@ -131,7 +131,7 @@ public class Spawn extends Location implements IIdentifiable, INamable
 			return;
 		}
 		
-		_constructor = Class.forName("com.l2jmobius.gameserver.model.actor.instance." + _template.getType() + "Instance").asSubclass(Npc.class).getConstructor(NpcTemplate.class);
+		_constructor = Class.forName("org.l2jmobius.gameserver.model.actor.instance." + _template.getType() + "Instance").asSubclass(Npc.class).getConstructor(NpcTemplate.class);
 	}
 	
 	/**

@@ -14,50 +14,50 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.ai;
+package org.l2jmobius.gameserver.ai;
 
-import static com.l2jmobius.gameserver.ai.CtrlIntention.AI_INTENTION_ACTIVE;
-import static com.l2jmobius.gameserver.ai.CtrlIntention.AI_INTENTION_ATTACK;
-import static com.l2jmobius.gameserver.ai.CtrlIntention.AI_INTENTION_CAST;
-import static com.l2jmobius.gameserver.ai.CtrlIntention.AI_INTENTION_FOLLOW;
-import static com.l2jmobius.gameserver.ai.CtrlIntention.AI_INTENTION_IDLE;
-import static com.l2jmobius.gameserver.ai.CtrlIntention.AI_INTENTION_INTERACT;
-import static com.l2jmobius.gameserver.ai.CtrlIntention.AI_INTENTION_MOVE_TO;
-import static com.l2jmobius.gameserver.ai.CtrlIntention.AI_INTENTION_PICK_UP;
-import static com.l2jmobius.gameserver.ai.CtrlIntention.AI_INTENTION_REST;
+import static org.l2jmobius.gameserver.ai.CtrlIntention.AI_INTENTION_ACTIVE;
+import static org.l2jmobius.gameserver.ai.CtrlIntention.AI_INTENTION_ATTACK;
+import static org.l2jmobius.gameserver.ai.CtrlIntention.AI_INTENTION_CAST;
+import static org.l2jmobius.gameserver.ai.CtrlIntention.AI_INTENTION_FOLLOW;
+import static org.l2jmobius.gameserver.ai.CtrlIntention.AI_INTENTION_IDLE;
+import static org.l2jmobius.gameserver.ai.CtrlIntention.AI_INTENTION_INTERACT;
+import static org.l2jmobius.gameserver.ai.CtrlIntention.AI_INTENTION_MOVE_TO;
+import static org.l2jmobius.gameserver.ai.CtrlIntention.AI_INTENTION_PICK_UP;
+import static org.l2jmobius.gameserver.ai.CtrlIntention.AI_INTENTION_REST;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import com.l2jmobius.Config;
-import com.l2jmobius.commons.concurrent.ThreadPool;
-import com.l2jmobius.commons.util.Rnd;
-import com.l2jmobius.gameserver.GameTimeController;
-import com.l2jmobius.gameserver.enums.ItemLocation;
-import com.l2jmobius.gameserver.geoengine.GeoEngine;
-import com.l2jmobius.gameserver.instancemanager.WalkingManager;
-import com.l2jmobius.gameserver.model.Location;
-import com.l2jmobius.gameserver.model.World;
-import com.l2jmobius.gameserver.model.WorldObject;
-import com.l2jmobius.gameserver.model.actor.Attackable;
-import com.l2jmobius.gameserver.model.actor.Creature;
-import com.l2jmobius.gameserver.model.actor.Npc;
-import com.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
-import com.l2jmobius.gameserver.model.actor.templates.NpcTemplate;
-import com.l2jmobius.gameserver.model.effects.EffectType;
-import com.l2jmobius.gameserver.model.events.EventDispatcher;
-import com.l2jmobius.gameserver.model.events.impl.creature.npc.OnNpcMoveFinished;
-import com.l2jmobius.gameserver.model.interfaces.ILocational;
-import com.l2jmobius.gameserver.model.items.Weapon;
-import com.l2jmobius.gameserver.model.items.instance.ItemInstance;
-import com.l2jmobius.gameserver.model.items.type.WeaponType;
-import com.l2jmobius.gameserver.model.skills.Skill;
-import com.l2jmobius.gameserver.model.skills.targets.TargetType;
-import com.l2jmobius.gameserver.network.SystemMessageId;
-import com.l2jmobius.gameserver.network.serverpackets.ActionFailed;
-import com.l2jmobius.gameserver.network.serverpackets.AutoAttackStop;
-import com.l2jmobius.gameserver.taskmanager.AttackStanceTaskManager;
-import com.l2jmobius.gameserver.util.Util;
+import org.l2jmobius.Config;
+import org.l2jmobius.commons.concurrent.ThreadPool;
+import org.l2jmobius.commons.util.Rnd;
+import org.l2jmobius.gameserver.GameTimeController;
+import org.l2jmobius.gameserver.enums.ItemLocation;
+import org.l2jmobius.gameserver.geoengine.GeoEngine;
+import org.l2jmobius.gameserver.instancemanager.WalkingManager;
+import org.l2jmobius.gameserver.model.Location;
+import org.l2jmobius.gameserver.model.World;
+import org.l2jmobius.gameserver.model.WorldObject;
+import org.l2jmobius.gameserver.model.actor.Attackable;
+import org.l2jmobius.gameserver.model.actor.Creature;
+import org.l2jmobius.gameserver.model.actor.Npc;
+import org.l2jmobius.gameserver.model.actor.instance.PlayerInstance;
+import org.l2jmobius.gameserver.model.actor.templates.NpcTemplate;
+import org.l2jmobius.gameserver.model.effects.EffectType;
+import org.l2jmobius.gameserver.model.events.EventDispatcher;
+import org.l2jmobius.gameserver.model.events.impl.creature.npc.OnNpcMoveFinished;
+import org.l2jmobius.gameserver.model.interfaces.ILocational;
+import org.l2jmobius.gameserver.model.items.Weapon;
+import org.l2jmobius.gameserver.model.items.instance.ItemInstance;
+import org.l2jmobius.gameserver.model.items.type.WeaponType;
+import org.l2jmobius.gameserver.model.skills.Skill;
+import org.l2jmobius.gameserver.model.skills.targets.TargetType;
+import org.l2jmobius.gameserver.network.SystemMessageId;
+import org.l2jmobius.gameserver.network.serverpackets.ActionFailed;
+import org.l2jmobius.gameserver.network.serverpackets.AutoAttackStop;
+import org.l2jmobius.gameserver.taskmanager.AttackStanceTaskManager;
+import org.l2jmobius.gameserver.util.Util;
 
 /**
  * This class manages AI of Creature.<br>

@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver;
+package org.l2jmobius.gameserver;
 
 import java.util.Calendar;
 import java.util.Set;
@@ -22,9 +22,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import com.l2jmobius.commons.concurrent.ThreadPool;
-import com.l2jmobius.gameserver.instancemanager.DayNightSpawnManager;
-import com.l2jmobius.gameserver.model.actor.Creature;
+import org.l2jmobius.commons.concurrent.ThreadPool;
+import org.l2jmobius.gameserver.instancemanager.DayNightSpawnManager;
+import org.l2jmobius.gameserver.model.actor.Creature;
 
 /**
  * Game Time controller class.

@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package com.l2jmobius.gameserver.taskmanager.tasks;
+package org.l2jmobius.gameserver.taskmanager.tasks;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -22,14 +22,14 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.concurrent.TimeUnit;
 
-import com.l2jmobius.Config;
-import com.l2jmobius.commons.database.DatabaseFactory;
-import com.l2jmobius.gameserver.instancemanager.MailManager;
-import com.l2jmobius.gameserver.model.entity.Message;
-import com.l2jmobius.gameserver.taskmanager.Task;
-import com.l2jmobius.gameserver.taskmanager.TaskManager;
-import com.l2jmobius.gameserver.taskmanager.TaskManager.ExecutedTask;
-import com.l2jmobius.gameserver.taskmanager.TaskTypes;
+import org.l2jmobius.Config;
+import org.l2jmobius.commons.database.DatabaseFactory;
+import org.l2jmobius.gameserver.instancemanager.MailManager;
+import org.l2jmobius.gameserver.model.entity.Message;
+import org.l2jmobius.gameserver.taskmanager.Task;
+import org.l2jmobius.gameserver.taskmanager.TaskManager;
+import org.l2jmobius.gameserver.taskmanager.TaskManager.ExecutedTask;
+import org.l2jmobius.gameserver.taskmanager.TaskTypes;
 
 /**
  * Birthday Gift task.
