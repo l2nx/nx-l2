@@ -19,7 +19,8 @@
  */
 package app.l2nx.highfive.scripts.handlers.skill.effects;
 
-import app.l2nx.commons.util.Rnd;
+import java.util.concurrent.ThreadLocalRandom;
+
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.actor.Creature;
@@ -135,7 +136,7 @@ public class Fishing extends AbstractEffect
 		}
 		
 		// calculate a position in front of the player with a random distance
-		int distance = Rnd.get(MIN_BAIT_DISTANCE, MAX_BAIT_DISTANCE);
+		int distance = ThreadLocalRandom.current().nextInt(MIN_BAIT_DISTANCE, MAX_BAIT_DISTANCE + 1);
 		final double angle = LocationUtil.convertHeadingToDegree(player.getHeading());
 		final double radian = Math.toRadians(angle);
 		final double sin = Math.sin(radian);

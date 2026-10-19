@@ -21,7 +21,8 @@ package app.l2nx.highfive.scripts.ai.others.AvantGarde;
 
 import java.util.List;
 
-import app.l2nx.commons.util.StringUtil;
+import org.apache.commons.lang3.StringUtils;
+
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.data.xml.MultisellData;
 import app.l2nx.highfive.data.xml.SkillData;
@@ -224,7 +225,7 @@ public class AvantGarde extends Script
 								if (qvar.endsWith(";"))
 								{
 									final String skillIdVar = qvar.replace(";", "");
-									if (StringUtil.isNumeric(skillIdVar))
+									if (StringUtils.isNumeric(skillIdVar))
 									{
 										final int skillId = Integer.parseInt(skillIdVar);
 										final Skill sk = SkillData.getInstance().getSkill(skillId, 1);
@@ -241,7 +242,7 @@ public class AvantGarde extends Script
 								}
 								else if (!qvar.isEmpty() && !qvar.equals("0"))
 								{
-									if (StringUtil.isNumeric(qvar))
+									if (StringUtils.isNumeric(qvar))
 									{
 										final int itemObjId = Integer.parseInt(qvar);
 										Item itemInstance = player.getInventory().getItemByObjectId(itemObjId);

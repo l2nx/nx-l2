@@ -28,12 +28,12 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Calendar;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import app.l2nx.commons.database.DatabaseFactory;
 import app.l2nx.commons.threads.ThreadPool;
-import app.l2nx.commons.util.Rnd;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.item.instance.Item;
@@ -241,7 +241,7 @@ public class LotteryManager
 				
 				while (found)
 				{
-					luckynum = Rnd.get(20) + 1;
+					luckynum = ThreadLocalRandom.current().nextInt(20) + 1;
 					found = false;
 					for (int j = 0; j < i; j++)
 					{

@@ -19,10 +19,10 @@
  */
 package app.l2nx.highfive.network.clientpackets;
 
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import app.l2nx.commons.util.Rnd;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.data.xml.EnchantSkillGroupsData;
 import app.l2nx.highfive.data.xml.SkillData;
@@ -140,7 +140,7 @@ public class RequestExEnchantSkillSafe extends ClientPacket
 			}
 			
 			// ok. Destroy ONE copy of the book
-			if (Rnd.get(100) <= rate)
+			if (ThreadLocalRandom.current().nextInt(100) <= rate)
 			{
 				if (GeneralConfig.LOG_SKILL_ENCHANTS)
 				{

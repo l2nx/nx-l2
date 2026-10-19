@@ -19,7 +19,8 @@
  */
 package app.l2nx.highfive.scripts.ai.others.TeleportToUndergroundColiseum;
 
-import app.l2nx.commons.util.StringUtil;
+import org.apache.commons.lang3.StringUtils;
+
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
@@ -105,7 +106,7 @@ public class TeleportToUndergroundColiseum extends Script
 		{
 			player.teleToLocation(getRandomEntry(RETURN_LOCS), false);
 		}
-		else if (StringUtil.isNumeric(event))
+		else if (StringUtils.isNumeric(event))
 		{
 			final int val = Integer.parseInt(event) - 1;
 			player.teleToLocation(getRandomEntry(MANAGERS_LOCS[val]), false);

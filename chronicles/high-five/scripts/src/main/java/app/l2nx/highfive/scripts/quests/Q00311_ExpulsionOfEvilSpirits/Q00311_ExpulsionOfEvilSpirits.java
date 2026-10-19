@@ -21,9 +21,9 @@ package app.l2nx.highfive.scripts.quests.Q00311_ExpulsionOfEvilSpirits;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ThreadLocalRandom;
 
 import app.l2nx.commons.threads.ThreadPool;
-import app.l2nx.commons.util.Rnd;
 import app.l2nx.highfive.data.xml.SkillData;
 import app.l2nx.highfive.entity.actor.Attackable;
 import app.l2nx.highfive.entity.actor.Creature;
@@ -140,7 +140,8 @@ public class Q00311_ExpulsionOfEvilSpirits extends Quest
 		{
 			if (!checkIfSpawned(VARANGKA + 1) && checkIfSpawned(VARANGKA))
 			{
-				_varangkaMinion1 = addSpawn(VARANGKA + 1, player.getX() + Rnd.get(10, 50), player.getY() + Rnd.get(10, 50), -967, 0, false, 0);
+				final ThreadLocalRandom random = ThreadLocalRandom.current();
+				_varangkaMinion1 = addSpawn(VARANGKA + 1, player.getX() + random.nextInt(10, 51), player.getY() + random.nextInt(10, 51), -967, 0, false, 0);
 				_varangkaMinion1.setRunning();
 				
 				final Player targetPlayer = _varangka.getTarget().asPlayer();
@@ -154,7 +155,8 @@ public class Q00311_ExpulsionOfEvilSpirits extends Quest
 		{
 			if (!checkIfSpawned(VARANGKA + 2) && checkIfSpawned(VARANGKA))
 			{
-				_varangkaMinion2 = addSpawn(VARANGKA + 2, player.getX() + Rnd.get(10, 50), player.getY() + Rnd.get(10, 50), -967, 0, false, 0);
+				final ThreadLocalRandom random = ThreadLocalRandom.current();
+				_varangkaMinion2 = addSpawn(VARANGKA + 2, player.getX() + random.nextInt(10, 51), player.getY() + random.nextInt(10, 51), -967, 0, false, 0);
 				_varangkaMinion2.setRunning();
 				
 				final Player targetPlayer = _varangka.getTarget().asPlayer();
@@ -254,7 +256,7 @@ public class Q00311_ExpulsionOfEvilSpirits extends Quest
 				cancelQuestTimers("minion2");
 				_varangkaMinion1 = null;
 				_varangkaMinion2 = null;
-				final long respawn = Rnd.get(14400000, 28800000);
+				final long respawn = ThreadLocalRandom.current().nextInt(14400000, 28800001);
 				GlobalVariablesManager.getInstance().set("VarangkaRespawn", System.currentTimeMillis() + respawn);
 				startQuestTimer("altarSpawn", respawn, null, null);
 				takeItems(member, PROTECTION_SOULS_PENDANT, 1);
@@ -263,13 +265,13 @@ public class Q00311_ExpulsionOfEvilSpirits extends Quest
 			else if (npc.getId() == (VARANGKA + 1))
 			{
 				_varangkaMinion1 = null;
-				startQuestTimer("minion1", Rnd.get(60000, 120000), npc, killer);
+				startQuestTimer("minion1", ThreadLocalRandom.current().nextInt(60000, 120001), npc, killer);
 				return;
 			}
 			else if (npc.getId() == (VARANGKA + 2))
 			{
 				_varangkaMinion2 = null;
-				startQuestTimer("minion2", Rnd.get(60000, 120000), npc, killer);
+				startQuestTimer("minion2", ThreadLocalRandom.current().nextInt(60000, 120001), npc, killer);
 				return;
 			}
 			
@@ -285,7 +287,7 @@ public class Q00311_ExpulsionOfEvilSpirits extends Quest
 				qs.setMemoStateEx(1, count);
 			}
 			
-			if (MONSTERS.get(npc.getId()) < Rnd.get(1d))
+			if (MONSTERS.get(npc.getId()) < ThreadLocalRandom.current().nextDouble())
 			{
 				giveItems(member, RAGNA_ORCS_AMULET, 1);
 			}
@@ -318,19 +320,20 @@ public class Q00311_ExpulsionOfEvilSpirits extends Quest
 			return;
 		}
 		
-		if (hasQuestItems(player, PROTECTION_SOULS_PENDANT) && (Rnd.get(100) < 20))
+		final ThreadLocalRandom random = ThreadLocalRandom.current();
+		if (hasQuestItems(player, PROTECTION_SOULS_PENDANT) && (random.nextInt(100) < 20))
 		{
 			if ((_varangka == null) && !checkIfSpawned(VARANGKA))
 			{
 				_varangka = addSpawn(VARANGKA, 74914, -101922, -967, 0, false, 0);
 				if ((_varangkaMinion1 == null) && !checkIfSpawned(VARANGKA + 1))
 				{
-					_varangkaMinion1 = addSpawn(VARANGKA + 1, 74914 + Rnd.get(10, 50), -101922 + Rnd.get(10, 50), -967, 0, false, 0);
+					_varangkaMinion1 = addSpawn(VARANGKA + 1, 74914 + random.nextInt(10, 51), -101922 + random.nextInt(10, 51), -967, 0, false, 0);
 				}
-				
+
 				if ((_varangkaMinion2 == null) && !checkIfSpawned(VARANGKA + 2))
 				{
-					_varangkaMinion2 = addSpawn(VARANGKA + 2, 74914 + Rnd.get(10, 50), -101922 + Rnd.get(10, 50), -967, 0, false, 0);
+					_varangkaMinion2 = addSpawn(VARANGKA + 2, 74914 + random.nextInt(10, 51), -101922 + random.nextInt(10, 51), -967, 0, false, 0);
 				}
 				
 				for (Creature creature : ALTARZONE.getCharactersInside())

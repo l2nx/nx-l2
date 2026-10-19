@@ -23,8 +23,8 @@
 package app.l2nx.highfive.network.clientpackets;
 
 import java.util.Arrays;
+import java.util.concurrent.ThreadLocalRandom;
 
-import app.l2nx.commons.util.Rnd;
 import app.l2nx.highfive.ai.Action;
 import app.l2nx.highfive.ai.Intention;
 import app.l2nx.highfive.ai.NextAction;
@@ -502,7 +502,7 @@ public class RequestActionUse extends ClientPacket
 			{
 				if (validateSummon(player, summon, true) && (summon.getId() == SIN_EATER_ID))
 				{
-					summon.broadcastPacket(new NpcSay(summon.getObjectId(), ChatType.NPC_GENERAL, summon.getId(), NPC_STRINGS[Rnd.get(NPC_STRINGS.length)]));
+					summon.broadcastPacket(new NpcSay(summon.getObjectId(), ChatType.NPC_GENERAL, summon.getId(), NPC_STRINGS[ThreadLocalRandom.current().nextInt(NPC_STRINGS.length)]));
 				}
 				break;
 			}

@@ -29,7 +29,6 @@ import java.util.Map;
 import java.util.logging.Logger;
 
 import app.l2nx.commons.util.ConfigReader;
-import app.l2nx.commons.util.StringUtil;
 
 /**
  * This class loads all the custom dualbox check related configurations.
@@ -68,7 +67,7 @@ public class DualboxCheckConfig
 			final String[] entrySplit = entry.split(",");
 			if (entrySplit.length != 2)
 			{
-				LOGGER.warning(StringUtil.concat("DualboxCheck[DualboxCheckConfig.load()]: invalid config property -> DualboxCheckWhitelist \"", entry, "\""));
+				LOGGER.warning("DualboxCheck[DualboxCheckConfig.load()]: invalid config property -> DualboxCheckWhitelist \"" + entry + "\"");
 			}
 			else
 			{
@@ -80,11 +79,11 @@ public class DualboxCheckConfig
 				}
 				catch (UnknownHostException e)
 				{
-					LOGGER.warning(StringUtil.concat("DualboxCheck[DualboxCheckConfig.load()]: invalid address -> DualboxCheckWhitelist \"", entrySplit[0], "\""));
+					LOGGER.warning("DualboxCheck[DualboxCheckConfig.load()]: invalid address -> DualboxCheckWhitelist \"" + entrySplit[0] + "\"");
 				}
 				catch (NumberFormatException e)
 				{
-					LOGGER.warning(StringUtil.concat("DualboxCheck[DualboxCheckConfig.load()]: invalid number -> DualboxCheckWhitelist \"", entrySplit[1], "\""));
+					LOGGER.warning("DualboxCheck[DualboxCheckConfig.load()]: invalid number -> DualboxCheckWhitelist \"" + entrySplit[1] + "\"");
 				}
 			}
 		}

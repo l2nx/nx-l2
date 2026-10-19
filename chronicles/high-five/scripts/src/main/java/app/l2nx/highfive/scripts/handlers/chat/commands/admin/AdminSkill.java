@@ -32,7 +32,6 @@ import java.util.TreeMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import app.l2nx.commons.util.StringUtil;
 import app.l2nx.highfive.data.xml.ClassListData;
 import app.l2nx.highfive.data.xml.SkillData;
 import app.l2nx.highfive.data.xml.SkillTreeData;
@@ -390,7 +389,7 @@ public class AdminSkill implements IAdminCommandHandler
 		final StringBuilder sb = new StringBuilder();
 		for (Race race : races)
 		{
-			sb.append("<tr><td><a action=\"bypass admin_skill_race " + race + "\">" + StringUtil.enumToString(race) + "</a></td></tr>");
+			sb.append("<tr><td><a action=\"bypass admin_skill_race " + race + "\">" + enumToString(race) + "</a></td></tr>");
 		}
 		
 		final NpcHtmlMessage html = new NpcHtmlMessage();
@@ -448,7 +447,7 @@ public class AdminSkill implements IAdminCommandHandler
 		
 		final NpcHtmlMessage html = new NpcHtmlMessage();
 		html.setFile(player, "data/html/admin/charskills_race.htm");
-		html.replace("%racename%", StringUtil.enumToString(race));
+		html.replace("%racename%", enumToString(race));
 		html.replace("%classlist%", sb.toString());
 		player.sendPacket(html);
 	}
@@ -776,7 +775,37 @@ public class AdminSkill implements IAdminCommandHandler
 		
 		showMainPage(activeChar);
 	}
-	
+
+	/**
+	 * Formats an enum constant name for display, e.g. {@code DARK_ELF} as "Dark Elf".
+	 */
+	private static String enumToString(Enum<?> enumeration)
+	{
+		final String name = enumeration.name().toLowerCase();
+		final StringBuilder sb = new StringBuilder(name.length());
+		boolean capitalizeNext = true;
+		for (int i = 0; i < name.length(); i++)
+		{
+			final char c = name.charAt(i);
+			if (c == '_')
+			{
+				sb.append(' ');
+				capitalizeNext = true;
+			}
+			else if (capitalizeNext)
+			{
+				sb.append(Character.toUpperCase(c));
+				capitalizeNext = false;
+			}
+			else
+			{
+				sb.append(c);
+			}
+		}
+
+		return sb.toString();
+	}
+
 	@Override
 	public String[] getCommandList()
 	{

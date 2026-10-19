@@ -26,9 +26,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Future;
+import java.util.concurrent.ThreadLocalRandom;
 
 import app.l2nx.commons.threads.ThreadPool;
-import app.l2nx.commons.util.Rnd;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.config.NpcConfig;
 import app.l2nx.highfive.config.custom.ChampionMonstersConfig;
@@ -637,7 +637,7 @@ public class AttackableAI extends CreatureAI
 		}
 		
 		// Chance to forget attackers after some time.
-		if ((npc.getCurrentHp() == npc.getMaxHp()) && (npc.getCurrentMp() == npc.getMaxMp()) && !npc.getAttackByList().isEmpty() && (Rnd.get(500) == 0))
+		if ((npc.getCurrentHp() == npc.getMaxHp()) && (npc.getCurrentMp() == npc.getMaxMp()) && !npc.getAttackByList().isEmpty() && (ThreadLocalRandom.current().nextInt(500) == 0))
 		{
 			npc.clearAggroList();
 			npc.getAttackByList().clear();
@@ -696,8 +696,9 @@ public class AttackableAI extends CreatureAI
 			
 			if (npc.calculateDistance2D(leader) > offset)
 			{
-				int x1 = Rnd.get(minRadius * 2, offset * 2); // x
-				int y1 = Rnd.get(x1, offset * 2); // distance
+				final ThreadLocalRandom random = ThreadLocalRandom.current();
+				int x1 = random.nextInt(minRadius * 2, (offset * 2) + 1); // x
+				int y1 = random.nextInt(x1, (offset * 2) + 1); // distance
 				y1 = (int) Math.sqrt((y1 * y1) - (x1 * x1)); // y
 				x1 = x1 > (offset + minRadius) ? (leader.getX() + x1) - offset : (leader.getX() - x1) + minRadius;
 				y1 = y1 > (offset + minRadius) ? (leader.getY() + y1) - offset : (leader.getY() - y1) + minRadius;
@@ -707,7 +708,7 @@ public class AttackableAI extends CreatureAI
 				return;
 			}
 			
-			if (Rnd.get(RANDOM_WALK_RATE) == 0)
+			if (ThreadLocalRandom.current().nextInt(RANDOM_WALK_RATE) == 0)
 			{
 				for (Skill sk : npc.getTemplate().getAISkills(AISkillScope.BUFF))
 				{
@@ -739,7 +740,7 @@ public class AttackableAI extends CreatureAI
 			}
 		}
 		// Order to the Monster to random walk (1/100).
-		else if ((npc.getSpawn() != null) && (Rnd.get(RANDOM_WALK_RATE) == 0) && npc.isRandomWalkingEnabled())
+		else if ((npc.getSpawn() != null) && (ThreadLocalRandom.current().nextInt(RANDOM_WALK_RATE) == 0) && npc.isRandomWalkingEnabled())
 		{
 			for (Skill sk : npc.getTemplate().getAISkills(AISkillScope.BUFF))
 			{
@@ -774,10 +775,12 @@ public class AttackableAI extends CreatureAI
 			if (spawnTerritory != null)
 			{
 				// Near a territory border most offsets fall outside, so give the roll a few attempts before giving up.
+				final ThreadLocalRandom random = ThreadLocalRandom.current();
+				final int driftDiameter = NpcConfig.MAX_DRIFT_RANGE * 2;
 				for (int i = 0; i < WANDER_ATTEMPTS; i++)
 				{
-					final int deltaX = Rnd.get(NpcConfig.MAX_DRIFT_RANGE * 2); // x
-					int deltaY = Rnd.get(deltaX, NpcConfig.MAX_DRIFT_RANGE * 2); // distance
+					final int deltaX = driftDiameter > 0 ? random.nextInt(driftDiameter) : 0; // x
+					int deltaY = deltaX < driftDiameter ? random.nextInt(deltaX, driftDiameter + 1) : deltaX; // distance
 					deltaY = (int) Math.sqrt((deltaY * deltaY) - (deltaX * deltaX)); // y
 					final int x2 = (deltaX + npc.getX()) - NpcConfig.MAX_DRIFT_RANGE;
 					final int y2 = (deltaY + npc.getY()) - NpcConfig.MAX_DRIFT_RANGE;
@@ -803,8 +806,10 @@ public class AttackableAI extends CreatureAI
 			int z1 = npc.getSpawn().getZ();
 			if (npc.isInsideRadius2D(x1, y1, 0, NpcConfig.MAX_DRIFT_RANGE))
 			{
-				final int deltaX = Rnd.get(NpcConfig.MAX_DRIFT_RANGE * 2); // x
-				int deltaY = Rnd.get(deltaX, NpcConfig.MAX_DRIFT_RANGE * 2); // distance
+				final ThreadLocalRandom random = ThreadLocalRandom.current();
+				final int driftDiameter = NpcConfig.MAX_DRIFT_RANGE * 2;
+				final int deltaX = driftDiameter > 0 ? random.nextInt(driftDiameter) : 0; // x
+				int deltaY = deltaX < driftDiameter ? random.nextInt(deltaX, driftDiameter + 1) : deltaX; // distance
 				deltaY = (int) Math.sqrt((deltaY * deltaY) - (deltaX * deltaX)); // y
 				x1 = (deltaX + x1) - NpcConfig.MAX_DRIFT_RANGE;
 				y1 = (deltaY + y1) - NpcConfig.MAX_DRIFT_RANGE;
@@ -993,7 +998,7 @@ public class AttackableAI extends CreatureAI
 		final List<Skill> aiSuicideSkills = template.getAISkills(AISkillScope.SUICIDE);
 		if (!aiSuicideSkills.isEmpty() && ((int) ((npc.getCurrentHp() / npc.getMaxHp()) * 100) < 30))
 		{
-			final Skill skill = aiSuicideSkills.get(Rnd.get(aiSuicideSkills.size()));
+			final Skill skill = aiSuicideSkills.get(ThreadLocalRandom.current().nextInt(aiSuicideSkills.size()));
 			if (LocationUtil.checkIfInRange(skill.getAffectRange(), npc, mostHate, false) && npc.hasSkillChance() && cast(skill))
 			{
 				return;
@@ -1006,15 +1011,15 @@ public class AttackableAI extends CreatureAI
 		// On l2js because of that sometimes mobs don't attack player only running around player without any sense, so decrease chance for now.
 		final int collision = template.getCollisionRadius();
 		final int combinedCollision = collision + mostHate.getTemplate().getCollisionRadius();
-		if (!npc.isMovementDisabled() && (Rnd.get(100) <= 3))
+		if (!npc.isMovementDisabled() && (ThreadLocalRandom.current().nextInt(100) <= 3))
 		{
 			final Creature currentTarget = mostHate;
 			if (World.getFirstVisibleObject(npc, Attackable.class, nearby -> npc.isInsideRadius2D(nearby, collision) && (nearby != currentTarget)) != null)
 			{
-				int newX = combinedCollision + Rnd.get(40);
-				newX = Rnd.nextBoolean() ? mostHate.getX() + newX : mostHate.getX() - newX;
-				int newY = combinedCollision + Rnd.get(40);
-				newY = Rnd.nextBoolean() ? mostHate.getY() + newY : mostHate.getY() - newY;
+				int newX = combinedCollision + ThreadLocalRandom.current().nextInt(40);
+				newX = ThreadLocalRandom.current().nextBoolean() ? mostHate.getX() + newX : mostHate.getX() - newX;
+				int newY = combinedCollision + ThreadLocalRandom.current().nextInt(40);
+				newY = ThreadLocalRandom.current().nextBoolean() ? mostHate.getY() + newY : mostHate.getY() - newY;
 				if (!npc.isInsideRadius2D(newX, newY, 0, collision))
 				{
 					final int newZ = npc.getZ() + 30;
@@ -1027,7 +1032,7 @@ public class AttackableAI extends CreatureAI
 		}
 		
 		// Calculate Archer movement.
-		if ((!npc.isMovementDisabled()) && (npc.getAiType() == AIType.ARCHER) && (Rnd.get(100) < 15))
+		if ((!npc.isMovementDisabled()) && (npc.getAiType() == AIType.ARCHER) && (ThreadLocalRandom.current().nextInt(100) < 15))
 		{
 			final double distance = npc.calculateDistance2D(mostHate);
 			if (distance <= (60 + combinedCollision))
@@ -1069,16 +1074,16 @@ public class AttackableAI extends CreatureAI
 			if ((npc instanceof RaidBoss) && (_chaosTime > NpcConfig.RAID_CHAOS_TIME))
 			{
 				final double multiplier = npc.asMonster().hasMinions() ? 200 : 100;
-				changeTarget = Rnd.get(100) <= (100 - ((npc.getCurrentHp() * multiplier) / npc.getMaxHp()));
+				changeTarget = ThreadLocalRandom.current().nextInt(100) <= (100 - ((npc.getCurrentHp() * multiplier) / npc.getMaxHp()));
 			}
 			else if ((npc instanceof GrandBoss) && (_chaosTime > NpcConfig.GRAND_CHAOS_TIME))
 			{
 				final double chaosRate = 100 - ((npc.getCurrentHp() * 300) / npc.getMaxHp());
-				changeTarget = ((chaosRate <= 10) && (Rnd.get(100) <= 10)) || ((chaosRate > 10) && (Rnd.get(100) <= chaosRate));
+				changeTarget = ((chaosRate <= 10) && (ThreadLocalRandom.current().nextInt(100) <= 10)) || ((chaosRate > 10) && (ThreadLocalRandom.current().nextInt(100) <= chaosRate));
 			}
 			else if (_chaosTime > NpcConfig.MINION_CHAOS_TIME)
 			{
-				changeTarget = Rnd.get(100) <= (100 - ((npc.getCurrentHp() * 200) / npc.getMaxHp()));
+				changeTarget = ThreadLocalRandom.current().nextInt(100) <= (100 - ((npc.getCurrentHp() * 200) / npc.getMaxHp()));
 			}
 			
 			if (changeTarget)
@@ -1119,7 +1124,7 @@ public class AttackableAI extends CreatureAI
 					if (npc.isMinion())
 					{
 						final Creature leader = npc.getLeader();
-						if ((leader != null) && !leader.isDead() && (Rnd.get(100) > ((leader.getCurrentHp() / leader.getMaxHp()) * 100)))
+						if ((leader != null) && !leader.isDead() && (ThreadLocalRandom.current().nextInt(100) > ((leader.getCurrentHp() / leader.getMaxHp()) * 100)))
 						{
 							for (Skill healSkill : aiHealSkills)
 							{
@@ -1155,7 +1160,7 @@ public class AttackableAI extends CreatureAI
 					}
 					
 					double percentage = (npc.getCurrentHp() / npc.getMaxHp()) * 100;
-					if (Rnd.get(100) < ((100 - percentage) / 3))
+					if (ThreadLocalRandom.current().nextInt(100) < ((100 - percentage) / 3))
 					{
 						for (Skill sk : aiHealSkills)
 						{
@@ -1184,7 +1189,7 @@ public class AttackableAI extends CreatureAI
 						
 						if (sk.getTargetType() == TargetType.ONE)
 						{
-							final Attackable healTarget = World.getFirstVisibleObjectInRange(npc, Attackable.class, sk.getCastRange() + collision, obj -> obj.isDead() && obj.isInMyClan(npc) && (Rnd.get(100) < ((100 - ((obj.getCurrentHp() / obj.getMaxHp()) * 100)) / 10)) && GeoEngine.getInstance().canSeeTarget(npc, obj));
+							final Attackable healTarget = World.getFirstVisibleObjectInRange(npc, Attackable.class, sk.getCastRange() + collision, obj -> obj.isDead() && obj.isInMyClan(npc) && (ThreadLocalRandom.current().nextInt(100) < ((100 - ((obj.getCurrentHp() / obj.getMaxHp()) * 100)) / 10)) && GeoEngine.getInstance().canSeeTarget(npc, obj));
 							if (healTarget != null)
 							{
 								clientStopMoving(null);
@@ -1258,7 +1263,7 @@ public class AttackableAI extends CreatureAI
 						
 						if (sk.getTargetType() == TargetType.ONE)
 						{
-							final Attackable resTarget = World.getFirstVisibleObjectInRange(npc, Attackable.class, sk.getCastRange() + collision, obj -> obj.isDead() && npc.isInMyClan(obj) && (Rnd.get(100) < 10) && GeoEngine.getInstance().canSeeTarget(npc, obj));
+							final Attackable resTarget = World.getFirstVisibleObjectInRange(npc, Attackable.class, sk.getCastRange() + collision, obj -> obj.isDead() && npc.isInMyClan(obj) && (ThreadLocalRandom.current().nextInt(100) < 10) && GeoEngine.getInstance().canSeeTarget(npc, obj));
 							if (resTarget != null)
 							{
 								clientStopMoving(null);
@@ -1291,7 +1296,7 @@ public class AttackableAI extends CreatureAI
 			final List<Skill> shortRangeSkills = npc.getShortRangeSkills();
 			if (!shortRangeSkills.isEmpty() && npc.hasSkillChance() && (npc.calculateDistance2D(mostHate) <= 150))
 			{
-				final Skill shortRangeSkill = shortRangeSkills.get(Rnd.get(shortRangeSkills.size()));
+				final Skill shortRangeSkill = shortRangeSkills.get(ThreadLocalRandom.current().nextInt(shortRangeSkills.size()));
 				final int castRange = shortRangeSkill.getCastRange();
 				if (((castRange < 1) || (npc.calculateDistance3D(mostHate) < castRange)) && checkSkillCastConditions(npc, shortRangeSkill) && allowsParameterizedCast(npc, shortRangeSkill, mostHate))
 				{
@@ -1306,7 +1311,7 @@ public class AttackableAI extends CreatureAI
 			final List<Skill> longRangeSkills = npc.getLongRangeSkills();
 			if (!longRangeSkills.isEmpty() && npc.hasSkillChance())
 			{
-				final Skill longRangeSkill = longRangeSkills.get(Rnd.get(longRangeSkills.size()));
+				final Skill longRangeSkill = longRangeSkills.get(ThreadLocalRandom.current().nextInt(longRangeSkills.size()));
 				final int castRange = longRangeSkill.getCastRange();
 				if (((castRange < 1) || (npc.calculateDistance3D(mostHate) < castRange)) && checkSkillCastConditions(npc, longRangeSkill) && allowsParameterizedCast(npc, longRangeSkill, mostHate))
 				{
@@ -1419,7 +1424,7 @@ public class AttackableAI extends CreatureAI
 			
 			if (!result.isEmpty())
 			{
-				return result.get(Rnd.get(result.size()));
+				return result.get(ThreadLocalRandom.current().nextInt(result.size()));
 			}
 		}
 		
@@ -1607,7 +1612,7 @@ public class AttackableAI extends CreatureAI
 			if (caster.isMinion() && (sk.getTargetType() != TargetType.SELF))
 			{
 				final Creature leader = caster.getLeader();
-				if ((leader != null) && !leader.isDead() && (Rnd.get(100) > ((leader.getCurrentHp() / leader.getMaxHp()) * 100)))
+				if ((leader != null) && !leader.isDead() && (ThreadLocalRandom.current().nextInt(100) > ((leader.getCurrentHp() / leader.getMaxHp()) * 100)))
 				{
 					if (!LocationUtil.checkIfInRange((sk.getCastRange() + caster.getTemplate().getCollisionRadius() + leader.getTemplate().getCollisionRadius()), caster, leader, false) && !isParty(sk) && !caster.isMovementDisabled())
 					{
@@ -1626,7 +1631,7 @@ public class AttackableAI extends CreatureAI
 			}
 			
 			double percentage = (caster.getCurrentHp() / caster.getMaxHp()) * 100;
-			if (Rnd.get(100) < ((100 - percentage) / 3))
+			if (ThreadLocalRandom.current().nextInt(100) < ((100 - percentage) / 3))
 			{
 				clientStopMoving(null);
 				caster.setTarget(caster);
@@ -1637,7 +1642,7 @@ public class AttackableAI extends CreatureAI
 			
 			if (sk.getTargetType() == TargetType.ONE)
 			{
-				final Attackable healTarget = World.getFirstVisibleObjectInRange(caster, Attackable.class, sk.getCastRange() + caster.getTemplate().getCollisionRadius(), obj -> !obj.isDead() && caster.isInMyClan(obj) && (Rnd.get(100) < ((100 - ((obj.getCurrentHp() / obj.getMaxHp()) * 100)) / 10)) && GeoEngine.getInstance().canSeeTarget(caster, obj));
+				final Attackable healTarget = World.getFirstVisibleObjectInRange(caster, Attackable.class, sk.getCastRange() + caster.getTemplate().getCollisionRadius(), obj -> !obj.isDead() && caster.isInMyClan(obj) && (ThreadLocalRandom.current().nextInt(100) < ((100 - ((obj.getCurrentHp() / obj.getMaxHp()) * 100)) / 10)) && GeoEngine.getInstance().canSeeTarget(caster, obj));
 				if (healTarget != null)
 				{
 					clientStopMoving(null);
@@ -1650,7 +1655,7 @@ public class AttackableAI extends CreatureAI
 			
 			if (isParty(sk))
 			{
-				if (World.getFirstVisibleObjectInRange(caster, Attackable.class, sk.getAffectRange() + caster.getTemplate().getCollisionRadius(), obj -> obj.isInMyClan(caster) && (obj.getCurrentHp() < obj.getMaxHp()) && (Rnd.get(100) <= 20)) != null)
+				if (World.getFirstVisibleObjectInRange(caster, Attackable.class, sk.getAffectRange() + caster.getTemplate().getCollisionRadius(), obj -> obj.isInMyClan(caster) && (obj.getCurrentHp() < obj.getMaxHp()) && (ThreadLocalRandom.current().nextInt(100) <= 20)) != null)
 				{
 					clientStopMoving(null);
 					caster.setTarget(caster);
@@ -1831,7 +1836,7 @@ public class AttackableAI extends CreatureAI
 					}
 				}
 				
-				final Attackable resTarget = World.getFirstVisibleObjectInRange(caster, Attackable.class, sk.getCastRange() + caster.getTemplate().getCollisionRadius(), obj -> obj.isDead() && caster.isInMyClan(obj) && (Rnd.get(100) < 10) && GeoEngine.getInstance().canSeeTarget(caster, obj));
+				final Attackable resTarget = World.getFirstVisibleObjectInRange(caster, Attackable.class, sk.getCastRange() + caster.getTemplate().getCollisionRadius(), obj -> obj.isDead() && caster.isInMyClan(obj) && (ThreadLocalRandom.current().nextInt(100) < 10) && GeoEngine.getInstance().canSeeTarget(caster, obj));
 				if (resTarget != null)
 				{
 					clientStopMoving(null);
@@ -1843,7 +1848,7 @@ public class AttackableAI extends CreatureAI
 			}
 			else if (isParty(sk))
 			{
-				if (World.getFirstVisibleObjectInRange(caster, Npc.class, sk.getAffectRange() + caster.getTemplate().getCollisionRadius(), obj -> caster.isInMyClan(obj) && (obj.getCurrentHp() < obj.getMaxHp()) && (Rnd.get(100) <= 20)) != null)
+				if (World.getFirstVisibleObjectInRange(caster, Npc.class, sk.getAffectRange() + caster.getTemplate().getCollisionRadius(), obj -> caster.isInMyClan(obj) && (obj.getCurrentHp() < obj.getMaxHp()) && (ThreadLocalRandom.current().nextInt(100) <= 20)) != null)
 				{
 					clientStopMoving(null);
 					caster.setTarget(caster);
@@ -1900,7 +1905,7 @@ public class AttackableAI extends CreatureAI
 		final double dist = npc.calculateDistance2D(target);
 		
 		// TODO(Zoey76): Review this "magic changes".
-		final int random = Rnd.get(100);
+		final int random = ThreadLocalRandom.current().nextInt(100);
 		if (!target.isImmobilized() && (random < 15) && tryCast(npc, target, AISkillScope.IMMOBILIZE, dist))
 		{
 			return;
@@ -2688,7 +2693,7 @@ public class AttackableAI extends CreatureAI
 		}
 		else
 		{
-			_globalAggro = -(Rnd.get(5) + 4);
+			_globalAggro = -(ThreadLocalRandom.current().nextInt(5) + 4);
 		}
 	}
 	
@@ -2763,7 +2768,7 @@ public class AttackableAI extends CreatureAI
 				return false;
 			}
 		}
-		else if (Rnd.get(SKILL_PROBABILITY_SCALE) >= probability)
+		else if (ThreadLocalRandom.current().nextInt(SKILL_PROBABILITY_SCALE) >= probability)
 		{
 			return false;
 		}

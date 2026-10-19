@@ -45,12 +45,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.apache.commons.lang3.exception.ExceptionUtils;
+
 import app.l2nx.commons.database.DatabaseFactory;
-import app.l2nx.commons.util.HexUtil;
-import app.l2nx.commons.util.TraceUtil;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.config.ServerConfig;
 import app.l2nx.highfive.entity.World;
@@ -144,7 +145,7 @@ public class LoginServerThread extends Thread
 		if (_hexID == null)
 		{
 			_requestID = ServerConfig.REQUEST_ID;
-			_hexID = HexUtil.generateHexBytes(HEX_ID_SIZE);
+			_hexID = generateHexBytes(HEX_ID_SIZE);
 		}
 		else
 		{
@@ -171,7 +172,7 @@ public class LoginServerThread extends Thread
 				_out = new BufferedOutputStream(_socket.getOutputStream());
 				
 				// Initialize Blowfish encryption with default key.
-				final byte[] blowfishKey = HexUtil.generateHexBytes(BLOWFISH_KEY_SIZE);
+				final byte[] blowfishKey = generateHexBytes(BLOWFISH_KEY_SIZE);
 				_blowfish = new LittleEndianBlowfishCipher("_;v.]05-31!|+-%xT!^[$\00".getBytes(StandardCharsets.UTF_8));
 				
 				while (!isInterrupted())
@@ -542,7 +543,23 @@ public class LoginServerThread extends Thread
 	{
 		return new BigInteger(hex).toString(16);
 	}
-	
+
+	private static byte[] generateHexBytes(int size)
+	{
+		final ThreadLocalRandom random = ThreadLocalRandom.current();
+		final byte[] array = new byte[size];
+		random.nextBytes(array);
+		for (int i = 0; i < array.length; i++)
+		{
+			while (array[i] == 0)
+			{
+				array[i] = (byte) random.nextInt(Byte.MAX_VALUE);
+			}
+		}
+
+		return array;
+	}
+
 	/**
 	 * Forcibly kicks player from the game server.
 	 * @param account the account name to kick
@@ -659,7 +676,7 @@ public class LoginServerThread extends Thread
 		catch (Exception e)
 		{
 			LOGGER.severe("LoginServerThread: IOException while sending packet " + packet.getClass().getSimpleName());
-			LOGGER.severe(TraceUtil.getStackTrace(e));
+			LOGGER.severe(ExceptionUtils.getStackTrace(e));
 		}
 	}
 	

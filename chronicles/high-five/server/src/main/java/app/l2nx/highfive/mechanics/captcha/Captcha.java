@@ -30,8 +30,8 @@ import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ThreadLocalRandom;
 
-import app.l2nx.commons.util.Rnd;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.managers.CaptchaManager.PlayerData;
 import app.l2nx.highfive.network.serverpackets.PledgeCrest;
@@ -116,7 +116,7 @@ public class Captcha
 		final char[] text = new char[CAPTCHA_WORD_LENGTH];
 		for (int i = 0; i < CAPTCHA_WORD_LENGTH; i++)
 		{
-			text[i] = CAPTCHA_TEXT_POSSIBILITIES[Rnd.get(CAPTCHA_TEXT_POSSIBILITIES.length)];
+			text[i] = CAPTCHA_TEXT_POSSIBILITIES[ThreadLocalRandom.current().nextInt(CAPTCHA_TEXT_POSSIBILITIES.length)];
 		}
 		
 		return text;
@@ -124,7 +124,7 @@ public class Captcha
 	
 	private static int generateRandomCaptchaId()
 	{
-		return Rnd.get(CAPTCHA_MIN_ID, CAPTCHA_MAX_ID);
+		return ThreadLocalRandom.current().nextInt(CAPTCHA_MIN_ID, CAPTCHA_MAX_ID + 1);
 	}
 	
 	public static BufferedImage generateCaptcha(char[] text)

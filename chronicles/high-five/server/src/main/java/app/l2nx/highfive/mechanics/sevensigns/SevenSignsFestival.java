@@ -30,12 +30,12 @@ import java.util.Map;
 import java.util.StringJoiner;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import app.l2nx.commons.database.DatabaseFactory;
 import app.l2nx.commons.threads.ThreadPool;
-import app.l2nx.commons.util.Rnd;
 import app.l2nx.highfive.ai.Intention;
 import app.l2nx.highfive.config.FeatureConfig;
 import app.l2nx.highfive.data.SpawnTable;
@@ -2077,15 +2077,15 @@ public class SevenSignsFestival
 						// Randomize the spawn point around the specific centerpoint for each player.
 						int x = _startLocation._x;
 						int y = _startLocation._y;
-						if (Rnd.nextBoolean())
+						if (ThreadLocalRandom.current().nextBoolean())
 						{
-							x += Rnd.get(FESTIVAL_MAX_OFFSET_X);
-							y += Rnd.get(FESTIVAL_MAX_OFFSET_Y);
+							x += ThreadLocalRandom.current().nextInt(FESTIVAL_MAX_OFFSET_X);
+							y += ThreadLocalRandom.current().nextInt(FESTIVAL_MAX_OFFSET_Y);
 						}
 						else
 						{
-							x -= Rnd.get(FESTIVAL_MAX_OFFSET_X);
-							y -= Rnd.get(FESTIVAL_MAX_OFFSET_Y);
+							x -= ThreadLocalRandom.current().nextInt(FESTIVAL_MAX_OFFSET_X);
+							y -= ThreadLocalRandom.current().nextInt(FESTIVAL_MAX_OFFSET_Y);
 						}
 						
 						participant.getAI().setIntentionIdle();
@@ -2167,19 +2167,19 @@ public class SevenSignsFestival
 				/*
 				 * Random X and Y coords around the player start location, up to half of the maximum allowed offset are generated to prevent the mobs from all moving to the exact same place.
 				 */
-				if (Rnd.nextBoolean())
+				if (ThreadLocalRandom.current().nextBoolean())
 				{
-					x += Rnd.get(FESTIVAL_MAX_OFFSET_X);
-					y += Rnd.get(FESTIVAL_MAX_OFFSET_Y);
+					x += ThreadLocalRandom.current().nextInt(FESTIVAL_MAX_OFFSET_X);
+					y += ThreadLocalRandom.current().nextInt(FESTIVAL_MAX_OFFSET_Y);
 				}
 				else
 				{
-					x -= Rnd.get(FESTIVAL_MAX_OFFSET_X);
-					y -= Rnd.get(FESTIVAL_MAX_OFFSET_Y);
+					x -= ThreadLocalRandom.current().nextInt(FESTIVAL_MAX_OFFSET_X);
+					y -= ThreadLocalRandom.current().nextInt(FESTIVAL_MAX_OFFSET_Y);
 				}
 				
 				festivalMob.setRunning();
-				festivalMob.getAI().setIntentionMoveTo(new Location(x, y, _startLocation._z, Rnd.get(65536)));
+				festivalMob.getAI().setIntentionMoveTo(new Location(x, y, _startLocation._z, ThreadLocalRandom.current().nextInt(65536)));
 			}
 		}
 		
@@ -2235,7 +2235,7 @@ public class SevenSignsFestival
 				{
 					final Spawn npcSpawn = new Spawn(currSpawn._npcId);
 					npcSpawn.setXYZ(currSpawn._x, currSpawn._y, currSpawn._z);
-					npcSpawn.setHeading(Rnd.get(65536));
+					npcSpawn.setHeading(ThreadLocalRandom.current().nextInt(65536));
 					npcSpawn.setAmount(1);
 					npcSpawn.setRespawnDelay(respawnDelay);
 					
@@ -2399,7 +2399,7 @@ public class SevenSignsFestival
 			_z = z;
 			
 			// Generate a random heading if no positive one given.
-			_heading = (heading < 0) ? Rnd.get(65536) : heading;
+			_heading = (heading < 0) ? ThreadLocalRandom.current().nextInt(65536) : heading;
 			_npcId = -1;
 		}
 		
@@ -2408,7 +2408,7 @@ public class SevenSignsFestival
 			_x = spawnData[0];
 			_y = spawnData[1];
 			_z = spawnData[2];
-			_heading = (spawnData[3] < 0) ? Rnd.get(65536) : spawnData[3];
+			_heading = (spawnData[3] < 0) ? ThreadLocalRandom.current().nextInt(65536) : spawnData[3];
 			if (spawnData.length > 4)
 			{
 				_npcId = spawnData[4];

@@ -24,7 +24,8 @@ package app.l2nx.highfive.network;
 
 import java.util.logging.Logger;
 
-import app.l2nx.commons.util.TraceUtil;
+import org.apache.commons.lang3.exception.ExceptionUtils;
+
 import app.l2nx.highfive.network.clientpackets.RequestBookMarkSlotInfo;
 import app.l2nx.highfive.network.clientpackets.RequestChangeBookMarkSlot;
 import app.l2nx.highfive.network.clientpackets.RequestDeleteBookMarkSlot;
@@ -54,7 +55,7 @@ public class GamePacketHandler implements PacketHandler<GameClient>
 		catch (Exception e)
 		{
 			LOGGER.warning("PacketHandler: Problem receiving packet id from " + client);
-			LOGGER.warning(TraceUtil.getStackTrace(e));
+			LOGGER.warning(ExceptionUtils.getStackTrace(e));
 			client.closeNow();
 			return null;
 		}

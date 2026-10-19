@@ -29,8 +29,9 @@ import java.util.Base64;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.apache.commons.lang3.StringUtils;
+
 import app.l2nx.commons.database.DatabaseFactory;
-import app.l2nx.commons.util.StringUtil;
 import app.l2nx.highfive.LoginServerThread;
 import app.l2nx.highfive.data.xml.SecondaryAuthData;
 import app.l2nx.highfive.network.Disconnection;
@@ -272,7 +273,7 @@ public class SecondaryPasswordAuth
 	
 	private boolean validatePassword(String password)
 	{
-		if (!StringUtil.isNumeric(password))
+		if (!StringUtils.isNumeric(password))
 		{
 			return false;
 		}

@@ -27,8 +27,9 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
 
+import org.apache.commons.lang3.exception.ExceptionUtils;
+
 import app.l2nx.commons.threads.ThreadPool;
-import app.l2nx.commons.util.TraceUtil;
 import app.l2nx.highfive.entity.actor.Creature;
 
 /**
@@ -89,7 +90,7 @@ public class MovementTaskManager
 						iterator.remove();
 					}
 					LOGGER.warning("MovementTaskManager: Problem updating position of " + creature);
-					LOGGER.warning(TraceUtil.getStackTrace(e));
+					LOGGER.warning(ExceptionUtils.getStackTrace(e));
 				}
 			}
 		}

@@ -19,7 +19,8 @@
  */
 package app.l2nx.highfive.scripts.handlers.skill.effects;
 
-import app.l2nx.commons.util.Rnd;
+import java.util.concurrent.ThreadLocalRandom;
+
 import app.l2nx.highfive.entity.WorldObject;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.handler.ITargetTypeHandler;
@@ -81,7 +82,7 @@ public class TriggerSkillBySkill extends AbstractEffect
 			return;
 		}
 		
-		if (Rnd.get(100) > _chance)
+		if (ThreadLocalRandom.current().nextInt(100) > _chance)
 		{
 			return;
 		}

@@ -22,7 +22,8 @@ package app.l2nx.highfive.scripts.custom.EchoCrystals;
 import java.util.HashMap;
 import java.util.Map;
 
-import app.l2nx.commons.util.StringUtil;
+import org.apache.commons.lang3.StringUtils;
+
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.mechanics.script.Script;
@@ -103,7 +104,7 @@ public class EchoCrystals extends Script
 	public String onEvent(String event, Npc npc, Player player)
 	{
 		String htmltext = "";
-		if (StringUtil.isNumeric(event))
+		if (StringUtils.isNumeric(event))
 		{
 			final int score = Integer.parseInt(event);
 			final ScoreData scoreEntry = SCORES.get(score);

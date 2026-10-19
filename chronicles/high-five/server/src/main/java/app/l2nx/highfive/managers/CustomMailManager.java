@@ -32,9 +32,10 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.apache.commons.lang3.StringUtils;
+
 import app.l2nx.commons.database.DatabaseFactory;
 import app.l2nx.commons.threads.ThreadPool;
-import app.l2nx.commons.util.StringUtil;
 import app.l2nx.highfive.config.custom.CustomMailManagerConfig;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Player;
@@ -82,12 +83,12 @@ public class CustomMailManager
 								final String itemId = split[0];
 								final String itemCount = split[1];
 								final String enchant = split.length > 2 ? split[2] : "0";
-								if (StringUtil.isNumeric(itemId) && StringUtil.isNumeric(itemCount))
+								if (StringUtils.isNumeric(itemId) && StringUtils.isNumeric(itemCount))
 								{
 									itemHolders.add(new ItemEnchantHolder(Integer.parseInt(itemId), Long.parseLong(itemCount), Integer.parseInt(enchant)));
 								}
 							}
-							else if (StringUtil.isNumeric(str))
+							else if (StringUtils.isNumeric(str))
 							{
 								itemHolders.add(new ItemEnchantHolder(Integer.parseInt(str), 1));
 							}

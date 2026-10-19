@@ -41,6 +41,7 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -50,7 +51,6 @@ import org.springframework.dao.DataAccessException;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.stereotype.Component;
 
-import app.l2nx.commons.util.Rnd;
 import app.l2nx.login.GameServerThread;
 import app.l2nx.login.config.LoginProperties;
 import app.l2nx.login.data.GameServerTable;
@@ -157,10 +157,7 @@ public class LoginController
 		
 		for (int i = 0; i < BLOWFISH_KEYS; i++)
 		{
-			for (int j = 0; j < _blowfishKeys[i].length; j++)
-			{
-				_blowfishKeys[i][j] = (byte) (Rnd.get(0, 255));
-			}
+			ThreadLocalRandom.current().nextBytes(_blowfishKeys[i]);
 		}
 		
 		LOGGER.info("Stored " + _blowfishKeys.length + " keys for Blowfish communication.");
@@ -176,7 +173,8 @@ public class LoginController
 	
 	public SessionKey assignSessionKeyToClient(String account, LoginClient client)
 	{
-		final SessionKey key = new SessionKey(Rnd.nextInt(), Rnd.nextInt(), Rnd.nextInt(), Rnd.nextInt());
+		final ThreadLocalRandom random = ThreadLocalRandom.current();
+		final SessionKey key = new SessionKey(random.nextInt(), random.nextInt(), random.nextInt(), random.nextInt());
 		_loginServerClients.put(account, client);
 		return key;
 	}
@@ -539,7 +537,7 @@ public class LoginController
 	 */
 	public ScrambledKeyPair getScrambledRSAKeyPair()
 	{
-		return _keyPairs[Rnd.get(10)];
+		return _keyPairs[ThreadLocalRandom.current().nextInt(_keyPairs.length)];
 	}
 	
 	/**

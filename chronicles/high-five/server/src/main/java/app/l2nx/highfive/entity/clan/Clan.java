@@ -38,8 +38,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.apache.commons.lang3.StringUtils;
+
 import app.l2nx.commons.database.DatabaseFactory;
-import app.l2nx.commons.util.StringUtil;
 import app.l2nx.highfive.communitybbs.BB.Forum;
 import app.l2nx.highfive.communitybbs.Manager.ForumsBBSManager;
 import app.l2nx.highfive.config.FeatureConfig;
@@ -2470,7 +2471,7 @@ public class Clan
 			return;
 		}
 		
-		if (!StringUtil.isAlphaNumeric(allyName))
+		if (!StringUtils.isAlphanumeric(allyName))
 		{
 			player.sendPacket(SystemMessageId.INCORRECT_ALLIANCE_NAME_PLEASE_TRY_AGAIN);
 			return;

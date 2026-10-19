@@ -24,7 +24,8 @@ package app.l2nx.login.network;
 
 import java.util.logging.Logger;
 
-import app.l2nx.commons.util.TraceUtil;
+import org.apache.commons.lang3.exception.ExceptionUtils;
+
 import app.l2nx.login.enums.LoginFailReason;
 import app.l2nx.network.buffer.ReadBuffer;
 import app.l2nx.network.packet.PacketHandler;
@@ -49,7 +50,7 @@ public class LoginPacketHandler implements PacketHandler<LoginClient>
 		catch (Exception e)
 		{
 			LOGGER.warning("LoginPacketHandler: Problem receiving packet id from " + client);
-			LOGGER.warning(TraceUtil.getStackTrace(e));
+			LOGGER.warning(ExceptionUtils.getStackTrace(e));
 			client.close(LoginFailReason.REASON_ACCESS_FAILED);
 			return null;
 		}

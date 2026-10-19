@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -33,7 +34,6 @@ import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 
-import app.l2nx.commons.util.Rnd;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.config.ServerConfig;
 import app.l2nx.highfive.data.xml.OptionData;
@@ -536,7 +536,7 @@ public class AugmentationData
 					}
 				}
 				
-				int r = Rnd.get(10000);
+				int r = ThreadLocalRandom.current().nextInt(10000);
 				float s = 10000;
 				for (AugmentationChance ac : selectedChances12)
 				{
@@ -576,7 +576,7 @@ public class AugmentationData
 					}
 				}
 				
-				int c = Rnd.get(100);
+				int c = ThreadLocalRandom.current().nextInt(100);
 				if (c < gradeChance[0])
 				{
 					c = 55;
@@ -603,7 +603,7 @@ public class AugmentationData
 					}
 				}
 				
-				r = Rnd.get(10000);
+				r = ThreadLocalRandom.current().nextInt(10000);
 				s = 10000;
 				for (AugmentationChance ac : selectedChances34final)
 				{
@@ -633,7 +633,7 @@ public class AugmentationData
 					}
 				}
 				
-				int r = Rnd.get(10000);
+				int r = ThreadLocalRandom.current().nextInt(10000);
 				float s = 10000;
 				for (AugmentationChance ac : selectedChances12)
 				{
@@ -673,7 +673,7 @@ public class AugmentationData
 					}
 				}
 				
-				int c = Rnd.get(100);
+				int c = ThreadLocalRandom.current().nextInt(100);
 				if (c < gradeChance[0])
 				{
 					c = 55;
@@ -700,7 +700,7 @@ public class AugmentationData
 					}
 				}
 				
-				r = Rnd.get(10000);
+				r = ThreadLocalRandom.current().nextInt(10000);
 				s = 10000;
 				for (AugmentationChance ac : selectedChances34final)
 				{
@@ -725,12 +725,12 @@ public class AugmentationData
 		{
 			case AbstractRefinePacket.GRADE_NONE:
 			{
-				if (Rnd.get(1, 100) <= PlayerConfig.AUGMENTATION_NG_SKILL_CHANCE)
+				if (ThreadLocalRandom.current().nextInt(1, 101) <= PlayerConfig.AUGMENTATION_NG_SKILL_CHANCE)
 				{
 					generateSkill = true;
 				}
 				
-				if (Rnd.get(1, 100) <= PlayerConfig.AUGMENTATION_NG_GLOW_CHANCE)
+				if (ThreadLocalRandom.current().nextInt(1, 101) <= PlayerConfig.AUGMENTATION_NG_GLOW_CHANCE)
 				{
 					generateGlow = true;
 				}
@@ -738,12 +738,12 @@ public class AugmentationData
 			}
 			case AbstractRefinePacket.GRADE_MID:
 			{
-				if (Rnd.get(1, 100) <= PlayerConfig.AUGMENTATION_MID_SKILL_CHANCE)
+				if (ThreadLocalRandom.current().nextInt(1, 101) <= PlayerConfig.AUGMENTATION_MID_SKILL_CHANCE)
 				{
 					generateSkill = true;
 				}
 				
-				if (Rnd.get(1, 100) <= PlayerConfig.AUGMENTATION_MID_GLOW_CHANCE)
+				if (ThreadLocalRandom.current().nextInt(1, 101) <= PlayerConfig.AUGMENTATION_MID_GLOW_CHANCE)
 				{
 					generateGlow = true;
 				}
@@ -751,12 +751,12 @@ public class AugmentationData
 			}
 			case AbstractRefinePacket.GRADE_HIGH:
 			{
-				if (Rnd.get(1, 100) <= PlayerConfig.AUGMENTATION_HIGH_SKILL_CHANCE)
+				if (ThreadLocalRandom.current().nextInt(1, 101) <= PlayerConfig.AUGMENTATION_HIGH_SKILL_CHANCE)
 				{
 					generateSkill = true;
 				}
 				
-				if (Rnd.get(1, 100) <= PlayerConfig.AUGMENTATION_HIGH_GLOW_CHANCE)
+				if (ThreadLocalRandom.current().nextInt(1, 101) <= PlayerConfig.AUGMENTATION_HIGH_GLOW_CHANCE)
 				{
 					generateGlow = true;
 				}
@@ -764,12 +764,12 @@ public class AugmentationData
 			}
 			case AbstractRefinePacket.GRADE_TOP:
 			{
-				if (Rnd.get(1, 100) <= PlayerConfig.AUGMENTATION_TOP_SKILL_CHANCE)
+				if (ThreadLocalRandom.current().nextInt(1, 101) <= PlayerConfig.AUGMENTATION_TOP_SKILL_CHANCE)
 				{
 					generateSkill = true;
 				}
 				
-				if (Rnd.get(1, 100) <= PlayerConfig.AUGMENTATION_TOP_GLOW_CHANCE)
+				if (ThreadLocalRandom.current().nextInt(1, 101) <= PlayerConfig.AUGMENTATION_TOP_GLOW_CHANCE)
 				{
 					generateGlow = true;
 				}
@@ -777,16 +777,16 @@ public class AugmentationData
 			}
 			case AbstractRefinePacket.GRADE_ACC:
 			{
-				if (Rnd.get(1, 100) <= PlayerConfig.AUGMENTATION_ACC_SKILL_CHANCE)
+				if (ThreadLocalRandom.current().nextInt(1, 101) <= PlayerConfig.AUGMENTATION_ACC_SKILL_CHANCE)
 				{
 					generateSkill = true;
 				}
 			}
 		}
 		
-		if (!generateSkill && (Rnd.get(1, 100) <= PlayerConfig.AUGMENTATION_BASESTAT_CHANCE))
+		if (!generateSkill && (ThreadLocalRandom.current().nextInt(1, 101) <= PlayerConfig.AUGMENTATION_BASESTAT_CHANCE))
 		{
-			stat34 = Rnd.get(BASESTAT_STR, BASESTAT_MEN);
+			stat34 = ThreadLocalRandom.current().nextInt(BASESTAT_STR, BASESTAT_MEN + 1);
 		}
 		
 		// Second: decide which grade the augmentation result is going to have:
@@ -794,7 +794,7 @@ public class AugmentationData
 		// The chances used here are most likely custom,
 		// what's known is: you can't have yellow with skill(or baseStatModifier)
 		// noGrade stone can not have glow, mid only with skill, high has a chance(custom), top allways glow
-		int resultColor = Rnd.get(0, 100);
+		int resultColor = ThreadLocalRandom.current().nextInt(101);
 		if ((stat34 == 0) && !generateSkill)
 		{
 			if (resultColor <= ((15 * lifeStoneGrade) + 40))
@@ -829,17 +829,17 @@ public class AugmentationData
 			{
 				case 1: // blue skill
 				{
-					stat34 = _blueSkills.get(lifeStoneLevel).get(Rnd.get(0, _blueSkills.get(lifeStoneLevel).size() - 1));
+					stat34 = _blueSkills.get(lifeStoneLevel).get(ThreadLocalRandom.current().nextInt(_blueSkills.get(lifeStoneLevel).size()));
 					break;
 				}
 				case 2: // purple skill
 				{
-					stat34 = _purpleSkills.get(lifeStoneLevel).get(Rnd.get(0, _purpleSkills.get(lifeStoneLevel).size() - 1));
+					stat34 = _purpleSkills.get(lifeStoneLevel).get(ThreadLocalRandom.current().nextInt(_purpleSkills.get(lifeStoneLevel).size()));
 					break;
 				}
 				case 3: // red skill
 				{
-					stat34 = _redSkills.get(lifeStoneLevel).get(Rnd.get(0, _redSkills.get(lifeStoneLevel).size() - 1));
+					stat34 = _redSkills.get(lifeStoneLevel).get(ThreadLocalRandom.current().nextInt(_redSkills.get(lifeStoneLevel).size()));
 					break;
 				}
 			}
@@ -869,32 +869,32 @@ public class AugmentationData
 		int offset;
 		if (stat34 == 0)
 		{
-			final int temp = Rnd.get(2, 3);
+			final int temp = ThreadLocalRandom.current().nextInt(2, 4);
 			final int colorOffset = (resultColor * (10 * STAT_SUBBLOCKSIZE)) + (temp * STAT_BLOCKSIZE) + 1;
 			offset = (lifeStoneLevel * STAT_SUBBLOCKSIZE) + colorOffset;
-			stat34 = Rnd.get(offset, (offset + STAT_SUBBLOCKSIZE) - 1);
+			stat34 = ThreadLocalRandom.current().nextInt(offset, offset + STAT_SUBBLOCKSIZE);
 			if (generateGlow && (lifeStoneGrade >= 2))
 			{
 				offset = (lifeStoneLevel * STAT_SUBBLOCKSIZE) + ((temp - 2) * STAT_BLOCKSIZE) + (lifeStoneGrade * (10 * STAT_SUBBLOCKSIZE)) + 1;
 			}
 			else
 			{
-				offset = (lifeStoneLevel * STAT_SUBBLOCKSIZE) + ((temp - 2) * STAT_BLOCKSIZE) + (Rnd.get(0, 1) * (10 * STAT_SUBBLOCKSIZE)) + 1;
+				offset = (lifeStoneLevel * STAT_SUBBLOCKSIZE) + ((temp - 2) * STAT_BLOCKSIZE) + (ThreadLocalRandom.current().nextInt(2) * (10 * STAT_SUBBLOCKSIZE)) + 1;
 			}
 		}
 		else
 		{
 			if (!generateGlow)
 			{
-				offset = (lifeStoneLevel * STAT_SUBBLOCKSIZE) + (Rnd.get(0, 1) * STAT_BLOCKSIZE) + 1;
+				offset = (lifeStoneLevel * STAT_SUBBLOCKSIZE) + (ThreadLocalRandom.current().nextInt(2) * STAT_BLOCKSIZE) + 1;
 			}
 			else
 			{
-				offset = (lifeStoneLevel * STAT_SUBBLOCKSIZE) + (Rnd.get(0, 1) * STAT_BLOCKSIZE) + (((lifeStoneGrade + resultColor) / 2) * (10 * STAT_SUBBLOCKSIZE)) + 1;
+				offset = (lifeStoneLevel * STAT_SUBBLOCKSIZE) + (ThreadLocalRandom.current().nextInt(2) * STAT_BLOCKSIZE) + (((lifeStoneGrade + resultColor) / 2) * (10 * STAT_SUBBLOCKSIZE)) + 1;
 			}
 		}
 		
-		stat12 = Rnd.get(offset, (offset + STAT_SUBBLOCKSIZE) - 1);
+		stat12 = ThreadLocalRandom.current().nextInt(offset, offset + STAT_SUBBLOCKSIZE);
 		return new Augmentation(((stat34 << 16) + stat12));
 	}
 	
@@ -921,7 +921,7 @@ public class AugmentationData
 				}
 			}
 			
-			int r = Rnd.get(10000);
+			int r = ThreadLocalRandom.current().nextInt(10000);
 			float s = 10000;
 			for (augmentationChanceAcc ac : selectedChances12)
 			{
@@ -932,7 +932,7 @@ public class AugmentationData
 				}
 			}
 			
-			int c = Rnd.get(100);
+			int c = ThreadLocalRandom.current().nextInt(100);
 			if (c < 55)
 			{
 				c = 55;
@@ -959,7 +959,7 @@ public class AugmentationData
 				}
 			}
 			
-			r = Rnd.get(10000);
+			r = ThreadLocalRandom.current().nextInt(10000);
 			s = 10000;
 			for (augmentationChanceAcc ac : selectedChances34final)
 			{
@@ -1003,15 +1003,15 @@ public class AugmentationData
 			}
 		}
 		
-		final int resultColor = Rnd.get(0, 3);
+		final int resultColor = ThreadLocalRandom.current().nextInt(4);
 		
 		// first augmentation (stats only)
-		stat12 = Rnd.get(ACC_STAT_SUBBLOCKSIZE);
+		stat12 = ThreadLocalRandom.current().nextInt(ACC_STAT_SUBBLOCKSIZE);
 		Options op = null;
-		if (Rnd.get(1, 100) <= PlayerConfig.AUGMENTATION_ACC_SKILL_CHANCE)
+		if (ThreadLocalRandom.current().nextInt(1, 101) <= PlayerConfig.AUGMENTATION_ACC_SKILL_CHANCE)
 		{
 			// second augmentation (skill)
-			stat34 = base + Rnd.get(skillsLength);
+			stat34 = base + ThreadLocalRandom.current().nextInt(skillsLength);
 			op = OptionData.getInstance().getOptions(stat34);
 		}
 		
@@ -1020,7 +1020,7 @@ public class AugmentationData
 			// second augmentation (stats)
 			// calculating any different from stat12 value inside sub-block
 			// starting from next and wrapping over using remainder
-			stat34 = (stat12 + 1 + Rnd.get(ACC_STAT_SUBBLOCKSIZE - 1)) % ACC_STAT_SUBBLOCKSIZE;
+			stat34 = (stat12 + 1 + ThreadLocalRandom.current().nextInt(ACC_STAT_SUBBLOCKSIZE - 1)) % ACC_STAT_SUBBLOCKSIZE;
 			
 			// this is a stats - skipping skills
 			stat34 = base + skillsLength + (ACC_STAT_SUBBLOCKSIZE * resultColor) + stat34;

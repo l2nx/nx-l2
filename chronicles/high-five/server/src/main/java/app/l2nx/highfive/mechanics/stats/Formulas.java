@@ -24,8 +24,8 @@ package app.l2nx.highfive.mechanics.stats;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
-import app.l2nx.commons.util.Rnd;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.config.NpcConfig;
 import app.l2nx.highfive.config.PlayerConfig;
@@ -1210,12 +1210,12 @@ public class Formulas
 			}
 		}
 		
-		return (target.getStat().calcStat(Stat.DEFENCE_CRITICAL_RATE, rate, null, null) + target.getStat().calcStat(Stat.DEFENCE_CRITICAL_RATE_ADD, 0, null, null)) > Rnd.get(1000);
+		return (target.getStat().calcStat(Stat.DEFENCE_CRITICAL_RATE, rate, null, null) + target.getStat().calcStat(Stat.DEFENCE_CRITICAL_RATE_ADD, 0, null, null)) > ThreadLocalRandom.current().nextInt(1000);
 	}
 	
 	public static boolean calcMCrit(double mRate)
 	{
-		return mRate > Rnd.get(1000);
+		return mRate > ThreadLocalRandom.current().nextInt(1000);
 	}
 	
 	/**
@@ -1263,7 +1263,7 @@ public class Formulas
 		// Adjust the rate to be between 1 and 99.
 		rate = Math.clamp(rate, 1, 99);
 		
-		return Rnd.get(100) < rate;
+		return ThreadLocalRandom.current().nextInt(100) < rate;
 	}
 	
 	/**
@@ -1318,7 +1318,7 @@ public class Formulas
 		chance = Math.max(chance, 200);
 		chance = Math.min(chance, 980);
 		
-		return chance < Rnd.get(1000);
+		return chance < ThreadLocalRandom.current().nextInt(1000);
 	}
 	
 	/**
@@ -1366,11 +1366,11 @@ public class Formulas
 			shldRate *= 1.3;
 		}
 		
-		if ((shldRate > 0) && ((100 - PlayerConfig.ALT_PERFECT_SHLD_BLOCK) < Rnd.get(100)))
+		if ((shldRate > 0) && ((100 - PlayerConfig.ALT_PERFECT_SHLD_BLOCK) < ThreadLocalRandom.current().nextInt(100)))
 		{
 			shldSuccess = SHIELD_DEFENSE_PERFECT_BLOCK;
 		}
-		else if (shldRate > Rnd.get(100))
+		else if (shldRate > ThreadLocalRandom.current().nextInt(100))
 		{
 			shldSuccess = SHIELD_DEFENSE_SUCCEED;
 		}
@@ -1427,7 +1427,7 @@ public class Formulas
 			}
 		}
 		
-		d += 0.5 * Rnd.nextGaussian();
+		d += 0.5 * ThreadLocalRandom.current().nextGaussian();
 		return d > 0;
 	}
 	
@@ -1533,7 +1533,7 @@ public class Formulas
 		final double rate = baseMod * elementMod * traitMod * mAtkMod * buffDebuffMod;
 		final double finalRate = traitMod > 0 ? Math.clamp(rate, skill.getMinChance(), skill.getMaxChance()) : 0;
 		
-		if (finalRate <= Rnd.get(100))
+		if (finalRate <= ThreadLocalRandom.current().nextInt(100))
 		{
 			final SystemMessage sm = new SystemMessage(SystemMessageId.C1_HAS_RESISTED_YOUR_S2);
 			sm.addString(target.getName());
@@ -1599,7 +1599,7 @@ public class Formulas
 		// Check the Rate Limits.
 		final double finalRate = Math.clamp(rate, skill.getMinChance(), skill.getMaxChance());
 		
-		return (Rnd.get(100) < finalRate);
+		return (ThreadLocalRandom.current().nextInt(100) < finalRate);
 	}
 	
 	public static boolean calcMagicSuccess(Creature attacker, Creature target, Skill skill)
@@ -1632,7 +1632,7 @@ public class Formulas
 		final double resModifier = target.calcStat(Stat.MAGIC_SUCCESS_RES, 1, null, skill);
 		final int rate = 100 - Math.round((float) (lvlModifier * targetModifier * resModifier));
 		
-		return (Rnd.get(100) < rate);
+		return (ThreadLocalRandom.current().nextInt(100) < rate);
 	}
 	
 	public static double calcManaDam(Creature attacker, Creature target, Skill skill, byte shld, boolean sps, boolean bss, boolean mcrit)
@@ -1743,7 +1743,7 @@ public class Formulas
 			return false;
 		}
 		
-		if (Rnd.get(100) < target.calcStat(Stat.P_SKILL_EVASION, 0, null, skill))
+		if (ThreadLocalRandom.current().nextInt(100) < target.calcStat(Stat.P_SKILL_EVASION, 0, null, skill))
 		{
 			if (creature.isPlayer())
 			{
@@ -1801,7 +1801,7 @@ public class Formulas
 		}
 		
 		chance *= actor.getStat().calcStat(Stat.SKILL_MASTERY_RATE, 1, null, null);
-		return (Rnd.get(100) < (chance * ClassBalanceConfig.SKILL_MASTERY_CHANCE_MULTIPLIERS[actor.asPlayer().getPlayerClass().getId()]));
+		return (ThreadLocalRandom.current().nextInt(100) < (chance * ClassBalanceConfig.SKILL_MASTERY_CHANCE_MULTIPLIERS[actor.asPlayer().getPlayerClass().getId()]));
 	}
 	
 	/**
@@ -1854,7 +1854,7 @@ public class Formulas
 		}
 		
 		final double chance = target.calcStat(Stat.VENGEANCE_SKILL_PHYSICAL_DAMAGE, 0, target, skill);
-		if (Rnd.get(100) < chance)
+		if (ThreadLocalRandom.current().nextInt(100) < chance)
 		{
 			if (target.isPlayer())
 			{
@@ -1896,7 +1896,7 @@ public class Formulas
 		}
 		
 		final double reflectChance = target.calcStat(skill.isMagic() ? Stat.REFLECT_SKILL_MAGIC : Stat.REFLECT_SKILL_PHYSIC, 0, null, skill);
-		return reflectChance > Rnd.get(100);
+		return reflectChance > ThreadLocalRandom.current().nextInt(100);
 	}
 	
 	/**
@@ -1930,7 +1930,7 @@ public class Formulas
 		
 		// Apply blow rates
 		final double rate = creature.calcStat(Stat.BLOW_RATE, baseRate, target, null);
-		return Rnd.get(100) < rate;
+		return ThreadLocalRandom.current().nextInt(100) < rate;
 	}
 	
 	public static List<BuffInfo> calcCancelStealEffects(Creature creature, Creature target, Skill skill, String slot, int rate, int max)
@@ -1981,7 +1981,7 @@ public class Formulas
 				for (int i = debuffs.size() - 1; i >= 0; i--)
 				{
 					final BuffInfo info = debuffs.get(i);
-					if (info.getSkill().isDebuff() && info.getSkill().canBeDispeled() && (Rnd.get(100) <= rate))
+					if (info.getSkill().isDebuff() && info.getSkill().canBeDispeled() && (ThreadLocalRandom.current().nextInt(100) <= rate))
 					{
 						canceled.add(info);
 						if (canceled.size() >= max)
@@ -2001,7 +2001,7 @@ public class Formulas
 	{
 		// Lvl Bonus Modifier.
 		final int chance = (int) (rate * (info.getSkill().getMagicLevel() > 0 ? 1 + ((cancelMagicLvl - info.getSkill().getMagicLevel()) / 100.) : 1));
-		return Rnd.get(100) < Math.clamp(chance, skill.getMinChance(), skill.getMaxChance());
+		return ThreadLocalRandom.current().nextInt(100) < Math.clamp(chance, skill.getMinChance(), skill.getMaxChance());
 	}
 	
 	/**
@@ -2062,7 +2062,7 @@ public class Formulas
 	 */
 	public static boolean calcProbability(double baseChance, Creature attacker, Creature target, Skill skill)
 	{
-		return Rnd.get(100) < ((((((skill.getMagicLevel() + baseChance) - target.getLevel()) + 30) - target.getINT()) * calcAttributeBonus(attacker, target, skill)) * calcGeneralTraitBonus(attacker, target, skill.getTraitType(), false));
+		return ThreadLocalRandom.current().nextInt(100) < ((((((skill.getMagicLevel() + baseChance) - target.getLevel()) + 30) - target.getINT()) * calcAttributeBonus(attacker, target, skill)) * calcGeneralTraitBonus(attacker, target, skill.getTraitType(), false));
 	}
 	
 	/**

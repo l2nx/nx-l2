@@ -22,7 +22,8 @@ package app.l2nx.highfive.scripts.custom.SellBuff;
 import java.util.Collections;
 import java.util.StringTokenizer;
 
-import app.l2nx.commons.util.StringUtil;
+import org.apache.commons.lang3.StringUtils;
+
 import app.l2nx.highfive.config.custom.SellBuffsConfig;
 import app.l2nx.highfive.data.holders.SellBuffHolder;
 import app.l2nx.highfive.data.xml.ItemData;
@@ -145,7 +146,7 @@ public class SellBuffBypassHandler implements IBypassHandler
 				if (!player.isSellingBuffs())
 				{
 					int index = 0;
-					if ((params != null) && !params.isEmpty() && StringUtil.isNumeric(params))
+					if ((params != null) && !params.isEmpty() && StringUtils.isNumeric(params))
 					{
 						index = Integer.parseInt(params);
 					}

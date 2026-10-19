@@ -7,6 +7,7 @@ dependencies {
     api(project(":libs:commons"))
     api(project(":libs:network"))
     implementation(libs.classgraph)
+    implementation(libs.commons.lang3)
     implementation(libs.lib.recur)
 }
 

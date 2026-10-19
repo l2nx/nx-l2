@@ -19,7 +19,8 @@
  */
 package app.l2nx.highfive.scripts.handlers.skill.effects;
 
-import app.l2nx.commons.util.Rnd;
+import java.util.concurrent.ThreadLocalRandom;
+
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.Summon;
@@ -52,7 +53,7 @@ public class Unsummon extends AbstractEffect
 		if ((magicLevel <= 0) || ((effected.getLevel() - 9) <= magicLevel))
 		{
 			final double chance = _chance * Formulas.calcAttributeBonus(effector, effected, skill) * Formulas.calcGeneralTraitBonus(effector, effected, skill.getTraitType(), false);
-			if (chance > (Rnd.nextDouble() * 100))
+			if (chance > (ThreadLocalRandom.current().nextDouble() * 100))
 			{
 				return true;
 			}

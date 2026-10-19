@@ -30,7 +30,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.StringTokenizer;
 
-import app.l2nx.commons.util.StringUtil;
+import org.apache.commons.lang3.StringUtils;
+
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.config.custom.SchemeBufferConfig;
 import app.l2nx.highfive.data.SchemeBufferTable;
@@ -307,7 +308,7 @@ public class SchemeBuffer extends Npc
 			}
 			
 			final String normalized = schemeName.replace(" ", "").replace(".", "").replace(",", "").replace("-", "").replace("+", "").replace("!", "").replace("?", "");
-			if (!StringUtil.isAlphaNumeric(normalized))
+			if (!StringUtils.isAlphanumeric(normalized))
 			{
 				player.sendMessage("Please use plain alphanumeric characters.");
 				return;

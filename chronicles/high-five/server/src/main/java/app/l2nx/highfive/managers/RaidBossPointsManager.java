@@ -24,6 +24,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.time.LocalTime;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Comparator;
@@ -37,7 +39,6 @@ import java.util.logging.Logger;
 
 import app.l2nx.commons.database.DatabaseFactory;
 import app.l2nx.commons.threads.ThreadPool;
-import app.l2nx.commons.time.TimeUtil;
 import app.l2nx.highfive.config.FeatureConfig;
 import app.l2nx.highfive.data.sql.ClanTable;
 import app.l2nx.highfive.entity.actor.Player;
@@ -58,7 +59,10 @@ public class RaidBossPointsManager
 		init();
 		
 		// Start reset task at 00:10 and repeat every 24 hours.
-		ThreadPool.scheduleAtFixedRate(this::resetRaidPoints, TimeUtil.getNextTime(0, 10).getTimeInMillis() - System.currentTimeMillis(), 86400000);
+		final ZonedDateTime now = ZonedDateTime.now();
+		final ZonedDateTime todayResetTime = now.with(LocalTime.of(0, 10));
+		final ZonedDateTime nextResetTime = todayResetTime.isBefore(now) ? todayResetTime.plusDays(1) : todayResetTime;
+		ThreadPool.scheduleAtFixedRate(this::resetRaidPoints, nextResetTime.toInstant().toEpochMilli() - System.currentTimeMillis(), 86400000);
 	}
 	
 	private void init()

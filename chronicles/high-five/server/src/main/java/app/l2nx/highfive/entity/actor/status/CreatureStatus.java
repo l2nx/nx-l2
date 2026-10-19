@@ -25,10 +25,10 @@ package app.l2nx.highfive.entity.actor.status;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Logger;
 
 import app.l2nx.commons.threads.ThreadPool;
-import app.l2nx.commons.util.Rnd;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.mechanics.stats.Formulas;
@@ -168,7 +168,7 @@ public class CreatureStatus
 		if (!isDOT && !isHPConsumption)
 		{
 			_creature.stopEffectsOnDamage(awake);
-			if (_creature.isStunned() && (Rnd.get(10) == 0))
+			if (_creature.isStunned() && (ThreadLocalRandom.current().nextInt(10) == 0))
 			{
 				_creature.stopStunning(true);
 			}

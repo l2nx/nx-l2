@@ -44,6 +44,7 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -51,7 +52,6 @@ import java.util.logging.Level;
 
 import app.l2nx.commons.database.DatabaseFactory;
 import app.l2nx.commons.threads.ThreadPool;
-import app.l2nx.commons.util.Rnd;
 import app.l2nx.highfive.LoginServerThread;
 import app.l2nx.highfive.ai.CreatureAI;
 import app.l2nx.highfive.ai.Intention;
@@ -3914,7 +3914,7 @@ public class Player extends Playable
 			return false;
 		}
 		
-		droppedItem.dropMe(this, (getX() + Rnd.get(50)) - 25, (getY() + Rnd.get(50)) - 25, getZ() + 20);
+		droppedItem.dropMe(this, (getX() + ThreadLocalRandom.current().nextInt(50)) - 25, (getY() + ThreadLocalRandom.current().nextInt(50)) - 25, getZ() + 20);
 		if ((GeneralConfig.AUTODESTROY_ITEM_AFTER > 0) && GeneralConfig.DESTROY_DROPPED_PLAYER_ITEM && !GeneralConfig.LIST_PROTECTED_ITEMS.contains(droppedItem.getId()) && ((droppedItem.isEquipable() && GeneralConfig.DESTROY_EQUIPABLE_PLAYER_ITEM) || !droppedItem.isEquipable()))
 		{
 			ItemsAutoDestroyTaskManager.getInstance().addItem(droppedItem);
@@ -5549,7 +5549,7 @@ public class Player extends Playable
 				dropLimit = RatesConfig.PLAYER_DROP_LIMIT;
 			}
 			
-			if ((dropPercent > 0) && (Rnd.get(100) < dropPercent))
+			if ((dropPercent > 0) && (ThreadLocalRandom.current().nextInt(100) < dropPercent))
 			{
 				int dropCount = 0;
 				int itemDropPercent = 0;
@@ -5579,7 +5579,7 @@ public class Player extends Playable
 					}
 					
 					// NOTE: Each time an item is dropped, the chance of another item being dropped gets lesser (dropCount * 2)
-					if (Rnd.get(100) < itemDropPercent)
+					if (ThreadLocalRandom.current().nextInt(100) < itemDropPercent)
 					{
 						if (itemDrop.isEquipped())
 						{
@@ -7961,7 +7961,7 @@ public class Player extends Playable
 		
 		if (!OfflinePlayConfig.OFFLINE_PLAY_ABNORMAL_EFFECTS.isEmpty())
 		{
-			startAbnormalVisualEffect(true, OfflinePlayConfig.OFFLINE_PLAY_ABNORMAL_EFFECTS.get(Rnd.get(OfflinePlayConfig.OFFLINE_PLAY_ABNORMAL_EFFECTS.size())));
+			startAbnormalVisualEffect(true, OfflinePlayConfig.OFFLINE_PLAY_ABNORMAL_EFFECTS.get(ThreadLocalRandom.current().nextInt(OfflinePlayConfig.OFFLINE_PLAY_ABNORMAL_EFFECTS.size())));
 		}
 		
 		broadcastUserInfo();
@@ -12082,8 +12082,8 @@ public class Player extends Playable
 					final Location loc = inst.getExitLoc();
 					if (loc != null)
 					{
-						final int x = loc.getX() + Rnd.get(-30, 30);
-						final int y = loc.getY() + Rnd.get(-30, 30);
+						final int x = loc.getX() + ThreadLocalRandom.current().nextInt(-30, 31);
+						final int y = loc.getY() + ThreadLocalRandom.current().nextInt(-30, 31);
 						setXYZInvisible(x, y, loc.getZ());
 						if (hasSummon()) // dead pet
 						{
@@ -12209,7 +12209,7 @@ public class Player extends Playable
 		}
 		
 		// Use a copy constructor else the fish data may be over-written below
-		_fish = fish.get(Rnd.get(fish.size())).clone();
+		_fish = fish.get(ThreadLocalRandom.current().nextInt(fish.size())).clone();
 		fish.clear();
 		sendPacket(SystemMessageId.YOU_CAST_YOUR_LINE_AND_START_TO_FISH);
 		// Night lures only catch at night, ordinary lures only during the day.
@@ -12292,7 +12292,7 @@ public class Player extends Playable
 	
 	private int getRandomFishGroup(int group)
 	{
-		final int check = Rnd.get(100);
+		final int check = ThreadLocalRandom.current().nextInt(100);
 		int type = 1;
 		switch (group)
 		{
@@ -12560,7 +12560,7 @@ public class Player extends Playable
 		}
 		
 		int randomlvl;
-		final int check = Rnd.get(100);
+		final int check = ThreadLocalRandom.current().nextInt(100);
 		if (check <= 50)
 		{
 			randomlvl = skillLevel;
@@ -13010,7 +13010,7 @@ public class Player extends Playable
 			percent *= calcStat(Stat.REDUCE_DEATH_PENALTY_BY_PVP, 1);
 		}
 		
-		if ((Rnd.get(1, 100) <= ((PlayerConfig.DEATH_PENALTY_CHANCE) * percent)) && (!killer.isPlayable() || (getKarma() > 0)))
+		if ((ThreadLocalRandom.current().nextInt(1, 101) <= ((PlayerConfig.DEATH_PENALTY_CHANCE) * percent)) && (!killer.isPlayable() || (getKarma() > 0)))
 		{
 			increaseDeathPenaltyBuffLevel();
 		}

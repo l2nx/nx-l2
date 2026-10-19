@@ -33,10 +33,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Future;
+import java.util.concurrent.ThreadLocalRandom;
 
 import app.l2nx.commons.database.DatabaseFactory;
 import app.l2nx.commons.threads.ThreadPool;
-import app.l2nx.commons.util.Rnd;
 import app.l2nx.highfive.config.ConquerableHallSiegeConfig;
 import app.l2nx.highfive.data.sql.ClanHallTable;
 import app.l2nx.highfive.data.sql.ClanTable;
@@ -474,7 +474,7 @@ public class RainbowSpringsChateau extends ClanHallSiegeEngine
 						player.destroyItemByItemId(ItemProcessType.DESTROY, itemInfo[0], itemInfo[1], player, true);
 					}
 					
-					final int rnd = Rnd.get(100);
+					final int rnd = ThreadLocalRandom.current().nextInt(100);
 					if ((_generated >= 0) && (_generated <= 5))
 					{
 						if (rnd < 70)
@@ -689,7 +689,7 @@ public class RainbowSpringsChateau extends ClanHallSiegeEngine
 			chestDie(npc);
 			chests.remove(npc);
 			
-			final int chance = Rnd.get(100);
+			final int chance = ThreadLocalRandom.current().nextInt(100);
 			if (chance <= 5)
 			{
 				npc.dropItem(killer, ITEM_A, 1);
@@ -1268,7 +1268,7 @@ public class RainbowSpringsChateau extends ClanHallSiegeEngine
 		int rnd = Integer.MIN_VALUE;
 		for (int i = 0; i < Byte.MAX_VALUE; i++)
 		{
-			rnd = Rnd.get(size);
+			rnd = ThreadLocalRandom.current().nextInt(size);
 			if (rnd != ex)
 			{
 				break;

@@ -29,7 +29,8 @@ import java.util.TreeSet;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import app.l2nx.commons.util.StringUtil;
+import org.apache.commons.lang3.StringUtils;
+
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.handler.IAdminCommandHandler;
@@ -57,7 +58,7 @@ public class AdminQuest implements IAdminCommandHandler
 	
 	private static Quest findScript(String script)
 	{
-		if (StringUtil.isNumeric(script))
+		if (StringUtils.isNumeric(script))
 		{
 			return ScriptManager.getInstance().getQuest(Integer.parseInt(script));
 		}

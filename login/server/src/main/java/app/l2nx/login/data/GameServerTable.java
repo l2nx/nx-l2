@@ -36,6 +36,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -46,7 +47,6 @@ import javax.xml.stream.XMLStreamReader;
 
 import org.springframework.stereotype.Component;
 
-import app.l2nx.commons.util.Rnd;
 import app.l2nx.login.GameServerThread;
 import app.l2nx.login.LoginServer;
 import app.l2nx.login.config.LoginProperties;
@@ -297,7 +297,7 @@ public class GameServerTable
 	 */
 	public KeyPair getKeyPair()
 	{
-		return _keyPairs[Rnd.get(10)];
+		return _keyPairs[ThreadLocalRandom.current().nextInt(_keyPairs.length)];
 	}
 	
 	/**

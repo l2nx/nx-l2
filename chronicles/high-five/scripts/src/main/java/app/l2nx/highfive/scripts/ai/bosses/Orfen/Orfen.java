@@ -27,7 +27,8 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
 
-import app.l2nx.commons.time.TimeUtil;
+import org.apache.commons.lang3.time.DateFormatUtils;
+
 import app.l2nx.highfive.config.GrandBossConfig;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.WorldObject;
@@ -444,7 +445,7 @@ public class Orfen extends Script
 			
 			// Next respawn time.
 			final long nextRespawnTime = System.currentTimeMillis() + respawnTime;
-			LOGGER.info("Orfen will respawn at: " + TimeUtil.getDateTimeString(nextRespawnTime));
+			LOGGER.info("Orfen will respawn at: " + DateFormatUtils.format(nextRespawnTime, "dd/MM/yyyy HH:mm:ss"));
 			
 			startQuestTimer(EVENT_ORFEN_UNLOCK, respawnTime, null, null);
 			

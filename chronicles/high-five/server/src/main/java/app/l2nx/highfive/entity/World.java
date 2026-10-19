@@ -27,11 +27,11 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.logging.Logger;
 
-import app.l2nx.commons.util.Rnd;
 import app.l2nx.highfive.ai.CreatureAI;
 import app.l2nx.highfive.ai.Intention;
 import app.l2nx.highfive.config.custom.FactionSystemConfig;
@@ -1811,7 +1811,7 @@ public class World
 				}
 				
 				count++;
-				if (Rnd.get(count) == 0)
+				if (ThreadLocalRandom.current().nextInt(count) == 0)
 				{
 					selected = clazz.cast(wo);
 				}
@@ -1865,7 +1865,7 @@ public class World
 				}
 				
 				count++;
-				if (Rnd.get(count) == 0)
+				if (ThreadLocalRandom.current().nextInt(count) == 0)
 				{
 					selected = clazz.cast(wo);
 				}
@@ -1928,7 +1928,7 @@ public class World
 					}
 					
 					count++;
-					if (Rnd.get(count) == 0)
+					if (ThreadLocalRandom.current().nextInt(count) == 0)
 					{
 						selected = cast;
 					}
@@ -1993,7 +1993,7 @@ public class World
 					}
 					
 					count++;
-					if (Rnd.get(count) == 0)
+					if (ThreadLocalRandom.current().nextInt(count) == 0)
 					{
 						selected = cast;
 					}
@@ -2054,7 +2054,7 @@ public class World
 				}
 				
 				count++;
-				if (Rnd.get(count) == 0)
+				if (ThreadLocalRandom.current().nextInt(count) == 0)
 				{
 					selected = cast;
 				}
@@ -2119,7 +2119,7 @@ public class World
 				}
 				
 				count++;
-				if (Rnd.get(count) == 0)
+				if (ThreadLocalRandom.current().nextInt(count) == 0)
 				{
 					selected = cast;
 				}
@@ -2186,7 +2186,7 @@ public class World
 					}
 					
 					count++;
-					if (Rnd.get(count) == 0)
+					if (ThreadLocalRandom.current().nextInt(count) == 0)
 					{
 						selected = cast;
 					}
@@ -2256,7 +2256,7 @@ public class World
 					}
 					
 					count++;
-					if (Rnd.get(count) == 0)
+					if (ThreadLocalRandom.current().nextInt(count) == 0)
 					{
 						selected = cast;
 					}

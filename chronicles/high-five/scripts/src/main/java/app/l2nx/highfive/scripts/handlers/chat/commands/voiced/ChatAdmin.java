@@ -24,7 +24,8 @@ package app.l2nx.highfive.scripts.handlers.chat.commands.voiced;
 
 import java.util.StringTokenizer;
 
-import app.l2nx.commons.util.StringUtil;
+import org.apache.commons.lang3.StringUtils;
+
 import app.l2nx.highfive.data.sql.CharInfoTable;
 import app.l2nx.highfive.data.xml.AdminData;
 import app.l2nx.highfive.entity.World;
@@ -72,7 +73,7 @@ public class ChatAdmin implements IVoicedCommandHandler
 					if (st.hasMoreTokens())
 					{
 						final String token = st.nextToken();
-						if (StringUtil.isNumeric(token))
+						if (StringUtils.isNumeric(token))
 						{
 							expirationTime = Integer.parseInt(token);
 						}

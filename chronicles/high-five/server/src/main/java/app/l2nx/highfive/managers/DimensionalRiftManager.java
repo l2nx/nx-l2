@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -37,7 +38,6 @@ import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 
 import app.l2nx.commons.database.DatabaseFactory;
-import app.l2nx.commons.util.Rnd;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.config.ServerConfig;
 import app.l2nx.highfive.data.SpawnTable;
@@ -365,7 +365,7 @@ public class DimensionalRiftManager
 		do
 		{
 			emptyRooms = getFreeRooms(type);
-			room = emptyRooms.get(Rnd.get(1, emptyRooms.size()) - 1);
+			room = emptyRooms.get(ThreadLocalRandom.current().nextInt(emptyRooms.size()));
 		}
 		
 		// find empty room

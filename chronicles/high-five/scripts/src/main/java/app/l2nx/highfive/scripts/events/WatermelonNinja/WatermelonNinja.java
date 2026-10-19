@@ -26,8 +26,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ThreadLocalRandom;
 
-import app.l2nx.commons.util.Rnd;
 import app.l2nx.highfive.entity.WorldObject;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
@@ -470,10 +470,11 @@ public class WatermelonNinja extends LongTimeEvent
 			return;
 		}
 		
+		final ThreadLocalRandom random = ThreadLocalRandom.current();
 		final int size = drops.size();
-		final int startIndex = Rnd.get(size); // Random starting index.
+		final int startIndex = random.nextInt(size); // Random starting index.
 		int dropCount = 0;
-		final int maxDrops = Rnd.get(1, MAX_DROP_COUNT);
+		final int maxDrops = random.nextInt(1, MAX_DROP_COUNT + 1);
 		final Monster monster = npc.asMonster();
 		
 		// Iterate through the list starting at random index.
@@ -481,7 +482,7 @@ public class WatermelonNinja extends LongTimeEvent
 		{
 			final int currentIndex = (startIndex + i) % size; // Wrap around using modulo.
 			final ItemChanceHolder drop = drops.get(currentIndex);
-			if (Rnd.get(100) < drop.getChance())
+			if (random.nextInt(100) < drop.getChance())
 			{
 				monster.dropItem(killer, drop);
 				dropCount++;

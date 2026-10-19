@@ -22,7 +22,8 @@
  */
 package app.l2nx.highfive.scripts.quests.Q10275_ContainingTheAttributePower;
 
-import app.l2nx.commons.util.StringUtil;
+import org.apache.commons.lang3.StringUtils;
+
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.item.holders.Elementals;
@@ -145,7 +146,7 @@ public class Q10275_ContainingTheAttributePower extends Quest
 			}
 		}
 		
-		if (StringUtil.isNumeric(event))
+		if (StringUtils.isNumeric(event))
 		{
 			htmltext = npc.getId() + "-1" + event + ".html";
 			giveItems(player, 10520 + Integer.parseInt(event), 2);

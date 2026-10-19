@@ -27,10 +27,13 @@ import java.net.UnknownHostException;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
 import java.util.StringTokenizer;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
-import app.l2nx.commons.util.StringUtil;
+import org.apache.commons.lang3.StringUtils;
+
 import app.l2nx.highfive.cache.HtmCache;
 import app.l2nx.highfive.config.ServerConfig;
 import app.l2nx.highfive.data.sql.CharInfoTable;
@@ -95,8 +98,8 @@ public class AdminPunishment implements IAdminCommandHandler
 					String content = HtmCache.getInstance().getHtm(activeChar, PUNISHMENT);
 					if (content != null)
 					{
-						content = content.replace("%punishments%", StringUtil.implode(PunishmentType.values(), ";"));
-						content = content.replace("%affects%", StringUtil.implode(PunishmentAffect.values(), ";"));
+						content = content.replace("%punishments%", Arrays.stream(PunishmentType.values()).map(Object::toString).collect(Collectors.joining(";")));
+						content = content.replace("%affects%", Arrays.stream(PunishmentAffect.values()).map(Object::toString).collect(Collectors.joining(";")));
 						activeChar.sendPacket(new NpcHtmlMessage(0, 1, content));
 					}
 					else
@@ -162,7 +165,7 @@ public class AdminPunishment implements IAdminCommandHandler
 								
 								content = content.replace("%player_name%", name);
 								content = content.replace("%punishments%", sb.toString());
-								content = content.replace("%affects%", StringUtil.implode(PunishmentAffect.values(), ";"));
+								content = content.replace("%affects%", Arrays.stream(PunishmentAffect.values()).map(Object::toString).collect(Collectors.joining(";")));
 								content = content.replace("%affect_type%", affect.name());
 								activeChar.sendPacket(new NpcHtmlMessage(0, 1, content));
 							}
@@ -201,7 +204,7 @@ public class AdminPunishment implements IAdminCommandHandler
 							if (content != null)
 							{
 								content = content.replace("%player_name%", target.getName());
-								content = content.replace("%punishments%", StringUtil.implode(PunishmentType.values(), ";"));
+								content = content.replace("%punishments%", Arrays.stream(PunishmentType.values()).map(Object::toString).collect(Collectors.joining(";")));
 								content = content.replace("%acc%", target.getAccountName());
 								content = content.replace("%char%", target.getName());
 								content = content.replace("%ip%", target.getIPAddress());
@@ -251,7 +254,7 @@ public class AdminPunishment implements IAdminCommandHandler
 					break;
 				}
 				
-				if (!StringUtil.isNumeric(exp) && !exp.equals("-1"))
+				if (!StringUtils.isNumeric(exp) && !exp.equals("-1"))
 				{
 					activeChar.sendSysMessage("Incorrect value specified for expiration time!");
 					break;

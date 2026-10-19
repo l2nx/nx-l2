@@ -32,10 +32,10 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import app.l2nx.commons.util.Rnd;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.data.xml.SkillData;
@@ -799,7 +799,7 @@ public class Skill
 	
 	public int getAffectLimit()
 	{
-		return (_affectLimit[0] + Rnd.get(_affectLimit[1]));
+		return _affectLimit[0] + (_affectLimit[1] > 0 ? ThreadLocalRandom.current().nextInt(_affectLimit[1]) : 0);
 	}
 	
 	public boolean isActive()

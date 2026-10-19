@@ -27,11 +27,11 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Level;
 
+import org.apache.commons.lang3.StringUtils;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 
 import app.l2nx.commons.util.IXmlReader;
-import app.l2nx.commons.util.StringUtil;
 import app.l2nx.highfive.entity.item.ItemTemplate;
 import app.l2nx.highfive.entity.item.instance.Item;
 import app.l2nx.highfive.mechanics.options.EnchantOptions;
@@ -83,7 +83,7 @@ public class EnchantItemOptionsData implements IXmlReader
 								for (byte i = 0; i < 3; i++)
 								{
 									final Node att = cd.getAttributes().getNamedItem("option" + (i + 1));
-									if ((att != null) && StringUtil.isNumeric(att.getNodeValue()))
+									if ((att != null) && StringUtils.isNumeric(att.getNodeValue()))
 									{
 										final int id = parseInteger(att);
 										if (OptionData.getInstance().getOptions(id) == null)

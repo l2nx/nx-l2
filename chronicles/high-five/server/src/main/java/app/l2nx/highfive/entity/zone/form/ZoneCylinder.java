@@ -22,7 +22,8 @@
  */
 package app.l2nx.highfive.entity.zone.form;
 
-import app.l2nx.commons.util.Rnd;
+import java.util.concurrent.ThreadLocalRandom;
+
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.itemcontainer.Inventory;
 import app.l2nx.highfive.entity.zone.ZoneForm;
@@ -172,10 +173,11 @@ public class ZoneCylinder extends ZoneForm
 		final int y3 = _y + _rad;
 		double dx = _x - x;
 		double dy = _y - y;
+		final ThreadLocalRandom random = ThreadLocalRandom.current();
 		while (((dx * dx) + (dy * dy)) > _radS)
 		{
-			x = Rnd.get(x2, x3);
-			y = Rnd.get(y2, y3);
+			x = random.nextInt(x2, x3 + 1);
+			y = random.nextInt(y2, y3 + 1);
 			dx = _x - x;
 			dy = _y - y;
 		}

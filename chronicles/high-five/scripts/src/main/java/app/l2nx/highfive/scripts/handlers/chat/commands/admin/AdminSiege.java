@@ -22,7 +22,8 @@ package app.l2nx.highfive.scripts.handlers.chat.commands.admin;
 import java.util.Calendar;
 import java.util.StringTokenizer;
 
-import app.l2nx.commons.util.StringUtil;
+import org.apache.commons.lang3.StringUtils;
+
 import app.l2nx.highfive.data.sql.ClanHallTable;
 import app.l2nx.highfive.data.sql.ClanTable;
 import app.l2nx.highfive.entity.actor.Player;
@@ -92,7 +93,7 @@ public class AdminSiege implements IAdminCommandHandler
 			String val = st.nextToken();
 			if (command.startsWith("admin_clanhall"))
 			{
-				if (StringUtil.isNumeric(val))
+				if (StringUtils.isNumeric(val))
 				{
 					clanhall = ClanHallTable.getInstance().getClanHallById(Integer.parseInt(val));
 					Clan clan = null;
@@ -232,7 +233,7 @@ public class AdminSiege implements IAdminCommandHandler
 						if (st.hasMoreTokens())
 						{
 							val = st.nextToken();
-							if (StringUtil.isNumeric(val))
+							if (StringUtils.isNumeric(val))
 							{
 								castle.getSiege().getSiegeGuardManager().addSiegeGuard(activeChar, Integer.parseInt(val));
 								break;

@@ -27,11 +27,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import app.l2nx.commons.threads.ThreadPool;
-import app.l2nx.commons.util.Rnd;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
@@ -626,7 +626,7 @@ public class Duel
 			return;
 		}
 		
-		_duelInstanceId = InstanceManager.getInstance().createDynamicInstance(Rnd.get(147, 150)).getId(); // Random Olympiad arena.
+		_duelInstanceId = InstanceManager.getInstance().createDynamicInstance(ThreadLocalRandom.current().nextInt(147, 151)).getId(); // Random Olympiad arena.
 		final OlympiadStadiumZone zone = ZoneManager.getInstance().getZone(InstanceManager.getInstance().getInstance(_duelInstanceId).getNpcs().stream().findFirst().get(), OlympiadStadiumZone.class);
 		if (zone == null)
 		{
@@ -644,13 +644,14 @@ public class Duel
 			}
 		}
 		
-		final Location spawn1 = spawns.get(Rnd.get(spawns.size() / 2));
+		final ThreadLocalRandom random = ThreadLocalRandom.current();
+		final Location spawn1 = spawns.get(spawns.size() > 1 ? random.nextInt(spawns.size() / 2) : 0);
 		for (Player temp : _playerA.getParty().getMembers())
 		{
 			temp.teleToLocation(spawn1.getX(), spawn1.getY(), spawn1.getZ(), 0, _duelInstanceId, 0);
 		}
 		
-		final Location spawn2 = spawns.get(Rnd.get(spawns.size() / 2, spawns.size()));
+		final Location spawn2 = spawns.get(random.nextInt(spawns.size() / 2, spawns.size()));
 		for (Player temp : _playerB.getParty().getMembers())
 		{
 			temp.teleToLocation(spawn2.getX(), spawn2.getY(), spawn2.getZ(), 0, _duelInstanceId, 0);

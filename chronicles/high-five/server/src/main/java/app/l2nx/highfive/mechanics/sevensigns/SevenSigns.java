@@ -32,9 +32,10 @@ import java.util.Map.Entry;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.apache.commons.lang3.time.DurationFormatUtils;
+
 import app.l2nx.commons.database.DatabaseFactory;
 import app.l2nx.commons.threads.ThreadPool;
-import app.l2nx.commons.time.TimeUtil;
 import app.l2nx.highfive.config.FeatureConfig;
 import app.l2nx.highfive.config.NpcConfig;
 import app.l2nx.highfive.entity.World;
@@ -192,7 +193,7 @@ public class SevenSigns
 		
 		// Schedule a time for the next period change.
 		ThreadPool.schedule(new SevenSignsPeriodChange(), milliToChange);
-		LOGGER.info("SevenSigns: Next period begins in " + TimeUtil.formatDuration(milliToChange));
+		LOGGER.info("SevenSigns: Next period begins in " + DurationFormatUtils.formatDurationWords(milliToChange, true, true));
 	}
 	
 	private boolean isNextPeriodChangeInPast()

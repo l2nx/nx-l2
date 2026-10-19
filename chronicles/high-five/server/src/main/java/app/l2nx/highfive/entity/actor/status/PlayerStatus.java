@@ -22,7 +22,8 @@
  */
 package app.l2nx.highfive.entity.actor.status;
 
-import app.l2nx.commons.util.Rnd;
+import java.util.concurrent.ThreadLocalRandom;
+
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.config.custom.MultilingualSupportConfig;
 import app.l2nx.highfive.config.custom.OfflineTradeConfig;
@@ -105,7 +106,7 @@ public class PlayerStatus extends PlayableStatus
 				player.standUp();
 			}
 			
-			if (!isDOT && player.isStunned() && (Rnd.get(10) == 0))
+			if (!isDOT && player.isStunned() && (ThreadLocalRandom.current().nextInt(10) == 0))
 			{
 				player.stopStunning(true);
 			}

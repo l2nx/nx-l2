@@ -25,8 +25,9 @@ import java.sql.ResultSet;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 
+import org.apache.commons.lang3.StringUtils;
+
 import app.l2nx.commons.database.DatabaseFactory;
-import app.l2nx.commons.util.StringUtil;
 import app.l2nx.highfive.cache.HtmCache;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.handler.CommunityBoardHandler;
@@ -124,7 +125,7 @@ public class FavoriteBoard implements IParseBoardHandler
 		else if (command.startsWith("_bbsdelfav_"))
 		{
 			final String favId = command.replace("_bbsdelfav_", "");
-			if (!StringUtil.isNumeric(favId))
+			if (!StringUtils.isNumeric(favId))
 			{
 				LOG.warning(FavoriteBoard.class.getSimpleName() + ": Couldn't delete favorite link, " + favId + " it's not a valid ID!");
 				return false;

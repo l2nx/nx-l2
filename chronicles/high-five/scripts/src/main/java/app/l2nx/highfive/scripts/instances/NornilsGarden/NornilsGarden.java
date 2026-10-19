@@ -19,7 +19,8 @@
  */
 package app.l2nx.highfive.scripts.instances.NornilsGarden;
 
-import app.l2nx.commons.util.StringUtil;
+import org.apache.commons.lang3.StringUtils;
+
 import app.l2nx.highfive.data.xml.SkillData;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.actor.Creature;
@@ -530,7 +531,7 @@ public class NornilsGarden extends InstanceScript
 			{
 				st.unset("correct");
 			}
-			else if (StringUtil.isNumeric(event))
+			else if (StringUtils.isNumeric(event))
 			{
 				int correct = st.getInt("correct");
 				correct++;

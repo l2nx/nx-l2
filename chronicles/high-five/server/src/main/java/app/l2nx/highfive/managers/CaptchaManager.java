@@ -26,12 +26,11 @@ import java.awt.image.BufferedImage;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
 import app.l2nx.commons.threads.ThreadPool;
-import app.l2nx.commons.util.Rnd;
-import app.l2nx.commons.util.StringUtil;
 import app.l2nx.highfive.config.ServerConfig;
 import app.l2nx.highfive.config.custom.AutoPlayConfig;
 import app.l2nx.highfive.config.custom.CaptchaConfig;
@@ -140,7 +139,7 @@ public class CaptchaManager
 			count = MONSTER_COUNTER.get(killer.getObjectId()) + 1;
 		}
 		
-		final int next = Rnd.get(CaptchaConfig.KILL_COUNTER_RANDOMIZATION);
+		final int next = CaptchaConfig.KILL_COUNTER_RANDOMIZATION > 0 ? ThreadLocalRandom.current().nextInt(CaptchaConfig.KILL_COUNTER_RANDOMIZATION) : 0;
 		if ((CaptchaConfig.KILL_COUNTER + next) < count)
 		{
 			validationTasks(killer);
@@ -157,14 +156,14 @@ public class CaptchaManager
 		RETRIES.put(player.getObjectId(), 0);
 		final NpcHtmlMessage html = new NpcHtmlMessage(1);
 		final StringBuilder sb = new StringBuilder();
-		StringUtil.append(sb, "<html>");
-		StringUtil.append(sb, "<title>Bot Protection</title>");
-		StringUtil.append(sb, "<body><center><br><br><img src=\"L2UI_CH3.herotower_deco\" width=\"256\" height=\"32\">");
-		StringUtil.append(sb, "<br><br><font color=\"a2a0a2\">If such window appears it means server suspect,<br1>that you may using cheating software.</font>");
-		StringUtil.append(sb, "<br><br><font color=\"b09979\">If given answer results are incorrect or no action is made character will be punished instantly.</font>");
-		StringUtil.append(sb, "<br><br><button value=\"CONTINUE\" action=\"bypass report_continue\" width=\"100\" height=\"27\" back=\"L2UI_CT1.Button_DF_Down\" fore=\"L2UI_CT1.Button_DF\">");
-		StringUtil.append(sb, "</center></body>");
-		StringUtil.append(sb, "</html>");
+		sb.append("<html>");
+		sb.append("<title>Bot Protection</title>");
+		sb.append("<body><center><br><br><img src=\"L2UI_CH3.herotower_deco\" width=\"256\" height=\"32\">");
+		sb.append("<br><br><font color=\"a2a0a2\">If such window appears it means server suspect,<br1>that you may using cheating software.</font>");
+		sb.append("<br><br><font color=\"b09979\">If given answer results are incorrect or no action is made character will be punished instantly.</font>");
+		sb.append("<br><br><button value=\"CONTINUE\" action=\"bypass report_continue\" width=\"100\" height=\"27\" back=\"L2UI_CT1.Button_DF_Down\" fore=\"L2UI_CT1.Button_DF\">");
+		sb.append("</center></body>");
+		sb.append("</html>");
 		html.setHtml(sb.toString());
 		player.sendPacket(html);
 	}
@@ -174,18 +173,18 @@ public class CaptchaManager
 		final PlayerData data = VALIDATION.get(player.getObjectId());
 		final NpcHtmlMessage html = new NpcHtmlMessage(1);
 		final StringBuilder sb = new StringBuilder();
-		StringUtil.append(sb, "<html>");
-		StringUtil.append(sb, "<title>Bot Protection</title>");
-		StringUtil.append(sb, "<body><center><br><br><img src=\"L2UI_CH3.herotower_deco\" width=\"256\" height=\"32\">");
-		StringUtil.append(sb, "<br><br><font color=\"a2a0a2\">in order to prove you are a human being<br1>you've to</font> <font color=\"b09979\">enter the code from picture:</font>");
+		sb.append("<html>");
+		sb.append("<title>Bot Protection</title>");
+		sb.append("<body><center><br><br><img src=\"L2UI_CH3.herotower_deco\" width=\"256\" height=\"32\">");
+		sb.append("<br><br><font color=\"a2a0a2\">in order to prove you are a human being<br1>you've to</font> <font color=\"b09979\">enter the code from picture:</font>");
 		
 		// Generated main pattern.
-		StringUtil.append(sb, "<br><br><img src=\"Crest.crest_" + ServerConfig.SERVER_ID + "_" + data.captchaId + "\" width=256 height=64></td></tr>");
-		StringUtil.append(sb, "<br>");
-		StringUtil.append(sb, "<br><br><edit var=\"answer\" width=110>");
-		StringUtil.append(sb, "<br><button value=\"Confirm\" action=\"bypass -h report_ $answer\" width=\"100\" height=\"27\" back=\"L2UI_CT1.Button_DF_Down\" fore=\"L2UI_CT1.Button_DF\"><br/>");
-		StringUtil.append(sb, "</center></body>");
-		StringUtil.append(sb, "</html>");
+		sb.append("<br><br><img src=\"Crest.crest_" + ServerConfig.SERVER_ID + "_" + data.captchaId + "\" width=256 height=64></td></tr>");
+		sb.append("<br>");
+		sb.append("<br><br><edit var=\"answer\" width=110>");
+		sb.append("<br><button value=\"Confirm\" action=\"bypass -h report_ $answer\" width=\"100\" height=\"27\" back=\"L2UI_CT1.Button_DF_Down\" fore=\"L2UI_CT1.Button_DF\"><br/>");
+		sb.append("</center></body>");
+		sb.append("</html>");
 		
 		html.setHtml(sb.toString());
 		player.sendPacket(html);
@@ -197,13 +196,13 @@ public class CaptchaManager
 	{
 		final NpcHtmlMessage html = new NpcHtmlMessage(1);
 		final StringBuilder sb = new StringBuilder();
-		StringUtil.append(sb, "<html>");
-		StringUtil.append(sb, "<title>Bot Protection</title>");
-		StringUtil.append(sb, "<body><center><br><br><img src=\"L2UI_CH3.herotower_deco\" width=\"256\" height=\"32\">");
-		StringUtil.append(sb, "<br><br><font color=\"a2a0a2\">If such window appears, it means character haven't passed through prevention system.");
-		StringUtil.append(sb, "<br><br><font color=\"b09979\">In such case character get moved to nearest town.</font>");
-		StringUtil.append(sb, "</center></body>");
-		StringUtil.append(sb, "</html>");
+		sb.append("<html>");
+		sb.append("<title>Bot Protection</title>");
+		sb.append("<body><center><br><br><img src=\"L2UI_CH3.herotower_deco\" width=\"256\" height=\"32\">");
+		sb.append("<br><br><font color=\"a2a0a2\">If such window appears, it means character haven't passed through prevention system.");
+		sb.append("<br><br><font color=\"b09979\">In such case character get moved to nearest town.</font>");
+		sb.append("</center></body>");
+		sb.append("</html>");
 		html.setHtml(sb.toString());
 		player.sendPacket(html);
 	}

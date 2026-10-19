@@ -22,7 +22,8 @@
  */
 package app.l2nx.highfive.util;
 
-import app.l2nx.commons.util.Rnd;
+import java.util.concurrent.ThreadLocalRandom;
+
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.WorldObject;
@@ -206,9 +207,10 @@ public class LocationUtil
 	 */
 	public static Location getRandomLocation(ILocational center, int minRadius, int maxRadius)
 	{
-		final int randomX = Rnd.get(minRadius, maxRadius);
-		final int randomY = Rnd.get(minRadius, maxRadius);
-		final double angle = Math.toRadians(Rnd.get(360));
+		final ThreadLocalRandom random = ThreadLocalRandom.current();
+		final int randomX = minRadius < maxRadius ? random.nextInt(minRadius, maxRadius + 1) : minRadius;
+		final int randomY = minRadius < maxRadius ? random.nextInt(minRadius, maxRadius + 1) : minRadius;
+		final double angle = Math.toRadians(random.nextInt(360));
 		final int newX = (int) (center.getX() + (randomX * Math.cos(angle)));
 		final int newY = (int) (center.getY() + (randomY * Math.sin(angle)));
 		return new Location(newX, newY, center.getZ());

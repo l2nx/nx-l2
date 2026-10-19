@@ -32,12 +32,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import app.l2nx.commons.database.DatabaseFactory;
 import app.l2nx.commons.threads.ThreadPool;
-import app.l2nx.commons.util.Rnd;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.data.xml.NpcData;
 import app.l2nx.highfive.entity.actor.Creature;
@@ -403,7 +403,7 @@ public class MonsterRaceManager
 				}
 				else
 				{
-					_speeds[i][j] = Rnd.get(60) + 65;
+					_speeds[i][j] = ThreadLocalRandom.current().nextInt(60) + 65;
 				}
 				
 				// Feed actual total to current lane total.

@@ -29,7 +29,6 @@ import java.util.Map;
 import java.util.logging.Logger;
 
 import app.l2nx.commons.util.ConfigReader;
-import app.l2nx.commons.util.StringUtil;
 
 /**
  * This class loads all the NPC related configurations.
@@ -181,7 +180,7 @@ public class NpcConfig
 			final String[] propSplit = prop.split(",");
 			if (propSplit.length != 2)
 			{
-				LOGGER.warning(StringUtil.concat("[CustomMinionsRespawnTime]: invalid config property -> CustomMinionsRespawnTime \"", prop, "\""));
+				LOGGER.warning("[CustomMinionsRespawnTime]: invalid config property -> CustomMinionsRespawnTime \"" + prop + "\"");
 			}
 			try
 			{
@@ -191,7 +190,7 @@ public class NpcConfig
 			{
 				if (!prop.isEmpty())
 				{
-					LOGGER.warning(StringUtil.concat("[CustomMinionsRespawnTime]: invalid config property -> CustomMinionsRespawnTime \"", propSplit[0], "\"", propSplit[1]));
+					LOGGER.warning("[CustomMinionsRespawnTime]: invalid config property -> CustomMinionsRespawnTime \"" + propSplit[0] + "\"" + propSplit[1]);
 				}
 			}
 		}

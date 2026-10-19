@@ -29,12 +29,12 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import app.l2nx.commons.database.DatabaseFactory;
 import app.l2nx.commons.threads.ThreadPool;
-import app.l2nx.commons.util.Rnd;
 import app.l2nx.highfive.config.NpcConfig;
 import app.l2nx.highfive.data.SpawnTable;
 import app.l2nx.highfive.entity.actor.enums.npc.RaidBossStatus;
@@ -164,7 +164,7 @@ public class RaidBossSpawnManager
 			
 			final int respawnMinDelay = (int) (boss.getSpawn().getRespawnMinDelay() * NpcConfig.RAID_MIN_RESPAWN_MULTIPLIER);
 			final int respawnMaxDelay = (int) (boss.getSpawn().getRespawnMaxDelay() * NpcConfig.RAID_MAX_RESPAWN_MULTIPLIER);
-			final int respawnDelay = Rnd.get(respawnMinDelay, respawnMaxDelay);
+			final int respawnDelay = respawnMinDelay < respawnMaxDelay ? ThreadLocalRandom.current().nextInt(respawnMinDelay, respawnMaxDelay + 1) : respawnMinDelay;
 			final long respawnTime = System.currentTimeMillis() + respawnDelay;
 			info.set("currentHP", boss.getMaxHp());
 			info.set("currentMP", boss.getMaxMp());

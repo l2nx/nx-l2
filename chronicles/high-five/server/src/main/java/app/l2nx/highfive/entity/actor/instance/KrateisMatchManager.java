@@ -22,7 +22,8 @@
  */
 package app.l2nx.highfive.entity.actor.instance;
 
-import app.l2nx.commons.util.Rnd;
+import java.util.concurrent.ThreadLocalRandom;
+
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.Summon;
 import app.l2nx.highfive.entity.actor.templates.NpcTemplate;
@@ -53,7 +54,7 @@ public class KrateisMatchManager extends Folk
 			{
 				if (arena.isActiveNow())
 				{
-					player.teleToLocation(arena.getBattleLoc().get(Rnd.get(arena.getBattleLoc().size())), true);
+					player.teleToLocation(arena.getBattleLoc().get(ThreadLocalRandom.current().nextInt(arena.getBattleLoc().size())), true);
 					arena.addEffects(player);
 				}
 				else

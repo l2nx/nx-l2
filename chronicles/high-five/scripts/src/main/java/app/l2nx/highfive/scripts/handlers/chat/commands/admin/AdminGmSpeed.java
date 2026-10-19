@@ -21,7 +21,6 @@ package app.l2nx.highfive.scripts.handlers.chat.commands.admin;
 
 import java.util.StringTokenizer;
 
-import app.l2nx.commons.util.StringUtil;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.entity.WorldObject;
 import app.l2nx.highfive.entity.actor.Creature;
@@ -62,7 +61,7 @@ public class AdminGmSpeed implements IAdminCommandHandler
 				return true;
 			}
 			
-			if (!StringUtil.isDouble(token))
+			if (!isDouble(token))
 			{
 				player.sendSysMessage("//gmspeed [0...10]");
 				return false;
@@ -104,6 +103,19 @@ public class AdminGmSpeed implements IAdminCommandHandler
 		return true;
 	}
 	
+	private static boolean isDouble(String text)
+	{
+		try
+		{
+			Double.parseDouble(text);
+			return true;
+		}
+		catch (NumberFormatException e)
+		{
+			return false;
+		}
+	}
+
 	@Override
 	public String[] getCommandList()
 	{

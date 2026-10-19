@@ -33,8 +33,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.lang3.StringUtils;
+
 import app.l2nx.commons.database.DatabaseFactory;
-import app.l2nx.commons.util.StringUtil;
 import app.l2nx.highfive.cache.HtmCache;
 import app.l2nx.highfive.data.sql.ClanTable;
 import app.l2nx.highfive.entity.actor.Player;
@@ -120,7 +121,7 @@ public class RegionBoard implements IWriteBoardHandler
 			CommunityBoardHandler.getInstance().addBypass(player, "Region>", command);
 			
 			final String id = command.replace("_bbsloc;", "");
-			if (!StringUtil.isNumeric(id))
+			if (!StringUtils.isNumeric(id))
 			{
 				LOG.warning(RegionBoard.class.getSimpleName() + ": " + player + " sent an invalid region bypass " + command + "!");
 				return false;

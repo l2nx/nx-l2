@@ -32,10 +32,10 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
 import app.l2nx.commons.threads.ThreadPool;
-import app.l2nx.commons.util.Rnd;
 import app.l2nx.highfive.config.custom.PremiumSystemConfig;
 import app.l2nx.highfive.data.SpawnTable;
 import app.l2nx.highfive.entity.Location;
@@ -464,7 +464,7 @@ public class KrateiArena
 			{
 				if (player != null)
 				{
-					player.teleToLocation(getBattleLoc().get(Rnd.get(getBattleLoc().size())), true);
+					player.teleToLocation(getBattleLoc().get(ThreadLocalRandom.current().nextInt(getBattleLoc().size())), true);
 					addEffects(player);
 					player.sendPacket(new ExPVPMatchCCMyRecord(getPoints(player)));
 					player.sendPacket(p);
@@ -480,7 +480,7 @@ public class KrateiArena
 		{
 			if (getPlayers().containsKey(player))
 			{
-				player.teleToLocation(getBattleLoc().get(Rnd.get(getBattleLoc().size())), true);
+				player.teleToLocation(getBattleLoc().get(ThreadLocalRandom.current().nextInt(getBattleLoc().size())), true);
 			}
 		}
 		else
@@ -507,7 +507,7 @@ public class KrateiArena
 				respawnEffects(player);
 			}
 			
-			player.teleToLocation(getWaitLoc().get(Rnd.get(getWaitLoc().size())), true);
+			player.teleToLocation(getWaitLoc().get(ThreadLocalRandom.current().nextInt(getWaitLoc().size())), true);
 		}
 	}
 	
@@ -874,7 +874,7 @@ public class KrateiArena
 				else
 				{
 					respawnEffects(_player);
-					_player.teleToLocation(getWaitLoc().get(Rnd.get(getWaitLoc().size())), true);
+					_player.teleToLocation(getWaitLoc().get(ThreadLocalRandom.current().nextInt(getWaitLoc().size())), true);
 				}
 			}
 		}

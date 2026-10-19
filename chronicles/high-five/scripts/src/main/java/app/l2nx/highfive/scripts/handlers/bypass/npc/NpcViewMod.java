@@ -29,7 +29,8 @@ import java.util.List;
 import java.util.StringTokenizer;
 import java.util.concurrent.TimeUnit;
 
-import app.l2nx.commons.util.StringUtil;
+import org.apache.commons.lang3.StringUtils;
+
 import app.l2nx.highfive.cache.HtmCache;
 import app.l2nx.highfive.config.NpcConfig;
 import app.l2nx.highfive.config.RatesConfig;
@@ -254,7 +255,7 @@ public class NpcViewMod implements IBypassHandler
 			}
 		}
 		
-		html.replace("%atktype%", StringUtil.capitalizeFirst(npc.getAttackType().name().toLowerCase()));
+		html.replace("%atktype%", StringUtils.capitalize(npc.getAttackType().name().toLowerCase()));
 		html.replace("%atkrange%", npc.getStat().getPhysicalAttackRange());
 		html.replace("%patk%", (int) npc.getPAtk(player));
 		html.replace("%pdef%", (int) npc.getPDef(player));

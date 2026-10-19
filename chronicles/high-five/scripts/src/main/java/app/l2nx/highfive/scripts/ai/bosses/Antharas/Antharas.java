@@ -26,7 +26,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import app.l2nx.commons.time.TimeUtil;
+import org.apache.commons.lang3.time.DateFormatUtils;
+
 import app.l2nx.highfive.config.GrandBossConfig;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.World;
@@ -889,7 +890,7 @@ public class Antharas extends Script
 			setStatus(STATUS_DEAD);
 			
 			final long nextRespawnTime = System.currentTimeMillis() + respawnDelay;
-			LOGGER.info("Antharas will respawn at: " + TimeUtil.getDateTimeString(nextRespawnTime));
+			LOGGER.info("Antharas will respawn at: " + DateFormatUtils.format(nextRespawnTime, "dd/MM/yyyy HH:mm:ss"));
 			
 			resetFightState();
 		}

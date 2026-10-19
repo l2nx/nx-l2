@@ -34,9 +34,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.apache.commons.lang3.StringUtils;
+
 import app.l2nx.commons.database.DatabaseFactory;
 import app.l2nx.commons.threads.ThreadPool;
-import app.l2nx.commons.util.StringUtil;
 import app.l2nx.highfive.communitybbs.Manager.ForumsBBSManager;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.entity.actor.Player;
@@ -188,7 +189,7 @@ public class ClanTable
 			return null;
 		}
 		
-		if (!StringUtil.isAlphaNumeric(clanName) || (2 > clanName.length()))
+		if (!StringUtils.isAlphanumeric(clanName) || (2 > clanName.length()))
 		{
 			player.sendPacket(SystemMessageId.CLAN_NAME_IS_INVALID);
 			return null;

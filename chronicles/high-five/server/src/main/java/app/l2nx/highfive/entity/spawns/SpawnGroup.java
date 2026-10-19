@@ -24,9 +24,9 @@ package app.l2nx.highfive.entity.spawns;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Logger;
 
-import app.l2nx.commons.util.Rnd;
 import app.l2nx.highfive.taskmanagers.SpawnGroupTaskManager;
 
 /**
@@ -146,7 +146,7 @@ public class SpawnGroup
 			case RANDOM:
 			{
 				// A single roll over the entry index, the whole quota of the rolled entry spawns. Nothing is filled up and the cap is not read.
-				final SpawnGroupEntry entry = _entries.get(Rnd.get(_entries.size()));
+				final SpawnGroupEntry entry = _entries.get(ThreadLocalRandom.current().nextInt(_entries.size()));
 				if (tryReserve(entry, entry.getTotal()))
 				{
 					spawned += spawnUnits(entry, entry.getTotal());
@@ -158,7 +158,7 @@ public class SpawnGroup
 				// The cap is the roll counter. Rolls use replacement and no retry, a roll into a full entry is simply lost.
 				for (int i = 0; i < _maximumNpc; i++)
 				{
-					final SpawnGroupEntry entry = _entries.get(Rnd.get(_entries.size()));
+					final SpawnGroupEntry entry = _entries.get(ThreadLocalRandom.current().nextInt(_entries.size()));
 					if (tryReserve(entry, 1))
 					{
 						spawned += spawnUnits(entry, 1);
@@ -202,7 +202,7 @@ public class SpawnGroup
 			return;
 		}
 		
-		final SpawnGroupEntry rolled = _entries.get(Rnd.get(_entries.size()));
+		final SpawnGroupEntry rolled = _entries.get(ThreadLocalRandom.current().nextInt(_entries.size()));
 		if (tryReserve(rolled, 1))
 		{
 			// Reserve now, materialize later. The delay comes from the rolled entry, not from the dead one.
@@ -210,7 +210,7 @@ public class SpawnGroup
 			final int respawnRandom = rolled.getRespawnRandom();
 			final int minDelay = Math.max(1, respawnDelay - respawnRandom) * 1000;
 			final int maxDelay = Math.max(1, respawnDelay + respawnRandom) * 1000;
-			SpawnGroupTaskManager.getInstance().add(this, rolled, System.currentTimeMillis() + (respawnRandom > 0 ? Rnd.get(minDelay, maxDelay) : minDelay));
+			SpawnGroupTaskManager.getInstance().add(this, rolled, System.currentTimeMillis() + (respawnRandom > 0 ? ThreadLocalRandom.current().nextInt(minDelay, maxDelay + 1) : minDelay));
 		}
 	}
 	
@@ -268,7 +268,7 @@ public class SpawnGroup
 		final List<Spawn> slots = entry.getSlots();
 		for (int i = 0; i < count; i++)
 		{
-			final Spawn slot = slots.get(Rnd.get(slots.size()));
+			final Spawn slot = slots.get(ThreadLocalRandom.current().nextInt(slots.size()));
 			if (slot.doSpawn(false) == null)
 			{
 				release(entry, 1);

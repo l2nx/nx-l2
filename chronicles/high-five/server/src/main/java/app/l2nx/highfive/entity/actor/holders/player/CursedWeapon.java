@@ -26,12 +26,12 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import app.l2nx.commons.database.DatabaseFactory;
 import app.l2nx.commons.threads.ThreadPool;
-import app.l2nx.commons.util.Rnd;
 import app.l2nx.highfive.data.xml.SkillData;
 import app.l2nx.highfive.data.xml.TransformData;
 import app.l2nx.highfive.entity.Location;
@@ -354,7 +354,7 @@ public class CursedWeapon
 	
 	public boolean checkDrop(Attackable attackable, Player player)
 	{
-		if (Rnd.get(100000) < _dropRate)
+		if (ThreadLocalRandom.current().nextInt(100000) < _dropRate)
 		{
 			// Drop the item
 			dropIt(attackable, player);
@@ -459,7 +459,7 @@ public class CursedWeapon
 	
 	public void dropIt(Creature killer)
 	{
-		if (Rnd.get(100) <= _disapearChance)
+		if (ThreadLocalRandom.current().nextInt(100) <= _disapearChance)
 		{
 			// Remove it
 			endOfLife();

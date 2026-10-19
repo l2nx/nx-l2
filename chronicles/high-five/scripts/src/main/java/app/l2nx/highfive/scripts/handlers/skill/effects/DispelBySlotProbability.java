@@ -28,9 +28,9 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.ThreadLocalRandom;
 
 import app.l2nx.commons.threads.ThreadPool;
-import app.l2nx.commons.util.Rnd;
 import app.l2nx.highfive.config.custom.CancelReturnConfig;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.holders.creature.EffectList;
@@ -118,7 +118,7 @@ public class DispelBySlotProbability extends AbstractEffect
 		final List<BuffInfo> canceled = new ArrayList<>();
 		for (Entry<AbnormalType, Short> entry : _dispelAbnormals.entrySet())
 		{
-			if (Rnd.get(100) < _rate)
+			if (ThreadLocalRandom.current().nextInt(100) < _rate)
 			{
 				// Dispel transformations (buff and by GM).
 				if ((entry.getKey() == AbnormalType.TRANSFORM) && (effected.isTransformed() || (effected.isPlayer() || (entry.getValue() == effected.asPlayer().getTransformationId()) || (entry.getValue() < 0))))
@@ -178,7 +178,7 @@ public class DispelBySlotProbability extends AbstractEffect
 		final EffectList effectList = effected.getEffectList();
 		for (Entry<AbnormalType, Short> entry : _dispelAbnormals.entrySet())
 		{
-			if (Rnd.get(100) < _rate)
+			if (ThreadLocalRandom.current().nextInt(100) < _rate)
 			{
 				// Dispel transformations (buff and by GM).
 				if ((entry.getKey() == AbnormalType.TRANSFORM) && (effected.isTransformed() || (effected.isPlayer() || (entry.getValue() == effected.asPlayer().getTransformationId()) || (entry.getValue() < 0))))

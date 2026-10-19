@@ -22,7 +22,8 @@
  */
 package app.l2nx.highfive.scripts.village_master.DarkElfChange1;
 
-import app.l2nx.commons.util.StringUtil;
+import org.apache.commons.lang3.StringUtils;
+
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.enums.creature.Race;
@@ -71,7 +72,7 @@ public class DarkElfChange1 extends Script
 	@Override
 	public String onEvent(String event, Npc npc, Player player)
 	{
-		if (StringUtil.isNumeric(event))
+		if (StringUtils.isNumeric(event))
 		{
 			final int i = Integer.parseInt(event);
 			final PlayerClass cid = player.getPlayerClass();

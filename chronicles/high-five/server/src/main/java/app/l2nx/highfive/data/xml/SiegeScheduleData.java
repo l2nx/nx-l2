@@ -25,12 +25,12 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Logger;
 
+import org.apache.commons.lang3.StringUtils;
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 
 import app.l2nx.commons.util.IXmlReader;
-import app.l2nx.commons.util.StringUtil;
 import app.l2nx.highfive.mechanics.siege.SiegeScheduleDate;
 import app.l2nx.highfive.util.StatSet;
 
@@ -75,7 +75,7 @@ public class SiegeScheduleData implements IXmlReader
 								final Node node = attrs.item(i);
 								final String key = node.getNodeName();
 								String val = node.getNodeValue();
-								if ("day".equals(key) && !StringUtil.isNumeric(val))
+								if ("day".equals(key) && !StringUtils.isNumeric(val))
 								{
 									val = Integer.toString(getValueForField(val));
 								}

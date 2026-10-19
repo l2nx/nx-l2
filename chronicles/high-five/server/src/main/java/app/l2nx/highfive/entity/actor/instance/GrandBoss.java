@@ -22,7 +22,8 @@
  */
 package app.l2nx.highfive.entity.actor.instance;
 
-import app.l2nx.commons.util.Rnd;
+import java.util.concurrent.ThreadLocalRandom;
+
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.enums.creature.InstanceType;
@@ -78,7 +79,7 @@ public class GrandBoss extends Monster
 				party.broadcastPacket(msg);
 				for (Player member : party.getMembers())
 				{
-					RaidBossPointsManager.getInstance().addPoints(member, getId(), (getLevel() / 2) + Rnd.get(-5, 5));
+					RaidBossPointsManager.getInstance().addPoints(member, getId(), (getLevel() / 2) + ThreadLocalRandom.current().nextInt(-5, 6));
 					if (member.isNoble())
 					{
 						Hero.getInstance().setRBkilled(member.getObjectId(), getId());
@@ -88,7 +89,7 @@ public class GrandBoss extends Monster
 			else
 			{
 				player.sendPacket(msg);
-				RaidBossPointsManager.getInstance().addPoints(player, getId(), (getLevel() / 2) + Rnd.get(-5, 5));
+				RaidBossPointsManager.getInstance().addPoints(player, getId(), (getLevel() / 2) + ThreadLocalRandom.current().nextInt(-5, 6));
 				if (player.isNoble())
 				{
 					Hero.getInstance().setRBkilled(player.getObjectId(), getId());

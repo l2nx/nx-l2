@@ -27,9 +27,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ThreadLocalRandom;
 
 import app.l2nx.commons.threads.ThreadPool;
-import app.l2nx.commons.util.Rnd;
 import app.l2nx.highfive.config.custom.PremiumSystemConfig;
 import app.l2nx.highfive.data.xml.NpcData;
 import app.l2nx.highfive.entity.Location;
@@ -547,7 +547,7 @@ public class RimKamaloka extends Script
 				if (((damage * 100) / maxHp) > 40)
 				{
 					final int npcId = npc.getId();
-					final int chance = Rnd.get(100);
+					final int chance = ThreadLocalRandom.current().nextInt(100);
 					int nextId = 0;
 					
 					if (npcId == world.KANABION)
@@ -603,7 +603,7 @@ public class RimKamaloka extends Script
 			}
 			
 			final int npcId = npc.getId();
-			final int chance = Rnd.get(100);
+			final int chance = ThreadLocalRandom.current().nextInt(100);
 			int nextId = 0;
 			
 			if (npcId == world.KANABION)

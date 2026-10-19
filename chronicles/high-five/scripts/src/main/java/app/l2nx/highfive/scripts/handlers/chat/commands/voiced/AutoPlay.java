@@ -28,7 +28,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
 
-import app.l2nx.commons.util.StringUtil;
+import org.apache.commons.lang3.StringUtils;
+
 import app.l2nx.highfive.cache.HtmCache;
 import app.l2nx.highfive.config.custom.AutoPlayConfig;
 import app.l2nx.highfive.data.xml.ItemData;
@@ -236,7 +237,7 @@ public class AutoPlay implements IVoicedCommandHandler
 						}
 						case "percent":
 						{
-							if ((paramArray.length > 1) && StringUtil.isNumeric(paramArray[1]))
+							if ((paramArray.length > 1) && StringUtils.isNumeric(paramArray[1]))
 							{
 								player.getAutoPlaySettings().setAutoPotionPercent(Math.max(0, Math.min(100, Integer.parseInt(paramArray[1]))));
 							}

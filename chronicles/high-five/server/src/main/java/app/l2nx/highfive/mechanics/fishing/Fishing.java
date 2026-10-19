@@ -23,9 +23,9 @@
 package app.l2nx.highfive.mechanics.fishing;
 
 import java.util.concurrent.Future;
+import java.util.concurrent.ThreadLocalRandom;
 
 import app.l2nx.commons.threads.ThreadPool;
-import app.l2nx.commons.util.Rnd;
 import app.l2nx.highfive.data.xml.FishingMonstersData;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
@@ -97,7 +97,7 @@ public class Fishing implements Runnable
 		final int lureType;
 		if (isUpperGrade)
 		{
-			_deceptiveMode = (Rnd.get(100) >= 90) ? 1 : 0;
+			_deceptiveMode = (ThreadLocalRandom.current().nextInt(100) >= 90) ? 1 : 0;
 			lureType = 2;
 		}
 		else
@@ -106,7 +106,7 @@ public class Fishing implements Runnable
 			lureType = isNoob ? 0 : 1;
 		}
 		
-		_mode = (Rnd.get(100) >= 80) ? 1 : 0;
+		_mode = (ThreadLocalRandom.current().nextInt(100) >= 80) ? 1 : 0;
 		_fisher.broadcastPacket(new ExFishingStartCombat(_fisher, _time, _fishMaxHp, _mode, lureType, _deceptiveMode));
 		_fisher.sendPacket(new PlaySound(1, "SF_S_01", 0, 0, 0, 0, 0));
 		
@@ -158,7 +158,7 @@ public class Fishing implements Runnable
 			final FishingMonster fishingMonster = FishingMonstersData.getInstance().getFishingMonster(_fisher.getLevel());
 			if (fishingMonster != null)
 			{
-				if (Rnd.get(100) <= fishingMonster.getProbability())
+				if (ThreadLocalRandom.current().nextInt(100) <= fishingMonster.getProbability())
 				{
 					_fisher.sendPacket(SystemMessageId.YOU_CAUGHT_SOMETHING_SMELLY_AND_SCARY_MAYBE_YOU_SHOULD_THROW_IT_BACK);
 					final Npc monster = Quest.addSpawn(fishingMonster.getFishingMonsterId(), _fisher);
@@ -199,7 +199,7 @@ public class Fishing implements Runnable
 			if (_stop == 0)
 			{
 				_stop = 1;
-				int check = Rnd.get(100);
+				int check = ThreadLocalRandom.current().nextInt(100);
 				if (check >= 70)
 				{
 					_mode = _mode == 0 ? 1 : 0;
@@ -207,7 +207,7 @@ public class Fishing implements Runnable
 				
 				if (_isUpperGrade)
 				{
-					check = Rnd.get(100);
+					check = ThreadLocalRandom.current().nextInt(100);
 					if (check >= 90)
 					{
 						_deceptiveMode = _deceptiveMode == 0 ? 1 : 0;
@@ -237,7 +237,7 @@ public class Fishing implements Runnable
 	public void useReeling(int dmg, int pen)
 	{
 		_anim = 2;
-		if (Rnd.get(100) > 90)
+		if (ThreadLocalRandom.current().nextInt(100) > 90)
 		{
 			_fisher.sendPacket(SystemMessageId.THE_FISH_HAS_RESISTED_YOUR_ATTEMPT_TO_BRING_IT_IN);
 			_goodUse = 0;
@@ -308,7 +308,7 @@ public class Fishing implements Runnable
 	public void usePumping(int dmg, int pen)
 	{
 		_anim = 1;
-		if (Rnd.get(100) > 90)
+		if (ThreadLocalRandom.current().nextInt(100) > 90)
 		{
 			_fisher.sendPacket(SystemMessageId.THE_FISH_HAS_RESISTED_YOUR_ATTEMPT_TO_BRING_IT_IN);
 			_goodUse = 0;

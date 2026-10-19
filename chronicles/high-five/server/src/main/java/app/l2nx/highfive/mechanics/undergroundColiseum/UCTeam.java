@@ -23,9 +23,9 @@
 package app.l2nx.highfive.mechanics.undergroundColiseum;
 
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
 import app.l2nx.commons.threads.ThreadPool;
-import app.l2nx.commons.util.Rnd;
 import app.l2nx.highfive.config.UndergroundColiseumConfig;
 import app.l2nx.highfive.config.custom.PremiumSystemConfig;
 import app.l2nx.highfive.data.xml.NpcData;
@@ -189,7 +189,8 @@ public class UCTeam
 			if (player.isDead())
 			{
 				resPlayer(player);
-				player.teleToLocation(_x + Rnd.get(2, 50), _y + Rnd.get(10, 100), _z, true);
+				final ThreadLocalRandom random = ThreadLocalRandom.current();
+				player.teleToLocation(_x + random.nextInt(2, 51), _y + random.nextInt(10, 101), _z, true);
 				if (player.hasSummon())
 				{
 					final Summon summon = player.getSummon();
@@ -199,7 +200,7 @@ public class UCTeam
 					{
 						summon.setCurrentHp(summon.getMaxHp());
 						summon.setCurrentMp(summon.getMaxMp());
-						summon.teleToLocation(_x + Rnd.get(2, 50), _y + Rnd.get(10, 100), _z, true);
+						summon.teleToLocation(_x + random.nextInt(2, 51), _y + random.nextInt(10, 101), _z, true);
 					}
 				}
 			}

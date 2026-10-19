@@ -29,12 +29,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Future;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import app.l2nx.commons.database.DatabaseFactory;
 import app.l2nx.commons.threads.ThreadPool;
-import app.l2nx.commons.util.Rnd;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.config.NpcConfig;
 import app.l2nx.highfive.config.PlayerConfig;
@@ -187,12 +187,12 @@ public class Pet extends Summon
 				
 				if (isUncontrollable())
 				{
-					if (Rnd.get(100) < 30)
+					if (ThreadLocalRandom.current().nextInt(100) < 30)
 					{
 						// Owl Monk remove PK.
 						if ((getTemplate().getId() == 16050) && (getOwner() != null))
 						{
-							getOwner().setPkKills(Math.max(0, getOwner().getPkKills() - Rnd.get(1, 6)));
+							getOwner().setPkKills(Math.max(0, getOwner().getPkKills() - ThreadLocalRandom.current().nextInt(1, 7)));
 						}
 						
 						sendPacket(SystemMessageId.STARVING_GRUMPY_AND_FED_UP_YOUR_PET_HAS_LEFT);

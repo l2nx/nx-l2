@@ -21,7 +21,8 @@ package app.l2nx.highfive.scripts.handlers.chat.commands.admin;
 
 import java.util.StringTokenizer;
 
-import app.l2nx.commons.util.StringUtil;
+import org.apache.commons.lang3.StringUtils;
+
 import app.l2nx.highfive.cache.HtmCache;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.data.sql.AnnouncementsTable;
@@ -117,7 +118,7 @@ public class AdminAnnouncements implements IAdminCommandHandler
 						}
 						
 						final String annInitDelay = st.nextToken();
-						if (!StringUtil.isNumeric(annInitDelay))
+						if (!StringUtils.isNumeric(annInitDelay))
 						{
 							activeChar.sendSysMessage("Syntax: //announces add <type> <delay> <repeat> <text>");
 							break;
@@ -133,7 +134,7 @@ public class AdminAnnouncements implements IAdminCommandHandler
 						}
 						
 						final String annDelay = st.nextToken();
-						if (!StringUtil.isNumeric(annDelay))
+						if (!StringUtils.isNumeric(annDelay))
 						{
 							activeChar.sendSysMessage("Syntax: //announces add <type> <delay> <repeat> <text>");
 							break;
@@ -154,7 +155,7 @@ public class AdminAnnouncements implements IAdminCommandHandler
 						}
 						
 						final String annRepeat = st.nextToken();
-						if (!StringUtil.isNumeric(annRepeat))
+						if (!StringUtils.isNumeric(annRepeat))
 						{
 							activeChar.sendSysMessage("Syntax: //announces add <type> <delay> <repeat> <text>");
 							break;
@@ -203,7 +204,7 @@ public class AdminAnnouncements implements IAdminCommandHandler
 						}
 						
 						final String annId = st.nextToken();
-						if (!StringUtil.isNumeric(annId))
+						if (!StringUtils.isNumeric(annId))
 						{
 							activeChar.sendSysMessage("Syntax: //announces edit <id>");
 							break;
@@ -296,7 +297,7 @@ public class AdminAnnouncements implements IAdminCommandHandler
 						}
 						
 						final String annInitDelay = st.nextToken();
-						if (!StringUtil.isNumeric(annInitDelay))
+						if (!StringUtils.isNumeric(annInitDelay))
 						{
 							activeChar.sendSysMessage("Syntax: //announces add <type> <delay> <repeat> <text>");
 							break;
@@ -312,7 +313,7 @@ public class AdminAnnouncements implements IAdminCommandHandler
 						}
 						
 						final String annDelay = st.nextToken();
-						if (!StringUtil.isNumeric(annDelay))
+						if (!StringUtils.isNumeric(annDelay))
 						{
 							activeChar.sendSysMessage("Syntax: //announces add <type> <delay> <repeat> <text>");
 							break;
@@ -333,7 +334,7 @@ public class AdminAnnouncements implements IAdminCommandHandler
 						}
 						
 						final String annRepeat = st.nextToken();
-						if (!StringUtil.isNumeric(annRepeat))
+						if (!StringUtils.isNumeric(annRepeat))
 						{
 							activeChar.sendSysMessage("Syntax: //announces add <type> <delay> <repeat> <text>");
 							break;
@@ -386,7 +387,7 @@ public class AdminAnnouncements implements IAdminCommandHandler
 						}
 						
 						final String token = st.nextToken();
-						if (!StringUtil.isNumeric(token))
+						if (!StringUtils.isNumeric(token))
 						{
 							activeChar.sendSysMessage("Syntax: //announces remove <announcement id>");
 							break;
@@ -422,7 +423,7 @@ public class AdminAnnouncements implements IAdminCommandHandler
 						}
 						
 						final String token = st.nextToken();
-						if (!StringUtil.isNumeric(token))
+						if (!StringUtils.isNumeric(token))
 						{
 							activeChar.sendSysMessage("Syntax: //announces show <announcement id>");
 							break;
@@ -458,7 +459,7 @@ public class AdminAnnouncements implements IAdminCommandHandler
 						}
 						
 						final String token = st.nextToken();
-						if (!StringUtil.isNumeric(token))
+						if (!StringUtils.isNumeric(token))
 						{
 							activeChar.sendSysMessage("Syntax: //announces show <announcement id>");
 							break;
@@ -504,7 +505,7 @@ public class AdminAnnouncements implements IAdminCommandHandler
 						if (st.hasMoreTokens())
 						{
 							final String token = st.nextToken().replace("page=", "");
-							if (StringUtil.isNumeric(token))
+							if (StringUtils.isNumeric(token))
 							{
 								page = Integer.parseInt(token);
 							}

@@ -23,8 +23,8 @@
 package app.l2nx.highfive.entity.actor.instance;
 
 import java.util.StringTokenizer;
+import java.util.concurrent.ThreadLocalRandom;
 
-import app.l2nx.commons.util.Rnd;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.templates.NpcTemplate;
@@ -69,7 +69,7 @@ public class UCHelper extends Folk
 		{
 			final int index = Integer.parseInt(token.nextToken());
 			final Location[] locs = LOCATIONS[index];
-			player.teleToLocation(locs[Rnd.get(locs.length)], true);
+			player.teleToLocation(locs[ThreadLocalRandom.current().nextInt(locs.length)], true);
 		}
 		else
 		{

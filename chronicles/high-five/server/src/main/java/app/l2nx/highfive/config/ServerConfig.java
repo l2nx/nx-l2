@@ -50,13 +50,13 @@ import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import java.util.stream.IntStream;
 
+import org.apache.commons.lang3.StringUtils;
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 
 import app.l2nx.commons.util.ConfigReader;
 import app.l2nx.commons.util.IXmlReader;
-import app.l2nx.commons.util.StringUtil;
 
 /**
  * This class loads all the server related configurations.
@@ -226,7 +226,7 @@ public class ServerConfig
 		SERVER_RESTART_DAYS = new ArrayList<>();
 		for (String day : config.getString("ServerRestartDays", "").trim().split(","))
 		{
-			if (StringUtil.isNumeric(day))
+			if (StringUtils.isNumeric(day))
 			{
 				SERVER_RESTART_DAYS.add(Integer.parseInt(day));
 			}
@@ -339,7 +339,7 @@ public class ServerConfig
 		}
 		catch (Exception e)
 		{
-			LOGGER.warning(StringUtil.concat("Failed to save hex id to ", fileName, " File."));
+			LOGGER.warning("Failed to save hex id to " + fileName + " File.");
 			LOGGER.warning("Config: " + e.getMessage());
 		}
 	}

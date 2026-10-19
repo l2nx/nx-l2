@@ -19,7 +19,8 @@
  */
 package app.l2nx.highfive.scripts.handlers.skill.effects;
 
-import app.l2nx.commons.util.Rnd;
+import java.util.concurrent.ThreadLocalRandom;
+
 import app.l2nx.highfive.config.custom.ClassBalanceConfig;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Player;
@@ -149,7 +150,7 @@ public class EnergyDamage extends AbstractEffect
 				damage = attacker.getStat().calcStat(Stat.PHYSICAL_SKILL_POWER, damage);
 			}
 			
-			critical = (BaseStat.STR.calcBonus(attacker) * _criticalChance) > (Rnd.nextDouble() * 100);
+			critical = (BaseStat.STR.calcBonus(attacker) * _criticalChance) > (ThreadLocalRandom.current().nextDouble() * 100);
 			if (critical)
 			{
 				damage *= 2;

@@ -19,7 +19,8 @@
  */
 package app.l2nx.highfive.scripts.handlers.skill.effects;
 
-import app.l2nx.commons.util.Rnd;
+import java.util.concurrent.ThreadLocalRandom;
+
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.mechanics.conditions.Condition;
 import app.l2nx.highfive.mechanics.effects.AbstractEffect;
@@ -72,7 +73,7 @@ public class Lethal extends AbstractEffect
 		final double chanceMultiplier = Formulas.calcAttributeBonus(effector, effected, skill) * Formulas.calcGeneralTraitBonus(effector, effected, skill.getTraitType(), false);
 		
 		// Lethal Strike
-		if (Rnd.get(100) < (_fullLethal * chanceMultiplier))
+		if (ThreadLocalRandom.current().nextInt(100) < (_fullLethal * chanceMultiplier))
 		{
 			// for Players CP and HP is set to 1.
 			if (effected.isPlayer())
@@ -92,7 +93,7 @@ public class Lethal extends AbstractEffect
 			effector.sendPacket(SystemMessageId.YOUR_LETHAL_STRIKE_WAS_SUCCESSFUL);
 		}
 		// Half-Kill
-		else if (Rnd.get(100) < (_halfLethal * chanceMultiplier))
+		else if (ThreadLocalRandom.current().nextInt(100) < (_halfLethal * chanceMultiplier))
 		{
 			// for Players CP is set to 1.
 			if (effected.isPlayer())

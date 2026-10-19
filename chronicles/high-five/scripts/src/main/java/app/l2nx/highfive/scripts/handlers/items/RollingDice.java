@@ -22,7 +22,8 @@
  */
 package app.l2nx.highfive.scripts.handlers.items;
 
-import app.l2nx.commons.util.Rnd;
+import java.util.concurrent.ThreadLocalRandom;
+
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Playable;
@@ -99,6 +100,6 @@ public class RollingDice implements IItemHandler
 			return 0;
 		}
 		
-		return Rnd.get(1, 6);
+		return ThreadLocalRandom.current().nextInt(1, 7);
 	}
 }

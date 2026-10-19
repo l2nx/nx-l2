@@ -30,10 +30,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Level;
 
 import app.l2nx.commons.threads.ThreadPool;
-import app.l2nx.commons.util.Rnd;
 import app.l2nx.highfive.cache.HtmCache;
 import app.l2nx.highfive.config.FeatureConfig;
 import app.l2nx.highfive.config.GeneralConfig;
@@ -202,7 +202,7 @@ public class Npc extends Creature
 		// Initialize the "current" equipment.
 		_currentLHandId = getTemplate().getLHandId();
 		_currentRHandId = getTemplate().getRHandId();
-		_currentEnchant = NpcConfig.ENABLE_RANDOM_ENCHANT_EFFECT ? Rnd.get(4, 21) : getTemplate().getWeaponEnchant();
+		_currentEnchant = NpcConfig.ENABLE_RANDOM_ENCHANT_EFFECT ? ThreadLocalRandom.current().nextInt(4, 22) : getTemplate().getWeaponEnchant();
 		
 		// Initialize the "current" collisions.
 		_currentCollisionHeight = getTemplate().getFCollisionHeight();
@@ -245,7 +245,10 @@ public class Npc extends Creature
 	 */
 	public boolean hasSkillChance()
 	{
-		return Rnd.get(100) < Rnd.get(getMinSkillChance(), getMaxSkillChance());
+		final ThreadLocalRandom random = ThreadLocalRandom.current();
+		final int minChance = getMinSkillChance();
+		final int maxChance = getMaxSkillChance();
+		return random.nextInt(100) < (minChance < maxChance ? random.nextInt(minChance, maxChance + 1) : minChance);
 	}
 	
 	public boolean canMove()
@@ -1735,7 +1738,7 @@ public class Npc extends Creature
 		{
 			if (physical)
 			{
-				if ((_soulshotamount == 0) || (Rnd.get(100) > getSoulShotChance()))
+				if ((_soulshotamount == 0) || (ThreadLocalRandom.current().nextInt(100) > getSoulShotChance()))
 				{
 					return;
 				}
@@ -1747,7 +1750,7 @@ public class Npc extends Creature
 			
 			if (magic)
 			{
-				if ((_spiritshotamount == 0) || (Rnd.get(100) > getSpiritShotChance()))
+				if ((_spiritshotamount == 0) || (ThreadLocalRandom.current().nextInt(100) > getSpiritShotChance()))
 				{
 					return;
 				}
@@ -1882,8 +1885,9 @@ public class Npc extends Creature
 			return new Location(getX(), getY(), getZ());
 		}
 		
-		final int radius = Rnd.get(radiusMin, radiusMax);
-		final double angle = Rnd.nextDouble() * 2 * Math.PI;
+		final ThreadLocalRandom random = ThreadLocalRandom.current();
+		final int radius = random.nextInt(radiusMin, radiusMax + 1);
+		final double angle = random.nextDouble() * 2 * Math.PI;
 		return new Location((int) (getX() + (radius * Math.cos(angle))), (int) (getY() + (radius * Math.sin(angle))), getZ());
 	}
 	
@@ -1917,8 +1921,8 @@ public class Npc extends Creature
 			}
 			
 			// Randomize drop position.
-			final int newX = (getX() + Rnd.get((RANDOM_ITEM_DROP_LIMIT * 2) + 1)) - RANDOM_ITEM_DROP_LIMIT;
-			final int newY = (getY() + Rnd.get((RANDOM_ITEM_DROP_LIMIT * 2) + 1)) - RANDOM_ITEM_DROP_LIMIT;
+			final int newX = (getX() + ThreadLocalRandom.current().nextInt((RANDOM_ITEM_DROP_LIMIT * 2) + 1)) - RANDOM_ITEM_DROP_LIMIT;
+			final int newY = (getY() + ThreadLocalRandom.current().nextInt((RANDOM_ITEM_DROP_LIMIT * 2) + 1)) - RANDOM_ITEM_DROP_LIMIT;
 			final int newZ = getZ() + 20;
 			
 			item.dropMe(this, newX, newY, newZ);

@@ -19,7 +19,8 @@
  */
 package app.l2nx.highfive.scripts.handlers.skill.effects;
 
-import app.l2nx.commons.util.Rnd;
+import java.util.concurrent.ThreadLocalRandom;
+
 import app.l2nx.highfive.ai.AttackableAI;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.mechanics.conditions.Condition;
@@ -58,7 +59,7 @@ public class RunAway extends AbstractEffect
 			return;
 		}
 		
-		if (Rnd.get(100) > _power)
+		if (ThreadLocalRandom.current().nextInt(100) > _power)
 		{
 			return;
 		}

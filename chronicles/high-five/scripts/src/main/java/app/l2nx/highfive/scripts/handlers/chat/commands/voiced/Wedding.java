@@ -25,9 +25,10 @@ import java.sql.ResultSet;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.apache.commons.lang3.time.DurationFormatUtils;
+
 import app.l2nx.commons.database.DatabaseFactory;
 import app.l2nx.commons.threads.ThreadPool;
-import app.l2nx.commons.time.TimeUtil;
 import app.l2nx.highfive.config.custom.WeddingConfig;
 import app.l2nx.highfive.data.xml.SkillData;
 import app.l2nx.highfive.entity.Location;
@@ -459,7 +460,7 @@ public class Wedding implements IVoicedCommandHandler
 			return false; // Player already informed by system message inside reduceAdena.
 		}
 		
-		String formattedTime = TimeUtil.formatDuration(teleportTimer);
+		String formattedTime = DurationFormatUtils.formatDurationWords(teleportTimer, true, true);
 		activeChar.sendMessage("You will be teleported to your partner in " + formattedTime + ".");
 		
 		activeChar.getAI().setIntentionIdle();

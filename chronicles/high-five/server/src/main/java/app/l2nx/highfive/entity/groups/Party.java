@@ -29,11 +29,11 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Future;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import app.l2nx.commons.threads.ThreadPool;
-import app.l2nx.commons.util.Rnd;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.config.RatesConfig;
 import app.l2nx.highfive.config.custom.ClassBalanceConfig;
@@ -163,7 +163,7 @@ public class Party extends AbstractPlayerGroup
 			}
 		}
 		
-		return !availableMembers.isEmpty() ? availableMembers.get(Rnd.get(availableMembers.size())) : null;
+		return !availableMembers.isEmpty() ? availableMembers.get(ThreadLocalRandom.current().nextInt(availableMembers.size())) : null;
 	}
 	
 	/**
@@ -736,7 +736,7 @@ public class Party extends AbstractPlayerGroup
 		// Distribute the leftover adena (1 adena each) to some members starting from a random index.
 		if (remainder > 0)
 		{
-			final int randomIndex = Rnd.get(toReward.size());
+			final int randomIndex = ThreadLocalRandom.current().nextInt(toReward.size());
 			for (int i = 0; i < remainder; i++)
 			{
 				final Player member = toReward.get((randomIndex + i) % toReward.size());

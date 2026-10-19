@@ -22,8 +22,8 @@ package app.l2nx.highfive.data.xml;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.ThreadLocalRandom;
 
-import app.l2nx.commons.util.Rnd;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.spawns.Spawn;
 
@@ -55,7 +55,7 @@ public class NpcPersonalAIData
 			// Check for spawn name. Since spawn name is key for AI Data, generate random name, if spawn name isn't specified.
 			if (spawnDat.getName() == null)
 			{
-				spawnDat.setName(Long.toString(Rnd.nextLong()));
+				spawnDat.setName(Long.toString(ThreadLocalRandom.current().nextLong()));
 			}
 			
 			_AIData.put(spawnDat.getName(), data);

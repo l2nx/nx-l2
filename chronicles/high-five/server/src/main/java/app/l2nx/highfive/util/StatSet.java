@@ -29,12 +29,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import app.l2nx.commons.time.TimeUtil;
-import app.l2nx.commons.util.StringUtil;
+import org.apache.commons.lang3.EnumUtils;
+
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.actor.holders.npc.MinionHolder;
 import app.l2nx.highfive.mechanics.skill.holders.SkillHolder;
@@ -717,8 +718,8 @@ public class StatSet
 		{
 			throw new IllegalArgumentException("String value required, but not specified");
 		}
-		
-		return TimeUtil.parseDuration(String.valueOf(val));
+
+		return parseDuration(String.valueOf(val));
 	}
 	
 	public Duration getDuration(String key, Duration defaultValue)
@@ -729,9 +730,52 @@ public class StatSet
 			return defaultValue;
 		}
 		
-		return TimeUtil.parseDuration(String.valueOf(val));
+		return parseDuration(String.valueOf(val));
 	}
-	
+
+	/**
+	 * Parses a datapack duration such as {@code 30secs}, {@code 5mins}, {@code 2hours}, {@code 7days}, {@code 1week}, {@code 1month} (30 days) or {@code 1year} (365 days).
+	 * @param durationString an integer immediately followed by a unit, unit case-insensitive
+	 * @return the parsed duration
+	 * @throws IllegalArgumentException if the format is invalid or the unit is unrecognized
+	 */
+	private static Duration parseDuration(String durationString)
+	{
+		int index = 0;
+		while ((index < durationString.length()) && Character.isDigit(durationString.charAt(index)))
+		{
+			index++;
+		}
+
+		if ((index == 0) || (index == durationString.length()))
+		{
+			throw new IllegalArgumentException("Invalid duration format: " + durationString);
+		}
+
+		final int durationValue;
+		try
+		{
+			durationValue = Integer.parseInt(durationString.substring(0, index));
+		}
+		catch (NumberFormatException e)
+		{
+			throw new IllegalArgumentException("Invalid duration format: " + durationString);
+		}
+
+		final String durationUnit = durationString.substring(index).toLowerCase();
+		return switch (durationUnit)
+		{
+			case "sec", "secs" -> Duration.ofSeconds(durationValue);
+			case "min", "mins" -> Duration.ofMinutes(durationValue);
+			case "hour", "hours" -> Duration.ofHours(durationValue);
+			case "day", "days" -> Duration.ofDays(durationValue);
+			case "week", "weeks" -> Duration.ofDays(durationValue * 7L);
+			case "month", "months" -> Duration.ofDays(durationValue * 30L);
+			case "year", "years" -> Duration.ofDays(durationValue * 365L);
+			default -> throw new IllegalArgumentException("Unrecognized time unit: " + durationUnit);
+		};
+	}
+
 	@SuppressWarnings("unchecked")
 	public <T extends Enum<T>> T getEnum(String key, Class<T> enumClass)
 	{
@@ -887,7 +931,7 @@ public class StatSet
 		}
 		
 		final List<Object> originalList = (List<Object>) obj;
-		if (!originalList.isEmpty() && (obj.getClass().getGenericInterfaces()[0] != clazz) && originalList.stream().allMatch(name -> StringUtil.isEnum(name.toString(), clazz)))
+		if (!originalList.isEmpty() && (obj.getClass().getGenericInterfaces()[0] != clazz) && originalList.stream().allMatch(name -> EnumUtils.isValidEnum(clazz, name.toString())))
 		{
 			final List<T> convertedList = originalList.stream().map(Object::toString).map(name -> Enum.valueOf(clazz, name)).map(clazz::cast).toList();
 			
@@ -907,29 +951,32 @@ public class StatSet
 	 */
 	private <T> List<T> convertList(List<Object> originalList, Class<T> clazz)
 	{
+		final Function<String, ?> parser;
 		if (clazz == Integer.class)
 		{
-			if (originalList.stream().map(Object::toString).allMatch(StringUtil::isInteger))
-			{
-				return originalList.stream().map(Object::toString).map(Integer::valueOf).map(clazz::cast).toList();
-			}
+			parser = Integer::valueOf;
 		}
 		else if (clazz == Float.class)
 		{
-			if (originalList.stream().map(Object::toString).allMatch(StringUtil::isFloat))
-			{
-				return originalList.stream().map(Object::toString).map(Float::valueOf).map(clazz::cast).toList();
-			}
+			parser = Float::valueOf;
 		}
 		else if (clazz == Double.class)
 		{
-			if (originalList.stream().map(Object::toString).allMatch(StringUtil::isDouble))
-			{
-				return originalList.stream().map(Object::toString).map(Double::valueOf).map(clazz::cast).toList();
-			}
+			parser = Double::valueOf;
 		}
-		
-		return null;
+		else
+		{
+			return null;
+		}
+
+		try
+		{
+			return originalList.stream().map(Object::toString).map(parser).map(clazz::cast).toList();
+		}
+		catch (NumberFormatException e)
+		{
+			return null;
+		}
 	}
 	
 	@SuppressWarnings("unchecked")

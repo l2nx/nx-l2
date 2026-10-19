@@ -19,7 +19,8 @@
  */
 package app.l2nx.highfive.mechanics.conditions;
 
-import app.l2nx.commons.util.Rnd;
+import java.util.concurrent.ThreadLocalRandom;
+
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.item.ItemTemplate;
 import app.l2nx.highfive.mechanics.skill.Skill;
@@ -48,6 +49,6 @@ public class ConditionGameChance extends Condition
 	@Override
 	public boolean testImpl(Creature effector, Creature effected, Skill skill, ItemTemplate item)
 	{
-		return Rnd.get(100) < _chance;
+		return ThreadLocalRandom.current().nextInt(100) < _chance;
 	}
 }

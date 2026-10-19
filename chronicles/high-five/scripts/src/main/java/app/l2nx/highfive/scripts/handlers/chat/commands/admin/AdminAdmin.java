@@ -25,7 +25,9 @@ package app.l2nx.highfive.scripts.handlers.chat.commands.admin;
 import java.util.StringTokenizer;
 import java.util.logging.Logger;
 
-import app.l2nx.commons.time.TimeUtil;
+import org.apache.commons.lang3.time.DateFormatUtils;
+import org.apache.commons.lang3.time.DurationFormatUtils;
+
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.config.RatesConfig;
 import app.l2nx.highfive.data.xml.AdminData;
@@ -116,12 +118,12 @@ public class AdminAdmin implements IAdminCommandHandler
 			final long olympiadEndMillis = Olympiad.getInstance().getMillisToOlympiadEnd();
 			final long weeklyChangeMillis = Olympiad.getInstance().getMillisToWeekChange();
 			
-			final String currentServerTime = TimeUtil.getDateTimeString(currentTimeMillis);
-			final String olympiadEndTime = TimeUtil.getDateTimeString(currentTimeMillis + olympiadEndMillis);
-			final String weeklyChangeTime = TimeUtil.getDateTimeString(currentTimeMillis + weeklyChangeMillis);
-			
-			final String olympiadTimeLeft = TimeUtil.formatDuration(olympiadEndMillis).replaceAll(",? \\d+ seconds?", "").replaceAll(",? \\d+ milliseconds?", "");
-			final String weeklyChangeTimeLeft = TimeUtil.formatDuration(weeklyChangeMillis).replaceAll(",? \\d+ seconds?", "").replaceAll(",? \\d+ milliseconds?", "");
+			final String currentServerTime = DateFormatUtils.format(currentTimeMillis, "dd/MM/yyyy HH:mm:ss");
+			final String olympiadEndTime = DateFormatUtils.format(currentTimeMillis + olympiadEndMillis, "dd/MM/yyyy HH:mm:ss");
+			final String weeklyChangeTime = DateFormatUtils.format(currentTimeMillis + weeklyChangeMillis, "dd/MM/yyyy HH:mm:ss");
+
+			final String olympiadTimeLeft = DurationFormatUtils.formatDurationWords(olympiadEndMillis, true, true).replaceAll(" \\d+ seconds?", "");
+			final String weeklyChangeTimeLeft = DurationFormatUtils.formatDurationWords(weeklyChangeMillis, true, true).replaceAll(" \\d+ seconds?", "");
 			
 			final NpcHtmlMessage html = new NpcHtmlMessage();
 			final StringBuilder sb = new StringBuilder();

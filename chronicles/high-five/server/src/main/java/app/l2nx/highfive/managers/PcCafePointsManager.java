@@ -22,8 +22,9 @@
  */
 package app.l2nx.highfive.managers;
 
+import java.util.concurrent.ThreadLocalRandom;
+
 import app.l2nx.commons.threads.ThreadPool;
-import app.l2nx.commons.util.Rnd;
 import app.l2nx.highfive.config.custom.PremiumSystemConfig;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.zone.ZoneId;
@@ -61,11 +62,12 @@ public class PcCafePointsManager
 		
 		if (PremiumSystemConfig.PC_CAFE_RANDOM_POINT)
 		{
-			points = Rnd.get(points / 2, points);
+			final int minPoints = points / 2;
+			points = minPoints < points ? ThreadLocalRandom.current().nextInt(minPoints, points + 1) : minPoints;
 		}
 		
 		SystemMessage message = null;
-		if (PremiumSystemConfig.PC_CAFE_ENABLE_DOUBLE_POINTS && (Rnd.get(100) < PremiumSystemConfig.PC_CAFE_DOUBLE_POINTS_CHANCE))
+		if (PremiumSystemConfig.PC_CAFE_ENABLE_DOUBLE_POINTS && (ThreadLocalRandom.current().nextInt(100) < PremiumSystemConfig.PC_CAFE_DOUBLE_POINTS_CHANCE))
 		{
 			points *= 2;
 			message = new SystemMessage(SystemMessageId.DOUBLE_POINTS_YOU_ACQUIRED_S1_PC_BANG_POINT);
@@ -109,10 +111,11 @@ public class PcCafePointsManager
 		int points = (int) (exp * 0.0001 * PremiumSystemConfig.PC_CAFE_POINT_RATE);
 		if (PremiumSystemConfig.PC_CAFE_RANDOM_POINT)
 		{
-			points = Rnd.get(points / 2, points);
+			final int minPoints = points / 2;
+			points = minPoints < points ? ThreadLocalRandom.current().nextInt(minPoints, points + 1) : minPoints;
 		}
 		
-		if ((points == 0) && (exp > 0) && PremiumSystemConfig.PC_CAFE_REWARD_LOW_EXP_KILLS && (Rnd.get(100) < PremiumSystemConfig.PC_CAFE_LOW_EXP_KILLS_CHANCE))
+		if ((points == 0) && (exp > 0) && PremiumSystemConfig.PC_CAFE_REWARD_LOW_EXP_KILLS && (ThreadLocalRandom.current().nextInt(100) < PremiumSystemConfig.PC_CAFE_LOW_EXP_KILLS_CHANCE))
 		{
 			points = 1; // minimum points
 		}
@@ -123,7 +126,7 @@ public class PcCafePointsManager
 		}
 		
 		SystemMessage message = null;
-		if (PremiumSystemConfig.PC_CAFE_ENABLE_DOUBLE_POINTS && (Rnd.get(100) < PremiumSystemConfig.PC_CAFE_DOUBLE_POINTS_CHANCE))
+		if (PremiumSystemConfig.PC_CAFE_ENABLE_DOUBLE_POINTS && (ThreadLocalRandom.current().nextInt(100) < PremiumSystemConfig.PC_CAFE_DOUBLE_POINTS_CHANCE))
 		{
 			points *= 2;
 			message = new SystemMessage(SystemMessageId.DOUBLE_POINTS_YOU_ACQUIRED_S1_PC_BANG_POINT);

@@ -27,11 +27,11 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.Calendar;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import app.l2nx.commons.database.DatabaseFactory;
-import app.l2nx.commons.util.Rnd;
 import app.l2nx.highfive.config.custom.DualboxCheckConfig;
 import app.l2nx.highfive.config.custom.OfflineTradeConfig;
 import app.l2nx.highfive.data.holders.SellBuffHolder;
@@ -313,7 +313,7 @@ public class OfflineTraderTable
 					player.restoreEffects();
 					if (!OfflineTradeConfig.OFFLINE_ABNORMAL_EFFECTS.isEmpty())
 					{
-						player.startAbnormalVisualEffect(false, OfflineTradeConfig.OFFLINE_ABNORMAL_EFFECTS.get(Rnd.get(OfflineTradeConfig.OFFLINE_ABNORMAL_EFFECTS.size())));
+						player.startAbnormalVisualEffect(false, OfflineTradeConfig.OFFLINE_ABNORMAL_EFFECTS.get(ThreadLocalRandom.current().nextInt(OfflineTradeConfig.OFFLINE_ABNORMAL_EFFECTS.size())));
 					}
 					
 					player.broadcastUserInfo();
@@ -600,7 +600,7 @@ public class OfflineTraderTable
 		
 		if (!OfflineTradeConfig.OFFLINE_ABNORMAL_EFFECTS.isEmpty())
 		{
-			player.startAbnormalVisualEffect(true, OfflineTradeConfig.OFFLINE_ABNORMAL_EFFECTS.get(Rnd.get(OfflineTradeConfig.OFFLINE_ABNORMAL_EFFECTS.size())));
+			player.startAbnormalVisualEffect(true, OfflineTradeConfig.OFFLINE_ABNORMAL_EFFECTS.get(ThreadLocalRandom.current().nextInt(OfflineTradeConfig.OFFLINE_ABNORMAL_EFFECTS.size())));
 		}
 		
 		return true;

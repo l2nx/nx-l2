@@ -21,7 +21,8 @@ package app.l2nx.highfive.network.clientpackets;
 
 import java.util.List;
 
-import app.l2nx.commons.util.StringUtil;
+import org.apache.commons.lang3.StringUtils;
+
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.data.xml.SkillData;
@@ -334,7 +335,7 @@ public class RequestAcquireSkill extends ClientPacket
 						final String itemOID = player.getVariables().getString(varName + i, "");
 						if (!itemOID.isEmpty() && !itemOID.endsWith(";") && !itemOID.equals("0"))
 						{
-							if (StringUtil.isNumeric(itemOID))
+							if (StringUtils.isNumeric(itemOID))
 							{
 								final int itemObjId = Integer.parseInt(itemOID);
 								final Item item = player.getInventory().getItemByObjectId(itemObjId);

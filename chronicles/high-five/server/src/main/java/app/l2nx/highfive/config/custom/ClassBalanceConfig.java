@@ -24,8 +24,9 @@ package app.l2nx.highfive.config.custom;
 
 import java.util.Arrays;
 
+import org.apache.commons.lang3.StringUtils;
+
 import app.l2nx.commons.util.ConfigReader;
-import app.l2nx.commons.util.StringUtil;
 import app.l2nx.highfive.entity.actor.enums.player.PlayerClass;
 
 /**
@@ -90,7 +91,7 @@ public class ClassBalanceConfig
 				if (classInfo.length == 2)
 				{
 					final String id = classInfo[0].trim();
-					PVE_MAGICAL_SKILL_DAMAGE_MULTIPLIERS[StringUtil.isNumeric(id) ? Integer.parseInt(id) : Enum.valueOf(PlayerClass.class, id).getId()] = Float.parseFloat(classInfo[1].trim());
+					PVE_MAGICAL_SKILL_DAMAGE_MULTIPLIERS[StringUtils.isNumeric(id) ? Integer.parseInt(id) : Enum.valueOf(PlayerClass.class, id).getId()] = Float.parseFloat(classInfo[1].trim());
 				}
 			}
 		}
@@ -105,7 +106,7 @@ public class ClassBalanceConfig
 				if (classInfo.length == 2)
 				{
 					final String id = classInfo[0].trim();
-					PVP_MAGICAL_SKILL_DAMAGE_MULTIPLIERS[StringUtil.isNumeric(id) ? Integer.parseInt(id) : Enum.valueOf(PlayerClass.class, id).getId()] = Float.parseFloat(classInfo[1].trim());
+					PVP_MAGICAL_SKILL_DAMAGE_MULTIPLIERS[StringUtils.isNumeric(id) ? Integer.parseInt(id) : Enum.valueOf(PlayerClass.class, id).getId()] = Float.parseFloat(classInfo[1].trim());
 				}
 			}
 		}
@@ -120,7 +121,7 @@ public class ClassBalanceConfig
 				if (classInfo.length == 2)
 				{
 					final String id = classInfo[0].trim();
-					PVE_MAGICAL_SKILL_DEFENCE_MULTIPLIERS[StringUtil.isNumeric(id) ? Integer.parseInt(id) : Enum.valueOf(PlayerClass.class, id).getId()] = Float.parseFloat(classInfo[1].trim());
+					PVE_MAGICAL_SKILL_DEFENCE_MULTIPLIERS[StringUtils.isNumeric(id) ? Integer.parseInt(id) : Enum.valueOf(PlayerClass.class, id).getId()] = Float.parseFloat(classInfo[1].trim());
 				}
 			}
 		}
@@ -135,7 +136,7 @@ public class ClassBalanceConfig
 				if (classInfo.length == 2)
 				{
 					final String id = classInfo[0].trim();
-					PVP_MAGICAL_SKILL_DEFENCE_MULTIPLIERS[StringUtil.isNumeric(id) ? Integer.parseInt(id) : Enum.valueOf(PlayerClass.class, id).getId()] = Float.parseFloat(classInfo[1].trim());
+					PVP_MAGICAL_SKILL_DEFENCE_MULTIPLIERS[StringUtils.isNumeric(id) ? Integer.parseInt(id) : Enum.valueOf(PlayerClass.class, id).getId()] = Float.parseFloat(classInfo[1].trim());
 				}
 			}
 		}
@@ -150,7 +151,7 @@ public class ClassBalanceConfig
 				if (classInfo.length == 2)
 				{
 					final String id = classInfo[0].trim();
-					PVE_MAGICAL_SKILL_CRITICAL_CHANCE_MULTIPLIERS[StringUtil.isNumeric(id) ? Integer.parseInt(id) : Enum.valueOf(PlayerClass.class, id).getId()] = Float.parseFloat(classInfo[1].trim());
+					PVE_MAGICAL_SKILL_CRITICAL_CHANCE_MULTIPLIERS[StringUtils.isNumeric(id) ? Integer.parseInt(id) : Enum.valueOf(PlayerClass.class, id).getId()] = Float.parseFloat(classInfo[1].trim());
 				}
 			}
 		}
@@ -165,7 +166,7 @@ public class ClassBalanceConfig
 				if (classInfo.length == 2)
 				{
 					final String id = classInfo[0].trim();
-					PVP_MAGICAL_SKILL_CRITICAL_CHANCE_MULTIPLIERS[StringUtil.isNumeric(id) ? Integer.parseInt(id) : Enum.valueOf(PlayerClass.class, id).getId()] = Float.parseFloat(classInfo[1].trim());
+					PVP_MAGICAL_SKILL_CRITICAL_CHANCE_MULTIPLIERS[StringUtils.isNumeric(id) ? Integer.parseInt(id) : Enum.valueOf(PlayerClass.class, id).getId()] = Float.parseFloat(classInfo[1].trim());
 				}
 			}
 		}
@@ -180,7 +181,7 @@ public class ClassBalanceConfig
 				if (classInfo.length == 2)
 				{
 					final String id = classInfo[0].trim();
-					PVE_MAGICAL_SKILL_CRITICAL_DAMAGE_MULTIPLIERS[StringUtil.isNumeric(id) ? Integer.parseInt(id) : Enum.valueOf(PlayerClass.class, id).getId()] = Float.parseFloat(classInfo[1].trim());
+					PVE_MAGICAL_SKILL_CRITICAL_DAMAGE_MULTIPLIERS[StringUtils.isNumeric(id) ? Integer.parseInt(id) : Enum.valueOf(PlayerClass.class, id).getId()] = Float.parseFloat(classInfo[1].trim());
 				}
 			}
 		}
@@ -195,7 +196,7 @@ public class ClassBalanceConfig
 				if (classInfo.length == 2)
 				{
 					final String id = classInfo[0].trim();
-					PVP_MAGICAL_SKILL_CRITICAL_DAMAGE_MULTIPLIERS[StringUtil.isNumeric(id) ? Integer.parseInt(id) : Enum.valueOf(PlayerClass.class, id).getId()] = Float.parseFloat(classInfo[1].trim());
+					PVP_MAGICAL_SKILL_CRITICAL_DAMAGE_MULTIPLIERS[StringUtils.isNumeric(id) ? Integer.parseInt(id) : Enum.valueOf(PlayerClass.class, id).getId()] = Float.parseFloat(classInfo[1].trim());
 				}
 			}
 		}
@@ -210,7 +211,7 @@ public class ClassBalanceConfig
 				if (classInfo.length == 2)
 				{
 					final String id = classInfo[0].trim();
-					PVE_PHYSICAL_SKILL_DAMAGE_MULTIPLIERS[StringUtil.isNumeric(id) ? Integer.parseInt(id) : Enum.valueOf(PlayerClass.class, id).getId()] = Float.parseFloat(classInfo[1].trim());
+					PVE_PHYSICAL_SKILL_DAMAGE_MULTIPLIERS[StringUtils.isNumeric(id) ? Integer.parseInt(id) : Enum.valueOf(PlayerClass.class, id).getId()] = Float.parseFloat(classInfo[1].trim());
 				}
 			}
 		}
@@ -225,7 +226,7 @@ public class ClassBalanceConfig
 				if (classInfo.length == 2)
 				{
 					final String id = classInfo[0].trim();
-					PVP_PHYSICAL_SKILL_DAMAGE_MULTIPLIERS[StringUtil.isNumeric(id) ? Integer.parseInt(id) : Enum.valueOf(PlayerClass.class, id).getId()] = Float.parseFloat(classInfo[1].trim());
+					PVP_PHYSICAL_SKILL_DAMAGE_MULTIPLIERS[StringUtils.isNumeric(id) ? Integer.parseInt(id) : Enum.valueOf(PlayerClass.class, id).getId()] = Float.parseFloat(classInfo[1].trim());
 				}
 			}
 		}
@@ -240,7 +241,7 @@ public class ClassBalanceConfig
 				if (classInfo.length == 2)
 				{
 					final String id = classInfo[0].trim();
-					PVE_PHYSICAL_SKILL_DEFENCE_MULTIPLIERS[StringUtil.isNumeric(id) ? Integer.parseInt(id) : Enum.valueOf(PlayerClass.class, id).getId()] = Float.parseFloat(classInfo[1].trim());
+					PVE_PHYSICAL_SKILL_DEFENCE_MULTIPLIERS[StringUtils.isNumeric(id) ? Integer.parseInt(id) : Enum.valueOf(PlayerClass.class, id).getId()] = Float.parseFloat(classInfo[1].trim());
 				}
 			}
 		}
@@ -255,7 +256,7 @@ public class ClassBalanceConfig
 				if (classInfo.length == 2)
 				{
 					final String id = classInfo[0].trim();
-					PVP_PHYSICAL_SKILL_DEFENCE_MULTIPLIERS[StringUtil.isNumeric(id) ? Integer.parseInt(id) : Enum.valueOf(PlayerClass.class, id).getId()] = Float.parseFloat(classInfo[1].trim());
+					PVP_PHYSICAL_SKILL_DEFENCE_MULTIPLIERS[StringUtils.isNumeric(id) ? Integer.parseInt(id) : Enum.valueOf(PlayerClass.class, id).getId()] = Float.parseFloat(classInfo[1].trim());
 				}
 			}
 		}
@@ -270,7 +271,7 @@ public class ClassBalanceConfig
 				if (classInfo.length == 2)
 				{
 					final String id = classInfo[0].trim();
-					PVE_PHYSICAL_SKILL_CRITICAL_CHANCE_MULTIPLIERS[StringUtil.isNumeric(id) ? Integer.parseInt(id) : Enum.valueOf(PlayerClass.class, id).getId()] = Float.parseFloat(classInfo[1].trim());
+					PVE_PHYSICAL_SKILL_CRITICAL_CHANCE_MULTIPLIERS[StringUtils.isNumeric(id) ? Integer.parseInt(id) : Enum.valueOf(PlayerClass.class, id).getId()] = Float.parseFloat(classInfo[1].trim());
 				}
 			}
 		}
@@ -285,7 +286,7 @@ public class ClassBalanceConfig
 				if (classInfo.length == 2)
 				{
 					final String id = classInfo[0].trim();
-					PVP_PHYSICAL_SKILL_CRITICAL_CHANCE_MULTIPLIERS[StringUtil.isNumeric(id) ? Integer.parseInt(id) : Enum.valueOf(PlayerClass.class, id).getId()] = Float.parseFloat(classInfo[1].trim());
+					PVP_PHYSICAL_SKILL_CRITICAL_CHANCE_MULTIPLIERS[StringUtils.isNumeric(id) ? Integer.parseInt(id) : Enum.valueOf(PlayerClass.class, id).getId()] = Float.parseFloat(classInfo[1].trim());
 				}
 			}
 		}
@@ -300,7 +301,7 @@ public class ClassBalanceConfig
 				if (classInfo.length == 2)
 				{
 					final String id = classInfo[0].trim();
-					PVE_PHYSICAL_SKILL_CRITICAL_DAMAGE_MULTIPLIERS[StringUtil.isNumeric(id) ? Integer.parseInt(id) : Enum.valueOf(PlayerClass.class, id).getId()] = Float.parseFloat(classInfo[1].trim());
+					PVE_PHYSICAL_SKILL_CRITICAL_DAMAGE_MULTIPLIERS[StringUtils.isNumeric(id) ? Integer.parseInt(id) : Enum.valueOf(PlayerClass.class, id).getId()] = Float.parseFloat(classInfo[1].trim());
 				}
 			}
 		}
@@ -315,7 +316,7 @@ public class ClassBalanceConfig
 				if (classInfo.length == 2)
 				{
 					final String id = classInfo[0].trim();
-					PVP_PHYSICAL_SKILL_CRITICAL_DAMAGE_MULTIPLIERS[StringUtil.isNumeric(id) ? Integer.parseInt(id) : Enum.valueOf(PlayerClass.class, id).getId()] = Float.parseFloat(classInfo[1].trim());
+					PVP_PHYSICAL_SKILL_CRITICAL_DAMAGE_MULTIPLIERS[StringUtils.isNumeric(id) ? Integer.parseInt(id) : Enum.valueOf(PlayerClass.class, id).getId()] = Float.parseFloat(classInfo[1].trim());
 				}
 			}
 		}
@@ -330,7 +331,7 @@ public class ClassBalanceConfig
 				if (classInfo.length == 2)
 				{
 					final String id = classInfo[0].trim();
-					PVE_PHYSICAL_ATTACK_DAMAGE_MULTIPLIERS[StringUtil.isNumeric(id) ? Integer.parseInt(id) : Enum.valueOf(PlayerClass.class, id).getId()] = Float.parseFloat(classInfo[1].trim());
+					PVE_PHYSICAL_ATTACK_DAMAGE_MULTIPLIERS[StringUtils.isNumeric(id) ? Integer.parseInt(id) : Enum.valueOf(PlayerClass.class, id).getId()] = Float.parseFloat(classInfo[1].trim());
 				}
 			}
 		}
@@ -345,7 +346,7 @@ public class ClassBalanceConfig
 				if (classInfo.length == 2)
 				{
 					final String id = classInfo[0].trim();
-					PVP_PHYSICAL_ATTACK_DAMAGE_MULTIPLIERS[StringUtil.isNumeric(id) ? Integer.parseInt(id) : Enum.valueOf(PlayerClass.class, id).getId()] = Float.parseFloat(classInfo[1].trim());
+					PVP_PHYSICAL_ATTACK_DAMAGE_MULTIPLIERS[StringUtils.isNumeric(id) ? Integer.parseInt(id) : Enum.valueOf(PlayerClass.class, id).getId()] = Float.parseFloat(classInfo[1].trim());
 				}
 			}
 		}
@@ -360,7 +361,7 @@ public class ClassBalanceConfig
 				if (classInfo.length == 2)
 				{
 					final String id = classInfo[0].trim();
-					PVE_PHYSICAL_ATTACK_DEFENCE_MULTIPLIERS[StringUtil.isNumeric(id) ? Integer.parseInt(id) : Enum.valueOf(PlayerClass.class, id).getId()] = Float.parseFloat(classInfo[1].trim());
+					PVE_PHYSICAL_ATTACK_DEFENCE_MULTIPLIERS[StringUtils.isNumeric(id) ? Integer.parseInt(id) : Enum.valueOf(PlayerClass.class, id).getId()] = Float.parseFloat(classInfo[1].trim());
 				}
 			}
 		}
@@ -375,7 +376,7 @@ public class ClassBalanceConfig
 				if (classInfo.length == 2)
 				{
 					final String id = classInfo[0].trim();
-					PVP_PHYSICAL_ATTACK_DEFENCE_MULTIPLIERS[StringUtil.isNumeric(id) ? Integer.parseInt(id) : Enum.valueOf(PlayerClass.class, id).getId()] = Float.parseFloat(classInfo[1].trim());
+					PVP_PHYSICAL_ATTACK_DEFENCE_MULTIPLIERS[StringUtils.isNumeric(id) ? Integer.parseInt(id) : Enum.valueOf(PlayerClass.class, id).getId()] = Float.parseFloat(classInfo[1].trim());
 				}
 			}
 		}
@@ -390,7 +391,7 @@ public class ClassBalanceConfig
 				if (classInfo.length == 2)
 				{
 					final String id = classInfo[0].trim();
-					PVE_PHYSICAL_ATTACK_CRITICAL_CHANCE_MULTIPLIERS[StringUtil.isNumeric(id) ? Integer.parseInt(id) : Enum.valueOf(PlayerClass.class, id).getId()] = Float.parseFloat(classInfo[1].trim());
+					PVE_PHYSICAL_ATTACK_CRITICAL_CHANCE_MULTIPLIERS[StringUtils.isNumeric(id) ? Integer.parseInt(id) : Enum.valueOf(PlayerClass.class, id).getId()] = Float.parseFloat(classInfo[1].trim());
 				}
 			}
 		}
@@ -405,7 +406,7 @@ public class ClassBalanceConfig
 				if (classInfo.length == 2)
 				{
 					final String id = classInfo[0].trim();
-					PVP_PHYSICAL_ATTACK_CRITICAL_CHANCE_MULTIPLIERS[StringUtil.isNumeric(id) ? Integer.parseInt(id) : Enum.valueOf(PlayerClass.class, id).getId()] = Float.parseFloat(classInfo[1].trim());
+					PVP_PHYSICAL_ATTACK_CRITICAL_CHANCE_MULTIPLIERS[StringUtils.isNumeric(id) ? Integer.parseInt(id) : Enum.valueOf(PlayerClass.class, id).getId()] = Float.parseFloat(classInfo[1].trim());
 				}
 			}
 		}
@@ -420,7 +421,7 @@ public class ClassBalanceConfig
 				if (classInfo.length == 2)
 				{
 					final String id = classInfo[0].trim();
-					PVE_PHYSICAL_ATTACK_CRITICAL_DAMAGE_MULTIPLIERS[StringUtil.isNumeric(id) ? Integer.parseInt(id) : Enum.valueOf(PlayerClass.class, id).getId()] = Float.parseFloat(classInfo[1].trim());
+					PVE_PHYSICAL_ATTACK_CRITICAL_DAMAGE_MULTIPLIERS[StringUtils.isNumeric(id) ? Integer.parseInt(id) : Enum.valueOf(PlayerClass.class, id).getId()] = Float.parseFloat(classInfo[1].trim());
 				}
 			}
 		}
@@ -435,7 +436,7 @@ public class ClassBalanceConfig
 				if (classInfo.length == 2)
 				{
 					final String id = classInfo[0].trim();
-					PVP_PHYSICAL_ATTACK_CRITICAL_DAMAGE_MULTIPLIERS[StringUtil.isNumeric(id) ? Integer.parseInt(id) : Enum.valueOf(PlayerClass.class, id).getId()] = Float.parseFloat(classInfo[1].trim());
+					PVP_PHYSICAL_ATTACK_CRITICAL_DAMAGE_MULTIPLIERS[StringUtils.isNumeric(id) ? Integer.parseInt(id) : Enum.valueOf(PlayerClass.class, id).getId()] = Float.parseFloat(classInfo[1].trim());
 				}
 			}
 		}
@@ -450,7 +451,7 @@ public class ClassBalanceConfig
 				if (classInfo.length == 2)
 				{
 					final String id = classInfo[0].trim();
-					PVE_BLOW_SKILL_DAMAGE_MULTIPLIERS[StringUtil.isNumeric(id) ? Integer.parseInt(id) : Enum.valueOf(PlayerClass.class, id).getId()] = Float.parseFloat(classInfo[1].trim());
+					PVE_BLOW_SKILL_DAMAGE_MULTIPLIERS[StringUtils.isNumeric(id) ? Integer.parseInt(id) : Enum.valueOf(PlayerClass.class, id).getId()] = Float.parseFloat(classInfo[1].trim());
 				}
 			}
 		}
@@ -465,7 +466,7 @@ public class ClassBalanceConfig
 				if (classInfo.length == 2)
 				{
 					final String id = classInfo[0].trim();
-					PVP_BLOW_SKILL_DAMAGE_MULTIPLIERS[StringUtil.isNumeric(id) ? Integer.parseInt(id) : Enum.valueOf(PlayerClass.class, id).getId()] = Float.parseFloat(classInfo[1].trim());
+					PVP_BLOW_SKILL_DAMAGE_MULTIPLIERS[StringUtils.isNumeric(id) ? Integer.parseInt(id) : Enum.valueOf(PlayerClass.class, id).getId()] = Float.parseFloat(classInfo[1].trim());
 				}
 			}
 		}
@@ -480,7 +481,7 @@ public class ClassBalanceConfig
 				if (classInfo.length == 2)
 				{
 					final String id = classInfo[0].trim();
-					PVE_BLOW_SKILL_DEFENCE_MULTIPLIERS[StringUtil.isNumeric(id) ? Integer.parseInt(id) : Enum.valueOf(PlayerClass.class, id).getId()] = Float.parseFloat(classInfo[1].trim());
+					PVE_BLOW_SKILL_DEFENCE_MULTIPLIERS[StringUtils.isNumeric(id) ? Integer.parseInt(id) : Enum.valueOf(PlayerClass.class, id).getId()] = Float.parseFloat(classInfo[1].trim());
 				}
 			}
 		}
@@ -495,7 +496,7 @@ public class ClassBalanceConfig
 				if (classInfo.length == 2)
 				{
 					final String id = classInfo[0].trim();
-					PVP_BLOW_SKILL_DEFENCE_MULTIPLIERS[StringUtil.isNumeric(id) ? Integer.parseInt(id) : Enum.valueOf(PlayerClass.class, id).getId()] = Float.parseFloat(classInfo[1].trim());
+					PVP_BLOW_SKILL_DEFENCE_MULTIPLIERS[StringUtils.isNumeric(id) ? Integer.parseInt(id) : Enum.valueOf(PlayerClass.class, id).getId()] = Float.parseFloat(classInfo[1].trim());
 				}
 			}
 		}
@@ -510,7 +511,7 @@ public class ClassBalanceConfig
 				if (classInfo.length == 2)
 				{
 					final String id = classInfo[0].trim();
-					PVE_ENERGY_SKILL_DAMAGE_MULTIPLIERS[StringUtil.isNumeric(id) ? Integer.parseInt(id) : Enum.valueOf(PlayerClass.class, id).getId()] = Float.parseFloat(classInfo[1].trim());
+					PVE_ENERGY_SKILL_DAMAGE_MULTIPLIERS[StringUtils.isNumeric(id) ? Integer.parseInt(id) : Enum.valueOf(PlayerClass.class, id).getId()] = Float.parseFloat(classInfo[1].trim());
 				}
 			}
 		}
@@ -525,7 +526,7 @@ public class ClassBalanceConfig
 				if (classInfo.length == 2)
 				{
 					final String id = classInfo[0].trim();
-					PVP_ENERGY_SKILL_DAMAGE_MULTIPLIERS[StringUtil.isNumeric(id) ? Integer.parseInt(id) : Enum.valueOf(PlayerClass.class, id).getId()] = Float.parseFloat(classInfo[1].trim());
+					PVP_ENERGY_SKILL_DAMAGE_MULTIPLIERS[StringUtils.isNumeric(id) ? Integer.parseInt(id) : Enum.valueOf(PlayerClass.class, id).getId()] = Float.parseFloat(classInfo[1].trim());
 				}
 			}
 		}
@@ -540,7 +541,7 @@ public class ClassBalanceConfig
 				if (classInfo.length == 2)
 				{
 					final String id = classInfo[0].trim();
-					PVE_ENERGY_SKILL_DEFENCE_MULTIPLIERS[StringUtil.isNumeric(id) ? Integer.parseInt(id) : Enum.valueOf(PlayerClass.class, id).getId()] = Float.parseFloat(classInfo[1].trim());
+					PVE_ENERGY_SKILL_DEFENCE_MULTIPLIERS[StringUtils.isNumeric(id) ? Integer.parseInt(id) : Enum.valueOf(PlayerClass.class, id).getId()] = Float.parseFloat(classInfo[1].trim());
 				}
 			}
 		}
@@ -555,7 +556,7 @@ public class ClassBalanceConfig
 				if (classInfo.length == 2)
 				{
 					final String id = classInfo[0].trim();
-					PVP_ENERGY_SKILL_DEFENCE_MULTIPLIERS[StringUtil.isNumeric(id) ? Integer.parseInt(id) : Enum.valueOf(PlayerClass.class, id).getId()] = Float.parseFloat(classInfo[1].trim());
+					PVP_ENERGY_SKILL_DEFENCE_MULTIPLIERS[StringUtils.isNumeric(id) ? Integer.parseInt(id) : Enum.valueOf(PlayerClass.class, id).getId()] = Float.parseFloat(classInfo[1].trim());
 				}
 			}
 		}
@@ -570,7 +571,7 @@ public class ClassBalanceConfig
 				if (classInfo.length == 2)
 				{
 					final String id = classInfo[0].trim();
-					PLAYER_HEALING_SKILL_MULTIPLIERS[StringUtil.isNumeric(id) ? Integer.parseInt(id) : Enum.valueOf(PlayerClass.class, id).getId()] = Float.parseFloat(classInfo[1].trim());
+					PLAYER_HEALING_SKILL_MULTIPLIERS[StringUtils.isNumeric(id) ? Integer.parseInt(id) : Enum.valueOf(PlayerClass.class, id).getId()] = Float.parseFloat(classInfo[1].trim());
 				}
 			}
 		}
@@ -585,7 +586,7 @@ public class ClassBalanceConfig
 				if (classInfo.length == 2)
 				{
 					final String id = classInfo[0].trim();
-					SKILL_MASTERY_CHANCE_MULTIPLIERS[StringUtil.isNumeric(id) ? Integer.parseInt(id) : Enum.valueOf(PlayerClass.class, id).getId()] = Float.parseFloat(classInfo[1].trim());
+					SKILL_MASTERY_CHANCE_MULTIPLIERS[StringUtils.isNumeric(id) ? Integer.parseInt(id) : Enum.valueOf(PlayerClass.class, id).getId()] = Float.parseFloat(classInfo[1].trim());
 				}
 			}
 		}
@@ -600,7 +601,7 @@ public class ClassBalanceConfig
 				if (classInfo.length == 2)
 				{
 					final String id = classInfo[0].trim();
-					SKILL_REUSE_MULTIPLIERS[StringUtil.isNumeric(id) ? Integer.parseInt(id) : Enum.valueOf(PlayerClass.class, id).getId()] = Float.parseFloat(classInfo[1].trim());
+					SKILL_REUSE_MULTIPLIERS[StringUtils.isNumeric(id) ? Integer.parseInt(id) : Enum.valueOf(PlayerClass.class, id).getId()] = Float.parseFloat(classInfo[1].trim());
 				}
 			}
 		}
@@ -615,7 +616,7 @@ public class ClassBalanceConfig
 				if (classInfo.length == 2)
 				{
 					final String id = classInfo[0].trim();
-					EXP_AMOUNT_MULTIPLIERS[StringUtil.isNumeric(id) ? Integer.parseInt(id) : Enum.valueOf(PlayerClass.class, id).getId()] = Float.parseFloat(classInfo[1].trim());
+					EXP_AMOUNT_MULTIPLIERS[StringUtils.isNumeric(id) ? Integer.parseInt(id) : Enum.valueOf(PlayerClass.class, id).getId()] = Float.parseFloat(classInfo[1].trim());
 				}
 			}
 		}
@@ -630,7 +631,7 @@ public class ClassBalanceConfig
 				if (classInfo.length == 2)
 				{
 					final String id = classInfo[0].trim();
-					SP_AMOUNT_MULTIPLIERS[StringUtil.isNumeric(id) ? Integer.parseInt(id) : Enum.valueOf(PlayerClass.class, id).getId()] = Float.parseFloat(classInfo[1].trim());
+					SP_AMOUNT_MULTIPLIERS[StringUtils.isNumeric(id) ? Integer.parseInt(id) : Enum.valueOf(PlayerClass.class, id).getId()] = Float.parseFloat(classInfo[1].trim());
 				}
 			}
 		}

@@ -22,7 +22,8 @@ package app.l2nx.highfive.scripts.custom.RaidbossInfo;
 import java.util.ArrayList;
 import java.util.List;
 
-import app.l2nx.commons.util.StringUtil;
+import org.apache.commons.lang3.StringUtils;
+
 import app.l2nx.highfive.data.SpawnTable;
 import app.l2nx.highfive.data.xml.NpcData;
 import app.l2nx.highfive.entity.Location;
@@ -74,7 +75,7 @@ public class RaidbossInfo extends Script
 	public String onEvent(String event, Npc npc, Player player)
 	{
 		String htmltext = event;
-		if (StringUtil.isNumeric(event))
+		if (StringUtils.isNumeric(event))
 		{
 			htmltext = null;
 			final int bossId = Integer.parseInt(event);

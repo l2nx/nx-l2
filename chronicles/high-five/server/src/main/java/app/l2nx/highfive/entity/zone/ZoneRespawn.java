@@ -21,8 +21,8 @@ package app.l2nx.highfive.entity.zone;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
-import app.l2nx.commons.util.Rnd;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.entity.Location;
 
@@ -124,7 +124,7 @@ public abstract class ZoneRespawn extends ZoneType
 	{
 		if (PlayerConfig.RANDOM_RESPAWN_IN_TOWN_ENABLED)
 		{
-			return _spawnLocs.get(Rnd.get(_spawnLocs.size()));
+			return _spawnLocs.get(ThreadLocalRandom.current().nextInt(_spawnLocs.size()));
 		}
 		
 		return _spawnLocs.get(0);
@@ -136,7 +136,7 @@ public abstract class ZoneRespawn extends ZoneType
 		{
 			if (PlayerConfig.RANDOM_RESPAWN_IN_TOWN_ENABLED)
 			{
-				return _otherSpawnLocs.get(Rnd.get(_otherSpawnLocs.size()));
+				return _otherSpawnLocs.get(ThreadLocalRandom.current().nextInt(_otherSpawnLocs.size()));
 			}
 			
 			return _otherSpawnLocs.get(0);
@@ -151,7 +151,7 @@ public abstract class ZoneRespawn extends ZoneType
 		{
 			if (PlayerConfig.RANDOM_RESPAWN_IN_TOWN_ENABLED)
 			{
-				return _chaoticSpawnLocs.get(Rnd.get(_chaoticSpawnLocs.size()));
+				return _chaoticSpawnLocs.get(ThreadLocalRandom.current().nextInt(_chaoticSpawnLocs.size()));
 			}
 			
 			return _chaoticSpawnLocs.get(0);
@@ -166,7 +166,7 @@ public abstract class ZoneRespawn extends ZoneType
 		{
 			if (PlayerConfig.RANDOM_RESPAWN_IN_TOWN_ENABLED)
 			{
-				return _banishSpawnLocs.get(Rnd.get(_banishSpawnLocs.size()));
+				return _banishSpawnLocs.get(ThreadLocalRandom.current().nextInt(_banishSpawnLocs.size()));
 			}
 			
 			return _banishSpawnLocs.get(0);

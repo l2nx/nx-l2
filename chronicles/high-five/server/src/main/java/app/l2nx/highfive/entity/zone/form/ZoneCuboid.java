@@ -23,8 +23,8 @@
 package app.l2nx.highfive.entity.zone.form;
 
 import java.awt.Rectangle;
+import java.util.concurrent.ThreadLocalRandom;
 
-import app.l2nx.commons.util.Rnd;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.itemcontainer.Inventory;
 import app.l2nx.highfive.entity.zone.ZoneForm;
@@ -147,8 +147,9 @@ public class ZoneCuboid extends ZoneForm
 	@Override
 	public Location getRandomPoint()
 	{
-		final int x = Rnd.get(_r.x, _r.x + _r.width);
-		final int y = Rnd.get(_r.y, _r.y + _r.height);
+		final ThreadLocalRandom random = ThreadLocalRandom.current();
+		final int x = random.nextInt(_r.x, _r.x + _r.width + 1);
+		final int y = random.nextInt(_r.y, _r.y + _r.height + 1);
 		
 		return new Location(x, y, GeoEngine.getInstance().getHeight(x, y, (_z1 + _z2) / 2));
 	}

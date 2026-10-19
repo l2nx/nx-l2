@@ -24,9 +24,9 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ThreadLocalRandom;
 
 import app.l2nx.commons.threads.ThreadPool;
-import app.l2nx.commons.util.Rnd;
 import app.l2nx.highfive.data.sql.CharInfoTable;
 import app.l2nx.highfive.entity.itemcontainer.Mail;
 import app.l2nx.highfive.managers.IdManager;
@@ -145,7 +145,7 @@ public class MailMessage
 		_attachments = msg.getAttachments();
 		msg.removeAttachments();
 		_attachments.setNewMessageId(_messageId);
-		_unloadTask = ThreadPool.schedule(new AttachmentsUnloadTask(this), UNLOAD_ATTACHMENTS_INTERVAL + Rnd.get(UNLOAD_ATTACHMENTS_INTERVAL));
+		_unloadTask = ThreadPool.schedule(new AttachmentsUnloadTask(this), UNLOAD_ATTACHMENTS_INTERVAL + ThreadLocalRandom.current().nextInt(UNLOAD_ATTACHMENTS_INTERVAL));
 	}
 	
 	public static PreparedStatement getStatement(MailMessage msg, Connection con) throws SQLException
@@ -333,7 +333,7 @@ public class MailMessage
 		{
 			_attachments = new Mail(_senderId, _messageId);
 			_attachments.restore();
-			_unloadTask = ThreadPool.schedule(new AttachmentsUnloadTask(this), UNLOAD_ATTACHMENTS_INTERVAL + Rnd.get(UNLOAD_ATTACHMENTS_INTERVAL));
+			_unloadTask = ThreadPool.schedule(new AttachmentsUnloadTask(this), UNLOAD_ATTACHMENTS_INTERVAL + ThreadLocalRandom.current().nextInt(UNLOAD_ATTACHMENTS_INTERVAL));
 		}
 		
 		return _attachments;
@@ -369,7 +369,7 @@ public class MailMessage
 		
 		_attachments = new Mail(_senderId, _messageId);
 		_hasAttachments = true;
-		_unloadTask = ThreadPool.schedule(new AttachmentsUnloadTask(this), UNLOAD_ATTACHMENTS_INTERVAL + Rnd.get(UNLOAD_ATTACHMENTS_INTERVAL));
+		_unloadTask = ThreadPool.schedule(new AttachmentsUnloadTask(this), UNLOAD_ATTACHMENTS_INTERVAL + ThreadLocalRandom.current().nextInt(UNLOAD_ATTACHMENTS_INTERVAL));
 		return _attachments;
 	}
 	

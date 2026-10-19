@@ -23,7 +23,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.logging.Level;
 
-import app.l2nx.commons.util.StringUtil;
+import org.apache.commons.lang3.StringUtils;
+
 import app.l2nx.highfive.config.OlympiadConfig;
 import app.l2nx.highfive.data.xml.MultisellData;
 import app.l2nx.highfive.entity.actor.Creature;
@@ -262,7 +263,7 @@ public class OlympiadManagerLink implements IBypassHandler
 				}
 				
 				final String[] params = command.split(" ");
-				if (!StringUtil.isNumeric(params[1]))
+				if (!StringUtils.isNumeric(params[1]))
 				{
 					LOGGER.warning("Olympiad Buffer Warning: npcId = " + target.getId() + " has invalid buffGroup set in the bypass for the buff selected: " + params[1]);
 					return false;

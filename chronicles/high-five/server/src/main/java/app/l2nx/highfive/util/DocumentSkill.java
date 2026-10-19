@@ -31,7 +31,6 @@ import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 
-import app.l2nx.commons.util.StringUtil;
 import app.l2nx.highfive.data.xml.EnchantSkillGroupsData;
 import app.l2nx.highfive.mechanics.conditions.Condition;
 import app.l2nx.highfive.mechanics.skill.EffectScope;
@@ -1739,7 +1738,7 @@ public class DocumentSkill extends DocumentBase
 				final String[] values = tableValue.split("\\s+");
 				if ((values.length > 0) && (level > 0) && (level <= values.length))
 				{
-					set.set(nodeName, StringUtil.parseValue(values[level - 1]));
+					set.set(nodeName, parseValue(values[level - 1]));
 					return;
 				}
 			}
@@ -1755,7 +1754,7 @@ public class DocumentSkill extends DocumentBase
 				final String[] values = tableValue.split("\\s+");
 				if ((values.length > 0) && (level > 0) && (level <= values.length))
 				{
-					set.set(nodeName, StringUtil.parseValue(values[level - 1]));
+					set.set(nodeName, parseValue(values[level - 1]));
 					return;
 				}
 			}
@@ -1772,7 +1771,44 @@ public class DocumentSkill extends DocumentBase
 	{
 		parseInlineLevelTable(n, set, level, 0);
 	}
-	
+
+	/**
+	 * Converts a level table value to {@link Boolean}, {@link Long} or {@link Float}, falling back to the trimmed string.
+	 * @param value the raw table value
+	 * @return the typed value
+	 */
+	private static Object parseValue(String value)
+	{
+		final String val = value.trim();
+		if (val.equalsIgnoreCase("true"))
+		{
+			return Boolean.TRUE;
+		}
+
+		if (val.equalsIgnoreCase("false"))
+		{
+			return Boolean.FALSE;
+		}
+
+		try
+		{
+			return Long.valueOf(val);
+		}
+		catch (NumberFormatException e)
+		{
+			// Not an integral value.
+		}
+
+		try
+		{
+			return Float.valueOf(val);
+		}
+		catch (NumberFormatException e)
+		{
+			return val;
+		}
+	}
+
 	private void makeSkills()
 	{
 		int count = 0;

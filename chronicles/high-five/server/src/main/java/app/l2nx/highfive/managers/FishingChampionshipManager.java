@@ -29,12 +29,12 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import app.l2nx.commons.database.DatabaseFactory;
 import app.l2nx.commons.threads.ThreadPool;
-import app.l2nx.commons.util.Rnd;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.data.xml.ItemData;
 import app.l2nx.highfive.entity.actor.Player;
@@ -139,10 +139,11 @@ public class FishingChampionshipManager
 			return;
 		}
 		
-		double len = Rnd.get(60, 89) + (Rnd.get(0, 1000) / 1000.);
+		final ThreadLocalRandom random = ThreadLocalRandom.current();
+		double len = random.nextInt(60, 90) + (random.nextInt(1001) / 1000.);
 		if ((lureId >= 8484) && (lureId <= 8486))
 		{
-			len += Rnd.get(0, 3000) / 1000.;
+			len += random.nextInt(3001) / 1000.;
 		}
 		
 		pl.sendPacket(new SystemMessage(SystemMessageId.YOU_CAUGHT_A_FISH_S1_IN_LENGTH).addString(String.valueOf(len)));

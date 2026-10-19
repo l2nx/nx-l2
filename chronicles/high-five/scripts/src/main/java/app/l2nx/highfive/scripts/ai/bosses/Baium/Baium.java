@@ -24,7 +24,8 @@ package app.l2nx.highfive.scripts.ai.bosses.Baium;
 
 import java.util.logging.Logger;
 
-import app.l2nx.commons.time.TimeUtil;
+import org.apache.commons.lang3.time.DateFormatUtils;
+
 import app.l2nx.highfive.config.GrandBossConfig;
 import app.l2nx.highfive.data.enums.CategoryType;
 import app.l2nx.highfive.entity.Location;
@@ -686,7 +687,7 @@ public class Baium extends Script
 		final long respawnDelayMillis = baseIntervalMillis + getRandom(-randomRangeMillis, randomRangeMillis);
 		final long nextRespawnTime = System.currentTimeMillis() + respawnDelayMillis;
 		
-		LOGGER.info("Baium will respawn at: " + TimeUtil.getDateTimeString(nextRespawnTime));
+		LOGGER.info("Baium will respawn at: " + DateFormatUtils.format(nextRespawnTime, "dd/MM/yyyy HH:mm:ss"));
 		
 		setRespawn(respawnDelayMillis);
 		startQuestTimer(EVENT_CLEAR_STATUS, respawnDelayMillis, null, null);

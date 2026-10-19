@@ -37,7 +37,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import app.l2nx.commons.database.DatabaseFactory;
-import app.l2nx.commons.util.StringUtil;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.config.OlympiadConfig;
 import app.l2nx.highfive.config.PlayerConfig;
@@ -306,11 +305,11 @@ public class Item extends WorldObject
 		{
 			if (_enchantLevel > 0)
 			{
-				LOG_ITEMS.info(StringUtil.concat("SETOWNER:", String.valueOf(process), ", item ", String.valueOf(getObjectId()), ":+", String.valueOf(_enchantLevel), " ", _itemTemplate.getName(), "(", String.valueOf(_count), "), ", String.valueOf(creator), ", ", String.valueOf(reference)));
+				LOG_ITEMS.info("SETOWNER:" + process + ", item " + getObjectId() + ":+" + _enchantLevel + " " + _itemTemplate.getName() + "(" + _count + "), " + creator + ", " + reference);
 			}
 			else
 			{
-				LOG_ITEMS.info(StringUtil.concat("SETOWNER:", String.valueOf(process), ", item ", String.valueOf(getObjectId()), ":", _itemTemplate.getName(), "(", String.valueOf(_count), "), ", String.valueOf(creator), ", ", String.valueOf(reference)));
+				LOG_ITEMS.info("SETOWNER:" + process + ", item " + getObjectId() + ":" + _itemTemplate.getName() + "(" + _count + "), " + creator + ", " + reference);
 			}
 		}
 		
@@ -327,7 +326,7 @@ public class Item extends WorldObject
 				referenceName = (String) reference;
 			}
 			
-			GMAudit.logAction(creator.toString(), StringUtil.concat(String.valueOf(process), "(id: ", String.valueOf(_itemId), " name: ", getName(), ")"), targetName, StringUtil.concat("Object referencing this action is: ", referenceName));
+			GMAudit.logAction(creator.toString(), process + "(id: " + _itemId + " name: " + getName() + ")", targetName, "Object referencing this action is: " + referenceName);
 		}
 	}
 	
@@ -481,11 +480,11 @@ public class Item extends WorldObject
 			{
 				if (_enchantLevel > 0)
 				{
-					LOG_ITEMS.info(StringUtil.concat("CHANGE:", String.valueOf(process), ", item ", String.valueOf(getObjectId()), ":+", String.valueOf(_enchantLevel), " ", _itemTemplate.getName(), "(", String.valueOf(_count), "), PrevCount(", String.valueOf(old), "), ", String.valueOf(creator), ", ", String.valueOf(reference)));
+					LOG_ITEMS.info("CHANGE:" + process + ", item " + getObjectId() + ":+" + _enchantLevel + " " + _itemTemplate.getName() + "(" + _count + "), PrevCount(" + old + "), " + creator + ", " + reference);
 				}
 				else
 				{
-					LOG_ITEMS.info(StringUtil.concat("CHANGE:", String.valueOf(process), ", item ", String.valueOf(getObjectId()), ":", _itemTemplate.getName(), "(", String.valueOf(_count), "), PrevCount(", String.valueOf(old), "), ", String.valueOf(creator), ", ", String.valueOf(reference)));
+					LOG_ITEMS.info("CHANGE:" + process + ", item " + getObjectId() + ":" + _itemTemplate.getName() + "(" + _count + "), PrevCount(" + old + "), " + creator + ", " + reference);
 				}
 			}
 			
@@ -502,7 +501,7 @@ public class Item extends WorldObject
 					referenceName = (String) reference;
 				}
 				
-				GMAudit.logAction(creator.toString(), StringUtil.concat(String.valueOf(process), "(id: ", String.valueOf(_itemId), " objId: ", String.valueOf(getObjectId()), " name: ", getName(), " count: ", String.valueOf(count), ")"), targetName, StringUtil.concat("Object referencing this action is: ", referenceName));
+				GMAudit.logAction(creator.toString(), process + "(id: " + _itemId + " objId: " + getObjectId() + " name: " + getName() + " count: " + count + ")", targetName, "Object referencing this action is: " + referenceName);
 			}
 		}
 	}

@@ -24,10 +24,10 @@ package app.l2nx.highfive.entity.actor.instance;
 
 import java.util.Set;
 import java.util.concurrent.Future;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Level;
 
 import app.l2nx.commons.threads.ThreadPool;
-import app.l2nx.commons.util.Rnd;
 import app.l2nx.highfive.ai.CreatureAI;
 import app.l2nx.highfive.ai.DoorAI;
 import app.l2nx.highfive.data.sql.ClanHallTable;
@@ -127,7 +127,7 @@ public class Door extends Creature
 		int delay = _open ? getTemplate().getOpenTime() : getTemplate().getCloseTime();
 		if (getTemplate().getRandomTime() > 0)
 		{
-			delay += Rnd.get(getTemplate().getRandomTime());
+			delay += ThreadLocalRandom.current().nextInt(getTemplate().getRandomTime());
 		}
 		
 		ThreadPool.schedule(new TimerOpen(), delay * 1000);
@@ -771,7 +771,7 @@ public class Door extends Creature
 			int delay = _open ? getTemplate().getCloseTime() : getTemplate().getOpenTime();
 			if (getTemplate().getRandomTime() > 0)
 			{
-				delay += Rnd.get(getTemplate().getRandomTime());
+				delay += ThreadLocalRandom.current().nextInt(getTemplate().getRandomTime());
 			}
 			
 			ThreadPool.schedule(this, delay * 1000);

@@ -26,9 +26,9 @@ import java.util.Collection;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ThreadLocalRandom;
 
 import app.l2nx.commons.threads.ThreadPool;
-import app.l2nx.commons.util.Rnd;
 import app.l2nx.highfive.config.NpcConfig;
 import app.l2nx.highfive.data.xml.NpcData;
 import app.l2nx.highfive.entity.Location;
@@ -230,12 +230,13 @@ public class MinionList
 	{
 		final int spawnRadius = SPAWN_OFFSET_RADIUS;
 		final int minimumRadius = (int) _master.getCollisionRadius() + MINIMUM_SPAWN_RADIUS;
+		final ThreadLocalRandom random = ThreadLocalRandom.current();
 		for (Monster minion : _spawnedMinions)
 		{
 			if ((minion != null) && !minion.isDead() && !minion.isMovementDisabled())
 			{
-				int newX = Rnd.get(minimumRadius * 2, spawnRadius * 2); // x
-				int newY = Rnd.get(newX, spawnRadius * 2); // distance
+				int newX = minimumRadius < spawnRadius ? random.nextInt(minimumRadius * 2, (spawnRadius * 2) + 1) : minimumRadius * 2; // x
+				int newY = newX < (spawnRadius * 2) ? random.nextInt(newX, (spawnRadius * 2) + 1) : newX; // distance
 				newY = (int) Math.sqrt((newY * newY) - (newX * newX)); // y
 				if (newX > (spawnRadius + minimumRadius))
 				{
@@ -366,8 +367,9 @@ public class MinionList
 		// Initialize the position of the Minion and add it in the world as a visible object.
 		final int spawnRadius = SPAWN_OFFSET_RADIUS;
 		final int minimumRadius = (int) master.getCollisionRadius() + MINIMUM_SPAWN_RADIUS;
-		int newX = Rnd.get(minimumRadius * 2, spawnRadius * 2); // x
-		int newY = Rnd.get(newX, spawnRadius * 2); // distance
+		final ThreadLocalRandom random = ThreadLocalRandom.current();
+		int newX = minimumRadius < spawnRadius ? random.nextInt(minimumRadius * 2, (spawnRadius * 2) + 1) : minimumRadius * 2; // x
+		int newY = newX < (spawnRadius * 2) ? random.nextInt(newX, (spawnRadius * 2) + 1) : newX; // distance
 		newY = (int) Math.sqrt((newY * newY) - (newX * newX)); // y
 		if (newX > (spawnRadius + minimumRadius))
 		{

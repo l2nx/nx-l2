@@ -29,6 +29,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Logger;
 
 import org.w3c.dom.Document;
@@ -36,7 +37,6 @@ import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 
 import app.l2nx.commons.util.IXmlReader;
-import app.l2nx.commons.util.Rnd;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.config.custom.FactionSystemConfig;
 import app.l2nx.highfive.data.sql.ClanHallTable;
@@ -296,7 +296,7 @@ public class MapRegionData implements IXmlReader
 		
 		if (PlayerConfig.RANDOM_RESPAWN_IN_TOWN_ENABLED)
 		{
-			return region.spawnLocs.get(Rnd.get(region.spawnLocs.size()));
+			return region.spawnLocs.get(ThreadLocalRandom.current().nextInt(region.spawnLocs.size()));
 		}
 		
 		return region.spawnLocs.get(0);
@@ -314,7 +314,7 @@ public class MapRegionData implements IXmlReader
 		{
 			if (PlayerConfig.RANDOM_RESPAWN_IN_TOWN_ENABLED)
 			{
-				return region.chaoticSpawnLocs.get(Rnd.get(region.chaoticSpawnLocs.size()));
+				return region.chaoticSpawnLocs.get(ThreadLocalRandom.current().nextInt(region.chaoticSpawnLocs.size()));
 			}
 			
 			return region.chaoticSpawnLocs.get(0);
@@ -826,7 +826,7 @@ public class MapRegionData implements IXmlReader
 		
 		if (PlayerConfig.RANDOM_RESPAWN_IN_TOWN_ENABLED)
 		{
-			return region.spawnLocs.get(Rnd.get(region.spawnLocs.size()));
+			return region.spawnLocs.get(ThreadLocalRandom.current().nextInt(region.spawnLocs.size()));
 		}
 		
 		return region.spawnLocs.get(0);

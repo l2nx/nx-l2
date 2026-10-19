@@ -19,7 +19,8 @@
  */
 package app.l2nx.highfive.scripts.handlers.skill.effects;
 
-import app.l2nx.commons.util.Rnd;
+import java.util.concurrent.ThreadLocalRandom;
+
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.instance.Monster;
@@ -145,6 +146,6 @@ public class Harvesting extends AbstractEffect
 			basicSuccess = 1;
 		}
 		
-		return Rnd.get(99) < basicSuccess;
+		return ThreadLocalRandom.current().nextInt(99) < basicSuccess;
 	}
 }

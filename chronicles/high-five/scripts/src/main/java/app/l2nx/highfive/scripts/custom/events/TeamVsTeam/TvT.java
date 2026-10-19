@@ -33,10 +33,10 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.commons.lang3.time.DateFormatUtils;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 
-import app.l2nx.commons.time.TimeUtil;
 import app.l2nx.commons.util.IXmlReader;
 import app.l2nx.highfive.config.custom.DualboxCheckConfig;
 import app.l2nx.highfive.entity.Location;
@@ -224,7 +224,7 @@ public class TvT extends Event
 		params.getObject("Schedule", RecurrenceSchedule.class).next().ifPresentOrElse(start ->
 		{
 			getTimers().addTimer(timer, params, (start.toEpochMilli() - System.currentTimeMillis()) + 5000, null, null); // Added 5 seconds to prevent overlapping.
-			LOGGER.info("Event " + params.getString("Name") + " scheduled at " + TimeUtil.getDateTimeString(start.toEpochMilli()));
+			LOGGER.info("Event " + params.getString("Name") + " scheduled at " + DateFormatUtils.format(start.toEpochMilli(), "dd/MM/yyyy HH:mm:ss"));
 		}, () -> LOGGER.warning("Event " + params.getString("Name") + " has no further start in its schedule."));
 	}
 	

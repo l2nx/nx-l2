@@ -19,9 +19,9 @@
  */
 package app.l2nx.highfive.scripts.ai.others;
 
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Level;
 
-import app.l2nx.commons.util.Rnd;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
@@ -60,7 +60,7 @@ public class AltarsOfSacrifice extends Script
 			spawn.setHeading(getRandom(65536));
 			
 			final int radius = getRandom(BOSS_MIN_SPAWN_RADIUS, BOSS_MAX_SPAWN_RADIUS);
-			final double angleRadians = Rnd.nextDouble() * 2 * Math.PI;
+			final double angleRadians = ThreadLocalRandom.current().nextDouble() * 2 * Math.PI;
 			final int spawnX = (int) (radius * Math.cos(angleRadians)) + _middlePoint.getX();
 			final int spawnY = (int) (radius * Math.sin(angleRadians)) + _middlePoint.getY();
 			spawn.setXYZ(spawnX, spawnY, GeoEngine.getInstance().getHeight(spawnX, spawnY, _middlePoint.getZ()));

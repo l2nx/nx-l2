@@ -34,7 +34,8 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
 
-import app.l2nx.commons.util.TraceUtil;
+import org.apache.commons.lang3.exception.ExceptionUtils;
+
 import app.l2nx.login.controller.LoginController;
 import app.l2nx.login.controller.ScrambledKeyPair;
 import app.l2nx.login.data.GameServerTable;
@@ -379,7 +380,7 @@ public class GameServerThread extends Thread
 		catch (IOException e)
 		{
 			LOGGER.severe("GameServerThread: IOException occurred while sending packet " + packet.getClass().getSimpleName() + " - " + e.getMessage());
-			LOGGER.severe(TraceUtil.getStackTrace(e));
+			LOGGER.severe(ExceptionUtils.getStackTrace(e));
 		}
 	}
 	

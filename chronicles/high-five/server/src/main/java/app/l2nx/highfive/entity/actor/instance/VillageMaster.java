@@ -30,7 +30,8 @@ import java.util.Set;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-import app.l2nx.commons.util.StringUtil;
+import org.apache.commons.lang3.StringUtils;
+
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.config.ServerConfig;
 import app.l2nx.highfive.data.enums.CategoryType;
@@ -1134,7 +1135,7 @@ public class VillageMaster extends Folk
 			return;
 		}
 		
-		if (!StringUtil.isAlphaNumeric(clanName) || !isValidName(clanName) || (2 > clanName.length()))
+		if (!StringUtils.isAlphanumeric(clanName) || !isValidName(clanName) || (2 > clanName.length()))
 		{
 			player.sendPacket(SystemMessageId.CLAN_NAME_IS_INVALID);
 			return;
@@ -1239,7 +1240,7 @@ public class VillageMaster extends Folk
 			return;
 		}
 		
-		if (!StringUtil.isAlphaNumeric(pledgeName) || !isValidName(pledgeName) || (2 > pledgeName.length()))
+		if (!StringUtils.isAlphanumeric(pledgeName) || !isValidName(pledgeName) || (2 > pledgeName.length()))
 		{
 			player.sendPacket(SystemMessageId.CLAN_NAME_IS_INVALID);
 			return;

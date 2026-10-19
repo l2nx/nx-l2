@@ -23,8 +23,8 @@
 package app.l2nx.highfive.entity.zone.form;
 
 import java.awt.Polygon;
+import java.util.concurrent.ThreadLocalRandom;
 
-import app.l2nx.commons.util.Rnd;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.itemcontainer.Inventory;
 import app.l2nx.highfive.entity.zone.ZoneForm;
@@ -162,14 +162,15 @@ public class ZoneNPoly extends ZoneForm
 		final int minY = _p.getBounds().y;
 		final int maxY = _p.getBounds().y + _p.getBounds().height;
 		
-		int x = Rnd.get(minX, maxX);
-		int y = Rnd.get(minY, maxY);
-		
+		final ThreadLocalRandom random = ThreadLocalRandom.current();
+		int x = random.nextInt(minX, maxX + 1);
+		int y = random.nextInt(minY, maxY + 1);
+
 		int antiBlocker = 0;
 		while (!_p.contains(x, y) && (antiBlocker++ < 1000))
 		{
-			x = Rnd.get(minX, maxX);
-			y = Rnd.get(minY, maxY);
+			x = random.nextInt(minX, maxX + 1);
+			y = random.nextInt(minY, maxY + 1);
 		}
 		
 		return new Location(x, y, GeoEngine.getInstance().getHeight(x, y, (_z1 + _z2) / 2));

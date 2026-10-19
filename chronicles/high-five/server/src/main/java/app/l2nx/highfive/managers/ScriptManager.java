@@ -27,7 +27,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import app.l2nx.commons.util.StringUtil;
 import app.l2nx.highfive.config.DevelopmentConfig;
 import app.l2nx.highfive.mechanics.script.Quest;
 import app.l2nx.highfive.scripting.ScriptEngine;
@@ -206,7 +205,7 @@ public class ScriptManager
 		if (DevelopmentConfig.SHOW_QUEST_LOAD_IN_LOGS)
 		{
 			final String questName = quest.getName().contains("_") ? quest.getName().substring(quest.getName().indexOf('_') + 1) : quest.getName();
-			LOGGER.info("Loaded quest " + StringUtil.separateWords(questName) + ".");
+			LOGGER.info("Loaded quest " + separateWords(questName) + ".");
 		}
 	}
 	
@@ -266,10 +265,27 @@ public class ScriptManager
 		
 		if (DevelopmentConfig.SHOW_SCRIPT_LOAD_IN_LOGS)
 		{
-			LOGGER.info("Loaded script " + StringUtil.separateWords(script.getClass().getSimpleName()) + ".");
+			LOGGER.info("Loaded script " + separateWords(script.getClass().getSimpleName()) + ".");
 		}
 	}
-	
+
+	private static String separateWords(String text)
+	{
+		final StringBuilder result = new StringBuilder(text.length());
+		for (int i = 0; i < text.length(); i++)
+		{
+			final char current = text.charAt(i);
+			if (Character.isUpperCase(current) && (i > 0) && Character.isLowerCase(text.charAt(i - 1)))
+			{
+				result.append(' ');
+			}
+
+			result.append(current);
+		}
+
+		return result.toString();
+	}
+
 	/**
 	 * Gets the single instance of {@code ScriptManager}.
 	 * @return single instance of {@code ScriptManager}

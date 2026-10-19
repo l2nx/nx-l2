@@ -21,9 +21,9 @@ package app.l2nx.highfive.util;
 
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Logger;
 
-import app.l2nx.commons.util.Rnd;
 import app.l2nx.highfive.entity.Location;
 
 /**
@@ -153,24 +153,25 @@ public class PolygonTerritory
 	
 	public Location getRandomPoint()
 	{
+		final ThreadLocalRandom random = ThreadLocalRandom.current();
 		if (_procMax > 0)
 		{
 			int pos = 0;
-			final int rnd = Rnd.get(_procMax);
+			final int rnd = random.nextInt(_procMax);
 			for (Point p1 : _points)
 			{
 				pos += p1._proc;
 				if (rnd <= pos)
 				{
-					return new Location(p1._x, p1._y, Rnd.get(p1._zmin, p1._zmax));
+					return new Location(p1._x, p1._y, p1._zmin < p1._zmax ? random.nextInt(p1._zmin, p1._zmax + 1) : p1._zmin);
 				}
 			}
 		}
-		
+
 		for (int i = 0; i < 100; i++)
 		{
-			final int x = Rnd.get(_xMin, _xMax);
-			final int y = Rnd.get(_yMin, _yMax);
+			final int x = _xMin < _xMax ? random.nextInt(_xMin, _xMax + 1) : _xMin;
+			final int y = _yMin < _yMax ? random.nextInt(_yMin, _yMax + 1) : _yMin;
 			if (isInside(x, y))
 			{
 				double curdistance = 0;
@@ -187,7 +188,7 @@ public class PolygonTerritory
 					}
 				}
 				
-				return new Location(x, y, Rnd.get(zmin, _zMax));
+				return new Location(x, y, zmin < _zMax ? random.nextInt(zmin, _zMax + 1) : zmin);
 			}
 		}
 		

@@ -23,9 +23,9 @@
 package app.l2nx.highfive.entity.actor;
 
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ThreadLocalRandom;
 
 import app.l2nx.commons.threads.ThreadPool;
-import app.l2nx.commons.util.Rnd;
 import app.l2nx.highfive.ai.CreatureAI;
 import app.l2nx.highfive.ai.SummonAI;
 import app.l2nx.highfive.config.GeoEngineConfig;
@@ -119,7 +119,7 @@ public abstract class Summon extends Playable
 		final int x = owner.getX();
 		final int y = owner.getY();
 		final int z = owner.getZ();
-		final Location location = GeoEngine.getInstance().getValidLocation(x, y, z, x + Rnd.get(-100, 100), y + Rnd.get(-100, 100), z, owner.getInstanceId());
+		final Location location = GeoEngine.getInstance().getValidLocation(x, y, z, x + ThreadLocalRandom.current().nextInt(-100, 101), y + ThreadLocalRandom.current().nextInt(-100, 101), z, owner.getInstanceId());
 		setXYZInvisible(location.getX(), location.getY(), location.getZ());
 	}
 	

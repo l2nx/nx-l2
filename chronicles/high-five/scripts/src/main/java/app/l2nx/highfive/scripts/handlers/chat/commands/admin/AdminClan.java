@@ -21,7 +21,8 @@ package app.l2nx.highfive.scripts.handlers.chat.commands.admin;
 
 import java.util.StringTokenizer;
 
-import app.l2nx.commons.util.StringUtil;
+import org.apache.commons.lang3.StringUtils;
+
 import app.l2nx.highfive.cache.HtmCache;
 import app.l2nx.highfive.data.sql.ClanHallTable;
 import app.l2nx.highfive.data.sql.ClanTable;
@@ -142,7 +143,7 @@ public class AdminClan implements IAdminCommandHandler
 				if (st.hasMoreElements())
 				{
 					final String token = st.nextToken();
-					if (!StringUtil.isNumeric(token))
+					if (!StringUtils.isNumeric(token))
 					{
 						break;
 					}
@@ -184,7 +185,7 @@ public class AdminClan implements IAdminCommandHandler
 			val = st.nextToken();
 			
 			// From the HTML we receive player's object Id.
-			if (StringUtil.isNumeric(val))
+			if (StringUtils.isNumeric(val))
 			{
 				player = World.getPlayer(Integer.parseInt(val));
 				if (player == null)

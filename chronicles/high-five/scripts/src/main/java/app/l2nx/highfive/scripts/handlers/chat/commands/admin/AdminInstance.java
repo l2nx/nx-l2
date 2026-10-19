@@ -21,7 +21,8 @@ package app.l2nx.highfive.scripts.handlers.chat.commands.admin;
 
 import java.util.StringTokenizer;
 
-import app.l2nx.commons.util.StringUtil;
+import org.apache.commons.lang3.StringUtils;
+
 import app.l2nx.highfive.entity.WorldObject;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.instancezone.Instance;
@@ -52,7 +53,7 @@ public class AdminInstance implements IAdminCommandHandler
 		if (command.startsWith("admin_createinstance"))
 		{
 			final String[] parts = command.split(" ");
-			if ((parts.length != 3) || !StringUtil.isNumeric(parts[2]))
+			if ((parts.length != 3) || !StringUtils.isNumeric(parts[2]))
 			{
 				activeChar.sendSysMessage("Example: //createinstance <id> <templateId> - ids => 300000 are reserved for dynamic instances");
 			}

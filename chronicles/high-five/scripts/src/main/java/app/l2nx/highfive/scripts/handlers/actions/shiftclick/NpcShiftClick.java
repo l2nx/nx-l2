@@ -23,8 +23,8 @@
 package app.l2nx.highfive.scripts.handlers.actions.shiftclick;
 
 import java.util.Set;
+import java.util.stream.Collectors;
 
-import app.l2nx.commons.util.StringUtil;
 import app.l2nx.highfive.config.NpcConfig;
 import app.l2nx.highfive.data.xml.SpawnData;
 import app.l2nx.highfive.entity.Location;
@@ -159,8 +159,8 @@ public class NpcShiftClick implements IActionShiftHandler
 			{
 				final Set<Integer> clans = target.asNpc().getTemplate().getClans();
 				final Set<Integer> ignoreClanNpcIds = target.asNpc().getTemplate().getIgnoreClanNpcIds();
-				final String clansString = clans != null ? StringUtil.implode(clans.toArray(), ", ") : "";
-				final String ignoreClanNpcIdsString = ignoreClanNpcIds != null ? StringUtil.implode(ignoreClanNpcIds.toArray(), ", ") : "";
+				final String clansString = clans != null ? clans.stream().map(Object::toString).collect(Collectors.joining(", ")) : "";
+				final String ignoreClanNpcIdsString = ignoreClanNpcIds != null ? ignoreClanNpcIds.stream().map(Object::toString).collect(Collectors.joining(", ")) : "";
 				
 				html.replace("%ai_intention%", "<tr><td><table width=270 border=0 bgcolor=131210><tr><td width=100><font color=FFAA00>Intention:</font></td><td align=right width=170>" + target.asNpc().getAI().getIntention().name() + "</td></tr></table></td></tr>");
 				html.replace("%ai%", "<tr><td><table width=270 border=0><tr><td width=100><font color=FFAA00>AI</font></td><td align=right width=170>" + target.asNpc().getAI().getClass().getSimpleName() + "</td></tr></table></td></tr>");

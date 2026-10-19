@@ -22,7 +22,8 @@
  */
 package app.l2nx.highfive.scripts.handlers.chat.commands.admin;
 
-import app.l2nx.commons.util.StringUtil;
+import org.apache.commons.lang3.StringUtils;
+
 import app.l2nx.highfive.data.xml.TransformData;
 import app.l2nx.highfive.entity.WorldObject;
 import app.l2nx.highfive.entity.actor.Player;
@@ -101,7 +102,7 @@ public class AdminTransform implements IAdminCommandHandler
 			}
 			
 			final String[] parts = command.split(" ");
-			if ((parts.length != 2) || !StringUtil.isNumeric(parts[1]))
+			if ((parts.length != 2) || !StringUtils.isNumeric(parts[1]))
 			{
 				activeChar.sendSysMessage("Usage: //transform <id>");
 				return false;

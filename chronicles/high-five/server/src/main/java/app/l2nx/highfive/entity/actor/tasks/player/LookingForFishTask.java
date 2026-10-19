@@ -19,7 +19,8 @@
  */
 package app.l2nx.highfive.entity.actor.tasks.player;
 
-import app.l2nx.commons.util.Rnd;
+import java.util.concurrent.ThreadLocalRandom;
+
 import app.l2nx.highfive.entity.actor.Player;
 
 /**
@@ -61,7 +62,7 @@ public class LookingForFishTask implements Runnable
 				return;
 			}
 			
-			final int check = Rnd.get(100);
+			final int check = ThreadLocalRandom.current().nextInt(100);
 			if (_fishGutsCheck > check)
 			{
 				_player.stopLookingForFishTask();

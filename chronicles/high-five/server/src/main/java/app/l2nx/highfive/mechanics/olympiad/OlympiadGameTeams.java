@@ -21,9 +21,9 @@ package app.l2nx.highfive.mechanics.olympiad;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Level;
 
-import app.l2nx.commons.util.Rnd;
 import app.l2nx.highfive.config.OlympiadConfig;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.World;
@@ -112,7 +112,7 @@ public class OlympiadGameTeams extends AbstractOlympiadGame
 		
 		while (list.size() > 1)
 		{
-			teamOne = list.remove(Rnd.get(list.size()));
+			teamOne = list.remove(ThreadLocalRandom.current().nextInt(list.size()));
 			
 			if ((teamOne == null) || teamOne.isEmpty())
 			{
@@ -136,7 +136,7 @@ public class OlympiadGameTeams extends AbstractOlympiadGame
 				continue;
 			}
 			
-			teamTwo = list.remove(Rnd.get(list.size()));
+			teamTwo = list.remove(ThreadLocalRandom.current().nextInt(list.size()));
 			if ((teamTwo == null) || teamTwo.isEmpty())
 			{
 				list.add(teamOne);

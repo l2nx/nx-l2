@@ -26,7 +26,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import app.l2nx.commons.util.StringUtil;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.managers.PunishmentManager;
 import app.l2nx.highfive.mechanics.punishment.PunishmentAffect;
@@ -141,8 +140,8 @@ public class FloodProtectorAction
 									
 									if (LOG_WARNING_ENABLED)
 									{
-										final String duration = (punishmentTime <= 0) ? DURATION_FOREVER : StringUtil.concat("for ", String.valueOf(punishmentTime / MINUTES_TO_MILLISECONDS), " mins.");
-										logPunishment(StringUtil.concat("banned for flooding ", duration));
+										final String duration = (punishmentTime <= 0) ? DURATION_FOREVER : "for " + (punishmentTime / MINUTES_TO_MILLISECONDS) + " mins.";
+										logPunishment("banned for flooding " + duration);
 									}
 									break;
 								}
@@ -161,8 +160,8 @@ public class FloodProtectorAction
 									
 									if (LOG_WARNING_ENABLED)
 									{
-										final String duration = (punishmentTime <= 0) ? DURATION_FOREVER : StringUtil.concat("for ", String.valueOf(punishmentTime / MINUTES_TO_MILLISECONDS), " mins.");
-										logPunishment(StringUtil.concat("jailed for flooding ", duration));
+										final String duration = (punishmentTime <= 0) ? DURATION_FOREVER : "for " + (punishmentTime / MINUTES_TO_MILLISECONDS) + " mins.";
+										logPunishment("jailed for flooding " + duration);
 									}
 									break;
 								}
@@ -170,7 +169,7 @@ public class FloodProtectorAction
 								{
 									if (LOG_WARNING_ENABLED)
 									{
-										LOGGER.warning(StringUtil.concat("FloodProtector: Unknown punishment type configured: ", punishmentType));
+										LOGGER.warning("FloodProtector: Unknown punishment type configured: " + punishmentType);
 									}
 									break;
 								}
@@ -191,7 +190,7 @@ public class FloodProtectorAction
 		if (LOG_WARNING_ENABLED && _settings.isLogFlooding() && (_requestCount.get() > 0))
 		{
 			final StringBuilder sb = buildLogPrefix();
-			StringUtil.append(sb, " issued ", String.valueOf(_requestCount.get()), " extra requests within ~", String.valueOf(_settings.getProtectionInterval() * GameTimeTaskManager.MILLIS_IN_TICK), " ms.");
+			sb.append(" issued ").append(_requestCount.get()).append(" extra requests within ~").append(_settings.getProtectionInterval() * GameTimeTaskManager.MILLIS_IN_TICK).append(" ms.");
 			LOGGER.warning(sb.toString());
 		}
 		
@@ -208,7 +207,7 @@ public class FloodProtectorAction
 	private void logFlooding(int timeUntilNext)
 	{
 		final StringBuilder sb = buildLogPrefix();
-		StringUtil.append(sb, " called command ", _settings.getFloodProtectorType(), " ~", String.valueOf(timeUntilNext), " ms after previous command.");
+		sb.append(" called command ").append(_settings.getFloodProtectorType()).append(" ~").append(timeUntilNext).append(" ms after previous command.");
 		LOGGER.warning(sb.toString());
 	}
 	
@@ -219,7 +218,7 @@ public class FloodProtectorAction
 	private void logPunishment(String message)
 	{
 		final StringBuilder sb = buildLogPrefix();
-		StringUtil.append(sb, " ", message);
+		sb.append(' ').append(message);
 		LOGGER.warning(sb.toString());
 	}
 	
@@ -230,7 +229,7 @@ public class FloodProtectorAction
 	private StringBuilder buildLogPrefix()
 	{
 		final StringBuilder sb = new StringBuilder(LOG_BUILDER_INITIAL_CAPACITY);
-		StringUtil.append(sb, _settings.getFloodProtectorType(), ": ");
+		sb.append(_settings.getFloodProtectorType()).append(": ");
 		
 		final ConnectionState connectionState = _client.getConnectionState();
 		switch (connectionState)
@@ -241,7 +240,7 @@ public class FloodProtectorAction
 				final Player player = _client.getPlayer();
 				if (player != null)
 				{
-					StringUtil.append(sb, player.getName(), "(", String.valueOf(player.getObjectId()), ") ");
+					sb.append(player.getName()).append('(').append(player.getObjectId()).append(") ");
 				}
 				break;
 			}
@@ -250,7 +249,7 @@ public class FloodProtectorAction
 				final String accountName = _client.getAccountName();
 				if (accountName != null)
 				{
-					StringUtil.append(sb, accountName, " ");
+					sb.append(accountName).append(' ');
 				}
 				break;
 			}
@@ -263,7 +262,7 @@ public class FloodProtectorAction
 						final String clientAddress = _client.getIp();
 						if (clientAddress != null)
 						{
-							StringUtil.append(sb, clientAddress);
+							sb.append(clientAddress);
 						}
 					}
 				}
@@ -275,7 +274,7 @@ public class FloodProtectorAction
 			}
 			default:
 			{
-				throw new IllegalStateException(StringUtil.concat("FloodProtector: Missing connection state in switch: ", connectionState.toString()));
+				throw new IllegalStateException("FloodProtector: Missing connection state in switch: " + connectionState);
 			}
 		}
 		

@@ -27,8 +27,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.ThreadLocalRandom;
 
-import app.l2nx.commons.util.Rnd;
 import app.l2nx.highfive.config.RatesConfig;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Player;
@@ -79,7 +79,8 @@ public class RestorationRandom extends AbstractEffect
 	@Override
 	public void onStart(Creature effector, Creature effected, Skill skill)
 	{
-		final double rndNum = 100 * Rnd.nextDouble();
+		final ThreadLocalRandom random = ThreadLocalRandom.current();
+		final double rndNum = 100 * random.nextDouble();
 		double chance = 0;
 		double chanceFrom = 0;
 		final List<RestorationItemHolder> creationList = new ArrayList<>();
@@ -125,7 +126,9 @@ public class RestorationRandom extends AbstractEffect
 			
 			if (createdItem.getMaxEnchant() > 0)
 			{
-				newItem.setEnchantLevel(Rnd.get(createdItem.getMinEnchant(), createdItem.getMaxEnchant()));
+				final int minEnchant = createdItem.getMinEnchant();
+				final int maxEnchant = createdItem.getMaxEnchant();
+				newItem.setEnchantLevel(minEnchant < maxEnchant ? random.nextInt(minEnchant, maxEnchant + 1) : minEnchant);
 			}
 			
 			extractedItems.merge(newItem, itemCount, Long::sum);

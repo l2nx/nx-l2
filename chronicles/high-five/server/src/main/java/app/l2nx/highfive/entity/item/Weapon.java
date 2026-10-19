@@ -25,7 +25,8 @@ package app.l2nx.highfive.entity.item;
 import java.util.Collections;
 import java.util.List;
 
-import app.l2nx.commons.util.StringUtil;
+import org.apache.commons.lang3.StringUtils;
+
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.WorldObject;
 import app.l2nx.highfive.entity.actor.Creature;
@@ -100,7 +101,7 @@ public class Weapon extends ItemTemplate
 		_mpConsume = set.getInt("mp_consume", 0);
 		_baseAttackRange = set.getInt("attack_range", 40);
 		final String[] damageRange = set.getString("damage_range", "").split(";"); // 0?;0?;fan sector;base attack angle
-		if ((damageRange.length > 1) && StringUtil.isNumeric(damageRange[2]) && StringUtil.isNumeric(damageRange[3]))
+		if ((damageRange.length > 1) && StringUtils.isNumeric(damageRange[2]) && StringUtils.isNumeric(damageRange[3]))
 		{
 			_baseAttackRadius = Integer.parseInt(damageRange[2]);
 			_baseAttackAngle = Integer.parseInt(damageRange[3]);

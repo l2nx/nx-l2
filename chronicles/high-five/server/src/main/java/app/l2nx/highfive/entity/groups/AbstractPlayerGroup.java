@@ -21,9 +21,9 @@ package app.l2nx.highfive.entity.groups;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Function;
 
-import app.l2nx.commons.util.Rnd;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.holders.player.BlockList;
 import app.l2nx.highfive.network.SystemMessageId;
@@ -178,7 +178,7 @@ public abstract class AbstractPlayerGroup
 	 */
 	public Player getRandomPlayer()
 	{
-		return getMembers().get(Rnd.get(getMembers().size()));
+		return getMembers().get(ThreadLocalRandom.current().nextInt(getMembers().size()));
 	}
 	
 	/**

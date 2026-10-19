@@ -23,8 +23,8 @@
 package app.l2nx.highfive.scripts.handlers.skill.effects;
 
 import java.util.Set;
+import java.util.concurrent.ThreadLocalRandom;
 
-import app.l2nx.commons.util.Rnd;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Attackable;
 import app.l2nx.highfive.entity.actor.Creature;
@@ -59,7 +59,7 @@ public class GetAgro extends AbstractEffect
 	@Override
 	public boolean calcSuccess(Creature effector, Creature effected, Skill skill)
 	{
-		return Rnd.get(100) < _chance;
+		return ThreadLocalRandom.current().nextInt(100) < _chance;
 	}
 	
 	@Override

@@ -22,7 +22,8 @@
  */
 package app.l2nx.highfive.scripts.handlers.chat.commands.voiced;
 
-import app.l2nx.commons.util.StringUtil;
+import org.apache.commons.lang3.StringUtils;
+
 import app.l2nx.highfive.entity.WorldObject;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.handler.IVoicedCommandHandler;
@@ -60,7 +61,7 @@ public class ClanHandler implements IVoicedCommandHandler
 		if (params.startsWith("privileges"))
 		{
 			final String privilegesValue = params.substring(11);
-			if (!StringUtil.isNumeric(privilegesValue))
+			if (!StringUtils.isNumeric(privilegesValue))
 			{
 				return false;
 			}

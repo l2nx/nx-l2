@@ -24,12 +24,15 @@ package app.l2nx.highfive.managers;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.time.LocalTime;
+import java.time.ZonedDateTime;
 import java.util.Calendar;
 import java.util.logging.Logger;
 
+import org.apache.commons.lang3.time.DateFormatUtils;
+
 import app.l2nx.commons.database.DatabaseFactory;
 import app.l2nx.commons.threads.ThreadPool;
-import app.l2nx.commons.time.TimeUtil;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.data.sql.ClanTable;
 import app.l2nx.highfive.data.xml.SkillData;
@@ -63,7 +66,9 @@ public class DailyResetManager
 	protected DailyResetManager()
 	{
 		// Schedule reset everyday at 6:30.
-		final long nextResetTime = TimeUtil.getNextTime(6, 30).getTimeInMillis();
+		final ZonedDateTime now = ZonedDateTime.now();
+		final ZonedDateTime todayResetTime = now.with(LocalTime.of(6, 30));
+		final long nextResetTime = (todayResetTime.isBefore(now) ? todayResetTime.plusDays(1) : todayResetTime).toInstant().toEpochMilli();
 		final long currentTime = System.currentTimeMillis();
 		
 		// Get today's 6:30 AM timestamp.
@@ -77,7 +82,7 @@ public class DailyResetManager
 		// Check if 24 hours have passed since the last daily reset.
 		if ((currentTime < currentResetTime) || (GlobalVariablesManager.getInstance().getLong(GlobalVariablesManager.DAILY_TASK_RESET, 0) > currentResetTime))
 		{
-			LOGGER.info(getClass().getSimpleName() + ": Next schedule at " + TimeUtil.getDateTimeString(nextResetTime) + ".");
+			LOGGER.info(getClass().getSimpleName() + ": Next schedule at " + DateFormatUtils.format(nextResetTime, "dd/MM/yyyy HH:mm:ss") + ".");
 		}
 		else
 		{

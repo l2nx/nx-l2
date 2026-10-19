@@ -19,7 +19,8 @@
  */
 package app.l2nx.highfive.scripts.handlers.skill.effects;
 
-import app.l2nx.commons.util.Rnd;
+import java.util.concurrent.ThreadLocalRandom;
+
 import app.l2nx.highfive.entity.WorldObject;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.enums.creature.InstanceType;
@@ -125,7 +126,7 @@ public class TriggerSkillByDamageDealt extends AbstractEffect
 			return;
 		}
 		
-		if ((event.getDamage() < _minDamage) || (Rnd.get(100) > _chance) || !event.getAttacker().getInstanceType().isType(_attackerType))
+		if ((event.getDamage() < _minDamage) || (ThreadLocalRandom.current().nextInt(100) > _chance) || !event.getAttacker().getInstanceType().isType(_attackerType))
 		{
 			return;
 		}

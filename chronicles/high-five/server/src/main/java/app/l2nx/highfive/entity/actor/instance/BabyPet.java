@@ -25,9 +25,9 @@ package app.l2nx.highfive.entity.actor.instance;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Future;
+import java.util.concurrent.ThreadLocalRandom;
 
 import app.l2nx.commons.threads.ThreadPool;
-import app.l2nx.commons.util.Rnd;
 import app.l2nx.highfive.ai.Intention;
 import app.l2nx.highfive.data.enums.CategoryType;
 import app.l2nx.highfive.data.holders.PetData.PetSkillLearn;
@@ -296,7 +296,7 @@ public class BabyPet extends Pet
 				if ((isImprovedBaby && (hpPercent < 0.3)) || (!isImprovedBaby && (hpPercent < 0.15)))
 				{
 					skill = _majorHeal.getSkill();
-					if (!_baby.isSkillDisabled(skill) && (Rnd.get(100) <= 75) && (_baby.getCurrentMp() >= skill.getMpConsume()))
+					if (!_baby.isSkillDisabled(skill) && (ThreadLocalRandom.current().nextInt(100) <= 75) && (_baby.getCurrentMp() >= skill.getMpConsume()))
 					{
 						castSkill(skill);
 						return;
@@ -306,7 +306,7 @@ public class BabyPet extends Pet
 				{
 					// Cast _minorHeal only if it's different than _majorHeal, then pet has two heals available.
 					skill = _minorHeal.getSkill();
-					if (!_baby.isSkillDisabled(skill) && (Rnd.get(100) <= 25) && (_baby.getCurrentMp() >= skill.getMpConsume()))
+					if (!_baby.isSkillDisabled(skill) && (ThreadLocalRandom.current().nextInt(100) <= 25) && (_baby.getCurrentMp() >= skill.getMpConsume()))
 					{
 						castSkill(skill);
 						return;
@@ -352,7 +352,7 @@ public class BabyPet extends Pet
 				
 				if (!_currentBuffs.isEmpty())
 				{
-					skill = _currentBuffs.get(Rnd.get(_currentBuffs.size()));
+					skill = _currentBuffs.get(ThreadLocalRandom.current().nextInt(_currentBuffs.size()));
 					castSkill(skill);
 					_currentBuffs.clear();
 					return;
@@ -360,7 +360,7 @@ public class BabyPet extends Pet
 			}
 			
 			// buffs/heal not casted, trying recharge, if exist recharge casted only if owner in combat stance.
-			if ((_recharge != null) && owner.isInCombat() && ((owner.getCurrentMp() / owner.getMaxMp()) < 0.6) && (Rnd.get(100) <= 60))
+			if ((_recharge != null) && owner.isInCombat() && ((owner.getCurrentMp() / owner.getMaxMp()) < 0.6) && (ThreadLocalRandom.current().nextInt(100) <= 60))
 			{
 				skill = _recharge.getSkill();
 				if (!_baby.isSkillDisabled(skill) && (_baby.getCurrentMp() >= skill.getMpConsume()))

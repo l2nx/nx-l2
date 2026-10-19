@@ -22,8 +22,9 @@
  */
 package app.l2nx.highfive.scripts.handlers.punishments;
 
+import org.apache.commons.lang3.time.DurationFormatUtils;
+
 import app.l2nx.commons.threads.ThreadPool;
-import app.l2nx.commons.time.TimeUtil;
 import app.l2nx.highfive.LoginServerThread;
 import app.l2nx.highfive.cache.HtmCache;
 import app.l2nx.highfive.entity.World;
@@ -76,7 +77,7 @@ public class JailHandler implements IPunishmentHandler
 					// Round up to nearest second to avoid showing 1 second less.
 					timeRemaining = ((timeRemaining + 999) / 1000) * 1000;
 					
-					String message = "Jail time remaining: " + TimeUtil.formatDuration(timeRemaining) + ".";
+					String message = "Jail time remaining: " + DurationFormatUtils.formatDurationWords(timeRemaining, true, true) + ".";
 					player.sendMessage(message);
 				}
 				else
@@ -246,7 +247,7 @@ public class JailHandler implements IPunishmentHandler
 				// Round up to nearest second to avoid showing 1 second less.
 				jailDuration = ((jailDuration + 999) / 1000) * 1000;
 				
-				String message = "You've been jailed for " + TimeUtil.formatDuration(jailDuration) + "!";
+				String message = "You've been jailed for " + DurationFormatUtils.formatDurationWords(jailDuration, true, true) + "!";
 				player.sendMessage(message);
 			}
 			else

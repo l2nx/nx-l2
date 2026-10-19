@@ -25,8 +25,8 @@ package app.l2nx.highfive.managers;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ThreadLocalRandom;
 
-import app.l2nx.commons.util.Rnd;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.config.RatesConfig;
 import app.l2nx.highfive.entity.actor.Attackable;
@@ -82,10 +82,11 @@ public class EventDropManager
 				}
 				
 				final int monsterLevel = attackable.getLevel();
-				if ((monsterLevel >= drop.getMinLevel()) && (monsterLevel <= drop.getMaxLevel()) && (Rnd.get(100d) < drop.getChance()))
+				final ThreadLocalRandom random = ThreadLocalRandom.current();
+				if ((monsterLevel >= drop.getMinLevel()) && (monsterLevel <= drop.getMaxLevel()) && (random.nextDouble(100) < drop.getChance()))
 				{
 					final int itemId = drop.getItemId();
-					final long itemCount = Rnd.get(drop.getMin(), drop.getMax());
+					final long itemCount = drop.getMin() < drop.getMax() ? random.nextLong(drop.getMin(), drop.getMax() + 1) : drop.getMin();
 					if (PlayerConfig.AUTO_LOOT_ITEM_IDS.contains(itemId) || PlayerConfig.AUTO_LOOT || attackable.isFlying())
 					{
 						player.doAutoLoot(attackable, itemId, itemCount); // Give the item to the player that has killed the attackable.

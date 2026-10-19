@@ -24,10 +24,10 @@ package app.l2nx.highfive.ai;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
 import app.l2nx.commons.threads.ThreadPool;
-import app.l2nx.commons.util.Rnd;
 import app.l2nx.highfive.config.GeoEngineConfig;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.World;
@@ -1705,7 +1705,7 @@ public class CreatureAI extends AbstractAI
 		public void update(Creature target)
 		{
 			// Update status once in 4 seconds.
-			if ((target == creature) && (Rnd.get(100) > 25))
+			if ((target == creature) && (ThreadLocalRandom.current().nextInt(100) > 25))
 			{
 				return;
 			}

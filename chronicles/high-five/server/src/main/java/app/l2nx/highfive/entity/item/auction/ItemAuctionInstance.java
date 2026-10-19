@@ -37,6 +37,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
@@ -47,7 +48,6 @@ import org.w3c.dom.Node;
 
 import app.l2nx.commons.database.DatabaseFactory;
 import app.l2nx.commons.threads.ThreadPool;
-import app.l2nx.commons.util.Rnd;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.data.sql.CharInfoTable;
 import app.l2nx.highfive.entity.World;
@@ -526,7 +526,7 @@ public class ItemAuctionInstance
 	
 	private ItemAuction createAuction(long after)
 	{
-		final AuctionItem auctionItem = _items.get(Rnd.get(_items.size()));
+		final AuctionItem auctionItem = _items.get(ThreadLocalRandom.current().nextInt(_items.size()));
 		final long startingTime = _dateGenerator.nextDate(after);
 		final long endingTime = startingTime + TimeUnit.MILLISECONDS.convert(auctionItem.getAuctionLength(), TimeUnit.MINUTES);
 		final ItemAuction auction = new ItemAuction(_auctionIds.getAndIncrement(), _instanceId, startingTime, endingTime, auctionItem);

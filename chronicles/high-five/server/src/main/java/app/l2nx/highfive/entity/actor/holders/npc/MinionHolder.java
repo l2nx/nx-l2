@@ -19,7 +19,7 @@
  */
 package app.l2nx.highfive.entity.actor.holders.npc;
 
-import app.l2nx.commons.util.Rnd;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * This class hold info needed for minions spawns<br>
@@ -65,7 +65,7 @@ public class MinionHolder
 	{
 		if (_max > _count)
 		{
-			return Rnd.get(_count, _max);
+			return ThreadLocalRandom.current().nextInt(_count, _max + 1);
 		}
 		
 		return _count;

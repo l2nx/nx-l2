@@ -25,9 +25,9 @@ package app.l2nx.highfive.taskmanagers;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ThreadLocalRandom;
 
 import app.l2nx.commons.threads.ThreadPool;
-import app.l2nx.commons.util.Rnd;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.entity.actor.Npc;
 
@@ -62,22 +62,29 @@ public class RandomAnimationTaskManager implements Runnable
 				final Npc npc = entry.getKey();
 				if (npc.isInActiveRegion() && !npc.isDead() && !npc.isInCombat() && !npc.isMoving() && !npc.isStunned() && !npc.isSleeping() && !npc.isParalyzed())
 				{
-					npc.onRandomAnimation(Rnd.get(2, 3));
+					npc.onRandomAnimation(ThreadLocalRandom.current().nextInt(2, 4));
 				}
-				
-				PENDING_ANIMATIONS.put(npc, currentTime + (Rnd.get((npc.isAttackable() ? GeneralConfig.MIN_MONSTER_ANIMATION : GeneralConfig.MIN_NPC_ANIMATION), (npc.isAttackable() ? GeneralConfig.MAX_MONSTER_ANIMATION : GeneralConfig.MAX_NPC_ANIMATION)) * 1000));
+
+				PENDING_ANIMATIONS.put(npc, currentTime + getAnimationDelay(npc));
 			}
 		}
-		
+
 		_working = false;
 	}
-	
+
 	public void add(Npc npc)
 	{
 		if (npc.hasRandomAnimation())
 		{
-			PENDING_ANIMATIONS.putIfAbsent(npc, System.currentTimeMillis() + (Rnd.get((npc.isAttackable() ? GeneralConfig.MIN_MONSTER_ANIMATION : GeneralConfig.MIN_NPC_ANIMATION), (npc.isAttackable() ? GeneralConfig.MAX_MONSTER_ANIMATION : GeneralConfig.MAX_NPC_ANIMATION)) * 1000));
+			PENDING_ANIMATIONS.putIfAbsent(npc, System.currentTimeMillis() + getAnimationDelay(npc));
 		}
+	}
+
+	private static long getAnimationDelay(Npc npc)
+	{
+		final int minDelay = npc.isAttackable() ? GeneralConfig.MIN_MONSTER_ANIMATION : GeneralConfig.MIN_NPC_ANIMATION;
+		final int maxDelay = npc.isAttackable() ? GeneralConfig.MAX_MONSTER_ANIMATION : GeneralConfig.MAX_NPC_ANIMATION;
+		return (minDelay < maxDelay ? ThreadLocalRandom.current().nextInt(minDelay, maxDelay + 1) : minDelay) * 1000;
 	}
 	
 	public void remove(Npc npc)

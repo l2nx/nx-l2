@@ -29,9 +29,9 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
+import java.util.concurrent.ThreadLocalRandom;
 
 import app.l2nx.commons.threads.ThreadPool;
-import app.l2nx.commons.util.Rnd;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.actor.Npc;
@@ -331,7 +331,7 @@ public class DimensionalRift
 					emptyRooms = DimensionalRiftManager.getInstance().getFreeRooms(_type);
 				}
 				
-				_choosenRoom = emptyRooms.get(Rnd.get(1, emptyRooms.size()) - 1);
+				_choosenRoom = emptyRooms.get(ThreadLocalRandom.current().nextInt(emptyRooms.size()));
 			}
 			while (DimensionalRiftManager.getInstance().getRoom(_type, _choosenRoom).isPartyInside());
 		}
@@ -420,7 +420,9 @@ public class DimensionalRift
 	
 	private long calcTimeToNextJump()
 	{
-		final int time = Rnd.get(GeneralConfig.RIFT_AUTO_JUMPS_TIME_MIN, GeneralConfig.RIFT_AUTO_JUMPS_TIME_MAX) * 1000;
+		final int minTime = GeneralConfig.RIFT_AUTO_JUMPS_TIME_MIN;
+		final int maxTime = GeneralConfig.RIFT_AUTO_JUMPS_TIME_MAX;
+		final int time = (minTime < maxTime ? ThreadLocalRandom.current().nextInt(minTime, maxTime + 1) : minTime) * 1000;
 		
 		if (isBossRoom)
 		{

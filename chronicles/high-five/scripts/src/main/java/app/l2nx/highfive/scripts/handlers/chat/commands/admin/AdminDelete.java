@@ -22,7 +22,8 @@
  */
 package app.l2nx.highfive.scripts.handlers.chat.commands.admin;
 
-import app.l2nx.commons.util.StringUtil;
+import org.apache.commons.lang3.StringUtils;
+
 import app.l2nx.highfive.data.xml.SpawnData;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.WorldObject;
@@ -55,7 +56,7 @@ public class AdminDelete implements IAdminCommandHandler
 		else if (command.startsWith("admin_delete"))
 		{
 			final String[] split = command.split(" ");
-			handleDelete(activeChar, (split.length > 1) && StringUtil.isNumeric(split[1]) ? Integer.parseInt(split[1]) : 0);
+			handleDelete(activeChar, (split.length > 1) && StringUtils.isNumeric(split[1]) ? Integer.parseInt(split[1]) : 0);
 		}
 		
 		return true;

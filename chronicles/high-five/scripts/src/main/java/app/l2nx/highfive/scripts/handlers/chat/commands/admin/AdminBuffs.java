@@ -29,7 +29,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.StringTokenizer;
-import app.l2nx.commons.util.StringUtil;
 
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.data.xml.SkillData;
@@ -128,7 +127,7 @@ public class AdminBuffs implements IAdminCommandHandler
 			{
 				final String targetToken = st.nextToken();
 				Creature target = World.getPlayer(targetToken);
-				if ((target == null) && StringUtil.isInteger(targetToken))
+				if ((target == null) && isInteger(targetToken))
 				{
 					final WorldObject object = World.findObject(Integer.parseInt(targetToken));
 					if ((object != null) && object.isCreature())
@@ -622,6 +621,19 @@ public class AdminBuffs implements IAdminCommandHandler
 		}
 	}
 	
+	private static boolean isInteger(String text)
+	{
+		try
+		{
+			Integer.parseInt(text);
+			return true;
+		}
+		catch (NumberFormatException e)
+		{
+			return false;
+		}
+	}
+
 	@Override
 	public String[] getCommandList()
 	{

@@ -25,7 +25,6 @@ package app.l2nx.highfive.entity.actor.instance;
 import java.util.List;
 import java.util.Locale;
 
-import app.l2nx.commons.util.StringUtil;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
@@ -258,7 +257,7 @@ public class RaceManager extends Npc
 					continue;
 				}
 				
-				StringUtil.append(sb, "<tr><td><a action=\"bypass -h npc_%objectId%_ShowTicket ", String.valueOf(ticket.getObjectId()), "\">", String.valueOf(ticket.getEnchantLevel()), " Race Number</a></td><td align=right><font color=\"LEVEL\">", String.valueOf(ticket.getCustomType1()), "</font> Number</td><td align=right><font color=\"LEVEL\">", String.valueOf(ticket.getCustomType2() * 100), "</font> Adena</td></tr>");
+				sb.append("<tr><td><a action=\"bypass -h npc_%objectId%_ShowTicket ").append(ticket.getObjectId()).append("\">").append(ticket.getEnchantLevel()).append(" Race Number</a></td><td align=right><font color=\"LEVEL\">").append(ticket.getCustomType1()).append("</font> Number</td><td align=right><font color=\"LEVEL\">").append(ticket.getCustomType2() * 100).append("</font> Adena</td></tr>");
 			}
 			
 			final NpcHtmlMessage html = new NpcHtmlMessage(getObjectId());
@@ -365,7 +364,7 @@ public class RaceManager extends Npc
 			for (int i = history.size() - 1; i >= Math.max(0, history.size() - 7); i--)
 			{
 				final HistoryInfo info = history.get(i);
-				StringUtil.append(sb, "<tr><td><font color=\"LEVEL\">", String.valueOf(info.getRaceId()), "</font> th</td><td><font color=\"LEVEL\">", String.valueOf(info.getFirst() + 1), "</font> Lane </td><td><font color=\"LEVEL\">", String.valueOf(info.getSecond() + 1), "</font> Lane</td><td align=right><font color=00ffff>", String.format(Locale.ENGLISH, "%.2f", info.getOddRate()), "</font> Times</td></tr>");
+				sb.append("<tr><td><font color=\"LEVEL\">").append(info.getRaceId()).append("</font> th</td><td><font color=\"LEVEL\">").append(info.getFirst() + 1).append("</font> Lane </td><td><font color=\"LEVEL\">").append(info.getSecond() + 1).append("</font> Lane</td><td align=right><font color=00ffff>").append(String.format(Locale.ENGLISH, "%.2f", info.getOddRate())).append("</font> Times</td></tr>");
 			}
 			
 			final NpcHtmlMessage html = new NpcHtmlMessage(getObjectId());

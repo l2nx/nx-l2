@@ -27,8 +27,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.ThreadLocalRandom;
 
-import app.l2nx.commons.util.Rnd;
 import app.l2nx.highfive.config.RatesConfig;
 import app.l2nx.highfive.data.xml.ItemData;
 import app.l2nx.highfive.entity.actor.Playable;
@@ -79,6 +79,7 @@ public class ExtractableItems implements IItemHandler
 			return false;
 		}
 		
+		final ThreadLocalRandom random = ThreadLocalRandom.current();
 		final Map<Item, Long> extractedItems = new HashMap<>();
 		final List<Item> enchantedItems = new ArrayList<>();
 		if (etcitem.getExtractableCountMin() > 0)
@@ -92,11 +93,11 @@ public class ExtractableItems implements IItemHandler
 						break;
 					}
 					
-					if (Rnd.get(100000) <= expi.getChance())
+					if (random.nextInt(100000) <= expi.getChance())
 					{
 						final long min = (long) (expi.getMin() * RatesConfig.RATE_EXTRACTABLE);
 						final long max = (long) (expi.getMax() * RatesConfig.RATE_EXTRACTABLE);
-						long createItemAmount = (max == min) ? min : (Rnd.get((max - min) + 1) + min);
+						long createItemAmount = (max > min) ? random.nextLong(min, max + 1) : min;
 						if (createItemAmount == 0)
 						{
 							continue;
@@ -130,7 +131,7 @@ public class ExtractableItems implements IItemHandler
 							final Item newItem = player.addItem(ItemProcessType.REWARD, expi.getId(), createItemAmount, player, false);
 							if (expi.getMaxEnchant() > 0)
 							{
-								newItem.setEnchantLevel(Rnd.get(expi.getMinEnchant(), expi.getMaxEnchant()));
+								newItem.setEnchantLevel(expi.getMinEnchant() < expi.getMaxEnchant() ? random.nextInt(expi.getMinEnchant(), expi.getMaxEnchant() + 1) : expi.getMinEnchant());
 								enchantedItems.add(newItem);
 							}
 							
@@ -143,7 +144,7 @@ public class ExtractableItems implements IItemHandler
 								final Item newItem = player.addItem(ItemProcessType.REWARD, expi.getId(), 1, player, false);
 								if (expi.getMaxEnchant() > 0)
 								{
-									newItem.setEnchantLevel(Rnd.get(expi.getMinEnchant(), expi.getMaxEnchant()));
+									newItem.setEnchantLevel(expi.getMinEnchant() < expi.getMaxEnchant() ? random.nextInt(expi.getMinEnchant(), expi.getMaxEnchant() + 1) : expi.getMinEnchant());
 									enchantedItems.add(newItem);
 								}
 								
@@ -164,11 +165,11 @@ public class ExtractableItems implements IItemHandler
 					break;
 				}
 				
-				if (Rnd.get(100000) <= expi.getChance())
+				if (random.nextInt(100000) <= expi.getChance())
 				{
 					final long min = (long) (expi.getMin() * RatesConfig.RATE_EXTRACTABLE);
 					final long max = (long) (expi.getMax() * RatesConfig.RATE_EXTRACTABLE);
-					long createItemAmount = (max == min) ? min : (Rnd.get((max - min) + 1) + min);
+					long createItemAmount = (max > min) ? random.nextLong(min, max + 1) : min;
 					if (createItemAmount == 0)
 					{
 						continue;
@@ -186,7 +187,7 @@ public class ExtractableItems implements IItemHandler
 						final Item newItem = player.addItem(ItemProcessType.REWARD, expi.getId(), createItemAmount, player, false);
 						if (expi.getMaxEnchant() > 0)
 						{
-							newItem.setEnchantLevel(Rnd.get(expi.getMinEnchant(), expi.getMaxEnchant()));
+							newItem.setEnchantLevel(expi.getMinEnchant() < expi.getMaxEnchant() ? random.nextInt(expi.getMinEnchant(), expi.getMaxEnchant() + 1) : expi.getMinEnchant());
 							enchantedItems.add(newItem);
 						}
 						
@@ -199,7 +200,7 @@ public class ExtractableItems implements IItemHandler
 							final Item newItem = player.addItem(ItemProcessType.REWARD, expi.getId(), 1, player, false);
 							if (expi.getMaxEnchant() > 0)
 							{
-								newItem.setEnchantLevel(Rnd.get(expi.getMinEnchant(), expi.getMaxEnchant()));
+								newItem.setEnchantLevel(expi.getMinEnchant() < expi.getMaxEnchant() ? random.nextInt(expi.getMinEnchant(), expi.getMaxEnchant() + 1) : expi.getMinEnchant());
 								enchantedItems.add(newItem);
 							}
 							

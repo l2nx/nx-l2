@@ -22,7 +22,8 @@
  */
 package app.l2nx.highfive.network.clientpackets;
 
-import app.l2nx.commons.util.Rnd;
+import java.util.concurrent.ThreadLocalRandom;
+
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.data.holders.ElementalItemHolder;
@@ -186,22 +187,22 @@ public class RequestExEnchantItemAttribute extends ClientPacket
 			case STONE:
 			case ROUGH_ORE:
 			{
-				success = Rnd.get(100) < PlayerConfig.ENCHANT_CHANCE_ELEMENT_STONE;
+				success = ThreadLocalRandom.current().nextInt(100) < PlayerConfig.ENCHANT_CHANCE_ELEMENT_STONE;
 				break;
 			}
 			case CRYSTAL:
 			{
-				success = Rnd.get(100) < PlayerConfig.ENCHANT_CHANCE_ELEMENT_CRYSTAL;
+				success = ThreadLocalRandom.current().nextInt(100) < PlayerConfig.ENCHANT_CHANCE_ELEMENT_CRYSTAL;
 				break;
 			}
 			case JEWEL:
 			{
-				success = Rnd.get(100) < PlayerConfig.ENCHANT_CHANCE_ELEMENT_JEWEL;
+				success = ThreadLocalRandom.current().nextInt(100) < PlayerConfig.ENCHANT_CHANCE_ELEMENT_JEWEL;
 				break;
 			}
 			case ENERGY:
 			{
-				success = Rnd.get(100) < PlayerConfig.ENCHANT_CHANCE_ELEMENT_ENERGY;
+				success = ThreadLocalRandom.current().nextInt(100) < PlayerConfig.ENCHANT_CHANCE_ELEMENT_ENERGY;
 				break;
 			}
 		}

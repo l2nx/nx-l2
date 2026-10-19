@@ -30,7 +30,6 @@ import java.util.Set;
 import java.util.logging.Logger;
 
 import app.l2nx.commons.util.ConfigReader;
-import app.l2nx.commons.util.StringUtil;
 import app.l2nx.highfive.entity.actor.enums.player.IllegalActionPunishmentType;
 import app.l2nx.highfive.entity.groups.PartyExpType;
 
@@ -285,7 +284,7 @@ public class PlayerConfig
 					{
 						if (!skill.isEmpty())
 						{
-							LOGGER.warning(StringUtil.concat("[SkillDurationList]: invalid config property -> SkillList \"", skillSplit[0], "\"", skillSplit[1]));
+							LOGGER.warning("[SkillDurationList]: invalid config property -> SkillList \"" + skillSplit[0] + "\"" + skillSplit[1]);
 						}
 					}
 				}
@@ -301,7 +300,7 @@ public class PlayerConfig
 				final String[] skillSplit = skill.split(",");
 				if (skillSplit.length != 2)
 				{
-					LOGGER.warning(StringUtil.concat("[SkillReuseList]: invalid config property -> SkillReuseList \"", skill, "\""));
+					LOGGER.warning("[SkillReuseList]: invalid config property -> SkillReuseList \"" + skill + "\"");
 				}
 				else
 				{
@@ -313,7 +312,7 @@ public class PlayerConfig
 					{
 						if (!skill.isEmpty())
 						{
-							LOGGER.warning(StringUtil.concat("[SkillReuseList]: invalid config property -> SkillList \"", skillSplit[0], "\"", skillSplit[1]));
+							LOGGER.warning("[SkillReuseList]: invalid config property -> SkillList \"" + skillSplit[0] + "\"" + skillSplit[1]);
 						}
 					}
 				}

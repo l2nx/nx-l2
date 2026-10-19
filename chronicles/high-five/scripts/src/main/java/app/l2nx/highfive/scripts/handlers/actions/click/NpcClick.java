@@ -22,7 +22,8 @@
  */
 package app.l2nx.highfive.scripts.handlers.actions.click;
 
-import app.l2nx.commons.util.Rnd;
+import java.util.concurrent.ThreadLocalRandom;
+
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.entity.WorldObject;
 import app.l2nx.highfive.entity.actor.Npc;
@@ -105,7 +106,7 @@ public class NpcClick implements IActionClickHandler
 					player.sendPacket(new MoveToPawn(player, npc, 100));
 					if (npc.hasRandomAnimation())
 					{
-						npc.onRandomAnimation(Rnd.get(8));
+						npc.onRandomAnimation(ThreadLocalRandom.current().nextInt(8));
 					}
 					
 					// Stop movement when trying to talk to a moving NPC.

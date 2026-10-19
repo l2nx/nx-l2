@@ -32,7 +32,8 @@ import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.logging.Logger;
 
-import app.l2nx.commons.util.StringUtil;
+import org.apache.commons.lang3.StringUtils;
+
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.config.custom.FakePlayersConfig;
 import app.l2nx.highfive.data.SpawnGroupTable;
@@ -432,7 +433,7 @@ public class AdminSpawn implements IAdminCommandHandler
 				String npcId = st.nextToken();
 				
 				// If the second token is not a digit, search for the NPC template by name.
-				if (!StringUtil.isNumeric(npcId))
+				if (!StringUtils.isNumeric(npcId))
 				{
 					// Initialize the variables.
 					final StringBuilder searchParam = new StringBuilder();
@@ -516,7 +517,7 @@ public class AdminSpawn implements IAdminCommandHandler
 				final StringBuilder searchParam = new StringBuilder();
 				
 				// The last word is a teleport index only when a search parameter precedes it.
-				final boolean hasTeleportIndex = (params.length > 2) && StringUtil.isNumeric(params[params.length - 1]);
+				final boolean hasTeleportIndex = (params.length > 2) && StringUtils.isNumeric(params[params.length - 1]);
 				final int searchEnd = hasTeleportIndex ? (params.length - 1) : params.length;
 				int pos = -1;
 				
@@ -534,7 +535,7 @@ public class AdminSpawn implements IAdminCommandHandler
 				final String searchString = searchParam.toString().trim();
 				
 				// If the search string is a number, use it as the NPC ID.
-				if (StringUtil.isNumeric(searchString))
+				if (StringUtils.isNumeric(searchString))
 				{
 					npcId = Integer.parseInt(searchString);
 				}
@@ -566,7 +567,7 @@ public class AdminSpawn implements IAdminCommandHandler
 			if (st.hasMoreTokens())
 			{
 				final String nextToken = st.nextToken();
-				if (StringUtil.isNumeric(nextToken))
+				if (StringUtils.isNumeric(nextToken))
 				{
 					count = Integer.parseInt(nextToken);
 				}
@@ -626,7 +627,7 @@ public class AdminSpawn implements IAdminCommandHandler
 				}
 				
 				NpcTemplate template;
-				if (StringUtil.isNumeric(npcIdStr))
+				if (StringUtils.isNumeric(npcIdStr))
 				{
 					template = NpcData.getInstance().getTemplate(Integer.parseInt(npcIdStr));
 				}
@@ -823,7 +824,7 @@ public class AdminSpawn implements IAdminCommandHandler
 		
 		NpcTemplate template;
 		String monsterId = monsterIdValue;
-		if (StringUtil.isNumeric(monsterId))
+		if (StringUtils.isNumeric(monsterId))
 		{
 			// First parameter was an ID number.
 			template = NpcData.getInstance().getTemplate(Integer.parseInt(monsterId));

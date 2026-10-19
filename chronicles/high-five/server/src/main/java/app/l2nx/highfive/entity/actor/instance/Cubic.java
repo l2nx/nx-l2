@@ -24,11 +24,11 @@ package app.l2nx.highfive.entity.actor.instance;
 
 import java.util.List;
 import java.util.concurrent.Future;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import app.l2nx.commons.threads.ThreadPool;
-import app.l2nx.commons.util.Rnd;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.data.xml.CubicData;
 import app.l2nx.highfive.entity.WorldObject;
@@ -245,7 +245,8 @@ public class Cubic
 	
 	private CubicSkill getRandomCubicSkill()
 	{
-		int index = Rnd.get(getNormalCubicSkillCount());
+		final int normalSkillCount = getNormalCubicSkillCount();
+		int index = normalSkillCount > 0 ? ThreadLocalRandom.current().nextInt(normalSkillCount) : 0;
 		for (CubicSkill cubicSkill : _cubicSkills)
 		{
 			if (cubicSkill.isPriority())
@@ -271,7 +272,7 @@ public class Cubic
 				continue;
 			}
 			
-			if ((cubicSkill.getTriggerRate() >= 100) || (Rnd.get(100) < cubicSkill.getTriggerRate()))
+			if ((cubicSkill.getTriggerRate() >= 100) || (ThreadLocalRandom.current().nextInt(100) < cubicSkill.getTriggerRate()))
 			{
 				return cubicSkill;
 			}
@@ -296,7 +297,7 @@ public class Cubic
 			return getRandomCubicSkill();
 		}
 		
-		int chance = Rnd.get(totalRate);
+		int chance = ThreadLocalRandom.current().nextInt(totalRate);
 		for (CubicSkill cubicSkill : _cubicSkills)
 		{
 			if (cubicSkill.isPriority() || (cubicSkill.getTriggerRate() <= 0))
@@ -660,7 +661,7 @@ public class Cubic
 				}
 				
 				// Shield Deflect Magic: If target is reflecting the skill then no damage is done.
-				if (target.getStat().calcStat(Stat.VENGEANCE_SKILL_MAGIC_DAMAGE, 0, target, skill) > Rnd.get(100))
+				if (target.getStat().calcStat(Stat.VENGEANCE_SKILL_MAGIC_DAMAGE, 0, target, skill) > ThreadLocalRandom.current().nextInt(100))
 				{
 					damage = 0;
 				}

@@ -24,10 +24,10 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Level;
 
 import app.l2nx.commons.database.DatabaseFactory;
-import app.l2nx.commons.util.Rnd;
 import app.l2nx.highfive.config.OlympiadConfig;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.World;
@@ -78,14 +78,14 @@ public abstract class OlympiadGameNormal extends AbstractOlympiadGame
 		
 		while (list.size() > 1)
 		{
-			playerOneObjectId = list.remove(Rnd.get(list.size()));
+			playerOneObjectId = list.remove(ThreadLocalRandom.current().nextInt(list.size()));
 			playerOne = World.getPlayer(playerOneObjectId);
 			if ((playerOne == null) || !playerOne.isOnline())
 			{
 				continue;
 			}
 			
-			playerTwo = World.getPlayer(list.remove(Rnd.get(list.size())));
+			playerTwo = World.getPlayer(list.remove(ThreadLocalRandom.current().nextInt(list.size())));
 			if ((playerTwo == null) || !playerTwo.isOnline())
 			{
 				list.add(playerOneObjectId);

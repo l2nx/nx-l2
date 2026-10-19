@@ -26,7 +26,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.StringTokenizer;
 
-import app.l2nx.commons.util.StringUtil;
 import app.l2nx.highfive.data.xml.ItemData;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.item.ItemTemplate;
@@ -112,19 +111,19 @@ public class AdminSearch implements IAdminCommandHandler
 		final StringBuilder sb = new StringBuilder();
 		for (ItemTemplate item : items)
 		{
-			StringUtil.append(sb, "<tr><td align=center><button value=\\\"Add\\\" action=\\\"bypass admin_create_item " //
-				, String.valueOf(item.getId()) //
-				, "\" width=32 height=22 back=\"L2UI_CT1.Button_DF_Down\" fore=\"L2UI_CT1.Button_DF\"></td><td><img src=\\\"" //
-				, item.getIcon() //
-				, "\" width=32 height=32></td><td>"//
-				, String.valueOf(item.getDisplayId()) //
-				, "</td><td>" //
-				, (item.isStackable() ? "<font name=\"hs8\" color=008000 size=-1>ST</font>" : "<font name=\"hs8\" color=ff0000 size=-1>ST</font>") //
-				, "</td><td align=center>"//
-				, getItemGrade(item) //
-				, "</td><td>" //
-				, getFontedWord(text, item.getName()) //
-				, "</td></tr>");
+			sb.append("<tr><td align=center><button value=\\\"Add\\\" action=\\\"bypass admin_create_item ") //
+				.append(item.getId()) //
+				.append("\" width=32 height=22 back=\"L2UI_CT1.Button_DF_Down\" fore=\"L2UI_CT1.Button_DF\"></td><td><img src=\\\"") //
+				.append(item.getIcon()) //
+				.append("\" width=32 height=32></td><td>") //
+				.append(item.getDisplayId()) //
+				.append("</td><td>") //
+				.append(item.isStackable() ? "<font name=\"hs8\" color=008000 size=-1>ST</font>" : "<font name=\"hs8\" color=ff0000 size=-1>ST</font>") //
+				.append("</td><td align=center>") //
+				.append(getItemGrade(item)) //
+				.append("</td><td>") //
+				.append(getFontedWord(text, item.getName())) //
+				.append("</td></tr>");
 		}
 		
 		html.replace("%items%", sb.toString());
@@ -135,11 +134,11 @@ public class AdminSearch implements IAdminCommandHandler
 			final int pagenr = i + 1;
 			if (page == pagenr)
 			{
-				StringUtil.append(sb, +pagenr + "&nbsp;");
+				sb.append(pagenr).append("&nbsp;");
 			}
 			else
 			{
-				StringUtil.append(sb, "<a action=\"bypass -h admin_search " + text + " " + pagenr + "\">" + pagenr + "</a>&nbsp;");
+				sb.append("<a action=\"bypass -h admin_search ").append(text).append(' ').append(pagenr).append("\">").append(pagenr).append("</a>&nbsp;");
 			}
 		}
 		

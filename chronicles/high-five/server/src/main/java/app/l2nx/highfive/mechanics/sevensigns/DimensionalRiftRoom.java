@@ -23,8 +23,8 @@ import java.awt.Polygon;
 import java.awt.Shape;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
-import app.l2nx.commons.util.Rnd;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.spawns.Spawn;
 
@@ -87,12 +87,12 @@ public class DimensionalRiftRoom
 	
 	public int getRandomX()
 	{
-		return Rnd.get(_xMin, _xMax);
+		return _xMin < _xMax ? ThreadLocalRandom.current().nextInt(_xMin, _xMax + 1) : _xMin;
 	}
-	
+
 	public int getRandomY()
 	{
-		return Rnd.get(_yMin, _yMax);
+		return _yMin < _yMax ? ThreadLocalRandom.current().nextInt(_yMin, _yMax + 1) : _yMin;
 	}
 	
 	public Location getTeleportCoorinates()

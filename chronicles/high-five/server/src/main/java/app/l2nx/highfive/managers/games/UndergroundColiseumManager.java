@@ -35,13 +35,13 @@ import java.util.Map;
 import java.util.concurrent.ScheduledFuture;
 import java.util.logging.Logger;
 
+import org.apache.commons.lang3.time.DateFormatUtils;
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 
 import app.l2nx.commons.database.DatabaseFactory;
 import app.l2nx.commons.threads.ThreadPool;
-import app.l2nx.commons.time.TimeUtil;
 import app.l2nx.commons.util.IXmlReader;
 import app.l2nx.highfive.config.UndergroundColiseumConfig;
 import app.l2nx.highfive.data.xml.DoorData;
@@ -95,7 +95,7 @@ public class UndergroundColiseumManager implements IXmlReader
 		{
 			final long nextTime = _periodStartTime - curerntTime;
 			_regTask = ThreadPool.schedule(new UCRegistrationTask(true), nextTime);
-			LOGGER.info(getClass().getSimpleName() + ": Starts at " + TimeUtil.getDateTimeString(_periodStartTime));
+			LOGGER.info(getClass().getSimpleName() + ": Starts at " + DateFormatUtils.format(_periodStartTime, "dd/MM/yyyy HH:mm:ss"));
 		}
 		
 		restoreBestTeams();
@@ -330,14 +330,14 @@ public class UndergroundColiseumManager implements IXmlReader
 		{
 			final long nextTime = _periodEndTime - System.currentTimeMillis();
 			_regTask = ThreadPool.schedule(new UCRegistrationTask(false), nextTime);
-			LOGGER.info(getClass().getSimpleName() + ": Ends at " + TimeUtil.getDateTimeString(_periodEndTime));
+			LOGGER.info(getClass().getSimpleName() + ": Ends at " + DateFormatUtils.format(_periodEndTime, "dd/MM/yyyy HH:mm:ss"));
 		}
 		else
 		{
 			generateNewDate();
 			final long nextTime = _periodStartTime - System.currentTimeMillis();
 			_regTask = ThreadPool.schedule(new UCRegistrationTask(true), nextTime);
-			LOGGER.info(getClass().getSimpleName() + ": Starts at " + TimeUtil.getDateTimeString(_periodStartTime));
+			LOGGER.info(getClass().getSimpleName() + ": Starts at " + DateFormatUtils.format(_periodStartTime, "dd/MM/yyyy HH:mm:ss"));
 		}
 	}
 	

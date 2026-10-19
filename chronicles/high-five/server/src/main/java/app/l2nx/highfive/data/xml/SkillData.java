@@ -32,10 +32,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
 import java.util.logging.Logger;
 
+import org.apache.commons.lang3.exception.ExceptionUtils;
+
 import app.l2nx.commons.config.ThreadConfig;
 import app.l2nx.commons.threads.ThreadPool;
-import app.l2nx.commons.util.StringUtil;
-import app.l2nx.commons.util.TraceUtil;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.config.ServerConfig;
 import app.l2nx.highfive.mechanics.skill.Skill;
@@ -236,11 +236,11 @@ public class SkillData
 		// Requested level too high.
 		if ((maxLevel > 0) && (level > maxLevel))
 		{
-			LOGGER.warning(StringUtil.concat(getClass().getSimpleName(), ": Call to unexisting skill level id: ", String.valueOf(skillId), " requested level: ", String.valueOf(level), " max level: ", String.valueOf(maxLevel), ".", System.lineSeparator(), TraceUtil.getStackTrace(new Exception())));
+			LOGGER.warning(getClass().getSimpleName() + ": Call to unexisting skill level id: " + skillId + " requested level: " + level + " max level: " + maxLevel + "." + System.lineSeparator() + ExceptionUtils.getStackTrace(new Exception()));
 			return _skillsByHash.get(getSkillHashCode(skillId, maxLevel));
 		}
 		
-		LOGGER.warning(StringUtil.concat(getClass().getSimpleName(), ": No skill info found for skill id ", String.valueOf(skillId), " and skill level ", String.valueOf(level), ".", System.lineSeparator(), TraceUtil.getStackTrace(new Exception())));
+		LOGGER.warning(getClass().getSimpleName() + ": No skill info found for skill id " + skillId + " and skill level " + level + "." + System.lineSeparator() + ExceptionUtils.getStackTrace(new Exception()));
 		return null;
 	}
 	

@@ -26,7 +26,8 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
 
-import app.l2nx.commons.time.TimeUtil;
+import org.apache.commons.lang3.time.DateFormatUtils;
+
 import app.l2nx.highfive.ai.Intention;
 import app.l2nx.highfive.config.GrandBossConfig;
 import app.l2nx.highfive.config.NpcConfig;
@@ -465,7 +466,7 @@ public class QueenAnt extends Script
 			final long respawnDelay = baseIntervalMillis + getRandom(-randomRangeMillis, randomRangeMillis);
 			
 			final long nextRespawnTime = System.currentTimeMillis() + respawnDelay;
-			LOGGER.info("Queen Ant will respawn at: " + TimeUtil.getDateTimeString(nextRespawnTime));
+			LOGGER.info("Queen Ant will respawn at: " + DateFormatUtils.format(nextRespawnTime, "dd/MM/yyyy HH:mm:ss"));
 			
 			startQuestTimer(EVENT_QUEEN_UNLOCK, respawnDelay, null, null);
 			cancelQuestTimer(EVENT_ACTION, npc, null);

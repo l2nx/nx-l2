@@ -25,8 +25,8 @@ package app.l2nx.login.network;
 import java.security.interfaces.RSAPrivateKey;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ThreadLocalRandom;
 
-import app.l2nx.commons.util.Rnd;
 import app.l2nx.login.controller.LoginController;
 import app.l2nx.login.controller.ScrambledKeyPair;
 import app.l2nx.login.controller.SessionKey;
@@ -83,7 +83,7 @@ public class LoginClient extends Client<Connection<LoginClient>>
 		_scrambledPair = LoginController.getInstance().getScrambledRSAKeyPair();
 		_blowfishKey = LoginController.getInstance().getBlowfishKey();
 		_ip = connection.getRemoteAddress();
-		_sessionId = Rnd.nextInt();
+		_sessionId = ThreadLocalRandom.current().nextInt();
 		_connectionStartTime = System.currentTimeMillis();
 		
 		_encryption = new LoginEncryption();

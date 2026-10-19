@@ -22,7 +22,8 @@
  */
 package app.l2nx.highfive.scripts.quests.Q00255_Tutorial;
 
-import app.l2nx.commons.util.StringUtil;
+import org.apache.commons.lang3.StringUtils;
+
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.actor.Npc;
@@ -304,7 +305,7 @@ public class Q00255_Tutorial extends Quest
 	@Override
 	public String onEvent(String event, Npc npc, Player talker)
 	{
-		if (!StringUtil.isNumeric(event))
+		if (!StringUtils.isNumeric(event))
 		{
 			if (PlayerConfig.DISABLE_TUTORIAL)
 			{

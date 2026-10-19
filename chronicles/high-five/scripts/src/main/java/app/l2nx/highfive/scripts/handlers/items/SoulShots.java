@@ -22,9 +22,9 @@
  */
 package app.l2nx.highfive.scripts.handlers.items;
 
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Level;
 
-import app.l2nx.commons.util.Rnd;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Playable;
 import app.l2nx.highfive.entity.actor.Player;
@@ -91,7 +91,7 @@ public class SoulShots implements IItemHandler
 		
 		// Consume Soul shots if player has enough of them.
 		int count = weaponItem.getSoulShotCount();
-		if ((weaponItem.getReducedSoulShot() > 0) && (Rnd.get(100) < weaponItem.getReducedSoulShotChance()))
+		if ((weaponItem.getReducedSoulShot() > 0) && (ThreadLocalRandom.current().nextInt(100) <weaponItem.getReducedSoulShotChance()))
 		{
 			count = weaponItem.getReducedSoulShot();
 		}

@@ -29,7 +29,6 @@ import java.util.Map;
 import java.util.logging.Logger;
 
 import app.l2nx.commons.util.ConfigReader;
-import app.l2nx.commons.util.StringUtil;
 import app.l2nx.highfive.entity.actor.enums.npc.DropType;
 import app.l2nx.highfive.entity.actor.holders.npc.DropHolder;
 
@@ -179,7 +178,7 @@ public class RatesConfig
 				final String[] itemSplit = item.split(",");
 				if (itemSplit.length != 2)
 				{
-					LOGGER.warning(StringUtil.concat("Config.load(): invalid config property -> DropAmountMultiplierByItemId \"", item, "\""));
+					LOGGER.warning("Config.load(): invalid config property -> DropAmountMultiplierByItemId \"" + item + "\"");
 				}
 				else
 				{
@@ -191,7 +190,7 @@ public class RatesConfig
 					{
 						if (!item.isEmpty())
 						{
-							LOGGER.warning(StringUtil.concat("Config.load(): invalid config property -> DropAmountMultiplierByItemId \"", item, "\""));
+							LOGGER.warning("Config.load(): invalid config property -> DropAmountMultiplierByItemId \"" + item + "\"");
 						}
 					}
 				}
@@ -206,7 +205,7 @@ public class RatesConfig
 				final String[] itemSplit = item.split(",");
 				if (itemSplit.length != 2)
 				{
-					LOGGER.warning(StringUtil.concat("Config.load(): invalid config property -> DropChanceMultiplierByItemId \"", item, "\""));
+					LOGGER.warning("Config.load(): invalid config property -> DropChanceMultiplierByItemId \"" + item + "\"");
 				}
 				else
 				{
@@ -218,7 +217,7 @@ public class RatesConfig
 					{
 						if (!item.isEmpty())
 						{
-							LOGGER.warning(StringUtil.concat("Config.load(): invalid config property -> DropChanceMultiplierByItemId \"", item, "\""));
+							LOGGER.warning("Config.load(): invalid config property -> DropChanceMultiplierByItemId \"" + item + "\"");
 						}
 					}
 				}

@@ -25,7 +25,8 @@ package app.l2nx.highfive.scripts.handlers.chat.commands.admin;
 import java.util.Collection;
 import java.util.StringTokenizer;
 
-import app.l2nx.commons.util.StringUtil;
+import org.apache.commons.lang3.StringUtils;
+
 import app.l2nx.highfive.entity.WorldObject;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.holders.player.CursedWeapon;
@@ -164,7 +165,7 @@ public class AdminCursedWeapons implements IAdminCommandHandler
 			try
 			{
 				String parameter = st.nextToken();
-				if (StringUtil.isNumeric(parameter))
+				if (StringUtils.isNumeric(parameter))
 				{
 					id = Integer.parseInt(parameter);
 				}

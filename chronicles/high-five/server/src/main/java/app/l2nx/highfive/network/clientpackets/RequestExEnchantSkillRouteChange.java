@@ -19,10 +19,10 @@
  */
 package app.l2nx.highfive.network.clientpackets;
 
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import app.l2nx.commons.util.Rnd;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.data.xml.EnchantSkillGroupsData;
@@ -154,7 +154,8 @@ public class RequestExEnchantSkillRouteChange extends ClientPacket
 				return;
 			}
 			
-			final int levelPenalty = Rnd.get(Math.min(4, currentEnchantLevel));
+			final int maxPenalty = Math.min(4, currentEnchantLevel);
+			final int levelPenalty = maxPenalty > 0 ? ThreadLocalRandom.current().nextInt(maxPenalty) : 0;
 			_skillLevel -= levelPenalty;
 			if ((_skillLevel % 100) == 0)
 			{

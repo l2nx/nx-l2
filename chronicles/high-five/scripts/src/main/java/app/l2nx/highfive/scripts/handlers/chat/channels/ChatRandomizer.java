@@ -22,7 +22,7 @@
  */
 package app.l2nx.highfive.scripts.handlers.chat.channels;
 
-import app.l2nx.commons.util.Rnd;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * @author Mobius
@@ -31,16 +31,17 @@ class ChatRandomizer
 {
 	static String randomize(String text)
 	{
+		final ThreadLocalRandom random = ThreadLocalRandom.current();
 		final StringBuilder textOut = new StringBuilder();
 		for (char c : text.toCharArray())
 		{
 			if ((c > 96) && (c < 123))
 			{
-				textOut.append(Character.toString((char) Rnd.get(96, 123)));
+				textOut.append(Character.toString((char) random.nextInt(96, 124)));
 			}
 			else if ((c > 64) && (c < 91))
 			{
-				textOut.append(Character.toString((char) Rnd.get(64, 91)));
+				textOut.append(Character.toString((char) random.nextInt(64, 92)));
 			}
 			else if ((c == 32) || (c == 44) || (c == 46))
 			{
@@ -48,7 +49,7 @@ class ChatRandomizer
 			}
 			else
 			{
-				textOut.append(Character.toString((char) Rnd.get(47, 64)));
+				textOut.append(Character.toString((char) random.nextInt(47, 65)));
 			}
 		}
 		

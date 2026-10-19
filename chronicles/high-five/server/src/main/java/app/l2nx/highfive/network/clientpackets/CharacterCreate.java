@@ -25,7 +25,8 @@ package app.l2nx.highfive.network.clientpackets;
 import java.util.Collection;
 import java.util.logging.Logger;
 
-import app.l2nx.commons.util.StringUtil;
+import org.apache.commons.lang3.StringUtils;
+
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.config.ServerConfig;
 import app.l2nx.highfive.config.custom.AllowedPlayerRacesConfig;
@@ -125,7 +126,7 @@ public class CharacterCreate extends ClientPacket
 		}
 		
 		// Last Verified: May 30, 2009 - Gracia Final.
-		if (!StringUtil.isAlphaNumeric(_name) || !isValidName(_name))
+		if (!StringUtils.isAlphanumeric(_name) || !isValidName(_name))
 		{
 			client.sendPacket(new CharCreateFail(CharCreateFail.REASON_INCORRECT_NAME));
 			return;

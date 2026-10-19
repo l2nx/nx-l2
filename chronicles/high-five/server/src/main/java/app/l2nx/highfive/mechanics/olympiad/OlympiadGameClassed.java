@@ -20,8 +20,8 @@
 package app.l2nx.highfive.mechanics.olympiad;
 
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
-import app.l2nx.commons.util.Rnd;
 import app.l2nx.highfive.config.OlympiadConfig;
 
 /**
@@ -69,7 +69,7 @@ public class OlympiadGameClassed extends OlympiadGameNormal
 		Participant[] opponents;
 		while (!classList.isEmpty())
 		{
-			list = classList.get(Rnd.get(classList.size()));
+			list = classList.get(ThreadLocalRandom.current().nextInt(classList.size()));
 			if ((list == null) || (list.size() < 2))
 			{
 				classList.remove(list);

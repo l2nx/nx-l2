@@ -22,7 +22,8 @@
  */
 package app.l2nx.login.network;
 
-import app.l2nx.commons.util.Rnd;
+import java.util.concurrent.ThreadLocalRandom;
+
 import app.l2nx.network.buffer.ReadBuffer;
 import app.l2nx.network.buffer.WriteBuffer;
 import app.l2nx.network.crypt.LittleEndianBlowfishCipher;
@@ -155,7 +156,7 @@ public class LoginEncryption
 		// Encrypt.
 		if (_usingStaticKey)
 		{
-			RollingXor.encrypt(raw, 0, packetSize, Rnd.nextInt());
+			RollingXor.encrypt(raw, 0, packetSize, ThreadLocalRandom.current().nextInt());
 			STATIC_CRYPT.encrypt(raw, 0, packetSize);
 			_usingStaticKey = false;
 		}

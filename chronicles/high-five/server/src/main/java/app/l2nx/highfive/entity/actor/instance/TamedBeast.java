@@ -26,9 +26,9 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
+import java.util.concurrent.ThreadLocalRandom;
 
 import app.l2nx.commons.threads.ThreadPool;
-import app.l2nx.commons.util.Rnd;
 import app.l2nx.highfive.data.xml.NpcData;
 import app.l2nx.highfive.data.xml.SkillData;
 import app.l2nx.highfive.entity.Location;
@@ -376,7 +376,7 @@ public class TamedBeast extends FeedableBeast
 			for (Skill skill : getTemplate().getSkills().values())
 			{
 				// if the skill is a debuff, check if the attacker has it already [ attacker.getEffect(Skill skill) ]
-				if (skill.isDebuff() && (Rnd.get(3) < 1) && ((attacker != null) && attacker.isAffectedBySkill(skill.getId())))
+				if (skill.isDebuff() && (ThreadLocalRandom.current().nextInt(3) < 1) && ((attacker != null) && attacker.isAffectedBySkill(skill.getId())))
 				{
 					sitCastAndFollow(skill, attacker);
 				}
@@ -397,7 +397,7 @@ public class TamedBeast extends FeedableBeast
 			for (Skill skill : getTemplate().getSkills().values())
 			{
 				// If the skill is a buff, check if the owner has it already [ owner.getEffect(Skill skill) ].
-				if ((Rnd.get(5) < chance) && skill.hasEffectType(EffectType.CPHEAL, EffectType.HEAL, EffectType.MANAHEAL_BY_LEVEL, EffectType.MANAHEAL_PERCENT))
+				if ((ThreadLocalRandom.current().nextInt(5) < chance) && skill.hasEffectType(EffectType.CPHEAL, EffectType.HEAL, EffectType.MANAHEAL_BY_LEVEL, EffectType.MANAHEAL_PERCENT))
 				{
 					sitCastAndFollow(skill, _owner);
 				}
@@ -544,7 +544,7 @@ public class TamedBeast extends FeedableBeast
 			
 			int totalBuffsOnOwner = 0;
 			int i = 0;
-			final int rand = Rnd.get(_numBuffs);
+			final int rand = _numBuffs > 0 ? ThreadLocalRandom.current().nextInt(_numBuffs) : 0;
 			Skill buffToGive = null;
 			
 			// Get this npc's skills: getSkills().

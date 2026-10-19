@@ -29,7 +29,8 @@ import java.util.StringTokenizer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import app.l2nx.commons.util.StringUtil;
+import org.apache.commons.lang3.StringUtils;
+
 import app.l2nx.highfive.cache.HtmCache;
 import app.l2nx.highfive.config.ConfigLoader;
 import app.l2nx.highfive.config.ServerConfig;
@@ -434,7 +435,7 @@ public class AdminReload implements IAdminCommandHandler
 					if (st.hasMoreElements())
 					{
 						final String value = st.nextToken();
-						if (!StringUtil.isNumeric(value))
+						if (!StringUtils.isNumeric(value))
 						{
 							ScriptManager.getInstance().reload(value);
 							AdminData.getInstance().broadcastMessageToGMs(activeChar.getName() + ": Reloaded Quest Name:" + value + ".");

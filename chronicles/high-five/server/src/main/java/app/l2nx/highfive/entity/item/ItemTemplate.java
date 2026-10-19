@@ -28,7 +28,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.logging.Logger;
 
-import app.l2nx.commons.util.StringUtil;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.config.OlympiadConfig;
 import app.l2nx.highfive.config.PlayerConfig;
@@ -1004,6 +1003,6 @@ public abstract class ItemTemplate extends ListenersContainer
 	@Override
 	public String toString()
 	{
-		return StringUtil.concat(_name, "(", String.valueOf(_itemId), ")");
+		return _name + "(" + _itemId + ")";
 	}
 }

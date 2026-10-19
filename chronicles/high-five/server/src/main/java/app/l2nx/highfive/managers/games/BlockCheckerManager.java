@@ -24,11 +24,11 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import app.l2nx.commons.threads.ThreadPool;
-import app.l2nx.commons.util.Rnd;
 import app.l2nx.highfive.data.SpawnTable;
 import app.l2nx.highfive.data.xml.SkillData;
 import app.l2nx.highfive.entity.actor.Player;
@@ -508,7 +508,7 @@ public class BlockCheckerManager
 				for (int i = 0; i < _numOfBoxes; i++)
 				{
 					final Spawn spawn = new Spawn(18672);
-					spawn.setXYZ(_arenaCoordinates[_arena][4] + Rnd.get(-400, 400), _arenaCoordinates[_arena][5] + Rnd.get(-400, 400), Z_COORD);
+					spawn.setXYZ(_arenaCoordinates[_arena][4] + ThreadLocalRandom.current().nextInt(-400, 401), _arenaCoordinates[_arena][5] + ThreadLocalRandom.current().nextInt(-400, 401), Z_COORD);
 					spawn.setAmount(1);
 					spawn.setHeading(1);
 					spawn.setRespawnDelay(1);
@@ -534,7 +534,7 @@ public class BlockCheckerManager
 				try
 				{
 					final Spawn girlSpawn = new Spawn(18676);
-					girlSpawn.setXYZ(_arenaCoordinates[_arena][4] + Rnd.get(-400, 400), _arenaCoordinates[_arena][5] + Rnd.get(-400, 400), Z_COORD);
+					girlSpawn.setXYZ(_arenaCoordinates[_arena][4] + ThreadLocalRandom.current().nextInt(-400, 401), _arenaCoordinates[_arena][5] + ThreadLocalRandom.current().nextInt(-400, 401), Z_COORD);
 					girlSpawn.setAmount(1);
 					girlSpawn.setHeading(1);
 					girlSpawn.setRespawnDelay(1);

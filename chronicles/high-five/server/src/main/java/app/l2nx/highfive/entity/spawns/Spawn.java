@@ -27,10 +27,10 @@ import java.util.Deque;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import app.l2nx.commons.util.Rnd;
 import app.l2nx.highfive.config.custom.ChampionMonstersConfig;
 import app.l2nx.highfive.config.custom.RandomSpawnsConfig;
 import app.l2nx.highfive.data.xml.NpcData;
@@ -262,7 +262,7 @@ public class Spawn extends Location
 			_scheduledCount++;
 			
 			// Schedule the next respawn.
-			RespawnTaskManager.getInstance().add(oldNpc, System.currentTimeMillis() + (hasRespawnRandom() ? Rnd.get(_respawnMinDelay, _respawnMaxDelay) : _respawnMinDelay));
+			RespawnTaskManager.getInstance().add(oldNpc, System.currentTimeMillis() + (_respawnMinDelay < _respawnMaxDelay ? ThreadLocalRandom.current().nextInt(_respawnMinDelay, _respawnMaxDelay + 1) : _respawnMinDelay));
 		}
 		
 		// Notify the spawn group, it rolls the replacement itself.
@@ -442,8 +442,11 @@ public class Spawn extends Location
 		// If random spawn system is enabled.
 		if (RandomSpawnsConfig.ENABLE_RANDOM_MONSTER_SPAWNS && (getHeading() != -1) && npc.isMonster() && !npc.isQuestMonster() && !WalkingManager.getInstance().isTargeted(npc) && (getInstanceId() == 0) && !getTemplate().isUndying() && !npc.isRaid() && !npc.isRaidMinion() && !npc.isFlying() && (water == null) && !RandomSpawnsConfig.MOBS_LIST_NOT_RANDOM.contains(npc.getId()))
 		{
-			final int randX = newlocx + Rnd.get(RandomSpawnsConfig.MOB_MIN_SPAWN_RANGE, RandomSpawnsConfig.MOB_MAX_SPAWN_RANGE);
-			final int randY = newlocy + Rnd.get(RandomSpawnsConfig.MOB_MIN_SPAWN_RANGE, RandomSpawnsConfig.MOB_MAX_SPAWN_RANGE);
+			final ThreadLocalRandom random = ThreadLocalRandom.current();
+			final int minRange = RandomSpawnsConfig.MOB_MIN_SPAWN_RANGE;
+			final int maxRange = RandomSpawnsConfig.MOB_MAX_SPAWN_RANGE;
+			final int randX = newlocx + (minRange < maxRange ? random.nextInt(minRange, maxRange + 1) : minRange);
+			final int randY = newlocy + (minRange < maxRange ? random.nextInt(minRange, maxRange + 1) : minRange);
 			if (GeoEngine.getInstance().canMoveToTarget(newlocx, newlocy, newlocz, randX, randY, newlocz, getInstanceId()) //
 				&& GeoEngine.getInstance().canSeeTarget(newlocx, newlocy, newlocz, randX, randY, newlocz, getInstanceId()))
 			{
@@ -492,7 +495,7 @@ public class Spawn extends Location
 		// Set the heading of the Npc (random heading if not defined).
 		if (getHeading() == -1)
 		{
-			npc.setHeading(Rnd.get(61794));
+			npc.setHeading(ThreadLocalRandom.current().nextInt(61794));
 		}
 		else
 		{
@@ -542,7 +545,7 @@ public class Spawn extends Location
 		}
 		
 		// Set champion on next spawn.
-		if (ChampionMonstersConfig.CHAMPION_ENABLE && npc.isMonster() && !npc.isQuestMonster() && !_template.isUndying() && !npc.isRaid() && !npc.isRaidMinion() && (ChampionMonstersConfig.CHAMPION_FREQUENCY > 0) && (npc.getLevel() >= ChampionMonstersConfig.CHAMP_MIN_LEVEL) && (npc.getLevel() <= ChampionMonstersConfig.CHAMP_MAX_LEVEL) && (ChampionMonstersConfig.CHAMPION_ENABLE_IN_INSTANCES || (getInstanceId() == 0)) && (Rnd.get(100) < ChampionMonstersConfig.CHAMPION_FREQUENCY))
+		if (ChampionMonstersConfig.CHAMPION_ENABLE && npc.isMonster() && !npc.isQuestMonster() && !_template.isUndying() && !npc.isRaid() && !npc.isRaidMinion() && (ChampionMonstersConfig.CHAMPION_FREQUENCY > 0) && (npc.getLevel() >= ChampionMonstersConfig.CHAMP_MIN_LEVEL) && (npc.getLevel() <= ChampionMonstersConfig.CHAMP_MAX_LEVEL) && (ChampionMonstersConfig.CHAMPION_ENABLE_IN_INSTANCES || (getInstanceId() == 0)) && (ThreadLocalRandom.current().nextInt(100) < ChampionMonstersConfig.CHAMPION_FREQUENCY))
 		{
 			npc.asAttackable().setChampion(true);
 		}

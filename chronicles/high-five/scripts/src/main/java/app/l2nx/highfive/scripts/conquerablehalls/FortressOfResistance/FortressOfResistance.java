@@ -23,7 +23,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import app.l2nx.commons.time.TimeUtil;
+import org.apache.commons.lang3.time.DateFormatUtils;
+
 import app.l2nx.highfive.cache.HtmCache;
 import app.l2nx.highfive.data.sql.ClanTable;
 import app.l2nx.highfive.entity.Location;
@@ -98,7 +99,7 @@ public class FortressOfResistance extends ClanHallSiegeEngine
 			// FIXME: We don't have an object id to put in here :(
 			_messengerMsg = new NpcHtmlMessage();
 			_messengerMsg.setHtml(html);
-			_messengerMsg.replace("%nextSiege%", TimeUtil.formatDate(_hall.getSiegeDate().getTime(), "yyyy-MM-dd HH:mm:ss"));
+			_messengerMsg.replace("%nextSiege%", DateFormatUtils.format(_hall.getSiegeDate().getTime(), "yyyy-MM-dd HH:mm:ss"));
 		}
 	}
 	

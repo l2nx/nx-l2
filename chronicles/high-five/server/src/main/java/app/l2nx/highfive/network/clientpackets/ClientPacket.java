@@ -22,7 +22,8 @@
  */
 package app.l2nx.highfive.network.clientpackets;
 
-import app.l2nx.commons.util.TraceUtil;
+import org.apache.commons.lang3.exception.ExceptionUtils;
+
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.network.GameClient;
 import app.l2nx.highfive.network.PacketLogger;
@@ -44,7 +45,7 @@ public abstract class ClientPacket extends ReadablePacket<GameClient>
 		catch (Exception e)
 		{
 			PacketLogger.warning("Client: " + getClient() + " - Failed reading: " + getClass().getSimpleName() + " ; " + e.getMessage());
-			PacketLogger.warning(TraceUtil.getStackTrace(e));
+			PacketLogger.warning(ExceptionUtils.getStackTrace(e));
 		}
 		
 		return false;
@@ -62,7 +63,7 @@ public abstract class ClientPacket extends ReadablePacket<GameClient>
 		catch (Exception e)
 		{
 			PacketLogger.warning("Client: " + getClient() + " - Failed running: " + getClass().getSimpleName() + " ; " + e.getMessage());
-			PacketLogger.warning(TraceUtil.getStackTrace(e));
+			PacketLogger.warning(ExceptionUtils.getStackTrace(e));
 			
 			// In case of EnterWorld error kick player from game.
 			if (this instanceof EnterWorld)

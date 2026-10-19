@@ -24,12 +24,12 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Level;
 
+import org.apache.commons.lang3.StringUtils;
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 
 import app.l2nx.commons.util.IXmlReader;
-import app.l2nx.commons.util.StringUtil;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.data.holders.RangeChanceHolder;
 import app.l2nx.highfive.entity.item.ItemTemplate;
@@ -95,13 +95,13 @@ public class EnchantItemGroupsData implements IXmlReader
 								if (range.contains("-"))
 								{
 									final String[] split = range.split("-");
-									if ((split.length == 2) && StringUtil.isNumeric(split[0]) && StringUtil.isNumeric(split[1]))
+									if ((split.length == 2) && StringUtils.isNumeric(split[0]) && StringUtils.isNumeric(split[1]))
 									{
 										min = Integer.parseInt(split[0]);
 										max = Integer.parseInt(split[1]);
 									}
 								}
-								else if (StringUtil.isNumeric(range))
+								else if (StringUtils.isNumeric(range))
 								{
 									min = Integer.parseInt(range);
 									max = min;

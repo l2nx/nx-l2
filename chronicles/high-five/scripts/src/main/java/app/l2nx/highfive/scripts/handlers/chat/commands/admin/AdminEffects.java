@@ -24,7 +24,8 @@ package app.l2nx.highfive.scripts.handlers.chat.commands.admin;
 
 import java.util.StringTokenizer;
 
-import app.l2nx.commons.util.StringUtil;
+import org.apache.commons.lang3.StringUtils;
+
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.WorldObject;
 import app.l2nx.highfive.entity.actor.Creature;
@@ -491,7 +492,7 @@ public class AdminEffects implements IAdminCommandHandler
 				if (st.countTokens() == 1)
 				{
 					param2 = st.nextToken();
-					if (StringUtil.isNumeric(param2))
+					if (StringUtils.isNumeric(param2))
 					{
 						radius = Integer.parseInt(param2);
 					}

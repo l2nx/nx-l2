@@ -22,7 +22,8 @@
  */
 package app.l2nx.highfive.scripts.handlers.skill.effects;
 
-import app.l2nx.commons.util.Rnd;
+import java.util.concurrent.ThreadLocalRandom;
+
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.item.enums.ShotType;
@@ -85,7 +86,7 @@ public class MagicalDamage extends AbstractEffect
 			}
 			
 			// Shield Deflect Magic: Reflect all damage on caster.
-			if (effected.getStat().calcStat(Stat.VENGEANCE_SKILL_MAGIC_DAMAGE, 0, effected, skill) > Rnd.get(100))
+			if (effected.getStat().calcStat(Stat.VENGEANCE_SKILL_MAGIC_DAMAGE, 0, effected, skill) > ThreadLocalRandom.current().nextInt(100))
 			{
 				effector.reduceCurrentHp(damage, effected, skill);
 				effector.notifyDamageReceived(damage, effected, skill, mcrit, false);

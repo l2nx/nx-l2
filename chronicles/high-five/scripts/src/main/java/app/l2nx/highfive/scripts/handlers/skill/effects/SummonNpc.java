@@ -19,7 +19,8 @@
  */
 package app.l2nx.highfive.scripts.handlers.skill.effects;
 
-import app.l2nx.commons.util.Rnd;
+import java.util.concurrent.ThreadLocalRandom;
+
 import app.l2nx.highfive.data.xml.NpcData;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.actor.Creature;
@@ -156,8 +157,9 @@ public class SummonNpc extends AbstractEffect
 				int y = player.getY();
 				if (_randomOffset)
 				{
-					x += (Rnd.nextBoolean() ? Rnd.get(20, 50) : Rnd.get(-50, -20));
-					y += (Rnd.nextBoolean() ? Rnd.get(20, 50) : Rnd.get(-50, -20));
+					final ThreadLocalRandom random = ThreadLocalRandom.current();
+					x += (random.nextBoolean() ? random.nextInt(20, 51) : random.nextInt(-50, -19));
+					y += (random.nextBoolean() ? random.nextInt(20, 51) : random.nextInt(-50, -19));
 				}
 				
 				spawn.setXYZ(x, y, player.getZ());

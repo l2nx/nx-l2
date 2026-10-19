@@ -24,8 +24,9 @@ package app.l2nx.highfive.network.clientpackets;
 
 import java.util.StringTokenizer;
 
-import app.l2nx.commons.util.StringUtil;
-import app.l2nx.commons.util.TraceUtil;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.exception.ExceptionUtils;
+
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.WorldObject;
@@ -151,7 +152,7 @@ public class RequestBypassToServer extends ClientPacket
 					id = _command.substring(4);
 				}
 				
-				if (StringUtil.isNumeric(id))
+				if (StringUtils.isNumeric(id))
 				{
 					final WorldObject object = World.findObject(Integer.parseInt(id));
 					if ((object != null) && object.isNpc() && (endOfId > 0) && player.isInsideRadius2D(object, Npc.INTERACTION_DISTANCE))
@@ -270,7 +271,7 @@ public class RequestBypassToServer extends ClientPacket
 		catch (Exception e)
 		{
 			PacketLogger.warning("Exception processing bypass from " + player + ": " + _command + " " + e.getMessage());
-			PacketLogger.warning(TraceUtil.getStackTrace(e));
+			PacketLogger.warning(ExceptionUtils.getStackTrace(e));
 			if (player.isGM())
 			{
 				final StringBuilder sb = new StringBuilder(200);

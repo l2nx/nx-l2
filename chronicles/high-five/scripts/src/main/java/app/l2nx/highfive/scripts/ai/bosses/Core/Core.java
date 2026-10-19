@@ -33,7 +33,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import app.l2nx.commons.time.TimeUtil;
+import org.apache.commons.lang3.time.DateFormatUtils;
+
 import app.l2nx.highfive.config.GrandBossConfig;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.actor.Attackable;
@@ -403,7 +404,7 @@ public class Core extends Script
 			final long respawnTime = baseIntervalMillis + getRandom(-randomRangeMillis, randomRangeMillis);
 			
 			final long nextRespawnTime = System.currentTimeMillis() + respawnTime;
-			LOGGER.info("Core will respawn at: " + TimeUtil.getDateTimeString(nextRespawnTime));
+			LOGGER.info("Core will respawn at: " + DateFormatUtils.format(nextRespawnTime, "dd/MM/yyyy HH:mm:ss"));
 			
 			startQuestTimer(EVENT_CORE_UNLOCK, respawnTime, null, null);
 			

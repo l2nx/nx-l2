@@ -29,8 +29,9 @@ import java.sql.SQLException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.apache.commons.lang3.StringUtils;
+
 import app.l2nx.commons.database.DatabaseFactory;
-import app.l2nx.commons.util.StringUtil;
 import app.l2nx.highfive.config.ServerConfig;
 import app.l2nx.highfive.data.xml.PetDataTable;
 
@@ -68,7 +69,7 @@ public class PetNameTable
 	public boolean isValidPetName(String name)
 	{
 		// Only allow alphanumeric names.
-		if (!StringUtil.isAlphaNumeric(name))
+		if (!StringUtils.isAlphanumeric(name))
 		{
 			return false;
 		}

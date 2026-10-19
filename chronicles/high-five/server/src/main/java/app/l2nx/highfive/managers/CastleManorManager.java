@@ -39,6 +39,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -49,7 +50,6 @@ import org.w3c.dom.Node;
 import app.l2nx.commons.database.DatabaseFactory;
 import app.l2nx.commons.threads.ThreadPool;
 import app.l2nx.commons.util.IXmlReader;
-import app.l2nx.commons.util.Rnd;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.entity.clan.Clan;
 import app.l2nx.highfive.entity.clan.ClanMember;
@@ -371,7 +371,7 @@ public class CastleManorManager implements IXmlReader
 							if (crop.getStartAmount() != crop.getAmount())
 							{
 								long harvestedAmount = (long) ((crop.getStartAmount() - crop.getAmount()) * 0.9);
-								if ((harvestedAmount < 1) && (Rnd.get(99) < 90))
+								if ((harvestedAmount < 1) && (ThreadLocalRandom.current().nextInt(99) < 90))
 								{
 									harvestedAmount = 1;
 								}

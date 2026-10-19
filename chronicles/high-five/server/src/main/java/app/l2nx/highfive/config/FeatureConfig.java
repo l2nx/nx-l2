@@ -25,8 +25,9 @@ package app.l2nx.highfive.config;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.commons.lang3.StringUtils;
+
 import app.l2nx.commons.util.ConfigReader;
-import app.l2nx.commons.util.StringUtil;
 
 /**
  * This class loads all the feature related configurations.
@@ -266,7 +267,7 @@ public class FeatureConfig
 		SIEGE_HOUR_LIST = new ArrayList<>();
 		for (String hour : config.getString("SiegeHourList", "").split(","))
 		{
-			if (StringUtil.isNumeric(hour))
+			if (StringUtils.isNumeric(hour))
 			{
 				SIEGE_HOUR_LIST.add(Integer.parseInt(hour));
 			}

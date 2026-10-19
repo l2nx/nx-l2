@@ -24,7 +24,8 @@ package app.l2nx.highfive.scripts.handlers.chat.commands.admin;
 
 import java.util.StringTokenizer;
 
-import app.l2nx.commons.util.StringUtil;
+import org.apache.commons.lang3.StringUtils;
+
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.enums.player.PlayerAction;
 import app.l2nx.highfive.handler.IAdminCommandHandler;
@@ -83,7 +84,7 @@ public class AdminZoneBuild implements IAdminCommandHandler
 			if (st.hasMoreTokens())
 			{
 				final String nextT = st.nextToken();
-				if (StringUtil.isNumeric(nextT))
+				if (StringUtils.isNumeric(nextT))
 				{
 					final int entry = Integer.parseInt(nextT);
 					ZoneBuildManager.getInstance().deleteEntry(activeChar, entry);

@@ -31,13 +31,13 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Future;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.StampedLock;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import app.l2nx.commons.threads.ThreadPool;
-import app.l2nx.commons.util.Rnd;
 import app.l2nx.highfive.ai.AttackableAI;
 import app.l2nx.highfive.ai.CreatureAI;
 import app.l2nx.highfive.ai.Intention;
@@ -829,15 +829,16 @@ public abstract class Creature extends WorldObject
 		// Adjust position a bit.
 		if (PlayerConfig.OFFSET_ON_TELEPORT_ENABLED || (randomOffset > 0))
 		{
-			x = xValue + Rnd.get(-randomOffset, randomOffset);
-			y = yValue + Rnd.get(-randomOffset, randomOffset);
-			
+			final ThreadLocalRandom random = ThreadLocalRandom.current();
+			x = xValue + (randomOffset > 0 ? random.nextInt(-randomOffset, randomOffset + 1) : -randomOffset);
+			y = yValue + (randomOffset > 0 ? random.nextInt(-randomOffset, randomOffset + 1) : -randomOffset);
+
 			int count = 0;
 			final float collision = Math.min(getTemplate().getCollisionRadius() * 2, randomOffset);
 			while ((count++ < 100) && ((LocationUtil.calculateDistance(xValue, yValue, zValue, x, y, z, true, false) < collision) || !GeoEngine.getInstance().canSeeTarget(xValue, yValue, zValue, x, y, z, instanceId) || !GeoEngine.getInstance().canMoveToTarget(xValue, yValue, zValue, x, y, z, instanceId)))
 			{
-				x = xValue + Rnd.get(-randomOffset, randomOffset);
-				y = yValue + Rnd.get(-randomOffset, randomOffset);
+				x = xValue + (randomOffset > 0 ? random.nextInt(-randomOffset, randomOffset + 1) : -randomOffset);
+				y = yValue + (randomOffset > 0 ? random.nextInt(-randomOffset, randomOffset + 1) : -randomOffset);
 			}
 			
 			if (!_isFlying)
@@ -970,7 +971,7 @@ public abstract class Creature extends WorldObject
 			{
 				// Verify if Player owns enough MP.
 				int mpConsume = weaponItem.getMpConsume();
-				if ((weaponItem.getReducedMpConsume() > 0) && (Rnd.get(100) < weaponItem.getReducedMpConsumeChance()))
+				if ((weaponItem.getReducedMpConsume() > 0) && (ThreadLocalRandom.current().nextInt(100) < weaponItem.getReducedMpConsumeChance()))
 				{
 					mpConsume = weaponItem.getReducedMpConsume();
 				}
@@ -5429,7 +5430,7 @@ public abstract class Creature extends WorldObject
 			{
 				for (OptionSkillHolder holder : _triggerSkills.values())
 				{
-					if (((!crit && (holder.getSkillType() == OptionSkillType.ATTACK)) || ((holder.getSkillType() == OptionSkillType.CRITICAL) && crit)) && (Rnd.get(100) < holder.getChance()))
+					if (((!crit && (holder.getSkillType() == OptionSkillType.ATTACK)) || ((holder.getSkillType() == OptionSkillType.CRITICAL) && crit)) && (ThreadLocalRandom.current().nextInt(100) < holder.getChance()))
 					{
 						makeTriggerCast(holder.getSkill(), target);
 					}
@@ -6327,7 +6328,7 @@ public abstract class Creature extends WorldObject
 					{
 						for (OptionSkillHolder holder : _triggerSkills.values())
 						{
-							if (((skill.isMagic() && (holder.getSkillType() == OptionSkillType.MAGIC)) || (skill.isPhysical() && (holder.getSkillType() == OptionSkillType.ATTACK))) && (Rnd.get(100) < holder.getChance()))
+							if (((skill.isMagic() && (holder.getSkillType() == OptionSkillType.MAGIC)) || (skill.isPhysical() && (holder.getSkillType() == OptionSkillType.ATTACK))) && (ThreadLocalRandom.current().nextInt(100) < holder.getChance()))
 							{
 								makeTriggerCast(holder.getSkill(), target);
 							}
@@ -6586,7 +6587,7 @@ public abstract class Creature extends WorldObject
 			random = 5 + (int) Math.sqrt(getLevel());
 		}
 		
-		return (1 + ((double) Rnd.get(0 - random, random) / 100));
+		return (1 + ((double) (random > 0 ? ThreadLocalRandom.current().nextInt(-random, random + 1) : -random) / 100));
 	}
 	
 	public long getAttackEndTime()

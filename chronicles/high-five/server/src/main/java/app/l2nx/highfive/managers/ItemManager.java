@@ -30,7 +30,6 @@ import java.util.logging.Logger;
 
 import app.l2nx.commons.database.DatabaseFactory;
 import app.l2nx.commons.threads.ThreadPool;
-import app.l2nx.commons.util.StringUtil;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.entity.World;
@@ -124,11 +123,11 @@ public class ItemManager
 		{
 			if (item.isEnchanted())
 			{
-				LOGGER_ITEMS.info(StringUtil.concat("CREATE:", String.valueOf(process), ", item ", String.valueOf(item.getObjectId()), ":+", String.valueOf(item.getEnchantLevel()), " ", item.getTemplate().getName(), "(", String.valueOf(item.getCount()), "), ", String.valueOf(actor), ", ", String.valueOf(reference)));
+				LOGGER_ITEMS.info("CREATE:" + process + ", item " + item.getObjectId() + ":+" + item.getEnchantLevel() + " " + item.getTemplate().getName() + "(" + item.getCount() + "), " + actor + ", " + reference);
 			}
 			else
 			{
-				LOGGER_ITEMS.info(StringUtil.concat("CREATE:", String.valueOf(process), ", item ", String.valueOf(item.getObjectId()), ":", item.getTemplate().getName(), "(", String.valueOf(item.getCount()), "), ", String.valueOf(actor), ", ", String.valueOf(reference)));
+				LOGGER_ITEMS.info("CREATE:" + process + ", item " + item.getObjectId() + ":" + item.getTemplate().getName() + "(" + item.getCount() + "), " + actor + ", " + reference);
 			}
 		}
 		
@@ -145,7 +144,7 @@ public class ItemManager
 			}
 			
 			final String targetName = (actor.getTarget() != null ? actor.getTarget().getName() : "no-target");
-			GMAudit.logAction(String.valueOf(actor), StringUtil.concat(String.valueOf(process), "(id: ", String.valueOf(itemId), " count: ", String.valueOf(count), " name: ", item.getItemName(), " objId: ", String.valueOf(item.getObjectId()), ")"), targetName, StringUtil.concat("Object referencing this action is: ", referenceName));
+			GMAudit.logAction(String.valueOf(actor), process + "(id: " + itemId + " count: " + count + " name: " + item.getItemName() + " objId: " + item.getObjectId() + ")", targetName, "Object referencing this action is: " + referenceName);
 		}
 		
 		// Notify to scripts.
@@ -184,11 +183,11 @@ public class ItemManager
 				{
 					if (item.isEnchanted())
 					{
-						LOGGER_ITEMS.info(StringUtil.concat("DELETE:", String.valueOf(process), ", item ", String.valueOf(item.getObjectId()), ":+", String.valueOf(item.getEnchantLevel()), " ", item.getTemplate().getName(), "(", String.valueOf(item.getCount()), "), PrevCount(", String.valueOf(old), "), ", String.valueOf(actor), ", ", String.valueOf(reference)));
+						LOGGER_ITEMS.info("DELETE:" + process + ", item " + item.getObjectId() + ":+" + item.getEnchantLevel() + " " + item.getTemplate().getName() + "(" + item.getCount() + "), PrevCount(" + old + "), " + actor + ", " + reference);
 					}
 					else
 					{
-						LOGGER_ITEMS.info(StringUtil.concat("DELETE:", String.valueOf(process), ", item ", String.valueOf(item.getObjectId()), ":", item.getTemplate().getName(), "(", String.valueOf(item.getCount()), "), PrevCount(", String.valueOf(old), "), ", String.valueOf(actor), ", ", String.valueOf(reference)));
+						LOGGER_ITEMS.info("DELETE:" + process + ", item " + item.getObjectId() + ":" + item.getTemplate().getName() + "(" + item.getCount() + "), PrevCount(" + old + "), " + actor + ", " + reference);
 					}
 				}
 				
@@ -205,7 +204,7 @@ public class ItemManager
 					}
 					
 					final String targetName = (actor.getTarget() != null ? actor.getTarget().getName() : "no-target");
-					GMAudit.logAction(String.valueOf(actor), StringUtil.concat(String.valueOf(process), "(id: ", String.valueOf(item.getId()), " count: ", String.valueOf(item.getCount()), " itemObjId: ", String.valueOf(item.getObjectId()), ")"), targetName, StringUtil.concat("Object referencing this action is: ", referenceName));
+					GMAudit.logAction(String.valueOf(actor), process + "(id: " + item.getId() + " count: " + item.getCount() + " itemObjId: " + item.getObjectId() + ")", targetName, "Object referencing this action is: " + referenceName);
 				}
 			}
 			

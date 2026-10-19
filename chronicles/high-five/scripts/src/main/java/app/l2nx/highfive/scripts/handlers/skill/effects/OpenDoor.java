@@ -19,7 +19,8 @@
  */
 package app.l2nx.highfive.scripts.handlers.skill.effects;
 
-import app.l2nx.commons.util.Rnd;
+import java.util.concurrent.ThreadLocalRandom;
+
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.instance.Door;
 import app.l2nx.highfive.entity.instancezone.Instance;
@@ -94,7 +95,7 @@ public class OpenDoor extends AbstractEffect
 			return;
 		}
 		
-		if ((Rnd.get(100) < _chance) && !door.isOpen())
+		if ((ThreadLocalRandom.current().nextInt(100) < _chance) && !door.isOpen())
 		{
 			door.openMe();
 		}

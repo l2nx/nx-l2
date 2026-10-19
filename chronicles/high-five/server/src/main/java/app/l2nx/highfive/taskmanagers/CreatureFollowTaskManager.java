@@ -25,9 +25,9 @@ package app.l2nx.highfive.taskmanagers;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ThreadLocalRandom;
 
 import app.l2nx.commons.threads.ThreadPool;
-import app.l2nx.commons.util.Rnd;
 import app.l2nx.highfive.ai.CreatureAI;
 import app.l2nx.highfive.ai.Intention;
 import app.l2nx.highfive.entity.WorldObject;
@@ -118,7 +118,7 @@ public class CreatureFollowTaskManager
 						return;
 					}
 					
-					final int followRange = range == -1 ? Rnd.get(50, 100) : range;
+					final int followRange = range == -1 ? ThreadLocalRandom.current().nextInt(50, 101) : range;
 					if (!creature.isInsideRadius3D(followTarget, followRange))
 					{
 						if (!creature.isInsideRadius3D(followTarget, 3000))

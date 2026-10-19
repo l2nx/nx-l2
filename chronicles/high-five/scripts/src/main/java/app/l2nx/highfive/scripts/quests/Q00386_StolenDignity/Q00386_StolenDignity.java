@@ -24,7 +24,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import app.l2nx.commons.util.StringUtil;
+import org.apache.commons.lang3.StringUtils;
+
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
@@ -591,44 +592,44 @@ public class Q00386_StolenDignity extends Quest
 		int found = 0;
 		
 		// Horizontal
-		if (StringUtil.isNumeric(q[0] + q[1] + q[2]))
+		if (StringUtils.isNumeric(q[0] + q[1] + q[2]))
 		{
 			found++;
 		}
 		
-		if (StringUtil.isNumeric(q[3] + q[4] + q[5]))
+		if (StringUtils.isNumeric(q[3] + q[4] + q[5]))
 		{
 			found++;
 		}
 		
-		if (StringUtil.isNumeric(q[6] + q[7] + q[8]))
+		if (StringUtils.isNumeric(q[6] + q[7] + q[8]))
 		{
 			found++;
 		}
 		
 		// Vertical
-		if (StringUtil.isNumeric(q[0] + q[3] + q[6]))
+		if (StringUtils.isNumeric(q[0] + q[3] + q[6]))
 		{
 			found++;
 		}
 		
-		if (StringUtil.isNumeric(q[1] + q[4] + q[7]))
+		if (StringUtils.isNumeric(q[1] + q[4] + q[7]))
 		{
 			found++;
 		}
 		
-		if (StringUtil.isNumeric(q[2] + q[5] + q[8]))
+		if (StringUtils.isNumeric(q[2] + q[5] + q[8]))
 		{
 			found++;
 		}
 		
 		// Diagonal
-		if (StringUtil.isNumeric(q[0] + q[4] + q[8]))
+		if (StringUtils.isNumeric(q[0] + q[4] + q[8]))
 		{
 			found++;
 		}
 		
-		if (StringUtil.isNumeric(q[2] + q[4] + q[6]))
+		if (StringUtils.isNumeric(q[2] + q[4] + q[6]))
 		{
 			found++;
 		}

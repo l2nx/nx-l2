@@ -39,8 +39,6 @@ import org.springframework.stereotype.Component;
 import app.l2nx.boot.ServerExit;
 import app.l2nx.commons.database.DatabaseFactory;
 import app.l2nx.commons.threads.ThreadPool;
-import app.l2nx.commons.time.TimeUtil;
-import app.l2nx.commons.util.StringUtil;
 import app.l2nx.highfive.cache.HtmCache;
 import app.l2nx.highfive.config.ConfigLoader;
 import app.l2nx.highfive.config.DevelopmentConfig;
@@ -526,9 +524,9 @@ public class GameServer implements SmartLifecycle
 		
 		System.gc();
 		final long totalMem = Runtime.getRuntime().maxMemory() / 1048576;
-		LOGGER.info(StringUtil.concat(getClass().getSimpleName(), ": Started, using ", getUsedMemoryMB(), " of ", totalMem, " MB total memory."));
-		LOGGER.info(StringUtil.concat(getClass().getSimpleName(), ": Maximum number of connected players is ", ServerConfig.MAXIMUM_ONLINE_USERS, "."));
-		LOGGER.info(StringUtil.concat(getClass().getSimpleName(), ": Server loaded in ", ((System.currentTimeMillis() - START_TIME) / 1000), " seconds."));
+		LOGGER.info(getClass().getSimpleName() + ": Started, using " + getUsedMemoryMB() + " of " + totalMem + " MB total memory.");
+		LOGGER.info(getClass().getSimpleName() + ": Maximum number of connected players is " + ServerConfig.MAXIMUM_ONLINE_USERS + ".");
+		LOGGER.info(getClass().getSimpleName() + ": Server loaded in " + ((System.currentTimeMillis() - START_TIME) / 1000) + " seconds.");
 		
 		try
 		{
@@ -554,7 +552,7 @@ public class GameServer implements SmartLifecycle
 			// Log elapsed time for previous section if not the first section.
 			if (_previousSectionName != null)
 			{
-				LOGGER.info(StringUtil.concat("...section [ ", _previousSectionName, " ] loaded in ", TimeUtil.formatDuration(sectionElapsed), "."));
+				LOGGER.info("...section [ " + _previousSectionName + " ] loaded in " + sectionElapsed + " ms.");
 			}
 			
 			// Update for next measurement.

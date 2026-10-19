@@ -25,7 +25,8 @@ package app.l2nx.highfive.scripts.handlers.chat.commands.admin;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 
-import app.l2nx.commons.util.StringUtil;
+import org.apache.commons.lang3.StringUtils;
+
 import app.l2nx.highfive.Shutdown;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Player;
@@ -54,7 +55,7 @@ public class AdminShutdown implements IAdminCommandHandler
 			try
 			{
 				final String val = command.substring(22);
-				if (StringUtil.isNumeric(val))
+				if (StringUtils.isNumeric(val))
 				{
 					serverShutdown(activeChar, Integer.parseInt(val), false);
 				}
@@ -74,7 +75,7 @@ public class AdminShutdown implements IAdminCommandHandler
 			try
 			{
 				final String val = command.substring(21);
-				if (StringUtil.isNumeric(val))
+				if (StringUtils.isNumeric(val))
 				{
 					serverShutdown(activeChar, Integer.parseInt(val), true);
 				}

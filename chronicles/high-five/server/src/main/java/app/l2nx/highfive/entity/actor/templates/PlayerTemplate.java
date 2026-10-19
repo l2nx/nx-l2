@@ -22,8 +22,8 @@ package app.l2nx.highfive.entity.actor.templates;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ThreadLocalRandom;
 
-import app.l2nx.commons.util.Rnd;
 import app.l2nx.highfive.data.xml.ExperienceData;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.actor.enums.player.PlayerClass;
@@ -97,7 +97,7 @@ public class PlayerTemplate extends CreatureTemplate
 	 */
 	public Location getCreationPoint()
 	{
-		return _creationPoints.get(Rnd.get(_creationPoints.size()));
+		return _creationPoints.get(ThreadLocalRandom.current().nextInt(_creationPoints.size()));
 	}
 	
 	/**

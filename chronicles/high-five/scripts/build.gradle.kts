@@ -4,4 +4,5 @@ plugins {
 
 dependencies {
     implementation(project(":chronicles:high-five:server"))
+    implementation(libs.commons.lang3)
 }

@@ -19,7 +19,8 @@
  */
 package app.l2nx.highfive.scripts.handlers.chat.commands.admin;
 
-import app.l2nx.commons.util.StringUtil;
+import org.apache.commons.lang3.StringUtils;
+
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.handler.IAdminCommandHandler;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
@@ -56,7 +57,7 @@ public class AdminMessages implements IAdminCommandHandler
 		else if (command.startsWith("admin_msgx "))
 		{
 			final String[] tokens = command.split(" ");
-			if ((tokens.length <= 2) || !StringUtil.isNumeric(tokens[1]))
+			if ((tokens.length <= 2) || !StringUtils.isNumeric(tokens[1]))
 			{
 				activeChar.sendSysMessage("Command format: //msgx <SYSTEM_MSG_ID> [item:Id] [skill:Id] [npc:Id] [zone:x,y,x] [castle:Id] [str:'text']");
 				return false;

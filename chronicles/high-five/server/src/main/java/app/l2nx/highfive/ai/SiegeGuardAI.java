@@ -24,9 +24,9 @@ package app.l2nx.highfive.ai;
 
 import java.util.Collection;
 import java.util.concurrent.Future;
+import java.util.concurrent.ThreadLocalRandom;
 
 import app.l2nx.commons.threads.ThreadPool;
-import app.l2nx.commons.util.Rnd;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.WorldObject;
 import app.l2nx.highfive.entity.actor.Attackable;
@@ -404,7 +404,7 @@ public class SiegeGuardAI extends CreatureAI implements Runnable
 						}
 						
 						final int chance = 5;
-						if (chance >= Rnd.get(100))
+						if (chance >= ThreadLocalRandom.current().nextInt(100))
 						{
 							continue;
 						}
@@ -451,7 +451,7 @@ public class SiegeGuardAI extends CreatureAI implements Runnable
 						}
 						
 						final int chance = 4;
-						if (chance >= Rnd.get(100))
+						if (chance >= ThreadLocalRandom.current().nextInt(100))
 						{
 							continue;
 						}
@@ -634,7 +634,7 @@ public class SiegeGuardAI extends CreatureAI implements Runnable
 				_attackTimeout = MAX_ATTACK_TIMEOUT + GameTimeTaskManager.getInstance().getGameTicks();
 				
 				// check for close combat skills && heal/buff skills
-				if (!_actor.isMuted() && (Rnd.get(100) <= 5))
+				if (!_actor.isMuted() && (ThreadLocalRandom.current().nextInt(100) <= 5))
 				{
 					for (Skill sk : skills)
 					{

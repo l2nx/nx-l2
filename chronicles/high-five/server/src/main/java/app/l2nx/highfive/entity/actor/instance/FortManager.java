@@ -27,7 +27,8 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.StringTokenizer;
 
-import app.l2nx.commons.util.StringUtil;
+import org.apache.commons.lang3.math.NumberUtils;
+
 import app.l2nx.highfive.cache.HtmCache;
 import app.l2nx.highfive.config.FeatureConfig;
 import app.l2nx.highfive.config.custom.WarehouseSortingConfig;
@@ -1028,7 +1029,7 @@ public class FortManager extends Merchant
 					return;
 				}
 				
-				holder.doTeleport(player, this, StringUtil.parseNextInt(st, -1));
+				holder.doTeleport(player, this, st.hasMoreTokens() ? NumberUtils.toInt(st.nextToken().trim(), -1) : -1);
 				return;
 			}
 			

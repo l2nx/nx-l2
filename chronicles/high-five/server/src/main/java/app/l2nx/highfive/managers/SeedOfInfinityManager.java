@@ -22,11 +22,12 @@
  */
 package app.l2nx.highfive.managers;
 
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Logger;
 
+import org.apache.commons.lang3.time.DateFormatUtils;
+
 import app.l2nx.commons.threads.ThreadPool;
-import app.l2nx.commons.time.TimeUtil;
-import app.l2nx.commons.util.Rnd;
 import app.l2nx.highfive.config.GraciaSeedsConfig;
 import app.l2nx.highfive.data.xml.DoorData;
 import app.l2nx.highfive.entity.Location;
@@ -124,7 +125,7 @@ public class SeedOfInfinityManager
 		
 		final long closeTime = System.currentTimeMillis() + time;
 		GlobalVariablesManager.getInstance().set("SoI_opened", closeTime / 1000);
-		LOGGER.info("Seed of Infinity Manager: Opening the seed until " + TimeUtil.getDateTimeString(time));
+		LOGGER.info("Seed of Infinity Manager: Opening the seed until " + DateFormatUtils.format(time, "dd/MM/yyyy HH:mm:ss"));
 		spawnOpenedSeed();
 		DoorData.getInstance().getDoor(14240102).openMe();
 		
@@ -263,7 +264,7 @@ public class SeedOfInfinityManager
 	
 	public static void teleportInSeed(Player player)
 	{
-		player.teleToLocation(openSeedTeleportLocs[Rnd.get(openSeedTeleportLocs.length)], false);
+		player.teleToLocation(openSeedTeleportLocs[ThreadLocalRandom.current().nextInt(openSeedTeleportLocs.length)], false);
 	}
 	
 	/**

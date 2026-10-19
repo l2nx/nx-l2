@@ -25,8 +25,8 @@ package app.l2nx.highfive.scripts.handlers.bypass.npc;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.ThreadLocalRandom;
 
-import app.l2nx.commons.util.Rnd;
 import app.l2nx.highfive.config.PvpConfig;
 import app.l2nx.highfive.config.custom.FindPvpConfig;
 import app.l2nx.highfive.entity.World;
@@ -132,7 +132,8 @@ public class FindPvP implements IBypassHandler
 				}
 			}
 			
-			player.teleToLocation((mostPvP.getX() + Rnd.get(300)) - 150, (mostPvP.getY() + Rnd.get(300)) - 150, mostPvP.getZ());
+			final ThreadLocalRandom random = ThreadLocalRandom.current();
+			player.teleToLocation((mostPvP.getX() + random.nextInt(300)) - 150, (mostPvP.getY() + random.nextInt(300)) - 150, mostPvP.getZ());
 			player.setSpawnProtection(true);
 			if (!player.isGM())
 			{

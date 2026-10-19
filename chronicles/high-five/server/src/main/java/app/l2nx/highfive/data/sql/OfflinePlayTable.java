@@ -26,11 +26,11 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Statement;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import app.l2nx.commons.database.DatabaseFactory;
-import app.l2nx.commons.util.Rnd;
 import app.l2nx.highfive.config.custom.AutoPlayConfig;
 import app.l2nx.highfive.config.custom.AutoPotionsConfig;
 import app.l2nx.highfive.config.custom.OfflinePlayConfig;
@@ -167,7 +167,7 @@ public class OfflinePlayTable
 					
 					if (!OfflinePlayConfig.OFFLINE_PLAY_ABNORMAL_EFFECTS.isEmpty())
 					{
-						player.startAbnormalVisualEffect(true, OfflinePlayConfig.OFFLINE_PLAY_ABNORMAL_EFFECTS.get(Rnd.get(OfflinePlayConfig.OFFLINE_PLAY_ABNORMAL_EFFECTS.size())));
+						player.startAbnormalVisualEffect(true, OfflinePlayConfig.OFFLINE_PLAY_ABNORMAL_EFFECTS.get(ThreadLocalRandom.current().nextInt(OfflinePlayConfig.OFFLINE_PLAY_ABNORMAL_EFFECTS.size())));
 					}
 					
 					// player.broadcastUserInfo();

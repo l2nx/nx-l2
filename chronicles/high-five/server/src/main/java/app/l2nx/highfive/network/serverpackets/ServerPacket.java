@@ -22,7 +22,8 @@
  */
 package app.l2nx.highfive.network.serverpackets;
 
-import app.l2nx.commons.util.TraceUtil;
+import org.apache.commons.lang3.exception.ExceptionUtils;
+
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.itemcontainer.Inventory;
 import app.l2nx.highfive.network.ConnectionState;
@@ -88,7 +89,7 @@ public abstract class ServerPacket extends WritablePacket<GameClient>
 		catch (Exception e)
 		{
 			PacketLogger.warning("Error writing packet " + this + " to client (" + e.getMessage() + ") " + c + "]]");
-			PacketLogger.warning(TraceUtil.getStackTrace(e));
+			PacketLogger.warning(ExceptionUtils.getStackTrace(e));
 		}
 		
 		return false;

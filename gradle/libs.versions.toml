@@ -12,6 +12,7 @@ spring-boot = "4.1.1"
 [libraries]
 assertj-core = { module = "org.assertj:assertj-core", version.ref = "assertj" }
 classgraph = { module = "io.github.classgraph:classgraph", version.ref = "classgraph" }
+commons-lang3 = { module = "org.apache.commons:commons-lang3" }
 disruptor = { module = "com.lmax:disruptor", version.ref = "disruptor" }
 junit-bom = { module = "org.junit:junit-bom", version.ref = "junit" }
 junit-jupiter = { module = "org.junit.jupiter:junit-jupiter" }

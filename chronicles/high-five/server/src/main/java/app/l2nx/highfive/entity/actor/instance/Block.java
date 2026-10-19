@@ -19,7 +19,8 @@
  */
 package app.l2nx.highfive.entity.actor.instance;
 
-import app.l2nx.commons.util.Rnd;
+import java.util.concurrent.ThreadLocalRandom;
+
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.holders.player.ArenaParticipantsHolder;
@@ -81,7 +82,7 @@ public class Block extends Monster
 			}
 			
 			// 30% chance to drop the event items
-			final int random = Rnd.get(100);
+			final int random = ThreadLocalRandom.current().nextInt(100);
 			
 			// Bond
 			if ((random > 69) && (random <= 84))
@@ -166,8 +167,8 @@ public class Block extends Monster
 	private void dropItem(int id, BlockCheckerManager eng, Player player)
 	{
 		final Item drop = ItemManager.createItem(ItemProcessType.LOOT, id, 1, player, this);
-		final int x = getX() + Rnd.get(50);
-		final int y = getY() + Rnd.get(50);
+		final int x = getX() + ThreadLocalRandom.current().nextInt(50);
+		final int y = getY() + ThreadLocalRandom.current().nextInt(50);
 		final int z = getZ();
 		drop.dropMe(this, x, y, z);
 		eng.addNewDrop(drop);

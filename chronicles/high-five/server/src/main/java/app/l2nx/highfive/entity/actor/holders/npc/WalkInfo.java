@@ -23,8 +23,8 @@
 package app.l2nx.highfive.entity.actor.holders.npc;
 
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ThreadLocalRandom;
 
-import app.l2nx.commons.util.Rnd;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.managers.WalkingManager;
 import app.l2nx.highfive.mechanics.events.EventDispatcher;
@@ -204,7 +204,7 @@ public class WalkInfo
 			int selected = base;
 			while (selected == base)
 			{
-				final int candidate = Rnd.get(nodesCount);
+				final int candidate = ThreadLocalRandom.current().nextInt(nodesCount);
 				if (candidate != base)
 				{
 					selected = candidate;

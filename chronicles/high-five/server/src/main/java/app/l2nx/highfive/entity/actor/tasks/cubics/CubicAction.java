@@ -23,11 +23,11 @@
 package app.l2nx.highfive.entity.actor.tasks.cubics;
 
 import java.util.Collections;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import app.l2nx.commons.util.Rnd;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.instance.Cubic;
 import app.l2nx.highfive.entity.cubic.CubicSkill;
@@ -107,7 +107,7 @@ public class CubicAction implements Runnable
 				return;
 			}
 			
-			if (Rnd.get(100) >= _chance)
+			if (ThreadLocalRandom.current().nextInt(100) >= _chance)
 			{
 				return;
 			}

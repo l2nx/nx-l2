@@ -25,6 +25,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ThreadLocalRandom;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
@@ -32,7 +33,6 @@ import org.w3c.dom.Node;
 
 import app.l2nx.commons.threads.ThreadPool;
 import app.l2nx.commons.util.IXmlReader;
-import app.l2nx.commons.util.Rnd;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.spawns.Spawn;
@@ -234,11 +234,12 @@ public class TarBeetleSpawn implements IXmlReader
 			{
 				while (_spawn.size() < _maxNpcCount)
 				{
-					final Location location = _zones.get(Rnd.get(_zones.size())).getRandomPoint();
+					final ThreadLocalRandom random = ThreadLocalRandom.current();
+					final Location location = _zones.get(random.nextInt(_zones.size())).getRandomPoint();
 					if (location != null)
 					{
 						final Spawn spawn = new Spawn(18804);
-						spawn.setHeading(Rnd.get(65535));
+						spawn.setHeading(random.nextInt(65535));
 						spawn.setXYZ(location.getX(), location.getY(), GeoEngine.getInstance().getHeight(location.getX(), location.getY(), location.getZ()));
 						final Npc npc = spawn.doSpawn();
 						spawn.stopRespawn();

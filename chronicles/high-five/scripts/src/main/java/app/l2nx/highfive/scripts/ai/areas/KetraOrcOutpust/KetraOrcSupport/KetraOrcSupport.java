@@ -22,7 +22,8 @@ package app.l2nx.highfive.scripts.ai.areas.KetraOrcOutpust.KetraOrcSupport;
 import java.util.HashMap;
 import java.util.Map;
 
-import app.l2nx.commons.util.StringUtil;
+import org.apache.commons.lang3.StringUtils;
+
 import app.l2nx.highfive.data.xml.SkillData;
 import app.l2nx.highfive.data.xml.TeleporterData;
 import app.l2nx.highfive.entity.actor.Npc;
@@ -118,7 +119,7 @@ public class KetraOrcSupport extends Script
 	public String onEvent(String event, Npc npc, Player player)
 	{
 		String htmltext = null;
-		if (StringUtil.isNumeric(event) && BUFF.containsKey(Integer.parseInt(event)))
+		if (StringUtils.isNumeric(event) && BUFF.containsKey(Integer.parseInt(event)))
 		{
 			final BuffsData buff = BUFF.get(Integer.parseInt(event));
 			if (getQuestItemsCount(player, HORN) >= buff.getCost())

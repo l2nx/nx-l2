@@ -24,8 +24,8 @@ package app.l2nx.highfive.scripts.handlers.skill.effects;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
-import app.l2nx.commons.util.Rnd;
 import app.l2nx.highfive.entity.actor.Attackable;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.mechanics.conditions.Condition;
@@ -84,7 +84,7 @@ public class RandomizeHate extends AbstractEffect
 		}
 		
 		// Choosing randomly a new target.
-		final Creature target = aggroList.get(Rnd.get(aggroList.size()));
+		final Creature target = aggroList.get(ThreadLocalRandom.current().nextInt(aggroList.size()));
 		final long hate = effectedMob.getHating(effector);
 		effectedMob.stopHating(effector);
 		effectedMob.addDamageHate(target, 0, hate);

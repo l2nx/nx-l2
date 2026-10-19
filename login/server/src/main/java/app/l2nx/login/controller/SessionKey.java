@@ -22,7 +22,6 @@
  */
 package app.l2nx.login.controller;
 
-import app.l2nx.commons.util.StringUtil;
 import app.l2nx.login.LoginServer;
 
 /**
@@ -71,7 +70,7 @@ public class SessionKey
 	@Override
 	public String toString()
 	{
-		return StringUtil.concat(LABEL_PLAY_OK + " " + _playOkID1 + " " + _playOkID2 + " " + LABEL_LOGIN_OK + _loginOkID1 + " " + _loginOkID2);
+		return LABEL_PLAY_OK + " " + _playOkID1 + " " + _playOkID2 + " " + LABEL_LOGIN_OK + _loginOkID1 + " " + _loginOkID2;
 	}
 	
 	/**

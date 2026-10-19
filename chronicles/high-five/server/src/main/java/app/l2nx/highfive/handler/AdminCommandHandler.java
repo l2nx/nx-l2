@@ -27,8 +27,9 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.apache.commons.lang3.time.DurationFormatUtils;
+
 import app.l2nx.commons.threads.ThreadPool;
-import app.l2nx.commons.time.TimeUtil;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.data.xml.AdminData;
 import app.l2nx.highfive.entity.WorldObject;
@@ -140,7 +141,7 @@ public class AdminCommandHandler implements IHandler<IAdminCommandHandler, Strin
 					final long runtime = System.currentTimeMillis() - begin;
 					if (runtime > 5000)
 					{
-						player.sendMessage("The execution of '" + fullCommand + "' took " + TimeUtil.formatDuration(runtime) + ".");
+						player.sendMessage("The execution of '" + fullCommand + "' took " + DurationFormatUtils.formatDurationWords(runtime, true, true) + ".");
 					}
 				}
 			});

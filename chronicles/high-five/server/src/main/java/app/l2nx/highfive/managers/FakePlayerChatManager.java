@@ -25,13 +25,13 @@ package app.l2nx.highfive.managers;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Logger;
 
 import org.w3c.dom.Document;
 
 import app.l2nx.commons.threads.ThreadPool;
 import app.l2nx.commons.util.IXmlReader;
-import app.l2nx.commons.util.Rnd;
 import app.l2nx.highfive.config.custom.FakePlayersConfig;
 import app.l2nx.highfive.data.SpawnTable;
 import app.l2nx.highfive.data.holders.FakePlayerChatHolder;
@@ -90,12 +90,12 @@ public class FakePlayerChatManager implements IXmlReader
 	
 	public void manageChat(Player player, String fpcName, String message)
 	{
-		ThreadPool.schedule(() -> manageResponce(player, fpcName, message), Rnd.get(MIN_DELAY, MAX_DELAY));
+		ThreadPool.schedule(() -> manageResponce(player, fpcName, message), ThreadLocalRandom.current().nextInt(MIN_DELAY, MAX_DELAY + 1));
 	}
 	
 	public void manageChat(Player player, String fpcName, String message, int minDelay, int maxDelay)
 	{
-		ThreadPool.schedule(() -> manageResponce(player, fpcName, message), Rnd.get(minDelay, maxDelay));
+		ThreadPool.schedule(() -> manageResponce(player, fpcName, message), minDelay < maxDelay ? ThreadLocalRandom.current().nextInt(minDelay, maxDelay + 1) : minDelay);
 	}
 	
 	private void manageResponce(Player player, String fpcName, String message)
@@ -120,16 +120,16 @@ public class FakePlayerChatManager implements IXmlReader
 					{
 						if (GeoEngine.getInstance().canSeeTarget(npc, player) && !player.isInvisible())
 						{
-							sendChat(player, fpcName, Rnd.nextBoolean() ? "i am not blind" : Rnd.nextBoolean() ? "of course i can" : "yes");
+							sendChat(player, fpcName, ThreadLocalRandom.current().nextBoolean() ? "i am not blind" : ThreadLocalRandom.current().nextBoolean() ? "of course i can" : "yes");
 						}
 						else
 						{
-							sendChat(player, fpcName, Rnd.nextBoolean() ? "i know you are around" : Rnd.nextBoolean() ? "not at the moment :P" : "no, where are you?");
+							sendChat(player, fpcName, ThreadLocalRandom.current().nextBoolean() ? "i know you are around" : ThreadLocalRandom.current().nextBoolean() ? "not at the moment :P" : "no, where are you?");
 						}
 					}
 					else
 					{
-						sendChat(player, fpcName, Rnd.nextBoolean() ? "nope, can't see you" : Rnd.nextBoolean() ? "nope" : "no");
+						sendChat(player, fpcName, ThreadLocalRandom.current().nextBoolean() ? "nope, can't see you" : ThreadLocalRandom.current().nextBoolean() ? "nope" : "no");
 					}
 					return;
 				}
@@ -149,7 +149,7 @@ public class FakePlayerChatManager implements IXmlReader
 				{
 					if (text.equals(chatHolder.getSearchText().get(0)))
 					{
-						sendChat(player, fpcName, chatHolder.getAnswers().get(Rnd.get(chatHolder.getAnswers().size())));
+						sendChat(player, fpcName, chatHolder.getAnswers().get(ThreadLocalRandom.current().nextInt(chatHolder.getAnswers().size())));
 					}
 					break;
 				}
@@ -157,7 +157,7 @@ public class FakePlayerChatManager implements IXmlReader
 				{
 					if (text.startsWith(chatHolder.getSearchText().get(0)))
 					{
-						sendChat(player, fpcName, chatHolder.getAnswers().get(Rnd.get(chatHolder.getAnswers().size())));
+						sendChat(player, fpcName, chatHolder.getAnswers().get(ThreadLocalRandom.current().nextInt(chatHolder.getAnswers().size())));
 					}
 					break;
 				}
@@ -174,7 +174,7 @@ public class FakePlayerChatManager implements IXmlReader
 					
 					if (allFound)
 					{
-						sendChat(player, fpcName, chatHolder.getAnswers().get(Rnd.get(chatHolder.getAnswers().size())));
+						sendChat(player, fpcName, chatHolder.getAnswers().get(ThreadLocalRandom.current().nextInt(chatHolder.getAnswers().size())));
 					}
 					break;
 				}

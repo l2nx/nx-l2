@@ -22,7 +22,8 @@ package app.l2nx.highfive.entity.actor.instance;
 import java.util.StringTokenizer;
 import java.util.logging.Logger;
 
-import app.l2nx.commons.util.StringUtil;
+import org.apache.commons.lang3.StringUtils;
+
 import app.l2nx.highfive.data.xml.TeleporterData;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Player;
@@ -141,7 +142,7 @@ public class Teleporter extends Merchant
 		if (st.hasMoreTokens())
 		{
 			final String token = st.nextToken();
-			if (StringUtil.isNumeric(token))
+			if (StringUtils.isNumeric(token))
 			{
 				return Integer.parseInt(token);
 			}

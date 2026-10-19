@@ -23,9 +23,9 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
+import java.util.concurrent.ThreadLocalRandom;
 
 import app.l2nx.commons.threads.ThreadPool;
-import app.l2nx.commons.util.Rnd;
 import app.l2nx.highfive.data.xml.SkillData;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.enums.creature.InstanceType;
@@ -285,7 +285,7 @@ public class EffectZone extends ZoneType
 			
 			for (Creature character : getCharactersInside())
 			{
-				if ((character != null) && character.isPlayer() && !character.isDead() && (Rnd.get(100) < _chance))
+				if ((character != null) && character.isPlayer() && !character.isDead() && (ThreadLocalRandom.current().nextInt(100) < _chance))
 				{
 					for (Entry<Integer, Integer> e : _skills.entrySet())
 					{

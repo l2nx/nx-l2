@@ -43,15 +43,16 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.PriorityBlockingQueue;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.apache.commons.lang3.exception.ExceptionUtils;
+
 import app.l2nx.commons.database.DatabaseFactory;
-import app.l2nx.commons.util.Rnd;
-import app.l2nx.commons.util.TraceUtil;
 import app.l2nx.highfive.cache.HtmCache;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.config.PlayerConfig;
@@ -1203,7 +1204,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
 		
 		if ((player != null) && player.getAccessLevel().isGm())
 		{
-			final String res = "<html><body><title>Script error</title>" + TraceUtil.getStackTrace(t) + "</body></html>";
+			final String res = "<html><body><title>Script error</title>" + ExceptionUtils.getStackTrace(t) + "</body></html>";
 			return showResult(player, res);
 		}
 		
@@ -1990,10 +1991,11 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
 			return player;
 		}
 		
-		Player member = members.get(Rnd.get(members.size()));
+		final ThreadLocalRandom random = ThreadLocalRandom.current();
+		Player member = members.get(random.nextInt(members.size()));
 		while (player.getInstanceId() != member.getInstanceId())
 		{
-			member = members.get(Rnd.get(members.size()));
+			member = members.get(random.nextInt(members.size()));
 		}
 		
 		return member;
@@ -2082,7 +2084,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
 		}
 		
 		// If a match was found from the party, return one of them at random.
-		return candidates.get(Rnd.get(candidates.size()));
+		return candidates.get(ThreadLocalRandom.current().nextInt(candidates.size()));
 	}
 	
 	/**
@@ -2149,7 +2151,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
 		}
 		
 		// If a match was found from the party, return one of them at random.
-		return candidates.get(Rnd.get(candidates.size()));
+		return candidates.get(ThreadLocalRandom.current().nextInt(candidates.size()));
 	}
 	
 	/**
@@ -4311,15 +4313,16 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
 			int y = yValue;
 			if (randomOffset)
 			{
-				int offset = Rnd.get(50, 100);
-				if (Rnd.nextBoolean())
+				final ThreadLocalRandom random = ThreadLocalRandom.current();
+				int offset = random.nextInt(50, 101);
+				if (random.nextBoolean())
 				{
 					offset *= -1;
 				}
-				
+
 				x += offset;
-				offset = Rnd.get(50, 100);
-				if (Rnd.nextBoolean())
+				offset = random.nextInt(50, 101);
+				if (random.nextBoolean())
 				{
 					offset *= -1;
 				}
@@ -4989,8 +4992,8 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
 			}
 		}
 		
-		long amountToGive = (minAmountWithBonus == maxAmountWithBonus) ? minAmountWithBonus : Rnd.get(minAmountWithBonus, maxAmountWithBonus);
-		final double random = Rnd.nextDouble();
+		long amountToGive = getRandom(minAmountWithBonus, maxAmountWithBonus);
+		final double random = ThreadLocalRandom.current().nextDouble();
 		
 		// Inventory slot check (almost useless for non-stacking items).
 		if ((dropChanceWithBonus >= random) && (amountToGive > 0) && player.getInventory().validateCapacityByItemId(itemId))
@@ -5193,58 +5196,69 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
 	
 	/**
 	 * Get a random integer from 0 (inclusive) to {@code max} (exclusive).<br>
-	 * Use this method instead of importing {@link app.l2nx.commons.util.Rnd} utility.
+	 * Returns {@code 0} when {@code max <= 0}.
 	 * @param max the maximum value for randomization
 	 * @return a random integer number from 0 to {@code max - 1}
 	 */
 	public static int getRandom(int max)
 	{
-		return Rnd.get(max);
+		return max > 0 ? ThreadLocalRandom.current().nextInt(max) : 0;
 	}
-	
+
 	/**
 	 * Get a random integer from {@code min} (inclusive) to {@code max} (inclusive).<br>
-	 * Use this method instead of importing {@link app.l2nx.commons.util.Rnd} utility.
+	 * Returns {@code min} when {@code min >= max}.
 	 * @param min the minimum value for randomization
 	 * @param max the maximum value for randomization
 	 * @return a random integer number from {@code min} to {@code max}
 	 */
 	public static int getRandom(int min, int max)
 	{
-		return Rnd.get(min, max);
+		if (min >= max)
+		{
+			return min;
+		}
+
+		// Integer.MAX_VALUE + 1 would overflow, so that single value stays unreachable.
+		return ThreadLocalRandom.current().nextInt(min, max == Integer.MAX_VALUE ? max : max + 1);
 	}
-	
+
 	/**
 	 * Get a random long from 0 (inclusive) to {@code max} (exclusive).<br>
-	 * Use this method instead of importing {@link app.l2nx.commons.util.Rnd} utility.
+	 * Returns {@code 0} when {@code max <= 0}.
 	 * @param max the maximum value for randomization
 	 * @return a random long number from 0 to {@code max - 1}
 	 */
 	public static long getRandom(long max)
 	{
-		return Rnd.get(max);
+		return max > 0 ? ThreadLocalRandom.current().nextLong(max) : 0;
 	}
-	
+
 	/**
 	 * Get a random long from {@code min} (inclusive) to {@code max} (inclusive).<br>
-	 * Use this method instead of importing {@link app.l2nx.commons.util.Rnd} utility.
+	 * Returns {@code min} when {@code min >= max}.
 	 * @param min the minimum value for randomization
 	 * @param max the maximum value for randomization
 	 * @return a random long number from {@code min} to {@code max}
 	 */
 	public static long getRandom(long min, long max)
 	{
-		return Rnd.get(min, max);
+		if (min >= max)
+		{
+			return min;
+		}
+
+		// Long.MAX_VALUE + 1 would overflow, so that single value stays unreachable.
+		return ThreadLocalRandom.current().nextLong(min, max == Long.MAX_VALUE ? max : max + 1);
 	}
-	
+
 	/**
-	 * Get a random boolean.<br>
-	 * Use this method instead of importing {@link app.l2nx.commons.util.Rnd} utility.
+	 * Get a random boolean.
 	 * @return {@code true} or {@code false} randomly
 	 */
 	public static boolean getRandomBoolean()
 	{
-		return Rnd.nextBoolean();
+		return ThreadLocalRandom.current().nextBoolean();
 	}
 	
 	/**
@@ -5261,9 +5275,9 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
 			return null;
 		}
 		
-		return array[Rnd.get(array.length)];
+		return array[ThreadLocalRandom.current().nextInt(array.length)];
 	}
-	
+
 	/**
 	 * Get a random entry.
 	 * @param <T>
@@ -5276,8 +5290,8 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
 		{
 			return null;
 		}
-		
-		return list.get(Rnd.get(list.size()));
+
+		return list.get(ThreadLocalRandom.current().nextInt(list.size()));
 	}
 	
 	/**
@@ -5287,7 +5301,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
 	 */
 	public static int getRandomEntry(int... array)
 	{
-		return array[Rnd.get(array.length)];
+		return array[ThreadLocalRandom.current().nextInt(array.length)];
 	}
 	
 	/**
