@@ -24,6 +24,10 @@ lists what is open.
 - [#20](https://github.com/l2nx/nx-l2/issues/20) Time dilation for overloaded partitions
 - [#21](https://github.com/l2nx/nx-l2/issues/21) Parallel open world if one partition exceeds its budget
 - [#22](https://github.com/l2nx/nx-l2/issues/22) Choose an XML library for the datapack loaders
+- [#23](https://github.com/l2nx/nx-l2/issues/23) Temporary login ban turns into a permanent account ban
+- [#24](https://github.com/l2nx/nx-l2/issues/24) Login fails with NPE on an accounts_ipauth row without a type
+- [#25](https://github.com/l2nx/nx-l2/issues/25) Weapon damage_range with 2 or 3 parts breaks item loading
+- [#26](https://github.com/l2nx/nx-l2/issues/26) Seed of Infinity logs the open duration as the close date
 
 ## Done
 
