@@ -1,0 +1,17 @@
+# Local DB for the built servers; mirrors config/Database.ini defaults (l2jmobiush5, passwordless root), localhost only.
+services:
+  mariadb:
+    image: mariadb:11.8
+    environment:
+      MARIADB_DATABASE: l2jmobiush5
+      MARIADB_ALLOW_EMPTY_ROOT_PASSWORD: "yes"
+    ports:
+      - "127.0.0.1:3306:3306"
+    volumes:
+      - mariadb:/var/lib/mysql
+      - ./docker/mariadb-init.sh:/docker-entrypoint-initdb.d/nx-l2.sh:ro
+      - ./login/server/sql:/sql/login:ro
+      - ./chronicles/high-five/datapack/sql:/sql/game:ro
+
+volumes:
+  mariadb:
