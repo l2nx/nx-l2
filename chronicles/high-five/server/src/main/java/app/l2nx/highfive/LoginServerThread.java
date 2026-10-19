@@ -205,6 +205,12 @@ public class LoginServerThread extends Thread
 						break;
 					}
 					
+					if ((incoming.length % 8) != 0)
+					{
+						LOGGER.warning(getClass().getSimpleName() + ": Packet length is not a multiple of the cipher block, closing connection (LS)");
+						break;
+					}
+
 					// Decrypt and verify packet.
 					_blowfish.decrypt(incoming, 0, incoming.length);
 					checksumOk = XorChecksum.verify(incoming, 0, incoming.length);

@@ -196,6 +196,12 @@ public class GameServerThread extends Thread
 					break;
 				}
 				
+				if ((packetData.length % 8) != 0)
+				{
+					LOGGER.warning("Packet length " + packetData.length + " from game server is not a multiple of the cipher block. Closing connection.");
+					break;
+				}
+
 				// Decrypt the packet data using Blowfish cipher.
 				_blowfishCipher.decrypt(packetData, 0, packetData.length);
 				

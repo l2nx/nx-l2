@@ -26,6 +26,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.KeyPairGenerator;
 import java.security.MessageDigest;
+import java.security.SecureRandom;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.spec.RSAKeyGenParameterSpec;
 import java.time.Duration;
@@ -73,6 +74,9 @@ public class LoginController
 	public static final int LOGIN_TIMEOUT = 5 * 60 * 1000; // 5 minutes.
 	
 	private static final int BLOWFISH_KEYS = 20;
+	
+	/** Session ids and keys reach the client, so they must not be predictable from earlier ones. */
+	public static final SecureRandom SECURE_RANDOM = new SecureRandom();
 	protected byte[][] _blowfishKeys;
 	protected ScrambledKeyPair[] _keyPairs;
 	
@@ -157,7 +161,7 @@ public class LoginController
 		
 		for (int i = 0; i < BLOWFISH_KEYS; i++)
 		{
-			ThreadLocalRandom.current().nextBytes(_blowfishKeys[i]);
+			SECURE_RANDOM.nextBytes(_blowfishKeys[i]);
 		}
 		
 		LOGGER.info("Stored " + _blowfishKeys.length + " keys for Blowfish communication.");
@@ -173,8 +177,7 @@ public class LoginController
 	
 	public SessionKey assignSessionKeyToClient(String account, LoginClient client)
 	{
-		final ThreadLocalRandom random = ThreadLocalRandom.current();
-		final SessionKey key = new SessionKey(random.nextInt(), random.nextInt(), random.nextInt(), random.nextInt());
+		final SessionKey key = new SessionKey(SECURE_RANDOM.nextInt(), SECURE_RANDOM.nextInt(), SECURE_RANDOM.nextInt(), SECURE_RANDOM.nextInt());
 		_loginServerClients.put(account, client);
 		return key;
 	}

@@ -6,24 +6,49 @@ package app.l2nx.boot;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.util.Map;
-
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.SpringApplication;
-import org.springframework.core.env.MapPropertySource;
-import org.springframework.core.env.StandardEnvironment;
+import org.springframework.boot.WebApplicationType;
+import org.springframework.boot.builder.SpringApplicationBuilder;
+import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.core.env.Environment;
 
+/**
+ * Runs the real environment preparation, so the defaults meet the application's own config data (test application.yaml).
+ */
 class DefaultsEnvironmentPostProcessorTest
 {
-	@Test
-	void applicationKeysOverrideTheDefaults()
+	@Nested
+	class PostProcessEnvironment
 	{
-		final StandardEnvironment environment = new StandardEnvironment();
-		environment.getPropertySources().addFirst(new MapPropertySource("application", Map.of("server.address", "0.0.0.0")));
+		@Test
+		void postProcessEnvironment_shouldKeepApplicationValue_whenKeyIsInBoth()
+		{
+			try (ConfigurableApplicationContext context = start())
+			{
+				assertThat(context.getEnvironment().getProperty("server.address")).isEqualTo("0.0.0.0");
+			}
+		}
 
-		new DefaultsEnvironmentPostProcessor().postProcessEnvironment(environment, new SpringApplication());
+		@Test
+		void postProcessEnvironment_shouldAddDefault_whenApplicationLacksKey()
+		{
+			try (ConfigurableApplicationContext context = start())
+			{
+				final Environment environment = context.getEnvironment();
+				assertThat(environment.getProperty("spring.datasource.hikari.pool-name")).isEqualTo("l2nx-db");
+			}
+		}
+	}
 
-		assertThat(environment.getProperty("server.address")).isEqualTo("0.0.0.0");
-		assertThat(environment.getProperty("spring.datasource.hikari.pool-name")).isEqualTo("l2nx-db");
+	private static ConfigurableApplicationContext start()
+	{
+		return new SpringApplicationBuilder(EmptyConfiguration.class).web(WebApplicationType.NONE).run();
+	}
+
+	@Configuration(proxyBeanMethods = false)
+	static class EmptyConfiguration
+	{
 	}
 }

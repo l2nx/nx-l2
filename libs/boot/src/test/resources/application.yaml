@@ -1,0 +1,5 @@
+# SPDX-FileCopyrightText: 2026 L2NX contributors
+# SPDX-License-Identifier: Apache-2.0
+
+server:
+  address: 0.0.0.0

@@ -49,6 +49,22 @@ class LoginPropertiesTest
 		{
 			runner.withPropertyValues(property).run(context -> assertThat(context).hasFailed().getFailure().rootCause().isInstanceOf(BindValidationException.class));
 		}
+
+		@ParameterizedTest(name = "{0}")
+		@ValueSource(strings =
+		{
+			"l2nx.login.network.shutdown-wait-time=-1s",
+			"l2nx.login.network.thread-priority=0",
+			"l2nx.login.network.thread-priority=11",
+			"l2nx.login.network.drop-packet-threshold=0",
+			"l2nx.login.network.buffer-segment-size=0",
+			"l2nx.login.network.init-buffer-pool-factor=-1",
+			"l2nx.login.network.buffer-pools[0].size=0"
+		})
+		void bind_shouldFailStartup_whenNetworkValueIsInvalid(String property)
+		{
+			runner.withPropertyValues(property).run(context -> assertThat(context).hasFailed().getFailure().rootCause().isInstanceOf(IllegalArgumentException.class));
+		}
 	}
 
 	@EnableConfigurationProperties(LoginProperties.class)
