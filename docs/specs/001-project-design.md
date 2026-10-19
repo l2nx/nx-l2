@@ -264,7 +264,7 @@ How the server finds scripts (`server` cannot depend on `scripts`, so discovery 
 | -------- | ---------------------------------------------------------------------------- |
 | Java     | 25 LTS (Mobius targets 27; the imported tree compiles on 25 as is)           |
 | Build    | Gradle Kotlin DSL, version catalog, no committed jars but the Gradle wrapper |
-| Format   | palantir-java-format via Spotless, checked by `build` (CI too); LF           |
+| Format   | palantir-java-format via Spotless, checked by `build`; LF (spec 005)         |
 | Local DB | `compose.yaml`: database only (`l2nx-db`), servers run from Gradle           |
 | Host     | Spring Boot 4.1 (spec 002)                                                   |
 | Network  | Netty for every connection: client↔game, client↔login, login↔game            |

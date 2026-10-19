@@ -22,6 +22,5 @@ and review findings left out of scope. The issue holds the failure scenario with
 - Design, module layout, stack, stages: [docs/specs/001-project-design.md](docs/specs/001-project-design.md).
 - Specs index: [docs/CLAUDE.md](docs/CLAUDE.md); deferred work: [docs/TODO.md](docs/TODO.md).
 - Import mapping from Mobius: [docs/provenance.md](docs/provenance.md).
-- Code style: palantir-java-format via Spotless, LF; the bulk reformat commits are in `.git-blame-ignore-revs`
-  ([CONTRIBUTING.md](CONTRIBUTING.md#code-style)).
+- Code style (palantir, LF, `.git-blame-ignore-revs`): [docs/specs/005-code-formatting.md](docs/specs/005-code-formatting.md).
 - Public pages (l2nx.dev/l2): `docs/public/{en,ru}/`.
