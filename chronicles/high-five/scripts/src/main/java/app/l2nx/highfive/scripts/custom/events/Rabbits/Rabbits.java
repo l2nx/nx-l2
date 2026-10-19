@@ -29,7 +29,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 
-import app.l2nx.commons.time.SchedulingPattern;
 import app.l2nx.commons.time.TimeUtil;
 import app.l2nx.commons.util.IXmlReader;
 import app.l2nx.highfive.config.GeneralConfig;
@@ -40,6 +39,7 @@ import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.mechanics.script.Event;
 import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.mechanics.skill.holders.SkillHolder;
+import app.l2nx.highfive.schedule.RecurrenceSchedule;
 import app.l2nx.highfive.util.StatSet;
 
 /**
@@ -123,14 +123,10 @@ public class Rabbits extends Event
 							case "schedule":
 							{
 								final StatSet attributes = new StatSet(parseAttributes(node));
-								final String pattern = attributes.getString("pattern");
-								final SchedulingPattern schedulingPattern = new SchedulingPattern(pattern);
 								final StatSet params = new StatSet();
 								params.set("Name", name);
-								params.set("SchedulingPattern", pattern);
-								final long delay = schedulingPattern.getDelayToNextFromNow();
-								getTimers().addTimer("Schedule" + count.incrementAndGet(), params, delay + 5000, null, null); // Added 5 seconds to prevent overlapping.
-								LOGGER.info("Event " + name + " scheduled at " + TimeUtil.getDateTimeString(System.currentTimeMillis() + delay));
+								params.set("Schedule", new RecurrenceSchedule(attributes.getString("rrule")));
+								scheduleStart("Schedule" + count.incrementAndGet(), params);
 								break;
 							}
 						}
@@ -146,11 +142,17 @@ public class Rabbits extends Event
 		if (event.startsWith("Schedule"))
 		{
 			eventStart(null);
-			final SchedulingPattern schedulingPattern = new SchedulingPattern(params.getString("SchedulingPattern"));
-			final long delay = schedulingPattern.getDelayToNextFromNow();
-			getTimers().addTimer(event, params, delay + 5000, null, null); // Added 5 seconds to prevent overlapping.
-			LOGGER.info("Event " + params.getString("Name") + " scheduled at " + TimeUtil.getDateTimeString(System.currentTimeMillis() + delay));
+			scheduleStart(event, params);
 		}
+	}
+
+	private void scheduleStart(String timer, StatSet params)
+	{
+		params.getObject("Schedule", RecurrenceSchedule.class).next().ifPresentOrElse(start ->
+		{
+			getTimers().addTimer(timer, params, (start.toEpochMilli() - System.currentTimeMillis()) + 5000, null, null); // Added 5 seconds to prevent overlapping.
+			LOGGER.info("Event " + params.getString("Name") + " scheduled at " + TimeUtil.getDateTimeString(start.toEpochMilli()));
+		}, () -> LOGGER.warning("Event " + params.getString("Name") + " has no further start in its schedule."));
 	}
 	
 	@Override

@@ -1,15 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <event name="Deathmatch" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../../xsd/event.xsd">
 	<!-- 
-		The pattern attribute specifies the schedule time of the event.
-		- Minutes (0-59)
-		- Hours (0-23)
-		- Day of the month (1-31)
-		- Month (1-12)
-		- Day of the week (0-7)
-		You can use * as a wildcard value.
+		The rrule attribute is an RFC 5545 recurrence rule for the start time of the event, in the server time zone.
+		- FREQ=DAILY;BYHOUR=20;BYMINUTE=0 runs at 20:00 every day.
+		- FREQ=WEEKLY;BYDAY=SA,SU;BYHOUR=18;BYMINUTE=30 runs at 18:30 every Saturday and Sunday.
+		- FREQ=DAILY;BYHOUR=0,4,8,12,16,20;BYMINUTE=0 runs every 4 hours, on the hour.
+		Set BYMINUTE, and BYHOUR for daily or longer rules; COUNT and INTERVAL are not supported (the rule has no fixed start date).
 		You can use multiple schedule elements.
 	-->
 	<!-- Run at 20:00 (8:00 PM) every day. -->
-	<!-- <schedule pattern="0 20 * * *" /> -->
+	<!-- <schedule rrule="FREQ=DAILY;BYHOUR=20;BYMINUTE=0" /> -->
 </event>

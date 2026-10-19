@@ -41,7 +41,6 @@ import org.w3c.dom.Node;
 
 import app.l2nx.commons.database.DatabaseFactory;
 import app.l2nx.commons.threads.ThreadPool;
-import app.l2nx.commons.time.SchedulingPattern;
 import app.l2nx.commons.time.TimeUtil;
 import app.l2nx.commons.util.IXmlReader;
 import app.l2nx.highfive.config.UndergroundColiseumConfig;
@@ -276,8 +275,7 @@ public class UndergroundColiseumManager implements IXmlReader
 	
 	private void generateNewDate()
 	{
-		final SchedulingPattern timePattern = new SchedulingPattern(UndergroundColiseumConfig.UC_START_TIME);
-		_periodStartTime = timePattern.next(System.currentTimeMillis());
+		_periodStartTime = UndergroundColiseumConfig.UC_START_SCHEDULE.next().orElseThrow(() -> new IllegalStateException("BattleStartRrule has no further start: " + UndergroundColiseumConfig.UC_START_SCHEDULE)).toEpochMilli();
 		_periodEndTime = _periodStartTime + (UndergroundColiseumConfig.UC_TIME_PERIOD * 3600000);
 		GlobalVariablesManager.getInstance().set("UC_START_TIME", _periodStartTime);
 		GlobalVariablesManager.getInstance().set("UC_STOP_TIME", _periodEndTime);

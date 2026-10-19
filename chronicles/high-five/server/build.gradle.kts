@@ -7,6 +7,7 @@ dependencies {
     api(project(":libs:commons"))
     api(project(":libs:network"))
     implementation(libs.classgraph)
+    implementation(libs.lib.recur)
 }
 
 // The engine reads ./config and ./data against the working directory.

@@ -23,6 +23,7 @@
 package app.l2nx.highfive.config;
 
 import app.l2nx.commons.util.ConfigReader;
+import app.l2nx.highfive.schedule.RecurrenceSchedule;
 
 /**
  * This class loads all the Underground Coliseum related configurations.
@@ -34,7 +35,7 @@ public class UndergroundColiseumConfig
 	private static final String UNDERGROUND_COLISEUM_CONFIG_FILE = "./config/UndergroundColiseum.ini";
 	
 	// Constants
-	public static String UC_START_TIME;
+	public static RecurrenceSchedule UC_START_SCHEDULE;
 	public static int UC_TIME_PERIOD;
 	public static boolean UC_ALLOW_ANNOUNCE;
 	public static int UC_PARTY_SIZE;
@@ -43,7 +44,7 @@ public class UndergroundColiseumConfig
 	public static void load()
 	{
 		final ConfigReader config = new ConfigReader(UNDERGROUND_COLISEUM_CONFIG_FILE);
-		UC_START_TIME = config.getString("BattleStartTime", "0 17 * * *");
+		UC_START_SCHEDULE = new RecurrenceSchedule(config.getString("BattleStartRrule", "FREQ=DAILY;BYHOUR=17;BYMINUTE=0"));
 		UC_TIME_PERIOD = config.getInt("BattlePeriod", 2);
 		UC_ALLOW_ANNOUNCE = config.getBoolean("AllowAnnouncements", false);
 		UC_PARTY_SIZE = config.getInt("PartySize", 7);
