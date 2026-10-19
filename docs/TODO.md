@@ -23,6 +23,7 @@ lists what is open.
 - [#19](https://github.com/l2nx/nx-l2/issues/19) Run both servers in Compose with an end-to-end login test
 - [#20](https://github.com/l2nx/nx-l2/issues/20) Time dilation for overloaded partitions
 - [#21](https://github.com/l2nx/nx-l2/issues/21) Parallel open world if one partition exceeds its budget
+- [#22](https://github.com/l2nx/nx-l2/issues/22) Choose an XML library for the datapack loaders
 
 ## Done
 
