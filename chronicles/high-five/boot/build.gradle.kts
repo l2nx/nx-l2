@@ -1,5 +1,5 @@
 plugins {
-    id("nx-l2.launcher-conventions")
+    id("nx-l2.spring-boot-conventions")
 }
 
 dependencies {
