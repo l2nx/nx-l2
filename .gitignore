@@ -4,3 +4,6 @@ PLAN-*.md
 build/
 .idea/
 *.iml
+
+# Local geodata, not shipped (see docs/public/en/quick-start.md#geodata)
+/geodata/
