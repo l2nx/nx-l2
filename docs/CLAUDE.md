@@ -9,4 +9,3 @@ Finished one-time specs are kept in [archive/](archive/).
 | 001 | project design      | 2026-10-17 | [001-project-design.md](specs/001-project-design.md)           |
 | 002 | Spring Boot runtime | 2026-10-19 | [002-spring-boot-runtime.md](specs/002-spring-boot-runtime.md) |
 | 003 | engine core         | 2026-10-19 | [003-engine-core/spec.md](specs/003-engine-core/spec.md)       |
-| 005 | code formatting     | 2026-10-19 | [005-code-formatting.md](specs/005-code-formatting.md)         |

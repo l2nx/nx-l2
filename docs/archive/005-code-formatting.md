@@ -1,3 +1,7 @@
+> **Archived 2026-10-19.** One-time work, done: the tree is formatted with palantir-java-format, `spotlessCheck`
+> runs in `./gradlew build`, line endings are LF, and the bulk commits are in `.git-blame-ignore-revs`. Its lasting
+> facts live in spec 001 §5, `CONTRIBUTING.md` (Code style) and `CLAUDE.md`.
+
 # 005. Code formatting with palantir-java-format
 
 **One-time:** archived when the formatter runs in nx-l2, the whole tree is reformatted, the versions are aligned
