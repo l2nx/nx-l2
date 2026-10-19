@@ -1,0 +1,7 @@
+# Bulk formatting commits; enable locally with: git config blame.ignoreRevsFile .git-blame-ignore-revs
+
+# chore: normalize line endings to LF
+c7d35c36a488896ce8c25bfd61c7a893fe0c3edc
+
+# style: reformat Java sources with palantir-java-format
+d1d5b3cbc56e72d0b3385f436d97d92d9654cea6
