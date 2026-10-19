@@ -201,13 +201,11 @@ public class LoginClient extends Client<Connection<LoginClient>> {
             sb.append("Account: ");
             sb.append(account);
         }
-        if (ip != null) {
-            if (account != null) {
-                sb.append(" - ");
-            }
-            sb.append("IP: ");
-            sb.append(ip.isEmpty() ? "disconnected" : ip);
+        if (account != null) {
+            sb.append(" - ");
         }
+        sb.append("IP: ");
+        sb.append(ip);
         sb.append(']');
         return sb.toString();
     }

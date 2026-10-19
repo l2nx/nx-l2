@@ -318,10 +318,10 @@ public abstract class Client<T extends Connection<?>> {
 
     /**
      * Returns the remote peer's IP address.
-     * @return IP string, or an empty string if unavailable
+     * @return IP string
      */
     public String getHostAddress() {
-        return connection == null ? "" : connection.getRemoteAddress();
+        return connection.getRemoteAddress();
     }
 
     /**

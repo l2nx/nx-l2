@@ -30,6 +30,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousSocketChannel;
+import java.nio.channels.ClosedChannelException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import lombok.Getter;
@@ -52,6 +53,9 @@ public class Connection<T extends Client<Connection<T>>> {
     private final WriteHandler<T> writeHandler;
     private final ConnectionConfig config;
 
+    @Getter
+    private final String remoteAddress;
+
     /** Volatile because NIO completion-handler threads read this field. */
     @Setter
     private volatile T client;
@@ -70,16 +74,23 @@ public class Connection<T extends Client<Connection<T>>> {
      * @param readHandler completion handler for read operations
      * @param writeHandler completion handler for write operations
      * @param config shared configuration (resource pool, thresholds, etc.)
+     * @throws IOException if the peer address is no longer available, so the channel cannot serve a client
      */
     public Connection(
             AsynchronousSocketChannel channel,
             ReadHandler<T> readHandler,
             WriteHandler<T> writeHandler,
-            ConnectionConfig config) {
+            ConnectionConfig config)
+            throws IOException {
         this.channel = channel;
         this.readHandler = readHandler;
         this.writeHandler = writeHandler;
         this.config = config;
+        // Read once at accept: a closed channel no longer reports its peer, and logs need the address after close.
+        if (!(channel.getRemoteAddress() instanceof InetSocketAddress remote)) {
+            throw new ClosedChannelException();
+        }
+        remoteAddress = remote.getAddress().getHostAddress();
     }
 
     // ------------------------------------------------------------------
@@ -205,19 +216,6 @@ public class Connection<T extends Client<Connection<T>>> {
     // ------------------------------------------------------------------
     // Accessors.
     // ------------------------------------------------------------------
-
-    /**
-     * Resolves the remote peer's IP address.
-     * @return dotted-quad (or IPv6) address string, or {@code ""} if the channel is closed
-     */
-    public String getRemoteAddress() {
-        try {
-            final InetSocketAddress remote = (InetSocketAddress) channel.getRemoteAddress();
-            return remote.getAddress().getHostAddress();
-        } catch (IOException e) {
-            return "";
-        }
-    }
 
     /**
      * Returns the {@link ResourcePool} shared by all connections on this acceptor.
