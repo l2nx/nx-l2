@@ -5,9 +5,7 @@ plugins {
 
 val libs = versionCatalogs.named("libs")
 
-// Local gate, not CI: the ratchet checks only files changed against a freshly fetched origin/main.
 spotless {
-    ratchetFrom("origin/main")
     java {
         target("src/**/*.java")
         palantirJavaFormat(libs.findVersion("palantir").get().requiredVersion)
