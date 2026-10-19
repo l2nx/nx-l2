@@ -18,7 +18,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.managers;
+package app.l2nx.highfive.managers;
 
 import java.io.File;
 import java.sql.Connection;
@@ -35,13 +35,13 @@ import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 
-import org.l2jmobius.commons.database.DatabaseFactory;
-import org.l2jmobius.commons.util.IXmlReader;
-import org.l2jmobius.gameserver.data.holders.StringStringHolder;
-import org.l2jmobius.gameserver.entity.WorldObject;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.instancezone.Instance;
-import org.l2jmobius.gameserver.entity.instancezone.InstanceWorld;
+import app.l2nx.commons.database.DatabaseFactory;
+import app.l2nx.commons.util.IXmlReader;
+import app.l2nx.highfive.data.holders.StringStringHolder;
+import app.l2nx.highfive.entity.WorldObject;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.instancezone.Instance;
+import app.l2nx.highfive.entity.instancezone.InstanceWorld;
 
 /**
  * Instance manager.

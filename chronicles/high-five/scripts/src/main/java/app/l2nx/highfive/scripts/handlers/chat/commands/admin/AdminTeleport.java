@@ -18,7 +18,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package handlers.chat.commands.admin;
+package app.l2nx.highfive.scripts.handlers.chat.commands.admin;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -27,21 +27,21 @@ import java.util.NoSuchElementException;
 import java.util.StringTokenizer;
 import java.util.logging.Logger;
 
-import org.l2jmobius.commons.database.DatabaseFactory;
-import org.l2jmobius.gameserver.data.xml.MapRegionData;
-import org.l2jmobius.gameserver.data.xml.SpawnData;
-import org.l2jmobius.gameserver.entity.Location;
-import org.l2jmobius.gameserver.entity.World;
-import org.l2jmobius.gameserver.entity.WorldObject;
-import org.l2jmobius.gameserver.entity.actor.Npc;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.actor.instance.GrandBoss;
-import org.l2jmobius.gameserver.entity.actor.instance.RaidBoss;
-import org.l2jmobius.gameserver.entity.spawns.Spawn;
-import org.l2jmobius.gameserver.handler.IAdminCommandHandler;
-import org.l2jmobius.gameserver.managers.RaidBossSpawnManager;
-import org.l2jmobius.gameserver.network.SystemMessageId;
-import org.l2jmobius.gameserver.network.serverpackets.NpcHtmlMessage;
+import app.l2nx.commons.database.DatabaseFactory;
+import app.l2nx.highfive.data.xml.MapRegionData;
+import app.l2nx.highfive.data.xml.SpawnData;
+import app.l2nx.highfive.entity.Location;
+import app.l2nx.highfive.entity.World;
+import app.l2nx.highfive.entity.WorldObject;
+import app.l2nx.highfive.entity.actor.Npc;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.actor.instance.GrandBoss;
+import app.l2nx.highfive.entity.actor.instance.RaidBoss;
+import app.l2nx.highfive.entity.spawns.Spawn;
+import app.l2nx.highfive.handler.IAdminCommandHandler;
+import app.l2nx.highfive.managers.RaidBossSpawnManager;
+import app.l2nx.highfive.network.SystemMessageId;
+import app.l2nx.highfive.network.serverpackets.NpcHtmlMessage;
 
 /**
  * This class handles following admin commands: - show_moves - show_teleport - teleport_to_character - move_to - teleport_character

@@ -14,15 +14,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package handlers.items;
+package app.l2nx.highfive.scripts.handlers.items;
 
-import org.l2jmobius.gameserver.data.holders.PetData;
-import org.l2jmobius.gameserver.data.xml.PetDataTable;
-import org.l2jmobius.gameserver.entity.actor.Playable;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.item.holders.PetItemHolder;
-import org.l2jmobius.gameserver.entity.item.instance.Item;
-import org.l2jmobius.gameserver.network.SystemMessageId;
+import app.l2nx.highfive.data.holders.PetData;
+import app.l2nx.highfive.data.xml.PetDataTable;
+import app.l2nx.highfive.entity.actor.Playable;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.item.holders.PetItemHolder;
+import app.l2nx.highfive.entity.item.instance.Item;
+import app.l2nx.highfive.network.SystemMessageId;
 
 /**
  * @author HorridoJoho, UnAfraid

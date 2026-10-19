@@ -18,7 +18,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.managers.games;
+package app.l2nx.highfive.managers.games;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -33,26 +33,26 @@ import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 
-import org.l2jmobius.commons.threads.ThreadPool;
-import org.l2jmobius.commons.util.IXmlReader;
-import org.l2jmobius.gameserver.config.PlayerConfig;
-import org.l2jmobius.gameserver.data.SpawnTable;
-import org.l2jmobius.gameserver.data.xml.DoorData;
-import org.l2jmobius.gameserver.data.xml.SkillData;
-import org.l2jmobius.gameserver.entity.Location;
-import org.l2jmobius.gameserver.entity.actor.Npc;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.actor.instance.Door;
-import org.l2jmobius.gameserver.entity.spawns.Spawn;
-import org.l2jmobius.gameserver.mechanics.krateisCube.KrateiArena;
-import org.l2jmobius.gameserver.mechanics.krateisCube.KrateiCubePlayer;
-import org.l2jmobius.gameserver.mechanics.krateisCube.KrateiMsgType;
-import org.l2jmobius.gameserver.mechanics.krateisCube.KrateisReward;
-import org.l2jmobius.gameserver.mechanics.skill.Skill;
-import org.l2jmobius.gameserver.network.NpcStringId;
-import org.l2jmobius.gameserver.network.enums.ChatType;
-import org.l2jmobius.gameserver.network.serverpackets.CreatureSay;
-import org.l2jmobius.gameserver.util.StatSet;
+import app.l2nx.commons.threads.ThreadPool;
+import app.l2nx.commons.util.IXmlReader;
+import app.l2nx.highfive.config.PlayerConfig;
+import app.l2nx.highfive.data.SpawnTable;
+import app.l2nx.highfive.data.xml.DoorData;
+import app.l2nx.highfive.data.xml.SkillData;
+import app.l2nx.highfive.entity.Location;
+import app.l2nx.highfive.entity.actor.Npc;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.actor.instance.Door;
+import app.l2nx.highfive.entity.spawns.Spawn;
+import app.l2nx.highfive.mechanics.krateisCube.KrateiArena;
+import app.l2nx.highfive.mechanics.krateisCube.KrateiCubePlayer;
+import app.l2nx.highfive.mechanics.krateisCube.KrateiMsgType;
+import app.l2nx.highfive.mechanics.krateisCube.KrateisReward;
+import app.l2nx.highfive.mechanics.skill.Skill;
+import app.l2nx.highfive.network.NpcStringId;
+import app.l2nx.highfive.network.enums.ChatType;
+import app.l2nx.highfive.network.serverpackets.CreatureSay;
+import app.l2nx.highfive.util.StatSet;
 
 /**
  * @author LordWinter

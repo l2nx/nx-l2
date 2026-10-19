@@ -18,7 +18,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.ui;
+package app.l2nx.highfive.ui;
 
 import java.awt.Color;
 import java.awt.Font;
@@ -34,11 +34,11 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.border.LineBorder;
 
-import org.l2jmobius.commons.config.InterfaceConfig;
-import org.l2jmobius.gameserver.GameServer;
-import org.l2jmobius.gameserver.config.ServerConfig;
-import org.l2jmobius.gameserver.entity.World;
-import org.l2jmobius.gameserver.util.Locator;
+import app.l2nx.commons.config.InterfaceConfig;
+import app.l2nx.highfive.GameServer;
+import app.l2nx.highfive.config.ServerConfig;
+import app.l2nx.highfive.entity.World;
+import app.l2nx.highfive.util.Locator;
 
 /**
  * @author Mobius

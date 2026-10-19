@@ -14,12 +14,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.network.clientpackets;
+package app.l2nx.highfive.network.clientpackets;
 
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.clan.Clan;
-import org.l2jmobius.gameserver.entity.clan.ClanMember;
-import org.l2jmobius.gameserver.network.serverpackets.PledgeReceiveMemberInfo;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.clan.Clan;
+import app.l2nx.highfive.entity.clan.ClanMember;
+import app.l2nx.highfive.network.serverpackets.PledgeReceiveMemberInfo;
 
 /**
  * Format: (ch) dS

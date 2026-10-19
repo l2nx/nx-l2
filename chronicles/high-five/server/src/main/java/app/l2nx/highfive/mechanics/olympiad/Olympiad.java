@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.mechanics.olympiad;
+package app.l2nx.highfive.mechanics.olympiad;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -32,18 +32,18 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.l2jmobius.commons.database.DatabaseFactory;
-import org.l2jmobius.commons.threads.ThreadPool;
-import org.l2jmobius.gameserver.config.OlympiadConfig;
-import org.l2jmobius.gameserver.entity.World;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.actor.enums.player.PlayerClass;
-import org.l2jmobius.gameserver.managers.AntiFeedManager;
-import org.l2jmobius.gameserver.managers.ZoneManager;
-import org.l2jmobius.gameserver.mechanics.events.ListenersContainer;
-import org.l2jmobius.gameserver.network.SystemMessageId;
-import org.l2jmobius.gameserver.network.serverpackets.SystemMessage;
-import org.l2jmobius.gameserver.util.StatSet;
+import app.l2nx.commons.database.DatabaseFactory;
+import app.l2nx.commons.threads.ThreadPool;
+import app.l2nx.highfive.config.OlympiadConfig;
+import app.l2nx.highfive.entity.World;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.actor.enums.player.PlayerClass;
+import app.l2nx.highfive.managers.AntiFeedManager;
+import app.l2nx.highfive.managers.ZoneManager;
+import app.l2nx.highfive.mechanics.events.ListenersContainer;
+import app.l2nx.highfive.network.SystemMessageId;
+import app.l2nx.highfive.network.serverpackets.SystemMessage;
+import app.l2nx.highfive.util.StatSet;
 
 /**
  * @author godson

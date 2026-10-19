@@ -18,49 +18,49 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.network.clientpackets;
+package app.l2nx.highfive.network.clientpackets;
 
 import java.util.Arrays;
 
-import org.l2jmobius.commons.util.Rnd;
-import org.l2jmobius.gameserver.ai.Action;
-import org.l2jmobius.gameserver.ai.Intention;
-import org.l2jmobius.gameserver.ai.NextAction;
-import org.l2jmobius.gameserver.ai.SummonAI;
-import org.l2jmobius.gameserver.config.GeneralConfig;
-import org.l2jmobius.gameserver.data.BotReportTable;
-import org.l2jmobius.gameserver.data.xml.PetDataTable;
-import org.l2jmobius.gameserver.data.xml.PetSkillData;
-import org.l2jmobius.gameserver.data.xml.SkillData;
-import org.l2jmobius.gameserver.entity.WorldObject;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.actor.Summon;
-import org.l2jmobius.gameserver.entity.actor.enums.player.MountType;
-import org.l2jmobius.gameserver.entity.actor.enums.player.PrivateStoreType;
-import org.l2jmobius.gameserver.entity.actor.instance.BabyPet;
-import org.l2jmobius.gameserver.entity.actor.instance.Pet;
-import org.l2jmobius.gameserver.entity.actor.instance.SiegeFlag;
-import org.l2jmobius.gameserver.entity.actor.instance.StaticObject;
-import org.l2jmobius.gameserver.managers.AirShipManager;
-import org.l2jmobius.gameserver.mechanics.effects.AbstractEffect;
-import org.l2jmobius.gameserver.mechanics.effects.EffectType;
-import org.l2jmobius.gameserver.mechanics.skill.AbnormalType;
-import org.l2jmobius.gameserver.mechanics.skill.BuffInfo;
-import org.l2jmobius.gameserver.mechanics.skill.Skill;
-import org.l2jmobius.gameserver.mechanics.skill.holders.SkillHolder;
-import org.l2jmobius.gameserver.network.NpcStringId;
-import org.l2jmobius.gameserver.network.PacketLogger;
-import org.l2jmobius.gameserver.network.SystemMessageId;
-import org.l2jmobius.gameserver.network.enums.ChatType;
-import org.l2jmobius.gameserver.network.serverpackets.ActionFailed;
-import org.l2jmobius.gameserver.network.serverpackets.ChairSit;
-import org.l2jmobius.gameserver.network.serverpackets.ExAskCoupleAction;
-import org.l2jmobius.gameserver.network.serverpackets.ExBasicActionList;
-import org.l2jmobius.gameserver.network.serverpackets.NpcSay;
-import org.l2jmobius.gameserver.network.serverpackets.RecipeShopManageList;
-import org.l2jmobius.gameserver.network.serverpackets.SocialAction;
-import org.l2jmobius.gameserver.network.serverpackets.SystemMessage;
-import org.l2jmobius.gameserver.taskmanagers.AttackStanceTaskManager;
+import app.l2nx.commons.util.Rnd;
+import app.l2nx.highfive.ai.Action;
+import app.l2nx.highfive.ai.Intention;
+import app.l2nx.highfive.ai.NextAction;
+import app.l2nx.highfive.ai.SummonAI;
+import app.l2nx.highfive.config.GeneralConfig;
+import app.l2nx.highfive.data.BotReportTable;
+import app.l2nx.highfive.data.xml.PetDataTable;
+import app.l2nx.highfive.data.xml.PetSkillData;
+import app.l2nx.highfive.data.xml.SkillData;
+import app.l2nx.highfive.entity.WorldObject;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.actor.Summon;
+import app.l2nx.highfive.entity.actor.enums.player.MountType;
+import app.l2nx.highfive.entity.actor.enums.player.PrivateStoreType;
+import app.l2nx.highfive.entity.actor.instance.BabyPet;
+import app.l2nx.highfive.entity.actor.instance.Pet;
+import app.l2nx.highfive.entity.actor.instance.SiegeFlag;
+import app.l2nx.highfive.entity.actor.instance.StaticObject;
+import app.l2nx.highfive.managers.AirShipManager;
+import app.l2nx.highfive.mechanics.effects.AbstractEffect;
+import app.l2nx.highfive.mechanics.effects.EffectType;
+import app.l2nx.highfive.mechanics.skill.AbnormalType;
+import app.l2nx.highfive.mechanics.skill.BuffInfo;
+import app.l2nx.highfive.mechanics.skill.Skill;
+import app.l2nx.highfive.mechanics.skill.holders.SkillHolder;
+import app.l2nx.highfive.network.NpcStringId;
+import app.l2nx.highfive.network.PacketLogger;
+import app.l2nx.highfive.network.SystemMessageId;
+import app.l2nx.highfive.network.enums.ChatType;
+import app.l2nx.highfive.network.serverpackets.ActionFailed;
+import app.l2nx.highfive.network.serverpackets.ChairSit;
+import app.l2nx.highfive.network.serverpackets.ExAskCoupleAction;
+import app.l2nx.highfive.network.serverpackets.ExBasicActionList;
+import app.l2nx.highfive.network.serverpackets.NpcSay;
+import app.l2nx.highfive.network.serverpackets.RecipeShopManageList;
+import app.l2nx.highfive.network.serverpackets.SocialAction;
+import app.l2nx.highfive.network.serverpackets.SystemMessage;
+import app.l2nx.highfive.taskmanagers.AttackStanceTaskManager;
 
 /**
  * @version $Revision: 1.11.2.7.2.9 $ $Date: 2005/04/06 16:13:48 $

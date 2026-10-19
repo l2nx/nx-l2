@@ -14,11 +14,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.network.clientpackets;
+package app.l2nx.highfive.network.clientpackets;
 
-import org.l2jmobius.gameserver.data.xml.SecondaryAuthData;
-import org.l2jmobius.gameserver.network.GameClient;
-import org.l2jmobius.gameserver.network.serverpackets.Ex2ndPasswordCheck;
+import app.l2nx.highfive.data.xml.SecondaryAuthData;
+import app.l2nx.highfive.network.GameClient;
+import app.l2nx.highfive.network.serverpackets.Ex2ndPasswordCheck;
 
 /**
  * Format: (ch)

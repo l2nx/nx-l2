@@ -18,15 +18,15 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.taskmanagers;
+package app.l2nx.highfive.taskmanagers;
 
 import java.util.Iterator;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-import org.l2jmobius.commons.threads.ThreadPool;
-import org.l2jmobius.gameserver.entity.spawns.SpawnGroup;
-import org.l2jmobius.gameserver.entity.spawns.SpawnGroupEntry;
+import app.l2nx.commons.threads.ThreadPool;
+import app.l2nx.highfive.entity.spawns.SpawnGroup;
+import app.l2nx.highfive.entity.spawns.SpawnGroupEntry;
 
 /**
  * Materializes pending spawn group replacements whose units were already reserved on death.<br>

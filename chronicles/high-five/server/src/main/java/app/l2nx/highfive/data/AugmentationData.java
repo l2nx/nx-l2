@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.data;
+package app.l2nx.highfive.data;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -30,16 +30,16 @@ import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 
-import org.l2jmobius.commons.util.Rnd;
-import org.l2jmobius.gameserver.config.PlayerConfig;
-import org.l2jmobius.gameserver.config.ServerConfig;
-import org.l2jmobius.gameserver.data.xml.OptionData;
-import org.l2jmobius.gameserver.entity.item.enums.BodyPart;
-import org.l2jmobius.gameserver.entity.item.instance.Item;
-import org.l2jmobius.gameserver.mechanics.options.Augmentation;
-import org.l2jmobius.gameserver.mechanics.options.Options;
-import org.l2jmobius.gameserver.mechanics.skill.holders.SkillHolder;
-import org.l2jmobius.gameserver.network.clientpackets.AbstractRefinePacket;
+import app.l2nx.commons.util.Rnd;
+import app.l2nx.highfive.config.PlayerConfig;
+import app.l2nx.highfive.config.ServerConfig;
+import app.l2nx.highfive.data.xml.OptionData;
+import app.l2nx.highfive.entity.item.enums.BodyPart;
+import app.l2nx.highfive.entity.item.instance.Item;
+import app.l2nx.highfive.mechanics.options.Augmentation;
+import app.l2nx.highfive.mechanics.options.Options;
+import app.l2nx.highfive.mechanics.skill.holders.SkillHolder;
+import app.l2nx.highfive.network.clientpackets.AbstractRefinePacket;
 
 /**
  * Loads augmentation bonuses and skills.

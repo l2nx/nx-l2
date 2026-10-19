@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.mechanics.sevensigns;
+package app.l2nx.highfive.mechanics.sevensigns;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -30,34 +30,34 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.l2jmobius.commons.database.DatabaseFactory;
-import org.l2jmobius.commons.threads.ThreadPool;
-import org.l2jmobius.commons.util.Rnd;
-import org.l2jmobius.gameserver.ai.Intention;
-import org.l2jmobius.gameserver.config.FeatureConfig;
-import org.l2jmobius.gameserver.data.SpawnTable;
-import org.l2jmobius.gameserver.data.sql.CharInfoTable;
-import org.l2jmobius.gameserver.data.sql.ClanTable;
-import org.l2jmobius.gameserver.data.xml.ExperienceData;
-import org.l2jmobius.gameserver.entity.Location;
-import org.l2jmobius.gameserver.entity.World;
-import org.l2jmobius.gameserver.entity.actor.Npc;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.actor.enums.player.TeleportWhereType;
-import org.l2jmobius.gameserver.entity.actor.instance.FestivalMonster;
-import org.l2jmobius.gameserver.entity.clan.Clan;
-import org.l2jmobius.gameserver.entity.groups.Party;
-import org.l2jmobius.gameserver.entity.groups.PartyMessageType;
-import org.l2jmobius.gameserver.entity.item.enums.ItemProcessType;
-import org.l2jmobius.gameserver.entity.item.instance.Item;
-import org.l2jmobius.gameserver.entity.spawns.Spawn;
-import org.l2jmobius.gameserver.network.NpcStringId;
-import org.l2jmobius.gameserver.network.SystemMessageId;
-import org.l2jmobius.gameserver.network.enums.ChatType;
-import org.l2jmobius.gameserver.network.serverpackets.CreatureSay;
-import org.l2jmobius.gameserver.network.serverpackets.MagicSkillUse;
-import org.l2jmobius.gameserver.network.serverpackets.SystemMessage;
-import org.l2jmobius.gameserver.util.StatSet;
+import app.l2nx.commons.database.DatabaseFactory;
+import app.l2nx.commons.threads.ThreadPool;
+import app.l2nx.commons.util.Rnd;
+import app.l2nx.highfive.ai.Intention;
+import app.l2nx.highfive.config.FeatureConfig;
+import app.l2nx.highfive.data.SpawnTable;
+import app.l2nx.highfive.data.sql.CharInfoTable;
+import app.l2nx.highfive.data.sql.ClanTable;
+import app.l2nx.highfive.data.xml.ExperienceData;
+import app.l2nx.highfive.entity.Location;
+import app.l2nx.highfive.entity.World;
+import app.l2nx.highfive.entity.actor.Npc;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.actor.enums.player.TeleportWhereType;
+import app.l2nx.highfive.entity.actor.instance.FestivalMonster;
+import app.l2nx.highfive.entity.clan.Clan;
+import app.l2nx.highfive.entity.groups.Party;
+import app.l2nx.highfive.entity.groups.PartyMessageType;
+import app.l2nx.highfive.entity.item.enums.ItemProcessType;
+import app.l2nx.highfive.entity.item.instance.Item;
+import app.l2nx.highfive.entity.spawns.Spawn;
+import app.l2nx.highfive.network.NpcStringId;
+import app.l2nx.highfive.network.SystemMessageId;
+import app.l2nx.highfive.network.enums.ChatType;
+import app.l2nx.highfive.network.serverpackets.CreatureSay;
+import app.l2nx.highfive.network.serverpackets.MagicSkillUse;
+import app.l2nx.highfive.network.serverpackets.SystemMessage;
+import app.l2nx.highfive.util.StatSet;
 
 /**
  * Seven Signs Festival of Darkness Engine.<br>

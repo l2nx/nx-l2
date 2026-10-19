@@ -18,23 +18,23 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package quests.Q00144_PailakaInjuredDragon;
+package app.l2nx.highfive.scripts.quests.Q00144_PailakaInjuredDragon;
 
-import org.l2jmobius.gameserver.config.GeneralConfig;
-import org.l2jmobius.gameserver.config.PlayerConfig;
-import org.l2jmobius.gameserver.entity.actor.Npc;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.instancezone.Instance;
-import org.l2jmobius.gameserver.managers.InstanceManager;
-import org.l2jmobius.gameserver.managers.ScriptManager;
-import org.l2jmobius.gameserver.mechanics.script.Quest;
-import org.l2jmobius.gameserver.mechanics.script.QuestSound;
-import org.l2jmobius.gameserver.mechanics.script.QuestState;
-import org.l2jmobius.gameserver.mechanics.script.State;
-import org.l2jmobius.gameserver.mechanics.skill.holders.SkillHolder;
-import org.l2jmobius.gameserver.util.LocationUtil;
+import app.l2nx.highfive.config.GeneralConfig;
+import app.l2nx.highfive.config.PlayerConfig;
+import app.l2nx.highfive.entity.actor.Npc;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.instancezone.Instance;
+import app.l2nx.highfive.managers.InstanceManager;
+import app.l2nx.highfive.managers.ScriptManager;
+import app.l2nx.highfive.mechanics.script.Quest;
+import app.l2nx.highfive.mechanics.script.QuestSound;
+import app.l2nx.highfive.mechanics.script.QuestState;
+import app.l2nx.highfive.mechanics.script.State;
+import app.l2nx.highfive.mechanics.skill.holders.SkillHolder;
+import app.l2nx.highfive.util.LocationUtil;
 
-import instances.PailakaInjuredDragon.PailakaInjuredDragon;
+import app.l2nx.highfive.scripts.instances.PailakaInjuredDragon.PailakaInjuredDragon;
 
 /**
  * Pailaka - Injured Dragon (144)

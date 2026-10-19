@@ -18,29 +18,29 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package handlers.punishments;
+package app.l2nx.highfive.scripts.handlers.punishments;
 
-import org.l2jmobius.commons.threads.ThreadPool;
-import org.l2jmobius.commons.time.TimeUtil;
-import org.l2jmobius.gameserver.LoginServerThread;
-import org.l2jmobius.gameserver.cache.HtmCache;
-import org.l2jmobius.gameserver.entity.World;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.actor.tasks.player.TeleportTask;
-import org.l2jmobius.gameserver.entity.zone.ZoneId;
-import org.l2jmobius.gameserver.entity.zone.type.JailZone;
-import org.l2jmobius.gameserver.handler.IPunishmentHandler;
-import org.l2jmobius.gameserver.managers.PunishmentManager;
-import org.l2jmobius.gameserver.mechanics.events.Containers;
-import org.l2jmobius.gameserver.mechanics.events.EventType;
-import org.l2jmobius.gameserver.mechanics.events.holders.actor.player.OnPlayerLogin;
-import org.l2jmobius.gameserver.mechanics.events.listeners.ConsumerEventListener;
-import org.l2jmobius.gameserver.mechanics.olympiad.OlympiadManager;
-import org.l2jmobius.gameserver.mechanics.punishment.PunishmentAffect;
-import org.l2jmobius.gameserver.mechanics.punishment.PunishmentTask;
-import org.l2jmobius.gameserver.mechanics.punishment.PunishmentType;
-import org.l2jmobius.gameserver.network.GameClient;
-import org.l2jmobius.gameserver.network.serverpackets.NpcHtmlMessage;
+import app.l2nx.commons.threads.ThreadPool;
+import app.l2nx.commons.time.TimeUtil;
+import app.l2nx.highfive.LoginServerThread;
+import app.l2nx.highfive.cache.HtmCache;
+import app.l2nx.highfive.entity.World;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.actor.tasks.player.TeleportTask;
+import app.l2nx.highfive.entity.zone.ZoneId;
+import app.l2nx.highfive.entity.zone.type.JailZone;
+import app.l2nx.highfive.handler.IPunishmentHandler;
+import app.l2nx.highfive.managers.PunishmentManager;
+import app.l2nx.highfive.mechanics.events.Containers;
+import app.l2nx.highfive.mechanics.events.EventType;
+import app.l2nx.highfive.mechanics.events.holders.actor.player.OnPlayerLogin;
+import app.l2nx.highfive.mechanics.events.listeners.ConsumerEventListener;
+import app.l2nx.highfive.mechanics.olympiad.OlympiadManager;
+import app.l2nx.highfive.mechanics.punishment.PunishmentAffect;
+import app.l2nx.highfive.mechanics.punishment.PunishmentTask;
+import app.l2nx.highfive.mechanics.punishment.PunishmentType;
+import app.l2nx.highfive.network.GameClient;
+import app.l2nx.highfive.network.serverpackets.NpcHtmlMessage;
 
 /**
  * This class handles jail punishment.

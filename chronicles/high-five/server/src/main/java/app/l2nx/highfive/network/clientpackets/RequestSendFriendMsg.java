@@ -14,15 +14,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.network.clientpackets;
+package app.l2nx.highfive.network.clientpackets;
 
 import java.util.logging.Logger;
 
-import org.l2jmobius.gameserver.config.GeneralConfig;
-import org.l2jmobius.gameserver.entity.World;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.network.SystemMessageId;
-import org.l2jmobius.gameserver.network.serverpackets.L2FriendSay;
+import app.l2nx.highfive.config.GeneralConfig;
+import app.l2nx.highfive.entity.World;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.network.SystemMessageId;
+import app.l2nx.highfive.network.serverpackets.L2FriendSay;
 
 /**
  * Receive Private (Friend) Message - 0xCC Format: c SS S: Message S: Receiving Player

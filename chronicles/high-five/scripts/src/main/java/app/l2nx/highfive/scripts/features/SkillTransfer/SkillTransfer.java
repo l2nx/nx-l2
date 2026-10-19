@@ -14,24 +14,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package features.SkillTransfer;
+package app.l2nx.highfive.scripts.features.SkillTransfer;
 
-import org.l2jmobius.gameserver.config.GeneralConfig;
-import org.l2jmobius.gameserver.data.xml.ClassListData;
-import org.l2jmobius.gameserver.data.xml.SkillTreeData;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.actor.enums.player.IllegalActionPunishmentType;
-import org.l2jmobius.gameserver.entity.actor.enums.player.PlayerClass;
-import org.l2jmobius.gameserver.entity.item.enums.ItemProcessType;
-import org.l2jmobius.gameserver.entity.item.holders.ItemHolder;
-import org.l2jmobius.gameserver.entity.item.instance.Item;
-import org.l2jmobius.gameserver.entity.itemcontainer.PlayerInventory;
-import org.l2jmobius.gameserver.managers.PunishmentManager;
-import org.l2jmobius.gameserver.mechanics.events.holders.actor.player.OnPlayerProfessionCancel;
-import org.l2jmobius.gameserver.mechanics.events.holders.actor.player.OnPlayerProfessionChange;
-import org.l2jmobius.gameserver.mechanics.script.Script;
-import org.l2jmobius.gameserver.mechanics.skill.Skill;
-import org.l2jmobius.gameserver.mechanics.skill.holders.SkillLearn;
+import app.l2nx.highfive.config.GeneralConfig;
+import app.l2nx.highfive.data.xml.ClassListData;
+import app.l2nx.highfive.data.xml.SkillTreeData;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.actor.enums.player.IllegalActionPunishmentType;
+import app.l2nx.highfive.entity.actor.enums.player.PlayerClass;
+import app.l2nx.highfive.entity.item.enums.ItemProcessType;
+import app.l2nx.highfive.entity.item.holders.ItemHolder;
+import app.l2nx.highfive.entity.item.instance.Item;
+import app.l2nx.highfive.entity.itemcontainer.PlayerInventory;
+import app.l2nx.highfive.managers.PunishmentManager;
+import app.l2nx.highfive.mechanics.events.holders.actor.player.OnPlayerProfessionCancel;
+import app.l2nx.highfive.mechanics.events.holders.actor.player.OnPlayerProfessionChange;
+import app.l2nx.highfive.mechanics.script.Script;
+import app.l2nx.highfive.mechanics.skill.Skill;
+import app.l2nx.highfive.mechanics.skill.holders.SkillLearn;
 
 /**
  * Skill Transfer feature.

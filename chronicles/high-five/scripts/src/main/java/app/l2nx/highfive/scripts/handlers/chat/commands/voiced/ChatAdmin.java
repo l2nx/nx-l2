@@ -18,20 +18,20 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package handlers.chat.commands.voiced;
+package app.l2nx.highfive.scripts.handlers.chat.commands.voiced;
 
 import java.util.StringTokenizer;
 
-import org.l2jmobius.commons.util.StringUtil;
-import org.l2jmobius.gameserver.data.sql.CharInfoTable;
-import org.l2jmobius.gameserver.data.xml.AdminData;
-import org.l2jmobius.gameserver.entity.World;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.handler.IVoicedCommandHandler;
-import org.l2jmobius.gameserver.managers.PunishmentManager;
-import org.l2jmobius.gameserver.mechanics.punishment.PunishmentAffect;
-import org.l2jmobius.gameserver.mechanics.punishment.PunishmentTask;
-import org.l2jmobius.gameserver.mechanics.punishment.PunishmentType;
+import app.l2nx.commons.util.StringUtil;
+import app.l2nx.highfive.data.sql.CharInfoTable;
+import app.l2nx.highfive.data.xml.AdminData;
+import app.l2nx.highfive.entity.World;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.handler.IVoicedCommandHandler;
+import app.l2nx.highfive.managers.PunishmentManager;
+import app.l2nx.highfive.mechanics.punishment.PunishmentAffect;
+import app.l2nx.highfive.mechanics.punishment.PunishmentTask;
+import app.l2nx.highfive.mechanics.punishment.PunishmentType;
 
 public class ChatAdmin implements IVoicedCommandHandler
 {

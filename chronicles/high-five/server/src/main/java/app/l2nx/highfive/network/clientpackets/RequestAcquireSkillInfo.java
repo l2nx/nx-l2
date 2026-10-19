@@ -14,18 +14,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.network.clientpackets;
+package app.l2nx.highfive.network.clientpackets;
 
-import org.l2jmobius.gameserver.data.xml.SkillData;
-import org.l2jmobius.gameserver.data.xml.SkillTreeData;
-import org.l2jmobius.gameserver.entity.actor.Npc;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.clan.ClanAccess;
-import org.l2jmobius.gameserver.mechanics.skill.Skill;
-import org.l2jmobius.gameserver.mechanics.skill.enums.AcquireSkillType;
-import org.l2jmobius.gameserver.mechanics.skill.holders.SkillLearn;
-import org.l2jmobius.gameserver.network.PacketLogger;
-import org.l2jmobius.gameserver.network.serverpackets.AcquireSkillInfo;
+import app.l2nx.highfive.data.xml.SkillData;
+import app.l2nx.highfive.data.xml.SkillTreeData;
+import app.l2nx.highfive.entity.actor.Npc;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.clan.ClanAccess;
+import app.l2nx.highfive.mechanics.skill.Skill;
+import app.l2nx.highfive.mechanics.skill.enums.AcquireSkillType;
+import app.l2nx.highfive.mechanics.skill.holders.SkillLearn;
+import app.l2nx.highfive.network.PacketLogger;
+import app.l2nx.highfive.network.serverpackets.AcquireSkillInfo;
 
 /**
  * Request Acquire Skill Info client packet implementation.

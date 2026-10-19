@@ -18,7 +18,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.mechanics.script;
+package app.l2nx.highfive.mechanics.script;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
@@ -46,144 +46,144 @@ import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.l2jmobius.commons.database.DatabaseFactory;
-import org.l2jmobius.commons.util.Rnd;
-import org.l2jmobius.commons.util.TraceUtil;
-import org.l2jmobius.gameserver.cache.HtmCache;
-import org.l2jmobius.gameserver.config.GeneralConfig;
-import org.l2jmobius.gameserver.config.PlayerConfig;
-import org.l2jmobius.gameserver.config.RatesConfig;
-import org.l2jmobius.gameserver.config.custom.ChampionMonstersConfig;
-import org.l2jmobius.gameserver.config.custom.PremiumSystemConfig;
-import org.l2jmobius.gameserver.config.custom.RandomSpawnsConfig;
-import org.l2jmobius.gameserver.data.enums.CategoryType;
-import org.l2jmobius.gameserver.data.xml.DoorData;
-import org.l2jmobius.gameserver.data.xml.ItemData;
-import org.l2jmobius.gameserver.data.xml.NpcData;
-import org.l2jmobius.gameserver.entity.Location;
-import org.l2jmobius.gameserver.entity.WorldObject;
-import org.l2jmobius.gameserver.entity.actor.Attackable;
-import org.l2jmobius.gameserver.entity.actor.Creature;
-import org.l2jmobius.gameserver.entity.actor.Npc;
-import org.l2jmobius.gameserver.entity.actor.Playable;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.actor.Summon;
-import org.l2jmobius.gameserver.entity.actor.enums.creature.Race;
-import org.l2jmobius.gameserver.entity.actor.enums.creature.TrapAction;
-import org.l2jmobius.gameserver.entity.actor.enums.player.PlayerClass;
-import org.l2jmobius.gameserver.entity.actor.holders.npc.MinionList;
-import org.l2jmobius.gameserver.entity.actor.holders.player.MovieHolder;
-import org.l2jmobius.gameserver.entity.actor.instance.Door;
-import org.l2jmobius.gameserver.entity.actor.instance.Monster;
-import org.l2jmobius.gameserver.entity.actor.instance.Trap;
-import org.l2jmobius.gameserver.entity.actor.templates.NpcTemplate;
-import org.l2jmobius.gameserver.entity.groups.Party;
-import org.l2jmobius.gameserver.entity.instancezone.Instance;
-import org.l2jmobius.gameserver.entity.instancezone.InstanceWorld;
-import org.l2jmobius.gameserver.entity.item.EtcItem;
-import org.l2jmobius.gameserver.entity.item.ItemTemplate;
-import org.l2jmobius.gameserver.entity.item.enums.ItemProcessType;
-import org.l2jmobius.gameserver.entity.item.holders.ItemHolder;
-import org.l2jmobius.gameserver.entity.item.instance.Item;
-import org.l2jmobius.gameserver.entity.itemcontainer.Inventory;
-import org.l2jmobius.gameserver.entity.itemcontainer.Mail;
-import org.l2jmobius.gameserver.entity.itemcontainer.PetInventory;
-import org.l2jmobius.gameserver.entity.itemcontainer.PlayerInventory;
-import org.l2jmobius.gameserver.entity.itemcontainer.PlayerWarehouse;
-import org.l2jmobius.gameserver.entity.spawns.Spawn;
-import org.l2jmobius.gameserver.entity.zone.ZoneType;
-import org.l2jmobius.gameserver.interfaces.IPositionable;
-import org.l2jmobius.gameserver.managers.CastleManager;
-import org.l2jmobius.gameserver.managers.FortManager;
-import org.l2jmobius.gameserver.managers.InstanceManager;
-import org.l2jmobius.gameserver.managers.MailManager;
-import org.l2jmobius.gameserver.managers.PcCafePointsManager;
-import org.l2jmobius.gameserver.managers.ScriptManager;
-import org.l2jmobius.gameserver.managers.ZoneManager;
-import org.l2jmobius.gameserver.mechanics.events.Containers;
-import org.l2jmobius.gameserver.mechanics.events.EventType;
-import org.l2jmobius.gameserver.mechanics.events.ListenerRegisterType;
-import org.l2jmobius.gameserver.mechanics.events.ListenersContainer;
-import org.l2jmobius.gameserver.mechanics.events.annotations.Id;
-import org.l2jmobius.gameserver.mechanics.events.annotations.Ids;
-import org.l2jmobius.gameserver.mechanics.events.annotations.NpcLevelRange;
-import org.l2jmobius.gameserver.mechanics.events.annotations.NpcLevelRanges;
-import org.l2jmobius.gameserver.mechanics.events.annotations.Priority;
-import org.l2jmobius.gameserver.mechanics.events.annotations.Range;
-import org.l2jmobius.gameserver.mechanics.events.annotations.Ranges;
-import org.l2jmobius.gameserver.mechanics.events.annotations.RegisterEvent;
-import org.l2jmobius.gameserver.mechanics.events.annotations.RegisterType;
-import org.l2jmobius.gameserver.mechanics.events.holders.IBaseEvent;
-import org.l2jmobius.gameserver.mechanics.events.holders.actor.creature.OnCreatureDeath;
-import org.l2jmobius.gameserver.mechanics.events.holders.actor.creature.OnCreatureSee;
-import org.l2jmobius.gameserver.mechanics.events.holders.actor.creature.OnCreatureZoneEnter;
-import org.l2jmobius.gameserver.mechanics.events.holders.actor.creature.OnCreatureZoneExit;
-import org.l2jmobius.gameserver.mechanics.events.holders.actor.npc.OnNpcCanBeSeen;
-import org.l2jmobius.gameserver.mechanics.events.holders.actor.npc.OnNpcEventReceived;
-import org.l2jmobius.gameserver.mechanics.events.holders.actor.npc.OnNpcFirstTalk;
-import org.l2jmobius.gameserver.mechanics.events.holders.actor.npc.OnNpcMoveFinished;
-import org.l2jmobius.gameserver.mechanics.events.holders.actor.npc.OnNpcMoveNodeArrived;
-import org.l2jmobius.gameserver.mechanics.events.holders.actor.npc.OnNpcMoveRouteFinished;
-import org.l2jmobius.gameserver.mechanics.events.holders.actor.npc.OnNpcSkillFinished;
-import org.l2jmobius.gameserver.mechanics.events.holders.actor.npc.OnNpcSkillSee;
-import org.l2jmobius.gameserver.mechanics.events.holders.actor.npc.OnNpcSpawn;
-import org.l2jmobius.gameserver.mechanics.events.holders.actor.npc.OnNpcTeleport;
-import org.l2jmobius.gameserver.mechanics.events.holders.actor.npc.attackable.OnAttackableAggroRangeEnter;
-import org.l2jmobius.gameserver.mechanics.events.holders.actor.npc.attackable.OnAttackableAttack;
-import org.l2jmobius.gameserver.mechanics.events.holders.actor.npc.attackable.OnAttackableFactionCall;
-import org.l2jmobius.gameserver.mechanics.events.holders.actor.npc.attackable.OnAttackableHate;
-import org.l2jmobius.gameserver.mechanics.events.holders.actor.npc.attackable.OnAttackableKill;
-import org.l2jmobius.gameserver.mechanics.events.holders.actor.player.OnPlayerLogin;
-import org.l2jmobius.gameserver.mechanics.events.holders.actor.player.OnPlayerLogout;
-import org.l2jmobius.gameserver.mechanics.events.holders.actor.player.OnPlayerProfessionCancel;
-import org.l2jmobius.gameserver.mechanics.events.holders.actor.player.OnPlayerProfessionChange;
-import org.l2jmobius.gameserver.mechanics.events.holders.actor.player.OnPlayerSkillLearn;
-import org.l2jmobius.gameserver.mechanics.events.holders.actor.player.OnPlayerSummonSpawn;
-import org.l2jmobius.gameserver.mechanics.events.holders.actor.player.OnPlayerSummonTalk;
-import org.l2jmobius.gameserver.mechanics.events.holders.actor.trap.OnTrapAction;
-import org.l2jmobius.gameserver.mechanics.events.holders.item.OnItemBypassEvent;
-import org.l2jmobius.gameserver.mechanics.events.holders.item.OnItemTalk;
-import org.l2jmobius.gameserver.mechanics.events.holders.olympiad.OnOlympiadMatchResult;
-import org.l2jmobius.gameserver.mechanics.events.holders.sieges.castle.OnCastleSiegeFinish;
-import org.l2jmobius.gameserver.mechanics.events.holders.sieges.castle.OnCastleSiegeOwnerChange;
-import org.l2jmobius.gameserver.mechanics.events.holders.sieges.castle.OnCastleSiegeStart;
-import org.l2jmobius.gameserver.mechanics.events.listeners.AbstractEventListener;
-import org.l2jmobius.gameserver.mechanics.events.listeners.AnnotationEventListener;
-import org.l2jmobius.gameserver.mechanics.events.listeners.ConsumerEventListener;
-import org.l2jmobius.gameserver.mechanics.events.listeners.DummyEventListener;
-import org.l2jmobius.gameserver.mechanics.events.listeners.FunctionEventListener;
-import org.l2jmobius.gameserver.mechanics.events.listeners.RunnableEventListener;
-import org.l2jmobius.gameserver.mechanics.events.returns.AbstractEventReturn;
-import org.l2jmobius.gameserver.mechanics.events.returns.TerminateReturn;
-import org.l2jmobius.gameserver.mechanics.olympiad.CompetitionType;
-import org.l2jmobius.gameserver.mechanics.olympiad.Olympiad;
-import org.l2jmobius.gameserver.mechanics.olympiad.Participant;
-import org.l2jmobius.gameserver.mechanics.script.timers.IEventTimerCancel;
-import org.l2jmobius.gameserver.mechanics.script.timers.IEventTimerEvent;
-import org.l2jmobius.gameserver.mechanics.script.timers.TimerExecutor;
-import org.l2jmobius.gameserver.mechanics.script.timers.TimerHolder;
-import org.l2jmobius.gameserver.mechanics.siege.Castle;
-import org.l2jmobius.gameserver.mechanics.siege.Fort;
-import org.l2jmobius.gameserver.mechanics.skill.Skill;
-import org.l2jmobius.gameserver.mechanics.skill.enums.AcquireSkillType;
-import org.l2jmobius.gameserver.mechanics.skill.holders.SkillHolder;
-import org.l2jmobius.gameserver.mechanics.stats.Stat;
-import org.l2jmobius.gameserver.network.NpcStringId;
-import org.l2jmobius.gameserver.network.SystemMessageId;
-import org.l2jmobius.gameserver.network.enums.Movie;
-import org.l2jmobius.gameserver.network.holders.MailMessage;
-import org.l2jmobius.gameserver.network.serverpackets.ActionFailed;
-import org.l2jmobius.gameserver.network.serverpackets.ExShowScreenMessage;
-import org.l2jmobius.gameserver.network.serverpackets.InventoryUpdate;
-import org.l2jmobius.gameserver.network.serverpackets.NpcHtmlMessage;
-import org.l2jmobius.gameserver.network.serverpackets.NpcQuestHtmlMessage;
-import org.l2jmobius.gameserver.network.serverpackets.SpecialCamera;
-import org.l2jmobius.gameserver.network.serverpackets.StatusUpdate;
-import org.l2jmobius.gameserver.network.serverpackets.SystemMessage;
-import org.l2jmobius.gameserver.scripting.ScriptEngine;
-import org.l2jmobius.gameserver.taskmanagers.GameTimeTaskManager;
-import org.l2jmobius.gameserver.util.LocationUtil;
-import org.l2jmobius.gameserver.util.StatSet;
+import app.l2nx.commons.database.DatabaseFactory;
+import app.l2nx.commons.util.Rnd;
+import app.l2nx.commons.util.TraceUtil;
+import app.l2nx.highfive.cache.HtmCache;
+import app.l2nx.highfive.config.GeneralConfig;
+import app.l2nx.highfive.config.PlayerConfig;
+import app.l2nx.highfive.config.RatesConfig;
+import app.l2nx.highfive.config.custom.ChampionMonstersConfig;
+import app.l2nx.highfive.config.custom.PremiumSystemConfig;
+import app.l2nx.highfive.config.custom.RandomSpawnsConfig;
+import app.l2nx.highfive.data.enums.CategoryType;
+import app.l2nx.highfive.data.xml.DoorData;
+import app.l2nx.highfive.data.xml.ItemData;
+import app.l2nx.highfive.data.xml.NpcData;
+import app.l2nx.highfive.entity.Location;
+import app.l2nx.highfive.entity.WorldObject;
+import app.l2nx.highfive.entity.actor.Attackable;
+import app.l2nx.highfive.entity.actor.Creature;
+import app.l2nx.highfive.entity.actor.Npc;
+import app.l2nx.highfive.entity.actor.Playable;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.actor.Summon;
+import app.l2nx.highfive.entity.actor.enums.creature.Race;
+import app.l2nx.highfive.entity.actor.enums.creature.TrapAction;
+import app.l2nx.highfive.entity.actor.enums.player.PlayerClass;
+import app.l2nx.highfive.entity.actor.holders.npc.MinionList;
+import app.l2nx.highfive.entity.actor.holders.player.MovieHolder;
+import app.l2nx.highfive.entity.actor.instance.Door;
+import app.l2nx.highfive.entity.actor.instance.Monster;
+import app.l2nx.highfive.entity.actor.instance.Trap;
+import app.l2nx.highfive.entity.actor.templates.NpcTemplate;
+import app.l2nx.highfive.entity.groups.Party;
+import app.l2nx.highfive.entity.instancezone.Instance;
+import app.l2nx.highfive.entity.instancezone.InstanceWorld;
+import app.l2nx.highfive.entity.item.EtcItem;
+import app.l2nx.highfive.entity.item.ItemTemplate;
+import app.l2nx.highfive.entity.item.enums.ItemProcessType;
+import app.l2nx.highfive.entity.item.holders.ItemHolder;
+import app.l2nx.highfive.entity.item.instance.Item;
+import app.l2nx.highfive.entity.itemcontainer.Inventory;
+import app.l2nx.highfive.entity.itemcontainer.Mail;
+import app.l2nx.highfive.entity.itemcontainer.PetInventory;
+import app.l2nx.highfive.entity.itemcontainer.PlayerInventory;
+import app.l2nx.highfive.entity.itemcontainer.PlayerWarehouse;
+import app.l2nx.highfive.entity.spawns.Spawn;
+import app.l2nx.highfive.entity.zone.ZoneType;
+import app.l2nx.highfive.interfaces.IPositionable;
+import app.l2nx.highfive.managers.CastleManager;
+import app.l2nx.highfive.managers.FortManager;
+import app.l2nx.highfive.managers.InstanceManager;
+import app.l2nx.highfive.managers.MailManager;
+import app.l2nx.highfive.managers.PcCafePointsManager;
+import app.l2nx.highfive.managers.ScriptManager;
+import app.l2nx.highfive.managers.ZoneManager;
+import app.l2nx.highfive.mechanics.events.Containers;
+import app.l2nx.highfive.mechanics.events.EventType;
+import app.l2nx.highfive.mechanics.events.ListenerRegisterType;
+import app.l2nx.highfive.mechanics.events.ListenersContainer;
+import app.l2nx.highfive.mechanics.events.annotations.Id;
+import app.l2nx.highfive.mechanics.events.annotations.Ids;
+import app.l2nx.highfive.mechanics.events.annotations.NpcLevelRange;
+import app.l2nx.highfive.mechanics.events.annotations.NpcLevelRanges;
+import app.l2nx.highfive.mechanics.events.annotations.Priority;
+import app.l2nx.highfive.mechanics.events.annotations.Range;
+import app.l2nx.highfive.mechanics.events.annotations.Ranges;
+import app.l2nx.highfive.mechanics.events.annotations.RegisterEvent;
+import app.l2nx.highfive.mechanics.events.annotations.RegisterType;
+import app.l2nx.highfive.mechanics.events.holders.IBaseEvent;
+import app.l2nx.highfive.mechanics.events.holders.actor.creature.OnCreatureDeath;
+import app.l2nx.highfive.mechanics.events.holders.actor.creature.OnCreatureSee;
+import app.l2nx.highfive.mechanics.events.holders.actor.creature.OnCreatureZoneEnter;
+import app.l2nx.highfive.mechanics.events.holders.actor.creature.OnCreatureZoneExit;
+import app.l2nx.highfive.mechanics.events.holders.actor.npc.OnNpcCanBeSeen;
+import app.l2nx.highfive.mechanics.events.holders.actor.npc.OnNpcEventReceived;
+import app.l2nx.highfive.mechanics.events.holders.actor.npc.OnNpcFirstTalk;
+import app.l2nx.highfive.mechanics.events.holders.actor.npc.OnNpcMoveFinished;
+import app.l2nx.highfive.mechanics.events.holders.actor.npc.OnNpcMoveNodeArrived;
+import app.l2nx.highfive.mechanics.events.holders.actor.npc.OnNpcMoveRouteFinished;
+import app.l2nx.highfive.mechanics.events.holders.actor.npc.OnNpcSkillFinished;
+import app.l2nx.highfive.mechanics.events.holders.actor.npc.OnNpcSkillSee;
+import app.l2nx.highfive.mechanics.events.holders.actor.npc.OnNpcSpawn;
+import app.l2nx.highfive.mechanics.events.holders.actor.npc.OnNpcTeleport;
+import app.l2nx.highfive.mechanics.events.holders.actor.npc.attackable.OnAttackableAggroRangeEnter;
+import app.l2nx.highfive.mechanics.events.holders.actor.npc.attackable.OnAttackableAttack;
+import app.l2nx.highfive.mechanics.events.holders.actor.npc.attackable.OnAttackableFactionCall;
+import app.l2nx.highfive.mechanics.events.holders.actor.npc.attackable.OnAttackableHate;
+import app.l2nx.highfive.mechanics.events.holders.actor.npc.attackable.OnAttackableKill;
+import app.l2nx.highfive.mechanics.events.holders.actor.player.OnPlayerLogin;
+import app.l2nx.highfive.mechanics.events.holders.actor.player.OnPlayerLogout;
+import app.l2nx.highfive.mechanics.events.holders.actor.player.OnPlayerProfessionCancel;
+import app.l2nx.highfive.mechanics.events.holders.actor.player.OnPlayerProfessionChange;
+import app.l2nx.highfive.mechanics.events.holders.actor.player.OnPlayerSkillLearn;
+import app.l2nx.highfive.mechanics.events.holders.actor.player.OnPlayerSummonSpawn;
+import app.l2nx.highfive.mechanics.events.holders.actor.player.OnPlayerSummonTalk;
+import app.l2nx.highfive.mechanics.events.holders.actor.trap.OnTrapAction;
+import app.l2nx.highfive.mechanics.events.holders.item.OnItemBypassEvent;
+import app.l2nx.highfive.mechanics.events.holders.item.OnItemTalk;
+import app.l2nx.highfive.mechanics.events.holders.olympiad.OnOlympiadMatchResult;
+import app.l2nx.highfive.mechanics.events.holders.sieges.castle.OnCastleSiegeFinish;
+import app.l2nx.highfive.mechanics.events.holders.sieges.castle.OnCastleSiegeOwnerChange;
+import app.l2nx.highfive.mechanics.events.holders.sieges.castle.OnCastleSiegeStart;
+import app.l2nx.highfive.mechanics.events.listeners.AbstractEventListener;
+import app.l2nx.highfive.mechanics.events.listeners.AnnotationEventListener;
+import app.l2nx.highfive.mechanics.events.listeners.ConsumerEventListener;
+import app.l2nx.highfive.mechanics.events.listeners.DummyEventListener;
+import app.l2nx.highfive.mechanics.events.listeners.FunctionEventListener;
+import app.l2nx.highfive.mechanics.events.listeners.RunnableEventListener;
+import app.l2nx.highfive.mechanics.events.returns.AbstractEventReturn;
+import app.l2nx.highfive.mechanics.events.returns.TerminateReturn;
+import app.l2nx.highfive.mechanics.olympiad.CompetitionType;
+import app.l2nx.highfive.mechanics.olympiad.Olympiad;
+import app.l2nx.highfive.mechanics.olympiad.Participant;
+import app.l2nx.highfive.mechanics.script.timers.IEventTimerCancel;
+import app.l2nx.highfive.mechanics.script.timers.IEventTimerEvent;
+import app.l2nx.highfive.mechanics.script.timers.TimerExecutor;
+import app.l2nx.highfive.mechanics.script.timers.TimerHolder;
+import app.l2nx.highfive.mechanics.siege.Castle;
+import app.l2nx.highfive.mechanics.siege.Fort;
+import app.l2nx.highfive.mechanics.skill.Skill;
+import app.l2nx.highfive.mechanics.skill.enums.AcquireSkillType;
+import app.l2nx.highfive.mechanics.skill.holders.SkillHolder;
+import app.l2nx.highfive.mechanics.stats.Stat;
+import app.l2nx.highfive.network.NpcStringId;
+import app.l2nx.highfive.network.SystemMessageId;
+import app.l2nx.highfive.network.enums.Movie;
+import app.l2nx.highfive.network.holders.MailMessage;
+import app.l2nx.highfive.network.serverpackets.ActionFailed;
+import app.l2nx.highfive.network.serverpackets.ExShowScreenMessage;
+import app.l2nx.highfive.network.serverpackets.InventoryUpdate;
+import app.l2nx.highfive.network.serverpackets.NpcHtmlMessage;
+import app.l2nx.highfive.network.serverpackets.NpcQuestHtmlMessage;
+import app.l2nx.highfive.network.serverpackets.SpecialCamera;
+import app.l2nx.highfive.network.serverpackets.StatusUpdate;
+import app.l2nx.highfive.network.serverpackets.SystemMessage;
+import app.l2nx.highfive.scripting.ScriptEngine;
+import app.l2nx.highfive.taskmanagers.GameTimeTaskManager;
+import app.l2nx.highfive.util.LocationUtil;
+import app.l2nx.highfive.util.StatSet;
 
 /**
  * Quest main class.
@@ -3437,7 +3437,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
 	// ---------------------------------------------------------------------------------------------------------------------------
 	
 	/**
-	 * Provides instant callback operation when {@link org.l2jmobius.gameserver.entity.actor.Creature} Enters on a {@link ZoneType}.
+	 * Provides instant callback operation when {@link app.l2nx.highfive.entity.actor.Creature} Enters on a {@link ZoneType}.
 	 * @param callback
 	 * @param npcIds
 	 * @return
@@ -3448,7 +3448,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
 	}
 	
 	/**
-	 * Provides instant callback operation when {@link org.l2jmobius.gameserver.entity.actor.Creature} Enters on a {@link ZoneType}.
+	 * Provides instant callback operation when {@link app.l2nx.highfive.entity.actor.Creature} Enters on a {@link ZoneType}.
 	 * @param callback
 	 * @param npcIds
 	 * @return
@@ -3461,7 +3461,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
 	// ---------------------------------------------------------------------------------------------------------------------------
 	
 	/**
-	 * Provides instant callback operation when {@link org.l2jmobius.gameserver.entity.actor.Creature} Exits on a {@link ZoneType}.
+	 * Provides instant callback operation when {@link app.l2nx.highfive.entity.actor.Creature} Exits on a {@link ZoneType}.
 	 * @param callback
 	 * @param npcIds
 	 * @return
@@ -3472,7 +3472,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
 	}
 	
 	/**
-	 * Provides instant callback operation when {@link org.l2jmobius.gameserver.entity.actor.Creature} Exits on a {@link ZoneType}.
+	 * Provides instant callback operation when {@link app.l2nx.highfive.entity.actor.Creature} Exits on a {@link ZoneType}.
 	 * @param callback
 	 * @param npcIds
 	 * @return
@@ -3485,7 +3485,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
 	// ---------------------------------------------------------------------------------------------------------------------------
 	
 	/**
-	 * Provides instant callback operation when {@link org.l2jmobius.gameserver.entity.actor.instance.Trap} acts.
+	 * Provides instant callback operation when {@link app.l2nx.highfive.entity.actor.instance.Trap} acts.
 	 * @param callback
 	 * @param npcIds
 	 * @return
@@ -3496,7 +3496,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
 	}
 	
 	/**
-	 * Provides instant callback operation when {@link org.l2jmobius.gameserver.entity.actor.instance.Trap} acts.
+	 * Provides instant callback operation when {@link app.l2nx.highfive.entity.actor.instance.Trap} acts.
 	 * @param callback
 	 * @param npcIds
 	 * @return
@@ -5164,7 +5164,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
 	
 	/**
 	 * Get a random integer from 0 (inclusive) to {@code max} (exclusive).<br>
-	 * Use this method instead of importing {@link org.l2jmobius.commons.util.Rnd} utility.
+	 * Use this method instead of importing {@link app.l2nx.commons.util.Rnd} utility.
 	 * @param max the maximum value for randomization
 	 * @return a random integer number from 0 to {@code max - 1}
 	 */
@@ -5175,7 +5175,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
 	
 	/**
 	 * Get a random integer from {@code min} (inclusive) to {@code max} (inclusive).<br>
-	 * Use this method instead of importing {@link org.l2jmobius.commons.util.Rnd} utility.
+	 * Use this method instead of importing {@link app.l2nx.commons.util.Rnd} utility.
 	 * @param min the minimum value for randomization
 	 * @param max the maximum value for randomization
 	 * @return a random integer number from {@code min} to {@code max}
@@ -5187,7 +5187,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
 	
 	/**
 	 * Get a random long from 0 (inclusive) to {@code max} (exclusive).<br>
-	 * Use this method instead of importing {@link org.l2jmobius.commons.util.Rnd} utility.
+	 * Use this method instead of importing {@link app.l2nx.commons.util.Rnd} utility.
 	 * @param max the maximum value for randomization
 	 * @return a random long number from 0 to {@code max - 1}
 	 */
@@ -5198,7 +5198,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
 	
 	/**
 	 * Get a random long from {@code min} (inclusive) to {@code max} (inclusive).<br>
-	 * Use this method instead of importing {@link org.l2jmobius.commons.util.Rnd} utility.
+	 * Use this method instead of importing {@link app.l2nx.commons.util.Rnd} utility.
 	 * @param min the minimum value for randomization
 	 * @param max the maximum value for randomization
 	 * @return a random long number from {@code min} to {@code max}
@@ -5210,7 +5210,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
 	
 	/**
 	 * Get a random boolean.<br>
-	 * Use this method instead of importing {@link org.l2jmobius.commons.util.Rnd} utility.
+	 * Use this method instead of importing {@link app.l2nx.commons.util.Rnd} utility.
 	 * @return {@code true} or {@code false} randomly
 	 */
 	public static boolean getRandomBoolean()
@@ -5273,7 +5273,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
 	}
 	
 	/**
-	 * @return the number of ticks from the {@link org.l2jmobius.gameserver.taskmanagers.GameTimeTaskManager}.
+	 * @return the number of ticks from the {@link app.l2nx.highfive.taskmanagers.GameTimeTaskManager}.
 	 */
 	public static int getGameTicks()
 	{

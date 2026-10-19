@@ -18,7 +18,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.mechanics.variables;
+package app.l2nx.highfive.mechanics.variables;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -27,7 +27,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import org.l2jmobius.gameserver.util.StatSet;
+import app.l2nx.highfive.util.StatSet;
 
 /**
  * @author UnAfraid, Mobius

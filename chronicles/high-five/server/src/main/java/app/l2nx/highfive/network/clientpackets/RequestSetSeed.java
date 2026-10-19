@@ -14,18 +14,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.network.clientpackets;
+package app.l2nx.highfive.network.clientpackets;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import org.l2jmobius.gameserver.config.PlayerConfig;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.clan.ClanAccess;
-import org.l2jmobius.gameserver.managers.CastleManorManager;
-import org.l2jmobius.gameserver.mechanics.siege.manor.Seed;
-import org.l2jmobius.gameserver.mechanics.siege.manor.SeedProduction;
-import org.l2jmobius.gameserver.network.serverpackets.ActionFailed;
+import app.l2nx.highfive.config.PlayerConfig;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.clan.ClanAccess;
+import app.l2nx.highfive.managers.CastleManorManager;
+import app.l2nx.highfive.mechanics.siege.manor.Seed;
+import app.l2nx.highfive.mechanics.siege.manor.SeedProduction;
+import app.l2nx.highfive.network.serverpackets.ActionFailed;
 
 /**
  * @author l3x

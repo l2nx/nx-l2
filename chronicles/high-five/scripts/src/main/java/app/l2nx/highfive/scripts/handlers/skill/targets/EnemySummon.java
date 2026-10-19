@@ -18,19 +18,19 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package handlers.skill.targets;
+package app.l2nx.highfive.scripts.handlers.skill.targets;
 
 import java.util.Collections;
 import java.util.List;
 
-import org.l2jmobius.gameserver.entity.WorldObject;
-import org.l2jmobius.gameserver.entity.actor.Creature;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.actor.Summon;
-import org.l2jmobius.gameserver.entity.zone.ZoneId;
-import org.l2jmobius.gameserver.handler.ITargetTypeHandler;
-import org.l2jmobius.gameserver.mechanics.skill.Skill;
-import org.l2jmobius.gameserver.mechanics.skill.targets.TargetType;
+import app.l2nx.highfive.entity.WorldObject;
+import app.l2nx.highfive.entity.actor.Creature;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.actor.Summon;
+import app.l2nx.highfive.entity.zone.ZoneId;
+import app.l2nx.highfive.handler.ITargetTypeHandler;
+import app.l2nx.highfive.mechanics.skill.Skill;
+import app.l2nx.highfive.mechanics.skill.targets.TargetType;
 
 /**
  * @author UnAfraid, Mobius

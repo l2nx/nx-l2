@@ -18,16 +18,16 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.mechanics.conditions;
+package app.l2nx.highfive.mechanics.conditions;
 
 import java.util.Set;
 
-import org.l2jmobius.gameserver.entity.actor.Creature;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.instancezone.InstanceWorld;
-import org.l2jmobius.gameserver.entity.item.ItemTemplate;
-import org.l2jmobius.gameserver.managers.InstanceManager;
-import org.l2jmobius.gameserver.mechanics.skill.Skill;
+import app.l2nx.highfive.entity.actor.Creature;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.instancezone.InstanceWorld;
+import app.l2nx.highfive.entity.item.ItemTemplate;
+import app.l2nx.highfive.managers.InstanceManager;
+import app.l2nx.highfive.mechanics.skill.Skill;
 
 /**
  * The Class ConditionPlayerInstanceId.

@@ -18,14 +18,14 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.mechanics.stats;
+package app.l2nx.highfive.mechanics.stats;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import org.l2jmobius.gameserver.entity.actor.Creature;
-import org.l2jmobius.gameserver.mechanics.skill.Skill;
-import org.l2jmobius.gameserver.mechanics.stats.functions.AbstractFunction;
+import app.l2nx.highfive.entity.actor.Creature;
+import app.l2nx.highfive.mechanics.skill.Skill;
+import app.l2nx.highfive.mechanics.stats.functions.AbstractFunction;
 
 /**
  * A calculator is created to manage and dynamically calculate the effect of a character property (ex : MAX_HP, REGENERATE_HP_RATE...).<br>

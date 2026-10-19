@@ -18,15 +18,15 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.commons.network;
+package app.l2nx.commons.network;
 
 import java.net.SocketAddress;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.l2jmobius.commons.network.pool.BufferPool;
-import org.l2jmobius.commons.network.pool.ResourcePool;
-import org.l2jmobius.commons.util.ConfigReader;
+import app.l2nx.commons.network.pool.BufferPool;
+import app.l2nx.commons.network.pool.ResourcePool;
+import app.l2nx.commons.util.ConfigReader;
 
 /**
  * Configures and initializes connection parameters for the network layer.<br>

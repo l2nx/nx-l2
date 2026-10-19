@@ -18,7 +18,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.data.xml;
+package app.l2nx.highfive.data.xml;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -30,9 +30,9 @@ import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 
-import org.l2jmobius.commons.util.IXmlReader;
-import org.l2jmobius.gameserver.mechanics.fishing.Fish;
-import org.l2jmobius.gameserver.util.StatSet;
+import app.l2nx.commons.util.IXmlReader;
+import app.l2nx.highfive.mechanics.fishing.Fish;
+import app.l2nx.highfive.util.StatSet;
 
 /**
  * This class holds the Fish information.

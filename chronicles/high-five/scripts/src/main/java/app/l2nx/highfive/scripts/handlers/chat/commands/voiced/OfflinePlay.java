@@ -18,25 +18,25 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package handlers.chat.commands.voiced;
+package app.l2nx.highfive.scripts.handlers.chat.commands.voiced;
 
 import java.util.function.Consumer;
 
-import org.l2jmobius.gameserver.config.custom.OfflinePlayConfig;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.actor.enums.player.PlayerAction;
-import org.l2jmobius.gameserver.entity.zone.ZoneId;
-import org.l2jmobius.gameserver.handler.IVoicedCommandHandler;
-import org.l2jmobius.gameserver.mechanics.events.Containers;
-import org.l2jmobius.gameserver.mechanics.events.EventType;
-import org.l2jmobius.gameserver.mechanics.events.holders.actor.player.OnPlayerLogin;
-import org.l2jmobius.gameserver.mechanics.events.listeners.ConsumerEventListener;
-import org.l2jmobius.gameserver.network.SystemMessageId;
-import org.l2jmobius.gameserver.network.enums.ChatType;
-import org.l2jmobius.gameserver.network.serverpackets.ActionFailed;
-import org.l2jmobius.gameserver.network.serverpackets.ConfirmDlg;
-import org.l2jmobius.gameserver.network.serverpackets.CreatureSay;
-import org.l2jmobius.gameserver.network.serverpackets.ExShowScreenMessage;
+import app.l2nx.highfive.config.custom.OfflinePlayConfig;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.actor.enums.player.PlayerAction;
+import app.l2nx.highfive.entity.zone.ZoneId;
+import app.l2nx.highfive.handler.IVoicedCommandHandler;
+import app.l2nx.highfive.mechanics.events.Containers;
+import app.l2nx.highfive.mechanics.events.EventType;
+import app.l2nx.highfive.mechanics.events.holders.actor.player.OnPlayerLogin;
+import app.l2nx.highfive.mechanics.events.listeners.ConsumerEventListener;
+import app.l2nx.highfive.network.SystemMessageId;
+import app.l2nx.highfive.network.enums.ChatType;
+import app.l2nx.highfive.network.serverpackets.ActionFailed;
+import app.l2nx.highfive.network.serverpackets.ConfirmDlg;
+import app.l2nx.highfive.network.serverpackets.CreatureSay;
+import app.l2nx.highfive.network.serverpackets.ExShowScreenMessage;
 
 /**
  * @author Mobius

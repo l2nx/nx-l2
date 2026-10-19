@@ -14,15 +14,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.mechanics.html;
+package app.l2nx.highfive.mechanics.html;
 
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Objects;
 
-import org.l2jmobius.gameserver.mechanics.html.formatters.DefaultFormatter;
-import org.l2jmobius.gameserver.mechanics.html.pagehandlers.DefaultPageHandler;
-import org.l2jmobius.gameserver.mechanics.html.styles.DefaultStyle;
+import app.l2nx.highfive.mechanics.html.formatters.DefaultFormatter;
+import app.l2nx.highfive.mechanics.html.pagehandlers.DefaultPageHandler;
+import app.l2nx.highfive.mechanics.html.styles.DefaultStyle;
 
 /**
  * @author UnAfraid

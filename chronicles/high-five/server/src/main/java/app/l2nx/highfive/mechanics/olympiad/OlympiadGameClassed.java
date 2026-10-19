@@ -14,12 +14,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.mechanics.olympiad;
+package app.l2nx.highfive.mechanics.olympiad;
 
 import java.util.List;
 
-import org.l2jmobius.commons.util.Rnd;
-import org.l2jmobius.gameserver.config.OlympiadConfig;
+import app.l2nx.commons.util.Rnd;
+import app.l2nx.highfive.config.OlympiadConfig;
 
 /**
  * @author DS

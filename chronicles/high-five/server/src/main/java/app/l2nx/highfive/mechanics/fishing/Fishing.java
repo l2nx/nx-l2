@@ -18,23 +18,23 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.mechanics.fishing;
+package app.l2nx.highfive.mechanics.fishing;
 
 import java.util.concurrent.Future;
 
-import org.l2jmobius.commons.threads.ThreadPool;
-import org.l2jmobius.commons.util.Rnd;
-import org.l2jmobius.gameserver.data.xml.FishingMonstersData;
-import org.l2jmobius.gameserver.entity.actor.Npc;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.item.enums.ItemProcessType;
-import org.l2jmobius.gameserver.managers.FishingChampionshipManager;
-import org.l2jmobius.gameserver.mechanics.script.Quest;
-import org.l2jmobius.gameserver.network.SystemMessageId;
-import org.l2jmobius.gameserver.network.serverpackets.ExFishingHpRegen;
-import org.l2jmobius.gameserver.network.serverpackets.ExFishingStartCombat;
-import org.l2jmobius.gameserver.network.serverpackets.PlaySound;
-import org.l2jmobius.gameserver.network.serverpackets.SystemMessage;
+import app.l2nx.commons.threads.ThreadPool;
+import app.l2nx.commons.util.Rnd;
+import app.l2nx.highfive.data.xml.FishingMonstersData;
+import app.l2nx.highfive.entity.actor.Npc;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.item.enums.ItemProcessType;
+import app.l2nx.highfive.managers.FishingChampionshipManager;
+import app.l2nx.highfive.mechanics.script.Quest;
+import app.l2nx.highfive.network.SystemMessageId;
+import app.l2nx.highfive.network.serverpackets.ExFishingHpRegen;
+import app.l2nx.highfive.network.serverpackets.ExFishingStartCombat;
+import app.l2nx.highfive.network.serverpackets.PlaySound;
+import app.l2nx.highfive.network.serverpackets.SystemMessage;
 
 public class Fishing implements Runnable
 {

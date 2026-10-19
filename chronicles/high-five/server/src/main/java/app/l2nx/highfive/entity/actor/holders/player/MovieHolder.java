@@ -14,12 +14,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.entity.actor.holders.player;
+package app.l2nx.highfive.entity.actor.holders.player;
 
 import java.util.Collection;
 
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.network.enums.Movie;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.network.enums.Movie;
 
 /**
  * @author St3eT

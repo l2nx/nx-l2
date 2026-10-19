@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.data;
+package app.l2nx.highfive.data;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -36,18 +36,18 @@ import javax.xml.parsers.SAXParserFactory;
 import org.xml.sax.Attributes;
 import org.xml.sax.helpers.DefaultHandler;
 
-import org.l2jmobius.commons.database.DatabaseFactory;
-import org.l2jmobius.commons.threads.ThreadPool;
-import org.l2jmobius.gameserver.config.GeneralConfig;
-import org.l2jmobius.gameserver.data.xml.SkillData;
-import org.l2jmobius.gameserver.entity.WorldObject;
-import org.l2jmobius.gameserver.entity.actor.Creature;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.clan.Clan;
-import org.l2jmobius.gameserver.entity.zone.ZoneId;
-import org.l2jmobius.gameserver.mechanics.skill.Skill;
-import org.l2jmobius.gameserver.network.SystemMessageId;
-import org.l2jmobius.gameserver.network.serverpackets.SystemMessage;
+import app.l2nx.commons.database.DatabaseFactory;
+import app.l2nx.commons.threads.ThreadPool;
+import app.l2nx.highfive.config.GeneralConfig;
+import app.l2nx.highfive.data.xml.SkillData;
+import app.l2nx.highfive.entity.WorldObject;
+import app.l2nx.highfive.entity.actor.Creature;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.clan.Clan;
+import app.l2nx.highfive.entity.zone.ZoneId;
+import app.l2nx.highfive.mechanics.skill.Skill;
+import app.l2nx.highfive.network.SystemMessageId;
+import app.l2nx.highfive.network.serverpackets.SystemMessage;
 
 /**
  * @author BiggBoss

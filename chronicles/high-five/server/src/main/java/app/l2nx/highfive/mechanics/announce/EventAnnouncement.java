@@ -18,11 +18,11 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.mechanics.announce;
+package app.l2nx.highfive.mechanics.announce;
 
 import java.util.Date;
 
-import org.l2jmobius.gameserver.managers.IdManager;
+import app.l2nx.highfive.managers.IdManager;
 
 /**
  * @author UnAfraid, Mobius

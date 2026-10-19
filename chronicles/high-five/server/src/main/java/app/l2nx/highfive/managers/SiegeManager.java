@@ -18,7 +18,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.managers;
+package app.l2nx.highfive.managers;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -31,18 +31,18 @@ import java.util.StringTokenizer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.l2jmobius.commons.database.DatabaseFactory;
-import org.l2jmobius.commons.util.ConfigReader;
-import org.l2jmobius.gameserver.data.xml.SkillData;
-import org.l2jmobius.gameserver.entity.Location;
-import org.l2jmobius.gameserver.entity.WorldObject;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.clan.Clan;
-import org.l2jmobius.gameserver.interfaces.ILocational;
-import org.l2jmobius.gameserver.mechanics.siege.Castle;
-import org.l2jmobius.gameserver.mechanics.siege.Siege;
-import org.l2jmobius.gameserver.mechanics.siege.TowerSpawn;
-import org.l2jmobius.gameserver.mechanics.skill.Skill;
+import app.l2nx.commons.database.DatabaseFactory;
+import app.l2nx.commons.util.ConfigReader;
+import app.l2nx.highfive.data.xml.SkillData;
+import app.l2nx.highfive.entity.Location;
+import app.l2nx.highfive.entity.WorldObject;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.clan.Clan;
+import app.l2nx.highfive.interfaces.ILocational;
+import app.l2nx.highfive.mechanics.siege.Castle;
+import app.l2nx.highfive.mechanics.siege.Siege;
+import app.l2nx.highfive.mechanics.siege.TowerSpawn;
+import app.l2nx.highfive.mechanics.skill.Skill;
 
 public class SiegeManager
 {

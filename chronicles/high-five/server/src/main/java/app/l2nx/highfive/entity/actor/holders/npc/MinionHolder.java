@@ -14,9 +14,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.entity.actor.holders.npc;
+package app.l2nx.highfive.entity.actor.holders.npc;
 
-import org.l2jmobius.commons.util.Rnd;
+import app.l2nx.commons.util.Rnd;
 
 /**
  * This class hold info needed for minions spawns<br>

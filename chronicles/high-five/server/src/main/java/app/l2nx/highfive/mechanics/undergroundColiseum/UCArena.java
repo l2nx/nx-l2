@@ -18,29 +18,29 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.mechanics.undergroundColiseum;
+package app.l2nx.highfive.mechanics.undergroundColiseum;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ScheduledFuture;
 
-import org.l2jmobius.commons.threads.ThreadPool;
-import org.l2jmobius.gameserver.config.PlayerConfig;
-import org.l2jmobius.gameserver.config.UndergroundColiseumConfig;
-import org.l2jmobius.gameserver.data.SpawnTable;
-import org.l2jmobius.gameserver.entity.actor.Npc;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.actor.enums.creature.Team;
-import org.l2jmobius.gameserver.entity.actor.enums.player.TeleportWhereType;
-import org.l2jmobius.gameserver.entity.groups.Party;
-import org.l2jmobius.gameserver.entity.spawns.Spawn;
-import org.l2jmobius.gameserver.mechanics.variables.PlayerVariables;
-import org.l2jmobius.gameserver.network.NpcStringId;
-import org.l2jmobius.gameserver.network.serverpackets.ExPVPMatchRecord;
-import org.l2jmobius.gameserver.network.serverpackets.ExPVPMatchUserDie;
-import org.l2jmobius.gameserver.network.serverpackets.ExShowScreenMessage;
-import org.l2jmobius.gameserver.network.serverpackets.ServerPacket;
+import app.l2nx.commons.threads.ThreadPool;
+import app.l2nx.highfive.config.PlayerConfig;
+import app.l2nx.highfive.config.UndergroundColiseumConfig;
+import app.l2nx.highfive.data.SpawnTable;
+import app.l2nx.highfive.entity.actor.Npc;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.actor.enums.creature.Team;
+import app.l2nx.highfive.entity.actor.enums.player.TeleportWhereType;
+import app.l2nx.highfive.entity.groups.Party;
+import app.l2nx.highfive.entity.spawns.Spawn;
+import app.l2nx.highfive.mechanics.variables.PlayerVariables;
+import app.l2nx.highfive.network.NpcStringId;
+import app.l2nx.highfive.network.serverpackets.ExPVPMatchRecord;
+import app.l2nx.highfive.network.serverpackets.ExPVPMatchUserDie;
+import app.l2nx.highfive.network.serverpackets.ExShowScreenMessage;
+import app.l2nx.highfive.network.serverpackets.ServerPacket;
 
 public class UCArena
 {

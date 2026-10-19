@@ -18,7 +18,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.managers;
+package app.l2nx.highfive.managers;
 
 import java.io.File;
 import java.lang.reflect.Constructor;
@@ -38,52 +38,52 @@ import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 
-import org.l2jmobius.commons.util.IXmlReader;
-import org.l2jmobius.gameserver.entity.World;
-import org.l2jmobius.gameserver.entity.WorldObject;
-import org.l2jmobius.gameserver.entity.actor.Creature;
-import org.l2jmobius.gameserver.entity.item.instance.Item;
-import org.l2jmobius.gameserver.entity.zone.AbstractZoneSettings;
-import org.l2jmobius.gameserver.entity.zone.ZoneForm;
-import org.l2jmobius.gameserver.entity.zone.ZoneRegion;
-import org.l2jmobius.gameserver.entity.zone.ZoneRespawn;
-import org.l2jmobius.gameserver.entity.zone.ZoneType;
-import org.l2jmobius.gameserver.entity.zone.form.ZoneCuboid;
-import org.l2jmobius.gameserver.entity.zone.form.ZoneCylinder;
-import org.l2jmobius.gameserver.entity.zone.form.ZoneNPoly;
-import org.l2jmobius.gameserver.entity.zone.type.ArenaZone;
-import org.l2jmobius.gameserver.entity.zone.type.BossZone;
-import org.l2jmobius.gameserver.entity.zone.type.CastleZone;
-import org.l2jmobius.gameserver.entity.zone.type.ClanHallZone;
-import org.l2jmobius.gameserver.entity.zone.type.ConditionZone;
-import org.l2jmobius.gameserver.entity.zone.type.DamageZone;
-import org.l2jmobius.gameserver.entity.zone.type.DerbyTrackZone;
-import org.l2jmobius.gameserver.entity.zone.type.EffectZone;
-import org.l2jmobius.gameserver.entity.zone.type.FishingZone;
-import org.l2jmobius.gameserver.entity.zone.type.FlagPvPZone;
-import org.l2jmobius.gameserver.entity.zone.type.FortZone;
-import org.l2jmobius.gameserver.entity.zone.type.HqZone;
-import org.l2jmobius.gameserver.entity.zone.type.JailZone;
-import org.l2jmobius.gameserver.entity.zone.type.LandingZone;
-import org.l2jmobius.gameserver.entity.zone.type.MotherTreeZone;
-import org.l2jmobius.gameserver.entity.zone.type.NoLandingZone;
-import org.l2jmobius.gameserver.entity.zone.type.NoRestartZone;
-import org.l2jmobius.gameserver.entity.zone.type.NoStoreZone;
-import org.l2jmobius.gameserver.entity.zone.type.NoSummonFriendZone;
-import org.l2jmobius.gameserver.entity.zone.type.NpcSpawnTerritory;
-import org.l2jmobius.gameserver.entity.zone.type.OlympiadStadiumZone;
-import org.l2jmobius.gameserver.entity.zone.type.PeaceZone;
-import org.l2jmobius.gameserver.entity.zone.type.ResidenceHallTeleportZone;
-import org.l2jmobius.gameserver.entity.zone.type.ResidenceTeleportZone;
-import org.l2jmobius.gameserver.entity.zone.type.ResidenceZone;
-import org.l2jmobius.gameserver.entity.zone.type.RespawnZone;
-import org.l2jmobius.gameserver.entity.zone.type.ScriptZone;
-import org.l2jmobius.gameserver.entity.zone.type.SiegableHallZone;
-import org.l2jmobius.gameserver.entity.zone.type.SiegeZone;
-import org.l2jmobius.gameserver.entity.zone.type.SwampZone;
-import org.l2jmobius.gameserver.entity.zone.type.TownZone;
-import org.l2jmobius.gameserver.entity.zone.type.WaterZone;
-import org.l2jmobius.gameserver.interfaces.ILocational;
+import app.l2nx.commons.util.IXmlReader;
+import app.l2nx.highfive.entity.World;
+import app.l2nx.highfive.entity.WorldObject;
+import app.l2nx.highfive.entity.actor.Creature;
+import app.l2nx.highfive.entity.item.instance.Item;
+import app.l2nx.highfive.entity.zone.AbstractZoneSettings;
+import app.l2nx.highfive.entity.zone.ZoneForm;
+import app.l2nx.highfive.entity.zone.ZoneRegion;
+import app.l2nx.highfive.entity.zone.ZoneRespawn;
+import app.l2nx.highfive.entity.zone.ZoneType;
+import app.l2nx.highfive.entity.zone.form.ZoneCuboid;
+import app.l2nx.highfive.entity.zone.form.ZoneCylinder;
+import app.l2nx.highfive.entity.zone.form.ZoneNPoly;
+import app.l2nx.highfive.entity.zone.type.ArenaZone;
+import app.l2nx.highfive.entity.zone.type.BossZone;
+import app.l2nx.highfive.entity.zone.type.CastleZone;
+import app.l2nx.highfive.entity.zone.type.ClanHallZone;
+import app.l2nx.highfive.entity.zone.type.ConditionZone;
+import app.l2nx.highfive.entity.zone.type.DamageZone;
+import app.l2nx.highfive.entity.zone.type.DerbyTrackZone;
+import app.l2nx.highfive.entity.zone.type.EffectZone;
+import app.l2nx.highfive.entity.zone.type.FishingZone;
+import app.l2nx.highfive.entity.zone.type.FlagPvPZone;
+import app.l2nx.highfive.entity.zone.type.FortZone;
+import app.l2nx.highfive.entity.zone.type.HqZone;
+import app.l2nx.highfive.entity.zone.type.JailZone;
+import app.l2nx.highfive.entity.zone.type.LandingZone;
+import app.l2nx.highfive.entity.zone.type.MotherTreeZone;
+import app.l2nx.highfive.entity.zone.type.NoLandingZone;
+import app.l2nx.highfive.entity.zone.type.NoRestartZone;
+import app.l2nx.highfive.entity.zone.type.NoStoreZone;
+import app.l2nx.highfive.entity.zone.type.NoSummonFriendZone;
+import app.l2nx.highfive.entity.zone.type.NpcSpawnTerritory;
+import app.l2nx.highfive.entity.zone.type.OlympiadStadiumZone;
+import app.l2nx.highfive.entity.zone.type.PeaceZone;
+import app.l2nx.highfive.entity.zone.type.ResidenceHallTeleportZone;
+import app.l2nx.highfive.entity.zone.type.ResidenceTeleportZone;
+import app.l2nx.highfive.entity.zone.type.ResidenceZone;
+import app.l2nx.highfive.entity.zone.type.RespawnZone;
+import app.l2nx.highfive.entity.zone.type.ScriptZone;
+import app.l2nx.highfive.entity.zone.type.SiegableHallZone;
+import app.l2nx.highfive.entity.zone.type.SiegeZone;
+import app.l2nx.highfive.entity.zone.type.SwampZone;
+import app.l2nx.highfive.entity.zone.type.TownZone;
+import app.l2nx.highfive.entity.zone.type.WaterZone;
+import app.l2nx.highfive.interfaces.ILocational;
 
 /**
  * This class manages the zones.
@@ -352,7 +352,7 @@ public class ZoneManager implements IXmlReader
 						ZoneType temp;
 						try
 						{
-							newZone = Class.forName("org.l2jmobius.gameserver.entity.zone.type." + zoneType);
+							newZone = Class.forName("app.l2nx.highfive.entity.zone.type." + zoneType);
 							zoneConstructor = newZone.getConstructor(int.class);
 							temp = (ZoneType) zoneConstructor.newInstance(zoneId);
 							temp.setZone(zoneForm);

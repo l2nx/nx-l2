@@ -18,7 +18,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package handlers.chat.commands.admin;
+package app.l2nx.highfive.scripts.handlers.chat.commands.admin;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -30,25 +30,25 @@ import java.util.TreeMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.l2jmobius.commons.util.StringUtil;
-import org.l2jmobius.gameserver.data.xml.ClassListData;
-import org.l2jmobius.gameserver.data.xml.SkillData;
-import org.l2jmobius.gameserver.data.xml.SkillTreeData;
-import org.l2jmobius.gameserver.entity.WorldObject;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.actor.enums.creature.Race;
-import org.l2jmobius.gameserver.entity.actor.enums.player.PlayerClass;
-import org.l2jmobius.gameserver.entity.clan.Clan;
-import org.l2jmobius.gameserver.handler.IAdminCommandHandler;
-import org.l2jmobius.gameserver.mechanics.html.PageBuilder;
-import org.l2jmobius.gameserver.mechanics.html.PageResult;
-import org.l2jmobius.gameserver.mechanics.html.styles.ButtonsStyle;
-import org.l2jmobius.gameserver.mechanics.skill.Skill;
-import org.l2jmobius.gameserver.mechanics.skill.holders.SkillLearn;
-import org.l2jmobius.gameserver.network.SystemMessageId;
-import org.l2jmobius.gameserver.network.serverpackets.NpcHtmlMessage;
-import org.l2jmobius.gameserver.network.serverpackets.PledgeSkillList;
-import org.l2jmobius.gameserver.network.serverpackets.SystemMessage;
+import app.l2nx.commons.util.StringUtil;
+import app.l2nx.highfive.data.xml.ClassListData;
+import app.l2nx.highfive.data.xml.SkillData;
+import app.l2nx.highfive.data.xml.SkillTreeData;
+import app.l2nx.highfive.entity.WorldObject;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.actor.enums.creature.Race;
+import app.l2nx.highfive.entity.actor.enums.player.PlayerClass;
+import app.l2nx.highfive.entity.clan.Clan;
+import app.l2nx.highfive.handler.IAdminCommandHandler;
+import app.l2nx.highfive.mechanics.html.PageBuilder;
+import app.l2nx.highfive.mechanics.html.PageResult;
+import app.l2nx.highfive.mechanics.html.styles.ButtonsStyle;
+import app.l2nx.highfive.mechanics.skill.Skill;
+import app.l2nx.highfive.mechanics.skill.holders.SkillLearn;
+import app.l2nx.highfive.network.SystemMessageId;
+import app.l2nx.highfive.network.serverpackets.NpcHtmlMessage;
+import app.l2nx.highfive.network.serverpackets.PledgeSkillList;
+import app.l2nx.highfive.network.serverpackets.SystemMessage;
 
 /**
  * @author Mobius

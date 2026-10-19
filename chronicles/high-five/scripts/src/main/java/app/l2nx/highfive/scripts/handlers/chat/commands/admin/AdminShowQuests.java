@@ -14,26 +14,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package handlers.chat.commands.admin;
+package app.l2nx.highfive.scripts.handlers.chat.commands.admin;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.logging.Logger;
 
-import org.l2jmobius.commons.database.DatabaseFactory;
-import org.l2jmobius.gameserver.entity.World;
-import org.l2jmobius.gameserver.entity.WorldObject;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.handler.IAdminCommandHandler;
-import org.l2jmobius.gameserver.managers.ScriptManager;
-import org.l2jmobius.gameserver.mechanics.script.Quest;
-import org.l2jmobius.gameserver.mechanics.script.QuestState;
-import org.l2jmobius.gameserver.mechanics.script.State;
-import org.l2jmobius.gameserver.network.SystemMessageId;
-import org.l2jmobius.gameserver.network.serverpackets.ExShowQuestMark;
-import org.l2jmobius.gameserver.network.serverpackets.NpcHtmlMessage;
-import org.l2jmobius.gameserver.network.serverpackets.QuestList;
+import app.l2nx.commons.database.DatabaseFactory;
+import app.l2nx.highfive.entity.World;
+import app.l2nx.highfive.entity.WorldObject;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.handler.IAdminCommandHandler;
+import app.l2nx.highfive.managers.ScriptManager;
+import app.l2nx.highfive.mechanics.script.Quest;
+import app.l2nx.highfive.mechanics.script.QuestState;
+import app.l2nx.highfive.mechanics.script.State;
+import app.l2nx.highfive.network.SystemMessageId;
+import app.l2nx.highfive.network.serverpackets.ExShowQuestMark;
+import app.l2nx.highfive.network.serverpackets.NpcHtmlMessage;
+import app.l2nx.highfive.network.serverpackets.QuestList;
 
 /**
  * TODO: Rework and cleanup.

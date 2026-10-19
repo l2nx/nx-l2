@@ -14,15 +14,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.network.serverpackets;
+package app.l2nx.highfive.network.serverpackets;
 
 import java.util.List;
 
-import org.l2jmobius.commons.network.buffer.WriteBuffer;
-import org.l2jmobius.gameserver.entity.item.holders.ItemInfo;
-import org.l2jmobius.gameserver.entity.item.instance.Item;
-import org.l2jmobius.gameserver.network.GameClient;
-import org.l2jmobius.gameserver.network.ServerPackets;
+import app.l2nx.commons.network.buffer.WriteBuffer;
+import app.l2nx.highfive.entity.item.holders.ItemInfo;
+import app.l2nx.highfive.entity.item.instance.Item;
+import app.l2nx.highfive.network.GameClient;
+import app.l2nx.highfive.network.ServerPackets;
 
 /**
  * @author Yme, Advi

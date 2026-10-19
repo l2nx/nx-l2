@@ -14,15 +14,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.entity.zone.type;
+package app.l2nx.highfive.entity.zone.type;
 
 import java.util.EnumMap;
 import java.util.Map;
 
-import org.l2jmobius.gameserver.entity.actor.Creature;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.actor.enums.creature.Race;
-import org.l2jmobius.gameserver.entity.zone.ZoneType;
+import app.l2nx.highfive.entity.actor.Creature;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.actor.enums.creature.Race;
+import app.l2nx.highfive.entity.zone.ZoneType;
 
 /**
  * Respawn zone implementation.

@@ -14,40 +14,40 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package ai.bosses.Beleth;
+package app.l2nx.highfive.scripts.ai.bosses.Beleth;
 
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import org.l2jmobius.gameserver.cache.HtmCache;
-import org.l2jmobius.gameserver.config.GrandBossConfig;
-import org.l2jmobius.gameserver.data.xml.DoorData;
-import org.l2jmobius.gameserver.data.xml.MapRegionData;
-import org.l2jmobius.gameserver.entity.Location;
-import org.l2jmobius.gameserver.entity.World;
-import org.l2jmobius.gameserver.entity.WorldObject;
-import org.l2jmobius.gameserver.entity.actor.Creature;
-import org.l2jmobius.gameserver.entity.actor.Npc;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.actor.enums.player.TeleportWhereType;
-import org.l2jmobius.gameserver.entity.actor.instance.Door;
-import org.l2jmobius.gameserver.entity.actor.instance.GrandBoss;
-import org.l2jmobius.gameserver.entity.item.holders.ItemHolder;
-import org.l2jmobius.gameserver.entity.zone.ZoneType;
-import org.l2jmobius.gameserver.managers.GrandBossManager;
-import org.l2jmobius.gameserver.managers.ZoneManager;
-import org.l2jmobius.gameserver.mechanics.effects.EffectType;
-import org.l2jmobius.gameserver.mechanics.script.Script;
-import org.l2jmobius.gameserver.mechanics.skill.Skill;
-import org.l2jmobius.gameserver.mechanics.skill.holders.SkillHolder;
-import org.l2jmobius.gameserver.network.serverpackets.DoorStatusUpdate;
-import org.l2jmobius.gameserver.network.serverpackets.MagicSkillUse;
-import org.l2jmobius.gameserver.network.serverpackets.PlaySound;
-import org.l2jmobius.gameserver.network.serverpackets.SocialAction;
-import org.l2jmobius.gameserver.network.serverpackets.SpecialCamera;
-import org.l2jmobius.gameserver.network.serverpackets.StaticObjectInfo;
-import org.l2jmobius.gameserver.util.LocationUtil;
-import org.l2jmobius.gameserver.util.StatSet;
+import app.l2nx.highfive.cache.HtmCache;
+import app.l2nx.highfive.config.GrandBossConfig;
+import app.l2nx.highfive.data.xml.DoorData;
+import app.l2nx.highfive.data.xml.MapRegionData;
+import app.l2nx.highfive.entity.Location;
+import app.l2nx.highfive.entity.World;
+import app.l2nx.highfive.entity.WorldObject;
+import app.l2nx.highfive.entity.actor.Creature;
+import app.l2nx.highfive.entity.actor.Npc;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.actor.enums.player.TeleportWhereType;
+import app.l2nx.highfive.entity.actor.instance.Door;
+import app.l2nx.highfive.entity.actor.instance.GrandBoss;
+import app.l2nx.highfive.entity.item.holders.ItemHolder;
+import app.l2nx.highfive.entity.zone.ZoneType;
+import app.l2nx.highfive.managers.GrandBossManager;
+import app.l2nx.highfive.managers.ZoneManager;
+import app.l2nx.highfive.mechanics.effects.EffectType;
+import app.l2nx.highfive.mechanics.script.Script;
+import app.l2nx.highfive.mechanics.skill.Skill;
+import app.l2nx.highfive.mechanics.skill.holders.SkillHolder;
+import app.l2nx.highfive.network.serverpackets.DoorStatusUpdate;
+import app.l2nx.highfive.network.serverpackets.MagicSkillUse;
+import app.l2nx.highfive.network.serverpackets.PlaySound;
+import app.l2nx.highfive.network.serverpackets.SocialAction;
+import app.l2nx.highfive.network.serverpackets.SpecialCamera;
+import app.l2nx.highfive.network.serverpackets.StaticObjectInfo;
+import app.l2nx.highfive.util.LocationUtil;
+import app.l2nx.highfive.util.StatSet;
 
 /**
  * Beleth's AI.

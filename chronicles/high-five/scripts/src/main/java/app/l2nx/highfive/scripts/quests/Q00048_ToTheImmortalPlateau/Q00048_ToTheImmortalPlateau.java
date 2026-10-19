@@ -18,19 +18,19 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package quests.Q00048_ToTheImmortalPlateau;
+package app.l2nx.highfive.scripts.quests.Q00048_ToTheImmortalPlateau;
 
 import java.util.HashMap;
 import java.util.Map;
 
-import org.l2jmobius.gameserver.entity.actor.Npc;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.item.holders.ItemHolder;
-import org.l2jmobius.gameserver.mechanics.script.Quest;
-import org.l2jmobius.gameserver.mechanics.script.QuestState;
-import org.l2jmobius.gameserver.mechanics.script.State;
+import app.l2nx.highfive.entity.actor.Npc;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.item.holders.ItemHolder;
+import app.l2nx.highfive.mechanics.script.Quest;
+import app.l2nx.highfive.mechanics.script.QuestState;
+import app.l2nx.highfive.mechanics.script.State;
 
-import quests.Q00009_IntoTheCityOfHumans.Q00009_IntoTheCityOfHumans;
+import app.l2nx.highfive.scripts.quests.Q00009_IntoTheCityOfHumans.Q00009_IntoTheCityOfHumans;
 
 /**
  * To The Immortal Plateau (48)

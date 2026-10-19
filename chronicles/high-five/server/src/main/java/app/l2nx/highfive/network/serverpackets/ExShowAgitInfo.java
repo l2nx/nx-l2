@@ -14,16 +14,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.network.serverpackets;
+package app.l2nx.highfive.network.serverpackets;
 
 import java.util.Map;
 
-import org.l2jmobius.commons.network.buffer.WriteBuffer;
-import org.l2jmobius.gameserver.data.sql.ClanHallTable;
-import org.l2jmobius.gameserver.data.sql.ClanTable;
-import org.l2jmobius.gameserver.entity.residences.AuctionableHall;
-import org.l2jmobius.gameserver.network.GameClient;
-import org.l2jmobius.gameserver.network.ServerPackets;
+import app.l2nx.commons.network.buffer.WriteBuffer;
+import app.l2nx.highfive.data.sql.ClanHallTable;
+import app.l2nx.highfive.data.sql.ClanTable;
+import app.l2nx.highfive.entity.residences.AuctionableHall;
+import app.l2nx.highfive.network.GameClient;
+import app.l2nx.highfive.network.ServerPackets;
 
 /**
  * @author KenM

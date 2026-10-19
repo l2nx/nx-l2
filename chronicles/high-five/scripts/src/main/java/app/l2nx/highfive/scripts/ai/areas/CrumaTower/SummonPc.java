@@ -14,14 +14,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package ai.areas.CrumaTower;
+package app.l2nx.highfive.scripts.ai.areas.CrumaTower;
 
-import org.l2jmobius.gameserver.entity.actor.Attackable;
-import org.l2jmobius.gameserver.entity.actor.Npc;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.mechanics.script.Script;
-import org.l2jmobius.gameserver.mechanics.skill.Skill;
-import org.l2jmobius.gameserver.mechanics.skill.holders.SkillHolder;
+import app.l2nx.highfive.entity.actor.Attackable;
+import app.l2nx.highfive.entity.actor.Npc;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.mechanics.script.Script;
+import app.l2nx.highfive.mechanics.skill.Skill;
+import app.l2nx.highfive.mechanics.skill.holders.SkillHolder;
 
 /**
  * Summon Pc AI.<br>

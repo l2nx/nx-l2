@@ -19,7 +19,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  * DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.loginserver;
+package app.l2nx.login;
 
 import java.io.IOException;
 import java.net.Socket;
@@ -28,8 +28,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.l2jmobius.loginserver.config.LoginConfig;
-import org.l2jmobius.loginserver.util.FloodProtectorListener;
+import app.l2nx.login.config.LoginConfig;
+import app.l2nx.login.util.FloodProtectorListener;
 
 /**
  * Listens for incoming game server connections on the configured login port.<br>

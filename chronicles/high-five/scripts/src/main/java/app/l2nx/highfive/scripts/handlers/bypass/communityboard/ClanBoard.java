@@ -14,18 +14,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package handlers.bypass.communityboard;
+package app.l2nx.highfive.scripts.handlers.bypass.communityboard;
 
 import java.util.Arrays;
 import java.util.stream.Collectors;
 
-import org.l2jmobius.gameserver.data.sql.ClanTable;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.clan.Clan;
-import org.l2jmobius.gameserver.handler.CommunityBoardHandler;
-import org.l2jmobius.gameserver.handler.IWriteBoardHandler;
-import org.l2jmobius.gameserver.network.SystemMessageId;
-import org.l2jmobius.gameserver.util.HtmlUtil;
+import app.l2nx.highfive.data.sql.ClanTable;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.clan.Clan;
+import app.l2nx.highfive.handler.CommunityBoardHandler;
+import app.l2nx.highfive.handler.IWriteBoardHandler;
+import app.l2nx.highfive.network.SystemMessageId;
+import app.l2nx.highfive.util.HtmlUtil;
 
 /**
  * Clan board.

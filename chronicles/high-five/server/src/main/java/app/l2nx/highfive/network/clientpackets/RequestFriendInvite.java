@@ -18,14 +18,14 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.network.clientpackets;
+package app.l2nx.highfive.network.clientpackets;
 
-import org.l2jmobius.gameserver.entity.World;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.actor.holders.player.BlockList;
-import org.l2jmobius.gameserver.network.SystemMessageId;
-import org.l2jmobius.gameserver.network.serverpackets.FriendAddRequest;
-import org.l2jmobius.gameserver.network.serverpackets.SystemMessage;
+import app.l2nx.highfive.entity.World;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.actor.holders.player.BlockList;
+import app.l2nx.highfive.network.SystemMessageId;
+import app.l2nx.highfive.network.serverpackets.FriendAddRequest;
+import app.l2nx.highfive.network.serverpackets.SystemMessage;
 
 public class RequestFriendInvite extends ClientPacket
 {

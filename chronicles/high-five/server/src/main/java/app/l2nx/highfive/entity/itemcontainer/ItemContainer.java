@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.entity.itemcontainer;
+package app.l2nx.highfive.entity.itemcontainer;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -26,19 +26,19 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.l2jmobius.commons.database.DatabaseFactory;
-import org.l2jmobius.gameserver.config.GeneralConfig;
-import org.l2jmobius.gameserver.data.xml.ItemData;
-import org.l2jmobius.gameserver.entity.World;
-import org.l2jmobius.gameserver.entity.actor.Creature;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.item.ItemTemplate;
-import org.l2jmobius.gameserver.entity.item.enums.ItemLocation;
-import org.l2jmobius.gameserver.entity.item.enums.ItemProcessType;
-import org.l2jmobius.gameserver.entity.item.instance.Item;
-import org.l2jmobius.gameserver.managers.ItemManager;
-import org.l2jmobius.gameserver.mechanics.variables.ItemVariables;
-import org.l2jmobius.gameserver.network.serverpackets.InventoryUpdate;
+import app.l2nx.commons.database.DatabaseFactory;
+import app.l2nx.highfive.config.GeneralConfig;
+import app.l2nx.highfive.data.xml.ItemData;
+import app.l2nx.highfive.entity.World;
+import app.l2nx.highfive.entity.actor.Creature;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.item.ItemTemplate;
+import app.l2nx.highfive.entity.item.enums.ItemLocation;
+import app.l2nx.highfive.entity.item.enums.ItemProcessType;
+import app.l2nx.highfive.entity.item.instance.Item;
+import app.l2nx.highfive.managers.ItemManager;
+import app.l2nx.highfive.mechanics.variables.ItemVariables;
+import app.l2nx.highfive.network.serverpackets.InventoryUpdate;
 
 /**
  * @author Advi

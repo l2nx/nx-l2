@@ -18,17 +18,17 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.network.clientpackets;
+package app.l2nx.highfive.network.clientpackets;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.actor.enums.player.MacroType;
-import org.l2jmobius.gameserver.entity.actor.holders.player.Macro;
-import org.l2jmobius.gameserver.entity.actor.holders.player.MacroCmd;
-import org.l2jmobius.gameserver.network.SystemMessageId;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.actor.enums.player.MacroType;
+import app.l2nx.highfive.entity.actor.holders.player.Macro;
+import app.l2nx.highfive.entity.actor.holders.player.MacroCmd;
+import app.l2nx.highfive.network.SystemMessageId;
 
 public class RequestMakeMacro extends ClientPacket
 {

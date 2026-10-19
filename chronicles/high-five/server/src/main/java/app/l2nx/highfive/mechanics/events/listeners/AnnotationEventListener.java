@@ -14,16 +14,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.mechanics.events.listeners;
+package app.l2nx.highfive.mechanics.events.listeners;
 
 import java.lang.reflect.Method;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.l2jmobius.gameserver.mechanics.events.EventType;
-import org.l2jmobius.gameserver.mechanics.events.ListenersContainer;
-import org.l2jmobius.gameserver.mechanics.events.holders.IBaseEvent;
-import org.l2jmobius.gameserver.mechanics.events.returns.AbstractEventReturn;
+import app.l2nx.highfive.mechanics.events.EventType;
+import app.l2nx.highfive.mechanics.events.ListenersContainer;
+import app.l2nx.highfive.mechanics.events.holders.IBaseEvent;
+import app.l2nx.highfive.mechanics.events.returns.AbstractEventReturn;
 
 /**
  * Annotation event listener provides dynamically attached callback to any method operation with or without any return object.

@@ -18,7 +18,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package handlers.chat.commands.voiced;
+package app.l2nx.highfive.scripts.handlers.chat.commands.voiced;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -26,37 +26,37 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
 
-import org.l2jmobius.commons.util.StringUtil;
-import org.l2jmobius.gameserver.cache.HtmCache;
-import org.l2jmobius.gameserver.config.custom.AutoPlayConfig;
-import org.l2jmobius.gameserver.data.xml.ItemData;
-import org.l2jmobius.gameserver.data.xml.OptionData;
-import org.l2jmobius.gameserver.data.xml.PetSkillData;
-import org.l2jmobius.gameserver.data.xml.SkillData;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.actor.Summon;
-import org.l2jmobius.gameserver.entity.item.ItemTemplate;
-import org.l2jmobius.gameserver.entity.item.instance.Item;
-import org.l2jmobius.gameserver.handler.IVoicedCommandHandler;
-import org.l2jmobius.gameserver.mechanics.events.Containers;
-import org.l2jmobius.gameserver.mechanics.events.EventType;
-import org.l2jmobius.gameserver.mechanics.events.holders.actor.player.OnPlayerLogin;
-import org.l2jmobius.gameserver.mechanics.events.holders.actor.player.OnPlayerLogout;
-import org.l2jmobius.gameserver.mechanics.events.listeners.ConsumerEventListener;
-import org.l2jmobius.gameserver.mechanics.options.OptionSkillHolder;
-import org.l2jmobius.gameserver.mechanics.options.Options;
-import org.l2jmobius.gameserver.mechanics.skill.AbnormalType;
-import org.l2jmobius.gameserver.mechanics.skill.Skill;
-import org.l2jmobius.gameserver.mechanics.skill.holders.SkillHolder;
-import org.l2jmobius.gameserver.mechanics.variables.PlayerVariables;
-import org.l2jmobius.gameserver.network.enums.ChatType;
-import org.l2jmobius.gameserver.network.serverpackets.ActionFailed;
-import org.l2jmobius.gameserver.network.serverpackets.CreatureSay;
-import org.l2jmobius.gameserver.network.serverpackets.ExShowScreenMessage;
-import org.l2jmobius.gameserver.network.serverpackets.NpcHtmlMessage;
-import org.l2jmobius.gameserver.taskmanagers.AutoPlayTaskManager;
-import org.l2jmobius.gameserver.taskmanagers.AutoUseTaskManager;
-import org.l2jmobius.gameserver.util.HtmlUtil;
+import app.l2nx.commons.util.StringUtil;
+import app.l2nx.highfive.cache.HtmCache;
+import app.l2nx.highfive.config.custom.AutoPlayConfig;
+import app.l2nx.highfive.data.xml.ItemData;
+import app.l2nx.highfive.data.xml.OptionData;
+import app.l2nx.highfive.data.xml.PetSkillData;
+import app.l2nx.highfive.data.xml.SkillData;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.actor.Summon;
+import app.l2nx.highfive.entity.item.ItemTemplate;
+import app.l2nx.highfive.entity.item.instance.Item;
+import app.l2nx.highfive.handler.IVoicedCommandHandler;
+import app.l2nx.highfive.mechanics.events.Containers;
+import app.l2nx.highfive.mechanics.events.EventType;
+import app.l2nx.highfive.mechanics.events.holders.actor.player.OnPlayerLogin;
+import app.l2nx.highfive.mechanics.events.holders.actor.player.OnPlayerLogout;
+import app.l2nx.highfive.mechanics.events.listeners.ConsumerEventListener;
+import app.l2nx.highfive.mechanics.options.OptionSkillHolder;
+import app.l2nx.highfive.mechanics.options.Options;
+import app.l2nx.highfive.mechanics.skill.AbnormalType;
+import app.l2nx.highfive.mechanics.skill.Skill;
+import app.l2nx.highfive.mechanics.skill.holders.SkillHolder;
+import app.l2nx.highfive.mechanics.variables.PlayerVariables;
+import app.l2nx.highfive.network.enums.ChatType;
+import app.l2nx.highfive.network.serverpackets.ActionFailed;
+import app.l2nx.highfive.network.serverpackets.CreatureSay;
+import app.l2nx.highfive.network.serverpackets.ExShowScreenMessage;
+import app.l2nx.highfive.network.serverpackets.NpcHtmlMessage;
+import app.l2nx.highfive.taskmanagers.AutoPlayTaskManager;
+import app.l2nx.highfive.taskmanagers.AutoUseTaskManager;
+import app.l2nx.highfive.util.HtmlUtil;
 
 /**
  * @author Mobius

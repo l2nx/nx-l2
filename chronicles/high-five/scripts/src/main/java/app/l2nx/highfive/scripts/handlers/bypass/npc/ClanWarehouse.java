@@ -18,27 +18,27 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package handlers.bypass.npc;
+package app.l2nx.highfive.scripts.handlers.bypass.npc;
 
 import java.util.logging.Level;
 
-import org.l2jmobius.gameserver.config.custom.WarehouseSortingConfig;
-import org.l2jmobius.gameserver.entity.actor.Creature;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.actor.instance.ClanHallManager;
-import org.l2jmobius.gameserver.entity.actor.instance.Warehouse;
-import org.l2jmobius.gameserver.entity.clan.Clan;
-import org.l2jmobius.gameserver.entity.clan.ClanAccess;
-import org.l2jmobius.gameserver.entity.item.enums.ItemProcessType;
-import org.l2jmobius.gameserver.entity.item.instance.Item;
-import org.l2jmobius.gameserver.handler.IBypassHandler;
-import org.l2jmobius.gameserver.network.SystemMessageId;
-import org.l2jmobius.gameserver.network.enums.WarehouseListType;
-import org.l2jmobius.gameserver.network.serverpackets.ActionFailed;
-import org.l2jmobius.gameserver.network.serverpackets.NpcHtmlMessage;
-import org.l2jmobius.gameserver.network.serverpackets.SortedWareHouseWithdrawalList;
-import org.l2jmobius.gameserver.network.serverpackets.WareHouseDepositList;
-import org.l2jmobius.gameserver.network.serverpackets.WareHouseWithdrawalList;
+import app.l2nx.highfive.config.custom.WarehouseSortingConfig;
+import app.l2nx.highfive.entity.actor.Creature;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.actor.instance.ClanHallManager;
+import app.l2nx.highfive.entity.actor.instance.Warehouse;
+import app.l2nx.highfive.entity.clan.Clan;
+import app.l2nx.highfive.entity.clan.ClanAccess;
+import app.l2nx.highfive.entity.item.enums.ItemProcessType;
+import app.l2nx.highfive.entity.item.instance.Item;
+import app.l2nx.highfive.handler.IBypassHandler;
+import app.l2nx.highfive.network.SystemMessageId;
+import app.l2nx.highfive.network.enums.WarehouseListType;
+import app.l2nx.highfive.network.serverpackets.ActionFailed;
+import app.l2nx.highfive.network.serverpackets.NpcHtmlMessage;
+import app.l2nx.highfive.network.serverpackets.SortedWareHouseWithdrawalList;
+import app.l2nx.highfive.network.serverpackets.WareHouseDepositList;
+import app.l2nx.highfive.network.serverpackets.WareHouseWithdrawalList;
 
 public class ClanWarehouse implements IBypassHandler
 {

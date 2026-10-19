@@ -18,7 +18,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.managers;
+package app.l2nx.highfive.managers;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -31,17 +31,17 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
 
-import org.l2jmobius.commons.database.DatabaseFactory;
-import org.l2jmobius.commons.threads.ThreadPool;
-import org.l2jmobius.gameserver.config.custom.PremiumSystemConfig;
-import org.l2jmobius.gameserver.entity.World;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.mechanics.events.Containers;
-import org.l2jmobius.gameserver.mechanics.events.EventType;
-import org.l2jmobius.gameserver.mechanics.events.ListenersContainer;
-import org.l2jmobius.gameserver.mechanics.events.holders.actor.player.OnPlayerLogin;
-import org.l2jmobius.gameserver.mechanics.events.holders.actor.player.OnPlayerLogout;
-import org.l2jmobius.gameserver.mechanics.events.listeners.ConsumerEventListener;
+import app.l2nx.commons.database.DatabaseFactory;
+import app.l2nx.commons.threads.ThreadPool;
+import app.l2nx.highfive.config.custom.PremiumSystemConfig;
+import app.l2nx.highfive.entity.World;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.mechanics.events.Containers;
+import app.l2nx.highfive.mechanics.events.EventType;
+import app.l2nx.highfive.mechanics.events.ListenersContainer;
+import app.l2nx.highfive.mechanics.events.holders.actor.player.OnPlayerLogin;
+import app.l2nx.highfive.mechanics.events.holders.actor.player.OnPlayerLogout;
+import app.l2nx.highfive.mechanics.events.listeners.ConsumerEventListener;
 
 /**
  * @author Mobius

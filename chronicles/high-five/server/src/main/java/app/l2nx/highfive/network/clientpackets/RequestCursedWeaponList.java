@@ -14,14 +14,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.network.clientpackets;
+package app.l2nx.highfive.network.clientpackets;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.managers.CursedWeaponsManager;
-import org.l2jmobius.gameserver.network.serverpackets.ExCursedWeaponList;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.managers.CursedWeaponsManager;
+import app.l2nx.highfive.network.serverpackets.ExCursedWeaponList;
 
 /**
  * Format: (ch)

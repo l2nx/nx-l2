@@ -14,16 +14,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package ai.areas.PaganTemple.PaganTeleporters;
+package app.l2nx.highfive.scripts.ai.areas.PaganTemple.PaganTeleporters;
 
 import java.util.HashMap;
 import java.util.Map;
 
-import org.l2jmobius.gameserver.data.xml.DoorData;
-import org.l2jmobius.gameserver.entity.Location;
-import org.l2jmobius.gameserver.entity.actor.Npc;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.mechanics.script.Script;
+import app.l2nx.highfive.data.xml.DoorData;
+import app.l2nx.highfive.entity.Location;
+import app.l2nx.highfive.entity.actor.Npc;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.mechanics.script.Script;
 
 /**
  * Pagan Temple teleport AI.<br>

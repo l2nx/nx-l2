@@ -18,7 +18,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.entity.actor.instance;
+package app.l2nx.highfive.entity.actor.instance;
 
 import java.util.EnumMap;
 import java.util.EnumSet;
@@ -28,41 +28,41 @@ import java.util.Set;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-import org.l2jmobius.commons.util.StringUtil;
-import org.l2jmobius.gameserver.config.PlayerConfig;
-import org.l2jmobius.gameserver.config.ServerConfig;
-import org.l2jmobius.gameserver.data.enums.CategoryType;
-import org.l2jmobius.gameserver.data.sql.ClanTable;
-import org.l2jmobius.gameserver.data.xml.CategoryData;
-import org.l2jmobius.gameserver.data.xml.ClassListData;
-import org.l2jmobius.gameserver.data.xml.SkillTreeData;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.actor.enums.creature.InstanceType;
-import org.l2jmobius.gameserver.entity.actor.enums.creature.Race;
-import org.l2jmobius.gameserver.entity.actor.enums.player.PlayerClass;
-import org.l2jmobius.gameserver.entity.actor.holders.player.SubClassHolder;
-import org.l2jmobius.gameserver.entity.actor.templates.NpcTemplate;
-import org.l2jmobius.gameserver.entity.clan.Clan;
-import org.l2jmobius.gameserver.entity.clan.Clan.SubPledge;
-import org.l2jmobius.gameserver.entity.clan.ClanMember;
-import org.l2jmobius.gameserver.entity.zone.ZoneId;
-import org.l2jmobius.gameserver.managers.CastleManager;
-import org.l2jmobius.gameserver.managers.FortManager;
-import org.l2jmobius.gameserver.managers.FortSiegeManager;
-import org.l2jmobius.gameserver.managers.SiegeManager;
-import org.l2jmobius.gameserver.mechanics.olympiad.OlympiadManager;
-import org.l2jmobius.gameserver.mechanics.script.QuestState;
-import org.l2jmobius.gameserver.mechanics.siege.Castle;
-import org.l2jmobius.gameserver.mechanics.siege.Fort;
-import org.l2jmobius.gameserver.mechanics.skill.enums.AcquireSkillType;
-import org.l2jmobius.gameserver.mechanics.skill.holders.SkillLearn;
-import org.l2jmobius.gameserver.network.SystemMessageId;
-import org.l2jmobius.gameserver.network.serverpackets.AcquireSkillList;
-import org.l2jmobius.gameserver.network.serverpackets.ActionFailed;
-import org.l2jmobius.gameserver.network.serverpackets.MagicSkillLaunched;
-import org.l2jmobius.gameserver.network.serverpackets.MagicSkillUse;
-import org.l2jmobius.gameserver.network.serverpackets.NpcHtmlMessage;
-import org.l2jmobius.gameserver.network.serverpackets.SystemMessage;
+import app.l2nx.commons.util.StringUtil;
+import app.l2nx.highfive.config.PlayerConfig;
+import app.l2nx.highfive.config.ServerConfig;
+import app.l2nx.highfive.data.enums.CategoryType;
+import app.l2nx.highfive.data.sql.ClanTable;
+import app.l2nx.highfive.data.xml.CategoryData;
+import app.l2nx.highfive.data.xml.ClassListData;
+import app.l2nx.highfive.data.xml.SkillTreeData;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.actor.enums.creature.InstanceType;
+import app.l2nx.highfive.entity.actor.enums.creature.Race;
+import app.l2nx.highfive.entity.actor.enums.player.PlayerClass;
+import app.l2nx.highfive.entity.actor.holders.player.SubClassHolder;
+import app.l2nx.highfive.entity.actor.templates.NpcTemplate;
+import app.l2nx.highfive.entity.clan.Clan;
+import app.l2nx.highfive.entity.clan.Clan.SubPledge;
+import app.l2nx.highfive.entity.clan.ClanMember;
+import app.l2nx.highfive.entity.zone.ZoneId;
+import app.l2nx.highfive.managers.CastleManager;
+import app.l2nx.highfive.managers.FortManager;
+import app.l2nx.highfive.managers.FortSiegeManager;
+import app.l2nx.highfive.managers.SiegeManager;
+import app.l2nx.highfive.mechanics.olympiad.OlympiadManager;
+import app.l2nx.highfive.mechanics.script.QuestState;
+import app.l2nx.highfive.mechanics.siege.Castle;
+import app.l2nx.highfive.mechanics.siege.Fort;
+import app.l2nx.highfive.mechanics.skill.enums.AcquireSkillType;
+import app.l2nx.highfive.mechanics.skill.holders.SkillLearn;
+import app.l2nx.highfive.network.SystemMessageId;
+import app.l2nx.highfive.network.serverpackets.AcquireSkillList;
+import app.l2nx.highfive.network.serverpackets.ActionFailed;
+import app.l2nx.highfive.network.serverpackets.MagicSkillLaunched;
+import app.l2nx.highfive.network.serverpackets.MagicSkillUse;
+import app.l2nx.highfive.network.serverpackets.NpcHtmlMessage;
+import app.l2nx.highfive.network.serverpackets.SystemMessage;
 
 /**
  * @version $Revision: 1.4.2.3.2.8 $ $Date: 2005/03/29 23:15:15 $

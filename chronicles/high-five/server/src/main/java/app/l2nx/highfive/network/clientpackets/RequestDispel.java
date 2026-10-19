@@ -14,14 +14,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.network.clientpackets;
+package app.l2nx.highfive.network.clientpackets;
 
-import org.l2jmobius.gameserver.config.PlayerConfig;
-import org.l2jmobius.gameserver.data.xml.SkillData;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.mechanics.skill.AbnormalType;
-import org.l2jmobius.gameserver.mechanics.skill.Skill;
-import org.l2jmobius.gameserver.mechanics.skill.enums.SkillFinishType;
+import app.l2nx.highfive.config.PlayerConfig;
+import app.l2nx.highfive.data.xml.SkillData;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.mechanics.skill.AbnormalType;
+import app.l2nx.highfive.mechanics.skill.Skill;
+import app.l2nx.highfive.mechanics.skill.enums.SkillFinishType;
 
 /**
  * @author KenM

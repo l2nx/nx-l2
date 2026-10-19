@@ -18,19 +18,19 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.entity.itemcontainer;
+package app.l2nx.highfive.entity.itemcontainer;
 
-import org.l2jmobius.gameserver.config.PlayerConfig;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.clan.Clan;
-import org.l2jmobius.gameserver.entity.item.enums.ItemLocation;
-import org.l2jmobius.gameserver.entity.item.enums.ItemProcessType;
-import org.l2jmobius.gameserver.entity.item.instance.Item;
-import org.l2jmobius.gameserver.mechanics.events.EventDispatcher;
-import org.l2jmobius.gameserver.mechanics.events.EventType;
-import org.l2jmobius.gameserver.mechanics.events.holders.actor.player.clanwh.OnPlayerClanWHItemAdd;
-import org.l2jmobius.gameserver.mechanics.events.holders.actor.player.clanwh.OnPlayerClanWHItemDestroy;
-import org.l2jmobius.gameserver.mechanics.events.holders.actor.player.clanwh.OnPlayerClanWHItemTransfer;
+import app.l2nx.highfive.config.PlayerConfig;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.clan.Clan;
+import app.l2nx.highfive.entity.item.enums.ItemLocation;
+import app.l2nx.highfive.entity.item.enums.ItemProcessType;
+import app.l2nx.highfive.entity.item.instance.Item;
+import app.l2nx.highfive.mechanics.events.EventDispatcher;
+import app.l2nx.highfive.mechanics.events.EventType;
+import app.l2nx.highfive.mechanics.events.holders.actor.player.clanwh.OnPlayerClanWHItemAdd;
+import app.l2nx.highfive.mechanics.events.holders.actor.player.clanwh.OnPlayerClanWHItemDestroy;
+import app.l2nx.highfive.mechanics.events.holders.actor.player.clanwh.OnPlayerClanWHItemTransfer;
 
 public class ClanWarehouse extends Warehouse
 {

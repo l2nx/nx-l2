@@ -14,25 +14,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package handlers.skill.effects;
+package app.l2nx.highfive.scripts.handlers.skill.effects;
 
-import org.l2jmobius.gameserver.config.GeneralConfig;
-import org.l2jmobius.gameserver.entity.WorldObject;
-import org.l2jmobius.gameserver.entity.actor.Creature;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.actor.holders.player.SummonRequestHolder;
-import org.l2jmobius.gameserver.entity.instancezone.Instance;
-import org.l2jmobius.gameserver.entity.zone.ZoneId;
-import org.l2jmobius.gameserver.managers.InstanceManager;
-import org.l2jmobius.gameserver.mechanics.conditions.Condition;
-import org.l2jmobius.gameserver.mechanics.effects.AbstractEffect;
-import org.l2jmobius.gameserver.mechanics.olympiad.OlympiadManager;
-import org.l2jmobius.gameserver.mechanics.sevensigns.SevenSigns;
-import org.l2jmobius.gameserver.mechanics.skill.Skill;
-import org.l2jmobius.gameserver.network.SystemMessageId;
-import org.l2jmobius.gameserver.network.serverpackets.ConfirmDlg;
-import org.l2jmobius.gameserver.network.serverpackets.SystemMessage;
-import org.l2jmobius.gameserver.util.StatSet;
+import app.l2nx.highfive.config.GeneralConfig;
+import app.l2nx.highfive.entity.WorldObject;
+import app.l2nx.highfive.entity.actor.Creature;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.actor.holders.player.SummonRequestHolder;
+import app.l2nx.highfive.entity.instancezone.Instance;
+import app.l2nx.highfive.entity.zone.ZoneId;
+import app.l2nx.highfive.managers.InstanceManager;
+import app.l2nx.highfive.mechanics.conditions.Condition;
+import app.l2nx.highfive.mechanics.effects.AbstractEffect;
+import app.l2nx.highfive.mechanics.olympiad.OlympiadManager;
+import app.l2nx.highfive.mechanics.sevensigns.SevenSigns;
+import app.l2nx.highfive.mechanics.skill.Skill;
+import app.l2nx.highfive.network.SystemMessageId;
+import app.l2nx.highfive.network.serverpackets.ConfirmDlg;
+import app.l2nx.highfive.network.serverpackets.SystemMessage;
+import app.l2nx.highfive.util.StatSet;
 
 /**
  * Call Pc effect implementation.

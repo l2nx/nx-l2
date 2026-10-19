@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.mechanics.olympiad;
+package app.l2nx.highfive.mechanics.olympiad;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -23,17 +23,17 @@ import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import org.l2jmobius.commons.threads.ThreadPool;
-import org.l2jmobius.gameserver.config.OlympiadConfig;
-import org.l2jmobius.gameserver.config.custom.DualboxCheckConfig;
-import org.l2jmobius.gameserver.entity.World;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.groups.Party;
-import org.l2jmobius.gameserver.managers.AntiFeedManager;
-import org.l2jmobius.gameserver.network.SystemMessageId;
-import org.l2jmobius.gameserver.network.serverpackets.NpcHtmlMessage;
-import org.l2jmobius.gameserver.network.serverpackets.SystemMessage;
-import org.l2jmobius.gameserver.util.StatSet;
+import app.l2nx.commons.threads.ThreadPool;
+import app.l2nx.highfive.config.OlympiadConfig;
+import app.l2nx.highfive.config.custom.DualboxCheckConfig;
+import app.l2nx.highfive.entity.World;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.groups.Party;
+import app.l2nx.highfive.managers.AntiFeedManager;
+import app.l2nx.highfive.network.SystemMessageId;
+import app.l2nx.highfive.network.serverpackets.NpcHtmlMessage;
+import app.l2nx.highfive.network.serverpackets.SystemMessage;
+import app.l2nx.highfive.util.StatSet;
 
 /**
  * @author DS

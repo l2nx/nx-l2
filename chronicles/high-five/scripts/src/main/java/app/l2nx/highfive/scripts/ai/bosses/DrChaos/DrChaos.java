@@ -18,20 +18,20 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package ai.bosses.DrChaos;
+package app.l2nx.highfive.scripts.ai.bosses.DrChaos;
 
-import org.l2jmobius.gameserver.entity.Location;
-import org.l2jmobius.gameserver.entity.World;
-import org.l2jmobius.gameserver.entity.actor.Npc;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.actor.instance.GrandBoss;
-import org.l2jmobius.gameserver.managers.GrandBossManager;
-import org.l2jmobius.gameserver.mechanics.script.Script;
-import org.l2jmobius.gameserver.network.enums.ChatType;
-import org.l2jmobius.gameserver.network.serverpackets.PlaySound;
-import org.l2jmobius.gameserver.network.serverpackets.SocialAction;
-import org.l2jmobius.gameserver.network.serverpackets.SpecialCamera;
-import org.l2jmobius.gameserver.util.StatSet;
+import app.l2nx.highfive.entity.Location;
+import app.l2nx.highfive.entity.World;
+import app.l2nx.highfive.entity.actor.Npc;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.actor.instance.GrandBoss;
+import app.l2nx.highfive.managers.GrandBossManager;
+import app.l2nx.highfive.mechanics.script.Script;
+import app.l2nx.highfive.network.enums.ChatType;
+import app.l2nx.highfive.network.serverpackets.PlaySound;
+import app.l2nx.highfive.network.serverpackets.SocialAction;
+import app.l2nx.highfive.network.serverpackets.SpecialCamera;
+import app.l2nx.highfive.util.StatSet;
 
 /**
  * AI for Dr. Chaos boss in Pavel's Ruins.<br>

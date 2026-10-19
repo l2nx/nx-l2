@@ -18,24 +18,24 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.loginserver.network;
+package app.l2nx.login.network;
 
 import java.util.logging.Logger;
 
-import org.l2jmobius.commons.network.packet.SimpleReadablePacket;
-import org.l2jmobius.loginserver.GameServerThread;
-import org.l2jmobius.loginserver.network.gameserverpackets.receive.BlowFishKey;
-import org.l2jmobius.loginserver.network.gameserverpackets.receive.ChangeAccessLevel;
-import org.l2jmobius.loginserver.network.gameserverpackets.receive.ChangePassword;
-import org.l2jmobius.loginserver.network.gameserverpackets.receive.GameServerAuth;
-import org.l2jmobius.loginserver.network.gameserverpackets.receive.PlayerAuthRequest;
-import org.l2jmobius.loginserver.network.gameserverpackets.receive.PlayerInGame;
-import org.l2jmobius.loginserver.network.gameserverpackets.receive.PlayerLogout;
-import org.l2jmobius.loginserver.network.gameserverpackets.receive.PlayerTracert;
-import org.l2jmobius.loginserver.network.gameserverpackets.receive.ReplyCharacters;
-import org.l2jmobius.loginserver.network.gameserverpackets.receive.RequestTempBan;
-import org.l2jmobius.loginserver.network.gameserverpackets.receive.ServerStatus;
-import org.l2jmobius.loginserver.network.gameserverpackets.send.LoginServerFail;
+import app.l2nx.commons.network.packet.SimpleReadablePacket;
+import app.l2nx.login.GameServerThread;
+import app.l2nx.login.network.gameserverpackets.receive.BlowFishKey;
+import app.l2nx.login.network.gameserverpackets.receive.ChangeAccessLevel;
+import app.l2nx.login.network.gameserverpackets.receive.ChangePassword;
+import app.l2nx.login.network.gameserverpackets.receive.GameServerAuth;
+import app.l2nx.login.network.gameserverpackets.receive.PlayerAuthRequest;
+import app.l2nx.login.network.gameserverpackets.receive.PlayerInGame;
+import app.l2nx.login.network.gameserverpackets.receive.PlayerLogout;
+import app.l2nx.login.network.gameserverpackets.receive.PlayerTracert;
+import app.l2nx.login.network.gameserverpackets.receive.ReplyCharacters;
+import app.l2nx.login.network.gameserverpackets.receive.RequestTempBan;
+import app.l2nx.login.network.gameserverpackets.receive.ServerStatus;
+import app.l2nx.login.network.gameserverpackets.send.LoginServerFail;
 
 /**
  * Handles routing of packets received from game server connections.

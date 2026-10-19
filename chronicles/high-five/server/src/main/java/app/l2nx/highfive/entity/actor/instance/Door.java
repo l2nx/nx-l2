@@ -18,45 +18,45 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.entity.actor.instance;
+package app.l2nx.highfive.entity.actor.instance;
 
 import java.util.Set;
 import java.util.concurrent.Future;
 import java.util.logging.Level;
 
-import org.l2jmobius.commons.threads.ThreadPool;
-import org.l2jmobius.commons.util.Rnd;
-import org.l2jmobius.gameserver.ai.CreatureAI;
-import org.l2jmobius.gameserver.ai.DoorAI;
-import org.l2jmobius.gameserver.data.sql.ClanHallTable;
-import org.l2jmobius.gameserver.data.xml.DoorData;
-import org.l2jmobius.gameserver.entity.Location;
-import org.l2jmobius.gameserver.entity.World;
-import org.l2jmobius.gameserver.entity.actor.Creature;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.actor.enums.creature.InstanceType;
-import org.l2jmobius.gameserver.entity.actor.enums.creature.Race;
-import org.l2jmobius.gameserver.entity.actor.stat.DoorStat;
-import org.l2jmobius.gameserver.entity.actor.status.DoorStatus;
-import org.l2jmobius.gameserver.entity.actor.templates.DoorTemplate;
-import org.l2jmobius.gameserver.entity.clan.Clan;
-import org.l2jmobius.gameserver.entity.instancezone.Instance;
-import org.l2jmobius.gameserver.entity.item.Weapon;
-import org.l2jmobius.gameserver.entity.item.instance.Item;
-import org.l2jmobius.gameserver.entity.residences.ClanHall;
-import org.l2jmobius.gameserver.managers.CastleManager;
-import org.l2jmobius.gameserver.managers.FortManager;
-import org.l2jmobius.gameserver.managers.InstanceManager;
-import org.l2jmobius.gameserver.managers.TerritoryWarManager;
-import org.l2jmobius.gameserver.mechanics.siege.Castle;
-import org.l2jmobius.gameserver.mechanics.siege.Fort;
-import org.l2jmobius.gameserver.mechanics.siege.clanhalls.SiegableHall;
-import org.l2jmobius.gameserver.mechanics.skill.Skill;
-import org.l2jmobius.gameserver.network.SystemMessageId;
-import org.l2jmobius.gameserver.network.serverpackets.DoorStatusUpdate;
-import org.l2jmobius.gameserver.network.serverpackets.OnEventTrigger;
-import org.l2jmobius.gameserver.network.serverpackets.StaticObjectInfo;
-import org.l2jmobius.gameserver.network.serverpackets.SystemMessage;
+import app.l2nx.commons.threads.ThreadPool;
+import app.l2nx.commons.util.Rnd;
+import app.l2nx.highfive.ai.CreatureAI;
+import app.l2nx.highfive.ai.DoorAI;
+import app.l2nx.highfive.data.sql.ClanHallTable;
+import app.l2nx.highfive.data.xml.DoorData;
+import app.l2nx.highfive.entity.Location;
+import app.l2nx.highfive.entity.World;
+import app.l2nx.highfive.entity.actor.Creature;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.actor.enums.creature.InstanceType;
+import app.l2nx.highfive.entity.actor.enums.creature.Race;
+import app.l2nx.highfive.entity.actor.stat.DoorStat;
+import app.l2nx.highfive.entity.actor.status.DoorStatus;
+import app.l2nx.highfive.entity.actor.templates.DoorTemplate;
+import app.l2nx.highfive.entity.clan.Clan;
+import app.l2nx.highfive.entity.instancezone.Instance;
+import app.l2nx.highfive.entity.item.Weapon;
+import app.l2nx.highfive.entity.item.instance.Item;
+import app.l2nx.highfive.entity.residences.ClanHall;
+import app.l2nx.highfive.managers.CastleManager;
+import app.l2nx.highfive.managers.FortManager;
+import app.l2nx.highfive.managers.InstanceManager;
+import app.l2nx.highfive.managers.TerritoryWarManager;
+import app.l2nx.highfive.mechanics.siege.Castle;
+import app.l2nx.highfive.mechanics.siege.Fort;
+import app.l2nx.highfive.mechanics.siege.clanhalls.SiegableHall;
+import app.l2nx.highfive.mechanics.skill.Skill;
+import app.l2nx.highfive.network.SystemMessageId;
+import app.l2nx.highfive.network.serverpackets.DoorStatusUpdate;
+import app.l2nx.highfive.network.serverpackets.OnEventTrigger;
+import app.l2nx.highfive.network.serverpackets.StaticObjectInfo;
+import app.l2nx.highfive.network.serverpackets.SystemMessage;
 
 public class Door extends Creature
 {

@@ -18,33 +18,33 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package ai.others;
+package app.l2nx.highfive.scripts.ai.others;
 
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import org.l2jmobius.commons.threads.ThreadPool;
-import org.l2jmobius.gameserver.entity.World;
-import org.l2jmobius.gameserver.entity.WorldObject;
-import org.l2jmobius.gameserver.entity.actor.Creature;
-import org.l2jmobius.gameserver.entity.actor.Npc;
-import org.l2jmobius.gameserver.entity.actor.Playable;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.item.type.WeaponType;
-import org.l2jmobius.gameserver.entity.spawns.Spawn;
-import org.l2jmobius.gameserver.geoengine.GeoEngine;
-import org.l2jmobius.gameserver.managers.CastleManager;
-import org.l2jmobius.gameserver.managers.FortManager;
-import org.l2jmobius.gameserver.mechanics.events.EventType;
-import org.l2jmobius.gameserver.mechanics.events.ListenerRegisterType;
-import org.l2jmobius.gameserver.mechanics.events.annotations.RegisterEvent;
-import org.l2jmobius.gameserver.mechanics.events.annotations.RegisterType;
-import org.l2jmobius.gameserver.mechanics.events.holders.sieges.castle.OnCastleSiegeFinish;
-import org.l2jmobius.gameserver.mechanics.events.holders.sieges.fort.OnFortSiegeFinish;
-import org.l2jmobius.gameserver.mechanics.script.Script;
-import org.l2jmobius.gameserver.mechanics.siege.Castle;
-import org.l2jmobius.gameserver.mechanics.siege.Fort;
-import org.l2jmobius.gameserver.mechanics.skill.Skill;
+import app.l2nx.commons.threads.ThreadPool;
+import app.l2nx.highfive.entity.World;
+import app.l2nx.highfive.entity.WorldObject;
+import app.l2nx.highfive.entity.actor.Creature;
+import app.l2nx.highfive.entity.actor.Npc;
+import app.l2nx.highfive.entity.actor.Playable;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.item.type.WeaponType;
+import app.l2nx.highfive.entity.spawns.Spawn;
+import app.l2nx.highfive.geoengine.GeoEngine;
+import app.l2nx.highfive.managers.CastleManager;
+import app.l2nx.highfive.managers.FortManager;
+import app.l2nx.highfive.mechanics.events.EventType;
+import app.l2nx.highfive.mechanics.events.ListenerRegisterType;
+import app.l2nx.highfive.mechanics.events.annotations.RegisterEvent;
+import app.l2nx.highfive.mechanics.events.annotations.RegisterType;
+import app.l2nx.highfive.mechanics.events.holders.sieges.castle.OnCastleSiegeFinish;
+import app.l2nx.highfive.mechanics.events.holders.sieges.fort.OnFortSiegeFinish;
+import app.l2nx.highfive.mechanics.script.Script;
+import app.l2nx.highfive.mechanics.siege.Castle;
+import app.l2nx.highfive.mechanics.siege.Fort;
+import app.l2nx.highfive.mechanics.skill.Skill;
 
 /**
  * @author Mobius

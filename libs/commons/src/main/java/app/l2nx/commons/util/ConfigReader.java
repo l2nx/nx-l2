@@ -18,7 +18,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.commons.util;
+package app.l2nx.commons.util;
 
 import java.io.File;
 import java.io.IOException;
@@ -32,7 +32,7 @@ import java.util.Collection;
 import java.util.Properties;
 import java.util.logging.Logger;
 
-import org.l2jmobius.commons.time.TimeUtil;
+import app.l2nx.commons.time.TimeUtil;
 
 /**
  * ConfigReader is a utility class that reads and provides access to configuration properties from a file.

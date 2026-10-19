@@ -14,15 +14,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.data.xml;
+package app.l2nx.highfive.data.xml;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import org.l2jmobius.commons.util.Rnd;
-import org.l2jmobius.gameserver.entity.actor.Npc;
-import org.l2jmobius.gameserver.entity.spawns.Spawn;
+import app.l2nx.commons.util.Rnd;
+import app.l2nx.highfive.entity.actor.Npc;
+import app.l2nx.highfive.entity.spawns.Spawn;
 
 /**
  * This class holds parameter, specific to certain NPCs.<br>

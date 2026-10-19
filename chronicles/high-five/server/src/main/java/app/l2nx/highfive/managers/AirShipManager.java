@@ -18,7 +18,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.managers;
+package app.l2nx.highfive.managers;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -30,14 +30,14 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.l2jmobius.commons.database.DatabaseFactory;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.actor.holders.creature.VehiclePathPoint;
-import org.l2jmobius.gameserver.entity.actor.instance.AirShip;
-import org.l2jmobius.gameserver.entity.actor.instance.ControllableAirShip;
-import org.l2jmobius.gameserver.entity.actor.templates.CreatureTemplate;
-import org.l2jmobius.gameserver.network.serverpackets.ExAirShipTeleportList;
-import org.l2jmobius.gameserver.util.StatSet;
+import app.l2nx.commons.database.DatabaseFactory;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.actor.holders.creature.VehiclePathPoint;
+import app.l2nx.highfive.entity.actor.instance.AirShip;
+import app.l2nx.highfive.entity.actor.instance.ControllableAirShip;
+import app.l2nx.highfive.entity.actor.templates.CreatureTemplate;
+import app.l2nx.highfive.network.serverpackets.ExAirShipTeleportList;
+import app.l2nx.highfive.util.StatSet;
 
 public class AirShipManager
 {

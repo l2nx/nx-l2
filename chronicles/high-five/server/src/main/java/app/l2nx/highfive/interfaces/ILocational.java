@@ -14,10 +14,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.interfaces;
+package app.l2nx.highfive.interfaces;
 
-import org.l2jmobius.gameserver.entity.actor.enums.creature.Position;
-import org.l2jmobius.gameserver.util.LocationUtil;
+import app.l2nx.highfive.entity.actor.enums.creature.Position;
+import app.l2nx.highfive.util.LocationUtil;
 
 /**
  * Object world location storage interface.

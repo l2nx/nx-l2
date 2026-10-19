@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package handlers.bypass.communityboard;
+package app.l2nx.highfive.scripts.handlers.bypass.communityboard;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -22,12 +22,12 @@ import java.sql.ResultSet;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 
-import org.l2jmobius.commons.database.DatabaseFactory;
-import org.l2jmobius.commons.util.StringUtil;
-import org.l2jmobius.gameserver.cache.HtmCache;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.handler.CommunityBoardHandler;
-import org.l2jmobius.gameserver.handler.IParseBoardHandler;
+import app.l2nx.commons.database.DatabaseFactory;
+import app.l2nx.commons.util.StringUtil;
+import app.l2nx.highfive.cache.HtmCache;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.handler.CommunityBoardHandler;
+import app.l2nx.highfive.handler.IParseBoardHandler;
 
 /**
  * Favorite board.

@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.managers;
+package app.l2nx.highfive.managers;
 
 import java.io.File;
 import java.sql.Connection;
@@ -34,24 +34,24 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 
-import org.l2jmobius.commons.database.DatabaseFactory;
-import org.l2jmobius.gameserver.config.GeneralConfig;
-import org.l2jmobius.gameserver.config.ServerConfig;
-import org.l2jmobius.gameserver.entity.World;
-import org.l2jmobius.gameserver.entity.actor.Attackable;
-import org.l2jmobius.gameserver.entity.actor.Creature;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.actor.holders.player.CursedWeapon;
-import org.l2jmobius.gameserver.entity.actor.instance.Defender;
-import org.l2jmobius.gameserver.entity.actor.instance.FeedableBeast;
-import org.l2jmobius.gameserver.entity.actor.instance.FestivalMonster;
-import org.l2jmobius.gameserver.entity.actor.instance.FortCommander;
-import org.l2jmobius.gameserver.entity.actor.instance.GrandBoss;
-import org.l2jmobius.gameserver.entity.actor.instance.Guard;
-import org.l2jmobius.gameserver.entity.actor.instance.RiftInvader;
-import org.l2jmobius.gameserver.entity.item.instance.Item;
-import org.l2jmobius.gameserver.network.SystemMessageId;
-import org.l2jmobius.gameserver.network.serverpackets.SystemMessage;
+import app.l2nx.commons.database.DatabaseFactory;
+import app.l2nx.highfive.config.GeneralConfig;
+import app.l2nx.highfive.config.ServerConfig;
+import app.l2nx.highfive.entity.World;
+import app.l2nx.highfive.entity.actor.Attackable;
+import app.l2nx.highfive.entity.actor.Creature;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.actor.holders.player.CursedWeapon;
+import app.l2nx.highfive.entity.actor.instance.Defender;
+import app.l2nx.highfive.entity.actor.instance.FeedableBeast;
+import app.l2nx.highfive.entity.actor.instance.FestivalMonster;
+import app.l2nx.highfive.entity.actor.instance.FortCommander;
+import app.l2nx.highfive.entity.actor.instance.GrandBoss;
+import app.l2nx.highfive.entity.actor.instance.Guard;
+import app.l2nx.highfive.entity.actor.instance.RiftInvader;
+import app.l2nx.highfive.entity.item.instance.Item;
+import app.l2nx.highfive.network.SystemMessageId;
+import app.l2nx.highfive.network.serverpackets.SystemMessage;
 
 /**
  * @author Micht

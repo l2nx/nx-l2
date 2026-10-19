@@ -14,20 +14,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.entity.actor.instance;
+package app.l2nx.highfive.entity.actor.instance;
 
-import org.l2jmobius.gameserver.ai.AirShipAI;
-import org.l2jmobius.gameserver.entity.Location;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.actor.Vehicle;
-import org.l2jmobius.gameserver.entity.actor.enums.creature.InstanceType;
-import org.l2jmobius.gameserver.entity.actor.templates.CreatureTemplate;
-import org.l2jmobius.gameserver.managers.AirShipManager;
-import org.l2jmobius.gameserver.network.serverpackets.ExAirShipInfo;
-import org.l2jmobius.gameserver.network.serverpackets.ExGetOffAirShip;
-import org.l2jmobius.gameserver.network.serverpackets.ExGetOnAirShip;
-import org.l2jmobius.gameserver.network.serverpackets.ExMoveToLocationAirShip;
-import org.l2jmobius.gameserver.network.serverpackets.ExStopMoveAirShip;
+import app.l2nx.highfive.ai.AirShipAI;
+import app.l2nx.highfive.entity.Location;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.actor.Vehicle;
+import app.l2nx.highfive.entity.actor.enums.creature.InstanceType;
+import app.l2nx.highfive.entity.actor.templates.CreatureTemplate;
+import app.l2nx.highfive.managers.AirShipManager;
+import app.l2nx.highfive.network.serverpackets.ExAirShipInfo;
+import app.l2nx.highfive.network.serverpackets.ExGetOffAirShip;
+import app.l2nx.highfive.network.serverpackets.ExGetOnAirShip;
+import app.l2nx.highfive.network.serverpackets.ExMoveToLocationAirShip;
+import app.l2nx.highfive.network.serverpackets.ExStopMoveAirShip;
 
 /**
  * Flying airships. Very similar to Maktakien boats (see Boat) but these do fly :P

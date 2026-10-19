@@ -18,12 +18,12 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.loginserver.network;
+package app.l2nx.login.network;
 
-import org.l2jmobius.commons.crypt.NewCrypt;
-import org.l2jmobius.commons.network.buffer.ReadBuffer;
-import org.l2jmobius.commons.network.buffer.WriteBuffer;
-import org.l2jmobius.commons.util.Rnd;
+import app.l2nx.commons.crypt.NewCrypt;
+import app.l2nx.commons.network.buffer.ReadBuffer;
+import app.l2nx.commons.network.buffer.WriteBuffer;
+import app.l2nx.commons.util.Rnd;
 
 /**
  * Blowfish cipher used by the login protocol.<br>

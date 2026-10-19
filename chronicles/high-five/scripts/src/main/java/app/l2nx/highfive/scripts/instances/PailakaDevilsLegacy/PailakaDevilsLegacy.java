@@ -14,27 +14,27 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package instances.PailakaDevilsLegacy;
+package app.l2nx.highfive.scripts.instances.PailakaDevilsLegacy;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import org.l2jmobius.gameserver.entity.Location;
-import org.l2jmobius.gameserver.entity.World;
-import org.l2jmobius.gameserver.entity.actor.Creature;
-import org.l2jmobius.gameserver.entity.actor.Npc;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.actor.Summon;
-import org.l2jmobius.gameserver.entity.actor.instance.Monster;
-import org.l2jmobius.gameserver.entity.instancezone.InstanceWorld;
-import org.l2jmobius.gameserver.entity.zone.ZoneType;
-import org.l2jmobius.gameserver.managers.InstanceManager;
-import org.l2jmobius.gameserver.mechanics.script.InstanceScript;
-import org.l2jmobius.gameserver.mechanics.script.QuestState;
-import org.l2jmobius.gameserver.mechanics.skill.holders.SkillHolder;
-import org.l2jmobius.gameserver.network.serverpackets.MagicSkillUse;
+import app.l2nx.highfive.entity.Location;
+import app.l2nx.highfive.entity.World;
+import app.l2nx.highfive.entity.actor.Creature;
+import app.l2nx.highfive.entity.actor.Npc;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.actor.Summon;
+import app.l2nx.highfive.entity.actor.instance.Monster;
+import app.l2nx.highfive.entity.instancezone.InstanceWorld;
+import app.l2nx.highfive.entity.zone.ZoneType;
+import app.l2nx.highfive.managers.InstanceManager;
+import app.l2nx.highfive.mechanics.script.InstanceScript;
+import app.l2nx.highfive.mechanics.script.QuestState;
+import app.l2nx.highfive.mechanics.skill.holders.SkillHolder;
+import app.l2nx.highfive.network.serverpackets.MagicSkillUse;
 
-import quests.Q00129_PailakaDevilsLegacy.Q00129_PailakaDevilsLegacy;
+import app.l2nx.highfive.scripts.quests.Q00129_PailakaDevilsLegacy.Q00129_PailakaDevilsLegacy;
 
 /**
  * Pailaka Devil's Legacy Instance zone.

@@ -18,7 +18,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.data.xml;
+package app.l2nx.highfive.data.xml;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -37,22 +37,22 @@ import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 
-import org.l2jmobius.commons.util.IXmlReader;
-import org.l2jmobius.gameserver.config.PlayerConfig;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.actor.enums.creature.Race;
-import org.l2jmobius.gameserver.entity.actor.enums.player.PlayerClass;
-import org.l2jmobius.gameserver.entity.actor.enums.player.SocialClass;
-import org.l2jmobius.gameserver.entity.actor.holders.player.SubClassHolder;
-import org.l2jmobius.gameserver.entity.clan.Clan;
-import org.l2jmobius.gameserver.entity.item.holders.ItemHolder;
-import org.l2jmobius.gameserver.mechanics.skill.CommonSkill;
-import org.l2jmobius.gameserver.mechanics.skill.Skill;
-import org.l2jmobius.gameserver.mechanics.skill.enums.AcquireSkillType;
-import org.l2jmobius.gameserver.mechanics.skill.holders.SkillHolder;
-import org.l2jmobius.gameserver.mechanics.skill.holders.SkillLearn;
-import org.l2jmobius.gameserver.mechanics.skill.holders.SkillLearn.SubClassData;
-import org.l2jmobius.gameserver.util.StatSet;
+import app.l2nx.commons.util.IXmlReader;
+import app.l2nx.highfive.config.PlayerConfig;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.actor.enums.creature.Race;
+import app.l2nx.highfive.entity.actor.enums.player.PlayerClass;
+import app.l2nx.highfive.entity.actor.enums.player.SocialClass;
+import app.l2nx.highfive.entity.actor.holders.player.SubClassHolder;
+import app.l2nx.highfive.entity.clan.Clan;
+import app.l2nx.highfive.entity.item.holders.ItemHolder;
+import app.l2nx.highfive.mechanics.skill.CommonSkill;
+import app.l2nx.highfive.mechanics.skill.Skill;
+import app.l2nx.highfive.mechanics.skill.enums.AcquireSkillType;
+import app.l2nx.highfive.mechanics.skill.holders.SkillHolder;
+import app.l2nx.highfive.mechanics.skill.holders.SkillLearn;
+import app.l2nx.highfive.mechanics.skill.holders.SkillLearn.SubClassData;
+import app.l2nx.highfive.util.StatSet;
 
 /**
  * This class loads and manage the characters and pledges skills trees.<br>

@@ -18,7 +18,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package ai.areas.FantasyIsle;
+package app.l2nx.highfive.scripts.ai.areas.FantasyIsle;
 
 import java.time.Instant;
 import java.time.ZoneId;
@@ -27,11 +27,11 @@ import java.util.Collection;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
 
-import org.l2jmobius.commons.threads.ThreadPool;
-import org.l2jmobius.gameserver.entity.Location;
-import org.l2jmobius.gameserver.entity.actor.Npc;
-import org.l2jmobius.gameserver.mechanics.script.Script;
-import org.l2jmobius.gameserver.taskmanagers.GameTimeTaskManager;
+import app.l2nx.commons.threads.ThreadPool;
+import app.l2nx.highfive.entity.Location;
+import app.l2nx.highfive.entity.actor.Npc;
+import app.l2nx.highfive.mechanics.script.Script;
+import app.l2nx.highfive.taskmanagers.GameTimeTaskManager;
 
 /**
  * Fantasy Isle Parade

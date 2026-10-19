@@ -18,19 +18,19 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.ai;
+package app.l2nx.highfive.ai;
 
 import java.util.concurrent.Future;
 
-import org.l2jmobius.commons.threads.ThreadPool;
-import org.l2jmobius.commons.util.Rnd;
-import org.l2jmobius.gameserver.config.GeoEngineConfig;
-import org.l2jmobius.gameserver.entity.WorldObject;
-import org.l2jmobius.gameserver.entity.actor.Creature;
-import org.l2jmobius.gameserver.entity.actor.Summon;
-import org.l2jmobius.gameserver.geoengine.GeoEngine;
-import org.l2jmobius.gameserver.geoengine.pathfinding.PathFinding;
-import org.l2jmobius.gameserver.mechanics.skill.Skill;
+import app.l2nx.commons.threads.ThreadPool;
+import app.l2nx.commons.util.Rnd;
+import app.l2nx.highfive.config.GeoEngineConfig;
+import app.l2nx.highfive.entity.WorldObject;
+import app.l2nx.highfive.entity.actor.Creature;
+import app.l2nx.highfive.entity.actor.Summon;
+import app.l2nx.highfive.geoengine.GeoEngine;
+import app.l2nx.highfive.geoengine.pathfinding.PathFinding;
+import app.l2nx.highfive.mechanics.skill.Skill;
 
 public class SummonAI extends PlayableAI implements Runnable
 {

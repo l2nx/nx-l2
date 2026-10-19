@@ -18,16 +18,16 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package handlers.actions.click;
+package app.l2nx.highfive.scripts.handlers.actions.click;
 
-import org.l2jmobius.gameserver.cache.HtmCache;
-import org.l2jmobius.gameserver.entity.WorldObject;
-import org.l2jmobius.gameserver.entity.actor.Npc;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.actor.enums.creature.InstanceType;
-import org.l2jmobius.gameserver.entity.actor.instance.StaticObject;
-import org.l2jmobius.gameserver.handler.IActionClickHandler;
-import org.l2jmobius.gameserver.network.serverpackets.NpcHtmlMessage;
+import app.l2nx.highfive.cache.HtmCache;
+import app.l2nx.highfive.entity.WorldObject;
+import app.l2nx.highfive.entity.actor.Npc;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.actor.enums.creature.InstanceType;
+import app.l2nx.highfive.entity.actor.instance.StaticObject;
+import app.l2nx.highfive.handler.IActionClickHandler;
+import app.l2nx.highfive.network.serverpackets.NpcHtmlMessage;
 
 public class StaticObjectClick implements IActionClickHandler
 {

@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.managers;
+package app.l2nx.highfive.managers;
 
 import java.io.File;
 import java.sql.Connection;
@@ -33,20 +33,20 @@ import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 
-import org.l2jmobius.commons.database.DatabaseFactory;
-import org.l2jmobius.commons.util.Rnd;
-import org.l2jmobius.gameserver.config.GeneralConfig;
-import org.l2jmobius.gameserver.config.ServerConfig;
-import org.l2jmobius.gameserver.data.SpawnTable;
-import org.l2jmobius.gameserver.entity.actor.Npc;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.groups.Party;
-import org.l2jmobius.gameserver.entity.item.enums.ItemProcessType;
-import org.l2jmobius.gameserver.entity.item.instance.Item;
-import org.l2jmobius.gameserver.entity.spawns.Spawn;
-import org.l2jmobius.gameserver.mechanics.sevensigns.DimensionalRift;
-import org.l2jmobius.gameserver.mechanics.sevensigns.DimensionalRiftRoom;
-import org.l2jmobius.gameserver.network.serverpackets.NpcHtmlMessage;
+import app.l2nx.commons.database.DatabaseFactory;
+import app.l2nx.commons.util.Rnd;
+import app.l2nx.highfive.config.GeneralConfig;
+import app.l2nx.highfive.config.ServerConfig;
+import app.l2nx.highfive.data.SpawnTable;
+import app.l2nx.highfive.entity.actor.Npc;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.groups.Party;
+import app.l2nx.highfive.entity.item.enums.ItemProcessType;
+import app.l2nx.highfive.entity.item.instance.Item;
+import app.l2nx.highfive.entity.spawns.Spawn;
+import app.l2nx.highfive.mechanics.sevensigns.DimensionalRift;
+import app.l2nx.highfive.mechanics.sevensigns.DimensionalRiftRoom;
+import app.l2nx.highfive.network.serverpackets.NpcHtmlMessage;
 
 /**
  * Dimensional Rift manager.

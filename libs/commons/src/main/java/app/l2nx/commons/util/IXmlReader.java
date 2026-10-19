@@ -18,7 +18,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.commons.util;
+package app.l2nx.commons.util;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -43,7 +43,7 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXParseException;
 
-import org.l2jmobius.commons.config.ThreadConfig;
+import app.l2nx.commons.config.ThreadConfig;
 
 /**
  * Interface for XML parsers.

@@ -18,9 +18,9 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package handlers.chat.channels;
+package app.l2nx.highfive.scripts.handlers.chat.channels;
 
-import org.l2jmobius.commons.util.Rnd;
+import app.l2nx.commons.util.Rnd;
 
 /**
  * @author Mobius

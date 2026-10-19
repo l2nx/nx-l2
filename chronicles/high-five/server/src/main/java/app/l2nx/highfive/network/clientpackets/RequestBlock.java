@@ -18,13 +18,13 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.network.clientpackets;
+package app.l2nx.highfive.network.clientpackets;
 
-import org.l2jmobius.gameserver.data.sql.CharInfoTable;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.actor.holders.player.BlockList;
-import org.l2jmobius.gameserver.network.PacketLogger;
-import org.l2jmobius.gameserver.network.SystemMessageId;
+import app.l2nx.highfive.data.sql.CharInfoTable;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.actor.holders.player.BlockList;
+import app.l2nx.highfive.network.PacketLogger;
+import app.l2nx.highfive.network.SystemMessageId;
 
 public class RequestBlock extends ClientPacket
 {

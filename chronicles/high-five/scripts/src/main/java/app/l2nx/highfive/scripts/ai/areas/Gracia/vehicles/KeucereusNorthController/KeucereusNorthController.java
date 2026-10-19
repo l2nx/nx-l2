@@ -18,13 +18,13 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package ai.areas.Gracia.vehicles.KeucereusNorthController;
+package app.l2nx.highfive.scripts.ai.areas.Gracia.vehicles.KeucereusNorthController;
 
-import org.l2jmobius.gameserver.entity.Location;
-import org.l2jmobius.gameserver.entity.actor.holders.creature.VehiclePathPoint;
-import org.l2jmobius.gameserver.network.enums.Movie;
+import app.l2nx.highfive.entity.Location;
+import app.l2nx.highfive.entity.actor.holders.creature.VehiclePathPoint;
+import app.l2nx.highfive.network.enums.Movie;
 
-import ai.areas.Gracia.vehicles.AirShipController;
+import app.l2nx.highfive.scripts.ai.areas.Gracia.vehicles.AirShipController;
 
 public class KeucereusNorthController extends AirShipController
 {

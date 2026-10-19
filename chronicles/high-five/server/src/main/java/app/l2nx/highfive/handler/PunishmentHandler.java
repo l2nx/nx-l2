@@ -14,12 +14,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.handler;
+package app.l2nx.highfive.handler;
 
 import java.util.EnumMap;
 import java.util.Map;
 
-import org.l2jmobius.gameserver.mechanics.punishment.PunishmentType;
+import app.l2nx.highfive.mechanics.punishment.PunishmentType;
 
 /**
  * This class manages handlers of punishments.

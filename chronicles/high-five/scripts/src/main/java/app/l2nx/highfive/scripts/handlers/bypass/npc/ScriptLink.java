@@ -18,7 +18,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package handlers.bypass.npc;
+package app.l2nx.highfive.scripts.handlers.bypass.npc;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -28,24 +28,24 @@ import java.util.List;
 import java.util.Set;
 import java.util.logging.Level;
 
-import org.l2jmobius.gameserver.config.custom.MultilingualSupportConfig;
-import org.l2jmobius.gameserver.data.xml.NpcData;
-import org.l2jmobius.gameserver.entity.World;
-import org.l2jmobius.gameserver.entity.actor.Creature;
-import org.l2jmobius.gameserver.entity.actor.Npc;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.actor.templates.NpcTemplate;
-import org.l2jmobius.gameserver.handler.IBypassHandler;
-import org.l2jmobius.gameserver.managers.ScriptManager;
-import org.l2jmobius.gameserver.mechanics.events.EventType;
-import org.l2jmobius.gameserver.mechanics.events.listeners.AbstractEventListener;
-import org.l2jmobius.gameserver.mechanics.script.Quest;
-import org.l2jmobius.gameserver.mechanics.script.QuestState;
-import org.l2jmobius.gameserver.network.NpcStringId;
-import org.l2jmobius.gameserver.network.NpcStringId.NSLocalisation;
-import org.l2jmobius.gameserver.network.SystemMessageId;
-import org.l2jmobius.gameserver.network.serverpackets.ActionFailed;
-import org.l2jmobius.gameserver.network.serverpackets.NpcHtmlMessage;
+import app.l2nx.highfive.config.custom.MultilingualSupportConfig;
+import app.l2nx.highfive.data.xml.NpcData;
+import app.l2nx.highfive.entity.World;
+import app.l2nx.highfive.entity.actor.Creature;
+import app.l2nx.highfive.entity.actor.Npc;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.actor.templates.NpcTemplate;
+import app.l2nx.highfive.handler.IBypassHandler;
+import app.l2nx.highfive.managers.ScriptManager;
+import app.l2nx.highfive.mechanics.events.EventType;
+import app.l2nx.highfive.mechanics.events.listeners.AbstractEventListener;
+import app.l2nx.highfive.mechanics.script.Quest;
+import app.l2nx.highfive.mechanics.script.QuestState;
+import app.l2nx.highfive.network.NpcStringId;
+import app.l2nx.highfive.network.NpcStringId.NSLocalisation;
+import app.l2nx.highfive.network.SystemMessageId;
+import app.l2nx.highfive.network.serverpackets.ActionFailed;
+import app.l2nx.highfive.network.serverpackets.NpcHtmlMessage;
 
 public class ScriptLink implements IBypassHandler
 {

@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.managers;
+package app.l2nx.highfive.managers;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -24,18 +24,18 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.logging.Logger;
 
-import org.l2jmobius.commons.database.DatabaseFactory;
-import org.l2jmobius.gameserver.config.ConquerableHallSiegeConfig;
-import org.l2jmobius.gameserver.data.sql.ClanHallTable;
-import org.l2jmobius.gameserver.entity.actor.Creature;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.clan.Clan;
-import org.l2jmobius.gameserver.entity.zone.type.ClanHallZone;
-import org.l2jmobius.gameserver.mechanics.siege.clanhalls.ClanHallSiegeEngine;
-import org.l2jmobius.gameserver.mechanics.siege.clanhalls.SiegableHall;
-import org.l2jmobius.gameserver.network.SystemMessageId;
-import org.l2jmobius.gameserver.network.serverpackets.SystemMessage;
-import org.l2jmobius.gameserver.util.StatSet;
+import app.l2nx.commons.database.DatabaseFactory;
+import app.l2nx.highfive.config.ConquerableHallSiegeConfig;
+import app.l2nx.highfive.data.sql.ClanHallTable;
+import app.l2nx.highfive.entity.actor.Creature;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.clan.Clan;
+import app.l2nx.highfive.entity.zone.type.ClanHallZone;
+import app.l2nx.highfive.mechanics.siege.clanhalls.ClanHallSiegeEngine;
+import app.l2nx.highfive.mechanics.siege.clanhalls.SiegableHall;
+import app.l2nx.highfive.network.SystemMessageId;
+import app.l2nx.highfive.network.serverpackets.SystemMessage;
+import app.l2nx.highfive.util.StatSet;
 
 /**
  * @author BiggBoss

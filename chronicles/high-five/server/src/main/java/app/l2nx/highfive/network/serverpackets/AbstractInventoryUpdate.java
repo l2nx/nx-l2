@@ -14,16 +14,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.network.serverpackets;
+package app.l2nx.highfive.network.serverpackets;
 
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.l2jmobius.commons.network.buffer.WriteBuffer;
-import org.l2jmobius.gameserver.entity.item.holders.ItemInfo;
-import org.l2jmobius.gameserver.entity.item.instance.Item;
+import app.l2nx.commons.network.buffer.WriteBuffer;
+import app.l2nx.highfive.entity.item.holders.ItemInfo;
+import app.l2nx.highfive.entity.item.instance.Item;
 
 /**
  * @author UnAfraid

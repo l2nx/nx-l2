@@ -18,15 +18,15 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.network.clientpackets;
+package app.l2nx.highfive.network.clientpackets;
 
-import org.l2jmobius.gameserver.config.OlympiadConfig;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.item.instance.Item;
-import org.l2jmobius.gameserver.entity.item.type.ActionType;
-import org.l2jmobius.gameserver.network.SystemMessageId;
-import org.l2jmobius.gameserver.network.serverpackets.ExAutoSoulShot;
-import org.l2jmobius.gameserver.network.serverpackets.SystemMessage;
+import app.l2nx.highfive.config.OlympiadConfig;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.item.instance.Item;
+import app.l2nx.highfive.entity.item.type.ActionType;
+import app.l2nx.highfive.network.SystemMessageId;
+import app.l2nx.highfive.network.serverpackets.ExAutoSoulShot;
+import app.l2nx.highfive.network.serverpackets.SystemMessage;
 
 /**
  * @version $Revision: 1.0.0.0 $ $Date: 2005/07/11 15:29:30 $

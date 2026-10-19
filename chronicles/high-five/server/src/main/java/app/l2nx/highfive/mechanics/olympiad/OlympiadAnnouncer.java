@@ -14,13 +14,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.mechanics.olympiad;
+package app.l2nx.highfive.mechanics.olympiad;
 
-import org.l2jmobius.gameserver.data.SpawnTable;
-import org.l2jmobius.gameserver.entity.actor.Npc;
-import org.l2jmobius.gameserver.entity.spawns.Spawn;
-import org.l2jmobius.gameserver.network.NpcStringId;
-import org.l2jmobius.gameserver.network.enums.ChatType;
+import app.l2nx.highfive.data.SpawnTable;
+import app.l2nx.highfive.entity.actor.Npc;
+import app.l2nx.highfive.entity.spawns.Spawn;
+import app.l2nx.highfive.network.NpcStringId;
+import app.l2nx.highfive.network.enums.ChatType;
 
 /**
  * @author DS

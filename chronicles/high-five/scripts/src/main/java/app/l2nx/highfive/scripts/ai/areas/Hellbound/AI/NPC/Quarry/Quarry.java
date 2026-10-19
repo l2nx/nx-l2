@@ -14,22 +14,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package ai.areas.Hellbound.AI.NPC.Quarry;
+package app.l2nx.highfive.scripts.ai.areas.Hellbound.AI.NPC.Quarry;
 
-import org.l2jmobius.gameserver.ai.Intention;
-import org.l2jmobius.gameserver.entity.actor.Attackable;
-import org.l2jmobius.gameserver.entity.actor.Creature;
-import org.l2jmobius.gameserver.entity.actor.Npc;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.actor.instance.QuestGuard;
-import org.l2jmobius.gameserver.entity.item.holders.ItemChanceHolder;
-import org.l2jmobius.gameserver.entity.zone.ZoneType;
-import org.l2jmobius.gameserver.managers.ZoneManager;
-import org.l2jmobius.gameserver.mechanics.script.Script;
-import org.l2jmobius.gameserver.network.NpcStringId;
-import org.l2jmobius.gameserver.network.enums.ChatType;
+import app.l2nx.highfive.ai.Intention;
+import app.l2nx.highfive.entity.actor.Attackable;
+import app.l2nx.highfive.entity.actor.Creature;
+import app.l2nx.highfive.entity.actor.Npc;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.actor.instance.QuestGuard;
+import app.l2nx.highfive.entity.item.holders.ItemChanceHolder;
+import app.l2nx.highfive.entity.zone.ZoneType;
+import app.l2nx.highfive.managers.ZoneManager;
+import app.l2nx.highfive.mechanics.script.Script;
+import app.l2nx.highfive.network.NpcStringId;
+import app.l2nx.highfive.network.enums.ChatType;
 
-import ai.areas.Hellbound.HellboundEngine;
+import app.l2nx.highfive.scripts.ai.areas.Hellbound.HellboundEngine;
 
 /**
  * Quarry AI.

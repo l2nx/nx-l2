@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.data.xml;
+package app.l2nx.highfive.data.xml;
 
 import java.io.File;
 import java.util.EnumMap;
@@ -28,8 +28,8 @@ import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 
-import org.l2jmobius.commons.util.IXmlReader;
-import org.l2jmobius.gameserver.data.enums.CategoryType;
+import app.l2nx.commons.util.IXmlReader;
+import app.l2nx.highfive.data.enums.CategoryType;
 
 /**
  * @author NosBit, xban1x

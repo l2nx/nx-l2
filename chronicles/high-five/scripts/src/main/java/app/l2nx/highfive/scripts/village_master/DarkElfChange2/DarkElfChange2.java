@@ -18,15 +18,15 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package village_master.DarkElfChange2;
+package app.l2nx.highfive.scripts.village_master.DarkElfChange2;
 
-import org.l2jmobius.commons.util.StringUtil;
-import org.l2jmobius.gameserver.entity.actor.Npc;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.actor.enums.creature.Race;
-import org.l2jmobius.gameserver.entity.actor.enums.player.PlayerClass;
-import org.l2jmobius.gameserver.mechanics.script.QuestSound;
-import org.l2jmobius.gameserver.mechanics.script.Script;
+import app.l2nx.commons.util.StringUtil;
+import app.l2nx.highfive.entity.actor.Npc;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.actor.enums.creature.Race;
+import app.l2nx.highfive.entity.actor.enums.player.PlayerClass;
+import app.l2nx.highfive.mechanics.script.QuestSound;
+import app.l2nx.highfive.mechanics.script.Script;
 
 /**
  * Dark Elven Change Part 2.

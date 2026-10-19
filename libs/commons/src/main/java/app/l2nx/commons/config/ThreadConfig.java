@@ -18,9 +18,9 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.commons.config;
+package app.l2nx.commons.config;
 
-import org.l2jmobius.commons.util.ConfigReader;
+import app.l2nx.commons.util.ConfigReader;
 
 /**
  * This class loads all the threadpool related configurations.

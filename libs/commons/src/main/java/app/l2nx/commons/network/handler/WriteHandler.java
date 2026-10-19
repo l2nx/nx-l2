@@ -18,12 +18,12 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.commons.network.handler;
+package app.l2nx.commons.network.handler;
 
 import java.nio.channels.CompletionHandler;
 
-import org.l2jmobius.commons.network.Client;
-import org.l2jmobius.commons.network.Connection;
+import app.l2nx.commons.network.Client;
+import app.l2nx.commons.network.Connection;
 
 /**
  * {@link CompletionHandler} for async scatter-write operations.<br>

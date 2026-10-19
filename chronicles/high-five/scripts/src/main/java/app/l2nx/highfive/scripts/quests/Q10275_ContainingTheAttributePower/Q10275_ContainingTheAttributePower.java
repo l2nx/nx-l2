@@ -18,18 +18,18 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package quests.Q10275_ContainingTheAttributePower;
+package app.l2nx.highfive.scripts.quests.Q10275_ContainingTheAttributePower;
 
-import org.l2jmobius.commons.util.StringUtil;
-import org.l2jmobius.gameserver.entity.actor.Npc;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.item.holders.Elementals;
-import org.l2jmobius.gameserver.entity.itemcontainer.Inventory;
-import org.l2jmobius.gameserver.mechanics.script.Quest;
-import org.l2jmobius.gameserver.mechanics.script.QuestSound;
-import org.l2jmobius.gameserver.mechanics.script.QuestState;
-import org.l2jmobius.gameserver.mechanics.script.State;
-import org.l2jmobius.gameserver.mechanics.skill.holders.SkillHolder;
+import app.l2nx.commons.util.StringUtil;
+import app.l2nx.highfive.entity.actor.Npc;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.item.holders.Elementals;
+import app.l2nx.highfive.entity.itemcontainer.Inventory;
+import app.l2nx.highfive.mechanics.script.Quest;
+import app.l2nx.highfive.mechanics.script.QuestSound;
+import app.l2nx.highfive.mechanics.script.QuestState;
+import app.l2nx.highfive.mechanics.script.State;
+import app.l2nx.highfive.mechanics.skill.holders.SkillHolder;
 
 /**
  * Containing the Attribute Power (10275)<br>

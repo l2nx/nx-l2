@@ -14,20 +14,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package ai.areas.Hellbound.AI.NPC.Warpgate;
+package app.l2nx.highfive.scripts.ai.areas.Hellbound.AI.NPC.Warpgate;
 
-import org.l2jmobius.gameserver.config.GeneralConfig;
-import org.l2jmobius.gameserver.entity.Location;
-import org.l2jmobius.gameserver.entity.actor.Creature;
-import org.l2jmobius.gameserver.entity.actor.Npc;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.zone.ZoneType;
-import org.l2jmobius.gameserver.mechanics.script.QuestState;
-import org.l2jmobius.gameserver.mechanics.script.Script;
+import app.l2nx.highfive.config.GeneralConfig;
+import app.l2nx.highfive.entity.Location;
+import app.l2nx.highfive.entity.actor.Creature;
+import app.l2nx.highfive.entity.actor.Npc;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.zone.ZoneType;
+import app.l2nx.highfive.mechanics.script.QuestState;
+import app.l2nx.highfive.mechanics.script.Script;
 
-import ai.areas.Hellbound.HellboundEngine;
-import quests.Q00130_PathToHellbound.Q00130_PathToHellbound;
-import quests.Q00133_ThatsBloodyHot.Q00133_ThatsBloodyHot;
+import app.l2nx.highfive.scripts.ai.areas.Hellbound.HellboundEngine;
+import app.l2nx.highfive.scripts.quests.Q00130_PathToHellbound.Q00130_PathToHellbound;
+import app.l2nx.highfive.scripts.quests.Q00133_ThatsBloodyHot.Q00133_ThatsBloodyHot;
 
 /**
  * Warpgate teleport AI.

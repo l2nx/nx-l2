@@ -18,7 +18,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.data;
+package app.l2nx.highfive.data;
 
 import java.io.File;
 import java.sql.Connection;
@@ -41,9 +41,9 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 
-import org.l2jmobius.commons.database.DatabaseFactory;
-import org.l2jmobius.gameserver.config.custom.SchemeBufferConfig;
-import org.l2jmobius.gameserver.entity.actor.holders.npc.BuffSkillHolder;
+import app.l2nx.commons.database.DatabaseFactory;
+import app.l2nx.highfive.config.custom.SchemeBufferConfig;
+import app.l2nx.highfive.entity.actor.holders.npc.BuffSkillHolder;
 
 /**
  * Loads available scheme buffer skills and manages player schemes in memory and database.<br>

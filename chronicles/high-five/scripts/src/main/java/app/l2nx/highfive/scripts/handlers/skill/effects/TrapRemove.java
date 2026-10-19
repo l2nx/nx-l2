@@ -14,19 +14,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package handlers.skill.effects;
+package app.l2nx.highfive.scripts.handlers.skill.effects;
 
-import org.l2jmobius.gameserver.entity.actor.Creature;
-import org.l2jmobius.gameserver.entity.actor.enums.creature.TrapAction;
-import org.l2jmobius.gameserver.entity.actor.instance.Trap;
-import org.l2jmobius.gameserver.mechanics.conditions.Condition;
-import org.l2jmobius.gameserver.mechanics.effects.AbstractEffect;
-import org.l2jmobius.gameserver.mechanics.events.EventDispatcher;
-import org.l2jmobius.gameserver.mechanics.events.EventType;
-import org.l2jmobius.gameserver.mechanics.events.holders.actor.trap.OnTrapAction;
-import org.l2jmobius.gameserver.mechanics.skill.Skill;
-import org.l2jmobius.gameserver.network.SystemMessageId;
-import org.l2jmobius.gameserver.util.StatSet;
+import app.l2nx.highfive.entity.actor.Creature;
+import app.l2nx.highfive.entity.actor.enums.creature.TrapAction;
+import app.l2nx.highfive.entity.actor.instance.Trap;
+import app.l2nx.highfive.mechanics.conditions.Condition;
+import app.l2nx.highfive.mechanics.effects.AbstractEffect;
+import app.l2nx.highfive.mechanics.events.EventDispatcher;
+import app.l2nx.highfive.mechanics.events.EventType;
+import app.l2nx.highfive.mechanics.events.holders.actor.trap.OnTrapAction;
+import app.l2nx.highfive.mechanics.skill.Skill;
+import app.l2nx.highfive.network.SystemMessageId;
+import app.l2nx.highfive.util.StatSet;
 
 /**
  * Trap Remove effect implementation.

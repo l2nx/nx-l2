@@ -18,25 +18,25 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package ai.areas.Rune.RuneCastle.Venom;
+package app.l2nx.highfive.scripts.ai.areas.Rune.RuneCastle.Venom;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import org.l2jmobius.gameserver.entity.Location;
-import org.l2jmobius.gameserver.entity.actor.Npc;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.actor.enums.player.TeleportWhereType;
-import org.l2jmobius.gameserver.entity.zone.ZoneId;
-import org.l2jmobius.gameserver.managers.CastleManager;
-import org.l2jmobius.gameserver.managers.GlobalVariablesManager;
-import org.l2jmobius.gameserver.mechanics.events.holders.sieges.castle.OnCastleSiegeFinish;
-import org.l2jmobius.gameserver.mechanics.events.holders.sieges.castle.OnCastleSiegeStart;
-import org.l2jmobius.gameserver.mechanics.script.Script;
-import org.l2jmobius.gameserver.mechanics.skill.Skill;
-import org.l2jmobius.gameserver.mechanics.skill.holders.SkillHolder;
-import org.l2jmobius.gameserver.network.NpcStringId;
-import org.l2jmobius.gameserver.network.enums.ChatType;
+import app.l2nx.highfive.entity.Location;
+import app.l2nx.highfive.entity.actor.Npc;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.actor.enums.player.TeleportWhereType;
+import app.l2nx.highfive.entity.zone.ZoneId;
+import app.l2nx.highfive.managers.CastleManager;
+import app.l2nx.highfive.managers.GlobalVariablesManager;
+import app.l2nx.highfive.mechanics.events.holders.sieges.castle.OnCastleSiegeFinish;
+import app.l2nx.highfive.mechanics.events.holders.sieges.castle.OnCastleSiegeStart;
+import app.l2nx.highfive.mechanics.script.Script;
+import app.l2nx.highfive.mechanics.skill.Skill;
+import app.l2nx.highfive.mechanics.skill.holders.SkillHolder;
+import app.l2nx.highfive.network.NpcStringId;
+import app.l2nx.highfive.network.enums.ChatType;
 
 /**
  * Venom AI on Rune Castle.

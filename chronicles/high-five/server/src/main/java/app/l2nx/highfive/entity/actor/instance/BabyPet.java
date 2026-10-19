@@ -18,30 +18,30 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.entity.actor.instance;
+package app.l2nx.highfive.entity.actor.instance;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Future;
 
-import org.l2jmobius.commons.threads.ThreadPool;
-import org.l2jmobius.commons.util.Rnd;
-import org.l2jmobius.gameserver.ai.Intention;
-import org.l2jmobius.gameserver.data.enums.CategoryType;
-import org.l2jmobius.gameserver.data.holders.PetData.PetSkillLearn;
-import org.l2jmobius.gameserver.data.xml.PetDataTable;
-import org.l2jmobius.gameserver.data.xml.SkillData;
-import org.l2jmobius.gameserver.entity.actor.Creature;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.actor.enums.creature.InstanceType;
-import org.l2jmobius.gameserver.entity.actor.templates.NpcTemplate;
-import org.l2jmobius.gameserver.entity.item.instance.Item;
-import org.l2jmobius.gameserver.mechanics.effects.EffectType;
-import org.l2jmobius.gameserver.mechanics.skill.BuffInfo;
-import org.l2jmobius.gameserver.mechanics.skill.Skill;
-import org.l2jmobius.gameserver.mechanics.skill.holders.SkillHolder;
-import org.l2jmobius.gameserver.network.SystemMessageId;
-import org.l2jmobius.gameserver.network.serverpackets.SystemMessage;
+import app.l2nx.commons.threads.ThreadPool;
+import app.l2nx.commons.util.Rnd;
+import app.l2nx.highfive.ai.Intention;
+import app.l2nx.highfive.data.enums.CategoryType;
+import app.l2nx.highfive.data.holders.PetData.PetSkillLearn;
+import app.l2nx.highfive.data.xml.PetDataTable;
+import app.l2nx.highfive.data.xml.SkillData;
+import app.l2nx.highfive.entity.actor.Creature;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.actor.enums.creature.InstanceType;
+import app.l2nx.highfive.entity.actor.templates.NpcTemplate;
+import app.l2nx.highfive.entity.item.instance.Item;
+import app.l2nx.highfive.mechanics.effects.EffectType;
+import app.l2nx.highfive.mechanics.skill.BuffInfo;
+import app.l2nx.highfive.mechanics.skill.Skill;
+import app.l2nx.highfive.mechanics.skill.holders.SkillHolder;
+import app.l2nx.highfive.network.SystemMessageId;
+import app.l2nx.highfive.network.serverpackets.SystemMessage;
 
 public class BabyPet extends Pet
 {

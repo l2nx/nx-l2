@@ -18,14 +18,14 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.entity.itemcontainer;
+package app.l2nx.highfive.entity.itemcontainer;
 
-import org.l2jmobius.gameserver.data.xml.ItemData;
-import org.l2jmobius.gameserver.entity.actor.instance.Pet;
-import org.l2jmobius.gameserver.entity.item.ItemTemplate;
-import org.l2jmobius.gameserver.entity.item.enums.ItemLocation;
-import org.l2jmobius.gameserver.entity.item.enums.ItemProcessType;
-import org.l2jmobius.gameserver.entity.item.instance.Item;
+import app.l2nx.highfive.data.xml.ItemData;
+import app.l2nx.highfive.entity.actor.instance.Pet;
+import app.l2nx.highfive.entity.item.ItemTemplate;
+import app.l2nx.highfive.entity.item.enums.ItemLocation;
+import app.l2nx.highfive.entity.item.enums.ItemProcessType;
+import app.l2nx.highfive.entity.item.instance.Item;
 
 public class PetInventory extends Inventory
 {

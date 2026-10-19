@@ -18,18 +18,18 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package custom;
+package app.l2nx.highfive.scripts.custom;
 
-import org.l2jmobius.gameserver.config.custom.BankingConfig;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.item.enums.ItemProcessType;
-import org.l2jmobius.gameserver.entity.item.instance.Item;
-import org.l2jmobius.gameserver.entity.itemcontainer.Inventory;
-import org.l2jmobius.gameserver.entity.itemcontainer.PlayerInventory;
-import org.l2jmobius.gameserver.mechanics.events.Containers;
-import org.l2jmobius.gameserver.mechanics.events.EventType;
-import org.l2jmobius.gameserver.mechanics.events.holders.actor.player.inventory.OnPlayerItemAdd;
-import org.l2jmobius.gameserver.mechanics.events.listeners.ConsumerEventListener;
+import app.l2nx.highfive.config.custom.BankingConfig;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.item.enums.ItemProcessType;
+import app.l2nx.highfive.entity.item.instance.Item;
+import app.l2nx.highfive.entity.itemcontainer.Inventory;
+import app.l2nx.highfive.entity.itemcontainer.PlayerInventory;
+import app.l2nx.highfive.mechanics.events.Containers;
+import app.l2nx.highfive.mechanics.events.EventType;
+import app.l2nx.highfive.mechanics.events.holders.actor.player.inventory.OnPlayerItemAdd;
+import app.l2nx.highfive.mechanics.events.listeners.ConsumerEventListener;
 
 /**
  * @author CostyKiller

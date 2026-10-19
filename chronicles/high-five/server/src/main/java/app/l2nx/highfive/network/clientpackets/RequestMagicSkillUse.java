@@ -18,17 +18,17 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.network.clientpackets;
+package app.l2nx.highfive.network.clientpackets;
 
-import org.l2jmobius.gameserver.config.PlayerConfig;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.actor.transform.Transform;
-import org.l2jmobius.gameserver.mechanics.effects.EffectType;
-import org.l2jmobius.gameserver.mechanics.skill.CommonSkill;
-import org.l2jmobius.gameserver.mechanics.skill.Skill;
-import org.l2jmobius.gameserver.mechanics.skill.targets.TargetType;
-import org.l2jmobius.gameserver.network.SystemMessageId;
-import org.l2jmobius.gameserver.network.serverpackets.ActionFailed;
+import app.l2nx.highfive.config.PlayerConfig;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.actor.transform.Transform;
+import app.l2nx.highfive.mechanics.effects.EffectType;
+import app.l2nx.highfive.mechanics.skill.CommonSkill;
+import app.l2nx.highfive.mechanics.skill.Skill;
+import app.l2nx.highfive.mechanics.skill.targets.TargetType;
+import app.l2nx.highfive.network.SystemMessageId;
+import app.l2nx.highfive.network.serverpackets.ActionFailed;
 
 public class RequestMagicSkillUse extends ClientPacket
 {

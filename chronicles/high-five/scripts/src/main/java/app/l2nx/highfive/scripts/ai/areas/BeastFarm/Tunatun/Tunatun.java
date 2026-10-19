@@ -14,14 +14,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package ai.areas.BeastFarm.Tunatun;
+package app.l2nx.highfive.scripts.ai.areas.BeastFarm.Tunatun;
 
-import org.l2jmobius.gameserver.entity.actor.Npc;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.mechanics.script.QuestState;
-import org.l2jmobius.gameserver.mechanics.script.Script;
+import app.l2nx.highfive.entity.actor.Npc;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.mechanics.script.QuestState;
+import app.l2nx.highfive.mechanics.script.Script;
 
-import quests.Q00020_BringUpWithLove.Q00020_BringUpWithLove;
+import app.l2nx.highfive.scripts.quests.Q00020_BringUpWithLove.Q00020_BringUpWithLove;
 
 /**
  * Beast Herder Tunatun AI.

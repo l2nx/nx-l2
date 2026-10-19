@@ -14,30 +14,30 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.entity.zone.type;
+package app.l2nx.highfive.entity.zone.type;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import org.l2jmobius.commons.threads.ThreadPool;
-import org.l2jmobius.gameserver.entity.Location;
-import org.l2jmobius.gameserver.entity.actor.Creature;
-import org.l2jmobius.gameserver.entity.actor.Npc;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.actor.enums.player.TeleportWhereType;
-import org.l2jmobius.gameserver.entity.actor.instance.Door;
-import org.l2jmobius.gameserver.entity.actor.instance.OlympiadManager;
-import org.l2jmobius.gameserver.entity.zone.AbstractZoneSettings;
-import org.l2jmobius.gameserver.entity.zone.ZoneId;
-import org.l2jmobius.gameserver.entity.zone.ZoneRespawn;
-import org.l2jmobius.gameserver.managers.InstanceManager;
-import org.l2jmobius.gameserver.managers.ZoneManager;
-import org.l2jmobius.gameserver.mechanics.olympiad.OlympiadGameTask;
-import org.l2jmobius.gameserver.network.SystemMessageId;
-import org.l2jmobius.gameserver.network.serverpackets.ExOlympiadMatchEnd;
-import org.l2jmobius.gameserver.network.serverpackets.ExOlympiadUserInfo;
-import org.l2jmobius.gameserver.network.serverpackets.ServerPacket;
-import org.l2jmobius.gameserver.network.serverpackets.SystemMessage;
+import app.l2nx.commons.threads.ThreadPool;
+import app.l2nx.highfive.entity.Location;
+import app.l2nx.highfive.entity.actor.Creature;
+import app.l2nx.highfive.entity.actor.Npc;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.actor.enums.player.TeleportWhereType;
+import app.l2nx.highfive.entity.actor.instance.Door;
+import app.l2nx.highfive.entity.actor.instance.OlympiadManager;
+import app.l2nx.highfive.entity.zone.AbstractZoneSettings;
+import app.l2nx.highfive.entity.zone.ZoneId;
+import app.l2nx.highfive.entity.zone.ZoneRespawn;
+import app.l2nx.highfive.managers.InstanceManager;
+import app.l2nx.highfive.managers.ZoneManager;
+import app.l2nx.highfive.mechanics.olympiad.OlympiadGameTask;
+import app.l2nx.highfive.network.SystemMessageId;
+import app.l2nx.highfive.network.serverpackets.ExOlympiadMatchEnd;
+import app.l2nx.highfive.network.serverpackets.ExOlympiadUserInfo;
+import app.l2nx.highfive.network.serverpackets.ServerPacket;
+import app.l2nx.highfive.network.serverpackets.SystemMessage;
 
 /**
  * An olympiad stadium

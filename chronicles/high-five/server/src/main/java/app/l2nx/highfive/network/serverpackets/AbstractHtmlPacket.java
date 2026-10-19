@@ -14,13 +14,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.network.serverpackets;
+package app.l2nx.highfive.network.serverpackets;
 
-import org.l2jmobius.gameserver.cache.HtmCache;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.network.PacketLogger;
-import org.l2jmobius.gameserver.network.enums.HtmlActionScope;
-import org.l2jmobius.gameserver.util.HtmlUtil;
+import app.l2nx.highfive.cache.HtmCache;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.network.PacketLogger;
+import app.l2nx.highfive.network.enums.HtmlActionScope;
+import app.l2nx.highfive.util.HtmlUtil;
 
 /**
  * @author HorridoJoho

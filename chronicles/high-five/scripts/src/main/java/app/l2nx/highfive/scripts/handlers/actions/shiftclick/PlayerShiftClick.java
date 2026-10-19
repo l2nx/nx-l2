@@ -18,13 +18,13 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package handlers.actions.shiftclick;
+package app.l2nx.highfive.scripts.handlers.actions.shiftclick;
 
-import org.l2jmobius.gameserver.entity.WorldObject;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.actor.enums.creature.InstanceType;
-import org.l2jmobius.gameserver.handler.AdminCommandHandler;
-import org.l2jmobius.gameserver.handler.IActionShiftHandler;
+import app.l2nx.highfive.entity.WorldObject;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.actor.enums.creature.InstanceType;
+import app.l2nx.highfive.handler.AdminCommandHandler;
+import app.l2nx.highfive.handler.IActionShiftHandler;
 
 public class PlayerShiftClick implements IActionShiftHandler
 {

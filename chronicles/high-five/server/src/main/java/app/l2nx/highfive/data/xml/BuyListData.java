@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.data.xml;
+package app.l2nx.highfive.data.xml;
 
 import java.io.File;
 import java.sql.Connection;
@@ -30,12 +30,12 @@ import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 
-import org.l2jmobius.commons.database.DatabaseFactory;
-import org.l2jmobius.commons.util.IXmlReader;
-import org.l2jmobius.gameserver.config.GeneralConfig;
-import org.l2jmobius.gameserver.entity.item.ItemTemplate;
-import org.l2jmobius.gameserver.mechanics.buylist.BuyListHolder;
-import org.l2jmobius.gameserver.mechanics.buylist.Product;
+import app.l2nx.commons.database.DatabaseFactory;
+import app.l2nx.commons.util.IXmlReader;
+import app.l2nx.highfive.config.GeneralConfig;
+import app.l2nx.highfive.entity.item.ItemTemplate;
+import app.l2nx.highfive.mechanics.buylist.BuyListHolder;
+import app.l2nx.highfive.mechanics.buylist.Product;
 
 /**
  * Loads buy lists for NPCs.

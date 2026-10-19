@@ -18,38 +18,38 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package ai.bosses.Frintezza;
+package app.l2nx.highfive.scripts.ai.bosses.Frintezza;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.l2jmobius.gameserver.entity.Location;
-import org.l2jmobius.gameserver.entity.WorldObject;
-import org.l2jmobius.gameserver.entity.actor.Npc;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.actor.instance.Monster;
-import org.l2jmobius.gameserver.entity.groups.CommandChannel;
-import org.l2jmobius.gameserver.entity.groups.Party;
-import org.l2jmobius.gameserver.entity.instancezone.InstanceWorld;
-import org.l2jmobius.gameserver.entity.item.enums.ItemProcessType;
-import org.l2jmobius.gameserver.managers.InstanceManager;
-import org.l2jmobius.gameserver.mechanics.script.InstanceScript;
-import org.l2jmobius.gameserver.mechanics.skill.Skill;
-import org.l2jmobius.gameserver.mechanics.skill.holders.SkillHolder;
-import org.l2jmobius.gameserver.network.NpcStringId;
-import org.l2jmobius.gameserver.network.SystemMessageId;
-import org.l2jmobius.gameserver.network.serverpackets.Earthquake;
-import org.l2jmobius.gameserver.network.serverpackets.ExShowScreenMessage;
-import org.l2jmobius.gameserver.network.serverpackets.MagicSkillCanceled;
-import org.l2jmobius.gameserver.network.serverpackets.MagicSkillUse;
-import org.l2jmobius.gameserver.network.serverpackets.ServerPacket;
-import org.l2jmobius.gameserver.network.serverpackets.SocialAction;
-import org.l2jmobius.gameserver.network.serverpackets.SpecialCamera;
-import org.l2jmobius.gameserver.network.serverpackets.SystemMessage;
-import org.l2jmobius.gameserver.util.ArrayUtil;
-import org.l2jmobius.gameserver.util.LocationUtil;
+import app.l2nx.highfive.entity.Location;
+import app.l2nx.highfive.entity.WorldObject;
+import app.l2nx.highfive.entity.actor.Npc;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.actor.instance.Monster;
+import app.l2nx.highfive.entity.groups.CommandChannel;
+import app.l2nx.highfive.entity.groups.Party;
+import app.l2nx.highfive.entity.instancezone.InstanceWorld;
+import app.l2nx.highfive.entity.item.enums.ItemProcessType;
+import app.l2nx.highfive.managers.InstanceManager;
+import app.l2nx.highfive.mechanics.script.InstanceScript;
+import app.l2nx.highfive.mechanics.skill.Skill;
+import app.l2nx.highfive.mechanics.skill.holders.SkillHolder;
+import app.l2nx.highfive.network.NpcStringId;
+import app.l2nx.highfive.network.SystemMessageId;
+import app.l2nx.highfive.network.serverpackets.Earthquake;
+import app.l2nx.highfive.network.serverpackets.ExShowScreenMessage;
+import app.l2nx.highfive.network.serverpackets.MagicSkillCanceled;
+import app.l2nx.highfive.network.serverpackets.MagicSkillUse;
+import app.l2nx.highfive.network.serverpackets.ServerPacket;
+import app.l2nx.highfive.network.serverpackets.SocialAction;
+import app.l2nx.highfive.network.serverpackets.SpecialCamera;
+import app.l2nx.highfive.network.serverpackets.SystemMessage;
+import app.l2nx.highfive.util.ArrayUtil;
+import app.l2nx.highfive.util.LocationUtil;
 
 /**
  * Last Imperial Tomb AI (reworked from L2J version)

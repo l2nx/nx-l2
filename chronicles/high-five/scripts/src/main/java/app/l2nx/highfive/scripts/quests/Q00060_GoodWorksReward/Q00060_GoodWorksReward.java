@@ -14,45 +14,45 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package quests.Q00060_GoodWorksReward;
+package app.l2nx.highfive.scripts.quests.Q00060_GoodWorksReward;
 
-import org.l2jmobius.gameserver.config.PlayerConfig;
-import org.l2jmobius.gameserver.data.enums.CategoryType;
-import org.l2jmobius.gameserver.entity.actor.Npc;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.actor.enums.creature.Race;
-import org.l2jmobius.gameserver.entity.actor.enums.player.PlayerClass;
-import org.l2jmobius.gameserver.entity.itemcontainer.Inventory;
-import org.l2jmobius.gameserver.mechanics.script.Quest;
-import org.l2jmobius.gameserver.mechanics.script.QuestState;
-import org.l2jmobius.gameserver.network.NpcStringId;
-import org.l2jmobius.gameserver.network.enums.ChatType;
-import org.l2jmobius.gameserver.network.serverpackets.NpcSay;
-import org.l2jmobius.gameserver.util.LocationUtil;
+import app.l2nx.highfive.config.PlayerConfig;
+import app.l2nx.highfive.data.enums.CategoryType;
+import app.l2nx.highfive.entity.actor.Npc;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.actor.enums.creature.Race;
+import app.l2nx.highfive.entity.actor.enums.player.PlayerClass;
+import app.l2nx.highfive.entity.itemcontainer.Inventory;
+import app.l2nx.highfive.mechanics.script.Quest;
+import app.l2nx.highfive.mechanics.script.QuestState;
+import app.l2nx.highfive.network.NpcStringId;
+import app.l2nx.highfive.network.enums.ChatType;
+import app.l2nx.highfive.network.serverpackets.NpcSay;
+import app.l2nx.highfive.util.LocationUtil;
 
-import quests.Q00211_TrialOfTheChallenger.Q00211_TrialOfTheChallenger;
-import quests.Q00212_TrialOfDuty.Q00212_TrialOfDuty;
-import quests.Q00213_TrialOfTheSeeker.Q00213_TrialOfTheSeeker;
-import quests.Q00214_TrialOfTheScholar.Q00214_TrialOfTheScholar;
-import quests.Q00215_TrialOfThePilgrim.Q00215_TrialOfThePilgrim;
-import quests.Q00216_TrialOfTheGuildsman.Q00216_TrialOfTheGuildsman;
-import quests.Q00217_TestimonyOfTrust.Q00217_TestimonyOfTrust;
-import quests.Q00218_TestimonyOfLife.Q00218_TestimonyOfLife;
-import quests.Q00219_TestimonyOfFate.Q00219_TestimonyOfFate;
-import quests.Q00220_TestimonyOfGlory.Q00220_TestimonyOfGlory;
-import quests.Q00221_TestimonyOfProsperity.Q00221_TestimonyOfProsperity;
-import quests.Q00222_TestOfTheDuelist.Q00222_TestOfTheDuelist;
-import quests.Q00223_TestOfTheChampion.Q00223_TestOfTheChampion;
-import quests.Q00224_TestOfSagittarius.Q00224_TestOfSagittarius;
-import quests.Q00225_TestOfTheSearcher.Q00225_TestOfTheSearcher;
-import quests.Q00226_TestOfTheHealer.Q00226_TestOfTheHealer;
-import quests.Q00227_TestOfTheReformer.Q00227_TestOfTheReformer;
-import quests.Q00228_TestOfMagus.Q00228_TestOfMagus;
-import quests.Q00229_TestOfWitchcraft.Q00229_TestOfWitchcraft;
-import quests.Q00230_TestOfTheSummoner.Q00230_TestOfTheSummoner;
-import quests.Q00231_TestOfTheMaestro.Q00231_TestOfTheMaestro;
-import quests.Q00232_TestOfTheLord.Q00232_TestOfTheLord;
-import quests.Q00233_TestOfTheWarSpirit.Q00233_TestOfTheWarSpirit;
+import app.l2nx.highfive.scripts.quests.Q00211_TrialOfTheChallenger.Q00211_TrialOfTheChallenger;
+import app.l2nx.highfive.scripts.quests.Q00212_TrialOfDuty.Q00212_TrialOfDuty;
+import app.l2nx.highfive.scripts.quests.Q00213_TrialOfTheSeeker.Q00213_TrialOfTheSeeker;
+import app.l2nx.highfive.scripts.quests.Q00214_TrialOfTheScholar.Q00214_TrialOfTheScholar;
+import app.l2nx.highfive.scripts.quests.Q00215_TrialOfThePilgrim.Q00215_TrialOfThePilgrim;
+import app.l2nx.highfive.scripts.quests.Q00216_TrialOfTheGuildsman.Q00216_TrialOfTheGuildsman;
+import app.l2nx.highfive.scripts.quests.Q00217_TestimonyOfTrust.Q00217_TestimonyOfTrust;
+import app.l2nx.highfive.scripts.quests.Q00218_TestimonyOfLife.Q00218_TestimonyOfLife;
+import app.l2nx.highfive.scripts.quests.Q00219_TestimonyOfFate.Q00219_TestimonyOfFate;
+import app.l2nx.highfive.scripts.quests.Q00220_TestimonyOfGlory.Q00220_TestimonyOfGlory;
+import app.l2nx.highfive.scripts.quests.Q00221_TestimonyOfProsperity.Q00221_TestimonyOfProsperity;
+import app.l2nx.highfive.scripts.quests.Q00222_TestOfTheDuelist.Q00222_TestOfTheDuelist;
+import app.l2nx.highfive.scripts.quests.Q00223_TestOfTheChampion.Q00223_TestOfTheChampion;
+import app.l2nx.highfive.scripts.quests.Q00224_TestOfSagittarius.Q00224_TestOfSagittarius;
+import app.l2nx.highfive.scripts.quests.Q00225_TestOfTheSearcher.Q00225_TestOfTheSearcher;
+import app.l2nx.highfive.scripts.quests.Q00226_TestOfTheHealer.Q00226_TestOfTheHealer;
+import app.l2nx.highfive.scripts.quests.Q00227_TestOfTheReformer.Q00227_TestOfTheReformer;
+import app.l2nx.highfive.scripts.quests.Q00228_TestOfMagus.Q00228_TestOfMagus;
+import app.l2nx.highfive.scripts.quests.Q00229_TestOfWitchcraft.Q00229_TestOfWitchcraft;
+import app.l2nx.highfive.scripts.quests.Q00230_TestOfTheSummoner.Q00230_TestOfTheSummoner;
+import app.l2nx.highfive.scripts.quests.Q00231_TestOfTheMaestro.Q00231_TestOfTheMaestro;
+import app.l2nx.highfive.scripts.quests.Q00232_TestOfTheLord.Q00232_TestOfTheLord;
+import app.l2nx.highfive.scripts.quests.Q00233_TestOfTheWarSpirit.Q00233_TestOfTheWarSpirit;
 
 /**
  * Good Work's Reward (60)

@@ -18,7 +18,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.data.sql;
+package app.l2nx.highfive.data.sql;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -28,24 +28,24 @@ import java.util.Calendar;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.l2jmobius.commons.database.DatabaseFactory;
-import org.l2jmobius.commons.util.Rnd;
-import org.l2jmobius.gameserver.config.custom.DualboxCheckConfig;
-import org.l2jmobius.gameserver.config.custom.OfflineTradeConfig;
-import org.l2jmobius.gameserver.data.holders.SellBuffHolder;
-import org.l2jmobius.gameserver.entity.World;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.actor.Summon;
-import org.l2jmobius.gameserver.entity.actor.enums.player.PrivateStoreType;
-import org.l2jmobius.gameserver.entity.item.recipe.ManufactureItem;
-import org.l2jmobius.gameserver.entity.zone.ZoneId;
-import org.l2jmobius.gameserver.managers.AntiFeedManager;
-import org.l2jmobius.gameserver.mechanics.olympiad.OlympiadManager;
-import org.l2jmobius.gameserver.network.Disconnection;
-import org.l2jmobius.gameserver.network.GameClient;
-import org.l2jmobius.gameserver.network.holders.TradeItem;
-import org.l2jmobius.gameserver.network.serverpackets.LeaveWorld;
-import org.l2jmobius.gameserver.network.serverpackets.ServerClose;
+import app.l2nx.commons.database.DatabaseFactory;
+import app.l2nx.commons.util.Rnd;
+import app.l2nx.highfive.config.custom.DualboxCheckConfig;
+import app.l2nx.highfive.config.custom.OfflineTradeConfig;
+import app.l2nx.highfive.data.holders.SellBuffHolder;
+import app.l2nx.highfive.entity.World;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.actor.Summon;
+import app.l2nx.highfive.entity.actor.enums.player.PrivateStoreType;
+import app.l2nx.highfive.entity.item.recipe.ManufactureItem;
+import app.l2nx.highfive.entity.zone.ZoneId;
+import app.l2nx.highfive.managers.AntiFeedManager;
+import app.l2nx.highfive.mechanics.olympiad.OlympiadManager;
+import app.l2nx.highfive.network.Disconnection;
+import app.l2nx.highfive.network.GameClient;
+import app.l2nx.highfive.network.holders.TradeItem;
+import app.l2nx.highfive.network.serverpackets.LeaveWorld;
+import app.l2nx.highfive.network.serverpackets.ServerClose;
 
 public class OfflineTraderTable
 {

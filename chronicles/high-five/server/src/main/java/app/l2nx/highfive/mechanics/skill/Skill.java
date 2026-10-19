@@ -18,7 +18,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.mechanics.skill;
+package app.l2nx.highfive.mechanics.skill;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -33,36 +33,36 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.l2jmobius.commons.util.Rnd;
-import org.l2jmobius.gameserver.config.GeneralConfig;
-import org.l2jmobius.gameserver.config.PlayerConfig;
-import org.l2jmobius.gameserver.data.xml.SkillData;
-import org.l2jmobius.gameserver.data.xml.SkillTreeData;
-import org.l2jmobius.gameserver.entity.WorldObject;
-import org.l2jmobius.gameserver.entity.actor.Creature;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.actor.instance.Cubic;
-import org.l2jmobius.gameserver.entity.groups.Party;
-import org.l2jmobius.gameserver.entity.item.enums.ShotType;
-import org.l2jmobius.gameserver.entity.zone.ZoneId;
-import org.l2jmobius.gameserver.geoengine.GeoEngine;
-import org.l2jmobius.gameserver.handler.ITargetTypeHandler;
-import org.l2jmobius.gameserver.handler.TargetHandler;
-import org.l2jmobius.gameserver.mechanics.conditions.Condition;
-import org.l2jmobius.gameserver.mechanics.effects.AbstractEffect;
-import org.l2jmobius.gameserver.mechanics.effects.EffectType;
-import org.l2jmobius.gameserver.mechanics.skill.enums.FlyType;
-import org.l2jmobius.gameserver.mechanics.skill.enums.SkillFinishType;
-import org.l2jmobius.gameserver.mechanics.skill.targets.TargetType;
-import org.l2jmobius.gameserver.mechanics.stats.BaseStat;
-import org.l2jmobius.gameserver.mechanics.stats.Formulas;
-import org.l2jmobius.gameserver.mechanics.stats.TraitType;
-import org.l2jmobius.gameserver.mechanics.stats.functions.AbstractFunction;
-import org.l2jmobius.gameserver.mechanics.stats.functions.FuncTemplate;
-import org.l2jmobius.gameserver.network.SystemMessageId;
-import org.l2jmobius.gameserver.network.serverpackets.SystemMessage;
-import org.l2jmobius.gameserver.util.LocationUtil;
-import org.l2jmobius.gameserver.util.StatSet;
+import app.l2nx.commons.util.Rnd;
+import app.l2nx.highfive.config.GeneralConfig;
+import app.l2nx.highfive.config.PlayerConfig;
+import app.l2nx.highfive.data.xml.SkillData;
+import app.l2nx.highfive.data.xml.SkillTreeData;
+import app.l2nx.highfive.entity.WorldObject;
+import app.l2nx.highfive.entity.actor.Creature;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.actor.instance.Cubic;
+import app.l2nx.highfive.entity.groups.Party;
+import app.l2nx.highfive.entity.item.enums.ShotType;
+import app.l2nx.highfive.entity.zone.ZoneId;
+import app.l2nx.highfive.geoengine.GeoEngine;
+import app.l2nx.highfive.handler.ITargetTypeHandler;
+import app.l2nx.highfive.handler.TargetHandler;
+import app.l2nx.highfive.mechanics.conditions.Condition;
+import app.l2nx.highfive.mechanics.effects.AbstractEffect;
+import app.l2nx.highfive.mechanics.effects.EffectType;
+import app.l2nx.highfive.mechanics.skill.enums.FlyType;
+import app.l2nx.highfive.mechanics.skill.enums.SkillFinishType;
+import app.l2nx.highfive.mechanics.skill.targets.TargetType;
+import app.l2nx.highfive.mechanics.stats.BaseStat;
+import app.l2nx.highfive.mechanics.stats.Formulas;
+import app.l2nx.highfive.mechanics.stats.TraitType;
+import app.l2nx.highfive.mechanics.stats.functions.AbstractFunction;
+import app.l2nx.highfive.mechanics.stats.functions.FuncTemplate;
+import app.l2nx.highfive.network.SystemMessageId;
+import app.l2nx.highfive.network.serverpackets.SystemMessage;
+import app.l2nx.highfive.util.LocationUtil;
+import app.l2nx.highfive.util.StatSet;
 
 public class Skill
 {

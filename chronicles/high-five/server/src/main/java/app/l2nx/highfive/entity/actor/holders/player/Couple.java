@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.entity.actor.holders.player;
+package app.l2nx.highfive.entity.actor.holders.player;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -23,9 +23,9 @@ import java.util.Calendar;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.l2jmobius.commons.database.DatabaseFactory;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.managers.IdManager;
+import app.l2nx.commons.database.DatabaseFactory;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.managers.IdManager;
 
 /**
  * @author evill33t

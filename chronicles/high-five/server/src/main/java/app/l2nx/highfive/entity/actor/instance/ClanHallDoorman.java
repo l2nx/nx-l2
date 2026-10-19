@@ -18,20 +18,20 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.entity.actor.instance;
+package app.l2nx.highfive.entity.actor.instance;
 
 import java.util.Arrays;
 import java.util.StringTokenizer;
 
-import org.l2jmobius.gameserver.data.sql.ClanHallTable;
-import org.l2jmobius.gameserver.data.sql.ClanTable;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.actor.enums.creature.InstanceType;
-import org.l2jmobius.gameserver.entity.actor.templates.NpcTemplate;
-import org.l2jmobius.gameserver.entity.clan.Clan;
-import org.l2jmobius.gameserver.entity.residences.ClanHall;
-import org.l2jmobius.gameserver.network.serverpackets.ActionFailed;
-import org.l2jmobius.gameserver.network.serverpackets.NpcHtmlMessage;
+import app.l2nx.highfive.data.sql.ClanHallTable;
+import app.l2nx.highfive.data.sql.ClanTable;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.actor.enums.creature.InstanceType;
+import app.l2nx.highfive.entity.actor.templates.NpcTemplate;
+import app.l2nx.highfive.entity.clan.Clan;
+import app.l2nx.highfive.entity.residences.ClanHall;
+import app.l2nx.highfive.network.serverpackets.ActionFailed;
+import app.l2nx.highfive.network.serverpackets.NpcHtmlMessage;
 
 public class ClanHallDoorman extends Doorman
 {

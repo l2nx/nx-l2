@@ -14,23 +14,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package custom.Validators;
+package app.l2nx.highfive.scripts.custom.Validators;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import org.l2jmobius.gameserver.config.GeneralConfig;
-import org.l2jmobius.gameserver.config.PlayerConfig;
-import org.l2jmobius.gameserver.data.xml.ClassListData;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.actor.enums.player.IllegalActionPunishmentType;
-import org.l2jmobius.gameserver.entity.item.instance.Item;
-import org.l2jmobius.gameserver.managers.PunishmentManager;
-import org.l2jmobius.gameserver.mechanics.script.QuestState;
-import org.l2jmobius.gameserver.mechanics.script.Script;
-import org.l2jmobius.gameserver.mechanics.skill.Skill;
-import org.l2jmobius.gameserver.util.ArrayUtil;
+import app.l2nx.highfive.config.GeneralConfig;
+import app.l2nx.highfive.config.PlayerConfig;
+import app.l2nx.highfive.data.xml.ClassListData;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.actor.enums.player.IllegalActionPunishmentType;
+import app.l2nx.highfive.entity.item.instance.Item;
+import app.l2nx.highfive.managers.PunishmentManager;
+import app.l2nx.highfive.mechanics.script.QuestState;
+import app.l2nx.highfive.mechanics.script.Script;
+import app.l2nx.highfive.mechanics.skill.Skill;
+import app.l2nx.highfive.util.ArrayUtil;
 
 /**
  * Sub-class skills validator.<br>

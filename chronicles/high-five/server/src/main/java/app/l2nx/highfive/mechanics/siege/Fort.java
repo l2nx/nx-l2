@@ -18,7 +18,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.mechanics.siege;
+package app.l2nx.highfive.mechanics.siege;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -37,33 +37,33 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.l2jmobius.commons.database.DatabaseFactory;
-import org.l2jmobius.commons.threads.ThreadPool;
-import org.l2jmobius.gameserver.config.FeatureConfig;
-import org.l2jmobius.gameserver.data.SpawnTable;
-import org.l2jmobius.gameserver.data.sql.ClanTable;
-import org.l2jmobius.gameserver.data.xml.DoorData;
-import org.l2jmobius.gameserver.data.xml.StaticObjectData;
-import org.l2jmobius.gameserver.entity.World;
-import org.l2jmobius.gameserver.entity.WorldObject;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.actor.enums.player.MountType;
-import org.l2jmobius.gameserver.entity.actor.instance.Door;
-import org.l2jmobius.gameserver.entity.actor.instance.StaticObject;
-import org.l2jmobius.gameserver.entity.clan.Clan;
-import org.l2jmobius.gameserver.entity.item.enums.ItemProcessType;
-import org.l2jmobius.gameserver.entity.itemcontainer.Inventory;
-import org.l2jmobius.gameserver.entity.residences.AbstractResidence;
-import org.l2jmobius.gameserver.entity.spawns.Spawn;
-import org.l2jmobius.gameserver.entity.zone.type.FortZone;
-import org.l2jmobius.gameserver.entity.zone.type.SiegeZone;
-import org.l2jmobius.gameserver.managers.CastleManager;
-import org.l2jmobius.gameserver.managers.FortManager;
-import org.l2jmobius.gameserver.managers.ZoneManager;
-import org.l2jmobius.gameserver.network.SystemMessageId;
-import org.l2jmobius.gameserver.network.serverpackets.PlaySound;
-import org.l2jmobius.gameserver.network.serverpackets.PledgeShowInfoUpdate;
-import org.l2jmobius.gameserver.network.serverpackets.SystemMessage;
+import app.l2nx.commons.database.DatabaseFactory;
+import app.l2nx.commons.threads.ThreadPool;
+import app.l2nx.highfive.config.FeatureConfig;
+import app.l2nx.highfive.data.SpawnTable;
+import app.l2nx.highfive.data.sql.ClanTable;
+import app.l2nx.highfive.data.xml.DoorData;
+import app.l2nx.highfive.data.xml.StaticObjectData;
+import app.l2nx.highfive.entity.World;
+import app.l2nx.highfive.entity.WorldObject;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.actor.enums.player.MountType;
+import app.l2nx.highfive.entity.actor.instance.Door;
+import app.l2nx.highfive.entity.actor.instance.StaticObject;
+import app.l2nx.highfive.entity.clan.Clan;
+import app.l2nx.highfive.entity.item.enums.ItemProcessType;
+import app.l2nx.highfive.entity.itemcontainer.Inventory;
+import app.l2nx.highfive.entity.residences.AbstractResidence;
+import app.l2nx.highfive.entity.spawns.Spawn;
+import app.l2nx.highfive.entity.zone.type.FortZone;
+import app.l2nx.highfive.entity.zone.type.SiegeZone;
+import app.l2nx.highfive.managers.CastleManager;
+import app.l2nx.highfive.managers.FortManager;
+import app.l2nx.highfive.managers.ZoneManager;
+import app.l2nx.highfive.network.SystemMessageId;
+import app.l2nx.highfive.network.serverpackets.PlaySound;
+import app.l2nx.highfive.network.serverpackets.PledgeShowInfoUpdate;
+import app.l2nx.highfive.network.serverpackets.SystemMessage;
 
 public class Fort extends AbstractResidence
 {

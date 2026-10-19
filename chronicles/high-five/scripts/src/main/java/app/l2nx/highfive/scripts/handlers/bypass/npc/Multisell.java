@@ -18,14 +18,14 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package handlers.bypass.npc;
+package app.l2nx.highfive.scripts.handlers.bypass.npc;
 
 import java.util.logging.Level;
 
-import org.l2jmobius.gameserver.data.xml.MultisellData;
-import org.l2jmobius.gameserver.entity.actor.Creature;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.handler.IBypassHandler;
+import app.l2nx.highfive.data.xml.MultisellData;
+import app.l2nx.highfive.entity.actor.Creature;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.handler.IBypassHandler;
 
 public class Multisell implements IBypassHandler
 {

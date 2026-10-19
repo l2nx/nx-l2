@@ -14,22 +14,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package conquerablehalls.FortressOfResistance;
+package app.l2nx.highfive.scripts.conquerablehalls.FortressOfResistance;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import org.l2jmobius.commons.time.TimeUtil;
-import org.l2jmobius.gameserver.cache.HtmCache;
-import org.l2jmobius.gameserver.data.sql.ClanTable;
-import org.l2jmobius.gameserver.entity.Location;
-import org.l2jmobius.gameserver.entity.actor.Npc;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.clan.Clan;
-import org.l2jmobius.gameserver.entity.spawns.Spawn;
-import org.l2jmobius.gameserver.mechanics.siege.clanhalls.ClanHallSiegeEngine;
-import org.l2jmobius.gameserver.network.serverpackets.NpcHtmlMessage;
+import app.l2nx.commons.time.TimeUtil;
+import app.l2nx.highfive.cache.HtmCache;
+import app.l2nx.highfive.data.sql.ClanTable;
+import app.l2nx.highfive.entity.Location;
+import app.l2nx.highfive.entity.actor.Npc;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.clan.Clan;
+import app.l2nx.highfive.entity.spawns.Spawn;
+import app.l2nx.highfive.mechanics.siege.clanhalls.ClanHallSiegeEngine;
+import app.l2nx.highfive.network.serverpackets.NpcHtmlMessage;
 
 /**
  * Fortress of Resistance clan hall siege Script.

@@ -14,19 +14,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.mechanics.stats.functions.formulas;
+package app.l2nx.highfive.mechanics.stats.functions.formulas;
 
 import java.util.EnumMap;
 import java.util.Map;
 
-import org.l2jmobius.gameserver.data.holders.ArmorSet;
-import org.l2jmobius.gameserver.data.xml.ArmorSetData;
-import org.l2jmobius.gameserver.entity.actor.Creature;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.item.instance.Item;
-import org.l2jmobius.gameserver.mechanics.skill.Skill;
-import org.l2jmobius.gameserver.mechanics.stats.Stat;
-import org.l2jmobius.gameserver.mechanics.stats.functions.AbstractFunction;
+import app.l2nx.highfive.data.holders.ArmorSet;
+import app.l2nx.highfive.data.xml.ArmorSetData;
+import app.l2nx.highfive.entity.actor.Creature;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.item.instance.Item;
+import app.l2nx.highfive.mechanics.skill.Skill;
+import app.l2nx.highfive.mechanics.stats.Stat;
+import app.l2nx.highfive.mechanics.stats.functions.AbstractFunction;
 
 /**
  * @author UnAfraid

@@ -14,17 +14,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package instances.NornilsGardenQuest;
+package app.l2nx.highfive.scripts.instances.NornilsGardenQuest;
 
-import org.l2jmobius.gameserver.entity.Location;
-import org.l2jmobius.gameserver.entity.actor.Npc;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.instancezone.InstanceWorld;
-import org.l2jmobius.gameserver.managers.InstanceManager;
-import org.l2jmobius.gameserver.mechanics.script.InstanceScript;
-import org.l2jmobius.gameserver.mechanics.script.QuestState;
+import app.l2nx.highfive.entity.Location;
+import app.l2nx.highfive.entity.actor.Npc;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.instancezone.InstanceWorld;
+import app.l2nx.highfive.managers.InstanceManager;
+import app.l2nx.highfive.mechanics.script.InstanceScript;
+import app.l2nx.highfive.mechanics.script.QuestState;
 
-import quests.Q00236_SeedsOfChaos.Q00236_SeedsOfChaos;
+import app.l2nx.highfive.scripts.quests.Q00236_SeedsOfChaos.Q00236_SeedsOfChaos;
 
 /**
  * Nornil's Garden Quest instant zone.

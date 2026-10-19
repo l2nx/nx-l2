@@ -14,9 +14,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.loginserver.network.gameserverpackets.send;
+package app.l2nx.login.network.gameserverpackets.send;
 
-import org.l2jmobius.commons.network.packet.SimpleWritablePacket;
+import app.l2nx.commons.network.packet.SimpleWritablePacket;
 
 /**
  * @author Nik

@@ -18,38 +18,38 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.entity.actor.stat;
+package app.l2nx.highfive.entity.actor.stat;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.l2jmobius.gameserver.config.GeneralConfig;
-import org.l2jmobius.gameserver.config.PlayerConfig;
-import org.l2jmobius.gameserver.config.RatesConfig;
-import org.l2jmobius.gameserver.data.holders.PetLevelData;
-import org.l2jmobius.gameserver.data.xml.ExperienceData;
-import org.l2jmobius.gameserver.data.xml.PetDataTable;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.actor.holders.player.SubClassHolder;
-import org.l2jmobius.gameserver.entity.actor.instance.Pet;
-import org.l2jmobius.gameserver.entity.actor.status.PlayerStatus;
-import org.l2jmobius.gameserver.entity.actor.transform.TransformTemplate;
-import org.l2jmobius.gameserver.entity.clan.Clan;
-import org.l2jmobius.gameserver.entity.zone.ZoneId;
-import org.l2jmobius.gameserver.mechanics.effects.EffectType;
-import org.l2jmobius.gameserver.mechanics.events.EventDispatcher;
-import org.l2jmobius.gameserver.mechanics.events.EventType;
-import org.l2jmobius.gameserver.mechanics.events.holders.actor.player.OnPlayerLevelChanged;
-import org.l2jmobius.gameserver.mechanics.script.QuestState;
-import org.l2jmobius.gameserver.mechanics.stats.Formulas;
-import org.l2jmobius.gameserver.mechanics.stats.MoveType;
-import org.l2jmobius.gameserver.mechanics.stats.Stat;
-import org.l2jmobius.gameserver.network.SystemMessageId;
-import org.l2jmobius.gameserver.network.serverpackets.ExVitalityPointInfo;
-import org.l2jmobius.gameserver.network.serverpackets.ExVoteSystemInfo;
-import org.l2jmobius.gameserver.network.serverpackets.PledgeShowMemberListUpdate;
-import org.l2jmobius.gameserver.network.serverpackets.SocialAction;
-import org.l2jmobius.gameserver.network.serverpackets.StatusUpdate;
-import org.l2jmobius.gameserver.network.serverpackets.SystemMessage;
+import app.l2nx.highfive.config.GeneralConfig;
+import app.l2nx.highfive.config.PlayerConfig;
+import app.l2nx.highfive.config.RatesConfig;
+import app.l2nx.highfive.data.holders.PetLevelData;
+import app.l2nx.highfive.data.xml.ExperienceData;
+import app.l2nx.highfive.data.xml.PetDataTable;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.actor.holders.player.SubClassHolder;
+import app.l2nx.highfive.entity.actor.instance.Pet;
+import app.l2nx.highfive.entity.actor.status.PlayerStatus;
+import app.l2nx.highfive.entity.actor.transform.TransformTemplate;
+import app.l2nx.highfive.entity.clan.Clan;
+import app.l2nx.highfive.entity.zone.ZoneId;
+import app.l2nx.highfive.mechanics.effects.EffectType;
+import app.l2nx.highfive.mechanics.events.EventDispatcher;
+import app.l2nx.highfive.mechanics.events.EventType;
+import app.l2nx.highfive.mechanics.events.holders.actor.player.OnPlayerLevelChanged;
+import app.l2nx.highfive.mechanics.script.QuestState;
+import app.l2nx.highfive.mechanics.stats.Formulas;
+import app.l2nx.highfive.mechanics.stats.MoveType;
+import app.l2nx.highfive.mechanics.stats.Stat;
+import app.l2nx.highfive.network.SystemMessageId;
+import app.l2nx.highfive.network.serverpackets.ExVitalityPointInfo;
+import app.l2nx.highfive.network.serverpackets.ExVoteSystemInfo;
+import app.l2nx.highfive.network.serverpackets.PledgeShowMemberListUpdate;
+import app.l2nx.highfive.network.serverpackets.SocialAction;
+import app.l2nx.highfive.network.serverpackets.StatusUpdate;
+import app.l2nx.highfive.network.serverpackets.SystemMessage;
 
 public class PlayerStat extends PlayableStat
 {

@@ -18,37 +18,37 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package ai.bosses.Baium;
+package app.l2nx.highfive.scripts.ai.bosses.Baium;
 
 import java.util.logging.Logger;
 
-import org.l2jmobius.commons.time.TimeUtil;
-import org.l2jmobius.gameserver.config.GrandBossConfig;
-import org.l2jmobius.gameserver.data.enums.CategoryType;
-import org.l2jmobius.gameserver.entity.Location;
-import org.l2jmobius.gameserver.entity.World;
-import org.l2jmobius.gameserver.entity.actor.Attackable;
-import org.l2jmobius.gameserver.entity.actor.Creature;
-import org.l2jmobius.gameserver.entity.actor.Npc;
-import org.l2jmobius.gameserver.entity.actor.Playable;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.actor.enums.player.MountType;
-import org.l2jmobius.gameserver.entity.actor.instance.GrandBoss;
-import org.l2jmobius.gameserver.entity.zone.type.NoRestartZone;
-import org.l2jmobius.gameserver.managers.GrandBossManager;
-import org.l2jmobius.gameserver.managers.ZoneManager;
-import org.l2jmobius.gameserver.mechanics.script.Script;
-import org.l2jmobius.gameserver.mechanics.skill.Skill;
-import org.l2jmobius.gameserver.mechanics.skill.holders.SkillHolder;
-import org.l2jmobius.gameserver.mechanics.variables.NpcVariables;
-import org.l2jmobius.gameserver.network.NpcStringId;
-import org.l2jmobius.gameserver.network.enums.ChatType;
-import org.l2jmobius.gameserver.network.serverpackets.Earthquake;
-import org.l2jmobius.gameserver.network.serverpackets.ExShowScreenMessage;
-import org.l2jmobius.gameserver.network.serverpackets.PlaySound;
-import org.l2jmobius.gameserver.network.serverpackets.SocialAction;
-import org.l2jmobius.gameserver.util.MathUtil;
-import org.l2jmobius.gameserver.util.StatSet;
+import app.l2nx.commons.time.TimeUtil;
+import app.l2nx.highfive.config.GrandBossConfig;
+import app.l2nx.highfive.data.enums.CategoryType;
+import app.l2nx.highfive.entity.Location;
+import app.l2nx.highfive.entity.World;
+import app.l2nx.highfive.entity.actor.Attackable;
+import app.l2nx.highfive.entity.actor.Creature;
+import app.l2nx.highfive.entity.actor.Npc;
+import app.l2nx.highfive.entity.actor.Playable;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.actor.enums.player.MountType;
+import app.l2nx.highfive.entity.actor.instance.GrandBoss;
+import app.l2nx.highfive.entity.zone.type.NoRestartZone;
+import app.l2nx.highfive.managers.GrandBossManager;
+import app.l2nx.highfive.managers.ZoneManager;
+import app.l2nx.highfive.mechanics.script.Script;
+import app.l2nx.highfive.mechanics.skill.Skill;
+import app.l2nx.highfive.mechanics.skill.holders.SkillHolder;
+import app.l2nx.highfive.mechanics.variables.NpcVariables;
+import app.l2nx.highfive.network.NpcStringId;
+import app.l2nx.highfive.network.enums.ChatType;
+import app.l2nx.highfive.network.serverpackets.Earthquake;
+import app.l2nx.highfive.network.serverpackets.ExShowScreenMessage;
+import app.l2nx.highfive.network.serverpackets.PlaySound;
+import app.l2nx.highfive.network.serverpackets.SocialAction;
+import app.l2nx.highfive.util.MathUtil;
+import app.l2nx.highfive.util.StatSet;
 
 /**
  * Baium grand boss AI implementation for the tower rooftop encounter.<br>

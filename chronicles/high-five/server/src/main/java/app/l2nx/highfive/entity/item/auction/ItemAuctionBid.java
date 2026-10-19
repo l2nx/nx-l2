@@ -14,10 +14,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.entity.item.auction;
+package app.l2nx.highfive.entity.item.auction;
 
-import org.l2jmobius.gameserver.entity.World;
-import org.l2jmobius.gameserver.entity.actor.Player;
+import app.l2nx.highfive.entity.World;
+import app.l2nx.highfive.entity.actor.Player;
 
 /**
  * @author Forsaiken

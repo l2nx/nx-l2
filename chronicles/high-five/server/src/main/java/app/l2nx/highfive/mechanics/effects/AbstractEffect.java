@@ -18,7 +18,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.mechanics.effects;
+package app.l2nx.highfive.mechanics.effects;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -27,14 +27,14 @@ import java.util.Collections;
 import java.util.List;
 import java.util.logging.Logger;
 
-import org.l2jmobius.gameserver.config.PlayerConfig;
-import org.l2jmobius.gameserver.entity.actor.Creature;
-import org.l2jmobius.gameserver.handler.EffectHandler;
-import org.l2jmobius.gameserver.mechanics.conditions.Condition;
-import org.l2jmobius.gameserver.mechanics.skill.Skill;
-import org.l2jmobius.gameserver.mechanics.stats.functions.AbstractFunction;
-import org.l2jmobius.gameserver.mechanics.stats.functions.FuncTemplate;
-import org.l2jmobius.gameserver.util.StatSet;
+import app.l2nx.highfive.config.PlayerConfig;
+import app.l2nx.highfive.entity.actor.Creature;
+import app.l2nx.highfive.handler.EffectHandler;
+import app.l2nx.highfive.mechanics.conditions.Condition;
+import app.l2nx.highfive.mechanics.skill.Skill;
+import app.l2nx.highfive.mechanics.stats.functions.AbstractFunction;
+import app.l2nx.highfive.mechanics.stats.functions.FuncTemplate;
+import app.l2nx.highfive.util.StatSet;
 
 /**
  * Abstract effect implementation.

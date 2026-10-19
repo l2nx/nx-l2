@@ -18,7 +18,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.managers;
+package app.l2nx.highfive.managers;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -34,9 +34,9 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
-import org.l2jmobius.commons.database.DatabaseFactory;
-import org.l2jmobius.gameserver.config.IdManagerConfig;
-import org.l2jmobius.gameserver.config.custom.WeddingConfig;
+import app.l2nx.commons.database.DatabaseFactory;
+import app.l2nx.highfive.config.IdManagerConfig;
+import app.l2nx.highfive.config.custom.WeddingConfig;
 
 /**
  * Manages database cleanup operations and retrieval of used IDs for ID allocation.

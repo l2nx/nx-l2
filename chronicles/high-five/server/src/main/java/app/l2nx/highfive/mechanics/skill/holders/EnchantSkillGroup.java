@@ -18,13 +18,13 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.mechanics.skill.holders;
+package app.l2nx.highfive.mechanics.skill.holders;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.util.StatSet;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.util.StatSet;
 
 public class EnchantSkillGroup
 {

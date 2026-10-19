@@ -14,13 +14,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package ai.others.NpcBuffers;
+package app.l2nx.highfive.scripts.ai.others.NpcBuffers;
 
-import org.l2jmobius.gameserver.mechanics.skill.Skill;
-import org.l2jmobius.gameserver.mechanics.skill.holders.SkillHolder;
-import org.l2jmobius.gameserver.mechanics.skill.targets.AffectObject;
-import org.l2jmobius.gameserver.mechanics.skill.targets.AffectScope;
-import org.l2jmobius.gameserver.util.StatSet;
+import app.l2nx.highfive.mechanics.skill.Skill;
+import app.l2nx.highfive.mechanics.skill.holders.SkillHolder;
+import app.l2nx.highfive.mechanics.skill.targets.AffectObject;
+import app.l2nx.highfive.mechanics.skill.targets.AffectScope;
+import app.l2nx.highfive.util.StatSet;
 
 /**
  * @author UnAfraid

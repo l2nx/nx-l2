@@ -18,7 +18,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.entity.actor.instance;
+package app.l2nx.highfive.entity.actor.instance;
 
 import java.io.File;
 import java.time.Instant;
@@ -26,26 +26,26 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.StringTokenizer;
 
-import org.l2jmobius.gameserver.config.FeatureConfig;
-import org.l2jmobius.gameserver.config.ServerConfig;
-import org.l2jmobius.gameserver.data.sql.ClanHallTable;
-import org.l2jmobius.gameserver.data.xml.SkillData;
-import org.l2jmobius.gameserver.data.xml.TeleporterData;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.actor.enums.creature.InstanceType;
-import org.l2jmobius.gameserver.entity.actor.templates.NpcTemplate;
-import org.l2jmobius.gameserver.entity.clan.ClanAccess;
-import org.l2jmobius.gameserver.entity.residences.AuctionableHall;
-import org.l2jmobius.gameserver.entity.residences.ClanHall;
-import org.l2jmobius.gameserver.entity.residences.ClanHall.ClanHallFunction;
-import org.l2jmobius.gameserver.entity.teleporter.TeleportHolder;
-import org.l2jmobius.gameserver.managers.CHSiegeManager;
-import org.l2jmobius.gameserver.mechanics.effects.EffectType;
-import org.l2jmobius.gameserver.mechanics.siege.clanhalls.SiegableHall;
-import org.l2jmobius.gameserver.mechanics.skill.Skill;
-import org.l2jmobius.gameserver.network.serverpackets.ActionFailed;
-import org.l2jmobius.gameserver.network.serverpackets.AgitDecoInfo;
-import org.l2jmobius.gameserver.network.serverpackets.NpcHtmlMessage;
+import app.l2nx.highfive.config.FeatureConfig;
+import app.l2nx.highfive.config.ServerConfig;
+import app.l2nx.highfive.data.sql.ClanHallTable;
+import app.l2nx.highfive.data.xml.SkillData;
+import app.l2nx.highfive.data.xml.TeleporterData;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.actor.enums.creature.InstanceType;
+import app.l2nx.highfive.entity.actor.templates.NpcTemplate;
+import app.l2nx.highfive.entity.clan.ClanAccess;
+import app.l2nx.highfive.entity.residences.AuctionableHall;
+import app.l2nx.highfive.entity.residences.ClanHall;
+import app.l2nx.highfive.entity.residences.ClanHall.ClanHallFunction;
+import app.l2nx.highfive.entity.teleporter.TeleportHolder;
+import app.l2nx.highfive.managers.CHSiegeManager;
+import app.l2nx.highfive.mechanics.effects.EffectType;
+import app.l2nx.highfive.mechanics.siege.clanhalls.SiegableHall;
+import app.l2nx.highfive.mechanics.skill.Skill;
+import app.l2nx.highfive.network.serverpackets.ActionFailed;
+import app.l2nx.highfive.network.serverpackets.AgitDecoInfo;
+import app.l2nx.highfive.network.serverpackets.NpcHtmlMessage;
 
 public class ClanHallManager extends Merchant
 {

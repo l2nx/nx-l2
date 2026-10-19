@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.managers;
+package app.l2nx.highfive.managers;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -27,22 +27,22 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 
-import org.l2jmobius.commons.util.IXmlReader;
-import org.l2jmobius.gameserver.cache.HtmCache;
-import org.l2jmobius.gameserver.config.custom.SellBuffsConfig;
-import org.l2jmobius.gameserver.data.holders.SellBuffHolder;
-import org.l2jmobius.gameserver.data.xml.ItemData;
-import org.l2jmobius.gameserver.data.xml.SkillData;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.actor.enums.player.PrivateStoreType;
-import org.l2jmobius.gameserver.entity.item.ItemTemplate;
-import org.l2jmobius.gameserver.entity.zone.ZoneId;
-import org.l2jmobius.gameserver.handler.CommunityBoardHandler;
-import org.l2jmobius.gameserver.mechanics.olympiad.OlympiadManager;
-import org.l2jmobius.gameserver.mechanics.skill.Skill;
-import org.l2jmobius.gameserver.network.serverpackets.ExPrivateStoreSetWholeMsg;
-import org.l2jmobius.gameserver.util.FormatUtil;
-import org.l2jmobius.gameserver.util.HtmlUtil;
+import app.l2nx.commons.util.IXmlReader;
+import app.l2nx.highfive.cache.HtmCache;
+import app.l2nx.highfive.config.custom.SellBuffsConfig;
+import app.l2nx.highfive.data.holders.SellBuffHolder;
+import app.l2nx.highfive.data.xml.ItemData;
+import app.l2nx.highfive.data.xml.SkillData;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.actor.enums.player.PrivateStoreType;
+import app.l2nx.highfive.entity.item.ItemTemplate;
+import app.l2nx.highfive.entity.zone.ZoneId;
+import app.l2nx.highfive.handler.CommunityBoardHandler;
+import app.l2nx.highfive.mechanics.olympiad.OlympiadManager;
+import app.l2nx.highfive.mechanics.skill.Skill;
+import app.l2nx.highfive.network.serverpackets.ExPrivateStoreSetWholeMsg;
+import app.l2nx.highfive.util.FormatUtil;
+import app.l2nx.highfive.util.HtmlUtil;
 
 /**
  * @author St3eT

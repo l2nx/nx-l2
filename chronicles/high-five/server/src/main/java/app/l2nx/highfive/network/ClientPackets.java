@@ -18,7 +18,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.network;
+package app.l2nx.highfive.network;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -26,8 +26,8 @@ import java.util.EnumSet;
 import java.util.Set;
 import java.util.function.Supplier;
 
-import org.l2jmobius.gameserver.config.DevelopmentConfig;
-import org.l2jmobius.gameserver.network.clientpackets.*;
+import app.l2nx.highfive.config.DevelopmentConfig;
+import app.l2nx.highfive.network.clientpackets.*;
 
 /**
  * @author Mobius

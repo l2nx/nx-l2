@@ -18,27 +18,27 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package events.CharacterBirthday;
+package app.l2nx.highfive.scripts.events.CharacterBirthday;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 
-import org.l2jmobius.commons.database.DatabaseFactory;
-import org.l2jmobius.gameserver.config.GeneralConfig;
-import org.l2jmobius.gameserver.entity.actor.Npc;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.item.enums.ItemProcessType;
-import org.l2jmobius.gameserver.managers.MailManager;
-import org.l2jmobius.gameserver.mechanics.events.EventType;
-import org.l2jmobius.gameserver.mechanics.events.ListenerRegisterType;
-import org.l2jmobius.gameserver.mechanics.events.annotations.RegisterEvent;
-import org.l2jmobius.gameserver.mechanics.events.annotations.RegisterType;
-import org.l2jmobius.gameserver.mechanics.events.holders.OnDailyReset;
-import org.l2jmobius.gameserver.mechanics.script.Script;
-import org.l2jmobius.gameserver.network.enums.MessageSenderType;
-import org.l2jmobius.gameserver.network.holders.MailMessage;
-import org.l2jmobius.gameserver.util.LocationUtil;
+import app.l2nx.commons.database.DatabaseFactory;
+import app.l2nx.highfive.config.GeneralConfig;
+import app.l2nx.highfive.entity.actor.Npc;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.item.enums.ItemProcessType;
+import app.l2nx.highfive.managers.MailManager;
+import app.l2nx.highfive.mechanics.events.EventType;
+import app.l2nx.highfive.mechanics.events.ListenerRegisterType;
+import app.l2nx.highfive.mechanics.events.annotations.RegisterEvent;
+import app.l2nx.highfive.mechanics.events.annotations.RegisterType;
+import app.l2nx.highfive.mechanics.events.holders.OnDailyReset;
+import app.l2nx.highfive.mechanics.script.Script;
+import app.l2nx.highfive.network.enums.MessageSenderType;
+import app.l2nx.highfive.network.holders.MailMessage;
+import app.l2nx.highfive.util.LocationUtil;
 
 /**
  * @author Nyaran, Mobius

@@ -18,17 +18,17 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package handlers.skill.effects;
+package app.l2nx.highfive.scripts.handlers.skill.effects;
 
-import org.l2jmobius.commons.threads.ThreadPool;
-import org.l2jmobius.gameserver.entity.actor.Creature;
-import org.l2jmobius.gameserver.mechanics.conditions.Condition;
-import org.l2jmobius.gameserver.mechanics.effects.AbstractEffect;
-import org.l2jmobius.gameserver.mechanics.skill.EffectScope;
-import org.l2jmobius.gameserver.mechanics.skill.Skill;
-import org.l2jmobius.gameserver.mechanics.stats.Formulas;
-import org.l2jmobius.gameserver.taskmanagers.DecayTaskManager;
-import org.l2jmobius.gameserver.util.StatSet;
+import app.l2nx.commons.threads.ThreadPool;
+import app.l2nx.highfive.entity.actor.Creature;
+import app.l2nx.highfive.mechanics.conditions.Condition;
+import app.l2nx.highfive.mechanics.effects.AbstractEffect;
+import app.l2nx.highfive.mechanics.skill.EffectScope;
+import app.l2nx.highfive.mechanics.skill.Skill;
+import app.l2nx.highfive.mechanics.stats.Formulas;
+import app.l2nx.highfive.taskmanagers.DecayTaskManager;
+import app.l2nx.highfive.util.StatSet;
 
 /**
  * Consume Body effect implementation.

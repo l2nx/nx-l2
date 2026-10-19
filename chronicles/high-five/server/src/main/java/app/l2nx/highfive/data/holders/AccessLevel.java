@@ -14,10 +14,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.data.holders;
+package app.l2nx.highfive.data.holders;
 
-import org.l2jmobius.gameserver.data.xml.AdminData;
-import org.l2jmobius.gameserver.util.StatSet;
+import app.l2nx.highfive.data.xml.AdminData;
+import app.l2nx.highfive.util.StatSet;
 
 /**
  * @author HorridoJoho

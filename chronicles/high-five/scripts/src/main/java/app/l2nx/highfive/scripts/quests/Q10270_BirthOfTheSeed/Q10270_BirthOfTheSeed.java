@@ -14,19 +14,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package quests.Q10270_BirthOfTheSeed;
+package app.l2nx.highfive.scripts.quests.Q10270_BirthOfTheSeed;
 
-import org.l2jmobius.gameserver.config.PlayerConfig;
-import org.l2jmobius.gameserver.entity.Location;
-import org.l2jmobius.gameserver.entity.actor.Npc;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.itemcontainer.Inventory;
-import org.l2jmobius.gameserver.mechanics.script.Quest;
-import org.l2jmobius.gameserver.mechanics.script.QuestSound;
-import org.l2jmobius.gameserver.mechanics.script.QuestState;
-import org.l2jmobius.gameserver.util.LocationUtil;
+import app.l2nx.highfive.config.PlayerConfig;
+import app.l2nx.highfive.entity.Location;
+import app.l2nx.highfive.entity.actor.Npc;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.itemcontainer.Inventory;
+import app.l2nx.highfive.mechanics.script.Quest;
+import app.l2nx.highfive.mechanics.script.QuestSound;
+import app.l2nx.highfive.mechanics.script.QuestState;
+import app.l2nx.highfive.util.LocationUtil;
 
-import quests.Q10272_LightFragment.Q10272_LightFragment;
+import app.l2nx.highfive.scripts.quests.Q10272_LightFragment.Q10272_LightFragment;
 
 /**
  * Birth of the Seed (10270)

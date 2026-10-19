@@ -14,11 +14,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.entity.actor;
+package app.l2nx.highfive.entity.actor;
 
-import org.l2jmobius.gameserver.entity.actor.templates.NpcTemplate;
-import org.l2jmobius.gameserver.geoengine.GeoEngine;
-import org.l2jmobius.gameserver.network.serverpackets.ActionFailed;
+import app.l2nx.highfive.entity.actor.templates.NpcTemplate;
+import app.l2nx.highfive.geoengine.GeoEngine;
+import app.l2nx.highfive.network.serverpackets.ActionFailed;
 
 /**
  * This class is a super-class for ControlTower and FlameTower.

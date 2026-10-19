@@ -14,10 +14,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package ai.others;
+package app.l2nx.highfive.scripts.ai.others;
 
-import org.l2jmobius.gameserver.entity.actor.Npc;
-import org.l2jmobius.gameserver.mechanics.script.Script;
+import app.l2nx.highfive.entity.actor.Npc;
+import app.l2nx.highfive.mechanics.script.Script;
 
 /**
  * @author UnAfraid

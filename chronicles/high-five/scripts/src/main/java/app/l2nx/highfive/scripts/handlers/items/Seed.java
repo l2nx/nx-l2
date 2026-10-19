@@ -14,21 +14,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package handlers.items;
+package app.l2nx.highfive.scripts.handlers.items;
 
-import org.l2jmobius.gameserver.config.GeneralConfig;
-import org.l2jmobius.gameserver.data.xml.MapRegionData;
-import org.l2jmobius.gameserver.entity.WorldObject;
-import org.l2jmobius.gameserver.entity.actor.Playable;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.actor.instance.Chest;
-import org.l2jmobius.gameserver.entity.actor.instance.Monster;
-import org.l2jmobius.gameserver.entity.item.instance.Item;
-import org.l2jmobius.gameserver.handler.IItemHandler;
-import org.l2jmobius.gameserver.managers.CastleManorManager;
-import org.l2jmobius.gameserver.mechanics.skill.holders.SkillHolder;
-import org.l2jmobius.gameserver.network.SystemMessageId;
-import org.l2jmobius.gameserver.network.serverpackets.ActionFailed;
+import app.l2nx.highfive.config.GeneralConfig;
+import app.l2nx.highfive.data.xml.MapRegionData;
+import app.l2nx.highfive.entity.WorldObject;
+import app.l2nx.highfive.entity.actor.Playable;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.actor.instance.Chest;
+import app.l2nx.highfive.entity.actor.instance.Monster;
+import app.l2nx.highfive.entity.item.instance.Item;
+import app.l2nx.highfive.handler.IItemHandler;
+import app.l2nx.highfive.managers.CastleManorManager;
+import app.l2nx.highfive.mechanics.skill.holders.SkillHolder;
+import app.l2nx.highfive.network.SystemMessageId;
+import app.l2nx.highfive.network.serverpackets.ActionFailed;
 
 /**
  * @author l3x
@@ -72,7 +72,7 @@ public class Seed implements IItemHandler
 			return false;
 		}
 		
-		final org.l2jmobius.gameserver.mechanics.siege.manor.Seed seed = CastleManorManager.getInstance().getSeed(item.getId());
+		final app.l2nx.highfive.mechanics.siege.manor.Seed seed = CastleManorManager.getInstance().getSeed(item.getId());
 		if (seed == null)
 		{
 			return false;

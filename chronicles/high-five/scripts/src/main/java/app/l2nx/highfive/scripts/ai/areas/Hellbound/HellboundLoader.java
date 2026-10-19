@@ -14,52 +14,52 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package ai.areas.Hellbound;
+package app.l2nx.highfive.scripts.ai.areas.Hellbound;
 
 import java.util.logging.Logger;
 
-import org.l2jmobius.gameserver.config.custom.HellboundStatusConfig;
-import org.l2jmobius.gameserver.handler.AdminCommandHandler;
-import org.l2jmobius.gameserver.handler.IAdminCommandHandler;
-import org.l2jmobius.gameserver.handler.IVoicedCommandHandler;
-import org.l2jmobius.gameserver.handler.VoicedCommandHandler;
+import app.l2nx.highfive.config.custom.HellboundStatusConfig;
+import app.l2nx.highfive.handler.AdminCommandHandler;
+import app.l2nx.highfive.handler.IAdminCommandHandler;
+import app.l2nx.highfive.handler.IVoicedCommandHandler;
+import app.l2nx.highfive.handler.VoicedCommandHandler;
 
-import ai.areas.Hellbound.AI.Amaskari;
-import ai.areas.Hellbound.AI.Chimeras;
-import ai.areas.Hellbound.AI.DemonPrince;
-import ai.areas.Hellbound.AI.HellboundCore;
-import ai.areas.Hellbound.AI.Keltas;
-import ai.areas.Hellbound.AI.NaiaLock;
-import ai.areas.Hellbound.AI.OutpostCaptain;
-import ai.areas.Hellbound.AI.Ranku;
-import ai.areas.Hellbound.AI.Slaves;
-import ai.areas.Hellbound.AI.Typhoon;
-import ai.areas.Hellbound.AI.NPC.Bernarde.Bernarde;
-import ai.areas.Hellbound.AI.NPC.Budenka.Budenka;
-import ai.areas.Hellbound.AI.NPC.Buron.Buron;
-import ai.areas.Hellbound.AI.NPC.Deltuva.Deltuva;
-import ai.areas.Hellbound.AI.NPC.Falk.Falk;
-import ai.areas.Hellbound.AI.NPC.Hude.Hude;
-import ai.areas.Hellbound.AI.NPC.Jude.Jude;
-import ai.areas.Hellbound.AI.NPC.Kanaf.Kanaf;
-import ai.areas.Hellbound.AI.NPC.Kief.Kief;
-import ai.areas.Hellbound.AI.NPC.Natives.Natives;
-import ai.areas.Hellbound.AI.NPC.Quarry.Quarry;
-import ai.areas.Hellbound.AI.NPC.Shadai.Shadai;
-import ai.areas.Hellbound.AI.NPC.Solomon.Solomon;
-import ai.areas.Hellbound.AI.NPC.Warpgate.Warpgate;
-import ai.areas.Hellbound.AI.Zones.AnomicFoundry.AnomicFoundry;
-import ai.areas.Hellbound.AI.Zones.BaseTower.BaseTower;
-import ai.areas.Hellbound.AI.Zones.TowerOfInfinitum.TowerOfInfinitum;
-import ai.areas.Hellbound.AI.Zones.TowerOfNaia.TowerOfNaia;
-import ai.areas.Hellbound.AI.Zones.TullyWorkshop.TullyWorkshop;
-import ai.areas.Hellbound.Instances.DemonPrinceFloor.DemonPrinceFloor;
-import ai.areas.Hellbound.Instances.RankuFloor.RankuFloor;
-import ai.areas.Hellbound.Instances.UrbanArea.UrbanArea;
-import handlers.chat.commands.admin.AdminHellbound;
-import handlers.chat.commands.voiced.Hellbound;
-import quests.Q00130_PathToHellbound.Q00130_PathToHellbound;
-import quests.Q00133_ThatsBloodyHot.Q00133_ThatsBloodyHot;
+import app.l2nx.highfive.scripts.ai.areas.Hellbound.AI.Amaskari;
+import app.l2nx.highfive.scripts.ai.areas.Hellbound.AI.Chimeras;
+import app.l2nx.highfive.scripts.ai.areas.Hellbound.AI.DemonPrince;
+import app.l2nx.highfive.scripts.ai.areas.Hellbound.AI.HellboundCore;
+import app.l2nx.highfive.scripts.ai.areas.Hellbound.AI.Keltas;
+import app.l2nx.highfive.scripts.ai.areas.Hellbound.AI.NaiaLock;
+import app.l2nx.highfive.scripts.ai.areas.Hellbound.AI.OutpostCaptain;
+import app.l2nx.highfive.scripts.ai.areas.Hellbound.AI.Ranku;
+import app.l2nx.highfive.scripts.ai.areas.Hellbound.AI.Slaves;
+import app.l2nx.highfive.scripts.ai.areas.Hellbound.AI.Typhoon;
+import app.l2nx.highfive.scripts.ai.areas.Hellbound.AI.NPC.Bernarde.Bernarde;
+import app.l2nx.highfive.scripts.ai.areas.Hellbound.AI.NPC.Budenka.Budenka;
+import app.l2nx.highfive.scripts.ai.areas.Hellbound.AI.NPC.Buron.Buron;
+import app.l2nx.highfive.scripts.ai.areas.Hellbound.AI.NPC.Deltuva.Deltuva;
+import app.l2nx.highfive.scripts.ai.areas.Hellbound.AI.NPC.Falk.Falk;
+import app.l2nx.highfive.scripts.ai.areas.Hellbound.AI.NPC.Hude.Hude;
+import app.l2nx.highfive.scripts.ai.areas.Hellbound.AI.NPC.Jude.Jude;
+import app.l2nx.highfive.scripts.ai.areas.Hellbound.AI.NPC.Kanaf.Kanaf;
+import app.l2nx.highfive.scripts.ai.areas.Hellbound.AI.NPC.Kief.Kief;
+import app.l2nx.highfive.scripts.ai.areas.Hellbound.AI.NPC.Natives.Natives;
+import app.l2nx.highfive.scripts.ai.areas.Hellbound.AI.NPC.Quarry.Quarry;
+import app.l2nx.highfive.scripts.ai.areas.Hellbound.AI.NPC.Shadai.Shadai;
+import app.l2nx.highfive.scripts.ai.areas.Hellbound.AI.NPC.Solomon.Solomon;
+import app.l2nx.highfive.scripts.ai.areas.Hellbound.AI.NPC.Warpgate.Warpgate;
+import app.l2nx.highfive.scripts.ai.areas.Hellbound.AI.Zones.AnomicFoundry.AnomicFoundry;
+import app.l2nx.highfive.scripts.ai.areas.Hellbound.AI.Zones.BaseTower.BaseTower;
+import app.l2nx.highfive.scripts.ai.areas.Hellbound.AI.Zones.TowerOfInfinitum.TowerOfInfinitum;
+import app.l2nx.highfive.scripts.ai.areas.Hellbound.AI.Zones.TowerOfNaia.TowerOfNaia;
+import app.l2nx.highfive.scripts.ai.areas.Hellbound.AI.Zones.TullyWorkshop.TullyWorkshop;
+import app.l2nx.highfive.scripts.ai.areas.Hellbound.Instances.DemonPrinceFloor.DemonPrinceFloor;
+import app.l2nx.highfive.scripts.ai.areas.Hellbound.Instances.RankuFloor.RankuFloor;
+import app.l2nx.highfive.scripts.ai.areas.Hellbound.Instances.UrbanArea.UrbanArea;
+import app.l2nx.highfive.scripts.handlers.chat.commands.admin.AdminHellbound;
+import app.l2nx.highfive.scripts.handlers.chat.commands.voiced.Hellbound;
+import app.l2nx.highfive.scripts.quests.Q00130_PathToHellbound.Q00130_PathToHellbound;
+import app.l2nx.highfive.scripts.quests.Q00133_ThatsBloodyHot.Q00133_ThatsBloodyHot;
 
 /**
  * Hellbound class-loader.

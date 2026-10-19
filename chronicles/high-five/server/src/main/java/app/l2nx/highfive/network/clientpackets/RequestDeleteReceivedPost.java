@@ -14,17 +14,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.network.clientpackets;
+package app.l2nx.highfive.network.clientpackets;
 
-import org.l2jmobius.gameserver.config.GeneralConfig;
-import org.l2jmobius.gameserver.config.PlayerConfig;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.zone.ZoneId;
-import org.l2jmobius.gameserver.managers.MailManager;
-import org.l2jmobius.gameserver.managers.PunishmentManager;
-import org.l2jmobius.gameserver.network.SystemMessageId;
-import org.l2jmobius.gameserver.network.holders.MailMessage;
-import org.l2jmobius.gameserver.network.serverpackets.ExChangePostState;
+import app.l2nx.highfive.config.GeneralConfig;
+import app.l2nx.highfive.config.PlayerConfig;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.zone.ZoneId;
+import app.l2nx.highfive.managers.MailManager;
+import app.l2nx.highfive.managers.PunishmentManager;
+import app.l2nx.highfive.network.SystemMessageId;
+import app.l2nx.highfive.network.holders.MailMessage;
+import app.l2nx.highfive.network.serverpackets.ExChangePostState;
 
 /**
  * @author Migi, DS

@@ -18,18 +18,18 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.entity.actor.instance;
+package app.l2nx.highfive.entity.actor.instance;
 
-import org.l2jmobius.gameserver.data.MerchantPriceConfigTable;
-import org.l2jmobius.gameserver.data.MerchantPriceConfigTable.MerchantPriceConfig;
-import org.l2jmobius.gameserver.data.xml.BuyListData;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.actor.enums.creature.InstanceType;
-import org.l2jmobius.gameserver.entity.actor.templates.NpcTemplate;
-import org.l2jmobius.gameserver.mechanics.buylist.BuyListHolder;
-import org.l2jmobius.gameserver.network.serverpackets.ActionFailed;
-import org.l2jmobius.gameserver.network.serverpackets.BuyList;
-import org.l2jmobius.gameserver.network.serverpackets.ExBuySellList;
+import app.l2nx.highfive.data.MerchantPriceConfigTable;
+import app.l2nx.highfive.data.MerchantPriceConfigTable.MerchantPriceConfig;
+import app.l2nx.highfive.data.xml.BuyListData;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.actor.enums.creature.InstanceType;
+import app.l2nx.highfive.entity.actor.templates.NpcTemplate;
+import app.l2nx.highfive.mechanics.buylist.BuyListHolder;
+import app.l2nx.highfive.network.serverpackets.ActionFailed;
+import app.l2nx.highfive.network.serverpackets.BuyList;
+import app.l2nx.highfive.network.serverpackets.ExBuySellList;
 
 /**
  * @version $Revision: 1.10.4.9 $ $Date: 2005/04/11 10:06:08 $

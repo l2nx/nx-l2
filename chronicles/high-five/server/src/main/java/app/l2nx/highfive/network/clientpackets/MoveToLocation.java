@@ -18,20 +18,20 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.network.clientpackets;
+package app.l2nx.highfive.network.clientpackets;
 
-import org.l2jmobius.gameserver.config.PlayerConfig;
-import org.l2jmobius.gameserver.data.xml.DoorData;
-import org.l2jmobius.gameserver.entity.Location;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.geoengine.GeoEngine;
-import org.l2jmobius.gameserver.managers.ZoneBuildManager;
-import org.l2jmobius.gameserver.mechanics.events.EventDispatcher;
-import org.l2jmobius.gameserver.mechanics.events.EventType;
-import org.l2jmobius.gameserver.mechanics.events.holders.actor.player.OnPlayerMoveRequest;
-import org.l2jmobius.gameserver.mechanics.events.returns.TerminateReturn;
-import org.l2jmobius.gameserver.network.SystemMessageId;
-import org.l2jmobius.gameserver.network.serverpackets.ActionFailed;
+import app.l2nx.highfive.config.PlayerConfig;
+import app.l2nx.highfive.data.xml.DoorData;
+import app.l2nx.highfive.entity.Location;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.geoengine.GeoEngine;
+import app.l2nx.highfive.managers.ZoneBuildManager;
+import app.l2nx.highfive.mechanics.events.EventDispatcher;
+import app.l2nx.highfive.mechanics.events.EventType;
+import app.l2nx.highfive.mechanics.events.holders.actor.player.OnPlayerMoveRequest;
+import app.l2nx.highfive.mechanics.events.returns.TerminateReturn;
+import app.l2nx.highfive.network.SystemMessageId;
+import app.l2nx.highfive.network.serverpackets.ActionFailed;
 
 public class MoveToLocation extends ClientPacket
 {

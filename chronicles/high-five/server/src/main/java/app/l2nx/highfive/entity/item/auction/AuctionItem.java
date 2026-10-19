@@ -14,14 +14,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.entity.item.auction;
+package app.l2nx.highfive.entity.item.auction;
 
-import org.l2jmobius.gameserver.data.xml.ItemData;
-import org.l2jmobius.gameserver.entity.item.enums.ItemProcessType;
-import org.l2jmobius.gameserver.entity.item.instance.Item;
-import org.l2jmobius.gameserver.managers.ItemManager;
-import org.l2jmobius.gameserver.mechanics.options.Augmentation;
-import org.l2jmobius.gameserver.util.StatSet;
+import app.l2nx.highfive.data.xml.ItemData;
+import app.l2nx.highfive.entity.item.enums.ItemProcessType;
+import app.l2nx.highfive.entity.item.instance.Item;
+import app.l2nx.highfive.managers.ItemManager;
+import app.l2nx.highfive.mechanics.options.Augmentation;
+import app.l2nx.highfive.util.StatSet;
 
 /**
  * @author Forsaiken

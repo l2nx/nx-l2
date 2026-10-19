@@ -14,28 +14,28 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.network.clientpackets;
+package app.l2nx.highfive.network.clientpackets;
 
-import org.l2jmobius.gameserver.config.custom.OfflinePlayConfig;
-import org.l2jmobius.gameserver.config.custom.OfflineTradeConfig;
-import org.l2jmobius.gameserver.config.custom.WeddingConfig;
-import org.l2jmobius.gameserver.data.sql.OfflineTraderTable;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.actor.enums.player.PlayerAction;
-import org.l2jmobius.gameserver.entity.actor.holders.creature.DoorRequestHolder;
-import org.l2jmobius.gameserver.entity.actor.holders.player.SummonRequestHolder;
-import org.l2jmobius.gameserver.entity.zone.ZoneId;
-import org.l2jmobius.gameserver.handler.AdminCommandHandler;
-import org.l2jmobius.gameserver.managers.ZoneBuildManager;
-import org.l2jmobius.gameserver.mechanics.events.EventDispatcher;
-import org.l2jmobius.gameserver.mechanics.events.EventType;
-import org.l2jmobius.gameserver.mechanics.events.holders.actor.player.OnPlayerDlgAnswer;
-import org.l2jmobius.gameserver.mechanics.events.returns.TerminateReturn;
-import org.l2jmobius.gameserver.mechanics.olympiad.OlympiadManager;
-import org.l2jmobius.gameserver.network.Disconnection;
-import org.l2jmobius.gameserver.network.SystemMessageId;
-import org.l2jmobius.gameserver.network.serverpackets.ActionFailed;
-import org.l2jmobius.gameserver.network.serverpackets.LeaveWorld;
+import app.l2nx.highfive.config.custom.OfflinePlayConfig;
+import app.l2nx.highfive.config.custom.OfflineTradeConfig;
+import app.l2nx.highfive.config.custom.WeddingConfig;
+import app.l2nx.highfive.data.sql.OfflineTraderTable;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.actor.enums.player.PlayerAction;
+import app.l2nx.highfive.entity.actor.holders.creature.DoorRequestHolder;
+import app.l2nx.highfive.entity.actor.holders.player.SummonRequestHolder;
+import app.l2nx.highfive.entity.zone.ZoneId;
+import app.l2nx.highfive.handler.AdminCommandHandler;
+import app.l2nx.highfive.managers.ZoneBuildManager;
+import app.l2nx.highfive.mechanics.events.EventDispatcher;
+import app.l2nx.highfive.mechanics.events.EventType;
+import app.l2nx.highfive.mechanics.events.holders.actor.player.OnPlayerDlgAnswer;
+import app.l2nx.highfive.mechanics.events.returns.TerminateReturn;
+import app.l2nx.highfive.mechanics.olympiad.OlympiadManager;
+import app.l2nx.highfive.network.Disconnection;
+import app.l2nx.highfive.network.SystemMessageId;
+import app.l2nx.highfive.network.serverpackets.ActionFailed;
+import app.l2nx.highfive.network.serverpackets.LeaveWorld;
 
 /**
  * @author Dezmond_snz

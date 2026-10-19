@@ -14,28 +14,28 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package ai.others.ManorManager;
+package app.l2nx.highfive.scripts.ai.others.ManorManager;
 
-import org.l2jmobius.gameserver.config.GeneralConfig;
-import org.l2jmobius.gameserver.entity.actor.Npc;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.actor.instance.Merchant;
-import org.l2jmobius.gameserver.managers.CastleManorManager;
-import org.l2jmobius.gameserver.mechanics.events.EventType;
-import org.l2jmobius.gameserver.mechanics.events.ListenerRegisterType;
-import org.l2jmobius.gameserver.mechanics.events.annotations.Id;
-import org.l2jmobius.gameserver.mechanics.events.annotations.RegisterEvent;
-import org.l2jmobius.gameserver.mechanics.events.annotations.RegisterType;
-import org.l2jmobius.gameserver.mechanics.events.holders.actor.npc.OnNpcManorBypass;
-import org.l2jmobius.gameserver.mechanics.script.Script;
-import org.l2jmobius.gameserver.network.SystemMessageId;
-import org.l2jmobius.gameserver.network.serverpackets.BuyListSeed;
-import org.l2jmobius.gameserver.network.serverpackets.ExShowCropInfo;
-import org.l2jmobius.gameserver.network.serverpackets.ExShowManorDefaultInfo;
-import org.l2jmobius.gameserver.network.serverpackets.ExShowProcureCropDetail;
-import org.l2jmobius.gameserver.network.serverpackets.ExShowSeedInfo;
-import org.l2jmobius.gameserver.network.serverpackets.ExShowSellCropList;
-import org.l2jmobius.gameserver.network.serverpackets.SystemMessage;
+import app.l2nx.highfive.config.GeneralConfig;
+import app.l2nx.highfive.entity.actor.Npc;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.actor.instance.Merchant;
+import app.l2nx.highfive.managers.CastleManorManager;
+import app.l2nx.highfive.mechanics.events.EventType;
+import app.l2nx.highfive.mechanics.events.ListenerRegisterType;
+import app.l2nx.highfive.mechanics.events.annotations.Id;
+import app.l2nx.highfive.mechanics.events.annotations.RegisterEvent;
+import app.l2nx.highfive.mechanics.events.annotations.RegisterType;
+import app.l2nx.highfive.mechanics.events.holders.actor.npc.OnNpcManorBypass;
+import app.l2nx.highfive.mechanics.script.Script;
+import app.l2nx.highfive.network.SystemMessageId;
+import app.l2nx.highfive.network.serverpackets.BuyListSeed;
+import app.l2nx.highfive.network.serverpackets.ExShowCropInfo;
+import app.l2nx.highfive.network.serverpackets.ExShowManorDefaultInfo;
+import app.l2nx.highfive.network.serverpackets.ExShowProcureCropDetail;
+import app.l2nx.highfive.network.serverpackets.ExShowSeedInfo;
+import app.l2nx.highfive.network.serverpackets.ExShowSellCropList;
+import app.l2nx.highfive.network.serverpackets.SystemMessage;
 
 /**
  * Manor manager AI.

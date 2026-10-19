@@ -18,7 +18,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.scripting;
+package app.l2nx.highfive.scripting;
 
 import java.io.File;
 import java.io.IOException;
@@ -39,11 +39,11 @@ import java.util.logging.Logger;
 
 import org.w3c.dom.Document;
 
-import org.l2jmobius.commons.util.IXmlReader;
-import org.l2jmobius.commons.util.TraceUtil;
-import org.l2jmobius.gameserver.config.DevelopmentConfig;
-import org.l2jmobius.gameserver.config.ServerConfig;
-import org.l2jmobius.gameserver.scripting.engine.ScriptExecutor;
+import app.l2nx.commons.util.IXmlReader;
+import app.l2nx.commons.util.TraceUtil;
+import app.l2nx.highfive.config.DevelopmentConfig;
+import app.l2nx.highfive.config.ServerConfig;
+import app.l2nx.highfive.scripting.engine.ScriptExecutor;
 
 /**
  * @author Mobius

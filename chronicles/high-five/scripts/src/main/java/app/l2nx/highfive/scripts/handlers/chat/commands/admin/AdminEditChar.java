@@ -18,7 +18,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package handlers.chat.commands.admin;
+package app.l2nx.highfive.scripts.handlers.chat.commands.admin;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -33,39 +33,39 @@ import java.util.StringTokenizer;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
-import org.l2jmobius.commons.database.DatabaseFactory;
-import org.l2jmobius.commons.threads.ThreadPool;
-import org.l2jmobius.gameserver.config.PlayerConfig;
-import org.l2jmobius.gameserver.config.custom.AutoPlayConfig;
-import org.l2jmobius.gameserver.data.sql.CharInfoTable;
-import org.l2jmobius.gameserver.data.xml.ClassListData;
-import org.l2jmobius.gameserver.data.xml.TransformData;
-import org.l2jmobius.gameserver.entity.World;
-import org.l2jmobius.gameserver.entity.WorldObject;
-import org.l2jmobius.gameserver.entity.actor.Playable;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.actor.Summon;
-import org.l2jmobius.gameserver.entity.actor.appearance.PlayerAppearance;
-import org.l2jmobius.gameserver.entity.actor.enums.creature.Race;
-import org.l2jmobius.gameserver.entity.actor.enums.player.PlayerClass;
-import org.l2jmobius.gameserver.entity.actor.instance.Pet;
-import org.l2jmobius.gameserver.entity.clan.Clan;
-import org.l2jmobius.gameserver.entity.groups.Party;
-import org.l2jmobius.gameserver.entity.groups.PartyDistributionType;
-import org.l2jmobius.gameserver.handler.IAdminCommandHandler;
-import org.l2jmobius.gameserver.mechanics.html.PageBuilder;
-import org.l2jmobius.gameserver.mechanics.html.PageResult;
-import org.l2jmobius.gameserver.mechanics.html.formatters.BypassParserFormatter;
-import org.l2jmobius.gameserver.mechanics.html.pagehandlers.NextPrevPageHandler;
-import org.l2jmobius.gameserver.mechanics.html.styles.ButtonsStyle;
-import org.l2jmobius.gameserver.network.GameClient;
-import org.l2jmobius.gameserver.network.SystemMessageId;
-import org.l2jmobius.gameserver.network.serverpackets.ExVoteSystemInfo;
-import org.l2jmobius.gameserver.network.serverpackets.GMViewItemList;
-import org.l2jmobius.gameserver.network.serverpackets.NpcHtmlMessage;
-import org.l2jmobius.gameserver.network.serverpackets.PartySmallWindowAll;
-import org.l2jmobius.gameserver.network.serverpackets.PartySmallWindowDeleteAll;
-import org.l2jmobius.gameserver.network.serverpackets.SystemMessage;
+import app.l2nx.commons.database.DatabaseFactory;
+import app.l2nx.commons.threads.ThreadPool;
+import app.l2nx.highfive.config.PlayerConfig;
+import app.l2nx.highfive.config.custom.AutoPlayConfig;
+import app.l2nx.highfive.data.sql.CharInfoTable;
+import app.l2nx.highfive.data.xml.ClassListData;
+import app.l2nx.highfive.data.xml.TransformData;
+import app.l2nx.highfive.entity.World;
+import app.l2nx.highfive.entity.WorldObject;
+import app.l2nx.highfive.entity.actor.Playable;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.actor.Summon;
+import app.l2nx.highfive.entity.actor.appearance.PlayerAppearance;
+import app.l2nx.highfive.entity.actor.enums.creature.Race;
+import app.l2nx.highfive.entity.actor.enums.player.PlayerClass;
+import app.l2nx.highfive.entity.actor.instance.Pet;
+import app.l2nx.highfive.entity.clan.Clan;
+import app.l2nx.highfive.entity.groups.Party;
+import app.l2nx.highfive.entity.groups.PartyDistributionType;
+import app.l2nx.highfive.handler.IAdminCommandHandler;
+import app.l2nx.highfive.mechanics.html.PageBuilder;
+import app.l2nx.highfive.mechanics.html.PageResult;
+import app.l2nx.highfive.mechanics.html.formatters.BypassParserFormatter;
+import app.l2nx.highfive.mechanics.html.pagehandlers.NextPrevPageHandler;
+import app.l2nx.highfive.mechanics.html.styles.ButtonsStyle;
+import app.l2nx.highfive.network.GameClient;
+import app.l2nx.highfive.network.SystemMessageId;
+import app.l2nx.highfive.network.serverpackets.ExVoteSystemInfo;
+import app.l2nx.highfive.network.serverpackets.GMViewItemList;
+import app.l2nx.highfive.network.serverpackets.NpcHtmlMessage;
+import app.l2nx.highfive.network.serverpackets.PartySmallWindowAll;
+import app.l2nx.highfive.network.serverpackets.PartySmallWindowDeleteAll;
+import app.l2nx.highfive.network.serverpackets.SystemMessage;
 
 /**
  * EditChar admin command implementation.

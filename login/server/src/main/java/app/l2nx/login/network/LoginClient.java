@@ -18,28 +18,28 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.loginserver.network;
+package app.l2nx.login.network;
 
 import java.security.interfaces.RSAPrivateKey;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.l2jmobius.commons.network.Client;
-import org.l2jmobius.commons.network.Connection;
-import org.l2jmobius.commons.network.buffer.ReadBuffer;
-import org.l2jmobius.commons.network.buffer.WriteBuffer;
-import org.l2jmobius.commons.util.Rnd;
-import org.l2jmobius.loginserver.controller.LoginController;
-import org.l2jmobius.loginserver.controller.ScrambledKeyPair;
-import org.l2jmobius.loginserver.controller.SessionKey;
-import org.l2jmobius.loginserver.enums.AccountKickedReason;
-import org.l2jmobius.loginserver.enums.LoginFailReason;
-import org.l2jmobius.loginserver.enums.PlayFailReason;
-import org.l2jmobius.loginserver.network.serverpackets.AccountKicked;
-import org.l2jmobius.loginserver.network.serverpackets.Init;
-import org.l2jmobius.loginserver.network.serverpackets.LoginFail;
-import org.l2jmobius.loginserver.network.serverpackets.LoginServerPacket;
-import org.l2jmobius.loginserver.network.serverpackets.PlayFail;
+import app.l2nx.commons.network.Client;
+import app.l2nx.commons.network.Connection;
+import app.l2nx.commons.network.buffer.ReadBuffer;
+import app.l2nx.commons.network.buffer.WriteBuffer;
+import app.l2nx.commons.util.Rnd;
+import app.l2nx.login.controller.LoginController;
+import app.l2nx.login.controller.ScrambledKeyPair;
+import app.l2nx.login.controller.SessionKey;
+import app.l2nx.login.enums.AccountKickedReason;
+import app.l2nx.login.enums.LoginFailReason;
+import app.l2nx.login.enums.PlayFailReason;
+import app.l2nx.login.network.serverpackets.AccountKicked;
+import app.l2nx.login.network.serverpackets.Init;
+import app.l2nx.login.network.serverpackets.LoginFail;
+import app.l2nx.login.network.serverpackets.LoginServerPacket;
+import app.l2nx.login.network.serverpackets.PlayFail;
 
 /**
  * Represents a client connected to the LoginServer.<br>

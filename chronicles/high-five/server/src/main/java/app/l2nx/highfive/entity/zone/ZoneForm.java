@@ -14,12 +14,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.entity.zone;
+package app.l2nx.highfive.entity.zone;
 
-import org.l2jmobius.gameserver.entity.Location;
-import org.l2jmobius.gameserver.entity.item.instance.Item;
-import org.l2jmobius.gameserver.managers.IdManager;
-import org.l2jmobius.gameserver.managers.ZoneManager;
+import app.l2nx.highfive.entity.Location;
+import app.l2nx.highfive.entity.item.instance.Item;
+import app.l2nx.highfive.managers.IdManager;
+import app.l2nx.highfive.managers.ZoneManager;
 
 /**
  * Abstract base class for any zone form

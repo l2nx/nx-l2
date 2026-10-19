@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.data.holders;
+package app.l2nx.highfive.data.holders;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -23,8 +23,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.l2jmobius.gameserver.data.xml.SkillData;
-import org.l2jmobius.gameserver.mechanics.skill.holders.SkillHolder;
+import app.l2nx.highfive.data.xml.SkillData;
+import app.l2nx.highfive.mechanics.skill.holders.SkillHolder;
 
 /**
  * Class hold information about basic pet stats which are same on each level.

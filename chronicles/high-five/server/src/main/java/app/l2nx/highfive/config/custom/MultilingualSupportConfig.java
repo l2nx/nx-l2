@@ -18,14 +18,14 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.config.custom;
+package app.l2nx.highfive.config.custom;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
 
-import org.l2jmobius.commons.util.ConfigReader;
-import org.l2jmobius.gameserver.config.GeneralConfig;
+import app.l2nx.commons.util.ConfigReader;
+import app.l2nx.highfive.config.GeneralConfig;
 
 /**
  * This class loads all the custom multilingual support related configurations.

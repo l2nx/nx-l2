@@ -14,21 +14,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.entity.actor.instance;
+package app.l2nx.highfive.entity.actor.instance;
 
-import org.l2jmobius.gameserver.ai.CreatureAI;
-import org.l2jmobius.gameserver.entity.Location;
-import org.l2jmobius.gameserver.entity.actor.Creature;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.actor.enums.creature.InstanceType;
-import org.l2jmobius.gameserver.entity.actor.stat.StaticObjectStat;
-import org.l2jmobius.gameserver.entity.actor.status.StaticObjectStatus;
-import org.l2jmobius.gameserver.entity.actor.templates.CreatureTemplate;
-import org.l2jmobius.gameserver.entity.item.Weapon;
-import org.l2jmobius.gameserver.entity.item.instance.Item;
-import org.l2jmobius.gameserver.mechanics.skill.Skill;
-import org.l2jmobius.gameserver.network.serverpackets.ShowTownMap;
-import org.l2jmobius.gameserver.network.serverpackets.StaticObjectInfo;
+import app.l2nx.highfive.ai.CreatureAI;
+import app.l2nx.highfive.entity.Location;
+import app.l2nx.highfive.entity.actor.Creature;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.actor.enums.creature.InstanceType;
+import app.l2nx.highfive.entity.actor.stat.StaticObjectStat;
+import app.l2nx.highfive.entity.actor.status.StaticObjectStatus;
+import app.l2nx.highfive.entity.actor.templates.CreatureTemplate;
+import app.l2nx.highfive.entity.item.Weapon;
+import app.l2nx.highfive.entity.item.instance.Item;
+import app.l2nx.highfive.mechanics.skill.Skill;
+import app.l2nx.highfive.network.serverpackets.ShowTownMap;
+import app.l2nx.highfive.network.serverpackets.StaticObjectInfo;
 
 /**
  * Static Object instance.

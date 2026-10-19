@@ -18,23 +18,23 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.util;
+package app.l2nx.highfive.util;
 
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.l2jmobius.commons.util.StringUtil;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.managers.PunishmentManager;
-import org.l2jmobius.gameserver.mechanics.punishment.PunishmentAffect;
-import org.l2jmobius.gameserver.mechanics.punishment.PunishmentTask;
-import org.l2jmobius.gameserver.mechanics.punishment.PunishmentType;
-import org.l2jmobius.gameserver.network.ConnectionState;
-import org.l2jmobius.gameserver.network.Disconnection;
-import org.l2jmobius.gameserver.network.GameClient;
-import org.l2jmobius.gameserver.network.serverpackets.LeaveWorld;
-import org.l2jmobius.gameserver.taskmanagers.GameTimeTaskManager;
+import app.l2nx.commons.util.StringUtil;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.managers.PunishmentManager;
+import app.l2nx.highfive.mechanics.punishment.PunishmentAffect;
+import app.l2nx.highfive.mechanics.punishment.PunishmentTask;
+import app.l2nx.highfive.mechanics.punishment.PunishmentType;
+import app.l2nx.highfive.network.ConnectionState;
+import app.l2nx.highfive.network.Disconnection;
+import app.l2nx.highfive.network.GameClient;
+import app.l2nx.highfive.network.serverpackets.LeaveWorld;
+import app.l2nx.highfive.taskmanagers.GameTimeTaskManager;
 
 /**
  * Flood protector implementation for preventing client request spam and abuse.<br>

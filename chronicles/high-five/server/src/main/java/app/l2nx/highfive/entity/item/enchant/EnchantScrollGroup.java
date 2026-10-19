@@ -14,13 +14,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.entity.item.enchant;
+package app.l2nx.highfive.entity.item.enchant;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import org.l2jmobius.gameserver.entity.item.ItemTemplate;
+import app.l2nx.highfive.entity.item.ItemTemplate;
 
 /**
  * @author UnAfraid

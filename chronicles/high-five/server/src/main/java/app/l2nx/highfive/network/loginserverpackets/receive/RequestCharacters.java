@@ -14,9 +14,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.network.loginserverpackets.receive;
+package app.l2nx.highfive.network.loginserverpackets.receive;
 
-import org.l2jmobius.commons.network.packet.SimpleReadablePacket;
+import app.l2nx.commons.network.packet.SimpleReadablePacket;
 
 /**
  * @author mrTJO, mochitto

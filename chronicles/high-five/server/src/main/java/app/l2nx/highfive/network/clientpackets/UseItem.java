@@ -18,44 +18,44 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.network.clientpackets;
+package app.l2nx.highfive.network.clientpackets;
 
 import java.util.concurrent.TimeUnit;
 
-import org.l2jmobius.commons.threads.ThreadPool;
-import org.l2jmobius.gameserver.ai.Action;
-import org.l2jmobius.gameserver.ai.CreatureAI;
-import org.l2jmobius.gameserver.ai.Intention;
-import org.l2jmobius.gameserver.ai.NextAction;
-import org.l2jmobius.gameserver.config.PlayerConfig;
-import org.l2jmobius.gameserver.data.xml.EnchantItemGroupsData;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.actor.enums.creature.Race;
-import org.l2jmobius.gameserver.entity.actor.enums.player.IllegalActionPunishmentType;
-import org.l2jmobius.gameserver.entity.item.EtcItem;
-import org.l2jmobius.gameserver.entity.item.ItemTemplate;
-import org.l2jmobius.gameserver.entity.item.Weapon;
-import org.l2jmobius.gameserver.entity.item.enums.BodyPart;
-import org.l2jmobius.gameserver.entity.item.enums.ItemProcessType;
-import org.l2jmobius.gameserver.entity.item.instance.Item;
-import org.l2jmobius.gameserver.entity.item.type.ArmorType;
-import org.l2jmobius.gameserver.entity.item.type.EtcItemType;
-import org.l2jmobius.gameserver.entity.item.type.WeaponType;
-import org.l2jmobius.gameserver.entity.itemcontainer.Inventory;
-import org.l2jmobius.gameserver.entity.zone.ZoneId;
-import org.l2jmobius.gameserver.handler.IItemHandler;
-import org.l2jmobius.gameserver.handler.ItemHandler;
-import org.l2jmobius.gameserver.managers.FortSiegeManager;
-import org.l2jmobius.gameserver.managers.PunishmentManager;
-import org.l2jmobius.gameserver.mechanics.effects.EffectType;
-import org.l2jmobius.gameserver.mechanics.skill.Skill;
-import org.l2jmobius.gameserver.mechanics.skill.holders.SkillHolder;
-import org.l2jmobius.gameserver.network.PacketLogger;
-import org.l2jmobius.gameserver.network.SystemMessageId;
-import org.l2jmobius.gameserver.network.serverpackets.ActionFailed;
-import org.l2jmobius.gameserver.network.serverpackets.ExShowScreenMessage;
-import org.l2jmobius.gameserver.network.serverpackets.ExUseSharedGroupItem;
-import org.l2jmobius.gameserver.network.serverpackets.SystemMessage;
+import app.l2nx.commons.threads.ThreadPool;
+import app.l2nx.highfive.ai.Action;
+import app.l2nx.highfive.ai.CreatureAI;
+import app.l2nx.highfive.ai.Intention;
+import app.l2nx.highfive.ai.NextAction;
+import app.l2nx.highfive.config.PlayerConfig;
+import app.l2nx.highfive.data.xml.EnchantItemGroupsData;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.actor.enums.creature.Race;
+import app.l2nx.highfive.entity.actor.enums.player.IllegalActionPunishmentType;
+import app.l2nx.highfive.entity.item.EtcItem;
+import app.l2nx.highfive.entity.item.ItemTemplate;
+import app.l2nx.highfive.entity.item.Weapon;
+import app.l2nx.highfive.entity.item.enums.BodyPart;
+import app.l2nx.highfive.entity.item.enums.ItemProcessType;
+import app.l2nx.highfive.entity.item.instance.Item;
+import app.l2nx.highfive.entity.item.type.ArmorType;
+import app.l2nx.highfive.entity.item.type.EtcItemType;
+import app.l2nx.highfive.entity.item.type.WeaponType;
+import app.l2nx.highfive.entity.itemcontainer.Inventory;
+import app.l2nx.highfive.entity.zone.ZoneId;
+import app.l2nx.highfive.handler.IItemHandler;
+import app.l2nx.highfive.handler.ItemHandler;
+import app.l2nx.highfive.managers.FortSiegeManager;
+import app.l2nx.highfive.managers.PunishmentManager;
+import app.l2nx.highfive.mechanics.effects.EffectType;
+import app.l2nx.highfive.mechanics.skill.Skill;
+import app.l2nx.highfive.mechanics.skill.holders.SkillHolder;
+import app.l2nx.highfive.network.PacketLogger;
+import app.l2nx.highfive.network.SystemMessageId;
+import app.l2nx.highfive.network.serverpackets.ActionFailed;
+import app.l2nx.highfive.network.serverpackets.ExShowScreenMessage;
+import app.l2nx.highfive.network.serverpackets.ExUseSharedGroupItem;
+import app.l2nx.highfive.network.serverpackets.SystemMessage;
 
 public class UseItem extends ClientPacket
 {

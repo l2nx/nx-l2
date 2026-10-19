@@ -18,20 +18,20 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.network.clientpackets;
+package app.l2nx.highfive.network.clientpackets;
 
-import org.l2jmobius.gameserver.data.sql.ClanTable;
-import org.l2jmobius.gameserver.entity.World;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.clan.Clan;
-import org.l2jmobius.gameserver.network.GameClient;
-import org.l2jmobius.gameserver.network.serverpackets.GMHennaInfo;
-import org.l2jmobius.gameserver.network.serverpackets.GMViewCharacterInfo;
-import org.l2jmobius.gameserver.network.serverpackets.GMViewItemList;
-import org.l2jmobius.gameserver.network.serverpackets.GMViewPledgeInfo;
-import org.l2jmobius.gameserver.network.serverpackets.GMViewSkillInfo;
-import org.l2jmobius.gameserver.network.serverpackets.GMViewWarehouseWithdrawList;
-import org.l2jmobius.gameserver.network.serverpackets.GmViewQuestInfo;
+import app.l2nx.highfive.data.sql.ClanTable;
+import app.l2nx.highfive.entity.World;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.clan.Clan;
+import app.l2nx.highfive.network.GameClient;
+import app.l2nx.highfive.network.serverpackets.GMHennaInfo;
+import app.l2nx.highfive.network.serverpackets.GMViewCharacterInfo;
+import app.l2nx.highfive.network.serverpackets.GMViewItemList;
+import app.l2nx.highfive.network.serverpackets.GMViewPledgeInfo;
+import app.l2nx.highfive.network.serverpackets.GMViewSkillInfo;
+import app.l2nx.highfive.network.serverpackets.GMViewWarehouseWithdrawList;
+import app.l2nx.highfive.network.serverpackets.GmViewQuestInfo;
 
 /**
  * @version $Revision: 1.1.2.2.2.2 $ $Date: 2005/03/27 15:29:30 $

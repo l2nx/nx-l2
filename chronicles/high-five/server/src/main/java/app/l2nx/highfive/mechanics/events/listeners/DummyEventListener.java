@@ -14,12 +14,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.mechanics.events.listeners;
+package app.l2nx.highfive.mechanics.events.listeners;
 
-import org.l2jmobius.gameserver.mechanics.events.EventType;
-import org.l2jmobius.gameserver.mechanics.events.ListenersContainer;
-import org.l2jmobius.gameserver.mechanics.events.holders.IBaseEvent;
-import org.l2jmobius.gameserver.mechanics.events.returns.AbstractEventReturn;
+import app.l2nx.highfive.mechanics.events.EventType;
+import app.l2nx.highfive.mechanics.events.ListenersContainer;
+import app.l2nx.highfive.mechanics.events.holders.IBaseEvent;
+import app.l2nx.highfive.mechanics.events.returns.AbstractEventReturn;
 
 /**
  * Runnable event listener provides callback operation without any parameters and return object.

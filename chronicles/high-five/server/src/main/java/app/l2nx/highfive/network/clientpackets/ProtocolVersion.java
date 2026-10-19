@@ -18,13 +18,13 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.network.clientpackets;
+package app.l2nx.highfive.network.clientpackets;
 
 import java.util.logging.Logger;
 
-import org.l2jmobius.gameserver.config.ServerConfig;
-import org.l2jmobius.gameserver.network.GameClient;
-import org.l2jmobius.gameserver.network.serverpackets.KeyPacket;
+import app.l2nx.highfive.config.ServerConfig;
+import app.l2nx.highfive.network.GameClient;
+import app.l2nx.highfive.network.serverpackets.KeyPacket;
 
 /**
  * @version $Revision: 1.5.2.8.2.8 $ $Date: 2005/04/02 10:43:04 $

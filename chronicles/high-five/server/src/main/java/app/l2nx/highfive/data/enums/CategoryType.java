@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.data.enums;
+package app.l2nx.highfive.data.enums;
 
 /**
  * This class defines all category types.

@@ -18,11 +18,11 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.network.clientpackets;
+package app.l2nx.highfive.network.clientpackets;
 
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.groups.Party;
-import org.l2jmobius.gameserver.network.SystemMessageId;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.groups.Party;
+import app.l2nx.highfive.network.SystemMessageId;
 
 /**
  * This packet is received from client when a party leader requests to change the leadership to another player in his party.

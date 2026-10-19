@@ -14,18 +14,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package handlers.chat.commands.admin;
+package app.l2nx.highfive.scripts.handlers.chat.commands.admin;
 
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.StringTokenizer;
 
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.handler.IAdminCommandHandler;
-import org.l2jmobius.gameserver.managers.GlobalVariablesManager;
-import org.l2jmobius.gameserver.managers.TerritoryWarManager;
-import org.l2jmobius.gameserver.mechanics.siege.TerritoryWard;
-import org.l2jmobius.gameserver.network.serverpackets.NpcHtmlMessage;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.handler.IAdminCommandHandler;
+import app.l2nx.highfive.managers.GlobalVariablesManager;
+import app.l2nx.highfive.managers.TerritoryWarManager;
+import app.l2nx.highfive.mechanics.siege.TerritoryWard;
+import app.l2nx.highfive.network.serverpackets.NpcHtmlMessage;
 
 /**
  * Admin comand handler for Territory War System This class handles following admin commands:

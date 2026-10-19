@@ -18,7 +18,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.data.xml;
+package app.l2nx.highfive.data.xml;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -40,28 +40,28 @@ import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 
-import org.l2jmobius.commons.util.IXmlReader;
-import org.l2jmobius.gameserver.config.DevelopmentConfig;
-import org.l2jmobius.gameserver.config.ServerConfig;
-import org.l2jmobius.gameserver.config.custom.FakePlayersConfig;
-import org.l2jmobius.gameserver.data.SpawnGroupTable;
-import org.l2jmobius.gameserver.data.SpawnTable;
-import org.l2jmobius.gameserver.entity.Location;
-import org.l2jmobius.gameserver.entity.World;
-import org.l2jmobius.gameserver.entity.actor.templates.NpcTemplate;
-import org.l2jmobius.gameserver.entity.spawns.Spawn;
-import org.l2jmobius.gameserver.entity.spawns.SpawnGroup;
-import org.l2jmobius.gameserver.entity.spawns.SpawnGroupEntry;
-import org.l2jmobius.gameserver.entity.spawns.SpawnSelection;
-import org.l2jmobius.gameserver.entity.zone.ZoneForm;
-import org.l2jmobius.gameserver.entity.zone.form.ZoneCuboid;
-import org.l2jmobius.gameserver.entity.zone.form.ZoneCylinder;
-import org.l2jmobius.gameserver.entity.zone.form.ZoneNPoly;
-import org.l2jmobius.gameserver.entity.zone.type.NpcSpawnTerritory;
-import org.l2jmobius.gameserver.managers.DayNightSpawnManager;
-import org.l2jmobius.gameserver.managers.ZoneManager;
-import org.l2jmobius.gameserver.taskmanagers.SpawnGroupTaskManager;
-import org.l2jmobius.gameserver.util.StatSet;
+import app.l2nx.commons.util.IXmlReader;
+import app.l2nx.highfive.config.DevelopmentConfig;
+import app.l2nx.highfive.config.ServerConfig;
+import app.l2nx.highfive.config.custom.FakePlayersConfig;
+import app.l2nx.highfive.data.SpawnGroupTable;
+import app.l2nx.highfive.data.SpawnTable;
+import app.l2nx.highfive.entity.Location;
+import app.l2nx.highfive.entity.World;
+import app.l2nx.highfive.entity.actor.templates.NpcTemplate;
+import app.l2nx.highfive.entity.spawns.Spawn;
+import app.l2nx.highfive.entity.spawns.SpawnGroup;
+import app.l2nx.highfive.entity.spawns.SpawnGroupEntry;
+import app.l2nx.highfive.entity.spawns.SpawnSelection;
+import app.l2nx.highfive.entity.zone.ZoneForm;
+import app.l2nx.highfive.entity.zone.form.ZoneCuboid;
+import app.l2nx.highfive.entity.zone.form.ZoneCylinder;
+import app.l2nx.highfive.entity.zone.form.ZoneNPoly;
+import app.l2nx.highfive.entity.zone.type.NpcSpawnTerritory;
+import app.l2nx.highfive.managers.DayNightSpawnManager;
+import app.l2nx.highfive.managers.ZoneManager;
+import app.l2nx.highfive.taskmanagers.SpawnGroupTaskManager;
+import app.l2nx.highfive.util.StatSet;
 
 /**
  * @author Mobius

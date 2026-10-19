@@ -18,11 +18,11 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.network.clientpackets;
+package app.l2nx.highfive.network.clientpackets;
 
-import org.l2jmobius.gameserver.data.xml.PlayerTemplateData;
-import org.l2jmobius.gameserver.entity.actor.enums.player.PlayerClass;
-import org.l2jmobius.gameserver.network.serverpackets.NewCharacterSuccess;
+import app.l2nx.highfive.data.xml.PlayerTemplateData;
+import app.l2nx.highfive.entity.actor.enums.player.PlayerClass;
+import app.l2nx.highfive.network.serverpackets.NewCharacterSuccess;
 
 /**
  * @version $Revision: 1.3.4.5 $ $Date: 2005/03/27 15:29:30 $

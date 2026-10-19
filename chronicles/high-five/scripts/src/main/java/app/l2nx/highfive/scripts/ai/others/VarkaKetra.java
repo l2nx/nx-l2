@@ -14,28 +14,28 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package ai.others;
+package app.l2nx.highfive.scripts.ai.others;
 
-import org.l2jmobius.gameserver.entity.actor.Attackable;
-import org.l2jmobius.gameserver.entity.actor.Npc;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.mechanics.script.QuestState;
-import org.l2jmobius.gameserver.mechanics.script.Script;
-import org.l2jmobius.gameserver.util.ArrayUtil;
-import org.l2jmobius.gameserver.util.LocationUtil;
+import app.l2nx.highfive.entity.actor.Attackable;
+import app.l2nx.highfive.entity.actor.Npc;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.mechanics.script.QuestState;
+import app.l2nx.highfive.mechanics.script.Script;
+import app.l2nx.highfive.util.ArrayUtil;
+import app.l2nx.highfive.util.LocationUtil;
 
-import quests.Q00605_AllianceWithKetraOrcs.Q00605_AllianceWithKetraOrcs;
-import quests.Q00606_BattleAgainstVarkaSilenos.Q00606_BattleAgainstVarkaSilenos;
-import quests.Q00607_ProveYourCourageKetra.Q00607_ProveYourCourageKetra;
-import quests.Q00608_SlayTheEnemyCommanderKetra.Q00608_SlayTheEnemyCommanderKetra;
-import quests.Q00609_MagicalPowerOfWaterPart1.Q00609_MagicalPowerOfWaterPart1;
-import quests.Q00610_MagicalPowerOfWaterPart2.Q00610_MagicalPowerOfWaterPart2;
-import quests.Q00611_AllianceWithVarkaSilenos.Q00611_AllianceWithVarkaSilenos;
-import quests.Q00612_BattleAgainstKetraOrcs.Q00612_BattleAgainstKetraOrcs;
-import quests.Q00613_ProveYourCourageVarka.Q00613_ProveYourCourageVarka;
-import quests.Q00614_SlayTheEnemyCommanderVarka.Q00614_SlayTheEnemyCommanderVarka;
-import quests.Q00615_MagicalPowerOfFirePart1.Q00615_MagicalPowerOfFirePart1;
-import quests.Q00616_MagicalPowerOfFirePart2.Q00616_MagicalPowerOfFirePart2;
+import app.l2nx.highfive.scripts.quests.Q00605_AllianceWithKetraOrcs.Q00605_AllianceWithKetraOrcs;
+import app.l2nx.highfive.scripts.quests.Q00606_BattleAgainstVarkaSilenos.Q00606_BattleAgainstVarkaSilenos;
+import app.l2nx.highfive.scripts.quests.Q00607_ProveYourCourageKetra.Q00607_ProveYourCourageKetra;
+import app.l2nx.highfive.scripts.quests.Q00608_SlayTheEnemyCommanderKetra.Q00608_SlayTheEnemyCommanderKetra;
+import app.l2nx.highfive.scripts.quests.Q00609_MagicalPowerOfWaterPart1.Q00609_MagicalPowerOfWaterPart1;
+import app.l2nx.highfive.scripts.quests.Q00610_MagicalPowerOfWaterPart2.Q00610_MagicalPowerOfWaterPart2;
+import app.l2nx.highfive.scripts.quests.Q00611_AllianceWithVarkaSilenos.Q00611_AllianceWithVarkaSilenos;
+import app.l2nx.highfive.scripts.quests.Q00612_BattleAgainstKetraOrcs.Q00612_BattleAgainstKetraOrcs;
+import app.l2nx.highfive.scripts.quests.Q00613_ProveYourCourageVarka.Q00613_ProveYourCourageVarka;
+import app.l2nx.highfive.scripts.quests.Q00614_SlayTheEnemyCommanderVarka.Q00614_SlayTheEnemyCommanderVarka;
+import app.l2nx.highfive.scripts.quests.Q00615_MagicalPowerOfFirePart1.Q00615_MagicalPowerOfFirePart1;
+import app.l2nx.highfive.scripts.quests.Q00616_MagicalPowerOfFirePart2.Q00616_MagicalPowerOfFirePart2;
 
 /**
  * Varka Silenos Barracks and Ketra Orc Outpost AI.

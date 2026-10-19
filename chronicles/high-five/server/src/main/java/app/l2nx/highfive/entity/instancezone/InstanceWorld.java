@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.entity.instancezone;
+package app.l2nx.highfive.entity.instancezone;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -22,15 +22,15 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.l2jmobius.gameserver.entity.World;
-import org.l2jmobius.gameserver.entity.actor.Creature;
-import org.l2jmobius.gameserver.entity.actor.Npc;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.actor.enums.player.TeleportWhereType;
-import org.l2jmobius.gameserver.entity.actor.instance.Door;
-import org.l2jmobius.gameserver.network.serverpackets.ServerPacket;
-import org.l2jmobius.gameserver.util.ArrayUtil;
-import org.l2jmobius.gameserver.util.StatSet;
+import app.l2nx.highfive.entity.World;
+import app.l2nx.highfive.entity.actor.Creature;
+import app.l2nx.highfive.entity.actor.Npc;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.actor.enums.player.TeleportWhereType;
+import app.l2nx.highfive.entity.actor.instance.Door;
+import app.l2nx.highfive.network.serverpackets.ServerPacket;
+import app.l2nx.highfive.util.ArrayUtil;
+import app.l2nx.highfive.util.StatSet;
 
 /**
  * Basic instance zone data transfer object.

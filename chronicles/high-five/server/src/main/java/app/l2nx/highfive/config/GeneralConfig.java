@@ -18,17 +18,17 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.config;
+package app.l2nx.highfive.config;
 
 import java.util.HashSet;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.l2jmobius.commons.util.ConfigReader;
-import org.l2jmobius.gameserver.entity.actor.enums.player.ChatBroadcastType;
-import org.l2jmobius.gameserver.entity.actor.enums.player.IllegalActionPunishmentType;
-import org.l2jmobius.gameserver.network.enums.ChatType;
+import app.l2nx.commons.util.ConfigReader;
+import app.l2nx.highfive.entity.actor.enums.player.ChatBroadcastType;
+import app.l2nx.highfive.entity.actor.enums.player.IllegalActionPunishmentType;
+import app.l2nx.highfive.network.enums.ChatType;
 
 /**
  * This class loads all the general related configurations.

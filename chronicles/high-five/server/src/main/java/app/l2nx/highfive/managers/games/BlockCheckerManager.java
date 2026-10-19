@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.managers.games;
+package app.l2nx.highfive.managers.games;
 
 import java.util.Collection;
 import java.util.Map;
@@ -24,30 +24,30 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.l2jmobius.commons.threads.ThreadPool;
-import org.l2jmobius.commons.util.Rnd;
-import org.l2jmobius.gameserver.data.SpawnTable;
-import org.l2jmobius.gameserver.data.xml.SkillData;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.actor.enums.creature.Team;
-import org.l2jmobius.gameserver.entity.actor.holders.player.ArenaParticipantsHolder;
-import org.l2jmobius.gameserver.entity.actor.instance.Block;
-import org.l2jmobius.gameserver.entity.item.enums.ItemProcessType;
-import org.l2jmobius.gameserver.entity.item.instance.Item;
-import org.l2jmobius.gameserver.entity.itemcontainer.PlayerInventory;
-import org.l2jmobius.gameserver.entity.spawns.Spawn;
-import org.l2jmobius.gameserver.entity.zone.ZoneId;
-import org.l2jmobius.gameserver.managers.HandysBlockCheckerManager;
-import org.l2jmobius.gameserver.mechanics.skill.Skill;
-import org.l2jmobius.gameserver.network.SystemMessageId;
-import org.l2jmobius.gameserver.network.serverpackets.ActionFailed;
-import org.l2jmobius.gameserver.network.serverpackets.ExBasicActionList;
-import org.l2jmobius.gameserver.network.serverpackets.ExCubeGameChangePoints;
-import org.l2jmobius.gameserver.network.serverpackets.ExCubeGameCloseUI;
-import org.l2jmobius.gameserver.network.serverpackets.ExCubeGameEnd;
-import org.l2jmobius.gameserver.network.serverpackets.ExCubeGameExtendedChangePoints;
-import org.l2jmobius.gameserver.network.serverpackets.RelationChanged;
-import org.l2jmobius.gameserver.network.serverpackets.SystemMessage;
+import app.l2nx.commons.threads.ThreadPool;
+import app.l2nx.commons.util.Rnd;
+import app.l2nx.highfive.data.SpawnTable;
+import app.l2nx.highfive.data.xml.SkillData;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.actor.enums.creature.Team;
+import app.l2nx.highfive.entity.actor.holders.player.ArenaParticipantsHolder;
+import app.l2nx.highfive.entity.actor.instance.Block;
+import app.l2nx.highfive.entity.item.enums.ItemProcessType;
+import app.l2nx.highfive.entity.item.instance.Item;
+import app.l2nx.highfive.entity.itemcontainer.PlayerInventory;
+import app.l2nx.highfive.entity.spawns.Spawn;
+import app.l2nx.highfive.entity.zone.ZoneId;
+import app.l2nx.highfive.managers.HandysBlockCheckerManager;
+import app.l2nx.highfive.mechanics.skill.Skill;
+import app.l2nx.highfive.network.SystemMessageId;
+import app.l2nx.highfive.network.serverpackets.ActionFailed;
+import app.l2nx.highfive.network.serverpackets.ExBasicActionList;
+import app.l2nx.highfive.network.serverpackets.ExCubeGameChangePoints;
+import app.l2nx.highfive.network.serverpackets.ExCubeGameCloseUI;
+import app.l2nx.highfive.network.serverpackets.ExCubeGameEnd;
+import app.l2nx.highfive.network.serverpackets.ExCubeGameExtendedChangePoints;
+import app.l2nx.highfive.network.serverpackets.RelationChanged;
+import app.l2nx.highfive.network.serverpackets.SystemMessage;
 
 /**
  * @author BiggBoss

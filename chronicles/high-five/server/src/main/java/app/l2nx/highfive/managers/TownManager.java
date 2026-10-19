@@ -18,12 +18,12 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.managers;
+package app.l2nx.highfive.managers;
 
-import org.l2jmobius.gameserver.data.xml.MapRegionData;
-import org.l2jmobius.gameserver.entity.zone.ZoneType;
-import org.l2jmobius.gameserver.entity.zone.type.TownZone;
-import org.l2jmobius.gameserver.mechanics.siege.Castle;
+import app.l2nx.highfive.data.xml.MapRegionData;
+import app.l2nx.highfive.entity.zone.ZoneType;
+import app.l2nx.highfive.entity.zone.type.TownZone;
+import app.l2nx.highfive.mechanics.siege.Castle;
 
 public class TownManager
 {

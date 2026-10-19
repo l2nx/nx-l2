@@ -14,21 +14,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.entity.actor.templates;
+package app.l2nx.highfive.entity.actor.templates;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import org.l2jmobius.gameserver.entity.WorldObject;
-import org.l2jmobius.gameserver.entity.actor.Creature;
-import org.l2jmobius.gameserver.entity.actor.instance.Cubic;
-import org.l2jmobius.gameserver.entity.cubic.CubicSelectionMode;
-import org.l2jmobius.gameserver.entity.cubic.CubicSkill;
-import org.l2jmobius.gameserver.entity.cubic.CubicTargetType;
-import org.l2jmobius.gameserver.entity.cubic.ICubicConditionHolder;
-import org.l2jmobius.gameserver.entity.cubic.conditions.ICubicCondition;
-import org.l2jmobius.gameserver.util.StatSet;
+import app.l2nx.highfive.entity.WorldObject;
+import app.l2nx.highfive.entity.actor.Creature;
+import app.l2nx.highfive.entity.actor.instance.Cubic;
+import app.l2nx.highfive.entity.cubic.CubicSelectionMode;
+import app.l2nx.highfive.entity.cubic.CubicSkill;
+import app.l2nx.highfive.entity.cubic.CubicTargetType;
+import app.l2nx.highfive.entity.cubic.ICubicConditionHolder;
+import app.l2nx.highfive.entity.cubic.conditions.ICubicCondition;
+import app.l2nx.highfive.util.StatSet;
 
 /**
  * Cubic template loaded from datapack XML.<br>

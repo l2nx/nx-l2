@@ -14,16 +14,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package ai.areas.TowerOfInsolence.ToIVortex;
+package app.l2nx.highfive.scripts.ai.areas.TowerOfInsolence.ToIVortex;
 
 import java.util.HashMap;
 import java.util.Map;
 
-import org.l2jmobius.gameserver.entity.Location;
-import org.l2jmobius.gameserver.entity.actor.Npc;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.itemcontainer.Inventory;
-import org.l2jmobius.gameserver.mechanics.script.Script;
+import app.l2nx.highfive.entity.Location;
+import app.l2nx.highfive.entity.actor.Npc;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.itemcontainer.Inventory;
+import app.l2nx.highfive.mechanics.script.Script;
 
 /**
  * Tower of Insolence Vortex teleport AI.<br>

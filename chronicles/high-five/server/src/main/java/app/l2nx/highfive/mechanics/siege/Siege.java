@@ -18,7 +18,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.mechanics.siege;
+package app.l2nx.highfive.mechanics.siege;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -35,35 +35,35 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.l2jmobius.commons.database.DatabaseFactory;
-import org.l2jmobius.commons.threads.ThreadPool;
-import org.l2jmobius.gameserver.config.PlayerConfig;
-import org.l2jmobius.gameserver.data.sql.ClanTable;
-import org.l2jmobius.gameserver.data.xml.SiegeScheduleData;
-import org.l2jmobius.gameserver.entity.World;
-import org.l2jmobius.gameserver.entity.WorldObject;
-import org.l2jmobius.gameserver.entity.actor.Npc;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.actor.enums.player.TeleportWhereType;
-import org.l2jmobius.gameserver.entity.actor.instance.ControlTower;
-import org.l2jmobius.gameserver.entity.actor.instance.FlameTower;
-import org.l2jmobius.gameserver.entity.clan.Clan;
-import org.l2jmobius.gameserver.entity.clan.ClanMember;
-import org.l2jmobius.gameserver.entity.spawns.Spawn;
-import org.l2jmobius.gameserver.managers.CastleManager;
-import org.l2jmobius.gameserver.managers.MercTicketManager;
-import org.l2jmobius.gameserver.managers.SiegeGuardManager;
-import org.l2jmobius.gameserver.managers.SiegeManager;
-import org.l2jmobius.gameserver.mechanics.events.EventDispatcher;
-import org.l2jmobius.gameserver.mechanics.events.EventType;
-import org.l2jmobius.gameserver.mechanics.events.holders.sieges.castle.OnCastleSiegeFinish;
-import org.l2jmobius.gameserver.mechanics.events.holders.sieges.castle.OnCastleSiegeOwnerChange;
-import org.l2jmobius.gameserver.mechanics.events.holders.sieges.castle.OnCastleSiegeStart;
-import org.l2jmobius.gameserver.mechanics.olympiad.Hero;
-import org.l2jmobius.gameserver.network.SystemMessageId;
-import org.l2jmobius.gameserver.network.serverpackets.RelationChanged;
-import org.l2jmobius.gameserver.network.serverpackets.SiegeInfo;
-import org.l2jmobius.gameserver.network.serverpackets.SystemMessage;
+import app.l2nx.commons.database.DatabaseFactory;
+import app.l2nx.commons.threads.ThreadPool;
+import app.l2nx.highfive.config.PlayerConfig;
+import app.l2nx.highfive.data.sql.ClanTable;
+import app.l2nx.highfive.data.xml.SiegeScheduleData;
+import app.l2nx.highfive.entity.World;
+import app.l2nx.highfive.entity.WorldObject;
+import app.l2nx.highfive.entity.actor.Npc;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.actor.enums.player.TeleportWhereType;
+import app.l2nx.highfive.entity.actor.instance.ControlTower;
+import app.l2nx.highfive.entity.actor.instance.FlameTower;
+import app.l2nx.highfive.entity.clan.Clan;
+import app.l2nx.highfive.entity.clan.ClanMember;
+import app.l2nx.highfive.entity.spawns.Spawn;
+import app.l2nx.highfive.managers.CastleManager;
+import app.l2nx.highfive.managers.MercTicketManager;
+import app.l2nx.highfive.managers.SiegeGuardManager;
+import app.l2nx.highfive.managers.SiegeManager;
+import app.l2nx.highfive.mechanics.events.EventDispatcher;
+import app.l2nx.highfive.mechanics.events.EventType;
+import app.l2nx.highfive.mechanics.events.holders.sieges.castle.OnCastleSiegeFinish;
+import app.l2nx.highfive.mechanics.events.holders.sieges.castle.OnCastleSiegeOwnerChange;
+import app.l2nx.highfive.mechanics.events.holders.sieges.castle.OnCastleSiegeStart;
+import app.l2nx.highfive.mechanics.olympiad.Hero;
+import app.l2nx.highfive.network.SystemMessageId;
+import app.l2nx.highfive.network.serverpackets.RelationChanged;
+import app.l2nx.highfive.network.serverpackets.SiegeInfo;
+import app.l2nx.highfive.network.serverpackets.SystemMessage;
 
 public class Siege implements Siegable
 {

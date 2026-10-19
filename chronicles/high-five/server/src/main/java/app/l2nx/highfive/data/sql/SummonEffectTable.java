@@ -14,18 +14,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.data.sql;
+package app.l2nx.highfive.data.sql;
 
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.actor.Summon;
-import org.l2jmobius.gameserver.entity.actor.instance.Pet;
-import org.l2jmobius.gameserver.entity.actor.instance.Servitor;
-import org.l2jmobius.gameserver.mechanics.skill.Skill;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.actor.Summon;
+import app.l2nx.highfive.entity.actor.instance.Pet;
+import app.l2nx.highfive.entity.actor.instance.Servitor;
+import app.l2nx.highfive.mechanics.skill.Skill;
 
 /**
  * @author Nyaran

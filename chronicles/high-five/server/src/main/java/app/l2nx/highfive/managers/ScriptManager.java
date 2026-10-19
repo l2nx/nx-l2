@@ -18,17 +18,17 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.managers;
+package app.l2nx.highfive.managers;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.l2jmobius.commons.util.StringUtil;
-import org.l2jmobius.gameserver.config.DevelopmentConfig;
-import org.l2jmobius.gameserver.mechanics.script.Quest;
-import org.l2jmobius.gameserver.scripting.ScriptEngine;
+import app.l2nx.commons.util.StringUtil;
+import app.l2nx.highfive.config.DevelopmentConfig;
+import app.l2nx.highfive.mechanics.script.Quest;
+import app.l2nx.highfive.scripting.ScriptEngine;
 
 public class ScriptManager
 {

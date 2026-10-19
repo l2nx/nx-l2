@@ -18,18 +18,18 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.util;
+package app.l2nx.highfive.util;
 
 import java.util.Arrays;
 import java.util.Locale;
 import java.util.logging.Logger;
 
-import org.l2jmobius.gameserver.config.DevelopmentConfig;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.network.enums.HtmlActionScope;
-import org.l2jmobius.gameserver.network.serverpackets.AbstractHtmlPacket;
-import org.l2jmobius.gameserver.network.serverpackets.NpcHtmlMessage;
-import org.l2jmobius.gameserver.network.serverpackets.ShowBoard;
+import app.l2nx.highfive.config.DevelopmentConfig;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.network.enums.HtmlActionScope;
+import app.l2nx.highfive.network.serverpackets.AbstractHtmlPacket;
+import app.l2nx.highfive.network.serverpackets.NpcHtmlMessage;
+import app.l2nx.highfive.network.serverpackets.ShowBoard;
 
 /**
  * A class containing useful methods for constructing HTML

@@ -18,9 +18,9 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.mechanics.undergroundColiseum;
+package app.l2nx.highfive.mechanics.undergroundColiseum;
 
-import org.l2jmobius.gameserver.entity.groups.Party;
+import app.l2nx.highfive.entity.groups.Party;
 
 public class UCWaiting
 {

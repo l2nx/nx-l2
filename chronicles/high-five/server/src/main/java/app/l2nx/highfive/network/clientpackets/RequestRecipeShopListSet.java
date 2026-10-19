@@ -18,24 +18,24 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.network.clientpackets;
+package app.l2nx.highfive.network.clientpackets;
 
-import static org.l2jmobius.gameserver.entity.itemcontainer.Inventory.MAX_ADENA;
+import static app.l2nx.highfive.entity.itemcontainer.Inventory.MAX_ADENA;
 
-import org.l2jmobius.gameserver.config.GeneralConfig;
-import org.l2jmobius.gameserver.config.PlayerConfig;
-import org.l2jmobius.gameserver.data.xml.RecipeData;
-import org.l2jmobius.gameserver.entity.World;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.actor.enums.player.PrivateStoreType;
-import org.l2jmobius.gameserver.entity.item.recipe.ManufactureItem;
-import org.l2jmobius.gameserver.entity.item.recipe.RecipeList;
-import org.l2jmobius.gameserver.entity.zone.ZoneId;
-import org.l2jmobius.gameserver.managers.PunishmentManager;
-import org.l2jmobius.gameserver.network.SystemMessageId;
-import org.l2jmobius.gameserver.network.serverpackets.ActionFailed;
-import org.l2jmobius.gameserver.network.serverpackets.RecipeShopMsg;
-import org.l2jmobius.gameserver.taskmanagers.AttackStanceTaskManager;
+import app.l2nx.highfive.config.GeneralConfig;
+import app.l2nx.highfive.config.PlayerConfig;
+import app.l2nx.highfive.data.xml.RecipeData;
+import app.l2nx.highfive.entity.World;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.actor.enums.player.PrivateStoreType;
+import app.l2nx.highfive.entity.item.recipe.ManufactureItem;
+import app.l2nx.highfive.entity.item.recipe.RecipeList;
+import app.l2nx.highfive.entity.zone.ZoneId;
+import app.l2nx.highfive.managers.PunishmentManager;
+import app.l2nx.highfive.network.SystemMessageId;
+import app.l2nx.highfive.network.serverpackets.ActionFailed;
+import app.l2nx.highfive.network.serverpackets.RecipeShopMsg;
+import app.l2nx.highfive.taskmanagers.AttackStanceTaskManager;
 
 /**
  * RequestRecipeShopListSet client packet class.

@@ -18,11 +18,11 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.loginserver.network.serverpackets;
+package app.l2nx.login.network.serverpackets;
 
-import org.l2jmobius.commons.network.buffer.WriteBuffer;
-import org.l2jmobius.loginserver.enums.PlayFailReason;
-import org.l2jmobius.loginserver.network.LoginClient;
+import app.l2nx.commons.network.buffer.WriteBuffer;
+import app.l2nx.login.enums.PlayFailReason;
+import app.l2nx.login.network.LoginClient;
 
 /**
  * @version $Revision: 1.2.4.1 $ $Date: 2005/03/27 15:30:11 $

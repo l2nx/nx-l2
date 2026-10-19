@@ -14,17 +14,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.network.clientpackets;
+package app.l2nx.highfive.network.clientpackets;
 
-import org.l2jmobius.gameserver.config.GeneralConfig;
-import org.l2jmobius.gameserver.data.xml.EnchantItemData;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.item.enchant.EnchantScroll;
-import org.l2jmobius.gameserver.entity.item.instance.Item;
-import org.l2jmobius.gameserver.managers.PunishmentManager;
-import org.l2jmobius.gameserver.network.PacketLogger;
-import org.l2jmobius.gameserver.network.SystemMessageId;
-import org.l2jmobius.gameserver.network.serverpackets.ExPutEnchantTargetItemResult;
+import app.l2nx.highfive.config.GeneralConfig;
+import app.l2nx.highfive.data.xml.EnchantItemData;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.item.enchant.EnchantScroll;
+import app.l2nx.highfive.entity.item.instance.Item;
+import app.l2nx.highfive.managers.PunishmentManager;
+import app.l2nx.highfive.network.PacketLogger;
+import app.l2nx.highfive.network.SystemMessageId;
+import app.l2nx.highfive.network.serverpackets.ExPutEnchantTargetItemResult;
 
 /**
  * @author KenM

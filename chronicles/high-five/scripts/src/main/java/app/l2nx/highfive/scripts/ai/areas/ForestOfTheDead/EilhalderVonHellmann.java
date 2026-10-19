@@ -18,17 +18,17 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package ai.areas.ForestOfTheDead;
+package app.l2nx.highfive.scripts.ai.areas.ForestOfTheDead;
 
-import org.l2jmobius.gameserver.entity.Location;
-import org.l2jmobius.gameserver.entity.actor.Npc;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.mechanics.events.EventType;
-import org.l2jmobius.gameserver.mechanics.events.ListenerRegisterType;
-import org.l2jmobius.gameserver.mechanics.events.annotations.RegisterEvent;
-import org.l2jmobius.gameserver.mechanics.events.annotations.RegisterType;
-import org.l2jmobius.gameserver.mechanics.events.holders.OnDayNightChange;
-import org.l2jmobius.gameserver.mechanics.script.Script;
+import app.l2nx.highfive.entity.Location;
+import app.l2nx.highfive.entity.actor.Npc;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.mechanics.events.EventType;
+import app.l2nx.highfive.mechanics.events.ListenerRegisterType;
+import app.l2nx.highfive.mechanics.events.annotations.RegisterEvent;
+import app.l2nx.highfive.mechanics.events.annotations.RegisterType;
+import app.l2nx.highfive.mechanics.events.holders.OnDayNightChange;
+import app.l2nx.highfive.mechanics.script.Script;
 
 /**
  * @author Mobius

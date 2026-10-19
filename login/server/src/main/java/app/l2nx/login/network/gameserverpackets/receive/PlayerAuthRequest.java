@@ -19,13 +19,13 @@
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package org.l2jmobius.loginserver.network.gameserverpackets.receive;
+package app.l2nx.login.network.gameserverpackets.receive;
 
-import org.l2jmobius.commons.network.packet.SimpleReadablePacket;
-import org.l2jmobius.loginserver.GameServerThread;
-import org.l2jmobius.loginserver.controller.LoginController;
-import org.l2jmobius.loginserver.controller.SessionKey;
-import org.l2jmobius.loginserver.network.gameserverpackets.send.PlayerAuthResponse;
+import app.l2nx.commons.network.packet.SimpleReadablePacket;
+import app.l2nx.login.GameServerThread;
+import app.l2nx.login.controller.LoginController;
+import app.l2nx.login.controller.SessionKey;
+import app.l2nx.login.network.gameserverpackets.send.PlayerAuthResponse;
 
 /**
  * Reads an authentication request from a game server and validates it against the stored session key.<br>

@@ -14,12 +14,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.mechanics.script;
+package app.l2nx.highfive.mechanics.script;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.l2jmobius.gameserver.network.serverpackets.PlaySound;
+import app.l2nx.highfive.network.serverpackets.PlaySound;
 
 /**
  * This enum contains known sound effects used by quests.<br>

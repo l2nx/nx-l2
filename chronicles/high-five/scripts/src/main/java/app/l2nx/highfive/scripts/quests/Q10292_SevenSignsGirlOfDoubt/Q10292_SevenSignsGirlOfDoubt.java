@@ -14,16 +14,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package quests.Q10292_SevenSignsGirlOfDoubt;
+package app.l2nx.highfive.scripts.quests.Q10292_SevenSignsGirlOfDoubt;
 
-import org.l2jmobius.gameserver.entity.actor.Npc;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.item.holders.ItemHolder;
-import org.l2jmobius.gameserver.mechanics.script.Quest;
-import org.l2jmobius.gameserver.mechanics.script.QuestState;
-import org.l2jmobius.gameserver.util.ArrayUtil;
+import app.l2nx.highfive.entity.actor.Npc;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.item.holders.ItemHolder;
+import app.l2nx.highfive.mechanics.script.Quest;
+import app.l2nx.highfive.mechanics.script.QuestState;
+import app.l2nx.highfive.util.ArrayUtil;
 
-import quests.Q00198_SevenSignsEmbryo.Q00198_SevenSignsEmbryo;
+import app.l2nx.highfive.scripts.quests.Q00198_SevenSignsEmbryo.Q00198_SevenSignsEmbryo;
 
 /**
  * Seven Signs, Girl of Doubt (10292)

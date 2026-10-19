@@ -18,24 +18,24 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.entity.actor.instance;
+package app.l2nx.highfive.entity.actor.instance;
 
 import java.util.StringTokenizer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.l2jmobius.gameserver.config.UndergroundColiseumConfig;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.actor.enums.creature.InstanceType;
-import org.l2jmobius.gameserver.entity.actor.templates.NpcTemplate;
-import org.l2jmobius.gameserver.entity.groups.Party;
-import org.l2jmobius.gameserver.managers.games.UndergroundColiseumManager;
-import org.l2jmobius.gameserver.mechanics.olympiad.OlympiadManager;
-import org.l2jmobius.gameserver.mechanics.undergroundColiseum.UCArena;
-import org.l2jmobius.gameserver.mechanics.undergroundColiseum.UCBestTeam;
-import org.l2jmobius.gameserver.mechanics.undergroundColiseum.UCWaiting;
-import org.l2jmobius.gameserver.network.SystemMessageId;
-import org.l2jmobius.gameserver.network.serverpackets.NpcHtmlMessage;
+import app.l2nx.highfive.config.UndergroundColiseumConfig;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.actor.enums.creature.InstanceType;
+import app.l2nx.highfive.entity.actor.templates.NpcTemplate;
+import app.l2nx.highfive.entity.groups.Party;
+import app.l2nx.highfive.managers.games.UndergroundColiseumManager;
+import app.l2nx.highfive.mechanics.olympiad.OlympiadManager;
+import app.l2nx.highfive.mechanics.undergroundColiseum.UCArena;
+import app.l2nx.highfive.mechanics.undergroundColiseum.UCBestTeam;
+import app.l2nx.highfive.mechanics.undergroundColiseum.UCWaiting;
+import app.l2nx.highfive.network.SystemMessageId;
+import app.l2nx.highfive.network.serverpackets.NpcHtmlMessage;
 
 public class UCManager extends Folk
 {

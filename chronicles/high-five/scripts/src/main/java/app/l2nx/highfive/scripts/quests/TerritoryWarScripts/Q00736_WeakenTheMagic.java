@@ -14,9 +14,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package quests.TerritoryWarScripts;
+package app.l2nx.highfive.scripts.quests.TerritoryWarScripts;
 
-import org.l2jmobius.gameserver.network.NpcStringId;
+import app.l2nx.highfive.network.NpcStringId;
 
 /**
  * Weaken the magic! (736)

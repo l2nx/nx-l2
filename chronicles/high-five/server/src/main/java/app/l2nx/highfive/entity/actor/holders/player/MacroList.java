@@ -18,7 +18,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.entity.actor.holders.player;
+package app.l2nx.highfive.entity.actor.holders.player;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -33,11 +33,11 @@ import java.util.StringTokenizer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.l2jmobius.commons.database.DatabaseFactory;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.actor.enums.player.MacroType;
-import org.l2jmobius.gameserver.entity.actor.enums.player.ShortcutType;
-import org.l2jmobius.gameserver.network.serverpackets.SendMacroList;
+import app.l2nx.commons.database.DatabaseFactory;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.actor.enums.player.MacroType;
+import app.l2nx.highfive.entity.actor.enums.player.ShortcutType;
+import app.l2nx.highfive.network.serverpackets.SendMacroList;
 
 public class MacroList
 {

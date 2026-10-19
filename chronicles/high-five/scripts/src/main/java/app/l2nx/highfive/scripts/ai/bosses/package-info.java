@@ -21,4 +21,4 @@
 /**
  * @author Mobius
  */
-package ai.bosses;
+package app.l2nx.highfive.scripts.ai.bosses;

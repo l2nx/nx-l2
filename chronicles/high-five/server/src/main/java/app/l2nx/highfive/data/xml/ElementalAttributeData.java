@@ -18,7 +18,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.data.xml;
+package app.l2nx.highfive.data.xml;
 
 import java.io.File;
 import java.util.HashMap;
@@ -26,11 +26,11 @@ import java.util.Map;
 
 import org.w3c.dom.Document;
 
-import org.l2jmobius.commons.util.IXmlReader;
-import org.l2jmobius.gameserver.data.holders.ElementalItemHolder;
-import org.l2jmobius.gameserver.entity.item.enums.ElementalItemType;
-import org.l2jmobius.gameserver.entity.item.holders.Elementals;
-import org.l2jmobius.gameserver.util.StatSet;
+import app.l2nx.commons.util.IXmlReader;
+import app.l2nx.highfive.data.holders.ElementalItemHolder;
+import app.l2nx.highfive.entity.item.enums.ElementalItemType;
+import app.l2nx.highfive.entity.item.holders.Elementals;
+import app.l2nx.highfive.util.StatSet;
 
 /**
  * @author Mobius

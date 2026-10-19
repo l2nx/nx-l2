@@ -14,31 +14,31 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package quests.TerritoryWarScripts;
+package app.l2nx.highfive.scripts.quests.TerritoryWarScripts;
 
 import java.util.Calendar;
 import java.util.List;
 
-import org.l2jmobius.gameserver.entity.World;
-import org.l2jmobius.gameserver.entity.WorldObject;
-import org.l2jmobius.gameserver.entity.actor.Creature;
-import org.l2jmobius.gameserver.entity.actor.Npc;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.managers.TerritoryWarManager;
-import org.l2jmobius.gameserver.managers.TerritoryWarManager.TerritoryNPCSpawn;
-import org.l2jmobius.gameserver.mechanics.script.Quest;
-import org.l2jmobius.gameserver.mechanics.script.QuestState;
-import org.l2jmobius.gameserver.mechanics.script.State;
-import org.l2jmobius.gameserver.mechanics.siege.TerritoryWard;
-import org.l2jmobius.gameserver.mechanics.skill.Skill;
-import org.l2jmobius.gameserver.network.NpcStringId;
-import org.l2jmobius.gameserver.network.serverpackets.ExShowScreenMessage;
-import org.l2jmobius.gameserver.util.ArrayUtil;
-import org.l2jmobius.gameserver.util.LocationUtil;
+import app.l2nx.highfive.entity.World;
+import app.l2nx.highfive.entity.WorldObject;
+import app.l2nx.highfive.entity.actor.Creature;
+import app.l2nx.highfive.entity.actor.Npc;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.managers.TerritoryWarManager;
+import app.l2nx.highfive.managers.TerritoryWarManager.TerritoryNPCSpawn;
+import app.l2nx.highfive.mechanics.script.Quest;
+import app.l2nx.highfive.mechanics.script.QuestState;
+import app.l2nx.highfive.mechanics.script.State;
+import app.l2nx.highfive.mechanics.siege.TerritoryWard;
+import app.l2nx.highfive.mechanics.skill.Skill;
+import app.l2nx.highfive.network.NpcStringId;
+import app.l2nx.highfive.network.serverpackets.ExShowScreenMessage;
+import app.l2nx.highfive.util.ArrayUtil;
+import app.l2nx.highfive.util.LocationUtil;
 
-import quests.Q00147_PathtoBecominganEliteMercenary.Q00147_PathtoBecominganEliteMercenary;
-import quests.Q00148_PathtoBecominganExaltedMercenary.Q00148_PathtoBecominganExaltedMercenary;
-import quests.Q00176_StepsForHonor.Q00176_StepsForHonor;
+import app.l2nx.highfive.scripts.quests.Q00147_PathtoBecominganEliteMercenary.Q00147_PathtoBecominganEliteMercenary;
+import app.l2nx.highfive.scripts.quests.Q00148_PathtoBecominganExaltedMercenary.Q00148_PathtoBecominganExaltedMercenary;
+import app.l2nx.highfive.scripts.quests.Q00176_StepsForHonor.Q00176_StepsForHonor;
 
 /**
  * Territory War quests superclass.

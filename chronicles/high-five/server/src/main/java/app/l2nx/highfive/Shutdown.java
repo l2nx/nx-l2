@@ -18,48 +18,48 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver;
+package app.l2nx.highfive;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.l2jmobius.commons.config.DatabaseConfig;
-import org.l2jmobius.commons.database.DatabaseBackup;
-import org.l2jmobius.commons.database.DatabaseFactory;
-import org.l2jmobius.commons.threads.ThreadPool;
-import org.l2jmobius.gameserver.config.GeneralConfig;
-import org.l2jmobius.gameserver.config.ServerConfig;
-import org.l2jmobius.gameserver.config.custom.AutoPlayConfig;
-import org.l2jmobius.gameserver.config.custom.OfflinePlayConfig;
-import org.l2jmobius.gameserver.config.custom.OfflineTradeConfig;
-import org.l2jmobius.gameserver.data.BotReportTable;
-import org.l2jmobius.gameserver.data.SchemeBufferTable;
-import org.l2jmobius.gameserver.data.sql.ClanTable;
-import org.l2jmobius.gameserver.data.sql.OfflinePlayTable;
-import org.l2jmobius.gameserver.data.sql.OfflineTraderTable;
-import org.l2jmobius.gameserver.entity.World;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.managers.CHSiegeManager;
-import org.l2jmobius.gameserver.managers.CastleManorManager;
-import org.l2jmobius.gameserver.managers.CursedWeaponsManager;
-import org.l2jmobius.gameserver.managers.FishingChampionshipManager;
-import org.l2jmobius.gameserver.managers.GlobalVariablesManager;
-import org.l2jmobius.gameserver.managers.GrandBossManager;
-import org.l2jmobius.gameserver.managers.ItemAuctionManager;
-import org.l2jmobius.gameserver.managers.ItemsOnGroundManager;
-import org.l2jmobius.gameserver.managers.PrecautionaryRestartManager;
-import org.l2jmobius.gameserver.managers.RaidBossSpawnManager;
-import org.l2jmobius.gameserver.managers.ScriptManager;
-import org.l2jmobius.gameserver.mechanics.olympiad.Hero;
-import org.l2jmobius.gameserver.mechanics.olympiad.Olympiad;
-import org.l2jmobius.gameserver.mechanics.sevensigns.SevenSigns;
-import org.l2jmobius.gameserver.mechanics.sevensigns.SevenSignsFestival;
-import org.l2jmobius.gameserver.network.Disconnection;
-import org.l2jmobius.gameserver.network.SystemMessageId;
-import org.l2jmobius.gameserver.network.loginserverpackets.send.ServerStatus;
-import org.l2jmobius.gameserver.network.serverpackets.ServerClose;
-import org.l2jmobius.gameserver.network.serverpackets.SystemMessage;
-import org.l2jmobius.gameserver.taskmanagers.GameTimeTaskManager;
+import app.l2nx.commons.config.DatabaseConfig;
+import app.l2nx.commons.database.DatabaseBackup;
+import app.l2nx.commons.database.DatabaseFactory;
+import app.l2nx.commons.threads.ThreadPool;
+import app.l2nx.highfive.config.GeneralConfig;
+import app.l2nx.highfive.config.ServerConfig;
+import app.l2nx.highfive.config.custom.AutoPlayConfig;
+import app.l2nx.highfive.config.custom.OfflinePlayConfig;
+import app.l2nx.highfive.config.custom.OfflineTradeConfig;
+import app.l2nx.highfive.data.BotReportTable;
+import app.l2nx.highfive.data.SchemeBufferTable;
+import app.l2nx.highfive.data.sql.ClanTable;
+import app.l2nx.highfive.data.sql.OfflinePlayTable;
+import app.l2nx.highfive.data.sql.OfflineTraderTable;
+import app.l2nx.highfive.entity.World;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.managers.CHSiegeManager;
+import app.l2nx.highfive.managers.CastleManorManager;
+import app.l2nx.highfive.managers.CursedWeaponsManager;
+import app.l2nx.highfive.managers.FishingChampionshipManager;
+import app.l2nx.highfive.managers.GlobalVariablesManager;
+import app.l2nx.highfive.managers.GrandBossManager;
+import app.l2nx.highfive.managers.ItemAuctionManager;
+import app.l2nx.highfive.managers.ItemsOnGroundManager;
+import app.l2nx.highfive.managers.PrecautionaryRestartManager;
+import app.l2nx.highfive.managers.RaidBossSpawnManager;
+import app.l2nx.highfive.managers.ScriptManager;
+import app.l2nx.highfive.mechanics.olympiad.Hero;
+import app.l2nx.highfive.mechanics.olympiad.Olympiad;
+import app.l2nx.highfive.mechanics.sevensigns.SevenSigns;
+import app.l2nx.highfive.mechanics.sevensigns.SevenSignsFestival;
+import app.l2nx.highfive.network.Disconnection;
+import app.l2nx.highfive.network.SystemMessageId;
+import app.l2nx.highfive.network.loginserverpackets.send.ServerStatus;
+import app.l2nx.highfive.network.serverpackets.ServerClose;
+import app.l2nx.highfive.network.serverpackets.SystemMessage;
+import app.l2nx.highfive.taskmanagers.GameTimeTaskManager;
 
 /**
  * This class provides the functions for shutting down and restarting the server.<br>

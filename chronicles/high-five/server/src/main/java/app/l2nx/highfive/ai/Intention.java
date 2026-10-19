@@ -18,7 +18,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.ai;
+package app.l2nx.highfive.ai;
 
 /**
  * Enumeration of generic intentions of an NPC/PC, an intention may require several steps to be completed.

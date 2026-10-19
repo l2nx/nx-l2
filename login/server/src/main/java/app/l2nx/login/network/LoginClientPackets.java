@@ -18,7 +18,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.loginserver.network;
+package app.l2nx.login.network;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -26,11 +26,11 @@ import java.util.EnumSet;
 import java.util.Set;
 import java.util.function.Supplier;
 
-import org.l2jmobius.loginserver.network.clientpackets.AuthGameGuard;
-import org.l2jmobius.loginserver.network.clientpackets.LoginClientPacket;
-import org.l2jmobius.loginserver.network.clientpackets.RequestAuthLogin;
-import org.l2jmobius.loginserver.network.clientpackets.RequestServerList;
-import org.l2jmobius.loginserver.network.clientpackets.RequestServerLogin;
+import app.l2nx.login.network.clientpackets.AuthGameGuard;
+import app.l2nx.login.network.clientpackets.LoginClientPacket;
+import app.l2nx.login.network.clientpackets.RequestAuthLogin;
+import app.l2nx.login.network.clientpackets.RequestServerList;
+import app.l2nx.login.network.clientpackets.RequestServerLogin;
 
 /**
  * @author Mobius

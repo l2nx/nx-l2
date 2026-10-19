@@ -18,23 +18,23 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.network.clientpackets;
+package app.l2nx.highfive.network.clientpackets;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 
-import org.l2jmobius.commons.database.DatabaseFactory;
-import org.l2jmobius.gameserver.config.GeneralConfig;
-import org.l2jmobius.gameserver.data.holders.PrimeShopProductHolder;
-import org.l2jmobius.gameserver.data.xml.ItemData;
-import org.l2jmobius.gameserver.data.xml.PrimeShopData;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.item.ItemTemplate;
-import org.l2jmobius.gameserver.entity.item.enums.ItemProcessType;
-import org.l2jmobius.gameserver.network.PacketLogger;
-import org.l2jmobius.gameserver.network.serverpackets.ExBrBuyProduct;
-import org.l2jmobius.gameserver.network.serverpackets.ExBrGamePoint;
-import org.l2jmobius.gameserver.network.serverpackets.StatusUpdate;
+import app.l2nx.commons.database.DatabaseFactory;
+import app.l2nx.highfive.config.GeneralConfig;
+import app.l2nx.highfive.data.holders.PrimeShopProductHolder;
+import app.l2nx.highfive.data.xml.ItemData;
+import app.l2nx.highfive.data.xml.PrimeShopData;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.item.ItemTemplate;
+import app.l2nx.highfive.entity.item.enums.ItemProcessType;
+import app.l2nx.highfive.network.PacketLogger;
+import app.l2nx.highfive.network.serverpackets.ExBrBuyProduct;
+import app.l2nx.highfive.network.serverpackets.ExBrGamePoint;
+import app.l2nx.highfive.network.serverpackets.StatusUpdate;
 
 /**
  * @author Mobius

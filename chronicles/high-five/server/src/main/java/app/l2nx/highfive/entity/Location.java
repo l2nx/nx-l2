@@ -18,13 +18,13 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.entity;
+package app.l2nx.highfive.entity;
 
 import java.util.Objects;
 
-import org.l2jmobius.gameserver.interfaces.ILocational;
-import org.l2jmobius.gameserver.interfaces.IPositionable;
-import org.l2jmobius.gameserver.util.StatSet;
+import app.l2nx.highfive.interfaces.ILocational;
+import app.l2nx.highfive.interfaces.IPositionable;
+import app.l2nx.highfive.util.StatSet;
 
 /**
  * Represents a 3D coordinate (x, y, z) with an optional heading and instance id.

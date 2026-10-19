@@ -14,14 +14,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.entity.item.enchant;
+package app.l2nx.highfive.entity.item.enchant;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.l2jmobius.gameserver.data.holders.RangeChanceHolder;
+import app.l2nx.highfive.data.holders.RangeChanceHolder;
 
 /**
  * @author UnAfraid

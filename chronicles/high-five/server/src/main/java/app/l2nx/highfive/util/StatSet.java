@@ -18,7 +18,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.util;
+package app.l2nx.highfive.util;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -31,11 +31,11 @@ import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.l2jmobius.commons.time.TimeUtil;
-import org.l2jmobius.commons.util.StringUtil;
-import org.l2jmobius.gameserver.entity.Location;
-import org.l2jmobius.gameserver.entity.actor.holders.npc.MinionHolder;
-import org.l2jmobius.gameserver.mechanics.skill.holders.SkillHolder;
+import app.l2nx.commons.time.TimeUtil;
+import app.l2nx.commons.util.StringUtil;
+import app.l2nx.highfive.entity.Location;
+import app.l2nx.highfive.entity.actor.holders.npc.MinionHolder;
+import app.l2nx.highfive.mechanics.skill.holders.SkillHolder;
 
 /**
  * This class is meant to hold a set of (key,value) pairs.<br>

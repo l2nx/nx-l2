@@ -18,7 +18,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.loginserver.network.clientpackets;
+package app.l2nx.login.network.clientpackets;
 
 import java.security.GeneralSecurityException;
 import java.util.logging.Level;
@@ -26,17 +26,17 @@ import java.util.logging.Logger;
 
 import javax.crypto.Cipher;
 
-import org.l2jmobius.loginserver.config.LoginConfig;
-import org.l2jmobius.loginserver.controller.AccountInfo;
-import org.l2jmobius.loginserver.controller.LoginController;
-import org.l2jmobius.loginserver.data.GameServerTable.GameServerInfo;
-import org.l2jmobius.loginserver.enums.AccountKickedReason;
-import org.l2jmobius.loginserver.enums.LoginFailReason;
-import org.l2jmobius.loginserver.network.ConnectionState;
-import org.l2jmobius.loginserver.network.LoginClient;
-import org.l2jmobius.loginserver.network.serverpackets.AccountKicked;
-import org.l2jmobius.loginserver.network.serverpackets.LoginOk;
-import org.l2jmobius.loginserver.network.serverpackets.ServerList;
+import app.l2nx.login.config.LoginConfig;
+import app.l2nx.login.controller.AccountInfo;
+import app.l2nx.login.controller.LoginController;
+import app.l2nx.login.data.GameServerTable.GameServerInfo;
+import app.l2nx.login.enums.AccountKickedReason;
+import app.l2nx.login.enums.LoginFailReason;
+import app.l2nx.login.network.ConnectionState;
+import app.l2nx.login.network.LoginClient;
+import app.l2nx.login.network.serverpackets.AccountKicked;
+import app.l2nx.login.network.serverpackets.LoginOk;
+import app.l2nx.login.network.serverpackets.ServerList;
 
 /**
  * Format: x 0 (a leading null) x: the rsa encrypted block with the login an password.

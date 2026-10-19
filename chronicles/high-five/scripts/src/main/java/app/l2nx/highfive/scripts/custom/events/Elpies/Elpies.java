@@ -18,7 +18,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package custom.events.Elpies;
+package app.l2nx.highfive.scripts.custom.events.Elpies;
 
 import java.io.File;
 import java.util.Set;
@@ -29,17 +29,17 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 
-import org.l2jmobius.commons.threads.ThreadPool;
-import org.l2jmobius.commons.time.SchedulingPattern;
-import org.l2jmobius.commons.time.TimeUtil;
-import org.l2jmobius.commons.util.IXmlReader;
-import org.l2jmobius.gameserver.config.GeneralConfig;
-import org.l2jmobius.gameserver.entity.World;
-import org.l2jmobius.gameserver.entity.actor.Npc;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.actor.instance.EventMonster;
-import org.l2jmobius.gameserver.mechanics.script.Event;
-import org.l2jmobius.gameserver.util.StatSet;
+import app.l2nx.commons.threads.ThreadPool;
+import app.l2nx.commons.time.SchedulingPattern;
+import app.l2nx.commons.time.TimeUtil;
+import app.l2nx.commons.util.IXmlReader;
+import app.l2nx.highfive.config.GeneralConfig;
+import app.l2nx.highfive.entity.World;
+import app.l2nx.highfive.entity.actor.Npc;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.actor.instance.EventMonster;
+import app.l2nx.highfive.mechanics.script.Event;
+import app.l2nx.highfive.util.StatSet;
 
 public class Elpies extends Event
 {

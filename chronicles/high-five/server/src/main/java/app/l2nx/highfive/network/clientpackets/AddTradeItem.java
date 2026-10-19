@@ -18,18 +18,18 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.network.clientpackets;
+package app.l2nx.highfive.network.clientpackets;
 
-import org.l2jmobius.gameserver.entity.World;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.item.enums.ItemProcessType;
-import org.l2jmobius.gameserver.network.PacketLogger;
-import org.l2jmobius.gameserver.network.SystemMessageId;
-import org.l2jmobius.gameserver.network.holders.TradeItem;
-import org.l2jmobius.gameserver.network.holders.TradeList;
-import org.l2jmobius.gameserver.network.serverpackets.TradeOtherAdd;
-import org.l2jmobius.gameserver.network.serverpackets.TradeOwnAdd;
-import org.l2jmobius.gameserver.network.serverpackets.TradeUpdate;
+import app.l2nx.highfive.entity.World;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.item.enums.ItemProcessType;
+import app.l2nx.highfive.network.PacketLogger;
+import app.l2nx.highfive.network.SystemMessageId;
+import app.l2nx.highfive.network.holders.TradeItem;
+import app.l2nx.highfive.network.holders.TradeList;
+import app.l2nx.highfive.network.serverpackets.TradeOtherAdd;
+import app.l2nx.highfive.network.serverpackets.TradeOwnAdd;
+import app.l2nx.highfive.network.serverpackets.TradeUpdate;
 
 /**
  * @version $Revision: 1.5.2.2.2.5 $ $Date: 2005/03/27 15:29:29 $

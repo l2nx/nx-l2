@@ -14,9 +14,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.entity.actor.tasks.npc.trap;
+package app.l2nx.highfive.entity.actor.tasks.npc.trap;
 
-import org.l2jmobius.gameserver.entity.actor.instance.Trap;
+import app.l2nx.highfive.entity.actor.instance.Trap;
 
 /**
  * Trap unsummon task.

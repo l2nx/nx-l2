@@ -18,21 +18,21 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.network.clientpackets;
+package app.l2nx.highfive.network.clientpackets;
 
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.l2jmobius.gameserver.config.PlayerConfig;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.item.Armor;
-import org.l2jmobius.gameserver.entity.item.Weapon;
-import org.l2jmobius.gameserver.entity.item.enums.BodyPart;
-import org.l2jmobius.gameserver.entity.item.enums.ItemLocation;
-import org.l2jmobius.gameserver.entity.item.instance.Item;
-import org.l2jmobius.gameserver.entity.item.type.CrystalType;
-import org.l2jmobius.gameserver.network.SystemMessageId;
+import app.l2nx.highfive.config.PlayerConfig;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.item.Armor;
+import app.l2nx.highfive.entity.item.Weapon;
+import app.l2nx.highfive.entity.item.enums.BodyPart;
+import app.l2nx.highfive.entity.item.enums.ItemLocation;
+import app.l2nx.highfive.entity.item.instance.Item;
+import app.l2nx.highfive.entity.item.type.CrystalType;
+import app.l2nx.highfive.network.SystemMessageId;
 
 public abstract class AbstractRefinePacket extends ClientPacket
 {

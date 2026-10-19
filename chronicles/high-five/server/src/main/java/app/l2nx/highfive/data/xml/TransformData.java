@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.data.xml;
+package app.l2nx.highfive.data.xml;
 
 import java.io.File;
 import java.util.Map;
@@ -25,16 +25,16 @@ import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 
-import org.l2jmobius.commons.util.IXmlReader;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.actor.transform.AdditionalItemHolder;
-import org.l2jmobius.gameserver.entity.actor.transform.AdditionalSkillHolder;
-import org.l2jmobius.gameserver.entity.actor.transform.Transform;
-import org.l2jmobius.gameserver.entity.actor.transform.TransformLevelData;
-import org.l2jmobius.gameserver.entity.actor.transform.TransformTemplate;
-import org.l2jmobius.gameserver.mechanics.skill.holders.SkillHolder;
-import org.l2jmobius.gameserver.network.serverpackets.ExBasicActionList;
-import org.l2jmobius.gameserver.util.StatSet;
+import app.l2nx.commons.util.IXmlReader;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.actor.transform.AdditionalItemHolder;
+import app.l2nx.highfive.entity.actor.transform.AdditionalSkillHolder;
+import app.l2nx.highfive.entity.actor.transform.Transform;
+import app.l2nx.highfive.entity.actor.transform.TransformLevelData;
+import app.l2nx.highfive.entity.actor.transform.TransformTemplate;
+import app.l2nx.highfive.mechanics.skill.holders.SkillHolder;
+import app.l2nx.highfive.network.serverpackets.ExBasicActionList;
+import app.l2nx.highfive.util.StatSet;
 
 /**
  * @author UnAfraid

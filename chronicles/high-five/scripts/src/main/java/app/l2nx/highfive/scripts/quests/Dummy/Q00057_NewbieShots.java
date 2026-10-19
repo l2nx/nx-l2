@@ -14,9 +14,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package quests.Dummy;
+package app.l2nx.highfive.scripts.quests.Dummy;
 
-import org.l2jmobius.gameserver.mechanics.script.Quest;
+import app.l2nx.highfive.mechanics.script.Quest;
 
 /**
  * Dammy quest to handle newbie shots (57)

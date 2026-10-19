@@ -18,13 +18,13 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package custom.DelevelManager;
+package app.l2nx.highfive.scripts.custom.DelevelManager;
 
-import org.l2jmobius.gameserver.config.custom.DelevelManagerConfig;
-import org.l2jmobius.gameserver.data.xml.ExperienceData;
-import org.l2jmobius.gameserver.entity.actor.Npc;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.mechanics.script.Script;
+import app.l2nx.highfive.config.custom.DelevelManagerConfig;
+import app.l2nx.highfive.data.xml.ExperienceData;
+import app.l2nx.highfive.entity.actor.Npc;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.mechanics.script.Script;
 
 /**
  * @author Mobius

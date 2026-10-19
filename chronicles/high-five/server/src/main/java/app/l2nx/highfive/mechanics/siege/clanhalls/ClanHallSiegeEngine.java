@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.mechanics.siege.clanhalls;
+package app.l2nx.highfive.mechanics.siege.clanhalls;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -30,28 +30,28 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
 import java.util.logging.Logger;
 
-import org.l2jmobius.commons.database.DatabaseFactory;
-import org.l2jmobius.commons.threads.ThreadPool;
-import org.l2jmobius.gameserver.config.ConquerableHallSiegeConfig;
-import org.l2jmobius.gameserver.data.sql.ClanTable;
-import org.l2jmobius.gameserver.data.xml.MapRegionData;
-import org.l2jmobius.gameserver.entity.Location;
-import org.l2jmobius.gameserver.entity.World;
-import org.l2jmobius.gameserver.entity.actor.Creature;
-import org.l2jmobius.gameserver.entity.actor.Npc;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.clan.Clan;
-import org.l2jmobius.gameserver.entity.spawns.Spawn;
-import org.l2jmobius.gameserver.managers.CHSiegeManager;
-import org.l2jmobius.gameserver.mechanics.script.Script;
-import org.l2jmobius.gameserver.mechanics.siege.Siegable;
-import org.l2jmobius.gameserver.mechanics.siege.SiegeClan;
-import org.l2jmobius.gameserver.mechanics.siege.SiegeClanType;
-import org.l2jmobius.gameserver.network.NpcStringId;
-import org.l2jmobius.gameserver.network.SystemMessageId;
-import org.l2jmobius.gameserver.network.enums.ChatType;
-import org.l2jmobius.gameserver.network.serverpackets.NpcSay;
-import org.l2jmobius.gameserver.network.serverpackets.SystemMessage;
+import app.l2nx.commons.database.DatabaseFactory;
+import app.l2nx.commons.threads.ThreadPool;
+import app.l2nx.highfive.config.ConquerableHallSiegeConfig;
+import app.l2nx.highfive.data.sql.ClanTable;
+import app.l2nx.highfive.data.xml.MapRegionData;
+import app.l2nx.highfive.entity.Location;
+import app.l2nx.highfive.entity.World;
+import app.l2nx.highfive.entity.actor.Creature;
+import app.l2nx.highfive.entity.actor.Npc;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.clan.Clan;
+import app.l2nx.highfive.entity.spawns.Spawn;
+import app.l2nx.highfive.managers.CHSiegeManager;
+import app.l2nx.highfive.mechanics.script.Script;
+import app.l2nx.highfive.mechanics.siege.Siegable;
+import app.l2nx.highfive.mechanics.siege.SiegeClan;
+import app.l2nx.highfive.mechanics.siege.SiegeClanType;
+import app.l2nx.highfive.network.NpcStringId;
+import app.l2nx.highfive.network.SystemMessageId;
+import app.l2nx.highfive.network.enums.ChatType;
+import app.l2nx.highfive.network.serverpackets.NpcSay;
+import app.l2nx.highfive.network.serverpackets.SystemMessage;
 
 /**
  * @author BiggBoss

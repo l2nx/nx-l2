@@ -14,12 +14,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.entity.item.auction;
+package app.l2nx.highfive.entity.item.auction;
 
 import java.util.Calendar;
 import java.util.concurrent.TimeUnit;
 
-import org.l2jmobius.gameserver.util.StatSet;
+import app.l2nx.highfive.util.StatSet;
 
 /**
  * @author Forsaiken

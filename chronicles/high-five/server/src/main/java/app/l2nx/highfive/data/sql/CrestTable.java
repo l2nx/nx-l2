@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.data.sql;
+package app.l2nx.highfive.data.sql;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -28,10 +28,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.l2jmobius.commons.database.DatabaseFactory;
-import org.l2jmobius.gameserver.entity.clan.Clan;
-import org.l2jmobius.gameserver.entity.clan.Crest;
-import org.l2jmobius.gameserver.entity.clan.enums.CrestType;
+import app.l2nx.commons.database.DatabaseFactory;
+import app.l2nx.highfive.entity.clan.Clan;
+import app.l2nx.highfive.entity.clan.Crest;
+import app.l2nx.highfive.entity.clan.enums.CrestType;
 
 /**
  * Loads and saves crests from database.

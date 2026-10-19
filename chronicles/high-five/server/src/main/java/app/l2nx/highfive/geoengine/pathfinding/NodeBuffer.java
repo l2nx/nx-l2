@@ -18,15 +18,15 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.geoengine.pathfinding;
+package app.l2nx.highfive.geoengine.pathfinding;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import org.l2jmobius.gameserver.config.GeoEngineConfig;
-import org.l2jmobius.gameserver.geoengine.GeoEngine;
-import org.l2jmobius.gameserver.geoengine.geodata.Cell;
+import app.l2nx.highfive.config.GeoEngineConfig;
+import app.l2nx.highfive.geoengine.GeoEngine;
+import app.l2nx.highfive.geoengine.geodata.Cell;
 
 /**
  * Data-oriented A* pathfinder.<br>

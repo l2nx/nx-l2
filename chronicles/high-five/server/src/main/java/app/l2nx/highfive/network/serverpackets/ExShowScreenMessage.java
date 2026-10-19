@@ -14,21 +14,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.network.serverpackets;
+package app.l2nx.highfive.network.serverpackets;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import org.l2jmobius.commons.network.buffer.WriteBuffer;
-import org.l2jmobius.gameserver.config.custom.MultilingualSupportConfig;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.network.GameClient;
-import org.l2jmobius.gameserver.network.NpcStringId;
-import org.l2jmobius.gameserver.network.NpcStringId.NSLocalisation;
-import org.l2jmobius.gameserver.network.ServerPackets;
-import org.l2jmobius.gameserver.network.SystemMessageId;
-import org.l2jmobius.gameserver.network.SystemMessageId.SMLocalisation;
+import app.l2nx.commons.network.buffer.WriteBuffer;
+import app.l2nx.highfive.config.custom.MultilingualSupportConfig;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.network.GameClient;
+import app.l2nx.highfive.network.NpcStringId;
+import app.l2nx.highfive.network.NpcStringId.NSLocalisation;
+import app.l2nx.highfive.network.ServerPackets;
+import app.l2nx.highfive.network.SystemMessageId;
+import app.l2nx.highfive.network.SystemMessageId.SMLocalisation;
 
 /**
  * @author Kerberos

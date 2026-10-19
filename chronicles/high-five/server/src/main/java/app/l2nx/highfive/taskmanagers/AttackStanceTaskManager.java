@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.taskmanagers;
+package app.l2nx.highfive.taskmanagers;
 
 import java.util.Iterator;
 import java.util.Map;
@@ -23,11 +23,11 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.l2jmobius.commons.threads.ThreadPool;
-import org.l2jmobius.gameserver.entity.actor.Creature;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.actor.instance.Cubic;
-import org.l2jmobius.gameserver.network.serverpackets.AutoAttackStop;
+import app.l2nx.commons.threads.ThreadPool;
+import app.l2nx.highfive.entity.actor.Creature;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.actor.instance.Cubic;
+import app.l2nx.highfive.network.serverpackets.AutoAttackStop;
 
 /**
  * Attack stance task manager.

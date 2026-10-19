@@ -18,7 +18,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package handlers.chat.commands.admin;
+package app.l2nx.highfive.scripts.handlers.chat.commands.admin;
 
 import java.time.Instant;
 import java.time.ZoneId;
@@ -26,19 +26,19 @@ import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.StringTokenizer;
 
-import org.l2jmobius.gameserver.cache.HtmCache;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.zone.type.NoRestartZone;
-import org.l2jmobius.gameserver.handler.IAdminCommandHandler;
-import org.l2jmobius.gameserver.managers.GrandBossManager;
-import org.l2jmobius.gameserver.managers.ScriptManager;
-import org.l2jmobius.gameserver.managers.ZoneManager;
-import org.l2jmobius.gameserver.mechanics.script.Quest;
-import org.l2jmobius.gameserver.network.serverpackets.NpcHtmlMessage;
-import org.l2jmobius.gameserver.util.StatSet;
+import app.l2nx.highfive.cache.HtmCache;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.zone.type.NoRestartZone;
+import app.l2nx.highfive.handler.IAdminCommandHandler;
+import app.l2nx.highfive.managers.GrandBossManager;
+import app.l2nx.highfive.managers.ScriptManager;
+import app.l2nx.highfive.managers.ZoneManager;
+import app.l2nx.highfive.mechanics.script.Quest;
+import app.l2nx.highfive.network.serverpackets.NpcHtmlMessage;
+import app.l2nx.highfive.util.StatSet;
 
-import ai.bosses.Antharas.Antharas;
-import ai.bosses.Baium.Baium;
+import app.l2nx.highfive.scripts.ai.bosses.Antharas.Antharas;
+import app.l2nx.highfive.scripts.ai.bosses.Baium.Baium;
 
 /**
  * @author St3eT, Skache

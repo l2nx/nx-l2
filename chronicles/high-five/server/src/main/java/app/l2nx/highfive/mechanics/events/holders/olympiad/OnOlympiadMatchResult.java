@@ -14,12 +14,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.mechanics.events.holders.olympiad;
+package app.l2nx.highfive.mechanics.events.holders.olympiad;
 
-import org.l2jmobius.gameserver.mechanics.events.EventType;
-import org.l2jmobius.gameserver.mechanics.events.holders.IBaseEvent;
-import org.l2jmobius.gameserver.mechanics.olympiad.CompetitionType;
-import org.l2jmobius.gameserver.mechanics.olympiad.Participant;
+import app.l2nx.highfive.mechanics.events.EventType;
+import app.l2nx.highfive.mechanics.events.holders.IBaseEvent;
+import app.l2nx.highfive.mechanics.olympiad.CompetitionType;
+import app.l2nx.highfive.mechanics.olympiad.Participant;
 
 /**
  * @author UnAfraid

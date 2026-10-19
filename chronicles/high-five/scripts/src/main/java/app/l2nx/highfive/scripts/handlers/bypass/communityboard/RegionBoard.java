@@ -18,7 +18,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package handlers.bypass.communityboard;
+package app.l2nx.highfive.scripts.handlers.bypass.communityboard;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -31,16 +31,16 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.l2jmobius.commons.database.DatabaseFactory;
-import org.l2jmobius.commons.util.StringUtil;
-import org.l2jmobius.gameserver.cache.HtmCache;
-import org.l2jmobius.gameserver.data.sql.ClanTable;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.clan.Clan;
-import org.l2jmobius.gameserver.handler.CommunityBoardHandler;
-import org.l2jmobius.gameserver.handler.IWriteBoardHandler;
-import org.l2jmobius.gameserver.managers.CastleManager;
-import org.l2jmobius.gameserver.mechanics.siege.Castle;
+import app.l2nx.commons.database.DatabaseFactory;
+import app.l2nx.commons.util.StringUtil;
+import app.l2nx.highfive.cache.HtmCache;
+import app.l2nx.highfive.data.sql.ClanTable;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.clan.Clan;
+import app.l2nx.highfive.handler.CommunityBoardHandler;
+import app.l2nx.highfive.handler.IWriteBoardHandler;
+import app.l2nx.highfive.managers.CastleManager;
+import app.l2nx.highfive.mechanics.siege.Castle;
 
 /**
  * Region board.

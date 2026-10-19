@@ -14,34 +14,34 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.entity.actor;
+package app.l2nx.highfive.entity.actor;
 
 import java.util.Collection;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
 import java.util.logging.Level;
 
-import org.l2jmobius.commons.threads.ThreadPool;
-import org.l2jmobius.gameserver.data.xml.MapRegionData;
-import org.l2jmobius.gameserver.entity.Location;
-import org.l2jmobius.gameserver.entity.World;
-import org.l2jmobius.gameserver.entity.actor.enums.creature.InstanceType;
-import org.l2jmobius.gameserver.entity.actor.enums.player.TeleportWhereType;
-import org.l2jmobius.gameserver.entity.actor.holders.creature.VehiclePathPoint;
-import org.l2jmobius.gameserver.entity.actor.stat.VehicleStat;
-import org.l2jmobius.gameserver.entity.actor.templates.CreatureTemplate;
-import org.l2jmobius.gameserver.entity.item.Weapon;
-import org.l2jmobius.gameserver.entity.item.enums.ItemProcessType;
-import org.l2jmobius.gameserver.entity.item.instance.Item;
-import org.l2jmobius.gameserver.entity.zone.ZoneRegion;
-import org.l2jmobius.gameserver.interfaces.ILocational;
-import org.l2jmobius.gameserver.managers.ZoneManager;
-import org.l2jmobius.gameserver.network.SystemMessageId;
-import org.l2jmobius.gameserver.network.serverpackets.InventoryUpdate;
-import org.l2jmobius.gameserver.network.serverpackets.ServerPacket;
-import org.l2jmobius.gameserver.taskmanagers.GameTimeTaskManager;
-import org.l2jmobius.gameserver.taskmanagers.MovementTaskManager;
-import org.l2jmobius.gameserver.util.LocationUtil;
+import app.l2nx.commons.threads.ThreadPool;
+import app.l2nx.highfive.data.xml.MapRegionData;
+import app.l2nx.highfive.entity.Location;
+import app.l2nx.highfive.entity.World;
+import app.l2nx.highfive.entity.actor.enums.creature.InstanceType;
+import app.l2nx.highfive.entity.actor.enums.player.TeleportWhereType;
+import app.l2nx.highfive.entity.actor.holders.creature.VehiclePathPoint;
+import app.l2nx.highfive.entity.actor.stat.VehicleStat;
+import app.l2nx.highfive.entity.actor.templates.CreatureTemplate;
+import app.l2nx.highfive.entity.item.Weapon;
+import app.l2nx.highfive.entity.item.enums.ItemProcessType;
+import app.l2nx.highfive.entity.item.instance.Item;
+import app.l2nx.highfive.entity.zone.ZoneRegion;
+import app.l2nx.highfive.interfaces.ILocational;
+import app.l2nx.highfive.managers.ZoneManager;
+import app.l2nx.highfive.network.SystemMessageId;
+import app.l2nx.highfive.network.serverpackets.InventoryUpdate;
+import app.l2nx.highfive.network.serverpackets.ServerPacket;
+import app.l2nx.highfive.taskmanagers.GameTimeTaskManager;
+import app.l2nx.highfive.taskmanagers.MovementTaskManager;
+import app.l2nx.highfive.util.LocationUtil;
 
 /**
  * @author DS

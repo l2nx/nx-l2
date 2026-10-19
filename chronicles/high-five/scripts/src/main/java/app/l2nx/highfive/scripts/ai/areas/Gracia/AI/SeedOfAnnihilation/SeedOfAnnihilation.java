@@ -14,24 +14,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package ai.areas.Gracia.AI.SeedOfAnnihilation;
+package app.l2nx.highfive.scripts.ai.areas.Gracia.AI.SeedOfAnnihilation;
 
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.l2jmobius.gameserver.data.xml.SkillData;
-import org.l2jmobius.gameserver.entity.Location;
-import org.l2jmobius.gameserver.entity.actor.Creature;
-import org.l2jmobius.gameserver.entity.actor.Npc;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.actor.instance.Monster;
-import org.l2jmobius.gameserver.entity.zone.ZoneType;
-import org.l2jmobius.gameserver.entity.zone.type.EffectZone;
-import org.l2jmobius.gameserver.managers.GlobalVariablesManager;
-import org.l2jmobius.gameserver.managers.ZoneManager;
-import org.l2jmobius.gameserver.mechanics.script.Script;
-import org.l2jmobius.gameserver.util.ArrayUtil;
+import app.l2nx.highfive.data.xml.SkillData;
+import app.l2nx.highfive.entity.Location;
+import app.l2nx.highfive.entity.actor.Creature;
+import app.l2nx.highfive.entity.actor.Npc;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.actor.instance.Monster;
+import app.l2nx.highfive.entity.zone.ZoneType;
+import app.l2nx.highfive.entity.zone.type.EffectZone;
+import app.l2nx.highfive.managers.GlobalVariablesManager;
+import app.l2nx.highfive.managers.ZoneManager;
+import app.l2nx.highfive.mechanics.script.Script;
+import app.l2nx.highfive.util.ArrayUtil;
 
 /**
  * Seed Of Annihilation AI.

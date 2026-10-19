@@ -14,15 +14,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.network.serverpackets;
+package app.l2nx.highfive.network.serverpackets;
 
-import org.l2jmobius.commons.network.buffer.WriteBuffer;
-import org.l2jmobius.gameserver.data.sql.ClanTable;
-import org.l2jmobius.gameserver.entity.clan.Clan;
-import org.l2jmobius.gameserver.mechanics.siege.Castle;
-import org.l2jmobius.gameserver.mechanics.siege.SiegeClan;
-import org.l2jmobius.gameserver.network.GameClient;
-import org.l2jmobius.gameserver.network.ServerPackets;
+import app.l2nx.commons.network.buffer.WriteBuffer;
+import app.l2nx.highfive.data.sql.ClanTable;
+import app.l2nx.highfive.entity.clan.Clan;
+import app.l2nx.highfive.mechanics.siege.Castle;
+import app.l2nx.highfive.mechanics.siege.SiegeClan;
+import app.l2nx.highfive.network.GameClient;
+import app.l2nx.highfive.network.ServerPackets;
 
 /**
  * Populates the Siege Defender List in the SiegeInfo Window<br>

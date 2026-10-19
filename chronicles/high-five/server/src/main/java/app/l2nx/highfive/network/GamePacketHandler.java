@@ -18,20 +18,20 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.network;
+package app.l2nx.highfive.network;
 
 import java.util.logging.Logger;
 
-import org.l2jmobius.commons.network.buffer.ReadBuffer;
-import org.l2jmobius.commons.network.packet.PacketHandler;
-import org.l2jmobius.commons.network.packet.ReadablePacket;
-import org.l2jmobius.commons.util.TraceUtil;
-import org.l2jmobius.gameserver.network.clientpackets.RequestBookMarkSlotInfo;
-import org.l2jmobius.gameserver.network.clientpackets.RequestChangeBookMarkSlot;
-import org.l2jmobius.gameserver.network.clientpackets.RequestDeleteBookMarkSlot;
-import org.l2jmobius.gameserver.network.clientpackets.RequestModifyBookMarkSlot;
-import org.l2jmobius.gameserver.network.clientpackets.RequestSaveBookMarkSlot;
-import org.l2jmobius.gameserver.network.clientpackets.RequestTeleportBookMark;
+import app.l2nx.commons.network.buffer.ReadBuffer;
+import app.l2nx.commons.network.packet.PacketHandler;
+import app.l2nx.commons.network.packet.ReadablePacket;
+import app.l2nx.commons.util.TraceUtil;
+import app.l2nx.highfive.network.clientpackets.RequestBookMarkSlotInfo;
+import app.l2nx.highfive.network.clientpackets.RequestChangeBookMarkSlot;
+import app.l2nx.highfive.network.clientpackets.RequestDeleteBookMarkSlot;
+import app.l2nx.highfive.network.clientpackets.RequestModifyBookMarkSlot;
+import app.l2nx.highfive.network.clientpackets.RequestSaveBookMarkSlot;
+import app.l2nx.highfive.network.clientpackets.RequestTeleportBookMark;
 
 /**
  * @author Mobius

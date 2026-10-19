@@ -18,11 +18,11 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.entity.item.recipe;
+package app.l2nx.highfive.entity.item.recipe;
 
-import org.l2jmobius.gameserver.data.holders.RecipeHolder;
-import org.l2jmobius.gameserver.data.holders.RecipeStatHolder;
-import org.l2jmobius.gameserver.util.StatSet;
+import app.l2nx.highfive.data.holders.RecipeHolder;
+import app.l2nx.highfive.data.holders.RecipeStatHolder;
+import app.l2nx.highfive.util.StatSet;
 
 /**
  * This class describes a Recipe used by Dwarf to craft Item. All RecipeList are made of RecipeHolder (1 line of the recipe : Item-Quantity needed).

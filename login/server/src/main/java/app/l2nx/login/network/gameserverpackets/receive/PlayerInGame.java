@@ -18,10 +18,10 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.loginserver.network.gameserverpackets.receive;
+package app.l2nx.login.network.gameserverpackets.receive;
 
-import org.l2jmobius.commons.network.packet.SimpleReadablePacket;
-import org.l2jmobius.loginserver.GameServerThread;
+import app.l2nx.commons.network.packet.SimpleReadablePacket;
+import app.l2nx.login.GameServerThread;
 
 /**
  * Reads the account list reported by a connected game server.<br>

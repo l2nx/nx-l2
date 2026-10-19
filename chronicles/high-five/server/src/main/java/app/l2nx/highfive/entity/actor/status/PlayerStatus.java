@@ -18,28 +18,28 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.entity.actor.status;
+package app.l2nx.highfive.entity.actor.status;
 
-import org.l2jmobius.commons.util.Rnd;
-import org.l2jmobius.gameserver.config.PlayerConfig;
-import org.l2jmobius.gameserver.config.custom.MultilingualSupportConfig;
-import org.l2jmobius.gameserver.config.custom.OfflineTradeConfig;
-import org.l2jmobius.gameserver.data.xml.NpcNameLocalisationData;
-import org.l2jmobius.gameserver.entity.actor.Creature;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.actor.Summon;
-import org.l2jmobius.gameserver.entity.actor.enums.player.PrivateStoreType;
-import org.l2jmobius.gameserver.entity.actor.holders.player.Duel;
-import org.l2jmobius.gameserver.entity.actor.stat.PlayerStat;
-import org.l2jmobius.gameserver.managers.DuelManager;
-import org.l2jmobius.gameserver.mechanics.script.QuestState;
-import org.l2jmobius.gameserver.mechanics.skill.enums.SkillFinishType;
-import org.l2jmobius.gameserver.mechanics.stats.Formulas;
-import org.l2jmobius.gameserver.mechanics.stats.Stat;
-import org.l2jmobius.gameserver.network.SystemMessageId;
-import org.l2jmobius.gameserver.network.serverpackets.ActionFailed;
-import org.l2jmobius.gameserver.network.serverpackets.SystemMessage;
-import org.l2jmobius.gameserver.util.LocationUtil;
+import app.l2nx.commons.util.Rnd;
+import app.l2nx.highfive.config.PlayerConfig;
+import app.l2nx.highfive.config.custom.MultilingualSupportConfig;
+import app.l2nx.highfive.config.custom.OfflineTradeConfig;
+import app.l2nx.highfive.data.xml.NpcNameLocalisationData;
+import app.l2nx.highfive.entity.actor.Creature;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.actor.Summon;
+import app.l2nx.highfive.entity.actor.enums.player.PrivateStoreType;
+import app.l2nx.highfive.entity.actor.holders.player.Duel;
+import app.l2nx.highfive.entity.actor.stat.PlayerStat;
+import app.l2nx.highfive.managers.DuelManager;
+import app.l2nx.highfive.mechanics.script.QuestState;
+import app.l2nx.highfive.mechanics.skill.enums.SkillFinishType;
+import app.l2nx.highfive.mechanics.stats.Formulas;
+import app.l2nx.highfive.mechanics.stats.Stat;
+import app.l2nx.highfive.network.SystemMessageId;
+import app.l2nx.highfive.network.serverpackets.ActionFailed;
+import app.l2nx.highfive.network.serverpackets.SystemMessage;
+import app.l2nx.highfive.util.LocationUtil;
 
 public class PlayerStatus extends PlayableStatus
 {

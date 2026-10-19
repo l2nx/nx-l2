@@ -18,7 +18,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.mechanics.captcha;
+package app.l2nx.highfive.mechanics.captcha;
 
 import java.awt.Color;
 import java.awt.Font;
@@ -29,11 +29,11 @@ import java.awt.image.BufferedImage;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.l2jmobius.commons.util.Rnd;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.managers.CaptchaManager.PlayerData;
-import org.l2jmobius.gameserver.network.serverpackets.PledgeCrest;
-import org.l2jmobius.gameserver.util.DDSConverter;
+import app.l2nx.commons.util.Rnd;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.managers.CaptchaManager.PlayerData;
+import app.l2nx.highfive.network.serverpackets.PledgeCrest;
+import app.l2nx.highfive.util.DDSConverter;
 
 public class Captcha
 {

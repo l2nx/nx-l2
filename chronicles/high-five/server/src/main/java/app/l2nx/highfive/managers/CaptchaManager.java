@@ -18,7 +18,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.managers;
+package app.l2nx.highfive.managers;
 
 import java.awt.image.BufferedImage;
 import java.util.Map;
@@ -27,32 +27,32 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
-import org.l2jmobius.commons.threads.ThreadPool;
-import org.l2jmobius.commons.util.Rnd;
-import org.l2jmobius.commons.util.StringUtil;
-import org.l2jmobius.gameserver.config.ServerConfig;
-import org.l2jmobius.gameserver.config.custom.AutoPlayConfig;
-import org.l2jmobius.gameserver.config.custom.CaptchaConfig;
-import org.l2jmobius.gameserver.data.xml.AdminData;
-import org.l2jmobius.gameserver.entity.actor.Creature;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.actor.enums.player.TeleportWhereType;
-import org.l2jmobius.gameserver.entity.actor.instance.Monster;
-import org.l2jmobius.gameserver.mechanics.captcha.Captcha;
-import org.l2jmobius.gameserver.mechanics.captcha.ImageData;
-import org.l2jmobius.gameserver.mechanics.punishment.PunishmentAffect;
-import org.l2jmobius.gameserver.mechanics.punishment.PunishmentTask;
-import org.l2jmobius.gameserver.mechanics.punishment.PunishmentType;
-import org.l2jmobius.gameserver.mechanics.script.QuestSound;
-import org.l2jmobius.gameserver.network.Disconnection;
-import org.l2jmobius.gameserver.network.PacketLogger;
-import org.l2jmobius.gameserver.network.enums.ChatType;
-import org.l2jmobius.gameserver.network.serverpackets.CreatureSay;
-import org.l2jmobius.gameserver.network.serverpackets.LeaveWorld;
-import org.l2jmobius.gameserver.network.serverpackets.NpcHtmlMessage;
-import org.l2jmobius.gameserver.network.serverpackets.PledgeCrest;
-import org.l2jmobius.gameserver.util.DDSConverter;
-import org.l2jmobius.gameserver.util.MathUtil;
+import app.l2nx.commons.threads.ThreadPool;
+import app.l2nx.commons.util.Rnd;
+import app.l2nx.commons.util.StringUtil;
+import app.l2nx.highfive.config.ServerConfig;
+import app.l2nx.highfive.config.custom.AutoPlayConfig;
+import app.l2nx.highfive.config.custom.CaptchaConfig;
+import app.l2nx.highfive.data.xml.AdminData;
+import app.l2nx.highfive.entity.actor.Creature;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.actor.enums.player.TeleportWhereType;
+import app.l2nx.highfive.entity.actor.instance.Monster;
+import app.l2nx.highfive.mechanics.captcha.Captcha;
+import app.l2nx.highfive.mechanics.captcha.ImageData;
+import app.l2nx.highfive.mechanics.punishment.PunishmentAffect;
+import app.l2nx.highfive.mechanics.punishment.PunishmentTask;
+import app.l2nx.highfive.mechanics.punishment.PunishmentType;
+import app.l2nx.highfive.mechanics.script.QuestSound;
+import app.l2nx.highfive.network.Disconnection;
+import app.l2nx.highfive.network.PacketLogger;
+import app.l2nx.highfive.network.enums.ChatType;
+import app.l2nx.highfive.network.serverpackets.CreatureSay;
+import app.l2nx.highfive.network.serverpackets.LeaveWorld;
+import app.l2nx.highfive.network.serverpackets.NpcHtmlMessage;
+import app.l2nx.highfive.network.serverpackets.PledgeCrest;
+import app.l2nx.highfive.util.DDSConverter;
+import app.l2nx.highfive.util.MathUtil;
 
 /**
  * @author Skache

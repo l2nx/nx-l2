@@ -14,14 +14,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.data.holders;
+package app.l2nx.highfive.data.holders;
 
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.l2jmobius.gameserver.mechanics.punishment.PunishmentTask;
-import org.l2jmobius.gameserver.mechanics.punishment.PunishmentType;
+import app.l2nx.highfive.mechanics.punishment.PunishmentTask;
+import app.l2nx.highfive.mechanics.punishment.PunishmentType;
 
 /**
  * @author UnAfraid

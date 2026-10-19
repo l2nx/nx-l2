@@ -18,14 +18,14 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.network.serverpackets;
+package app.l2nx.highfive.network.serverpackets;
 
-import org.l2jmobius.commons.network.buffer.WriteBuffer;
-import org.l2jmobius.gameserver.entity.actor.Summon;
-import org.l2jmobius.gameserver.entity.actor.instance.Pet;
-import org.l2jmobius.gameserver.entity.actor.instance.Servitor;
-import org.l2jmobius.gameserver.network.GameClient;
-import org.l2jmobius.gameserver.network.ServerPackets;
+import app.l2nx.commons.network.buffer.WriteBuffer;
+import app.l2nx.highfive.entity.actor.Summon;
+import app.l2nx.highfive.entity.actor.instance.Pet;
+import app.l2nx.highfive.entity.actor.instance.Servitor;
+import app.l2nx.highfive.network.GameClient;
+import app.l2nx.highfive.network.ServerPackets;
 
 /**
  * @version $Revision: 1.5.2.3.2.5 $ $Date: 2005/03/29 23:15:10 $

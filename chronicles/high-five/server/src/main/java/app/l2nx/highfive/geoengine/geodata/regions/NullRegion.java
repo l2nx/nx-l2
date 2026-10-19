@@ -18,9 +18,9 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.geoengine.geodata.regions;
+package app.l2nx.highfive.geoengine.geodata.regions;
 
-import org.l2jmobius.gameserver.geoengine.geodata.IRegion;
+import app.l2nx.highfive.geoengine.geodata.IRegion;
 
 /**
  * @author HorridoJoho, Mobius

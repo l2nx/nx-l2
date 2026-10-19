@@ -18,7 +18,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.data.xml;
+package app.l2nx.highfive.data.xml;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -30,14 +30,14 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
 import java.util.logging.Logger;
 
-import org.l2jmobius.commons.config.ThreadConfig;
-import org.l2jmobius.commons.threads.ThreadPool;
-import org.l2jmobius.commons.util.StringUtil;
-import org.l2jmobius.commons.util.TraceUtil;
-import org.l2jmobius.gameserver.config.GeneralConfig;
-import org.l2jmobius.gameserver.config.ServerConfig;
-import org.l2jmobius.gameserver.mechanics.skill.Skill;
-import org.l2jmobius.gameserver.util.DocumentSkill;
+import app.l2nx.commons.config.ThreadConfig;
+import app.l2nx.commons.threads.ThreadPool;
+import app.l2nx.commons.util.StringUtil;
+import app.l2nx.commons.util.TraceUtil;
+import app.l2nx.highfive.config.GeneralConfig;
+import app.l2nx.highfive.config.ServerConfig;
+import app.l2nx.highfive.mechanics.skill.Skill;
+import app.l2nx.highfive.util.DocumentSkill;
 
 /**
  * The {@code SkillData} class is responsible for parsing, loading, and managing skill data within the game server.

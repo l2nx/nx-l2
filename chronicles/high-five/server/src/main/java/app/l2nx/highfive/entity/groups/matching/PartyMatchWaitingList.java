@@ -14,12 +14,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.entity.groups.matching;
+package app.l2nx.highfive.entity.groups.matching;
 
 import java.util.Collection;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.l2jmobius.gameserver.entity.actor.Player;
+import app.l2nx.highfive.entity.actor.Player;
 
 /**
  * @author Gnacik

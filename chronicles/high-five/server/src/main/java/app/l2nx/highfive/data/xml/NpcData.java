@@ -18,7 +18,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.data.xml;
+package app.l2nx.highfive.data.xml;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -37,22 +37,22 @@ import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 
-import org.l2jmobius.commons.util.IXmlReader;
-import org.l2jmobius.gameserver.config.GeneralConfig;
-import org.l2jmobius.gameserver.config.RatesConfig;
-import org.l2jmobius.gameserver.config.custom.FakePlayersConfig;
-import org.l2jmobius.gameserver.entity.actor.enums.npc.AISkillScope;
-import org.l2jmobius.gameserver.entity.actor.enums.npc.DropType;
-import org.l2jmobius.gameserver.entity.actor.enums.player.PlayerClass;
-import org.l2jmobius.gameserver.entity.actor.holders.npc.DropGroupHolder;
-import org.l2jmobius.gameserver.entity.actor.holders.npc.DropHolder;
-import org.l2jmobius.gameserver.entity.actor.holders.npc.MinionHolder;
-import org.l2jmobius.gameserver.entity.actor.templates.NpcTemplate;
-import org.l2jmobius.gameserver.mechanics.effects.EffectType;
-import org.l2jmobius.gameserver.mechanics.skill.Skill;
-import org.l2jmobius.gameserver.mechanics.skill.holders.SkillHolder;
-import org.l2jmobius.gameserver.util.ArrayUtil;
-import org.l2jmobius.gameserver.util.StatSet;
+import app.l2nx.commons.util.IXmlReader;
+import app.l2nx.highfive.config.GeneralConfig;
+import app.l2nx.highfive.config.RatesConfig;
+import app.l2nx.highfive.config.custom.FakePlayersConfig;
+import app.l2nx.highfive.entity.actor.enums.npc.AISkillScope;
+import app.l2nx.highfive.entity.actor.enums.npc.DropType;
+import app.l2nx.highfive.entity.actor.enums.player.PlayerClass;
+import app.l2nx.highfive.entity.actor.holders.npc.DropGroupHolder;
+import app.l2nx.highfive.entity.actor.holders.npc.DropHolder;
+import app.l2nx.highfive.entity.actor.holders.npc.MinionHolder;
+import app.l2nx.highfive.entity.actor.templates.NpcTemplate;
+import app.l2nx.highfive.mechanics.effects.EffectType;
+import app.l2nx.highfive.mechanics.skill.Skill;
+import app.l2nx.highfive.mechanics.skill.holders.SkillHolder;
+import app.l2nx.highfive.util.ArrayUtil;
+import app.l2nx.highfive.util.StatSet;
 
 /**
  * NPC data parser.

@@ -18,16 +18,16 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.network.serverpackets;
+package app.l2nx.highfive.network.serverpackets;
 
-import static org.l2jmobius.gameserver.data.xml.MultisellData.PAGE_SIZE;
+import static app.l2nx.highfive.data.xml.MultisellData.PAGE_SIZE;
 
-import org.l2jmobius.commons.network.buffer.WriteBuffer;
-import org.l2jmobius.gameserver.mechanics.multisell.Entry;
-import org.l2jmobius.gameserver.mechanics.multisell.Ingredient;
-import org.l2jmobius.gameserver.mechanics.multisell.ListContainer;
-import org.l2jmobius.gameserver.network.GameClient;
-import org.l2jmobius.gameserver.network.ServerPackets;
+import app.l2nx.commons.network.buffer.WriteBuffer;
+import app.l2nx.highfive.mechanics.multisell.Entry;
+import app.l2nx.highfive.mechanics.multisell.Ingredient;
+import app.l2nx.highfive.mechanics.multisell.ListContainer;
+import app.l2nx.highfive.network.GameClient;
+import app.l2nx.highfive.network.ServerPackets;
 
 public class MultiSellList extends ServerPacket
 {

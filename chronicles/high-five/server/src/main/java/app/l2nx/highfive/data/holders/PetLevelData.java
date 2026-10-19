@@ -14,10 +14,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.data.holders;
+package app.l2nx.highfive.data.holders;
 
-import org.l2jmobius.gameserver.mechanics.stats.MoveType;
-import org.l2jmobius.gameserver.util.StatSet;
+import app.l2nx.highfive.mechanics.stats.MoveType;
+import app.l2nx.highfive.util.StatSet;
 
 /**
  * Stats definition for each pet level.

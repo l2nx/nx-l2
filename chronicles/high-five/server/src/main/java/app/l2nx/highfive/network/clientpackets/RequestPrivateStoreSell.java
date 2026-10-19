@@ -18,20 +18,20 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.network.clientpackets;
+package app.l2nx.highfive.network.clientpackets;
 
-import static org.l2jmobius.gameserver.entity.actor.Npc.INTERACTION_DISTANCE;
+import static app.l2nx.highfive.entity.actor.Npc.INTERACTION_DISTANCE;
 
-import org.l2jmobius.gameserver.config.PlayerConfig;
-import org.l2jmobius.gameserver.config.custom.OfflineTradeConfig;
-import org.l2jmobius.gameserver.data.sql.OfflineTraderTable;
-import org.l2jmobius.gameserver.entity.World;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.actor.enums.player.PrivateStoreType;
-import org.l2jmobius.gameserver.network.PacketLogger;
-import org.l2jmobius.gameserver.network.holders.RequestTrade;
-import org.l2jmobius.gameserver.network.holders.TradeList;
-import org.l2jmobius.gameserver.network.serverpackets.ActionFailed;
+import app.l2nx.highfive.config.PlayerConfig;
+import app.l2nx.highfive.config.custom.OfflineTradeConfig;
+import app.l2nx.highfive.data.sql.OfflineTraderTable;
+import app.l2nx.highfive.entity.World;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.actor.enums.player.PrivateStoreType;
+import app.l2nx.highfive.network.PacketLogger;
+import app.l2nx.highfive.network.holders.RequestTrade;
+import app.l2nx.highfive.network.holders.TradeList;
+import app.l2nx.highfive.network.serverpackets.ActionFailed;
 
 /**
  * @version $Revision: 1.2.2.1.2.4 $ $Date: 2005/03/27 15:29:30 $

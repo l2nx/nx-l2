@@ -18,7 +18,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.commons.network;
+package app.l2nx.commons.network;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -27,9 +27,9 @@ import java.nio.channels.AsynchronousSocketChannel;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.l2jmobius.commons.network.handler.ReadHandler;
-import org.l2jmobius.commons.network.handler.WriteHandler;
-import org.l2jmobius.commons.network.pool.ResourcePool;
+import app.l2nx.commons.network.handler.ReadHandler;
+import app.l2nx.commons.network.handler.WriteHandler;
+import app.l2nx.commons.network.pool.ResourcePool;
 
 /**
  * Manages a single network connection backed by an {@link AsynchronousSocketChannel}.<br>

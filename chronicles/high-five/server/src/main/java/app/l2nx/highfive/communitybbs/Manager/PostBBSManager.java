@@ -18,7 +18,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.communitybbs.Manager;
+package app.l2nx.highfive.communitybbs.Manager;
 
 import java.text.DateFormat;
 import java.util.Date;
@@ -27,11 +27,11 @@ import java.util.Map;
 import java.util.StringTokenizer;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.l2jmobius.gameserver.communitybbs.BB.Forum;
-import org.l2jmobius.gameserver.communitybbs.BB.Post;
-import org.l2jmobius.gameserver.communitybbs.BB.Topic;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.handler.CommunityBoardHandler;
+import app.l2nx.highfive.communitybbs.BB.Forum;
+import app.l2nx.highfive.communitybbs.BB.Post;
+import app.l2nx.highfive.communitybbs.BB.Topic;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.handler.CommunityBoardHandler;
 
 public class PostBBSManager extends BaseBBSManager
 {

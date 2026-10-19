@@ -14,18 +14,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.entity.actor.templates;
+package app.l2nx.highfive.entity.actor.templates;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.l2jmobius.commons.util.Rnd;
-import org.l2jmobius.gameserver.data.xml.ExperienceData;
-import org.l2jmobius.gameserver.entity.Location;
-import org.l2jmobius.gameserver.entity.actor.enums.player.PlayerClass;
-import org.l2jmobius.gameserver.entity.itemcontainer.Inventory;
-import org.l2jmobius.gameserver.util.StatSet;
+import app.l2nx.commons.util.Rnd;
+import app.l2nx.highfive.data.xml.ExperienceData;
+import app.l2nx.highfive.entity.Location;
+import app.l2nx.highfive.entity.actor.enums.player.PlayerClass;
+import app.l2nx.highfive.entity.itemcontainer.Inventory;
+import app.l2nx.highfive.util.StatSet;
 
 /**
  * @author mkizub, Zoey76

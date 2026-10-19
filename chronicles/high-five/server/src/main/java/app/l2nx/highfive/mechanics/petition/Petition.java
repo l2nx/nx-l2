@@ -14,19 +14,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.mechanics.petition;
+package app.l2nx.highfive.mechanics.petition;
 
 import java.util.Collection;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.managers.IdManager;
-import org.l2jmobius.gameserver.managers.PetitionManager;
-import org.l2jmobius.gameserver.network.SystemMessageId;
-import org.l2jmobius.gameserver.network.serverpackets.CreatureSay;
-import org.l2jmobius.gameserver.network.serverpackets.PetitionVotePacket;
-import org.l2jmobius.gameserver.network.serverpackets.ServerPacket;
-import org.l2jmobius.gameserver.network.serverpackets.SystemMessage;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.managers.IdManager;
+import app.l2nx.highfive.managers.PetitionManager;
+import app.l2nx.highfive.network.SystemMessageId;
+import app.l2nx.highfive.network.serverpackets.CreatureSay;
+import app.l2nx.highfive.network.serverpackets.PetitionVotePacket;
+import app.l2nx.highfive.network.serverpackets.ServerPacket;
+import app.l2nx.highfive.network.serverpackets.SystemMessage;
 
 /**
  * Petition

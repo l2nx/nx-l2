@@ -18,46 +18,46 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.network.clientpackets;
+package app.l2nx.highfive.network.clientpackets;
 
 import java.util.Collection;
 import java.util.logging.Logger;
 
-import org.l2jmobius.commons.util.StringUtil;
-import org.l2jmobius.gameserver.config.PlayerConfig;
-import org.l2jmobius.gameserver.config.ServerConfig;
-import org.l2jmobius.gameserver.config.custom.AllowedPlayerRacesConfig;
-import org.l2jmobius.gameserver.config.custom.FactionSystemConfig;
-import org.l2jmobius.gameserver.config.custom.StartingLocationConfig;
-import org.l2jmobius.gameserver.config.custom.StartingTitleConfig;
-import org.l2jmobius.gameserver.data.sql.CharInfoTable;
-import org.l2jmobius.gameserver.data.xml.FakePlayerData;
-import org.l2jmobius.gameserver.data.xml.InitialEquipmentData;
-import org.l2jmobius.gameserver.data.xml.InitialShortcutData;
-import org.l2jmobius.gameserver.data.xml.PlayerTemplateData;
-import org.l2jmobius.gameserver.data.xml.SkillData;
-import org.l2jmobius.gameserver.data.xml.SkillTreeData;
-import org.l2jmobius.gameserver.entity.Location;
-import org.l2jmobius.gameserver.entity.World;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.actor.appearance.PlayerAppearance;
-import org.l2jmobius.gameserver.entity.actor.enums.player.PlayerClass;
-import org.l2jmobius.gameserver.entity.actor.stat.PlayerStat;
-import org.l2jmobius.gameserver.entity.actor.templates.PlayerTemplate;
-import org.l2jmobius.gameserver.entity.item.enums.ItemProcessType;
-import org.l2jmobius.gameserver.entity.item.holders.InitialEquipment;
-import org.l2jmobius.gameserver.entity.item.instance.Item;
-import org.l2jmobius.gameserver.mechanics.events.Containers;
-import org.l2jmobius.gameserver.mechanics.events.EventDispatcher;
-import org.l2jmobius.gameserver.mechanics.events.EventType;
-import org.l2jmobius.gameserver.mechanics.events.holders.actor.player.OnPlayerCreate;
-import org.l2jmobius.gameserver.mechanics.skill.holders.SkillLearn;
-import org.l2jmobius.gameserver.network.Disconnection;
-import org.l2jmobius.gameserver.network.GameClient;
-import org.l2jmobius.gameserver.network.PacketLogger;
-import org.l2jmobius.gameserver.network.serverpackets.CharCreateFail;
-import org.l2jmobius.gameserver.network.serverpackets.CharCreateOk;
-import org.l2jmobius.gameserver.network.serverpackets.CharSelectionInfo;
+import app.l2nx.commons.util.StringUtil;
+import app.l2nx.highfive.config.PlayerConfig;
+import app.l2nx.highfive.config.ServerConfig;
+import app.l2nx.highfive.config.custom.AllowedPlayerRacesConfig;
+import app.l2nx.highfive.config.custom.FactionSystemConfig;
+import app.l2nx.highfive.config.custom.StartingLocationConfig;
+import app.l2nx.highfive.config.custom.StartingTitleConfig;
+import app.l2nx.highfive.data.sql.CharInfoTable;
+import app.l2nx.highfive.data.xml.FakePlayerData;
+import app.l2nx.highfive.data.xml.InitialEquipmentData;
+import app.l2nx.highfive.data.xml.InitialShortcutData;
+import app.l2nx.highfive.data.xml.PlayerTemplateData;
+import app.l2nx.highfive.data.xml.SkillData;
+import app.l2nx.highfive.data.xml.SkillTreeData;
+import app.l2nx.highfive.entity.Location;
+import app.l2nx.highfive.entity.World;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.actor.appearance.PlayerAppearance;
+import app.l2nx.highfive.entity.actor.enums.player.PlayerClass;
+import app.l2nx.highfive.entity.actor.stat.PlayerStat;
+import app.l2nx.highfive.entity.actor.templates.PlayerTemplate;
+import app.l2nx.highfive.entity.item.enums.ItemProcessType;
+import app.l2nx.highfive.entity.item.holders.InitialEquipment;
+import app.l2nx.highfive.entity.item.instance.Item;
+import app.l2nx.highfive.mechanics.events.Containers;
+import app.l2nx.highfive.mechanics.events.EventDispatcher;
+import app.l2nx.highfive.mechanics.events.EventType;
+import app.l2nx.highfive.mechanics.events.holders.actor.player.OnPlayerCreate;
+import app.l2nx.highfive.mechanics.skill.holders.SkillLearn;
+import app.l2nx.highfive.network.Disconnection;
+import app.l2nx.highfive.network.GameClient;
+import app.l2nx.highfive.network.PacketLogger;
+import app.l2nx.highfive.network.serverpackets.CharCreateFail;
+import app.l2nx.highfive.network.serverpackets.CharCreateOk;
+import app.l2nx.highfive.network.serverpackets.CharSelectionInfo;
 
 /**
  * @author Mobius

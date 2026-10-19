@@ -18,12 +18,12 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.entity.item;
+package app.l2nx.highfive.entity.item;
 
-import org.l2jmobius.gameserver.entity.item.enums.BodyPart;
-import org.l2jmobius.gameserver.entity.item.instance.Item;
-import org.l2jmobius.gameserver.entity.item.type.CrystalType;
-import org.l2jmobius.gameserver.entity.item.type.ItemType;
+import app.l2nx.highfive.entity.item.enums.BodyPart;
+import app.l2nx.highfive.entity.item.instance.Item;
+import app.l2nx.highfive.entity.item.type.CrystalType;
+import app.l2nx.highfive.entity.item.type.ItemType;
 
 /**
  * This class contains Item<br>

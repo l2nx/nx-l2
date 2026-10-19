@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package ai.areas.Hellbound;
+package app.l2nx.highfive.scripts.ai.areas.Hellbound;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -26,10 +26,10 @@ import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 
-import org.l2jmobius.commons.util.IXmlReader;
-import org.l2jmobius.gameserver.data.SpawnTable;
-import org.l2jmobius.gameserver.entity.Location;
-import org.l2jmobius.gameserver.entity.spawns.Spawn;
+import app.l2nx.commons.util.IXmlReader;
+import app.l2nx.highfive.data.SpawnTable;
+import app.l2nx.highfive.entity.Location;
+import app.l2nx.highfive.entity.spawns.Spawn;
 
 /**
  * Hellbound Spawns parser.

@@ -14,28 +14,28 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.network.clientpackets;
+package app.l2nx.highfive.network.clientpackets;
 
-import static org.l2jmobius.gameserver.entity.itemcontainer.Inventory.ADENA_ID;
+import static app.l2nx.highfive.entity.itemcontainer.Inventory.ADENA_ID;
 
-import org.l2jmobius.gameserver.config.GeneralConfig;
-import org.l2jmobius.gameserver.entity.World;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.item.enums.ItemLocation;
-import org.l2jmobius.gameserver.entity.item.enums.ItemProcessType;
-import org.l2jmobius.gameserver.entity.item.instance.Item;
-import org.l2jmobius.gameserver.entity.itemcontainer.ItemContainer;
-import org.l2jmobius.gameserver.entity.zone.ZoneId;
-import org.l2jmobius.gameserver.managers.ItemManager;
-import org.l2jmobius.gameserver.managers.MailManager;
-import org.l2jmobius.gameserver.managers.PunishmentManager;
-import org.l2jmobius.gameserver.network.SystemMessageId;
-import org.l2jmobius.gameserver.network.holders.MailMessage;
-import org.l2jmobius.gameserver.network.serverpackets.ExChangePostState;
-import org.l2jmobius.gameserver.network.serverpackets.ExShowReceivedPostList;
-import org.l2jmobius.gameserver.network.serverpackets.InventoryUpdate;
-import org.l2jmobius.gameserver.network.serverpackets.StatusUpdate;
-import org.l2jmobius.gameserver.network.serverpackets.SystemMessage;
+import app.l2nx.highfive.config.GeneralConfig;
+import app.l2nx.highfive.entity.World;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.item.enums.ItemLocation;
+import app.l2nx.highfive.entity.item.enums.ItemProcessType;
+import app.l2nx.highfive.entity.item.instance.Item;
+import app.l2nx.highfive.entity.itemcontainer.ItemContainer;
+import app.l2nx.highfive.entity.zone.ZoneId;
+import app.l2nx.highfive.managers.ItemManager;
+import app.l2nx.highfive.managers.MailManager;
+import app.l2nx.highfive.managers.PunishmentManager;
+import app.l2nx.highfive.network.SystemMessageId;
+import app.l2nx.highfive.network.holders.MailMessage;
+import app.l2nx.highfive.network.serverpackets.ExChangePostState;
+import app.l2nx.highfive.network.serverpackets.ExShowReceivedPostList;
+import app.l2nx.highfive.network.serverpackets.InventoryUpdate;
+import app.l2nx.highfive.network.serverpackets.StatusUpdate;
+import app.l2nx.highfive.network.serverpackets.SystemMessage;
 
 /**
  * @author Migi, DS

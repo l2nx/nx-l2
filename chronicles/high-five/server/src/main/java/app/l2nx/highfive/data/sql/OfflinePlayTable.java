@@ -18,7 +18,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.data.sql;
+package app.l2nx.highfive.data.sql;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -27,22 +27,22 @@ import java.sql.Statement;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.l2jmobius.commons.database.DatabaseFactory;
-import org.l2jmobius.commons.util.Rnd;
-import org.l2jmobius.gameserver.config.custom.AutoPlayConfig;
-import org.l2jmobius.gameserver.config.custom.AutoPotionsConfig;
-import org.l2jmobius.gameserver.config.custom.OfflinePlayConfig;
-import org.l2jmobius.gameserver.config.custom.OfflineTradeConfig;
-import org.l2jmobius.gameserver.entity.World;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.actor.holders.player.AutoUseSettingsHolder;
-import org.l2jmobius.gameserver.entity.groups.Party;
-import org.l2jmobius.gameserver.entity.groups.PartyDistributionType;
-import org.l2jmobius.gameserver.network.Disconnection;
-import org.l2jmobius.gameserver.network.serverpackets.LeaveWorld;
-import org.l2jmobius.gameserver.taskmanagers.AutoPlayTaskManager;
-import org.l2jmobius.gameserver.taskmanagers.AutoPotionTaskManager;
-import org.l2jmobius.gameserver.taskmanagers.AutoUseTaskManager;
+import app.l2nx.commons.database.DatabaseFactory;
+import app.l2nx.commons.util.Rnd;
+import app.l2nx.highfive.config.custom.AutoPlayConfig;
+import app.l2nx.highfive.config.custom.AutoPotionsConfig;
+import app.l2nx.highfive.config.custom.OfflinePlayConfig;
+import app.l2nx.highfive.config.custom.OfflineTradeConfig;
+import app.l2nx.highfive.entity.World;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.actor.holders.player.AutoUseSettingsHolder;
+import app.l2nx.highfive.entity.groups.Party;
+import app.l2nx.highfive.entity.groups.PartyDistributionType;
+import app.l2nx.highfive.network.Disconnection;
+import app.l2nx.highfive.network.serverpackets.LeaveWorld;
+import app.l2nx.highfive.taskmanagers.AutoPlayTaskManager;
+import app.l2nx.highfive.taskmanagers.AutoPotionTaskManager;
+import app.l2nx.highfive.taskmanagers.AutoUseTaskManager;
 
 /**
  * @author Mobius

@@ -14,14 +14,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.util;
+package app.l2nx.highfive.util;
 
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.logging.Logger;
 
-import org.l2jmobius.commons.util.Rnd;
-import org.l2jmobius.gameserver.entity.Location;
+import app.l2nx.commons.util.Rnd;
+import app.l2nx.highfive.entity.Location;
 
 /**
  * @version 0.1, 2005-03-12

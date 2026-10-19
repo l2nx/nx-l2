@@ -18,34 +18,34 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.network.clientpackets;
+package app.l2nx.highfive.network.clientpackets;
 
 import java.util.StringTokenizer;
 
-import org.l2jmobius.commons.util.StringUtil;
-import org.l2jmobius.commons.util.TraceUtil;
-import org.l2jmobius.gameserver.config.GeneralConfig;
-import org.l2jmobius.gameserver.entity.World;
-import org.l2jmobius.gameserver.entity.WorldObject;
-import org.l2jmobius.gameserver.entity.actor.Npc;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.item.instance.Item;
-import org.l2jmobius.gameserver.handler.AdminCommandHandler;
-import org.l2jmobius.gameserver.handler.BypassHandler;
-import org.l2jmobius.gameserver.handler.CommunityBoardHandler;
-import org.l2jmobius.gameserver.handler.IBypassHandler;
-import org.l2jmobius.gameserver.managers.CaptchaManager;
-import org.l2jmobius.gameserver.mechanics.events.EventDispatcher;
-import org.l2jmobius.gameserver.mechanics.events.EventType;
-import org.l2jmobius.gameserver.mechanics.events.holders.actor.npc.OnNpcManorBypass;
-import org.l2jmobius.gameserver.mechanics.events.holders.actor.player.OnPlayerBypass;
-import org.l2jmobius.gameserver.mechanics.olympiad.Hero;
-import org.l2jmobius.gameserver.network.Disconnection;
-import org.l2jmobius.gameserver.network.PacketLogger;
-import org.l2jmobius.gameserver.network.serverpackets.ActionFailed;
-import org.l2jmobius.gameserver.network.serverpackets.LeaveWorld;
-import org.l2jmobius.gameserver.network.serverpackets.NpcHtmlMessage;
-import org.l2jmobius.gameserver.util.LocationUtil;
+import app.l2nx.commons.util.StringUtil;
+import app.l2nx.commons.util.TraceUtil;
+import app.l2nx.highfive.config.GeneralConfig;
+import app.l2nx.highfive.entity.World;
+import app.l2nx.highfive.entity.WorldObject;
+import app.l2nx.highfive.entity.actor.Npc;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.item.instance.Item;
+import app.l2nx.highfive.handler.AdminCommandHandler;
+import app.l2nx.highfive.handler.BypassHandler;
+import app.l2nx.highfive.handler.CommunityBoardHandler;
+import app.l2nx.highfive.handler.IBypassHandler;
+import app.l2nx.highfive.managers.CaptchaManager;
+import app.l2nx.highfive.mechanics.events.EventDispatcher;
+import app.l2nx.highfive.mechanics.events.EventType;
+import app.l2nx.highfive.mechanics.events.holders.actor.npc.OnNpcManorBypass;
+import app.l2nx.highfive.mechanics.events.holders.actor.player.OnPlayerBypass;
+import app.l2nx.highfive.mechanics.olympiad.Hero;
+import app.l2nx.highfive.network.Disconnection;
+import app.l2nx.highfive.network.PacketLogger;
+import app.l2nx.highfive.network.serverpackets.ActionFailed;
+import app.l2nx.highfive.network.serverpackets.LeaveWorld;
+import app.l2nx.highfive.network.serverpackets.NpcHtmlMessage;
+import app.l2nx.highfive.util.LocationUtil;
 
 /**
  * @version $Revision: 1.12.4.5 $ $Date: 2005/04/11 10:06:11 $

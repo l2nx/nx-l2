@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.mechanics.sevensigns;
+package app.l2nx.highfive.mechanics.sevensigns;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -29,23 +29,23 @@ import java.util.Map.Entry;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.l2jmobius.commons.database.DatabaseFactory;
-import org.l2jmobius.commons.threads.ThreadPool;
-import org.l2jmobius.commons.time.TimeUtil;
-import org.l2jmobius.gameserver.config.FeatureConfig;
-import org.l2jmobius.gameserver.config.NpcConfig;
-import org.l2jmobius.gameserver.entity.World;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.actor.enums.player.TeleportWhereType;
-import org.l2jmobius.gameserver.entity.spawns.AutoSpawnHandler;
-import org.l2jmobius.gameserver.entity.spawns.AutoSpawnHandler.AutoSpawnInstance;
-import org.l2jmobius.gameserver.managers.CastleManager;
-import org.l2jmobius.gameserver.mechanics.siege.Castle;
-import org.l2jmobius.gameserver.mechanics.skill.CommonSkill;
-import org.l2jmobius.gameserver.network.SystemMessageId;
-import org.l2jmobius.gameserver.network.serverpackets.SSQInfo;
-import org.l2jmobius.gameserver.network.serverpackets.SystemMessage;
-import org.l2jmobius.gameserver.util.StatSet;
+import app.l2nx.commons.database.DatabaseFactory;
+import app.l2nx.commons.threads.ThreadPool;
+import app.l2nx.commons.time.TimeUtil;
+import app.l2nx.highfive.config.FeatureConfig;
+import app.l2nx.highfive.config.NpcConfig;
+import app.l2nx.highfive.entity.World;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.actor.enums.player.TeleportWhereType;
+import app.l2nx.highfive.entity.spawns.AutoSpawnHandler;
+import app.l2nx.highfive.entity.spawns.AutoSpawnHandler.AutoSpawnInstance;
+import app.l2nx.highfive.managers.CastleManager;
+import app.l2nx.highfive.mechanics.siege.Castle;
+import app.l2nx.highfive.mechanics.skill.CommonSkill;
+import app.l2nx.highfive.network.SystemMessageId;
+import app.l2nx.highfive.network.serverpackets.SSQInfo;
+import app.l2nx.highfive.network.serverpackets.SystemMessage;
+import app.l2nx.highfive.util.StatSet;
 
 /**
  * Seven Signs engine.

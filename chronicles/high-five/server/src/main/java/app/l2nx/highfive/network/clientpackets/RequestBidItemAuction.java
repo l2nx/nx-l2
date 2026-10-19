@@ -14,13 +14,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.network.clientpackets;
+package app.l2nx.highfive.network.clientpackets;
 
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.item.auction.ItemAuction;
-import org.l2jmobius.gameserver.entity.item.auction.ItemAuctionInstance;
-import org.l2jmobius.gameserver.entity.itemcontainer.Inventory;
-import org.l2jmobius.gameserver.managers.ItemAuctionManager;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.item.auction.ItemAuction;
+import app.l2nx.highfive.entity.item.auction.ItemAuctionInstance;
+import app.l2nx.highfive.entity.itemcontainer.Inventory;
+import app.l2nx.highfive.managers.ItemAuctionManager;
 
 /**
  * @author Forsaiken

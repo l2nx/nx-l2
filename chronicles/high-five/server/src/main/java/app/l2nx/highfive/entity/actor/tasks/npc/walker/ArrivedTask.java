@@ -14,11 +14,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.entity.actor.tasks.npc.walker;
+package app.l2nx.highfive.entity.actor.tasks.npc.walker;
 
-import org.l2jmobius.gameserver.entity.actor.Npc;
-import org.l2jmobius.gameserver.entity.actor.holders.npc.WalkInfo;
-import org.l2jmobius.gameserver.managers.WalkingManager;
+import app.l2nx.highfive.entity.actor.Npc;
+import app.l2nx.highfive.entity.actor.holders.npc.WalkInfo;
+import app.l2nx.highfive.managers.WalkingManager;
 
 /**
  * Walker arrive task.

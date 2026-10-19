@@ -18,17 +18,17 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package handlers.chat.commands.user;
+package app.l2nx.highfive.scripts.handlers.chat.commands.user;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
-import org.l2jmobius.gameserver.config.custom.ServerTimeConfig;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.handler.IUserCommandHandler;
-import org.l2jmobius.gameserver.network.SystemMessageId;
-import org.l2jmobius.gameserver.network.serverpackets.SystemMessage;
-import org.l2jmobius.gameserver.taskmanagers.GameTimeTaskManager;
+import app.l2nx.highfive.config.custom.ServerTimeConfig;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.handler.IUserCommandHandler;
+import app.l2nx.highfive.network.SystemMessageId;
+import app.l2nx.highfive.network.serverpackets.SystemMessage;
+import app.l2nx.highfive.taskmanagers.GameTimeTaskManager;
 
 /**
  * Time user command.

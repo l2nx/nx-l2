@@ -18,39 +18,39 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.network.clientpackets;
+package app.l2nx.highfive.network.clientpackets;
 
 import java.util.logging.Logger;
 
-import org.l2jmobius.gameserver.config.GeneralConfig;
-import org.l2jmobius.gameserver.config.custom.DualboxCheckConfig;
-import org.l2jmobius.gameserver.config.custom.FactionSystemConfig;
-import org.l2jmobius.gameserver.config.custom.OfflinePlayConfig;
-import org.l2jmobius.gameserver.data.sql.CharInfoTable;
-import org.l2jmobius.gameserver.data.sql.OfflinePlayTable;
-import org.l2jmobius.gameserver.data.xml.AdminData;
-import org.l2jmobius.gameserver.data.xml.SecondaryAuthData;
-import org.l2jmobius.gameserver.entity.World;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.managers.AntiFeedManager;
-import org.l2jmobius.gameserver.managers.PunishmentManager;
-import org.l2jmobius.gameserver.mechanics.events.Containers;
-import org.l2jmobius.gameserver.mechanics.events.EventDispatcher;
-import org.l2jmobius.gameserver.mechanics.events.EventType;
-import org.l2jmobius.gameserver.mechanics.events.holders.actor.player.OnPlayerSelect;
-import org.l2jmobius.gameserver.mechanics.events.returns.TerminateReturn;
-import org.l2jmobius.gameserver.mechanics.punishment.PunishmentAffect;
-import org.l2jmobius.gameserver.mechanics.punishment.PunishmentType;
-import org.l2jmobius.gameserver.mechanics.variables.PlayerVariables;
-import org.l2jmobius.gameserver.network.ConnectionState;
-import org.l2jmobius.gameserver.network.Disconnection;
-import org.l2jmobius.gameserver.network.GameClient;
-import org.l2jmobius.gameserver.network.holders.CharacterInfoHolder;
-import org.l2jmobius.gameserver.network.serverpackets.CharSelected;
-import org.l2jmobius.gameserver.network.serverpackets.LeaveWorld;
-import org.l2jmobius.gameserver.network.serverpackets.NpcHtmlMessage;
-import org.l2jmobius.gameserver.network.serverpackets.SSQInfo;
-import org.l2jmobius.gameserver.network.serverpackets.ServerClose;
+import app.l2nx.highfive.config.GeneralConfig;
+import app.l2nx.highfive.config.custom.DualboxCheckConfig;
+import app.l2nx.highfive.config.custom.FactionSystemConfig;
+import app.l2nx.highfive.config.custom.OfflinePlayConfig;
+import app.l2nx.highfive.data.sql.CharInfoTable;
+import app.l2nx.highfive.data.sql.OfflinePlayTable;
+import app.l2nx.highfive.data.xml.AdminData;
+import app.l2nx.highfive.data.xml.SecondaryAuthData;
+import app.l2nx.highfive.entity.World;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.managers.AntiFeedManager;
+import app.l2nx.highfive.managers.PunishmentManager;
+import app.l2nx.highfive.mechanics.events.Containers;
+import app.l2nx.highfive.mechanics.events.EventDispatcher;
+import app.l2nx.highfive.mechanics.events.EventType;
+import app.l2nx.highfive.mechanics.events.holders.actor.player.OnPlayerSelect;
+import app.l2nx.highfive.mechanics.events.returns.TerminateReturn;
+import app.l2nx.highfive.mechanics.punishment.PunishmentAffect;
+import app.l2nx.highfive.mechanics.punishment.PunishmentType;
+import app.l2nx.highfive.mechanics.variables.PlayerVariables;
+import app.l2nx.highfive.network.ConnectionState;
+import app.l2nx.highfive.network.Disconnection;
+import app.l2nx.highfive.network.GameClient;
+import app.l2nx.highfive.network.holders.CharacterInfoHolder;
+import app.l2nx.highfive.network.serverpackets.CharSelected;
+import app.l2nx.highfive.network.serverpackets.LeaveWorld;
+import app.l2nx.highfive.network.serverpackets.NpcHtmlMessage;
+import app.l2nx.highfive.network.serverpackets.SSQInfo;
+import app.l2nx.highfive.network.serverpackets.ServerClose;
 
 /**
  * @version $Revision: 1.5.2.1.2.5 $ $Date: 2005/03/27 15:29:30 $

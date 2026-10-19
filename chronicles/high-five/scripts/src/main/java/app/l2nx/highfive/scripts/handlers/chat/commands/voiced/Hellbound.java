@@ -14,12 +14,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package handlers.chat.commands.voiced;
+package app.l2nx.highfive.scripts.handlers.chat.commands.voiced;
 
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.handler.IVoicedCommandHandler;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.handler.IVoicedCommandHandler;
 
-import ai.areas.Hellbound.HellboundEngine;
+import app.l2nx.highfive.scripts.ai.areas.Hellbound.HellboundEngine;
 
 /**
  * Hellbound voiced command.

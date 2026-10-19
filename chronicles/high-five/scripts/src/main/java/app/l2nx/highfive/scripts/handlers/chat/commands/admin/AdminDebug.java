@@ -18,7 +18,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package handlers.chat.commands.admin;
+package app.l2nx.highfive.scripts.handlers.chat.commands.admin;
 
 import java.awt.Color;
 import java.util.List;
@@ -27,17 +27,17 @@ import java.util.StringTokenizer;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
 
-import org.l2jmobius.commons.threads.ThreadPool;
-import org.l2jmobius.gameserver.cache.HtmCache;
-import org.l2jmobius.gameserver.config.DevelopmentConfig;
-import org.l2jmobius.gameserver.entity.Location;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.geoengine.pathfinding.GeoLocation;
-import org.l2jmobius.gameserver.handler.AdminCommandHandler;
-import org.l2jmobius.gameserver.handler.IAdminCommandHandler;
-import org.l2jmobius.gameserver.network.serverpackets.ExServerPrimitive;
-import org.l2jmobius.gameserver.network.serverpackets.NpcHtmlMessage;
-import org.l2jmobius.gameserver.util.LocationUtil;
+import app.l2nx.commons.threads.ThreadPool;
+import app.l2nx.highfive.cache.HtmCache;
+import app.l2nx.highfive.config.DevelopmentConfig;
+import app.l2nx.highfive.entity.Location;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.geoengine.pathfinding.GeoLocation;
+import app.l2nx.highfive.handler.AdminCommandHandler;
+import app.l2nx.highfive.handler.IAdminCommandHandler;
+import app.l2nx.highfive.network.serverpackets.ExServerPrimitive;
+import app.l2nx.highfive.network.serverpackets.NpcHtmlMessage;
+import app.l2nx.highfive.util.LocationUtil;
 
 /**
  * @author Mobius

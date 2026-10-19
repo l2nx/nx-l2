@@ -18,7 +18,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.communitybbs.BB;
+package app.l2nx.highfive.communitybbs.BB;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -29,10 +29,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.l2jmobius.commons.database.DatabaseFactory;
-import org.l2jmobius.gameserver.communitybbs.TopicConstructorType;
-import org.l2jmobius.gameserver.communitybbs.Manager.ForumsBBSManager;
-import org.l2jmobius.gameserver.communitybbs.Manager.TopicBBSManager;
+import app.l2nx.commons.database.DatabaseFactory;
+import app.l2nx.highfive.communitybbs.TopicConstructorType;
+import app.l2nx.highfive.communitybbs.Manager.ForumsBBSManager;
+import app.l2nx.highfive.communitybbs.Manager.TopicBBSManager;
 
 public class Forum
 {
@@ -63,7 +63,7 @@ public class Forum
 	private boolean _loaded = false;
 	
 	/**
-	 * Creates new instance of Forum. When you create new forum, use {@link org.l2jmobius.gameserver.communitybbs.Manager.ForumsBBSManager#addForum(org.l2jmobius.gameserver.communitybbs.BB.Forum)} to add forum to the forums manager.
+	 * Creates new instance of Forum. When you create new forum, use {@link app.l2nx.highfive.communitybbs.Manager.ForumsBBSManager#addForum(app.l2nx.highfive.communitybbs.BB.Forum)} to add forum to the forums manager.
 	 * @param forumId
 	 * @param fParent
 	 */

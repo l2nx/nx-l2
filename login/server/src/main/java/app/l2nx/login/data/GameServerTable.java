@@ -18,7 +18,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.loginserver.data;
+package app.l2nx.login.data;
 
 import java.io.File;
 import java.math.BigInteger;
@@ -40,14 +40,14 @@ import java.util.logging.Logger;
 import org.w3c.dom.Document;
 import org.w3c.dom.NodeList;
 
-import org.l2jmobius.commons.database.DatabaseFactory;
-import org.l2jmobius.commons.util.IXmlReader;
-import org.l2jmobius.commons.util.Rnd;
-import org.l2jmobius.loginserver.GameServerThread;
-import org.l2jmobius.loginserver.LoginServer;
-import org.l2jmobius.loginserver.network.LoginClient;
-import org.l2jmobius.loginserver.network.gameserverpackets.receive.ServerStatus;
-import org.l2jmobius.loginserver.util.Subnet;
+import app.l2nx.commons.database.DatabaseFactory;
+import app.l2nx.commons.util.IXmlReader;
+import app.l2nx.commons.util.Rnd;
+import app.l2nx.login.GameServerThread;
+import app.l2nx.login.LoginServer;
+import app.l2nx.login.network.LoginClient;
+import app.l2nx.login.network.gameserverpackets.receive.ServerStatus;
+import app.l2nx.login.util.Subnet;
 
 /**
  * The Class GameServerTable loads the game server names and initialize the game server tables.

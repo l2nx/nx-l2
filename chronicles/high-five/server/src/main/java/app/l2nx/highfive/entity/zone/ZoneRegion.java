@@ -14,14 +14,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.entity.zone;
+package app.l2nx.highfive.entity.zone;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.l2jmobius.gameserver.entity.actor.Creature;
-import org.l2jmobius.gameserver.entity.zone.type.PeaceZone;
-import org.l2jmobius.gameserver.mechanics.skill.Skill;
+import app.l2nx.highfive.entity.actor.Creature;
+import app.l2nx.highfive.entity.zone.type.PeaceZone;
+import app.l2nx.highfive.mechanics.skill.Skill;
 
 /**
  * @author NosBit

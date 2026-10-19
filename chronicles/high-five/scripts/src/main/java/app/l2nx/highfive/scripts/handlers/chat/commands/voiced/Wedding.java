@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package handlers.chat.commands.voiced;
+package app.l2nx.highfive.scripts.handlers.chat.commands.voiced;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -22,28 +22,28 @@ import java.sql.ResultSet;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.l2jmobius.commons.database.DatabaseFactory;
-import org.l2jmobius.commons.threads.ThreadPool;
-import org.l2jmobius.commons.time.TimeUtil;
-import org.l2jmobius.gameserver.config.custom.WeddingConfig;
-import org.l2jmobius.gameserver.data.xml.SkillData;
-import org.l2jmobius.gameserver.entity.Location;
-import org.l2jmobius.gameserver.entity.World;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.actor.enums.player.PlayerAction;
-import org.l2jmobius.gameserver.entity.item.enums.ItemProcessType;
-import org.l2jmobius.gameserver.entity.zone.ZoneId;
-import org.l2jmobius.gameserver.handler.IVoicedCommandHandler;
-import org.l2jmobius.gameserver.managers.CoupleManager;
-import org.l2jmobius.gameserver.managers.GrandBossManager;
-import org.l2jmobius.gameserver.managers.SiegeManager;
-import org.l2jmobius.gameserver.mechanics.sevensigns.SevenSigns;
-import org.l2jmobius.gameserver.mechanics.skill.AbnormalVisualEffect;
-import org.l2jmobius.gameserver.mechanics.skill.Skill;
-import org.l2jmobius.gameserver.network.serverpackets.ConfirmDlg;
-import org.l2jmobius.gameserver.network.serverpackets.MagicSkillUse;
-import org.l2jmobius.gameserver.network.serverpackets.SetupGauge;
-import org.l2jmobius.gameserver.taskmanagers.GameTimeTaskManager;
+import app.l2nx.commons.database.DatabaseFactory;
+import app.l2nx.commons.threads.ThreadPool;
+import app.l2nx.commons.time.TimeUtil;
+import app.l2nx.highfive.config.custom.WeddingConfig;
+import app.l2nx.highfive.data.xml.SkillData;
+import app.l2nx.highfive.entity.Location;
+import app.l2nx.highfive.entity.World;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.actor.enums.player.PlayerAction;
+import app.l2nx.highfive.entity.item.enums.ItemProcessType;
+import app.l2nx.highfive.entity.zone.ZoneId;
+import app.l2nx.highfive.handler.IVoicedCommandHandler;
+import app.l2nx.highfive.managers.CoupleManager;
+import app.l2nx.highfive.managers.GrandBossManager;
+import app.l2nx.highfive.managers.SiegeManager;
+import app.l2nx.highfive.mechanics.sevensigns.SevenSigns;
+import app.l2nx.highfive.mechanics.skill.AbnormalVisualEffect;
+import app.l2nx.highfive.mechanics.skill.Skill;
+import app.l2nx.highfive.network.serverpackets.ConfirmDlg;
+import app.l2nx.highfive.network.serverpackets.MagicSkillUse;
+import app.l2nx.highfive.network.serverpackets.SetupGauge;
+import app.l2nx.highfive.taskmanagers.GameTimeTaskManager;
 
 /**
  * Wedding voiced commands handler.

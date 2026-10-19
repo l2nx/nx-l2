@@ -19,9 +19,9 @@
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package org.l2jmobius.gameserver.network.loginserverpackets.send;
+package app.l2nx.highfive.network.loginserverpackets.send;
 
-import org.l2jmobius.commons.network.packet.SimpleWritablePacket;
+import app.l2nx.commons.network.packet.SimpleWritablePacket;
 
 /**
  * Changes the access level of a player at the login server.

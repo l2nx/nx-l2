@@ -18,40 +18,40 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.entity;
+package app.l2nx.highfive.entity;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.l2jmobius.gameserver.entity.actor.Attackable;
-import org.l2jmobius.gameserver.entity.actor.Creature;
-import org.l2jmobius.gameserver.entity.actor.Npc;
-import org.l2jmobius.gameserver.entity.actor.Playable;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.actor.Summon;
-import org.l2jmobius.gameserver.entity.actor.enums.creature.InstanceType;
-import org.l2jmobius.gameserver.entity.actor.instance.Door;
-import org.l2jmobius.gameserver.entity.actor.instance.Monster;
-import org.l2jmobius.gameserver.entity.actor.instance.Pet;
-import org.l2jmobius.gameserver.entity.actor.instance.Servitor;
-import org.l2jmobius.gameserver.entity.instancezone.Instance;
-import org.l2jmobius.gameserver.entity.item.enums.ShotType;
-import org.l2jmobius.gameserver.entity.zone.ZoneId;
-import org.l2jmobius.gameserver.handler.ActionClickHandler;
-import org.l2jmobius.gameserver.handler.ActionShiftHandler;
-import org.l2jmobius.gameserver.handler.IActionClickHandler;
-import org.l2jmobius.gameserver.handler.IActionShiftHandler;
-import org.l2jmobius.gameserver.interfaces.ILocational;
-import org.l2jmobius.gameserver.interfaces.IPositionable;
-import org.l2jmobius.gameserver.managers.IdManager;
-import org.l2jmobius.gameserver.managers.InstanceManager;
-import org.l2jmobius.gameserver.mechanics.events.ListenersContainer;
-import org.l2jmobius.gameserver.network.SystemMessageId;
-import org.l2jmobius.gameserver.network.serverpackets.ActionFailed;
-import org.l2jmobius.gameserver.network.serverpackets.DeleteObject;
-import org.l2jmobius.gameserver.network.serverpackets.ExSendUIEvent;
-import org.l2jmobius.gameserver.network.serverpackets.ServerPacket;
-import org.l2jmobius.gameserver.util.LocationUtil;
+import app.l2nx.highfive.entity.actor.Attackable;
+import app.l2nx.highfive.entity.actor.Creature;
+import app.l2nx.highfive.entity.actor.Npc;
+import app.l2nx.highfive.entity.actor.Playable;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.actor.Summon;
+import app.l2nx.highfive.entity.actor.enums.creature.InstanceType;
+import app.l2nx.highfive.entity.actor.instance.Door;
+import app.l2nx.highfive.entity.actor.instance.Monster;
+import app.l2nx.highfive.entity.actor.instance.Pet;
+import app.l2nx.highfive.entity.actor.instance.Servitor;
+import app.l2nx.highfive.entity.instancezone.Instance;
+import app.l2nx.highfive.entity.item.enums.ShotType;
+import app.l2nx.highfive.entity.zone.ZoneId;
+import app.l2nx.highfive.handler.ActionClickHandler;
+import app.l2nx.highfive.handler.ActionShiftHandler;
+import app.l2nx.highfive.handler.IActionClickHandler;
+import app.l2nx.highfive.handler.IActionShiftHandler;
+import app.l2nx.highfive.interfaces.ILocational;
+import app.l2nx.highfive.interfaces.IPositionable;
+import app.l2nx.highfive.managers.IdManager;
+import app.l2nx.highfive.managers.InstanceManager;
+import app.l2nx.highfive.mechanics.events.ListenersContainer;
+import app.l2nx.highfive.network.SystemMessageId;
+import app.l2nx.highfive.network.serverpackets.ActionFailed;
+import app.l2nx.highfive.network.serverpackets.DeleteObject;
+import app.l2nx.highfive.network.serverpackets.ExSendUIEvent;
+import app.l2nx.highfive.network.serverpackets.ServerPacket;
+import app.l2nx.highfive.util.LocationUtil;
 
 /**
  * Base class for all interactive objects.

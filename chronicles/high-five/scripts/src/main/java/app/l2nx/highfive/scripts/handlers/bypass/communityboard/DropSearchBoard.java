@@ -18,7 +18,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package handlers.bypass.communityboard;
+package app.l2nx.highfive.scripts.handlers.bypass.communityboard;
 
 import java.text.DecimalFormat;
 import java.util.ArrayList;
@@ -29,26 +29,26 @@ import java.util.Map;
 import java.util.Set;
 import java.util.StringJoiner;
 
-import org.l2jmobius.commons.threads.ThreadPool;
-import org.l2jmobius.gameserver.cache.HtmCache;
-import org.l2jmobius.gameserver.config.RatesConfig;
-import org.l2jmobius.gameserver.config.custom.PremiumSystemConfig;
-import org.l2jmobius.gameserver.data.SpawnTable;
-import org.l2jmobius.gameserver.data.xml.ItemData;
-import org.l2jmobius.gameserver.data.xml.NpcData;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.actor.enums.npc.DropType;
-import org.l2jmobius.gameserver.entity.actor.holders.npc.DropGroupHolder;
-import org.l2jmobius.gameserver.entity.actor.holders.npc.DropHolder;
-import org.l2jmobius.gameserver.entity.actor.stat.PlayerStat;
-import org.l2jmobius.gameserver.entity.actor.templates.NpcTemplate;
-import org.l2jmobius.gameserver.entity.item.ItemTemplate;
-import org.l2jmobius.gameserver.entity.itemcontainer.Inventory;
-import org.l2jmobius.gameserver.entity.spawns.Spawn;
-import org.l2jmobius.gameserver.handler.CommunityBoardHandler;
-import org.l2jmobius.gameserver.handler.IParseBoardHandler;
-import org.l2jmobius.gameserver.network.serverpackets.RadarControl;
-import org.l2jmobius.gameserver.network.serverpackets.ShowMiniMap;
+import app.l2nx.commons.threads.ThreadPool;
+import app.l2nx.highfive.cache.HtmCache;
+import app.l2nx.highfive.config.RatesConfig;
+import app.l2nx.highfive.config.custom.PremiumSystemConfig;
+import app.l2nx.highfive.data.SpawnTable;
+import app.l2nx.highfive.data.xml.ItemData;
+import app.l2nx.highfive.data.xml.NpcData;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.actor.enums.npc.DropType;
+import app.l2nx.highfive.entity.actor.holders.npc.DropGroupHolder;
+import app.l2nx.highfive.entity.actor.holders.npc.DropHolder;
+import app.l2nx.highfive.entity.actor.stat.PlayerStat;
+import app.l2nx.highfive.entity.actor.templates.NpcTemplate;
+import app.l2nx.highfive.entity.item.ItemTemplate;
+import app.l2nx.highfive.entity.itemcontainer.Inventory;
+import app.l2nx.highfive.entity.spawns.Spawn;
+import app.l2nx.highfive.handler.CommunityBoardHandler;
+import app.l2nx.highfive.handler.IParseBoardHandler;
+import app.l2nx.highfive.network.serverpackets.RadarControl;
+import app.l2nx.highfive.network.serverpackets.ShowMiniMap;
 
 /**
  * @author yksdtc

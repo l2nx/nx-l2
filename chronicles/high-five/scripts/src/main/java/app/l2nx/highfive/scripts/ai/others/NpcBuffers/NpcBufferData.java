@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package ai.others.NpcBuffers;
+package app.l2nx.highfive.scripts.ai.others.NpcBuffers;
 
 import java.util.ArrayList;
 import java.util.List;

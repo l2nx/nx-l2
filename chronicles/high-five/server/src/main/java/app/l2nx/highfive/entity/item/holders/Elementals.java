@@ -18,13 +18,13 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.entity.item.holders;
+package app.l2nx.highfive.entity.item.holders;
 
-import org.l2jmobius.gameserver.data.holders.ElementalItemHolder;
-import org.l2jmobius.gameserver.data.xml.ElementalAttributeData;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.mechanics.stats.Stat;
-import org.l2jmobius.gameserver.mechanics.stats.functions.FuncAdd;
+import app.l2nx.highfive.data.holders.ElementalItemHolder;
+import app.l2nx.highfive.data.xml.ElementalAttributeData;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.mechanics.stats.Stat;
+import app.l2nx.highfive.mechanics.stats.functions.FuncAdd;
 
 public class Elementals
 {

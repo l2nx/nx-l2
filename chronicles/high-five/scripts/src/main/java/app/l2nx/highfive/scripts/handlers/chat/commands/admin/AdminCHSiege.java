@@ -14,22 +14,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package handlers.chat.commands.admin;
+package app.l2nx.highfive.scripts.handlers.chat.commands.admin;
 
 import java.util.Calendar;
 import java.util.logging.Logger;
 
-import org.l2jmobius.gameserver.config.DevelopmentConfig;
-import org.l2jmobius.gameserver.data.sql.ClanTable;
-import org.l2jmobius.gameserver.entity.WorldObject;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.clan.Clan;
-import org.l2jmobius.gameserver.handler.IAdminCommandHandler;
-import org.l2jmobius.gameserver.managers.CHSiegeManager;
-import org.l2jmobius.gameserver.mechanics.siege.clanhalls.ClanHallSiegeEngine;
-import org.l2jmobius.gameserver.mechanics.siege.clanhalls.SiegableHall;
-import org.l2jmobius.gameserver.network.serverpackets.NpcHtmlMessage;
-import org.l2jmobius.gameserver.network.serverpackets.SiegeInfo;
+import app.l2nx.highfive.config.DevelopmentConfig;
+import app.l2nx.highfive.data.sql.ClanTable;
+import app.l2nx.highfive.entity.WorldObject;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.clan.Clan;
+import app.l2nx.highfive.handler.IAdminCommandHandler;
+import app.l2nx.highfive.managers.CHSiegeManager;
+import app.l2nx.highfive.mechanics.siege.clanhalls.ClanHallSiegeEngine;
+import app.l2nx.highfive.mechanics.siege.clanhalls.SiegableHall;
+import app.l2nx.highfive.network.serverpackets.NpcHtmlMessage;
+import app.l2nx.highfive.network.serverpackets.SiegeInfo;
 
 /**
  * @author BiggBoss

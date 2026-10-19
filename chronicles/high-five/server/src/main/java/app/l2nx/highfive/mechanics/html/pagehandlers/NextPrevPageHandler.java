@@ -14,11 +14,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.mechanics.html.pagehandlers;
+package app.l2nx.highfive.mechanics.html.pagehandlers;
 
-import org.l2jmobius.gameserver.mechanics.html.IBypassFormatter;
-import org.l2jmobius.gameserver.mechanics.html.IHtmlStyle;
-import org.l2jmobius.gameserver.mechanics.html.IPageHandler;
+import app.l2nx.highfive.mechanics.html.IBypassFormatter;
+import app.l2nx.highfive.mechanics.html.IHtmlStyle;
+import app.l2nx.highfive.mechanics.html.IPageHandler;
 
 /**
  * Creates pager with links << | < | > | >>

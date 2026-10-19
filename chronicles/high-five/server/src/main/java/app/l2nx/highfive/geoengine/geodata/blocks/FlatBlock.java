@@ -18,12 +18,12 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.geoengine.geodata.blocks;
+package app.l2nx.highfive.geoengine.geodata.blocks;
 
 import java.nio.ByteBuffer;
 
-import org.l2jmobius.gameserver.geoengine.geodata.Cell;
-import org.l2jmobius.gameserver.geoengine.geodata.IBlock;
+import app.l2nx.highfive.geoengine.geodata.Cell;
+import app.l2nx.highfive.geoengine.geodata.IBlock;
 
 /**
  * @author HorridoJoho, Mobius

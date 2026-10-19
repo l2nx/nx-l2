@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.managers;
+package app.l2nx.highfive.managers;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -22,20 +22,20 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import org.l2jmobius.commons.threads.ThreadPool;
-import org.l2jmobius.gameserver.config.GeneralConfig;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.actor.enums.creature.Team;
-import org.l2jmobius.gameserver.entity.actor.holders.player.ArenaParticipantsHolder;
-import org.l2jmobius.gameserver.entity.item.enums.ItemProcessType;
-import org.l2jmobius.gameserver.entity.itemcontainer.PlayerInventory;
-import org.l2jmobius.gameserver.entity.zone.ZoneId;
-import org.l2jmobius.gameserver.mechanics.olympiad.OlympiadManager;
-import org.l2jmobius.gameserver.network.SystemMessageId;
-import org.l2jmobius.gameserver.network.serverpackets.ExCubeGameAddPlayer;
-import org.l2jmobius.gameserver.network.serverpackets.ExCubeGameChangeTeam;
-import org.l2jmobius.gameserver.network.serverpackets.ExCubeGameRemovePlayer;
-import org.l2jmobius.gameserver.network.serverpackets.SystemMessage;
+import app.l2nx.commons.threads.ThreadPool;
+import app.l2nx.highfive.config.GeneralConfig;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.actor.enums.creature.Team;
+import app.l2nx.highfive.entity.actor.holders.player.ArenaParticipantsHolder;
+import app.l2nx.highfive.entity.item.enums.ItemProcessType;
+import app.l2nx.highfive.entity.itemcontainer.PlayerInventory;
+import app.l2nx.highfive.entity.zone.ZoneId;
+import app.l2nx.highfive.mechanics.olympiad.OlympiadManager;
+import app.l2nx.highfive.network.SystemMessageId;
+import app.l2nx.highfive.network.serverpackets.ExCubeGameAddPlayer;
+import app.l2nx.highfive.network.serverpackets.ExCubeGameChangeTeam;
+import app.l2nx.highfive.network.serverpackets.ExCubeGameRemovePlayer;
+import app.l2nx.highfive.network.serverpackets.SystemMessage;
 
 /**
  * This class manage the player add/remove, team change and event arena status,<br>

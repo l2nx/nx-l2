@@ -14,18 +14,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package ai.areas.CrumaTower.Alarm;
+package app.l2nx.highfive.scripts.ai.areas.CrumaTower.Alarm;
 
-import org.l2jmobius.gameserver.entity.actor.Npc;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.mechanics.script.QuestSound;
-import org.l2jmobius.gameserver.mechanics.script.QuestState;
-import org.l2jmobius.gameserver.mechanics.script.Script;
-import org.l2jmobius.gameserver.network.NpcStringId;
-import org.l2jmobius.gameserver.network.enums.ChatType;
+import app.l2nx.highfive.entity.actor.Npc;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.mechanics.script.QuestSound;
+import app.l2nx.highfive.mechanics.script.QuestState;
+import app.l2nx.highfive.mechanics.script.Script;
+import app.l2nx.highfive.network.NpcStringId;
+import app.l2nx.highfive.network.enums.ChatType;
 
-import quests.Q00184_ArtOfPersuasion.Q00184_ArtOfPersuasion;
-import quests.Q00185_NikolasCooperation.Q00185_NikolasCooperation;
+import app.l2nx.highfive.scripts.quests.Q00184_ArtOfPersuasion.Q00184_ArtOfPersuasion;
+import app.l2nx.highfive.scripts.quests.Q00185_NikolasCooperation.Q00185_NikolasCooperation;
 
 /**
  * Alarm AI for quests Art of Persuasion (184) and Nikola's Cooperation (185).

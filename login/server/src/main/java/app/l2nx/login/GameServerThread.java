@@ -18,7 +18,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.loginserver;
+package app.l2nx.login;
 
 import java.io.BufferedOutputStream;
 import java.io.IOException;
@@ -31,20 +31,20 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
 
-import org.l2jmobius.commons.crypt.NewCrypt;
-import org.l2jmobius.commons.network.packet.SimpleWritablePacket;
-import org.l2jmobius.commons.util.TraceUtil;
-import org.l2jmobius.loginserver.controller.LoginController;
-import org.l2jmobius.loginserver.controller.ScrambledKeyPair;
-import org.l2jmobius.loginserver.data.GameServerTable;
-import org.l2jmobius.loginserver.data.GameServerTable.GameServerInfo;
-import org.l2jmobius.loginserver.network.GameServerPacketHandler;
-import org.l2jmobius.loginserver.network.GameServerPacketHandler.GameServerState;
-import org.l2jmobius.loginserver.network.gameserverpackets.send.ChangePasswordResponse;
-import org.l2jmobius.loginserver.network.gameserverpackets.send.InitLS;
-import org.l2jmobius.loginserver.network.gameserverpackets.send.KickPlayer;
-import org.l2jmobius.loginserver.network.gameserverpackets.send.LoginServerFail;
-import org.l2jmobius.loginserver.network.gameserverpackets.send.RequestCharacters;
+import app.l2nx.commons.crypt.NewCrypt;
+import app.l2nx.commons.network.packet.SimpleWritablePacket;
+import app.l2nx.commons.util.TraceUtil;
+import app.l2nx.login.controller.LoginController;
+import app.l2nx.login.controller.ScrambledKeyPair;
+import app.l2nx.login.data.GameServerTable;
+import app.l2nx.login.data.GameServerTable.GameServerInfo;
+import app.l2nx.login.network.GameServerPacketHandler;
+import app.l2nx.login.network.GameServerPacketHandler.GameServerState;
+import app.l2nx.login.network.gameserverpackets.send.ChangePasswordResponse;
+import app.l2nx.login.network.gameserverpackets.send.InitLS;
+import app.l2nx.login.network.gameserverpackets.send.KickPlayer;
+import app.l2nx.login.network.gameserverpackets.send.LoginServerFail;
+import app.l2nx.login.network.gameserverpackets.send.RequestCharacters;
 
 /**
  * Handles connection and communication between login server and game server.<br>

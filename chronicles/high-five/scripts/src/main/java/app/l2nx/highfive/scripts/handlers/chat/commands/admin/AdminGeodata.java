@@ -18,28 +18,28 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package handlers.chat.commands.admin;
+package app.l2nx.highfive.scripts.handlers.chat.commands.admin;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.StringTokenizer;
 
-import org.l2jmobius.gameserver.cache.HtmCache;
-import org.l2jmobius.gameserver.config.GeoEngineConfig;
-import org.l2jmobius.gameserver.entity.World;
-import org.l2jmobius.gameserver.entity.WorldObject;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.geoengine.GeoEngine;
-import org.l2jmobius.gameserver.geoengine.geodata.Cell;
-import org.l2jmobius.gameserver.geoengine.geodata.IRegion;
-import org.l2jmobius.gameserver.geoengine.geodata.regions.NullRegion;
-import org.l2jmobius.gameserver.handler.AdminCommandHandler;
-import org.l2jmobius.gameserver.handler.IAdminCommandHandler;
-import org.l2jmobius.gameserver.network.SystemMessageId;
-import org.l2jmobius.gameserver.network.serverpackets.SystemMessage;
-import org.l2jmobius.gameserver.util.GeoUtils;
-import org.l2jmobius.gameserver.util.HtmlUtil;
+import app.l2nx.highfive.cache.HtmCache;
+import app.l2nx.highfive.config.GeoEngineConfig;
+import app.l2nx.highfive.entity.World;
+import app.l2nx.highfive.entity.WorldObject;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.geoengine.GeoEngine;
+import app.l2nx.highfive.geoengine.geodata.Cell;
+import app.l2nx.highfive.geoengine.geodata.IRegion;
+import app.l2nx.highfive.geoengine.geodata.regions.NullRegion;
+import app.l2nx.highfive.handler.AdminCommandHandler;
+import app.l2nx.highfive.handler.IAdminCommandHandler;
+import app.l2nx.highfive.network.SystemMessageId;
+import app.l2nx.highfive.network.serverpackets.SystemMessage;
+import app.l2nx.highfive.util.GeoUtils;
+import app.l2nx.highfive.util.HtmlUtil;
 
 /**
  * @author Mobius, -Nemesiss-, HorridoJoho

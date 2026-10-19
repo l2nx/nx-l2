@@ -18,15 +18,15 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.network.serverpackets;
+package app.l2nx.highfive.network.serverpackets;
 
-import org.l2jmobius.commons.network.buffer.WriteBuffer;
-import org.l2jmobius.gameserver.data.xml.RecipeData;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.item.recipe.RecipeList;
-import org.l2jmobius.gameserver.network.GameClient;
-import org.l2jmobius.gameserver.network.PacketLogger;
-import org.l2jmobius.gameserver.network.ServerPackets;
+import app.l2nx.commons.network.buffer.WriteBuffer;
+import app.l2nx.highfive.data.xml.RecipeData;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.item.recipe.RecipeList;
+import app.l2nx.highfive.network.GameClient;
+import app.l2nx.highfive.network.PacketLogger;
+import app.l2nx.highfive.network.ServerPackets;
 
 public class RecipeItemMakeInfo extends ServerPacket
 {

@@ -18,7 +18,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.network;
+package app.l2nx.highfive.network;
 
 import java.io.File;
 import java.lang.reflect.Field;
@@ -36,9 +36,9 @@ import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 
-import org.l2jmobius.gameserver.config.custom.MultilingualSupportConfig;
-import org.l2jmobius.gameserver.mechanics.clientstrings.Builder;
-import org.l2jmobius.gameserver.network.serverpackets.ExShowScreenMessage;
+import app.l2nx.highfive.config.custom.MultilingualSupportConfig;
+import app.l2nx.highfive.mechanics.clientstrings.Builder;
+import app.l2nx.highfive.network.serverpackets.ExShowScreenMessage;
 
 public class NpcStringId
 {

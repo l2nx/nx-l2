@@ -18,16 +18,16 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.entity.item;
+package app.l2nx.highfive.entity.item;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import org.l2jmobius.gameserver.entity.item.holders.ExtractableProduct;
-import org.l2jmobius.gameserver.entity.item.type.ActionType;
-import org.l2jmobius.gameserver.entity.item.type.EtcItemType;
-import org.l2jmobius.gameserver.entity.itemcontainer.Inventory;
-import org.l2jmobius.gameserver.util.StatSet;
+import app.l2nx.highfive.entity.item.holders.ExtractableProduct;
+import app.l2nx.highfive.entity.item.type.ActionType;
+import app.l2nx.highfive.entity.item.type.EtcItemType;
+import app.l2nx.highfive.entity.itemcontainer.Inventory;
+import app.l2nx.highfive.util.StatSet;
 
 /**
  * This class is dedicated to the management of EtcItem.

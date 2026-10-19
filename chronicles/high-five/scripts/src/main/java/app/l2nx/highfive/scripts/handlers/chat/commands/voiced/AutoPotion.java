@@ -18,12 +18,12 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package handlers.chat.commands.voiced;
+package app.l2nx.highfive.scripts.handlers.chat.commands.voiced;
 
-import org.l2jmobius.gameserver.config.custom.AutoPotionsConfig;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.handler.IVoicedCommandHandler;
-import org.l2jmobius.gameserver.taskmanagers.AutoPotionTaskManager;
+import app.l2nx.highfive.config.custom.AutoPotionsConfig;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.handler.IVoicedCommandHandler;
+import app.l2nx.highfive.taskmanagers.AutoPotionTaskManager;
 
 /**
  * @author Mobius, Gigi

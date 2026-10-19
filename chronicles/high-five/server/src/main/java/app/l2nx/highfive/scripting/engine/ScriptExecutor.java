@@ -18,7 +18,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.scripting.engine;
+package app.l2nx.highfive.scripting.engine;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -40,7 +40,7 @@ import javax.tools.JavaCompiler;
 import javax.tools.JavaFileObject;
 import javax.tools.ToolProvider;
 
-import org.l2jmobius.gameserver.scripting.annotations.Disabled;
+import app.l2nx.highfive.scripting.annotations.Disabled;
 
 /**
  * @author HorridoJoho, Mobius

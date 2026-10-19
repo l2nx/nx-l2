@@ -18,7 +18,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.loginserver.network.gameserverpackets.receive;
+package app.l2nx.login.network.gameserverpackets.receive;
 
 import java.security.GeneralSecurityException;
 import java.util.logging.Level;
@@ -26,10 +26,10 @@ import java.util.logging.Logger;
 
 import javax.crypto.Cipher;
 
-import org.l2jmobius.commons.crypt.NewCrypt;
-import org.l2jmobius.commons.network.packet.SimpleReadablePacket;
-import org.l2jmobius.loginserver.GameServerThread;
-import org.l2jmobius.loginserver.network.GameServerPacketHandler.GameServerState;
+import app.l2nx.commons.crypt.NewCrypt;
+import app.l2nx.commons.network.packet.SimpleReadablePacket;
+import app.l2nx.login.GameServerThread;
+import app.l2nx.login.network.GameServerPacketHandler.GameServerState;
 
 /**
  * Receives the Blowfish session key from the game server, encrypted with RSA.<br>

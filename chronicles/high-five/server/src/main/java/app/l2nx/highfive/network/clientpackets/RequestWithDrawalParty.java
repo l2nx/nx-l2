@@ -18,16 +18,16 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.network.clientpackets;
+package app.l2nx.highfive.network.clientpackets;
 
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.groups.Party;
-import org.l2jmobius.gameserver.entity.groups.PartyMessageType;
-import org.l2jmobius.gameserver.entity.groups.matching.PartyMatchRoom;
-import org.l2jmobius.gameserver.entity.groups.matching.PartyMatchRoomList;
-import org.l2jmobius.gameserver.network.serverpackets.ExClosePartyRoom;
-import org.l2jmobius.gameserver.network.serverpackets.ExPartyRoomMember;
-import org.l2jmobius.gameserver.network.serverpackets.PartyMatchDetail;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.groups.Party;
+import app.l2nx.highfive.entity.groups.PartyMessageType;
+import app.l2nx.highfive.entity.groups.matching.PartyMatchRoom;
+import app.l2nx.highfive.entity.groups.matching.PartyMatchRoomList;
+import app.l2nx.highfive.network.serverpackets.ExClosePartyRoom;
+import app.l2nx.highfive.network.serverpackets.ExPartyRoomMember;
+import app.l2nx.highfive.network.serverpackets.PartyMatchDetail;
 
 /**
  * @version $Revision: 1.3.4.2 $ $Date: 2005/03/27 15:29:30 $

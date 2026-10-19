@@ -18,7 +18,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.managers;
+package app.l2nx.highfive.managers;
 
 import java.awt.Color;
 import java.io.BufferedWriter;
@@ -31,10 +31,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.l2jmobius.gameserver.entity.Location;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.handler.AdminCommandHandler;
-import org.l2jmobius.gameserver.network.serverpackets.ExServerPrimitive;
+import app.l2nx.highfive.entity.Location;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.handler.AdminCommandHandler;
+import app.l2nx.highfive.network.serverpackets.ExServerPrimitive;
 
 /**
  * @author Mobius

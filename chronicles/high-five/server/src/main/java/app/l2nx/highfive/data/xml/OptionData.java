@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.data.xml;
+package app.l2nx.highfive.data.xml;
 
 import java.io.File;
 import java.util.Collections;
@@ -27,13 +27,13 @@ import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 
-import org.l2jmobius.commons.util.IXmlReader;
-import org.l2jmobius.gameserver.mechanics.options.OptionSkillHolder;
-import org.l2jmobius.gameserver.mechanics.options.OptionSkillType;
-import org.l2jmobius.gameserver.mechanics.options.Options;
-import org.l2jmobius.gameserver.mechanics.skill.Skill;
-import org.l2jmobius.gameserver.mechanics.stats.Stat;
-import org.l2jmobius.gameserver.mechanics.stats.functions.FuncTemplate;
+import app.l2nx.commons.util.IXmlReader;
+import app.l2nx.highfive.mechanics.options.OptionSkillHolder;
+import app.l2nx.highfive.mechanics.options.OptionSkillType;
+import app.l2nx.highfive.mechanics.options.Options;
+import app.l2nx.highfive.mechanics.skill.Skill;
+import app.l2nx.highfive.mechanics.stats.Stat;
+import app.l2nx.highfive.mechanics.stats.functions.FuncTemplate;
 
 /**
  * Item Option data.

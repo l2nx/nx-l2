@@ -18,13 +18,13 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.commons.network.buffer;
+package app.l2nx.commons.network.buffer;
 
 import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.l2jmobius.commons.network.pool.ResourcePool;
+import app.l2nx.commons.network.pool.ResourcePool;
 
 /**
  * Outbound network buffer backed by a single pooled direct {@link ByteBuffer} from a {@link ResourcePool}.<br>

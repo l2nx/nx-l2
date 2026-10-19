@@ -18,7 +18,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.data.sql;
+package app.l2nx.highfive.data.sql;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -32,38 +32,38 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.l2jmobius.commons.database.DatabaseFactory;
-import org.l2jmobius.commons.threads.ThreadPool;
-import org.l2jmobius.commons.util.StringUtil;
-import org.l2jmobius.gameserver.communitybbs.Manager.ForumsBBSManager;
-import org.l2jmobius.gameserver.config.GeneralConfig;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.clan.Clan;
-import org.l2jmobius.gameserver.entity.clan.ClanMember;
-import org.l2jmobius.gameserver.entity.clan.ClanPrivileges;
-import org.l2jmobius.gameserver.entity.item.enums.ItemProcessType;
-import org.l2jmobius.gameserver.entity.residences.ClanHallAuction;
-import org.l2jmobius.gameserver.managers.CHSiegeManager;
-import org.l2jmobius.gameserver.managers.ClanHallAuctionManager;
-import org.l2jmobius.gameserver.managers.FortManager;
-import org.l2jmobius.gameserver.managers.FortSiegeManager;
-import org.l2jmobius.gameserver.managers.IdManager;
-import org.l2jmobius.gameserver.managers.SiegeManager;
-import org.l2jmobius.gameserver.mechanics.events.EventDispatcher;
-import org.l2jmobius.gameserver.mechanics.events.EventType;
-import org.l2jmobius.gameserver.mechanics.events.holders.actor.player.clan.OnPlayerClanCreate;
-import org.l2jmobius.gameserver.mechanics.events.holders.actor.player.clan.OnPlayerClanDestroy;
-import org.l2jmobius.gameserver.mechanics.events.holders.clan.OnClanWarFinish;
-import org.l2jmobius.gameserver.mechanics.events.holders.clan.OnClanWarStart;
-import org.l2jmobius.gameserver.mechanics.siege.Fort;
-import org.l2jmobius.gameserver.mechanics.siege.FortSiege;
-import org.l2jmobius.gameserver.mechanics.siege.Siege;
-import org.l2jmobius.gameserver.mechanics.siege.clanhalls.SiegableHall;
-import org.l2jmobius.gameserver.network.SystemMessageId;
-import org.l2jmobius.gameserver.network.serverpackets.PledgeShowInfoUpdate;
-import org.l2jmobius.gameserver.network.serverpackets.PledgeShowMemberListAll;
-import org.l2jmobius.gameserver.network.serverpackets.PledgeShowMemberListUpdate;
-import org.l2jmobius.gameserver.network.serverpackets.SystemMessage;
+import app.l2nx.commons.database.DatabaseFactory;
+import app.l2nx.commons.threads.ThreadPool;
+import app.l2nx.commons.util.StringUtil;
+import app.l2nx.highfive.communitybbs.Manager.ForumsBBSManager;
+import app.l2nx.highfive.config.GeneralConfig;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.clan.Clan;
+import app.l2nx.highfive.entity.clan.ClanMember;
+import app.l2nx.highfive.entity.clan.ClanPrivileges;
+import app.l2nx.highfive.entity.item.enums.ItemProcessType;
+import app.l2nx.highfive.entity.residences.ClanHallAuction;
+import app.l2nx.highfive.managers.CHSiegeManager;
+import app.l2nx.highfive.managers.ClanHallAuctionManager;
+import app.l2nx.highfive.managers.FortManager;
+import app.l2nx.highfive.managers.FortSiegeManager;
+import app.l2nx.highfive.managers.IdManager;
+import app.l2nx.highfive.managers.SiegeManager;
+import app.l2nx.highfive.mechanics.events.EventDispatcher;
+import app.l2nx.highfive.mechanics.events.EventType;
+import app.l2nx.highfive.mechanics.events.holders.actor.player.clan.OnPlayerClanCreate;
+import app.l2nx.highfive.mechanics.events.holders.actor.player.clan.OnPlayerClanDestroy;
+import app.l2nx.highfive.mechanics.events.holders.clan.OnClanWarFinish;
+import app.l2nx.highfive.mechanics.events.holders.clan.OnClanWarStart;
+import app.l2nx.highfive.mechanics.siege.Fort;
+import app.l2nx.highfive.mechanics.siege.FortSiege;
+import app.l2nx.highfive.mechanics.siege.Siege;
+import app.l2nx.highfive.mechanics.siege.clanhalls.SiegableHall;
+import app.l2nx.highfive.network.SystemMessageId;
+import app.l2nx.highfive.network.serverpackets.PledgeShowInfoUpdate;
+import app.l2nx.highfive.network.serverpackets.PledgeShowMemberListAll;
+import app.l2nx.highfive.network.serverpackets.PledgeShowMemberListUpdate;
+import app.l2nx.highfive.network.serverpackets.SystemMessage;
 
 /**
  * This class loads the clan related data.

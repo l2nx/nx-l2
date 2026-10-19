@@ -14,17 +14,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.mechanics.olympiad;
+package app.l2nx.highfive.mechanics.olympiad;
 
 import java.util.Collection;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.zone.type.OlympiadStadiumZone;
-import org.l2jmobius.gameserver.managers.InstanceManager;
-import org.l2jmobius.gameserver.managers.ZoneManager;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.zone.type.OlympiadStadiumZone;
+import app.l2nx.highfive.managers.InstanceManager;
+import app.l2nx.highfive.managers.ZoneManager;
 
 /**
  * @author GodKratos, DS

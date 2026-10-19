@@ -14,11 +14,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.loginserver.network.serverpackets;
+package app.l2nx.login.network.serverpackets;
 
-import org.l2jmobius.commons.network.buffer.WriteBuffer;
-import org.l2jmobius.commons.network.packet.WritablePacket;
-import org.l2jmobius.loginserver.network.LoginClient;
+import app.l2nx.commons.network.buffer.WriteBuffer;
+import app.l2nx.commons.network.packet.WritablePacket;
+import app.l2nx.login.network.LoginClient;
 
 /**
  * @author KenM

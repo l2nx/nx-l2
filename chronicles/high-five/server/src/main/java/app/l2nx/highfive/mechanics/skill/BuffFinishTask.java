@@ -18,7 +18,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.mechanics.skill;
+package app.l2nx.highfive.mechanics.skill;
 
 import java.util.Map;
 import java.util.Map.Entry;
@@ -26,9 +26,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.l2jmobius.commons.threads.ThreadPool;
-import org.l2jmobius.gameserver.entity.actor.Creature;
-import org.l2jmobius.gameserver.mechanics.skill.enums.SkillFinishType;
+import app.l2nx.commons.threads.ThreadPool;
+import app.l2nx.highfive.entity.actor.Creature;
+import app.l2nx.highfive.mechanics.skill.enums.SkillFinishType;
 
 /**
  * @author Mobius

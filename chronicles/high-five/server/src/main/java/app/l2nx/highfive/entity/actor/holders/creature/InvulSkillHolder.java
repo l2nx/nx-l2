@@ -14,11 +14,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.entity.actor.holders.creature;
+package app.l2nx.highfive.entity.actor.holders.creature;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.l2jmobius.gameserver.mechanics.skill.holders.SkillHolder;
+import app.l2nx.highfive.mechanics.skill.holders.SkillHolder;
 
 /**
  * @author UnAfraid

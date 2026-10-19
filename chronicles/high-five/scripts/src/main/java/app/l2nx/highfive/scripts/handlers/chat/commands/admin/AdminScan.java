@@ -18,28 +18,28 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package handlers.chat.commands.admin;
+package app.l2nx.highfive.scripts.handlers.chat.commands.admin;
 
 import java.util.StringTokenizer;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.l2jmobius.gameserver.data.xml.SpawnData;
-import org.l2jmobius.gameserver.entity.World;
-import org.l2jmobius.gameserver.entity.WorldObject;
-import org.l2jmobius.gameserver.entity.actor.Npc;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.spawns.Spawn;
-import org.l2jmobius.gameserver.handler.IAdminCommandHandler;
-import org.l2jmobius.gameserver.managers.RaidBossSpawnManager;
-import org.l2jmobius.gameserver.mechanics.html.PageBuilder;
-import org.l2jmobius.gameserver.mechanics.html.PageResult;
-import org.l2jmobius.gameserver.mechanics.html.formatters.BypassParserFormatter;
-import org.l2jmobius.gameserver.mechanics.html.pagehandlers.NextPrevPageHandler;
-import org.l2jmobius.gameserver.mechanics.html.styles.ButtonsStyle;
-import org.l2jmobius.gameserver.network.serverpackets.NpcHtmlMessage;
-import org.l2jmobius.gameserver.util.FormatUtil;
+import app.l2nx.highfive.data.xml.SpawnData;
+import app.l2nx.highfive.entity.World;
+import app.l2nx.highfive.entity.WorldObject;
+import app.l2nx.highfive.entity.actor.Npc;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.spawns.Spawn;
+import app.l2nx.highfive.handler.IAdminCommandHandler;
+import app.l2nx.highfive.managers.RaidBossSpawnManager;
+import app.l2nx.highfive.mechanics.html.PageBuilder;
+import app.l2nx.highfive.mechanics.html.PageResult;
+import app.l2nx.highfive.mechanics.html.formatters.BypassParserFormatter;
+import app.l2nx.highfive.mechanics.html.pagehandlers.NextPrevPageHandler;
+import app.l2nx.highfive.mechanics.html.styles.ButtonsStyle;
+import app.l2nx.highfive.network.serverpackets.NpcHtmlMessage;
+import app.l2nx.highfive.util.FormatUtil;
 
 /**
  * @author NosBit, Mobius

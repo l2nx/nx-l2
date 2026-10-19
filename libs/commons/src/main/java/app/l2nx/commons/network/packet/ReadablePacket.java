@@ -18,13 +18,13 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.commons.network.packet;
+package app.l2nx.commons.network.packet;
 
 import java.nio.charset.StandardCharsets;
 
-import org.l2jmobius.commons.network.Client;
-import org.l2jmobius.commons.network.Connection;
-import org.l2jmobius.commons.network.buffer.ReadBuffer;
+import app.l2nx.commons.network.Client;
+import app.l2nx.commons.network.Connection;
+import app.l2nx.commons.network.buffer.ReadBuffer;
 
 /**
  * Base class for all packets received from a client.<br>

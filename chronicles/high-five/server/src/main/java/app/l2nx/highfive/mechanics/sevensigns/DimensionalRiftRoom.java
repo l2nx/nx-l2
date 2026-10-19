@@ -14,16 +14,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.mechanics.sevensigns;
+package app.l2nx.highfive.mechanics.sevensigns;
 
 import java.awt.Polygon;
 import java.awt.Shape;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.l2jmobius.commons.util.Rnd;
-import org.l2jmobius.gameserver.entity.Location;
-import org.l2jmobius.gameserver.entity.spawns.Spawn;
+import app.l2nx.commons.util.Rnd;
+import app.l2nx.highfive.entity.Location;
+import app.l2nx.highfive.entity.spawns.Spawn;
 
 /**
  * Dimensional Rift Room.

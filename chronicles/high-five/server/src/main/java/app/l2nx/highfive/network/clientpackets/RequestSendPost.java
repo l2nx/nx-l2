@@ -14,30 +14,30 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.network.clientpackets;
+package app.l2nx.highfive.network.clientpackets;
 
-import static org.l2jmobius.gameserver.entity.itemcontainer.Inventory.ADENA_ID;
-import static org.l2jmobius.gameserver.entity.itemcontainer.Inventory.MAX_ADENA;
+import static app.l2nx.highfive.entity.itemcontainer.Inventory.ADENA_ID;
+import static app.l2nx.highfive.entity.itemcontainer.Inventory.MAX_ADENA;
 
-import org.l2jmobius.gameserver.config.GeneralConfig;
-import org.l2jmobius.gameserver.config.PlayerConfig;
-import org.l2jmobius.gameserver.data.holders.AccessLevel;
-import org.l2jmobius.gameserver.data.sql.CharInfoTable;
-import org.l2jmobius.gameserver.data.xml.AdminData;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.actor.holders.player.BlockList;
-import org.l2jmobius.gameserver.entity.item.enums.ItemProcessType;
-import org.l2jmobius.gameserver.entity.item.instance.Item;
-import org.l2jmobius.gameserver.entity.itemcontainer.Mail;
-import org.l2jmobius.gameserver.entity.zone.ZoneId;
-import org.l2jmobius.gameserver.managers.MailManager;
-import org.l2jmobius.gameserver.network.PacketLogger;
-import org.l2jmobius.gameserver.network.SystemMessageId;
-import org.l2jmobius.gameserver.network.holders.MailMessage;
-import org.l2jmobius.gameserver.network.serverpackets.ExNoticePostSent;
-import org.l2jmobius.gameserver.network.serverpackets.InventoryUpdate;
-import org.l2jmobius.gameserver.network.serverpackets.StatusUpdate;
-import org.l2jmobius.gameserver.network.serverpackets.SystemMessage;
+import app.l2nx.highfive.config.GeneralConfig;
+import app.l2nx.highfive.config.PlayerConfig;
+import app.l2nx.highfive.data.holders.AccessLevel;
+import app.l2nx.highfive.data.sql.CharInfoTable;
+import app.l2nx.highfive.data.xml.AdminData;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.actor.holders.player.BlockList;
+import app.l2nx.highfive.entity.item.enums.ItemProcessType;
+import app.l2nx.highfive.entity.item.instance.Item;
+import app.l2nx.highfive.entity.itemcontainer.Mail;
+import app.l2nx.highfive.entity.zone.ZoneId;
+import app.l2nx.highfive.managers.MailManager;
+import app.l2nx.highfive.network.PacketLogger;
+import app.l2nx.highfive.network.SystemMessageId;
+import app.l2nx.highfive.network.holders.MailMessage;
+import app.l2nx.highfive.network.serverpackets.ExNoticePostSent;
+import app.l2nx.highfive.network.serverpackets.InventoryUpdate;
+import app.l2nx.highfive.network.serverpackets.StatusUpdate;
+import app.l2nx.highfive.network.serverpackets.SystemMessage;
 
 /**
  * @author Migi, DS

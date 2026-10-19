@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.data;
+package app.l2nx.highfive.data;
 
 import java.io.File;
 import java.io.IOException;
@@ -30,11 +30,11 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.xml.sax.SAXException;
 
-import org.l2jmobius.gameserver.config.ServerConfig;
-import org.l2jmobius.gameserver.entity.actor.instance.Merchant;
-import org.l2jmobius.gameserver.managers.CastleManager;
-import org.l2jmobius.gameserver.managers.ZoneManager;
-import org.l2jmobius.gameserver.mechanics.siege.Castle;
+import app.l2nx.highfive.config.ServerConfig;
+import app.l2nx.highfive.entity.actor.instance.Merchant;
+import app.l2nx.highfive.managers.CastleManager;
+import app.l2nx.highfive.managers.ZoneManager;
+import app.l2nx.highfive.mechanics.siege.Castle;
 
 /**
  * @author KenM

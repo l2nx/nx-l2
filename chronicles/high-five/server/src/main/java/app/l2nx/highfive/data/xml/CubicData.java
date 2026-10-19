@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.data.xml;
+package app.l2nx.highfive.data.xml;
 
 import java.io.File;
 import java.util.Collections;
@@ -25,15 +25,15 @@ import java.util.logging.Logger;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 
-import org.l2jmobius.commons.util.IXmlReader;
-import org.l2jmobius.gameserver.entity.actor.templates.CubicTemplate;
-import org.l2jmobius.gameserver.entity.cubic.CubicSkill;
-import org.l2jmobius.gameserver.entity.cubic.ICubicConditionHolder;
-import org.l2jmobius.gameserver.entity.cubic.conditions.HealthCondition;
-import org.l2jmobius.gameserver.entity.cubic.conditions.HpCondition;
-import org.l2jmobius.gameserver.entity.cubic.conditions.HpCondition.HpConditionType;
-import org.l2jmobius.gameserver.entity.cubic.conditions.RangeCondition;
-import org.l2jmobius.gameserver.util.StatSet;
+import app.l2nx.commons.util.IXmlReader;
+import app.l2nx.highfive.entity.actor.templates.CubicTemplate;
+import app.l2nx.highfive.entity.cubic.CubicSkill;
+import app.l2nx.highfive.entity.cubic.ICubicConditionHolder;
+import app.l2nx.highfive.entity.cubic.conditions.HealthCondition;
+import app.l2nx.highfive.entity.cubic.conditions.HpCondition;
+import app.l2nx.highfive.entity.cubic.conditions.HpCondition.HpConditionType;
+import app.l2nx.highfive.entity.cubic.conditions.RangeCondition;
+import app.l2nx.highfive.util.StatSet;
 
 /**
  * Loads cubic templates from the datapack XML definitions.<br>

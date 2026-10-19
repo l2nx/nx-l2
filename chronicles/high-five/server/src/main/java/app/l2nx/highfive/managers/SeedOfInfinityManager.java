@@ -18,17 +18,17 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.managers;
+package app.l2nx.highfive.managers;
 
 import java.util.logging.Logger;
 
-import org.l2jmobius.commons.threads.ThreadPool;
-import org.l2jmobius.commons.time.TimeUtil;
-import org.l2jmobius.commons.util.Rnd;
-import org.l2jmobius.gameserver.config.GraciaSeedsConfig;
-import org.l2jmobius.gameserver.data.xml.DoorData;
-import org.l2jmobius.gameserver.entity.Location;
-import org.l2jmobius.gameserver.entity.actor.Player;
+import app.l2nx.commons.threads.ThreadPool;
+import app.l2nx.commons.time.TimeUtil;
+import app.l2nx.commons.util.Rnd;
+import app.l2nx.highfive.config.GraciaSeedsConfig;
+import app.l2nx.highfive.data.xml.DoorData;
+import app.l2nx.highfive.entity.Location;
+import app.l2nx.highfive.entity.actor.Player;
 
 public class SeedOfInfinityManager
 {

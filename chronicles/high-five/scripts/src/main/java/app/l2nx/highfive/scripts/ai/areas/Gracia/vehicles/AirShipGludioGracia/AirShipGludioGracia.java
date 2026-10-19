@@ -14,21 +14,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package ai.areas.Gracia.vehicles.AirShipGludioGracia;
+package app.l2nx.highfive.scripts.ai.areas.Gracia.vehicles.AirShipGludioGracia;
 
-import org.l2jmobius.commons.threads.ThreadPool;
-import org.l2jmobius.gameserver.entity.Location;
-import org.l2jmobius.gameserver.entity.World;
-import org.l2jmobius.gameserver.entity.actor.Npc;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.actor.holders.creature.VehiclePathPoint;
-import org.l2jmobius.gameserver.entity.actor.instance.AirShip;
-import org.l2jmobius.gameserver.managers.AirShipManager;
-import org.l2jmobius.gameserver.mechanics.script.Script;
-import org.l2jmobius.gameserver.network.NpcStringId;
-import org.l2jmobius.gameserver.network.SystemMessageId;
-import org.l2jmobius.gameserver.network.enums.ChatType;
-import org.l2jmobius.gameserver.network.serverpackets.NpcSay;
+import app.l2nx.commons.threads.ThreadPool;
+import app.l2nx.highfive.entity.Location;
+import app.l2nx.highfive.entity.World;
+import app.l2nx.highfive.entity.actor.Npc;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.actor.holders.creature.VehiclePathPoint;
+import app.l2nx.highfive.entity.actor.instance.AirShip;
+import app.l2nx.highfive.managers.AirShipManager;
+import app.l2nx.highfive.mechanics.script.Script;
+import app.l2nx.highfive.network.NpcStringId;
+import app.l2nx.highfive.network.SystemMessageId;
+import app.l2nx.highfive.network.enums.ChatType;
+import app.l2nx.highfive.network.serverpackets.NpcSay;
 
 /**
  * @author DS

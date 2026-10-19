@@ -18,7 +18,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.entity.actor.holders.creature;
+package app.l2nx.highfive.entity.actor.holders.creature;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -35,24 +35,24 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.logging.Logger;
 
-import org.l2jmobius.commons.threads.ThreadPool;
-import org.l2jmobius.gameserver.config.PlayerConfig;
-import org.l2jmobius.gameserver.entity.actor.Creature;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.mechanics.effects.AbstractEffect;
-import org.l2jmobius.gameserver.mechanics.effects.EffectFlag;
-import org.l2jmobius.gameserver.mechanics.effects.EffectType;
-import org.l2jmobius.gameserver.mechanics.olympiad.OlympiadGameManager;
-import org.l2jmobius.gameserver.mechanics.olympiad.OlympiadGameTask;
-import org.l2jmobius.gameserver.mechanics.skill.AbnormalType;
-import org.l2jmobius.gameserver.mechanics.skill.BuffInfo;
-import org.l2jmobius.gameserver.mechanics.skill.EffectScope;
-import org.l2jmobius.gameserver.mechanics.skill.Skill;
-import org.l2jmobius.gameserver.mechanics.skill.enums.SkillFinishType;
-import org.l2jmobius.gameserver.network.serverpackets.AbnormalStatusUpdate;
-import org.l2jmobius.gameserver.network.serverpackets.ExOlympiadSpelledInfo;
-import org.l2jmobius.gameserver.network.serverpackets.PartySpelled;
-import org.l2jmobius.gameserver.network.serverpackets.ShortBuffStatusUpdate;
+import app.l2nx.commons.threads.ThreadPool;
+import app.l2nx.highfive.config.PlayerConfig;
+import app.l2nx.highfive.entity.actor.Creature;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.mechanics.effects.AbstractEffect;
+import app.l2nx.highfive.mechanics.effects.EffectFlag;
+import app.l2nx.highfive.mechanics.effects.EffectType;
+import app.l2nx.highfive.mechanics.olympiad.OlympiadGameManager;
+import app.l2nx.highfive.mechanics.olympiad.OlympiadGameTask;
+import app.l2nx.highfive.mechanics.skill.AbnormalType;
+import app.l2nx.highfive.mechanics.skill.BuffInfo;
+import app.l2nx.highfive.mechanics.skill.EffectScope;
+import app.l2nx.highfive.mechanics.skill.Skill;
+import app.l2nx.highfive.mechanics.skill.enums.SkillFinishType;
+import app.l2nx.highfive.network.serverpackets.AbnormalStatusUpdate;
+import app.l2nx.highfive.network.serverpackets.ExOlympiadSpelledInfo;
+import app.l2nx.highfive.network.serverpackets.PartySpelled;
+import app.l2nx.highfive.network.serverpackets.ShortBuffStatusUpdate;
 
 /**
  * Effect lists.<br>

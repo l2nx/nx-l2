@@ -18,7 +18,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.loginserver.ui;
+package app.l2nx.login.ui;
 
 import java.awt.BorderLayout;
 import java.awt.Dimension;
@@ -53,15 +53,15 @@ import javax.swing.WindowConstants;
 import javax.swing.event.PopupMenuEvent;
 import javax.swing.event.PopupMenuListener;
 
-import org.l2jmobius.commons.config.InterfaceConfig;
-import org.l2jmobius.commons.ui.DarkTheme;
-import org.l2jmobius.commons.ui.LineLimitListener;
-import org.l2jmobius.commons.ui.SplashScreen;
-import org.l2jmobius.loginserver.LoginServer;
-import org.l2jmobius.loginserver.controller.LoginController;
-import org.l2jmobius.loginserver.data.GameServerTable;
-import org.l2jmobius.loginserver.data.GameServerTable.GameServerInfo;
-import org.l2jmobius.loginserver.network.gameserverpackets.receive.ServerStatus;
+import app.l2nx.commons.config.InterfaceConfig;
+import app.l2nx.commons.ui.DarkTheme;
+import app.l2nx.commons.ui.LineLimitListener;
+import app.l2nx.commons.ui.SplashScreen;
+import app.l2nx.login.LoginServer;
+import app.l2nx.login.controller.LoginController;
+import app.l2nx.login.data.GameServerTable;
+import app.l2nx.login.data.GameServerTable.GameServerInfo;
+import app.l2nx.login.network.gameserverpackets.receive.ServerStatus;
 
 /**
  * @author Mobius

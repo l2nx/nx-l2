@@ -18,7 +18,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.commons.threads;
+package app.l2nx.commons.threads;
 
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -29,9 +29,9 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
-import org.l2jmobius.commons.config.ThreadConfig;
-import org.l2jmobius.commons.util.StringUtil;
-import org.l2jmobius.commons.util.TraceUtil;
+import app.l2nx.commons.config.ThreadConfig;
+import app.l2nx.commons.util.StringUtil;
+import app.l2nx.commons.util.TraceUtil;
 
 /**
  * Provides methods to schedule tasks with delays, fixed rates and immediate execution.<br>

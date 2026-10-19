@@ -18,7 +18,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.managers;
+package app.l2nx.highfive.managers;
 
 import java.time.Instant;
 import java.time.ZoneId;
@@ -27,9 +27,9 @@ import java.util.Calendar;
 import java.util.Locale;
 import java.util.logging.Logger;
 
-import org.l2jmobius.commons.threads.ThreadPool;
-import org.l2jmobius.gameserver.Shutdown;
-import org.l2jmobius.gameserver.config.ServerConfig;
+import app.l2nx.commons.threads.ThreadPool;
+import app.l2nx.highfive.Shutdown;
+import app.l2nx.highfive.config.ServerConfig;
 
 /**
  * @author Gigi, Mobius

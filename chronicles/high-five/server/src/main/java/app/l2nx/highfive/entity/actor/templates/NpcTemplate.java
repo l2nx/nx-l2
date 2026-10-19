@@ -18,7 +18,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.entity.actor.templates;
+package app.l2nx.highfive.entity.actor.templates;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -27,33 +27,33 @@ import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
 
-import org.l2jmobius.commons.util.Rnd;
-import org.l2jmobius.gameserver.config.NpcConfig;
-import org.l2jmobius.gameserver.config.RatesConfig;
-import org.l2jmobius.gameserver.config.custom.ChampionMonstersConfig;
-import org.l2jmobius.gameserver.config.custom.NpcStatMultipliersConfig;
-import org.l2jmobius.gameserver.config.custom.PremiumSystemConfig;
-import org.l2jmobius.gameserver.data.sql.CharInfoTable;
-import org.l2jmobius.gameserver.data.xml.ItemData;
-import org.l2jmobius.gameserver.data.xml.NpcData;
-import org.l2jmobius.gameserver.entity.actor.Creature;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.actor.enums.creature.Race;
-import org.l2jmobius.gameserver.entity.actor.enums.npc.AISkillScope;
-import org.l2jmobius.gameserver.entity.actor.enums.npc.AIType;
-import org.l2jmobius.gameserver.entity.actor.enums.npc.DropType;
-import org.l2jmobius.gameserver.entity.actor.enums.player.PlayerClass;
-import org.l2jmobius.gameserver.entity.actor.enums.player.Sex;
-import org.l2jmobius.gameserver.entity.actor.holders.npc.DropGroupHolder;
-import org.l2jmobius.gameserver.entity.actor.holders.npc.DropHolder;
-import org.l2jmobius.gameserver.entity.actor.holders.npc.FakePlayerHolder;
-import org.l2jmobius.gameserver.entity.actor.stat.PlayerStat;
-import org.l2jmobius.gameserver.entity.item.ItemTemplate;
-import org.l2jmobius.gameserver.entity.item.holders.ItemHolder;
-import org.l2jmobius.gameserver.entity.itemcontainer.Inventory;
-import org.l2jmobius.gameserver.mechanics.skill.Skill;
-import org.l2jmobius.gameserver.util.MathUtil;
-import org.l2jmobius.gameserver.util.StatSet;
+import app.l2nx.commons.util.Rnd;
+import app.l2nx.highfive.config.NpcConfig;
+import app.l2nx.highfive.config.RatesConfig;
+import app.l2nx.highfive.config.custom.ChampionMonstersConfig;
+import app.l2nx.highfive.config.custom.NpcStatMultipliersConfig;
+import app.l2nx.highfive.config.custom.PremiumSystemConfig;
+import app.l2nx.highfive.data.sql.CharInfoTable;
+import app.l2nx.highfive.data.xml.ItemData;
+import app.l2nx.highfive.data.xml.NpcData;
+import app.l2nx.highfive.entity.actor.Creature;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.actor.enums.creature.Race;
+import app.l2nx.highfive.entity.actor.enums.npc.AISkillScope;
+import app.l2nx.highfive.entity.actor.enums.npc.AIType;
+import app.l2nx.highfive.entity.actor.enums.npc.DropType;
+import app.l2nx.highfive.entity.actor.enums.player.PlayerClass;
+import app.l2nx.highfive.entity.actor.enums.player.Sex;
+import app.l2nx.highfive.entity.actor.holders.npc.DropGroupHolder;
+import app.l2nx.highfive.entity.actor.holders.npc.DropHolder;
+import app.l2nx.highfive.entity.actor.holders.npc.FakePlayerHolder;
+import app.l2nx.highfive.entity.actor.stat.PlayerStat;
+import app.l2nx.highfive.entity.item.ItemTemplate;
+import app.l2nx.highfive.entity.item.holders.ItemHolder;
+import app.l2nx.highfive.entity.itemcontainer.Inventory;
+import app.l2nx.highfive.mechanics.skill.Skill;
+import app.l2nx.highfive.util.MathUtil;
+import app.l2nx.highfive.util.StatSet;
 
 /**
  * @author NosBit, Nobius

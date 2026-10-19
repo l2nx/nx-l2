@@ -18,22 +18,22 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package handlers.chat.commands.admin;
+package app.l2nx.highfive.scripts.handlers.chat.commands.admin;
 
 import java.util.NoSuchElementException;
 import java.util.StringTokenizer;
 
-import org.l2jmobius.gameserver.data.xml.FenceData;
-import org.l2jmobius.gameserver.entity.World;
-import org.l2jmobius.gameserver.entity.WorldObject;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.actor.enums.creature.FenceState;
-import org.l2jmobius.gameserver.entity.actor.instance.Fence;
-import org.l2jmobius.gameserver.handler.IAdminCommandHandler;
-import org.l2jmobius.gameserver.mechanics.html.PageBuilder;
-import org.l2jmobius.gameserver.mechanics.html.PageResult;
-import org.l2jmobius.gameserver.mechanics.html.styles.ButtonsStyle;
-import org.l2jmobius.gameserver.network.serverpackets.NpcHtmlMessage;
+import app.l2nx.highfive.data.xml.FenceData;
+import app.l2nx.highfive.entity.World;
+import app.l2nx.highfive.entity.WorldObject;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.actor.enums.creature.FenceState;
+import app.l2nx.highfive.entity.actor.instance.Fence;
+import app.l2nx.highfive.handler.IAdminCommandHandler;
+import app.l2nx.highfive.mechanics.html.PageBuilder;
+import app.l2nx.highfive.mechanics.html.PageResult;
+import app.l2nx.highfive.mechanics.html.styles.ButtonsStyle;
+import app.l2nx.highfive.network.serverpackets.NpcHtmlMessage;
 
 /**
  * @author Sahar, Nik64

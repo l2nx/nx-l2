@@ -18,15 +18,15 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package events.L2Day;
+package app.l2nx.highfive.scripts.events.L2Day;
 
 import java.util.HashMap;
 import java.util.Map;
 
-import org.l2jmobius.gameserver.entity.actor.Npc;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.item.holders.ItemChanceHolder;
-import org.l2jmobius.gameserver.mechanics.script.LongTimeEvent;
+import app.l2nx.highfive.entity.actor.Npc;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.item.holders.ItemChanceHolder;
+import app.l2nx.highfive.mechanics.script.LongTimeEvent;
 
 /**
  * L2 Day event AI.

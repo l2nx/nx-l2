@@ -14,30 +14,30 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package handlers.bypass.npc;
+package app.l2nx.highfive.scripts.handlers.bypass.npc;
 
 import java.util.Collection;
 import java.util.List;
 import java.util.logging.Level;
 
-import org.l2jmobius.commons.util.StringUtil;
-import org.l2jmobius.gameserver.config.OlympiadConfig;
-import org.l2jmobius.gameserver.data.xml.MultisellData;
-import org.l2jmobius.gameserver.entity.actor.Creature;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.actor.Summon;
-import org.l2jmobius.gameserver.entity.actor.enums.player.PlayerClass;
-import org.l2jmobius.gameserver.entity.actor.instance.OlympiadManager;
-import org.l2jmobius.gameserver.entity.item.enums.ItemProcessType;
-import org.l2jmobius.gameserver.handler.IBypassHandler;
-import org.l2jmobius.gameserver.mechanics.olympiad.CompetitionType;
-import org.l2jmobius.gameserver.mechanics.olympiad.Hero;
-import org.l2jmobius.gameserver.mechanics.olympiad.Olympiad;
-import org.l2jmobius.gameserver.mechanics.skill.Skill;
-import org.l2jmobius.gameserver.mechanics.skill.holders.SkillHolder;
-import org.l2jmobius.gameserver.network.serverpackets.ExHeroList;
-import org.l2jmobius.gameserver.network.serverpackets.MagicSkillUse;
-import org.l2jmobius.gameserver.network.serverpackets.NpcHtmlMessage;
+import app.l2nx.commons.util.StringUtil;
+import app.l2nx.highfive.config.OlympiadConfig;
+import app.l2nx.highfive.data.xml.MultisellData;
+import app.l2nx.highfive.entity.actor.Creature;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.actor.Summon;
+import app.l2nx.highfive.entity.actor.enums.player.PlayerClass;
+import app.l2nx.highfive.entity.actor.instance.OlympiadManager;
+import app.l2nx.highfive.entity.item.enums.ItemProcessType;
+import app.l2nx.highfive.handler.IBypassHandler;
+import app.l2nx.highfive.mechanics.olympiad.CompetitionType;
+import app.l2nx.highfive.mechanics.olympiad.Hero;
+import app.l2nx.highfive.mechanics.olympiad.Olympiad;
+import app.l2nx.highfive.mechanics.skill.Skill;
+import app.l2nx.highfive.mechanics.skill.holders.SkillHolder;
+import app.l2nx.highfive.network.serverpackets.ExHeroList;
+import app.l2nx.highfive.network.serverpackets.MagicSkillUse;
+import app.l2nx.highfive.network.serverpackets.NpcHtmlMessage;
 
 /**
  * @author DS
@@ -117,13 +117,13 @@ public class OlympiadManagerLink implements IBypassHandler
 				{
 					case 0: // H5 match selection
 					{
-						if (!org.l2jmobius.gameserver.mechanics.olympiad.OlympiadManager.getInstance().isRegistered(player))
+						if (!app.l2nx.highfive.mechanics.olympiad.OlympiadManager.getInstance().isRegistered(player))
 						{
 							html.setFile(player, Olympiad.OLYMPIAD_HTML_PATH + "noble_desc2a.htm");
 							html.replace("%objectId%", String.valueOf(target.getObjectId()));
 							html.replace("%olympiad_period%", String.valueOf(Olympiad.getInstance().getPeriod()));
 							html.replace("%olympiad_cycle%", String.valueOf(Olympiad.getInstance().getCurrentCycle()));
-							html.replace("%olympiad_opponent%", String.valueOf(org.l2jmobius.gameserver.mechanics.olympiad.OlympiadManager.getInstance().getCountOpponents()));
+							html.replace("%olympiad_opponent%", String.valueOf(app.l2nx.highfive.mechanics.olympiad.OlympiadManager.getInstance().getCountOpponents()));
 							player.sendPacket(html);
 						}
 						else
@@ -136,14 +136,14 @@ public class OlympiadManagerLink implements IBypassHandler
 					}
 					case 1: // unregister
 					{
-						org.l2jmobius.gameserver.mechanics.olympiad.OlympiadManager.getInstance().unRegisterNoble(player);
+						app.l2nx.highfive.mechanics.olympiad.OlympiadManager.getInstance().unRegisterNoble(player);
 						break;
 					}
 					case 2: // show waiting list | TODO: cleanup (not used anymore)
 					{
-						final int nonClassed = org.l2jmobius.gameserver.mechanics.olympiad.OlympiadManager.getInstance().getRegisteredNonClassBased().size();
-						final int teams = org.l2jmobius.gameserver.mechanics.olympiad.OlympiadManager.getInstance().getRegisteredTeamsBased().size();
-						final Collection<List<Integer>> allClassed = org.l2jmobius.gameserver.mechanics.olympiad.OlympiadManager.getInstance().getRegisteredClassBased().values();
+						final int nonClassed = app.l2nx.highfive.mechanics.olympiad.OlympiadManager.getInstance().getRegisteredNonClassBased().size();
+						final int teams = app.l2nx.highfive.mechanics.olympiad.OlympiadManager.getInstance().getRegisteredTeamsBased().size();
+						final Collection<List<Integer>> allClassed = app.l2nx.highfive.mechanics.olympiad.OlympiadManager.getInstance().getRegisteredClassBased().values();
 						int classed = 0;
 						if (!allClassed.isEmpty())
 						{
@@ -185,12 +185,12 @@ public class OlympiadManagerLink implements IBypassHandler
 					}
 					case 4: // register non classed
 					{
-						org.l2jmobius.gameserver.mechanics.olympiad.OlympiadManager.getInstance().registerNoble(player, CompetitionType.NON_CLASSED);
+						app.l2nx.highfive.mechanics.olympiad.OlympiadManager.getInstance().registerNoble(player, CompetitionType.NON_CLASSED);
 						break;
 					}
 					case 5: // register classed
 					{
-						org.l2jmobius.gameserver.mechanics.olympiad.OlympiadManager.getInstance().registerNoble(player, CompetitionType.CLASSED);
+						app.l2nx.highfive.mechanics.olympiad.OlympiadManager.getInstance().registerNoble(player, CompetitionType.CLASSED);
 						break;
 					}
 					case 6: // request tokens reward
@@ -240,7 +240,7 @@ public class OlympiadManagerLink implements IBypassHandler
 					}
 					case 11: // register team
 					{
-						org.l2jmobius.gameserver.mechanics.olympiad.OlympiadManager.getInstance().registerNoble(player, CompetitionType.TEAMS);
+						app.l2nx.highfive.mechanics.olympiad.OlympiadManager.getInstance().registerNoble(player, CompetitionType.TEAMS);
 						break;
 					}
 					default:

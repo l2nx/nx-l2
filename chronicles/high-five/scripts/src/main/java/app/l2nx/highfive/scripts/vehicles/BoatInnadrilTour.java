@@ -14,19 +14,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package vehicles;
+package app.l2nx.highfive.scripts.vehicles;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.l2jmobius.commons.threads.ThreadPool;
-import org.l2jmobius.gameserver.entity.actor.holders.creature.VehiclePathPoint;
-import org.l2jmobius.gameserver.entity.actor.instance.Boat;
-import org.l2jmobius.gameserver.managers.BoatManager;
-import org.l2jmobius.gameserver.network.SystemMessageId;
-import org.l2jmobius.gameserver.network.enums.ChatType;
-import org.l2jmobius.gameserver.network.serverpackets.CreatureSay;
-import org.l2jmobius.gameserver.network.serverpackets.PlaySound;
+import app.l2nx.commons.threads.ThreadPool;
+import app.l2nx.highfive.entity.actor.holders.creature.VehiclePathPoint;
+import app.l2nx.highfive.entity.actor.instance.Boat;
+import app.l2nx.highfive.managers.BoatManager;
+import app.l2nx.highfive.network.SystemMessageId;
+import app.l2nx.highfive.network.enums.ChatType;
+import app.l2nx.highfive.network.serverpackets.CreatureSay;
+import app.l2nx.highfive.network.serverpackets.PlaySound;
 
 /**
  * @author DS

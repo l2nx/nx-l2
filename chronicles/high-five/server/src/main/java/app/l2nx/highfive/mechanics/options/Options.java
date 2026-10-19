@@ -14,19 +14,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.mechanics.options;
+package app.l2nx.highfive.mechanics.options;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import org.l2jmobius.gameserver.entity.actor.Creature;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.item.instance.Item;
-import org.l2jmobius.gameserver.mechanics.skill.Skill;
-import org.l2jmobius.gameserver.mechanics.stats.functions.AbstractFunction;
-import org.l2jmobius.gameserver.mechanics.stats.functions.FuncTemplate;
-import org.l2jmobius.gameserver.network.serverpackets.SkillCoolTime;
+import app.l2nx.highfive.entity.actor.Creature;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.item.instance.Item;
+import app.l2nx.highfive.mechanics.skill.Skill;
+import app.l2nx.highfive.mechanics.stats.functions.AbstractFunction;
+import app.l2nx.highfive.mechanics.stats.functions.FuncTemplate;
+import app.l2nx.highfive.network.serverpackets.SkillCoolTime;
 
 /**
  * @author UnAfraid

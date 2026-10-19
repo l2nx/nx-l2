@@ -18,7 +18,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package ai.others.ClassMaster;
+package app.l2nx.highfive.scripts.ai.others.ClassMaster;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -32,31 +32,31 @@ import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 
-import org.l2jmobius.commons.util.IXmlReader;
-import org.l2jmobius.gameserver.config.PlayerConfig;
-import org.l2jmobius.gameserver.data.enums.CategoryType;
-import org.l2jmobius.gameserver.data.xml.CategoryData;
-import org.l2jmobius.gameserver.data.xml.ClassListData;
-import org.l2jmobius.gameserver.data.xml.ItemData;
-import org.l2jmobius.gameserver.entity.actor.Npc;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.actor.enums.player.PlayerClass;
-import org.l2jmobius.gameserver.entity.clan.Clan;
-import org.l2jmobius.gameserver.entity.item.enums.ItemProcessType;
-import org.l2jmobius.gameserver.entity.item.holders.ItemHolder;
-import org.l2jmobius.gameserver.mechanics.events.EventType;
-import org.l2jmobius.gameserver.mechanics.events.ListenerRegisterType;
-import org.l2jmobius.gameserver.mechanics.events.annotations.RegisterEvent;
-import org.l2jmobius.gameserver.mechanics.events.annotations.RegisterType;
-import org.l2jmobius.gameserver.mechanics.events.holders.actor.player.OnPlayerBypass;
-import org.l2jmobius.gameserver.mechanics.events.holders.actor.player.OnPlayerLevelChanged;
-import org.l2jmobius.gameserver.mechanics.events.holders.actor.player.OnPlayerLogin;
-import org.l2jmobius.gameserver.mechanics.events.holders.actor.player.OnPlayerPressTutorialMark;
-import org.l2jmobius.gameserver.mechanics.events.holders.actor.player.OnPlayerProfessionChange;
-import org.l2jmobius.gameserver.mechanics.script.Script;
-import org.l2jmobius.gameserver.network.serverpackets.PlaySound;
-import org.l2jmobius.gameserver.network.serverpackets.TutorialCloseHtml;
-import org.l2jmobius.gameserver.network.serverpackets.TutorialShowQuestionMark;
+import app.l2nx.commons.util.IXmlReader;
+import app.l2nx.highfive.config.PlayerConfig;
+import app.l2nx.highfive.data.enums.CategoryType;
+import app.l2nx.highfive.data.xml.CategoryData;
+import app.l2nx.highfive.data.xml.ClassListData;
+import app.l2nx.highfive.data.xml.ItemData;
+import app.l2nx.highfive.entity.actor.Npc;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.actor.enums.player.PlayerClass;
+import app.l2nx.highfive.entity.clan.Clan;
+import app.l2nx.highfive.entity.item.enums.ItemProcessType;
+import app.l2nx.highfive.entity.item.holders.ItemHolder;
+import app.l2nx.highfive.mechanics.events.EventType;
+import app.l2nx.highfive.mechanics.events.ListenerRegisterType;
+import app.l2nx.highfive.mechanics.events.annotations.RegisterEvent;
+import app.l2nx.highfive.mechanics.events.annotations.RegisterType;
+import app.l2nx.highfive.mechanics.events.holders.actor.player.OnPlayerBypass;
+import app.l2nx.highfive.mechanics.events.holders.actor.player.OnPlayerLevelChanged;
+import app.l2nx.highfive.mechanics.events.holders.actor.player.OnPlayerLogin;
+import app.l2nx.highfive.mechanics.events.holders.actor.player.OnPlayerPressTutorialMark;
+import app.l2nx.highfive.mechanics.events.holders.actor.player.OnPlayerProfessionChange;
+import app.l2nx.highfive.mechanics.script.Script;
+import app.l2nx.highfive.network.serverpackets.PlaySound;
+import app.l2nx.highfive.network.serverpackets.TutorialCloseHtml;
+import app.l2nx.highfive.network.serverpackets.TutorialShowQuestionMark;
 
 /**
  * Class Master AI.

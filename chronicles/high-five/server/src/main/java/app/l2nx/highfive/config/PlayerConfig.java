@@ -18,7 +18,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.config;
+package app.l2nx.highfive.config;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -27,10 +27,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
 
-import org.l2jmobius.commons.util.ConfigReader;
-import org.l2jmobius.commons.util.StringUtil;
-import org.l2jmobius.gameserver.entity.actor.enums.player.IllegalActionPunishmentType;
-import org.l2jmobius.gameserver.entity.groups.PartyExpType;
+import app.l2nx.commons.util.ConfigReader;
+import app.l2nx.commons.util.StringUtil;
+import app.l2nx.highfive.entity.actor.enums.player.IllegalActionPunishmentType;
+import app.l2nx.highfive.entity.groups.PartyExpType;
 
 /**
  * This class loads all the player related configurations.

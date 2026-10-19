@@ -14,9 +14,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.entity.actor.tasks.cubics;
+package app.l2nx.highfive.entity.actor.tasks.cubics;
 
-import org.l2jmobius.gameserver.entity.actor.instance.Cubic;
+import app.l2nx.highfive.entity.actor.instance.Cubic;
 
 /**
  * Cubic disappear task.

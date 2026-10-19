@@ -18,7 +18,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.loginserver.network.serverpackets;
+package app.l2nx.login.network.serverpackets;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -28,11 +28,11 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.logging.Logger;
 
-import org.l2jmobius.commons.network.buffer.WriteBuffer;
-import org.l2jmobius.loginserver.data.GameServerTable;
-import org.l2jmobius.loginserver.data.GameServerTable.GameServerInfo;
-import org.l2jmobius.loginserver.network.LoginClient;
-import org.l2jmobius.loginserver.network.gameserverpackets.receive.ServerStatus;
+import app.l2nx.commons.network.buffer.WriteBuffer;
+import app.l2nx.login.data.GameServerTable;
+import app.l2nx.login.data.GameServerTable.GameServerInfo;
+import app.l2nx.login.network.LoginClient;
+import app.l2nx.login.network.gameserverpackets.receive.ServerStatus;
 
 /**
  * ServerList

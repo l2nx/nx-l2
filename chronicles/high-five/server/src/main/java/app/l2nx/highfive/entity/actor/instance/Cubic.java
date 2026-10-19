@@ -18,39 +18,39 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.entity.actor.instance;
+package app.l2nx.highfive.entity.actor.instance;
 
 import java.util.List;
 import java.util.concurrent.Future;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.l2jmobius.commons.threads.ThreadPool;
-import org.l2jmobius.commons.util.Rnd;
-import org.l2jmobius.gameserver.config.PlayerConfig;
-import org.l2jmobius.gameserver.data.xml.CubicData;
-import org.l2jmobius.gameserver.entity.WorldObject;
-import org.l2jmobius.gameserver.entity.actor.Attackable;
-import org.l2jmobius.gameserver.entity.actor.Creature;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.actor.Summon;
-import org.l2jmobius.gameserver.entity.actor.tasks.cubics.CubicAction;
-import org.l2jmobius.gameserver.entity.actor.tasks.cubics.CubicDisappear;
-import org.l2jmobius.gameserver.entity.actor.tasks.cubics.CubicHeal;
-import org.l2jmobius.gameserver.entity.actor.templates.CubicTemplate;
-import org.l2jmobius.gameserver.entity.cubic.CubicSelectionMode;
-import org.l2jmobius.gameserver.entity.cubic.CubicSkill;
-import org.l2jmobius.gameserver.entity.cubic.CubicTargetType;
-import org.l2jmobius.gameserver.entity.groups.Party;
-import org.l2jmobius.gameserver.entity.zone.ZoneId;
-import org.l2jmobius.gameserver.managers.DuelManager;
-import org.l2jmobius.gameserver.mechanics.effects.EffectType;
-import org.l2jmobius.gameserver.mechanics.skill.BuffInfo;
-import org.l2jmobius.gameserver.mechanics.skill.EffectScope;
-import org.l2jmobius.gameserver.mechanics.skill.Skill;
-import org.l2jmobius.gameserver.mechanics.stats.Formulas;
-import org.l2jmobius.gameserver.mechanics.stats.Stat;
-import org.l2jmobius.gameserver.network.SystemMessageId;
+import app.l2nx.commons.threads.ThreadPool;
+import app.l2nx.commons.util.Rnd;
+import app.l2nx.highfive.config.PlayerConfig;
+import app.l2nx.highfive.data.xml.CubicData;
+import app.l2nx.highfive.entity.WorldObject;
+import app.l2nx.highfive.entity.actor.Attackable;
+import app.l2nx.highfive.entity.actor.Creature;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.actor.Summon;
+import app.l2nx.highfive.entity.actor.tasks.cubics.CubicAction;
+import app.l2nx.highfive.entity.actor.tasks.cubics.CubicDisappear;
+import app.l2nx.highfive.entity.actor.tasks.cubics.CubicHeal;
+import app.l2nx.highfive.entity.actor.templates.CubicTemplate;
+import app.l2nx.highfive.entity.cubic.CubicSelectionMode;
+import app.l2nx.highfive.entity.cubic.CubicSkill;
+import app.l2nx.highfive.entity.cubic.CubicTargetType;
+import app.l2nx.highfive.entity.groups.Party;
+import app.l2nx.highfive.entity.zone.ZoneId;
+import app.l2nx.highfive.managers.DuelManager;
+import app.l2nx.highfive.mechanics.effects.EffectType;
+import app.l2nx.highfive.mechanics.skill.BuffInfo;
+import app.l2nx.highfive.mechanics.skill.EffectScope;
+import app.l2nx.highfive.mechanics.skill.Skill;
+import app.l2nx.highfive.mechanics.stats.Formulas;
+import app.l2nx.highfive.mechanics.stats.Stat;
+import app.l2nx.highfive.network.SystemMessageId;
 
 /**
  * @author UnAfraid, Mobius, BazookaRpm

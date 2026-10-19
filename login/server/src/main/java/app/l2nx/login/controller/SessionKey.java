@@ -18,10 +18,10 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.loginserver.controller;
+package app.l2nx.login.controller;
 
-import org.l2jmobius.commons.util.StringUtil;
-import org.l2jmobius.loginserver.config.LoginConfig;
+import app.l2nx.commons.util.StringUtil;
+import app.l2nx.login.config.LoginConfig;
 
 /**
  * Session key used by the client to authenticate against the gameserver.<br>

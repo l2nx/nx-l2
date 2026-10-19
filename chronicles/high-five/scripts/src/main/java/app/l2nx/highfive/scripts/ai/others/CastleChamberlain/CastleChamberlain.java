@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package ai.others.CastleChamberlain;
+package app.l2nx.highfive.scripts.ai.others.CastleChamberlain;
 
 import java.util.Arrays;
 import java.util.Calendar;
@@ -23,43 +23,43 @@ import java.util.List;
 import java.util.Map;
 import java.util.StringTokenizer;
 
-import org.l2jmobius.gameserver.config.FeatureConfig;
-import org.l2jmobius.gameserver.config.GeneralConfig;
-import org.l2jmobius.gameserver.data.sql.ClanTable;
-import org.l2jmobius.gameserver.data.xml.TeleporterData;
-import org.l2jmobius.gameserver.entity.actor.Npc;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.actor.enums.player.TeleportType;
-import org.l2jmobius.gameserver.entity.actor.instance.Door;
-import org.l2jmobius.gameserver.entity.actor.instance.Merchant;
-import org.l2jmobius.gameserver.entity.clan.Clan;
-import org.l2jmobius.gameserver.entity.clan.ClanAccess;
-import org.l2jmobius.gameserver.entity.itemcontainer.Inventory;
-import org.l2jmobius.gameserver.entity.teleporter.TeleportHolder;
-import org.l2jmobius.gameserver.managers.CastleManorManager;
-import org.l2jmobius.gameserver.managers.FortManager;
-import org.l2jmobius.gameserver.mechanics.events.EventType;
-import org.l2jmobius.gameserver.mechanics.events.ListenerRegisterType;
-import org.l2jmobius.gameserver.mechanics.events.annotations.Id;
-import org.l2jmobius.gameserver.mechanics.events.annotations.RegisterEvent;
-import org.l2jmobius.gameserver.mechanics.events.annotations.RegisterType;
-import org.l2jmobius.gameserver.mechanics.events.holders.actor.npc.OnNpcManorBypass;
-import org.l2jmobius.gameserver.mechanics.script.Script;
-import org.l2jmobius.gameserver.mechanics.sevensigns.SevenSigns;
-import org.l2jmobius.gameserver.mechanics.siege.Castle;
-import org.l2jmobius.gameserver.mechanics.siege.Castle.CastleFunction;
-import org.l2jmobius.gameserver.mechanics.siege.Fort;
-import org.l2jmobius.gameserver.mechanics.siege.manor.SeedProduction;
-import org.l2jmobius.gameserver.mechanics.skill.holders.SkillHolder;
-import org.l2jmobius.gameserver.network.SystemMessageId;
-import org.l2jmobius.gameserver.network.serverpackets.ExShowCropInfo;
-import org.l2jmobius.gameserver.network.serverpackets.ExShowCropSetting;
-import org.l2jmobius.gameserver.network.serverpackets.ExShowDominionRegistry;
-import org.l2jmobius.gameserver.network.serverpackets.ExShowManorDefaultInfo;
-import org.l2jmobius.gameserver.network.serverpackets.ExShowSeedInfo;
-import org.l2jmobius.gameserver.network.serverpackets.ExShowSeedSetting;
-import org.l2jmobius.gameserver.network.serverpackets.NpcHtmlMessage;
-import org.l2jmobius.gameserver.util.FormatUtil;
+import app.l2nx.highfive.config.FeatureConfig;
+import app.l2nx.highfive.config.GeneralConfig;
+import app.l2nx.highfive.data.sql.ClanTable;
+import app.l2nx.highfive.data.xml.TeleporterData;
+import app.l2nx.highfive.entity.actor.Npc;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.actor.enums.player.TeleportType;
+import app.l2nx.highfive.entity.actor.instance.Door;
+import app.l2nx.highfive.entity.actor.instance.Merchant;
+import app.l2nx.highfive.entity.clan.Clan;
+import app.l2nx.highfive.entity.clan.ClanAccess;
+import app.l2nx.highfive.entity.itemcontainer.Inventory;
+import app.l2nx.highfive.entity.teleporter.TeleportHolder;
+import app.l2nx.highfive.managers.CastleManorManager;
+import app.l2nx.highfive.managers.FortManager;
+import app.l2nx.highfive.mechanics.events.EventType;
+import app.l2nx.highfive.mechanics.events.ListenerRegisterType;
+import app.l2nx.highfive.mechanics.events.annotations.Id;
+import app.l2nx.highfive.mechanics.events.annotations.RegisterEvent;
+import app.l2nx.highfive.mechanics.events.annotations.RegisterType;
+import app.l2nx.highfive.mechanics.events.holders.actor.npc.OnNpcManorBypass;
+import app.l2nx.highfive.mechanics.script.Script;
+import app.l2nx.highfive.mechanics.sevensigns.SevenSigns;
+import app.l2nx.highfive.mechanics.siege.Castle;
+import app.l2nx.highfive.mechanics.siege.Castle.CastleFunction;
+import app.l2nx.highfive.mechanics.siege.Fort;
+import app.l2nx.highfive.mechanics.siege.manor.SeedProduction;
+import app.l2nx.highfive.mechanics.skill.holders.SkillHolder;
+import app.l2nx.highfive.network.SystemMessageId;
+import app.l2nx.highfive.network.serverpackets.ExShowCropInfo;
+import app.l2nx.highfive.network.serverpackets.ExShowCropSetting;
+import app.l2nx.highfive.network.serverpackets.ExShowDominionRegistry;
+import app.l2nx.highfive.network.serverpackets.ExShowManorDefaultInfo;
+import app.l2nx.highfive.network.serverpackets.ExShowSeedInfo;
+import app.l2nx.highfive.network.serverpackets.ExShowSeedSetting;
+import app.l2nx.highfive.network.serverpackets.NpcHtmlMessage;
+import app.l2nx.highfive.util.FormatUtil;
 
 /**
  * Castle Chamberlain AI.

@@ -18,7 +18,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.commons.network;
+package app.l2nx.commons.network;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -33,12 +33,12 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
-import org.l2jmobius.commons.network.handler.ReadHandler;
-import org.l2jmobius.commons.network.handler.WriteHandler;
-import org.l2jmobius.commons.network.packet.PacketExecutor;
-import org.l2jmobius.commons.network.packet.PacketHandler;
-import org.l2jmobius.commons.network.packet.PacketThreadFactory;
-import org.l2jmobius.commons.network.packet.ReadablePacket;
+import app.l2nx.commons.network.handler.ReadHandler;
+import app.l2nx.commons.network.handler.WriteHandler;
+import app.l2nx.commons.network.packet.PacketExecutor;
+import app.l2nx.commons.network.packet.PacketHandler;
+import app.l2nx.commons.network.packet.PacketThreadFactory;
+import app.l2nx.commons.network.packet.ReadablePacket;
 
 /**
  * Binds a server socket, accepts incoming TCP connections and initialises a {@link Client} for each one via a caller-supplied factory.<br>

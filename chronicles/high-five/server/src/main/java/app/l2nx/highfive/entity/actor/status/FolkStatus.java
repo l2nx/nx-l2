@@ -18,13 +18,13 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.entity.actor.status;
+package app.l2nx.highfive.entity.actor.status;
 
-import org.l2jmobius.gameserver.config.FeatureConfig;
-import org.l2jmobius.gameserver.entity.actor.Creature;
-import org.l2jmobius.gameserver.entity.actor.Npc;
-import org.l2jmobius.gameserver.entity.actor.instance.ClanHallManager;
-import org.l2jmobius.gameserver.entity.actor.instance.Folk;
+import app.l2nx.highfive.config.FeatureConfig;
+import app.l2nx.highfive.entity.actor.Creature;
+import app.l2nx.highfive.entity.actor.Npc;
+import app.l2nx.highfive.entity.actor.instance.ClanHallManager;
+import app.l2nx.highfive.entity.actor.instance.Folk;
 
 public class FolkStatus extends NpcStatus
 {

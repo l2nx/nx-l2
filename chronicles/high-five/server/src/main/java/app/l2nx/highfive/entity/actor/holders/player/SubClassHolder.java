@@ -14,11 +14,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.entity.actor.holders.player;
+package app.l2nx.highfive.entity.actor.holders.player;
 
-import org.l2jmobius.gameserver.config.PlayerConfig;
-import org.l2jmobius.gameserver.data.xml.ExperienceData;
-import org.l2jmobius.gameserver.entity.actor.enums.player.PlayerClass;
+import app.l2nx.highfive.config.PlayerConfig;
+import app.l2nx.highfive.data.xml.ExperienceData;
+import app.l2nx.highfive.entity.actor.enums.player.PlayerClass;
 
 /**
  * Character Sub-Class Definition<br>

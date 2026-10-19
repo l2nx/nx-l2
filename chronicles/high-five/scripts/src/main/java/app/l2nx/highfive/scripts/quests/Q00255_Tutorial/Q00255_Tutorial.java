@@ -18,31 +18,31 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package quests.Q00255_Tutorial;
+package app.l2nx.highfive.scripts.quests.Q00255_Tutorial;
 
-import org.l2jmobius.commons.util.StringUtil;
-import org.l2jmobius.gameserver.config.PlayerConfig;
-import org.l2jmobius.gameserver.entity.Location;
-import org.l2jmobius.gameserver.entity.actor.Npc;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.actor.enums.creature.Race;
-import org.l2jmobius.gameserver.entity.actor.enums.player.PlayerClass;
-import org.l2jmobius.gameserver.managers.TerritoryWarManager;
-import org.l2jmobius.gameserver.mechanics.events.EventType;
-import org.l2jmobius.gameserver.mechanics.events.holders.actor.creature.OnCreatureAttacked;
-import org.l2jmobius.gameserver.mechanics.events.holders.actor.player.OnPlayerLevelChanged;
-import org.l2jmobius.gameserver.mechanics.events.holders.actor.player.OnPlayerSit;
-import org.l2jmobius.gameserver.mechanics.events.holders.actor.player.inventory.OnPlayerItemPickup;
-import org.l2jmobius.gameserver.mechanics.events.listeners.ConsumerEventListener;
-import org.l2jmobius.gameserver.mechanics.script.Quest;
-import org.l2jmobius.gameserver.mechanics.script.QuestSound;
-import org.l2jmobius.gameserver.mechanics.script.QuestState;
-import org.l2jmobius.gameserver.mechanics.script.State;
-import org.l2jmobius.gameserver.network.serverpackets.PlaySound;
-import org.l2jmobius.gameserver.network.serverpackets.TutorialCloseHtml;
-import org.l2jmobius.gameserver.network.serverpackets.TutorialEnableClientEvent;
-import org.l2jmobius.gameserver.network.serverpackets.TutorialShowHtml;
-import org.l2jmobius.gameserver.network.serverpackets.TutorialShowQuestionMark;
+import app.l2nx.commons.util.StringUtil;
+import app.l2nx.highfive.config.PlayerConfig;
+import app.l2nx.highfive.entity.Location;
+import app.l2nx.highfive.entity.actor.Npc;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.actor.enums.creature.Race;
+import app.l2nx.highfive.entity.actor.enums.player.PlayerClass;
+import app.l2nx.highfive.managers.TerritoryWarManager;
+import app.l2nx.highfive.mechanics.events.EventType;
+import app.l2nx.highfive.mechanics.events.holders.actor.creature.OnCreatureAttacked;
+import app.l2nx.highfive.mechanics.events.holders.actor.player.OnPlayerLevelChanged;
+import app.l2nx.highfive.mechanics.events.holders.actor.player.OnPlayerSit;
+import app.l2nx.highfive.mechanics.events.holders.actor.player.inventory.OnPlayerItemPickup;
+import app.l2nx.highfive.mechanics.events.listeners.ConsumerEventListener;
+import app.l2nx.highfive.mechanics.script.Quest;
+import app.l2nx.highfive.mechanics.script.QuestSound;
+import app.l2nx.highfive.mechanics.script.QuestState;
+import app.l2nx.highfive.mechanics.script.State;
+import app.l2nx.highfive.network.serverpackets.PlaySound;
+import app.l2nx.highfive.network.serverpackets.TutorialCloseHtml;
+import app.l2nx.highfive.network.serverpackets.TutorialEnableClientEvent;
+import app.l2nx.highfive.network.serverpackets.TutorialShowHtml;
+import app.l2nx.highfive.network.serverpackets.TutorialShowQuestionMark;
 
 /**
  * Tutorial (255)

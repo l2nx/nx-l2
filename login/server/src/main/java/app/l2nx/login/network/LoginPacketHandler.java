@@ -18,15 +18,15 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.loginserver.network;
+package app.l2nx.login.network;
 
 import java.util.logging.Logger;
 
-import org.l2jmobius.commons.network.buffer.ReadBuffer;
-import org.l2jmobius.commons.network.packet.PacketHandler;
-import org.l2jmobius.commons.network.packet.ReadablePacket;
-import org.l2jmobius.commons.util.TraceUtil;
-import org.l2jmobius.loginserver.enums.LoginFailReason;
+import app.l2nx.commons.network.buffer.ReadBuffer;
+import app.l2nx.commons.network.packet.PacketHandler;
+import app.l2nx.commons.network.packet.ReadablePacket;
+import app.l2nx.commons.util.TraceUtil;
+import app.l2nx.login.enums.LoginFailReason;
 
 /**
  * @author Mobius

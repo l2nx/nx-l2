@@ -14,9 +14,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package quests.Q00635_IntoTheDimensionalRift;
+package app.l2nx.highfive.scripts.quests.Q00635_IntoTheDimensionalRift;
 
-import org.l2jmobius.gameserver.mechanics.script.Quest;
+import app.l2nx.highfive.mechanics.script.Quest;
 
 /**
  * Into the Dimensional Rift (635)<br>

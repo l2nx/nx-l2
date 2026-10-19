@@ -18,7 +18,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.managers.games;
+package app.l2nx.highfive.managers.games;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -33,23 +33,23 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.l2jmobius.commons.database.DatabaseFactory;
-import org.l2jmobius.commons.threads.ThreadPool;
-import org.l2jmobius.commons.util.Rnd;
-import org.l2jmobius.gameserver.config.GeneralConfig;
-import org.l2jmobius.gameserver.data.xml.NpcData;
-import org.l2jmobius.gameserver.entity.actor.Creature;
-import org.l2jmobius.gameserver.entity.actor.Npc;
-import org.l2jmobius.gameserver.entity.actor.templates.NpcTemplate;
-import org.l2jmobius.gameserver.entity.zone.ZoneType;
-import org.l2jmobius.gameserver.entity.zone.type.DerbyTrackZone;
-import org.l2jmobius.gameserver.managers.ZoneManager;
-import org.l2jmobius.gameserver.network.SystemMessageId;
-import org.l2jmobius.gameserver.network.serverpackets.DeleteObject;
-import org.l2jmobius.gameserver.network.serverpackets.MonRaceInfo;
-import org.l2jmobius.gameserver.network.serverpackets.PlaySound;
-import org.l2jmobius.gameserver.network.serverpackets.ServerPacket;
-import org.l2jmobius.gameserver.network.serverpackets.SystemMessage;
+import app.l2nx.commons.database.DatabaseFactory;
+import app.l2nx.commons.threads.ThreadPool;
+import app.l2nx.commons.util.Rnd;
+import app.l2nx.highfive.config.GeneralConfig;
+import app.l2nx.highfive.data.xml.NpcData;
+import app.l2nx.highfive.entity.actor.Creature;
+import app.l2nx.highfive.entity.actor.Npc;
+import app.l2nx.highfive.entity.actor.templates.NpcTemplate;
+import app.l2nx.highfive.entity.zone.ZoneType;
+import app.l2nx.highfive.entity.zone.type.DerbyTrackZone;
+import app.l2nx.highfive.managers.ZoneManager;
+import app.l2nx.highfive.network.SystemMessageId;
+import app.l2nx.highfive.network.serverpackets.DeleteObject;
+import app.l2nx.highfive.network.serverpackets.MonRaceInfo;
+import app.l2nx.highfive.network.serverpackets.PlaySound;
+import app.l2nx.highfive.network.serverpackets.ServerPacket;
+import app.l2nx.highfive.network.serverpackets.SystemMessage;
 
 public class MonsterRaceManager
 {
@@ -369,7 +369,7 @@ public class MonsterRaceManager
 			try
 			{
 				final NpcTemplate template = NpcData.getInstance().getTemplate(_npcTemplates.get(i));
-				_monsters[i] = (Npc) Class.forName("org.l2jmobius.gameserver.entity.actor.instance." + template.getType()).getConstructors()[0].newInstance(template);
+				_monsters[i] = (Npc) Class.forName("app.l2nx.highfive.entity.actor.instance." + template.getType()).getConstructors()[0].newInstance(template);
 			}
 			catch (Exception e)
 			{

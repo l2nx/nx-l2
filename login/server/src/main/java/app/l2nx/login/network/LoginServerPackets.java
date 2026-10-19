@@ -18,9 +18,9 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.loginserver.network;
+package app.l2nx.login.network;
 
-import org.l2jmobius.commons.network.packet.SimpleWritablePacket;
+import app.l2nx.commons.network.packet.SimpleWritablePacket;
 
 /**
  * @author Mobius

@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.network.holders;
+package app.l2nx.highfive.network.holders;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -22,13 +22,13 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.concurrent.ScheduledFuture;
 
-import org.l2jmobius.commons.threads.ThreadPool;
-import org.l2jmobius.commons.util.Rnd;
-import org.l2jmobius.gameserver.data.sql.CharInfoTable;
-import org.l2jmobius.gameserver.entity.itemcontainer.Mail;
-import org.l2jmobius.gameserver.managers.IdManager;
-import org.l2jmobius.gameserver.managers.MailManager;
-import org.l2jmobius.gameserver.network.enums.MessageSenderType;
+import app.l2nx.commons.threads.ThreadPool;
+import app.l2nx.commons.util.Rnd;
+import app.l2nx.highfive.data.sql.CharInfoTable;
+import app.l2nx.highfive.entity.itemcontainer.Mail;
+import app.l2nx.highfive.managers.IdManager;
+import app.l2nx.highfive.managers.MailManager;
+import app.l2nx.highfive.network.enums.MessageSenderType;
 
 /**
  * @author Migi, DS

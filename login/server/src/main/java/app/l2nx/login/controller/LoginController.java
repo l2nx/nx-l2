@@ -18,7 +18,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.loginserver.controller;
+package app.l2nx.login.controller;
 
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
@@ -43,16 +43,16 @@ import java.util.logging.Logger;
 
 import javax.crypto.Cipher;
 
-import org.l2jmobius.commons.database.DatabaseFactory;
-import org.l2jmobius.commons.threads.ThreadPool;
-import org.l2jmobius.commons.util.Rnd;
-import org.l2jmobius.loginserver.GameServerThread;
-import org.l2jmobius.loginserver.config.LoginConfig;
-import org.l2jmobius.loginserver.data.GameServerTable;
-import org.l2jmobius.loginserver.data.GameServerTable.GameServerInfo;
-import org.l2jmobius.loginserver.enums.LoginFailReason;
-import org.l2jmobius.loginserver.enums.LoginResult;
-import org.l2jmobius.loginserver.network.LoginClient;
+import app.l2nx.commons.database.DatabaseFactory;
+import app.l2nx.commons.threads.ThreadPool;
+import app.l2nx.commons.util.Rnd;
+import app.l2nx.login.GameServerThread;
+import app.l2nx.login.config.LoginConfig;
+import app.l2nx.login.data.GameServerTable;
+import app.l2nx.login.data.GameServerTable.GameServerInfo;
+import app.l2nx.login.enums.LoginFailReason;
+import app.l2nx.login.enums.LoginResult;
+import app.l2nx.login.network.LoginClient;
 
 public class LoginController
 {

@@ -14,20 +14,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package ai.areas.Gracia.AI.NPC.Nottingale;
+package app.l2nx.highfive.scripts.ai.areas.Gracia.AI.NPC.Nottingale;
 
 import java.util.HashMap;
 import java.util.Map;
 
-import org.l2jmobius.gameserver.entity.actor.Npc;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.clan.ClanAccess;
-import org.l2jmobius.gameserver.managers.AirShipManager;
-import org.l2jmobius.gameserver.mechanics.script.QuestState;
-import org.l2jmobius.gameserver.mechanics.script.Script;
-import org.l2jmobius.gameserver.network.serverpackets.RadarControl;
+import app.l2nx.highfive.entity.actor.Npc;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.clan.ClanAccess;
+import app.l2nx.highfive.managers.AirShipManager;
+import app.l2nx.highfive.mechanics.script.QuestState;
+import app.l2nx.highfive.mechanics.script.Script;
+import app.l2nx.highfive.network.serverpackets.RadarControl;
 
-import quests.Q10273_GoodDayToFly.Q10273_GoodDayToFly;
+import app.l2nx.highfive.scripts.quests.Q10273_GoodDayToFly.Q10273_GoodDayToFly;
 
 /**
  * Nottingale AI

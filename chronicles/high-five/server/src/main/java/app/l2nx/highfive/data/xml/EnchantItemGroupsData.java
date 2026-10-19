@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.data.xml;
+package app.l2nx.highfive.data.xml;
 
 import java.io.File;
 import java.util.HashMap;
@@ -25,15 +25,15 @@ import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 
-import org.l2jmobius.commons.util.IXmlReader;
-import org.l2jmobius.commons.util.StringUtil;
-import org.l2jmobius.gameserver.config.PlayerConfig;
-import org.l2jmobius.gameserver.data.holders.RangeChanceHolder;
-import org.l2jmobius.gameserver.entity.item.ItemTemplate;
-import org.l2jmobius.gameserver.entity.item.enchant.EnchantItemGroup;
-import org.l2jmobius.gameserver.entity.item.enchant.EnchantRateItem;
-import org.l2jmobius.gameserver.entity.item.enchant.EnchantScrollGroup;
-import org.l2jmobius.gameserver.entity.item.enums.BodyPart;
+import app.l2nx.commons.util.IXmlReader;
+import app.l2nx.commons.util.StringUtil;
+import app.l2nx.highfive.config.PlayerConfig;
+import app.l2nx.highfive.data.holders.RangeChanceHolder;
+import app.l2nx.highfive.entity.item.ItemTemplate;
+import app.l2nx.highfive.entity.item.enchant.EnchantItemGroup;
+import app.l2nx.highfive.entity.item.enchant.EnchantRateItem;
+import app.l2nx.highfive.entity.item.enchant.EnchantScrollGroup;
+import app.l2nx.highfive.entity.item.enums.BodyPart;
 
 /**
  * @author UnAfraid

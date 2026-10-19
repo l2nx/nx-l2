@@ -18,9 +18,9 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.entity.actor.holders.npc;
+package app.l2nx.highfive.entity.actor.holders.npc;
 
-import org.l2jmobius.gameserver.entity.actor.Creature;
+import app.l2nx.highfive.entity.actor.Creature;
 
 /**
  * Holds aggro-related information for a single aggressor against an NPC.

@@ -18,7 +18,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.mechanics.script;
+package app.l2nx.highfive.mechanics.script;
 
 import java.io.File;
 import java.sql.Connection;
@@ -39,25 +39,25 @@ import java.util.function.Consumer;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 
-import org.l2jmobius.commons.database.DatabaseFactory;
-import org.l2jmobius.commons.threads.ThreadPool;
-import org.l2jmobius.commons.util.IXmlReader;
-import org.l2jmobius.gameserver.data.sql.AnnouncementsTable;
-import org.l2jmobius.gameserver.data.xml.ItemData;
-import org.l2jmobius.gameserver.data.xml.NpcData;
-import org.l2jmobius.gameserver.entity.Location;
-import org.l2jmobius.gameserver.entity.World;
-import org.l2jmobius.gameserver.entity.actor.Npc;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.actor.holders.npc.EventDropHolder;
-import org.l2jmobius.gameserver.entity.item.enums.ItemProcessType;
-import org.l2jmobius.gameserver.entity.spawns.Spawn;
-import org.l2jmobius.gameserver.managers.EventDropManager;
-import org.l2jmobius.gameserver.mechanics.announce.EventAnnouncement;
-import org.l2jmobius.gameserver.mechanics.events.Containers;
-import org.l2jmobius.gameserver.mechanics.events.EventType;
-import org.l2jmobius.gameserver.mechanics.events.holders.OnServerStart;
-import org.l2jmobius.gameserver.mechanics.events.listeners.ConsumerEventListener;
+import app.l2nx.commons.database.DatabaseFactory;
+import app.l2nx.commons.threads.ThreadPool;
+import app.l2nx.commons.util.IXmlReader;
+import app.l2nx.highfive.data.sql.AnnouncementsTable;
+import app.l2nx.highfive.data.xml.ItemData;
+import app.l2nx.highfive.data.xml.NpcData;
+import app.l2nx.highfive.entity.Location;
+import app.l2nx.highfive.entity.World;
+import app.l2nx.highfive.entity.actor.Npc;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.actor.holders.npc.EventDropHolder;
+import app.l2nx.highfive.entity.item.enums.ItemProcessType;
+import app.l2nx.highfive.entity.spawns.Spawn;
+import app.l2nx.highfive.managers.EventDropManager;
+import app.l2nx.highfive.mechanics.announce.EventAnnouncement;
+import app.l2nx.highfive.mechanics.events.Containers;
+import app.l2nx.highfive.mechanics.events.EventType;
+import app.l2nx.highfive.mechanics.events.holders.OnServerStart;
+import app.l2nx.highfive.mechanics.events.listeners.ConsumerEventListener;
 
 /**
  * Parent class for long time events.<br>

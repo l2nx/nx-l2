@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.entity.item.holders;
+package app.l2nx.highfive.entity.item.holders;
 
 /**
  ** @author Gnacik

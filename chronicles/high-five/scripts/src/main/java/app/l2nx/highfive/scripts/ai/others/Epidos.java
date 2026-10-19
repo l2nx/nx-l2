@@ -14,17 +14,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package ai.others;
+package app.l2nx.highfive.scripts.ai.others;
 
 import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.l2jmobius.gameserver.ai.Intention;
-import org.l2jmobius.gameserver.entity.actor.Npc;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.actor.holders.npc.MinionList;
-import org.l2jmobius.gameserver.mechanics.script.Script;
+import app.l2nx.highfive.ai.Intention;
+import app.l2nx.highfive.entity.actor.Npc;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.actor.holders.npc.MinionList;
+import app.l2nx.highfive.mechanics.script.Script;
 
 /**
  * Manages minion's spawn, idle despawn and Teleportation Cube spawn.

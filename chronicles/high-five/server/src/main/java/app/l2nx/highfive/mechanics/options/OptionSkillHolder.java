@@ -18,9 +18,9 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.mechanics.options;
+package app.l2nx.highfive.mechanics.options;
 
-import org.l2jmobius.gameserver.mechanics.skill.Skill;
+import app.l2nx.highfive.mechanics.skill.Skill;
 
 /**
  * @author UnAfraid, Mobius

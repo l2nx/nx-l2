@@ -18,16 +18,16 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.taskmanagers;
+package app.l2nx.highfive.taskmanagers;
 
 import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
 
-import org.l2jmobius.commons.threads.ThreadPool;
-import org.l2jmobius.commons.util.TraceUtil;
-import org.l2jmobius.gameserver.entity.actor.Creature;
+import app.l2nx.commons.threads.ThreadPool;
+import app.l2nx.commons.util.TraceUtil;
+import app.l2nx.highfive.entity.actor.Creature;
 
 /**
  * Movement task manager class.

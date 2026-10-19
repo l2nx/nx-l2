@@ -18,7 +18,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.entity.spawns;
+package app.l2nx.highfive.entity.spawns;
 
 import java.lang.reflect.Constructor;
 import java.util.Deque;
@@ -28,22 +28,22 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.l2jmobius.commons.util.Rnd;
-import org.l2jmobius.gameserver.config.custom.ChampionMonstersConfig;
-import org.l2jmobius.gameserver.config.custom.RandomSpawnsConfig;
-import org.l2jmobius.gameserver.data.xml.NpcData;
-import org.l2jmobius.gameserver.data.xml.NpcPersonalAIData;
-import org.l2jmobius.gameserver.entity.Location;
-import org.l2jmobius.gameserver.entity.actor.Npc;
-import org.l2jmobius.gameserver.entity.actor.templates.NpcTemplate;
-import org.l2jmobius.gameserver.entity.zone.type.NpcSpawnTerritory;
-import org.l2jmobius.gameserver.entity.zone.type.WaterZone;
-import org.l2jmobius.gameserver.geoengine.GeoEngine;
-import org.l2jmobius.gameserver.managers.WalkingManager;
-import org.l2jmobius.gameserver.managers.ZoneManager;
-import org.l2jmobius.gameserver.mechanics.sevensigns.SevenSignsFestival;
-import org.l2jmobius.gameserver.taskmanagers.RespawnTaskManager;
-import org.l2jmobius.gameserver.util.LocationUtil;
+import app.l2nx.commons.util.Rnd;
+import app.l2nx.highfive.config.custom.ChampionMonstersConfig;
+import app.l2nx.highfive.config.custom.RandomSpawnsConfig;
+import app.l2nx.highfive.data.xml.NpcData;
+import app.l2nx.highfive.data.xml.NpcPersonalAIData;
+import app.l2nx.highfive.entity.Location;
+import app.l2nx.highfive.entity.actor.Npc;
+import app.l2nx.highfive.entity.actor.templates.NpcTemplate;
+import app.l2nx.highfive.entity.zone.type.NpcSpawnTerritory;
+import app.l2nx.highfive.entity.zone.type.WaterZone;
+import app.l2nx.highfive.geoengine.GeoEngine;
+import app.l2nx.highfive.managers.WalkingManager;
+import app.l2nx.highfive.managers.ZoneManager;
+import app.l2nx.highfive.mechanics.sevensigns.SevenSignsFestival;
+import app.l2nx.highfive.taskmanagers.RespawnTaskManager;
+import app.l2nx.highfive.util.LocationUtil;
 
 /**
  * This class manages the spawn and respawn of a group of Npcs that are in the same are and have the same type.<br>
@@ -122,7 +122,7 @@ public class Spawn extends Location
 			return;
 		}
 		
-		_constructor = Class.forName("org.l2jmobius.gameserver.entity.actor.instance." + _template.getType()).asSubclass(Npc.class).getConstructor(NpcTemplate.class);
+		_constructor = Class.forName("app.l2nx.highfive.entity.actor.instance." + _template.getType()).asSubclass(Npc.class).getConstructor(NpcTemplate.class);
 	}
 	
 	/**

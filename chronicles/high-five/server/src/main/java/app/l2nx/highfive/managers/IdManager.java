@@ -18,15 +18,15 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.managers;
+package app.l2nx.highfive.managers;
 
 import java.util.BitSet;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Logger;
 
-import org.l2jmobius.gameserver.config.IdManagerConfig;
-import org.l2jmobius.gameserver.util.PrimeCapacityAllocator;
+import app.l2nx.highfive.config.IdManagerConfig;
+import app.l2nx.highfive.util.PrimeCapacityAllocator;
 
 /**
  * Manages unique IDs for objects.

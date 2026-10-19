@@ -18,7 +18,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.tools;
+package app.l2nx.login.tools;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -64,12 +64,12 @@ import javax.swing.border.TitledBorder;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 
-import org.l2jmobius.commons.config.InterfaceConfig;
-import org.l2jmobius.commons.database.DatabaseFactory;
-import org.l2jmobius.commons.ui.DarkTheme;
-import org.l2jmobius.commons.ui.SplashScreen;
-import org.l2jmobius.commons.util.HexUtil;
-import org.l2jmobius.loginserver.data.GameServerTable;
+import app.l2nx.commons.config.InterfaceConfig;
+import app.l2nx.commons.database.DatabaseFactory;
+import app.l2nx.commons.ui.DarkTheme;
+import app.l2nx.commons.ui.SplashScreen;
+import app.l2nx.commons.util.HexUtil;
+import app.l2nx.login.data.GameServerTable;
 
 /**
  * @author Skache

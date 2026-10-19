@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.data.sql;
+package app.l2nx.highfive.data.sql;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -25,14 +25,14 @@ import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.l2jmobius.commons.database.DatabaseFactory;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.mechanics.announce.Announcement;
-import org.l2jmobius.gameserver.mechanics.announce.AnnouncementType;
-import org.l2jmobius.gameserver.mechanics.announce.AutoAnnouncement;
-import org.l2jmobius.gameserver.mechanics.announce.IAnnouncement;
-import org.l2jmobius.gameserver.network.enums.ChatType;
-import org.l2jmobius.gameserver.network.serverpackets.CreatureSay;
+import app.l2nx.commons.database.DatabaseFactory;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.mechanics.announce.Announcement;
+import app.l2nx.highfive.mechanics.announce.AnnouncementType;
+import app.l2nx.highfive.mechanics.announce.AutoAnnouncement;
+import app.l2nx.highfive.mechanics.announce.IAnnouncement;
+import app.l2nx.highfive.network.enums.ChatType;
+import app.l2nx.highfive.network.serverpackets.CreatureSay;
 
 /**
  * Loads announcements from database.

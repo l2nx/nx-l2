@@ -18,7 +18,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.util;
+package app.l2nx.highfive.util;
 
 import java.io.File;
 import java.lang.reflect.Constructor;
@@ -31,15 +31,15 @@ import java.util.logging.Logger;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 
-import org.l2jmobius.commons.util.IXmlReader;
-import org.l2jmobius.gameserver.entity.item.ItemTemplate;
-import org.l2jmobius.gameserver.entity.item.enums.ItemSkillType;
-import org.l2jmobius.gameserver.entity.item.holders.ExtractableProduct;
-import org.l2jmobius.gameserver.entity.item.type.ArmorType;
-import org.l2jmobius.gameserver.mechanics.conditions.Condition;
-import org.l2jmobius.gameserver.mechanics.stats.Stat;
-import org.l2jmobius.gameserver.mechanics.stats.functions.FuncEnchant;
-import org.l2jmobius.gameserver.mechanics.stats.functions.FuncTemplate;
+import app.l2nx.commons.util.IXmlReader;
+import app.l2nx.highfive.entity.item.ItemTemplate;
+import app.l2nx.highfive.entity.item.enums.ItemSkillType;
+import app.l2nx.highfive.entity.item.holders.ExtractableProduct;
+import app.l2nx.highfive.entity.item.type.ArmorType;
+import app.l2nx.highfive.mechanics.conditions.Condition;
+import app.l2nx.highfive.mechanics.stats.Stat;
+import app.l2nx.highfive.mechanics.stats.functions.FuncEnchant;
+import app.l2nx.highfive.mechanics.stats.functions.FuncTemplate;
 
 /**
  * @author mkizub, JIV, Mobius
@@ -371,7 +371,7 @@ public class DocumentItem extends DocumentBase implements IXmlReader
 		
 		try
 		{
-			final Constructor<?> itemClass = Class.forName("org.l2jmobius.gameserver.entity.item." + _currentItem.type).getConstructor(StatSet.class);
+			final Constructor<?> itemClass = Class.forName("app.l2nx.highfive.entity.item." + _currentItem.type).getConstructor(StatSet.class);
 			_currentItem.item = (ItemTemplate) itemClass.newInstance(_currentItem.set);
 		}
 		catch (Exception e)

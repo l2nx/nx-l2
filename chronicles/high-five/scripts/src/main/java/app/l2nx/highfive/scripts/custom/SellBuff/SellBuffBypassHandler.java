@@ -14,27 +14,27 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package custom.SellBuff;
+package app.l2nx.highfive.scripts.custom.SellBuff;
 
 import java.util.Collections;
 import java.util.StringTokenizer;
 
-import org.l2jmobius.commons.util.StringUtil;
-import org.l2jmobius.gameserver.config.custom.SellBuffsConfig;
-import org.l2jmobius.gameserver.data.holders.SellBuffHolder;
-import org.l2jmobius.gameserver.data.xml.ItemData;
-import org.l2jmobius.gameserver.entity.World;
-import org.l2jmobius.gameserver.entity.actor.Creature;
-import org.l2jmobius.gameserver.entity.actor.Npc;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.item.ItemTemplate;
-import org.l2jmobius.gameserver.entity.item.enums.ItemProcessType;
-import org.l2jmobius.gameserver.handler.BypassHandler;
-import org.l2jmobius.gameserver.handler.IBypassHandler;
-import org.l2jmobius.gameserver.managers.SellBuffsManager;
-import org.l2jmobius.gameserver.mechanics.script.Quest;
-import org.l2jmobius.gameserver.mechanics.skill.Skill;
-import org.l2jmobius.gameserver.util.LocationUtil;
+import app.l2nx.commons.util.StringUtil;
+import app.l2nx.highfive.config.custom.SellBuffsConfig;
+import app.l2nx.highfive.data.holders.SellBuffHolder;
+import app.l2nx.highfive.data.xml.ItemData;
+import app.l2nx.highfive.entity.World;
+import app.l2nx.highfive.entity.actor.Creature;
+import app.l2nx.highfive.entity.actor.Npc;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.item.ItemTemplate;
+import app.l2nx.highfive.entity.item.enums.ItemProcessType;
+import app.l2nx.highfive.handler.BypassHandler;
+import app.l2nx.highfive.handler.IBypassHandler;
+import app.l2nx.highfive.managers.SellBuffsManager;
+import app.l2nx.highfive.mechanics.script.Quest;
+import app.l2nx.highfive.mechanics.skill.Skill;
+import app.l2nx.highfive.util.LocationUtil;
 
 /**
  * Sell Buffs bypass commands.

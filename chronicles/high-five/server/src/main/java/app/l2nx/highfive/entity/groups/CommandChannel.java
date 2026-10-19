@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.entity.groups;
+package app.l2nx.highfive.entity.groups;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -22,14 +22,14 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
-import org.l2jmobius.gameserver.config.PlayerConfig;
-import org.l2jmobius.gameserver.entity.WorldObject;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.network.SystemMessageId;
-import org.l2jmobius.gameserver.network.serverpackets.ExCloseMPCC;
-import org.l2jmobius.gameserver.network.serverpackets.ExMPCCPartyInfoUpdate;
-import org.l2jmobius.gameserver.network.serverpackets.ExOpenMPCC;
-import org.l2jmobius.gameserver.network.serverpackets.SystemMessage;
+import app.l2nx.highfive.config.PlayerConfig;
+import app.l2nx.highfive.entity.WorldObject;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.network.SystemMessageId;
+import app.l2nx.highfive.network.serverpackets.ExCloseMPCC;
+import app.l2nx.highfive.network.serverpackets.ExMPCCPartyInfoUpdate;
+import app.l2nx.highfive.network.serverpackets.ExOpenMPCC;
+import app.l2nx.highfive.network.serverpackets.SystemMessage;
 
 /**
  * This class serves as a container for command channels.
@@ -241,7 +241,7 @@ public class CommandChannel extends AbstractPlayerGroup
 	
 	/**
 	 * Iterates over all command channel members without the need to allocate a new list
-	 * @see org.l2jmobius.gameserver.entity.groups.AbstractPlayerGroup#forEachMember(Function)
+	 * @see app.l2nx.highfive.entity.groups.AbstractPlayerGroup#forEachMember(Function)
 	 */
 	@Override
 	public boolean forEachMember(Function<Player, Boolean> function)

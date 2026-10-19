@@ -14,27 +14,27 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package handlers.chat.commands.admin;
+package app.l2nx.highfive.scripts.handlers.chat.commands.admin;
 
 import java.util.StringTokenizer;
 
-import org.l2jmobius.commons.util.StringUtil;
-import org.l2jmobius.gameserver.cache.HtmCache;
-import org.l2jmobius.gameserver.config.GeneralConfig;
-import org.l2jmobius.gameserver.data.sql.AnnouncementsTable;
-import org.l2jmobius.gameserver.entity.World;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.handler.IAdminCommandHandler;
-import org.l2jmobius.gameserver.mechanics.announce.Announcement;
-import org.l2jmobius.gameserver.mechanics.announce.AnnouncementType;
-import org.l2jmobius.gameserver.mechanics.announce.AutoAnnouncement;
-import org.l2jmobius.gameserver.mechanics.announce.IAnnouncement;
-import org.l2jmobius.gameserver.mechanics.html.PageBuilder;
-import org.l2jmobius.gameserver.mechanics.html.PageResult;
-import org.l2jmobius.gameserver.mechanics.html.formatters.BypassParserFormatter;
-import org.l2jmobius.gameserver.mechanics.html.pagehandlers.NextPrevPageHandler;
-import org.l2jmobius.gameserver.mechanics.html.styles.ButtonsStyle;
-import org.l2jmobius.gameserver.util.HtmlUtil;
+import app.l2nx.commons.util.StringUtil;
+import app.l2nx.highfive.cache.HtmCache;
+import app.l2nx.highfive.config.GeneralConfig;
+import app.l2nx.highfive.data.sql.AnnouncementsTable;
+import app.l2nx.highfive.entity.World;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.handler.IAdminCommandHandler;
+import app.l2nx.highfive.mechanics.announce.Announcement;
+import app.l2nx.highfive.mechanics.announce.AnnouncementType;
+import app.l2nx.highfive.mechanics.announce.AutoAnnouncement;
+import app.l2nx.highfive.mechanics.announce.IAnnouncement;
+import app.l2nx.highfive.mechanics.html.PageBuilder;
+import app.l2nx.highfive.mechanics.html.PageResult;
+import app.l2nx.highfive.mechanics.html.formatters.BypassParserFormatter;
+import app.l2nx.highfive.mechanics.html.pagehandlers.NextPrevPageHandler;
+import app.l2nx.highfive.mechanics.html.styles.ButtonsStyle;
+import app.l2nx.highfive.util.HtmlUtil;
 
 /**
  * @author UnAfraid

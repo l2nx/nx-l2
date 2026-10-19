@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.managers;
+package app.l2nx.highfive.managers;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -31,23 +31,23 @@ import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 
-import org.l2jmobius.commons.threads.ThreadPool;
-import org.l2jmobius.commons.util.IXmlReader;
-import org.l2jmobius.gameserver.ai.Intention;
-import org.l2jmobius.gameserver.data.holders.NpcRoutesHolder;
-import org.l2jmobius.gameserver.data.xml.NpcData;
-import org.l2jmobius.gameserver.entity.Location;
-import org.l2jmobius.gameserver.entity.actor.Npc;
-import org.l2jmobius.gameserver.entity.actor.holders.npc.WalkInfo;
-import org.l2jmobius.gameserver.entity.actor.holders.npc.WalkNode;
-import org.l2jmobius.gameserver.entity.actor.holders.npc.WalkRoute;
-import org.l2jmobius.gameserver.entity.actor.instance.Monster;
-import org.l2jmobius.gameserver.entity.actor.tasks.npc.walker.ArrivedTask;
-import org.l2jmobius.gameserver.mechanics.events.EventDispatcher;
-import org.l2jmobius.gameserver.mechanics.events.EventType;
-import org.l2jmobius.gameserver.mechanics.events.holders.actor.npc.OnNpcMoveNodeArrived;
-import org.l2jmobius.gameserver.network.NpcStringId;
-import org.l2jmobius.gameserver.network.enums.ChatType;
+import app.l2nx.commons.threads.ThreadPool;
+import app.l2nx.commons.util.IXmlReader;
+import app.l2nx.highfive.ai.Intention;
+import app.l2nx.highfive.data.holders.NpcRoutesHolder;
+import app.l2nx.highfive.data.xml.NpcData;
+import app.l2nx.highfive.entity.Location;
+import app.l2nx.highfive.entity.actor.Npc;
+import app.l2nx.highfive.entity.actor.holders.npc.WalkInfo;
+import app.l2nx.highfive.entity.actor.holders.npc.WalkNode;
+import app.l2nx.highfive.entity.actor.holders.npc.WalkRoute;
+import app.l2nx.highfive.entity.actor.instance.Monster;
+import app.l2nx.highfive.entity.actor.tasks.npc.walker.ArrivedTask;
+import app.l2nx.highfive.mechanics.events.EventDispatcher;
+import app.l2nx.highfive.mechanics.events.EventType;
+import app.l2nx.highfive.mechanics.events.holders.actor.npc.OnNpcMoveNodeArrived;
+import app.l2nx.highfive.network.NpcStringId;
+import app.l2nx.highfive.network.enums.ChatType;
 
 /**
  * This class manages walking monsters.

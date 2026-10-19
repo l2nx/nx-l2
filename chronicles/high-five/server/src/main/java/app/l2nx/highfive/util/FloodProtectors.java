@@ -18,10 +18,10 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.util;
+package app.l2nx.highfive.util;
 
-import org.l2jmobius.gameserver.config.FloodProtectorConfig;
-import org.l2jmobius.gameserver.network.GameClient;
+import app.l2nx.highfive.config.FloodProtectorConfig;
+import app.l2nx.highfive.network.GameClient;
 
 /**
  * Collection of flood protectors for single player.

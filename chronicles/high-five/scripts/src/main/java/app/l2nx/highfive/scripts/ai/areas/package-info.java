@@ -21,4 +21,4 @@
 /**
  * @author Mobius
  */
-package ai.areas;
+package app.l2nx.highfive.scripts.ai.areas;

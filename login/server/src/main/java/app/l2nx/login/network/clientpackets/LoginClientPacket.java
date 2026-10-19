@@ -19,13 +19,13 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  * DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.loginserver.network.clientpackets;
+package app.l2nx.login.network.clientpackets;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.l2jmobius.commons.network.packet.ReadablePacket;
-import org.l2jmobius.loginserver.network.LoginClient;
+import app.l2nx.commons.network.packet.ReadablePacket;
+import app.l2nx.login.network.LoginClient;
 
 /**
  * Base implementation for all incoming login client packets.<br>

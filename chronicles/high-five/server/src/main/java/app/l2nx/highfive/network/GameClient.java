@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.network;
+package app.l2nx.highfive.network;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -24,36 +24,36 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.l2jmobius.commons.database.DatabaseFactory;
-import org.l2jmobius.commons.network.Client;
-import org.l2jmobius.commons.network.buffer.ReadBuffer;
-import org.l2jmobius.commons.network.buffer.WriteBuffer;
-import org.l2jmobius.commons.threads.ThreadPool;
-import org.l2jmobius.commons.util.TraceUtil;
-import org.l2jmobius.gameserver.LoginServerThread;
-import org.l2jmobius.gameserver.LoginServerThread.SessionKey;
-import org.l2jmobius.gameserver.config.PlayerConfig;
-import org.l2jmobius.gameserver.config.ServerConfig;
-import org.l2jmobius.gameserver.config.custom.WeddingConfig;
-import org.l2jmobius.gameserver.data.sql.CharInfoTable;
-import org.l2jmobius.gameserver.data.sql.ClanTable;
-import org.l2jmobius.gameserver.data.xml.SecondaryAuthData;
-import org.l2jmobius.gameserver.entity.World;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.clan.Clan;
-import org.l2jmobius.gameserver.network.holders.CharacterInfoHolder;
-import org.l2jmobius.gameserver.network.holders.ClientHardwareInfoHolder;
-import org.l2jmobius.gameserver.network.serverpackets.LeaveWorld;
-import org.l2jmobius.gameserver.network.serverpackets.ServerPacket;
-import org.l2jmobius.gameserver.network.serverpackets.SystemMessage;
-import org.l2jmobius.gameserver.security.SecondaryPasswordAuth;
-import org.l2jmobius.gameserver.util.FloodProtectors;
+import app.l2nx.commons.database.DatabaseFactory;
+import app.l2nx.commons.network.Client;
+import app.l2nx.commons.network.buffer.ReadBuffer;
+import app.l2nx.commons.network.buffer.WriteBuffer;
+import app.l2nx.commons.threads.ThreadPool;
+import app.l2nx.commons.util.TraceUtil;
+import app.l2nx.highfive.LoginServerThread;
+import app.l2nx.highfive.LoginServerThread.SessionKey;
+import app.l2nx.highfive.config.PlayerConfig;
+import app.l2nx.highfive.config.ServerConfig;
+import app.l2nx.highfive.config.custom.WeddingConfig;
+import app.l2nx.highfive.data.sql.CharInfoTable;
+import app.l2nx.highfive.data.sql.ClanTable;
+import app.l2nx.highfive.data.xml.SecondaryAuthData;
+import app.l2nx.highfive.entity.World;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.clan.Clan;
+import app.l2nx.highfive.network.holders.CharacterInfoHolder;
+import app.l2nx.highfive.network.holders.ClientHardwareInfoHolder;
+import app.l2nx.highfive.network.serverpackets.LeaveWorld;
+import app.l2nx.highfive.network.serverpackets.ServerPacket;
+import app.l2nx.highfive.network.serverpackets.SystemMessage;
+import app.l2nx.highfive.security.SecondaryPasswordAuth;
+import app.l2nx.highfive.util.FloodProtectors;
 
 /**
  * Represents a client connected on GameServer.
  * @author KenM
  */
-public class GameClient extends Client<org.l2jmobius.commons.network.Connection<GameClient>>
+public class GameClient extends Client<app.l2nx.commons.network.Connection<GameClient>>
 {
 	private static final Logger LOGGER = Logger.getLogger(GameClient.class.getName());
 	private static final Logger LOGGER_ACCOUNTING = Logger.getLogger("accounting");
@@ -75,7 +75,7 @@ public class GameClient extends Client<org.l2jmobius.commons.network.Connection<
 	private int _protocolVersion;
 	private int[][] _trace;
 	
-	public GameClient(org.l2jmobius.commons.network.Connection<GameClient> connection)
+	public GameClient(app.l2nx.commons.network.Connection<GameClient> connection)
 	{
 		super(connection);
 		_ip = connection.getRemoteAddress();

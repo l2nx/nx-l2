@@ -18,15 +18,15 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.network;
+package app.l2nx.highfive.network;
 
 import java.util.logging.Logger;
 
-import org.l2jmobius.commons.threads.ThreadPool;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.managers.AntiFeedManager;
-import org.l2jmobius.gameserver.network.serverpackets.ServerPacket;
-import org.l2jmobius.gameserver.taskmanagers.AttackStanceTaskManager;
+import app.l2nx.commons.threads.ThreadPool;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.managers.AntiFeedManager;
+import app.l2nx.highfive.network.serverpackets.ServerPacket;
+import app.l2nx.highfive.taskmanagers.AttackStanceTaskManager;
 
 /**
  * Handles the disconnection process for a player or client.

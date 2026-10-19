@@ -14,13 +14,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.entity.actor.tasks.player;
+package app.l2nx.highfive.entity.actor.tasks.player;
 
-import org.l2jmobius.gameserver.config.RatesConfig;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.actor.stat.PlayerStat;
-import org.l2jmobius.gameserver.entity.zone.ZoneId;
-import org.l2jmobius.gameserver.network.serverpackets.ExVitalityPointInfo;
+import app.l2nx.highfive.config.RatesConfig;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.actor.stat.PlayerStat;
+import app.l2nx.highfive.entity.zone.ZoneId;
+import app.l2nx.highfive.network.serverpackets.ExVitalityPointInfo;
 
 /**
  * Task dedicated to reward player with vitality.

@@ -18,13 +18,13 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.network.loginserverpackets.send;
+package app.l2nx.highfive.network.loginserverpackets.send;
 
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import org.l2jmobius.commons.network.packet.SimpleWritablePacket;
+import app.l2nx.commons.network.packet.SimpleWritablePacket;
 
 /**
  * Announces to the login server the players currently connected on this game server.<br>

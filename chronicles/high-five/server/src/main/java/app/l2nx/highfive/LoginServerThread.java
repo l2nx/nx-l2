@@ -18,7 +18,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver;
+package app.l2nx.highfive;
 
 import java.io.BufferedOutputStream;
 import java.io.IOException;
@@ -45,41 +45,41 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.l2jmobius.commons.crypt.NewCrypt;
-import org.l2jmobius.commons.database.DatabaseFactory;
-import org.l2jmobius.commons.network.packet.SimpleWritablePacket;
-import org.l2jmobius.commons.util.HexUtil;
-import org.l2jmobius.commons.util.TraceUtil;
-import org.l2jmobius.gameserver.config.GeneralConfig;
-import org.l2jmobius.gameserver.config.ServerConfig;
-import org.l2jmobius.gameserver.entity.World;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.network.ConnectionState;
-import org.l2jmobius.gameserver.network.Disconnection;
-import org.l2jmobius.gameserver.network.GameClient;
-import org.l2jmobius.gameserver.network.SystemMessageId;
-import org.l2jmobius.gameserver.network.loginserverpackets.receive.AuthResponse;
-import org.l2jmobius.gameserver.network.loginserverpackets.receive.ChangePasswordResponse;
-import org.l2jmobius.gameserver.network.loginserverpackets.receive.InitLS;
-import org.l2jmobius.gameserver.network.loginserverpackets.receive.KickPlayer;
-import org.l2jmobius.gameserver.network.loginserverpackets.receive.LoginServerFail;
-import org.l2jmobius.gameserver.network.loginserverpackets.receive.PlayerAuthResponse;
-import org.l2jmobius.gameserver.network.loginserverpackets.receive.RequestCharacters;
-import org.l2jmobius.gameserver.network.loginserverpackets.send.AuthRequest;
-import org.l2jmobius.gameserver.network.loginserverpackets.send.BlowFishKey;
-import org.l2jmobius.gameserver.network.loginserverpackets.send.ChangeAccessLevel;
-import org.l2jmobius.gameserver.network.loginserverpackets.send.ChangePassword;
-import org.l2jmobius.gameserver.network.loginserverpackets.send.PlayerAuthRequest;
-import org.l2jmobius.gameserver.network.loginserverpackets.send.PlayerInGame;
-import org.l2jmobius.gameserver.network.loginserverpackets.send.PlayerLogout;
-import org.l2jmobius.gameserver.network.loginserverpackets.send.PlayerTracert;
-import org.l2jmobius.gameserver.network.loginserverpackets.send.ReplyCharacters;
-import org.l2jmobius.gameserver.network.loginserverpackets.send.SendMail;
-import org.l2jmobius.gameserver.network.loginserverpackets.send.ServerStatus;
-import org.l2jmobius.gameserver.network.loginserverpackets.send.TempBan;
-import org.l2jmobius.gameserver.network.serverpackets.CharSelectionInfo;
-import org.l2jmobius.gameserver.network.serverpackets.LoginFail;
-import org.l2jmobius.gameserver.network.serverpackets.SystemMessage;
+import app.l2nx.commons.crypt.NewCrypt;
+import app.l2nx.commons.database.DatabaseFactory;
+import app.l2nx.commons.network.packet.SimpleWritablePacket;
+import app.l2nx.commons.util.HexUtil;
+import app.l2nx.commons.util.TraceUtil;
+import app.l2nx.highfive.config.GeneralConfig;
+import app.l2nx.highfive.config.ServerConfig;
+import app.l2nx.highfive.entity.World;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.network.ConnectionState;
+import app.l2nx.highfive.network.Disconnection;
+import app.l2nx.highfive.network.GameClient;
+import app.l2nx.highfive.network.SystemMessageId;
+import app.l2nx.highfive.network.loginserverpackets.receive.AuthResponse;
+import app.l2nx.highfive.network.loginserverpackets.receive.ChangePasswordResponse;
+import app.l2nx.highfive.network.loginserverpackets.receive.InitLS;
+import app.l2nx.highfive.network.loginserverpackets.receive.KickPlayer;
+import app.l2nx.highfive.network.loginserverpackets.receive.LoginServerFail;
+import app.l2nx.highfive.network.loginserverpackets.receive.PlayerAuthResponse;
+import app.l2nx.highfive.network.loginserverpackets.receive.RequestCharacters;
+import app.l2nx.highfive.network.loginserverpackets.send.AuthRequest;
+import app.l2nx.highfive.network.loginserverpackets.send.BlowFishKey;
+import app.l2nx.highfive.network.loginserverpackets.send.ChangeAccessLevel;
+import app.l2nx.highfive.network.loginserverpackets.send.ChangePassword;
+import app.l2nx.highfive.network.loginserverpackets.send.PlayerAuthRequest;
+import app.l2nx.highfive.network.loginserverpackets.send.PlayerInGame;
+import app.l2nx.highfive.network.loginserverpackets.send.PlayerLogout;
+import app.l2nx.highfive.network.loginserverpackets.send.PlayerTracert;
+import app.l2nx.highfive.network.loginserverpackets.send.ReplyCharacters;
+import app.l2nx.highfive.network.loginserverpackets.send.SendMail;
+import app.l2nx.highfive.network.loginserverpackets.send.ServerStatus;
+import app.l2nx.highfive.network.loginserverpackets.send.TempBan;
+import app.l2nx.highfive.network.serverpackets.CharSelectionInfo;
+import app.l2nx.highfive.network.serverpackets.LoginFail;
+import app.l2nx.highfive.network.serverpackets.SystemMessage;
 
 /**
  * Handles communication between the game server and login server.<br>
@@ -91,7 +91,7 @@ public class LoginServerThread extends Thread
 	protected static final Logger ACCOUNTING_LOGGER = Logger.getLogger("accounting");
 	
 	// Protocol constants.
-	private static final int REVISION = 0x0106; // @see org.l2jmobius.loginserver.LoginServer#PROTOCOL_REV
+	private static final int REVISION = 0x0106; // @see app.l2nx.login.LoginServer#PROTOCOL_REV
 	private static final int RECONNECT_DELAY = 5000; // 5 seconds.
 	private static final int BLOWFISH_KEY_SIZE = 40;
 	private static final int HEX_ID_SIZE = 16;

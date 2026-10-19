@@ -14,9 +14,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.entity.actor.tasks.creature;
+package app.l2nx.highfive.entity.actor.tasks.creature;
 
-import org.l2jmobius.gameserver.entity.actor.Creature;
+import app.l2nx.highfive.entity.actor.Creature;
 
 /**
  * Task launching the function onHitTimer().<br>

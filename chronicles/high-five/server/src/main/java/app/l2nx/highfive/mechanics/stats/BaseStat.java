@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.mechanics.stats;
+package app.l2nx.highfive.mechanics.stats;
 
 import java.io.File;
 import java.util.NoSuchElementException;
@@ -27,8 +27,8 @@ import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 
-import org.l2jmobius.gameserver.config.ServerConfig;
-import org.l2jmobius.gameserver.entity.actor.Creature;
+import app.l2nx.highfive.config.ServerConfig;
+import app.l2nx.highfive.entity.actor.Creature;
 
 /**
  * @author DS

@@ -14,15 +14,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package ai.others.Kier;
+package app.l2nx.highfive.scripts.ai.others.Kier;
 
-import org.l2jmobius.gameserver.entity.actor.Npc;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.mechanics.script.QuestState;
-import org.l2jmobius.gameserver.mechanics.script.Script;
+import app.l2nx.highfive.entity.actor.Npc;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.mechanics.script.QuestState;
+import app.l2nx.highfive.mechanics.script.Script;
 
-import quests.Q00115_TheOtherSideOfTruth.Q00115_TheOtherSideOfTruth;
-import quests.Q10283_RequestOfIceMerchant.Q10283_RequestOfIceMerchant;
+import app.l2nx.highfive.scripts.quests.Q00115_TheOtherSideOfTruth.Q00115_TheOtherSideOfTruth;
+import app.l2nx.highfive.scripts.quests.Q10283_RequestOfIceMerchant.Q10283_RequestOfIceMerchant;
 
 /**
  * Kier AI.

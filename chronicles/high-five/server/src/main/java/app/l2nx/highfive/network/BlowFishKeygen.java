@@ -18,9 +18,9 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.network;
+package app.l2nx.highfive.network;
 
-import org.l2jmobius.commons.util.Rnd;
+import app.l2nx.commons.util.Rnd;
 
 /**
  * Blowfish key generator for GameServer sessions.<br>

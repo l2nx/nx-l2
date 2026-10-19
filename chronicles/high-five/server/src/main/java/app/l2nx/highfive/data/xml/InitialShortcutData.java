@@ -18,7 +18,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.data.xml;
+package app.l2nx.highfive.data.xml;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -32,16 +32,16 @@ import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 
-import org.l2jmobius.commons.util.IXmlReader;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.actor.enums.player.MacroType;
-import org.l2jmobius.gameserver.entity.actor.enums.player.PlayerClass;
-import org.l2jmobius.gameserver.entity.actor.enums.player.ShortcutType;
-import org.l2jmobius.gameserver.entity.actor.holders.player.Macro;
-import org.l2jmobius.gameserver.entity.actor.holders.player.MacroCmd;
-import org.l2jmobius.gameserver.entity.actor.holders.player.Shortcut;
-import org.l2jmobius.gameserver.entity.item.instance.Item;
-import org.l2jmobius.gameserver.network.serverpackets.ShortcutRegister;
+import app.l2nx.commons.util.IXmlReader;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.actor.enums.player.MacroType;
+import app.l2nx.highfive.entity.actor.enums.player.PlayerClass;
+import app.l2nx.highfive.entity.actor.enums.player.ShortcutType;
+import app.l2nx.highfive.entity.actor.holders.player.Macro;
+import app.l2nx.highfive.entity.actor.holders.player.MacroCmd;
+import app.l2nx.highfive.entity.actor.holders.player.Shortcut;
+import app.l2nx.highfive.entity.item.instance.Item;
+import app.l2nx.highfive.network.serverpackets.ShortcutRegister;
 
 /**
  * Manages initial shortcut and macro configurations for new player characters.<br>

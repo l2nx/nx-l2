@@ -18,13 +18,13 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.network.clientpackets;
+package app.l2nx.highfive.network.clientpackets;
 
-import org.l2jmobius.commons.network.packet.ReadablePacket;
-import org.l2jmobius.commons.util.TraceUtil;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.network.GameClient;
-import org.l2jmobius.gameserver.network.PacketLogger;
+import app.l2nx.commons.network.packet.ReadablePacket;
+import app.l2nx.commons.util.TraceUtil;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.network.GameClient;
+import app.l2nx.highfive.network.PacketLogger;
 
 /**
  * @author Mobius

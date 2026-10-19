@@ -14,11 +14,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package quests.Q00076_SagaOfTheGrandKhavatari;
+package app.l2nx.highfive.scripts.quests.Q00076_SagaOfTheGrandKhavatari;
 
-import org.l2jmobius.gameserver.entity.Location;
+import app.l2nx.highfive.entity.Location;
 
-import quests.AbstractSagaQuest;
+import app.l2nx.highfive.scripts.quests.AbstractSagaQuest;
 
 /**
  * Saga of the Grand Khavatari (76)

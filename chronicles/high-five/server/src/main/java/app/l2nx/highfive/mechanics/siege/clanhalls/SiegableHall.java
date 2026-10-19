@@ -14,24 +14,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.mechanics.siege.clanhalls;
+package app.l2nx.highfive.mechanics.siege.clanhalls;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.util.Calendar;
 import java.util.logging.Level;
 
-import org.l2jmobius.commons.database.DatabaseFactory;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.actor.instance.Door;
-import org.l2jmobius.gameserver.entity.clan.Clan;
-import org.l2jmobius.gameserver.entity.residences.ClanHall;
-import org.l2jmobius.gameserver.entity.zone.type.SiegableHallZone;
-import org.l2jmobius.gameserver.entity.zone.type.SiegeZone;
-import org.l2jmobius.gameserver.mechanics.siege.SiegeClan;
-import org.l2jmobius.gameserver.mechanics.siege.SiegeClanType;
-import org.l2jmobius.gameserver.network.serverpackets.SiegeInfo;
-import org.l2jmobius.gameserver.util.StatSet;
+import app.l2nx.commons.database.DatabaseFactory;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.actor.instance.Door;
+import app.l2nx.highfive.entity.clan.Clan;
+import app.l2nx.highfive.entity.residences.ClanHall;
+import app.l2nx.highfive.entity.zone.type.SiegableHallZone;
+import app.l2nx.highfive.entity.zone.type.SiegeZone;
+import app.l2nx.highfive.mechanics.siege.SiegeClan;
+import app.l2nx.highfive.mechanics.siege.SiegeClanType;
+import app.l2nx.highfive.network.serverpackets.SiegeInfo;
+import app.l2nx.highfive.util.StatSet;
 
 /**
  * @author BiggBoss

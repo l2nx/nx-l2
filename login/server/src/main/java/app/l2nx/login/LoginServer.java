@@ -18,7 +18,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.loginserver;
+package app.l2nx.login;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -32,19 +32,19 @@ import java.util.logging.Level;
 import java.util.logging.LogManager;
 import java.util.logging.Logger;
 
-import org.l2jmobius.commons.config.DatabaseConfig;
-import org.l2jmobius.commons.config.InterfaceConfig;
-import org.l2jmobius.commons.database.DatabaseBackup;
-import org.l2jmobius.commons.database.DatabaseFactory;
-import org.l2jmobius.commons.network.ConnectionManager;
-import org.l2jmobius.commons.threads.ThreadPool;
-import org.l2jmobius.loginserver.config.LoginConfig;
-import org.l2jmobius.loginserver.controller.LoginController;
-import org.l2jmobius.loginserver.data.GameServerTable;
-import org.l2jmobius.loginserver.network.LoginClient;
-import org.l2jmobius.loginserver.network.LoginPacketHandler;
-import org.l2jmobius.loginserver.network.gameserverpackets.receive.ServerStatus;
-import org.l2jmobius.loginserver.ui.Gui;
+import app.l2nx.commons.config.DatabaseConfig;
+import app.l2nx.commons.config.InterfaceConfig;
+import app.l2nx.commons.database.DatabaseBackup;
+import app.l2nx.commons.database.DatabaseFactory;
+import app.l2nx.commons.network.ConnectionManager;
+import app.l2nx.commons.threads.ThreadPool;
+import app.l2nx.login.config.LoginConfig;
+import app.l2nx.login.controller.LoginController;
+import app.l2nx.login.data.GameServerTable;
+import app.l2nx.login.network.LoginClient;
+import app.l2nx.login.network.LoginPacketHandler;
+import app.l2nx.login.network.gameserverpackets.receive.ServerStatus;
+import app.l2nx.login.ui.Gui;
 
 /**
  * Bootstraps and drives the login server lifecycle.<br>

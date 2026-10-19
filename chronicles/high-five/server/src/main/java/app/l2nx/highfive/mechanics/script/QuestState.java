@@ -18,7 +18,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.mechanics.script;
+package app.l2nx.highfive.mechanics.script;
 
 import java.util.Calendar;
 import java.util.HashMap;
@@ -26,12 +26,12 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.l2jmobius.gameserver.entity.actor.Creature;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.managers.ScriptManager;
-import org.l2jmobius.gameserver.network.serverpackets.ExShowQuestMark;
-import org.l2jmobius.gameserver.network.serverpackets.QuestList;
-import org.l2jmobius.gameserver.network.serverpackets.TutorialShowQuestionMark;
+import app.l2nx.highfive.entity.actor.Creature;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.managers.ScriptManager;
+import app.l2nx.highfive.network.serverpackets.ExShowQuestMark;
+import app.l2nx.highfive.network.serverpackets.QuestList;
+import app.l2nx.highfive.network.serverpackets.TutorialShowQuestionMark;
 
 /**
  * Quest state class.
@@ -109,7 +109,7 @@ public class QuestState
 	
 	/**
 	 * @return the current State of this QuestState
-	 * @see org.l2jmobius.gameserver.mechanics.script.State
+	 * @see app.l2nx.highfive.mechanics.script.State
 	 */
 	public byte getState()
 	{
@@ -118,7 +118,7 @@ public class QuestState
 	
 	/**
 	 * @return {@code true} if the State of this QuestState is CREATED, {@code false} otherwise
-	 * @see org.l2jmobius.gameserver.mechanics.script.State
+	 * @see app.l2nx.highfive.mechanics.script.State
 	 */
 	public boolean isCreated()
 	{
@@ -127,7 +127,7 @@ public class QuestState
 	
 	/**
 	 * @return {@code true} if the State of this QuestState is STARTED, {@code false} otherwise
-	 * @see org.l2jmobius.gameserver.mechanics.script.State
+	 * @see app.l2nx.highfive.mechanics.script.State
 	 */
 	public boolean isStarted()
 	{
@@ -136,7 +136,7 @@ public class QuestState
 	
 	/**
 	 * @return {@code true} if the State of this QuestState is COMPLETED, {@code false} otherwise
-	 * @see org.l2jmobius.gameserver.mechanics.script.State
+	 * @see app.l2nx.highfive.mechanics.script.State
 	 */
 	public boolean isCompleted()
 	{
@@ -146,7 +146,7 @@ public class QuestState
 	/**
 	 * @param state the new state of the quest to set
 	 * @see #setState(byte state, boolean saveInDb)
-	 * @see org.l2jmobius.gameserver.mechanics.script.State
+	 * @see app.l2nx.highfive.mechanics.script.State
 	 */
 	public void setState(byte state)
 	{
@@ -157,7 +157,7 @@ public class QuestState
 	 * Change the state of this quest to the specified value.
 	 * @param state the new state of the quest to set
 	 * @param saveInDb if {@code true}, will save the state change in the database
-	 * @see org.l2jmobius.gameserver.mechanics.script.State
+	 * @see app.l2nx.highfive.mechanics.script.State
 	 */
 	public void setState(byte state, boolean saveInDb)
 	{

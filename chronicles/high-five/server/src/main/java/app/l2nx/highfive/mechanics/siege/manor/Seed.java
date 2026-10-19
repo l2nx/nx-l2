@@ -18,12 +18,12 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.mechanics.siege.manor;
+package app.l2nx.highfive.mechanics.siege.manor;
 
-import org.l2jmobius.gameserver.config.RatesConfig;
-import org.l2jmobius.gameserver.data.xml.ItemData;
-import org.l2jmobius.gameserver.entity.item.ItemTemplate;
-import org.l2jmobius.gameserver.util.StatSet;
+import app.l2nx.highfive.config.RatesConfig;
+import app.l2nx.highfive.data.xml.ItemData;
+import app.l2nx.highfive.entity.item.ItemTemplate;
+import app.l2nx.highfive.util.StatSet;
 
 public class Seed
 {

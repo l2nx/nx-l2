@@ -18,7 +18,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.geoengine.pathfinding;
+package app.l2nx.highfive.geoengine.pathfinding;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -26,9 +26,9 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.l2jmobius.gameserver.config.GeoEngineConfig;
-import org.l2jmobius.gameserver.entity.World;
-import org.l2jmobius.gameserver.geoengine.GeoEngine;
+import app.l2nx.highfive.config.GeoEngineConfig;
+import app.l2nx.highfive.entity.World;
+import app.l2nx.highfive.geoengine.GeoEngine;
 
 /**
  * Entry point for pathfinding.<br>

@@ -18,14 +18,14 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.entity.actor.instance;
+package app.l2nx.highfive.entity.actor.instance;
 
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.actor.Summon;
-import org.l2jmobius.gameserver.entity.actor.templates.NpcTemplate;
-import org.l2jmobius.gameserver.mechanics.krateisCube.KrateiArena;
-import org.l2jmobius.gameserver.mechanics.olympiad.OlympiadManager;
-import org.l2jmobius.gameserver.network.SystemMessageId;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.actor.Summon;
+import app.l2nx.highfive.entity.actor.templates.NpcTemplate;
+import app.l2nx.highfive.mechanics.krateisCube.KrateiArena;
+import app.l2nx.highfive.mechanics.olympiad.OlympiadManager;
+import app.l2nx.highfive.network.SystemMessageId;
 
 /**
  * @author LordWinter
@@ -68,7 +68,7 @@ public class KrateisCubeManager extends Folk
 			}
 			
 			final int id = Integer.parseInt(command.substring(9, 10).trim());
-			final KrateiArena arena = org.l2jmobius.gameserver.managers.games.KrateisCubeManager.getInstance().getArenaId(id);
+			final KrateiArena arena = app.l2nx.highfive.managers.games.KrateisCubeManager.getInstance().getArenaId(id);
 			if (arena != null)
 			{
 				if ((player.getLevel() < arena.getMinLevel()) || (player.getLevel() > arena.getMaxLevel()))
@@ -83,7 +83,7 @@ public class KrateisCubeManager extends Folk
 				return;
 			}
 			
-			if (org.l2jmobius.gameserver.managers.games.KrateisCubeManager.getInstance().isRegisterTime())
+			if (app.l2nx.highfive.managers.games.KrateisCubeManager.getInstance().isRegisterTime())
 			{
 				if (arena.addRegisterPlayer(player))
 				{
@@ -112,7 +112,7 @@ public class KrateisCubeManager extends Folk
 		}
 		else if (command.startsWith("Cancel"))
 		{
-			for (KrateiArena arena : org.l2jmobius.gameserver.managers.games.KrateisCubeManager.getInstance().getArenas().values())
+			for (KrateiArena arena : app.l2nx.highfive.managers.games.KrateisCubeManager.getInstance().getArenas().values())
 			{
 				if ((arena != null) && arena.removePlayer(player))
 				{

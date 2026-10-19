@@ -18,7 +18,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.ui;
+package app.l2nx.highfive.ui;
 
 import java.awt.BorderLayout;
 import java.awt.Dimension;
@@ -54,19 +54,19 @@ import javax.swing.WindowConstants;
 import javax.swing.event.PopupMenuEvent;
 import javax.swing.event.PopupMenuListener;
 
-import org.l2jmobius.commons.config.InterfaceConfig;
-import org.l2jmobius.commons.ui.DarkTheme;
-import org.l2jmobius.commons.ui.LineLimitListener;
-import org.l2jmobius.commons.ui.SplashScreen;
-import org.l2jmobius.commons.util.StringUtil;
-import org.l2jmobius.gameserver.Shutdown;
-import org.l2jmobius.gameserver.cache.HtmCache;
-import org.l2jmobius.gameserver.config.ConfigLoader;
-import org.l2jmobius.gameserver.data.xml.AdminData;
-import org.l2jmobius.gameserver.data.xml.BuyListData;
-import org.l2jmobius.gameserver.data.xml.MultisellData;
-import org.l2jmobius.gameserver.data.xml.PrimeShopData;
-import org.l2jmobius.gameserver.entity.World;
+import app.l2nx.commons.config.InterfaceConfig;
+import app.l2nx.commons.ui.DarkTheme;
+import app.l2nx.commons.ui.LineLimitListener;
+import app.l2nx.commons.ui.SplashScreen;
+import app.l2nx.commons.util.StringUtil;
+import app.l2nx.highfive.Shutdown;
+import app.l2nx.highfive.cache.HtmCache;
+import app.l2nx.highfive.config.ConfigLoader;
+import app.l2nx.highfive.data.xml.AdminData;
+import app.l2nx.highfive.data.xml.BuyListData;
+import app.l2nx.highfive.data.xml.MultisellData;
+import app.l2nx.highfive.data.xml.PrimeShopData;
+import app.l2nx.highfive.entity.World;
 
 /**
  * @author Mobius

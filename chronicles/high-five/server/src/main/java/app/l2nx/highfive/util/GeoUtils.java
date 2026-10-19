@@ -18,16 +18,16 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.util;
+package app.l2nx.highfive.util;
 
 import java.awt.Color;
 
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.geoengine.GeoEngine;
-import org.l2jmobius.gameserver.geoengine.geodata.Cell;
-import org.l2jmobius.gameserver.geoengine.util.GridLineIterator2D;
-import org.l2jmobius.gameserver.geoengine.util.GridLineIterator3D;
-import org.l2jmobius.gameserver.network.serverpackets.ExServerPrimitive;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.geoengine.GeoEngine;
+import app.l2nx.highfive.geoengine.geodata.Cell;
+import app.l2nx.highfive.geoengine.util.GridLineIterator2D;
+import app.l2nx.highfive.geoengine.util.GridLineIterator3D;
+import app.l2nx.highfive.network.serverpackets.ExServerPrimitive;
 
 /**
  * @author HorridoJoho, Mobius

@@ -18,15 +18,15 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package quests.Q00028_ChestCaughtWithABaitOfIcyAir;
+package app.l2nx.highfive.scripts.quests.Q00028_ChestCaughtWithABaitOfIcyAir;
 
-import org.l2jmobius.gameserver.entity.actor.Npc;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.mechanics.script.Quest;
-import org.l2jmobius.gameserver.mechanics.script.QuestState;
-import org.l2jmobius.gameserver.mechanics.script.State;
+import app.l2nx.highfive.entity.actor.Npc;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.mechanics.script.Quest;
+import app.l2nx.highfive.mechanics.script.QuestState;
+import app.l2nx.highfive.mechanics.script.State;
 
-import quests.Q00051_OFullesSpecialBait.Q00051_OFullesSpecialBait;
+import app.l2nx.highfive.scripts.quests.Q00051_OFullesSpecialBait.Q00051_OFullesSpecialBait;
 
 /**
  * Chest Caught With A Bait Of Icy Air (28)<br>

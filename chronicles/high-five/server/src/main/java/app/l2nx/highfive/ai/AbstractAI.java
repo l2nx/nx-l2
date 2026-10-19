@@ -18,26 +18,26 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.ai;
+package app.l2nx.highfive.ai;
 
-import org.l2jmobius.gameserver.entity.Location;
-import org.l2jmobius.gameserver.entity.WorldObject;
-import org.l2jmobius.gameserver.entity.WorldRegion;
-import org.l2jmobius.gameserver.entity.actor.Creature;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.actor.Summon;
-import org.l2jmobius.gameserver.interfaces.ILocational;
-import org.l2jmobius.gameserver.mechanics.skill.Skill;
-import org.l2jmobius.gameserver.network.serverpackets.ActionFailed;
-import org.l2jmobius.gameserver.network.serverpackets.AutoAttackStart;
-import org.l2jmobius.gameserver.network.serverpackets.AutoAttackStop;
-import org.l2jmobius.gameserver.network.serverpackets.Die;
-import org.l2jmobius.gameserver.network.serverpackets.MoveToLocation;
-import org.l2jmobius.gameserver.network.serverpackets.MoveToPawn;
-import org.l2jmobius.gameserver.network.serverpackets.StopMove;
-import org.l2jmobius.gameserver.taskmanagers.AttackStanceTaskManager;
-import org.l2jmobius.gameserver.taskmanagers.CreatureFollowTaskManager;
-import org.l2jmobius.gameserver.taskmanagers.GameTimeTaskManager;
+import app.l2nx.highfive.entity.Location;
+import app.l2nx.highfive.entity.WorldObject;
+import app.l2nx.highfive.entity.WorldRegion;
+import app.l2nx.highfive.entity.actor.Creature;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.actor.Summon;
+import app.l2nx.highfive.interfaces.ILocational;
+import app.l2nx.highfive.mechanics.skill.Skill;
+import app.l2nx.highfive.network.serverpackets.ActionFailed;
+import app.l2nx.highfive.network.serverpackets.AutoAttackStart;
+import app.l2nx.highfive.network.serverpackets.AutoAttackStop;
+import app.l2nx.highfive.network.serverpackets.Die;
+import app.l2nx.highfive.network.serverpackets.MoveToLocation;
+import app.l2nx.highfive.network.serverpackets.MoveToPawn;
+import app.l2nx.highfive.network.serverpackets.StopMove;
+import app.l2nx.highfive.taskmanagers.AttackStanceTaskManager;
+import app.l2nx.highfive.taskmanagers.CreatureFollowTaskManager;
+import app.l2nx.highfive.taskmanagers.GameTimeTaskManager;
 
 /**
  * Mother class of all objects AI in the world.<br>

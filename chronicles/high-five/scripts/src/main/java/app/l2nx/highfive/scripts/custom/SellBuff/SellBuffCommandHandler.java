@@ -14,13 +14,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package custom.SellBuff;
+package app.l2nx.highfive.scripts.custom.SellBuff;
 
-import org.l2jmobius.gameserver.config.custom.SellBuffsConfig;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.handler.IVoicedCommandHandler;
-import org.l2jmobius.gameserver.handler.VoicedCommandHandler;
-import org.l2jmobius.gameserver.managers.SellBuffsManager;
+import app.l2nx.highfive.config.custom.SellBuffsConfig;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.handler.IVoicedCommandHandler;
+import app.l2nx.highfive.handler.VoicedCommandHandler;
+import app.l2nx.highfive.managers.SellBuffsManager;
 
 /**
  * Sell Buffs voiced commands.

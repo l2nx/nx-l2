@@ -14,9 +14,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.entity.item.enums;
+package app.l2nx.highfive.entity.item.enums;
 
-import org.l2jmobius.gameserver.entity.item.type.CrystalType;
+import app.l2nx.highfive.entity.item.type.CrystalType;
 
 /**
  * @author UnAfraid

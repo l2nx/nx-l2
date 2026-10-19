@@ -14,21 +14,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.entity.actor.instance;
+package app.l2nx.highfive.entity.actor.instance;
 
-import org.l2jmobius.commons.util.Rnd;
-import org.l2jmobius.gameserver.entity.actor.Creature;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.actor.holders.player.ArenaParticipantsHolder;
-import org.l2jmobius.gameserver.entity.actor.templates.NpcTemplate;
-import org.l2jmobius.gameserver.entity.item.enums.ItemProcessType;
-import org.l2jmobius.gameserver.entity.item.instance.Item;
-import org.l2jmobius.gameserver.managers.ItemManager;
-import org.l2jmobius.gameserver.managers.games.BlockCheckerManager;
-import org.l2jmobius.gameserver.network.serverpackets.AbstractNpcInfo;
-import org.l2jmobius.gameserver.network.serverpackets.ActionFailed;
-import org.l2jmobius.gameserver.network.serverpackets.ExCubeGameChangePoints;
-import org.l2jmobius.gameserver.network.serverpackets.ExCubeGameExtendedChangePoints;
+import app.l2nx.commons.util.Rnd;
+import app.l2nx.highfive.entity.actor.Creature;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.actor.holders.player.ArenaParticipantsHolder;
+import app.l2nx.highfive.entity.actor.templates.NpcTemplate;
+import app.l2nx.highfive.entity.item.enums.ItemProcessType;
+import app.l2nx.highfive.entity.item.instance.Item;
+import app.l2nx.highfive.managers.ItemManager;
+import app.l2nx.highfive.managers.games.BlockCheckerManager;
+import app.l2nx.highfive.network.serverpackets.AbstractNpcInfo;
+import app.l2nx.highfive.network.serverpackets.ActionFailed;
+import app.l2nx.highfive.network.serverpackets.ExCubeGameChangePoints;
+import app.l2nx.highfive.network.serverpackets.ExCubeGameExtendedChangePoints;
 
 /**
  * @author BiggBoss

@@ -18,9 +18,9 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.network.loginserverpackets.receive;
+package app.l2nx.highfive.network.loginserverpackets.receive;
 
-import org.l2jmobius.commons.network.packet.SimpleReadablePacket;
+import app.l2nx.commons.network.packet.SimpleReadablePacket;
 
 public class KickPlayer extends SimpleReadablePacket
 {

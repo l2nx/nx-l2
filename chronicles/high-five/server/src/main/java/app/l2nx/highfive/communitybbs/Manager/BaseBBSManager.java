@@ -18,13 +18,13 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.l2jmobius.gameserver.communitybbs.Manager;
+package app.l2nx.highfive.communitybbs.Manager;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.network.serverpackets.ShowBoard;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.network.serverpackets.ShowBoard;
 
 public abstract class BaseBBSManager
 {

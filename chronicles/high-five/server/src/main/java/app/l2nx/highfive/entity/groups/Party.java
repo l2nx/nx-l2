@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.gameserver.entity.groups;
+package app.l2nx.highfive.entity.groups;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -29,43 +29,43 @@ import java.util.concurrent.Future;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.l2jmobius.commons.threads.ThreadPool;
-import org.l2jmobius.commons.util.Rnd;
-import org.l2jmobius.gameserver.config.PlayerConfig;
-import org.l2jmobius.gameserver.config.RatesConfig;
-import org.l2jmobius.gameserver.config.custom.ClassBalanceConfig;
-import org.l2jmobius.gameserver.config.custom.PremiumSystemConfig;
-import org.l2jmobius.gameserver.entity.actor.Attackable;
-import org.l2jmobius.gameserver.entity.actor.Creature;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.entity.actor.Summon;
-import org.l2jmobius.gameserver.entity.groups.matching.PartyMatchRoomList;
-import org.l2jmobius.gameserver.entity.item.enums.ItemProcessType;
-import org.l2jmobius.gameserver.entity.item.holders.ItemHolder;
-import org.l2jmobius.gameserver.entity.item.instance.Item;
-import org.l2jmobius.gameserver.entity.itemcontainer.Inventory;
-import org.l2jmobius.gameserver.managers.DuelManager;
-import org.l2jmobius.gameserver.managers.ItemManager;
-import org.l2jmobius.gameserver.managers.PcCafePointsManager;
-import org.l2jmobius.gameserver.mechanics.sevensigns.DimensionalRift;
-import org.l2jmobius.gameserver.mechanics.sevensigns.SevenSignsFestival;
-import org.l2jmobius.gameserver.mechanics.stats.Stat;
-import org.l2jmobius.gameserver.network.SystemMessageId;
-import org.l2jmobius.gameserver.network.serverpackets.ExAskModifyPartyLooting;
-import org.l2jmobius.gameserver.network.serverpackets.ExCloseMPCC;
-import org.l2jmobius.gameserver.network.serverpackets.ExOpenMPCC;
-import org.l2jmobius.gameserver.network.serverpackets.ExPartyPetWindowAdd;
-import org.l2jmobius.gameserver.network.serverpackets.ExPartyPetWindowDelete;
-import org.l2jmobius.gameserver.network.serverpackets.ExSetPartyLooting;
-import org.l2jmobius.gameserver.network.serverpackets.PartyMemberPosition;
-import org.l2jmobius.gameserver.network.serverpackets.PartySmallWindowAdd;
-import org.l2jmobius.gameserver.network.serverpackets.PartySmallWindowAll;
-import org.l2jmobius.gameserver.network.serverpackets.PartySmallWindowDelete;
-import org.l2jmobius.gameserver.network.serverpackets.PartySmallWindowDeleteAll;
-import org.l2jmobius.gameserver.network.serverpackets.ServerPacket;
-import org.l2jmobius.gameserver.network.serverpackets.SystemMessage;
-import org.l2jmobius.gameserver.taskmanagers.GameTimeTaskManager;
-import org.l2jmobius.gameserver.util.LocationUtil;
+import app.l2nx.commons.threads.ThreadPool;
+import app.l2nx.commons.util.Rnd;
+import app.l2nx.highfive.config.PlayerConfig;
+import app.l2nx.highfive.config.RatesConfig;
+import app.l2nx.highfive.config.custom.ClassBalanceConfig;
+import app.l2nx.highfive.config.custom.PremiumSystemConfig;
+import app.l2nx.highfive.entity.actor.Attackable;
+import app.l2nx.highfive.entity.actor.Creature;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.actor.Summon;
+import app.l2nx.highfive.entity.groups.matching.PartyMatchRoomList;
+import app.l2nx.highfive.entity.item.enums.ItemProcessType;
+import app.l2nx.highfive.entity.item.holders.ItemHolder;
+import app.l2nx.highfive.entity.item.instance.Item;
+import app.l2nx.highfive.entity.itemcontainer.Inventory;
+import app.l2nx.highfive.managers.DuelManager;
+import app.l2nx.highfive.managers.ItemManager;
+import app.l2nx.highfive.managers.PcCafePointsManager;
+import app.l2nx.highfive.mechanics.sevensigns.DimensionalRift;
+import app.l2nx.highfive.mechanics.sevensigns.SevenSignsFestival;
+import app.l2nx.highfive.mechanics.stats.Stat;
+import app.l2nx.highfive.network.SystemMessageId;
+import app.l2nx.highfive.network.serverpackets.ExAskModifyPartyLooting;
+import app.l2nx.highfive.network.serverpackets.ExCloseMPCC;
+import app.l2nx.highfive.network.serverpackets.ExOpenMPCC;
+import app.l2nx.highfive.network.serverpackets.ExPartyPetWindowAdd;
+import app.l2nx.highfive.network.serverpackets.ExPartyPetWindowDelete;
+import app.l2nx.highfive.network.serverpackets.ExSetPartyLooting;
+import app.l2nx.highfive.network.serverpackets.PartyMemberPosition;
+import app.l2nx.highfive.network.serverpackets.PartySmallWindowAdd;
+import app.l2nx.highfive.network.serverpackets.PartySmallWindowAll;
+import app.l2nx.highfive.network.serverpackets.PartySmallWindowDelete;
+import app.l2nx.highfive.network.serverpackets.PartySmallWindowDeleteAll;
+import app.l2nx.highfive.network.serverpackets.ServerPacket;
+import app.l2nx.highfive.network.serverpackets.SystemMessage;
+import app.l2nx.highfive.taskmanagers.GameTimeTaskManager;
+import app.l2nx.highfive.util.LocationUtil;
 
 /**
  * This class serves as a container for player parties.
@@ -136,7 +136,7 @@ public class Party extends AbstractPlayerGroup
 	/**
 	 * Check if a player invitation request is expired.
 	 * @return {@code true} if time is expired, {@code false} otherwise
-	 * @see org.l2jmobius.gameserver.entity.actor.Player#isRequestExpired()
+	 * @see app.l2nx.highfive.entity.actor.Player#isRequestExpired()
 	 */
 	public boolean isInvitationRequestExpired()
 	{

@@ -14,14 +14,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package quests.Q00073_SagaOfTheDuelist;
+package app.l2nx.highfive.scripts.quests.Q00073_SagaOfTheDuelist;
 
-import org.l2jmobius.gameserver.entity.Location;
-import org.l2jmobius.gameserver.entity.actor.Npc;
-import org.l2jmobius.gameserver.entity.actor.Player;
-import org.l2jmobius.gameserver.mechanics.script.QuestState;
+import app.l2nx.highfive.entity.Location;
+import app.l2nx.highfive.entity.actor.Npc;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.mechanics.script.QuestState;
 
-import quests.AbstractSagaQuest;
+import app.l2nx.highfive.scripts.quests.AbstractSagaQuest;
 
 /**
  * Saga of the Duelist (73)

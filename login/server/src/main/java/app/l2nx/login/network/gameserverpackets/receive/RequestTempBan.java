@@ -14,16 +14,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.l2jmobius.loginserver.network.gameserverpackets.receive;
+package app.l2nx.login.network.gameserverpackets.receive;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.logging.Logger;
 
-import org.l2jmobius.commons.database.DatabaseFactory;
-import org.l2jmobius.commons.network.packet.SimpleReadablePacket;
-import org.l2jmobius.loginserver.controller.LoginController;
+import app.l2nx.commons.database.DatabaseFactory;
+import app.l2nx.commons.network.packet.SimpleReadablePacket;
+import app.l2nx.login.controller.LoginController;
 
 /**
  * @author mrTJO
