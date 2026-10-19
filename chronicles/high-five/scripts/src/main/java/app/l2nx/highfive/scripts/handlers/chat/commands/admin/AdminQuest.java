@@ -22,7 +22,6 @@
  */
 package app.l2nx.highfive.scripts.handlers.chat.commands.admin;
 
-import java.nio.file.Paths;
 import java.util.List;
 import java.util.Set;
 import java.util.StringTokenizer;
@@ -87,7 +86,12 @@ public class AdminQuest implements IAdminCommandHandler
 				return false;
 			}
 			
-			quest.reload();
+			if (!quest.reload())
+			{
+				activeChar.sendSysMessage("Failed to reload " + script + ", see the server log.");
+				return false;
+			}
+			
 			activeChar.sendSysMessage("Script successfully reloaded.");
 		}
 		else if (command.startsWith("admin_script_load"))
@@ -96,14 +100,14 @@ public class AdminQuest implements IAdminCommandHandler
 			st.nextToken(); // skip command token
 			if (!st.hasMoreTokens())
 			{
-				activeChar.sendSysMessage("Usage: //script_load path/to/script.java");
+				activeChar.sendSysMessage("Usage: //script_load package.ScriptClass or path/to/ScriptClass.java");
 				return false;
 			}
 			
 			final String script = st.nextToken();
 			try
 			{
-				ScriptEngine.getInstance().executeScript(Paths.get(script));
+				ScriptEngine.getInstance().executeScript(script);
 				activeChar.sendSysMessage("Script loaded successfully!");
 			}
 			catch (Exception e)

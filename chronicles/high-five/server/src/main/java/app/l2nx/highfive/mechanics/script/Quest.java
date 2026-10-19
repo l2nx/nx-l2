@@ -1,4 +1,5 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -23,8 +24,8 @@
 package app.l2nx.highfive.mechanics.script;
 
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
-import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -207,7 +208,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
 	private TimerExecutor<String> _timerExecutor;
 	
 	private final int _questId;
-	private final Path _scriptFile;
+	private final String scriptName;
 	private boolean _isCustom = false;
 	public int[] _questItemIds = null;
 	
@@ -218,7 +219,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
 	 */
 	public Quest(int questId)
 	{
-		_scriptFile = Path.of(ScriptEngine.getInstance().getCurrentLoadingScript().toUri());
+		scriptName = ScriptEngine.getInstance().getCurrentLoadingScript();
 		initializeAnnotationListeners();
 		
 		_questId = questId;
@@ -297,11 +298,11 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
 	}
 	
 	/**
-	 * @return Returns the scriptFile.
+	 * @return the name of the script that created this quest, {@code null} if it was not created by the script engine
 	 */
-	public Path getScriptFile()
+	public String getScriptName()
 	{
-		return _scriptFile;
+		return scriptName;
 	}
 	
 	/**
@@ -309,8 +310,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
 	 */
 	public String getPath()
 	{
-		final String path = getClass().getName().replace('.', '/');
-		return path.substring(0, path.lastIndexOf('/' + getClass().getSimpleName()));
+		return ScriptEngine.getInstance().getScriptFolder(getClass());
 	}
 	
 	/**
@@ -340,17 +340,44 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
 		return _questId > 10000 ? _questId - 5000 : _questId;
 	}
 	
-	public void reload()
+	/**
+	 * Without a public no-argument constructor the quest is recreated by re-running its script. Static fields keep their values.
+	 * @return {@code true} if a new instance replaced this one
+	 */
+	public boolean reload()
 	{
+		Constructor<? extends Quest> constructor = null;
+		try
+		{
+			constructor = getClass().getConstructor();
+		}
+		catch (NoSuchMethodException e)
+		{
+			if (scriptName == null)
+			{
+				LOGGER.warning(getClass().getSimpleName() + ": Cannot reload, the quest has no public no-argument constructor and was not created by a script.");
+				return false;
+			}
+		}
+		
 		unload();
 		
 		try
 		{
-			ScriptEngine.getInstance().executeScript(_scriptFile);
+			if (constructor != null)
+			{
+				constructor.newInstance();
+			}
+			else
+			{
+				ScriptEngine.getInstance().executeScript(scriptName);
+			}
+			return true;
 		}
 		catch (Exception e)
 		{
-			LOGGER.log(Level.WARNING, "Failed to reload script!", e);
+			LOGGER.log(Level.WARNING, "Failed to reload " + getName() + "!", e);
+			return false;
 		}
 	}
 	
@@ -1168,7 +1195,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
 	 */
 	public boolean showError(Player player, Throwable t)
 	{
-		LOGGER.log(Level.WARNING, getScriptFile().toAbsolutePath().toString(), t);
+		LOGGER.log(Level.WARNING, getClass().getName(), t);
 		if (t.getMessage() == null)
 		{
 			LOGGER.warning(getClass().getSimpleName() + ": " + t.getMessage());

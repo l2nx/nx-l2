@@ -4,4 +4,5 @@ plugins {
 
 dependencies {
     api(project(":libs:commons"))
+    implementation(libs.classgraph)
 }

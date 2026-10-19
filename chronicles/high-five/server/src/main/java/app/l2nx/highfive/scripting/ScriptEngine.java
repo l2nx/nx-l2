@@ -1,4 +1,5 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -23,43 +24,37 @@
 package app.l2nx.highfive.scripting;
 
 import java.io.File;
-import java.io.IOException;
-import java.nio.file.FileVisitResult;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.SimpleFileVisitor;
-import java.nio.file.attribute.BasicFileAttributes;
-import java.util.ArrayList;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.w3c.dom.Document;
 
 import app.l2nx.commons.util.IXmlReader;
-import app.l2nx.commons.util.TraceUtil;
 import app.l2nx.highfive.config.DevelopmentConfig;
-import app.l2nx.highfive.config.ServerConfig;
-import app.l2nx.highfive.scripting.engine.ScriptExecutor;
+import app.l2nx.highfive.scripting.annotations.Disabled;
 
 /**
+ * Runs compiled scripts named relative to {@link #SCRIPTS_PACKAGE} by calling their {@code main}. Re-running reuses the loaded classes, so
+ * changed script code needs a rebuild.
  * @author Mobius
  */
 public class ScriptEngine implements IXmlReader
 {
 	private static final Logger LOGGER = Logger.getLogger(ScriptEngine.class.getName());
 	
-	public static final Path SCRIPT_FOLDER = ServerConfig.SCRIPT_ROOT.toPath();
-	public static final Path MASTER_HANDLER_FILE = Paths.get(SCRIPT_FOLDER.toString(), "handlers", "MasterHandler.java");
-	public static final Path EFFECT_MASTER_HANDLER_FILE = Paths.get(SCRIPT_FOLDER.toString(), "handlers", "EffectMasterHandler.java");
+	public static final String SCRIPTS_PACKAGE = "app.l2nx.highfive.scripts";
+	public static final String MASTER_HANDLER = "handlers.MasterHandler";
+	public static final String EFFECT_MASTER_HANDLER = "handlers.EffectMasterHandler";
 	
-	private static final ScriptExecutor SCRIPT_EXECUTOR = new ScriptExecutor();
-	private static final Set<String> EXCLUSIONS = new HashSet<>();
+	private final Map<String, Set<String>> exclusions = new HashMap<>();
+	private final ScriptCatalog catalog = new ScriptCatalog(SCRIPTS_PACKAGE, exclusions);
+	private String currentScript;
 	
 	protected ScriptEngine()
 	{
@@ -70,144 +65,101 @@ public class ScriptEngine implements IXmlReader
 	@Override
 	public void load()
 	{
-		EXCLUSIONS.clear();
+		exclusions.clear();
 		parseDatapackFile("config/Scripts.xml");
-		LOGGER.info("Loaded " + EXCLUSIONS.size() + " files to exclude.");
+		LOGGER.info("Loaded " + exclusions.size() + " script exclusions.");
 	}
 	
 	@Override
 	public void parseDocument(Document document, File file)
 	{
+		forEach(document, "list", listNode -> forEach(listNode, "exclude", excludeNode ->
+		{
+			final Set<String> includes = exclusions.computeIfAbsent(parseString(excludeNode.getAttributes(), "file"), _ -> new HashSet<>());
+			forEach(excludeNode, "include", includeNode -> includes.add(parseString(includeNode.getAttributes(), "file")));
+		}));
+	}
+	
+	/**
+	 * @param script a script name ({@code quests.QuestMasterHandler}) or a Mobius script path ({@code quests/QuestMasterHandler.java})
+	 */
+	public void executeScript(String script) throws Exception
+	{
+		final String name = ScriptCatalog.toScriptName(script);
+		final Class<?> scriptClass;
 		try
 		{
-			final Map<String, Set<String>> excludePaths = new HashMap<>();
-			forEach(document, "list", listNode -> forEach(listNode, "exclude", excludeNode ->
-			{
-				final String excludeFile = parseString(excludeNode.getAttributes(), "file");
-				excludePaths.putIfAbsent(excludeFile, new HashSet<>());
-				
-				forEach(excludeNode, "include", includeNode -> excludePaths.get(excludeFile).add(parseString(includeNode.getAttributes(), "file")));
-			}));
-			
-			final int nameCount = SCRIPT_FOLDER.getNameCount();
-			Files.walkFileTree(SCRIPT_FOLDER, new SimpleFileVisitor<Path>()
-			{
-				@Override
-				public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
-				{
-					final String fileName = file.getFileName().toString();
-					if (!fileName.endsWith(".java"))
-					{
-						return FileVisitResult.CONTINUE;
-					}
-					
-					final List<String> relativePathParts = new ArrayList<>();
-					file.subpath(nameCount, file.getNameCount()).forEach(p -> relativePathParts.add(p.toString()));
-					for (int i = 0; i < relativePathParts.size(); i++)
-					{
-						final String currentPart = relativePathParts.get(i);
-						final Set<String> includePath = excludePaths.get(currentPart);
-						if (includePath != null)
-						{
-							boolean excludeScript = true;
-							
-							for (int j = i + 1; j < relativePathParts.size(); j++)
-							{
-								if (includePath.contains(relativePathParts.get(j)))
-								{
-									excludeScript = false;
-									break;
-								}
-							}
-							
-							if (excludeScript)
-							{
-								EXCLUSIONS.add(file.toUri().getPath());
-								break;
-							}
-						}
-					}
-					
-					return FileVisitResult.CONTINUE;
-				}
-			});
+			scriptClass = Class.forName(SCRIPTS_PACKAGE + "." + name);
 		}
-		catch (IOException e)
+		catch (ClassNotFoundException e)
 		{
-			LOGGER.warning(getClass().getSimpleName() + ": Could not initialize. " + e.getMessage());
+			throw new Exception("Script does not exist: " + name, e);
+		}
+		
+		if (scriptClass.isAnnotationPresent(Disabled.class))
+		{
+			return;
+		}
+		
+		// Same rule as the startup scan (ScriptCatalog): the class itself declares public static main(String[]).
+		final Method main;
+		try
+		{
+			main = scriptClass.getDeclaredMethod("main", String[].class);
+		}
+		catch (NoSuchMethodException e)
+		{
+			throw new Exception("Script " + name + " has no main method.", e);
+		}
+		
+		if (!Modifier.isPublic(main.getModifiers()) || !Modifier.isStatic(main.getModifiers()))
+		{
+			throw new Exception("Script " + name + " has no public static main method.");
+		}
+		
+		final String previous = currentScript;
+		currentScript = name;
+		try
+		{
+			main.invoke(null, (Object) new String[0]);
+		}
+		finally
+		{
+			currentScript = previous;
 		}
 	}
 	
-	private void processDirectory(File dir, List<Path> files)
-	{
-		for (File file : dir.listFiles())
-		{
-			if (file.isFile())
-			{
-				final String filePath = file.toURI().getPath();
-				if (filePath.endsWith(".java") && !EXCLUSIONS.contains(filePath))
-				{
-					files.add(file.toPath().toAbsolutePath());
-				}
-			}
-			else if (file.isDirectory())
-			{
-				processDirectory(file, files);
-			}
-		}
-	}
-	
-	public void executeScript(Path sourceFiles) throws Exception
-	{
-		Path path = sourceFiles;
-		if (!path.isAbsolute())
-		{
-			path = SCRIPT_FOLDER.resolve(path);
-		}
-		
-		path = path.toAbsolutePath();
-		// System.out.println("Executing script at path: " + path.toString());
-		
-		// Check if the path exists.
-		if (!Files.exists(path))
-		{
-			throw new Exception("Script file does not exist: " + path.toString());
-		}
-		
-		// Execute the script and check for errors.
-		final Entry<Path, Throwable> error = SCRIPT_EXECUTOR.executeScript(path);
-		if (error != null)
-		{
-			final Throwable cause = error.getValue();
-			if (cause != null)
-			{
-				LOGGER.warning(TraceUtil.getStackTrace(cause));
-			}
-			
-			throw new Exception("ScriptEngine: " + error.getKey() + " failed execution!", cause);
-		}
-	}
-	
-	public void executeScriptList() throws Exception
+	public void executeScriptList()
 	{
 		if (DevelopmentConfig.NO_QUESTS)
 		{
 			return;
 		}
 		
-		final List<Path> files = new ArrayList<>();
-		processDirectory(SCRIPT_FOLDER.toFile(), files);
-		
-		final Map<Path, Throwable> invokationErrors = SCRIPT_EXECUTOR.executeScripts(files);
-		for (Entry<Path, Throwable> entry : invokationErrors.entrySet())
+		for (String script : catalog.scripts())
 		{
-			LOGGER.warning(getClass().getSimpleName() + ": " + entry.getKey() + " failed execution! " + entry.getValue().getMessage());
+			try
+			{
+				executeScript(script);
+			}
+			catch (Exception e)
+			{
+				LOGGER.log(Level.WARNING, getClass().getSimpleName() + ": " + script + " failed execution!", e);
+			}
 		}
 	}
 	
-	public Path getCurrentLoadingScript()
+	/**
+	 * @return the name of the script whose {@code main} is running, {@code null} outside script loading
+	 */
+	public String getCurrentLoadingScript()
 	{
-		return SCRIPT_EXECUTOR.getCurrentExecutingScript();
+		return currentScript;
+	}
+	
+	public String getScriptFolder(Class<?> scriptClass)
+	{
+		return catalog.folderOf(scriptClass.getName());
 	}
 	
 	public static ScriptEngine getInstance()

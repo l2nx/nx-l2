@@ -206,7 +206,7 @@ public class AdminReload implements IAdminCommandHandler
 				{
 					try
 					{
-						ScriptEngine.getInstance().executeScript(ScriptEngine.EFFECT_MASTER_HANDLER_FILE);
+						ScriptEngine.getInstance().executeScript(ScriptEngine.EFFECT_MASTER_HANDLER);
 						AdminData.getInstance().broadcastMessageToGMs(activeChar.getName() + ": Reloaded effect master handler.");
 					}
 					catch (Exception e)
@@ -288,7 +288,7 @@ public class AdminReload implements IAdminCommandHandler
 				{
 					try
 					{
-						ScriptEngine.getInstance().executeScript(ScriptEngine.MASTER_HANDLER_FILE);
+						ScriptEngine.getInstance().executeScript(ScriptEngine.MASTER_HANDLER);
 						AdminData.getInstance().broadcastMessageToGMs(activeChar.getName() + ": Reloaded master handler.");
 					}
 					catch (Exception e)
