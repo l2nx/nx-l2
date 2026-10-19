@@ -32,12 +32,14 @@ import app.l2nx.highfive.network.serverpackets.ActionFailed;
 import app.l2nx.highfive.network.serverpackets.ExCubeGameChangePoints;
 import app.l2nx.highfive.network.serverpackets.ExCubeGameExtendedChangePoints;
 import java.util.concurrent.ThreadLocalRandom;
+import lombok.Getter;
 
 /**
  * @author BiggBoss
  */
 public class Block extends Monster {
-    private int _colorEffect;
+    @Getter
+    private int colorEffect;
 
     /**
      * Creates a block.
@@ -57,16 +59,16 @@ public class Block extends Monster {
         // Do not update color while sending old info.
         synchronized (this) {
             final BlockCheckerManager event = holder.getEvent();
-            if (_colorEffect == 0x53) {
+            if (colorEffect == 0x53) {
                 // Change color
-                _colorEffect = 0x00;
+                colorEffect = 0x00;
 
                 // BroadCast to all known players.
                 broadcastPacket(new AbstractNpcInfo.NpcInfo(this, attacker));
                 increaseTeamPointsAndSend(attacker, team, event);
             } else {
                 // Change color
-                _colorEffect = 0x53;
+                colorEffect = 0x53;
 
                 // BroadCast to all known players.
                 broadcastPacket(new AbstractNpcInfo.NpcInfo(this, attacker));
@@ -90,15 +92,7 @@ public class Block extends Monster {
      * @param isRed
      */
     public void setRed(boolean isRed) {
-        _colorEffect = isRed ? 0x53 : 0x00;
-    }
-
-    /**
-     * @return {@code true} if the block is red at this moment, {@code false} otherwise
-     */
-    @Override
-    public int getColorEffect() {
-        return _colorEffect;
+        colorEffect = isRed ? 0x53 : 0x00;
     }
 
     @Override

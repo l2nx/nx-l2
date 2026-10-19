@@ -21,36 +21,31 @@ package app.l2nx.highfive.mechanics.siege;
 
 import app.l2nx.highfive.util.StatSet;
 import java.util.Calendar;
+import lombok.Getter;
 
 /**
  * @author UnAfraid
  */
 public class SiegeScheduleDate {
-    private final int _day;
-    private final int _hour;
-    private final int _maxConcurrent;
-    private final boolean _siegeEnabled;
+    @Getter
+    private final int day;
+
+    @Getter
+    private final int hour;
+
+    @Getter
+    private final int maxConcurrent;
+
+    private final boolean siegeEnabled;
 
     public SiegeScheduleDate(StatSet set) {
-        _day = set.getInt("day", Calendar.SUNDAY);
-        _hour = set.getInt("hour", 16);
-        _maxConcurrent = set.getInt("maxConcurrent", 5);
-        _siegeEnabled = set.getBoolean("siegeEnabled", false);
-    }
-
-    public int getDay() {
-        return _day;
-    }
-
-    public int getHour() {
-        return _hour;
-    }
-
-    public int getMaxConcurrent() {
-        return _maxConcurrent;
+        day = set.getInt("day", Calendar.SUNDAY);
+        hour = set.getInt("hour", 16);
+        maxConcurrent = set.getInt("maxConcurrent", 5);
+        siegeEnabled = set.getBoolean("siegeEnabled", false);
     }
 
     public boolean siegeEnabled() {
-        return _siegeEnabled;
+        return siegeEnabled;
     }
 }

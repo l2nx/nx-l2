@@ -23,30 +23,24 @@
 package app.l2nx.highfive.data.holders;
 
 import app.l2nx.highfive.entity.item.enums.ElementalItemType;
+import lombok.Getter;
 
 /**
  * @author Mobius
  */
 public class ElementalItemHolder {
-    private final int _itemId;
-    private final byte _elementId;
-    private final ElementalItemType _type;
+    @Getter
+    private final int itemId;
+
+    @Getter
+    private final byte elementId;
+
+    @Getter
+    private final ElementalItemType type;
 
     public ElementalItemHolder(int itemId, int elementId, ElementalItemType type) {
-        _itemId = itemId;
-        _elementId = (byte) elementId;
-        _type = type;
-    }
-
-    public int getItemId() {
-        return _itemId;
-    }
-
-    public byte getElementId() {
-        return _elementId;
-    }
-
-    public ElementalItemType getType() {
-        return _type;
+        this.itemId = itemId;
+        this.elementId = (byte) elementId;
+        this.type = type;
     }
 }

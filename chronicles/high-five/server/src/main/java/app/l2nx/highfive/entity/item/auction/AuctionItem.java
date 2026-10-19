@@ -25,58 +25,48 @@ import app.l2nx.highfive.entity.item.instance.Item;
 import app.l2nx.highfive.managers.ItemManager;
 import app.l2nx.highfive.mechanics.options.Augmentation;
 import app.l2nx.highfive.util.StatSet;
+import lombok.Getter;
 
 /**
  * @author Forsaiken
  */
 public class AuctionItem {
-    private final int _auctionItemId;
-    private final int _auctionLength;
-    private final long _auctionInitBid;
+    @Getter
+    private final int auctionItemId;
 
-    private final int _itemId;
-    private final long _itemCount;
-    private final StatSet _itemExtra;
+    @Getter
+    private final int auctionLength;
+
+    @Getter
+    private final long auctionInitBid;
+
+    @Getter
+    private final int itemId;
+
+    @Getter
+    private final long itemCount;
+
+    private final StatSet itemExtra;
 
     public AuctionItem(
             int auctionItemId, int auctionLength, long auctionInitBid, int itemId, long itemCount, StatSet itemExtra) {
-        _auctionItemId = auctionItemId;
-        _auctionLength = auctionLength;
-        _auctionInitBid = auctionInitBid;
-        _itemId = itemId;
-        _itemCount = itemCount;
-        _itemExtra = itemExtra;
+        this.auctionItemId = auctionItemId;
+        this.auctionLength = auctionLength;
+        this.auctionInitBid = auctionInitBid;
+        this.itemId = itemId;
+        this.itemCount = itemCount;
+        this.itemExtra = itemExtra;
     }
 
     public boolean checkItemExists() {
-        return ItemData.getInstance().getTemplate(_itemId) != null;
-    }
-
-    public int getAuctionItemId() {
-        return _auctionItemId;
-    }
-
-    public int getAuctionLength() {
-        return _auctionLength;
-    }
-
-    public long getAuctionInitBid() {
-        return _auctionInitBid;
-    }
-
-    public int getItemId() {
-        return _itemId;
-    }
-
-    public long getItemCount() {
-        return _itemCount;
+        return ItemData.getInstance().getTemplate(itemId) != null;
     }
 
     public Item createNewItemInstance() {
-        final Item item = ItemManager.createItem(ItemProcessType.RESTORE, _itemId, _itemCount, null, null);
+        final Item item = ItemManager.createItem(ItemProcessType.RESTORE, itemId, itemCount, null, null);
         item.setEnchantLevel(item.getDefaultEnchantLevel());
 
-        final int augmentationId = _itemExtra.getInt("augmentation_id", 0);
+        final int augmentationId = itemExtra.getInt("augmentation_id", 0);
         if (augmentationId > 0) {
             item.setAugmentation(new Augmentation(augmentationId));
         }

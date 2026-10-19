@@ -26,14 +26,15 @@ import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.itemcontainer.Inventory;
 import app.l2nx.highfive.network.ConnectionState;
 import app.l2nx.highfive.network.GameClient;
-import app.l2nx.highfive.network.PacketLogger;
 import app.l2nx.network.buffer.WriteBuffer;
 import app.l2nx.network.packet.WritablePacket;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 
 /**
  * @author Mobius
  */
+@Slf4j
 public abstract class ServerPacket extends WritablePacket<GameClient> {
     private static final int[] PAPERDOLL_ORDER = {
         Inventory.PAPERDOLL_UNDER,
@@ -79,8 +80,8 @@ public abstract class ServerPacket extends WritablePacket<GameClient> {
             writeImpl(c, buffer);
             return true;
         } catch (Exception e) {
-            PacketLogger.warning("Error writing packet " + this + " to client (" + e.getMessage() + ") " + c + "]]");
-            PacketLogger.warning(ExceptionUtils.getStackTrace(e));
+            log.warn("Error writing packet {} to client ({}) {}]]", this, e.getMessage(), c);
+            log.warn(ExceptionUtils.getStackTrace(e));
         }
 
         return false;

@@ -29,48 +29,47 @@ import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.network.serverpackets.MagicSkillUse;
 import java.util.Collections;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Executes heal cubic actions.<br>
  * Tracks successful heal usage so consumable heal cubics respect template limits.
  * @author UnAfraid, BazookaRpm
  */
+@Slf4j
 public class CubicHeal implements Runnable {
-    private static final Logger LOGGER = Logger.getLogger(CubicHeal.class.getName());
 
-    private final Cubic _cubic;
-    private final AtomicInteger _currentCount = new AtomicInteger();
+    private final Cubic cubic;
+    private final AtomicInteger currentCount = new AtomicInteger();
 
     public CubicHeal(Cubic cubic) {
-        _cubic = cubic;
+        this.cubic = cubic;
     }
 
     @Override
     public void run() {
-        if (_cubic == null) {
+        if (cubic == null) {
             return;
         }
 
-        if (_cubic.getOwner().isDead() || !_cubic.getOwner().isOnline()) {
-            _cubic.getOwner().removeCubic(_cubic.getId());
-            _cubic.getOwner().broadcastUserInfo();
+        if (cubic.getOwner().isDead() || !cubic.getOwner().isOnline()) {
+            cubic.getOwner().removeCubic(cubic.getId());
+            cubic.getOwner().broadcastUserInfo();
             return;
         }
 
         try {
-            if ((_cubic.getCubicMaxCount() > -1) && (_currentCount.get() >= _cubic.getCubicMaxCount())) {
-                _cubic.stopAction();
-                if ((_cubic.getTemplate() != null) && (_cubic.getTemplate().getUseUp() > 0)) {
-                    _cubic.getOwner().removeCubic(_cubic.getId());
-                    _cubic.getOwner().broadcastUserInfo();
+            if ((cubic.getCubicMaxCount() > -1) && (currentCount.get() >= cubic.getCubicMaxCount())) {
+                cubic.stopAction();
+                if ((cubic.getTemplate() != null) && (cubic.getTemplate().getUseUp() > 0)) {
+                    cubic.getOwner().removeCubic(cubic.getId());
+                    cubic.getOwner().broadcastUserInfo();
                 }
                 return;
             }
 
-            _cubic.cubicTargetForHeal();
-            final Creature target = _cubic.getTarget();
+            cubic.cubicTargetForHeal();
+            final Creature target = cubic.getTarget();
             if ((target == null) || target.isDead()) {
                 return;
             }
@@ -85,31 +84,30 @@ public class CubicHeal implements Runnable {
                 return;
             }
 
-            skill.activateSkill(_cubic, Collections.singletonList(target));
-            _cubic.getOwner()
+            skill.activateSkill(cubic, Collections.singletonList(target));
+            cubic.getOwner()
                     .broadcastPacket(
-                            new MagicSkillUse(_cubic.getOwner(), target, skill.getId(), skill.getLevel(), 0, 0));
-            _currentCount.incrementAndGet();
+                            new MagicSkillUse(cubic.getOwner(), target, skill.getId(), skill.getLevel(), 0, 0));
+            currentCount.incrementAndGet();
         } catch (Exception e) {
-            LOGGER.log(
-                    Level.SEVERE,
-                    "Cubic heal failed. cubicId: " + _cubic.getId() + " ownerId: "
-                            + _cubic.getOwner().getObjectId(),
+            log.error(
+                    "Cubic heal failed. cubicId: {} ownerId: {}",
+                    cubic.getId(),
+                    cubic.getOwner().getObjectId(),
                     e);
         }
     }
 
     private CubicSkill getHealSkill(Creature target) {
-        if ((_cubic.getTemplate() != null)
-                && !_cubic.getTemplate().validateConditions(_cubic, _cubic.getOwner(), target)) {
+        if ((cubic.getTemplate() != null) && !cubic.getTemplate().validateConditions(cubic, cubic.getOwner(), target)) {
             return null;
         }
 
-        for (CubicSkill cubicSkill : _cubic.getCubicSkills()) {
+        for (CubicSkill cubicSkill : cubic.getCubicSkills()) {
             final Skill skill = cubicSkill.getSkill();
             if ((skill != null)
                     && (skill.getId() == Cubic.SKILL_CUBIC_HEAL)
-                    && cubicSkill.validateConditions(_cubic, _cubic.getOwner(), target)) {
+                    && cubicSkill.validateConditions(cubic, cubic.getOwner(), target)) {
                 return cubicSkill;
             }
         }

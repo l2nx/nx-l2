@@ -19,6 +19,8 @@
  */
 package app.l2nx.highfive.entity.item.enums;
 
+import lombok.Getter;
+
 /**
  * @author UnAfraid
  */
@@ -28,13 +30,10 @@ public enum ShotType {
     BLESSED_SPIRITSHOTS,
     FISH_SOULSHOTS;
 
-    private final int _mask;
+    @Getter
+    private final int mask;
 
     private ShotType() {
-        _mask = 1 << ordinal();
-    }
-
-    public int getMask() {
-        return _mask;
+        mask = 1 << ordinal();
     }
 }

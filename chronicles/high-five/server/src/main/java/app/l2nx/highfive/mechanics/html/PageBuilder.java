@@ -31,66 +31,66 @@ import java.util.Objects;
  * @param <T>
  */
 public class PageBuilder<T> {
-    private final Collection<T> _elements;
-    private final int _elementsPerPage;
-    private final String _bypass;
-    private int _currentPage = 0;
-    private IPageHandler _pageHandler = DefaultPageHandler.INSTANCE;
-    private IBypassFormatter _formatter = DefaultFormatter.INSTANCE;
-    private IHtmlStyle _style = DefaultStyle.INSTANCE;
-    private IBodyHandler<T> _bodyHandler;
+    private final Collection<T> elements;
+    private final int elementsPerPage;
+    private final String bypass;
+    private int currentPage = 0;
+    private IPageHandler pageHandler = DefaultPageHandler.INSTANCE;
+    private IBypassFormatter formatter = DefaultFormatter.INSTANCE;
+    private IHtmlStyle style = DefaultStyle.INSTANCE;
+    private IBodyHandler<T> bodyHandler;
 
     private PageBuilder(Collection<T> elements, int elementsPerPage, String bypass) {
-        _elements = elements;
-        _elementsPerPage = elementsPerPage;
-        _bypass = bypass;
+        this.elements = elements;
+        this.elementsPerPage = elementsPerPage;
+        this.bypass = bypass;
     }
 
     public PageBuilder<T> currentPage(int currentPage) {
-        _currentPage = Math.max(currentPage, 0);
+        this.currentPage = Math.max(currentPage, 0);
         return this;
     }
 
     public PageBuilder<T> bodyHandler(IBodyHandler<T> bodyHandler) {
         Objects.requireNonNull(bodyHandler, "Body Handler cannot be null!");
-        _bodyHandler = bodyHandler;
+        this.bodyHandler = bodyHandler;
         return this;
     }
 
     public PageBuilder<T> pageHandler(IPageHandler pageHandler) {
         Objects.requireNonNull(pageHandler, "Page Handler cannot be null!");
-        _pageHandler = pageHandler;
+        this.pageHandler = pageHandler;
         return this;
     }
 
     public PageBuilder<T> formatter(IBypassFormatter formatter) {
         Objects.requireNonNull(formatter, "Formatter cannot be null!");
-        _formatter = formatter;
+        this.formatter = formatter;
         return this;
     }
 
     public PageBuilder<T> style(IHtmlStyle style) {
         Objects.requireNonNull(style, "Style cannot be null!");
-        _style = style;
+        this.style = style;
         return this;
     }
 
     public PageResult build() {
-        Objects.requireNonNull(_bodyHandler, "Body was not set!");
+        Objects.requireNonNull(bodyHandler, "Body was not set!");
 
         final StringBuilder pagerTemplate = new StringBuilder();
-        final int pages = (_elements.size() / _elementsPerPage) + ((_elements.size() % _elementsPerPage) > 0 ? 1 : 0);
+        final int pages = (elements.size() / elementsPerPage) + ((elements.size() % elementsPerPage) > 0 ? 1 : 0);
         if (pages > 1) {
-            _pageHandler.apply(_bypass, _currentPage, pages - 1, pagerTemplate, _formatter, _style);
+            pageHandler.apply(bypass, currentPage, pages - 1, pagerTemplate, formatter, style);
         }
 
-        if (_currentPage > pages) {
-            _currentPage = pages - 1;
+        if (currentPage > pages) {
+            currentPage = pages - 1;
         }
 
         final StringBuilder sb = new StringBuilder();
-        final int start = Math.max(_elementsPerPage * _currentPage, 0);
-        _bodyHandler.create(_elements, pages, start, _elementsPerPage, sb);
+        final int start = Math.max(elementsPerPage * currentPage, 0);
+        bodyHandler.create(elements, pages, start, elementsPerPage, sb);
 
         return new PageResult(pages, pagerTemplate, sb);
     }

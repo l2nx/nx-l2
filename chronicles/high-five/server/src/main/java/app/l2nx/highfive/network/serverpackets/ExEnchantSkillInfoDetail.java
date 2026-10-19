@@ -44,12 +44,12 @@ public class ExEnchantSkillInfoDetail extends ServerPacket {
     private int bookId = 0;
     private boolean reqCount = false;
     private int multi = 1;
-    private final int _type;
-    private final int _skillId;
-    private final int _skillLevel;
-    private final int _chance;
-    private int _sp;
-    private final int _adenacount;
+    private final int type;
+    private final int skillId;
+    private final int skillLevel;
+    private final int chance;
+    private int sp;
+    private final int adenacount;
 
     public ExEnchantSkillInfoDetail(int type, int skillId, int skillLevel, Player ply) {
         final EnchantSkillLearn enchantLearn =
@@ -76,20 +76,20 @@ public class ExEnchantSkillInfoDetail extends ServerPacket {
             multi = EnchantSkillGroupsData.SAFE_ENCHANT_COST_MULTIPLIER;
         }
 
-        _chance = esd.getRate(ply);
-        _sp = esd.getSpCost();
+        chance = esd.getRate(ply);
+        sp = esd.getSpCost();
         if (type == TYPE_UNTRAIN_ENCHANT) {
-            _sp = (int) (0.8 * _sp);
+            sp = (int) (0.8 * sp);
         }
 
-        _adenacount = esd.getAdenaCost() * multi;
-        _type = type;
-        _skillId = skillId;
-        _skillLevel = skillLevel;
+        adenacount = esd.getAdenaCost() * multi;
+        this.type = type;
+        this.skillId = skillId;
+        this.skillLevel = skillLevel;
         switch (type) {
             case TYPE_NORMAL_ENCHANT: {
                 bookId = EnchantSkillGroupsData.NORMAL_ENCHANT_BOOK;
-                reqCount = (_skillLevel % 100) < 2;
+                reqCount = (this.skillLevel % 100) < 2;
                 break;
             }
             case TYPE_SAFE_ENCHANT: {
@@ -120,14 +120,14 @@ public class ExEnchantSkillInfoDetail extends ServerPacket {
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_ENCHANT_SKILL_INFO_DETAIL.writeId(this, buffer);
-        buffer.writeInt(_type);
-        buffer.writeInt(_skillId);
-        buffer.writeInt(_skillLevel);
-        buffer.writeInt(_sp * multi); // sp
-        buffer.writeInt(_chance); // exp
+        buffer.writeInt(type);
+        buffer.writeInt(skillId);
+        buffer.writeInt(skillLevel);
+        buffer.writeInt(sp * multi); // sp
+        buffer.writeInt(chance); // exp
         buffer.writeInt(2); // items count?
         buffer.writeInt(Inventory.ADENA_ID); // Adena
-        buffer.writeInt(_adenacount); // Adena count
+        buffer.writeInt(adenacount); // Adena count
         buffer.writeInt(bookId); // ItemId Required
         buffer.writeInt(reqCount);
     }

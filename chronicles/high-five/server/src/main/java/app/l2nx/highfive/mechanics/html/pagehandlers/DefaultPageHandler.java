@@ -29,10 +29,10 @@ import app.l2nx.highfive.mechanics.html.IPageHandler;
  */
 public class DefaultPageHandler implements IPageHandler {
     public static final DefaultPageHandler INSTANCE = new DefaultPageHandler(2);
-    protected final int _pagesOffset;
+    protected final int pagesOffset;
 
     public DefaultPageHandler(int pagesOffset) {
-        _pagesOffset = pagesOffset;
+        this.pagesOffset = pagesOffset;
     }
 
     @Override
@@ -43,12 +43,12 @@ public class DefaultPageHandler implements IPageHandler {
             StringBuilder sb,
             IBypassFormatter bypassFormatter,
             IHtmlStyle style) {
-        final int pagerStart = Math.max(currentPage - _pagesOffset, 0);
-        final int pagerFinish = Math.min(currentPage + _pagesOffset + 1, pages);
+        final int pagerStart = Math.max(currentPage - pagesOffset, 0);
+        final int pagerFinish = Math.min(currentPage + pagesOffset + 1, pages);
 
         // Show the initial pages in case we are in the middle or at the end.
-        if (pagerStart > _pagesOffset) {
-            for (int i = 0; i < _pagesOffset; i++) {
+        if (pagerStart > pagesOffset) {
+            for (int i = 0; i < pagesOffset; i++) {
                 sb.append(style.applyBypass(
                         bypassFormatter.formatBypass(bypass, i), String.valueOf(i + 1), currentPage == i));
             }
@@ -68,7 +68,7 @@ public class DefaultPageHandler implements IPageHandler {
             // Separator
             sb.append(style.applySeparator());
 
-            for (int i = pages - _pagesOffset; i < pages; i++) {
+            for (int i = pages - pagesOffset; i < pages; i++) {
                 sb.append(style.applyBypass(
                         bypassFormatter.formatBypass(bypass, i), String.valueOf(i + 1), currentPage == i));
             }

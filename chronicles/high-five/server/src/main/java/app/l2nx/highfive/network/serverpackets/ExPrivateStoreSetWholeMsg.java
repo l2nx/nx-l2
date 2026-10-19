@@ -28,17 +28,17 @@ import app.l2nx.network.buffer.WriteBuffer;
  * @author KenM
  */
 public class ExPrivateStoreSetWholeMsg extends ServerPacket {
-    private final int _objectId;
-    private final String _message;
+    private final int objectId;
+    private final String message;
 
     public ExPrivateStoreSetWholeMsg(Player player, String msg) {
-        _objectId = player.getObjectId();
-        _message = msg;
+        objectId = player.getObjectId();
+        message = msg;
     }
 
     public ExPrivateStoreSetWholeMsg(int objectId, String message) {
-        _objectId = objectId;
-        _message = message;
+        this.objectId = objectId;
+        this.message = message;
     }
 
     public ExPrivateStoreSetWholeMsg(Player player) {
@@ -48,7 +48,7 @@ public class ExPrivateStoreSetWholeMsg extends ServerPacket {
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_PRIVATE_STORE_PACKAGE_MSG.writeId(this, buffer);
-        buffer.writeInt(_objectId);
-        buffer.writeString(_message);
+        buffer.writeInt(objectId);
+        buffer.writeString(message);
     }
 }

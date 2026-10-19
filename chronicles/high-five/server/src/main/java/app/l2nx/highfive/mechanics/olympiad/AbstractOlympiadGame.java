@@ -44,15 +44,18 @@ import app.l2nx.highfive.network.serverpackets.ServerPacket;
 import app.l2nx.highfive.network.serverpackets.SkillCoolTime;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author godson, GodKratos, Pere, DS
  */
+@Slf4j
 public abstract class AbstractOlympiadGame {
-    protected static final Logger LOGGER = Logger.getLogger(AbstractOlympiadGame.class.getName());
-    protected static final Logger LOGGER_OLYMPIAD = Logger.getLogger("olympiad");
+
+    private static final Logger OLYMPIAD_LOG = LoggerFactory.getLogger("olympiad");
 
     protected static final String POINTS = "olympiad_points";
     protected static final String COMP_DONE = "competitions_done";
@@ -64,25 +67,21 @@ public abstract class AbstractOlympiadGame {
     protected static final String COMP_DONE_WEEK_NON_CLASSED = "competitions_done_week_non_classed";
     protected static final String COMP_DONE_WEEK_TEAM = "competitions_done_week_team";
 
-    protected long _startTime = 0;
-    protected boolean _aborted = false;
-    protected final int _stadiumID;
+    protected long startTime = 0;
+
+    @Getter
+    protected boolean aborted = false;
+
+    @Getter
+    protected final int stadiumId;
 
     protected AbstractOlympiadGame(int id) {
-        _stadiumID = id;
-    }
-
-    public boolean isAborted() {
-        return _aborted;
-    }
-
-    public int getStadiumId() {
-        return _stadiumID;
+        stadiumId = id;
     }
 
     protected boolean makeCompetitionStart() {
-        _startTime = System.currentTimeMillis();
-        return !_aborted;
+        startTime = System.currentTimeMillis();
+        return !aborted;
     }
 
     protected void addPointsToParticipant(Participant par, int points) {
@@ -202,7 +201,7 @@ public abstract class AbstractOlympiadGame {
             // FIXME: Make sure player has no buffs.
             cleanEffects(player);
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, e.getMessage(), e);
+            log.warn(e.getMessage(), e);
             return false;
         }
 
@@ -299,7 +298,7 @@ public abstract class AbstractOlympiadGame {
             player.sendSkillList();
             player.sendPacket(new SkillCoolTime(player));
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, e.getMessage(), e);
+            log.warn(e.getMessage(), e);
         }
     }
 
@@ -337,7 +336,7 @@ public abstract class AbstractOlympiadGame {
             player.setCurrentMp(player.getMaxMp());
             player.getStatus().startHpMpRegeneration();
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, e.getMessage(), e);
+            log.warn(e.getMessage(), e);
         }
     }
 
@@ -387,7 +386,7 @@ public abstract class AbstractOlympiadGame {
                 AntiFeedManager.getInstance().removePlayer(AntiFeedManager.OLYMPIAD_ID, player);
             }
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, "portPlayersToArena()", e);
+            log.warn("portPlayersToArena()", e);
         }
     }
 
@@ -435,7 +434,7 @@ public abstract class AbstractOlympiadGame {
 
             player.sendInventoryUpdate(iu);
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, e.getMessage(), e);
+            log.warn(e.getMessage(), e);
         }
     }
 

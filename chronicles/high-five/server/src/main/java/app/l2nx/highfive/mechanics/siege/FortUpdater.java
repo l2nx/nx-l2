@@ -23,77 +23,76 @@ import app.l2nx.highfive.config.FeatureConfig;
 import app.l2nx.highfive.entity.clan.Clan;
 import app.l2nx.highfive.entity.item.enums.ItemProcessType;
 import app.l2nx.highfive.entity.itemcontainer.Inventory;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Class managing periodical events with castle
  * @author Vice
  */
+@Slf4j
 public class FortUpdater implements Runnable {
-    private static final Logger LOGGER = Logger.getLogger(FortUpdater.class.getName());
 
-    private final Clan _clan;
-    private final Fort _fort;
-    private int _runCount;
-    private final FortUpdaterType _updaterType;
+    private final Clan clan;
+    private final Fort fort;
+
+    @Getter
+    private int runCount;
+
+    private final FortUpdaterType updaterType;
 
     public FortUpdater(Fort fort, Clan clan, int runCount, FortUpdaterType ut) {
-        _fort = fort;
-        _clan = clan;
-        _runCount = runCount;
-        _updaterType = ut;
+        this.fort = fort;
+        this.clan = clan;
+        this.runCount = runCount;
+        updaterType = ut;
     }
 
     @Override
     public void run() {
         try {
-            switch (_updaterType) {
+            switch (updaterType) {
                 case PERIODIC_UPDATE: {
-                    _runCount++;
-                    if ((_fort.getOwnerClan() == null) || (_fort.getOwnerClan() != _clan)) {
+                    runCount++;
+                    if ((fort.getOwnerClan() == null) || (fort.getOwnerClan() != clan)) {
                         return;
                     }
 
-                    _fort.getOwnerClan().increaseBloodOathCount();
+                    fort.getOwnerClan().increaseBloodOathCount();
 
-                    if (_fort.getFortState() == 2) {
-                        if (_clan.getWarehouse().getAdena() >= FeatureConfig.FS_FEE_FOR_CASTLE) {
-                            _clan.getWarehouse()
+                    if (fort.getFortState() == 2) {
+                        if (clan.getWarehouse().getAdena() >= FeatureConfig.FS_FEE_FOR_CASTLE) {
+                            clan.getWarehouse()
                                     .destroyItemByItemId(
                                             ItemProcessType.FEE,
                                             Inventory.ADENA_ID,
                                             FeatureConfig.FS_FEE_FOR_CASTLE,
                                             null,
                                             null);
-                            _fort.getContractedCastle().addToTreasuryNoTax(FeatureConfig.FS_FEE_FOR_CASTLE);
-                            _fort.raiseSupplyLeveL();
+                            fort.getContractedCastle().addToTreasuryNoTax(FeatureConfig.FS_FEE_FOR_CASTLE);
+                            fort.raiseSupplyLeveL();
                         } else {
-                            _fort.setFortState(1, 0);
+                            fort.setFortState(1, 0);
                         }
                     }
 
-                    _fort.saveFortVariables();
+                    fort.saveFortVariables();
                     break;
                 }
                 case MAX_OWN_TIME: {
-                    if ((_fort.getOwnerClan() == null) || (_fort.getOwnerClan() != _clan)) {
+                    if ((fort.getOwnerClan() == null) || (fort.getOwnerClan() != clan)) {
                         return;
                     }
 
-                    if (_fort.getOwnedTime() > (FeatureConfig.FS_MAX_OWN_TIME * 3600)) {
-                        _fort.removeOwner(true);
-                        _fort.setFortState(0, 0);
+                    if (fort.getOwnedTime() > (FeatureConfig.FS_MAX_OWN_TIME * 3600)) {
+                        fort.removeOwner(true);
+                        fort.setFortState(0, 0);
                     }
                     break;
                 }
             }
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, "run: ", e);
+            log.warn("run: ", e);
         }
-    }
-
-    public int getRunCount() {
-        return _runCount;
     }
 }

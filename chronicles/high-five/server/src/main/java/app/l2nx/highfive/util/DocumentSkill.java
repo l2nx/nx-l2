@@ -29,7 +29,10 @@ import app.l2nx.highfive.mechanics.skill.Skill;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Level;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
@@ -37,9 +40,13 @@ import org.w3c.dom.Node;
 /**
  * @author mkizub, Mobius
  */
+@Slf4j
 public class DocumentSkill extends DocumentBase {
-    private DocumentSkillDataHolder _currentSkill;
-    private final List<Skill> _skillsInFile = new ArrayList<>();
+    @Setter(AccessLevel.PRIVATE)
+    private DocumentSkillDataHolder currentSkill;
+
+    @Getter
+    private final List<Skill> skills = new ArrayList<>();
 
     private class DocumentSkillDataHolder {
         public DocumentSkillDataHolder() {}
@@ -64,21 +71,17 @@ public class DocumentSkill extends DocumentBase {
         super(file);
     }
 
-    private void setCurrentSkill(DocumentSkillDataHolder skill) {
-        _currentSkill = skill;
-    }
-
     @Override
     protected StatSet getStatSet() {
-        return _currentSkill.sets[_currentSkill.currentLevel];
+        return currentSkill.sets[currentSkill.currentLevel];
     }
 
     @Override
     protected String getTableValue(String name) {
         try {
-            return _tables.get(name)[_currentSkill.currentLevel];
+            return tables.get(name)[currentSkill.currentLevel];
         } catch (RuntimeException e) {
-            LOGGER.log(Level.SEVERE, "Error in table: " + name + " of Skill Id " + _currentSkill.id, e);
+            log.error("Error in table: {} of Skill Id {}", name, currentSkill.id, e);
             return "";
         }
     }
@@ -86,12 +89,9 @@ public class DocumentSkill extends DocumentBase {
     @Override
     protected String getTableValue(String name, int idx) {
         try {
-            return _tables.get(name)[idx - 1];
+            return tables.get(name)[idx - 1];
         } catch (RuntimeException e) {
-            LOGGER.log(
-                    Level.SEVERE,
-                    "Wrong level count in skill Id " + _currentSkill.id + " name: " + name + " index : " + idx,
-                    e);
+            log.error("Wrong level count in skill Id {} name: {} index : {}", currentSkill.id, name, idx, e);
             return "";
         }
     }
@@ -104,14 +104,14 @@ public class DocumentSkill extends DocumentBase {
                     if ("skill".equalsIgnoreCase(d.getNodeName())) {
                         setCurrentSkill(new DocumentSkillDataHolder());
                         parseSkill(d);
-                        _skillsInFile.addAll(_currentSkill.skills);
+                        skills.addAll(currentSkill.skills);
                         resetTable();
                     }
                 }
             } else if ("skill".equalsIgnoreCase(n.getNodeName())) {
                 setCurrentSkill(new DocumentSkillDataHolder());
                 parseSkill(n);
-                _skillsInFile.addAll(_currentSkill.skills);
+                skills.addAll(currentSkill.skills);
             }
         }
     }
@@ -203,26 +203,26 @@ public class DocumentSkill extends DocumentBase {
                             Integer.parseInt(attrs.getNamedItem("enchantGroup8").getNodeValue()));
         }
 
-        _currentSkill.id = skillId;
-        _currentSkill.name = skillName;
-        _currentSkill.sets = new StatSet[lastLvl];
-        _currentSkill.enchsets1 = new StatSet[enchantLevels1];
-        _currentSkill.enchsets2 = new StatSet[enchantLevels2];
-        _currentSkill.enchsets3 = new StatSet[enchantLevels3];
-        _currentSkill.enchsets4 = new StatSet[enchantLevels4];
-        _currentSkill.enchsets5 = new StatSet[enchantLevels5];
-        _currentSkill.enchsets6 = new StatSet[enchantLevels6];
-        _currentSkill.enchsets7 = new StatSet[enchantLevels7];
-        _currentSkill.enchsets8 = new StatSet[enchantLevels8];
+        currentSkill.id = skillId;
+        currentSkill.name = skillName;
+        currentSkill.sets = new StatSet[lastLvl];
+        currentSkill.enchsets1 = new StatSet[enchantLevels1];
+        currentSkill.enchsets2 = new StatSet[enchantLevels2];
+        currentSkill.enchsets3 = new StatSet[enchantLevels3];
+        currentSkill.enchsets4 = new StatSet[enchantLevels4];
+        currentSkill.enchsets5 = new StatSet[enchantLevels5];
+        currentSkill.enchsets6 = new StatSet[enchantLevels6];
+        currentSkill.enchsets7 = new StatSet[enchantLevels7];
+        currentSkill.enchsets8 = new StatSet[enchantLevels8];
 
         for (int i = 0; i < lastLvl; i++) {
-            _currentSkill.sets[i] = new StatSet();
-            _currentSkill.sets[i].set("skill_id", _currentSkill.id);
-            _currentSkill.sets[i].set("level", i + 1);
-            _currentSkill.sets[i].set("name", _currentSkill.name);
+            currentSkill.sets[i] = new StatSet();
+            currentSkill.sets[i].set("skill_id", currentSkill.id);
+            currentSkill.sets[i].set("level", i + 1);
+            currentSkill.sets[i].set("name", currentSkill.name);
         }
 
-        if (_currentSkill.sets.length != lastLvl) {
+        if (currentSkill.sets.length != lastLvl) {
             throw new RuntimeException(
                     "Skill id=" + skillId + " number of levels missmatch, " + lastLvl + " levels expected");
         }
@@ -249,13 +249,13 @@ public class DocumentSkill extends DocumentBase {
                 }
 
                 if ("set".equalsIgnoreCase(nodeName)) {
-                    parseBeanSet(n, _currentSkill.sets[i - 1], i);
+                    parseBeanSet(n, currentSkill.sets[i - 1], i);
                 } else {
                     // Check if this is a direct element value node (like <reuseDelay>3000</reuseDelay>).
                     if (n.getAttributes().getNamedItem("levelValues") != null) {
-                        parseInlineLevelTable(n, _currentSkill.sets[i - 1], i);
+                        parseInlineLevelTable(n, currentSkill.sets[i - 1], i);
                     } else {
-                        parseElementValue(n, _currentSkill.sets[i - 1], i);
+                        parseElementValue(n, currentSkill.sets[i - 1], i);
                     }
                 }
             }
@@ -263,10 +263,10 @@ public class DocumentSkill extends DocumentBase {
 
         // --- Enchant Route 1 ---
         for (int i = 0; i < enchantLevels1; i++) {
-            _currentSkill.enchsets1[i] = new StatSet();
-            _currentSkill.enchsets1[i].set("skill_id", _currentSkill.id);
-            _currentSkill.enchsets1[i].set("level", i + 101);
-            _currentSkill.enchsets1[i].set("name", _currentSkill.name);
+            currentSkill.enchsets1[i] = new StatSet();
+            currentSkill.enchsets1[i].set("skill_id", currentSkill.id);
+            currentSkill.enchsets1[i].set("level", i + 101);
+            currentSkill.enchsets1[i].set("name", currentSkill.name);
 
             for (n = first; n != null; n = n.getNextSibling()) {
                 if (n.getNodeType() != Node.ELEMENT_NODE) {
@@ -281,14 +281,14 @@ public class DocumentSkill extends DocumentBase {
                 }
 
                 if ("set".equalsIgnoreCase(nodeName)) {
-                    parseBeanSet(n, _currentSkill.enchsets1[i], _currentSkill.sets.length);
+                    parseBeanSet(n, currentSkill.enchsets1[i], currentSkill.sets.length);
                 } else if ("enchant1".equalsIgnoreCase(nodeName)) {
-                    parseBeanSet(n, _currentSkill.enchsets1[i], i + 1);
+                    parseBeanSet(n, currentSkill.enchsets1[i], i + 1);
                 } else if (!nodeName.toLowerCase().endsWith("effects")) {
                     if (n.getAttributes().getNamedItem("subLevel1Values") != null) {
-                        parseInlineLevelTable(n, _currentSkill.enchsets1[i], i + 1, 1);
+                        parseInlineLevelTable(n, currentSkill.enchsets1[i], i + 1, 1);
                     } else {
-                        parseElementValue(n, _currentSkill.enchsets1[i], _currentSkill.sets.length);
+                        parseElementValue(n, currentSkill.enchsets1[i], currentSkill.sets.length);
                     }
                 }
             }
@@ -296,10 +296,10 @@ public class DocumentSkill extends DocumentBase {
 
         // --- Enchant Route 2 ---
         for (int i = 0; i < enchantLevels2; i++) {
-            _currentSkill.enchsets2[i] = new StatSet();
-            _currentSkill.enchsets2[i].set("skill_id", _currentSkill.id);
-            _currentSkill.enchsets2[i].set("level", i + 201);
-            _currentSkill.enchsets2[i].set("name", _currentSkill.name);
+            currentSkill.enchsets2[i] = new StatSet();
+            currentSkill.enchsets2[i].set("skill_id", currentSkill.id);
+            currentSkill.enchsets2[i].set("level", i + 201);
+            currentSkill.enchsets2[i].set("name", currentSkill.name);
 
             for (n = first; n != null; n = n.getNextSibling()) {
                 if (n.getNodeType() != Node.ELEMENT_NODE) {
@@ -314,14 +314,14 @@ public class DocumentSkill extends DocumentBase {
                 }
 
                 if ("set".equalsIgnoreCase(nodeName)) {
-                    parseBeanSet(n, _currentSkill.enchsets2[i], _currentSkill.sets.length);
+                    parseBeanSet(n, currentSkill.enchsets2[i], currentSkill.sets.length);
                 } else if ("enchant2".equalsIgnoreCase(nodeName)) {
-                    parseBeanSet(n, _currentSkill.enchsets2[i], i + 1);
+                    parseBeanSet(n, currentSkill.enchsets2[i], i + 1);
                 } else if (!nodeName.toLowerCase().endsWith("effects")) {
                     if (n.getAttributes().getNamedItem("subLevel2Values") != null) {
-                        parseInlineLevelTable(n, _currentSkill.enchsets2[i], i + 1, 2);
+                        parseInlineLevelTable(n, currentSkill.enchsets2[i], i + 1, 2);
                     } else {
-                        parseElementValue(n, _currentSkill.enchsets2[i], _currentSkill.sets.length);
+                        parseElementValue(n, currentSkill.enchsets2[i], currentSkill.sets.length);
                     }
                 }
             }
@@ -329,10 +329,10 @@ public class DocumentSkill extends DocumentBase {
 
         // --- Enchant Route 3 ---
         for (int i = 0; i < enchantLevels3; i++) {
-            _currentSkill.enchsets3[i] = new StatSet();
-            _currentSkill.enchsets3[i].set("skill_id", _currentSkill.id);
-            _currentSkill.enchsets3[i].set("level", i + 301);
-            _currentSkill.enchsets3[i].set("name", _currentSkill.name);
+            currentSkill.enchsets3[i] = new StatSet();
+            currentSkill.enchsets3[i].set("skill_id", currentSkill.id);
+            currentSkill.enchsets3[i].set("level", i + 301);
+            currentSkill.enchsets3[i].set("name", currentSkill.name);
 
             for (n = first; n != null; n = n.getNextSibling()) {
                 if (n.getNodeType() != Node.ELEMENT_NODE) {
@@ -347,14 +347,14 @@ public class DocumentSkill extends DocumentBase {
                 }
 
                 if ("set".equalsIgnoreCase(nodeName)) {
-                    parseBeanSet(n, _currentSkill.enchsets3[i], _currentSkill.sets.length);
+                    parseBeanSet(n, currentSkill.enchsets3[i], currentSkill.sets.length);
                 } else if ("enchant3".equalsIgnoreCase(nodeName)) {
-                    parseBeanSet(n, _currentSkill.enchsets3[i], i + 1);
+                    parseBeanSet(n, currentSkill.enchsets3[i], i + 1);
                 } else if (!nodeName.toLowerCase().endsWith("effects")) {
                     if (n.getAttributes().getNamedItem("subLevel3Values") != null) {
-                        parseInlineLevelTable(n, _currentSkill.enchsets3[i], i + 1, 3);
+                        parseInlineLevelTable(n, currentSkill.enchsets3[i], i + 1, 3);
                     } else {
-                        parseElementValue(n, _currentSkill.enchsets3[i], _currentSkill.sets.length);
+                        parseElementValue(n, currentSkill.enchsets3[i], currentSkill.sets.length);
                     }
                 }
             }
@@ -362,10 +362,10 @@ public class DocumentSkill extends DocumentBase {
 
         // --- Enchant Route 4 ---
         for (int i = 0; i < enchantLevels4; i++) {
-            _currentSkill.enchsets4[i] = new StatSet();
-            _currentSkill.enchsets4[i].set("skill_id", _currentSkill.id);
-            _currentSkill.enchsets4[i].set("level", i + 401);
-            _currentSkill.enchsets4[i].set("name", _currentSkill.name);
+            currentSkill.enchsets4[i] = new StatSet();
+            currentSkill.enchsets4[i].set("skill_id", currentSkill.id);
+            currentSkill.enchsets4[i].set("level", i + 401);
+            currentSkill.enchsets4[i].set("name", currentSkill.name);
 
             for (n = first; n != null; n = n.getNextSibling()) {
                 if (n.getNodeType() != Node.ELEMENT_NODE) {
@@ -380,14 +380,14 @@ public class DocumentSkill extends DocumentBase {
                 }
 
                 if ("set".equalsIgnoreCase(nodeName)) {
-                    parseBeanSet(n, _currentSkill.enchsets4[i], _currentSkill.sets.length);
+                    parseBeanSet(n, currentSkill.enchsets4[i], currentSkill.sets.length);
                 } else if ("enchant4".equalsIgnoreCase(nodeName)) {
-                    parseBeanSet(n, _currentSkill.enchsets4[i], i + 1);
+                    parseBeanSet(n, currentSkill.enchsets4[i], i + 1);
                 } else if (!nodeName.toLowerCase().endsWith("effects")) {
                     if (n.getAttributes().getNamedItem("subLevel4Values") != null) {
-                        parseInlineLevelTable(n, _currentSkill.enchsets4[i], i + 1, 4);
+                        parseInlineLevelTable(n, currentSkill.enchsets4[i], i + 1, 4);
                     } else {
-                        parseElementValue(n, _currentSkill.enchsets4[i], _currentSkill.sets.length);
+                        parseElementValue(n, currentSkill.enchsets4[i], currentSkill.sets.length);
                     }
                 }
             }
@@ -395,10 +395,10 @@ public class DocumentSkill extends DocumentBase {
 
         // --- Enchant Route 5 ---
         for (int i = 0; i < enchantLevels5; i++) {
-            _currentSkill.enchsets5[i] = new StatSet();
-            _currentSkill.enchsets5[i].set("skill_id", _currentSkill.id);
-            _currentSkill.enchsets5[i].set("level", i + 501);
-            _currentSkill.enchsets5[i].set("name", _currentSkill.name);
+            currentSkill.enchsets5[i] = new StatSet();
+            currentSkill.enchsets5[i].set("skill_id", currentSkill.id);
+            currentSkill.enchsets5[i].set("level", i + 501);
+            currentSkill.enchsets5[i].set("name", currentSkill.name);
 
             for (n = first; n != null; n = n.getNextSibling()) {
                 if (n.getNodeType() != Node.ELEMENT_NODE) {
@@ -413,14 +413,14 @@ public class DocumentSkill extends DocumentBase {
                 }
 
                 if ("set".equalsIgnoreCase(nodeName)) {
-                    parseBeanSet(n, _currentSkill.enchsets5[i], _currentSkill.sets.length);
+                    parseBeanSet(n, currentSkill.enchsets5[i], currentSkill.sets.length);
                 } else if ("enchant5".equalsIgnoreCase(nodeName)) {
-                    parseBeanSet(n, _currentSkill.enchsets5[i], i + 1);
+                    parseBeanSet(n, currentSkill.enchsets5[i], i + 1);
                 } else if (!nodeName.toLowerCase().endsWith("effects")) {
                     if (n.getAttributes().getNamedItem("subLevel5Values") != null) {
-                        parseInlineLevelTable(n, _currentSkill.enchsets5[i], i + 1, 5);
+                        parseInlineLevelTable(n, currentSkill.enchsets5[i], i + 1, 5);
                     } else {
-                        parseElementValue(n, _currentSkill.enchsets5[i], _currentSkill.sets.length);
+                        parseElementValue(n, currentSkill.enchsets5[i], currentSkill.sets.length);
                     }
                 }
             }
@@ -428,10 +428,10 @@ public class DocumentSkill extends DocumentBase {
 
         // --- Enchant Route 6 ---
         for (int i = 0; i < enchantLevels6; i++) {
-            _currentSkill.enchsets6[i] = new StatSet();
-            _currentSkill.enchsets6[i].set("skill_id", _currentSkill.id);
-            _currentSkill.enchsets6[i].set("level", i + 601);
-            _currentSkill.enchsets6[i].set("name", _currentSkill.name);
+            currentSkill.enchsets6[i] = new StatSet();
+            currentSkill.enchsets6[i].set("skill_id", currentSkill.id);
+            currentSkill.enchsets6[i].set("level", i + 601);
+            currentSkill.enchsets6[i].set("name", currentSkill.name);
 
             for (n = first; n != null; n = n.getNextSibling()) {
                 if (n.getNodeType() != Node.ELEMENT_NODE) {
@@ -446,14 +446,14 @@ public class DocumentSkill extends DocumentBase {
                 }
 
                 if ("set".equalsIgnoreCase(nodeName)) {
-                    parseBeanSet(n, _currentSkill.enchsets6[i], _currentSkill.sets.length);
+                    parseBeanSet(n, currentSkill.enchsets6[i], currentSkill.sets.length);
                 } else if ("enchant6".equalsIgnoreCase(nodeName)) {
-                    parseBeanSet(n, _currentSkill.enchsets6[i], i + 1);
+                    parseBeanSet(n, currentSkill.enchsets6[i], i + 1);
                 } else if (!nodeName.toLowerCase().endsWith("effects")) {
                     if (n.getAttributes().getNamedItem("subLevel6Values") != null) {
-                        parseInlineLevelTable(n, _currentSkill.enchsets6[i], i + 1, 6);
+                        parseInlineLevelTable(n, currentSkill.enchsets6[i], i + 1, 6);
                     } else {
-                        parseElementValue(n, _currentSkill.enchsets6[i], _currentSkill.sets.length);
+                        parseElementValue(n, currentSkill.enchsets6[i], currentSkill.sets.length);
                     }
                 }
             }
@@ -461,10 +461,10 @@ public class DocumentSkill extends DocumentBase {
 
         // --- Enchant Route 7 ---
         for (int i = 0; i < enchantLevels7; i++) {
-            _currentSkill.enchsets7[i] = new StatSet();
-            _currentSkill.enchsets7[i].set("skill_id", _currentSkill.id);
-            _currentSkill.enchsets7[i].set("level", i + 701);
-            _currentSkill.enchsets7[i].set("name", _currentSkill.name);
+            currentSkill.enchsets7[i] = new StatSet();
+            currentSkill.enchsets7[i].set("skill_id", currentSkill.id);
+            currentSkill.enchsets7[i].set("level", i + 701);
+            currentSkill.enchsets7[i].set("name", currentSkill.name);
 
             for (n = first; n != null; n = n.getNextSibling()) {
                 if (n.getNodeType() != Node.ELEMENT_NODE) {
@@ -479,14 +479,14 @@ public class DocumentSkill extends DocumentBase {
                 }
 
                 if ("set".equalsIgnoreCase(nodeName)) {
-                    parseBeanSet(n, _currentSkill.enchsets7[i], _currentSkill.sets.length);
+                    parseBeanSet(n, currentSkill.enchsets7[i], currentSkill.sets.length);
                 } else if ("enchant7".equalsIgnoreCase(nodeName)) {
-                    parseBeanSet(n, _currentSkill.enchsets7[i], i + 1);
+                    parseBeanSet(n, currentSkill.enchsets7[i], i + 1);
                 } else if (!nodeName.toLowerCase().endsWith("effects")) {
                     if (n.getAttributes().getNamedItem("subLevel7Values") != null) {
-                        parseInlineLevelTable(n, _currentSkill.enchsets7[i], i + 1, 7);
+                        parseInlineLevelTable(n, currentSkill.enchsets7[i], i + 1, 7);
                     } else {
-                        parseElementValue(n, _currentSkill.enchsets7[i], _currentSkill.sets.length);
+                        parseElementValue(n, currentSkill.enchsets7[i], currentSkill.sets.length);
                     }
                 }
             }
@@ -494,10 +494,10 @@ public class DocumentSkill extends DocumentBase {
 
         // --- Enchant Route 8 ---
         for (int i = 0; i < enchantLevels8; i++) {
-            _currentSkill.enchsets8[i] = new StatSet();
-            _currentSkill.enchsets8[i].set("skill_id", _currentSkill.id);
-            _currentSkill.enchsets8[i].set("level", i + 801);
-            _currentSkill.enchsets8[i].set("name", _currentSkill.name);
+            currentSkill.enchsets8[i] = new StatSet();
+            currentSkill.enchsets8[i].set("skill_id", currentSkill.id);
+            currentSkill.enchsets8[i].set("level", i + 801);
+            currentSkill.enchsets8[i].set("name", currentSkill.name);
 
             for (n = first; n != null; n = n.getNextSibling()) {
                 if (n.getNodeType() != Node.ELEMENT_NODE) {
@@ -512,30 +512,30 @@ public class DocumentSkill extends DocumentBase {
                 }
 
                 if ("set".equalsIgnoreCase(nodeName)) {
-                    parseBeanSet(n, _currentSkill.enchsets8[i], _currentSkill.sets.length);
+                    parseBeanSet(n, currentSkill.enchsets8[i], currentSkill.sets.length);
                 } else if ("enchant8".equalsIgnoreCase(nodeName)) {
-                    parseBeanSet(n, _currentSkill.enchsets8[i], i + 1);
+                    parseBeanSet(n, currentSkill.enchsets8[i], i + 1);
                 } else if (!nodeName.toLowerCase().endsWith("effects")) {
                     if (n.getAttributes().getNamedItem("subLevel8Values") != null) {
-                        parseInlineLevelTable(n, _currentSkill.enchsets8[i], i + 1, 8);
+                        parseInlineLevelTable(n, currentSkill.enchsets8[i], i + 1, 8);
                     } else {
-                        parseElementValue(n, _currentSkill.enchsets8[i], _currentSkill.sets.length);
+                        parseElementValue(n, currentSkill.enchsets8[i], currentSkill.sets.length);
                     }
                 }
             }
         }
 
-        if (_currentSkill.enchsets8.length != enchantLevels8) {
+        if (currentSkill.enchsets8.length != enchantLevels8) {
             throw new RuntimeException(
                     "Skill id=" + skillId + " number of levels missmatch, " + enchantLevels8 + " levels expected");
         }
 
         makeSkills();
         for (int i = 0; i < lastLvl; i++) {
-            _currentSkill.currentLevel = i;
+            currentSkill.currentLevel = i;
             for (n = first; n != null; n = n.getNextSibling()) {
                 if ("conditions".equalsIgnoreCase(n.getNodeName())) {
-                    final Condition condition = parseCondition(n.getFirstChild(), _currentSkill.currentSkills.get(i));
+                    final Condition condition = parseCondition(n.getFirstChild(), currentSkill.currentSkills.get(i));
                     final Node msg = n.getAttributes().getNamedItem("msg");
                     final Node msgId = n.getAttributes().getNamedItem("msgId");
                     if ((condition != null) && (msg != null)) {
@@ -548,27 +548,27 @@ public class DocumentSkill extends DocumentBase {
                         }
                     }
 
-                    _currentSkill.currentSkills.get(i).attach(condition, false);
+                    currentSkill.currentSkills.get(i).attach(condition, false);
                 } else if ("effects".equalsIgnoreCase(n.getNodeName())) {
-                    parseTemplate(n, _currentSkill.currentSkills.get(i));
+                    parseTemplate(n, currentSkill.currentSkills.get(i));
                 } else if ("startEffects".equalsIgnoreCase(n.getNodeName())) {
-                    parseTemplate(n, _currentSkill.currentSkills.get(i), EffectScope.START);
+                    parseTemplate(n, currentSkill.currentSkills.get(i), EffectScope.START);
                 } else if ("channelingEffects".equalsIgnoreCase(n.getNodeName())) {
-                    parseTemplate(n, _currentSkill.currentSkills.get(i), EffectScope.CHANNELING);
+                    parseTemplate(n, currentSkill.currentSkills.get(i), EffectScope.CHANNELING);
                 } else if ("pveEffects".equalsIgnoreCase(n.getNodeName())) {
-                    parseTemplate(n, _currentSkill.currentSkills.get(i), EffectScope.PVE);
+                    parseTemplate(n, currentSkill.currentSkills.get(i), EffectScope.PVE);
                 } else if ("pvpEffects".equalsIgnoreCase(n.getNodeName())) {
-                    parseTemplate(n, _currentSkill.currentSkills.get(i), EffectScope.PVP);
+                    parseTemplate(n, currentSkill.currentSkills.get(i), EffectScope.PVP);
                 } else if ("endEffects".equalsIgnoreCase(n.getNodeName())) {
-                    parseTemplate(n, _currentSkill.currentSkills.get(i), EffectScope.END);
+                    parseTemplate(n, currentSkill.currentSkills.get(i), EffectScope.END);
                 } else if ("selfEffects".equalsIgnoreCase(n.getNodeName())) {
-                    parseTemplate(n, _currentSkill.currentSkills.get(i), EffectScope.SELF);
+                    parseTemplate(n, currentSkill.currentSkills.get(i), EffectScope.SELF);
                 }
             }
         }
 
         for (int i = lastLvl; i < (lastLvl + enchantLevels1); i++) {
-            _currentSkill.currentLevel = i - lastLvl;
+            currentSkill.currentLevel = i - lastLvl;
             boolean foundConditions = false;
             boolean foundEffects = false;
             boolean foundChannelingEffects = false;
@@ -580,7 +580,7 @@ public class DocumentSkill extends DocumentBase {
             for (n = first; n != null; n = n.getNextSibling()) {
                 if ("enchant1conditions".equalsIgnoreCase(n.getNodeName())) {
                     foundConditions = true;
-                    final Condition condition = parseCondition(n.getFirstChild(), _currentSkill.currentSkills.get(i));
+                    final Condition condition = parseCondition(n.getFirstChild(), currentSkill.currentSkills.get(i));
                     final Node msg = n.getAttributes().getNamedItem("msg");
                     final Node msgId = n.getAttributes().getNamedItem("msgId");
                     if ((condition != null) && (msg != null)) {
@@ -593,28 +593,28 @@ public class DocumentSkill extends DocumentBase {
                         }
                     }
 
-                    _currentSkill.currentSkills.get(i).attach(condition, false);
+                    currentSkill.currentSkills.get(i).attach(condition, false);
                 } else if ("enchant1effects".equalsIgnoreCase(n.getNodeName())) {
                     foundEffects = true;
-                    parseTemplate(n, _currentSkill.currentSkills.get(i));
+                    parseTemplate(n, currentSkill.currentSkills.get(i));
                 } else if ("enchant1startEffects".equalsIgnoreCase(n.getNodeName())) {
                     foundStartEffects = true;
-                    parseTemplate(n, _currentSkill.currentSkills.get(i), EffectScope.START);
+                    parseTemplate(n, currentSkill.currentSkills.get(i), EffectScope.START);
                 } else if ("enchant1channelingEffects".equalsIgnoreCase(n.getNodeName())) {
                     foundChannelingEffects = true;
-                    parseTemplate(n, _currentSkill.currentSkills.get(i), EffectScope.CHANNELING);
+                    parseTemplate(n, currentSkill.currentSkills.get(i), EffectScope.CHANNELING);
                 } else if ("enchant1pveEffects".equalsIgnoreCase(n.getNodeName())) {
                     foundPveEffects = true;
-                    parseTemplate(n, _currentSkill.currentSkills.get(i), EffectScope.PVE);
+                    parseTemplate(n, currentSkill.currentSkills.get(i), EffectScope.PVE);
                 } else if ("enchant1pvpEffects".equalsIgnoreCase(n.getNodeName())) {
                     foundPvpEffects = true;
-                    parseTemplate(n, _currentSkill.currentSkills.get(i), EffectScope.PVP);
+                    parseTemplate(n, currentSkill.currentSkills.get(i), EffectScope.PVP);
                 } else if ("enchant1endEffects".equalsIgnoreCase(n.getNodeName())) {
                     foundEndEffects = true;
-                    parseTemplate(n, _currentSkill.currentSkills.get(i), EffectScope.END);
+                    parseTemplate(n, currentSkill.currentSkills.get(i), EffectScope.END);
                 } else if ("enchant1selfEffects".equalsIgnoreCase(n.getNodeName())) {
                     foundSelfEffects = true;
-                    parseTemplate(n, _currentSkill.currentSkills.get(i), EffectScope.SELF);
+                    parseTemplate(n, currentSkill.currentSkills.get(i), EffectScope.SELF);
                 }
             }
 
@@ -627,11 +627,11 @@ public class DocumentSkill extends DocumentBase {
                     || !foundPvpEffects
                     || !foundEndEffects
                     || !foundSelfEffects) {
-                _currentSkill.currentLevel = lastLvl - 1;
+                currentSkill.currentLevel = lastLvl - 1;
                 for (n = first; n != null; n = n.getNextSibling()) {
                     if (!foundConditions && "conditions".equalsIgnoreCase(n.getNodeName())) {
                         final Condition condition =
-                                parseCondition(n.getFirstChild(), _currentSkill.currentSkills.get(i));
+                                parseCondition(n.getFirstChild(), currentSkill.currentSkills.get(i));
                         final Node msg = n.getAttributes().getNamedItem("msg");
                         final Node msgId = n.getAttributes().getNamedItem("msgId");
                         if ((condition != null) && (msg != null)) {
@@ -644,21 +644,21 @@ public class DocumentSkill extends DocumentBase {
                             }
                         }
 
-                        _currentSkill.currentSkills.get(i).attach(condition, false);
+                        currentSkill.currentSkills.get(i).attach(condition, false);
                     } else if (!foundEffects && "effects".equalsIgnoreCase(n.getNodeName())) {
-                        parseTemplate(n, _currentSkill.currentSkills.get(i));
+                        parseTemplate(n, currentSkill.currentSkills.get(i));
                     } else if (!foundStartEffects && "startEffects".equalsIgnoreCase(n.getNodeName())) {
-                        parseTemplate(n, _currentSkill.currentSkills.get(i), EffectScope.START);
+                        parseTemplate(n, currentSkill.currentSkills.get(i), EffectScope.START);
                     } else if (!foundChannelingEffects && "channelingEffects".equalsIgnoreCase(n.getNodeName())) {
-                        parseTemplate(n, _currentSkill.currentSkills.get(i), EffectScope.CHANNELING);
+                        parseTemplate(n, currentSkill.currentSkills.get(i), EffectScope.CHANNELING);
                     } else if (!foundPveEffects && "pveEffects".equalsIgnoreCase(n.getNodeName())) {
-                        parseTemplate(n, _currentSkill.currentSkills.get(i), EffectScope.PVE);
+                        parseTemplate(n, currentSkill.currentSkills.get(i), EffectScope.PVE);
                     } else if (!foundPvpEffects && "pvpEffects".equalsIgnoreCase(n.getNodeName())) {
-                        parseTemplate(n, _currentSkill.currentSkills.get(i), EffectScope.PVP);
+                        parseTemplate(n, currentSkill.currentSkills.get(i), EffectScope.PVP);
                     } else if (!foundEndEffects && "endEffects".equalsIgnoreCase(n.getNodeName())) {
-                        parseTemplate(n, _currentSkill.currentSkills.get(i), EffectScope.END);
+                        parseTemplate(n, currentSkill.currentSkills.get(i), EffectScope.END);
                     } else if (!foundSelfEffects && "selfEffects".equalsIgnoreCase(n.getNodeName())) {
-                        parseTemplate(n, _currentSkill.currentSkills.get(i), EffectScope.SELF);
+                        parseTemplate(n, currentSkill.currentSkills.get(i), EffectScope.SELF);
                     }
                 }
             }
@@ -673,11 +673,11 @@ public class DocumentSkill extends DocumentBase {
             boolean foundPvpEffects = false;
             boolean foundEndEffects = false;
             boolean foundSelfEffects = false;
-            _currentSkill.currentLevel = i - lastLvl - enchantLevels1;
+            currentSkill.currentLevel = i - lastLvl - enchantLevels1;
             for (n = first; n != null; n = n.getNextSibling()) {
                 if ("enchant2conditions".equalsIgnoreCase(n.getNodeName())) {
                     foundConditions = true;
-                    final Condition condition = parseCondition(n.getFirstChild(), _currentSkill.currentSkills.get(i));
+                    final Condition condition = parseCondition(n.getFirstChild(), currentSkill.currentSkills.get(i));
                     final Node msg = n.getAttributes().getNamedItem("msg");
                     final Node msgId = n.getAttributes().getNamedItem("msgId");
                     if ((condition != null) && (msg != null)) {
@@ -690,28 +690,28 @@ public class DocumentSkill extends DocumentBase {
                         }
                     }
 
-                    _currentSkill.currentSkills.get(i).attach(condition, false);
+                    currentSkill.currentSkills.get(i).attach(condition, false);
                 } else if ("enchant2effects".equalsIgnoreCase(n.getNodeName())) {
                     foundEffects = true;
-                    parseTemplate(n, _currentSkill.currentSkills.get(i));
+                    parseTemplate(n, currentSkill.currentSkills.get(i));
                 } else if ("enchant2startEffects".equalsIgnoreCase(n.getNodeName())) {
                     foundStartEffects = true;
-                    parseTemplate(n, _currentSkill.currentSkills.get(i), EffectScope.START);
+                    parseTemplate(n, currentSkill.currentSkills.get(i), EffectScope.START);
                 } else if ("enchant2channelingEffects".equalsIgnoreCase(n.getNodeName())) {
                     foundChannelingEffects = true;
-                    parseTemplate(n, _currentSkill.currentSkills.get(i), EffectScope.CHANNELING);
+                    parseTemplate(n, currentSkill.currentSkills.get(i), EffectScope.CHANNELING);
                 } else if ("enchant2pveEffects".equalsIgnoreCase(n.getNodeName())) {
                     foundPveEffects = true;
-                    parseTemplate(n, _currentSkill.currentSkills.get(i), EffectScope.PVE);
+                    parseTemplate(n, currentSkill.currentSkills.get(i), EffectScope.PVE);
                 } else if ("enchant2pvpEffects".equalsIgnoreCase(n.getNodeName())) {
                     foundPvpEffects = true;
-                    parseTemplate(n, _currentSkill.currentSkills.get(i), EffectScope.PVP);
+                    parseTemplate(n, currentSkill.currentSkills.get(i), EffectScope.PVP);
                 } else if ("enchant2endEffects".equalsIgnoreCase(n.getNodeName())) {
                     foundEndEffects = true;
-                    parseTemplate(n, _currentSkill.currentSkills.get(i), EffectScope.END);
+                    parseTemplate(n, currentSkill.currentSkills.get(i), EffectScope.END);
                 } else if ("enchant2selfEffects".equalsIgnoreCase(n.getNodeName())) {
                     foundSelfEffects = true;
-                    parseTemplate(n, _currentSkill.currentSkills.get(i), EffectScope.SELF);
+                    parseTemplate(n, currentSkill.currentSkills.get(i), EffectScope.SELF);
                 }
             }
 
@@ -724,11 +724,11 @@ public class DocumentSkill extends DocumentBase {
                     || !foundPvpEffects
                     || !foundEndEffects
                     || !foundSelfEffects) {
-                _currentSkill.currentLevel = lastLvl - 1;
+                currentSkill.currentLevel = lastLvl - 1;
                 for (n = first; n != null; n = n.getNextSibling()) {
                     if (!foundConditions && "conditions".equalsIgnoreCase(n.getNodeName())) {
                         final Condition condition =
-                                parseCondition(n.getFirstChild(), _currentSkill.currentSkills.get(i));
+                                parseCondition(n.getFirstChild(), currentSkill.currentSkills.get(i));
                         final Node msg = n.getAttributes().getNamedItem("msg");
                         final Node msgId = n.getAttributes().getNamedItem("msgId");
                         if ((condition != null) && (msg != null)) {
@@ -741,19 +741,19 @@ public class DocumentSkill extends DocumentBase {
                             }
                         }
 
-                        _currentSkill.currentSkills.get(i).attach(condition, false);
+                        currentSkill.currentSkills.get(i).attach(condition, false);
                     } else if (!foundEffects && "effects".equalsIgnoreCase(n.getNodeName())) {
-                        parseTemplate(n, _currentSkill.currentSkills.get(i));
+                        parseTemplate(n, currentSkill.currentSkills.get(i));
                     } else if (!foundChannelingEffects && "channelingEffects".equalsIgnoreCase(n.getNodeName())) {
-                        parseTemplate(n, _currentSkill.currentSkills.get(i), EffectScope.CHANNELING);
+                        parseTemplate(n, currentSkill.currentSkills.get(i), EffectScope.CHANNELING);
                     } else if (!foundPveEffects && "pveEffects".equalsIgnoreCase(n.getNodeName())) {
-                        parseTemplate(n, _currentSkill.currentSkills.get(i), EffectScope.PVE);
+                        parseTemplate(n, currentSkill.currentSkills.get(i), EffectScope.PVE);
                     } else if (!foundPvpEffects && "pvpEffects".equalsIgnoreCase(n.getNodeName())) {
-                        parseTemplate(n, _currentSkill.currentSkills.get(i), EffectScope.PVP);
+                        parseTemplate(n, currentSkill.currentSkills.get(i), EffectScope.PVP);
                     } else if (!foundEndEffects && "endEffects".equalsIgnoreCase(n.getNodeName())) {
-                        parseTemplate(n, _currentSkill.currentSkills.get(i), EffectScope.END);
+                        parseTemplate(n, currentSkill.currentSkills.get(i), EffectScope.END);
                     } else if (!foundSelfEffects && "selfEffects".equalsIgnoreCase(n.getNodeName())) {
-                        parseTemplate(n, _currentSkill.currentSkills.get(i), EffectScope.SELF);
+                        parseTemplate(n, currentSkill.currentSkills.get(i), EffectScope.SELF);
                     }
                 }
             }
@@ -770,11 +770,11 @@ public class DocumentSkill extends DocumentBase {
             boolean foundPvpEffects = false;
             boolean foundEndEffects = false;
             boolean foundSelfEffects = false;
-            _currentSkill.currentLevel = i - lastLvl - enchantLevels1 - enchantLevels2;
+            currentSkill.currentLevel = i - lastLvl - enchantLevels1 - enchantLevels2;
             for (n = first; n != null; n = n.getNextSibling()) {
                 if ("enchant3conditions".equalsIgnoreCase(n.getNodeName())) {
                     foundConditions = true;
-                    final Condition condition = parseCondition(n.getFirstChild(), _currentSkill.currentSkills.get(i));
+                    final Condition condition = parseCondition(n.getFirstChild(), currentSkill.currentSkills.get(i));
                     final Node msg = n.getAttributes().getNamedItem("msg");
                     final Node msgId = n.getAttributes().getNamedItem("msgId");
                     if ((condition != null) && (msg != null)) {
@@ -787,28 +787,28 @@ public class DocumentSkill extends DocumentBase {
                         }
                     }
 
-                    _currentSkill.currentSkills.get(i).attach(condition, false);
+                    currentSkill.currentSkills.get(i).attach(condition, false);
                 } else if ("enchant3effects".equalsIgnoreCase(n.getNodeName())) {
                     foundEffects = true;
-                    parseTemplate(n, _currentSkill.currentSkills.get(i));
+                    parseTemplate(n, currentSkill.currentSkills.get(i));
                 } else if ("enchant3startEffects".equalsIgnoreCase(n.getNodeName())) {
                     foundStartEffects = true;
-                    parseTemplate(n, _currentSkill.currentSkills.get(i), EffectScope.START);
+                    parseTemplate(n, currentSkill.currentSkills.get(i), EffectScope.START);
                 } else if ("enchant3channelingEffects".equalsIgnoreCase(n.getNodeName())) {
                     foundChannelingEffects = true;
-                    parseTemplate(n, _currentSkill.currentSkills.get(i), EffectScope.CHANNELING);
+                    parseTemplate(n, currentSkill.currentSkills.get(i), EffectScope.CHANNELING);
                 } else if ("enchant3pveEffects".equalsIgnoreCase(n.getNodeName())) {
                     foundPveEffects = true;
-                    parseTemplate(n, _currentSkill.currentSkills.get(i), EffectScope.PVE);
+                    parseTemplate(n, currentSkill.currentSkills.get(i), EffectScope.PVE);
                 } else if ("enchant3pvpEffects".equalsIgnoreCase(n.getNodeName())) {
                     foundPvpEffects = true;
-                    parseTemplate(n, _currentSkill.currentSkills.get(i), EffectScope.PVP);
+                    parseTemplate(n, currentSkill.currentSkills.get(i), EffectScope.PVP);
                 } else if ("enchant3endEffects".equalsIgnoreCase(n.getNodeName())) {
                     foundEndEffects = true;
-                    parseTemplate(n, _currentSkill.currentSkills.get(i), EffectScope.END);
+                    parseTemplate(n, currentSkill.currentSkills.get(i), EffectScope.END);
                 } else if ("enchant3selfEffects".equalsIgnoreCase(n.getNodeName())) {
                     foundSelfEffects = true;
-                    parseTemplate(n, _currentSkill.currentSkills.get(i), EffectScope.SELF);
+                    parseTemplate(n, currentSkill.currentSkills.get(i), EffectScope.SELF);
                 }
             }
 
@@ -821,11 +821,11 @@ public class DocumentSkill extends DocumentBase {
                     || !foundPvpEffects
                     || !foundEndEffects
                     || !foundSelfEffects) {
-                _currentSkill.currentLevel = lastLvl - 1;
+                currentSkill.currentLevel = lastLvl - 1;
                 for (n = first; n != null; n = n.getNextSibling()) {
                     if (!foundConditions && "conditions".equalsIgnoreCase(n.getNodeName())) {
                         final Condition condition =
-                                parseCondition(n.getFirstChild(), _currentSkill.currentSkills.get(i));
+                                parseCondition(n.getFirstChild(), currentSkill.currentSkills.get(i));
                         final Node msg = n.getAttributes().getNamedItem("msg");
                         final Node msgId = n.getAttributes().getNamedItem("msgId");
                         if ((condition != null) && (msg != null)) {
@@ -838,21 +838,21 @@ public class DocumentSkill extends DocumentBase {
                             }
                         }
 
-                        _currentSkill.currentSkills.get(i).attach(condition, false);
+                        currentSkill.currentSkills.get(i).attach(condition, false);
                     } else if (!foundEffects && "effects".equalsIgnoreCase(n.getNodeName())) {
-                        parseTemplate(n, _currentSkill.currentSkills.get(i));
+                        parseTemplate(n, currentSkill.currentSkills.get(i));
                     } else if (!foundStartEffects && "startEffects".equalsIgnoreCase(n.getNodeName())) {
-                        parseTemplate(n, _currentSkill.currentSkills.get(i), EffectScope.START);
+                        parseTemplate(n, currentSkill.currentSkills.get(i), EffectScope.START);
                     } else if (!foundChannelingEffects && "channelingEffects".equalsIgnoreCase(n.getNodeName())) {
-                        parseTemplate(n, _currentSkill.currentSkills.get(i), EffectScope.CHANNELING);
+                        parseTemplate(n, currentSkill.currentSkills.get(i), EffectScope.CHANNELING);
                     } else if (!foundPveEffects && "pveEffects".equalsIgnoreCase(n.getNodeName())) {
-                        parseTemplate(n, _currentSkill.currentSkills.get(i), EffectScope.PVE);
+                        parseTemplate(n, currentSkill.currentSkills.get(i), EffectScope.PVE);
                     } else if (!foundPvpEffects && "pvpEffects".equalsIgnoreCase(n.getNodeName())) {
-                        parseTemplate(n, _currentSkill.currentSkills.get(i), EffectScope.PVP);
+                        parseTemplate(n, currentSkill.currentSkills.get(i), EffectScope.PVP);
                     } else if (!foundEndEffects && "endEffects".equalsIgnoreCase(n.getNodeName())) {
-                        parseTemplate(n, _currentSkill.currentSkills.get(i), EffectScope.END);
+                        parseTemplate(n, currentSkill.currentSkills.get(i), EffectScope.END);
                     } else if (!foundSelfEffects && "selfEffects".equalsIgnoreCase(n.getNodeName())) {
-                        parseTemplate(n, _currentSkill.currentSkills.get(i), EffectScope.SELF);
+                        parseTemplate(n, currentSkill.currentSkills.get(i), EffectScope.SELF);
                     }
                 }
             }
@@ -869,11 +869,11 @@ public class DocumentSkill extends DocumentBase {
             boolean foundPvpEffects = false;
             boolean foundEndEffects = false;
             boolean foundSelfEffects = false;
-            _currentSkill.currentLevel = i - lastLvl - enchantLevels1 - enchantLevels2 - enchantLevels3;
+            currentSkill.currentLevel = i - lastLvl - enchantLevels1 - enchantLevels2 - enchantLevels3;
             for (n = first; n != null; n = n.getNextSibling()) {
                 if ("enchant4conditions".equalsIgnoreCase(n.getNodeName())) {
                     foundConditions = true;
-                    final Condition condition = parseCondition(n.getFirstChild(), _currentSkill.currentSkills.get(i));
+                    final Condition condition = parseCondition(n.getFirstChild(), currentSkill.currentSkills.get(i));
                     final Node msg = n.getAttributes().getNamedItem("msg");
                     final Node msgId = n.getAttributes().getNamedItem("msgId");
                     if ((condition != null) && (msg != null)) {
@@ -886,28 +886,28 @@ public class DocumentSkill extends DocumentBase {
                         }
                     }
 
-                    _currentSkill.currentSkills.get(i).attach(condition, false);
+                    currentSkill.currentSkills.get(i).attach(condition, false);
                 } else if ("enchant4effects".equalsIgnoreCase(n.getNodeName())) {
                     foundEffects = true;
-                    parseTemplate(n, _currentSkill.currentSkills.get(i));
+                    parseTemplate(n, currentSkill.currentSkills.get(i));
                 } else if ("enchant4startEffects".equalsIgnoreCase(n.getNodeName())) {
                     foundStartEffects = true;
-                    parseTemplate(n, _currentSkill.currentSkills.get(i), EffectScope.START);
+                    parseTemplate(n, currentSkill.currentSkills.get(i), EffectScope.START);
                 } else if ("enchant4channelingEffects".equalsIgnoreCase(n.getNodeName())) {
                     foundChannelingEffects = true;
-                    parseTemplate(n, _currentSkill.currentSkills.get(i), EffectScope.CHANNELING);
+                    parseTemplate(n, currentSkill.currentSkills.get(i), EffectScope.CHANNELING);
                 } else if ("enchant4pveEffects".equalsIgnoreCase(n.getNodeName())) {
                     foundPveEffects = true;
-                    parseTemplate(n, _currentSkill.currentSkills.get(i), EffectScope.PVE);
+                    parseTemplate(n, currentSkill.currentSkills.get(i), EffectScope.PVE);
                 } else if ("enchant4pvpEffects".equalsIgnoreCase(n.getNodeName())) {
                     foundPvpEffects = true;
-                    parseTemplate(n, _currentSkill.currentSkills.get(i), EffectScope.PVP);
+                    parseTemplate(n, currentSkill.currentSkills.get(i), EffectScope.PVP);
                 } else if ("enchant4endEffects".equalsIgnoreCase(n.getNodeName())) {
                     foundEndEffects = true;
-                    parseTemplate(n, _currentSkill.currentSkills.get(i), EffectScope.END);
+                    parseTemplate(n, currentSkill.currentSkills.get(i), EffectScope.END);
                 } else if ("enchant4selfEffects".equalsIgnoreCase(n.getNodeName())) {
                     foundSelfEffects = true;
-                    parseTemplate(n, _currentSkill.currentSkills.get(i), EffectScope.SELF);
+                    parseTemplate(n, currentSkill.currentSkills.get(i), EffectScope.SELF);
                 }
             }
 
@@ -920,11 +920,11 @@ public class DocumentSkill extends DocumentBase {
                     || !foundPvpEffects
                     || !foundEndEffects
                     || !foundSelfEffects) {
-                _currentSkill.currentLevel = lastLvl - 1;
+                currentSkill.currentLevel = lastLvl - 1;
                 for (n = first; n != null; n = n.getNextSibling()) {
                     if (!foundConditions && "conditions".equalsIgnoreCase(n.getNodeName())) {
                         final Condition condition =
-                                parseCondition(n.getFirstChild(), _currentSkill.currentSkills.get(i));
+                                parseCondition(n.getFirstChild(), currentSkill.currentSkills.get(i));
                         final Node msg = n.getAttributes().getNamedItem("msg");
                         final Node msgId = n.getAttributes().getNamedItem("msgId");
                         if ((condition != null) && (msg != null)) {
@@ -937,21 +937,21 @@ public class DocumentSkill extends DocumentBase {
                             }
                         }
 
-                        _currentSkill.currentSkills.get(i).attach(condition, false);
+                        currentSkill.currentSkills.get(i).attach(condition, false);
                     } else if (!foundEffects && "effects".equalsIgnoreCase(n.getNodeName())) {
-                        parseTemplate(n, _currentSkill.currentSkills.get(i));
+                        parseTemplate(n, currentSkill.currentSkills.get(i));
                     } else if (!foundStartEffects && "startEffects".equalsIgnoreCase(n.getNodeName())) {
-                        parseTemplate(n, _currentSkill.currentSkills.get(i), EffectScope.START);
+                        parseTemplate(n, currentSkill.currentSkills.get(i), EffectScope.START);
                     } else if (!foundChannelingEffects && "channelingEffects".equalsIgnoreCase(n.getNodeName())) {
-                        parseTemplate(n, _currentSkill.currentSkills.get(i), EffectScope.CHANNELING);
+                        parseTemplate(n, currentSkill.currentSkills.get(i), EffectScope.CHANNELING);
                     } else if (!foundPveEffects && "pveEffects".equalsIgnoreCase(n.getNodeName())) {
-                        parseTemplate(n, _currentSkill.currentSkills.get(i), EffectScope.PVE);
+                        parseTemplate(n, currentSkill.currentSkills.get(i), EffectScope.PVE);
                     } else if (!foundPvpEffects && "pvpEffects".equalsIgnoreCase(n.getNodeName())) {
-                        parseTemplate(n, _currentSkill.currentSkills.get(i), EffectScope.PVP);
+                        parseTemplate(n, currentSkill.currentSkills.get(i), EffectScope.PVP);
                     } else if (!foundEndEffects && "endEffects".equalsIgnoreCase(n.getNodeName())) {
-                        parseTemplate(n, _currentSkill.currentSkills.get(i), EffectScope.END);
+                        parseTemplate(n, currentSkill.currentSkills.get(i), EffectScope.END);
                     } else if (!foundSelfEffects && "selfEffects".equalsIgnoreCase(n.getNodeName())) {
-                        parseTemplate(n, _currentSkill.currentSkills.get(i), EffectScope.SELF);
+                        parseTemplate(n, currentSkill.currentSkills.get(i), EffectScope.SELF);
                     }
                 }
             }
@@ -968,12 +968,11 @@ public class DocumentSkill extends DocumentBase {
             boolean foundPvpEffects = false;
             boolean foundEndEffects = false;
             boolean foundSelfEffects = false;
-            _currentSkill.currentLevel =
-                    i - lastLvl - enchantLevels1 - enchantLevels2 - enchantLevels3 - enchantLevels4;
+            currentSkill.currentLevel = i - lastLvl - enchantLevels1 - enchantLevels2 - enchantLevels3 - enchantLevels4;
             for (n = first; n != null; n = n.getNextSibling()) {
                 if ("enchant5conditions".equalsIgnoreCase(n.getNodeName())) {
                     foundConditions = true;
-                    final Condition condition = parseCondition(n.getFirstChild(), _currentSkill.currentSkills.get(i));
+                    final Condition condition = parseCondition(n.getFirstChild(), currentSkill.currentSkills.get(i));
                     final Node msg = n.getAttributes().getNamedItem("msg");
                     final Node msgId = n.getAttributes().getNamedItem("msgId");
                     if ((condition != null) && (msg != null)) {
@@ -986,28 +985,28 @@ public class DocumentSkill extends DocumentBase {
                         }
                     }
 
-                    _currentSkill.currentSkills.get(i).attach(condition, false);
+                    currentSkill.currentSkills.get(i).attach(condition, false);
                 } else if ("enchant5effects".equalsIgnoreCase(n.getNodeName())) {
                     foundEffects = true;
-                    parseTemplate(n, _currentSkill.currentSkills.get(i));
+                    parseTemplate(n, currentSkill.currentSkills.get(i));
                 } else if ("enchant5startEffects".equalsIgnoreCase(n.getNodeName())) {
                     foundStartEffects = true;
-                    parseTemplate(n, _currentSkill.currentSkills.get(i), EffectScope.START);
+                    parseTemplate(n, currentSkill.currentSkills.get(i), EffectScope.START);
                 } else if ("enchant5channelingEffects".equalsIgnoreCase(n.getNodeName())) {
                     foundChannelingEffects = true;
-                    parseTemplate(n, _currentSkill.currentSkills.get(i), EffectScope.CHANNELING);
+                    parseTemplate(n, currentSkill.currentSkills.get(i), EffectScope.CHANNELING);
                 } else if ("enchant5pveEffects".equalsIgnoreCase(n.getNodeName())) {
                     foundPveEffects = true;
-                    parseTemplate(n, _currentSkill.currentSkills.get(i), EffectScope.PVE);
+                    parseTemplate(n, currentSkill.currentSkills.get(i), EffectScope.PVE);
                 } else if ("enchant5pvpEffects".equalsIgnoreCase(n.getNodeName())) {
                     foundPvpEffects = true;
-                    parseTemplate(n, _currentSkill.currentSkills.get(i), EffectScope.PVP);
+                    parseTemplate(n, currentSkill.currentSkills.get(i), EffectScope.PVP);
                 } else if ("enchant5endEffects".equalsIgnoreCase(n.getNodeName())) {
                     foundEndEffects = true;
-                    parseTemplate(n, _currentSkill.currentSkills.get(i), EffectScope.END);
+                    parseTemplate(n, currentSkill.currentSkills.get(i), EffectScope.END);
                 } else if ("enchant5selfEffects".equalsIgnoreCase(n.getNodeName())) {
                     foundSelfEffects = true;
-                    parseTemplate(n, _currentSkill.currentSkills.get(i), EffectScope.SELF);
+                    parseTemplate(n, currentSkill.currentSkills.get(i), EffectScope.SELF);
                 }
             }
 
@@ -1020,11 +1019,11 @@ public class DocumentSkill extends DocumentBase {
                     || !foundPvpEffects
                     || !foundEndEffects
                     || !foundSelfEffects) {
-                _currentSkill.currentLevel = lastLvl - 1;
+                currentSkill.currentLevel = lastLvl - 1;
                 for (n = first; n != null; n = n.getNextSibling()) {
                     if (!foundConditions && "conditions".equalsIgnoreCase(n.getNodeName())) {
                         final Condition condition =
-                                parseCondition(n.getFirstChild(), _currentSkill.currentSkills.get(i));
+                                parseCondition(n.getFirstChild(), currentSkill.currentSkills.get(i));
                         final Node msg = n.getAttributes().getNamedItem("msg");
                         final Node msgId = n.getAttributes().getNamedItem("msgId");
                         if ((condition != null) && (msg != null)) {
@@ -1037,21 +1036,21 @@ public class DocumentSkill extends DocumentBase {
                             }
                         }
 
-                        _currentSkill.currentSkills.get(i).attach(condition, false);
+                        currentSkill.currentSkills.get(i).attach(condition, false);
                     } else if (!foundEffects && "effects".equalsIgnoreCase(n.getNodeName())) {
-                        parseTemplate(n, _currentSkill.currentSkills.get(i));
+                        parseTemplate(n, currentSkill.currentSkills.get(i));
                     } else if (!foundStartEffects && "startEffects".equalsIgnoreCase(n.getNodeName())) {
-                        parseTemplate(n, _currentSkill.currentSkills.get(i), EffectScope.START);
+                        parseTemplate(n, currentSkill.currentSkills.get(i), EffectScope.START);
                     } else if (!foundChannelingEffects && "channelingEffects".equalsIgnoreCase(n.getNodeName())) {
-                        parseTemplate(n, _currentSkill.currentSkills.get(i), EffectScope.CHANNELING);
+                        parseTemplate(n, currentSkill.currentSkills.get(i), EffectScope.CHANNELING);
                     } else if (!foundPveEffects && "pveEffects".equalsIgnoreCase(n.getNodeName())) {
-                        parseTemplate(n, _currentSkill.currentSkills.get(i), EffectScope.PVE);
+                        parseTemplate(n, currentSkill.currentSkills.get(i), EffectScope.PVE);
                     } else if (!foundPvpEffects && "pvpEffects".equalsIgnoreCase(n.getNodeName())) {
-                        parseTemplate(n, _currentSkill.currentSkills.get(i), EffectScope.PVP);
+                        parseTemplate(n, currentSkill.currentSkills.get(i), EffectScope.PVP);
                     } else if (!foundEndEffects && "endEffects".equalsIgnoreCase(n.getNodeName())) {
-                        parseTemplate(n, _currentSkill.currentSkills.get(i), EffectScope.END);
+                        parseTemplate(n, currentSkill.currentSkills.get(i), EffectScope.END);
                     } else if (!foundSelfEffects && "selfEffects".equalsIgnoreCase(n.getNodeName())) {
-                        parseTemplate(n, _currentSkill.currentSkills.get(i), EffectScope.SELF);
+                        parseTemplate(n, currentSkill.currentSkills.get(i), EffectScope.SELF);
                     }
                 }
             }
@@ -1075,12 +1074,12 @@ public class DocumentSkill extends DocumentBase {
             boolean foundPvpEffects = false;
             boolean foundEndEffects = false;
             boolean foundSelfEffects = false;
-            _currentSkill.currentLevel =
+            currentSkill.currentLevel =
                     i - lastLvl - enchantLevels1 - enchantLevels2 - enchantLevels3 - enchantLevels4 - enchantLevels5;
             for (n = first; n != null; n = n.getNextSibling()) {
                 if ("enchant6conditions".equalsIgnoreCase(n.getNodeName())) {
                     foundConditions = true;
-                    final Condition condition = parseCondition(n.getFirstChild(), _currentSkill.currentSkills.get(i));
+                    final Condition condition = parseCondition(n.getFirstChild(), currentSkill.currentSkills.get(i));
                     final Node msg = n.getAttributes().getNamedItem("msg");
                     final Node msgId = n.getAttributes().getNamedItem("msgId");
                     if ((condition != null) && (msg != null)) {
@@ -1093,28 +1092,28 @@ public class DocumentSkill extends DocumentBase {
                         }
                     }
 
-                    _currentSkill.currentSkills.get(i).attach(condition, false);
+                    currentSkill.currentSkills.get(i).attach(condition, false);
                 } else if ("enchant6effects".equalsIgnoreCase(n.getNodeName())) {
                     foundEffects = true;
-                    parseTemplate(n, _currentSkill.currentSkills.get(i));
+                    parseTemplate(n, currentSkill.currentSkills.get(i));
                 } else if ("enchant6startEffects".equalsIgnoreCase(n.getNodeName())) {
                     foundStartEffects = true;
-                    parseTemplate(n, _currentSkill.currentSkills.get(i), EffectScope.START);
+                    parseTemplate(n, currentSkill.currentSkills.get(i), EffectScope.START);
                 } else if ("enchant6channelingEffects".equalsIgnoreCase(n.getNodeName())) {
                     foundChannelingEffects = true;
-                    parseTemplate(n, _currentSkill.currentSkills.get(i), EffectScope.CHANNELING);
+                    parseTemplate(n, currentSkill.currentSkills.get(i), EffectScope.CHANNELING);
                 } else if ("enchant6pveEffects".equalsIgnoreCase(n.getNodeName())) {
                     foundPveEffects = true;
-                    parseTemplate(n, _currentSkill.currentSkills.get(i), EffectScope.PVE);
+                    parseTemplate(n, currentSkill.currentSkills.get(i), EffectScope.PVE);
                 } else if ("enchant6pvpEffects".equalsIgnoreCase(n.getNodeName())) {
                     foundPvpEffects = true;
-                    parseTemplate(n, _currentSkill.currentSkills.get(i), EffectScope.PVP);
+                    parseTemplate(n, currentSkill.currentSkills.get(i), EffectScope.PVP);
                 } else if ("enchant6endEffects".equalsIgnoreCase(n.getNodeName())) {
                     foundEndEffects = true;
-                    parseTemplate(n, _currentSkill.currentSkills.get(i), EffectScope.END);
+                    parseTemplate(n, currentSkill.currentSkills.get(i), EffectScope.END);
                 } else if ("enchant6selfEffects".equalsIgnoreCase(n.getNodeName())) {
                     foundSelfEffects = true;
-                    parseTemplate(n, _currentSkill.currentSkills.get(i), EffectScope.SELF);
+                    parseTemplate(n, currentSkill.currentSkills.get(i), EffectScope.SELF);
                 }
             }
 
@@ -1127,11 +1126,11 @@ public class DocumentSkill extends DocumentBase {
                     || !foundPvpEffects
                     || !foundEndEffects
                     || !foundSelfEffects) {
-                _currentSkill.currentLevel = lastLvl - 1;
+                currentSkill.currentLevel = lastLvl - 1;
                 for (n = first; n != null; n = n.getNextSibling()) {
                     if (!foundConditions && "conditions".equalsIgnoreCase(n.getNodeName())) {
                         final Condition condition =
-                                parseCondition(n.getFirstChild(), _currentSkill.currentSkills.get(i));
+                                parseCondition(n.getFirstChild(), currentSkill.currentSkills.get(i));
                         final Node msg = n.getAttributes().getNamedItem("msg");
                         final Node msgId = n.getAttributes().getNamedItem("msgId");
                         if ((condition != null) && (msg != null)) {
@@ -1144,21 +1143,21 @@ public class DocumentSkill extends DocumentBase {
                             }
                         }
 
-                        _currentSkill.currentSkills.get(i).attach(condition, false);
+                        currentSkill.currentSkills.get(i).attach(condition, false);
                     } else if (!foundEffects && "effects".equalsIgnoreCase(n.getNodeName())) {
-                        parseTemplate(n, _currentSkill.currentSkills.get(i));
+                        parseTemplate(n, currentSkill.currentSkills.get(i));
                     } else if (!foundStartEffects && "startEffects".equalsIgnoreCase(n.getNodeName())) {
-                        parseTemplate(n, _currentSkill.currentSkills.get(i), EffectScope.START);
+                        parseTemplate(n, currentSkill.currentSkills.get(i), EffectScope.START);
                     } else if (!foundChannelingEffects && "channelingEffects".equalsIgnoreCase(n.getNodeName())) {
-                        parseTemplate(n, _currentSkill.currentSkills.get(i), EffectScope.CHANNELING);
+                        parseTemplate(n, currentSkill.currentSkills.get(i), EffectScope.CHANNELING);
                     } else if (!foundPveEffects && "pveEffects".equalsIgnoreCase(n.getNodeName())) {
-                        parseTemplate(n, _currentSkill.currentSkills.get(i), EffectScope.PVE);
+                        parseTemplate(n, currentSkill.currentSkills.get(i), EffectScope.PVE);
                     } else if (!foundPvpEffects && "pvpEffects".equalsIgnoreCase(n.getNodeName())) {
-                        parseTemplate(n, _currentSkill.currentSkills.get(i), EffectScope.PVP);
+                        parseTemplate(n, currentSkill.currentSkills.get(i), EffectScope.PVP);
                     } else if (!foundEndEffects && "endEffects".equalsIgnoreCase(n.getNodeName())) {
-                        parseTemplate(n, _currentSkill.currentSkills.get(i), EffectScope.END);
+                        parseTemplate(n, currentSkill.currentSkills.get(i), EffectScope.END);
                     } else if (!foundSelfEffects && "selfEffects".equalsIgnoreCase(n.getNodeName())) {
-                        parseTemplate(n, _currentSkill.currentSkills.get(i), EffectScope.SELF);
+                        parseTemplate(n, currentSkill.currentSkills.get(i), EffectScope.SELF);
                     }
                 }
             }
@@ -1189,7 +1188,7 @@ public class DocumentSkill extends DocumentBase {
             boolean foundPvpEffects = false;
             boolean foundEndEffects = false;
             boolean foundSelfEffects = false;
-            _currentSkill.currentLevel = i
+            currentSkill.currentLevel = i
                     - lastLvl
                     - enchantLevels1
                     - enchantLevels2
@@ -1200,7 +1199,7 @@ public class DocumentSkill extends DocumentBase {
             for (n = first; n != null; n = n.getNextSibling()) {
                 if ("enchant7conditions".equalsIgnoreCase(n.getNodeName())) {
                     foundConditions = true;
-                    final Condition condition = parseCondition(n.getFirstChild(), _currentSkill.currentSkills.get(i));
+                    final Condition condition = parseCondition(n.getFirstChild(), currentSkill.currentSkills.get(i));
                     final Node msg = n.getAttributes().getNamedItem("msg");
                     final Node msgId = n.getAttributes().getNamedItem("msgId");
                     if ((condition != null) && (msg != null)) {
@@ -1213,28 +1212,28 @@ public class DocumentSkill extends DocumentBase {
                         }
                     }
 
-                    _currentSkill.currentSkills.get(i).attach(condition, false);
+                    currentSkill.currentSkills.get(i).attach(condition, false);
                 } else if ("enchant7effects".equalsIgnoreCase(n.getNodeName())) {
                     foundEffects = true;
-                    parseTemplate(n, _currentSkill.currentSkills.get(i));
+                    parseTemplate(n, currentSkill.currentSkills.get(i));
                 } else if ("enchant7startEffects".equalsIgnoreCase(n.getNodeName())) {
                     foundStartEffects = true;
-                    parseTemplate(n, _currentSkill.currentSkills.get(i), EffectScope.START);
+                    parseTemplate(n, currentSkill.currentSkills.get(i), EffectScope.START);
                 } else if ("enchant7channelingEffects".equalsIgnoreCase(n.getNodeName())) {
                     foundChannelingEffects = true;
-                    parseTemplate(n, _currentSkill.currentSkills.get(i), EffectScope.CHANNELING);
+                    parseTemplate(n, currentSkill.currentSkills.get(i), EffectScope.CHANNELING);
                 } else if ("enchant7pveEffects".equalsIgnoreCase(n.getNodeName())) {
                     foundPveEffects = true;
-                    parseTemplate(n, _currentSkill.currentSkills.get(i), EffectScope.PVE);
+                    parseTemplate(n, currentSkill.currentSkills.get(i), EffectScope.PVE);
                 } else if ("enchant7pvpEffects".equalsIgnoreCase(n.getNodeName())) {
                     foundPvpEffects = true;
-                    parseTemplate(n, _currentSkill.currentSkills.get(i), EffectScope.PVP);
+                    parseTemplate(n, currentSkill.currentSkills.get(i), EffectScope.PVP);
                 } else if ("enchant7endEffects".equalsIgnoreCase(n.getNodeName())) {
                     foundEndEffects = true;
-                    parseTemplate(n, _currentSkill.currentSkills.get(i), EffectScope.END);
+                    parseTemplate(n, currentSkill.currentSkills.get(i), EffectScope.END);
                 } else if ("enchant7selfEffects".equalsIgnoreCase(n.getNodeName())) {
                     foundSelfEffects = true;
-                    parseTemplate(n, _currentSkill.currentSkills.get(i), EffectScope.SELF);
+                    parseTemplate(n, currentSkill.currentSkills.get(i), EffectScope.SELF);
                 }
             }
 
@@ -1247,11 +1246,11 @@ public class DocumentSkill extends DocumentBase {
                     || !foundPvpEffects
                     || !foundEndEffects
                     || !foundSelfEffects) {
-                _currentSkill.currentLevel = lastLvl - 1;
+                currentSkill.currentLevel = lastLvl - 1;
                 for (n = first; n != null; n = n.getNextSibling()) {
                     if (!foundConditions && "conditions".equalsIgnoreCase(n.getNodeName())) {
                         final Condition condition =
-                                parseCondition(n.getFirstChild(), _currentSkill.currentSkills.get(i));
+                                parseCondition(n.getFirstChild(), currentSkill.currentSkills.get(i));
                         final Node msg = n.getAttributes().getNamedItem("msg");
                         final Node msgId = n.getAttributes().getNamedItem("msgId");
                         if ((condition != null) && (msg != null)) {
@@ -1264,21 +1263,21 @@ public class DocumentSkill extends DocumentBase {
                             }
                         }
 
-                        _currentSkill.currentSkills.get(i).attach(condition, false);
+                        currentSkill.currentSkills.get(i).attach(condition, false);
                     } else if (!foundEffects && "effects".equalsIgnoreCase(n.getNodeName())) {
-                        parseTemplate(n, _currentSkill.currentSkills.get(i));
+                        parseTemplate(n, currentSkill.currentSkills.get(i));
                     } else if (!foundChannelingEffects && "startEffects".equalsIgnoreCase(n.getNodeName())) {
-                        parseTemplate(n, _currentSkill.currentSkills.get(i), EffectScope.START);
+                        parseTemplate(n, currentSkill.currentSkills.get(i), EffectScope.START);
                     } else if (!foundChannelingEffects && "channelingEffects".equalsIgnoreCase(n.getNodeName())) {
-                        parseTemplate(n, _currentSkill.currentSkills.get(i), EffectScope.CHANNELING);
+                        parseTemplate(n, currentSkill.currentSkills.get(i), EffectScope.CHANNELING);
                     } else if (!foundPveEffects && "pveEffects".equalsIgnoreCase(n.getNodeName())) {
-                        parseTemplate(n, _currentSkill.currentSkills.get(i), EffectScope.PVE);
+                        parseTemplate(n, currentSkill.currentSkills.get(i), EffectScope.PVE);
                     } else if (!foundPvpEffects && "pvpEffects".equalsIgnoreCase(n.getNodeName())) {
-                        parseTemplate(n, _currentSkill.currentSkills.get(i), EffectScope.PVP);
+                        parseTemplate(n, currentSkill.currentSkills.get(i), EffectScope.PVP);
                     } else if (!foundEndEffects && "endEffects".equalsIgnoreCase(n.getNodeName())) {
-                        parseTemplate(n, _currentSkill.currentSkills.get(i), EffectScope.END);
+                        parseTemplate(n, currentSkill.currentSkills.get(i), EffectScope.END);
                     } else if (!foundSelfEffects && "selfEffects".equalsIgnoreCase(n.getNodeName())) {
-                        parseTemplate(n, _currentSkill.currentSkills.get(i), EffectScope.SELF);
+                        parseTemplate(n, currentSkill.currentSkills.get(i), EffectScope.SELF);
                     }
                 }
             }
@@ -1311,7 +1310,7 @@ public class DocumentSkill extends DocumentBase {
             boolean foundPvpEffects = false;
             boolean foundEndEffects = false;
             boolean foundSelfEffects = false;
-            _currentSkill.currentLevel = i
+            currentSkill.currentLevel = i
                     - lastLvl
                     - enchantLevels1
                     - enchantLevels2
@@ -1323,7 +1322,7 @@ public class DocumentSkill extends DocumentBase {
             for (n = first; n != null; n = n.getNextSibling()) {
                 if ("enchant8conditions".equalsIgnoreCase(n.getNodeName())) {
                     foundConditions = true;
-                    final Condition condition = parseCondition(n.getFirstChild(), _currentSkill.currentSkills.get(i));
+                    final Condition condition = parseCondition(n.getFirstChild(), currentSkill.currentSkills.get(i));
                     final Node msg = n.getAttributes().getNamedItem("msg");
                     final Node msgId = n.getAttributes().getNamedItem("msgId");
                     if ((condition != null) && (msg != null)) {
@@ -1336,28 +1335,28 @@ public class DocumentSkill extends DocumentBase {
                         }
                     }
 
-                    _currentSkill.currentSkills.get(i).attach(condition, false);
+                    currentSkill.currentSkills.get(i).attach(condition, false);
                 } else if ("enchant8effects".equalsIgnoreCase(n.getNodeName())) {
                     foundEffects = true;
-                    parseTemplate(n, _currentSkill.currentSkills.get(i));
+                    parseTemplate(n, currentSkill.currentSkills.get(i));
                 } else if ("enchant8startEffects".equalsIgnoreCase(n.getNodeName())) {
                     foundStartEffects = true;
-                    parseTemplate(n, _currentSkill.currentSkills.get(i), EffectScope.START);
+                    parseTemplate(n, currentSkill.currentSkills.get(i), EffectScope.START);
                 } else if ("enchant8channelingEffects".equalsIgnoreCase(n.getNodeName())) {
                     foundChannelingEffects = true;
-                    parseTemplate(n, _currentSkill.currentSkills.get(i), EffectScope.CHANNELING);
+                    parseTemplate(n, currentSkill.currentSkills.get(i), EffectScope.CHANNELING);
                 } else if ("enchant8pveEffects".equalsIgnoreCase(n.getNodeName())) {
                     foundPveEffects = true;
-                    parseTemplate(n, _currentSkill.currentSkills.get(i), EffectScope.PVE);
+                    parseTemplate(n, currentSkill.currentSkills.get(i), EffectScope.PVE);
                 } else if ("enchant8pvpEffects".equalsIgnoreCase(n.getNodeName())) {
                     foundPvpEffects = true;
-                    parseTemplate(n, _currentSkill.currentSkills.get(i), EffectScope.PVP);
+                    parseTemplate(n, currentSkill.currentSkills.get(i), EffectScope.PVP);
                 } else if ("enchant8endEffects".equalsIgnoreCase(n.getNodeName())) {
                     foundEndEffects = true;
-                    parseTemplate(n, _currentSkill.currentSkills.get(i), EffectScope.END);
+                    parseTemplate(n, currentSkill.currentSkills.get(i), EffectScope.END);
                 } else if ("enchant8selfEffects".equalsIgnoreCase(n.getNodeName())) {
                     foundSelfEffects = true;
-                    parseTemplate(n, _currentSkill.currentSkills.get(i), EffectScope.SELF);
+                    parseTemplate(n, currentSkill.currentSkills.get(i), EffectScope.SELF);
                 }
             }
 
@@ -1370,11 +1369,11 @@ public class DocumentSkill extends DocumentBase {
                     || !foundPvpEffects
                     || !foundEndEffects
                     || !foundSelfEffects) {
-                _currentSkill.currentLevel = lastLvl - 1;
+                currentSkill.currentLevel = lastLvl - 1;
                 for (n = first; n != null; n = n.getNextSibling()) {
                     if (!foundConditions && "conditions".equalsIgnoreCase(n.getNodeName())) {
                         final Condition condition =
-                                parseCondition(n.getFirstChild(), _currentSkill.currentSkills.get(i));
+                                parseCondition(n.getFirstChild(), currentSkill.currentSkills.get(i));
                         final Node msg = n.getAttributes().getNamedItem("msg");
                         final Node msgId = n.getAttributes().getNamedItem("msgId");
                         if ((condition != null) && (msg != null)) {
@@ -1387,27 +1386,27 @@ public class DocumentSkill extends DocumentBase {
                             }
                         }
 
-                        _currentSkill.currentSkills.get(i).attach(condition, false);
+                        currentSkill.currentSkills.get(i).attach(condition, false);
                     } else if (!foundEffects && "effects".equalsIgnoreCase(n.getNodeName())) {
-                        parseTemplate(n, _currentSkill.currentSkills.get(i));
+                        parseTemplate(n, currentSkill.currentSkills.get(i));
                     } else if (!foundStartEffects && "startEffects".equalsIgnoreCase(n.getNodeName())) {
-                        parseTemplate(n, _currentSkill.currentSkills.get(i), EffectScope.START);
+                        parseTemplate(n, currentSkill.currentSkills.get(i), EffectScope.START);
                     } else if (!foundChannelingEffects && "channelingEffects".equalsIgnoreCase(n.getNodeName())) {
-                        parseTemplate(n, _currentSkill.currentSkills.get(i), EffectScope.CHANNELING);
+                        parseTemplate(n, currentSkill.currentSkills.get(i), EffectScope.CHANNELING);
                     } else if (!foundPveEffects && "pveEffects".equalsIgnoreCase(n.getNodeName())) {
-                        parseTemplate(n, _currentSkill.currentSkills.get(i), EffectScope.PVE);
+                        parseTemplate(n, currentSkill.currentSkills.get(i), EffectScope.PVE);
                     } else if (!foundPvpEffects && "pvpEffects".equalsIgnoreCase(n.getNodeName())) {
-                        parseTemplate(n, _currentSkill.currentSkills.get(i), EffectScope.PVP);
+                        parseTemplate(n, currentSkill.currentSkills.get(i), EffectScope.PVP);
                     } else if (!foundEndEffects && "endEffects".equalsIgnoreCase(n.getNodeName())) {
-                        parseTemplate(n, _currentSkill.currentSkills.get(i), EffectScope.END);
+                        parseTemplate(n, currentSkill.currentSkills.get(i), EffectScope.END);
                     } else if (!foundSelfEffects && "selfEffects".equalsIgnoreCase(n.getNodeName())) {
-                        parseTemplate(n, _currentSkill.currentSkills.get(i), EffectScope.SELF);
+                        parseTemplate(n, currentSkill.currentSkills.get(i), EffectScope.SELF);
                     }
                 }
             }
         }
 
-        _currentSkill.skills.addAll(_currentSkill.currentSkills);
+        currentSkill.skills.addAll(currentSkill.currentSkills);
     }
 
     /**
@@ -1484,116 +1483,112 @@ public class DocumentSkill extends DocumentBase {
 
     private void makeSkills() {
         int count = 0;
-        _currentSkill.currentSkills = new ArrayList<>(_currentSkill.sets.length
-                + _currentSkill.enchsets1.length
-                + _currentSkill.enchsets2.length
-                + _currentSkill.enchsets3.length
-                + _currentSkill.enchsets4.length
-                + _currentSkill.enchsets5.length
-                + _currentSkill.enchsets6.length
-                + _currentSkill.enchsets7.length
-                + _currentSkill.enchsets8.length);
+        currentSkill.currentSkills = new ArrayList<>(currentSkill.sets.length
+                + currentSkill.enchsets1.length
+                + currentSkill.enchsets2.length
+                + currentSkill.enchsets3.length
+                + currentSkill.enchsets4.length
+                + currentSkill.enchsets5.length
+                + currentSkill.enchsets6.length
+                + currentSkill.enchsets7.length
+                + currentSkill.enchsets8.length);
         StatSet set;
-        for (int i = 0; i < _currentSkill.sets.length; i++) {
-            set = _currentSkill.sets[i];
+        for (int i = 0; i < currentSkill.sets.length; i++) {
+            set = currentSkill.sets[i];
             try {
-                _currentSkill.currentSkills.add(i, new Skill(set));
+                currentSkill.currentSkills.add(i, new Skill(set));
                 count++;
             } catch (Exception e) {
-                LOGGER.log(Level.SEVERE, "Skill id=" + set.getInt("skill_id") + "level" + set.getInt("level"), e);
+                log.error("Skill id={}level{}", set.getInt("skill_id"), set.getInt("level"), e);
             }
         }
 
         int count2 = count;
-        for (int i = 0; i < _currentSkill.enchsets1.length; i++) {
-            set = _currentSkill.enchsets1[i];
+        for (int i = 0; i < currentSkill.enchsets1.length; i++) {
+            set = currentSkill.enchsets1[i];
             try {
-                _currentSkill.currentSkills.add(count2 + i, new Skill(set));
+                currentSkill.currentSkills.add(count2 + i, new Skill(set));
                 count++;
             } catch (Exception e) {
-                LOGGER.log(Level.SEVERE, "Skill id=" + set.getInt("skill_id") + "level" + set.getInt("level"), e);
+                log.error("Skill id={}level{}", set.getInt("skill_id"), set.getInt("level"), e);
             }
         }
 
         count2 = count;
-        for (int i = 0; i < _currentSkill.enchsets2.length; i++) {
-            set = _currentSkill.enchsets2[i];
+        for (int i = 0; i < currentSkill.enchsets2.length; i++) {
+            set = currentSkill.enchsets2[i];
             try {
-                _currentSkill.currentSkills.add(count2 + i, new Skill(set));
+                currentSkill.currentSkills.add(count2 + i, new Skill(set));
                 count++;
             } catch (Exception e) {
-                LOGGER.log(Level.SEVERE, "Skill id=" + set.getInt("skill_id") + "level" + set.getInt("level"), e);
+                log.error("Skill id={}level{}", set.getInt("skill_id"), set.getInt("level"), e);
             }
         }
 
         count2 = count;
-        for (int i = 0; i < _currentSkill.enchsets3.length; i++) {
-            set = _currentSkill.enchsets3[i];
+        for (int i = 0; i < currentSkill.enchsets3.length; i++) {
+            set = currentSkill.enchsets3[i];
             try {
-                _currentSkill.currentSkills.add(count2 + i, new Skill(set));
+                currentSkill.currentSkills.add(count2 + i, new Skill(set));
                 count++;
             } catch (Exception e) {
-                LOGGER.log(Level.SEVERE, "Skill id=" + set.getInt("skill_id") + "level" + set.getInt("level"), e);
+                log.error("Skill id={}level{}", set.getInt("skill_id"), set.getInt("level"), e);
             }
         }
 
         count2 = count;
-        for (int i = 0; i < _currentSkill.enchsets4.length; i++) {
-            set = _currentSkill.enchsets4[i];
+        for (int i = 0; i < currentSkill.enchsets4.length; i++) {
+            set = currentSkill.enchsets4[i];
             try {
-                _currentSkill.currentSkills.add(count2 + i, new Skill(set));
+                currentSkill.currentSkills.add(count2 + i, new Skill(set));
                 count++;
             } catch (Exception e) {
-                LOGGER.log(Level.SEVERE, "Skill id=" + set.getInt("skill_id") + "level" + set.getInt("level"), e);
+                log.error("Skill id={}level{}", set.getInt("skill_id"), set.getInt("level"), e);
             }
         }
 
         count2 = count;
-        for (int i = 0; i < _currentSkill.enchsets5.length; i++) {
-            set = _currentSkill.enchsets5[i];
+        for (int i = 0; i < currentSkill.enchsets5.length; i++) {
+            set = currentSkill.enchsets5[i];
             try {
-                _currentSkill.currentSkills.add(count2 + i, new Skill(set));
+                currentSkill.currentSkills.add(count2 + i, new Skill(set));
                 count++;
             } catch (Exception e) {
-                LOGGER.log(Level.SEVERE, "Skill id=" + set.getInt("skill_id") + "level" + set.getInt("level"), e);
+                log.error("Skill id={}level{}", set.getInt("skill_id"), set.getInt("level"), e);
             }
         }
 
         count2 = count;
-        for (int i = 0; i < _currentSkill.enchsets6.length; i++) {
-            set = _currentSkill.enchsets6[i];
+        for (int i = 0; i < currentSkill.enchsets6.length; i++) {
+            set = currentSkill.enchsets6[i];
             try {
-                _currentSkill.currentSkills.add(count2 + i, new Skill(set));
+                currentSkill.currentSkills.add(count2 + i, new Skill(set));
                 count++;
             } catch (Exception e) {
-                LOGGER.log(Level.SEVERE, "Skill id=" + set.getInt("skill_id") + "level" + set.getInt("level"), e);
+                log.error("Skill id={}level{}", set.getInt("skill_id"), set.getInt("level"), e);
             }
         }
 
         count2 = count;
-        for (int i = 0; i < _currentSkill.enchsets7.length; i++) {
-            set = _currentSkill.enchsets7[i];
+        for (int i = 0; i < currentSkill.enchsets7.length; i++) {
+            set = currentSkill.enchsets7[i];
             try {
-                _currentSkill.currentSkills.add(count2 + i, new Skill(set));
+                currentSkill.currentSkills.add(count2 + i, new Skill(set));
                 count++;
             } catch (Exception e) {
-                LOGGER.log(Level.SEVERE, "Skill id=" + set.getInt("skill_id") + "level" + set.getInt("level"), e);
+                log.error("Skill id={}level{}", set.getInt("skill_id"), set.getInt("level"), e);
             }
         }
 
         count2 = count;
-        for (int i = 0; i < _currentSkill.enchsets8.length; i++) {
-            set = _currentSkill.enchsets8[i];
+        for (int i = 0; i < currentSkill.enchsets8.length; i++) {
+            set = currentSkill.enchsets8[i];
             try {
-                _currentSkill.currentSkills.add(count2 + i, new Skill(set));
+                currentSkill.currentSkills.add(count2 + i, new Skill(set));
                 count++;
             } catch (Exception e) {
-                LOGGER.log(Level.SEVERE, "Skill id=" + set.getInt("skill_id") + "level" + set.getInt("level"), e);
+                log.error("Skill id={}level{}", set.getInt("skill_id"), set.getInt("level"), e);
             }
         }
-    }
-
-    public List<Skill> getSkills() {
-        return _skillsInFile;
     }
 }

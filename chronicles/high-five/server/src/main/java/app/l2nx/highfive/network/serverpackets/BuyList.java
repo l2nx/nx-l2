@@ -31,26 +31,26 @@ import app.l2nx.network.buffer.WriteBuffer;
 import java.util.Collection;
 
 public class BuyList extends ServerPacket {
-    private final int _listId;
-    private final Collection<Product> _list;
-    private final long _money;
-    private double _taxRate = 0;
+    private final int listId;
+    private final Collection<Product> list;
+    private final long money;
+    private double taxRate = 0;
 
     public BuyList(BuyListHolder list, long currentMoney, double taxRate) {
-        _listId = list.getListId();
-        _list = list.getProducts();
-        _money = currentMoney;
-        _taxRate = taxRate;
+        listId = list.getListId();
+        this.list = list.getProducts();
+        money = currentMoney;
+        this.taxRate = taxRate;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_BUY_SELL_LIST.writeId(this, buffer);
         buffer.writeInt(0);
-        buffer.writeLong(_money); // current money
-        buffer.writeInt(_listId);
-        buffer.writeShort(_list.size());
-        for (Product product : _list) {
+        buffer.writeLong(money); // current money
+        buffer.writeInt(listId);
+        buffer.writeShort(list.size());
+        for (Product product : list) {
             if ((product.getCount() > 0) || !product.hasLimitedStock()) {
                 buffer.writeInt(product.getItemId());
                 buffer.writeInt(product.getItemId());
@@ -76,10 +76,9 @@ public class BuyList extends ServerPacket {
                 buffer.writeShort(0);
                 buffer.writeShort(0);
                 if ((product.getItemId() >= 3960) && (product.getItemId() <= 4026)) {
-                    buffer.writeLong(
-                            (long) (product.getPrice() * RatesConfig.RATE_SIEGE_GUARDS_PRICE * (1 + _taxRate)));
+                    buffer.writeLong((long) (product.getPrice() * RatesConfig.RATE_SIEGE_GUARDS_PRICE * (1 + taxRate)));
                 } else {
-                    buffer.writeLong((long) (product.getPrice() * (1 + _taxRate)));
+                    buffer.writeLong((long) (product.getPrice() * (1 + taxRate)));
                 }
             }
         }

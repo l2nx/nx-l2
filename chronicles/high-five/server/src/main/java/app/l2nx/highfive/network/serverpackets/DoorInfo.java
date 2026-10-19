@@ -28,16 +28,16 @@ import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.network.buffer.WriteBuffer;
 
 public class DoorInfo extends ServerPacket {
-    private final Door _door;
+    private final Door door;
 
     public DoorInfo(Door door) {
-        _door = door;
+        this.door = door;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.DOOR_INFO.writeId(this, buffer);
-        buffer.writeInt(_door.getObjectId());
-        buffer.writeInt(_door.getId());
+        buffer.writeInt(door.getObjectId());
+        buffer.writeInt(door.getId());
     }
 }

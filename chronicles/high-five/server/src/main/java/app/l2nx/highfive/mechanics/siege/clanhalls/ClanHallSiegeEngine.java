@@ -53,11 +53,14 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
-import java.util.logging.Logger;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author BiggBoss
  */
+@Slf4j
 public abstract class ClanHallSiegeEngine extends Script implements Siegable {
     private static final String SQL_LOAD_ATTACKERS =
             "SELECT attacker_id FROM clanhall_siege_attackers WHERE clanhall_id = ?";
@@ -71,39 +74,40 @@ public abstract class ClanHallSiegeEngine extends Script implements Siegable {
     public static final int BEAST_FARM = 63;
     public static final int FORTRESS_OF_DEAD = 64;
 
-    protected final Logger LOGGER;
+    @Getter
+    private final Map<Integer, SiegeClan> attackers = new ConcurrentHashMap<>();
 
-    private final Map<Integer, SiegeClan> _attackers = new ConcurrentHashMap<>();
-    private Collection<Spawn> _guards;
+    private Collection<Spawn> guards;
 
-    public SiegableHall _hall;
-    public ScheduledFuture<?> _siegeTask;
-    public boolean _missionAccomplished = false;
+    public SiegableHall hall;
+    public ScheduledFuture<?> siegeTask;
+    public boolean missionAccomplished = false;
 
     public ClanHallSiegeEngine(int hallId) {
-        LOGGER = Logger.getLogger(getClass().getName());
-        _hall = CHSiegeManager.getInstance().getSiegableHall(hallId);
-        _hall.setSiege(this);
+        hall = CHSiegeManager.getInstance().getSiegableHall(hallId);
+        hall.setSiege(this);
 
-        _siegeTask = ThreadPool.schedule(
-                new PrepareOwner(), _hall.getNextSiegeTime() - System.currentTimeMillis() - 3600000);
-        LOGGER.config(
-                _hall.getName() + " siege scheduled for " + _hall.getSiegeDate().getTime() + ".");
+        siegeTask =
+                ThreadPool.schedule(new PrepareOwner(), hall.getNextSiegeTime() - System.currentTimeMillis() - 3600000);
+        log.info(
+                "{} siege scheduled for {}.",
+                hall.getName(),
+                hall.getSiegeDate().getTime());
         loadAttackers();
     }
 
     public void loadAttackers() {
         try (Connection con = DatabaseFactory.getConnection();
                 PreparedStatement ps = con.prepareStatement(SQL_LOAD_ATTACKERS)) {
-            ps.setInt(1, _hall.getId());
+            ps.setInt(1, hall.getId());
             try (ResultSet rset = ps.executeQuery()) {
                 while (rset.next()) {
                     final int id = rset.getInt("attacker_id");
-                    _attackers.put(id, new SiegeClan(id, SiegeClanType.ATTACKER));
+                    attackers.put(id, new SiegeClan(id, SiegeClanType.ATTACKER));
                 }
             }
         } catch (Exception e) {
-            LOGGER.warning(getName() + ": Could not load siege attackers!");
+            LoggerFactory.getLogger(getClass()).warn("Could not load siege attackers!");
         }
     }
 
@@ -111,13 +115,13 @@ public abstract class ClanHallSiegeEngine extends Script implements Siegable {
         try (Connection con = DatabaseFactory.getConnection();
                 PreparedStatement ps =
                         con.prepareStatement("DELETE FROM clanhall_siege_attackers WHERE clanhall_id = ?")) {
-            ps.setInt(1, _hall.getId());
+            ps.setInt(1, hall.getId());
             ps.execute();
 
-            if (!_attackers.isEmpty()) {
+            if (!attackers.isEmpty()) {
                 try (PreparedStatement insert = con.prepareStatement(SQL_SAVE_ATTACKERS)) {
-                    for (SiegeClan clan : _attackers.values()) {
-                        insert.setInt(1, _hall.getId());
+                    for (SiegeClan clan : attackers.values()) {
+                        insert.setInt(1, hall.getId());
                         insert.setInt(2, clan.getClanId());
                         insert.execute();
                         insert.clearParameters();
@@ -125,22 +129,22 @@ public abstract class ClanHallSiegeEngine extends Script implements Siegable {
                 }
             }
 
-            LOGGER.config(getName() + ": Successfully saved attackers to database.");
+            LoggerFactory.getLogger(getClass()).info("Successfully saved attackers to database.");
         } catch (Exception e) {
-            LOGGER.warning(getName() + ": Couldn't save attacker list!");
+            LoggerFactory.getLogger(getClass()).warn("Couldn't save attacker list!");
         }
     }
 
     public void loadGuards() {
-        if (_guards != null) {
-            _guards.forEach(Spawn::startRespawn);
+        if (guards != null) {
+            guards.forEach(Spawn::startRespawn);
             return;
         }
 
-        _guards = new ArrayList<>();
+        guards = new ArrayList<>();
         try (Connection con = DatabaseFactory.getConnection();
                 PreparedStatement ps = con.prepareStatement(SQL_LOAD_GUARDS)) {
-            ps.setInt(1, _hall.getId());
+            ps.setInt(1, hall.getId());
             final ResultSet rset = ps.executeQuery();
             while (rset.next()) {
                 final Spawn spawn = new Spawn(rset.getInt("npcId"));
@@ -148,15 +152,15 @@ public abstract class ClanHallSiegeEngine extends Script implements Siegable {
                 spawn.setHeading(rset.getInt("heading"));
                 spawn.setRespawnDelay(rset.getInt("respawnDelay"));
                 spawn.setAmount(1);
-                _guards.add(spawn);
+                guards.add(spawn);
             }
         } catch (Exception e) {
-            LOGGER.warning(getName() + ": Could not load siege guards!");
+            LoggerFactory.getLogger(getClass()).warn("Could not load siege guards!");
         }
     }
 
     private void spawnSiegeGuards() {
-        for (Spawn guard : _guards) {
+        for (Spawn guard : guards) {
             guard.init();
             if (guard.getRespawnDelay() == 0) {
                 guard.stopRespawn();
@@ -165,8 +169,8 @@ public abstract class ClanHallSiegeEngine extends Script implements Siegable {
     }
 
     private void unSpawnSiegeGuards() {
-        if (_guards != null) {
-            for (Spawn guard : _guards) {
+        if (guards != null) {
+            for (Spawn guard : guards) {
                 guard.stopRespawn();
                 if (guard.getLastSpawn() != null) {
                     guard.getLastSpawn().deleteMe();
@@ -186,17 +190,13 @@ public abstract class ClanHallSiegeEngine extends Script implements Siegable {
         return result;
     }
 
-    public Map<Integer, SiegeClan> getAttackers() {
-        return _attackers;
-    }
-
     @Override
     public boolean checkIsAttacker(Clan clan) {
         if (clan == null) {
             return false;
         }
 
-        return _attackers.containsKey(clan.getId());
+        return attackers.containsKey(clan.getId());
     }
 
     @Override
@@ -206,7 +206,7 @@ public abstract class ClanHallSiegeEngine extends Script implements Siegable {
 
     @Override
     public SiegeClan getAttackerClan(int clanId) {
-        return _attackers.get(clanId);
+        return attackers.get(clanId);
     }
 
     @Override
@@ -216,15 +216,15 @@ public abstract class ClanHallSiegeEngine extends Script implements Siegable {
 
     @Override
     public Collection<SiegeClan> getAttackerClans() {
-        return Collections.unmodifiableCollection(_attackers.values());
+        return Collections.unmodifiableCollection(attackers.values());
     }
 
     @Override
     public List<Player> getAttackersInZone() {
         final List<Player> attackers = new ArrayList<>();
-        for (Player pc : _hall.getSiegeZone().getPlayersInside()) {
+        for (Player pc : hall.getSiegeZone().getPlayersInside()) {
             final Clan clan = pc.getClan();
-            if ((clan != null) && _attackers.containsKey(clan.getId())) {
+            if ((clan != null) && this.attackers.containsKey(clan.getId())) {
                 attackers.add(pc);
             }
         }
@@ -248,45 +248,45 @@ public abstract class ClanHallSiegeEngine extends Script implements Siegable {
     }
 
     public void prepareOwner() {
-        if (_hall.getOwnerId() > 0) {
-            final SiegeClan clan = new SiegeClan(_hall.getOwnerId(), SiegeClanType.ATTACKER);
-            _attackers.put(clan.getClanId(), new SiegeClan(clan.getClanId(), SiegeClanType.ATTACKER));
+        if (hall.getOwnerId() > 0) {
+            final SiegeClan clan = new SiegeClan(hall.getOwnerId(), SiegeClanType.ATTACKER);
+            attackers.put(clan.getClanId(), new SiegeClan(clan.getClanId(), SiegeClanType.ATTACKER));
         }
 
-        _hall.free();
-        _hall.banishForeigners();
+        hall.free();
+        hall.banishForeigners();
         final SystemMessage msg = new SystemMessage(SystemMessageId.THE_REGISTRATION_TERM_FOR_S1_HAS_ENDED);
         msg.addString(getName());
         World.broadcastToAllOnlinePlayers(msg);
-        _hall.updateSiegeStatus(SiegeStatus.WAITING_BATTLE);
+        hall.updateSiegeStatus(SiegeStatus.WAITING_BATTLE);
 
-        _siegeTask = ThreadPool.schedule(new SiegeStarts(), 3600000);
+        siegeTask = ThreadPool.schedule(new SiegeStarts(), 3600000);
     }
 
     @Override
     public void startSiege() {
-        if ((_attackers.isEmpty()) && (_hall.getId() != 21)) // Fortress of resistance don't have attacker list.
+        if ((attackers.isEmpty()) && (hall.getId() != 21)) // Fortress of resistance don't have attacker list.
         {
             onSiegeEnds();
-            _attackers.clear();
-            _hall.updateNextSiege();
-            _siegeTask =
-                    ThreadPool.schedule(new PrepareOwner(), _hall.getSiegeDate().getTimeInMillis());
-            _hall.updateSiegeStatus(SiegeStatus.WAITING_BATTLE);
+            attackers.clear();
+            hall.updateNextSiege();
+            siegeTask =
+                    ThreadPool.schedule(new PrepareOwner(), hall.getSiegeDate().getTimeInMillis());
+            hall.updateSiegeStatus(SiegeStatus.WAITING_BATTLE);
             final SystemMessage sm =
                     new SystemMessage(SystemMessageId.THE_SIEGE_OF_S1_HAS_BEEN_CANCELED_DUE_TO_LACK_OF_INTEREST);
-            sm.addString(_hall.getName());
+            sm.addString(hall.getName());
             World.broadcastToAllOnlinePlayers(sm);
             return;
         }
 
-        _hall.spawnDoor();
+        hall.spawnDoor();
         loadGuards();
         spawnSiegeGuards();
-        _hall.updateSiegeZone(true);
+        hall.updateSiegeZone(true);
 
         final byte state = 1;
-        for (SiegeClan sClan : _attackers.values()) {
+        for (SiegeClan sClan : attackers.values()) {
             final Clan clan = ClanTable.getInstance().getClan(sClan.getClanId());
             if (clan == null) {
                 continue;
@@ -299,38 +299,38 @@ public abstract class ClanHallSiegeEngine extends Script implements Siegable {
             }
         }
 
-        _hall.updateSiegeStatus(SiegeStatus.RUNNING);
+        hall.updateSiegeStatus(SiegeStatus.RUNNING);
         onSiegeStarts();
-        _siegeTask = ThreadPool.schedule(new SiegeEnds(), _hall.getSiegeLength());
+        siegeTask = ThreadPool.schedule(new SiegeEnds(), hall.getSiegeLength());
     }
 
     @Override
     public void endSiege() {
         final SystemMessage end = new SystemMessage(SystemMessageId.THE_S1_SIEGE_HAS_FINISHED);
-        end.addString(_hall.getName());
+        end.addString(hall.getName());
         World.broadcastToAllOnlinePlayers(end);
 
         final Clan winner = getWinner();
         SystemMessage finalMsg = null;
-        if (_missionAccomplished && (winner != null)) {
-            _hall.setOwner(winner);
-            winner.setHideoutId(_hall.getId());
+        if (missionAccomplished && (winner != null)) {
+            hall.setOwner(winner);
+            winner.setHideoutId(hall.getId());
             finalMsg = new SystemMessage(SystemMessageId.CLAN_S1_IS_VICTORIOUS_OVER_S2_S_CASTLE_SIEGE);
             finalMsg.addString(winner.getName());
         } else {
             finalMsg = new SystemMessage(SystemMessageId.THE_SIEGE_OF_S1_HAS_ENDED_IN_A_DRAW);
         }
 
-        finalMsg.addString(_hall.getName());
+        finalMsg.addString(hall.getName());
         World.broadcastToAllOnlinePlayers(finalMsg);
-        _missionAccomplished = false;
-        _hall.updateSiegeZone(false);
-        _hall.updateNextSiege();
-        _hall.spawnDoor(false);
-        _hall.banishForeigners();
+        missionAccomplished = false;
+        hall.updateSiegeZone(false);
+        hall.updateNextSiege();
+        hall.spawnDoor(false);
+        hall.banishForeigners();
 
         final byte state = 0;
-        for (SiegeClan sClan : _attackers.values()) {
+        for (SiegeClan sClan : attackers.values()) {
             final Clan clan = ClanTable.getInstance().getClan(sClan.getClanId());
             if (clan == null) {
                 continue;
@@ -344,41 +344,45 @@ public abstract class ClanHallSiegeEngine extends Script implements Siegable {
         }
 
         // Update pvp flag for winners when siege zone becomes inactive.
-        for (Creature chr : _hall.getSiegeZone().getCharactersInside()) {
+        for (Creature chr : hall.getSiegeZone().getCharactersInside()) {
             if ((chr != null) && chr.isPlayer()) {
                 chr.asPlayer().startPvPFlag();
             }
         }
 
-        _attackers.clear();
+        attackers.clear();
 
         onSiegeEnds();
 
-        _siegeTask = ThreadPool.schedule(
-                new PrepareOwner(), _hall.getNextSiegeTime() - System.currentTimeMillis() - 3600000);
-        LOGGER.config("Siege of " + _hall.getName() + " scheduled for "
-                + _hall.getSiegeDate().getTime() + ".");
-        _hall.updateSiegeStatus(SiegeStatus.REGISTERING);
+        siegeTask =
+                ThreadPool.schedule(new PrepareOwner(), hall.getNextSiegeTime() - System.currentTimeMillis() - 3600000);
+        log.info(
+                "Siege of {} scheduled for {}.",
+                hall.getName(),
+                hall.getSiegeDate().getTime());
+        hall.updateSiegeStatus(SiegeStatus.REGISTERING);
         unSpawnSiegeGuards();
     }
 
     @Override
     public void updateSiege() {
         cancelSiegeTask();
-        _siegeTask = ThreadPool.schedule(new PrepareOwner(), _hall.getNextSiegeTime() - 3600000);
-        LOGGER.config(
-                _hall.getName() + " siege scheduled for " + _hall.getSiegeDate().getTime() + ".");
+        siegeTask = ThreadPool.schedule(new PrepareOwner(), hall.getNextSiegeTime() - 3600000);
+        log.info(
+                "{} siege scheduled for {}.",
+                hall.getName(),
+                hall.getSiegeDate().getTime());
     }
 
     public void cancelSiegeTask() {
-        if (_siegeTask != null) {
-            _siegeTask.cancel(false);
+        if (siegeTask != null) {
+            siegeTask.cancel(false);
         }
     }
 
     @Override
     public Calendar getSiegeDate() {
-        return _hall.getSiegeDate();
+        return hall.getSiegeDate();
     }
 
     @Override

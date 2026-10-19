@@ -21,20 +21,21 @@ package app.l2nx.highfive.network.clientpackets;
 
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.managers.RaidBossPointsManager;
-import app.l2nx.highfive.network.PacketLogger;
 import app.l2nx.highfive.network.serverpackets.ExGetBossRecord;
 import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Format: (ch) d
  * @author -Wooden-
  */
+@Slf4j
 public class RequestGetBossRecord extends ClientPacket {
-    private int _bossId;
+    private int bossId;
 
     @Override
     protected void readImpl() {
-        _bossId = readInt();
+        bossId = readInt();
     }
 
     @Override
@@ -44,9 +45,11 @@ public class RequestGetBossRecord extends ClientPacket {
             return;
         }
 
-        if (_bossId != 0) {
-            PacketLogger.info("C5: RequestGetBossRecord: d: " + _bossId + " ActiveChar: "
-                    + player); // should be always 0, log it if is not 0 for furture research
+        if (bossId != 0) {
+            log.info(
+                    "C5: RequestGetBossRecord: d: {} ActiveChar: {}",
+                    bossId,
+                    player); // should be always 0, log it if is not 0 for furture research
         }
 
         final int points = RaidBossPointsManager.getInstance().getPointsByOwnerId(player.getObjectId());

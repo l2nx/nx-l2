@@ -38,8 +38,8 @@ public class GeneralDilios extends Script {
     private static final int GENERAL_ID = 32549;
     private static final int GUARD_ID = 32619;
 
-    private Npc _general = null;
-    private final Set<Spawn> _guards = Collections.newSetFromMap(new ConcurrentHashMap<>());
+    private Npc general = null;
+    private final Set<Spawn> guards = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
     private static final NpcStringId[] DILIOS_TEXT = {
         NpcStringId
@@ -64,19 +64,19 @@ public class GeneralDilios extends Script {
         if (event.startsWith("command_")) {
             int value = Integer.parseInt(event.substring(8));
             if (value < 6) {
-                _general.broadcastPacket(new NpcSay(
-                        _general.getObjectId(), ChatType.NPC_GENERAL, GENERAL_ID, NpcStringId.STABBING_THREE_TIMES));
+                general.broadcastPacket(new NpcSay(
+                        general.getObjectId(), ChatType.NPC_GENERAL, GENERAL_ID, NpcStringId.STABBING_THREE_TIMES));
                 startQuestTimer("guard_animation_0", 3400, null, null);
             } else {
                 value = -1;
-                _general.broadcastPacket(new NpcSay(
-                        _general.getObjectId(), ChatType.NPC_SHOUT, GENERAL_ID, getRandomEntry(DILIOS_TEXT)));
+                general.broadcastPacket(
+                        new NpcSay(general.getObjectId(), ChatType.NPC_SHOUT, GENERAL_ID, getRandomEntry(DILIOS_TEXT)));
             }
 
             startQuestTimer("command_" + (value + 1), 60000, null, null);
         } else if (event.startsWith("guard_animation_")) {
             final int value = Integer.parseInt(event.substring(16));
-            for (Spawn guard : _guards) {
+            for (Spawn guard : guards) {
                 guard.getLastSpawn().broadcastSocialAction(4);
             }
 
@@ -92,9 +92,9 @@ public class GeneralDilios extends Script {
     public void onSpawn(Npc npc) {
         if (npc.getId() == GENERAL_ID) {
             startQuestTimer("command_0", 60000, null, null);
-            _general = npc;
+            general = npc;
         } else if (npc.getId() == GUARD_ID) {
-            _guards.add(npc.getSpawn());
+            guards.add(npc.getSpawn());
         }
     }
 }

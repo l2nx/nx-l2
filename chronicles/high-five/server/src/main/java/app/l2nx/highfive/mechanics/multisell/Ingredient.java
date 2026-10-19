@@ -25,18 +25,35 @@ import app.l2nx.highfive.entity.item.ItemTemplate;
 import app.l2nx.highfive.entity.item.Weapon;
 import app.l2nx.highfive.entity.item.instance.Item;
 import app.l2nx.highfive.util.StatSet;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * @author DS
  */
 public class Ingredient {
-    private int _itemId;
-    private long _itemCount;
-    private final int _enchantmentLevel;
-    private boolean _isTaxIngredient;
-    private boolean _maintainIngredient;
-    private ItemTemplate _template = null;
-    private ItemInfo _itemInfo = null;
+    @Getter
+    @Setter
+    private int itemId;
+
+    @Getter
+    @Setter
+    private long itemCount;
+
+    private final int enchantmentLevel;
+
+    @Getter
+    @Setter
+    private boolean taxIngredient;
+
+    @Setter
+    private boolean maintainIngredient;
+
+    @Getter
+    private ItemTemplate template = null;
+
+    @Getter
+    private ItemInfo itemInfo = null;
 
     public Ingredient(StatSet set) {
         this(
@@ -49,13 +66,13 @@ public class Ingredient {
 
     public Ingredient(
             int itemId, long itemCount, int enchantmentLevel, boolean isTaxIngredient, boolean maintainIngredient) {
-        _itemId = itemId;
-        _itemCount = itemCount;
-        _enchantmentLevel = enchantmentLevel;
-        _isTaxIngredient = isTaxIngredient;
-        _maintainIngredient = maintainIngredient;
-        if (_itemId > 0) {
-            _template = ItemData.getInstance().getTemplate(_itemId);
+        this.itemId = itemId;
+        this.itemCount = itemCount;
+        this.enchantmentLevel = enchantmentLevel;
+        taxIngredient = isTaxIngredient;
+        this.maintainIngredient = maintainIngredient;
+        if (this.itemId > 0) {
+            template = ItemData.getInstance().getTemplate(this.itemId);
         }
     }
 
@@ -63,70 +80,34 @@ public class Ingredient {
      * @return a new Ingredient instance with the same values as this.
      */
     public Ingredient getCopy() {
-        return new Ingredient(_itemId, _itemCount, _enchantmentLevel, _isTaxIngredient, _maintainIngredient);
-    }
-
-    public ItemTemplate getTemplate() {
-        return _template;
+        return new Ingredient(itemId, itemCount, enchantmentLevel, taxIngredient, maintainIngredient);
     }
 
     public void setItemInfo(Item item) {
-        _itemInfo = new ItemInfo(item);
+        itemInfo = new ItemInfo(item);
     }
 
     public void setItemInfo(ItemInfo info) {
-        _itemInfo = info;
-    }
-
-    public ItemInfo getItemInfo() {
-        return _itemInfo;
+        itemInfo = info;
     }
 
     public int getEnchantLevel() {
-        return _itemInfo == null ? _enchantmentLevel : _itemInfo.getEnchantLevel();
-    }
-
-    public void setItemId(int itemId) {
-        _itemId = itemId;
-    }
-
-    public int getItemId() {
-        return _itemId;
-    }
-
-    public void setItemCount(long itemCount) {
-        _itemCount = itemCount;
-    }
-
-    public long getItemCount() {
-        return _itemCount;
-    }
-
-    public void setTaxIngredient(boolean isTaxIngredient) {
-        _isTaxIngredient = isTaxIngredient;
-    }
-
-    public boolean isTaxIngredient() {
-        return _isTaxIngredient;
-    }
-
-    public void setMaintainIngredient(boolean maintainIngredient) {
-        _maintainIngredient = maintainIngredient;
+        return itemInfo == null ? enchantmentLevel : itemInfo.getEnchantLevel();
     }
 
     public boolean getMaintainIngredient() {
-        return _maintainIngredient;
+        return maintainIngredient;
     }
 
     public boolean isStackable() {
-        return _template == null ? true : _template.isStackable();
+        return template == null ? true : template.isStackable();
     }
 
     public boolean isArmorOrWeapon() {
-        return _template == null ? false : (_template instanceof Armor) || (_template instanceof Weapon);
+        return template == null ? false : (template instanceof Armor) || (template instanceof Weapon);
     }
 
     public int getWeight() {
-        return _template == null ? 0 : _template.getWeight();
+        return template == null ? 0 : template.getWeight();
     }
 }

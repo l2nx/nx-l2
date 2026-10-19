@@ -47,14 +47,13 @@ import java.util.Map;
 import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.TreeMap;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author Mobius
  */
+@Slf4j
 public class AdminSkill implements IAdminCommandHandler {
-    private static final Logger LOGGER = Logger.getLogger(AdminSkill.class.getName());
 
     private static final int PAGE_LIMIT = 7;
 
@@ -294,7 +293,7 @@ public class AdminSkill implements IAdminCommandHandler {
                         + " "
                         + ClassListData.getInstance()
                                 .getClass(player.getPlayerClass())
-                                .getClassName()
+                                .className()
                         + "</td></tr></table><br><table width=270><tr><td>Note: Do not forget that modifying players skills can</td></tr><tr><td>ruin the game...</td></tr></table><br><center>Click on the skill you wish to remove:</center><br><center><table width=270><tr>");
         for (int x = 0; x < maxPages; x++) {
             final int pagenr = x + 1;
@@ -378,7 +377,7 @@ public class AdminSkill implements IAdminCommandHandler {
             }
 
             sb.append("<tr><td><a action=\"bypass admin_skill_class " + playerClass + "\"><font color=\"" + color
-                    + "\">" + ClassListData.getInstance().getClass(playerClass).getClassName()
+                    + "\">" + ClassListData.getInstance().getClass(playerClass).className()
                     + "</font></a></td></tr>");
         }
 
@@ -422,7 +421,7 @@ public class AdminSkill implements IAdminCommandHandler {
         final NpcHtmlMessage html = new NpcHtmlMessage();
         html.setFile(player, "data/html/admin/charskills_class.htm");
         html.replace(
-                "%classname%", ClassListData.getInstance().getClass(playerClass).getClassName());
+                "%classname%", ClassListData.getInstance().getClass(playerClass).className());
         html.replace("%skilllist%", result.getBodyTemplate().toString());
         if (result.getPages() > 1) {
             html.replace(
@@ -497,7 +496,7 @@ public class AdminSkill implements IAdminCommandHandler {
         adminReply.replace("%level%", String.valueOf(player.getLevel()));
         adminReply.replace(
                 "%class%",
-                ClassListData.getInstance().getClass(player.getPlayerClass()).getClassName());
+                ClassListData.getInstance().getClass(player.getPlayerClass()).className());
         activeChar.sendPacket(adminReply);
     }
 
@@ -588,7 +587,7 @@ public class AdminSkill implements IAdminCommandHandler {
                 final int levelval = level == null ? 1 : Integer.parseInt(level);
                 skill = SkillData.getInstance().getSkill(idval, levelval);
             } catch (Exception e) {
-                LOGGER.log(Level.WARNING, "", e);
+                log.warn("", e);
             }
 
             if (skill != null) {

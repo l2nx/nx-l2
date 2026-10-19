@@ -32,7 +32,9 @@ import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.serverpackets.ActionFailed;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class TerritoryWard extends Attackable {
     /**
      * Creates territory ward.
@@ -81,7 +83,7 @@ public class TerritoryWard extends Attackable {
         super.onSpawn();
 
         if (getCastle() == null) {
-            LOGGER.warning("TerritoryWard(" + getName() + ") spawned outside Castle Zone!");
+            log.warn("TerritoryWard({}) spawned outside Castle Zone!", getName());
         }
     }
 

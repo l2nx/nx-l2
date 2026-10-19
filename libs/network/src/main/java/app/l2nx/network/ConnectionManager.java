@@ -57,12 +57,12 @@ import java.util.function.Function;
 public class ConnectionManager<T extends Client<Connection<T>>> {
     private final ThreadPoolExecutor ioPool;
     private final PacketExecutor<T> packetExecutor;
-    private final AsynchronousChannelGroup _group;
-    private final AsynchronousServerSocketChannel _socketChannel;
-    private final ConnectionConfig _config;
-    private final WriteHandler<T> _writeHandler;
-    private final ReadHandler<T> _readHandler;
-    private final Function<Connection<T>, T> _clientFactory;
+    private final AsynchronousChannelGroup group;
+    private final AsynchronousServerSocketChannel socketChannel;
+    private final ConnectionConfig config;
+    private final WriteHandler<T> writeHandler;
+    private final ReadHandler<T> readHandler;
+    private final Function<Connection<T>, T> clientFactory;
 
     /**
      * Binds the server to {@code address} and starts accepting connections.
@@ -78,37 +78,37 @@ public class ConnectionManager<T extends Client<Connection<T>>> {
             PacketHandler<T> packetHandler,
             NetworkSettings settings)
             throws IOException {
-        _config = new ConnectionConfig(address, settings);
-        _clientFactory = clientFactory;
-        packetExecutor = new PacketExecutor<>(_config);
-        _readHandler = new ReadHandler<>(packetHandler, packetExecutor);
-        _writeHandler = new WriteHandler<>();
+        config = new ConnectionConfig(address, settings);
+        this.clientFactory = clientFactory;
+        packetExecutor = new PacketExecutor<>(config);
+        readHandler = new ReadHandler<>(packetHandler, packetExecutor);
+        writeHandler = new WriteHandler<>();
 
         // Bounded thread pool: core == max == threadPoolSize; idle threads kept alive for 1 minute.
         // LinkedBlockingQueue buffers short accept bursts without spawning extra threads.
         final ThreadPoolExecutor threadPool = new ThreadPoolExecutor(
-                _config.threadPoolSize,
-                _config.threadPoolSize,
+                config.threadPoolSize,
+                config.threadPoolSize,
                 1,
                 TimeUnit.MINUTES,
                 new LinkedBlockingQueue<>(),
-                new PacketThreadFactory("Server", _config.threadPriority));
+                new PacketThreadFactory("Server", config.threadPriority));
         threadPool.allowCoreThreadTimeOut(true);
         ioPool = threadPool;
 
-        _group = AsynchronousChannelGroup.withThreadPool(threadPool);
+        group = AsynchronousChannelGroup.withThreadPool(threadPool);
         try {
-            _socketChannel = _group.provider().openAsynchronousServerSocketChannel(_group);
-            _socketChannel.setOption(StandardSocketOptions.SO_REUSEADDR, true);
-            _socketChannel.bind(_config.address);
+            socketChannel = group.provider().openAsynchronousServerSocketChannel(group);
+            socketChannel.setOption(StandardSocketOptions.SO_REUSEADDR, true);
+            socketChannel.bind(config.address);
         } catch (IOException | RuntimeException e) {
             // The group's threads are non-daemon: left running, they would keep a server that failed to bind alive.
-            _group.shutdownNow();
+            group.shutdownNow();
             throw e;
         }
 
         // Begin the accept loop.
-        _socketChannel.accept(null, new AcceptConnectionHandler());
+        socketChannel.accept(null, new AcceptConnectionHandler());
     }
 
     public void bindMetrics(MeterRegistry registry, String name) {
@@ -118,7 +118,7 @@ public class ConnectionManager<T extends Client<Connection<T>>> {
 
     public void stopAccepting() {
         try {
-            _socketChannel.close();
+            socketChannel.close();
         } catch (IOException e) {
         }
     }
@@ -129,19 +129,19 @@ public class ConnectionManager<T extends Client<Connection<T>>> {
      */
     public void shutdown() {
         try {
-            _socketChannel.close();
-            _group.shutdown();
-            _group.awaitTermination(_config.shutdownWaitTime, TimeUnit.MILLISECONDS);
+            socketChannel.close();
+            group.shutdown();
+            group.awaitTermination(config.shutdownWaitTime, TimeUnit.MILLISECONDS);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         } catch (Exception e) {
             // Best-effort shutdown; errors here are not actionable.
         } finally {
             try {
-                _group.shutdownNow();
+                group.shutdownNow();
             } catch (IOException e) {
             }
-            packetExecutor.shutdown(_config.shutdownWaitTime);
+            packetExecutor.shutdown(config.shutdownWaitTime);
         }
     }
 
@@ -150,8 +150,8 @@ public class ConnectionManager<T extends Client<Connection<T>>> {
         public void completed(AsynchronousSocketChannel clientChannel, Void attachment) {
             // Re-arm the accept loop before processing the new channel so that further connections are not delayed by
             // client initialisation.
-            if (_socketChannel.isOpen()) {
-                _socketChannel.accept(null, this);
+            if (socketChannel.isOpen()) {
+                socketChannel.accept(null, this);
             }
 
             processNewConnection(clientChannel);
@@ -160,8 +160,8 @@ public class ConnectionManager<T extends Client<Connection<T>>> {
         @Override
         public void failed(Throwable t, Void attachment) {
             // Re-arm even on failure so transient errors do not kill the accept loop.
-            if (_socketChannel.isOpen()) {
-                _socketChannel.accept(null, this);
+            if (socketChannel.isOpen()) {
+                socketChannel.accept(null, this);
             }
         }
 
@@ -171,10 +171,10 @@ public class ConnectionManager<T extends Client<Connection<T>>> {
             }
 
             try {
-                channel.setOption(StandardSocketOptions.TCP_NODELAY, !_config.useNagle);
+                channel.setOption(StandardSocketOptions.TCP_NODELAY, !config.useNagle);
 
-                final Connection<T> connection = new Connection<>(channel, _readHandler, _writeHandler, _config);
-                final T client = _clientFactory.apply(connection);
+                final Connection<T> connection = new Connection<>(channel, readHandler, writeHandler, config);
+                final T client = clientFactory.apply(connection);
                 connection.setClient(client);
 
                 client.onConnected();

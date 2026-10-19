@@ -32,34 +32,34 @@ import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.network.buffer.WriteBuffer;
 
 public class MultiSellList extends ServerPacket {
-    private int _size;
-    private int _index;
-    private final ListContainer _list;
-    private final boolean _finished;
+    private int size;
+    private int index;
+    private final ListContainer list;
+    private final boolean finished;
 
     public MultiSellList(ListContainer list, int index) {
-        _list = list;
-        _index = index;
-        _size = list.getEntries().size() - index;
-        if (_size > PAGE_SIZE) {
-            _finished = false;
-            _size = PAGE_SIZE;
+        this.list = list;
+        this.index = index;
+        size = list.getEntries().size() - index;
+        if (size > PAGE_SIZE) {
+            finished = false;
+            size = PAGE_SIZE;
         } else {
-            _finished = true;
+            finished = true;
         }
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.MULTI_SELL_LIST.writeId(this, buffer);
-        buffer.writeInt(_list.getListId()); // list id
-        buffer.writeInt(1 + (_index / PAGE_SIZE)); // page started from 1
-        buffer.writeInt(_finished); // finished
+        buffer.writeInt(list.getListId()); // list id
+        buffer.writeInt(1 + (index / PAGE_SIZE)); // page started from 1
+        buffer.writeInt(finished); // finished
         buffer.writeInt(PAGE_SIZE); // size of pages
-        buffer.writeInt(_size); // list length
+        buffer.writeInt(size); // list length
         Entry ent;
-        while (_size-- > 0) {
-            ent = _list.getEntries().get(_index++);
+        while (size-- > 0) {
+            ent = list.getEntries().get(index++);
             buffer.writeInt(ent.getEntryId());
             buffer.writeByte(ent.isStackable());
             buffer.writeShort(0); // C6

@@ -24,48 +24,45 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
+import lombok.Getter;
 
 /**
  * @author NosBit
  */
 public class BuyListHolder {
-    private final int _listId;
-    private final Map<Integer, Product> _products = new LinkedHashMap<>();
-    private Set<Integer> _allowedNpcs = null;
+    @Getter
+    private final int listId;
+
+    private final Map<Integer, Product> products = new LinkedHashMap<>();
+
+    @Getter
+    private Set<Integer> npcsAllowed = null;
 
     public BuyListHolder(int listId) {
-        _listId = listId;
-    }
-
-    public int getListId() {
-        return _listId;
+        this.listId = listId;
     }
 
     public Collection<Product> getProducts() {
-        return _products.values();
+        return products.values();
     }
 
     public Product getProductByItemId(int itemId) {
-        return _products.get(itemId);
+        return products.get(itemId);
     }
 
     public void addProduct(Product product) {
-        _products.put(product.getItemId(), product);
+        products.put(product.getItemId(), product);
     }
 
     public void addAllowedNpc(int npcId) {
-        if (_allowedNpcs == null) {
-            _allowedNpcs = new HashSet<>();
+        if (npcsAllowed == null) {
+            npcsAllowed = new HashSet<>();
         }
 
-        _allowedNpcs.add(npcId);
+        npcsAllowed.add(npcId);
     }
 
     public boolean isNpcAllowed(int npcId) {
-        return (_allowedNpcs != null) && _allowedNpcs.contains(npcId);
-    }
-
-    public Set<Integer> getNpcsAllowed() {
-        return _allowedNpcs;
+        return (npcsAllowed != null) && npcsAllowed.contains(npcId);
     }
 }

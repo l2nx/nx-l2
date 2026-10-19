@@ -27,8 +27,8 @@ import app.l2nx.network.buffer.WriteBuffer;
  * @author janiii
  */
 public class ExEventMatchMessage extends ServerPacket {
-    private final int _type;
-    private final String _message;
+    private final int type;
+    private final String message;
 
     /**
      * Create an event match message.
@@ -36,14 +36,14 @@ public class ExEventMatchMessage extends ServerPacket {
      * @param message message to show, only when type is 0 - gm
      */
     public ExEventMatchMessage(int type, String message) {
-        _type = type;
-        _message = message;
+        this.type = type;
+        this.message = message;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_EVENT_MATCH_MESSAGE.writeId(this, buffer);
-        buffer.writeByte(_type);
-        buffer.writeString(_message);
+        buffer.writeByte(type);
+        buffer.writeString(message);
     }
 }

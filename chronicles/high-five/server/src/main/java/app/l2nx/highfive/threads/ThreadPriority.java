@@ -22,6 +22,8 @@
  */
 package app.l2nx.highfive.threads;
 
+import lombok.Getter;
+
 /**
  * Defines different levels of thread priorities.<br>
  * This enum provides a convenient way to set thread priorities in a readable and maintainable manner.<br>
@@ -80,21 +82,14 @@ public enum ThreadPriority {
      */
     PRIORITY_10(10);
 
-    private final int _id;
+    @Getter
+    private final int id;
 
     /**
      * Constructs a new {@code ThreadPriority} instance with the specified priority level.
      * @param id the priority level, ranging from 1 to 10.
      */
     ThreadPriority(int id) {
-        _id = id;
-    }
-
-    /**
-     * Returns the numerical ID of the priority level.
-     * @return the priority level as an integer.
-     */
-    public int getId() {
-        return _id;
+        this.id = id;
     }
 }

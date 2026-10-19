@@ -29,17 +29,17 @@ import java.util.Map.Entry;
  * @author -Wooden-, UnAfraid, mrTJO
  */
 public class PackageToList extends ServerPacket {
-    private final Map<Integer, String> _players;
+    private final Map<Integer, String> players;
 
     public PackageToList(Map<Integer, String> chars) {
-        _players = chars;
+        players = chars;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.PACKAGE_TO_LIST.writeId(this, buffer);
-        buffer.writeInt(_players.size());
-        for (Entry<Integer, String> entry : _players.entrySet()) {
+        buffer.writeInt(players.size());
+        for (Entry<Integer, String> entry : players.entrySet()) {
             buffer.writeInt(entry.getKey());
             buffer.writeString(entry.getValue());
         }

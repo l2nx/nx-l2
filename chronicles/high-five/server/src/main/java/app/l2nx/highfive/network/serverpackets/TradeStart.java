@@ -31,26 +31,27 @@ import app.l2nx.network.buffer.WriteBuffer;
 import java.util.Collection;
 
 public class TradeStart extends AbstractItemPacket {
-    private final Player _player;
-    private final Collection<Item> _itemList;
+    private final Player player;
+    private final Collection<Item> itemList;
 
     public TradeStart(Player player) {
-        _player = player;
-        _itemList = _player.getInventory()
-                .getAvailableItems(true, (_player.isGM() && GeneralConfig.GM_TRADE_RESTRICTED_ITEMS), false);
+        this.player = player;
+        itemList = this.player
+                .getInventory()
+                .getAvailableItems(true, (this.player.isGM() && GeneralConfig.GM_TRADE_RESTRICTED_ITEMS), false);
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
-        if ((_player.getActiveTradeList() == null)
-                || (_player.getActiveTradeList().getPartner() == null)) {
+        if ((player.getActiveTradeList() == null)
+                || (player.getActiveTradeList().getPartner() == null)) {
             return;
         }
 
         ServerPackets.TRADE_START.writeId(this, buffer);
-        buffer.writeInt(_player.getActiveTradeList().getPartner().getObjectId());
-        buffer.writeShort(_itemList.size());
-        for (Item item : _itemList) {
+        buffer.writeInt(player.getActiveTradeList().getPartner().getObjectId());
+        buffer.writeShort(itemList.size());
+        for (Item item : itemList) {
             writeItem(item, buffer);
         }
     }

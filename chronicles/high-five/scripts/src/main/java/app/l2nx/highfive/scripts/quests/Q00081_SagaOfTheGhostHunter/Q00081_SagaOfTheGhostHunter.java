@@ -29,15 +29,15 @@ import app.l2nx.highfive.scripts.quests.AbstractSagaQuest;
 public class Q00081_SagaOfTheGhostHunter extends AbstractSagaQuest {
     public Q00081_SagaOfTheGhostHunter() {
         super(81);
-        _npc = new int[] {31603, 31624, 31286, 31615, 31617, 31646, 31649, 31653, 31654, 31655, 31656, 31616};
-        _items = new int[] {7080, 7518, 7081, 7496, 7279, 7310, 7341, 7372, 7403, 7434, 7104, 0};
-        _mob = new int[] {27301, 27230, 27304};
-        _classId = new int[] {108};
-        _prevClass = new int[] {0x24};
-        _npcSpawnLocations = new Location[] {
+        npc = new int[] {31603, 31624, 31286, 31615, 31617, 31646, 31649, 31653, 31654, 31655, 31656, 31616};
+        items = new int[] {7080, 7518, 7081, 7496, 7279, 7310, 7341, 7372, 7403, 7434, 7104, 0};
+        mob = new int[] {27301, 27230, 27304};
+        classId = new int[] {108};
+        prevClass = new int[] {0x24};
+        npcSpawnLocations = new Location[] {
             new Location(164650, -74121, -2871), new Location(47391, -56929, -2370), new Location(47429, -56923, -2383)
         };
-        _text = new String[] {
+        text = new String[] {
             "PLAYERNAME! Pursued to here! However, I jumped out of the Banshouren boundaries! You look at the giant as the sign of power!",
             "... Oh ... good! So it was ... let's begin!",
             "I do not have the patience ..! I have been a giant force ...! Cough chatter ah ah ah!",

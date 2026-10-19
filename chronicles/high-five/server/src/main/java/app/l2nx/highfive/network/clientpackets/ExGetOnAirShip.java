@@ -25,23 +25,23 @@ package app.l2nx.highfive.network.clientpackets;
  */
 public class ExGetOnAirShip extends ClientPacket {
     @SuppressWarnings("unused")
-    private int _x;
+    private int x;
 
     @SuppressWarnings("unused")
-    private int _y;
+    private int y;
 
     @SuppressWarnings("unused")
-    private int _z;
+    private int z;
 
     @SuppressWarnings("unused")
-    private int _shipId;
+    private int shipId;
 
     @Override
     protected void readImpl() {
-        _x = readInt();
-        _y = readInt();
-        _z = readInt();
-        _shipId = readInt();
+        x = readInt();
+        y = readInt();
+        z = readInt();
+        shipId = readInt();
     }
 
     @Override

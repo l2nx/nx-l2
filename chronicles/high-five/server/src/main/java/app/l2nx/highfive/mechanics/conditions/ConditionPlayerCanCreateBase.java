@@ -39,16 +39,16 @@ import app.l2nx.highfive.network.serverpackets.SystemMessage;
  * @author Adry_85
  */
 public class ConditionPlayerCanCreateBase extends Condition {
-    private final boolean _value;
+    private final boolean value;
 
     public ConditionPlayerCanCreateBase(boolean value) {
-        _value = value;
+        this.value = value;
     }
 
     @Override
     public boolean testImpl(Creature effector, Creature effected, Skill skill, ItemTemplate item) {
         if ((effector == null) || !effector.isPlayer()) {
-            return !_value;
+            return !value;
         }
 
         final Player player = effector.asPlayer();
@@ -98,6 +98,6 @@ public class ConditionPlayerCanCreateBase extends Condition {
             canCreateBase = false;
         }
 
-        return _value == canCreateBase;
+        return value == canCreateBase;
     }
 }

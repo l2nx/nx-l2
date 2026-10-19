@@ -26,17 +26,7 @@ import app.l2nx.highfive.mechanics.siege.Siege;
 /**
  * @author UnAfraid
  */
-public class OnCastleSiegeOwnerChange implements IBaseEvent {
-    private final Siege _siege;
-
-    public OnCastleSiegeOwnerChange(Siege siege) {
-        _siege = siege;
-    }
-
-    public Siege getSiege() {
-        return _siege;
-    }
-
+public record OnCastleSiegeOwnerChange(Siege siege) implements IBaseEvent {
     @Override
     public EventType getType() {
         return EventType.ON_CASTLE_SIEGE_OWNER_CHANGE;

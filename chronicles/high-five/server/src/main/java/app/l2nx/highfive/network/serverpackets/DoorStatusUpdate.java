@@ -28,21 +28,21 @@ import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.network.buffer.WriteBuffer;
 
 public class DoorStatusUpdate extends ServerPacket {
-    private final Door _door;
+    private final Door door;
 
     public DoorStatusUpdate(Door door) {
-        _door = door;
+        this.door = door;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.DOOR_STATUS_UPDATE.writeId(this, buffer);
-        buffer.writeInt(_door.getObjectId());
-        buffer.writeInt(!_door.isOpen());
-        buffer.writeInt(_door.getDamage());
-        buffer.writeInt(_door.isEnemy());
-        buffer.writeInt(_door.getId());
-        buffer.writeInt((int) _door.getCurrentHp());
-        buffer.writeInt(_door.getMaxHp());
+        buffer.writeInt(door.getObjectId());
+        buffer.writeInt(!door.isOpen());
+        buffer.writeInt(door.getDamage());
+        buffer.writeInt(door.isEnemy());
+        buffer.writeInt(door.getId());
+        buffer.writeInt((int) door.getCurrentHp());
+        buffer.writeInt(door.getMaxHp());
     }
 }

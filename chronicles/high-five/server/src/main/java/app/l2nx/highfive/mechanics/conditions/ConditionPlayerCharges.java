@@ -30,18 +30,18 @@ import app.l2nx.highfive.mechanics.skill.Skill;
  * The Class ConditionPlayerCharges.
  */
 public class ConditionPlayerCharges extends Condition {
-    private final int _charges;
+    private final int charges;
 
     /**
      * Instantiates a new condition player charges.
      * @param charges the charges
      */
     public ConditionPlayerCharges(int charges) {
-        _charges = charges;
+        this.charges = charges;
     }
 
     @Override
     public boolean testImpl(Creature effector, Creature effected, Skill skill, ItemTemplate item) {
-        return effector.isPlayer() && (effector.asPlayer().getCharges() >= _charges);
+        return effector.isPlayer() && (effector.asPlayer().getCharges() >= charges);
     }
 }

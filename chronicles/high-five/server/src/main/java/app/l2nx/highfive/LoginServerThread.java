@@ -81,17 +81,19 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import org.apache.commons.lang3.exception.ExceptionUtils;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Handles communication between the game server and login server.<br>
  * Manages player authentication, server status updates and various administrative functions.
  */
+@Slf4j
 public class LoginServerThread extends Thread {
-    protected static final Logger LOGGER = Logger.getLogger(LoginServerThread.class.getName());
-    protected static final Logger ACCOUNTING_LOGGER = Logger.getLogger("accounting");
+
+    private static final Logger ACCOUNTING_LOG = LoggerFactory.getLogger("accounting");
 
     // Protocol constants.
     private static final int REVISION = 0x0106; // @see app.l2nx.login.LoginServer#PROTOCOL_REV
@@ -101,48 +103,54 @@ public class LoginServerThread extends Thread {
     private static final int PACKET_PADDING = 8;
 
     // Connection configuration.
-    private final String _hostname;
-    private final int _port;
-    private final int _gamePort;
-    private final boolean _acceptAlternate;
-    private final boolean _reserveHost;
-    private final List<String> _subnets;
-    private final List<String> _hosts;
+    private final String hostname;
+    private final int port;
+    private final int gamePort;
+    private final boolean acceptAlternate;
+    private final boolean reserveHost;
+    private final List<String> subnets;
+    private final List<String> hosts;
 
     // Connection state.
-    private Socket _socket;
-    private OutputStream _out;
-    private PacketCipher _blowfish;
-    private byte[] _hexID;
-    private int _requestID;
+    private Socket socket;
+    private OutputStream out;
+    private PacketCipher blowfish;
+    private byte[] hexID;
+    private int requestID;
 
     // Server state.
-    private int _maxPlayer;
-    private final Set<WaitingClient> _waitingClients = ConcurrentHashMap.newKeySet();
-    private final Map<String, GameClient> _accountsInGameServer = new ConcurrentHashMap<>();
-    private int _status;
-    private String _serverName;
+    @Getter
+    private int maxPlayer;
+
+    private final Set<WaitingClient> waitingClients = ConcurrentHashMap.newKeySet();
+    private final Map<String, GameClient> accountsInGameServer = new ConcurrentHashMap<>();
+
+    @Getter
+    private int serverStatus;
+
+    @Getter
+    private String serverName;
 
     protected LoginServerThread() {
         super("LoginServerThread");
 
         // Initialize connection settings.
-        _port = ServerConfig.GAME_SERVER_LOGIN_PORT;
-        _gamePort = ServerConfig.PORT_GAME;
-        _hostname = ServerConfig.GAME_SERVER_LOGIN_HOST;
-        _acceptAlternate = ServerConfig.ACCEPT_ALTERNATE_ID;
-        _reserveHost = ServerConfig.RESERVE_HOST_ON_LOGIN;
-        _subnets = ServerConfig.GAME_SERVER_SUBNETS;
-        _hosts = ServerConfig.GAME_SERVER_HOSTS;
-        _maxPlayer = ServerConfig.MAXIMUM_ONLINE_USERS;
+        port = ServerConfig.GAME_SERVER_LOGIN_PORT;
+        gamePort = ServerConfig.PORT_GAME;
+        hostname = ServerConfig.GAME_SERVER_LOGIN_HOST;
+        acceptAlternate = ServerConfig.ACCEPT_ALTERNATE_ID;
+        reserveHost = ServerConfig.RESERVE_HOST_ON_LOGIN;
+        subnets = ServerConfig.GAME_SERVER_SUBNETS;
+        hosts = ServerConfig.GAME_SERVER_HOSTS;
+        maxPlayer = ServerConfig.MAXIMUM_ONLINE_USERS;
 
         // Initialize server identification.
-        _hexID = ServerConfig.HEX_ID;
-        if (_hexID == null) {
-            _requestID = ServerConfig.REQUEST_ID;
-            _hexID = generateHexBytes(HEX_ID_SIZE);
+        hexID = ServerConfig.HEX_ID;
+        if (hexID == null) {
+            requestID = ServerConfig.REQUEST_ID;
+            hexID = generateHexBytes(HEX_ID_SIZE);
         } else {
-            _requestID = ServerConfig.SERVER_ID;
+            requestID = ServerConfig.SERVER_ID;
         }
     }
 
@@ -156,14 +164,14 @@ public class LoginServerThread extends Thread {
 
             try {
                 // Establish connection to login server.
-                LOGGER.info(getClass().getSimpleName() + ": Connecting to login on " + _hostname + ":" + _port);
-                _socket = new Socket(_hostname, _port);
-                final InputStream in = _socket.getInputStream();
-                _out = new BufferedOutputStream(_socket.getOutputStream());
+                log.info("Connecting to login on {}:{}", hostname, port);
+                socket = new Socket(hostname, port);
+                final InputStream in = socket.getInputStream();
+                out = new BufferedOutputStream(socket.getOutputStream());
 
                 // Initialize Blowfish encryption with default key.
                 final byte[] blowfishKey = generateHexBytes(BLOWFISH_KEY_SIZE);
-                _blowfish = new LittleEndianBlowfishCipher("_;v.]05-31!|+-%xT!^[$\00".getBytes(StandardCharsets.UTF_8));
+                blowfish = new LittleEndianBlowfishCipher("_;v.]05-31!|+-%xT!^[$\00".getBytes(StandardCharsets.UTF_8));
 
                 while (!isInterrupted()) {
                     // Read packet length.
@@ -171,7 +179,7 @@ public class LoginServerThread extends Thread {
                     lengthHi = in.read();
                     length = (lengthHi * 256) + lengthLo;
                     if (lengthHi < 0) {
-                        LOGGER.finer(getClass().getSimpleName() + ": Login terminated the connection.");
+                        log.trace("Login terminated the connection.");
                         break;
                     }
 
@@ -187,23 +195,20 @@ public class LoginServerThread extends Thread {
                     }
 
                     if (receivedBytes != (length - 2)) {
-                        LOGGER.warning(
-                                getClass().getSimpleName() + ": Incomplete packet received, closing connection (LS)");
+                        log.warn("Incomplete packet received, closing connection (LS)");
                         break;
                     }
 
                     if ((incoming.length % 8) != 0) {
-                        LOGGER.warning(getClass().getSimpleName()
-                                + ": Packet length is not a multiple of the cipher block, closing connection (LS)");
+                        log.warn("Packet length is not a multiple of the cipher block, closing connection (LS)");
                         break;
                     }
 
                     // Decrypt and verify packet.
-                    _blowfish.decrypt(incoming, 0, incoming.length);
+                    blowfish.decrypt(incoming, 0, incoming.length);
                     checksumOk = XorChecksum.verify(incoming, 0, incoming.length);
                     if (!checksumOk) {
-                        LOGGER.warning(
-                                getClass().getSimpleName() + ": Incorrect packet checksum, ignoring packet (LS)");
+                        log.warn("Incorrect packet checksum, ignoring packet (LS)");
                         break;
                     }
 
@@ -214,7 +219,7 @@ public class LoginServerThread extends Thread {
                         {
                             final InitLS init = new InitLS(incoming);
                             if (init.getRevision() != REVISION) {
-                                LOGGER.warning("/!\\ Revision mismatch between LS and GS /!\\");
+                                log.warn("/!\\ Revision mismatch between LS and GS /!\\");
                                 break;
                             }
 
@@ -227,39 +232,37 @@ public class LoginServerThread extends Thread {
                                         new RSAPublicKeySpec(modulus, RSAKeyGenParameterSpec.F4);
                                 publicKey = (RSAPublicKey) kfac.generatePublic(kspec1);
                             } catch (GeneralSecurityException e) {
-                                LOGGER.warning(getClass().getSimpleName()
-                                        + ": Trouble initializing RSA public key from login server.");
+                                log.warn("Trouble initializing RSA public key from login server.");
                                 break;
                             }
 
                             // Send encrypted blowfish key and switch to secure communication.
                             sendPacket(new BlowFishKey(blowfishKey, publicKey));
-                            _blowfish = new LittleEndianBlowfishCipher(blowfishKey);
+                            blowfish = new LittleEndianBlowfishCipher(blowfishKey);
                             sendPacket(new AuthRequest(
-                                    _requestID,
-                                    _acceptAlternate,
-                                    _hexID,
-                                    _gamePort,
-                                    _reserveHost,
-                                    _maxPlayer,
-                                    _subnets,
-                                    _hosts));
+                                    requestID,
+                                    acceptAlternate,
+                                    hexID,
+                                    gamePort,
+                                    reserveHost,
+                                    maxPlayer,
+                                    subnets,
+                                    hosts));
                             break;
                         }
                         case 0x01: // LoginServerFail - Registration failure.
                         {
                             final LoginServerFail lsf = new LoginServerFail(incoming);
-                            LOGGER.info(getClass().getSimpleName() + ": Registration failed: " + lsf.getReasonString());
+                            log.info("Registration failed: {}", lsf.getReasonString());
                             break;
                         }
                         case 0x02: // AuthResponse - Server registration successful.
                         {
                             final AuthResponse aresp = new AuthResponse(incoming);
                             final int serverID = aresp.getServerId();
-                            _serverName = aresp.getServerName();
-                            ServerConfig.saveHexid(serverID, hexToString(_hexID));
-                            LOGGER.info(getClass().getSimpleName() + ": Registered on login as Server " + serverID
-                                    + ": " + _serverName);
+                            serverName = aresp.getServerName();
+                            ServerConfig.saveHexid(serverID, hexToString(hexID));
+                            log.info("Registered on login as Server {}: {}", serverID, serverName);
 
                             // Configure and send server status.
                             final ServerStatus st = new ServerStatus();
@@ -306,8 +309,8 @@ public class LoginServerThread extends Thread {
                             WaitingClient wcToRemove = null;
 
                             // Find the waiting client for this account.
-                            synchronized (_waitingClients) {
-                                for (WaitingClient wc : _waitingClients) {
+                            synchronized (waitingClients) {
+                                for (WaitingClient wc : waitingClients) {
                                     if (wc.account.equals(account)) {
                                         wcToRemove = wc;
                                         break;
@@ -328,14 +331,14 @@ public class LoginServerThread extends Thread {
                                     wcToRemove.gameClient.setCharSelection(cl.getCharInfo());
                                 } else {
                                     // Authentication failed - close connection.
-                                    LOGGER.warning(getClass().getSimpleName()
-                                            + ": Session key incorrect. Closing connection for account "
-                                            + wcToRemove.account);
+                                    log.warn(
+                                            "Session key incorrect. Closing connection for account {}",
+                                            wcToRemove.account);
                                     wcToRemove.gameClient.close(new LoginFail(LoginFail.SYSTEM_ERROR_LOGIN_LATER));
                                     sendLogout(wcToRemove.account);
                                 }
 
-                                _waitingClients.remove(wcToRemove);
+                                waitingClients.remove(wcToRemove);
                             }
                             break;
                         }
@@ -359,18 +362,15 @@ public class LoginServerThread extends Thread {
                     }
                 }
             } catch (UnknownHostException e) {
-                LOGGER.log(Level.WARNING, getClass().getSimpleName() + ": Unknown host: ", e);
+                log.warn("Unknown host: ", e);
             } catch (SocketException e) {
-                LOGGER.warning(getClass().getSimpleName() + ": LoginServer not available, trying to reconnect...");
+                log.warn("LoginServer not available, trying to reconnect...");
             } catch (IOException e) {
-                LOGGER.log(
-                        Level.WARNING,
-                        getClass().getSimpleName() + ": Disconnected from Login, trying to reconnect: ",
-                        e);
+                log.warn("Disconnected from Login, trying to reconnect: ", e);
             } finally {
                 // Clean up connection resources.
                 try {
-                    _socket.close();
+                    socket.close();
                     if (isInterrupted()) {
                         return;
                     }
@@ -396,8 +396,8 @@ public class LoginServerThread extends Thread {
      * @param key the session key
      */
     public void addWaitingClientAndSendRequest(String accountName, GameClient client, SessionKey key) {
-        synchronized (_waitingClients) {
-            _waitingClients.add(new WaitingClient(accountName, client, key));
+        synchronized (waitingClients) {
+            waitingClients.add(new WaitingClient(accountName, client, key));
         }
 
         sendPacket(new PlayerAuthRequest(accountName, key));
@@ -409,8 +409,8 @@ public class LoginServerThread extends Thread {
      */
     public void removeWaitingClient(GameClient client) {
         WaitingClient toRemove = null;
-        synchronized (_waitingClients) {
-            for (WaitingClient c : _waitingClients) {
+        synchronized (waitingClients) {
+            for (WaitingClient c : waitingClients) {
                 if (c.gameClient == client) {
                     toRemove = c;
                     break;
@@ -418,7 +418,7 @@ public class LoginServerThread extends Thread {
             }
 
             if (toRemove != null) {
-                _waitingClients.remove(toRemove);
+                waitingClients.remove(toRemove);
             }
         }
     }
@@ -432,7 +432,7 @@ public class LoginServerThread extends Thread {
             return;
         }
 
-        final GameClient removed = _accountsInGameServer.remove(account);
+        final GameClient removed = accountsInGameServer.remove(account);
         if (removed != null) {
             removed.disconnect();
         }
@@ -447,7 +447,7 @@ public class LoginServerThread extends Thread {
      * @return true if account was not already logged in, false otherwise
      */
     public boolean addGameServerLogin(String account, GameClient client) {
-        return _accountsInGameServer.putIfAbsent(account, client) == null;
+        return accountsInGameServer.putIfAbsent(account, client) == null;
     }
 
     /**
@@ -515,7 +515,7 @@ public class LoginServerThread extends Thread {
      * @param account the account name to kick
      */
     private void doKickPlayer(String account) {
-        final GameClient client = _accountsInGameServer.get(account);
+        final GameClient client = accountsInGameServer.get(account);
         if (client != null) {
             final SystemMessage msg =
                     new SystemMessage(SystemMessageId.ANOTHER_PERSON_HAS_LOGGED_IN_WITH_THE_SAME_ACCOUNT);
@@ -530,7 +530,7 @@ public class LoginServerThread extends Thread {
                 client.close(msg);
             } else {
                 Disconnection.of(client).storeAndDeleteWith(msg);
-                ACCOUNTING_LOGGER.info("Kicked by login, " + client);
+                ACCOUNTING_LOG.info("Kicked by login, {}", client);
             }
         }
 
@@ -558,10 +558,7 @@ public class LoginServerThread extends Thread {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.log(
-                    Level.WARNING,
-                    getClass().getSimpleName() + ": Exception in getCharsOnServer: " + e.getMessage(),
-                    e);
+            log.warn("Exception in getCharsOnServer: {}", e.getMessage(), e);
         }
 
         sendPacket(new ReplyCharacters(account, chars, charToDel));
@@ -572,7 +569,7 @@ public class LoginServerThread extends Thread {
      * @param packet the packet to send
      */
     private void sendPacket(SimpleWritablePacket packet) {
-        if ((_blowfish == null) || (_socket == null) || _socket.isClosed()) {
+        if ((blowfish == null) || (socket == null) || socket.isClosed()) {
             return;
         }
 
@@ -593,21 +590,19 @@ public class LoginServerThread extends Thread {
             final byte[] data = packet.getSendableBytes();
             size = data.length - 2; // Data size without header.
 
-            synchronized (_out) {
+            synchronized (out) {
                 XorChecksum.append(data, 2, size);
-                _blowfish.encrypt(data, 2, size);
+                blowfish.encrypt(data, 2, size);
 
-                _out.write(data);
+                out.write(data);
                 try {
-                    _out.flush();
+                    out.flush();
                 } catch (IOException e) {
                     // LoginServer might have terminated connection.
                 }
             }
         } catch (Exception e) {
-            LOGGER.severe("LoginServerThread: IOException while sending packet "
-                    + packet.getClass().getSimpleName());
-            LOGGER.severe(ExceptionUtils.getStackTrace(e));
+            log.error("IOException while sending packet {}", packet.getClass().getSimpleName(), e);
         }
     }
 
@@ -617,15 +612,7 @@ public class LoginServerThread extends Thread {
      */
     public void setMaxPlayer(int maxPlayer) {
         sendServerStatus(ServerStatus.MAX_PLAYERS, maxPlayer);
-        _maxPlayer = maxPlayer;
-    }
-
-    /**
-     * Gets current maximum player count.
-     * @return the maximum player count
-     */
-    public int getMaxPlayer() {
-        return _maxPlayer;
+        this.maxPlayer = maxPlayer;
     }
 
     /**
@@ -660,27 +647,11 @@ public class LoginServerThread extends Thread {
     }
 
     /**
-     * Gets current server status.
-     * @return the server status code
-     */
-    public int getServerStatus() {
-        return _status;
-    }
-
-    /**
      * Gets server status as human-readable string.
      * @return the status string representation
      */
     public String getStatusString() {
-        return ServerStatus.STATUS_STRING[_status];
-    }
-
-    /**
-     * Gets registered server name.
-     * @return the server name
-     */
-    public String getServerName() {
-        return _serverName;
+        return ServerStatus.STATUS_STRING[serverStatus];
     }
 
     /**
@@ -696,7 +667,7 @@ public class LoginServerThread extends Thread {
             case ServerStatus.STATUS_GOOD:
             case ServerStatus.STATUS_NORMAL: {
                 sendServerStatus(ServerStatus.SERVER_LIST_STATUS, status);
-                _status = status;
+                serverStatus = status;
                 break;
             }
             default: {
@@ -711,7 +682,7 @@ public class LoginServerThread extends Thread {
      * @return the game client or null if not found
      */
     public GameClient getClient(String name) {
-        return name != null ? _accountsInGameServer.get(name) : null;
+        return name != null ? accountsInGameServer.get(name) : null;
     }
 
     /**

@@ -23,9 +23,8 @@ import app.l2nx.highfive.config.ServerConfig;
 import app.l2nx.highfive.entity.actor.Creature;
 import java.io.File;
 import java.util.NoSuchElementException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.xml.parsers.DocumentBuilderFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
@@ -33,6 +32,7 @@ import org.w3c.dom.Node;
 /**
  * @author DS
  */
+@Slf4j
 public enum BaseStat {
     STR(new STR()),
     INT(new INT()),
@@ -41,8 +41,6 @@ public enum BaseStat {
     CON(new CON()),
     MEN(new MEN()),
     NONE(new NONE());
-
-    private static final Logger LOGGER = Logger.getLogger(BaseStat.class.getName());
 
     public static final int MAX_STAT_VALUE = 100;
 
@@ -53,19 +51,19 @@ public enum BaseStat {
     protected static final double[] CONbonus = new double[MAX_STAT_VALUE];
     protected static final double[] MENbonus = new double[MAX_STAT_VALUE];
 
-    private final IBaseStatFunction _stat;
+    private final IBaseStatFunction stat;
 
     public String getValue() {
-        return _stat.getClass().getSimpleName();
+        return stat.getClass().getSimpleName();
     }
 
     private BaseStat(IBaseStatFunction s) {
-        _stat = s;
+        stat = s;
     }
 
     public double calcBonus(Creature actor) {
         if (actor != null) {
-            return _stat.calcBonus(actor);
+            return stat.calcBonus(actor);
         }
 
         return 1;
@@ -142,7 +140,7 @@ public enum BaseStat {
             try {
                 document = factory.newDocumentBuilder().parse(file);
             } catch (Exception e) {
-                LOGGER.log(Level.WARNING, "[BaseStats] Could not parse file: " + e.getMessage(), e);
+                log.warn("[BaseStats] Could not parse file: {}", e.getMessage(), e);
             }
 
             if (document != null) {
@@ -163,8 +161,8 @@ public enum BaseStat {
                                         bonus = Double.parseDouble(
                                                 attrs.getNamedItem("bonus").getNodeValue());
                                     } catch (Exception e) {
-                                        LOGGER.severe("[BaseStats] Invalid stats value: " + value.getNodeValue()
-                                                + ", skipping");
+                                        log.error(
+                                                "[BaseStats] Invalid stats value: {}, skipping", value.getNodeValue());
                                         continue;
                                     }
 
@@ -181,7 +179,7 @@ public enum BaseStat {
                                     } else if ("MEN".equalsIgnoreCase(statName)) {
                                         MENbonus[val] = bonus;
                                     } else {
-                                        LOGGER.severe("[BaseStats] Invalid stats name: " + statName + ", skipping");
+                                        log.error("[BaseStats] Invalid stats name: {}, skipping", statName);
                                     }
                                 }
                             }

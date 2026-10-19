@@ -36,39 +36,39 @@ public class ExPVPMatchRecord extends ServerPacket {
     public static final int UPDATE = 1;
     public static final int FINISH = 2;
 
-    private final int _type;
-    private final int _winnerTeam;
-    private final int _blueKills;
-    private final int _redKills;
-    private final List<Member> _blueList;
-    private final List<Member> _redList;
+    private final int type;
+    private final int winnerTeam;
+    private final int blueKills;
+    private final int redKills;
+    private final List<Member> blueList;
+    private final List<Member> redList;
 
     public ExPVPMatchRecord(int type, int winnerTeam, UCArena arena) {
-        _type = type;
-        _winnerTeam = winnerTeam;
+        this.type = type;
+        this.winnerTeam = winnerTeam;
 
         final UCTeam blueTeam = arena.getTeams()[0];
-        _blueKills = blueTeam.getKillCount();
+        blueKills = blueTeam.getKillCount();
         final UCTeam redTeam = arena.getTeams()[1];
-        _redKills = redTeam.getKillCount();
+        redKills = redTeam.getKillCount();
 
-        _blueList = new ArrayList<>(9);
+        blueList = new ArrayList<>(9);
 
         if (blueTeam.getParty() != null) {
             for (Player memberObject : blueTeam.getParty().getMembers()) {
                 if (memberObject != null) {
-                    _blueList.add(
+                    blueList.add(
                             new Member(memberObject.getName(), memberObject.getUCKills(), memberObject.getUCDeaths()));
                 }
             }
         }
 
-        _redList = new ArrayList<>(9);
+        redList = new ArrayList<>(9);
 
         if (redTeam.getParty() != null) {
             for (Player memberObject : redTeam.getParty().getMembers()) {
                 if (memberObject != null) {
-                    _redList.add(
+                    redList.add(
                             new Member(memberObject.getName(), memberObject.getUCKills(), memberObject.getUCDeaths()));
                 }
             }
@@ -76,46 +76,46 @@ public class ExPVPMatchRecord extends ServerPacket {
     }
 
     public ExPVPMatchRecord(int type, int winnerTeam) {
-        _type = type;
-        _winnerTeam = winnerTeam;
-        _blueKills = 0;
-        _redKills = 0;
-        _blueList = new ArrayList<>(9);
-        _redList = new ArrayList<>(9);
+        this.type = type;
+        this.winnerTeam = winnerTeam;
+        blueKills = 0;
+        redKills = 0;
+        blueList = new ArrayList<>(9);
+        redList = new ArrayList<>(9);
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_PVP_MATCH_RECORD.writeId(this, buffer);
-        buffer.writeInt(_type);
-        buffer.writeInt(_winnerTeam);
-        buffer.writeInt(_winnerTeam == 0 ? 0 : _winnerTeam == 1 ? 2 : 1);
-        buffer.writeInt(_blueKills);
-        buffer.writeInt(_redKills);
-        buffer.writeInt(_blueList.size());
-        for (Member member : _blueList) {
-            buffer.writeString(member._name);
-            buffer.writeInt(member._kills);
-            buffer.writeInt(member._deaths);
+        buffer.writeInt(type);
+        buffer.writeInt(winnerTeam);
+        buffer.writeInt(winnerTeam == 0 ? 0 : winnerTeam == 1 ? 2 : 1);
+        buffer.writeInt(blueKills);
+        buffer.writeInt(redKills);
+        buffer.writeInt(blueList.size());
+        for (Member member : blueList) {
+            buffer.writeString(member.name);
+            buffer.writeInt(member.kills);
+            buffer.writeInt(member.deaths);
         }
 
-        buffer.writeInt(_redList.size());
-        for (Member member : _redList) {
-            buffer.writeString(member._name);
-            buffer.writeInt(member._kills);
-            buffer.writeInt(member._deaths);
+        buffer.writeInt(redList.size());
+        for (Member member : redList) {
+            buffer.writeString(member.name);
+            buffer.writeInt(member.kills);
+            buffer.writeInt(member.deaths);
         }
     }
 
     public static class Member {
-        public String _name;
-        public int _kills;
-        public int _deaths;
+        public String name;
+        public int kills;
+        public int deaths;
 
         public Member(String name, int kills, int deaths) {
-            _name = name;
-            _kills = kills;
-            _deaths = deaths;
+            this.name = name;
+            this.kills = kills;
+            this.deaths = deaths;
         }
     }
 }

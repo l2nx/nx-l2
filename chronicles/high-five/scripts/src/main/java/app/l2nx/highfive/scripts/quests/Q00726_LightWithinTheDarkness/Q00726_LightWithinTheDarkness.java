@@ -42,13 +42,18 @@ import app.l2nx.highfive.scripts.quests.Q00727_HopeWithinTheDarkness.Q00727_Hope
 import app.l2nx.highfive.threads.ThreadPool;
 import java.util.HashMap;
 import java.util.Map;
+import lombok.Getter;
+import lombok.Setter;
 
 public class Q00726_LightWithinTheDarkness extends Quest {
     protected class PAWORLD extends InstanceWorld {}
 
     public static class FortDungeon {
         private final int INSTANCEID;
-        private long _reEnterTime = 0;
+
+        @Getter
+        @Setter
+        private long reEnterTime = 0;
 
         public FortDungeon(int iId) {
             INSTANCEID = iId;
@@ -56,14 +61,6 @@ public class Q00726_LightWithinTheDarkness extends Quest {
 
         public int getInstanceId() {
             return INSTANCEID;
-        }
-
-        public long getReEnterTime() {
-            return _reEnterTime;
-        }
-
-        public void setReEnterTime(long time) {
-            _reEnterTime = time;
         }
     }
 
@@ -80,33 +77,33 @@ public class Q00726_LightWithinTheDarkness extends Quest {
     private static final int KANADIS_FOLLOWER2 = 25663;
     private static final int KANADIS_FOLLOWER3 = 25664;
 
-    private final Map<Integer, FortDungeon> _fortDungeons = new HashMap<>(21);
+    private final Map<Integer, FortDungeon> fortDungeons = new HashMap<>(21);
 
     public Q00726_LightWithinTheDarkness() {
         super(726);
-        _fortDungeons.put(35666, new FortDungeon(80));
-        _fortDungeons.put(35698, new FortDungeon(81));
-        _fortDungeons.put(35735, new FortDungeon(82));
-        _fortDungeons.put(35767, new FortDungeon(83));
-        _fortDungeons.put(35804, new FortDungeon(84));
-        _fortDungeons.put(35835, new FortDungeon(85));
-        _fortDungeons.put(35867, new FortDungeon(86));
-        _fortDungeons.put(35904, new FortDungeon(87));
-        _fortDungeons.put(35936, new FortDungeon(88));
-        _fortDungeons.put(35974, new FortDungeon(89));
-        _fortDungeons.put(36011, new FortDungeon(90));
-        _fortDungeons.put(36043, new FortDungeon(91));
-        _fortDungeons.put(36081, new FortDungeon(92));
-        _fortDungeons.put(36118, new FortDungeon(93));
-        _fortDungeons.put(36149, new FortDungeon(94));
-        _fortDungeons.put(36181, new FortDungeon(95));
-        _fortDungeons.put(36219, new FortDungeon(96));
-        _fortDungeons.put(36257, new FortDungeon(97));
-        _fortDungeons.put(36294, new FortDungeon(98));
-        _fortDungeons.put(36326, new FortDungeon(99));
-        _fortDungeons.put(36364, new FortDungeon(100));
+        fortDungeons.put(35666, new FortDungeon(80));
+        fortDungeons.put(35698, new FortDungeon(81));
+        fortDungeons.put(35735, new FortDungeon(82));
+        fortDungeons.put(35767, new FortDungeon(83));
+        fortDungeons.put(35804, new FortDungeon(84));
+        fortDungeons.put(35835, new FortDungeon(85));
+        fortDungeons.put(35867, new FortDungeon(86));
+        fortDungeons.put(35904, new FortDungeon(87));
+        fortDungeons.put(35936, new FortDungeon(88));
+        fortDungeons.put(35974, new FortDungeon(89));
+        fortDungeons.put(36011, new FortDungeon(90));
+        fortDungeons.put(36043, new FortDungeon(91));
+        fortDungeons.put(36081, new FortDungeon(92));
+        fortDungeons.put(36118, new FortDungeon(93));
+        fortDungeons.put(36149, new FortDungeon(94));
+        fortDungeons.put(36181, new FortDungeon(95));
+        fortDungeons.put(36219, new FortDungeon(96));
+        fortDungeons.put(36257, new FortDungeon(97));
+        fortDungeons.put(36294, new FortDungeon(98));
+        fortDungeons.put(36326, new FortDungeon(99));
+        fortDungeons.put(36364, new FortDungeon(100));
 
-        for (int i : _fortDungeons.keySet()) {
+        for (int i : fortDungeons.keySet()) {
             addStartNpc(i);
             addTalkId(i);
         }
@@ -139,7 +136,7 @@ public class Q00726_LightWithinTheDarkness extends Quest {
                     player,
                     "RimPailakaCastle.xml",
                     tele,
-                    _fortDungeons.get(npc.getId()),
+                    fortDungeons.get(npc.getId()),
                     checkFortCondition(player, npc, true));
         }
 
@@ -297,7 +294,7 @@ public class Q00726_LightWithinTheDarkness extends Quest {
 
     private String checkFortCondition(Player player, Npc npc, boolean isEnter) {
         final Fort fort = npc.getFort();
-        final FortDungeon dungeon = _fortDungeons.get(npc.getId());
+        final FortDungeon dungeon = fortDungeons.get(npc.getId());
         if ((player == null) || (fort == null) || (dungeon == null)) {
             return "FortWarden-01a.htm";
         }
@@ -329,15 +326,15 @@ public class Q00726_LightWithinTheDarkness extends Quest {
     }
 
     protected class spawnNpcs implements Runnable {
-        private final PAWORLD _world;
+        private final PAWORLD world;
 
         public spawnNpcs(PAWORLD world) {
-            _world = world;
+            this.world = world;
         }
 
         @Override
         public void run() {
-            FirstWave(_world);
+            FirstWave(world);
         }
     }
 

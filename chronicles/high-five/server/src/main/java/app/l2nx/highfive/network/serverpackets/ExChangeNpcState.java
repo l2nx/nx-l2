@@ -27,18 +27,18 @@ import app.l2nx.network.buffer.WriteBuffer;
  * @author JIV
  */
 public class ExChangeNpcState extends ServerPacket {
-    private final int _objId;
-    private final int _state;
+    private final int objId;
+    private final int state;
 
     public ExChangeNpcState(int objId, int state) {
-        _objId = objId;
-        _state = state;
+        this.objId = objId;
+        this.state = state;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_CHANGE_NPC_STATE.writeId(this, buffer);
-        buffer.writeInt(_objId);
-        buffer.writeInt(_state);
+        buffer.writeInt(objId);
+        buffer.writeInt(state);
     }
 }

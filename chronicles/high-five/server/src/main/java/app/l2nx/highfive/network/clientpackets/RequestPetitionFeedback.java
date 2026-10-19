@@ -21,27 +21,28 @@ package app.l2nx.highfive.network.clientpackets;
 
 import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.entity.actor.Player;
-import app.l2nx.highfive.network.PacketLogger;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author Plim
  */
+@Slf4j
 public class RequestPetitionFeedback extends ClientPacket {
     private static final String INSERT_FEEDBACK = "INSERT INTO petition_feedback VALUES (?,?,?,?,?)";
 
     // cdds
     // private int _unknown;
-    private int _rate; // 4=VeryGood, 3=Good, 2=Fair, 1=Poor, 0=VeryPoor
-    private String _message;
+    private int rate; // 4=VeryGood, 3=Good, 2=Fair, 1=Poor, 0=VeryPoor
+    private String message;
 
     @Override
     protected void readImpl() {
         readInt(); // unknown
-        _rate = readInt();
-        _message = readString();
+        rate = readInt();
+        message = readString();
     }
 
     @Override
@@ -51,7 +52,7 @@ public class RequestPetitionFeedback extends ClientPacket {
             return;
         }
 
-        if ((_rate > 4) || (_rate < 0)) {
+        if ((rate > 4) || (rate < 0)) {
             return;
         }
 
@@ -59,13 +60,12 @@ public class RequestPetitionFeedback extends ClientPacket {
                 PreparedStatement statement = con.prepareStatement(INSERT_FEEDBACK)) {
             statement.setString(1, player.getName());
             statement.setString(2, player.getLastPetitionGmName());
-            statement.setInt(3, _rate);
-            statement.setString(4, _message);
+            statement.setInt(3, rate);
+            statement.setString(4, message);
             statement.setLong(5, System.currentTimeMillis());
             statement.execute();
         } catch (SQLException e) {
-            PacketLogger.warning(
-                    getClass().getSimpleName() + ": Error while saving petition feedback: " + e.getMessage());
+            log.warn("{}: Error while saving petition feedback: {}", getClass().getSimpleName(), e.getMessage());
         }
     }
 }

@@ -45,16 +45,16 @@ public class LoginOk extends LoginServerPacket {
     private static final byte[] RESERVED_BYTES_16 = new byte[RESERVED_BYTES_LEN];
 
     // Session key parts.
-    private final int _loginOkPart1;
-    private final int _loginOkPart2;
+    private final int loginOkPart1;
+    private final int loginOkPart2;
 
     /**
      * Constructs the packet with the LoginOk pair.
      * @param sessionKey
      */
     public LoginOk(SessionKey sessionKey) {
-        _loginOkPart1 = sessionKey.getLoginOkID1();
-        _loginOkPart2 = sessionKey.getLoginOkID2();
+        loginOkPart1 = sessionKey.getLoginOkID1();
+        loginOkPart2 = sessionKey.getLoginOkID2();
     }
 
     /**
@@ -65,8 +65,8 @@ public class LoginOk extends LoginServerPacket {
     @Override
     protected void writeImpl(LoginClient client, WriteBuffer buffer) {
         buffer.writeByte(OPCODE_LOGIN_OK);
-        buffer.writeInt(_loginOkPart1);
-        buffer.writeInt(_loginOkPart2);
+        buffer.writeInt(loginOkPart1);
+        buffer.writeInt(loginOkPart2);
         buffer.writeInt(RESERVED_ZERO);
         buffer.writeInt(RESERVED_ZERO);
         buffer.writeInt(RESERVED_VALUE_3EA);

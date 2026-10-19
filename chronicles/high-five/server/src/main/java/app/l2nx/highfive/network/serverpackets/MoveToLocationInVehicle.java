@@ -29,10 +29,10 @@ import app.l2nx.network.buffer.WriteBuffer;
  * @author Maktakien
  */
 public class MoveToLocationInVehicle extends ServerPacket {
-    private final int _objectId;
-    private final int _boatId;
-    private final Location _destination;
-    private final Location _origin;
+    private final int objectId;
+    private final int boatId;
+    private final Location destination;
+    private final Location origin;
 
     /**
      * @param player
@@ -40,22 +40,22 @@ public class MoveToLocationInVehicle extends ServerPacket {
      * @param origin
      */
     public MoveToLocationInVehicle(Player player, Location destination, Location origin) {
-        _objectId = player.getObjectId();
-        _boatId = player.getBoat().getObjectId();
-        _destination = destination;
-        _origin = origin;
+        objectId = player.getObjectId();
+        boatId = player.getBoat().getObjectId();
+        this.destination = destination;
+        this.origin = origin;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.MOVE_TO_LOCATION_IN_VEHICLE.writeId(this, buffer);
-        buffer.writeInt(_objectId);
-        buffer.writeInt(_boatId);
-        buffer.writeInt(_destination.getX());
-        buffer.writeInt(_destination.getY());
-        buffer.writeInt(_destination.getZ());
-        buffer.writeInt(_origin.getX());
-        buffer.writeInt(_origin.getY());
-        buffer.writeInt(_origin.getZ());
+        buffer.writeInt(objectId);
+        buffer.writeInt(boatId);
+        buffer.writeInt(destination.getX());
+        buffer.writeInt(destination.getY());
+        buffer.writeInt(destination.getZ());
+        buffer.writeInt(origin.getX());
+        buffer.writeInt(origin.getY());
+        buffer.writeInt(origin.getZ());
     }
 }

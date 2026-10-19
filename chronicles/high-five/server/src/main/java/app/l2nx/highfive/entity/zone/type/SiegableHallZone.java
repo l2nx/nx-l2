@@ -23,12 +23,14 @@ import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.actor.Player;
 import java.util.ArrayList;
 import java.util.List;
+import lombok.Getter;
 
 /**
  * @author BiggBoss
  */
 public class SiegableHallZone extends ClanHallZone {
-    private List<Location> _challengerLocations;
+    @Getter
+    private List<Location> challengerSpawns;
 
     public SiegableHallZone(int id) {
         super(id);
@@ -37,18 +39,14 @@ public class SiegableHallZone extends ClanHallZone {
     @Override
     public void parseLoc(int x, int y, int z, String type) {
         if ((type != null) && type.equals("challenger")) {
-            if (_challengerLocations == null) {
-                _challengerLocations = new ArrayList<>();
+            if (challengerSpawns == null) {
+                challengerSpawns = new ArrayList<>();
             }
 
-            _challengerLocations.add(new Location(x, y, z));
+            challengerSpawns.add(new Location(x, y, z));
         } else {
             super.parseLoc(x, y, z, type);
         }
-    }
-
-    public List<Location> getChallengerSpawns() {
-        return _challengerLocations;
     }
 
     public void banishNonSiegeParticipants() {

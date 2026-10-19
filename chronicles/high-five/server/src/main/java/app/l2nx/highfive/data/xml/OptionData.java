@@ -30,7 +30,7 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
@@ -39,11 +39,11 @@ import org.w3c.dom.Node;
  * Item Option data.
  * @author UnAfraid
  */
+@Slf4j
 public class OptionData implements IXmlReader {
-    private static final Logger LOGGER = Logger.getLogger(OptionData.class.getName());
 
-    private static Options[] _options;
-    private static Map<Integer, Options> _optionMap = new ConcurrentHashMap<>();
+    private static Options[] options;
+    private static Map<Integer, Options> optionMap = new ConcurrentHashMap<>();
 
     protected OptionData() {
         load();
@@ -53,13 +53,13 @@ public class OptionData implements IXmlReader {
     public synchronized void load() {
         parseDatapackDirectory("data/stats/augmentation/options", false);
 
-        _options = new Options[Collections.max(_optionMap.keySet()) + 1];
-        for (Entry<Integer, Options> option : _optionMap.entrySet()) {
-            _options[option.getKey()] = option.getValue();
+        options = new Options[Collections.max(optionMap.keySet()) + 1];
+        for (Entry<Integer, Options> option : optionMap.entrySet()) {
+            options[option.getKey()] = option.getValue();
         }
 
-        LOGGER.info(getClass().getSimpleName() + ": Loaded " + _optionMap.size() + " options.");
-        _optionMap.clear();
+        log.info("Loaded {} options.", optionMap.size());
+        optionMap.clear();
     }
 
     @Override
@@ -96,8 +96,11 @@ public class OptionData implements IXmlReader {
                                     if (skill != null) {
                                         option.setActiveSkill(skill);
                                     } else {
-                                        LOGGER.info(getClass().getSimpleName() + ": Could not find skill " + skillId
-                                                + "(" + skillLevel + ") used by option " + id + ".");
+                                        log.info(
+                                                "Could not find skill {}({}) used by option {}.",
+                                                skillId,
+                                                skillLevel,
+                                                id);
                                     }
                                     break;
                                 }
@@ -108,8 +111,11 @@ public class OptionData implements IXmlReader {
                                     if (skill != null) {
                                         option.setPassiveSkill(skill);
                                     } else {
-                                        LOGGER.info(getClass().getSimpleName() + ": Could not find skill " + skillId
-                                                + "(" + skillLevel + ") used by option " + id + ".");
+                                        log.info(
+                                                "Could not find skill {}({}) used by option {}.",
+                                                skillId,
+                                                skillLevel,
+                                                id);
                                     }
                                     break;
                                 }
@@ -118,13 +124,17 @@ public class OptionData implements IXmlReader {
                                     final int skillLevel = parseInteger(cd.getAttributes(), "level");
                                     final Skill skill = SkillData.getInstance().getSkill(skillId, skillLevel);
                                     if (skill != null) {
-                                        option.addActivationSkill(new OptionSkillHolder(
-                                                skill,
-                                                parseDouble(cd.getAttributes(), "chance"),
-                                                OptionSkillType.ATTACK));
+                                        option.addActivationSkill(OptionSkillHolder.builder()
+                                                .skill(skill)
+                                                .chance(parseDouble(cd.getAttributes(), "chance"))
+                                                .skillType(OptionSkillType.ATTACK)
+                                                .build());
                                     } else {
-                                        LOGGER.info(getClass().getSimpleName() + ": Could not find skill " + skillId
-                                                + "(" + skillLevel + ") used by option " + id + ".");
+                                        log.info(
+                                                "Could not find skill {}({}) used by option {}.",
+                                                skillId,
+                                                skillLevel,
+                                                id);
                                     }
                                     break;
                                 }
@@ -133,13 +143,17 @@ public class OptionData implements IXmlReader {
                                     final int skillLevel = parseInteger(cd.getAttributes(), "level");
                                     final Skill skill = SkillData.getInstance().getSkill(skillId, skillLevel);
                                     if (skill != null) {
-                                        option.addActivationSkill(new OptionSkillHolder(
-                                                skill,
-                                                parseDouble(cd.getAttributes(), "chance"),
-                                                OptionSkillType.MAGIC));
+                                        option.addActivationSkill(OptionSkillHolder.builder()
+                                                .skill(skill)
+                                                .chance(parseDouble(cd.getAttributes(), "chance"))
+                                                .skillType(OptionSkillType.MAGIC)
+                                                .build());
                                     } else {
-                                        LOGGER.info(getClass().getSimpleName() + ": Could not find skill " + skillId
-                                                + "(" + skillLevel + ") used by option " + id + ".");
+                                        log.info(
+                                                "Could not find skill {}({}) used by option {}.",
+                                                skillId,
+                                                skillLevel,
+                                                id);
                                     }
                                     break;
                                 }
@@ -148,20 +162,24 @@ public class OptionData implements IXmlReader {
                                     final int skillLevel = parseInteger(cd.getAttributes(), "level");
                                     final Skill skill = SkillData.getInstance().getSkill(skillId, skillLevel);
                                     if (skill != null) {
-                                        option.addActivationSkill(new OptionSkillHolder(
-                                                skill,
-                                                parseDouble(cd.getAttributes(), "chance"),
-                                                OptionSkillType.CRITICAL));
+                                        option.addActivationSkill(OptionSkillHolder.builder()
+                                                .skill(skill)
+                                                .chance(parseDouble(cd.getAttributes(), "chance"))
+                                                .skillType(OptionSkillType.CRITICAL)
+                                                .build());
                                     } else {
-                                        LOGGER.info(getClass().getSimpleName() + ": Could not find skill " + skillId
-                                                + "(" + skillLevel + ") used by option " + id + ".");
+                                        log.info(
+                                                "Could not find skill {}({}) used by option {}.",
+                                                skillId,
+                                                skillLevel,
+                                                id);
                                     }
                                     break;
                                 }
                             }
                         }
 
-                        _optionMap.put(option.getId(), option);
+                        optionMap.put(option.getId(), option);
                     }
                 }
             }
@@ -181,8 +199,8 @@ public class OptionData implements IXmlReader {
     }
 
     public Options getOptions(int id) {
-        if (_options.length > id) {
-            return _options[id];
+        if (options.length > id) {
+            return options[id];
         }
 
         return null;

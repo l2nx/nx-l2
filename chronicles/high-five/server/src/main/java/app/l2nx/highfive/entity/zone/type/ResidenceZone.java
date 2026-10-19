@@ -21,12 +21,17 @@ package app.l2nx.highfive.entity.zone.type;
 
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.zone.ZoneRespawn;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * @author xban1x
  */
 public abstract class ResidenceZone extends ZoneRespawn {
-    private int _residenceId;
+    @Getter
+    @Setter(AccessLevel.PROTECTED)
+    private int residenceId;
 
     protected ResidenceZone(int id) {
         super(id);
@@ -40,13 +45,5 @@ public abstract class ResidenceZone extends ZoneRespawn {
 
             temp.teleToLocation(getBanishSpawnLoc(), true);
         }
-    }
-
-    protected void setResidenceId(int residenceId) {
-        _residenceId = residenceId;
-    }
-
-    public int getResidenceId() {
-        return _residenceId;
     }
 }

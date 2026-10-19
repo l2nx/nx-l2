@@ -27,17 +27,16 @@ import app.l2nx.login.network.GameServerPacketHandler.GameServerState;
 import app.l2nx.network.crypt.LittleEndianBlowfishCipher;
 import app.l2nx.network.packet.SimpleReadablePacket;
 import java.security.GeneralSecurityException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.crypto.Cipher;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Receives the Blowfish session key from the game server, encrypted with RSA.<br>
  * The decrypted RSA block may contain leading zero bytes that must be stripped before use.
  * @author BazookaRpm
  */
+@Slf4j
 public class BlowFishKey extends SimpleReadablePacket {
-    private static final Logger LOGGER = Logger.getLogger(BlowFishKey.class.getName());
 
     /**
      * Constructor that processes the Blowfish key packet received from the game server.<br>
@@ -53,7 +52,7 @@ public class BlowFishKey extends SimpleReadablePacket {
         // Reads the size of the RSA encrypted block.
         final int encryptedBlockSize = readInt();
         if (encryptedBlockSize <= 0) {
-            LOGGER.warning("Invalid RSA block size for Blowfish key: " + encryptedBlockSize);
+            log.warn("Invalid RSA block size for Blowfish key: {}", encryptedBlockSize);
             return;
         }
 
@@ -68,7 +67,7 @@ public class BlowFishKey extends SimpleReadablePacket {
             final byte[] blowfishKey = extractKeyMaterial(decryptedBlock);
 
             if (blowfishKey.length == 0) {
-                LOGGER.warning("Decrypted Blowfish key is empty.");
+                log.warn("Decrypted Blowfish key is empty.");
                 return;
             }
 
@@ -76,9 +75,9 @@ public class BlowFishKey extends SimpleReadablePacket {
             server.setBlowFish(new LittleEndianBlowfishCipher(blowfishKey));
             server.setLoginConnectionState(GameServerState.BF_CONNECTED);
         } catch (GeneralSecurityException e) {
-            LOGGER.log(Level.SEVERE, "Error while decrypting Blowfish key (RSA).", e);
+            log.error("Error while decrypting Blowfish key (RSA).", e);
         } catch (IllegalArgumentException e) {
-            LOGGER.warning("Rejected Blowfish key: " + e.getMessage());
+            log.warn("Rejected Blowfish key: {}", e.getMessage());
         }
     }
 

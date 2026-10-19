@@ -34,53 +34,54 @@ import app.l2nx.highfive.network.serverpackets.SystemMessage;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.logging.Level;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author Pere, DS
  */
+@Slf4j
 public class OlympiadGameTeams extends AbstractOlympiadGame {
     public static final int MAX_TEAM_SIZE = 3;
 
-    protected boolean _teamOneDefaulted;
-    protected boolean _teamTwoDefaulted;
+    protected boolean teamOneDefaulted;
+    protected boolean teamTwoDefaulted;
 
-    protected int _damageT1 = 0;
-    protected int _damageT2 = 0;
+    protected int damageT1 = 0;
+    protected int damageT2 = 0;
 
-    protected final int _teamOneSize;
-    protected final int _teamTwoSize;
-    protected final Participant[] _teamOne;
-    protected final Participant[] _teamTwo;
+    protected final int teamOneSize;
+    protected final int teamTwoSize;
+    protected final Participant[] teamOne;
+    protected final Participant[] teamTwo;
 
     protected OlympiadGameTeams(int id, Participant[] teamOne, Participant[] teamTwo) {
         super(id);
 
-        _teamOneSize = Math.min(teamOne.length, MAX_TEAM_SIZE);
-        _teamTwoSize = Math.min(teamTwo.length, MAX_TEAM_SIZE);
-        _teamOne = new Participant[MAX_TEAM_SIZE];
-        _teamTwo = new Participant[MAX_TEAM_SIZE];
+        teamOneSize = Math.min(teamOne.length, MAX_TEAM_SIZE);
+        teamTwoSize = Math.min(teamTwo.length, MAX_TEAM_SIZE);
+        this.teamOne = new Participant[MAX_TEAM_SIZE];
+        this.teamTwo = new Participant[MAX_TEAM_SIZE];
 
         Participant par;
         for (int i = 0; i < MAX_TEAM_SIZE; i++) {
-            if (i < _teamOneSize) {
+            if (i < teamOneSize) {
                 par = teamOne[i];
-                _teamOne[i] = par;
+                this.teamOne[i] = par;
                 if (par.getPlayer() != null) {
                     par.getPlayer().setOlympiadGameId(id);
                 }
             } else {
-                _teamOne[i] = new Participant(IdManager.getInstance().getNextId(), 1);
+                this.teamOne[i] = new Participant(IdManager.getInstance().getNextId(), 1);
             }
 
-            if (i < _teamTwoSize) {
+            if (i < teamTwoSize) {
                 par = teamTwo[i];
-                _teamTwo[i] = par;
+                this.teamTwo[i] = par;
                 if (par.getPlayer() != null) {
                     par.getPlayer().setOlympiadGameId(id);
                 }
             } else {
-                _teamTwo[i] = new Participant(IdManager.getInstance().getNextId(), 2);
+                this.teamTwo[i] = new Participant(IdManager.getInstance().getNextId(), 2);
             }
         }
     }
@@ -187,14 +188,14 @@ public class OlympiadGameTeams extends AbstractOlympiadGame {
 
     @Override
     public boolean containsParticipant(int playerId) {
-        for (int i = _teamOneSize; --i >= 0; ) {
-            if (_teamOne[i].getObjectId() == playerId) {
+        for (int i = teamOneSize; --i >= 0; ) {
+            if (teamOne[i].getObjectId() == playerId) {
                 return true;
             }
         }
 
-        for (int i = _teamTwoSize; --i >= 0; ) {
-            if (_teamTwo[i].getObjectId() == playerId) {
+        for (int i = teamTwoSize; --i >= 0; ) {
+            if (teamTwo[i].getObjectId() == playerId) {
                 return true;
             }
         }
@@ -205,37 +206,37 @@ public class OlympiadGameTeams extends AbstractOlympiadGame {
     @Override
     public void sendOlympiadInfo(Creature creature) {
         for (int i = 0; i < MAX_TEAM_SIZE; i++) {
-            creature.sendPacket(new ExOlympiadUserInfo(_teamOne[i]));
+            creature.sendPacket(new ExOlympiadUserInfo(teamOne[i]));
         }
 
         for (int i = 0; i < MAX_TEAM_SIZE; i++) {
-            creature.sendPacket(new ExOlympiadUserInfo(_teamTwo[i]));
+            creature.sendPacket(new ExOlympiadUserInfo(teamTwo[i]));
         }
     }
 
     @Override
     public void broadcastOlympiadInfo(OlympiadStadiumZone stadium) {
         for (int i = 0; i < MAX_TEAM_SIZE; i++) {
-            stadium.broadcastPacket(new ExOlympiadUserInfo(_teamOne[i]));
+            stadium.broadcastPacket(new ExOlympiadUserInfo(teamOne[i]));
         }
 
         for (int i = 0; i < MAX_TEAM_SIZE; i++) {
-            stadium.broadcastPacket(new ExOlympiadUserInfo(_teamTwo[i]));
+            stadium.broadcastPacket(new ExOlympiadUserInfo(teamTwo[i]));
         }
     }
 
     @Override
     protected void broadcastPacket(ServerPacket packet) {
         Participant par;
-        for (int i = 0; i < _teamOneSize; i++) {
-            par = _teamOne[i];
+        for (int i = 0; i < teamOneSize; i++) {
+            par = teamOne[i];
             if (par.updatePlayer()) {
                 par.getPlayer().sendPacket(packet);
             }
         }
 
-        for (int i = 0; i < _teamTwoSize; i++) {
-            par = _teamTwo[i];
+        for (int i = 0; i < teamTwoSize; i++) {
+            par = teamTwo[i];
             par.updatePlayer();
             if (par.getPlayer() != null) {
                 par.getPlayer().sendPacket(packet);
@@ -255,16 +256,16 @@ public class OlympiadGameTeams extends AbstractOlympiadGame {
     protected boolean portPlayersToArena(List<Location> spawns) {
         boolean result = true;
         try {
-            for (int i = 0; i < _teamOneSize; i++) {
-                result &= portPlayerToArena(_teamOne[i], spawns.get(i), _stadiumID);
+            for (int i = 0; i < teamOneSize; i++) {
+                result &= portPlayerToArena(teamOne[i], spawns.get(i), stadiumId);
             }
 
             final int offset = spawns.size() / 2;
-            for (int i = 0; i < _teamTwoSize; i++) {
-                result &= portPlayerToArena(_teamTwo[i], spawns.get(i + offset), _stadiumID);
+            for (int i = 0; i < teamTwoSize; i++) {
+                result &= portPlayerToArena(teamTwo[i], spawns.get(i + offset), stadiumId);
             }
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, "portPlayersToArena: ", e);
+            log.warn("portPlayersToArena: ", e);
             return false;
         }
 
@@ -273,12 +274,12 @@ public class OlympiadGameTeams extends AbstractOlympiadGame {
 
     @Override
     protected void removals() {
-        for (int i = _teamOneSize; --i >= 0; ) {
-            removals(_teamOne[i].getPlayer(), false);
+        for (int i = teamOneSize; --i >= 0; ) {
+            removals(teamOne[i].getPlayer(), false);
         }
 
-        for (int i = _teamTwoSize; --i >= 0; ) {
-            removals(_teamTwo[i].getPlayer(), false);
+        for (int i = teamTwoSize; --i >= 0; ) {
+            removals(teamTwo[i].getPlayer(), false);
         }
     }
 
@@ -289,8 +290,8 @@ public class OlympiadGameTeams extends AbstractOlympiadGame {
         }
 
         Participant par;
-        for (int i = 0; i < _teamOneSize; i++) {
-            par = _teamOne[i];
+        for (int i = 0; i < teamOneSize; i++) {
+            par = teamOne[i];
             if (par.getPlayer() == null) {
                 return false;
             }
@@ -299,8 +300,8 @@ public class OlympiadGameTeams extends AbstractOlympiadGame {
             par.getPlayer().updateEffectIcons();
         }
 
-        for (int i = 0; i < _teamTwoSize; i++) {
-            par = _teamTwo[i];
+        for (int i = 0; i < teamTwoSize; i++) {
+            par = teamTwo[i];
             if (par.getPlayer() == null) {
                 return false;
             }
@@ -315,22 +316,22 @@ public class OlympiadGameTeams extends AbstractOlympiadGame {
     @Override
     protected void cleanEffects() {
         Participant par;
-        for (int i = _teamOneSize; --i >= 0; ) {
-            par = _teamOne[i];
+        for (int i = teamOneSize; --i >= 0; ) {
+            par = teamOne[i];
             if ((par.getPlayer() != null)
                     && !par.isDefaulted()
                     && !par.isDisconnected()
-                    && (par.getPlayer().getOlympiadGameId() == _stadiumID)) {
+                    && (par.getPlayer().getOlympiadGameId() == stadiumId)) {
                 cleanEffects(par.getPlayer());
             }
         }
 
-        for (int i = _teamTwoSize; --i >= 0; ) {
-            par = _teamTwo[i];
+        for (int i = teamTwoSize; --i >= 0; ) {
+            par = teamTwo[i];
             if ((par.getPlayer() != null)
                     && !par.isDefaulted()
                     && !par.isDisconnected()
-                    && (par.getPlayer().getOlympiadGameId() == _stadiumID)) {
+                    && (par.getPlayer().getOlympiadGameId() == stadiumId)) {
                 cleanEffects(par.getPlayer());
             }
         }
@@ -339,15 +340,15 @@ public class OlympiadGameTeams extends AbstractOlympiadGame {
     @Override
     protected void portPlayersBack() {
         Participant par;
-        for (int i = _teamOneSize; --i >= 0; ) {
-            par = _teamOne[i];
+        for (int i = teamOneSize; --i >= 0; ) {
+            par = teamOne[i];
             if ((par.getPlayer() != null) && !par.isDefaulted() && !par.isDisconnected()) {
                 portPlayerBack(par.getPlayer());
             }
         }
 
-        for (int i = _teamTwoSize; --i >= 0; ) {
-            par = _teamTwo[i];
+        for (int i = teamTwoSize; --i >= 0; ) {
+            par = teamTwo[i];
             if ((par.getPlayer() != null) && !par.isDefaulted() && !par.isDisconnected()) {
                 portPlayerBack(par.getPlayer());
             }
@@ -357,22 +358,22 @@ public class OlympiadGameTeams extends AbstractOlympiadGame {
     @Override
     protected void playersStatusBack() {
         Participant par;
-        for (int i = _teamOneSize; --i >= 0; ) {
-            par = _teamOne[i];
+        for (int i = teamOneSize; --i >= 0; ) {
+            par = teamOne[i];
             if ((par.getPlayer() != null)
                     && !par.isDefaulted()
                     && !par.isDisconnected()
-                    && (par.getPlayer().getOlympiadGameId() == _stadiumID)) {
+                    && (par.getPlayer().getOlympiadGameId() == stadiumId)) {
                 playerStatusBack(par.getPlayer());
             }
         }
 
-        for (int i = _teamTwoSize; --i >= 0; ) {
-            par = _teamTwo[i];
+        for (int i = teamTwoSize; --i >= 0; ) {
+            par = teamTwo[i];
             if ((par.getPlayer() != null)
                     && !par.isDefaulted()
                     && !par.isDisconnected()
-                    && (par.getPlayer().getOlympiadGameId() == _stadiumID)) {
+                    && (par.getPlayer().getOlympiadGameId() == stadiumId)) {
                 playerStatusBack(par.getPlayer());
             }
         }
@@ -381,36 +382,36 @@ public class OlympiadGameTeams extends AbstractOlympiadGame {
     @Override
     protected void clearPlayers() {
         for (int i = 0; i < MAX_TEAM_SIZE; i++) {
-            if (i < _teamOneSize) {
-                _teamOne[i].setPlayer(null);
+            if (i < teamOneSize) {
+                teamOne[i].setPlayer(null);
             } else {
-                IdManager.getInstance().releaseId(_teamOne[i].getObjectId());
+                IdManager.getInstance().releaseId(teamOne[i].getObjectId());
             }
 
-            if (i < _teamTwoSize) {
-                _teamTwo[i].setPlayer(null);
+            if (i < teamTwoSize) {
+                teamTwo[i].setPlayer(null);
             } else {
-                IdManager.getInstance().releaseId(_teamTwo[i].getObjectId());
+                IdManager.getInstance().releaseId(teamTwo[i].getObjectId());
             }
 
-            _teamOne[i] = null;
-            _teamTwo[i] = null;
+            teamOne[i] = null;
+            teamTwo[i] = null;
         }
     }
 
     @Override
     protected void handleDisconnect(Player player) {
         Participant par;
-        for (int i = _teamOneSize; --i >= 0; ) {
-            par = _teamOne[i];
+        for (int i = teamOneSize; --i >= 0; ) {
+            par = teamOne[i];
             if (par.getObjectId() == player.getObjectId()) {
                 par.setDisconnected(true);
                 return;
             }
         }
 
-        for (int i = _teamTwoSize; --i >= 0; ) {
-            par = _teamTwo[i];
+        for (int i = teamTwoSize; --i >= 0; ) {
+            par = teamTwo[i];
             if (par.getObjectId() == player.getObjectId()) {
                 par.setDisconnected(true);
                 return;
@@ -427,20 +428,20 @@ public class OlympiadGameTeams extends AbstractOlympiadGame {
         boolean teamOneLost = true;
         boolean teamTwoLost = true;
         Participant par;
-        for (int i = _teamOneSize; --i >= 0; ) {
-            par = _teamOne[i];
+        for (int i = teamOneSize; --i >= 0; ) {
+            par = teamOne[i];
             if (!par.isDisconnected()
                     && (par.getPlayer() != null)
-                    && (par.getPlayer().getOlympiadGameId() == _stadiumID)) {
+                    && (par.getPlayer().getOlympiadGameId() == stadiumId)) {
                 teamOneLost &= par.getPlayer().isDead();
             }
         }
 
-        for (int i = _teamTwoSize; --i >= 0; ) {
-            par = _teamTwo[i];
+        for (int i = teamTwoSize; --i >= 0; ) {
+            par = teamTwo[i];
             if (!par.isDisconnected()
                     && (par.getPlayer() != null)
-                    && (par.getPlayer().getOlympiadGameId() == _stadiumID)) {
+                    && (par.getPlayer().getOlympiadGameId() == stadiumId)) {
                 teamTwoLost &= par.getPlayer().isDead();
             }
         }
@@ -450,12 +451,12 @@ public class OlympiadGameTeams extends AbstractOlympiadGame {
 
     @Override
     protected boolean checkBattleStatus() {
-        return !_aborted && !teamOneAllDisconnected() && !teamTwoAllDisconnected();
+        return !aborted && !teamOneAllDisconnected() && !teamTwoAllDisconnected();
     }
 
     @Override
     protected void validateWinner(OlympiadStadiumZone stadium) {
-        if (_aborted) {
+        if (aborted) {
             return;
         }
 
@@ -475,41 +476,43 @@ public class OlympiadGameTeams extends AbstractOlympiadGame {
         int points;
 
         // Check for if a team defaulted before battle started
-        if (_teamOneDefaulted || _teamTwoDefaulted) {
+        if (teamOneDefaulted || teamTwoDefaulted) {
             try {
-                if (_teamOneDefaulted) {
-                    for (int i = _teamOneSize; --i >= 0; ) {
-                        par = _teamOne[i];
+                if (teamOneDefaulted) {
+                    for (int i = teamOneSize; --i >= 0; ) {
+                        par = teamOne[i];
                         points = par.getStats().getInt(POINTS) / getDivider();
                         final int val = Math.min(par.getStats().getInt(POINTS) / 3, OlympiadConfig.OLYMPIAD_MAX_POINTS);
                         removePointsFromParticipant(par, val);
-                        list1.add(new OlympiadInfo(
-                                par.getName(),
-                                par.getClanName(),
-                                par.getClanId(),
-                                par.getBaseClass(),
-                                _damageT1,
-                                points - val,
-                                -val));
+                        list1.add(OlympiadInfo.builder()
+                                .name(par.getName())
+                                .clanName(par.getClanName())
+                                .clanId(par.getClanId())
+                                .classId(par.getBaseClass())
+                                .damage(damageT1)
+                                .currentPoints(points - val)
+                                .diffPoints(-val)
+                                .build());
                     }
 
                     winside = 2;
                 }
 
-                if (_teamTwoDefaulted) {
-                    for (int i = _teamTwoSize; --i >= 0; ) {
-                        par = _teamTwo[i];
+                if (teamTwoDefaulted) {
+                    for (int i = teamTwoSize; --i >= 0; ) {
+                        par = teamTwo[i];
                         points = par.getStats().getInt(POINTS) / getDivider();
                         final int val = Math.min(par.getStats().getInt(POINTS) / 3, OlympiadConfig.OLYMPIAD_MAX_POINTS);
                         removePointsFromParticipant(par, val);
-                        list2.add(new OlympiadInfo(
-                                par.getName(),
-                                par.getClanName(),
-                                par.getClanId(),
-                                par.getBaseClass(),
-                                _damageT2,
-                                points - val,
-                                -val));
+                        list2.add(OlympiadInfo.builder()
+                                .name(par.getName())
+                                .clanName(par.getClanName())
+                                .clanId(par.getClanId())
+                                .classId(par.getBaseClass())
+                                .damage(damageT2)
+                                .currentPoints(points - val)
+                                .diffPoints(-val)
+                                .build());
                     }
 
                     if (winside == 2) {
@@ -527,20 +530,20 @@ public class OlympiadGameTeams extends AbstractOlympiadGame {
 
                 stadium.broadcastPacket(result);
             } catch (Exception e) {
-                LOGGER.log(Level.WARNING, "Exception on validateWinner(): " + e.getMessage(), e);
+                log.warn("Exception on validateWinner(): {}", e.getMessage(), e);
             }
             return;
         }
 
         // points to be dedicted in case of losing
-        final int[] pointsTeamOne = new int[_teamOneSize];
-        final int[] pointsTeamTwo = new int[_teamTwoSize];
-        final int[] maxPointsTeamOne = new int[_teamOneSize];
-        final int[] maxPointsTeamTwo = new int[_teamTwoSize];
+        final int[] pointsTeamOne = new int[teamOneSize];
+        final int[] pointsTeamTwo = new int[teamTwoSize];
+        final int[] maxPointsTeamOne = new int[teamOneSize];
+        final int[] maxPointsTeamTwo = new int[teamTwoSize];
         int totalPointsTeamOne = 0;
         int totalPointsTeamTwo = 0;
-        for (int i = 0; i < _teamOneSize; i++) {
-            points = _teamOne[i].getStats().getInt(POINTS) / getDivider();
+        for (int i = 0; i < teamOneSize; i++) {
+            points = teamOne[i].getStats().getInt(POINTS) / getDivider();
             if (points <= 0) {
                 points = 1;
             } else if (points > OlympiadConfig.OLYMPIAD_MAX_POINTS) {
@@ -552,8 +555,8 @@ public class OlympiadGameTeams extends AbstractOlympiadGame {
             maxPointsTeamOne[i] = points;
         }
 
-        for (int i = _teamTwoSize; --i >= 0; ) {
-            points = _teamTwo[i].getStats().getInt(POINTS) / getDivider();
+        for (int i = teamTwoSize; --i >= 0; ) {
+            points = teamTwo[i].getStats().getInt(POINTS) / getDivider();
             if (points <= 0) {
                 points = 1;
             } else if (points > OlympiadConfig.OLYMPIAD_MAX_POINTS) {
@@ -575,27 +578,27 @@ public class OlympiadGameTeams extends AbstractOlympiadGame {
         final double dividerTwo = (double) totalPointsTeamTwo / min;
         totalPointsTeamOne = min;
         totalPointsTeamTwo = min;
-        for (int i = 0; i < _teamOneSize; i++) {
+        for (int i = 0; i < teamOneSize; i++) {
             points = Math.max((int) (pointsTeamOne[i] / dividerOne), 1);
             pointsTeamOne[i] = points;
             totalPointsTeamOne -= points;
         }
 
-        for (int i = _teamTwoSize; --i >= 0; ) {
+        for (int i = teamTwoSize; --i >= 0; ) {
             points = Math.max((int) (pointsTeamTwo[i] / dividerTwo), 1);
             pointsTeamTwo[i] = points;
             totalPointsTeamTwo -= points;
         }
 
         // compensating remaining points, first team from begin to end, second from end to begin
-        for (int i = 0; (totalPointsTeamOne > 0) && (i < _teamOneSize); i++) {
+        for (int i = 0; (totalPointsTeamOne > 0) && (i < teamOneSize); i++) {
             if (pointsTeamOne[i] < maxPointsTeamOne[i]) {
                 pointsTeamOne[i]++;
                 totalPointsTeamOne--;
             }
         }
 
-        for (int i = _teamTwoSize; (totalPointsTeamTwo > 0) && (--i >= 0); ) {
+        for (int i = teamTwoSize; (totalPointsTeamTwo > 0) && (--i >= 0); ) {
             if (pointsTeamTwo[i] < maxPointsTeamTwo[i]) {
                 pointsTeamTwo[i]++;
                 totalPointsTeamTwo--;
@@ -607,134 +610,140 @@ public class OlympiadGameTeams extends AbstractOlympiadGame {
             try {
                 if (tTwoCrash && !tOneCrash) {
                     sm = new SystemMessage(SystemMessageId.CONGRATULATIONS_C1_YOU_WIN_THE_MATCH);
-                    sm.addString(_teamOne[0].getName());
+                    sm.addString(teamOne[0].getName());
                     stadium.broadcastPacket(sm);
 
-                    for (int i = 0; i < _teamTwoSize; i++) {
-                        par = _teamTwo[i];
+                    for (int i = 0; i < teamTwoSize; i++) {
+                        par = teamTwo[i];
                         par.updateStat(COMP_LOST, 1);
                         points = pointsTeamTwo[i];
                         removePointsFromParticipant(par, points);
-                        list2.add(new OlympiadInfo(
-                                par.getName(),
-                                par.getClanName(),
-                                par.getClanId(),
-                                par.getBaseClass(),
-                                _damageT2,
-                                par.getStats().getInt(POINTS) - points,
-                                -points));
+                        list2.add(OlympiadInfo.builder()
+                                .name(par.getName())
+                                .clanName(par.getClanName())
+                                .clanId(par.getClanId())
+                                .classId(par.getBaseClass())
+                                .damage(damageT2)
+                                .currentPoints(par.getStats().getInt(POINTS) - points)
+                                .diffPoints(-points)
+                                .build());
                     }
 
                     points = min / MAX_TEAM_SIZE;
-                    for (int i = 0; i < _teamOneSize; i++) {
-                        par = _teamOne[i];
+                    for (int i = 0; i < teamOneSize; i++) {
+                        par = teamOne[i];
                         par.updateStat(COMP_WON, 1);
                         addPointsToParticipant(par, points);
-                        list1.add(new OlympiadInfo(
-                                par.getName(),
-                                par.getClanName(),
-                                par.getClanId(),
-                                par.getBaseClass(),
-                                _damageT1,
-                                par.getStats().getInt(POINTS) + points,
-                                points));
+                        list1.add(OlympiadInfo.builder()
+                                .name(par.getName())
+                                .clanName(par.getClanName())
+                                .clanId(par.getClanId())
+                                .classId(par.getBaseClass())
+                                .damage(damageT1)
+                                .currentPoints(par.getStats().getInt(POINTS) + points)
+                                .diffPoints(points)
+                                .build());
                     }
 
-                    for (int i = 0; i < _teamOneSize; i++) {
-                        rewardParticipant(_teamOne[i].getPlayer(), getReward());
+                    for (int i = 0; i < teamOneSize; i++) {
+                        rewardParticipant(teamOne[i].getPlayer(), getReward());
                     }
 
                     winside = 1;
                 } else if (tOneCrash && !tTwoCrash) {
                     sm = new SystemMessage(SystemMessageId.CONGRATULATIONS_C1_YOU_WIN_THE_MATCH);
-                    sm.addString(_teamTwo[0].getName());
+                    sm.addString(teamTwo[0].getName());
                     stadium.broadcastPacket(sm);
 
-                    for (int i = 0; i < _teamOneSize; i++) {
-                        par = _teamOne[i];
+                    for (int i = 0; i < teamOneSize; i++) {
+                        par = teamOne[i];
                         par.updateStat(COMP_LOST, 1);
                         points = pointsTeamOne[i];
                         removePointsFromParticipant(par, points);
-                        list1.add(new OlympiadInfo(
-                                par.getName(),
-                                par.getClanName(),
-                                par.getClanId(),
-                                par.getBaseClass(),
-                                _damageT1,
-                                par.getStats().getInt(POINTS) - points,
-                                -points));
+                        list1.add(OlympiadInfo.builder()
+                                .name(par.getName())
+                                .clanName(par.getClanName())
+                                .clanId(par.getClanId())
+                                .classId(par.getBaseClass())
+                                .damage(damageT1)
+                                .currentPoints(par.getStats().getInt(POINTS) - points)
+                                .diffPoints(-points)
+                                .build());
                     }
 
                     points = min / MAX_TEAM_SIZE;
-                    for (int i = 0; i < _teamTwoSize; i++) {
-                        par = _teamTwo[i];
+                    for (int i = 0; i < teamTwoSize; i++) {
+                        par = teamTwo[i];
                         par.updateStat(COMP_WON, 1);
                         addPointsToParticipant(par, points);
-                        list2.add(new OlympiadInfo(
-                                par.getName(),
-                                par.getClanName(),
-                                par.getClanId(),
-                                par.getBaseClass(),
-                                _damageT2,
-                                par.getStats().getInt(POINTS) + points,
-                                points));
+                        list2.add(OlympiadInfo.builder()
+                                .name(par.getName())
+                                .clanName(par.getClanName())
+                                .clanId(par.getClanId())
+                                .classId(par.getBaseClass())
+                                .damage(damageT2)
+                                .currentPoints(par.getStats().getInt(POINTS) + points)
+                                .diffPoints(points)
+                                .build());
                     }
 
                     winside = 2;
 
-                    for (int i = 0; i < _teamTwoSize; i++) {
-                        rewardParticipant(_teamTwo[i].getPlayer(), getReward());
+                    for (int i = 0; i < teamTwoSize; i++) {
+                        rewardParticipant(teamTwo[i].getPlayer(), getReward());
                     }
                 } else if (tOneCrash && tTwoCrash) {
                     stadium.broadcastPacket(
                             new SystemMessage(SystemMessageId.THERE_IS_NO_VICTOR_THE_MATCH_ENDS_IN_A_TIE));
 
-                    for (int i = _teamOneSize; --i >= 0; ) {
-                        par = _teamOne[i];
+                    for (int i = teamOneSize; --i >= 0; ) {
+                        par = teamOne[i];
                         par.updateStat(COMP_LOST, 1);
                         removePointsFromParticipant(par, pointsTeamOne[i]);
-                        list1.add(new OlympiadInfo(
-                                par.getName(),
-                                par.getClanName(),
-                                par.getClanId(),
-                                par.getBaseClass(),
-                                _damageT1,
-                                par.getStats().getInt(POINTS) - pointsTeamOne[i],
-                                -pointsTeamOne[i]));
+                        list1.add(OlympiadInfo.builder()
+                                .name(par.getName())
+                                .clanName(par.getClanName())
+                                .clanId(par.getClanId())
+                                .classId(par.getBaseClass())
+                                .damage(damageT1)
+                                .currentPoints(par.getStats().getInt(POINTS) - pointsTeamOne[i])
+                                .diffPoints(-pointsTeamOne[i])
+                                .build());
                     }
 
-                    for (int i = _teamTwoSize; --i >= 0; ) {
-                        par = _teamTwo[i];
+                    for (int i = teamTwoSize; --i >= 0; ) {
+                        par = teamTwo[i];
                         par.updateStat(COMP_LOST, 1);
                         removePointsFromParticipant(par, pointsTeamTwo[i]);
-                        list2.add(new OlympiadInfo(
-                                par.getName(),
-                                par.getClanName(),
-                                par.getClanId(),
-                                par.getBaseClass(),
-                                _damageT2,
-                                par.getStats().getInt(POINTS) - pointsTeamOne[i],
-                                -pointsTeamOne[i]));
+                        list2.add(OlympiadInfo.builder()
+                                .name(par.getName())
+                                .clanName(par.getClanName())
+                                .clanId(par.getClanId())
+                                .classId(par.getBaseClass())
+                                .damage(damageT2)
+                                .currentPoints(par.getStats().getInt(POINTS) - pointsTeamOne[i])
+                                .diffPoints(-pointsTeamOne[i])
+                                .build());
                     }
 
                     tie = true;
                 }
 
-                for (int i = _teamOneSize; --i >= 0; ) {
-                    par = _teamOne[i];
+                for (int i = teamOneSize; --i >= 0; ) {
+                    par = teamOne[i];
                     par.updateStat(COMP_DONE, 1);
                     par.updateStat(COMP_DONE_WEEK, 1);
                     par.updateStat(getWeeklyMatchType(), 1);
                 }
 
-                for (int i = _teamTwoSize; --i >= 0; ) {
-                    par = _teamTwo[i];
+                for (int i = teamTwoSize; --i >= 0; ) {
+                    par = teamTwo[i];
                     par.updateStat(COMP_DONE, 1);
                     par.updateStat(COMP_DONE_WEEK, 1);
                     par.updateStat(getWeeklyMatchType(), 1);
                 }
             } catch (Exception e) {
-                LOGGER.log(Level.WARNING, "Exception on validateWinner(): " + e.getMessage(), e);
+                log.warn("Exception on validateWinner(): {}", e.getMessage(), e);
             }
 
             if (winside == 1) {
@@ -752,8 +761,8 @@ public class OlympiadGameTeams extends AbstractOlympiadGame {
             double teamOneHp = 0;
             double teamTwoHp = 0;
 
-            for (int i = _teamOneSize; --i >= 0; ) {
-                par = _teamOne[i];
+            for (int i = teamOneSize; --i >= 0; ) {
+                par = teamOne[i];
                 if (!par.isDisconnected()
                         && (par.getPlayer() != null)
                         && !par.getPlayer().isDead()) {
@@ -766,8 +775,8 @@ public class OlympiadGameTeams extends AbstractOlympiadGame {
                 par.updatePlayer();
             }
 
-            for (int i = _teamTwoSize; --i >= 0; ) {
-                par = _teamTwo[i];
+            for (int i = teamTwoSize; --i >= 0; ) {
+                par = teamTwo[i];
                 if (!par.isDisconnected()
                         && (par.getPlayer() != null)
                         && !par.getPlayer().isDead()) {
@@ -781,132 +790,138 @@ public class OlympiadGameTeams extends AbstractOlympiadGame {
             }
 
             if (((teamTwoHp == 0) && (teamOneHp != 0))
-                    || ((_damageT1 > _damageT2) && (teamTwoHp != 0) && (teamOneHp != 0))) {
+                    || ((damageT1 > damageT2) && (teamTwoHp != 0) && (teamOneHp != 0))) {
                 sm = new SystemMessage(SystemMessageId.CONGRATULATIONS_C1_YOU_WIN_THE_MATCH);
-                sm.addString(_teamOne[0].getName());
+                sm.addString(teamOne[0].getName());
                 stadium.broadcastPacket(sm);
 
-                for (int i = 0; i < _teamTwoSize; i++) {
-                    par = _teamTwo[i];
+                for (int i = 0; i < teamTwoSize; i++) {
+                    par = teamTwo[i];
                     par.updateStat(COMP_LOST, 1);
                     points = pointsTeamTwo[i];
                     removePointsFromParticipant(par, points);
-                    list2.add(new OlympiadInfo(
-                            par.getName(),
-                            par.getClanName(),
-                            par.getClanId(),
-                            par.getBaseClass(),
-                            _damageT2,
-                            par.getStats().getInt(POINTS) - points,
-                            -points));
+                    list2.add(OlympiadInfo.builder()
+                            .name(par.getName())
+                            .clanName(par.getClanName())
+                            .clanId(par.getClanId())
+                            .classId(par.getBaseClass())
+                            .damage(damageT2)
+                            .currentPoints(par.getStats().getInt(POINTS) - points)
+                            .diffPoints(-points)
+                            .build());
                 }
 
                 points = min / MAX_TEAM_SIZE;
-                for (int i = 0; i < _teamOneSize; i++) {
-                    par = _teamOne[i];
+                for (int i = 0; i < teamOneSize; i++) {
+                    par = teamOne[i];
                     par.updateStat(COMP_WON, 1);
                     addPointsToParticipant(par, points);
-                    list1.add(new OlympiadInfo(
-                            par.getName(),
-                            par.getClanName(),
-                            par.getClanId(),
-                            par.getBaseClass(),
-                            _damageT1,
-                            par.getStats().getInt(POINTS) + points,
-                            points));
+                    list1.add(OlympiadInfo.builder()
+                            .name(par.getName())
+                            .clanName(par.getClanName())
+                            .clanId(par.getClanId())
+                            .classId(par.getBaseClass())
+                            .damage(damageT1)
+                            .currentPoints(par.getStats().getInt(POINTS) + points)
+                            .diffPoints(points)
+                            .build());
                 }
 
                 winside = 1;
 
-                for (int i = 0; i < _teamOneSize; i++) {
-                    rewardParticipant(_teamOne[i].getPlayer(), getReward());
+                for (int i = 0; i < teamOneSize; i++) {
+                    rewardParticipant(teamOne[i].getPlayer(), getReward());
                 }
             } else if (((teamOneHp == 0) && (teamTwoHp != 0))
-                    || ((_damageT2 > _damageT1) && (teamOneHp != 0) && (teamTwoHp != 0))) {
+                    || ((damageT2 > damageT1) && (teamOneHp != 0) && (teamTwoHp != 0))) {
                 sm = new SystemMessage(SystemMessageId.CONGRATULATIONS_C1_YOU_WIN_THE_MATCH);
-                sm.addString(_teamTwo[0].getName());
+                sm.addString(teamTwo[0].getName());
                 stadium.broadcastPacket(sm);
 
-                for (int i = 0; i < _teamOneSize; i++) {
-                    par = _teamOne[i];
+                for (int i = 0; i < teamOneSize; i++) {
+                    par = teamOne[i];
                     par.updateStat(COMP_LOST, 1);
                     points = pointsTeamOne[i];
                     removePointsFromParticipant(par, points);
-                    list1.add(new OlympiadInfo(
-                            par.getName(),
-                            par.getClanName(),
-                            par.getClanId(),
-                            par.getBaseClass(),
-                            _damageT1,
-                            par.getStats().getInt(POINTS) - points,
-                            -points));
+                    list1.add(OlympiadInfo.builder()
+                            .name(par.getName())
+                            .clanName(par.getClanName())
+                            .clanId(par.getClanId())
+                            .classId(par.getBaseClass())
+                            .damage(damageT1)
+                            .currentPoints(par.getStats().getInt(POINTS) - points)
+                            .diffPoints(-points)
+                            .build());
                 }
 
                 points = min / MAX_TEAM_SIZE;
-                for (int i = 0; i < _teamTwoSize; i++) {
-                    par = _teamTwo[i];
+                for (int i = 0; i < teamTwoSize; i++) {
+                    par = teamTwo[i];
                     par.updateStat(COMP_WON, 1);
                     addPointsToParticipant(par, points);
-                    list2.add(new OlympiadInfo(
-                            par.getName(),
-                            par.getClanName(),
-                            par.getClanId(),
-                            par.getBaseClass(),
-                            _damageT2,
-                            par.getStats().getInt(POINTS) + points,
-                            points));
+                    list2.add(OlympiadInfo.builder()
+                            .name(par.getName())
+                            .clanName(par.getClanName())
+                            .clanId(par.getClanId())
+                            .classId(par.getBaseClass())
+                            .damage(damageT2)
+                            .currentPoints(par.getStats().getInt(POINTS) + points)
+                            .diffPoints(points)
+                            .build());
                 }
 
                 winside = 2;
 
-                for (int i = 0; i < _teamTwoSize; i++) {
-                    rewardParticipant(_teamTwo[i].getPlayer(), getReward());
+                for (int i = 0; i < teamTwoSize; i++) {
+                    rewardParticipant(teamTwo[i].getPlayer(), getReward());
                 }
             } else {
                 stadium.broadcastPacket(new SystemMessage(SystemMessageId.THERE_IS_NO_VICTOR_THE_MATCH_ENDS_IN_A_TIE));
 
-                for (int i = 0; i < _teamOneSize; i++) {
-                    par = _teamOne[i];
+                for (int i = 0; i < teamOneSize; i++) {
+                    par = teamOne[i];
                     par.updateStat(COMP_DRAWN, 1);
                     points = Math.min(par.getStats().getInt(POINTS) / getDivider(), OlympiadConfig.OLYMPIAD_MAX_POINTS);
                     removePointsFromParticipant(par, points);
-                    list1.add(new OlympiadInfo(
-                            par.getName(),
-                            par.getClanName(),
-                            par.getClanId(),
-                            par.getBaseClass(),
-                            _damageT1,
-                            par.getStats().getInt(POINTS) - points,
-                            -points));
+                    list1.add(OlympiadInfo.builder()
+                            .name(par.getName())
+                            .clanName(par.getClanName())
+                            .clanId(par.getClanId())
+                            .classId(par.getBaseClass())
+                            .damage(damageT1)
+                            .currentPoints(par.getStats().getInt(POINTS) - points)
+                            .diffPoints(-points)
+                            .build());
                 }
 
-                for (int i = 0; i < _teamTwoSize; i++) {
-                    par = _teamTwo[i];
+                for (int i = 0; i < teamTwoSize; i++) {
+                    par = teamTwo[i];
                     par.updateStat(COMP_DRAWN, 1);
                     points = Math.min(par.getStats().getInt(POINTS) / getDivider(), OlympiadConfig.OLYMPIAD_MAX_POINTS);
                     removePointsFromParticipant(par, points);
-                    list2.add(new OlympiadInfo(
-                            par.getName(),
-                            par.getClanName(),
-                            par.getClanId(),
-                            par.getBaseClass(),
-                            _damageT2,
-                            par.getStats().getInt(POINTS) - points,
-                            -points));
+                    list2.add(OlympiadInfo.builder()
+                            .name(par.getName())
+                            .clanName(par.getClanName())
+                            .clanId(par.getClanId())
+                            .classId(par.getBaseClass())
+                            .damage(damageT2)
+                            .currentPoints(par.getStats().getInt(POINTS) - points)
+                            .diffPoints(-points)
+                            .build());
                 }
 
                 tie = true;
             }
 
-            for (int i = _teamOneSize; --i >= 0; ) {
-                par = _teamOne[i];
+            for (int i = teamOneSize; --i >= 0; ) {
+                par = teamOne[i];
                 par.updateStat(COMP_DONE, 1);
                 par.updateStat(COMP_DONE_WEEK, 1);
                 par.updateStat(getWeeklyMatchType(), 1);
             }
 
-            for (int i = _teamTwoSize; --i >= 0; ) {
-                par = _teamTwo[i];
+            for (int i = teamTwoSize; --i >= 0; ) {
+                par = teamTwo[i];
                 par.updateStat(COMP_DONE, 1);
                 par.updateStat(COMP_DONE_WEEK, 1);
                 par.updateStat(getWeeklyMatchType(), 1);
@@ -920,7 +935,7 @@ public class OlympiadGameTeams extends AbstractOlympiadGame {
 
             stadium.broadcastPacket(result);
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, "Exception on validateWinner(): " + e.getMessage(), e);
+            log.warn("Exception on validateWinner(): {}", e.getMessage(), e);
         }
     }
 
@@ -930,21 +945,21 @@ public class OlympiadGameTeams extends AbstractOlympiadGame {
     @Override
     protected void addDamage(Player player, int damage) {
         Participant par;
-        for (int i = _teamOneSize; --i >= 0; ) {
-            par = _teamOne[i];
+        for (int i = teamOneSize; --i >= 0; ) {
+            par = teamOne[i];
             if (par.getObjectId() == player.getObjectId()) {
                 if (!par.isDisconnected()) {
-                    _damageT1 += damage;
+                    damageT1 += damage;
                 }
                 return;
             }
         }
 
-        for (int i = _teamTwoSize; --i >= 0; ) {
-            par = _teamTwo[i];
+        for (int i = teamTwoSize; --i >= 0; ) {
+            par = teamTwo[i];
             if (par.getObjectId() == player.getObjectId()) {
                 if (!par.isDisconnected()) {
-                    _damageT2 += damage;
+                    damageT2 += damage;
                 }
                 return;
             }
@@ -953,7 +968,7 @@ public class OlympiadGameTeams extends AbstractOlympiadGame {
 
     @Override
     public String[] getPlayerNames() {
-        return new String[] {_teamOne[0].getName(), _teamTwo[0].getName()};
+        return new String[] {teamOne[0].getName(), teamTwo[0].getName()};
     }
 
     @Override
@@ -961,15 +976,15 @@ public class OlympiadGameTeams extends AbstractOlympiadGame {
         try {
             SystemMessage reason = null;
             Participant par;
-            for (int i = _teamOneSize; --i >= 0; ) {
-                par = _teamOne[i];
+            for (int i = teamOneSize; --i >= 0; ) {
+                par = teamOne[i];
                 par.updatePlayer();
                 reason = checkDefaulted(par.getPlayer());
                 if (reason != null) {
                     par.setDefaulted(true);
-                    if (!_teamOneDefaulted) {
-                        _teamOneDefaulted = true;
-                        for (Participant t : _teamTwo) {
+                    if (!teamOneDefaulted) {
+                        teamOneDefaulted = true;
+                        for (Participant t : teamTwo) {
                             if (t.getPlayer() != null) {
                                 t.getPlayer().sendPacket(reason);
                             }
@@ -978,15 +993,15 @@ public class OlympiadGameTeams extends AbstractOlympiadGame {
                 }
             }
 
-            for (int i = _teamTwoSize; --i >= 0; ) {
-                par = _teamTwo[i];
+            for (int i = teamTwoSize; --i >= 0; ) {
+                par = teamTwo[i];
                 par.updatePlayer();
                 reason = checkDefaulted(par.getPlayer());
                 if (reason != null) {
                     par.setDefaulted(true);
-                    if (!_teamTwoDefaulted) {
-                        _teamTwoDefaulted = true;
-                        for (Participant t : _teamOne) {
+                    if (!teamTwoDefaulted) {
+                        teamTwoDefaulted = true;
+                        for (Participant t : teamOne) {
                             if (t.getPlayer() != null) {
                                 t.getPlayer().sendPacket(reason);
                             }
@@ -995,22 +1010,22 @@ public class OlympiadGameTeams extends AbstractOlympiadGame {
                 }
             }
 
-            return _teamOneDefaulted || _teamTwoDefaulted;
+            return teamOneDefaulted || teamTwoDefaulted;
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, "Exception on checkDefaulted(): " + e.getMessage(), e);
+            log.warn("Exception on checkDefaulted(): {}", e.getMessage(), e);
             return true;
         }
     }
 
     @Override
     public void resetDamage() {
-        _damageT1 = 0;
-        _damageT2 = 0;
+        damageT1 = 0;
+        damageT2 = 0;
     }
 
     protected boolean teamOneAllDisconnected() {
-        for (int i = _teamOneSize; --i >= 0; ) {
-            if (!_teamOne[i].isDisconnected()) {
+        for (int i = teamOneSize; --i >= 0; ) {
+            if (!teamOne[i].isDisconnected()) {
                 return false;
             }
         }
@@ -1019,8 +1034,8 @@ public class OlympiadGameTeams extends AbstractOlympiadGame {
     }
 
     protected boolean teamTwoAllDisconnected() {
-        for (int i = _teamTwoSize; --i >= 0; ) {
-            if (!_teamTwo[i].isDisconnected()) {
+        for (int i = teamTwoSize; --i >= 0; ) {
+            if (!teamTwo[i].isDisconnected()) {
                 return false;
             }
         }
@@ -1030,13 +1045,13 @@ public class OlympiadGameTeams extends AbstractOlympiadGame {
 
     @Override
     protected void makePlayersInvul() {
-        for (Participant participant : _teamOne) {
+        for (Participant participant : teamOne) {
             if (participant.getPlayer() != null) {
                 participant.getPlayer().setInvul(true);
             }
         }
 
-        for (Participant participant : _teamTwo) {
+        for (Participant participant : teamTwo) {
             if (participant.getPlayer() != null) {
                 participant.getPlayer().setInvul(true);
             }
@@ -1045,13 +1060,13 @@ public class OlympiadGameTeams extends AbstractOlympiadGame {
 
     @Override
     protected void removePlayersInvul() {
-        for (Participant participant : _teamOne) {
+        for (Participant participant : teamOne) {
             if (participant.getPlayer() != null) {
                 participant.getPlayer().setInvul(false);
             }
         }
 
-        for (Participant participant : _teamTwo) {
+        for (Participant participant : teamTwo) {
             if (participant.getPlayer() != null) {
                 participant.getPlayer().setInvul(false);
             }

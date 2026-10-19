@@ -31,33 +31,33 @@ import app.l2nx.highfive.util.LocationUtil;
  * @author JIV
  */
 public class AnswerCoupleAction extends ClientPacket {
-    private int _objectId;
-    private int _actionId;
-    private int _answer;
+    private int objectId;
+    private int actionId;
+    private int answer;
 
     @Override
     protected void readImpl() {
-        _actionId = readInt();
-        _answer = readInt();
-        _objectId = readInt();
+        actionId = readInt();
+        answer = readInt();
+        objectId = readInt();
     }
 
     @Override
     protected void runImpl() {
         final Player player = getPlayer();
-        final Player target = World.getPlayer(_objectId);
+        final Player target = World.getPlayer(objectId);
         if ((player == null) || (target == null)) {
             return;
         }
 
-        if ((target.getMultiSocialTarget() != player.getObjectId()) || (target.getMultiSociaAction() != _actionId)) {
+        if ((target.getMultiSocialTarget() != player.getObjectId()) || (target.getMultiSociaAction() != actionId)) {
             return;
         }
 
-        if (_answer == 0) // cancel
+        if (answer == 0) // cancel
         {
             target.sendPacket(SystemMessageId.THE_COUPLE_ACTION_WAS_DENIED);
-        } else if (_answer == 1) // approve
+        } else if (answer == 1) // approve
         {
             final int distance = (int) player.calculateDistance2D(target);
             if ((distance > 125) || (distance < 15) || (player.getObjectId() == target.getObjectId())) {
@@ -76,9 +76,9 @@ public class AnswerCoupleAction extends ClientPacket {
             heading = LocationUtil.calculateHeadingFrom(target, player);
             target.setHeading(heading);
             target.broadcastPacket(new ExRotation(target.getObjectId(), heading));
-            player.broadcastPacket(new SocialAction(player.getObjectId(), _actionId));
-            target.broadcastPacket(new SocialAction(_objectId, _actionId));
-        } else if (_answer == -1) // refused
+            player.broadcastPacket(new SocialAction(player.getObjectId(), actionId));
+            target.broadcastPacket(new SocialAction(objectId, actionId));
+        } else if (answer == -1) // refused
         {
             final SystemMessage sm = new SystemMessage(
                     SystemMessageId.C1_IS_SET_TO_REFUSE_COUPLE_ACTIONS_AND_CANNOT_BE_REQUESTED_FOR_A_COUPLE_ACTION);

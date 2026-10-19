@@ -23,56 +23,30 @@ import app.l2nx.highfive.mechanics.events.EventType;
 import app.l2nx.highfive.mechanics.events.ListenersContainer;
 import app.l2nx.highfive.mechanics.events.holders.IBaseEvent;
 import app.l2nx.highfive.mechanics.events.returns.AbstractEventReturn;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * @author UnAfraid
  */
 public abstract class AbstractEventListener implements Comparable<AbstractEventListener> {
-    private int _priority = 0;
-    private final ListenersContainer _container;
-    private final EventType _type;
-    private final Object _owner;
+    @Getter
+    @Setter
+    private int priority = 0;
+
+    @Getter
+    private final ListenersContainer container;
+
+    @Getter
+    private final EventType type;
+
+    @Getter
+    private final Object owner;
 
     public AbstractEventListener(ListenersContainer container, EventType type, Object owner) {
-        _container = container;
-        _type = type;
-        _owner = owner;
-    }
-
-    /**
-     * @return the container on which this listener is being registered (Used to unregister when unloading scripts)
-     */
-    public ListenersContainer getContainer() {
-        return _container;
-    }
-
-    /**
-     * @return the type of event which listener is listening for.
-     */
-    public EventType getType() {
-        return _type;
-    }
-
-    /**
-     * @return the owner of the listener, the object that registered this listener.
-     */
-    public Object getOwner() {
-        return _owner;
-    }
-
-    /**
-     * @return priority of execution (Higher the sooner)
-     */
-    public int getPriority() {
-        return _priority;
-    }
-
-    /**
-     * Sets priority of execution.
-     * @param priority
-     */
-    public void setPriority(int priority) {
-        _priority = priority;
+        this.container = container;
+        this.type = type;
+        this.owner = owner;
     }
 
     /**
@@ -88,7 +62,7 @@ public abstract class AbstractEventListener implements Comparable<AbstractEventL
      * Unregisters detaches and unregisters current listener.
      */
     public void unregisterMe() {
-        _container.removeListener(this);
+        container.removeListener(this);
     }
 
     @Override

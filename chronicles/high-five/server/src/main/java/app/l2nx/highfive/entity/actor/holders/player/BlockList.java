@@ -35,37 +35,40 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class BlockList {
-    private static final Logger LOGGER = Logger.getLogger(BlockList.class.getName());
 
     private static final Map<Integer, Set<Integer>> OFFLINE_LIST = new ConcurrentHashMap<>();
 
-    private final Player _owner;
-    private Set<Integer> _blockList;
+    private final Player owner;
+
+    @Getter(AccessLevel.PRIVATE)
+    private Set<Integer> blockList;
 
     public BlockList(Player owner) {
-        _owner = owner;
-        _blockList = OFFLINE_LIST.get(owner.getObjectId());
-        if (_blockList == null) {
-            _blockList = loadList(_owner.getObjectId());
+        this.owner = owner;
+        blockList = OFFLINE_LIST.get(owner.getObjectId());
+        if (blockList == null) {
+            blockList = loadList(this.owner.getObjectId());
         }
     }
 
     private void addToBlockList(int target) {
-        _blockList.add(target);
+        blockList.add(target);
         updateInDB(target, true);
     }
 
     private void removeFromBlockList(int target) {
-        _blockList.remove(Integer.valueOf(target));
+        blockList.remove(Integer.valueOf(target));
         updateInDB(target, false);
     }
 
     public void playerLogout() {
-        OFFLINE_LIST.put(_owner.getObjectId(), _blockList);
+        OFFLINE_LIST.put(owner.getObjectId(), blockList);
     }
 
     private static Set<Integer> loadList(int objId) {
@@ -86,10 +89,7 @@ public class BlockList {
                 }
             }
         } catch (Exception e) {
-            LOGGER.log(
-                    Level.WARNING,
-                    "Error found in " + objId + " FriendList while loading BlockList: " + e.getMessage(),
-                    e);
+            log.warn("Error found in {} FriendList while loading BlockList: {}", objId, e.getMessage(), e);
         }
 
         return list;
@@ -101,7 +101,7 @@ public class BlockList {
             {
                 try (PreparedStatement statement = con.prepareStatement(
                         "INSERT INTO character_friends (charId, friendId, relation) VALUES (?, ?, 1)")) {
-                    statement.setInt(1, _owner.getObjectId());
+                    statement.setInt(1, owner.getObjectId());
                     statement.setInt(2, targetId);
                     statement.execute();
                 }
@@ -110,26 +110,26 @@ public class BlockList {
             {
                 try (PreparedStatement statement = con.prepareStatement(
                         "DELETE FROM character_friends WHERE charId=? AND friendId=? AND relation=1")) {
-                    statement.setInt(1, _owner.getObjectId());
+                    statement.setInt(1, owner.getObjectId());
                     statement.setInt(2, targetId);
                     statement.execute();
                 }
             }
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, "Could not add block player: " + e.getMessage(), e);
+            log.warn("Could not add block player: {}", e.getMessage(), e);
         }
     }
 
     public boolean isInBlockList(Player target) {
-        return _blockList.contains(target.getObjectId());
+        return blockList.contains(target.getObjectId());
     }
 
     public boolean isInBlockList(int targetId) {
-        return _blockList.contains(targetId);
+        return blockList.contains(targetId);
     }
 
     private boolean isBlockAll() {
-        return _owner.getMessageRefusal();
+        return owner.getMessageRefusal();
     }
 
     public static boolean isBlocked(Player listOwner, Player target) {
@@ -143,11 +143,7 @@ public class BlockList {
     }
 
     private void setBlockAll(boolean value) {
-        _owner.setMessageRefusal(value);
-    }
-
-    private Set<Integer> getBlockList() {
-        return _blockList;
+        owner.setMessageRefusal(value);
     }
 
     public static void addToBlockList(Player listOwner, int targetId) {

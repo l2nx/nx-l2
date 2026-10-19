@@ -183,16 +183,18 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.slf4j.LoggerFactory;
 
 /**
  * Quest main class.
  * @author Luis Arias, Mobius
  */
+@Slf4j
 public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String> {
-    public static final Logger LOGGER = Logger.getLogger(Quest.class.getName());
 
     private static final String DEFAULT_NO_QUEST_MSG =
             "<html><body>You are either not on a quest that involves this NPC, or you don't meet this NPC's minimum quest requirements.</body></html>";
@@ -202,16 +204,30 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
     private static final String QUEST_DELETE_FROM_CHAR_QUERY_NON_REPEATABLE_QUERY =
             "DELETE FROM character_quests WHERE charId=? AND name=? AND var!=?";
 
-    private final Map<ListenerRegisterType, Set<Integer>> _registeredIds = new ConcurrentHashMap<>();
-    private final Queue<AbstractEventListener> _listeners = new PriorityBlockingQueue<>();
-    private final Map<Predicate<Player>, String> _startCondition = new LinkedHashMap<>(1);
-    private final Map<String, List<QuestTimer>> _questTimers = new HashMap<>();
-    private TimerExecutor<String> _timerExecutor;
+    private final Map<ListenerRegisterType, Set<Integer>> registeredIds = new ConcurrentHashMap<>();
 
-    private final int _questId;
+    @Getter
+    private final Queue<AbstractEventListener> listeners = new PriorityBlockingQueue<>();
+
+    @Getter(AccessLevel.PRIVATE)
+    private final Map<Predicate<Player>, String> startConditions = new LinkedHashMap<>(1);
+
+    @Getter
+    private final Map<String, List<QuestTimer>> questTimers = new HashMap<>();
+
+    private TimerExecutor<String> timerExecutor;
+
+    @Getter
+    private final int id;
+
+    @Getter
     private final String scriptName;
-    private boolean _isCustom = false;
-    public int[] _questItemIds = null;
+
+    @Getter
+    private boolean customQuest = false;
+
+    @Getter
+    public int[] registeredItemIds = null;
 
     /**
      * The Quest object constructor.<br>
@@ -222,7 +238,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
         scriptName = ScriptEngine.getInstance().getCurrentLoadingScript();
         initializeAnnotationListeners();
 
-        _questId = questId;
+        id = questId;
         if (questId > 0) {
             ScriptManager.getInstance().addQuest(this);
         } else {
@@ -243,9 +259,12 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
     }
 
     public void onTimerEvent(String event, StatSet params, Npc npc, Player player) {
-        LOGGER.warning(
-                "[" + getClass().getSimpleName() + "]: Timer event arrived at non overriden onTimerEvent method event: "
-                        + event + " npc: " + npc + " player: " + player);
+        log.warn(
+                "[{}]: Timer event arrived at non overriden onTimerEvent method event: {} npc: {} player: {}",
+                getClass().getSimpleName(),
+                event,
+                npc,
+                player);
     }
 
     public void onTimerCancel(String event, StatSet params, Npc npc, Player player) {}
@@ -254,27 +273,19 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
      * @return the {@link TimerExecutor} object that manages timers
      */
     public TimerExecutor<String> getTimers() {
-        if (_timerExecutor == null) {
+        if (timerExecutor == null) {
             synchronized (this) {
-                if (_timerExecutor == null) {
-                    _timerExecutor = new TimerExecutor<>(this, this);
+                if (timerExecutor == null) {
+                    timerExecutor = new TimerExecutor<>(this, this);
                 }
             }
         }
 
-        return _timerExecutor;
+        return timerExecutor;
     }
 
     public boolean hasTimers() {
-        return _timerExecutor != null;
-    }
-
-    /**
-     * Gets the quest ID.
-     * @return the quest ID
-     */
-    public int getId() {
-        return _questId;
+        return timerExecutor != null;
     }
 
     /**
@@ -285,25 +296,10 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
     }
 
     /**
-     * @return the name of the script that created this quest, {@code null} if it was not created by the script engine
-     */
-    public String getScriptName() {
-        return scriptName;
-    }
-
-    /**
      * @return the path of the quest script
      */
     public String getPath() {
         return ScriptEngine.getInstance().getScriptFolder(getClass());
-    }
-
-    /**
-     * Verifies if this is a custom quest.
-     * @return {@code true} if the quest script is a custom quest, {@code false} otherwise.
-     */
-    public boolean isCustomQuest() {
-        return _isCustom;
     }
 
     /**
@@ -312,14 +308,14 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
      * @param value if {@code true} the quest script will be set as custom quest.
      */
     public void setCustom(boolean value) {
-        _isCustom = value;
+        customQuest = value;
     }
 
     /**
      * @return the NpcStringId of the current quest, used in Quest link bypass
      */
     public int getNpcStringId() {
-        return _questId > 10000 ? _questId - 5000 : _questId;
+        return id > 10000 ? id - 5000 : id;
     }
 
     /**
@@ -332,9 +328,9 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
             constructor = getClass().getConstructor();
         } catch (NoSuchMethodException e) {
             if (scriptName == null) {
-                LOGGER.warning(
-                        getClass().getSimpleName()
-                                + ": Cannot reload, the quest has no public no-argument constructor and was not created by a script.");
+                LoggerFactory.getLogger(getClass())
+                        .warn(
+                                "Cannot reload, the quest has no public no-argument constructor and was not created by a script.");
                 return false;
             }
         }
@@ -349,7 +345,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
             }
             return true;
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, "Failed to reload " + getName() + "!", e);
+            log.warn("Failed to reload {}!", getName(), e);
             return false;
         }
     }
@@ -364,7 +360,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
         // Cancel all pending timers before reloading.
         // If timers ought to be restarted, the quest can take care of it with its code (example: save global data
         // indicating what timer must be restarted).
-        for (List<QuestTimer> timers : _questTimers.values()) {
+        for (List<QuestTimer> timers : questTimers.values()) {
             for (QuestTimer timer : timers) {
                 timer.cancel();
             }
@@ -372,16 +368,16 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
             timers.clear();
         }
 
-        _questTimers.clear();
+        questTimers.clear();
 
         if (removeFromList) {
             ScriptManager.getInstance().removeScript(this);
         }
 
-        _listeners.forEach(AbstractEventListener::unregisterMe);
-        _listeners.clear();
-        if (_timerExecutor != null) {
-            _timerExecutor.cancelAllTimers();
+        listeners.forEach(AbstractEventListener::unregisterMe);
+        listeners.clear();
+        if (timerExecutor != null) {
+            timerExecutor.cancelAllTimers();
         }
     }
 
@@ -440,14 +436,6 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
     }
 
     /**
-     * Gets the quest timers.
-     * @return the quest timers
-     */
-    public Map<String, List<QuestTimer>> getQuestTimers() {
-        return _questTimers;
-    }
-
-    /**
      * Add a timer to the quest (if it doesn't exist already) and start it.
      * @param name the name of the timer (also passed back as "event" in {@link #onEvent(String, Npc, Player)})
      * @param time time in ms for when to fire the timer
@@ -461,13 +449,13 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
             return;
         }
 
-        synchronized (_questTimers) {
-            _questTimers.computeIfAbsent(name, k -> new CopyOnWriteArrayList<>());
+        synchronized (questTimers) {
+            questTimers.computeIfAbsent(name, k -> new CopyOnWriteArrayList<>());
 
             // If there exists a timer with this name, allow the timer only if the [npc, player] set is unique nulls act
             // as wildcards.
             if (getQuestTimer(name, npc, player) == null) {
-                _questTimers.get(name).add(new QuestTimer(this, name, time, npc, player, repeating));
+                questTimers.get(name).add(new QuestTimer(this, name, time, npc, player, repeating));
             }
         }
     }
@@ -484,7 +472,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
             return null;
         }
 
-        final List<QuestTimer> timers = _questTimers.get(name);
+        final List<QuestTimer> timers = questTimers.get(name);
         if ((timers == null) || timers.isEmpty()) {
             return null;
         }
@@ -507,7 +495,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
             return;
         }
 
-        final List<QuestTimer> timers = _questTimers.get(name);
+        final List<QuestTimer> timers = questTimers.get(name);
         if ((timers == null) || timers.isEmpty()) {
             return;
         }
@@ -532,7 +520,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
             return;
         }
 
-        final List<QuestTimer> timers = _questTimers.get(name);
+        final List<QuestTimer> timers = questTimers.get(name);
         if ((timers == null) || timers.isEmpty()) {
             return;
         }
@@ -554,7 +542,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
             return;
         }
 
-        final List<QuestTimer> timers = _questTimers.get(timer.toString());
+        final List<QuestTimer> timers = questTimers.get(timer.toString());
         if (timers != null) {
             timers.remove(timer);
         }
@@ -569,7 +557,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
         try {
             onTeleport(npc);
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, "Exception on onTeleport() in notifyTeleport(): " + e.getMessage(), e);
+            log.warn("Exception on onTeleport() in notifyTeleport(): {}", e.getMessage(), e);
         }
     }
 
@@ -665,7 +653,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
         try {
             onEventReceived(eventName, sender, receiver, reference);
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, "Exception on onEventReceived() in notifyEventReceived(): " + e.getMessage(), e);
+            log.warn("Exception on onEventReceived() in notifyEventReceived(): {}", e.getMessage(), e);
         }
     }
 
@@ -678,10 +666,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
         try {
             onOlympiadMatchFinish(winner, looser, type);
         } catch (Exception e) {
-            LOGGER.log(
-                    Level.WARNING,
-                    "Execution on onOlympiadMatchFinish() in notifyOlympiadMatch(): " + e.getMessage(),
-                    e);
+            log.warn("Execution on onOlympiadMatchFinish() in notifyOlympiadMatch(): {}", e.getMessage(), e);
         }
     }
 
@@ -692,7 +677,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
         try {
             onMoveFinished(npc);
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, "Exception on onMoveFinished() in notifyMoveFinished(): " + e.getMessage(), e);
+            log.warn("Exception on onMoveFinished() in notifyMoveFinished(): {}", e.getMessage(), e);
         }
     }
 
@@ -703,7 +688,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
         try {
             onNodeArrived(npc);
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, "Exception on onNodeArrived() in notifyNodeArrived(): " + e.getMessage(), e);
+            log.warn("Exception on onNodeArrived() in notifyNodeArrived(): {}", e.getMessage(), e);
         }
     }
 
@@ -714,7 +699,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
         try {
             onRouteFinished(npc);
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, "Exception on onRouteFinished() in notifyRouteFinished(): " + e.getMessage(), e);
+            log.warn("Exception on onRouteFinished() in notifyRouteFinished(): {}", e.getMessage(), e);
         }
     }
 
@@ -727,7 +712,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
         try {
             return onCanSeeMe(npc, player);
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, "Exception on onCanSeeMe() in notifyOnCanSeeMe(): " + e.getMessage(), e);
+            log.warn("Exception on onCanSeeMe() in notifyOnCanSeeMe(): {}", e.getMessage(), e);
         }
 
         return false;
@@ -1031,9 +1016,9 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
      * @return {@code false}
      */
     public boolean showError(Player player, Throwable t) {
-        LOGGER.log(Level.WARNING, getClass().getName(), t);
+        log.warn(getClass().getName(), t);
         if (t.getMessage() == null) {
-            LOGGER.warning(getClass().getSimpleName() + ": " + t.getMessage());
+            LoggerFactory.getLogger(getClass()).warn("{}", t.getMessage());
         }
 
         if ((player != null) && player.getAccessLevel().isGm()) {
@@ -1112,7 +1097,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
                     // Search quest associated with the ID.
                     final Quest q = ScriptManager.getInstance().getScript(questId);
                     if (q == null) {
-                        LOGGER.finer("Unknown quest " + questId + " for " + player);
+                        log.trace("Unknown quest {} for {}", questId, player);
                         if (GeneralConfig.AUTODELETE_INVALID_QUEST_DATA) {
                             invalidQuestData.setInt(1, player.getObjectId());
                             invalidQuestData.setString(2, questId);
@@ -1142,7 +1127,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
                         if (quest != null) {
                             final QuestState qs = quest.getQuestState(player, true);
                             if (qs == null) {
-                                LOGGER.finer("Lost variable " + var + " in quest " + questId + " for " + player);
+                                log.trace("Lost variable {} in quest {} for {}", var, questId, player);
 
                                 if (GeneralConfig.AUTODELETE_INVALID_QUEST_DATA) {
                                     invalidQuestDataVar.setInt(1, player.getObjectId());
@@ -1160,7 +1145,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
                 }
             }
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, "could not insert char quest:", e);
+            log.warn("could not insert char quest:", e);
         }
 
         // Events? Remove this?
@@ -1186,7 +1171,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
             statement.setString(5, value);
             statement.executeUpdate();
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, "could not insert char quest:", e);
+            log.warn("could not insert char quest:", e);
         }
     }
 
@@ -1206,7 +1191,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
             statement.setString(4, var);
             statement.executeUpdate();
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, "could not update char quest:", e);
+            log.warn("could not update char quest:", e);
         }
     }
 
@@ -1224,7 +1209,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
             statement.setString(3, var);
             statement.executeUpdate();
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, "Unable to delete char quest!", e);
+            log.warn("Unable to delete char quest!", e);
         }
     }
 
@@ -1247,7 +1232,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
 
             ps.executeUpdate();
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, "could not delete char quest:", e);
+            log.warn("could not delete char quest:", e);
         }
     }
 
@@ -1306,7 +1291,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
      * @param npcIds the IDs of the NPCs to register
      */
     public void addFirstTalkId(int... npcIds) {
-        setNpcFirstTalkId(event -> notifyFirstTalk(event.getNpc(), event.getPlayer()), npcIds);
+        setNpcFirstTalkId(event -> notifyFirstTalk(event.npc(), event.player()), npcIds);
     }
 
     /**
@@ -1314,7 +1299,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
      * @param npcIds the IDs of the NPCs to register
      */
     public void addFirstTalkId(Collection<Integer> npcIds) {
-        setNpcFirstTalkId(event -> notifyFirstTalk(event.getNpc(), event.getPlayer()), npcIds);
+        setNpcFirstTalkId(event -> notifyFirstTalk(event.npc(), event.player()), npcIds);
     }
 
     /**
@@ -1323,9 +1308,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
      */
     public void addAcquireSkillId(int... npcIds) {
         setPlayerSkillLearnId(
-                event ->
-                        onAcquireSkill(event.getTrainer(), event.getPlayer(), event.getSkill(), event.getAcquireType()),
-                npcIds);
+                event -> onAcquireSkill(event.trainer(), event.player(), event.skill(), event.acquireType()), npcIds);
     }
 
     /**
@@ -1334,9 +1317,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
      */
     public void addAcquireSkillId(Collection<Integer> npcIds) {
         setPlayerSkillLearnId(
-                event ->
-                        onAcquireSkill(event.getTrainer(), event.getPlayer(), event.getSkill(), event.getAcquireType()),
-                npcIds);
+                event -> onAcquireSkill(event.trainer(), event.player(), event.skill(), event.acquireType()), npcIds);
     }
 
     /**
@@ -1344,7 +1325,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
      * @param itemIds the IDs of the Item to register
      */
     public void addItemBypassEventId(int... itemIds) {
-        setItemBypassEvenId(event -> onItemEvent(event.getItem(), event.getPlayer(), event.getEvent()), itemIds);
+        setItemBypassEvenId(event -> onItemEvent(event.item(), event.player(), event.event()), itemIds);
     }
 
     /**
@@ -1352,7 +1333,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
      * @param itemIds the IDs of the Item to register
      */
     public void addItemBypassEventId(Collection<Integer> itemIds) {
-        setItemBypassEvenId(event -> onItemEvent(event.getItem(), event.getPlayer(), event.getEvent()), itemIds);
+        setItemBypassEvenId(event -> onItemEvent(event.item(), event.player(), event.event()), itemIds);
     }
 
     /**
@@ -1360,7 +1341,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
      * @param itemIds the IDs of the Item to register
      */
     public void addItemTalkId(int... itemIds) {
-        setItemTalkId(event -> notifyItemTalk(event.getItem(), event.getPlayer()), itemIds);
+        setItemTalkId(event -> notifyItemTalk(event.item(), event.player()), itemIds);
     }
 
     /**
@@ -1368,7 +1349,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
      * @param itemIds the IDs of the Item to register
      */
     public void addItemTalkId(Collection<Integer> itemIds) {
-        setItemTalkId(event -> notifyItemTalk(event.getItem(), event.getPlayer()), itemIds);
+        setItemTalkId(event -> notifyItemTalk(event.item(), event.player()), itemIds);
     }
 
     /**
@@ -1377,12 +1358,8 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
      */
     public void addAttackId(int... npcIds) {
         setAttackableAttackId(
-                attack -> onAttack(
-                        attack.getTarget(),
-                        attack.getAttacker(),
-                        attack.getDamage(),
-                        attack.isSummon(),
-                        attack.getSkill()),
+                attack ->
+                        onAttack(attack.target(), attack.attacker(), attack.damage(), attack.summon(), attack.skill()),
                 npcIds);
     }
 
@@ -1392,12 +1369,8 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
      */
     public void addAttackId(Collection<Integer> npcIds) {
         setAttackableAttackId(
-                attack -> onAttack(
-                        attack.getTarget(),
-                        attack.getAttacker(),
-                        attack.getDamage(),
-                        attack.isSummon(),
-                        attack.getSkill()),
+                attack ->
+                        onAttack(attack.target(), attack.attacker(), attack.damage(), attack.summon(), attack.skill()),
                 npcIds);
     }
 
@@ -1406,7 +1379,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
      * @param npcIds
      */
     public void addKillId(int... npcIds) {
-        setAttackableKillId(kill -> onKill(kill.getTarget(), kill.getAttacker(), kill.isSummon()), npcIds);
+        setAttackableKillId(kill -> onKill(kill.target(), kill.attacker(), kill.summon()), npcIds);
     }
 
     /**
@@ -1414,7 +1387,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
      * @param npcIds the collection of NPC IDs
      */
     public void addKillId(Collection<Integer> npcIds) {
-        setAttackableKillId(kill -> onKill(kill.getTarget(), kill.getAttacker(), kill.isSummon()), npcIds);
+        setAttackableKillId(kill -> onKill(kill.target(), kill.attacker(), kill.summon()), npcIds);
     }
 
     /**
@@ -1434,7 +1407,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
      * @param npcIds the IDs of the NPCs to register
      */
     public void addTeleportId(int... npcIds) {
-        setNpcTeleportId(event -> notifyTeleport(event.getNpc()), npcIds);
+        setNpcTeleportId(event -> notifyTeleport(event.npc()), npcIds);
     }
 
     /**
@@ -1442,7 +1415,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
      * @param npcIds the IDs of the NPCs to register
      */
     public void addTeleportId(Collection<Integer> npcIds) {
-        setNpcTeleportId(event -> notifyTeleport(event.getNpc()), npcIds);
+        setNpcTeleportId(event -> notifyTeleport(event.npc()), npcIds);
     }
 
     /**
@@ -1450,7 +1423,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
      * @param npcIds the IDs of the NPCs to register
      */
     public void addSpawnId(int... npcIds) {
-        setNpcSpawnId(event -> onSpawn(event.getNpc()), npcIds);
+        setNpcSpawnId(event -> onSpawn(event.npc()), npcIds);
     }
 
     /**
@@ -1458,7 +1431,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
      * @param npcIds the IDs of the NPCs to register
      */
     public void addSpawnId(Collection<Integer> npcIds) {
-        setNpcSpawnId(event -> onSpawn(event.getNpc()), npcIds);
+        setNpcSpawnId(event -> onSpawn(event.npc()), npcIds);
     }
 
     /**
@@ -1487,28 +1460,28 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
      * @param npcIds the IDs of the NPCs to register
      */
     public void addSpellFinishedId(int... npcIds) {
-        setNpcSkillFinishedId(event -> onSpellFinished(event.getCaster(), event.getTarget(), event.getSkill()), npcIds);
+        setNpcSkillFinishedId(event -> onSpellFinished(event.caster(), event.target(), event.skill()), npcIds);
     }
 
     /**
      * @param npcIds the IDs of the NPCs to register
      */
     public void addSpellFinishedId(Collection<Integer> npcIds) {
-        setNpcSkillFinishedId(event -> onSpellFinished(event.getCaster(), event.getTarget(), event.getSkill()), npcIds);
+        setNpcSkillFinishedId(event -> onSpellFinished(event.caster(), event.target(), event.skill()), npcIds);
     }
 
     /**
      * @param npcIds the IDs of the NPCs to register
      */
     public void addTrapActionId(int... npcIds) {
-        setTrapActionId(event -> onTrapAction(event.getTrap(), event.getTrigger(), event.getAction()), npcIds);
+        setTrapActionId(event -> onTrapAction(event.trap(), event.trigger(), event.action()), npcIds);
     }
 
     /**
      * @param npcIds the IDs of the NPCs to register
      */
     public void addTrapActionId(Collection<Integer> npcIds) {
-        setTrapActionId(event -> onTrapAction(event.getTrap(), event.getTrigger(), event.getAction()), npcIds);
+        setTrapActionId(event -> onTrapAction(event.trap(), event.trigger(), event.action()), npcIds);
     }
 
     /**
@@ -1517,8 +1490,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
      */
     public void addFactionCallId(int... npcIds) {
         setAttackableFactionIdId(
-                event -> onFactionCall(event.getNpc(), event.getCaller(), event.getAttacker(), event.isSummon()),
-                npcIds);
+                event -> onFactionCall(event.npc(), event.caller(), event.attacker(), event.summon()), npcIds);
     }
 
     /**
@@ -1527,8 +1499,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
      */
     public void addFactionCallId(Collection<Integer> npcIds) {
         setAttackableFactionIdId(
-                event -> onFactionCall(event.getNpc(), event.getCaller(), event.getAttacker(), event.isSummon()),
-                npcIds);
+                event -> onFactionCall(event.npc(), event.caller(), event.attacker(), event.summon()), npcIds);
     }
 
     /**
@@ -1536,8 +1507,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
      * @param npcIds the IDs of the NPCs to register
      */
     public void addAggroRangeEnterId(int... npcIds) {
-        setAttackableAggroRangeEnterId(
-                event -> onAggroRangeEnter(event.getNpc(), event.getPlayer(), event.isSummon()), npcIds);
+        setAttackableAggroRangeEnterId(event -> onAggroRangeEnter(event.npc(), event.player(), event.summon()), npcIds);
     }
 
     /**
@@ -1545,22 +1515,21 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
      * @param npcIds the IDs of the NPCs to register
      */
     public void addAggroRangeEnterId(Collection<Integer> npcIds) {
-        setAttackableAggroRangeEnterId(
-                event -> onAggroRangeEnter(event.getNpc(), event.getPlayer(), event.isSummon()), npcIds);
+        setAttackableAggroRangeEnterId(event -> onAggroRangeEnter(event.npc(), event.player(), event.summon()), npcIds);
     }
 
     /**
      * @param npcIds the IDs of the NPCs to register
      */
     public void addCreatureSeeId(int... npcIds) {
-        setCreatureSeeId(event -> onCreatureSee(event.getCreature().asNpc(), event.getSeen()), npcIds);
+        setCreatureSeeId(event -> onCreatureSee(event.creature().asNpc(), event.seen()), npcIds);
     }
 
     /**
      * @param npcIds the IDs of the NPCs to register
      */
     public void addCreatureSeeId(Collection<Integer> npcIds) {
-        setCreatureSeeId(event -> onCreatureSee(event.getCreature().asNpc(), event.getSeen()), npcIds);
+        setCreatureSeeId(event -> onCreatureSee(event.creature().asNpc(), event.seen()), npcIds);
     }
 
     /**
@@ -1568,7 +1537,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
      * @param zoneId the ID of the zone to register
      */
     public void addEnterZoneId(int zoneId) {
-        setCreatureZoneEnterId(event -> onEnterZone(event.getCreature(), event.getZone()), zoneId);
+        setCreatureZoneEnterId(event -> onEnterZone(event.creature(), event.zone()), zoneId);
     }
 
     /**
@@ -1576,7 +1545,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
      * @param zoneIds the IDs of the zones to register
      */
     public void addEnterZoneId(int... zoneIds) {
-        setCreatureZoneEnterId(event -> onEnterZone(event.getCreature(), event.getZone()), zoneIds);
+        setCreatureZoneEnterId(event -> onEnterZone(event.creature(), event.zone()), zoneIds);
     }
 
     /**
@@ -1584,7 +1553,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
      * @param zoneIds the IDs of the zones to register
      */
     public void addEnterZoneId(Collection<Integer> zoneIds) {
-        setCreatureZoneEnterId(event -> onEnterZone(event.getCreature(), event.getZone()), zoneIds);
+        setCreatureZoneEnterId(event -> onEnterZone(event.creature(), event.zone()), zoneIds);
     }
 
     /**
@@ -1592,7 +1561,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
      * @param zoneId the ID of the zone to register
      */
     public void addExitZoneId(int zoneId) {
-        setCreatureZoneExitId(event -> onExitZone(event.getCreature(), event.getZone()), zoneId);
+        setCreatureZoneExitId(event -> onExitZone(event.creature(), event.zone()), zoneId);
     }
 
     /**
@@ -1600,7 +1569,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
      * @param zoneIds the IDs of the zones to register
      */
     public void addExitZoneId(int... zoneIds) {
-        setCreatureZoneExitId(event -> onExitZone(event.getCreature(), event.getZone()), zoneIds);
+        setCreatureZoneExitId(event -> onExitZone(event.creature(), event.zone()), zoneIds);
     }
 
     /**
@@ -1608,7 +1577,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
      * @param zoneIds the IDs of the zones to register
      */
     public void addExitZoneId(Collection<Integer> zoneIds) {
-        setCreatureZoneExitId(event -> onExitZone(event.getCreature(), event.getZone()), zoneIds);
+        setCreatureZoneExitId(event -> onExitZone(event.creature(), event.zone()), zoneIds);
     }
 
     /**
@@ -1617,8 +1586,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
      */
     public void addEventReceivedId(int... npcIds) {
         setNpcEventReceivedId(
-                event -> notifyEventReceived(
-                        event.getEventName(), event.getSender(), event.getReceiver(), event.getReference()),
+                event -> notifyEventReceived(event.eventName(), event.sender(), event.receiver(), event.reference()),
                 npcIds);
     }
 
@@ -1628,8 +1596,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
      */
     public void addEventReceivedId(Collection<Integer> npcIds) {
         setNpcEventReceivedId(
-                event -> notifyEventReceived(
-                        event.getEventName(), event.getSender(), event.getReceiver(), event.getReference()),
+                event -> notifyEventReceived(event.eventName(), event.sender(), event.receiver(), event.reference()),
                 npcIds);
     }
 
@@ -1638,7 +1605,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
      * @param npcIds the IDs of the NPCs to register
      */
     public void addMoveFinishedId(int... npcIds) {
-        setNpcMoveFinishedId(event -> notifyMoveFinished(event.getNpc()), npcIds);
+        setNpcMoveFinishedId(event -> notifyMoveFinished(event.npc()), npcIds);
     }
 
     /**
@@ -1646,7 +1613,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
      * @param npcIds the IDs of the NPCs to register
      */
     public void addMoveFinishedId(Collection<Integer> npcIds) {
-        setNpcMoveFinishedId(event -> notifyMoveFinished(event.getNpc()), npcIds);
+        setNpcMoveFinishedId(event -> notifyMoveFinished(event.npc()), npcIds);
     }
 
     /**
@@ -1654,7 +1621,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
      * @param npcIds the IDs of the NPCs to register
      */
     public void addNodeArrivedId(int... npcIds) {
-        setNpcMoveNodeArrivedId(event -> notifyNodeArrived(event.getNpc()), npcIds);
+        setNpcMoveNodeArrivedId(event -> notifyNodeArrived(event.npc()), npcIds);
     }
 
     /**
@@ -1662,7 +1629,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
      * @param npcIds the IDs of the NPCs to register
      */
     public void addNodeArrivedId(Collection<Integer> npcIds) {
-        setNpcMoveNodeArrivedId(event -> notifyNodeArrived(event.getNpc()), npcIds);
+        setNpcMoveNodeArrivedId(event -> notifyNodeArrived(event.npc()), npcIds);
     }
 
     /**
@@ -1670,7 +1637,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
      * @param npcIds the IDs of the NPCs to register
      */
     public void addRouteFinishedId(int... npcIds) {
-        setNpcMoveRouteFinishedId(event -> notifyRouteFinished(event.getNpc()), npcIds);
+        setNpcMoveRouteFinishedId(event -> notifyRouteFinished(event.npc()), npcIds);
     }
 
     /**
@@ -1678,7 +1645,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
      * @param npcIds the IDs of the NPCs to register
      */
     public void addRouteFinishedId(Collection<Integer> npcIds) {
-        setNpcMoveRouteFinishedId(event -> notifyRouteFinished(event.getNpc()), npcIds);
+        setNpcMoveRouteFinishedId(event -> notifyRouteFinished(event.npc()), npcIds);
     }
 
     /**
@@ -1687,8 +1654,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
      */
     public void addNpcHateId(int... npcIds) {
         addNpcHateId(
-                event -> new TerminateReturn(
-                        !onNpcHate(event.getNpc(), event.getPlayer(), event.isSummon()), false, false),
+                event -> new TerminateReturn(!onNpcHate(event.npc(), event.player(), event.summon()), false, false),
                 npcIds);
     }
 
@@ -1698,8 +1664,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
      */
     public void addNpcHateId(Collection<Integer> npcIds) {
         addNpcHateId(
-                event -> new TerminateReturn(
-                        !onNpcHate(event.getNpc(), event.getPlayer(), event.isSummon()), false, false),
+                event -> new TerminateReturn(!onNpcHate(event.npc(), event.player(), event.summon()), false, false),
                 npcIds);
     }
 
@@ -1708,7 +1673,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
      * @param npcIds
      */
     public void addSummonSpawnId(int... npcIds) {
-        setPlayerSummonSpawnId(event -> onSummonSpawn(event.getSummon()), npcIds);
+        setPlayerSummonSpawnId(event -> onSummonSpawn(event.summon()), npcIds);
     }
 
     /**
@@ -1716,7 +1681,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
      * @param npcIds
      */
     public void addSummonSpawnId(Collection<Integer> npcIds) {
-        setPlayerSummonSpawnId(event -> onSummonSpawn(event.getSummon()), npcIds);
+        setPlayerSummonSpawnId(event -> onSummonSpawn(event.summon()), npcIds);
     }
 
     /**
@@ -1724,7 +1689,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
      * @param npcIds
      */
     public void addSummonTalkId(int... npcIds) {
-        setPlayerSummonTalkId(event -> onSummonTalk(event.getSummon()), npcIds);
+        setPlayerSummonTalkId(event -> onSummonTalk(event.summon()), npcIds);
     }
 
     /**
@@ -1732,7 +1697,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
      * @param npcIds
      */
     public void addSummonTalkId(Collection<Integer> npcIds) {
-        setPlayerSummonTalkId(event -> onSummonTalk(event.getSummon()), npcIds);
+        setPlayerSummonTalkId(event -> onSummonTalk(event.summon()), npcIds);
     }
 
     /**
@@ -1741,8 +1706,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
      */
     public void addCanSeeMeId(int... npcIds) {
         addNpcHateId(
-                event -> new TerminateReturn(!notifyOnCanSeeMe(event.getNpc(), event.getPlayer()), false, false),
-                npcIds);
+                event -> new TerminateReturn(!notifyOnCanSeeMe(event.npc(), event.player()), false, false), npcIds);
     }
 
     /**
@@ -1751,13 +1715,11 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
      */
     public void addCanSeeMeId(Collection<Integer> npcIds) {
         addNpcHateId(
-                event -> new TerminateReturn(!notifyOnCanSeeMe(event.getNpc(), event.getPlayer()), false, false),
-                npcIds);
+                event -> new TerminateReturn(!notifyOnCanSeeMe(event.npc(), event.player()), false, false), npcIds);
     }
 
     public void addOlympiadMatchFinishId() {
-        setOlympiadMatchResult(
-                event -> notifyOlympiadMatch(event.getWinner(), event.getLoser(), event.getCompetitionType()));
+        setOlympiadMatchResult(event -> notifyOlympiadMatch(event.winner(), event.loser(), event.competitionType()));
     }
 
     /**
@@ -2075,9 +2037,8 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
                 content = content.replace("%objectId%", String.valueOf(npc.getObjectId()));
             }
 
-            if (questwindow && (_questId > 0) && (_questId < 20000) && (_questId != 999)) {
-                final NpcQuestHtmlMessage npcReply =
-                        new NpcQuestHtmlMessage(npc != null ? npc.getObjectId() : 0, _questId);
+            if (questwindow && (id > 0) && (id < 20000) && (id != 999)) {
+                final NpcQuestHtmlMessage npcReply = new NpcQuestHtmlMessage(npc != null ? npc.getObjectId() : 0, id);
                 npcReply.setHtml(content);
                 npcReply.replace("%playername%", player.getName());
                 player.sendPacket(npcReply);
@@ -2113,25 +2074,17 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
     }
 
     /**
-     * @return the registered quest items IDs.
-     */
-    public int[] getRegisteredItemIds() {
-        return _questItemIds;
-    }
-
-    /**
      * Registers all items that have to be destroyed in case player abort the quest or finish it.
      * @param items
      */
     public void registerQuestItems(int... items) {
         for (int id : items) {
             if ((id != 0) && (ItemData.getInstance().getTemplate(id) == null)) {
-                LOGGER.severe(super.getClass().getSimpleName() + ": Found registerQuestItems for non existing item: "
-                        + id + "!");
+                LoggerFactory.getLogger(getClass()).error("Found registerQuestItems for non existing item: {}!", id);
             }
         }
 
-        _questItemIds = items;
+        registeredItemIds = items;
     }
 
     /**
@@ -2139,12 +2092,12 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
      * @param player the player whose quest items to remove
      */
     public void removeRegisteredQuestItems(Player player) {
-        takeItems(player, -1, _questItemIds);
+        takeItems(player, -1, registeredItemIds);
     }
 
     public void setOnEnterWorld(boolean value) {
         if (value) {
-            setPlayerLoginId(event -> onEnterWorld(event.getPlayer()));
+            setPlayerLoginId(event -> onEnterWorld(event.player()));
         } else {
             for (AbstractEventListener listener : getListeners()) {
                 if (listener.getType() == EventType.ON_PLAYER_LOGIN) {
@@ -2155,20 +2108,12 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
     }
 
     /**
-     * Gets the start conditions.
-     * @return the start conditions
-     */
-    private Map<Predicate<Player>, String> getStartConditions() {
-        return _startCondition;
-    }
-
-    /**
      * Verifies if the player meets all the start conditions.
      * @param player the player
      * @return {@code true} if all conditions are met
      */
     public boolean canStartQuest(Player player) {
-        for (Predicate<Player> cond : _startCondition.keySet()) {
+        for (Predicate<Player> cond : startConditions.keySet()) {
             if (!cond.test(player)) {
                 return false;
             }
@@ -2183,7 +2128,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
      * @return the HTML
      */
     public String getStartConditionHtml(Player player) {
-        for (Entry<Predicate<Player>, String> startRequirement : _startCondition.entrySet()) {
+        for (Entry<Predicate<Player>, String> startRequirement : startConditions.entrySet()) {
             if (!startRequirement.getKey().test(player)) {
                 return startRequirement.getValue();
             }
@@ -2307,21 +2252,27 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
                 final RegisterEvent listener = method.getAnnotation(RegisterEvent.class);
                 final EventType eventType = listener.value();
                 if (method.getParameterCount() != 1) {
-                    LOGGER.warning(getClass().getSimpleName() + ": Non properly defined annotation listener on method: "
-                            + method.getName() + " expected parameter count is 1 but found: "
-                            + method.getParameterCount());
+                    LoggerFactory.getLogger(getClass())
+                            .warn(
+                                    "Non properly defined annotation listener on method: {} expected parameter count is 1 but found: {}",
+                                    method.getName(),
+                                    method.getParameterCount());
                     continue;
                 } else if (!eventType.isEventClass(method.getParameterTypes()[0])) {
-                    LOGGER.warning(getClass().getSimpleName() + ": Non properly defined annotation listener on method: "
-                            + method.getName() + " expected parameter to be type of: "
-                            + eventType.getEventClass().getSimpleName() + " but found: "
-                            + method.getParameterTypes()[0].getSimpleName());
+                    LoggerFactory.getLogger(getClass())
+                            .warn(
+                                    "Non properly defined annotation listener on method: {} expected parameter to be type of: {} but found: {}",
+                                    method.getName(),
+                                    eventType.getEventClass().getSimpleName(),
+                                    method.getParameterTypes()[0].getSimpleName());
                     continue;
                 } else if (!eventType.isReturnClass(method.getReturnType())) {
-                    LOGGER.warning(getClass().getSimpleName() + ": Non properly defined annotation listener on method: "
-                            + method.getName() + " expected return type to be one of: "
-                            + Arrays.toString(eventType.getReturnClasses()) + " but found: "
-                            + method.getReturnType().getSimpleName());
+                    LoggerFactory.getLogger(getClass())
+                            .warn(
+                                    "Non properly defined annotation listener on method: {} expected return type to be one of: {} but found: {}",
+                                    method.getName(),
+                                    Arrays.toString(eventType.getReturnClasses()),
+                                    method.getReturnType().getSimpleName());
                     continue;
                 }
 
@@ -2349,8 +2300,10 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
                     } else if (annotation instanceof Range) {
                         final Range range = (Range) annotation;
                         if (range.from() > range.to()) {
-                            LOGGER.warning(getClass().getSimpleName() + ": Wrong "
-                                    + annotation.getClass().getSimpleName() + " from is higher then to!");
+                            LoggerFactory.getLogger(getClass())
+                                    .warn(
+                                            "Wrong {} from is higher then to!",
+                                            annotation.getClass().getSimpleName());
                             continue;
                         }
 
@@ -2361,8 +2314,10 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
                         final Ranges ranges = (Ranges) annotation;
                         for (Range range : ranges.value()) {
                             if (range.from() > range.to()) {
-                                LOGGER.warning(getClass().getSimpleName() + ": Wrong "
-                                        + annotation.getClass().getSimpleName() + " from is higher then to!");
+                                LoggerFactory.getLogger(getClass())
+                                        .warn(
+                                                "Wrong {} from is higher then to!",
+                                                annotation.getClass().getSimpleName());
                                 continue;
                             }
 
@@ -2373,12 +2328,17 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
                     } else if (annotation instanceof NpcLevelRange) {
                         final NpcLevelRange range = (NpcLevelRange) annotation;
                         if (range.from() > range.to()) {
-                            LOGGER.warning(getClass().getSimpleName() + ": Wrong "
-                                    + annotation.getClass().getSimpleName() + " from is higher then to!");
+                            LoggerFactory.getLogger(getClass())
+                                    .warn(
+                                            "Wrong {} from is higher then to!",
+                                            annotation.getClass().getSimpleName());
                             continue;
                         } else if (type != ListenerRegisterType.NPC) {
-                            LOGGER.warning(getClass().getSimpleName() + ": ListenerRegisterType " + type + " for "
-                                    + annotation.getClass().getSimpleName() + " NPC is expected!");
+                            LoggerFactory.getLogger(getClass())
+                                    .warn(
+                                            "ListenerRegisterType {} for {} NPC is expected!",
+                                            type,
+                                            annotation.getClass().getSimpleName());
                             continue;
                         }
 
@@ -2391,12 +2351,17 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
                         final NpcLevelRanges ranges = (NpcLevelRanges) annotation;
                         for (NpcLevelRange range : ranges.value()) {
                             if (range.from() > range.to()) {
-                                LOGGER.warning(getClass().getSimpleName() + ": Wrong "
-                                        + annotation.getClass().getSimpleName() + " from is higher then to!");
+                                LoggerFactory.getLogger(getClass())
+                                        .warn(
+                                                "Wrong {} from is higher then to!",
+                                                annotation.getClass().getSimpleName());
                                 continue;
                             } else if (type != ListenerRegisterType.NPC) {
-                                LOGGER.warning(getClass().getSimpleName() + ": ListenerRegisterType " + type + " for "
-                                        + annotation.getClass().getSimpleName() + " NPC is expected!");
+                                LoggerFactory.getLogger(getClass())
+                                        .warn(
+                                                "ListenerRegisterType {} for {} NPC is expected!",
+                                                type,
+                                                annotation.getClass().getSimpleName());
                                 continue;
                             }
 
@@ -2413,7 +2378,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
                 }
 
                 if (!ids.isEmpty()) {
-                    _registeredIds
+                    registeredIds
                             .computeIfAbsent(type, _ -> ConcurrentHashMap.newKeySet())
                             .addAll(ids);
                 }
@@ -2434,7 +2399,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
     protected List<AbstractEventListener> setAttackableKillId(Consumer<OnAttackableKill> callback, int... npcIds) {
         for (int id : npcIds) {
             if (NpcData.getInstance().getTemplate(id) == null) {
-                LOGGER.severe(super.getClass().getSimpleName() + ": Found addKillId for non existing NPC: " + id + "!");
+                LoggerFactory.getLogger(getClass()).error("Found addKillId for non existing NPC: {}!", id);
             }
         }
 
@@ -2451,7 +2416,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
             Consumer<OnAttackableKill> callback, Collection<Integer> npcIds) {
         for (int id : npcIds) {
             if (NpcData.getInstance().getTemplate(id) == null) {
-                LOGGER.severe(super.getClass().getSimpleName() + ": Found addKillId for non existing NPC: " + id + "!");
+                LoggerFactory.getLogger(getClass()).error("Found addKillId for non existing NPC: {}!", id);
             }
         }
 
@@ -2503,8 +2468,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
     protected List<AbstractEventListener> setNpcFirstTalkId(Consumer<OnNpcFirstTalk> callback, int... npcIds) {
         for (int id : npcIds) {
             if (NpcData.getInstance().getTemplate(id) == null) {
-                LOGGER.severe(
-                        super.getClass().getSimpleName() + ": Found addFirstTalkId for non existing NPC: " + id + "!");
+                LoggerFactory.getLogger(getClass()).error("Found addFirstTalkId for non existing NPC: {}!", id);
             }
         }
 
@@ -2521,8 +2485,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
             Consumer<OnNpcFirstTalk> callback, Collection<Integer> npcIds) {
         for (int id : npcIds) {
             if (NpcData.getInstance().getTemplate(id) == null) {
-                LOGGER.severe(
-                        super.getClass().getSimpleName() + ": Found addFirstTalkId for non existing NPC: " + id + "!");
+                LoggerFactory.getLogger(getClass()).error("Found addFirstTalkId for non existing NPC: {}!", id);
             }
         }
 
@@ -2539,7 +2502,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
     protected List<AbstractEventListener> setNpcTalkId(Collection<Integer> npcIds) {
         for (int id : npcIds) {
             if (NpcData.getInstance().getTemplate(id) == null) {
-                LOGGER.severe(super.getClass().getSimpleName() + ": Found addTalkId for non existing NPC: " + id + "!");
+                LoggerFactory.getLogger(getClass()).error("Found addTalkId for non existing NPC: {}!", id);
             }
         }
 
@@ -2554,7 +2517,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
     protected List<AbstractEventListener> setNpcTalkId(int... npcIds) {
         for (int id : npcIds) {
             if (NpcData.getInstance().getTemplate(id) == null) {
-                LOGGER.severe(super.getClass().getSimpleName() + ": Found addTalkId for non existing NPC: " + id + "!");
+                LoggerFactory.getLogger(getClass()).error("Found addTalkId for non existing NPC: {}!", id);
             }
         }
 
@@ -2594,8 +2557,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
     protected List<AbstractEventListener> setNpcQuestStartId(int... npcIds) {
         for (int id : npcIds) {
             if (NpcData.getInstance().getTemplate(id) == null) {
-                LOGGER.severe(
-                        super.getClass().getSimpleName() + ": Found addStartNpc for non existing NPC: " + id + "!");
+                LoggerFactory.getLogger(getClass()).error("Found addStartNpc for non existing NPC: {}!", id);
             }
         }
 
@@ -2610,8 +2572,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
     protected List<AbstractEventListener> setNpcQuestStartId(Collection<Integer> npcIds) {
         for (int id : npcIds) {
             if (NpcData.getInstance().getTemplate(id) == null) {
-                LOGGER.severe(
-                        super.getClass().getSimpleName() + ": Found addStartNpc for non existing NPC: " + id + "!");
+                LoggerFactory.getLogger(getClass()).error("Found addStartNpc for non existing NPC: {}!", id);
             }
         }
 
@@ -2629,8 +2590,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
     protected List<AbstractEventListener> setNpcSkillSeeId(Consumer<OnNpcSkillSee> callback, int... npcIds) {
         for (int id : npcIds) {
             if (NpcData.getInstance().getTemplate(id) == null) {
-                LOGGER.severe(
-                        super.getClass().getSimpleName() + ": Found addSkillSeeId for non existing NPC: " + id + "!");
+                LoggerFactory.getLogger(getClass()).error("Found addSkillSeeId for non existing NPC: {}!", id);
             }
         }
 
@@ -2647,8 +2607,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
             Consumer<OnNpcSkillSee> callback, Collection<Integer> npcIds) {
         for (int id : npcIds) {
             if (NpcData.getInstance().getTemplate(id) == null) {
-                LOGGER.severe(
-                        super.getClass().getSimpleName() + ": Found addSkillSeeId for non existing NPC: " + id + "!");
+                LoggerFactory.getLogger(getClass()).error("Found addSkillSeeId for non existing NPC: {}!", id);
             }
         }
 
@@ -2666,8 +2625,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
     protected List<AbstractEventListener> setNpcSkillFinishedId(Consumer<OnNpcSkillFinished> callback, int... npcIds) {
         for (int id : npcIds) {
             if (NpcData.getInstance().getTemplate(id) == null) {
-                LOGGER.severe(super.getClass().getSimpleName() + ": Found addSpellFinishedId for non existing NPC: "
-                        + id + "!");
+                LoggerFactory.getLogger(getClass()).error("Found addSpellFinishedId for non existing NPC: {}!", id);
             }
         }
 
@@ -2684,8 +2642,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
             Consumer<OnNpcSkillFinished> callback, Collection<Integer> npcIds) {
         for (int id : npcIds) {
             if (NpcData.getInstance().getTemplate(id) == null) {
-                LOGGER.severe(super.getClass().getSimpleName() + ": Found addSpellFinishedId for non existing NPC: "
-                        + id + "!");
+                LoggerFactory.getLogger(getClass()).error("Found addSpellFinishedId for non existing NPC: {}!", id);
             }
         }
 
@@ -2703,8 +2660,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
     protected List<AbstractEventListener> setNpcSpawnId(Consumer<OnNpcSpawn> callback, int... npcIds) {
         for (int id : npcIds) {
             if (NpcData.getInstance().getTemplate(id) == null) {
-                LOGGER.severe(
-                        super.getClass().getSimpleName() + ": Found addSpawnId for non existing NPC: " + id + "!");
+                LoggerFactory.getLogger(getClass()).error("Found addSpawnId for non existing NPC: {}!", id);
             }
         }
 
@@ -2720,8 +2676,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
     protected List<AbstractEventListener> setNpcSpawnId(Consumer<OnNpcSpawn> callback, Collection<Integer> npcIds) {
         for (int id : npcIds) {
             if (NpcData.getInstance().getTemplate(id) == null) {
-                LOGGER.severe(
-                        super.getClass().getSimpleName() + ": Found addSpawnId for non existing NPC: " + id + "!");
+                LoggerFactory.getLogger(getClass()).error("Found addSpawnId for non existing NPC: {}!", id);
             }
         }
 
@@ -2978,8 +2933,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
     protected List<AbstractEventListener> setAttackableAttackId(Consumer<OnAttackableAttack> callback, int... npcIds) {
         for (int id : npcIds) {
             if (NpcData.getInstance().getTemplate(id) == null) {
-                LOGGER.severe(
-                        super.getClass().getSimpleName() + ": Found addAttackId for non existing NPC: " + id + "!");
+                LoggerFactory.getLogger(getClass()).error("Found addAttackId for non existing NPC: {}!", id);
             }
         }
 
@@ -2996,8 +2950,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
             Consumer<OnAttackableAttack> callback, Collection<Integer> npcIds) {
         for (int id : npcIds) {
             if (NpcData.getInstance().getTemplate(id) == null) {
-                LOGGER.severe(
-                        super.getClass().getSimpleName() + ": Found addAttackId for non existing NPC: " + id + "!");
+                LoggerFactory.getLogger(getClass()).error("Found addAttackId for non existing NPC: {}!", id);
             }
         }
 
@@ -3551,11 +3504,11 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
                         break;
                     }
                     default: {
-                        LOGGER.warning(getClass().getSimpleName() + ": Unhandled register type: " + registerType);
+                        LoggerFactory.getLogger(getClass()).warn("Unhandled register type: {}", registerType);
                     }
                 }
 
-                _registeredIds
+                registeredIds
                         .computeIfAbsent(registerType, _ -> ConcurrentHashMap.newKeySet())
                         .add(id);
             }
@@ -3593,7 +3546,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
             }
         }
 
-        _listeners.addAll(listeners);
+        this.listeners.addAll(listeners);
         return listeners;
     }
 
@@ -3648,12 +3601,12 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
                         break;
                     }
                     default: {
-                        LOGGER.warning(getClass().getSimpleName() + ": Unhandled register type: " + registerType);
+                        LoggerFactory.getLogger(getClass()).warn("Unhandled register type: {}", registerType);
                     }
                 }
             }
 
-            _registeredIds
+            registeredIds
                     .computeIfAbsent(registerType, _ -> ConcurrentHashMap.newKeySet())
                     .addAll(ids);
         } else {
@@ -3690,16 +3643,12 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
             }
         }
 
-        _listeners.addAll(listeners);
+        this.listeners.addAll(listeners);
         return listeners;
     }
 
     public Set<Integer> getRegisteredIds(ListenerRegisterType type) {
-        return _registeredIds.getOrDefault(type, Collections.emptySet());
-    }
-
-    public Queue<AbstractEventListener> getListeners() {
-        return _listeners;
+        return registeredIds.getOrDefault(type, Collections.emptySet());
     }
 
     /**
@@ -3993,7 +3942,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
             int instanceId) {
         try {
             if ((xValue == 0) && (yValue == 0)) {
-                LOGGER.severe("addSpawn(): invalid spawn coordinates for NPC #" + npcId + "!");
+                log.error("addSpawn(): invalid spawn coordinates for NPC #{}!", npcId);
                 return null;
             }
 
@@ -4044,7 +3993,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
 
             return npc;
         } catch (Exception e) {
-            LOGGER.warning("Could not spawn NPC #" + npcId + "; error: " + e.getMessage());
+            log.warn("Could not spawn NPC #{}; error: {}", npcId, e.getMessage());
         }
 
         return null;
@@ -4921,11 +4870,12 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
     public void openDoor(int doorId, int instanceId) {
         final Door door = getDoor(doorId, instanceId);
         if (door == null) {
-            LOGGER.log(
-                    Level.WARNING,
-                    getClass().getSimpleName() + ": called openDoor(" + doorId + ", " + instanceId
-                            + "); but door was not found!",
-                    new NullPointerException());
+            LoggerFactory.getLogger(getClass())
+                    .warn(
+                            "Called openDoor({}, {}); but door was not found!",
+                            doorId,
+                            instanceId,
+                            new NullPointerException());
         } else if (!door.isOpen()) {
             door.openMe();
         }
@@ -4939,11 +4889,12 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
     public void closeDoor(int doorId, int instanceId) {
         final Door door = getDoor(doorId, instanceId);
         if (door == null) {
-            LOGGER.log(
-                    Level.WARNING,
-                    getClass().getSimpleName() + ": called closeDoor(" + doorId + ", " + instanceId
-                            + "); but door was not found!",
-                    new NullPointerException());
+            LoggerFactory.getLogger(getClass())
+                    .warn(
+                            "Called closeDoor({}, {}); but door was not found!",
+                            doorId,
+                            instanceId,
+                            new NullPointerException());
         } else if (door.isOpen()) {
             door.closeMe();
         }

@@ -25,25 +25,26 @@ import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.item.enchant.EnchantScroll;
 import app.l2nx.highfive.entity.item.instance.Item;
 import app.l2nx.highfive.managers.PunishmentManager;
-import app.l2nx.highfive.network.PacketLogger;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.serverpackets.ExPutEnchantTargetItemResult;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author KenM
  */
+@Slf4j
 public class RequestExTryToPutEnchantTargetItem extends ClientPacket {
-    private int _objectId;
+    private int objectId;
 
     @Override
     protected void readImpl() {
-        _objectId = readInt();
+        objectId = readInt();
     }
 
     @Override
     protected void runImpl() {
         final Player player = getPlayer();
-        if ((_objectId == 0) || (player == null)) {
+        if ((objectId == 0) || (player == null)) {
             return;
         }
 
@@ -56,7 +57,7 @@ public class RequestExTryToPutEnchantTargetItem extends ClientPacket {
             return;
         }
 
-        final Item item = player.getInventory().getItemByObjectId(_objectId);
+        final Item item = player.getInventory().getItemByObjectId(objectId);
         if (item == null) {
             PunishmentManager.handleIllegalPlayerAction(
                     player,
@@ -72,14 +73,16 @@ public class RequestExTryToPutEnchantTargetItem extends ClientPacket {
             player.setActiveEnchantItemId(Player.ID_NONE);
             player.sendPacket(new ExPutEnchantTargetItemResult(0));
             if (scrollTemplate == null) {
-                PacketLogger.warning("RequestExTryToPutEnchantTargetItem: " + player
-                        + " has used undefined scroll with id " + scroll.getId());
+                log.warn(
+                        "RequestExTryToPutEnchantTargetItem: {} has used undefined scroll with id {}",
+                        player,
+                        scroll.getId());
             }
             return;
         }
 
         player.setEnchanting(true);
         player.setActiveEnchantTimestamp(System.currentTimeMillis());
-        player.sendPacket(new ExPutEnchantTargetItemResult(_objectId));
+        player.sendPacket(new ExPutEnchantTargetItemResult(objectId));
     }
 }

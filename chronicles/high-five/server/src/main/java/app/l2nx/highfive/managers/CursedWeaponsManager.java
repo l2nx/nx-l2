@@ -47,26 +47,25 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.xml.parsers.DocumentBuilderFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 
 /**
  * @author Micht
  */
+@Slf4j
 public class CursedWeaponsManager {
-    private static final Logger LOGGER = Logger.getLogger(CursedWeaponsManager.class.getName());
 
-    private Map<Integer, CursedWeapon> _cursedWeapons;
+    private Map<Integer, CursedWeapon> cursedWeapons;
 
     protected CursedWeaponsManager() {
         init();
     }
 
     private void init() {
-        _cursedWeapons = new HashMap<>();
+        cursedWeapons = new HashMap<>();
         if (!GeneralConfig.ALLOW_CURSED_WEAPONS) {
             return;
         }
@@ -74,7 +73,7 @@ public class CursedWeaponsManager {
         load();
         restore();
         controlPlayers();
-        LOGGER.info(getClass().getSimpleName() + ": Loaded : " + _cursedWeapons.size() + " cursed weapon(s).");
+        log.info("Loaded : {} cursed weapon(s).", cursedWeapons.size());
     }
 
     public void reload() {
@@ -89,7 +88,7 @@ public class CursedWeaponsManager {
 
             final File file = new File(ServerConfig.DATAPACK_ROOT + "/data/CursedWeapons.xml");
             if (!file.exists()) {
-                LOGGER.log(Level.WARNING, getClass().getSimpleName() + ": Couldn't find data/" + file.getName());
+                log.warn("Couldn't find data/{}", file.getName());
                 return;
             }
 
@@ -135,13 +134,13 @@ public class CursedWeaponsManager {
                             }
 
                             // Store cursed weapon
-                            _cursedWeapons.put(id, cw);
+                            cursedWeapons.put(id, cw);
                         }
                     }
                 }
             }
         } catch (Exception e) {
-            LOGGER.log(Level.SEVERE, "Error parsing cursed weapons file.", e);
+            log.error("Error parsing cursed weapons file.", e);
         }
     }
 
@@ -153,7 +152,7 @@ public class CursedWeaponsManager {
             // Retrieve the Player from the characters table of the database.
             CursedWeapon cw;
             while (rs.next()) {
-                cw = _cursedWeapons.get(rs.getInt("itemId"));
+                cw = cursedWeapons.get(rs.getInt("itemId"));
                 cw.setPlayerId(rs.getInt("charId"));
                 cw.setPlayerKarma(rs.getInt("playerKarma"));
                 cw.setPlayerPkKills(rs.getInt("playerPkKills"));
@@ -162,7 +161,7 @@ public class CursedWeaponsManager {
                 cw.reActivate();
             }
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, "Could not restore CursedWeapons data: " + e.getMessage(), e);
+            log.warn("Could not restore CursedWeapons data: {}", e.getMessage(), e);
         }
     }
 
@@ -177,7 +176,7 @@ public class CursedWeaponsManager {
         // Retrieve the Player from the characters table of the database.
         try (Connection con = DatabaseFactory.getConnection();
                 PreparedStatement ps = con.prepareStatement("SELECT owner_id FROM items WHERE item_id=?")) {
-            for (CursedWeapon cw : _cursedWeapons.values()) {
+            for (CursedWeapon cw : cursedWeapons.values()) {
                 if (cw.isActivated()) {
                     continue;
                 }
@@ -189,8 +188,7 @@ public class CursedWeaponsManager {
                     if (rset.next()) {
                         // A player has the cursed weapon in his inventory ...
                         final int playerId = rset.getInt("owner_id");
-                        LOGGER.info("PROBLEM : Player " + playerId + " owns the cursed weapon " + itemId
-                                + " but he shouldn't.");
+                        log.info("PROBLEM : Player {} owns the cursed weapon {} but he shouldn't.", playerId, itemId);
 
                         // Delete the item
                         try (PreparedStatement delete =
@@ -198,8 +196,7 @@ public class CursedWeaponsManager {
                             delete.setInt(1, playerId);
                             delete.setInt(2, itemId);
                             if (delete.executeUpdate() != 1) {
-                                LOGGER.warning(
-                                        "Error while deleting cursed weapon " + itemId + " from userId " + playerId);
+                                log.warn("Error while deleting cursed weapon {} from userId {}", itemId, playerId);
                             }
                         }
 
@@ -210,7 +207,7 @@ public class CursedWeaponsManager {
                             update.setInt(2, cw.getPlayerPkKills());
                             update.setInt(3, playerId);
                             if (update.executeUpdate() != 1) {
-                                LOGGER.warning("Error while updating karma & pkkills for userId " + cw.getPlayerId());
+                                log.warn("Error while updating karma & pkkills for userId {}", cw.getPlayerId());
                             }
                         }
 
@@ -222,7 +219,7 @@ public class CursedWeaponsManager {
                 ps.clearParameters();
             }
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, "Could not check CursedWeapons data: " + e.getMessage(), e);
+            log.warn("Could not check CursedWeapons data: {}", e.getMessage(), e);
         }
     }
 
@@ -237,7 +234,7 @@ public class CursedWeaponsManager {
             return;
         }
 
-        for (CursedWeapon cw : _cursedWeapons.values()) {
+        for (CursedWeapon cw : cursedWeapons.values()) {
             if (cw.isActive()) {
                 continue;
             }
@@ -249,15 +246,15 @@ public class CursedWeaponsManager {
     }
 
     public void activate(Player player, Item item) {
-        final CursedWeapon cw = _cursedWeapons.get(item.getId());
+        final CursedWeapon cw = cursedWeapons.get(item.getId());
         if (player.isCursedWeaponEquipped()) // cannot own 2 cursed swords
         {
-            final CursedWeapon cw2 = _cursedWeapons.get(player.getCursedWeaponEquippedId());
+            final CursedWeapon cw2 = cursedWeapons.get(player.getCursedWeaponEquippedId());
 
             // TODO: give the bonus level in a more appropriate manner.
-            // The following code adds "_stageKills" levels. This will also show in the char status.
+            // The following code adds "stageKills" levels. This will also show in the char status.
             // I do not have enough info to know if the bonus should be shown in the pk count, or if it
-            // should be a full "_stageKills" bonus or just the remaining from the current count till the of the current
+            // should be a full "stageKills" bonus or just the remaining from the current count till the of the current
             // stage...
             // This code is a TEMP fix, so that the cursed weapon's bonus level can be observed with as little change in
             // the code as possible, until proper info arises.
@@ -273,15 +270,15 @@ public class CursedWeaponsManager {
     }
 
     public void drop(int itemId, Creature killer) {
-        _cursedWeapons.get(itemId).dropIt(killer);
+        cursedWeapons.get(itemId).dropIt(killer);
     }
 
     public void increaseKills(int itemId) {
-        _cursedWeapons.get(itemId).increaseKills();
+        cursedWeapons.get(itemId).increaseKills();
     }
 
     public int getLevel(int itemId) {
-        return _cursedWeapons.get(itemId).getLevel();
+        return cursedWeapons.get(itemId).getLevel();
     }
 
     public static void announce(SystemMessage sm) {
@@ -293,7 +290,7 @@ public class CursedWeaponsManager {
             return;
         }
 
-        for (CursedWeapon cw : _cursedWeapons.values()) {
+        for (CursedWeapon cw : cursedWeapons.values()) {
             if (cw.isActivated() && (player.getObjectId() == cw.getPlayerId())) {
                 cw.setPlayer(player);
                 cw.setItem(player.getInventory().getItemByItemId(cw.getItemId()));
@@ -310,7 +307,7 @@ public class CursedWeaponsManager {
     }
 
     public int checkOwnsWeaponId(int ownerId) {
-        for (CursedWeapon cw : _cursedWeapons.values()) {
+        for (CursedWeapon cw : cursedWeapons.values()) {
             if (cw.isActivated() && (ownerId == cw.getPlayerId())) {
                 return cw.getItemId();
             }
@@ -325,35 +322,35 @@ public class CursedWeaponsManager {
             ps.setInt(1, itemId);
             ps.executeUpdate();
         } catch (SQLException e) {
-            LOGGER.log(Level.SEVERE, "CursedWeaponsManager: Failed to remove data: " + e.getMessage(), e);
+            log.error("Failed to remove data: {}", e.getMessage(), e);
         }
     }
 
     public void saveData() {
-        for (CursedWeapon cw : _cursedWeapons.values()) {
+        for (CursedWeapon cw : cursedWeapons.values()) {
             cw.saveData();
         }
     }
 
     public boolean isCursed(int itemId) {
-        return _cursedWeapons.containsKey(itemId);
+        return cursedWeapons.containsKey(itemId);
     }
 
     public Collection<CursedWeapon> getCursedWeapons() {
-        return _cursedWeapons.values();
+        return cursedWeapons.values();
     }
 
     public Set<Integer> getCursedWeaponsIds() {
-        return _cursedWeapons.keySet();
+        return cursedWeapons.keySet();
     }
 
     public CursedWeapon getCursedWeapon(int itemId) {
-        return _cursedWeapons.get(itemId);
+        return cursedWeapons.get(itemId);
     }
 
     public void givePassive(int itemId) {
         try {
-            _cursedWeapons.get(itemId).giveSkill();
+            cursedWeapons.get(itemId).giveSkill();
         } catch (Exception e) {
             /***/
         }

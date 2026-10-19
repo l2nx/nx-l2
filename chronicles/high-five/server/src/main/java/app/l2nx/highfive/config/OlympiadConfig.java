@@ -26,14 +26,14 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * This class loads all the olympiad related configurations.
  * @author Mobius
  */
+@Slf4j
 public class OlympiadConfig {
-    private static final Logger LOGGER = Logger.getLogger(OlympiadConfig.class.getName());
 
     // File
     private static final String OLYMPIAD_CONFIG_FILE = "./config/Olympiad.ini";
@@ -166,8 +166,9 @@ public class OlympiadConfig {
         for (String value : propertySplit) {
             valueSplit = value.split(",");
             if (valueSplit.length != 2) {
-                LOGGER.warning("parseItemsList[Config.load()]: invalid entry -> \"" + valueSplit[0]
-                        + "\", should be itemId,itemNumber. Skipping to the next entry in the list.");
+                log.warn(
+                        "parseItemsList[Config.load()]: invalid entry -> \"{}\", should be itemId,itemNumber. Skipping to the next entry in the list.",
+                        valueSplit[0]);
                 continue;
             }
 
@@ -175,15 +176,17 @@ public class OlympiadConfig {
             try {
                 tmp[0] = Integer.parseInt(valueSplit[0]);
             } catch (NumberFormatException e) {
-                LOGGER.warning("parseItemsList[Config.load()]: invalid itemId -> \"" + valueSplit[0]
-                        + "\", value must be an integer. Skipping to the next entry in the list.");
+                log.warn(
+                        "parseItemsList[Config.load()]: invalid itemId -> \"{}\", value must be an integer. Skipping to the next entry in the list.",
+                        valueSplit[0]);
                 continue;
             }
             try {
                 tmp[1] = Integer.parseInt(valueSplit[1]);
             } catch (NumberFormatException e) {
-                LOGGER.warning("parseItemsList[Config.load()]: invalid item number -> \"" + valueSplit[1]
-                        + "\", value must be an integer. Skipping to the next entry in the list.");
+                log.warn(
+                        "parseItemsList[Config.load()]: invalid item number -> \"{}\", value must be an integer. Skipping to the next entry in the list.",
+                        valueSplit[1]);
                 continue;
             }
             result[i++] = tmp;

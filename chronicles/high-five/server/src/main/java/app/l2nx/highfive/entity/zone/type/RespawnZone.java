@@ -25,13 +25,15 @@ import app.l2nx.highfive.entity.actor.enums.creature.Race;
 import app.l2nx.highfive.entity.zone.ZoneType;
 import java.util.EnumMap;
 import java.util.Map;
+import lombok.Getter;
 
 /**
  * Respawn zone implementation.
  * @author Nyaran
  */
 public class RespawnZone extends ZoneType {
-    private final Map<Race, String> _raceRespawnPoint = new EnumMap<>(Race.class);
+    @Getter
+    private final Map<Race, String> allRespawnPoints = new EnumMap<>(Race.class);
 
     public RespawnZone(int id) {
         super(id);
@@ -44,14 +46,10 @@ public class RespawnZone extends ZoneType {
     protected void onExit(Creature creature) {}
 
     public void addRaceRespawnPoint(String race, String point) {
-        _raceRespawnPoint.put(Race.valueOf(race), point);
-    }
-
-    public Map<Race, String> getAllRespawnPoints() {
-        return _raceRespawnPoint;
+        allRespawnPoints.put(Race.valueOf(race), point);
     }
 
     public String getRespawnPoint(Player player) {
-        return _raceRespawnPoint.get(player.getRace());
+        return allRespawnPoints.get(player.getRace());
     }
 }

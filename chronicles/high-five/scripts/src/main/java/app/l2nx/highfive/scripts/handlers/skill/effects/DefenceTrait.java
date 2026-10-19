@@ -29,19 +29,21 @@ import app.l2nx.highfive.util.StatSet;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.Map.Entry;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Defence Trait effect implementation.
  * @author NosBit
  */
+@Slf4j
 public class DefenceTrait extends AbstractEffect {
-    private final Map<TraitType, Float> _defenceTraits = new EnumMap<>(TraitType.class);
+    private final Map<TraitType, Float> defenceTraits = new EnumMap<>(TraitType.class);
 
     public DefenceTrait(Condition attachCond, Condition applyCond, StatSet set, StatSet params) {
         super(attachCond, applyCond, set, params);
 
         if (params.isEmpty()) {
-            LOGGER.warning(getClass().getSimpleName() + ": must have parameters.");
+            log.warn("Must have parameters.");
             return;
         }
 
@@ -53,13 +55,11 @@ public class DefenceTrait extends AbstractEffect {
                 }
 
                 final TraitType traitType = TraitType.valueOf(param.getKey());
-                _defenceTraits.put(traitType, (value + 100) / 100);
+                defenceTraits.put(traitType, (value + 100) / 100);
             } catch (NumberFormatException e) {
-                LOGGER.warning(getClass().getSimpleName() + ": value of " + param.getKey() + " must be float value "
-                        + param.getValue() + " found.");
+                log.warn("Value of {} must be float value {} found.", param.getKey(), param.getValue());
             } catch (Exception e) {
-                LOGGER.warning(getClass().getSimpleName() + ": value of TraitType enum required but found: "
-                        + param.getValue());
+                log.warn("Value of TraitType enum required but found: {}", param.getValue());
             }
         }
     }
@@ -68,7 +68,7 @@ public class DefenceTrait extends AbstractEffect {
     public void onExit(Creature effector, Creature effected, Skill skill) {
         final CreatureStat charStat = effected.getStat();
         synchronized (charStat.getDefenceTraits()) {
-            for (Entry<TraitType, Float> trait : _defenceTraits.entrySet()) {
+            for (Entry<TraitType, Float> trait : defenceTraits.entrySet()) {
                 if (trait.getValue() < 2.0f) {
                     if (charStat.getDefenceTraitsCount()[trait.getKey().ordinal()] == 0) {
                         continue;
@@ -91,7 +91,7 @@ public class DefenceTrait extends AbstractEffect {
     public void onStart(Creature effector, Creature effected, Skill skill) {
         final CreatureStat charStat = effected.getStat();
         synchronized (charStat.getDefenceTraits()) {
-            for (Entry<TraitType, Float> trait : _defenceTraits.entrySet()) {
+            for (Entry<TraitType, Float> trait : defenceTraits.entrySet()) {
                 if (trait.getValue() < 2.0f) {
                     charStat.getDefenceTraits()[trait.getKey().ordinal()] *= trait.getValue();
                     charStat.getDefenceTraitsCount()[trait.getKey().ordinal()]++;

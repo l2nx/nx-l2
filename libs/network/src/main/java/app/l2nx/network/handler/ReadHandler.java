@@ -46,8 +46,8 @@ public class ReadHandler<T extends Client<Connection<T>>> implements CompletionH
     /** Maximum accepted payload size (65533 bytes = 0xFFFF total − 2-byte header). */
     private static final int MAX_PACKET_SIZE = 65533;
 
-    private final PacketHandler<T> _packetHandler;
-    private final PacketExecutor<T> _executor;
+    private final PacketHandler<T> packetHandler;
+    private final PacketExecutor<T> executor;
 
     /**
      * Creates a read handler backed by the given packet factory and executor.
@@ -55,8 +55,8 @@ public class ReadHandler<T extends Client<Connection<T>>> implements CompletionH
      * @param executor pool that will run accepted packets off the I/O thread
      */
     public ReadHandler(PacketHandler<T> packetHandler, PacketExecutor<T> executor) {
-        _packetHandler = packetHandler;
-        _executor = executor;
+        this.packetHandler = packetHandler;
+        this.executor = executor;
     }
 
     @Override
@@ -128,11 +128,11 @@ public class ReadHandler<T extends Client<Connection<T>>> implements CompletionH
         try {
             final ReadBuffer buffer = ReadBuffer.of(incomingBuffer);
             if (client.decrypt(buffer, 0, buffer.remaining())) {
-                final ReadablePacket<T> packet = _packetHandler.handle(buffer, client);
+                final ReadablePacket<T> packet = packetHandler.handle(buffer, client);
                 if (packet != null) {
                     packet.init(client, buffer);
                     if (packet.read()) {
-                        _executor.execute(packet);
+                        executor.execute(packet);
                     }
                 }
             }

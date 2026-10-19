@@ -30,7 +30,7 @@ import java.util.List;
  * @author Maktakien
  */
 public class AdminForgePacket extends ServerPacket {
-    private final List<Part> _parts = new ArrayList<>();
+    private final List<Part> parts = new ArrayList<>();
 
     private static class Part {
         public byte b;
@@ -44,7 +44,7 @@ public class AdminForgePacket extends ServerPacket {
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
-        for (Part p : _parts) {
+        for (Part p : parts) {
             generate(p.b, p.str, buffer);
         }
     }
@@ -83,6 +83,6 @@ public class AdminForgePacket extends ServerPacket {
     }
 
     public void addPart(byte b, String string) {
-        _parts.add(new Part(b, string));
+        parts.add(new Part(b, string));
     }
 }

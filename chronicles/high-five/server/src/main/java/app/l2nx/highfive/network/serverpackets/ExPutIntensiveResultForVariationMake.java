@@ -27,28 +27,28 @@ import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.network.buffer.WriteBuffer;
 
 public class ExPutIntensiveResultForVariationMake extends ServerPacket {
-    private final int _refinerItemObjId;
-    private final int _lifestoneItemId;
-    private final int _gemstoneItemId;
-    private final int _gemstoneCount;
-    private final int _unk2;
+    private final int refinerItemObjId;
+    private final int lifestoneItemId;
+    private final int gemstoneItemId;
+    private final int gemstoneCount;
+    private final int unk2;
 
     public ExPutIntensiveResultForVariationMake(
             int refinerItemObjId, int lifeStoneId, int gemstoneItemId, int gemstoneCount) {
-        _refinerItemObjId = refinerItemObjId;
-        _lifestoneItemId = lifeStoneId;
-        _gemstoneItemId = gemstoneItemId;
-        _gemstoneCount = gemstoneCount;
-        _unk2 = 1;
+        this.refinerItemObjId = refinerItemObjId;
+        lifestoneItemId = lifeStoneId;
+        this.gemstoneItemId = gemstoneItemId;
+        this.gemstoneCount = gemstoneCount;
+        unk2 = 1;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_PUT_INTENSIVE_RESULT_FOR_VARIATION_MAKE.writeId(this, buffer);
-        buffer.writeInt(_refinerItemObjId);
-        buffer.writeInt(_lifestoneItemId);
-        buffer.writeInt(_gemstoneItemId);
-        buffer.writeLong(_gemstoneCount);
-        buffer.writeInt(_unk2);
+        buffer.writeInt(refinerItemObjId);
+        buffer.writeInt(lifestoneItemId);
+        buffer.writeInt(gemstoneItemId);
+        buffer.writeLong(gemstoneCount);
+        buffer.writeInt(unk2);
     }
 }

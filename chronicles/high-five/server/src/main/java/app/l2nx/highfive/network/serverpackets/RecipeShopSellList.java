@@ -29,26 +29,26 @@ import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.network.buffer.WriteBuffer;
 
 public class RecipeShopSellList extends ServerPacket {
-    private final Player _buyer;
-    private final Player _manufacturer;
+    private final Player buyer;
+    private final Player manufacturer;
 
     public RecipeShopSellList(Player buyer, Player manufacturer) {
-        _buyer = buyer;
-        _manufacturer = manufacturer;
+        this.buyer = buyer;
+        this.manufacturer = manufacturer;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.RECIPE_SHOP_SELL_LIST.writeId(this, buffer);
-        buffer.writeInt(_manufacturer.getObjectId());
-        buffer.writeInt((int) _manufacturer.getCurrentMp()); // Creator's MP
-        buffer.writeInt(_manufacturer.getMaxMp()); // Creator's MP
-        buffer.writeLong(_buyer.getAdena()); // Buyer Adena
-        if (!_manufacturer.hasManufactureShop()) {
+        buffer.writeInt(manufacturer.getObjectId());
+        buffer.writeInt((int) manufacturer.getCurrentMp()); // Creator's MP
+        buffer.writeInt(manufacturer.getMaxMp()); // Creator's MP
+        buffer.writeLong(buyer.getAdena()); // Buyer Adena
+        if (!manufacturer.hasManufactureShop()) {
             buffer.writeInt(0);
         } else {
-            buffer.writeInt(_manufacturer.getManufactureItems().size());
-            for (ManufactureItem temp : _manufacturer.getManufactureItems().values()) {
+            buffer.writeInt(manufacturer.getManufactureItems().size());
+            for (ManufactureItem temp : manufacturer.getManufactureItems().values()) {
                 buffer.writeInt(temp.getRecipeId());
                 buffer.writeInt(0); // unknown
                 buffer.writeLong(temp.getCost());

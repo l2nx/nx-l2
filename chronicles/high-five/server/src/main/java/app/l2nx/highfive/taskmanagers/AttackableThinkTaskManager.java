@@ -40,21 +40,21 @@ public class AttackableThinkTaskManager {
     protected AttackableThinkTaskManager() {}
 
     private class AttackableThink implements Runnable {
-        private final Set<Attackable> _attackables;
+        private final Set<Attackable> attackables;
 
         public AttackableThink(Set<Attackable> attackables) {
-            _attackables = attackables;
+            this.attackables = attackables;
         }
 
         @Override
         public void run() {
-            if (_attackables.isEmpty()) {
+            if (attackables.isEmpty()) {
                 return;
             }
 
             CreatureAI ai;
             Attackable attackable;
-            final Iterator<Attackable> iterator = _attackables.iterator();
+            final Iterator<Attackable> iterator = attackables.iterator();
             while (iterator.hasNext()) {
                 attackable = iterator.next();
                 if (attackable.hasAI()) {

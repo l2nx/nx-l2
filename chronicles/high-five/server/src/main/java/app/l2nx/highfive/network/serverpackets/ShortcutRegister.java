@@ -28,44 +28,44 @@ import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.network.buffer.WriteBuffer;
 
 public class ShortcutRegister extends ServerPacket {
-    private final Shortcut _shortcut;
+    private final Shortcut shortcut;
 
     /**
      * Register new skill shortcut
      * @param shortcut
      */
     public ShortcutRegister(Shortcut shortcut) {
-        _shortcut = shortcut;
+        this.shortcut = shortcut;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.SHORT_CUT_REGISTER.writeId(this, buffer);
-        buffer.writeInt(_shortcut.getType().ordinal());
-        buffer.writeInt(_shortcut.getSlot() + (_shortcut.getPage() * 12)); // C4 Client
-        switch (_shortcut.getType()) {
+        buffer.writeInt(shortcut.getType().ordinal());
+        buffer.writeInt(shortcut.getSlot() + (shortcut.getPage() * 12)); // C4 Client
+        switch (shortcut.getType()) {
             case ITEM: {
-                buffer.writeInt(_shortcut.getId());
-                buffer.writeInt(_shortcut.getCharacterType());
-                buffer.writeInt(_shortcut.getSharedReuseGroup());
+                buffer.writeInt(shortcut.getId());
+                buffer.writeInt(shortcut.getCharacterType());
+                buffer.writeInt(shortcut.getSharedReuseGroup());
                 buffer.writeInt(0); // unknown
                 buffer.writeInt(0); // unknown
                 buffer.writeInt(0); // item augment id
                 break;
             }
             case SKILL: {
-                buffer.writeInt(_shortcut.getId());
-                buffer.writeInt(_shortcut.getLevel());
+                buffer.writeInt(shortcut.getId());
+                buffer.writeInt(shortcut.getLevel());
                 buffer.writeByte(0); // C5
-                buffer.writeInt(_shortcut.getCharacterType());
+                buffer.writeInt(shortcut.getCharacterType());
                 break;
             }
             case ACTION:
             case MACRO:
             case RECIPE:
             case BOOKMARK: {
-                buffer.writeInt(_shortcut.getId());
-                buffer.writeInt(_shortcut.getCharacterType());
+                buffer.writeInt(shortcut.getId());
+                buffer.writeInt(shortcut.getCharacterType());
             }
         }
     }

@@ -29,32 +29,32 @@ import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.network.buffer.WriteBuffer;
 
 public class SendMacroList extends ServerPacket {
-    private final int _rev;
-    private final int _count;
-    private final Macro _macro;
+    private final int rev;
+    private final int count;
+    private final Macro macro;
 
     public SendMacroList(int rev, int count, Macro macro) {
-        _rev = rev;
-        _count = count;
-        _macro = macro;
+        this.rev = rev;
+        this.count = count;
+        this.macro = macro;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.MACRO_LIST.writeId(this, buffer);
-        buffer.writeInt(_rev); // macro change revision (changes after each macro edition)
+        buffer.writeInt(rev); // macro change revision (changes after each macro edition)
         buffer.writeByte(0); // unknown
-        buffer.writeByte(_count); // count of Macros
-        buffer.writeByte(_macro != null); // unknown
-        if (_macro != null) {
-            buffer.writeInt(_macro.getId()); // Macro ID
-            buffer.writeString(_macro.getName()); // Macro Name
-            buffer.writeString(_macro.getDescr()); // Desc
-            buffer.writeString(_macro.getAcronym()); // acronym
-            buffer.writeByte(_macro.getIcon()); // icon
-            buffer.writeByte(_macro.getCommands().size()); // count
+        buffer.writeByte(count); // count of Macros
+        buffer.writeByte(macro != null); // unknown
+        if (macro != null) {
+            buffer.writeInt(macro.getId()); // Macro ID
+            buffer.writeString(macro.getName()); // Macro Name
+            buffer.writeString(macro.getDescr()); // Desc
+            buffer.writeString(macro.getAcronym()); // acronym
+            buffer.writeByte(macro.getIcon()); // icon
+            buffer.writeByte(macro.getCommands().size()); // count
             int i = 1;
-            for (MacroCmd cmd : _macro.getCommands()) {
+            for (MacroCmd cmd : macro.getCommands()) {
                 buffer.writeByte(i++); // command count
                 buffer.writeByte(cmd.getType().ordinal()); // type 1 = skill, 3 = action, 4 = shortcut
                 buffer.writeInt(cmd.getD1()); // skill id

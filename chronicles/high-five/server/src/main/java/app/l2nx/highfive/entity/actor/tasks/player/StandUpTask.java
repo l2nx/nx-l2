@@ -26,21 +26,21 @@ import app.l2nx.highfive.entity.actor.Player;
  * @author UnAfraid
  */
 public class StandUpTask implements Runnable {
-    private final Player _player;
+    private final Player player;
 
     public StandUpTask(Player player) {
-        _player = player;
+        this.player = player;
     }
 
     @Override
     public void run() {
-        if (_player == null) {
+        if (player == null) {
             return;
         }
 
-        _player.setParalyzed(false);
-        _player.setSitting(false);
-        _player.setSittingProgress(false);
-        _player.getAI().setIntentionIdle();
+        player.setParalyzed(false);
+        player.setSitting(false);
+        player.setSittingProgress(false);
+        player.getAI().setIntentionIdle();
     }
 }

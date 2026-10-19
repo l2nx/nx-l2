@@ -28,11 +28,13 @@ import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.util.HtmlUtil;
 import java.util.Arrays;
 import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Clan board.
  * @author Zoey76
  */
+@Slf4j
 public class ClanBoard implements IWriteBoardHandler {
     private static final String[] COMMANDS = {"_bbsclan", "_bbsclan_list", "_bbsclan_clanhome"};
 
@@ -60,8 +62,7 @@ public class ClanBoard implements IWriteBoardHandler {
                     clanList(player, Integer.parseInt(command.split(";")[1]));
                 } catch (Exception e) {
                     clanList(player, 1);
-                    LOG.warning(ClanBoard.class.getSimpleName() + ": " + player + " send invalid clan list bypass "
-                            + command + "!");
+                    log.warn("{} send invalid clan list bypass {}!", player, command);
                 }
             }
         } else if (command.startsWith("_bbsclan_clanhome")) {
@@ -73,8 +74,7 @@ public class ClanBoard implements IWriteBoardHandler {
                     clanHome(player, Integer.parseInt(command.split(";")[1]));
                 } catch (Exception e) {
                     clanHome(player);
-                    LOG.warning(ClanBoard.class.getSimpleName() + ": " + player + " send invalid clan home bypass "
-                            + command + "!");
+                    log.warn("{} send invalid clan home bypass {}!", player, command);
                 }
             }
         } else if (command.startsWith("_bbsclan_clannotice_edit;")) {

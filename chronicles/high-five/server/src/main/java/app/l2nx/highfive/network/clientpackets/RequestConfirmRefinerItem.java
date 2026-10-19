@@ -30,13 +30,13 @@ import app.l2nx.highfive.network.serverpackets.ExPutIntensiveResultForVariationM
  * @author -Wooden-
  */
 public class RequestConfirmRefinerItem extends AbstractRefinePacket {
-    private int _targetItemObjId;
-    private int _refinerItemObjId;
+    private int targetItemObjId;
+    private int refinerItemObjId;
 
     @Override
     protected void readImpl() {
-        _targetItemObjId = readInt();
-        _refinerItemObjId = readInt();
+        targetItemObjId = readInt();
+        refinerItemObjId = readInt();
     }
 
     @Override
@@ -46,12 +46,12 @@ public class RequestConfirmRefinerItem extends AbstractRefinePacket {
             return;
         }
 
-        final Item targetItem = player.getInventory().getItemByObjectId(_targetItemObjId);
+        final Item targetItem = player.getInventory().getItemByObjectId(targetItemObjId);
         if (targetItem == null) {
             return;
         }
 
-        final Item refinerItem = player.getInventory().getItemByObjectId(_refinerItemObjId);
+        final Item refinerItem = player.getInventory().getItemByObjectId(refinerItemObjId);
         if (refinerItem == null) {
             return;
         }
@@ -67,6 +67,6 @@ public class RequestConfirmRefinerItem extends AbstractRefinePacket {
         final int gemStoneId = getGemStoneId(grade);
         final int gemStoneCount = getGemStoneCount(grade, ls.getGrade());
         player.sendPacket(
-                new ExPutIntensiveResultForVariationMake(_refinerItemObjId, refinerItemId, gemStoneId, gemStoneCount));
+                new ExPutIntensiveResultForVariationMake(refinerItemObjId, refinerItemId, gemStoneId, gemStoneCount));
     }
 }

@@ -53,7 +53,10 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.StringTokenizer;
-import java.util.logging.Logger;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
@@ -62,8 +65,8 @@ import org.w3c.dom.Node;
  * Class Master AI.
  * @author Nik, Mobius
  */
+@Slf4j
 public class ClassMaster extends Script implements IXmlReader {
-    private static final Logger LOGGER = Logger.getLogger(ClassMaster.class.getName());
 
     // NPCs
     private static final List<Integer> CLASS_MASTERS = new ArrayList<>();
@@ -74,10 +77,10 @@ public class ClassMaster extends Script implements IXmlReader {
     }
 
     // Misc
-    private boolean _isEnabled;
-    private boolean _spawnClassMasters;
-    private boolean _showPopupWindow;
-    private final List<ClassChangeData> _classChangeData = new ArrayList<>();
+    private boolean enabled;
+    private boolean spawnClassMasters;
+    private boolean showPopupWindow;
+    private final List<ClassChangeData> classChangeData = new ArrayList<>();
 
     public ClassMaster() {
         load();
@@ -88,14 +91,14 @@ public class ClassMaster extends Script implements IXmlReader {
 
     @Override
     public void load() {
-        _classChangeData.clear();
+        classChangeData.clear();
         parseDatapackFile("config/ClassMaster.xml");
 
-        if (!_isEnabled) {
+        if (!enabled) {
             return;
         }
 
-        if (_spawnClassMasters) {
+        if (spawnClassMasters) {
             addSpawn(31756, -116948, 46841, 360, 3355); // Aden
             addSpawn(31756, -84336, 242156, -3725, 24500); // Gludio
             addSpawn(31756, -84119, 243254, -3725, 8000); // Gludio
@@ -150,7 +153,7 @@ public class ClassMaster extends Script implements IXmlReader {
             addSpawn(31757, 148514, -57972, -2974, 53000); // Goddard
         }
 
-        LOGGER.info(getClass().getSimpleName() + ": Loaded " + _classChangeData.size() + " class change options.");
+        log.info("Loaded {} class change options.", classChangeData.size());
     }
 
     @Override
@@ -166,13 +169,13 @@ public class ClassMaster extends Script implements IXmlReader {
                 for (Node cm = n.getFirstChild(); cm != null; cm = cm.getNextSibling()) {
                     attrs = cm.getAttributes();
                     if ("classMaster".equals(cm.getNodeName())) {
-                        _isEnabled = parseBoolean(attrs, "classChangeEnabled", false);
-                        if (!_isEnabled) {
+                        enabled = parseBoolean(attrs, "classChangeEnabled", false);
+                        if (!enabled) {
                             return;
                         }
 
-                        _spawnClassMasters = parseBoolean(attrs, "spawnClassMasters", true);
-                        _showPopupWindow = parseBoolean(attrs, "showPopupWindow", false);
+                        spawnClassMasters = parseBoolean(attrs, "spawnClassMasters", true);
+                        showPopupWindow = parseBoolean(attrs, "showPopupWindow", false);
                         for (Node c = cm.getFirstChild(); c != null; c = c.getNextSibling()) {
                             attrs = c.getAttributes();
                             if ("classChangeOption".equals(c.getNodeName())) {
@@ -191,8 +194,7 @@ public class ClassMaster extends Script implements IXmlReader {
                                                 final CategoryType category = CategoryType.findByName(
                                                         r.getTextContent().trim());
                                                 if (category == null) {
-                                                    LOGGER.severe(getClass().getSimpleName()
-                                                            + ": Incorrect category type: " + r.getNodeValue());
+                                                    log.error("Incorrect category type: {}", r.getNodeValue());
                                                     continue;
                                                 }
 
@@ -227,8 +229,9 @@ public class ClassMaster extends Script implements IXmlReader {
                                 }
 
                                 if (appliedCategories.isEmpty()) {
-                                    LOGGER.warning(getClass().getSimpleName() + ": Class change option: " + optionName
-                                            + " has no categories to be applied on. Skipping!");
+                                    log.warn(
+                                            "Class change option: {} has no categories to be applied on. Skipping!",
+                                            optionName);
                                     continue;
                                 }
 
@@ -239,7 +242,7 @@ public class ClassMaster extends Script implements IXmlReader {
                                 classChangeData.setRewardHero(setHero);
                                 classChangeData.setRewardNoblesse(setNoble);
 
-                                _classChangeData.add(classChangeData);
+                                this.classChangeData.add(classChangeData);
                             }
                         }
                     }
@@ -255,7 +258,7 @@ public class ClassMaster extends Script implements IXmlReader {
 
     @Override
     public String onEvent(String eventValue, Npc npc, Player player) {
-        if (!_isEnabled) {
+        if (!enabled) {
             return null;
         }
 
@@ -312,7 +315,7 @@ public class ClassMaster extends Script implements IXmlReader {
                 }
 
                 boolean found = false;
-                for (ClassChangeData classChangeData : _classChangeData) {
+                for (ClassChangeData classChangeData : this.classChangeData) {
                     if (classChangeData.isInCategory(player)) {
                         found = true;
                     }
@@ -349,7 +352,7 @@ public class ClassMaster extends Script implements IXmlReader {
                         htmltext = getHtm(player, "cc_options.html");
                         htmltext = htmltext.replace(
                                 "%name%",
-                                ClassListData.getInstance().getClass(classId).getClassName());
+                                ClassListData.getInstance().getClass(classId).className());
                         htmltext = htmltext.replace("%options%", getClassChangeOptions(player, classId));
                         return htmltext;
                     }
@@ -651,23 +654,22 @@ public class ClassMaster extends Script implements IXmlReader {
                 .findAny()
                 .orElse(null);
         if (newClass == null) {
-            LOGGER.warning(getClass().getSimpleName() + ": No new classId found for " + player);
+            log.warn("No new classId found for {}", player);
             return false;
         } else if (newClass == player.getPlayerClass()) {
-            LOGGER.warning(getClass().getSimpleName() + ": New classId found for " + player
-                    + " is exactly the same as the one he currently is!");
+            log.warn("New classId found for {} is exactly the same as the one he currently is!", player);
             return false;
         } else if (checkIfClassChangeHasOptions(player)) {
             String html = getHtm(player, "cc_options.html");
             html = html.replace(
                     "%name%",
-                    ClassListData.getInstance().getClass(newClass.getId()).getClassName()); // getEscapedClientCode());
+                    ClassListData.getInstance().getClass(newClass.getId()).className()); // getEscapedClientCode());
             html = html.replace("%options%", getClassChangeOptions(player, newClass.getId()));
             showResult(player, html);
             return false;
         } else {
             ClassChangeData data = null;
-            for (ClassChangeData ccd : _classChangeData) {
+            for (ClassChangeData ccd : classChangeData) {
                 if (ccd.isInCategory(player)) {
                     data = ccd;
                     break;
@@ -729,12 +731,12 @@ public class ClassMaster extends Script implements IXmlReader {
     }
 
     private void showPopupWindow(Player player) {
-        if (!_showPopupWindow) {
+        if (!showPopupWindow) {
             return;
         }
 
         boolean found = false;
-        for (ClassChangeData classChangeData : _classChangeData) {
+        for (ClassChangeData classChangeData : this.classChangeData) {
             if (classChangeData.isInCategory(player)) {
                 found = true;
             }
@@ -758,13 +760,13 @@ public class ClassMaster extends Script implements IXmlReader {
     @RegisterEvent(EventType.ON_PLAYER_PRESS_TUTORIAL_MARK)
     @RegisterType(ListenerRegisterType.GLOBAL_PLAYERS)
     public void onPlayerPressTutorialMark(OnPlayerPressTutorialMark event) {
-        final Player player = event.getPlayer();
-        if (!_showPopupWindow || (event.getMarkId() != 1001)) {
+        final Player player = event.player();
+        if (!showPopupWindow || (event.markId() != 1001)) {
             return;
         }
 
         boolean found = false;
-        for (ClassChangeData classChangeData : _classChangeData) {
+        for (ClassChangeData classChangeData : this.classChangeData) {
             if (classChangeData.isInCategory(player)) {
                 found = true;
             }
@@ -783,41 +785,41 @@ public class ClassMaster extends Script implements IXmlReader {
         }
 
         if (html != null) {
-            showResult(event.getPlayer(), html);
+            showResult(event.player(), html);
         }
     }
 
     @RegisterEvent(EventType.ON_PLAYER_BYPASS)
     @RegisterType(ListenerRegisterType.GLOBAL_PLAYERS)
     public void onPlayerBypass(OnPlayerBypass event) {
-        if (event.getCommand().startsWith("Script ClassMaster ")) {
-            final String html = onEvent(event.getCommand().substring(18), null, event.getPlayer());
-            event.getPlayer().sendPacket(TutorialCloseHtml.STATIC_PACKET);
-            showResult(event.getPlayer(), html);
+        if (event.command().startsWith("Script ClassMaster ")) {
+            final String html = onEvent(event.command().substring(18), null, event.player());
+            event.player().sendPacket(TutorialCloseHtml.STATIC_PACKET);
+            showResult(event.player(), html);
         }
     }
 
     @RegisterEvent(EventType.ON_PLAYER_PROFESSION_CHANGE)
     @RegisterType(ListenerRegisterType.GLOBAL_PLAYERS)
     public void onPlayerProfessionChange(OnPlayerProfessionChange event) {
-        showPopupWindow(event.getPlayer());
+        showPopupWindow(event.player());
     }
 
     @RegisterEvent(EventType.ON_PLAYER_LEVEL_CHANGED)
     @RegisterType(ListenerRegisterType.GLOBAL_PLAYERS)
     public void onPlayerLevelChanged(OnPlayerLevelChanged event) {
-        showPopupWindow(event.getPlayer());
+        showPopupWindow(event.player());
     }
 
     @RegisterEvent(EventType.ON_PLAYER_LOGIN)
     @RegisterType(ListenerRegisterType.GLOBAL_PLAYERS)
     public void onPlayerLogin(OnPlayerLogin event) {
-        showPopupWindow(event.getPlayer());
+        showPopupWindow(event.player());
     }
 
     private String getClassChangeOptions(Player player, int selectedClassId) {
         final StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < _classChangeData.size(); i++) {
+        for (int i = 0; i < classChangeData.size(); i++) {
             final ClassChangeData option = getClassChangeData(i);
             if ((option == null) || option.getCategories().stream().noneMatch(player::isInCategory)) {
                 continue;
@@ -873,29 +875,37 @@ public class ClassMaster extends Script implements IXmlReader {
     }
 
     private static class ClassChangeData {
-        private final String _name;
-        private final List<CategoryType> _appliedCategories;
-        private boolean _rewardNoblesse;
-        private boolean _rewardHero;
-        private List<ItemHolder> _itemsRequired;
-        private List<ItemHolder> _itemsRewarded;
+        @Getter
+        private final String name;
+
+        private final List<CategoryType> appliedCategories;
+
+        @Getter
+        @Setter
+        private boolean rewardNoblesse;
+
+        @Getter
+        @Setter
+        private boolean rewardHero;
+
+        @Setter(AccessLevel.PACKAGE)
+        private List<ItemHolder> itemsRequired;
+
+        @Setter(AccessLevel.PACKAGE)
+        private List<ItemHolder> itemsRewarded;
 
         public ClassChangeData(String name, List<CategoryType> appliedCategories) {
-            _name = name;
-            _appliedCategories = appliedCategories != null ? appliedCategories : Collections.emptyList();
-        }
-
-        public String getName() {
-            return _name;
+            this.name = name;
+            this.appliedCategories = appliedCategories != null ? appliedCategories : Collections.emptyList();
         }
 
         public List<CategoryType> getCategories() {
-            return _appliedCategories != null ? _appliedCategories : Collections.emptyList();
+            return appliedCategories != null ? appliedCategories : Collections.emptyList();
         }
 
         public boolean isInCategory(Player player) {
-            if (_appliedCategories != null) {
-                for (CategoryType category : _appliedCategories) {
+            if (appliedCategories != null) {
+                for (CategoryType category : appliedCategories) {
                     if (player.isInCategory(category)) {
                         return true;
                     }
@@ -905,36 +915,12 @@ public class ClassMaster extends Script implements IXmlReader {
             return false;
         }
 
-        public boolean isRewardNoblesse() {
-            return _rewardNoblesse;
-        }
-
-        public void setRewardNoblesse(boolean rewardNoblesse) {
-            _rewardNoblesse = rewardNoblesse;
-        }
-
-        public boolean isRewardHero() {
-            return _rewardHero;
-        }
-
-        public void setRewardHero(boolean rewardHero) {
-            _rewardHero = rewardHero;
-        }
-
-        void setItemsRequired(List<ItemHolder> itemsRequired) {
-            _itemsRequired = itemsRequired;
-        }
-
         public List<ItemHolder> getItemsRequired() {
-            return _itemsRequired != null ? _itemsRequired : Collections.emptyList();
-        }
-
-        void setItemsRewarded(List<ItemHolder> itemsRewarded) {
-            _itemsRewarded = itemsRewarded;
+            return itemsRequired != null ? itemsRequired : Collections.emptyList();
         }
 
         public List<ItemHolder> getItemsRewarded() {
-            return _itemsRewarded != null ? _itemsRewarded : Collections.emptyList();
+            return itemsRewarded != null ? itemsRewarded : Collections.emptyList();
         }
     }
 
@@ -942,7 +928,7 @@ public class ClassMaster extends Script implements IXmlReader {
         boolean showOptions = false;
 
         // Check if there are requirements.
-        for (ClassChangeData ccd : _classChangeData) {
+        for (ClassChangeData ccd : classChangeData) {
             if (!ccd.getItemsRequired().isEmpty() && ccd.isInCategory(player)) {
                 showOptions = true;
                 break;
@@ -952,7 +938,7 @@ public class ClassMaster extends Script implements IXmlReader {
         if (!showOptions) {
             // Check if there is more than 1 reward to chose.
             int count = 0;
-            for (ClassChangeData ccd : _classChangeData) {
+            for (ClassChangeData ccd : classChangeData) {
                 if (!ccd.getItemsRewarded().isEmpty() && ccd.isInCategory(player)) {
                     count++;
                 }
@@ -967,8 +953,8 @@ public class ClassMaster extends Script implements IXmlReader {
     }
 
     private ClassChangeData getClassChangeData(int index) {
-        if ((index >= 0) && (index < _classChangeData.size())) {
-            return _classChangeData.get(index);
+        if ((index >= 0) && (index < classChangeData.size())) {
+            return classChangeData.get(index);
         }
 
         return null;

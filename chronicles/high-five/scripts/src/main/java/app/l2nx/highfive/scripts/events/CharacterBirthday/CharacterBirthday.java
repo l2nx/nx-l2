@@ -40,10 +40,12 @@ import app.l2nx.highfive.util.LocationUtil;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author Nyaran, Mobius
  */
+@Slf4j
 public class CharacterBirthday extends Script {
     // NPCs
     private static final int ALEGRIA = 32600;
@@ -134,10 +136,10 @@ public class CharacterBirthday extends Script {
                 }
             }
         } catch (Exception e) {
-            LOGGER.warning(getClass().getSimpleName() + ": Error checking birthdays. " + e.getMessage());
+            log.warn("Error checking birthdays. {}", e.getMessage());
         }
 
-        LOGGER.info(getClass().getSimpleName() + " " + birthdayGiftCount + " gifts sent.");
+        log.info("{} gifts sent.", birthdayGiftCount);
     }
 
     public static void main(String[] args) {

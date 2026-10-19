@@ -29,10 +29,10 @@ import app.l2nx.highfive.mechanics.stats.functions.AbstractFunction;
  * @author UnAfraid
  */
 public class FuncMAtkCritical extends AbstractFunction {
-    private static final FuncMAtkCritical _fac_instance = new FuncMAtkCritical();
+    private static final FuncMAtkCritical instance = new FuncMAtkCritical();
 
     public static AbstractFunction getInstance() {
-        return _fac_instance;
+        return instance;
     }
 
     private FuncMAtkCritical() {

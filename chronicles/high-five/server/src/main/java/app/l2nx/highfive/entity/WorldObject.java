@@ -53,45 +53,44 @@ import app.l2nx.highfive.network.serverpackets.ServerPacket;
 import app.l2nx.highfive.util.LocationUtil;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * Base class for all interactive objects.
  */
 public abstract class WorldObject extends ListenersContainer implements IPositionable {
     /** Name */
-    private String _name;
+    @Getter
+    @Setter
+    private String name;
     /** Object ID */
-    private int _objectId;
+    @Getter
+    private int objectId;
     /** World Region */
-    private WorldRegion _worldRegion;
+    @Getter
+    private WorldRegion worldRegion;
     /** Location */
-    private final Location _location = new Location(0, 0, -10000);
+    @Getter
+    private final Location location = new Location(0, 0, -10000);
     /** Instance type */
-    private InstanceType _instanceType;
+    @Getter
+    @Setter(AccessLevel.PROTECTED)
+    private InstanceType instanceType;
 
-    private boolean _isSpawned;
-    private boolean _isInvisible;
-    private Map<String, Object> _scripts;
+    @Getter
+    @Setter
+    private boolean spawned;
+
+    @Getter
+    private boolean invisible;
+
+    private Map<String, Object> scripts;
 
     public WorldObject(int objectId) {
         setInstanceType(InstanceType.WorldObject);
-        _objectId = objectId;
-    }
-
-    /**
-     * Gets the instance type of object.
-     * @return the instance type
-     */
-    public InstanceType getInstanceType() {
-        return _instanceType;
-    }
-
-    /**
-     * Sets the instance type.
-     * @param newInstanceType the instance type to set
-     */
-    protected void setInstanceType(InstanceType newInstanceType) {
-        _instanceType = newInstanceType;
+        this.objectId = objectId;
     }
 
     /**
@@ -100,7 +99,7 @@ public abstract class WorldObject extends ListenersContainer implements IPositio
      * @return {@code true} if object is of any given instance types, {@code false} otherwise
      */
     public boolean isInstanceTypes(InstanceType... instanceTypes) {
-        return _instanceType.isTypes(instanceTypes);
+        return instanceType.isTypes(instanceTypes);
     }
 
     public void onAction(Player player) {
@@ -132,8 +131,8 @@ public abstract class WorldObject extends ListenersContainer implements IPositio
     public void onSpawn() {}
 
     public boolean decayMe() {
-        _isSpawned = false;
-        World.removeVisibleObject(this, _worldRegion);
+        spawned = false;
+        World.removeVisibleObject(this, worldRegion);
         World.removeObject(this);
         return true;
     }
@@ -141,20 +140,20 @@ public abstract class WorldObject extends ListenersContainer implements IPositio
     public void refreshId() {
         World.removeObject(this);
         IdManager.getInstance().releaseId(getObjectId());
-        _objectId = IdManager.getInstance().getNextId();
+        objectId = IdManager.getInstance().getNextId();
     }
 
     public boolean spawnMe() {
         synchronized (this) {
             // Set the x,y,z position of the WorldObject spawn and update its _worldregion.
-            _isSpawned = true;
+            spawned = true;
             setWorldRegion(World.getRegion(this));
 
             // Add the WorldObject spawn in the _allobjects of World.
             World.addObject(this);
 
             // Add the WorldObject spawn to _visibleObjects and if necessary to _allplayers of its WorldRegion.
-            _worldRegion.addVisibleObject(this);
+            worldRegion.addVisibleObject(this);
         }
 
         // This can synchronize on others instances, so it's out of synchronized, to avoid deadlocks.
@@ -205,28 +204,8 @@ public abstract class WorldObject extends ListenersContainer implements IPositio
 
     public abstract boolean isAutoAttackable(Creature attacker);
 
-    public boolean isSpawned() {
-        return _isSpawned;
-    }
-
-    public void setSpawned(boolean value) {
-        _isSpawned = value;
-    }
-
-    public String getName() {
-        return _name;
-    }
-
-    public void setName(String value) {
-        _name = value;
-    }
-
     public int getId() {
         return 0;
-    }
-
-    public int getObjectId() {
-        return _objectId;
     }
 
     public abstract void sendInfo(Player player);
@@ -514,16 +493,16 @@ public abstract class WorldObject extends ListenersContainer implements IPositio
      * @return
      */
     public <T> T addScript(T script) {
-        if (_scripts == null) {
+        if (scripts == null) {
             // Double-checked locking
             synchronized (this) {
-                if (_scripts == null) {
-                    _scripts = new ConcurrentHashMap<>();
+                if (scripts == null) {
+                    scripts = new ConcurrentHashMap<>();
                 }
             }
         }
 
-        _scripts.put(script.getClass().getName(), script);
+        scripts.put(script.getClass().getName(), script);
         return script;
     }
 
@@ -534,11 +513,11 @@ public abstract class WorldObject extends ListenersContainer implements IPositio
      */
     @SuppressWarnings("unchecked")
     public <T> T removeScript(Class<T> script) {
-        if (_scripts == null) {
+        if (scripts == null) {
             return null;
         }
 
-        return (T) _scripts.remove(script.getName());
+        return (T) scripts.remove(script.getName());
     }
 
     /**
@@ -548,11 +527,11 @@ public abstract class WorldObject extends ListenersContainer implements IPositio
      */
     @SuppressWarnings("unchecked")
     public <T> T getScript(Class<T> script) {
-        if (_scripts == null) {
+        if (scripts == null) {
             return null;
         }
 
-        return (T) _scripts.get(script.getName());
+        return (T) scripts.get(script.getName());
     }
 
     public void removeStatusListener(Creature object) {}
@@ -584,16 +563,12 @@ public abstract class WorldObject extends ListenersContainer implements IPositio
         setXYZInvisible(loc.getX(), loc.getY(), loc.getZ());
     }
 
-    public WorldRegion getWorldRegion() {
-        return _worldRegion;
-    }
-
     public void setWorldRegion(WorldRegion region) {
-        if ((region == null) && (_worldRegion != null)) {
-            _worldRegion.removeVisibleObject(this);
+        if ((region == null) && (worldRegion != null)) {
+            worldRegion.removeVisibleObject(this);
         }
 
-        _worldRegion = region;
+        worldRegion = region;
     }
 
     /**
@@ -602,7 +577,7 @@ public abstract class WorldObject extends ListenersContainer implements IPositio
      */
     @Override
     public int getX() {
-        return _location.getX();
+        return location.getX();
     }
 
     /**
@@ -611,7 +586,7 @@ public abstract class WorldObject extends ListenersContainer implements IPositio
      */
     @Override
     public int getY() {
-        return _location.getY();
+        return location.getY();
     }
 
     /**
@@ -620,7 +595,7 @@ public abstract class WorldObject extends ListenersContainer implements IPositio
      */
     @Override
     public int getZ() {
-        return _location.getZ();
+        return location.getZ();
     }
 
     /**
@@ -629,7 +604,7 @@ public abstract class WorldObject extends ListenersContainer implements IPositio
      */
     @Override
     public int getHeading() {
-        return _location.getHeading();
+        return location.getHeading();
     }
 
     /**
@@ -638,7 +613,7 @@ public abstract class WorldObject extends ListenersContainer implements IPositio
      */
     @Override
     public int getInstanceId() {
-        return _location.getInstanceId();
+        return location.getInstanceId();
     }
 
     /**
@@ -646,16 +621,7 @@ public abstract class WorldObject extends ListenersContainer implements IPositio
      * @return {@code true} when object is inside any instance world, otherwise {@code false}
      */
     public boolean isInInstance() {
-        return _location.getInstanceId() > 0;
-    }
-
-    /**
-     * Gets the location object.
-     * @return the location object
-     */
-    @Override
-    public Location getLocation() {
-        return _location;
+        return location.getInstanceId() > 0;
     }
 
     /**
@@ -666,13 +632,13 @@ public abstract class WorldObject extends ListenersContainer implements IPositio
      */
     @Override
     public void setXYZ(int newX, int newY, int newZ) {
-        _location.setXYZ(newX, newY, newZ);
+        location.setXYZ(newX, newY, newZ);
 
-        if (_isSpawned) {
+        if (spawned) {
             final WorldRegion newRegion = World.getRegion(this);
-            if ((newRegion != null) && (newRegion != _worldRegion)) {
-                if (_worldRegion != null) {
-                    _worldRegion.removeVisibleObject(this);
+            if ((newRegion != null) && (newRegion != worldRegion)) {
+                if (worldRegion != null) {
+                    worldRegion.removeVisibleObject(this);
                 }
 
                 newRegion.addVisibleObject(this);
@@ -697,7 +663,7 @@ public abstract class WorldObject extends ListenersContainer implements IPositio
      */
     @Override
     public void setHeading(int newHeading) {
-        _location.setHeading(newHeading);
+        location.setHeading(newHeading);
     }
 
     /**
@@ -722,14 +688,14 @@ public abstract class WorldObject extends ListenersContainer implements IPositio
         if (isPlayer()) {
             final Player player = asPlayer();
             if ((oldInstanceId > 0) && (oldI != null)) {
-                oldI.removePlayer(_objectId);
+                oldI.removePlayer(objectId);
                 if (oldI.isShowTimer()) {
                     sendInstanceUpdate(oldI, true);
                 }
             }
 
             if (instanceId > 0) {
-                newI.addPlayer(_objectId);
+                newI.addPlayer(objectId);
                 if (newI.isShowTimer()) {
                     sendInstanceUpdate(newI, false);
                 }
@@ -749,7 +715,7 @@ public abstract class WorldObject extends ListenersContainer implements IPositio
             }
         }
 
-        _location.setInstanceId(instanceId);
+        location.setInstanceId(instanceId);
     }
 
     /**
@@ -773,9 +739,9 @@ public abstract class WorldObject extends ListenersContainer implements IPositio
      */
     @Override
     public void setLocation(Location loc) {
-        _location.setXYZ(loc.getX(), loc.getY(), loc.getZ());
-        _location.setHeading(loc.getHeading());
-        _location.setInstanceId(loc.getInstanceId());
+        location.setXYZ(loc.getX(), loc.getY(), loc.getZ());
+        location.setHeading(loc.getHeading());
+        location.setInstanceId(loc.getInstanceId());
     }
 
     /**
@@ -843,18 +809,11 @@ public abstract class WorldObject extends ListenersContainer implements IPositio
     }
 
     /**
-     * @return {@code true} if this object is invisible, {@code false} otherwise.
-     */
-    public boolean isInvisible() {
-        return _isInvisible;
-    }
-
-    /**
      * Sets this object as invisible or not
      * @param invisible
      */
     public void setInvisible(boolean invisible) {
-        _isInvisible = invisible;
+        this.invisible = invisible;
 
         if (invisible) {
             final DeleteObject deletePacket = new DeleteObject(this);
@@ -874,7 +833,7 @@ public abstract class WorldObject extends ListenersContainer implements IPositio
      * @return {@code true} if player can see an invisible object if it's invisible, {@code false} otherwise.
      */
     public boolean isVisibleFor(Player player) {
-        return !_isInvisible || player.isGM();
+        return !invisible || player.isGM();
     }
 
     /**
@@ -898,11 +857,11 @@ public abstract class WorldObject extends ListenersContainer implements IPositio
             return false;
         }
 
-        if (_worldRegion == null) {
+        if (this.worldRegion == null) {
             return false;
         }
 
-        return worldRegion.isSurroundingRegion(_worldRegion);
+        return worldRegion.isSurroundingRegion(this.worldRegion);
     }
 
     @Override
@@ -915,9 +874,9 @@ public abstract class WorldObject extends ListenersContainer implements IPositio
         final StringBuilder sb = new StringBuilder();
         sb.append(getClass().getSimpleName());
         sb.append(':');
-        sb.append(_name);
+        sb.append(name);
         sb.append('[');
-        sb.append(_objectId);
+        sb.append(objectId);
         sb.append(']');
         return sb.toString();
     }

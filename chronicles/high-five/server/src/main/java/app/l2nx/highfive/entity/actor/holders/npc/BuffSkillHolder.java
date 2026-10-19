@@ -22,41 +22,10 @@
  */
 package app.l2nx.highfive.entity.actor.holders.npc;
 
+import lombok.Builder;
+
 /**
  * A container used for schemes buffer.
  */
-public class BuffSkillHolder {
-    private final int _id;
-    private final int _level;
-    private final int _price;
-    private final String _type;
-    private final String _description;
-
-    public BuffSkillHolder(int id, int level, int price, String type, String description) {
-        _id = id;
-        _level = level;
-        _price = price;
-        _type = type;
-        _description = description;
-    }
-
-    public int getId() {
-        return _id;
-    }
-
-    public int getLevel() {
-        return _level;
-    }
-
-    public int getPrice() {
-        return _price;
-    }
-
-    public String getType() {
-        return _type;
-    }
-
-    public String getDescription() {
-        return _description;
-    }
-}
+@Builder(toBuilder = true)
+public record BuffSkillHolder(int id, int level, int price, String type, String description) {}

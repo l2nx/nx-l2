@@ -29,31 +29,32 @@ import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.mechanics.effects.AbstractEffect;
 import app.l2nx.highfive.mechanics.skill.AbnormalType;
 import app.l2nx.highfive.mechanics.skill.BuffInfo;
-import app.l2nx.highfive.network.PacketLogger;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.serverpackets.ActionFailed;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class Action extends ClientPacket {
-    private int _objectId;
+    private int objectId;
 
     @SuppressWarnings("unused")
-    private int _originX;
+    private int originX;
 
     @SuppressWarnings("unused")
-    private int _originY;
+    private int originY;
 
     @SuppressWarnings("unused")
-    private int _originZ;
+    private int originZ;
 
-    private int _actionId;
+    private int actionId;
 
     @Override
     protected void readImpl() {
-        _objectId = readInt(); // Target object Identifier
-        _originX = readInt();
-        _originY = readInt();
-        _originZ = readInt();
-        _actionId = readByte(); // Action identifier : 0-Simple click, 1-Shift click.
+        objectId = readInt(); // Target object Identifier
+        originX = readInt();
+        originY = readInt();
+        originZ = readInt();
+        actionId = readByte(); // Action identifier : 0-Simple click, 1-Shift click.
     }
 
     @Override
@@ -88,12 +89,12 @@ public class Action extends ClientPacket {
         }
 
         final WorldObject obj;
-        if (player.getTargetId() == _objectId) {
+        if (player.getTargetId() == objectId) {
             obj = player.getTarget();
-        } else if (player.isInAirShip() && (player.getAirShip().getHelmObjectId() == _objectId)) {
+        } else if (player.isInAirShip() && (player.getAirShip().getHelmObjectId() == objectId)) {
             obj = player.getAirShip();
         } else {
-            obj = World.findObject(_objectId);
+            obj = World.findObject(objectId);
         }
 
         // If object requested does not exist, add warn msg into logs.
@@ -130,7 +131,7 @@ public class Action extends ClientPacket {
 
         player.onActionRequest();
 
-        switch (_actionId) {
+        switch (actionId) {
             case 0: {
                 obj.onAction(player);
                 break;
@@ -145,8 +146,7 @@ public class Action extends ClientPacket {
             }
             default: {
                 // Invalid action detected (probably client cheating), log this.
-                PacketLogger.warning(
-                        "[C] Action: Character: " + player.getName() + " requested invalid action: " + _actionId);
+                log.warn("[C] Action: Character: {} requested invalid action: {}", player.getName(), actionId);
                 player.sendPacket(ActionFailed.STATIC_PACKET);
                 break;
             }

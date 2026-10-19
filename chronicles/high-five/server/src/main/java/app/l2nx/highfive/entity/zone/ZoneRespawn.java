@@ -24,16 +24,22 @@ import app.l2nx.highfive.entity.Location;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
+import org.slf4j.LoggerFactory;
 
 /**
  * Abstract zone with spawn locations
  * @author DS, Nyaran
  */
+@Slf4j
 public abstract class ZoneRespawn extends ZoneType {
-    private List<Location> _spawnLocs = null;
-    private List<Location> _otherSpawnLocs = null;
-    private List<Location> _chaoticSpawnLocs = null;
-    private List<Location> _banishSpawnLocs = null;
+    @Getter
+    private List<Location> spawns = null;
+
+    private List<Location> otherSpawnLocs = null;
+    private List<Location> chaoticSpawnLocs = null;
+    private List<Location> banishSpawnLocs = null;
 
     protected ZoneRespawn(int id) {
         super(id);
@@ -57,87 +63,83 @@ public abstract class ZoneRespawn extends ZoneType {
                     break;
                 }
                 default: {
-                    LOGGER.warning(getClass().getSimpleName() + ": Unknown location type: " + type);
+                    LoggerFactory.getLogger(getClass()).warn("Unknown location type: {}", type);
                 }
             }
         }
     }
 
     public void addSpawn(int x, int y, int z) {
-        if (_spawnLocs == null) {
-            _spawnLocs = new ArrayList<>();
+        if (spawns == null) {
+            spawns = new ArrayList<>();
         }
 
-        _spawnLocs.add(new Location(x, y, z));
+        spawns.add(new Location(x, y, z));
     }
 
     public void addOtherSpawn(int x, int y, int z) {
-        if (_otherSpawnLocs == null) {
-            _otherSpawnLocs = new ArrayList<>();
+        if (otherSpawnLocs == null) {
+            otherSpawnLocs = new ArrayList<>();
         }
 
-        _otherSpawnLocs.add(new Location(x, y, z));
+        otherSpawnLocs.add(new Location(x, y, z));
     }
 
     public void addChaoticSpawn(int x, int y, int z) {
-        if (_chaoticSpawnLocs == null) {
-            _chaoticSpawnLocs = new ArrayList<>();
+        if (chaoticSpawnLocs == null) {
+            chaoticSpawnLocs = new ArrayList<>();
         }
 
-        _chaoticSpawnLocs.add(new Location(x, y, z));
+        chaoticSpawnLocs.add(new Location(x, y, z));
     }
 
     public void addBanishSpawn(int x, int y, int z) {
-        if (_banishSpawnLocs == null) {
-            _banishSpawnLocs = new ArrayList<>();
+        if (banishSpawnLocs == null) {
+            banishSpawnLocs = new ArrayList<>();
         }
 
-        _banishSpawnLocs.add(new Location(x, y, z));
-    }
-
-    public List<Location> getSpawns() {
-        return _spawnLocs;
+        banishSpawnLocs.add(new Location(x, y, z));
     }
 
     public Location getSpawnLoc() {
         if (PlayerConfig.RANDOM_RESPAWN_IN_TOWN_ENABLED) {
-            return _spawnLocs.get(ThreadLocalRandom.current().nextInt(_spawnLocs.size()));
+            return spawns.get(ThreadLocalRandom.current().nextInt(spawns.size()));
         }
 
-        return _spawnLocs.get(0);
+        return spawns.get(0);
     }
 
     public Location getOtherSpawnLoc() {
-        if (_otherSpawnLocs != null) {
+        if (otherSpawnLocs != null) {
             if (PlayerConfig.RANDOM_RESPAWN_IN_TOWN_ENABLED) {
-                return _otherSpawnLocs.get(ThreadLocalRandom.current().nextInt(_otherSpawnLocs.size()));
+                return otherSpawnLocs.get(ThreadLocalRandom.current().nextInt(otherSpawnLocs.size()));
             }
 
-            return _otherSpawnLocs.get(0);
+            return otherSpawnLocs.get(0);
         }
 
         return getSpawnLoc();
     }
 
     public Location getChaoticSpawnLoc() {
-        if (_chaoticSpawnLocs != null) {
+        if (chaoticSpawnLocs != null) {
             if (PlayerConfig.RANDOM_RESPAWN_IN_TOWN_ENABLED) {
-                return _chaoticSpawnLocs.get(ThreadLocalRandom.current().nextInt(_chaoticSpawnLocs.size()));
+                return chaoticSpawnLocs.get(ThreadLocalRandom.current().nextInt(chaoticSpawnLocs.size()));
             }
 
-            return _chaoticSpawnLocs.get(0);
+            return chaoticSpawnLocs.get(0);
         }
 
         return getSpawnLoc();
     }
 
     public Location getBanishSpawnLoc() {
-        if (_banishSpawnLocs != null) {
+        if (banishSpawnLocs != null) {
             if (PlayerConfig.RANDOM_RESPAWN_IN_TOWN_ENABLED) {
-                return _banishSpawnLocs.get(ThreadLocalRandom.current().nextInt(_banishSpawnLocs.size()));
+                return banishSpawnLocs.get(ThreadLocalRandom.current().nextInt(banishSpawnLocs.size()));
             }
 
-            return _banishSpawnLocs.get(0);
+            return banishSpawnLocs.get(0);
         }
 
         return getSpawnLoc();

@@ -33,16 +33,18 @@ import app.l2nx.highfive.mechanics.skill.holders.SkillHolder;
 import app.l2nx.highfive.mechanics.skill.targets.TargetType;
 import app.l2nx.highfive.util.StatSet;
 import java.util.concurrent.ThreadLocalRandom;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Trigger Skill By Skill effect implementation.
  * @author Zealar
  */
+@Slf4j
 public class TriggerSkillBySkill extends AbstractEffect {
-    private final int _castSkillId;
-    private final int _chance;
-    private final SkillHolder _skill;
-    private final TargetType _targetType;
+    private final int castSkillId;
+    private final int chance;
+    private final SkillHolder skill;
+    private final TargetType targetType;
 
     /**
      * @param attachCond
@@ -53,32 +55,32 @@ public class TriggerSkillBySkill extends AbstractEffect {
     public TriggerSkillBySkill(Condition attachCond, Condition applyCond, StatSet set, StatSet params) {
         super(attachCond, applyCond, set, params);
 
-        _castSkillId = params.getInt("castSkillId", 0);
-        _chance = params.getInt("chance", 100);
-        _skill = new SkillHolder(params.getInt("skillId", 0), params.getInt("skillLevel", 0));
-        _targetType = params.getEnum("targetType", TargetType.class, TargetType.ONE);
+        castSkillId = params.getInt("castSkillId", 0);
+        chance = params.getInt("chance", 100);
+        skill = new SkillHolder(params.getInt("skillId", 0), params.getInt("skillLevel", 0));
+        targetType = params.getEnum("targetType", TargetType.class, TargetType.ONE);
     }
 
     public void onSkillUseEvent(OnCreatureSkillUse event) {
-        if ((_chance == 0) || ((_skill.getSkillId() == 0) || (_skill.getSkillLevel() == 0) || (_castSkillId == 0))) {
+        if ((chance == 0) || ((skill.getSkillId() == 0) || (skill.getSkillLevel() == 0) || (castSkillId == 0))) {
             return;
         }
 
-        if (_castSkillId != event.getSkill().getId()) {
+        if (castSkillId != event.getSkill().getId()) {
             return;
         }
 
-        final ITargetTypeHandler targetHandler = TargetHandler.getInstance().getHandler(_targetType);
+        final ITargetTypeHandler targetHandler = TargetHandler.getInstance().getHandler(targetType);
         if (targetHandler == null) {
-            LOGGER.warning("Handler for target type: " + _targetType + " does not exist.");
+            log.warn("Handler for target type: {} does not exist.", targetType);
             return;
         }
 
-        if (ThreadLocalRandom.current().nextInt(100) > _chance) {
+        if (ThreadLocalRandom.current().nextInt(100) > chance) {
             return;
         }
 
-        final Skill triggerSkill = _skill.getSkill();
+        final Skill triggerSkill = skill.getSkill();
         for (WorldObject triggerTarget :
                 targetHandler.getTargetList(triggerSkill, event.getCaster(), false, event.getTarget())) {
             if ((triggerTarget == null) || !triggerTarget.isCreature()) {

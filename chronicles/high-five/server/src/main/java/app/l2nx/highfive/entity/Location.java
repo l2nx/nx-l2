@@ -26,6 +26,8 @@ import app.l2nx.highfive.interfaces.ILocational;
 import app.l2nx.highfive.interfaces.IPositionable;
 import app.l2nx.highfive.util.StatSet;
 import java.util.Objects;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * Represents a 3D coordinate (x, y, z) with an optional heading and instance id.
@@ -33,11 +35,21 @@ import java.util.Objects;
 public class Location implements IPositionable {
     private static final int MAX_HEADING = 65535; // Max unsigned 16-bit value.
 
-    protected volatile int _x;
-    protected volatile int _y;
-    protected volatile int _z;
-    protected volatile int _heading;
-    protected volatile int _instanceId;
+    @Getter
+    protected volatile int x;
+
+    @Getter
+    protected volatile int y;
+
+    @Getter
+    protected volatile int z;
+
+    @Getter
+    protected volatile int heading;
+
+    @Getter
+    @Setter
+    protected volatile int instanceId;
 
     /**
      * Constructs a Location at a specified x, y and z coordinate, with a default heading and instance id of 0.
@@ -46,11 +58,11 @@ public class Location implements IPositionable {
      * @param z the z coordinate
      */
     public Location(int x, int y, int z) {
-        _x = x;
-        _y = y;
-        _z = z;
-        _heading = 0;
-        _instanceId = 0;
+        this.x = x;
+        this.y = y;
+        this.z = z;
+        heading = 0;
+        instanceId = 0;
     }
 
     /**
@@ -61,11 +73,11 @@ public class Location implements IPositionable {
      * @param heading the heading (direction)
      */
     public Location(int x, int y, int z, int heading) {
-        _x = x;
-        _y = y;
-        _z = z;
-        _heading = heading;
-        _instanceId = 0;
+        this.x = x;
+        this.y = y;
+        this.z = z;
+        this.heading = heading;
+        instanceId = 0;
     }
 
     /**
@@ -85,11 +97,11 @@ public class Location implements IPositionable {
      * @param instanceId the instance id
      */
     public Location(int x, int y, int z, int heading, int instanceId) {
-        _x = x;
-        _y = y;
-        _z = z;
-        _heading = heading;
-        _instanceId = instanceId;
+        this.x = x;
+        this.y = y;
+        this.z = z;
+        this.heading = heading;
+        this.instanceId = instanceId;
     }
 
     /**
@@ -97,38 +109,11 @@ public class Location implements IPositionable {
      * @param set a StatSet containing x, y, z and heading properties.
      */
     public Location(StatSet set) {
-        _x = set.getInt("x", 0);
-        _y = set.getInt("y", 0);
-        _z = set.getInt("z", 0);
-        _heading = set.getInt("heading", 0);
-        _instanceId = set.getInt("instanceId", 0);
-    }
-
-    /**
-     * Retrieves the x coordinate.
-     * @return the x coordinate
-     */
-    @Override
-    public int getX() {
-        return _x;
-    }
-
-    /**
-     * Retrieves the y coordinate.
-     * @return the y coordinate
-     */
-    @Override
-    public int getY() {
-        return _y;
-    }
-
-    /**
-     * Retrieves the z coordinate.
-     * @return the z coordinate
-     */
-    @Override
-    public int getZ() {
-        return _z;
+        x = set.getInt("x", 0);
+        y = set.getInt("y", 0);
+        z = set.getInt("z", 0);
+        heading = set.getInt("heading", 0);
+        instanceId = set.getInt("instanceId", 0);
     }
 
     /**
@@ -139,9 +124,9 @@ public class Location implements IPositionable {
      */
     @Override
     public void setXYZ(int x, int y, int z) {
-        _x = x;
-        _y = y;
-        _z = z;
+        this.x = x;
+        this.y = y;
+        this.z = z;
     }
 
     /**
@@ -154,39 +139,12 @@ public class Location implements IPositionable {
     }
 
     /**
-     * Retrieves the heading (direction) of this Location.
-     * @return the heading of this location.
-     */
-    @Override
-    public int getHeading() {
-        return _heading;
-    }
-
-    /**
      * Sets the heading (direction) for this Location.
      * @param heading the new the heading for this location.
      */
     @Override
     public void setHeading(int heading) {
-        _heading = Math.clamp(heading, 0, MAX_HEADING);
-    }
-
-    /**
-     * Get the instance Id.
-     * @return the instance Id
-     */
-    @Override
-    public int getInstanceId() {
-        return _instanceId;
-    }
-
-    /**
-     * Set the instance Id.
-     * @param instanceId the instance Id to set
-     */
-    @Override
-    public void setInstanceId(int instanceId) {
-        _instanceId = instanceId;
+        this.heading = Math.clamp(heading, 0, MAX_HEADING);
     }
 
     /**
@@ -204,11 +162,11 @@ public class Location implements IPositionable {
      */
     @Override
     public void setLocation(Location loc) {
-        _x = loc.getX();
-        _y = loc.getY();
-        _z = loc.getZ();
-        _heading = loc.getHeading();
-        _instanceId = loc.getInstanceId();
+        x = loc.getX();
+        y = loc.getY();
+        z = loc.getZ();
+        heading = loc.getHeading();
+        instanceId = loc.getInstanceId();
     }
 
     /**
@@ -217,7 +175,7 @@ public class Location implements IPositionable {
      */
     @Override
     public Location clone() {
-        return new Location(_x, _y, _z, _heading, _instanceId);
+        return new Location(x, y, z, heading, instanceId);
     }
 
     /**
@@ -226,7 +184,7 @@ public class Location implements IPositionable {
      */
     @Override
     public int hashCode() {
-        return (31 * Objects.hash(_x, _y)) + Objects.hash(_z);
+        return (31 * Objects.hash(x, y)) + Objects.hash(z);
     }
 
     /**
@@ -255,7 +213,7 @@ public class Location implements IPositionable {
      */
     @Override
     public String toString() {
-        return "[" + getClass().getSimpleName() + "] X: " + _x + " Y: " + _y + " Z: " + _z + " Heading: " + _heading
-                + " InstanceId: " + _instanceId;
+        return "[" + getClass().getSimpleName() + "] X: " + x + " Y: " + y + " Z: " + z + " Heading: " + heading
+                + " InstanceId: " + instanceId;
     }
 }

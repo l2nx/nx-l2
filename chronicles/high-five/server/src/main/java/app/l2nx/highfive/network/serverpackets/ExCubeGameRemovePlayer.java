@@ -28,8 +28,8 @@ import app.l2nx.network.buffer.WriteBuffer;
  * @author mrTJO
  */
 public class ExCubeGameRemovePlayer extends ServerPacket {
-    private final Player _player;
-    private final boolean _isRedTeam;
+    private final Player player;
+    private final boolean redTeam;
 
     /**
      * Remove Player from Minigame Waiting List
@@ -37,8 +37,8 @@ public class ExCubeGameRemovePlayer extends ServerPacket {
      * @param isRedTeam Is Player from Red Team?
      */
     public ExCubeGameRemovePlayer(Player player, boolean isRedTeam) {
-        _player = player;
-        _isRedTeam = isRedTeam;
+        this.player = player;
+        redTeam = isRedTeam;
     }
 
     @Override
@@ -46,7 +46,7 @@ public class ExCubeGameRemovePlayer extends ServerPacket {
         ServerPackets.EX_BLOCK_UP_SET_LIST.writeId(this, buffer);
         buffer.writeInt(2);
         buffer.writeInt(0xffffffff);
-        buffer.writeInt(_isRedTeam);
-        buffer.writeInt(_player.getObjectId());
+        buffer.writeInt(redTeam);
+        buffer.writeInt(player.getObjectId());
     }
 }

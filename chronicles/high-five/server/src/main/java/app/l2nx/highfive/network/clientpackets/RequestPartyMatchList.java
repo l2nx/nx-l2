@@ -34,21 +34,21 @@ import app.l2nx.highfive.network.serverpackets.PartyMatchDetail;
  * @author Gnacik
  */
 public class RequestPartyMatchList extends ClientPacket {
-    private int _roomid;
-    private int _membersmax;
-    private int _minLevel;
-    private int _maxLevel;
-    private int _loot;
-    private String _roomtitle;
+    private int roomid;
+    private int membersmax;
+    private int minLevel;
+    private int maxLevel;
+    private int loot;
+    private String roomtitle;
 
     @Override
     protected void readImpl() {
-        _roomid = readInt();
-        _membersmax = readInt();
-        _minLevel = readInt();
-        _maxLevel = readInt();
-        _loot = readInt();
-        _roomtitle = readString();
+        roomid = readInt();
+        membersmax = readInt();
+        minLevel = readInt();
+        maxLevel = readInt();
+        loot = readInt();
+        roomtitle = readString();
     }
 
     @Override
@@ -58,15 +58,15 @@ public class RequestPartyMatchList extends ClientPacket {
             return;
         }
 
-        if (_roomid > 0) {
-            final PartyMatchRoom room = PartyMatchRoomList.getInstance().getRoom(_roomid);
+        if (roomid > 0) {
+            final PartyMatchRoom room = PartyMatchRoomList.getInstance().getRoom(roomid);
             if (room != null) {
                 // PacketLogger.info("PartyMatchRoom #" + room.getId() + " changed by " + player.getName());
-                room.setMaxMembers(_membersmax);
-                room.setMinLevel(_minLevel);
-                room.setMaxLevel(_maxLevel);
-                room.setLootType(_loot);
-                room.setTitle(_roomtitle);
+                room.setMaxMembers(membersmax);
+                room.setMinLevel(minLevel);
+                room.setMaxLevel(maxLevel);
+                room.setLootType(loot);
+                room.setTitle(roomtitle);
 
                 for (Player member : room.getPartyMembers()) {
                     if (member == null) {
@@ -80,7 +80,7 @@ public class RequestPartyMatchList extends ClientPacket {
         } else {
             final int maxid = PartyMatchRoomList.getInstance().getMaxId();
             final PartyMatchRoom room =
-                    new PartyMatchRoom(maxid, _roomtitle, _loot, _minLevel, _maxLevel, _membersmax, player);
+                    new PartyMatchRoom(maxid, roomtitle, loot, minLevel, maxLevel, membersmax, player);
 
             // PacketLogger.info("PartyMatchRoom #" + maxid + " created by " + player.getName());
             // Remove from waiting list

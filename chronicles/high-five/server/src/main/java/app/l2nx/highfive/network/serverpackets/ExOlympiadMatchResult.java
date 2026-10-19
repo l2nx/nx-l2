@@ -29,22 +29,22 @@ import java.util.List;
  * @author JIV
  */
 public class ExOlympiadMatchResult extends ServerPacket {
-    private final boolean _tie;
-    private int _winTeam; // 1,2
-    private int _loseTeam = 2;
-    private final List<OlympiadInfo> _winnerList;
-    private final List<OlympiadInfo> _loserList;
+    private final boolean tie;
+    private int winTeam; // 1,2
+    private int loseTeam = 2;
+    private final List<OlympiadInfo> winnerList;
+    private final List<OlympiadInfo> loserList;
 
     public ExOlympiadMatchResult(
             boolean tie, int winTeam, List<OlympiadInfo> winnerList, List<OlympiadInfo> loserList) {
-        _tie = tie;
-        _winTeam = winTeam;
-        _winnerList = winnerList;
-        _loserList = loserList;
-        if (_winTeam == 2) {
-            _loseTeam = 1;
-        } else if (_winTeam == 0) {
-            _winTeam = 1;
+        this.tie = tie;
+        this.winTeam = winTeam;
+        this.winnerList = winnerList;
+        this.loserList = loserList;
+        if (this.winTeam == 2) {
+            loseTeam = 1;
+        } else if (this.winTeam == 0) {
+            this.winTeam = 1;
         }
     }
 
@@ -52,30 +52,30 @@ public class ExOlympiadMatchResult extends ServerPacket {
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_RECEIVE_OLYMPIAD.writeId(this, buffer);
         buffer.writeInt(1); // Type 0 = Match List, 1 = Match Result
-        buffer.writeInt(_tie); // 0 - win, 1 - tie
-        buffer.writeString(_winnerList.get(0).getName());
-        buffer.writeInt(_winTeam);
-        buffer.writeInt(_winnerList.size());
-        for (OlympiadInfo info : _winnerList) {
-            buffer.writeString(info.getName());
-            buffer.writeString(info.getClanName());
-            buffer.writeInt(info.getClanId());
-            buffer.writeInt(info.getClassId());
-            buffer.writeInt(info.getDamage());
-            buffer.writeInt(info.getCurrentPoints());
-            buffer.writeInt(info.getDiffPoints());
+        buffer.writeInt(tie); // 0 - win, 1 - tie
+        buffer.writeString(winnerList.get(0).name());
+        buffer.writeInt(winTeam);
+        buffer.writeInt(winnerList.size());
+        for (OlympiadInfo info : winnerList) {
+            buffer.writeString(info.name());
+            buffer.writeString(info.clanName());
+            buffer.writeInt(info.clanId());
+            buffer.writeInt(info.classId());
+            buffer.writeInt(info.damage());
+            buffer.writeInt(info.currentPoints());
+            buffer.writeInt(info.diffPoints());
         }
 
-        buffer.writeInt(_loseTeam);
-        buffer.writeInt(_loserList.size());
-        for (OlympiadInfo info : _loserList) {
-            buffer.writeString(info.getName());
-            buffer.writeString(info.getClanName());
-            buffer.writeInt(info.getClanId());
-            buffer.writeInt(info.getClassId());
-            buffer.writeInt(info.getDamage());
-            buffer.writeInt(info.getCurrentPoints());
-            buffer.writeInt(info.getDiffPoints());
+        buffer.writeInt(loseTeam);
+        buffer.writeInt(loserList.size());
+        for (OlympiadInfo info : loserList) {
+            buffer.writeString(info.name());
+            buffer.writeString(info.clanName());
+            buffer.writeInt(info.clanId());
+            buffer.writeInt(info.classId());
+            buffer.writeInt(info.damage());
+            buffer.writeInt(info.currentPoints());
+            buffer.writeInt(info.diffPoints());
         }
     }
 }

@@ -33,13 +33,13 @@ public class SendBypassBuildCmd extends ClientPacket {
     public static final int GM_MESSAGE = 9;
     public static final int ANNOUNCEMENT = 10;
 
-    private String _command;
+    private String command;
 
     @Override
     protected void readImpl() {
-        _command = readString();
-        if (_command != null) {
-            _command = _command.trim();
+        command = readString();
+        if (command != null) {
+            command = command.trim();
         }
     }
 
@@ -50,6 +50,6 @@ public class SendBypassBuildCmd extends ClientPacket {
             return;
         }
 
-        AdminCommandHandler.getInstance().onCommand(player, "admin_" + _command, true);
+        AdminCommandHandler.getInstance().onCommand(player, "admin_" + command, true);
     }
 }

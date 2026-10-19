@@ -28,17 +28,17 @@ import app.l2nx.highfive.managers.WalkingManager;
  * @author GKR
  */
 public class ArrivedTask implements Runnable {
-    private final WalkInfo _walk;
-    private final Npc _npc;
+    private final WalkInfo walk;
+    private final Npc npc;
 
     public ArrivedTask(Npc npc, WalkInfo walk) {
-        _npc = npc;
-        _walk = walk;
+        this.npc = npc;
+        this.walk = walk;
     }
 
     @Override
     public void run() {
-        _walk.setBlocked(false);
-        WalkingManager.getInstance().startMoving(_npc, _walk.getRoute().getName());
+        walk.setBlocked(false);
+        WalkingManager.getInstance().startMoving(npc, walk.getRoute().getName());
     }
 }

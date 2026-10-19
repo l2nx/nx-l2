@@ -21,20 +21,17 @@ package app.l2nx.highfive.entity.item.enchant;
 
 import app.l2nx.highfive.entity.item.type.EtcItemType;
 import app.l2nx.highfive.util.StatSet;
+import lombok.Getter;
 
 /**
  * @author UnAfraid
  */
 public class EnchantSupportItem extends AbstractEnchantItem {
-    private final boolean _isWeapon;
+    @Getter
+    private final boolean weapon;
 
     public EnchantSupportItem(StatSet set) {
         super(set);
-        _isWeapon = getItem().getItemType() == EtcItemType.SCRL_INC_ENCHANT_PROP_WP;
-    }
-
-    @Override
-    public boolean isWeapon() {
-        return _isWeapon;
+        weapon = getItem().getItemType() == EtcItemType.SCRL_INC_ENCHANT_PROP_WP;
     }
 }

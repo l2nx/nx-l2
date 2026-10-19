@@ -28,41 +28,41 @@ import app.l2nx.network.buffer.WriteBuffer;
  * @author KenM
  */
 public class ExRpItemLink extends ServerPacket {
-    private final Item _item;
+    private final Item item;
 
     public ExRpItemLink(Item item) {
-        _item = item;
+        this.item = item;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_RP_ITEM_LINK.writeId(this, buffer);
-        buffer.writeInt(_item.getObjectId());
-        buffer.writeInt(_item.getDisplayId());
-        buffer.writeInt(_item.getLocationSlot());
-        buffer.writeLong(_item.getCount());
-        buffer.writeShort(_item.getTemplate().getType2());
-        buffer.writeShort(_item.getCustomType1());
-        buffer.writeShort(_item.isEquipped());
-        buffer.writeInt(_item.getTemplate().getBodyPart().getMask());
-        buffer.writeShort(_item.getEnchantLevel());
-        buffer.writeShort(_item.getCustomType2());
-        if (_item.isAugmented()) {
-            buffer.writeInt(_item.getAugmentation().getAugmentationId());
+        buffer.writeInt(item.getObjectId());
+        buffer.writeInt(item.getDisplayId());
+        buffer.writeInt(item.getLocationSlot());
+        buffer.writeLong(item.getCount());
+        buffer.writeShort(item.getTemplate().getType2());
+        buffer.writeShort(item.getCustomType1());
+        buffer.writeShort(item.isEquipped());
+        buffer.writeInt(item.getTemplate().getBodyPart().getMask());
+        buffer.writeShort(item.getEnchantLevel());
+        buffer.writeShort(item.getCustomType2());
+        if (item.isAugmented()) {
+            buffer.writeInt(item.getAugmentation().getAugmentationId());
         } else {
             buffer.writeInt(0);
         }
 
-        buffer.writeInt(_item.getMana());
-        buffer.writeInt(_item.isTimeLimitedItem() ? (int) (_item.getRemainingTime() / 1000) : -9999);
-        buffer.writeShort(_item.getAttackElementType());
-        buffer.writeShort(_item.getAttackElementPower());
+        buffer.writeInt(item.getMana());
+        buffer.writeInt(item.isTimeLimitedItem() ? (int) (item.getRemainingTime() / 1000) : -9999);
+        buffer.writeShort(item.getAttackElementType());
+        buffer.writeShort(item.getAttackElementPower());
         for (byte i = 0; i < 6; i++) {
-            buffer.writeShort(_item.getElementDefAttr(i));
+            buffer.writeShort(item.getElementDefAttr(i));
         }
 
         // Enchant Effects
-        for (int op : _item.getEnchantOptions()) {
+        for (int op : item.getEnchantOptions()) {
             buffer.writeShort(op);
         }
     }

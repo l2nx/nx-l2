@@ -27,15 +27,15 @@ import app.l2nx.network.buffer.WriteBuffer;
  * @author nBd
  */
 public class ExPutEnchantTargetItemResult extends ServerPacket {
-    private final int _result;
+    private final int result;
 
     public ExPutEnchantTargetItemResult(int result) {
-        _result = result;
+        this.result = result;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_PUT_ENCHANT_TARGET_ITEM_RESULT.writeId(this, buffer);
-        buffer.writeInt(_result);
+        buffer.writeInt(result);
     }
 }

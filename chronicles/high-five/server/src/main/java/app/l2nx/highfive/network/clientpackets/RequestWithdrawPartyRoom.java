@@ -29,15 +29,15 @@ import app.l2nx.highfive.network.serverpackets.ExClosePartyRoom;
  * @author Gnacik
  */
 public class RequestWithdrawPartyRoom extends ClientPacket {
-    private int _roomid;
+    private int roomid;
 
     @SuppressWarnings("unused")
-    private int _unk1;
+    private int unk1;
 
     @Override
     protected void readImpl() {
-        _roomid = readInt();
-        _unk1 = readInt();
+        roomid = readInt();
+        unk1 = readInt();
     }
 
     @Override
@@ -47,7 +47,7 @@ public class RequestWithdrawPartyRoom extends ClientPacket {
             return;
         }
 
-        final PartyMatchRoom room = PartyMatchRoomList.getInstance().getRoom(_roomid);
+        final PartyMatchRoom room = PartyMatchRoomList.getInstance().getRoom(roomid);
         if (room == null) {
             return;
         }

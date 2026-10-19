@@ -20,38 +20,33 @@
 package app.l2nx.highfive.entity.actor.holders.npc;
 
 import app.l2nx.highfive.entity.actor.Player;
+import lombok.Getter;
 
 /**
  * @author xban1x
  */
 public class DamageDoneInfo {
-    private final Player _attacker;
-    private long _damage = 0;
+    @Getter
+    private final Player attacker;
+
+    @Getter
+    private long damage = 0;
 
     public DamageDoneInfo(Player attacker) {
-        _attacker = attacker;
-    }
-
-    public Player getAttacker() {
-        return _attacker;
+        this.attacker = attacker;
     }
 
     public void addDamage(long damage) {
-        _damage += damage;
-    }
-
-    public long getDamage() {
-        return _damage;
+        this.damage += damage;
     }
 
     @Override
     public boolean equals(Object obj) {
-        return (this == obj)
-                || ((obj instanceof DamageDoneInfo) && (((DamageDoneInfo) obj).getAttacker() == _attacker));
+        return (this == obj) || ((obj instanceof DamageDoneInfo) && (((DamageDoneInfo) obj).getAttacker() == attacker));
     }
 
     @Override
     public int hashCode() {
-        return _attacker.getObjectId();
+        return attacker.getObjectId();
     }
 }

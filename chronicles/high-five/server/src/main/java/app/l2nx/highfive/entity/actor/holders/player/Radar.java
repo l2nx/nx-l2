@@ -28,76 +28,76 @@ import java.util.concurrent.ConcurrentHashMap;
  * @author dalrond
  */
 public class Radar {
-    private final Player _player;
-    private final Set<RadarMarker> _markers = ConcurrentHashMap.newKeySet();
+    private final Player player;
+    private final Set<RadarMarker> markers = ConcurrentHashMap.newKeySet();
 
     public Radar(Player player) {
-        _player = player;
+        this.player = player;
     }
 
     // Add a marker to player's radar.
     public void addMarker(int x, int y, int z) {
         final RadarMarker newMarker = new RadarMarker(x, y, z);
-        _markers.add(newMarker);
-        _player.sendPacket(new RadarControl(2, 2, x, y, z));
-        _player.sendPacket(new RadarControl(0, 1, x, y, z));
+        markers.add(newMarker);
+        player.sendPacket(new RadarControl(2, 2, x, y, z));
+        player.sendPacket(new RadarControl(0, 1, x, y, z));
     }
 
     // Remove a marker from player's radar.
     public void removeMarker(int x, int y, int z) {
-        for (RadarMarker rm : _markers) {
-            if ((rm._x == x) && (rm._y == y) && (rm._z == z)) {
-                _markers.remove(rm);
+        for (RadarMarker rm : markers) {
+            if ((rm.x == x) && (rm.y == y) && (rm.z == z)) {
+                markers.remove(rm);
             }
         }
 
-        _player.sendPacket(new RadarControl(1, 1, x, y, z));
+        player.sendPacket(new RadarControl(1, 1, x, y, z));
     }
 
     public void removeAllMarkers() {
-        for (RadarMarker tempMarker : _markers) {
-            _player.sendPacket(new RadarControl(2, 2, tempMarker._x, tempMarker._y, tempMarker._z));
+        for (RadarMarker tempMarker : markers) {
+            player.sendPacket(new RadarControl(2, 2, tempMarker.x, tempMarker.y, tempMarker.z));
         }
 
-        _markers.clear();
+        markers.clear();
     }
 
     public void loadMarkers() {
-        _player.sendPacket(new RadarControl(2, 2, _player.getX(), _player.getY(), _player.getZ()));
-        for (RadarMarker tempMarker : _markers) {
-            _player.sendPacket(new RadarControl(0, 1, tempMarker._x, tempMarker._y, tempMarker._z));
+        player.sendPacket(new RadarControl(2, 2, player.getX(), player.getY(), player.getZ()));
+        for (RadarMarker tempMarker : markers) {
+            player.sendPacket(new RadarControl(0, 1, tempMarker.x, tempMarker.y, tempMarker.z));
         }
     }
 
     public static class RadarMarker {
         // Simple class to model radar points.
-        public int _type;
-        public int _x;
-        public int _y;
-        public int _z;
+        public int type;
+        public int x;
+        public int y;
+        public int z;
 
         public RadarMarker(int type, int x, int y, int z) {
-            _type = type;
-            _x = x;
-            _y = y;
-            _z = z;
+            this.type = type;
+            this.x = x;
+            this.y = y;
+            this.z = z;
         }
 
         public RadarMarker(int x, int y, int z) {
-            _type = 1;
-            _x = x;
-            _y = y;
-            _z = z;
+            type = 1;
+            this.x = x;
+            this.y = y;
+            this.z = z;
         }
 
         @Override
         public int hashCode() {
             final int prime = 31;
             int result = 1;
-            result = (prime * result) + _type;
-            result = (prime * result) + _x;
-            result = (prime * result) + _y;
-            result = (prime * result) + _z;
+            result = (prime * result) + type;
+            result = (prime * result) + x;
+            result = (prime * result) + y;
+            result = (prime * result) + z;
             return result;
         }
 
@@ -112,7 +112,7 @@ public class Radar {
             }
 
             final RadarMarker other = (RadarMarker) obj;
-            return (_type == other._type) && (_x == other._x) && (_y == other._y) && (_z == other._z);
+            return (type == other.type) && (x == other.x) && (y == other.y) && (z == other.z);
         }
     }
 }

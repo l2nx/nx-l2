@@ -29,7 +29,7 @@ import app.l2nx.highfive.entity.actor.templates.NpcTemplate;
  * @author Julian
  */
 public class Chest extends Monster {
-    private volatile boolean _specialDrop;
+    private volatile boolean specialDrop;
 
     /**
      * Creates a chest.
@@ -39,24 +39,24 @@ public class Chest extends Monster {
         super(template);
         setInstanceType(InstanceType.Chest);
         setRandomWalking(false);
-        _specialDrop = false;
+        specialDrop = false;
     }
 
     @Override
     public void onSpawn() {
         super.onSpawn();
-        _specialDrop = false;
+        specialDrop = false;
         setMustRewardExpSp(true);
     }
 
     public synchronized void setSpecialDrop() {
-        _specialDrop = true;
+        specialDrop = true;
     }
 
     @Override
     public void doItemDrop(NpcTemplate npcTemplate, Creature lastAttacker) {
         int id = getTemplate().getId();
-        if (!_specialDrop) {
+        if (!specialDrop) {
             if ((id >= 18265) && (id <= 18286)) {
                 id += 3536;
             } else if ((id == 18287) || (id == 18288)) {

@@ -34,8 +34,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.EnumUtils;
 
 /**
@@ -43,13 +43,14 @@ import org.apache.commons.lang3.EnumUtils;
  * They are stored as object but can be retrieved in any type wanted. As long as cast is available.<br>
  * @author mkizub, Mobius
  */
+@Slf4j
 public class StatSet {
-    private static final Logger LOGGER = Logger.getLogger(StatSet.class.getName());
 
     /** Static empty immutable map, used to avoid multiple null checks over the source. */
     public static final StatSet EMPTY_STATSET = new StatSet(Collections.emptyMap());
 
-    private final Map<String, Object> _set;
+    @Getter
+    private final Map<String, Object> set;
 
     public StatSet() {
         this(HashMap::new);
@@ -60,15 +61,7 @@ public class StatSet {
     }
 
     public StatSet(Map<String, Object> map) {
-        _set = map;
-    }
-
-    /**
-     * Returns the set of values
-     * @return HashMap
-     */
-    public Map<String, Object> getSet() {
-        return _set;
+        set = map;
     }
 
     /**
@@ -76,7 +69,7 @@ public class StatSet {
      * @param newSet : StatSet pointing out the list of couples to add in the current set
      */
     public void merge(StatSet newSet) {
-        _set.putAll(newSet.getSet());
+        set.putAll(newSet.getSet());
     }
 
     /**
@@ -84,7 +77,7 @@ public class StatSet {
      * @return {@code true} if the stat set is empty, {@code false} otherwise
      */
     public boolean isEmpty() {
-        return _set.isEmpty();
+        return set.isEmpty();
     }
 
     /**
@@ -94,7 +87,7 @@ public class StatSet {
      * @throws IllegalArgumentException : If value is not set or value is not boolean
      */
     public boolean getBoolean(String key) {
-        final Object val = _set.get(key);
+        final Object val = set.get(key);
         if (val == null) {
             throw new IllegalArgumentException("Boolean value required, but not specified");
         }
@@ -118,7 +111,7 @@ public class StatSet {
      * @return boolean : value associated to the key
      */
     public boolean getBoolean(String key, boolean defaultValue) {
-        final Object val = _set.get(key);
+        final Object val = set.get(key);
         if (val == null) {
             return defaultValue;
         }
@@ -135,7 +128,7 @@ public class StatSet {
     }
 
     public byte getByte(String key) {
-        final Object val = _set.get(key);
+        final Object val = set.get(key);
         if (val == null) {
             throw new IllegalArgumentException("Byte value required, but not specified");
         }
@@ -152,7 +145,7 @@ public class StatSet {
     }
 
     public byte getByte(String key, byte defaultValue) {
-        final Object val = _set.get(key);
+        final Object val = set.get(key);
         if (val == null) {
             return defaultValue;
         }
@@ -181,7 +174,7 @@ public class StatSet {
     }
 
     public byte[] getByteArray(String key, String splitOn) {
-        final Object val = _set.get(key);
+        final Object val = set.get(key);
         if (val == null) {
             throw new IllegalArgumentException("Byte value required, but not specified");
         }
@@ -214,7 +207,7 @@ public class StatSet {
     }
 
     public short getShort(String key) {
-        final Object val = _set.get(key);
+        final Object val = set.get(key);
         if (val == null) {
             throw new IllegalArgumentException("Short value required, but not specified");
         }
@@ -231,7 +224,7 @@ public class StatSet {
     }
 
     public short getShort(String key, short defaultValue) {
-        final Object val = _set.get(key);
+        final Object val = set.get(key);
         if (val == null) {
             return defaultValue;
         }
@@ -260,7 +253,7 @@ public class StatSet {
     }
 
     public int getInt(String key) {
-        final Object val = _set.get(key);
+        final Object val = set.get(key);
         if (val == null) {
             throw new IllegalArgumentException("Integer value required, but not specified: " + key + "!");
         }
@@ -277,7 +270,7 @@ public class StatSet {
     }
 
     public int getInt(String key, int defaultValue) {
-        final Object val = _set.get(key);
+        final Object val = set.get(key);
         if (val == null) {
             return defaultValue;
         }
@@ -306,7 +299,7 @@ public class StatSet {
     }
 
     public int[] getIntArray(String key, String splitOn) {
-        final Object val = _set.get(key);
+        final Object val = set.get(key);
         if (val == null) {
             throw new IllegalArgumentException("Integer value required, but not specified");
         }
@@ -407,7 +400,7 @@ public class StatSet {
     }
 
     public long getLong(String key) {
-        final Object val = _set.get(key);
+        final Object val = set.get(key);
         if (val == null) {
             throw new IllegalArgumentException("Long value required, but not specified");
         }
@@ -424,7 +417,7 @@ public class StatSet {
     }
 
     public long getLong(String key, long defaultValue) {
-        final Object val = _set.get(key);
+        final Object val = set.get(key);
         if (val == null) {
             return defaultValue;
         }
@@ -453,7 +446,7 @@ public class StatSet {
     }
 
     public float getFloat(String key) {
-        final Object val = _set.get(key);
+        final Object val = set.get(key);
         if (val == null) {
             throw new IllegalArgumentException("Float value required, but not specified");
         }
@@ -470,7 +463,7 @@ public class StatSet {
     }
 
     public float getFloat(String key, float defaultValue) {
-        final Object val = _set.get(key);
+        final Object val = set.get(key);
         if (val == null) {
             return defaultValue;
         }
@@ -499,7 +492,7 @@ public class StatSet {
     }
 
     public double getDouble(String key) {
-        final Object val = _set.get(key);
+        final Object val = set.get(key);
         if (val == null) {
             throw new IllegalArgumentException("Double value required, but not specified");
         }
@@ -516,7 +509,7 @@ public class StatSet {
     }
 
     public double getDouble(String key, double defaultValue) {
-        final Object val = _set.get(key);
+        final Object val = set.get(key);
         if (val == null) {
             return defaultValue;
         }
@@ -545,7 +538,7 @@ public class StatSet {
     }
 
     public String getString(String key) {
-        final Object val = _set.get(key);
+        final Object val = set.get(key);
         if (val == null) {
             throw new IllegalArgumentException("String value required, but not specified");
         }
@@ -554,7 +547,7 @@ public class StatSet {
     }
 
     public String getString(String key, String defaultValue) {
-        final Object val = _set.get(key);
+        final Object val = set.get(key);
         if (val == null) {
             return defaultValue;
         }
@@ -563,7 +556,7 @@ public class StatSet {
     }
 
     public Duration getDuration(String key) {
-        final Object val = _set.get(key);
+        final Object val = set.get(key);
         if (val == null) {
             throw new IllegalArgumentException("String value required, but not specified");
         }
@@ -572,7 +565,7 @@ public class StatSet {
     }
 
     public Duration getDuration(String key, Duration defaultValue) {
-        final Object val = _set.get(key);
+        final Object val = set.get(key);
         if (val == null) {
             return defaultValue;
         }
@@ -612,7 +605,7 @@ public class StatSet {
 
     @SuppressWarnings("unchecked")
     public <T extends Enum<T>> T getEnum(String key, Class<T> enumClass) {
-        final Object val = _set.get(key);
+        final Object val = set.get(key);
         if (val == null) {
             throw new IllegalArgumentException(
                     "Enum value of type " + enumClass.getName() + " required, but not specified");
@@ -632,7 +625,7 @@ public class StatSet {
 
     @SuppressWarnings("unchecked")
     public <T extends Enum<T>> T getEnum(String key, Class<T> enumClass, T defaultValue) {
-        final Object val = _set.get(key);
+        final Object val = set.get(key);
         if (val == null) {
             return defaultValue;
         }
@@ -651,7 +644,7 @@ public class StatSet {
 
     @SuppressWarnings("unchecked")
     public <A> A getObject(String name, Class<A> type) {
-        final Object obj = _set.get(name);
+        final Object obj = set.get(name);
         if ((obj == null) || !type.isAssignableFrom(obj.getClass())) {
             return null;
         }
@@ -661,7 +654,7 @@ public class StatSet {
 
     @SuppressWarnings("unchecked")
     public <A> A getObject(String name, Class<A> type, A defaultValue) {
-        final Object obj = _set.get(name);
+        final Object obj = set.get(name);
         if ((obj == null) || !type.isAssignableFrom(obj.getClass())) {
             return defaultValue;
         }
@@ -670,7 +663,7 @@ public class StatSet {
     }
 
     public SkillHolder getSkillHolder(String key) {
-        final Object obj = _set.get(key);
+        final Object obj = set.get(key);
         if (!(obj instanceof SkillHolder)) {
             return null;
         }
@@ -679,7 +672,7 @@ public class StatSet {
     }
 
     public Location getLocation(String key) {
-        final Object obj = _set.get(key);
+        final Object obj = set.get(key);
         if (!(obj instanceof Location)) {
             return null;
         }
@@ -689,7 +682,7 @@ public class StatSet {
 
     @SuppressWarnings("unchecked")
     public List<MinionHolder> getMinionList(String key) {
-        final Object obj = _set.get(key);
+        final Object obj = set.get(key);
         if (!(obj instanceof List<?>)) {
             return Collections.emptyList();
         }
@@ -699,7 +692,7 @@ public class StatSet {
 
     @SuppressWarnings("unchecked")
     public <T> List<T> getList(String key, Class<T> clazz) {
-        final Object obj = _set.get(key);
+        final Object obj = set.get(key);
         if (!(obj instanceof List<?>)) {
             return null;
         }
@@ -713,16 +706,17 @@ public class StatSet {
             // Attempt to convert the list.
             final List<T> convertedList = convertList(originalList, clazz);
             if (convertedList == null) {
-                LOGGER.log(
-                        Level.WARNING,
-                        "getList(\"" + key + "\", " + clazz.getSimpleName() + ") requested with wrong generic type: "
-                                + obj.getClass().getGenericInterfaces()[0] + "!",
+                log.warn(
+                        "getList(\"{}\", {}) requested with wrong generic type: {}!",
+                        key,
+                        clazz.getSimpleName(),
+                        obj.getClass().getGenericInterfaces()[0],
                         new ClassNotFoundException());
                 return null;
             }
 
             // Overwrite the existing list with proper generic type.
-            _set.put(key, convertedList);
+            set.put(key, convertedList);
             return convertedList;
         }
 
@@ -736,7 +730,7 @@ public class StatSet {
 
     @SuppressWarnings("unchecked")
     public <T extends Enum<T>> List<T> getEnumList(String key, Class<T> clazz) {
-        final Object obj = _set.get(key);
+        final Object obj = set.get(key);
         if (!(obj instanceof List<?>)) {
             return null;
         }
@@ -752,7 +746,7 @@ public class StatSet {
                     .toList();
 
             // Overwrite the existing list with proper generic type.
-            _set.put(key, convertedList);
+            set.put(key, convertedList);
             return convertedList;
         }
 
@@ -790,7 +784,7 @@ public class StatSet {
 
     @SuppressWarnings("unchecked")
     public <K, V> Map<K, V> getMap(String key, Class<K> keyClass, Class<V> valueClass) {
-        final Object obj = _set.get(key);
+        final Object obj = set.get(key);
         if (!(obj instanceof Map<?, ?>)) {
             return null;
         }
@@ -799,11 +793,12 @@ public class StatSet {
         if (!originalList.isEmpty()
                 && ((!originalList.keySet().stream().allMatch(keyClass::isInstance))
                         || (!originalList.values().stream().allMatch(valueClass::isInstance)))) {
-            LOGGER.log(
-                    Level.WARNING,
-                    "getMap(\"" + key + "\", " + keyClass.getSimpleName() + ", " + valueClass.getSimpleName()
-                            + ") requested with wrong generic type: "
-                            + obj.getClass().getGenericInterfaces()[0] + "!",
+            log.warn(
+                    "getMap(\"{}\", {}, {}) requested with wrong generic type: {}!",
+                    key,
+                    keyClass.getSimpleName(),
+                    valueClass.getSimpleName(),
+                    obj.getClass().getGenericInterfaces()[0],
                     new ClassNotFoundException());
         }
 
@@ -815,35 +810,35 @@ public class StatSet {
             return;
         }
 
-        _set.put(name, value);
+        set.put(name, value);
     }
 
     public void set(String name, boolean value) {
-        _set.put(name, Boolean.valueOf(value));
+        set.put(name, Boolean.valueOf(value));
     }
 
     public void set(String key, byte value) {
-        _set.put(key, value);
+        set.put(key, value);
     }
 
     public void set(String key, short value) {
-        _set.put(key, value);
+        set.put(key, value);
     }
 
     public void set(String key, int value) {
-        _set.put(key, value);
+        set.put(key, value);
     }
 
     public void set(String key, long value) {
-        _set.put(key, value);
+        set.put(key, value);
     }
 
     public void set(String key, float value) {
-        _set.put(key, value);
+        set.put(key, value);
     }
 
     public void set(String key, double value) {
-        _set.put(key, value);
+        set.put(key, value);
     }
 
     public void set(String key, String value) {
@@ -851,7 +846,7 @@ public class StatSet {
             return;
         }
 
-        _set.put(key, value);
+        set.put(key, value);
     }
 
     public void set(String key, Enum<?> value) {
@@ -859,19 +854,19 @@ public class StatSet {
             return;
         }
 
-        _set.put(key, value);
+        set.put(key, value);
     }
 
     public void remove(String key) {
-        _set.remove(key);
+        set.remove(key);
     }
 
     public boolean contains(String name) {
-        return _set.containsKey(name);
+        return set.containsKey(name);
     }
 
     @Override
     public String toString() {
-        return "StatSet{_set=" + _set + '}';
+        return "StatSet{_set=" + set + '}';
     }
 }

@@ -27,6 +27,7 @@ import app.l2nx.highfive.util.StatSet;
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
@@ -35,8 +36,9 @@ import org.w3c.dom.Node;
  * This class holds the Fishing Monsters information.
  * @author nonom
  */
+@Slf4j
 public class FishingMonstersData implements IXmlReader {
-    private final Map<Integer, FishingMonster> _fishingMonstersData = new HashMap<>();
+    private final Map<Integer, FishingMonster> fishingMonstersData = new HashMap<>();
 
     /**
      * Instantiates a new fishing monsters data.
@@ -47,9 +49,9 @@ public class FishingMonstersData implements IXmlReader {
 
     @Override
     public void load() {
-        _fishingMonstersData.clear();
+        fishingMonstersData.clear();
         parseDatapackFile("data/stats/fishing/fishingMonsters.xml");
-        LOGGER.info(getClass().getSimpleName() + ": Loaded " + _fishingMonstersData.size() + " fishing monsters.");
+        log.info("Loaded {} fishing monsters.", fishingMonstersData.size());
     }
 
     @Override
@@ -66,7 +68,7 @@ public class FishingMonstersData implements IXmlReader {
                         }
 
                         final FishingMonster fishingMonster = new FishingMonster(set);
-                        _fishingMonstersData.put(fishingMonster.getFishingMonsterId(), fishingMonster);
+                        fishingMonstersData.put(fishingMonster.getFishingMonsterId(), fishingMonster);
                     }
                 }
             }
@@ -79,7 +81,7 @@ public class FishingMonstersData implements IXmlReader {
      * @return a fishing monster given the fisherman level
      */
     public FishingMonster getFishingMonster(int level) {
-        for (FishingMonster fishingMonster : _fishingMonstersData.values()) {
+        for (FishingMonster fishingMonster : fishingMonstersData.values()) {
             if ((level >= fishingMonster.getUserMinLevel()) && (level <= fishingMonster.getUserMaxLevel())) {
                 return fishingMonster;
             }
@@ -94,7 +96,7 @@ public class FishingMonstersData implements IXmlReader {
      * @return the fishing monster by Id
      */
     public FishingMonster getFishingMonsterById(int id) {
-        return _fishingMonstersData.get(id);
+        return fishingMonstersData.get(id);
     }
 
     /**

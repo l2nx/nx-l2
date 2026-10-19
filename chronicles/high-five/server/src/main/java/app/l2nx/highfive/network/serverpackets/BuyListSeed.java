@@ -31,16 +31,16 @@ import java.util.List;
  * @author l3x
  */
 public class BuyListSeed extends ServerPacket {
-    private final int _manorId;
-    private final long _money;
-    private final List<SeedProduction> _list = new ArrayList<>();
+    private final int manorId;
+    private final long money;
+    private final List<SeedProduction> list = new ArrayList<>();
 
     public BuyListSeed(long currentMoney, int castleId) {
-        _money = currentMoney;
-        _manorId = castleId;
+        money = currentMoney;
+        manorId = castleId;
         for (SeedProduction s : CastleManorManager.getInstance().getSeedProduction(castleId, false)) {
             if ((s.getAmount() > 0) && (s.getPrice() > 0)) {
-                _list.add(s);
+                list.add(s);
             }
         }
     }
@@ -48,11 +48,11 @@ public class BuyListSeed extends ServerPacket {
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.BUY_LIST_SEED.writeId(this, buffer);
-        buffer.writeLong(_money); // current money
-        buffer.writeInt(_manorId); // manor id
-        if (!_list.isEmpty()) {
-            buffer.writeShort(_list.size()); // list length
-            for (SeedProduction s : _list) {
+        buffer.writeLong(money); // current money
+        buffer.writeInt(manorId); // manor id
+        if (!list.isEmpty()) {
+            buffer.writeShort(list.size()); // list length
+            for (SeedProduction s : list) {
                 buffer.writeInt(s.getId());
                 buffer.writeInt(s.getId());
                 buffer.writeInt(0);
@@ -79,7 +79,7 @@ public class BuyListSeed extends ServerPacket {
                 buffer.writeLong(s.getPrice()); // price
             }
 
-            _list.clear();
+            list.clear();
         } else {
             buffer.writeShort(0);
         }

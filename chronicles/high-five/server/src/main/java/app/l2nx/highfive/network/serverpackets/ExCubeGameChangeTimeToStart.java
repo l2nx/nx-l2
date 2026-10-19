@@ -27,20 +27,20 @@ import app.l2nx.network.buffer.WriteBuffer;
  * @author mrTJO
  */
 public class ExCubeGameChangeTimeToStart extends ServerPacket {
-    private final int _seconds;
+    private final int seconds;
 
     /**
      * Update Minigame Waiting List Time to Start
      * @param seconds
      */
     public ExCubeGameChangeTimeToStart(int seconds) {
-        _seconds = seconds;
+        this.seconds = seconds;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_BLOCK_UP_SET_LIST.writeId(this, buffer);
         buffer.writeInt(3);
-        buffer.writeInt(_seconds);
+        buffer.writeInt(seconds);
     }
 }

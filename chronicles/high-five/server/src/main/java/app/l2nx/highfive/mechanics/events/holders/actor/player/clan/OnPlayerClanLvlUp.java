@@ -23,27 +23,13 @@ import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.clan.Clan;
 import app.l2nx.highfive.mechanics.events.EventType;
 import app.l2nx.highfive.mechanics.events.holders.IBaseEvent;
+import lombok.Builder;
 
 /**
  * @author UnAfraid
  */
-public class OnPlayerClanLvlUp implements IBaseEvent {
-    private final Player _player;
-    private final Clan _clan;
-
-    public OnPlayerClanLvlUp(Player player, Clan clan) {
-        _player = player;
-        _clan = clan;
-    }
-
-    public Player getPlayer() {
-        return _player;
-    }
-
-    public Clan getClan() {
-        return _clan;
-    }
-
+@Builder(toBuilder = true)
+public record OnPlayerClanLvlUp(Player player, Clan clan) implements IBaseEvent {
     @Override
     public EventType getType() {
         return EventType.ON_PLAYER_CLAN_LEVELUP;

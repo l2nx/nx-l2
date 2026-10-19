@@ -32,13 +32,15 @@ import app.l2nx.highfive.mechanics.olympiad.Hero;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
 import java.util.concurrent.ThreadLocalRandom;
+import lombok.Setter;
 
 /**
  * This class manages all Grand Bosses.
  * @version $Revision: 1.0.0.0 $ $Date: 2006/06/16 $
  */
 public class GrandBoss extends Monster {
-    private boolean _useRaidCurse = true;
+    @Setter
+    private boolean useRaidCurse = true;
 
     /**
      * Creates a grand boss.
@@ -106,12 +108,8 @@ public class GrandBoss extends Monster {
         return false;
     }
 
-    public void setUseRaidCurse(boolean value) {
-        _useRaidCurse = value;
-    }
-
     @Override
     public boolean giveRaidCurse() {
-        return _useRaidCurse;
+        return useRaidCurse;
     }
 }

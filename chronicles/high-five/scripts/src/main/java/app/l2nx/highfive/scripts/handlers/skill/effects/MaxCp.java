@@ -31,32 +31,34 @@ import app.l2nx.highfive.mechanics.stats.functions.FuncMul;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
 import app.l2nx.highfive.util.StatSet;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author Zealar
  */
+@Slf4j
 public class MaxCp extends AbstractEffect {
-    private final double _power;
-    private final EffectCalculationType _type;
-    private final boolean _heal;
+    private final double power;
+    private final EffectCalculationType type;
+    private final boolean heal;
 
     public MaxCp(Condition attachCond, Condition applyCond, StatSet set, StatSet params) {
         super(attachCond, applyCond, set, params);
 
-        _type = params.getEnum("type", EffectCalculationType.class, EffectCalculationType.DIFF);
-        switch (_type) {
+        type = params.getEnum("type", EffectCalculationType.class, EffectCalculationType.DIFF);
+        switch (type) {
             case DIFF: {
-                _power = params.getInt("power", 0);
+                power = params.getInt("power", 0);
                 break;
             }
             default: {
-                _power = 1 + (params.getInt("power", 0) / 100.0);
+                power = 1 + (params.getInt("power", 0) / 100.0);
             }
         }
 
-        _heal = params.getBoolean("heal", false);
+        heal = params.getBoolean("heal", false);
         if (params.isEmpty()) {
-            LOGGER.warning(getClass().getSimpleName() + ": must have parameters.");
+            log.warn("Must have parameters.");
         }
     }
 
@@ -64,22 +66,22 @@ public class MaxCp extends AbstractEffect {
     public void onStart(Creature effector, Creature effected, Skill skill) {
         final CreatureStat charStat = effected.getStat();
         final double currentCp = effected.getCurrentCp();
-        double amount = _power;
+        double amount = power;
 
         synchronized (charStat) {
-            switch (_type) {
+            switch (type) {
                 case DIFF: {
-                    charStat.getActiveChar().addStatFunc(new FuncAdd(Stat.MAX_CP, 1, this, _power, null));
-                    if (_heal) {
-                        effected.setCurrentCp((currentCp + _power));
+                    charStat.getActiveChar().addStatFunc(new FuncAdd(Stat.MAX_CP, 1, this, power, null));
+                    if (heal) {
+                        effected.setCurrentCp((currentCp + power));
                     }
                     break;
                 }
                 case PER: {
                     final double maxCp = effected.getMaxCp();
-                    charStat.getActiveChar().addStatFunc(new FuncMul(Stat.MAX_CP, 1, this, _power, null));
-                    if (_heal) {
-                        amount = (_power - 1) * maxCp;
+                    charStat.getActiveChar().addStatFunc(new FuncMul(Stat.MAX_CP, 1, this, power, null));
+                    if (heal) {
+                        amount = (power - 1) * maxCp;
                         effected.setCurrentCp(currentCp + amount);
                     }
                     break;
@@ -87,7 +89,7 @@ public class MaxCp extends AbstractEffect {
             }
         }
 
-        if (_heal) {
+        if (heal) {
             if ((effector != null) && (effector != effected)) {
                 final SystemMessage sm = new SystemMessage(SystemMessageId.S2_CP_HAS_BEEN_RESTORED_BY_C1);
                 sm.addString(effector.getName());

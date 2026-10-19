@@ -23,89 +23,67 @@ import app.l2nx.highfive.entity.WorldObject;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.mechanics.skill.Skill;
 import java.util.List;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * Task dedicated to magic use of character
  * @author xban1x
  */
 public class MagicUseTask implements Runnable {
-    private final Creature _creature;
-    private List<WorldObject> _targets;
-    private final Skill _skill;
-    private int _count;
-    private int _skillTime;
-    private int _phase;
-    private final boolean _simultaneously;
+    private final Creature creature;
+
+    @Getter
+    @Setter
+    private List<WorldObject> targets;
+
+    @Getter
+    private final Skill skill;
+
+    @Getter
+    @Setter
+    private int count;
+
+    @Getter
+    @Setter
+    private int skillTime;
+
+    @Getter
+    @Setter
+    private int phase;
+
+    @Getter
+    private final boolean simultaneous;
 
     public MagicUseTask(Creature creature, List<WorldObject> targets, Skill s, int hit, boolean simultaneous) {
-        _creature = creature;
-        _targets = targets;
-        _skill = s;
-        _count = 0;
-        _phase = 1;
-        _skillTime = hit;
-        _simultaneously = simultaneous;
+        this.creature = creature;
+        this.targets = targets;
+        skill = s;
+        count = 0;
+        phase = 1;
+        skillTime = hit;
+        this.simultaneous = simultaneous;
     }
 
     @Override
     public void run() {
-        if (_creature == null) {
+        if (creature == null) {
             return;
         }
 
-        switch (_phase) {
+        switch (phase) {
             case 1: {
-                _creature.onMagicLaunchedTimer(this);
+                creature.onMagicLaunchedTimer(this);
                 break;
             }
             case 2: {
-                _creature.onMagicHitTimer(this);
+                creature.onMagicHitTimer(this);
                 break;
             }
             case 3: {
-                _creature.onMagicFinalizer(this);
+                creature.onMagicFinalizer(this);
                 break;
             }
         }
-    }
-
-    public int getCount() {
-        return _count;
-    }
-
-    public int getPhase() {
-        return _phase;
-    }
-
-    public Skill getSkill() {
-        return _skill;
-    }
-
-    public int getSkillTime() {
-        return _skillTime;
-    }
-
-    public List<WorldObject> getTargets() {
-        return _targets;
-    }
-
-    public boolean isSimultaneous() {
-        return _simultaneously;
-    }
-
-    public void setCount(int count) {
-        _count = count;
-    }
-
-    public void setPhase(int phase) {
-        _phase = phase;
-    }
-
-    public void setSkillTime(int skillTime) {
-        _skillTime = skillTime;
-    }
-
-    public void setTargets(List<WorldObject> targets) {
-        _targets = targets;
     }
 }

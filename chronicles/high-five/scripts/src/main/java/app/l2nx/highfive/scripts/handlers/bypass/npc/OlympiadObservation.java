@@ -29,11 +29,12 @@ import app.l2nx.highfive.mechanics.olympiad.OlympiadGameManager;
 import app.l2nx.highfive.mechanics.olympiad.OlympiadGameTask;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.serverpackets.ExOlympiadMatchList;
-import java.util.logging.Level;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author DS
  */
+@Slf4j
 public class OlympiadObservation implements IBypassHandler {
     private static final String[] COMMANDS = {"watchmatch", "arenachange"};
 
@@ -91,7 +92,7 @@ public class OlympiadObservation implements IBypassHandler {
 
             return true;
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, "Exception in " + getClass().getSimpleName(), e);
+            log.warn("Bypass failed", e);
         }
 
         return false;

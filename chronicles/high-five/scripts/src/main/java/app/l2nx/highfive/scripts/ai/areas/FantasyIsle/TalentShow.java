@@ -32,11 +32,14 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Talent Show AI.
  * @author Kerberos
  */
+@Slf4j
 public class TalentShow extends Script {
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
 
@@ -76,68 +79,36 @@ public class TalentShow extends Script {
     };
 
     private class ShoutInfo {
-        private final NpcStringId _npcStringId;
-        private final String _nextEvent;
-        private final int _time;
+        @Getter
+        private final NpcStringId npcStringId;
+
+        @Getter
+        private final String nextEvent;
+
+        @Getter
+        private final int time;
 
         public ShoutInfo(NpcStringId npcStringId, String nextEvent, int time) {
-            _npcStringId = npcStringId;
-            _nextEvent = nextEvent;
-            _time = time;
-        }
-
-        /**
-         * @return the _npcStringId
-         */
-        public NpcStringId getNpcStringId() {
-            return _npcStringId;
-        }
-
-        /**
-         * @return the _nextEvent
-         */
-        public String getNextEvent() {
-            return _nextEvent;
-        }
-
-        /**
-         * @return the _time
-         */
-        public int getTime() {
-            return _time;
+            this.npcStringId = npcStringId;
+            this.nextEvent = nextEvent;
+            this.time = time;
         }
     }
 
     private class WalkInfo {
-        private final Location _charPos;
-        private final String _nextEvent;
-        private final int _time;
+        @Getter
+        private final Location charPos;
+
+        @Getter
+        private final String nextEvent;
+
+        @Getter
+        private final int time;
 
         public WalkInfo(Location charPos, String nextEvent, int time) {
-            _charPos = charPos;
-            _nextEvent = nextEvent;
-            _time = time;
-        }
-
-        /**
-         * @return the _charPos
-         */
-        public Location getCharPos() {
-            return _charPos;
-        }
-
-        /**
-         * @return the _nextEvent
-         */
-        public String getNextEvent() {
-            return _nextEvent;
-        }
-
-        /**
-         * @return the _time
-         */
-        public int getTime() {
-            return _time;
+            this.charPos = charPos;
+            this.nextEvent = nextEvent;
+            this.time = time;
         }
     }
 
@@ -280,10 +251,10 @@ public class TalentShow extends Script {
         hourDiff *= 3600000;
         minDiff *= 60000;
         diff = hourDiff + minDiff;
-        LOGGER.info("Fantasy Isle: MC show script starting at "
-                + DATE_FORMAT.format(
-                        Instant.ofEpochMilli(System.currentTimeMillis() + diff).atZone(ZoneId.systemDefault()))
-                + " and is scheduled each next 4 hours.");
+        log.info(
+                "Fantasy Isle: MC show script starting at {} and is scheduled each next 4 hours.",
+                DATE_FORMAT.format(
+                        Instant.ofEpochMilli(System.currentTimeMillis() + diff).atZone(ZoneId.systemDefault())));
         startQuestTimer("Start", diff, null, null); // first start
     }
 
@@ -332,7 +303,7 @@ public class TalentShow extends Script {
     @Override
     public String onEvent(String event, Npc npc, Player player) {
         if ((event == null) || event.isEmpty()) {
-            LOGGER.warning("MC_Show: Null/Empty event for " + npc + " and " + player + "!");
+            log.warn("MC_Show: Null/Empty event for {} and {}!", npc, player);
             return null;
         }
 

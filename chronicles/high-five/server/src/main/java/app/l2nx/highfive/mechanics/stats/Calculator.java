@@ -27,12 +27,13 @@ import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.mechanics.stats.functions.AbstractFunction;
 import java.util.ArrayList;
 import java.util.List;
+import lombok.Getter;
 
 /**
  * A calculator is created to manage and dynamically calculate the effect of a character property (ex : MAX_HP, REGENERATE_HP_RATE...).<br>
  * In fact, each calculator is a table of Func object in which each Func represents a mathematical function:<br>
  * FuncAtkAccuracy -> Math.sqrt(_player.getDEX())*6+_player.getLevel()<br>
- * When the calc method of a calculator is launched, each mathematical function is called according to its priority <b>_order</b>.<br>
+ * When the calc method of a calculator is launched, each mathematical function is called according to its priority <b>order</b>.<br>
  * Indeed, Func with lowest priority order is executed first and Funcs with the same order are executed in unspecified order.<br>
  * The result of the calculation is stored in the value property of an Env class instance.<br>
  * Method addFunc and removeFunc permit to add and remove a Func object from a Calculator.
@@ -42,13 +43,14 @@ public class Calculator {
     private static final AbstractFunction[] EMPTY_FUNCS = new AbstractFunction[0];
 
     /** Table of Func object */
-    private AbstractFunction[] _functions;
+    @Getter
+    private AbstractFunction[] functions;
 
     /**
      * Constructor of Calculator (Init value : emptyFuncs).
      */
     public Calculator() {
-        _functions = EMPTY_FUNCS;
+        functions = EMPTY_FUNCS;
     }
 
     /**
@@ -56,7 +58,7 @@ public class Calculator {
      * @param c
      */
     public Calculator(Calculator c) {
-        _functions = c._functions;
+        functions = c.functions;
     }
 
     /**
@@ -74,8 +76,8 @@ public class Calculator {
             return false;
         }
 
-        final AbstractFunction[] funcs1 = c1._functions;
-        final AbstractFunction[] funcs2 = c2._functions;
+        final AbstractFunction[] funcs1 = c1.functions;
+        final AbstractFunction[] funcs2 = c2.functions;
         if (funcs1 == funcs2) {
             return true;
         }
@@ -102,7 +104,7 @@ public class Calculator {
      * @return
      */
     public int size() {
-        return _functions.length;
+        return functions.length;
     }
 
     /**
@@ -110,7 +112,7 @@ public class Calculator {
      * @param function the function
      */
     public synchronized void addFunc(AbstractFunction function) {
-        final AbstractFunction[] funcs = _functions;
+        final AbstractFunction[] funcs = functions;
         final AbstractFunction[] tmp = new AbstractFunction[funcs.length + 1];
         final int order = function.getOrder();
         int i;
@@ -123,7 +125,7 @@ public class Calculator {
             tmp[i + 1] = funcs[i];
         }
 
-        _functions = tmp;
+        functions = tmp;
     }
 
     /**
@@ -131,7 +133,7 @@ public class Calculator {
      * @param function the function
      */
     public synchronized void removeFunc(AbstractFunction function) {
-        final AbstractFunction[] funcs = _functions;
+        final AbstractFunction[] funcs = functions;
         final AbstractFunction[] tmp = new AbstractFunction[funcs.length - 1];
         int i;
         for (i = 0; (i < (funcs.length - 1)) && (function != funcs[i]); i++) {
@@ -147,9 +149,9 @@ public class Calculator {
         }
 
         if (tmp.length == 0) {
-            _functions = EMPTY_FUNCS;
+            functions = EMPTY_FUNCS;
         } else {
-            _functions = tmp;
+            functions = tmp;
         }
     }
 
@@ -160,7 +162,7 @@ public class Calculator {
      */
     public synchronized List<Stat> removeOwner(Object owner) {
         final List<Stat> modifiedStats = new ArrayList<>();
-        for (AbstractFunction func : _functions) {
+        for (AbstractFunction func : functions) {
             if (func.getFuncOwner() == owner) {
                 modifiedStats.add(func.getStat());
                 removeFunc(func);
@@ -180,18 +182,10 @@ public class Calculator {
      */
     public double calc(Creature caster, Creature target, Skill skill, double initVal) {
         double value = initVal;
-        for (AbstractFunction func : _functions) {
+        for (AbstractFunction func : functions) {
             value = func.calc(caster, target, skill, value);
         }
 
         return value;
-    }
-
-    /**
-     * Get array of all function, do not use for add/remove
-     * @return
-     */
-    public AbstractFunction[] getFunctions() {
-        return _functions;
     }
 }

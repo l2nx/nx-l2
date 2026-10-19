@@ -79,6 +79,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * This class manages AI of Attackable.
@@ -96,23 +98,27 @@ public class AttackableAI extends CreatureAI {
             100; // Retail raid minion is placed on a random point around its master.
 
     /** The delay after which the attacked is stopped. */
-    private int _attackTimeout;
+    private int attackTimeout;
     /** The Attackable aggro counter. */
-    private int _globalAggro;
+    @Setter
+    private int globalAggro;
     /** The flag used to indicate that a thinking action is in progress, to prevent recursive thinking. */
-    private boolean _thinking;
+    private boolean thinking;
 
-    private int _chaosTime = 0;
+    private int chaosTime = 0;
     /** The time of the next raid minion territory check. */
-    private long _minionLeashTime;
+    private long minionLeashTime;
 
     // Fear parameters.
-    private int _fearTime;
-    private Future<?> _fearTask = null;
+    @Getter
+    @Setter
+    private int fearTime;
+
+    private Future<?> fearTask = null;
 
     public AttackableAI(Attackable attackable) {
         super(attackable);
-        _attackTimeout = Integer.MAX_VALUE;
+        attackTimeout = Integer.MAX_VALUE;
         rollGlobalAggro();
     }
 
@@ -173,9 +179,9 @@ public class AttackableAI extends CreatureAI {
             if (FactionSystemConfig.FACTION_SYSTEM_ENABLED
                     && FactionSystemConfig.FACTION_GUARDS_ENABLED
                     && ((player.isGood()
-                                    && _actor.asNpc().getTemplate().isClan(FactionSystemConfig.FACTION_EVIL_TEAM_NAME))
+                                    && actor.asNpc().getTemplate().isClan(FactionSystemConfig.FACTION_EVIL_TEAM_NAME))
                             || (player.isEvil()
-                                    && _actor.asNpc()
+                                    && actor.asNpc()
                                             .getTemplate()
                                             .isClan(FactionSystemConfig.FACTION_GOOD_TEAM_NAME)))) {
                 return true;
@@ -308,13 +314,13 @@ public class AttackableAI extends CreatureAI {
         stopAITask();
 
         // Cancel the AI
-        _actor.detachAI();
+        actor.detachAI();
     }
 
     @Override
     public synchronized void setIntentionActive() {
         // Cancel attack timeout.
-        _attackTimeout = Integer.MAX_VALUE;
+        attackTimeout = Integer.MAX_VALUE;
         super.setIntentionActive();
         startAITask();
     }
@@ -332,7 +338,7 @@ public class AttackableAI extends CreatureAI {
     @Override
     public synchronized void setIntentionAttack(WorldObject target) {
         // Calculate the attack timeout.
-        _attackTimeout = MAX_ATTACK_TIMEOUT + GameTimeTaskManager.getInstance().getGameTicks();
+        attackTimeout = MAX_ATTACK_TIMEOUT + GameTimeTaskManager.getInstance().getGameTicks();
 
         // Manage the Attack Intention : Stop current Attack (if necessary), Start a new Attack and Launch Think Action.
         super.setIntentionAttack(target);
@@ -343,7 +349,7 @@ public class AttackableAI extends CreatureAI {
     public void notifyActionReadyToAct() {
         // A landed attack keeps the fight alive, the timeout is only for targets that cannot be reached.
         if (getIntention() == Intention.ATTACK) {
-            _attackTimeout =
+            attackTimeout =
                     MAX_ATTACK_TIMEOUT + GameTimeTaskManager.getInstance().getGameTicks();
         }
 
@@ -354,7 +360,7 @@ public class AttackableAI extends CreatureAI {
     public void notifyActionFinishCasting() {
         // A finished cast keeps the fight alive, the timeout is only for targets that cannot be reached.
         if (getIntention() == Intention.ATTACK) {
-            _attackTimeout =
+            attackTimeout =
                     MAX_ATTACK_TIMEOUT + GameTimeTaskManager.getInstance().getGameTicks();
         }
 
@@ -396,8 +402,8 @@ public class AttackableAI extends CreatureAI {
 
     @Override
     public void notifyActionAfraid(WorldObject effector, boolean start) {
-        if ((_fearTime > 0) && (_fearTask == null)) {
-            _fearTask = ThreadPool.scheduleAtFixedRate(
+        if ((fearTime > 0) && (fearTask == null)) {
+            fearTask = ThreadPool.scheduleAtFixedRate(
                     () -> {
                         if (effector != null) {
                             final int fearTimeLeft = getFearTime() - FEAR_TICKS;
@@ -408,14 +414,14 @@ public class AttackableAI extends CreatureAI {
                     0,
                     FEAR_TICKS * 1000);
 
-            _actor.startAbnormalVisualEffect(true, AbnormalVisualEffect.TURN_FLEE);
+            actor.startAbnormalVisualEffect(true, AbnormalVisualEffect.TURN_FLEE);
         } else {
             super.notifyActionAfraid(effector, start);
 
-            if ((_actor.isDead() || (_fearTime <= 0)) && (_fearTask != null)) {
-                _fearTask.cancel(true);
-                _fearTask = null;
-                _actor.stopAbnormalVisualEffect(true, AbnormalVisualEffect.TURN_FLEE);
+            if ((actor.isDead() || (fearTime <= 0)) && (fearTask != null)) {
+                fearTask.cancel(true);
+                fearTask = null;
+                actor.stopAbnormalVisualEffect(true, AbnormalVisualEffect.TURN_FLEE);
                 setIntentionIdle();
             }
         }
@@ -427,19 +433,19 @@ public class AttackableAI extends CreatureAI {
             return;
         }
 
-        if (maybeMoveToPawn(getCastTarget(), _actor.getMagicalAttackRange(_skill))) {
+        if (maybeMoveToPawn(getCastTarget(), actor.getMagicalAttackRange(skill))) {
             return;
         }
 
         clientStopMoving(null);
         setIntentionActive();
-        _actor.doCast(_skill);
+        actor.doCast(skill);
     }
 
     /**
      * Manage AI standard thinks of a Attackable (called by onActionThink). <b><u>Actions</u>:</b>
      * <ul>
-     * <li>Update every 1s the _globalAggro counter to come close to 0</li>
+     * <li>Update every 1s the globalAggro counter to come close to 0</li>
      * <li>If the actor is Aggressive and can attack, add all autoAttackable Creature in its Aggro Range to its _aggroList, chose a target and order to attack it</li>
      * <li>If the actor is a GuardInstance that can't attack, order to it to return to its home location</li>
      * <li>If the actor is a Monster that can't attack, order to it to random walk (1/100)</li>
@@ -447,25 +453,25 @@ public class AttackableAI extends CreatureAI {
      */
     protected void thinkActive() {
         // Check if region and its neighbors are active.
-        final WorldRegion region = _actor.getWorldRegion();
+        final WorldRegion region = actor.getWorldRegion();
         if ((region == null) || !region.areNeighborsActive()) {
             return;
         }
 
         final Attackable npc = getActiveChar();
 
-        // Update every 1s the _globalAggro counter to come close to 0.
-        if (_globalAggro != 0) {
-            if (_globalAggro < 0) {
-                _globalAggro++;
+        // Update every 1s the globalAggro counter to come close to 0.
+        if (globalAggro != 0) {
+            if (globalAggro < 0) {
+                globalAggro++;
             } else {
-                _globalAggro--;
+                globalAggro--;
             }
         }
 
         // Add all autoAttackable Creature in Attackable Aggro Range to its _aggroList with 0 damage and 1 hate.
-        // An Attackable isn't aggressive during 10s after its spawn because _globalAggro is set to -10.
-        if (_globalAggro >= 0) {
+        // An Attackable isn't aggressive during 10s after its spawn because globalAggro is set to -10.
+        if (globalAggro >= 0) {
             World.forEachVisibleObject(npc, Creature.class, target -> {
                 if (target instanceof StaticObject) {
                     return;
@@ -478,7 +484,7 @@ public class AttackableAI extends CreatureAI {
                                 npc,
                                 Creature.class,
                                 npc.getAggroRange(),
-                                t -> (t != _actor)
+                                t -> (t != actor)
                                         && !t.isDead()
                                         && ((FakePlayersConfig.FAKE_PLAYER_AGGRO_FPC && t.isFakePlayer())
                                                 || (FakePlayersConfig.FAKE_PLAYER_AGGRO_MONSTERS
@@ -549,7 +555,11 @@ public class AttackableAI extends CreatureAI {
                             && EventDispatcher.getInstance().hasListener(EventType.ON_NPC_HATE, getActiveChar())) {
                         final TerminateReturn term = EventDispatcher.getInstance()
                                 .notifyEvent(
-                                        new OnAttackableHate(getActiveChar(), target.asPlayer(), target.isSummon()),
+                                        OnAttackableHate.builder()
+                                                .npc(getActiveChar())
+                                                .player(target.asPlayer())
+                                                .summon(target.isSummon())
+                                                .build(),
                                         getActiveChar(),
                                         TerminateReturn.class);
                         if ((term != null) && term.terminate()) {
@@ -570,7 +580,7 @@ public class AttackableAI extends CreatureAI {
             if ((hated != null) && !npc.isCoreAIDisabled()) {
                 // Get the hate level of the Attackable against this Creature target contained in _aggroList.
                 final long aggro = npc.getHating(hated);
-                if ((aggro + _globalAggro) > 0) {
+                if ((aggro + globalAggro) > 0) {
                     // Set the Creature movement type to run and send Server->Client packet ChangeMoveType to all others
                     // Player.
                     if (!npc.isRunning()) {
@@ -733,7 +743,7 @@ public class AttackableAI extends CreatureAI {
 
                     // Move the actor to Location (x,y,z) server side AND client side by sending Server->Client packet
                     // MoveToLocation (broadcast)
-                    final Location moveLoc = _actor.isFlying()
+                    final Location moveLoc = actor.isFlying()
                             ? new Location(x2, y2, npc.getZ())
                             : GeoEngine.getInstance()
                                     .getValidLocation(
@@ -769,7 +779,7 @@ public class AttackableAI extends CreatureAI {
 
             // Move the actor to Location (x,y,z) server side AND client side by sending Server->Client packet
             // MoveToLocation (broadcast).
-            final Location moveLoc = _actor.isFlying()
+            final Location moveLoc = actor.isFlying()
                     ? new Location(x1, y1, z1)
                     : GeoEngine.getInstance()
                             .getValidLocation(npc.getX(), npc.getY(), npc.getZ(), x1, y1, z1, npc.getInstanceId());
@@ -838,8 +848,8 @@ public class AttackableAI extends CreatureAI {
                     }
 
                     // Minions should return as well.
-                    if (_actor.asMonster().hasMinions()) {
-                        for (Monster minion : _actor.asMonster().getMinionList().getSpawnedMinions()) {
+                    if (actor.asMonster().hasMinions()) {
+                        for (Monster minion : actor.asMonster().getMinionList().getSpawnedMinions()) {
                             if (NpcConfig.AGGRO_DISTANCE_CHECK_RESTORE_LIFE) {
                                 minion.setCurrentHp(minion.getMaxHp());
                                 minion.setCurrentMp(minion.getMaxMp());
@@ -891,7 +901,7 @@ public class AttackableAI extends CreatureAI {
             return;
         }
 
-        if (_attackTimeout < GameTimeTaskManager.getInstance().getGameTicks()) {
+        if (attackTimeout < GameTimeTaskManager.getInstance().getGameTicks()) {
             // Remember the combat state, the intention change below clears it.
             final boolean wasInCombat = npc.isInCombat();
 
@@ -903,7 +913,7 @@ public class AttackableAI extends CreatureAI {
             npc.clearAggroList();
             npc.getAttackByList().clear();
 
-            if (!_actor.isFakePlayer()) {
+            if (!actor.isFakePlayer()) {
                 npc.setWalking();
             }
 
@@ -918,8 +928,8 @@ public class AttackableAI extends CreatureAI {
         }
 
         // Actor should be able to see target.
-        if (!GeoEngine.getInstance().canSeeTarget(_actor, mostHate)) {
-            if (_actor.calculateDistance3D(mostHate) < 6000) {
+        if (!GeoEngine.getInstance().canSeeTarget(actor, mostHate)) {
+            if (actor.calculateDistance3D(mostHate) < 6000) {
                 moveTo(mostHate);
             }
             return;
@@ -999,18 +1009,18 @@ public class AttackableAI extends CreatureAI {
 
         // BOSS/Raid Minion Target Reconsider.
         if (npc.isRaid() || npc.isRaidMinion()) {
-            _chaosTime++;
+            chaosTime++;
             boolean changeTarget = false;
-            if ((npc instanceof RaidBoss) && (_chaosTime > NpcConfig.RAID_CHAOS_TIME)) {
+            if ((npc instanceof RaidBoss) && (chaosTime > NpcConfig.RAID_CHAOS_TIME)) {
                 final double multiplier = npc.asMonster().hasMinions() ? 200 : 100;
                 changeTarget = ThreadLocalRandom.current().nextInt(100)
                         <= (100 - ((npc.getCurrentHp() * multiplier) / npc.getMaxHp()));
-            } else if ((npc instanceof GrandBoss) && (_chaosTime > NpcConfig.GRAND_CHAOS_TIME)) {
+            } else if ((npc instanceof GrandBoss) && (chaosTime > NpcConfig.GRAND_CHAOS_TIME)) {
                 final double chaosRate = 100 - ((npc.getCurrentHp() * 300) / npc.getMaxHp());
                 changeTarget = ((chaosRate <= 10)
                                 && (ThreadLocalRandom.current().nextInt(100) <= 10))
                         || ((chaosRate > 10) && (ThreadLocalRandom.current().nextInt(100) <= chaosRate));
-            } else if (_chaosTime > NpcConfig.MINION_CHAOS_TIME) {
+            } else if (chaosTime > NpcConfig.MINION_CHAOS_TIME) {
                 changeTarget = ThreadLocalRandom.current().nextInt(100)
                         <= (100 - ((npc.getCurrentHp() * 200) / npc.getMaxHp()));
             }
@@ -1020,7 +1030,7 @@ public class AttackableAI extends CreatureAI {
                 if (mostHate != null) {
                     setAttackTarget(mostHate);
                     setTarget(mostHate);
-                    _chaosTime = 0;
+                    chaosTime = 0;
                     return;
                 }
             }
@@ -1288,7 +1298,7 @@ public class AttackableAI extends CreatureAI {
         }
 
         // Attacks target
-        _actor.doAttack(getAttackTarget());
+        actor.doAttack(getAttackTarget());
     }
 
     private boolean checkTarget(WorldObject target) {
@@ -1360,10 +1370,10 @@ public class AttackableAI extends CreatureAI {
         }
 
         if ((creature == null) && npc.isAggressive()) {
-            final Creature _match = World.getFirstVisibleObjectInRange(
+            final Creature match = World.getFirstVisibleObjectInRange(
                     npc, Creature.class, npc.getAggroRange(), nearby -> checkTarget(nearby));
-            if (_match != null) {
-                return _match;
+            if (match != null) {
+                return match;
             }
         }
 
@@ -1406,7 +1416,7 @@ public class AttackableAI extends CreatureAI {
                     clientStopMoving(null);
                     caster.setTarget(caster);
                     caster.doCast(sk);
-                    _actor.setTarget(attackTarget);
+                    actor.setTarget(attackTarget);
                     return true;
                 }
 
@@ -1877,7 +1887,7 @@ public class AttackableAI extends CreatureAI {
                 + npc.getTemplate().getCollisionRadius()
                 + target.getTemplate().getCollisionRadius();
         if ((dist <= range) && GeoEngine.getInstance().canSeeTarget(npc, target)) {
-            _actor.doAttack(target);
+            actor.doAttack(target);
             return;
         }
 
@@ -2215,12 +2225,12 @@ public class AttackableAI extends CreatureAI {
     @Override
     public void notifyActionThink() {
         // Check if a thinking action is already in progress.
-        if (_thinking) {
+        if (thinking) {
             return;
         }
 
         // Check if region and its neighbors are active.
-        final WorldRegion region = _actor.getWorldRegion();
+        final WorldRegion region = actor.getWorldRegion();
         if ((region == null) || !region.areNeighborsActive()) {
             return;
         }
@@ -2231,7 +2241,7 @@ public class AttackableAI extends CreatureAI {
         }
 
         // Start thinking action.
-        _thinking = true;
+        thinking = true;
 
         try {
             // Send raid minions back to their master when they were dragged out of the master territory.
@@ -2256,7 +2266,7 @@ public class AttackableAI extends CreatureAI {
             // LOGGER.warning(getClass().getSimpleName() + ": " + getActor().getName() + " - onActionThink() failed!");
         } finally {
             // Stop thinking action.
-            _thinking = false;
+            thinking = false;
         }
     }
 
@@ -2272,16 +2282,16 @@ public class AttackableAI extends CreatureAI {
         }
 
         final long currentTime = System.currentTimeMillis();
-        if (_minionLeashTime == 0) {
-            _minionLeashTime = currentTime + MINION_LEASH_INTERVAL;
+        if (minionLeashTime == 0) {
+            minionLeashTime = currentTime + MINION_LEASH_INTERVAL;
             return;
         }
 
-        if (_minionLeashTime > currentTime) {
+        if (minionLeashTime > currentTime) {
             return;
         }
 
-        _minionLeashTime = currentTime + MINION_LEASH_INTERVAL;
+        minionLeashTime = currentTime + MINION_LEASH_INTERVAL;
 
         final Attackable master = npc.getLeader();
         if ((master == null) || master.isDead() || isInsideMasterTerritory(npc, master)) {
@@ -2320,7 +2330,7 @@ public class AttackableAI extends CreatureAI {
      * <br>
      * <b><u>Actions</u>:</b>
      * <ul>
-     * <li>Init the attack : Calculate the attack timeout, Set the _globalAggro to 0, Add the attacker to the actor _aggroList</li>
+     * <li>Init the attack : Calculate the attack timeout, Set the globalAggro to 0, Add the attacker to the actor _aggroList</li>
      * <li>Set the Creature movement type to run and send Server->Client packet ChangeMoveType to all others Player</li>
      * <li>Set the Intention to ATTACK</li>
      * </ul>
@@ -2340,11 +2350,11 @@ public class AttackableAI extends CreatureAI {
         final Attackable me = getActiveChar();
 
         // Calculate the attack timeout.
-        _attackTimeout = MAX_ATTACK_TIMEOUT + GameTimeTaskManager.getInstance().getGameTicks();
+        attackTimeout = MAX_ATTACK_TIMEOUT + GameTimeTaskManager.getInstance().getGameTicks();
 
-        // Set the _globalAggro to 0 to permit attack even just after spawn.
-        if (_globalAggro < 0) {
-            _globalAggro = 0;
+        // Set the globalAggro to 0 to permit attack even just after spawn.
+        if (globalAggro < 0) {
+            globalAggro = 0;
         }
 
         // Add the attacker to the _aggroList of the actor if not present.
@@ -2412,8 +2422,8 @@ public class AttackableAI extends CreatureAI {
                         }
 
                         // Don't call npcs who are already doing some action (e.g. attacking, casting).
-                        if ((nearby.getAI()._intention != Intention.IDLE)
-                                && (nearby.getAI()._intention != Intention.ACTIVE)) {
+                        if ((nearby.getAI().intention != Intention.IDLE)
+                                && (nearby.getAI().intention != Intention.ACTIVE)) {
                             return;
                         }
 
@@ -2451,11 +2461,15 @@ public class AttackableAI extends CreatureAI {
                                     .hasListener(EventType.ON_ATTACKABLE_FACTION_CALL, nearby)) {
                                 EventDispatcher.getInstance()
                                         .notifyEventAsync(
-                                                new OnAttackableFactionCall(
-                                                        nearby, me, finalTarget.asPlayer(), finalTarget.isSummon()),
+                                                OnAttackableFactionCall.builder()
+                                                        .npc(nearby)
+                                                        .caller(me)
+                                                        .attacker(finalTarget.asPlayer())
+                                                        .summon(finalTarget.isSummon())
+                                                        .build(),
                                                 nearby);
                             }
-                        } else if (nearby.getAI()._intention != Intention.ATTACK) {
+                        } else if (nearby.getAI().intention != Intention.ATTACK) {
                             if (GeoEngine.getInstance().canSeeTarget(nearby, finalTarget)) {
                                 nearby.addDamageHate(finalTarget, 0, me.getHating(finalTarget));
                                 nearby.getAI().setIntentionAttack(finalTarget);
@@ -2528,29 +2542,17 @@ public class AttackableAI extends CreatureAI {
     public void rollGlobalAggro() {
         final int aggressiveTime = getActiveChar().getTemplate().getParameters().getInt("SetAggressiveTime", -1);
         if (aggressiveTime == 0) {
-            _globalAggro = 0;
+            globalAggro = 0;
         } else if (aggressiveTime > 0) {
             // The counter is tested on the tick that raises it, so it is set one past the wanted delay.
-            _globalAggro = -(aggressiveTime + 1);
+            globalAggro = -(aggressiveTime + 1);
         } else {
-            _globalAggro = -(ThreadLocalRandom.current().nextInt(5) + 4);
+            globalAggro = -(ThreadLocalRandom.current().nextInt(5) + 4);
         }
     }
 
-    public void setGlobalAggro(int value) {
-        _globalAggro = value;
-    }
-
     public Attackable getActiveChar() {
-        return _actor.asAttackable();
-    }
-
-    public int getFearTime() {
-        return _fearTime;
-    }
-
-    public void setFearTime(int fearTime) {
-        _fearTime = fearTime;
+        return actor.asAttackable();
     }
 
     private boolean allowsParameterizedCast(Attackable caster, Skill skill, Creature target) {

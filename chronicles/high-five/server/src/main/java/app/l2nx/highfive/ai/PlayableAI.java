@@ -44,7 +44,7 @@ public abstract class PlayableAI extends CreatureAI {
     @Override
     public void setIntentionAttack(WorldObject target) {
         if ((target != null) && target.isPlayable()) {
-            final Player player = _actor.asPlayer();
+            final Player player = actor.asPlayer();
             final Player targetPlayer = target.asPlayer();
             if ((player != null) && (targetPlayer != null)) {
                 if (targetPlayer.isProtectionBlessingAffected()
@@ -88,7 +88,7 @@ public abstract class PlayableAI extends CreatureAI {
     @Override
     public void setIntentionCast(Skill skill, WorldObject target) {
         if ((target != null) && (target.isPlayable()) && (skill != null) && skill.hasNegativeEffect()) {
-            final Player player = _actor.asPlayer();
+            final Player player = actor.asPlayer();
             final Player targetPlayer = target.asPlayer();
             if ((player != null) && (targetPlayer != null)) {
                 if (targetPlayer.isProtectionBlessingAffected()

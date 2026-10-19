@@ -29,14 +29,14 @@ import app.l2nx.highfive.mechanics.skill.Skill;
  * @author mkizub
  */
 public class ConditionTargetUsesWeaponKind extends Condition {
-    private final int _weaponMask;
+    private final int weaponMask;
 
     /**
      * Instantiates a new condition target uses weapon kind.
      * @param weaponMask the weapon mask
      */
     public ConditionTargetUsesWeaponKind(int weaponMask) {
-        _weaponMask = weaponMask;
+        this.weaponMask = weaponMask;
     }
 
     @Override
@@ -50,6 +50,6 @@ public class ConditionTargetUsesWeaponKind extends Condition {
             return false;
         }
 
-        return (weapon.getItemType().mask() & _weaponMask) != 0;
+        return (weapon.getItemType().mask() & weaponMask) != 0;
     }
 }

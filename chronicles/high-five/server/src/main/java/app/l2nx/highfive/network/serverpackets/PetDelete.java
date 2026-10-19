@@ -27,18 +27,18 @@ import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.network.buffer.WriteBuffer;
 
 public class PetDelete extends ServerPacket {
-    private final int _petType;
-    private final int _petObjId;
+    private final int petType;
+    private final int petObjId;
 
     public PetDelete(int petType, int petObjId) {
-        _petType = petType; // Summon Type
-        _petObjId = petObjId; // objectId
+        this.petType = petType; // Summon Type
+        this.petObjId = petObjId; // objectId
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.PET_DELETE.writeId(this, buffer);
-        buffer.writeInt(_petType);
-        buffer.writeInt(_petObjId);
+        buffer.writeInt(petType);
+        buffer.writeInt(petObjId);
     }
 }

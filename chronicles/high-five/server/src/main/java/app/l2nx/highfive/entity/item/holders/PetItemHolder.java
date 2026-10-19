@@ -24,14 +24,4 @@ import app.l2nx.highfive.entity.item.instance.Item;
 /**
  * @author UnAfraid
  */
-public class PetItemHolder {
-    private final Item _item;
-
-    public PetItemHolder(Item item) {
-        _item = item;
-    }
-
-    public Item getItem() {
-        return _item;
-    }
-}
+public record PetItemHolder(Item item) {}

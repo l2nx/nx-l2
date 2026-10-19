@@ -53,7 +53,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
@@ -62,8 +62,8 @@ import org.w3c.dom.Node;
  * Four Selpuchers AI
  * @author Mobius
  */
+@Slf4j
 public class FourSepulchers extends Script implements IXmlReader {
-    private static final Logger LOGGER = Logger.getLogger(FourSepulchers.class.getName());
 
     // NPCs
     private static final int CONQUEROR_MANAGER = 31921;
@@ -161,6 +161,7 @@ public class FourSepulchers extends Script implements IXmlReader {
         STORED_MONSTER_SPAWNS.put(3, new CopyOnWriteArrayList<>());
         STORED_MONSTER_SPAWNS.put(4, new CopyOnWriteArrayList<>());
     }
+
     // @formatter:off
     private static final int[][] CHEST_SPAWN_LOCATIONS = {
         // sepulcherId, roomNumber, npcLocX, npcLocY, npcLocZ, npcLocHeading
@@ -406,7 +407,7 @@ public class FourSepulchers extends Script implements IXmlReader {
                             manager.broadcastSay(ChatType.NPC_SHOUT, message);
                         }
                     } else {
-                        LOGGER.warning("Four Sepulcher Manager with ID " + managerId + " is missing!");
+                        log.warn("Four Sepulcher Manager with ID {} is missing!", managerId);
                     }
                 }
 
@@ -741,7 +742,7 @@ public class FourSepulchers extends Script implements IXmlReader {
     public void load() {
         ROOM_SPAWN_DATA.clear();
         parseDatapackFile("data/scripts/ai/areas/ImperialTomb/FourSepulchers/FourSepulchers.xml");
-        LOGGER.info("[Four Sepulchers] Loaded " + ROOM_SPAWN_DATA.size() + " spawn zones data.");
+        log.info("[Four Sepulchers] Loaded {} spawn zones data.", ROOM_SPAWN_DATA.size());
     }
 
     @Override

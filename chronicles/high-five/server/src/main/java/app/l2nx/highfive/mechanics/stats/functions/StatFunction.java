@@ -19,6 +19,8 @@
  */
 package app.l2nx.highfive.mechanics.stats.functions;
 
+import lombok.Getter;
+
 /**
  * @author Zealar
  */
@@ -32,19 +34,14 @@ public enum StatFunction {
     SHARE("Share", 30),
     SUB("Sub", 30);
 
-    private final String _name;
-    private final int _order;
+    @Getter
+    private final String name;
+
+    @Getter
+    private final int order;
 
     StatFunction(String name, int order) {
-        _name = name;
-        _order = order;
-    }
-
-    public String getName() {
-        return _name;
-    }
-
-    public int getOrder() {
-        return _order;
+        this.name = name;
+        this.order = order;
     }
 }

@@ -33,8 +33,7 @@ import java.lang.Thread.UncaughtExceptionHandler;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Thread-pool-based executor for incoming network packets.<br>
@@ -42,17 +41,17 @@ import java.util.logging.Logger;
  * @param <T> the client type associated with the packets being executed
  * @author Mobius
  */
+@Slf4j
 public class PacketExecutor<T extends Client<Connection<T>>> {
-    private static final Logger LOGGER = Logger.getLogger(PacketExecutor.class.getName());
 
-    private final ThreadPoolExecutor _executor;
+    private final ThreadPoolExecutor executor;
 
     /**
      * Creates an executor sized according to {@link ConnectionConfig#threadPoolSize}.
      * @param config the connection configuration supplying pool size and thread priority
      */
     public PacketExecutor(ConnectionConfig config) {
-        _executor = new ThreadPoolExecutor(
+        executor = new ThreadPoolExecutor(
                 config.threadPoolSize,
                 Integer.MAX_VALUE,
                 1,
@@ -62,17 +61,17 @@ public class PacketExecutor<T extends Client<Connection<T>>> {
     }
 
     public void bindMetrics(MeterRegistry registry, String name) {
-        new ExecutorServiceMetrics(_executor, name, Tags.empty()).bindTo(registry);
+        new ExecutorServiceMetrics(executor, name, Tags.empty()).bindTo(registry);
     }
 
     public void shutdown(long waitMillis) {
-        _executor.shutdown();
+        executor.shutdown();
         try {
-            if (!_executor.awaitTermination(waitMillis, TimeUnit.MILLISECONDS)) {
-                _executor.shutdownNow();
+            if (!executor.awaitTermination(waitMillis, TimeUnit.MILLISECONDS)) {
+                executor.shutdownNow();
             }
         } catch (InterruptedException e) {
-            _executor.shutdownNow();
+            executor.shutdownNow();
             Thread.currentThread().interrupt();
         }
     }
@@ -83,33 +82,31 @@ public class PacketExecutor<T extends Client<Connection<T>>> {
      */
     public void execute(ReadablePacket<T> packet) {
         try {
-            _executor.execute(new PacketRunnable<>(packet));
+            executor.execute(new PacketRunnable<>(packet));
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, "Failed to submit " + packet.getClass().getSimpleName(), e);
+            log.warn("Failed to submit {}", packet.getClass().getSimpleName(), e);
         }
     }
 
+    @Slf4j
     private static class PacketRunnable<T extends Client<Connection<T>>> implements Runnable {
-        private final ReadablePacket<T> _packet;
+        private final ReadablePacket<T> packet;
 
         public PacketRunnable(ReadablePacket<T> packet) {
-            _packet = packet;
+            this.packet = packet;
         }
 
         @Override
         public void run() {
             try {
-                _packet.run();
+                packet.run();
             } catch (Throwable t) {
                 final Thread currentThread = Thread.currentThread();
                 final UncaughtExceptionHandler handler = currentThread.getUncaughtExceptionHandler();
                 if (handler != null) {
                     handler.uncaughtException(currentThread, t);
                 } else {
-                    LOGGER.log(
-                            Level.SEVERE,
-                            "Uncaught exception in " + _packet.getClass().getSimpleName(),
-                            t);
+                    log.error("Uncaught exception in {}", packet.getClass().getSimpleName(), t);
                 }
             }
         }

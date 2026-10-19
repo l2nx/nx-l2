@@ -27,15 +27,15 @@ import app.l2nx.network.buffer.WriteBuffer;
  * @author devScarlet, mrTJO
  */
 public class ShowXMasSeal extends ServerPacket {
-    private final int _item;
+    private final int item;
 
     public ShowXMasSeal(int item) {
-        _item = item;
+        this.item = item;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.SHOW_XMAS_SEAL.writeId(this, buffer);
-        buffer.writeInt(_item);
+        buffer.writeInt(item);
     }
 }

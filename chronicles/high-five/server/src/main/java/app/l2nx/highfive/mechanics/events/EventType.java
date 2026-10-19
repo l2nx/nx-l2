@@ -113,6 +113,7 @@ import app.l2nx.highfive.mechanics.events.holders.sieges.fort.OnFortSiegeStart;
 import app.l2nx.highfive.mechanics.events.returns.ChatFilterReturn;
 import app.l2nx.highfive.mechanics.events.returns.TerminateReturn;
 import app.l2nx.highfive.util.ArrayUtil;
+import lombok.Getter;
 
 /**
  * @author UnAfraid, Mobius
@@ -241,27 +242,22 @@ public enum EventType {
     ON_DAY_NIGHT_CHANGE(OnDayNightChange.class, void.class),
     ON_DAILY_RESET(OnDailyReset.class, void.class);
 
-    private final Class<? extends IBaseEvent> _eventClass;
-    private final Class<?>[] _returnClass;
+    @Getter
+    private final Class<? extends IBaseEvent> eventClass;
+
+    @Getter
+    private final Class<?>[] returnClasses;
 
     EventType(Class<? extends IBaseEvent> eventClass, Class<?>... returnClasss) {
-        _eventClass = eventClass;
-        _returnClass = returnClasss;
-    }
-
-    public Class<? extends IBaseEvent> getEventClass() {
-        return _eventClass;
-    }
-
-    public Class<?>[] getReturnClasses() {
-        return _returnClass;
+        this.eventClass = eventClass;
+        returnClasses = returnClasss;
     }
 
     public boolean isEventClass(Class<?> clazz) {
-        return _eventClass == clazz;
+        return eventClass == clazz;
     }
 
     public boolean isReturnClass(Class<?> clazz) {
-        return ArrayUtil.contains(_returnClass, clazz);
+        return ArrayUtil.contains(returnClasses, clazz);
     }
 }

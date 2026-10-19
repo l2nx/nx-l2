@@ -29,21 +29,21 @@ import app.l2nx.highfive.mechanics.skill.Skill;
  * @author Kerberos
  */
 public class ConditionPlayerInvSize extends Condition {
-    private final int _size;
+    private final int size;
 
     /**
      * Instantiates a new condition player inv size.
      * @param size the size
      */
     public ConditionPlayerInvSize(int size) {
-        _size = size;
+        this.size = size;
     }
 
     @Override
     public boolean testImpl(Creature effector, Creature effected, Skill skill, ItemTemplate item) {
         final Player player = effector.asPlayer();
         if (player != null) {
-            return player.getInventory().getNonQuestSize() <= (player.getInventoryLimit() - _size);
+            return player.getInventory().getNonQuestSize() <= (player.getInventoryLimit() - size);
         }
 
         return true;

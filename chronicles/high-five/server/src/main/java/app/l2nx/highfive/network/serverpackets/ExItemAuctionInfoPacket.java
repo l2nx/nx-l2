@@ -30,10 +30,10 @@ import app.l2nx.network.buffer.WriteBuffer;
  * @author Forsaiken
  */
 public class ExItemAuctionInfoPacket extends AbstractItemPacket {
-    private final boolean _refresh;
-    private final int _timeRemaining;
-    private final ItemAuction _currentAuction;
-    private final ItemAuction _nextAuction;
+    private final boolean refresh;
+    private final int timeRemaining;
+    private final ItemAuction currentAuction;
+    private final ItemAuction nextAuction;
 
     public ExItemAuctionInfoPacket(boolean refresh, ItemAuction currentAuction, ItemAuction nextAuction) {
         if (currentAuction == null) {
@@ -41,29 +41,29 @@ public class ExItemAuctionInfoPacket extends AbstractItemPacket {
         }
 
         if (currentAuction.getAuctionState() != ItemAuctionState.STARTED) {
-            _timeRemaining = 0;
+            timeRemaining = 0;
         } else {
-            _timeRemaining = (int) (currentAuction.getFinishingTimeRemaining() / 1000); // in seconds
+            timeRemaining = (int) (currentAuction.getFinishingTimeRemaining() / 1000); // in seconds
         }
 
-        _refresh = refresh;
-        _currentAuction = currentAuction;
-        _nextAuction = nextAuction;
+        this.refresh = refresh;
+        this.currentAuction = currentAuction;
+        this.nextAuction = nextAuction;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_ITEM_AUCTION_INFO.writeId(this, buffer);
-        buffer.writeByte(!_refresh);
-        buffer.writeInt(_currentAuction.getInstanceId());
-        final ItemAuctionBid highestBid = _currentAuction.getHighestBid();
-        buffer.writeLong(highestBid != null ? highestBid.getLastBid() : _currentAuction.getAuctionInitBid());
-        buffer.writeInt(_timeRemaining);
-        writeItem(_currentAuction.getItemInfo(), buffer);
-        if (_nextAuction != null) {
-            buffer.writeLong(_nextAuction.getAuctionInitBid());
-            buffer.writeInt((int) (_nextAuction.getStartingTime() / 1000)); // unix time in seconds
-            writeItem(_nextAuction.getItemInfo(), buffer);
+        buffer.writeByte(!refresh);
+        buffer.writeInt(currentAuction.getInstanceId());
+        final ItemAuctionBid highestBid = currentAuction.getHighestBid();
+        buffer.writeLong(highestBid != null ? highestBid.getLastBid() : currentAuction.getAuctionInitBid());
+        buffer.writeInt(timeRemaining);
+        writeItem(currentAuction.getItemInfo(), buffer);
+        if (nextAuction != null) {
+            buffer.writeLong(nextAuction.getAuctionInitBid());
+            buffer.writeInt((int) (nextAuction.getStartingTime() / 1000)); // unix time in seconds
+            writeItem(nextAuction.getItemInfo(), buffer);
         }
     }
 }

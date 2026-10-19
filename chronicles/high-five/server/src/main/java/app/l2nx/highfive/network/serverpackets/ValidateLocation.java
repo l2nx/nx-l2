@@ -29,21 +29,21 @@ import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.network.buffer.WriteBuffer;
 
 public class ValidateLocation extends ServerPacket {
-    private final int _objectId;
-    private final Location _loc;
+    private final int objectId;
+    private final Location loc;
 
     public ValidateLocation(WorldObject obj) {
-        _objectId = obj.getObjectId();
-        _loc = obj.getLocation();
+        objectId = obj.getObjectId();
+        loc = obj.getLocation();
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.VALIDATE_LOCATION.writeId(this, buffer);
-        buffer.writeInt(_objectId);
-        buffer.writeInt(_loc.getX());
-        buffer.writeInt(_loc.getY());
-        buffer.writeInt(_loc.getZ());
-        buffer.writeInt(_loc.getHeading());
+        buffer.writeInt(objectId);
+        buffer.writeInt(loc.getX());
+        buffer.writeInt(loc.getY());
+        buffer.writeInt(loc.getZ());
+        buffer.writeInt(loc.getHeading());
     }
 }

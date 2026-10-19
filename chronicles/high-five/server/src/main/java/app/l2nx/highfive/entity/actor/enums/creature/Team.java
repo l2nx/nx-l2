@@ -19,6 +19,8 @@
  */
 package app.l2nx.highfive.entity.actor.enums.creature;
 
+import lombok.Getter;
+
 /**
  * @author NosBit
  */
@@ -27,13 +29,10 @@ public enum Team {
     BLUE(1),
     RED(2);
 
-    private int _id;
+    @Getter
+    private int id;
 
     private Team(int id) {
-        _id = id;
-    }
-
-    public int getId() {
-        return _id;
+        this.id = id;
     }
 }

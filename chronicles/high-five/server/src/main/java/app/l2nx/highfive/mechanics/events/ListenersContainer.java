@@ -36,7 +36,7 @@ import java.util.function.Predicate;
  * @author UnAfraid, Mobius
  */
 public class ListenersContainer {
-    private Map<EventType, Queue<AbstractEventListener>> _listeners = null;
+    private Map<EventType, Queue<AbstractEventListener>> listeners = null;
 
     /**
      * Registers listener for a callback when specified event is executed.
@@ -64,26 +64,26 @@ public class ListenersContainer {
             throw new NullPointerException("Listener cannot be null!");
         }
 
-        if (_listeners == null) {
+        if (listeners == null) {
             throw new NullPointerException("Listeners container is not initialized!");
         }
 
         final EventType type = listener.getType();
-        final Queue<AbstractEventListener> eventListenerQueue = _listeners.get(type);
+        final Queue<AbstractEventListener> eventListenerQueue = listeners.get(type);
         if (eventListenerQueue == null) {
             throw new IllegalAccessError("Listeners container doesn't had " + type + " event type added!");
         }
 
         eventListenerQueue.remove(listener);
         if (eventListenerQueue.isEmpty()) {
-            _listeners.remove(type);
+            listeners.remove(type);
         }
 
         return listener;
     }
 
     public void removeListenerIf(EventType type, Predicate<? super AbstractEventListener> filter) {
-        if (_listeners == null) {
+        if (listeners == null) {
             return;
         }
 
@@ -95,7 +95,7 @@ public class ListenersContainer {
     }
 
     public void removeListenerIf(Predicate<? super AbstractEventListener> filter) {
-        if (_listeners == null) {
+        if (listeners == null) {
             return;
         }
 
@@ -109,7 +109,7 @@ public class ListenersContainer {
     }
 
     public boolean hasListener(EventType type) {
-        if ((_listeners != null) && _listeners.containsKey(type)) {
+        if ((listeners != null) && listeners.containsKey(type)) {
             return true;
         }
 
@@ -136,8 +136,8 @@ public class ListenersContainer {
      * @return {@code List} of {@link AbstractEventListener} by the specified type
      */
     public Collection<AbstractEventListener> getListeners(EventType type) {
-        if (_listeners != null) {
-            final Collection<AbstractEventListener> eventListenerQueue = _listeners.get(type);
+        if (listeners != null) {
+            final Collection<AbstractEventListener> eventListenerQueue = listeners.get(type);
             if (eventListenerQueue != null) {
                 return eventListenerQueue;
             }
@@ -151,14 +151,14 @@ public class ListenersContainer {
      * @return the listeners container map.
      */
     private Map<EventType, Queue<AbstractEventListener>> getListeners() {
-        if (_listeners == null) {
+        if (listeners == null) {
             synchronized (this) {
-                if (_listeners == null) {
-                    _listeners = new ConcurrentHashMap<>();
+                if (listeners == null) {
+                    listeners = new ConcurrentHashMap<>();
                 }
             }
         }
 
-        return _listeners;
+        return listeners;
     }
 }

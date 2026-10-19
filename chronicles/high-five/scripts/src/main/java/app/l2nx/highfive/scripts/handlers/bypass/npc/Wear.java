@@ -31,8 +31,9 @@ import app.l2nx.highfive.mechanics.buylist.BuyListHolder;
 import app.l2nx.highfive.network.serverpackets.ActionFailed;
 import app.l2nx.highfive.network.serverpackets.ShopPreviewList;
 import java.util.StringTokenizer;
-import java.util.logging.Level;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class Wear implements IBypassHandler {
     private static final String[] COMMANDS = {"Wear"};
 
@@ -57,7 +58,7 @@ public class Wear implements IBypassHandler {
             showWearWindow(player, Integer.parseInt(st.nextToken()));
             return true;
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, "Exception in " + getClass().getSimpleName(), e);
+            log.warn("Bypass failed", e);
         }
 
         return false;
@@ -66,7 +67,7 @@ public class Wear implements IBypassHandler {
     private void showWearWindow(Player player, int value) {
         final BuyListHolder buyList = BuyListData.getInstance().getBuyList(value);
         if (buyList == null) {
-            LOGGER.warning("BuyList not found! BuyListId:" + value);
+            log.warn("BuyList not found! BuyListId:{}", value);
             player.sendPacket(ActionFailed.STATIC_PACKET);
             return;
         }

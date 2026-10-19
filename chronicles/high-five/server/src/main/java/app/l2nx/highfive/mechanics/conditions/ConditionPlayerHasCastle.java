@@ -29,14 +29,14 @@ import app.l2nx.highfive.mechanics.skill.Skill;
  * @author MrPoke
  */
 public class ConditionPlayerHasCastle extends Condition {
-    private final int _castle;
+    private final int castle;
 
     /**
      * Instantiates a new condition player has castle.
      * @param castle the castle
      */
     public ConditionPlayerHasCastle(int castle) {
-        _castle = castle;
+        this.castle = castle;
     }
 
     /**
@@ -51,14 +51,14 @@ public class ConditionPlayerHasCastle extends Condition {
 
         final Clan clan = effector.asPlayer().getClan();
         if (clan == null) {
-            return _castle == 0;
+            return castle == 0;
         }
 
         // Any castle
-        if (_castle == -1) {
+        if (castle == -1) {
             return clan.getCastleId() > 0;
         }
 
-        return clan.getCastleId() == _castle;
+        return clan.getCastleId() == castle;
     }
 }

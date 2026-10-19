@@ -28,30 +28,30 @@ import app.l2nx.network.buffer.WriteBuffer;
  * @author Maktakien
  */
 public class VehicleDeparture extends ServerPacket {
-    private final int _objId;
-    private final int _x;
-    private final int _y;
-    private final int _z;
-    private final int _moveSpeed;
-    private final int _rotationSpeed;
+    private final int objId;
+    private final int x;
+    private final int y;
+    private final int z;
+    private final int moveSpeed;
+    private final int rotationSpeed;
 
     public VehicleDeparture(Boat boat) {
-        _objId = boat.getObjectId();
-        _x = boat.getXdestination();
-        _y = boat.getYdestination();
-        _z = boat.getZdestination();
-        _moveSpeed = (int) boat.getMoveSpeed();
-        _rotationSpeed = (int) boat.getStat().getRotationSpeed();
+        objId = boat.getObjectId();
+        x = boat.getXdestination();
+        y = boat.getYdestination();
+        z = boat.getZdestination();
+        moveSpeed = (int) boat.getMoveSpeed();
+        rotationSpeed = (int) boat.getStat().getRotationSpeed();
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.VEHICLE_DEPARTURE.writeId(this, buffer);
-        buffer.writeInt(_objId);
-        buffer.writeInt(_moveSpeed);
-        buffer.writeInt(_rotationSpeed);
-        buffer.writeInt(_x);
-        buffer.writeInt(_y);
-        buffer.writeInt(_z);
+        buffer.writeInt(objId);
+        buffer.writeInt(moveSpeed);
+        buffer.writeInt(rotationSpeed);
+        buffer.writeInt(x);
+        buffer.writeInt(y);
+        buffer.writeInt(z);
     }
 }

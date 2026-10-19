@@ -60,20 +60,20 @@ public class SoIController extends AirShipController {
         addFirstTalkId(CONTROLLER_ID);
         addTalkId(CONTROLLER_ID);
 
-        _dockZone = DOCK_ZONE;
+        dockZone = DOCK_ZONE;
         addEnterZoneId(DOCK_ZONE);
         addExitZoneId(DOCK_ZONE);
 
-        _shipSpawnX = -212719;
-        _shipSpawnY = 213348;
-        _shipSpawnZ = 5000;
-        _oustLoc = new Location(-213401, 210401, 4408);
-        _locationId = LOCATION;
-        _arrivalPath = ARRIVAL;
-        _departPath = DEPART;
-        _teleportsTable = TELEPORTS;
-        _fuelTable = FUEL;
-        _movie = Movie.LAND_UNDEAD_A;
+        shipSpawnX = -212719;
+        shipSpawnY = 213348;
+        shipSpawnZ = 5000;
+        oustLoc = new Location(-213401, 210401, 4408);
+        locationId = LOCATION;
+        arrivalPath = ARRIVAL;
+        departPath = DEPART;
+        teleportsTable = TELEPORTS;
+        fuelTable = FUEL;
+        movie = Movie.LAND_UNDEAD_A;
         validityCheck();
     }
 }

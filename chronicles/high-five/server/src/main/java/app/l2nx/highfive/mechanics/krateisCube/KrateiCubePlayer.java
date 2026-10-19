@@ -23,45 +23,37 @@
 package app.l2nx.highfive.mechanics.krateisCube;
 
 import app.l2nx.highfive.entity.actor.Player;
+import lombok.Getter;
 
 /**
  * @author LordWinter
  */
 public class KrateiCubePlayer {
-    private final Player _player;
-    private boolean _isInside = false;
-    private boolean _isRegister = false;
-    private int _points = 0;
+    @Getter
+    private final Player player;
+
+    @Getter
+    private boolean inside = false;
+
+    @Getter
+    private boolean register = false;
+
+    @Getter
+    private int points = 0;
 
     public KrateiCubePlayer(Player player) {
-        _player = player;
-    }
-
-    public Player getPlayer() {
-        return _player;
+        this.player = player;
     }
 
     public void setIsRegister(boolean value) {
-        _isRegister = value;
-    }
-
-    public boolean isRegister() {
-        return _isRegister;
+        register = value;
     }
 
     public void setIsInside(boolean value) {
-        _isInside = value;
-    }
-
-    public boolean isInside() {
-        return _isInside;
+        inside = value;
     }
 
     public void addPoints(int points) {
-        _points = points;
-    }
-
-    public int getPoints() {
-        return _points;
+        this.points = points;
     }
 }

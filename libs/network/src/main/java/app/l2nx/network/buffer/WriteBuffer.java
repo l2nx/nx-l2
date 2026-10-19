@@ -45,13 +45,13 @@ public class WriteBuffer {
     /** Per-packet-class largest observed packet size, used to right-size the initial pooled buffer. */
     private static final Map<Class<?>, Integer> MAXIMUM_PACKET_SIZE = new ConcurrentHashMap<>();
 
-    private final ResourcePool _resourcePool;
-    private final Class<?> _packetClass;
-    private final int _initialSize;
+    private final ResourcePool resourcePool;
+    private final Class<?> packetClass;
+    private final int initialSize;
 
-    private ByteBuffer _buf;
-    private int _position;
-    private int _limit;
+    private ByteBuffer buf;
+    private int position;
+    private int limit;
 
     /**
      * Creates an empty buffer sized to the historical maximum for the given packet class, falling back to the pool's segment size.
@@ -59,11 +59,11 @@ public class WriteBuffer {
      * @param packetClass the packet class; used for size-hint tracking
      */
     public WriteBuffer(ResourcePool resourcePool, Class<?> packetClass) {
-        _resourcePool = resourcePool;
-        _packetClass = packetClass;
-        _initialSize = MAXIMUM_PACKET_SIZE.getOrDefault(packetClass, resourcePool.getSegmentSize());
-        _buf = resourcePool.getBuffer(_initialSize);
-        _limit = _buf.capacity();
+        this.resourcePool = resourcePool;
+        this.packetClass = packetClass;
+        initialSize = MAXIMUM_PACKET_SIZE.getOrDefault(packetClass, resourcePool.getSegmentSize());
+        buf = resourcePool.getBuffer(initialSize);
+        limit = buf.capacity();
     }
 
     /**
@@ -75,16 +75,16 @@ public class WriteBuffer {
      * @param packetClass the packet class; used for size-hint tracking
      */
     public WriteBuffer(byte[] cached, int cachedLength, ResourcePool resourcePool, Class<?> packetClass) {
-        _resourcePool = resourcePool;
-        _packetClass = packetClass;
-        _initialSize =
+        this.resourcePool = resourcePool;
+        this.packetClass = packetClass;
+        initialSize =
                 MAXIMUM_PACKET_SIZE.getOrDefault(packetClass, Math.max(cachedLength, resourcePool.getSegmentSize()));
-        _buf = resourcePool.getBuffer(Math.max(_initialSize, cachedLength));
-        _buf.position(0);
-        _buf.put(cached, 0, cachedLength);
-        _buf.position(0);
-        _position = cachedLength;
-        _limit = cachedLength;
+        buf = resourcePool.getBuffer(Math.max(initialSize, cachedLength));
+        buf.position(0);
+        buf.put(cached, 0, cachedLength);
+        buf.position(0);
+        position = cachedLength;
+        limit = cachedLength;
     }
 
     /**
@@ -93,16 +93,16 @@ public class WriteBuffer {
      * @param required the minimum capacity needed
      */
     private void ensureSize(int required) {
-        final int capacity = _buf.capacity();
+        final int capacity = buf.capacity();
         if (capacity < required) {
             final int newSize = Math.max(required, (int) (capacity * 1.5));
-            final ByteBuffer newBuf = _resourcePool.getBuffer(newSize);
+            final ByteBuffer newBuf = resourcePool.getBuffer(newSize);
             newBuf.position(0);
-            _buf.position(0).limit(Math.min(_position, capacity));
-            newBuf.put(_buf);
+            buf.position(0).limit(Math.min(position, capacity));
+            newBuf.put(buf);
             newBuf.position(0);
-            _resourcePool.recycleBuffer(_buf);
-            _buf = newBuf;
+            resourcePool.recycleBuffer(buf);
+            buf = newBuf;
         }
     }
 
@@ -115,8 +115,8 @@ public class WriteBuffer {
      * @param value the byte to write
      */
     public void writeByte(byte value) {
-        ensureSize(_position + 1);
-        _buf.put(_position++, value);
+        ensureSize(position + 1);
+        buf.put(position++, value);
     }
 
     /**
@@ -144,9 +144,9 @@ public class WriteBuffer {
             return;
         }
 
-        ensureSize(_position + value.length);
-        _buf.put(_position, value, 0, value.length);
-        _position += value.length;
+        ensureSize(position + value.length);
+        buf.put(position, value, 0, value.length);
+        position += value.length;
     }
 
     /**
@@ -154,9 +154,9 @@ public class WriteBuffer {
      * @param value the short to write
      */
     public void writeShort(short value) {
-        ensureSize(_position + 2);
-        _buf.putShort(_position, value);
-        _position += 2;
+        ensureSize(position + 2);
+        buf.putShort(position, value);
+        position += 2;
     }
 
     /**
@@ -180,9 +180,9 @@ public class WriteBuffer {
      * @param value the int to write
      */
     public void writeInt(int value) {
-        ensureSize(_position + 4);
-        _buf.putInt(_position, value);
-        _position += 4;
+        ensureSize(position + 4);
+        buf.putInt(position, value);
+        position += 4;
     }
 
     /**
@@ -198,9 +198,9 @@ public class WriteBuffer {
      * @param value the long to write
      */
     public void writeLong(long value) {
-        ensureSize(_position + 8);
-        _buf.putLong(_position, value);
-        _position += 8;
+        ensureSize(position + 8);
+        buf.putLong(position, value);
+        position += 8;
     }
 
     /**
@@ -235,15 +235,15 @@ public class WriteBuffer {
     public void writeString(CharSequence text) {
         if (text != null) {
             final int len = text.length();
-            ensureSize(_position + (len << 1) + 2);
+            ensureSize(position + (len << 1) + 2);
             for (int i = 0; i < len; i++) {
-                _buf.putShort(_position, (short) text.charAt(i));
-                _position += 2;
+                buf.putShort(position, (short) text.charAt(i));
+                position += 2;
             }
 
             // Null terminator - capacity already reserved above.
-            _buf.putShort(_position, (short) 0);
-            _position += 2;
+            buf.putShort(position, (short) 0);
+            position += 2;
             return;
         }
 
@@ -257,12 +257,12 @@ public class WriteBuffer {
     public void writeSizedString(CharSequence text) {
         if ((text != null) && !text.isEmpty()) {
             final int len = text.length();
-            ensureSize(_position + 2 + (len << 1));
-            _buf.putShort(_position, (short) len);
-            _position += 2;
+            ensureSize(position + 2 + (len << 1));
+            buf.putShort(position, (short) len);
+            position += 2;
             for (int i = 0; i < len; i++) {
-                _buf.putShort(_position, (short) text.charAt(i));
-                _position += 2;
+                buf.putShort(position, (short) text.charAt(i));
+                position += 2;
             }
             return;
         }
@@ -276,29 +276,29 @@ public class WriteBuffer {
 
     public void writeByte(int index, byte value) {
         ensureSize(index + 1);
-        _buf.put(index, value);
+        buf.put(index, value);
     }
 
     public void writeShort(int index, short value) {
         ensureSize(index + 2);
-        _buf.putShort(index, value);
+        buf.putShort(index, value);
     }
 
     public void writeInt(int index, int value) {
         ensureSize(index + 4);
-        _buf.putInt(index, value);
+        buf.putInt(index, value);
     }
 
     public byte readByte(int index) {
-        return _buf.get(index);
+        return buf.get(index);
     }
 
     public short readShort(int index) {
-        return _buf.getShort(index);
+        return buf.getShort(index);
     }
 
     public int readInt(int index) {
-        return _buf.getInt(index);
+        return buf.getInt(index);
     }
 
     // -------------------------------------------------------------------------
@@ -310,7 +310,7 @@ public class WriteBuffer {
      * @return write cursor
      */
     public int position() {
-        return _position;
+        return position;
     }
 
     /**
@@ -318,23 +318,23 @@ public class WriteBuffer {
      * @param pos the new position
      */
     public void position(int pos) {
-        _position = pos;
+        position = pos;
     }
 
     public int limit() {
-        return _limit;
+        return limit;
     }
 
     public void limit(int newLimit) {
         ensureSize(newLimit);
-        _limit = newLimit;
+        limit = newLimit;
     }
 
     /**
      * Marks the current write position as the logical end of the buffer's content, setting the limit to the current position.
      */
     public void mark() {
-        _limit = _position;
+        limit = position;
     }
 
     // -------------------------------------------------------------------------
@@ -347,13 +347,13 @@ public class WriteBuffer {
      * @return a single-element array containing the underlying buffer, positioned at 0 with limit set to the logical packet length
      */
     public ByteBuffer[] toByteBuffers() {
-        if (_limit > _initialSize) {
-            MAXIMUM_PACKET_SIZE.put(_packetClass, Math.min(_limit, 65535));
+        if (limit > initialSize) {
+            MAXIMUM_PACKET_SIZE.put(packetClass, Math.min(limit, 65535));
         }
 
-        _buf.position(0);
-        _buf.limit(_limit);
-        return new ByteBuffer[] {_buf};
+        buf.position(0);
+        buf.limit(limit);
+        return new ByteBuffer[] {buf};
     }
 
     /**
@@ -362,8 +362,8 @@ public class WriteBuffer {
      * @return a new heap byte array holding the packet data
      */
     public byte[] toByteArray() {
-        final byte[] snapshot = new byte[_limit];
-        _buf.get(0, snapshot, 0, _limit);
+        final byte[] snapshot = new byte[limit];
+        buf.get(0, snapshot, 0, limit);
         return snapshot;
     }
 
@@ -371,12 +371,12 @@ public class WriteBuffer {
      * Returns the pooled {@link ByteBuffer} back to the {@link ResourcePool}.
      */
     public void releaseResources() {
-        if (_buf != null) {
-            _resourcePool.recycleBuffer(_buf);
-            _buf = null;
+        if (buf != null) {
+            resourcePool.recycleBuffer(buf);
+            buf = null;
         }
 
-        _position = 0;
-        _limit = 0;
+        position = 0;
+        limit = 0;
     }
 }

@@ -44,15 +44,15 @@ import app.l2nx.highfive.network.serverpackets.LeaveWorld;
  * @author Dezmond_snz
  */
 public class DlgAnswer extends ClientPacket {
-    private int _messageId;
-    private int _answer;
-    private int _requesterId;
+    private int messageId;
+    private int answer;
+    private int requesterId;
 
     @Override
     protected void readImpl() {
-        _messageId = readInt();
-        _answer = readInt();
-        _requesterId = readInt();
+        messageId = readInt();
+        answer = readInt();
+        requesterId = readInt();
     }
 
     @Override
@@ -65,7 +65,12 @@ public class DlgAnswer extends ClientPacket {
         if (EventDispatcher.getInstance().hasListener(EventType.ON_PLAYER_DLG_ANSWER, player)) {
             final TerminateReturn term = EventDispatcher.getInstance()
                     .notifyEvent(
-                            new OnPlayerDlgAnswer(player, _messageId, _answer, _requesterId),
+                            OnPlayerDlgAnswer.builder()
+                                    .player(player)
+                                    .messageId(messageId)
+                                    .answer(answer)
+                                    .requesterId(requesterId)
+                                    .build(),
                             player,
                             TerminateReturn.class);
             if ((term != null) && term.terminate()) {
@@ -73,10 +78,10 @@ public class DlgAnswer extends ClientPacket {
             }
         }
 
-        if (_messageId == SystemMessageId.S1_3.getId()) {
+        if (messageId == SystemMessageId.S1_3.getId()) {
             // Custom .offline voiced command dialog.
             if (player.removeAction(PlayerAction.OFFLINE_TRADE)) {
-                if ((_answer == 0)
+                if ((answer == 0)
                         || !OfflineTradeConfig.ENABLE_OFFLINE_COMMAND
                         || (!OfflineTradeConfig.OFFLINE_TRADE_ENABLE && !OfflineTradeConfig.OFFLINE_CRAFT_ENABLE)) {
                     return;
@@ -109,7 +114,7 @@ public class DlgAnswer extends ClientPacket {
 
             // Custom .offlineplay voiced command dialog.
             if (player.removeAction(PlayerAction.OFFLINE_PLAY)) {
-                if ((_answer == 0) || !OfflinePlayConfig.ENABLE_OFFLINE_PLAY_COMMAND) {
+                if ((answer == 0) || !OfflinePlayConfig.ENABLE_OFFLINE_PLAY_COMMAND) {
                     return;
                 }
 
@@ -144,13 +149,13 @@ public class DlgAnswer extends ClientPacket {
 
             if (player.removeAction(PlayerAction.USER_ENGAGE)) {
                 if (WeddingConfig.ALLOW_WEDDING) {
-                    player.engageAnswer(_answer);
+                    player.engageAnswer(answer);
                 }
                 return;
             }
 
             if (player.removeAction(PlayerAction.ADMIN_SAVE_ZONE)) {
-                if (_answer == 0) {
+                if (answer == 0) {
                     return;
                 }
 
@@ -161,36 +166,36 @@ public class DlgAnswer extends ClientPacket {
             if (player.removeAction(PlayerAction.ADMIN_COMMAND)) {
                 final String cmd = player.getAdminConfirmCmd();
                 player.setAdminConfirmCmd(null);
-                if (_answer == 0) {
+                if (answer == 0) {
                     return;
                 }
 
                 // The 'useConfirm' must be disabled here, as we don't want to repeat that process.
                 AdminCommandHandler.getInstance().onCommand(player, cmd, false);
             }
-        } else if ((_messageId
+        } else if ((messageId
                         == SystemMessageId
                                 .C1_IS_MAKING_AN_ATTEMPT_TO_RESURRECT_YOU_IF_YOU_CHOOSE_THIS_PATH_S2_EXPERIENCE_POINTS_WILL_BE_RETURNED_TO_YOU_DO_YOU_WANT_TO_BE_RESURRECTED
                                 .getId())
-                || (_messageId
+                || (messageId
                         == SystemMessageId
                                 .YOUR_CHARM_OF_COURAGE_IS_TRYING_TO_RESURRECT_YOU_WOULD_YOU_LIKE_TO_RESURRECT_NOW
                                 .getId())) {
-            player.reviveAnswer(_answer);
-        } else if (_messageId == SystemMessageId.C1_WISHES_TO_SUMMON_YOU_FROM_S2_DO_YOU_ACCEPT.getId()) {
+            player.reviveAnswer(answer);
+        } else if (messageId == SystemMessageId.C1_WISHES_TO_SUMMON_YOU_FROM_S2_DO_YOU_ACCEPT.getId()) {
             final SummonRequestHolder holder = player.removeScript(SummonRequestHolder.class);
-            if ((_answer == 1) && (holder != null) && (holder.getSummoner().getObjectId() == _requesterId)) {
+            if ((answer == 1) && (holder != null) && (holder.getSummoner().getObjectId() == requesterId)) {
                 player.teleToLocation(holder.getLocation(), true);
             }
-        } else if (_messageId == SystemMessageId.WOULD_YOU_LIKE_TO_OPEN_THE_GATE.getId()) {
+        } else if (messageId == SystemMessageId.WOULD_YOU_LIKE_TO_OPEN_THE_GATE.getId()) {
             final DoorRequestHolder holder = player.removeScript(DoorRequestHolder.class);
-            if ((holder != null) && (holder.getDoor() == player.getTarget()) && (_answer == 1)) {
-                holder.getDoor().openMe();
+            if ((holder != null) && (holder.door() == player.getTarget()) && (answer == 1)) {
+                holder.door().openMe();
             }
-        } else if (_messageId == SystemMessageId.WOULD_YOU_LIKE_TO_CLOSE_THE_GATE.getId()) {
+        } else if (messageId == SystemMessageId.WOULD_YOU_LIKE_TO_CLOSE_THE_GATE.getId()) {
             final DoorRequestHolder holder = player.removeScript(DoorRequestHolder.class);
-            if ((holder != null) && (holder.getDoor() == player.getTarget()) && (_answer == 1)) {
-                holder.getDoor().closeMe();
+            if ((holder != null) && (holder.door() == player.getTarget()) && (answer == 1)) {
+                holder.door().closeMe();
             }
         }
     }

@@ -29,23 +29,23 @@ import app.l2nx.network.buffer.WriteBuffer;
  * @author JIV
  */
 public class ExDominionWarStart extends ServerPacket {
-    private final int _objId;
-    private final int _terId;
-    private final boolean _isDisguised;
+    private final int objId;
+    private final int terId;
+    private final boolean disguised;
 
     public ExDominionWarStart(Player player) {
-        _objId = player.getObjectId();
-        _terId = TerritoryWarManager.getInstance().getRegisteredTerritoryId(player);
-        _isDisguised = TerritoryWarManager.getInstance().isDisguised(_objId);
+        objId = player.getObjectId();
+        terId = TerritoryWarManager.getInstance().getRegisteredTerritoryId(player);
+        disguised = TerritoryWarManager.getInstance().isDisguised(objId);
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_DOMINION_WAR_START.writeId(this, buffer);
-        buffer.writeInt(_objId);
+        buffer.writeInt(objId);
         buffer.writeInt(1); // ??
-        buffer.writeInt(_terId);
-        buffer.writeInt(_isDisguised);
-        buffer.writeInt(_isDisguised ? _terId : 0);
+        buffer.writeInt(terId);
+        buffer.writeInt(disguised);
+        buffer.writeInt(disguised ? terId : 0);
     }
 }

@@ -23,33 +23,13 @@ import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.mechanics.events.EventType;
 import app.l2nx.highfive.mechanics.events.holders.IBaseEvent;
+import lombok.Builder;
 
 /**
  * @author UnAfraid
  */
-public class OnAttackableAggroRangeEnter implements IBaseEvent {
-    private final Npc _npc;
-    private final Player _player;
-    private final boolean _isSummon;
-
-    public OnAttackableAggroRangeEnter(Npc npc, Player attacker, boolean isSummon) {
-        _npc = npc;
-        _player = attacker;
-        _isSummon = isSummon;
-    }
-
-    public Npc getNpc() {
-        return _npc;
-    }
-
-    public Player getPlayer() {
-        return _player;
-    }
-
-    public boolean isSummon() {
-        return _isSummon;
-    }
-
+@Builder(toBuilder = true)
+public record OnAttackableAggroRangeEnter(Npc npc, Player player, boolean summon) implements IBaseEvent {
     @Override
     public EventType getType() {
         return EventType.ON_ATTACKABLE_AGGRO_RANGE_ENTER;

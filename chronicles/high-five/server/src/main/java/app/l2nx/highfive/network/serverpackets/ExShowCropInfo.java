@@ -31,30 +31,30 @@ import java.util.List;
  * @author l3x
  */
 public class ExShowCropInfo extends ServerPacket {
-    private final List<CropProcure> _crops;
-    private final int _manorId;
-    private final boolean _hideButtons;
+    private final List<CropProcure> crops;
+    private final int manorId;
+    private final boolean hideButtons;
 
     public ExShowCropInfo(int manorId, boolean nextPeriod, boolean hideButtons) {
-        _manorId = manorId;
-        _hideButtons = hideButtons;
+        this.manorId = manorId;
+        this.hideButtons = hideButtons;
         final CastleManorManager manor = CastleManorManager.getInstance();
-        _crops = (nextPeriod && !manor.isManorApproved()) ? null : manor.getCropProcure(manorId, nextPeriod);
+        crops = (nextPeriod && !manor.isManorApproved()) ? null : manor.getCropProcure(manorId, nextPeriod);
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_SHOW_CROP_INFO.writeId(this, buffer);
-        buffer.writeByte(_hideButtons); // Hide "Crop Sales" button
-        buffer.writeInt(_manorId); // Manor ID
+        buffer.writeByte(hideButtons); // Hide "Crop Sales" button
+        buffer.writeInt(manorId); // Manor ID
         buffer.writeInt(0);
-        if (_crops == null) {
+        if (crops == null) {
             buffer.writeInt(0);
             return;
         }
 
-        buffer.writeInt(_crops.size());
-        for (CropProcure crop : _crops) {
+        buffer.writeInt(crops.size());
+        for (CropProcure crop : crops) {
             buffer.writeInt(crop.getId()); // Crop id
             buffer.writeLong(crop.getAmount()); // Buy residual
             buffer.writeLong(crop.getStartAmount()); // Buy

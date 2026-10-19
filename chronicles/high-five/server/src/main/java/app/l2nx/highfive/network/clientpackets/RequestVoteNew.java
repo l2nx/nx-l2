@@ -30,11 +30,11 @@ import app.l2nx.highfive.network.serverpackets.ExVoteSystemInfo;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
 
 public class RequestVoteNew extends ClientPacket {
-    private int _targetId;
+    private int targetId;
 
     @Override
     protected void readImpl() {
-        _targetId = readInt();
+        targetId = readInt();
     }
 
     @Override
@@ -55,7 +55,7 @@ public class RequestVoteNew extends ClientPacket {
         }
 
         final Player target = object.asPlayer();
-        if (target.getObjectId() != _targetId) {
+        if (target.getObjectId() != targetId) {
             return;
         }
 

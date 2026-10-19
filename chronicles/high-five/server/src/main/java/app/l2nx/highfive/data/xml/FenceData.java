@@ -31,19 +31,21 @@ import java.io.File;
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.logging.Logger;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 
 /**
  * @author HorridoJoho, BazookaRpm
  */
+@Slf4j
 public class FenceData implements IXmlReader {
-    private static final Logger LOGGER = Logger.getLogger(FenceData.class.getSimpleName());
 
     private static final int MAX_Z_DIFF = 100;
 
-    private final Map<Integer, Fence> _fences = new ConcurrentHashMap<>();
+    @Getter
+    private final Map<Integer, Fence> fences = new ConcurrentHashMap<>();
 
     protected FenceData() {
         load();
@@ -51,13 +53,13 @@ public class FenceData implements IXmlReader {
 
     @Override
     public void load() {
-        if (!_fences.isEmpty()) {
+        if (!fences.isEmpty()) {
             // Remove old fences when reloading.
-            _fences.values().forEach(this::removeFence);
+            fences.values().forEach(this::removeFence);
         }
 
         parseDatapackFile("data/FenceData.xml");
-        LOGGER.info(getClass().getSimpleName() + ": Loaded " + _fences.size() + " fences.");
+        log.info("Loaded {} fences.", fences.size());
     }
 
     @Override
@@ -66,7 +68,7 @@ public class FenceData implements IXmlReader {
     }
 
     public int getLoadedElementsCount() {
-        return _fences.size();
+        return fences.size();
     }
 
     private void spawnFence(Node fenceNode) {
@@ -101,19 +103,15 @@ public class FenceData implements IXmlReader {
     }
 
     private void addFence(Fence fence) {
-        _fences.put(fence.getObjectId(), fence);
+        fences.put(fence.getObjectId(), fence);
     }
 
     public void removeFence(Fence fence) {
-        _fences.remove(fence.getObjectId());
-    }
-
-    public Map<Integer, Fence> getFences() {
-        return _fences;
+        fences.remove(fence.getObjectId());
     }
 
     public Fence getFence(int objectId) {
-        return _fences.get(objectId);
+        return fences.get(objectId);
     }
 
     public boolean checkIfFenceBetween(int x, int y, int z, int tx, int ty, int tz, int instanceId) {

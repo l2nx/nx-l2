@@ -31,12 +31,12 @@ import app.l2nx.highfive.util.StatSet;
  * @author Zoey76
  */
 public class ChangeFace extends AbstractEffect {
-    private final int _value;
+    private final int value;
 
     public ChangeFace(Condition attachCond, Condition applyCond, StatSet set, StatSet params) {
         super(attachCond, applyCond, set, params);
 
-        _value = params.getInt("value", 0);
+        value = params.getInt("value", 0);
     }
 
     @Override
@@ -55,7 +55,7 @@ public class ChangeFace extends AbstractEffect {
         }
 
         final Player player = effector.asPlayer();
-        player.getAppearance().setFace(_value);
+        player.getAppearance().setFace(value);
         player.broadcastUserInfo();
     }
 }

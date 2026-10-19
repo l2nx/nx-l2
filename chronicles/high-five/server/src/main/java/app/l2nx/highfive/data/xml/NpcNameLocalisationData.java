@@ -27,18 +27,17 @@ import app.l2nx.highfive.util.StatSet;
 import java.io.File;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 import org.w3c.dom.Document;
 
 /**
  * @author Mobius
  */
+@Slf4j
 public class NpcNameLocalisationData implements IXmlReader {
-    private static final Logger LOGGER = Logger.getLogger(NpcNameLocalisationData.class.getName());
 
     private static final Map<String, Map<Integer, String[]>> NPC_NAME_LOCALISATIONS = new ConcurrentHashMap<>();
-    private static String _lang;
+    private static String lang;
 
     protected NpcNameLocalisationData() {
         load();
@@ -56,13 +55,13 @@ public class NpcNameLocalisationData implements IXmlReader {
                 }
 
                 NPC_NAME_LOCALISATIONS.put(lang, new ConcurrentHashMap<>());
-                _lang = lang;
+                NpcNameLocalisationData.lang = lang;
                 parseDatapackFile("data/lang/" + lang + "/NpcNameLocalisation.xml");
                 final int count = NPC_NAME_LOCALISATIONS.get(lang).values().size();
                 if (count == 0) {
                     NPC_NAME_LOCALISATIONS.remove(lang);
                 } else {
-                    LOGGER.log(Level.INFO, getClass().getSimpleName() + ": Loaded localisations for [" + lang + "].");
+                    log.info("Loaded localisations for [{}].", lang);
                 }
             }
         }
@@ -76,7 +75,7 @@ public class NpcNameLocalisationData implements IXmlReader {
                 listNode -> forEach(listNode, "localisation", localisationNode -> {
                     final StatSet set = new StatSet(parseAttributes(localisationNode));
                     NPC_NAME_LOCALISATIONS
-                            .get(_lang)
+                            .get(lang)
                             .put(set.getInt("id"), new String[] {set.getString("name"), set.getString("title")});
                 }));
     }

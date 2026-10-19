@@ -30,66 +30,66 @@ import app.l2nx.network.buffer.WriteBuffer;
  * @author -Wooden-
  */
 public class PledgeShowMemberListUpdate extends ServerPacket {
-    private final int _pledgeType;
-    private boolean _hasSponsor;
-    private final String _name;
-    private final int _level;
-    private final int _classId;
-    private final int _objectId;
-    private final boolean _isOnline;
-    private final int _race;
-    private final boolean _female;
+    private final int pledgeType;
+    private boolean hasSponsor;
+    private final String name;
+    private final int level;
+    private final int classId;
+    private final int objectId;
+    private final boolean online;
+    private final int race;
+    private final boolean female;
 
     public PledgeShowMemberListUpdate(Player player) {
-        _pledgeType = player.getPledgeType();
-        if (_pledgeType == Clan.SUBUNIT_ACADEMY) {
-            _hasSponsor = player.getSponsor() != 0;
+        pledgeType = player.getPledgeType();
+        if (pledgeType == Clan.SUBUNIT_ACADEMY) {
+            hasSponsor = player.getSponsor() != 0;
         } else {
-            _hasSponsor = false;
+            hasSponsor = false;
         }
 
-        _name = player.getName();
-        _level = player.getLevel();
-        _classId = player.getPlayerClass().getId();
-        _race = player.getRace().ordinal();
-        _female = player.getAppearance().isFemale();
-        _objectId = player.getObjectId();
-        _isOnline = player.isOnline();
+        name = player.getName();
+        level = player.getLevel();
+        classId = player.getPlayerClass().getId();
+        race = player.getRace().ordinal();
+        female = player.getAppearance().isFemale();
+        objectId = player.getObjectId();
+        online = player.isOnline();
     }
 
     public PledgeShowMemberListUpdate(ClanMember member) {
-        _name = member.getName();
-        _level = member.getLevel();
-        _classId = member.getClassId();
-        _objectId = member.getObjectId();
-        _isOnline = member.isOnline();
-        _pledgeType = member.getPledgeType();
-        _race = member.getRaceOrdinal();
-        _female = member.getSex();
-        if (_pledgeType == Clan.SUBUNIT_ACADEMY) {
-            _hasSponsor = member.getSponsor() != 0;
+        name = member.getName();
+        level = member.getLevel();
+        classId = member.getClassId();
+        objectId = member.getObjectId();
+        online = member.isOnline();
+        pledgeType = member.getPledgeType();
+        race = member.getRaceOrdinal();
+        female = member.getSex();
+        if (pledgeType == Clan.SUBUNIT_ACADEMY) {
+            hasSponsor = member.getSponsor() != 0;
         } else {
-            _hasSponsor = false;
+            hasSponsor = false;
         }
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.PLEDGE_SHOW_MEMBER_LIST_UPDATE.writeId(this, buffer);
-        buffer.writeString(_name);
-        buffer.writeInt(_level);
-        buffer.writeInt(_classId);
-        buffer.writeInt(_female);
-        buffer.writeInt(_race);
-        if (_isOnline) {
-            buffer.writeInt(_objectId);
-            buffer.writeInt(_pledgeType);
+        buffer.writeString(name);
+        buffer.writeInt(level);
+        buffer.writeInt(classId);
+        buffer.writeInt(female);
+        buffer.writeInt(race);
+        if (online) {
+            buffer.writeInt(objectId);
+            buffer.writeInt(pledgeType);
         } else {
             // When going offline send as 0.
             buffer.writeInt(0);
             buffer.writeInt(0);
         }
 
-        buffer.writeInt(_hasSponsor);
+        buffer.writeInt(hasSponsor);
     }
 }

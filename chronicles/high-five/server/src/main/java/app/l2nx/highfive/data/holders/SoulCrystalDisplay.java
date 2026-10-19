@@ -23,39 +23,29 @@
 package app.l2nx.highfive.data.holders;
 
 import app.l2nx.highfive.data.enums.AbsorbCrystalType;
+import lombok.Getter;
 
 public class SoulCrystalDisplay {
-    private Integer _fromLevel = 0;
-    private Integer _chance = 0;
-    private Integer _npcLvl = 0;
-    private final AbsorbCrystalType _absorb;
-    private final String _name;
+    @Getter
+    private Integer fromLevel = 0;
+
+    @Getter
+    private Integer chance = 0;
+
+    @Getter
+    private Integer level = 0;
+
+    @Getter
+    private final AbsorbCrystalType absorb;
+
+    @Getter
+    private final String name;
 
     public SoulCrystalDisplay(int fromLevel, int chance, AbsorbCrystalType absorb, int npcLvl, String name) {
-        _fromLevel = fromLevel;
-        _chance = chance;
-        _absorb = absorb;
-        _npcLvl = npcLvl;
-        _name = name;
-    }
-
-    public Integer getFromLevel() {
-        return _fromLevel;
-    }
-
-    public Integer getChance() {
-        return _chance;
-    }
-
-    public AbsorbCrystalType getAbsorb() {
-        return _absorb;
-    }
-
-    public Integer getLevel() {
-        return _npcLvl;
-    }
-
-    public String getName() {
-        return _name;
+        this.fromLevel = fromLevel;
+        this.chance = chance;
+        this.absorb = absorb;
+        level = npcLvl;
+        this.name = name;
     }
 }

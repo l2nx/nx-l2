@@ -32,14 +32,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author UnAfraid, Mobius
  */
+@Slf4j
 public class ItemVariables extends AbstractVariables {
-    private static final Logger LOGGER = Logger.getLogger(ItemVariables.class.getName());
 
     // SQL Queries.
     private static final String SELECT_QUERY = "SELECT * FROM item_variables WHERE id = ?";
@@ -57,11 +56,11 @@ public class ItemVariables extends AbstractVariables {
     public static final String TRANSMOG_ID = "transmogId";
 
     // Private variables.
-    private final AtomicBoolean _scheduledSave = new AtomicBoolean(false);
-    private final int _objectId;
+    private final AtomicBoolean scheduledSave = new AtomicBoolean(false);
+    private final int objectId;
 
     public ItemVariables(int objectId) {
-        _objectId = objectId;
+        this.objectId = objectId;
         restoreMe();
     }
 
@@ -76,10 +75,7 @@ public class ItemVariables extends AbstractVariables {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.log(
-                    Level.WARNING,
-                    ItemVariables.class.getSimpleName() + ": Could not select variables count for: " + objectId,
-                    e);
+            log.warn("Could not select variables count for: {}", objectId, e);
             return false;
         }
 
@@ -92,15 +88,14 @@ public class ItemVariables extends AbstractVariables {
         // Restore previous variables.
         try (Connection con = DatabaseFactory.getConnection();
                 PreparedStatement st = con.prepareStatement(SELECT_QUERY)) {
-            st.setInt(1, _objectId);
+            st.setInt(1, objectId);
             try (ResultSet rset = st.executeQuery()) {
                 while (rset.next()) {
                     set(rset.getString("var"), rset.getString("val"), false);
                 }
             }
         } catch (SQLException e) {
-            LOGGER.log(
-                    Level.WARNING, getClass().getSimpleName() + ": Could not restore variables for: " + _objectId, e);
+            log.warn("Could not restore variables for: {}", objectId, e);
             return false;
         } finally {
             compareAndSetChanges(true, false);
@@ -116,12 +111,12 @@ public class ItemVariables extends AbstractVariables {
         }
 
         // If async saving is enabled and not already scheduled, schedule a save.
-        if (ASYNC_SAVE_ENABLED && !_scheduledSave.get()) {
-            _scheduledSave.set(true);
+        if (ASYNC_SAVE_ENABLED && !scheduledSave.get()) {
+            scheduledSave.set(true);
 
             ThreadPool.schedule(
                     () -> {
-                        _scheduledSave.set(false);
+                        scheduledSave.set(false);
                         saveNow();
                     },
                     SAVE_INTERVAL);
@@ -156,16 +151,16 @@ public class ItemVariables extends AbstractVariables {
      * @return true if successful, false otherwise.
      */
     private boolean saveNowSync() {
-        _saveLock.lock();
+        saveLock.lock();
 
         try {
             try (Connection con = DatabaseFactory.getConnection()) {
-                if (!_deleted.isEmpty()) {
+                if (!deleted.isEmpty()) {
                     try (PreparedStatement st = con.prepareStatement(DELETE_QUERY)) {
-                        final List<String> sortedDeleted = new ArrayList<>(_deleted);
+                        final List<String> sortedDeleted = new ArrayList<>(deleted);
                         sortedDeleted.sort(null);
                         for (String name : sortedDeleted) {
-                            st.setInt(1, _objectId);
+                            st.setInt(1, objectId);
                             st.setString(2, name);
                             st.addBatch();
                         }
@@ -174,15 +169,15 @@ public class ItemVariables extends AbstractVariables {
                     }
                 }
 
-                if (!_added.isEmpty() || !_modified.isEmpty()) {
+                if (!added.isEmpty() || !modified.isEmpty()) {
                     final TreeSet<String> allChanges = new TreeSet<>();
-                    allChanges.addAll(_added);
-                    allChanges.addAll(_modified);
+                    allChanges.addAll(added);
+                    allChanges.addAll(modified);
                     try (PreparedStatement st = con.prepareStatement(UPSERT_QUERY)) {
                         for (String name : allChanges) {
                             final Object value = getSet().get(name);
                             if (value != null) {
-                                st.setInt(1, _objectId);
+                                st.setInt(1, objectId);
                                 st.setString(2, name);
                                 st.setString(3, String.valueOf(value));
                                 st.addBatch();
@@ -198,27 +193,24 @@ public class ItemVariables extends AbstractVariables {
                 compareAndSetChanges(true, false);
                 return true;
             } catch (SQLException e) {
-                LOGGER.log(
-                        Level.WARNING,
-                        getClass().getSimpleName() + ": Could not update variables for: " + _objectId,
-                        e);
+                log.warn("Could not update variables for: {}", objectId, e);
                 return false;
             }
         } finally {
-            _saveLock.unlock();
+            saveLock.unlock();
         }
     }
 
     public boolean deleteMe() {
-        _saveLock.lock();
+        saveLock.lock();
 
         try (Connection con = DatabaseFactory.getConnection();
                 PreparedStatement st = con.prepareStatement(DELETE_ALL_QUERY)) {
-            st.setInt(1, _objectId);
+            st.setInt(1, objectId);
             st.execute();
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, getClass().getSimpleName() + ": Could not delete variables for: " + _objectId, e);
-            _saveLock.unlock();
+            log.warn("Could not delete variables for: {}", objectId, e);
+            saveLock.unlock();
             return false;
         }
 
@@ -226,7 +218,7 @@ public class ItemVariables extends AbstractVariables {
         getSet().clear();
         clearChangeTracking();
 
-        _saveLock.unlock();
+        saveLock.unlock();
         return true;
     }
 }

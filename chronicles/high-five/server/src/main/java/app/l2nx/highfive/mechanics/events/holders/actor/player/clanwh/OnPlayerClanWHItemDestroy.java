@@ -24,39 +24,14 @@ import app.l2nx.highfive.entity.item.instance.Item;
 import app.l2nx.highfive.entity.itemcontainer.ItemContainer;
 import app.l2nx.highfive.mechanics.events.EventType;
 import app.l2nx.highfive.mechanics.events.holders.IBaseEvent;
+import lombok.Builder;
 
 /**
  * @author UnAfraid
  */
-public class OnPlayerClanWHItemDestroy implements IBaseEvent {
-    private final Player _player;
-    private final Item _item;
-    private final long _count;
-    private final ItemContainer _container;
-
-    public OnPlayerClanWHItemDestroy(Player player, Item item, long count, ItemContainer container) {
-        _player = player;
-        _item = item;
-        _count = count;
-        _container = container;
-    }
-
-    public Player getPlayer() {
-        return _player;
-    }
-
-    public Item getItem() {
-        return _item;
-    }
-
-    public long getCount() {
-        return _count;
-    }
-
-    public ItemContainer getContainer() {
-        return _container;
-    }
-
+@Builder(toBuilder = true)
+public record OnPlayerClanWHItemDestroy(Player player, Item item, long count, ItemContainer container)
+        implements IBaseEvent {
     @Override
     public EventType getType() {
         return EventType.ON_PLAYER_CLAN_WH_ITEM_DESTROY;

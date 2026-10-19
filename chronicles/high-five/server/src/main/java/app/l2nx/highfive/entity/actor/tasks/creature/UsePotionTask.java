@@ -27,18 +27,18 @@ import app.l2nx.highfive.mechanics.skill.Skill;
  * @author xban1x
  */
 public class UsePotionTask implements Runnable {
-    private final Creature _creature;
-    private final Skill _skill;
+    private final Creature creature;
+    private final Skill skill;
 
     public UsePotionTask(Creature creature, Skill skill) {
-        _creature = creature;
-        _skill = skill;
+        this.creature = creature;
+        this.skill = skill;
     }
 
     @Override
     public void run() {
-        if (_creature != null) {
-            _creature.doSimultaneousCast(_skill);
+        if (creature != null) {
+            creature.doSimultaneousCast(skill);
         }
     }
 }

@@ -540,14 +540,13 @@ import app.l2nx.highfive.scripts.quests.Q10502_FreyaEmbroideredSoulCloak.Q10502_
 import app.l2nx.highfive.scripts.quests.Q10503_FrintezzaEmbroideredSoulCloak.Q10503_FrintezzaEmbroideredSoulCloak;
 import app.l2nx.highfive.scripts.quests.Q10504_JewelOfAntharas.Q10504_JewelOfAntharas;
 import app.l2nx.highfive.scripts.quests.Q10505_JewelOfValakas.Q10505_JewelOfValakas;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author NosBit, Mobius
  */
+@Slf4j
 public class QuestMasterHandler {
-    private static final Logger LOGGER = Logger.getLogger(QuestMasterHandler.class.getName());
 
     private static final Class<?>[] QUESTS = {
         Q00001_LettersOfLove.class,
@@ -1075,10 +1074,7 @@ public class QuestMasterHandler {
             try {
                 quest.getDeclaredConstructor().newInstance();
             } catch (Exception e) {
-                LOGGER.log(
-                        Level.SEVERE,
-                        QuestMasterHandler.class.getSimpleName() + ": Failed loading " + quest.getSimpleName() + ":",
-                        e);
+                log.error("Failed loading {}:", quest.getSimpleName(), e);
             }
         }
     }

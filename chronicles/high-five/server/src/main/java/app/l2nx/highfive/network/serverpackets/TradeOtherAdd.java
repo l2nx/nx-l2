@@ -31,16 +31,16 @@ import app.l2nx.network.buffer.WriteBuffer;
  * @author Mobius
  */
 public class TradeOtherAdd extends AbstractItemPacket {
-    private final TradeItem _item;
+    private final TradeItem item;
 
     public TradeOtherAdd(TradeItem item) {
-        _item = item;
+        this.item = item;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.TRADE_OTHER_ADD.writeId(this, buffer);
         buffer.writeShort(1); // item count
-        writeTradeItem(_item, buffer);
+        writeTradeItem(item, buffer);
     }
 }

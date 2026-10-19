@@ -24,17 +24,7 @@ import app.l2nx.highfive.mechanics.events.EventType;
 /**
  * @author UnAfraid
  */
-public class OnDayNightChange implements IBaseEvent {
-    private final boolean _isNight;
-
-    public OnDayNightChange(boolean isNight) {
-        _isNight = isNight;
-    }
-
-    public boolean isNight() {
-        return _isNight;
-    }
-
+public record OnDayNightChange(boolean night) implements IBaseEvent {
     @Override
     public EventType getType() {
         return EventType.ON_DAY_NIGHT_CHANGE;

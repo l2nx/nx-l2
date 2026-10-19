@@ -31,13 +31,13 @@ import app.l2nx.highfive.mechanics.siege.clanhalls.SiegableHall;
 import app.l2nx.highfive.network.serverpackets.NpcHtmlMessage;
 import app.l2nx.highfive.network.serverpackets.SiegeInfo;
 import java.util.Calendar;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author BiggBoss
  */
+@Slf4j
 public class AdminCHSiege implements IAdminCommandHandler {
-    private static final Logger LOGGER = Logger.getLogger(AdminCHSiege.class.getName());
 
     private static final String[] COMMANDS = {
         "admin_chsiege_siegablehall",
@@ -265,7 +265,7 @@ public class AdminCHSiege implements IAdminCommandHandler {
         try {
             val = Integer.parseInt(st);
         } catch (NumberFormatException e) {
-            LOGGER.warning("Problem with AdminCHSiege: " + e.getMessage());
+            log.warn("Problem with AdminCHSiege: {}", e.getMessage());
         }
 
         return val;

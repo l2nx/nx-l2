@@ -22,31 +22,29 @@ package app.l2nx.highfive.entity.groups.matching;
 import app.l2nx.highfive.entity.actor.Player;
 import java.util.Collection;
 import java.util.concurrent.ConcurrentHashMap;
+import lombok.Getter;
 
 /**
  * @author Gnacik
  */
 public class PartyMatchWaitingList {
-    private final Collection<Player> _members;
+    @Getter
+    private final Collection<Player> players;
 
     protected PartyMatchWaitingList() {
-        _members = ConcurrentHashMap.newKeySet();
+        players = ConcurrentHashMap.newKeySet();
     }
 
     public void addPlayer(Player player) {
         // player.setPartyWait(1);
-        if (!_members.contains(player)) {
-            _members.add(player);
+        if (!players.contains(player)) {
+            players.add(player);
         }
     }
 
     public void removePlayer(Player player) {
         // player.setPartyWait(0);
-        _members.remove(player);
-    }
-
-    public Collection<Player> getPlayers() {
-        return _members;
+        players.remove(player);
     }
 
     public static PartyMatchWaitingList getInstance() {

@@ -24,13 +24,11 @@ package app.l2nx.highfive.handler;
 
 import app.l2nx.highfive.entity.actor.Playable;
 import app.l2nx.highfive.entity.item.instance.Item;
-import java.util.logging.Logger;
 
 /**
  * Mother class of all Item Handlers.
  */
 public interface IItemHandler {
-    Logger LOGGER = Logger.getLogger(IItemHandler.class.getName());
 
     /**
      * Launch task associated to the item.

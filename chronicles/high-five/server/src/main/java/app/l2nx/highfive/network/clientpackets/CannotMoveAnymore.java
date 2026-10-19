@@ -29,17 +29,17 @@ import app.l2nx.highfive.entity.actor.Player;
  * @version $Revision: 1.1.2.1.2.4 $ $Date: 2005/03/27 15:29:30 $
  */
 public class CannotMoveAnymore extends ClientPacket {
-    private int _x;
-    private int _y;
-    private int _z;
-    private int _heading;
+    private int x;
+    private int y;
+    private int z;
+    private int heading;
 
     @Override
     protected void readImpl() {
-        _x = readInt();
-        _y = readInt();
-        _z = readInt();
-        _heading = readInt();
+        x = readInt();
+        y = readInt();
+        z = readInt();
+        heading = readInt();
     }
 
     @Override
@@ -50,7 +50,7 @@ public class CannotMoveAnymore extends ClientPacket {
         }
 
         if (player.getAI() != null) {
-            player.getAI().notifyActionArrivedBlocked(new Location(_x, _y, _z, _heading));
+            player.getAI().notifyActionArrivedBlocked(new Location(x, y, z, heading));
         }
     }
 }

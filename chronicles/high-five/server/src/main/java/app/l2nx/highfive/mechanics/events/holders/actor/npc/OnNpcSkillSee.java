@@ -26,43 +26,33 @@ import app.l2nx.highfive.mechanics.events.EventType;
 import app.l2nx.highfive.mechanics.events.holders.IBaseEvent;
 import app.l2nx.highfive.mechanics.skill.Skill;
 import java.util.List;
+import lombok.Getter;
 
 /**
  * @author UnAfraid
  */
 public class OnNpcSkillSee implements IBaseEvent {
-    private final Npc _npc;
-    private final Player _caster;
-    private final Skill _skill;
-    private final List<WorldObject> _targets;
-    private final boolean _isSummon;
+    @Getter
+    private final Npc target;
+
+    @Getter
+    private final Player caster;
+
+    @Getter
+    private final Skill skill;
+
+    @Getter
+    private final List<WorldObject> targets;
+
+    @Getter
+    private final boolean summon;
 
     public OnNpcSkillSee(Npc npc, Player caster, Skill skill, List<WorldObject> targets, boolean isSummon) {
-        _npc = npc;
-        _caster = caster;
-        _skill = skill;
-        _targets = targets;
-        _isSummon = isSummon;
-    }
-
-    public Npc getTarget() {
-        return _npc;
-    }
-
-    public Player getCaster() {
-        return _caster;
-    }
-
-    public Skill getSkill() {
-        return _skill;
-    }
-
-    public List<WorldObject> getTargets() {
-        return _targets;
-    }
-
-    public boolean isSummon() {
-        return _isSummon;
+        target = npc;
+        this.caster = caster;
+        this.skill = skill;
+        this.targets = targets;
+        summon = isSummon;
     }
 
     @Override

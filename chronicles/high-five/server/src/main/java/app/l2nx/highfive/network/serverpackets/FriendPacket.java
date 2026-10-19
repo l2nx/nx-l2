@@ -31,29 +31,29 @@ import app.l2nx.network.buffer.WriteBuffer;
  * @author JIV
  */
 public class FriendPacket extends ServerPacket {
-    private final boolean _action;
-    private final boolean _online;
-    private final int _objid;
-    private final String _name;
+    private final boolean action;
+    private final boolean online;
+    private final int objid;
+    private final String name;
 
     /**
      * @param action - true for adding, false for remove
      * @param objId
      */
     public FriendPacket(boolean action, int objId) {
-        _action = action;
-        _objid = objId;
-        _name = CharInfoTable.getInstance().getNameById(objId);
-        _online = World.getPlayer(objId) != null;
+        this.action = action;
+        objid = objId;
+        name = CharInfoTable.getInstance().getNameById(objId);
+        online = World.getPlayer(objId) != null;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.L2_FRIEND.writeId(this, buffer);
-        buffer.writeInt(_action ? 1 : 3); // 1-add 3-remove
-        buffer.writeInt(_objid);
-        buffer.writeString(_name);
-        buffer.writeInt(_online);
-        buffer.writeInt(_online ? _objid : 0);
+        buffer.writeInt(action ? 1 : 3); // 1-add 3-remove
+        buffer.writeInt(objid);
+        buffer.writeString(name);
+        buffer.writeInt(online);
+        buffer.writeInt(online ? objid : 0);
     }
 }

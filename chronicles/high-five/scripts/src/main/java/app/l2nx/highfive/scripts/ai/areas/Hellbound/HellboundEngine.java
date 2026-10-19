@@ -28,11 +28,14 @@ import app.l2nx.highfive.entity.actor.instance.Door;
 import app.l2nx.highfive.entity.spawns.Spawn;
 import app.l2nx.highfive.managers.GlobalVariablesManager;
 import app.l2nx.highfive.mechanics.script.Script;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Hellbound Engine.
  * @author Zoey76
  */
+@Slf4j
 public class HellboundEngine extends Script {
     // @formatter:off
     private static final int[][] DOOR_LIST = {
@@ -53,26 +56,32 @@ public class HellboundEngine extends Script {
     private static final String ANNOUNCEMENT = "Hellbound has reached level: %lvl%";
     private static final int UPDATE_INTERVAL = 60000; // 1 minute.
     private static final String UPDATE_EVENT = "UPDATE";
-    private int _cachedLevel = -1;
-    private int _maxTrust = 0;
-    private int _minTrust = 0;
+
+    @Getter
+    private int cachedLevel = -1;
+
+    @Getter
+    private int maxTrust = 0;
+
+    @Getter
+    private int minTrust = 0;
 
     public HellboundEngine() {
         addKillId(HellboundPointData.getInstance().getPointsInfo().keySet());
 
         startQuestTimer(UPDATE_EVENT, 1000, null, null);
 
-        LOGGER.info(HellboundEngine.class.getSimpleName() + ": Level: " + getLevel());
-        LOGGER.info(HellboundEngine.class.getSimpleName() + ": Trust: " + getTrust());
-        LOGGER.info(HellboundEngine.class.getSimpleName() + ": Status: " + (isLocked() ? "locked." : "unlocked."));
+        log.info("Level: {}", getLevel());
+        log.info("Trust: {}", getTrust());
+        log.info("Status: {}", (isLocked() ? "locked." : "unlocked."));
     }
 
     @Override
     public String onEvent(String event, Npc npc, Player player) {
         if (event.equals(UPDATE_EVENT)) {
             int level = getLevel();
-            if ((level > 0) && (level == _cachedLevel)) {
-                if ((getTrust() == _maxTrust) && (level != 4)) // Only exclusion is kill of Derek.
+            if ((level > 0) && (level == cachedLevel)) {
+                if ((getTrust() == maxTrust) && (level != 4)) // Only exclusion is kill of Derek.
                 {
                     level++;
                     setLevel(level);
@@ -131,11 +140,11 @@ public class HellboundEngine extends Script {
         }
 
         if (added > 0) {
-            LOGGER.info(getClass().getSimpleName() + ": Spawned " + added + " NPCs.");
+            log.info("Spawned {} NPCs.", added);
         }
 
         if (deleted > 0) {
-            LOGGER.info(getClass().getSimpleName() + ": Removed " + deleted + " NPCs.");
+            log.info("Removed {} NPCs.", deleted);
         }
     }
 
@@ -156,21 +165,9 @@ public class HellboundEngine extends Script {
             return;
         }
 
-        LOGGER.info(HellboundEngine.class.getSimpleName() + ": Changing level from " + getLevel() + " to " + lvl + ".");
+        log.info("Changing level from {} to {}.", getLevel(), lvl);
 
         GlobalVariablesManager.getInstance().set("HBLevel", lvl);
-    }
-
-    public int getCachedLevel() {
-        return _cachedLevel;
-    }
-
-    public int getMaxTrust() {
-        return _maxTrust;
-    }
-
-    public int getMinTrust() {
-        return _minTrust;
     }
 
     /**
@@ -245,16 +242,16 @@ public class HellboundEngine extends Script {
                     }
                 }
             } catch (Exception e) {
-                LOGGER.warning(getClass().getSimpleName() + " : Doors problem!" + e.getMessage());
+                log.warn(": Doors problem!{}", e.getMessage());
             }
         }
 
-        if (_cachedLevel > 0) {
+        if (cachedLevel > 0) {
             World.broadcastToAllOnlinePlayers(ANNOUNCEMENT.replace("%lvl%", String.valueOf(newLevel)));
-            LOGGER.info(HellboundEngine.class.getSimpleName() + ": New level: " + newLevel);
+            log.info("New level: {}", newLevel);
         }
 
-        _cachedLevel = newLevel;
+        cachedLevel = newLevel;
     }
 
     /**
@@ -262,9 +259,9 @@ public class HellboundEngine extends Script {
      * @param trust the maximum trust
      */
     private void setMaxTrust(int trust) {
-        _maxTrust = trust;
-        if ((_maxTrust > 0) && (getTrust() > _maxTrust)) {
-            setTrust(_maxTrust);
+        maxTrust = trust;
+        if ((maxTrust > 0) && (getTrust() > maxTrust)) {
+            setTrust(maxTrust);
         }
     }
 
@@ -273,10 +270,10 @@ public class HellboundEngine extends Script {
      * @param trust the minimum trust
      */
     private void setMinTrust(int trust) {
-        _minTrust = trust;
+        minTrust = trust;
 
-        if (getTrust() >= _maxTrust) {
-            setTrust(_minTrust);
+        if (getTrust() >= maxTrust) {
+            setTrust(minTrust);
         }
     }
 
@@ -302,9 +299,9 @@ public class HellboundEngine extends Script {
                     (trust * (trust > 0 ? RatesConfig.RATE_HB_TRUST_INCREASE : RatesConfig.RATE_HB_TRUST_DECREASE));
         }
 
-        final int finalTrust = Math.max(getTrust() + reward, _minTrust);
-        if (_maxTrust > 0) {
-            setTrust(Math.min(finalTrust, _maxTrust));
+        final int finalTrust = Math.max(getTrust() + reward, minTrust);
+        if (maxTrust > 0) {
+            setTrust(Math.min(finalTrust, maxTrust));
         } else {
             setTrust(finalTrust);
         }

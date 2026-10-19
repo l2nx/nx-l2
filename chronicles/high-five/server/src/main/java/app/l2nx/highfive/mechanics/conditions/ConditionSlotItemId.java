@@ -29,8 +29,8 @@ import app.l2nx.highfive.mechanics.skill.Skill;
  * @author mkizub
  */
 public class ConditionSlotItemId extends ConditionInventory {
-    private final int _itemId;
-    private final int _enchantLevel;
+    private final int itemId;
+    private final int enchantLevel;
 
     /**
      * Instantiates a new condition slot item id.
@@ -40,8 +40,8 @@ public class ConditionSlotItemId extends ConditionInventory {
      */
     public ConditionSlotItemId(int slot, int itemId, int enchantLevel) {
         super(slot);
-        _itemId = itemId;
-        _enchantLevel = enchantLevel;
+        this.itemId = itemId;
+        this.enchantLevel = enchantLevel;
     }
 
     @Override
@@ -50,11 +50,11 @@ public class ConditionSlotItemId extends ConditionInventory {
             return false;
         }
 
-        final Item itemSlot = effector.getInventory().getPaperdollItem(_slot);
+        final Item itemSlot = effector.getInventory().getPaperdollItem(slot);
         if (itemSlot == null) {
-            return _itemId == 0;
+            return itemId == 0;
         }
 
-        return (itemSlot.getId() == _itemId) && (itemSlot.getEnchantLevel() >= _enchantLevel);
+        return (itemSlot.getId() == itemId) && (itemSlot.getEnchantLevel() >= enchantLevel);
     }
 }

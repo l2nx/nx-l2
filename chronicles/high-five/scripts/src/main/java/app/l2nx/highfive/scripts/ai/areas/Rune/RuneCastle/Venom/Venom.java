@@ -80,19 +80,19 @@ public class Venom extends Script {
     private static final SkillHolder VENOM_TELEPORT = new SkillHolder(4995, 1);
     private static final SkillHolder RANGE_TELEPORT = new SkillHolder(4996, 1);
 
-    private Npc _venom;
-    private Npc _massymore;
+    private Npc venom;
+    private Npc massymore;
 
-    private Location _loc;
+    private Location loc;
 
-    private boolean _aggroMode = false;
-    private boolean _prisonIsOpen = false;
+    private boolean aggroMode = false;
+    private boolean prisonIsOpen = false;
 
     // @formatter:off
     private static final int[] TARGET_TELEPORTS_OFFSET = {650, 100, 100, 100, 100, 650, 200, 200, 200, 200, 200, 650};
     // @formatter:on
 
-    private static List<Player> _targets = new ArrayList<>();
+    private static List<Player> targets = new ArrayList<>();
 
     private Venom() {
         addStartNpc(DUNGEON_KEEPER, TELEPORT_CUBE);
@@ -110,7 +110,7 @@ public class Venom extends Script {
         final long startSiegeDate =
                 CastleManager.getInstance().getCastleById(CASTLE).getSiegeDate().getTimeInMillis();
         if ((currentTime > (startSiegeDate - (HOURS_BEFORE * 360000))) && (currentTime < startSiegeDate)) {
-            _prisonIsOpen = true;
+            prisonIsOpen = true;
         }
     }
 
@@ -127,7 +127,7 @@ public class Venom extends Script {
                 break;
             }
             case DUNGEON_KEEPER: {
-                if (_prisonIsOpen) {
+                if (prisonIsOpen) {
                     talker.teleToLocation(TELEPORT);
                 } else {
                     return "35506-02.html";
@@ -145,7 +145,7 @@ public class Venom extends Script {
             case "tower_check": {
                 if (CastleManager.getInstance().getCastleById(CASTLE).getSiege().getControlTowerCount() <= 1) {
                     changeLocation(MoveTo.THRONE);
-                    _massymore.broadcastSay(
+                    massymore.broadcastSay(
                             ChatType.NPC_SHOUT,
                             NpcStringId
                                     .OH_NO_THE_DEFENSES_HAVE_FAILED_IT_IS_TOO_DANGEROUS_TO_REMAIN_INSIDE_THE_CASTLE_FLEE_EVERY_MAN_FOR_HIMSELF);
@@ -156,7 +156,7 @@ public class Venom extends Script {
             }
             case "raid_check": {
                 if (!npc.isInsideZone(ZoneId.SIEGE) && !npc.isTeleporting()) {
-                    npc.teleToLocation(_loc);
+                    npc.teleToLocation(loc);
                 }
                 break;
             }
@@ -177,41 +177,41 @@ public class Venom extends Script {
             return;
         }
 
-        if (_aggroMode && (_targets.size() < 10) && (getRandom(3) < 1) && !player.isDead()) {
-            _targets.add(player);
+        if (aggroMode && (targets.size() < 10) && (getRandom(3) < 1) && !player.isDead()) {
+            targets.add(player);
         }
     }
 
     public void onSiegeStart(OnCastleSiegeStart event) {
-        _aggroMode = true;
-        _prisonIsOpen = false;
-        if ((_venom != null) && !_venom.isDead()) {
-            _venom.setCurrentHp(_venom.getMaxHp());
-            _venom.setCurrentMp(_venom.getMaxMp());
-            _venom.enableSkill(VENOM_TELEPORT.getSkill());
-            _venom.enableSkill(RANGE_TELEPORT.getSkill());
-            startQuestTimer("tower_check", 30000, _venom, null, true);
+        aggroMode = true;
+        prisonIsOpen = false;
+        if ((venom != null) && !venom.isDead()) {
+            venom.setCurrentHp(venom.getMaxHp());
+            venom.setCurrentMp(venom.getMaxMp());
+            venom.enableSkill(VENOM_TELEPORT.getSkill());
+            venom.enableSkill(RANGE_TELEPORT.getSkill());
+            startQuestTimer("tower_check", 30000, venom, null, true);
         }
     }
 
     public void onSiegeFinish(OnCastleSiegeFinish event) {
-        _aggroMode = false;
-        if ((_venom != null) && !_venom.isDead()) {
+        aggroMode = false;
+        if ((venom != null) && !venom.isDead()) {
             changeLocation(MoveTo.PRISON);
-            _venom.disableSkill(VENOM_TELEPORT.getSkill(), -1);
-            _venom.disableSkill(RANGE_TELEPORT.getSkill(), -1);
+            venom.disableSkill(VENOM_TELEPORT.getSkill(), -1);
+            venom.disableSkill(RANGE_TELEPORT.getSkill(), -1);
         }
 
         updateStatus(ALIVE);
-        cancelQuestTimer("tower_check", _venom, null);
-        cancelQuestTimer("raid_check", _venom, null);
+        cancelQuestTimer("tower_check", venom, null);
+        cancelQuestTimer("raid_check", venom, null);
     }
 
     @Override
     public void onSpellFinished(Npc npc, Player player, Skill skill) {
         switch (skill.getId()) {
             case 4222: {
-                npc.teleToLocation(_loc);
+                npc.teleToLocation(loc);
                 break;
             }
             case 4995: {
@@ -222,8 +222,8 @@ public class Venom extends Script {
             case 4996: {
                 teleportTarget(player);
                 npc.asAttackable().stopHating(player);
-                if ((_targets != null) && !_targets.isEmpty()) {
-                    for (Player target : _targets) {
+                if ((targets != null) && !targets.isEmpty()) {
+                    for (Player target : targets) {
                         final long x = player.getX() - target.getX();
                         final long y = player.getY() - target.getY();
                         final long z = player.getZ() - target.getZ();
@@ -234,7 +234,7 @@ public class Venom extends Script {
                         }
                     }
 
-                    _targets.clear();
+                    targets.clear();
                 }
                 break;
             }
@@ -245,22 +245,22 @@ public class Venom extends Script {
     public void onSpawn(Npc npc) {
         switch (npc.getId()) {
             case DUNGEON_KEEPER: {
-                _massymore = npc;
+                massymore = npc;
                 break;
             }
             case VENOM: {
-                _venom = npc;
-                _loc = _venom.getLocation();
-                _venom.disableSkill(VENOM_TELEPORT.getSkill(), -1);
-                _venom.disableSkill(RANGE_TELEPORT.getSkill(), -1);
-                _venom.doRevive();
+                venom = npc;
+                loc = venom.getLocation();
+                venom.disableSkill(VENOM_TELEPORT.getSkill(), -1);
+                venom.disableSkill(RANGE_TELEPORT.getSkill(), -1);
+                venom.doRevive();
                 npc.broadcastSay(
                         ChatType.NPC_SHOUT,
                         NpcStringId
                                 .WHO_DARES_TO_COVET_THE_THRONE_OF_OUR_CASTLE_LEAVE_IMMEDIATELY_OR_YOU_WILL_PAY_THE_PRICE_OF_YOUR_AUDACITY_WITH_YOUR_VERY_OWN_BLOOD);
-                _venom.asAttackable().setCanReturnToSpawnPoint(false);
+                venom.asAttackable().setCanReturnToSpawnPoint(false);
                 if (checkStatus() == DEAD) {
-                    _venom.deleteMe();
+                    venom.deleteMe();
                 }
                 break;
             }
@@ -276,10 +276,10 @@ public class Venom extends Script {
     @Override
     public void onAttack(Npc npc, Player attacker, int damage, boolean isSummon) {
         final double distance = npc.calculateDistance2D(attacker);
-        if (_aggroMode && (getRandom(100) < 25)) {
+        if (aggroMode && (getRandom(100) < 25)) {
             npc.setTarget(attacker);
             npc.doCast(VENOM_TELEPORT.getSkill());
-        } else if (_aggroMode
+        } else if (aggroMode
                 && (npc.getCurrentHp() < (npc.getMaxHp() / 3))
                 && (getRandom(100) < 25)
                 && !npc.isCastingNow()) {
@@ -313,23 +313,23 @@ public class Venom extends Script {
     private void changeLocation(MoveTo loc) {
         switch (loc) {
             case THRONE: {
-                _venom.teleToLocation(TRHONE, false);
+                venom.teleToLocation(TRHONE, false);
                 break;
             }
             case PRISON: {
-                if ((_venom == null) || _venom.isDead() || _venom.isDecayed()) {
-                    _venom = addSpawn(VENOM, DUNGEON, false, 0);
+                if ((venom == null) || venom.isDead() || venom.isDecayed()) {
+                    venom = addSpawn(VENOM, DUNGEON, false, 0);
                 } else {
-                    _venom.teleToLocation(DUNGEON, false);
+                    venom.teleToLocation(DUNGEON, false);
                 }
 
-                cancelQuestTimer("raid_check", _venom, null);
-                cancelQuestTimer("tower_check", _venom, null);
+                cancelQuestTimer("raid_check", venom, null);
+                cancelQuestTimer("tower_check", venom, null);
                 break;
             }
         }
 
-        _loc.setLocation(_venom.getLocation());
+        this.loc.setLocation(venom.getLocation());
     }
 
     private void teleportTarget(Player player) {

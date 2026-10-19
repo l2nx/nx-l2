@@ -19,6 +19,8 @@
  */
 package app.l2nx.highfive.mechanics.skill;
 
+import lombok.Getter;
+
 /**
  * Abnormal Visual Effect enumerated.
  * @author DrHouse, Zoey76
@@ -90,21 +92,14 @@ public enum AbnormalVisualEffect {
     BR_SOUL_AVATAR(0x000100, 2); // High Five
 
     /** Int mask. */
-    private final int _mask;
+    @Getter
+    private final int mask;
     /** Type: 0 Normal, 1 Special, 2 Event. */
-    private final int _type;
+    private final int type;
 
     private AbnormalVisualEffect(int mask, int type) {
-        _mask = mask;
-        _type = type;
-    }
-
-    /**
-     * Gets the int bitmask for the abnormal visual effect.
-     * @return the int bitmask
-     */
-    public int getMask() {
-        return _mask;
+        this.mask = mask;
+        this.type = type;
     }
 
     /**
@@ -112,7 +107,7 @@ public enum AbnormalVisualEffect {
      * @return {@code true} it's a special abnormal visual effect, {@code false} otherwise
      */
     public boolean isSpecial() {
-        return _type == 1;
+        return type == 1;
     }
 
     /**
@@ -120,6 +115,6 @@ public enum AbnormalVisualEffect {
      * @return {@code true} it's an event abnormal visual effect, {@code false} otherwise
      */
     public boolean isEvent() {
-        return _type == 2;
+        return type == 2;
     }
 }

@@ -22,26 +22,7 @@
  */
 package app.l2nx.highfive.mechanics.undergroundColiseum;
 
-public class UCReward {
-    private final int _itemId;
-    private final long _amount;
-    private final boolean _allowMidifier;
+import lombok.Builder;
 
-    public UCReward(int itemId, long amount, boolean allowMidifier) {
-        _itemId = itemId;
-        _amount = amount;
-        _allowMidifier = allowMidifier;
-    }
-
-    public int getId() {
-        return _itemId;
-    }
-
-    public long getAmount() {
-        return _amount;
-    }
-
-    public boolean isAllowMidifier() {
-        return _allowMidifier;
-    }
-}
+@Builder(toBuilder = true)
+public record UCReward(int id, long amount, boolean allowMidifier) {}

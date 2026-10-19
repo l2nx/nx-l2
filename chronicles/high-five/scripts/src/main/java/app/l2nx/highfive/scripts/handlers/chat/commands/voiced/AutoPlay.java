@@ -73,7 +73,7 @@ public class AutoPlay implements IVoicedCommandHandler {
             return;
         }
 
-        final Player player = event.getPlayer();
+        final Player player = event.player();
         if (!AutoPlayConfig.AUTO_PLAY_LOGIN_MESSAGE.isEmpty()) {
             player.sendPacket(
                     new CreatureSay(null, ChatType.ANNOUNCEMENT, "AutoPlay", AutoPlayConfig.AUTO_PLAY_LOGIN_MESSAGE));
@@ -123,7 +123,7 @@ public class AutoPlay implements IVoicedCommandHandler {
             return;
         }
 
-        final Player player = event.getPlayer();
+        final Player player = event.player();
         player.getVariables()
                 .setIntegerList(
                         PlayerVariables.AUTO_USE_ACTIONS,
@@ -382,7 +382,7 @@ public class AutoPlay implements IVoicedCommandHandler {
                             final Options options = OptionData.getInstance().getOptions(id);
                             if ((options != null) && options.hasActivationSkills()) {
                                 for (OptionSkillHolder holder : options.getActivationSkills()) {
-                                    Skill skill = holder.getSkill();
+                                    Skill skill = holder.skill();
                                     if (skill != null) {
                                         skills.remove(skill);
                                     }
@@ -396,7 +396,7 @@ public class AutoPlay implements IVoicedCommandHandler {
                                 .getOptions(item.getAugmentation().getAugmentationId());
                         if ((options != null) && options.hasActivationSkills()) {
                             for (OptionSkillHolder holder : options.getActivationSkills()) {
-                                final Skill skill = holder.getSkill();
+                                final Skill skill = holder.skill();
                                 if (skill != null) {
                                     skills.remove(skill);
                                 }

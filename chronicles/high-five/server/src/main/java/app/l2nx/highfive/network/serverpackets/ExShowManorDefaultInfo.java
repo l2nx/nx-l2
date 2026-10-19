@@ -30,20 +30,20 @@ import java.util.List;
  * @author l3x
  */
 public class ExShowManorDefaultInfo extends ServerPacket {
-    private final List<Seed> _crops;
-    private final boolean _hideButtons;
+    private final List<Seed> crops;
+    private final boolean hideButtons;
 
     public ExShowManorDefaultInfo(boolean hideButtons) {
-        _crops = CastleManorManager.getInstance().getCrops();
-        _hideButtons = hideButtons;
+        crops = CastleManorManager.getInstance().getCrops();
+        this.hideButtons = hideButtons;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_SHOW_MANOR_DEFAULT_INFO.writeId(this, buffer);
-        buffer.writeByte(_hideButtons); // Hide "Seed Purchase" and "Crop Sales" buttons
-        buffer.writeInt(_crops.size());
-        for (Seed crop : _crops) {
+        buffer.writeByte(hideButtons); // Hide "Seed Purchase" and "Crop Sales" buttons
+        buffer.writeInt(crops.size());
+        for (Seed crop : crops) {
             buffer.writeInt(crop.getCropId()); // crop Id
             buffer.writeInt(crop.getLevel()); // level
             buffer.writeInt(crop.getSeedReferencePrice()); // seed price

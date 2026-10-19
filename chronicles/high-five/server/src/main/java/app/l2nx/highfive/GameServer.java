@@ -174,22 +174,24 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.InetSocketAddress;
 import java.time.Duration;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.SmartLifecycle;
 import org.springframework.stereotype.Component;
 
 @Component
+@Slf4j
 public class GameServer implements SmartLifecycle {
-    private static final Logger LOGGER = Logger.getLogger(GameServer.class.getName());
 
     private static final long START_TIME = System.currentTimeMillis();
-    private long _sectionStartTime = START_TIME;
-    private String _previousSectionName = null;
+    private long sectionStartTime = START_TIME;
+    private String previousSectionName = null;
 
     private final ServerExit serverExit;
     private final MeterRegistry meterRegistry;
     private ConnectionManager<GameClient> connectionManager;
+
+    @Getter
     private volatile boolean running;
 
     /**
@@ -227,11 +229,6 @@ public class GameServer implements SmartLifecycle {
             connectionManager.shutdown();
             running = false;
         }
-    }
-
-    @Override
-    public boolean isRunning() {
-        return running;
     }
 
     private void abortStart() {
@@ -318,7 +315,7 @@ public class GameServer implements SmartLifecycle {
         CaptchaManager.getInstance();
 
         if (PremiumSystemConfig.PREMIUM_SYSTEM_ENABLED) {
-            LOGGER.info("PremiumManager: Premium system is enabled.");
+            log.info("PremiumManager: Premium system is enabled.");
             PremiumManager.getInstance();
         }
 
@@ -386,11 +383,11 @@ public class GameServer implements SmartLifecycle {
         SeedOfInfinityManager.getInstance();
 
         try {
-            LOGGER.info("Loading server scripts...");
+            log.info("Loading server scripts...");
             ScriptEngine.getInstance().executeScript(ScriptEngine.MASTER_HANDLER);
             ScriptEngine.getInstance().executeScriptList();
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, "Failed to execute script list!", e);
+            log.warn("Failed to execute script list!", e);
         }
 
         SpawnData.getInstance();
@@ -424,7 +421,9 @@ public class GameServer implements SmartLifecycle {
         SevenSigns.getInstance().spawnSevenSignsNPC();
         SevenSignsFestival.getInstance();
         AutoSpawnHandler.getInstance();
-        LOGGER.info("AutoSpawnHandler: Loaded " + AutoSpawnHandler.getInstance().size() + " handlers in total.");
+        log.info(
+                "AutoSpawnHandler: Loaded {} handlers in total.",
+                AutoSpawnHandler.getInstance().size());
 
         if (WeddingConfig.ALLOW_WEDDING) {
             CoupleManager.getInstance();
@@ -457,8 +456,9 @@ public class GameServer implements SmartLifecycle {
 
         PunishmentManager.getInstance();
 
-        LOGGER.info("IdManager: Free ObjectID's remaining: "
-                + IdManager.getInstance().getAvailableIdCount());
+        log.info(
+                "IdManager: Free ObjectID's remaining: {}",
+                IdManager.getInstance().getAvailableIdCount());
 
         if ((OfflineTradeConfig.OFFLINE_TRADE_ENABLE || OfflineTradeConfig.OFFLINE_CRAFT_ENABLE)
                 && OfflineTradeConfig.RESTORE_OFFLINERS) {
@@ -491,12 +491,9 @@ public class GameServer implements SmartLifecycle {
 
         System.gc();
         final long totalMem = Runtime.getRuntime().maxMemory() / 1048576;
-        LOGGER.info(getClass().getSimpleName() + ": Started, using " + getUsedMemoryMB() + " of " + totalMem
-                + " MB total memory.");
-        LOGGER.info(getClass().getSimpleName() + ": Maximum number of connected players is "
-                + ServerConfig.MAXIMUM_ONLINE_USERS + ".");
-        LOGGER.info(getClass().getSimpleName() + ": Server loaded in "
-                + ((System.currentTimeMillis() - START_TIME) / 1000) + " seconds.");
+        log.info("Started, using {} of {} MB total memory.", getUsedMemoryMB(), totalMem);
+        log.info("Maximum number of connected players is {}.", ServerConfig.MAXIMUM_ONLINE_USERS);
+        log.info("Server loaded in {} seconds.", ((System.currentTimeMillis() - START_TIME) / 1000));
 
         try {
             connectionManager = new ConnectionManager<>(
@@ -516,16 +513,16 @@ public class GameServer implements SmartLifecycle {
         if (DevelopmentConfig.LOG_SERVER_LOAD_TIMES) {
             // Calculate elapsed time for previous section.
             final long currentTime = System.currentTimeMillis();
-            final long sectionElapsed = currentTime - _sectionStartTime;
+            final long sectionElapsed = currentTime - sectionStartTime;
 
             // Log elapsed time for previous section if not the first section.
-            if (_previousSectionName != null) {
-                LOGGER.info("...section [ " + _previousSectionName + " ] loaded in " + sectionElapsed + " ms.");
+            if (previousSectionName != null) {
+                log.info("...section [ {} ] loaded in {} ms.", previousSectionName, sectionElapsed);
             }
 
             // Update for next measurement.
-            _previousSectionName = section;
-            _sectionStartTime = currentTime;
+            previousSectionName = section;
+            sectionStartTime = currentTime;
         }
 
         // Build and log the new section header.
@@ -534,7 +531,7 @@ public class GameServer implements SmartLifecycle {
         while (sb.length() < 61) {
             sb.insert(0, '-');
         }
-        LOGGER.info(sb.toString());
+        log.info(sb.toString());
     }
 
     public long getUsedMemoryMB() {

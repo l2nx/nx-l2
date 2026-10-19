@@ -62,21 +62,21 @@ public enum CommonSkill {
     PUMPING(1313, 1),
     REELING(1314, 1);
 
-    private final SkillHolder _holder;
+    private final SkillHolder holder;
 
     CommonSkill(int id, int level) {
-        _holder = new SkillHolder(id, level);
+        holder = new SkillHolder(id, level);
     }
 
     public int getId() {
-        return _holder.getSkillId();
+        return holder.getSkillId();
     }
 
     public int getLevel() {
-        return _holder.getSkillLevel();
+        return holder.getSkillLevel();
     }
 
     public Skill getSkill() {
-        return _holder.getSkill();
+        return holder.getSkill();
     }
 }

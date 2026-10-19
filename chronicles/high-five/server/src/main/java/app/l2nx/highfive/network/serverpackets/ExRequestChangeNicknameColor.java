@@ -27,15 +27,15 @@ import app.l2nx.network.buffer.WriteBuffer;
  * @author Gnacik
  */
 public class ExRequestChangeNicknameColor extends ServerPacket {
-    private final int _itemObjectId;
+    private final int itemObjectId;
 
     public ExRequestChangeNicknameColor(int itemObjectId) {
-        _itemObjectId = itemObjectId;
+        this.itemObjectId = itemObjectId;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_REQUEST_CHANGE_NICKNAME_COLOR.writeId(this, buffer);
-        buffer.writeInt(_itemObjectId);
+        buffer.writeInt(itemObjectId);
     }
 }

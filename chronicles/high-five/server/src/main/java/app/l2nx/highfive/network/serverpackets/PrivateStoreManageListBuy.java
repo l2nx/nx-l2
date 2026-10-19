@@ -31,33 +31,33 @@ import app.l2nx.network.buffer.WriteBuffer;
 import java.util.Collection;
 
 public class PrivateStoreManageListBuy extends AbstractItemPacket {
-    private final int _objId;
-    private final long _playerAdena;
-    private final Collection<Item> _itemList;
-    private final Collection<TradeItem> _buyList;
+    private final int objId;
+    private final long playerAdena;
+    private final Collection<Item> itemList;
+    private final Collection<TradeItem> buyList;
 
     public PrivateStoreManageListBuy(Player player) {
-        _objId = player.getObjectId();
-        _playerAdena = player.getAdena();
-        _itemList = player.getInventory().getUniqueItems(false, true, true, false);
-        _buyList = player.getBuyList().getItems();
+        objId = player.getObjectId();
+        playerAdena = player.getAdena();
+        itemList = player.getInventory().getUniqueItems(false, true, true, false);
+        buyList = player.getBuyList().getItems();
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.PRIVATE_STORE_BUY_MANAGE_LIST.writeId(this, buffer);
 
-        buffer.writeInt(_objId);
-        buffer.writeLong(_playerAdena);
+        buffer.writeInt(objId);
+        buffer.writeLong(playerAdena);
 
-        buffer.writeInt(_itemList.size()); // inventory items for potential buy
-        for (Item item : _itemList) {
+        buffer.writeInt(itemList.size()); // inventory items for potential buy
+        for (Item item : itemList) {
             writeItem(item, buffer);
             buffer.writeLong(item.getTemplate().getReferencePrice() * 2);
         }
 
-        buffer.writeInt(_buyList.size()); // count for all items already added for buy
-        for (TradeItem item : _buyList) {
+        buffer.writeInt(buyList.size()); // count for all items already added for buy
+        for (TradeItem item : buyList) {
             writeItem(item, buffer);
             buffer.writeLong(item.getPrice());
             buffer.writeLong(item.getItem().getReferencePrice() * 2);

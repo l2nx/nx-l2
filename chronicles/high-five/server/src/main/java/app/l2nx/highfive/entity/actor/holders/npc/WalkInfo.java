@@ -29,6 +29,8 @@ import app.l2nx.highfive.mechanics.events.EventType;
 import app.l2nx.highfive.mechanics.events.holders.actor.npc.OnNpcMoveRouteFinished;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ThreadLocalRandom;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * Holds info about current walk progress.<br>
@@ -52,101 +54,88 @@ public class WalkInfo {
     private static final int NODE_SECOND = 1;
 
     // Route Data.
-    private final String _routeName;
+    private final String routeName;
 
     // Task Data.
-    private ScheduledFuture<?> _walkCheckTask;
+    @Getter
+    @Setter
+    private ScheduledFuture<?> walkCheckTask;
 
     // Runtime State.
-    private int _stateFlags;
-    private int _cursor;
-    private int _step;
+    private int stateFlags;
+
+    @Getter
+    private int currentNodeId;
+
+    private int step;
 
     // Debug Data.
-    private long _lastActionTime;
+    @Getter
+    @Setter
+    private long lastAction;
 
     public WalkInfo(String routeName) {
-        _routeName = routeName;
-        _walkCheckTask = null;
+        this.routeName = routeName;
+        walkCheckTask = null;
 
-        _stateFlags = 0;
-        _cursor = NODE_FIRST;
-        _step = STEP_FORWARD;
+        stateFlags = 0;
+        currentNodeId = NODE_FIRST;
+        step = STEP_FORWARD;
 
-        _lastActionTime = 0L;
+        lastAction = 0L;
     }
 
     public boolean isBlocked() {
-        return (_stateFlags & FLAG_BLOCKED) != 0;
+        return (stateFlags & FLAG_BLOCKED) != 0;
     }
 
     public void setBlocked(boolean value) {
-        int flags = _stateFlags;
+        int flags = stateFlags;
         if (value) {
             flags |= FLAG_BLOCKED;
         } else {
             flags &= ~FLAG_BLOCKED;
         }
-        _stateFlags = flags;
+        stateFlags = flags;
     }
 
     public boolean isSuspended() {
-        return (_stateFlags & FLAG_SUSPENDED) != 0;
+        return (stateFlags & FLAG_SUSPENDED) != 0;
     }
 
     public void setSuspended(boolean value) {
-        int flags = _stateFlags;
+        int flags = stateFlags;
         if (value) {
             flags |= FLAG_SUSPENDED;
         } else {
             flags &= ~FLAG_SUSPENDED;
         }
-        _stateFlags = flags;
+        stateFlags = flags;
     }
 
     public boolean isStoppedByAttack() {
-        return (_stateFlags & FLAG_STOPPED_BY_ATTACK) != 0;
+        return (stateFlags & FLAG_STOPPED_BY_ATTACK) != 0;
     }
 
     public void setStoppedByAttack(boolean value) {
-        int flags = _stateFlags;
+        int flags = stateFlags;
         if (value) {
             flags |= FLAG_STOPPED_BY_ATTACK;
         } else {
             flags &= ~FLAG_STOPPED_BY_ATTACK;
         }
-        _stateFlags = flags;
-    }
-
-    public int getCurrentNodeId() {
-        return _cursor;
-    }
-
-    public long getLastAction() {
-        return _lastActionTime;
-    }
-
-    public void setLastAction(long value) {
-        _lastActionTime = value;
-    }
-
-    public ScheduledFuture<?> getWalkCheckTask() {
-        return _walkCheckTask;
-    }
-
-    public void setWalkCheckTask(ScheduledFuture<?> task) {
-        _walkCheckTask = task;
+        stateFlags = flags;
     }
 
     public WalkRoute getRoute() {
         final WalkingManager manager = WalkingManager.getInstance();
-        final WalkRoute route = manager.getRoute(_routeName);
+        final WalkRoute route = manager.getRoute(routeName);
         return route;
     }
 
     public WalkNode getCurrentNode() {
         final WalkRoute route = getRoute();
-        int cursor = _cursor;
+        int cursor = currentNodeId;
         if (cursor < NODE_FIRST) {
             cursor = NODE_FIRST;
         }
@@ -166,11 +155,11 @@ public class WalkInfo {
         final byte repeatType = route.getRepeatType();
         if (repeatType == WalkingManager.REPEAT_RANDOM) {
             if (nodesCount <= NODE_SECOND) {
-                _cursor = NODE_FIRST;
+                currentNodeId = NODE_FIRST;
                 return;
             }
 
-            final int base = _cursor;
+            final int base = currentNodeId;
             int selected = base;
             while (selected == base) {
                 final int candidate = ThreadLocalRandom.current().nextInt(nodesCount);
@@ -179,15 +168,15 @@ public class WalkInfo {
                 }
             }
 
-            _cursor = selected;
+            currentNodeId = selected;
             return;
         }
 
-        int cursor = _cursor;
-        cursor += _step;
-        _cursor = cursor;
+        int cursor = currentNodeId;
+        cursor += step;
+        currentNodeId = cursor;
 
-        if (_cursor == nodesCount) {
+        if (currentNodeId == nodesCount) {
             final EventDispatcher dispatcher = EventDispatcher.getInstance();
             if (dispatcher.hasListener(EventType.ON_NPC_MOVE_ROUTE_FINISHED, npc)) {
                 dispatcher.notifyEventAsync(new OnNpcMoveRouteFinished(npc), npc);
@@ -200,19 +189,19 @@ public class WalkInfo {
 
             switch (repeatType) {
                 case WalkingManager.REPEAT_GO_BACK: {
-                    _step = -STEP_FORWARD;
-                    _cursor = nodesCount - 2;
+                    step = -STEP_FORWARD;
+                    currentNodeId = nodesCount - 2;
                     break;
                 }
                 case WalkingManager.REPEAT_GO_FIRST: {
-                    _step = STEP_FORWARD;
-                    _cursor = NODE_FIRST;
+                    step = STEP_FORWARD;
+                    currentNodeId = NODE_FIRST;
                     break;
                 }
                 case WalkingManager.REPEAT_TELE_FIRST: {
                     npc.teleToLocation(npc.getSpawn().getLocation());
-                    _step = STEP_FORWARD;
-                    _cursor = NODE_FIRST;
+                    step = STEP_FORWARD;
+                    currentNodeId = NODE_FIRST;
                     break;
                 }
                 default: {
@@ -222,9 +211,9 @@ public class WalkInfo {
             return;
         }
 
-        if (_cursor == WalkingManager.NO_REPEAT) {
-            _cursor = NODE_SECOND;
-            _step = STEP_FORWARD;
+        if (currentNodeId == WalkingManager.NO_REPEAT) {
+            currentNodeId = NODE_SECOND;
+            step = STEP_FORWARD;
         }
     }
 
@@ -232,15 +221,15 @@ public class WalkInfo {
     public String toString() {
         StringBuilder sb = new StringBuilder(220);
         sb.append("WalkInfo [routeName=");
-        sb.append(_routeName);
+        sb.append(routeName);
         sb.append(", walkCheckTask=");
-        sb.append(_walkCheckTask);
+        sb.append(walkCheckTask);
         sb.append(", stateFlags=0x");
-        sb.append(Integer.toHexString(_stateFlags));
+        sb.append(Integer.toHexString(stateFlags));
         sb.append(", cursor=");
-        sb.append(_cursor);
+        sb.append(currentNodeId);
         sb.append(", step=");
-        sb.append(_step);
+        sb.append(step);
         sb.append(", blocked=");
         sb.append(isBlocked());
         sb.append(", suspended=");
@@ -248,7 +237,7 @@ public class WalkInfo {
         sb.append(", stoppedByAttack=");
         sb.append(isStoppedByAttack());
         sb.append(", lastActionTime=");
-        sb.append(_lastActionTime);
+        sb.append(lastAction);
         sb.append(']');
         return sb.toString();
     }

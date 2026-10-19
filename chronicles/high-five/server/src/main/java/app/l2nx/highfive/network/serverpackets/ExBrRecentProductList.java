@@ -27,7 +27,6 @@ import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.data.xml.PrimeShopData;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.network.GameClient;
-import app.l2nx.highfive.network.PacketLogger;
 import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.network.buffer.WriteBuffer;
 import java.sql.Connection;
@@ -35,12 +34,14 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.List;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author Mobius
  */
+@Slf4j
 public class ExBrRecentProductList extends ServerPacket {
-    private final List<PrimeShopProductHolder> _itemList = new ArrayList<>();
+    private final List<PrimeShopProductHolder> itemList = new ArrayList<>();
 
     public ExBrRecentProductList(Player player) {
         final int playerObj = player.getObjectId();
@@ -52,25 +53,25 @@ public class ExBrRecentProductList extends ServerPacket {
                 while (rset.next()) {
                     final PrimeShopProductHolder product =
                             PrimeShopData.getInstance().getProduct(rset.getInt("productId"));
-                    if ((product != null) && !_itemList.contains(product)) {
-                        _itemList.add(product);
+                    if ((product != null) && !itemList.contains(product)) {
+                        itemList.add(product);
                     }
                 }
             }
         } catch (Exception e) {
-            PacketLogger.warning("Could not restore Item Mall transaction: " + e.getMessage());
+            log.warn("Could not restore Item Mall transaction: {}", e.getMessage());
         }
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
-        if (_itemList.isEmpty()) {
+        if (itemList.isEmpty()) {
             return;
         }
 
         ServerPackets.EX_BR_RECENT_PRODUCT_LIST.writeId(this, buffer);
-        buffer.writeInt(_itemList.size());
-        for (PrimeShopProductHolder product : _itemList) {
+        buffer.writeInt(itemList.size());
+        for (PrimeShopProductHolder product : itemList) {
             buffer.writeInt(product.getProductId());
             buffer.writeShort(product.getCategory());
             buffer.writeInt(product.getPrice());

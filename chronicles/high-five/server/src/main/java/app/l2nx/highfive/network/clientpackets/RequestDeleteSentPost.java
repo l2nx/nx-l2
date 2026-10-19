@@ -35,7 +35,7 @@ import app.l2nx.highfive.network.serverpackets.ExChangePostState;
 public class RequestDeleteSentPost extends ClientPacket {
     private static final int BATCH_LENGTH = 4; // length of the one item
 
-    int[] _msgIds = null;
+    int[] msgIds = null;
 
     @Override
     protected void readImpl() {
@@ -44,16 +44,16 @@ public class RequestDeleteSentPost extends ClientPacket {
             return;
         }
 
-        _msgIds = new int[count];
+        msgIds = new int[count];
         for (int i = 0; i < count; i++) {
-            _msgIds[i] = readInt();
+            msgIds[i] = readInt();
         }
     }
 
     @Override
     protected void runImpl() {
         final Player player = getPlayer();
-        if ((player == null) || (_msgIds == null) || !GeneralConfig.ALLOW_MAIL) {
+        if ((player == null) || (msgIds == null) || !GeneralConfig.ALLOW_MAIL) {
             return;
         }
 
@@ -63,7 +63,7 @@ public class RequestDeleteSentPost extends ClientPacket {
             return;
         }
 
-        for (int msgId : _msgIds) {
+        for (int msgId : msgIds) {
             final MailMessage msg = MailManager.getInstance().getMessage(msgId);
             if (msg == null) {
                 continue;
@@ -82,6 +82,6 @@ public class RequestDeleteSentPost extends ClientPacket {
             msg.setDeletedBySender();
         }
 
-        player.sendPacket(new ExChangePostState(false, _msgIds, MailMessage.DELETED));
+        player.sendPacket(new ExChangePostState(false, msgIds, MailMessage.DELETED));
     }
 }

@@ -40,15 +40,15 @@ public class RequestChangeNicknameColor extends ClientPacket {
         0x999999, // Silver
     };
 
-    private int _colorNum;
-    private int _itemObjectId;
-    private String _title;
+    private int colorNum;
+    private int itemObjectId;
+    private String title;
 
     @Override
     protected void readImpl() {
-        _colorNum = readInt();
-        _title = readString();
-        _itemObjectId = readInt();
+        colorNum = readInt();
+        title = readString();
+        itemObjectId = readInt();
     }
 
     @Override
@@ -58,11 +58,11 @@ public class RequestChangeNicknameColor extends ClientPacket {
             return;
         }
 
-        if ((_colorNum < 0) || (_colorNum >= COLORS.length)) {
+        if ((colorNum < 0) || (colorNum >= COLORS.length)) {
             return;
         }
 
-        final Item item = player.getInventory().getItemByObjectId(_itemObjectId);
+        final Item item = player.getInventory().getItemByObjectId(itemObjectId);
         if ((item == null)
                 || (item.getEtcItem() == null)
                 || (item.getEtcItem().getHandlerName() == null)
@@ -71,8 +71,8 @@ public class RequestChangeNicknameColor extends ClientPacket {
         }
 
         if (player.destroyItem(ItemProcessType.NONE, item, 1, null, true)) {
-            player.setTitle(_title);
-            player.getAppearance().setTitleColor(COLORS[_colorNum]);
+            player.setTitle(title);
+            player.getAppearance().setTitleColor(COLORS[colorNum]);
             player.broadcastUserInfo();
         }
     }

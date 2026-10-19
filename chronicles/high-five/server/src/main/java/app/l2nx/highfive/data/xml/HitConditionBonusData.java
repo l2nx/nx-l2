@@ -22,6 +22,7 @@ package app.l2nx.highfive.data.xml;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.taskmanagers.GameTimeTaskManager;
 import java.io.File;
+import lombok.extern.slf4j.Slf4j;
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
@@ -30,6 +31,7 @@ import org.w3c.dom.Node;
  * This class load, holds and calculates the hit condition bonuses.
  * @author Nik
  */
+@Slf4j
 public class HitConditionBonusData implements IXmlReader {
     private int frontBonus = 0;
     private int sideBonus = 0;
@@ -51,7 +53,7 @@ public class HitConditionBonusData implements IXmlReader {
     @Override
     public void load() {
         parseDatapackFile("data/stats/hitConditionBonus.xml");
-        LOGGER.info(getClass().getSimpleName() + ": Loaded hit condition bonuses.");
+        log.info("Loaded hit condition bonuses.");
     }
 
     @Override

@@ -32,10 +32,10 @@ import app.l2nx.highfive.network.serverpackets.SystemMessage;
  * @author Adry_85
  */
 public class ConditionPlayerCallPc extends Condition {
-    private final boolean _value;
+    private final boolean value;
 
     public ConditionPlayerCallPc(boolean value) {
-        _value = value;
+        this.value = value;
     }
 
     @Override
@@ -64,6 +64,6 @@ public class ConditionPlayerCallPc extends Condition {
             canCallPlayer = false;
         }
 
-        return _value == canCallPlayer;
+        return value == canCallPlayer;
     }
 }

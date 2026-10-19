@@ -29,40 +29,40 @@ import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.network.buffer.WriteBuffer;
 
 public class MoveToPawn extends ServerPacket {
-    private final int _objectId;
-    private final int _targetId;
-    private final int _distance;
-    private final int _x;
-    private final int _y;
-    private final int _z;
-    private final int _tx;
-    private final int _ty;
-    private final int _tz;
+    private final int objectId;
+    private final int targetId;
+    private final int distance;
+    private final int x;
+    private final int y;
+    private final int z;
+    private final int tx;
+    private final int ty;
+    private final int tz;
 
     public MoveToPawn(Creature creature, WorldObject target, int distance) {
-        _objectId = creature.getObjectId();
-        _targetId = target.getObjectId();
-        _distance = distance;
-        _x = creature.getX();
-        _y = creature.getY();
-        _z = creature.getZ();
-        _tx = target.getX();
-        _ty = target.getY();
-        _tz = target.getZ();
+        objectId = creature.getObjectId();
+        targetId = target.getObjectId();
+        this.distance = distance;
+        x = creature.getX();
+        y = creature.getY();
+        z = creature.getZ();
+        tx = target.getX();
+        ty = target.getY();
+        tz = target.getZ();
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.MOVE_TO_PAWN.writeId(this, buffer);
-        buffer.writeInt(_objectId);
-        buffer.writeInt(_targetId);
-        buffer.writeInt(_distance);
-        buffer.writeInt(_x);
-        buffer.writeInt(_y);
-        buffer.writeInt(_z);
-        buffer.writeInt(_tx);
-        buffer.writeInt(_ty);
-        buffer.writeInt(_tz);
+        buffer.writeInt(objectId);
+        buffer.writeInt(targetId);
+        buffer.writeInt(distance);
+        buffer.writeInt(x);
+        buffer.writeInt(y);
+        buffer.writeInt(z);
+        buffer.writeInt(tx);
+        buffer.writeInt(ty);
+        buffer.writeInt(tz);
     }
 
     @Override

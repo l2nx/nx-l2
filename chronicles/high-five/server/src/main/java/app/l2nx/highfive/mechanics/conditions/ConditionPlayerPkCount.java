@@ -31,14 +31,14 @@ import app.l2nx.highfive.mechanics.skill.Skill;
  * The Class ConditionPlayerPkCount.
  */
 public class ConditionPlayerPkCount extends Condition {
-    public int _pk;
+    public int pk;
 
     /**
      * Instantiates a new condition player pk count.
      * @param pk the pk
      */
     public ConditionPlayerPkCount(int pk) {
-        _pk = pk;
+        this.pk = pk;
     }
 
     @Override
@@ -48,6 +48,6 @@ public class ConditionPlayerPkCount extends Condition {
             return false;
         }
 
-        return player.getPkKills() <= _pk;
+        return player.getPkKills() <= pk;
     }
 }

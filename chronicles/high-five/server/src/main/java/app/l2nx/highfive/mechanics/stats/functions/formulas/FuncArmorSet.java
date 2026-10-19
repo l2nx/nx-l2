@@ -34,12 +34,12 @@ import java.util.Map;
  * @author UnAfraid
  */
 public class FuncArmorSet extends AbstractFunction {
-    private static final Map<Stat, FuncArmorSet> _fh_instance = new EnumMap<>(Stat.class);
+    private static final Map<Stat, FuncArmorSet> fh_instance = new EnumMap<>(Stat.class);
 
     public static AbstractFunction getInstance(Stat st) {
-        _fh_instance.computeIfAbsent(st, k -> new FuncArmorSet(st));
+        fh_instance.computeIfAbsent(st, k -> new FuncArmorSet(st));
 
-        return _fh_instance.get(st);
+        return fh_instance.get(st);
     }
 
     private FuncArmorSet(Stat stat) {

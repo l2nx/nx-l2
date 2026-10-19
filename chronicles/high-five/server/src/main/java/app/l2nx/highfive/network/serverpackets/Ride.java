@@ -29,29 +29,29 @@ import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.network.buffer.WriteBuffer;
 
 public class Ride extends ServerPacket {
-    private final int _objectId;
-    private final boolean _mounted;
-    private final int _rideType;
-    private final int _rideNpcId;
-    private final Location _loc;
+    private final int objectId;
+    private final boolean mounted;
+    private final int rideType;
+    private final int rideNpcId;
+    private final Location loc;
 
     public Ride(Player player) {
-        _objectId = player.getObjectId();
-        _mounted = player.isMounted();
-        _rideType = player.getMountType().ordinal();
-        _rideNpcId = player.getMountNpcId() + 1000000;
-        _loc = player.getLocation();
+        objectId = player.getObjectId();
+        mounted = player.isMounted();
+        rideType = player.getMountType().ordinal();
+        rideNpcId = player.getMountNpcId() + 1000000;
+        loc = player.getLocation();
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.RIDE.writeId(this, buffer);
-        buffer.writeInt(_objectId);
-        buffer.writeInt(_mounted);
-        buffer.writeInt(_rideType);
-        buffer.writeInt(_rideNpcId);
-        buffer.writeInt(_loc.getX());
-        buffer.writeInt(_loc.getY());
-        buffer.writeInt(_loc.getZ());
+        buffer.writeInt(objectId);
+        buffer.writeInt(mounted);
+        buffer.writeInt(rideType);
+        buffer.writeInt(rideNpcId);
+        buffer.writeInt(loc.getX());
+        buffer.writeInt(loc.getY());
+        buffer.writeInt(loc.getZ());
     }
 }

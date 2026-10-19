@@ -27,19 +27,19 @@ import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.network.buffer.WriteBuffer;
 
 public class ExPutItemResultForVariationMake extends ServerPacket {
-    private final int _itemObjId;
-    private final int _itemId;
+    private final int itemObjId;
+    private final int itemId;
 
     public ExPutItemResultForVariationMake(int itemObjId, int itemId) {
-        _itemObjId = itemObjId;
-        _itemId = itemId;
+        this.itemObjId = itemObjId;
+        this.itemId = itemId;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_PUT_ITEM_RESULT_FOR_VARIATION_MAKE.writeId(this, buffer);
-        buffer.writeInt(_itemObjId);
-        buffer.writeInt(_itemId);
+        buffer.writeInt(itemObjId);
+        buffer.writeInt(itemId);
         buffer.writeInt(1);
     }
 }

@@ -24,30 +24,24 @@ import app.l2nx.highfive.entity.zone.type.PeaceZone;
 import app.l2nx.highfive.mechanics.skill.Skill;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import lombok.Getter;
 
 /**
  * @author NosBit
  */
 public class ZoneRegion {
-    private final int _regionX;
-    private final int _regionY;
-    private final Map<Integer, ZoneType> _zones = new ConcurrentHashMap<>();
+    @Getter
+    private final int regionX;
+
+    @Getter
+    private final int regionY;
+
+    @Getter
+    private final Map<Integer, ZoneType> zones = new ConcurrentHashMap<>();
 
     public ZoneRegion(int regionX, int regionY) {
-        _regionX = regionX;
-        _regionY = regionY;
-    }
-
-    public Map<Integer, ZoneType> getZones() {
-        return _zones;
-    }
-
-    public int getRegionX() {
-        return _regionX;
-    }
-
-    public int getRegionY() {
-        return _regionY;
+        this.regionX = regionX;
+        this.regionY = regionY;
     }
 
     public void revalidateZones(Creature creature) {
@@ -57,13 +51,13 @@ public class ZoneRegion {
             return;
         }
 
-        for (ZoneType z : _zones.values()) {
+        for (ZoneType z : zones.values()) {
             z.revalidateInZone(creature);
         }
     }
 
     public void removeFromZones(Creature creature) {
-        for (ZoneType z : _zones.values()) {
+        for (ZoneType z : zones.values()) {
             z.removeCharacter(creature);
         }
     }
@@ -74,7 +68,7 @@ public class ZoneRegion {
         final int down = y - range;
         final int left = x + range;
         final int right = x - range;
-        for (ZoneType e : _zones.values()) {
+        for (ZoneType e : zones.values()) {
             if (e instanceof PeaceZone) {
                 if (e.isInsideZone(x, up, z)) {
                     return false;
@@ -102,7 +96,7 @@ public class ZoneRegion {
     }
 
     public void onDeath(Creature creature) {
-        for (ZoneType z : _zones.values()) {
+        for (ZoneType z : zones.values()) {
             if (z.isInsideZone(creature)) {
                 z.onDieInside(creature);
             }
@@ -110,7 +104,7 @@ public class ZoneRegion {
     }
 
     public void onRevive(Creature creature) {
-        for (ZoneType z : _zones.values()) {
+        for (ZoneType z : zones.values()) {
             if (z.isInsideZone(creature)) {
                 z.onReviveInside(creature);
             }

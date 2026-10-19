@@ -27,11 +27,11 @@ import app.l2nx.highfive.mechanics.olympiad.Hero;
  * @author -Wooden-
  */
 public class RequestWriteHeroWords extends ClientPacket {
-    private String _heroWords;
+    private String heroWords;
 
     @Override
     protected void readImpl() {
-        _heroWords = readString();
+        heroWords = readString();
     }
 
     @Override
@@ -41,10 +41,10 @@ public class RequestWriteHeroWords extends ClientPacket {
             return;
         }
 
-        if ((_heroWords == null) || (_heroWords.length() > 300)) {
+        if ((heroWords == null) || (heroWords.length() > 300)) {
             return;
         }
 
-        Hero.getInstance().setHeroMessage(player, _heroWords);
+        Hero.getInstance().setHeroMessage(player, heroWords);
     }
 }

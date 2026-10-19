@@ -28,21 +28,21 @@ import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.network.buffer.WriteBuffer;
 
 public class RecipeShopItemInfo extends ServerPacket {
-    private final Player _player;
-    private final int _recipeId;
+    private final Player player;
+    private final int recipeId;
 
     public RecipeShopItemInfo(Player player, int recipeId) {
-        _player = player;
-        _recipeId = recipeId;
+        this.player = player;
+        this.recipeId = recipeId;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.RECIPE_SHOP_ITEM_INFO.writeId(this, buffer);
-        buffer.writeInt(_player.getObjectId());
-        buffer.writeInt(_recipeId);
-        buffer.writeInt((int) _player.getCurrentMp());
-        buffer.writeInt(_player.getMaxMp());
+        buffer.writeInt(player.getObjectId());
+        buffer.writeInt(recipeId);
+        buffer.writeInt((int) player.getCurrentMp());
+        buffer.writeInt(player.getMaxMp());
         buffer.writeInt(0xffffffff);
     }
 }

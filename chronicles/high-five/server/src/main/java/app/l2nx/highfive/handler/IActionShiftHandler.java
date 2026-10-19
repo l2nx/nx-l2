@@ -25,10 +25,8 @@ package app.l2nx.highfive.handler;
 import app.l2nx.highfive.entity.WorldObject;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.enums.creature.InstanceType;
-import java.util.logging.Logger;
 
 public interface IActionShiftHandler {
-    Logger LOGGER = Logger.getLogger(IActionShiftHandler.class.getName());
 
     boolean onAction(Player player, WorldObject target, boolean interact);
 

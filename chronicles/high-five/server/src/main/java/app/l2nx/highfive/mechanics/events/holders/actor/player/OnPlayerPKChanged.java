@@ -22,33 +22,13 @@ package app.l2nx.highfive.mechanics.events.holders.actor.player;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.mechanics.events.EventType;
 import app.l2nx.highfive.mechanics.events.holders.IBaseEvent;
+import lombok.Builder;
 
 /**
  * @author UnAfraid
  */
-public class OnPlayerPKChanged implements IBaseEvent {
-    private final Player _player;
-    private final int _oldPoints;
-    private final int _newPoints;
-
-    public OnPlayerPKChanged(Player player, int oldPoints, int newPoints) {
-        _player = player;
-        _oldPoints = oldPoints;
-        _newPoints = newPoints;
-    }
-
-    public Player getPlayer() {
-        return _player;
-    }
-
-    public int getOldPoints() {
-        return _oldPoints;
-    }
-
-    public int getNewPoints() {
-        return _newPoints;
-    }
-
+@Builder(toBuilder = true)
+public record OnPlayerPKChanged(Player player, int oldPoints, int newPoints) implements IBaseEvent {
     @Override
     public EventType getType() {
         return EventType.ON_PLAYER_PK_CHANGED;

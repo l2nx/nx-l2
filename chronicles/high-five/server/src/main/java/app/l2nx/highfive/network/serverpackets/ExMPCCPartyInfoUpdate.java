@@ -28,28 +28,28 @@ import app.l2nx.network.buffer.WriteBuffer;
  * @author chris_00
  */
 public class ExMPCCPartyInfoUpdate extends ServerPacket {
-    private final int _mode;
-    private final int _LeaderOID;
-    private final int _memberCount;
-    private final String _name;
+    private final int mode;
+    private final int leaderOID;
+    private final int memberCount;
+    private final String name;
 
     /**
      * @param party
      * @param mode 0 = Remove, 1 = Add
      */
     public ExMPCCPartyInfoUpdate(Party party, int mode) {
-        _name = party.getLeader().getName();
-        _LeaderOID = party.getLeaderObjectId();
-        _memberCount = party.getMemberCount();
-        _mode = mode;
+        name = party.getLeader().getName();
+        leaderOID = party.getLeaderObjectId();
+        memberCount = party.getMemberCount();
+        this.mode = mode;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_MPCC_PARTY_INFO_UPDATE.writeId(this, buffer);
-        buffer.writeString(_name);
-        buffer.writeInt(_LeaderOID);
-        buffer.writeInt(_memberCount);
-        buffer.writeInt(_mode); // mode 0 = Remove Party, 1 = AddParty, maybe more...
+        buffer.writeString(name);
+        buffer.writeInt(leaderOID);
+        buffer.writeInt(memberCount);
+        buffer.writeInt(mode); // mode 0 = Remove Party, 1 = AddParty, maybe more...
     }
 }

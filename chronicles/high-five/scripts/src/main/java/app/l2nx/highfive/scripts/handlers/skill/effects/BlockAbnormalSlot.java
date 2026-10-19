@@ -34,29 +34,29 @@ import java.util.Set;
  * @author Zoey76
  */
 public class BlockAbnormalSlot extends AbstractEffect {
-    private final Set<AbnormalType> _blockAbnormalSlots;
+    private final Set<AbnormalType> blockAbnormalSlots;
 
     public BlockAbnormalSlot(Condition attachCond, Condition applyCond, StatSet set, StatSet params) {
         super(attachCond, applyCond, set, params);
 
         final String blockBuffSlots = params.getString("slot", null);
         if ((blockBuffSlots != null) && !blockBuffSlots.isEmpty()) {
-            _blockAbnormalSlots = new HashSet<>();
+            blockAbnormalSlots = new HashSet<>();
             for (String slot : blockBuffSlots.split(";")) {
-                _blockAbnormalSlots.add(AbnormalType.getAbnormalType(slot));
+                blockAbnormalSlots.add(AbnormalType.getAbnormalType(slot));
             }
         } else {
-            _blockAbnormalSlots = Collections.<AbnormalType>emptySet();
+            blockAbnormalSlots = Collections.<AbnormalType>emptySet();
         }
     }
 
     @Override
     public void onExit(Creature effector, Creature effected, Skill skill) {
-        effected.getEffectList().removeBlockedAbnormalTypes(_blockAbnormalSlots);
+        effected.getEffectList().removeBlockedAbnormalTypes(blockAbnormalSlots);
     }
 
     @Override
     public void onStart(Creature effector, Creature effected, Skill skill) {
-        effected.getEffectList().addBlockedAbnormalTypes(_blockAbnormalSlots);
+        effected.getEffectList().addBlockedAbnormalTypes(blockAbnormalSlots);
     }
 }

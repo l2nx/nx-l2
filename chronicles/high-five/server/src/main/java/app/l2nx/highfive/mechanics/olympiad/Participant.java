@@ -22,20 +22,44 @@ package app.l2nx.highfive.mechanics.olympiad;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.util.StatSet;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * @author DS, Zoey76
  */
 public class Participant {
+    @Getter
     private final int objectId;
+
+    @Getter
+    @Setter
     private Player player;
+
+    @Getter
     private final String name;
+
+    @Getter
     private final int side;
+
+    @Getter
     private final int baseClass;
+
+    @Getter
+    @Setter
     private boolean disconnected = false;
+
+    @Getter
+    @Setter
     private boolean defaulted = false;
+
+    @Getter
     private final StatSet stats;
+
+    @Getter
     public String clanName;
+
+    @Getter
     public int clanId;
 
     public Participant(Player plr, int olympiadSide) {
@@ -78,96 +102,5 @@ public class Participant {
      */
     public void updateStat(String statName, int increment) {
         stats.set(statName, Math.max(stats.getInt(statName) + increment, 0));
-    }
-
-    /**
-     * @return the name the player's name.
-     */
-    public String getName() {
-        return name;
-    }
-
-    /**
-     * @return the name the player's clan name.
-     */
-    public String getClanName() {
-        return clanName;
-    }
-
-    /**
-     * @return the name the player's id.
-     */
-    public int getClanId() {
-        return clanId;
-    }
-
-    /**
-     * @return the player
-     */
-    public Player getPlayer() {
-        return player;
-    }
-
-    /**
-     * @return the objectId
-     */
-    public int getObjectId() {
-        return objectId;
-    }
-
-    /**
-     * @return the stats
-     */
-    public StatSet getStats() {
-        return stats;
-    }
-
-    /**
-     * @param noble the player to set
-     */
-    public void setPlayer(Player noble) {
-        player = noble;
-    }
-
-    /**
-     * @return the side
-     */
-    public int getSide() {
-        return side;
-    }
-
-    /**
-     * @return the baseClass
-     */
-    public int getBaseClass() {
-        return baseClass;
-    }
-
-    /**
-     * @return the disconnected
-     */
-    public boolean isDisconnected() {
-        return disconnected;
-    }
-
-    /**
-     * @param value the disconnected to set
-     */
-    public void setDisconnected(boolean value) {
-        disconnected = value;
-    }
-
-    /**
-     * @return the defaulted
-     */
-    public boolean isDefaulted() {
-        return defaulted;
-    }
-
-    /**
-     * @param value the value to set.
-     */
-    public void setDefaulted(boolean value) {
-        defaulted = value;
     }
 }

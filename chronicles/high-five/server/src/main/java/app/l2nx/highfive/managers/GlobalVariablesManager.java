@@ -30,11 +30,10 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Map.Entry;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class GlobalVariablesManager extends AbstractVariables {
-    private static final Logger LOGGER = Logger.getLogger(GlobalVariablesManager.class.getName());
 
     // SQL Queries.
     private static final String SELECT_QUERY = "SELECT * FROM global_variables";
@@ -57,11 +56,11 @@ public class GlobalVariablesManager extends AbstractVariables {
                 set(rset.getString("var"), rset.getString("value"));
             }
         } catch (SQLException e) {
-            LOGGER.warning(getClass().getSimpleName() + ": Couldn't restore global variables.");
+            log.warn("Couldn't restore global variables.");
             return false;
         }
 
-        LOGGER.info(getClass().getSimpleName() + ": Loaded " + getSet().size() + " variables.");
+        log.info("Loaded {} variables.", getSet().size());
         return true;
     }
 
@@ -81,11 +80,11 @@ public class GlobalVariablesManager extends AbstractVariables {
 
             st.executeBatch();
         } catch (SQLException e) {
-            LOGGER.log(Level.WARNING, getClass().getSimpleName() + ": Couldn't save global variables to database.", e);
+            log.warn("Couldn't save global variables to database.", e);
             return false;
         }
 
-        LOGGER.info(getClass().getSimpleName() + ": Stored " + getSet().size() + " variables.");
+        log.info("Stored {} variables.", getSet().size());
         return true;
     }
 
@@ -94,8 +93,7 @@ public class GlobalVariablesManager extends AbstractVariables {
                 Statement del = con.createStatement()) {
             del.execute(DELETE_QUERY);
         } catch (Exception e) {
-            LOGGER.log(
-                    Level.WARNING, getClass().getSimpleName() + ": Couldn't delete global variables to database.", e);
+            log.warn("Couldn't delete global variables to database.", e);
             return false;
         }
 

@@ -36,12 +36,12 @@ import java.util.concurrent.ThreadLocalRandom;
 public class SummonAI extends PlayableAI implements Runnable {
     private static final int AVOID_RADIUS = 70;
 
-    private volatile boolean _thinking; // To prevent recursive thinking.
-    private volatile boolean _startFollow = _actor.asSummon().getFollowStatus();
-    private Creature _lastAttack = null;
+    private volatile boolean thinking; // To prevent recursive thinking.
+    private volatile boolean startFollow = actor.asSummon().getFollowStatus();
+    private Creature lastAttack = null;
 
-    private volatile boolean _startAvoid = false;
-    private Future<?> _avoidTask = null;
+    private volatile boolean startAvoid = false;
+    private Future<?> avoidTask = null;
 
     public SummonAI(Summon creature) {
         super(creature);
@@ -49,7 +49,7 @@ public class SummonAI extends PlayableAI implements Runnable {
 
     @Override
     public Intention getNextIntention() {
-        return _lastAttack != null ? Intention.ATTACK : null;
+        return lastAttack != null ? Intention.ATTACK : null;
     }
 
     @Override
@@ -66,13 +66,13 @@ public class SummonAI extends PlayableAI implements Runnable {
         if ((GeoEngineConfig.PATHFINDING > 0)
                 && (PathFinding.getInstance()
                                 .findPath(
-                                        _actor.getX(),
-                                        _actor.getY(),
-                                        _actor.getZ(),
+                                        actor.getX(),
+                                        actor.getY(),
+                                        actor.getZ(),
                                         creatureTarget.getX(),
                                         creatureTarget.getY(),
                                         creatureTarget.getZ(),
-                                        _actor.getInstanceId(),
+                                        actor.getInstanceId(),
                                         false)
                         == null)) {
             return;
@@ -85,16 +85,16 @@ public class SummonAI extends PlayableAI implements Runnable {
     @Override
     public void setIntentionIdle() {
         stopFollow();
-        _startFollow = false;
+        startFollow = false;
         stopAvoidTask();
         setIntentionActive();
     }
 
     @Override
     public void setIntentionActive() {
-        if (_startFollow) {
+        if (startFollow) {
             startAvoidTask();
-            setIntentionFollow(_actor.asSummon().getOwner());
+            setIntentionFollow(actor.asSummon().getOwner());
         } else {
             startAvoidTask();
             super.setIntentionActive();
@@ -117,13 +117,13 @@ public class SummonAI extends PlayableAI implements Runnable {
         if ((GeoEngineConfig.PATHFINDING > 0)
                 && (PathFinding.getInstance()
                                 .findPath(
-                                        _actor.getX(),
-                                        _actor.getY(),
-                                        _actor.getZ(),
+                                        actor.getX(),
+                                        actor.getY(),
+                                        actor.getZ(),
                                         creatureTarget.getX(),
                                         creatureTarget.getY(),
                                         creatureTarget.getZ(),
-                                        _actor.getInstanceId(),
+                                        actor.getInstanceId(),
                                         false)
                         == null)) {
             clientActionFailed();
@@ -140,12 +140,12 @@ public class SummonAI extends PlayableAI implements Runnable {
             return;
         }
 
-        if (maybeMoveToPawn(getAttackTarget(), _actor.getPhysicalAttackRange())) {
+        if (maybeMoveToPawn(getAttackTarget(), actor.getPhysicalAttackRange())) {
             return;
         }
 
         clientStopMoving(null);
-        _actor.doAttack(getAttackTarget());
+        actor.doAttack(getAttackTarget());
     }
 
     private void thinkCast() {
@@ -154,17 +154,17 @@ public class SummonAI extends PlayableAI implements Runnable {
             return;
         }
 
-        final boolean val = _startFollow;
-        if (maybeMoveToPawn(getCastTarget(), _actor.getMagicalAttackRange(_skill))) {
+        final boolean val = startFollow;
+        if (maybeMoveToPawn(getCastTarget(), actor.getMagicalAttackRange(skill))) {
             return;
         }
 
         clientStopMoving(null);
-        final Summon summon = _actor.asSummon();
+        final Summon summon = actor.asSummon();
         summon.setFollowStatus(false);
         setIntentionIdle();
-        _startFollow = val;
-        _actor.doCast(_skill);
+        startFollow = val;
+        actor.doCast(skill);
     }
 
     private void thinkPickUp() {
@@ -173,7 +173,7 @@ public class SummonAI extends PlayableAI implements Runnable {
         }
 
         setIntentionIdle();
-        _actor.asSummon().doPickupItem(getTarget());
+        actor.asSummon().doPickupItem(getTarget());
     }
 
     private void thinkInteract() {
@@ -186,11 +186,11 @@ public class SummonAI extends PlayableAI implements Runnable {
 
     @Override
     public void notifyActionThink() {
-        if (_thinking || _actor.isCastingNow() || _actor.isAllSkillsDisabled()) {
+        if (thinking || actor.isCastingNow() || actor.isAllSkillsDisabled()) {
             return;
         }
 
-        _thinking = true;
+        thinking = true;
 
         try {
             switch (getIntention()) {
@@ -212,17 +212,17 @@ public class SummonAI extends PlayableAI implements Runnable {
                 }
             }
         } finally {
-            _thinking = false;
+            thinking = false;
         }
     }
 
     @Override
     public void notifyActionFinishCasting() {
-        if (_lastAttack == null) {
-            _actor.asSummon().setFollowStatus(_startFollow);
+        if (lastAttack == null) {
+            actor.asSummon().setFollowStatus(startFollow);
         } else {
-            final Creature replayTarget = _lastAttack;
-            _lastAttack = null;
+            final Creature replayTarget = lastAttack;
+            lastAttack = null;
             setIntentionAttack(replayTarget);
         }
 
@@ -255,67 +255,67 @@ public class SummonAI extends PlayableAI implements Runnable {
 
     private void avoidAttack(Creature attacker) {
         // Trying to avoid if summon near owner.
-        if ((_actor.asSummon().getOwner() != null)
-                && (_actor.asSummon().getOwner() != attacker)
-                && _actor.asSummon().getOwner().isInsideRadius3D(_actor, 2 * AVOID_RADIUS)) {
-            _startAvoid = true;
+        if ((actor.asSummon().getOwner() != null)
+                && (actor.asSummon().getOwner() != attacker)
+                && actor.asSummon().getOwner().isInsideRadius3D(actor, 2 * AVOID_RADIUS)) {
+            startAvoid = true;
         }
     }
 
     @Override
     public void run() {
-        if (!_startAvoid) {
+        if (!startAvoid) {
             return;
         }
 
-        _startAvoid = false;
+        startAvoid = false;
 
-        if (_actor.isMoving() || _actor.isDead() || _actor.isMovementDisabled()) {
+        if (actor.isMoving() || actor.isDead() || actor.isMovementDisabled()) {
             return;
         }
 
-        final int ownerX = _actor.asSummon().getOwner().getX();
-        final int ownerY = _actor.asSummon().getOwner().getY();
+        final int ownerX = actor.asSummon().getOwner().getX();
+        final int ownerY = actor.asSummon().getOwner().getY();
         final double angle = Math.toRadians(ThreadLocalRandom.current().nextInt(-90, 91))
-                + Math.atan2(ownerY - _actor.getY(), ownerX - _actor.getX());
+                + Math.atan2(ownerY - actor.getY(), ownerX - actor.getX());
         final int targetX = ownerX + (int) (AVOID_RADIUS * Math.cos(angle));
         final int targetY = ownerY + (int) (AVOID_RADIUS * Math.sin(angle));
         if (GeoEngine.getInstance()
                 .canMoveToTarget(
-                        _actor.getX(),
-                        _actor.getY(),
-                        _actor.getZ(),
+                        actor.getX(),
+                        actor.getY(),
+                        actor.getZ(),
                         targetX,
                         targetY,
-                        _actor.getZ(),
-                        _actor.getInstanceId())) {
-            moveTo(targetX, targetY, _actor.getZ());
+                        actor.getZ(),
+                        actor.getInstanceId())) {
+            moveTo(targetX, targetY, actor.getZ());
         }
     }
 
     public void notifyFollowStatusChange() {
-        _startFollow = !_startFollow;
+        startFollow = !startFollow;
         switch (getIntention()) {
             case ACTIVE:
             case FOLLOW:
             case IDLE:
             case MOVE_TO:
             case PICK_UP: {
-                _actor.asSummon().setFollowStatus(_startFollow);
+                actor.asSummon().setFollowStatus(startFollow);
             }
         }
     }
 
     public void setStartFollowController(boolean value) {
-        _startFollow = value;
+        startFollow = value;
     }
 
     @Override
     public void setIntentionCast(Skill skill, WorldObject target) {
         if (getIntention() == Intention.ATTACK) {
-            _lastAttack = getAttackTarget();
+            lastAttack = getAttackTarget();
         } else {
-            _lastAttack = null;
+            lastAttack = null;
         }
 
         stopAvoidTask();
@@ -323,15 +323,15 @@ public class SummonAI extends PlayableAI implements Runnable {
     }
 
     private void startAvoidTask() {
-        if (_avoidTask == null) {
-            _avoidTask = ThreadPool.scheduleAtFixedRate(this, 100, 100);
+        if (avoidTask == null) {
+            avoidTask = ThreadPool.scheduleAtFixedRate(this, 100, 100);
         }
     }
 
     private void stopAvoidTask() {
-        if (_avoidTask != null) {
-            _avoidTask.cancel(false);
-            _avoidTask = null;
+        if (avoidTask != null) {
+            avoidTask.cancel(false);
+            avoidTask = null;
         }
     }
 

@@ -33,6 +33,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import lombok.extern.slf4j.Slf4j;
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
@@ -41,10 +42,11 @@ import org.w3c.dom.Node;
  * Loads doors.
  * @author JIV, GodKratos, UnAfraid
  */
+@Slf4j
 public class DoorData implements IXmlReader {
-    private static final Map<String, Set<Integer>> _groups = new HashMap<>();
-    private final Map<Integer, Door> _doors = new HashMap<>();
-    private final Map<Integer, StatSet> _templates = new HashMap<>();
+    private static final Map<String, Set<Integer>> groups = new HashMap<>();
+    private final Map<Integer, Door> doors = new HashMap<>();
+    private final Map<Integer, StatSet> templates = new HashMap<>();
 
     protected DoorData() {
         load();
@@ -52,8 +54,8 @@ public class DoorData implements IXmlReader {
 
     @Override
     public void load() {
-        _doors.clear();
-        _groups.clear();
+        doors.clear();
+        groups.clear();
         parseDatapackFile("data/Doors.xml");
     }
 
@@ -73,13 +75,13 @@ public class DoorData implements IXmlReader {
                         }
 
                         makeDoor(set);
-                        _templates.put(set.getInt("id"), set);
+                        templates.put(set.getInt("id"), set);
                     }
                 }
             }
         }
 
-        LOGGER.info(getClass().getSimpleName() + ": Loaded " + _doors.size() + " doors.");
+        log.info("Loaded {} doors.", doors.size());
     }
 
     public void insertCollisionData(StatSet set) {
@@ -114,33 +116,33 @@ public class DoorData implements IXmlReader {
         final Door door = new Door(template);
         door.setCurrentHp(door.getMaxHp());
         door.spawnMe(template.getX(), template.getY(), template.getZ());
-        _doors.put(door.getId(), door);
+        doors.put(door.getId(), door);
     }
 
     public StatSet getDoorTemplate(int doorId) {
-        return _templates.get(doorId);
+        return templates.get(doorId);
     }
 
     public Door getDoor(int doorId) {
-        return _doors.get(doorId);
+        return doors.get(doorId);
     }
 
     public static void addDoorGroup(String groupName, int doorId) {
-        Set<Integer> set = _groups.get(groupName);
+        Set<Integer> set = groups.get(groupName);
         if (set == null) {
             set = new HashSet<>();
-            _groups.put(groupName, set);
+            groups.put(groupName, set);
         }
 
         set.add(doorId);
     }
 
     public static Set<Integer> getDoorsByGroup(String groupName) {
-        return _groups.get(groupName);
+        return groups.get(groupName);
     }
 
     public Collection<Door> getDoors() {
-        return _doors.values();
+        return doors.values();
     }
 
     public boolean checkIfDoorsBetween(Location start, Location end, int instanceId) {

@@ -19,6 +19,8 @@
  */
 package app.l2nx.highfive.entity.item.auction;
 
+import lombok.Getter;
+
 /**
  * @author Forsaiken
  */
@@ -27,14 +29,11 @@ public enum ItemAuctionState {
     STARTED((byte) 1),
     FINISHED((byte) 2);
 
-    private final byte _stateId;
+    @Getter
+    private final byte stateId;
 
     private ItemAuctionState(byte stateId) {
-        _stateId = stateId;
-    }
-
-    public byte getStateId() {
-        return _stateId;
+        this.stateId = stateId;
     }
 
     public static ItemAuctionState stateForStateId(byte stateId) {

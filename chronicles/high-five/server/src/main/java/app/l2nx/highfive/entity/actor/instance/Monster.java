@@ -33,6 +33,8 @@ import app.l2nx.highfive.entity.actor.templates.NpcTemplate;
 import app.l2nx.highfive.mechanics.effects.EffectFlag;
 import app.l2nx.highfive.mechanics.skill.Skill;
 import java.util.List;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * This class manages all Monsters.
@@ -43,10 +45,13 @@ import java.util.List;
  * </ul>
  */
 public class Monster extends Attackable {
-    protected boolean _enableMinions = true;
+    protected boolean enableMinions = true;
 
-    private Monster _master = null;
-    private MinionList _minionList = null;
+    @Getter
+    @Setter
+    private Monster leader = null;
+
+    private MinionList minionList = null;
 
     /**
      * Creates a monster.
@@ -101,10 +106,10 @@ public class Monster extends Attackable {
 
     @Override
     public void onSpawn() {
-        if (!isTeleporting() && (_master != null)) {
+        if (!isTeleporting() && (leader != null)) {
             setRandomWalking(false);
-            setIsRaidMinion(_master.isRaid());
-            _master.getMinionList().onMinionSpawn(this);
+            setIsRaidMinion(leader.isRaid());
+            leader.getMinionList().onMinionSpawn(this);
         }
 
         // Dynamic script-based minions spawned here, after all preparations.
@@ -126,40 +131,31 @@ public class Monster extends Attackable {
             getMinionList().onMasterDie(true);
         }
 
-        if (_master != null) {
-            _master.getMinionList().onMinionDie(this, 0);
+        if (leader != null) {
+            leader.getMinionList().onMinionDie(this, 0);
         }
 
         return super.deleteMe();
     }
 
-    @Override
-    public Monster getLeader() {
-        return _master;
-    }
-
-    public void setLeader(Monster leader) {
-        _master = leader;
-    }
-
     public void enableMinions(boolean value) {
-        _enableMinions = value;
+        enableMinions = value;
     }
 
     public boolean hasMinions() {
-        return _minionList != null;
+        return minionList != null;
     }
 
     public MinionList getMinionList() {
-        if (_minionList == null) {
+        if (minionList == null) {
             synchronized (this) {
-                if (_minionList == null) {
-                    _minionList = new MinionList(this);
+                if (minionList == null) {
+                    minionList = new MinionList(this);
                 }
             }
         }
 
-        return _minionList;
+        return minionList;
     }
 
     @Override
@@ -177,7 +173,7 @@ public class Monster extends Attackable {
      */
     @Override
     public boolean isWalker() {
-        return ((_master == null) ? super.isWalker() : _master.isWalker());
+        return ((leader == null) ? super.isWalker() : leader.isWalker());
     }
 
     /**
@@ -185,7 +181,7 @@ public class Monster extends Attackable {
      */
     @Override
     public boolean giveRaidCurse() {
-        return (isRaidMinion() && (_master != null)) ? _master.giveRaidCurse() : super.giveRaidCurse();
+        return (isRaidMinion() && (leader != null)) ? leader.giveRaidCurse() : super.giveRaidCurse();
     }
 
     @Override

@@ -28,15 +28,14 @@ import app.l2nx.highfive.network.serverpackets.SystemMessage;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Clan War Start, Under Attack List, War List user commands.
  * @author Tempy
  */
+@Slf4j
 public class ClanWarsList implements IUserCommandHandler {
-    private static final Logger LOGGER = Logger.getLogger(ClanWarsList.class.getName());
     private static final int[] COMMAND_IDS = {88, 89, 90};
 
     // SQL queries
@@ -106,7 +105,7 @@ public class ClanWarsList implements IUserCommandHandler {
 
             player.sendPacket(SystemMessageId.EMPTY_3);
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, "", e);
+            log.warn("", e);
         }
 
         return true;

@@ -25,40 +25,47 @@ import app.l2nx.highfive.mechanics.conditions.Condition;
 import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.mechanics.stats.Stat;
 import java.lang.reflect.Constructor;
-import java.util.logging.Logger;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Function template.
  * @author mkizub, Zoey76
  */
+@Slf4j
 public class FuncTemplate {
-    private static final Logger LOG = Logger.getLogger(FuncTemplate.class.getName());
 
-    private final Condition _attachCond;
-    private final Condition _applyCond;
-    private final Constructor<?> _constructor;
-    private final Stat _stat;
-    private final int _order;
-    private final double _value;
+    private final Condition attachCond;
+    private final Condition applyCond;
+    private final Constructor<?> constructor;
+
+    @Getter
+    private final Stat stat;
+
+    @Getter
+    private final int order;
+
+    @Getter
+    private final double value;
 
     public FuncTemplate(
             Condition attachCond, Condition applyCond, String functionName, int order, Stat stat, double value) {
         final StatFunction function = StatFunction.valueOf(functionName.toUpperCase());
         if (order >= 0) {
-            _order = order;
+            this.order = order;
         } else {
-            _order = function.getOrder();
+            this.order = function.getOrder();
         }
 
-        _attachCond = attachCond;
-        _applyCond = applyCond;
-        _stat = stat;
-        _value = value;
+        this.attachCond = attachCond;
+        this.applyCond = applyCond;
+        this.stat = stat;
+        this.value = value;
 
         try {
             final Class<?> functionClass =
                     Class.forName("app.l2nx.highfive.mechanics.stats.functions.Func" + function.getName());
-            _constructor = functionClass.getConstructor(
+            constructor = functionClass.getConstructor(
                     Stat.class, // Stats to update
                     Integer.TYPE, // Order of execution
                     Object.class, // Owner
@@ -68,30 +75,6 @@ public class FuncTemplate {
         } catch (ClassNotFoundException | NoSuchMethodException e) {
             throw new RuntimeException(e);
         }
-    }
-
-    /**
-     * Gets the function stat.
-     * @return the stat.
-     */
-    public Stat getStat() {
-        return _stat;
-    }
-
-    /**
-     * Gets the function priority order.
-     * @return the order
-     */
-    public int getOrder() {
-        return _order;
-    }
-
-    /**
-     * Gets the function value.
-     * @return the value
-     */
-    public double getValue() {
-        return _value;
     }
 
     /**
@@ -128,14 +111,14 @@ public class FuncTemplate {
      * @return the function if conditions are met, {@code null} otherwise
      */
     private AbstractFunction getFunc(Creature caster, Creature target, Skill skill, Item item, Object owner) {
-        if ((_attachCond != null) && !_attachCond.test(caster, target, skill)) {
+        if ((attachCond != null) && !attachCond.test(caster, target, skill)) {
             return null;
         }
 
         try {
-            return (AbstractFunction) _constructor.newInstance(_stat, _order, owner, _value, _applyCond);
+            return (AbstractFunction) constructor.newInstance(stat, order, owner, value, applyCond);
         } catch (Exception e) {
-            LOG.warning(FuncTemplate.class.getSimpleName() + ": " + e.getMessage());
+            log.warn("{}", e.getMessage());
         }
 
         return null;

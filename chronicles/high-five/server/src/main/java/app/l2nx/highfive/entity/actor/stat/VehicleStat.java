@@ -23,10 +23,14 @@
 package app.l2nx.highfive.entity.actor.stat;
 
 import app.l2nx.highfive.entity.actor.Vehicle;
+import lombok.Setter;
 
 public class VehicleStat extends CreatureStat {
-    private float _moveSpeed = 0;
-    private int _rotationSpeed = 0;
+    @Setter
+    private float moveSpeed = 0;
+
+    @Setter
+    private int rotationSpeed = 0;
 
     public VehicleStat(Vehicle activeChar) {
         super(activeChar);
@@ -34,18 +38,10 @@ public class VehicleStat extends CreatureStat {
 
     @Override
     public double getMoveSpeed() {
-        return _moveSpeed;
-    }
-
-    public void setMoveSpeed(float speed) {
-        _moveSpeed = speed;
+        return moveSpeed;
     }
 
     public double getRotationSpeed() {
-        return _rotationSpeed;
-    }
-
-    public void setRotationSpeed(int speed) {
-        _rotationSpeed = speed;
+        return rotationSpeed;
     }
 }

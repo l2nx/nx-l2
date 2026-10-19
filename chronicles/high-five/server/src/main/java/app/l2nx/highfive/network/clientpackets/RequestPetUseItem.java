@@ -27,17 +27,18 @@ import app.l2nx.highfive.entity.actor.instance.Pet;
 import app.l2nx.highfive.entity.item.instance.Item;
 import app.l2nx.highfive.handler.IItemHandler;
 import app.l2nx.highfive.handler.ItemHandler;
-import app.l2nx.highfive.network.PacketLogger;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.serverpackets.PetItemList;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class RequestPetUseItem extends ClientPacket {
-    private int _objectId;
+    private int objectId;
 
     @Override
     protected void readImpl() {
-        _objectId = readInt();
+        objectId = readInt();
 
         // TODO: implement me properly
         // readLong();
@@ -56,7 +57,7 @@ public class RequestPetUseItem extends ClientPacket {
         }
 
         final Pet pet = player.getSummon().asPet();
-        final Item item = pet.getInventory().getItemByObjectId(_objectId);
+        final Item item = pet.getInventory().getItemByObjectId(objectId);
         if (item == null) {
             return;
         }
@@ -124,7 +125,7 @@ public class RequestPetUseItem extends ClientPacket {
                 }
             } else {
                 player.sendPacket(SystemMessageId.THIS_PET_CANNOT_USE_THIS_ITEM);
-                PacketLogger.warning("No item handler registered for itemId: " + item.getId());
+                log.warn("No item handler registered for itemId: {}", item.getId());
             }
         }
     }

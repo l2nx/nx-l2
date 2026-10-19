@@ -38,16 +38,16 @@ public class ChangeAccessLevel extends SimpleWritablePacket {
     private static final int OPCODE = 0x04;
 
     // Data.
-    private final String _player;
-    private final int _access;
+    private final String player;
+    private final int access;
 
     /**
      * @param player player name
      * @param access new access level
      */
     public ChangeAccessLevel(String player, int access) {
-        _player = (player != null) ? player : "";
-        _access = access;
+        this.player = (player != null) ? player : "";
+        this.access = access;
     }
 
     /**
@@ -56,7 +56,7 @@ public class ChangeAccessLevel extends SimpleWritablePacket {
     @Override
     public void write() {
         writeByte(OPCODE);
-        writeInt(_access);
-        writeString(_player);
+        writeInt(access);
+        writeString(player);
     }
 }

@@ -32,23 +32,23 @@ import app.l2nx.highfive.network.serverpackets.StopMoveInVehicle;
  * @author GodKratos
  */
 public class MoveToLocationInAirShip extends ClientPacket {
-    private int _shipId;
-    private int _targetX;
-    private int _targetY;
-    private int _targetZ;
-    private int _originX;
-    private int _originY;
-    private int _originZ;
+    private int shipId;
+    private int targetX;
+    private int targetY;
+    private int targetZ;
+    private int originX;
+    private int originY;
+    private int originZ;
 
     @Override
     protected void readImpl() {
-        _shipId = readInt();
-        _targetX = readInt();
-        _targetY = readInt();
-        _targetZ = readInt();
-        _originX = readInt();
-        _originY = readInt();
-        _originZ = readInt();
+        shipId = readInt();
+        targetX = readInt();
+        targetY = readInt();
+        targetZ = readInt();
+        originX = readInt();
+        originY = readInt();
+        originZ = readInt();
     }
 
     @Override
@@ -58,8 +58,8 @@ public class MoveToLocationInAirShip extends ClientPacket {
             return;
         }
 
-        if ((_targetX == _originX) && (_targetY == _originY) && (_targetZ == _originZ)) {
-            player.sendPacket(new StopMoveInVehicle(player, _shipId));
+        if ((targetX == originX) && (targetY == originY) && (targetZ == originZ)) {
+            player.sendPacket(new StopMoveInVehicle(player, shipId));
             return;
         }
 
@@ -81,12 +81,12 @@ public class MoveToLocationInAirShip extends ClientPacket {
         }
 
         final AirShip airShip = player.getAirShip();
-        if (airShip.getObjectId() != _shipId) {
+        if (airShip.getObjectId() != shipId) {
             player.sendPacket(ActionFailed.STATIC_PACKET);
             return;
         }
 
-        player.setInVehiclePosition(new Location(_targetX, _targetY, _targetZ));
+        player.setInVehiclePosition(new Location(targetX, targetY, targetZ));
         player.broadcastPacket(new ExMoveToLocationInAirShip(player));
     }
 }

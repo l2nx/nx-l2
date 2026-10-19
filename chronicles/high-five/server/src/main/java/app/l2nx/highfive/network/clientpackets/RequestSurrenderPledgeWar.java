@@ -25,17 +25,18 @@ package app.l2nx.highfive.network.clientpackets;
 import app.l2nx.highfive.data.sql.ClanTable;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.clan.Clan;
-import app.l2nx.highfive.network.PacketLogger;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.serverpackets.ActionFailed;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class RequestSurrenderPledgeWar extends ClientPacket {
-    private String _pledgeName;
+    private String pledgeName;
 
     @Override
     protected void readImpl() {
-        _pledgeName = readString();
+        pledgeName = readString();
     }
 
     @Override
@@ -50,14 +51,14 @@ public class RequestSurrenderPledgeWar extends ClientPacket {
             return;
         }
 
-        final Clan clan = ClanTable.getInstance().getClanByName(_pledgeName);
+        final Clan clan = ClanTable.getInstance().getClanByName(pledgeName);
         if (clan == null) {
             player.sendMessage("No such clan.");
             player.sendPacket(ActionFailed.STATIC_PACKET);
             return;
         }
 
-        PacketLogger.info("RequestSurrenderPledgeWar by " + player.getClan().getName() + " with " + _pledgeName);
+        log.info("RequestSurrenderPledgeWar by {} with {}", player.getClan().getName(), pledgeName);
         if (!playerClan.isAtWarWith(clan.getId())) {
             player.sendMessage("You aren't at war with this clan.");
             player.sendPacket(ActionFailed.STATIC_PACKET);
@@ -65,7 +66,7 @@ public class RequestSurrenderPledgeWar extends ClientPacket {
         }
 
         final SystemMessage msg = new SystemMessage(SystemMessageId.YOU_HAVE_SURRENDERED_TO_THE_S1_CLAN);
-        msg.addString(_pledgeName);
+        msg.addString(pledgeName);
         player.sendPacket(msg);
         ClanTable.getInstance().deleteClanWars(playerClan.getId(), clan.getId());
 

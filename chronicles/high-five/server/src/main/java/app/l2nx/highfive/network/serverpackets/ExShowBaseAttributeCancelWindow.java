@@ -31,18 +31,18 @@ import app.l2nx.network.buffer.WriteBuffer;
 import java.util.Collection;
 
 public class ExShowBaseAttributeCancelWindow extends ServerPacket {
-    private final Collection<Item> _items;
-    private long _price;
+    private final Collection<Item> items;
+    private long price;
 
     public ExShowBaseAttributeCancelWindow(Player player) {
-        _items = player.getInventory().getElementItems();
+        items = player.getInventory().getElementItems();
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_SHOW_BASE_ATTRIBUTE_CANCEL_WINDOW.writeId(this, buffer);
-        buffer.writeInt(_items.size());
-        for (Item item : _items) {
+        buffer.writeInt(items.size());
+        for (Item item : items) {
             buffer.writeInt(item.getObjectId());
             buffer.writeLong(getPrice(item));
         }
@@ -57,30 +57,30 @@ public class ExShowBaseAttributeCancelWindow extends ServerPacket {
         switch (item.getTemplate().getCrystalType()) {
             case S: {
                 if (item.getTemplate() instanceof Weapon) {
-                    _price = 50000;
+                    price = 50000;
                 } else {
-                    _price = 40000;
+                    price = 40000;
                 }
                 break;
             }
             case S80: {
                 if (item.getTemplate() instanceof Weapon) {
-                    _price = 100000;
+                    price = 100000;
                 } else {
-                    _price = 80000;
+                    price = 80000;
                 }
                 break;
             }
             case S84: {
                 if (item.getTemplate() instanceof Weapon) {
-                    _price = 200000;
+                    price = 200000;
                 } else {
-                    _price = 160000;
+                    price = 160000;
                 }
                 break;
             }
         }
 
-        return _price;
+        return price;
     }
 }

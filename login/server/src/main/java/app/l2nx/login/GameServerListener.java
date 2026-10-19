@@ -29,8 +29,8 @@ import java.io.IOException;
 import java.net.Socket;
 import java.util.Collection;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Listens for incoming game server connections on the configured login port.<br>
@@ -43,11 +43,12 @@ import java.util.logging.Logger;
  * </ul>
  * @author BazookaRpm
  */
+@Slf4j
 public class GameServerListener extends FloodProtectorListener {
-    private static final Logger LOGGER = Logger.getLogger(GameServerListener.class.getName());
 
     // Active game server handler threads.
-    private static final Collection<GameServerThread> _gameServerThreads = ConcurrentHashMap.newKeySet();
+    @Getter
+    private static final Collection<GameServerThread> gameServers = ConcurrentHashMap.newKeySet();
 
     /**
      * Constructs a new game server listener bound to the configured host and port.<br>
@@ -68,37 +69,32 @@ public class GameServerListener extends FloodProtectorListener {
     @Override
     public void addClient(Socket socket) {
         if ((socket == null) || socket.isClosed()) {
-            LOGGER.warning(getClass().getSimpleName() + ": Attempted to add game server with null or closed socket.");
+            log.warn("Attempted to add game server with null or closed socket.");
             return;
         }
 
         try {
             final GameServerThread gameServerThread =
                     new GameServerThread(socket); // The constructor itself already does start().
-            _gameServerThreads.add(gameServerThread);
+            gameServers.add(gameServerThread);
 
-            if (LOGGER.isLoggable(Level.FINE)) {
+            if (log.isDebugEnabled()) {
                 final String address = (socket.getInetAddress() != null)
                         ? socket.getInetAddress().getHostAddress()
                         : "unknown";
-                LOGGER.fine(getClass().getSimpleName() + ": Registered new game server connection from " + address
-                        + ". Active game servers: " + _gameServerThreads.size() + ".");
+                log.debug(
+                        "Registered new game server connection from {}. Active game servers: {}.",
+                        address,
+                        gameServers.size());
             }
         } catch (Exception e) {
             // Ensure that we do not keep a broken connection or leak resources if handler creation fails.
-            LOGGER.log(
-                    Level.WARNING,
-                    getClass().getSimpleName() + ": Failed to register game server connection from "
-                            + socket.getRemoteSocketAddress() + ".",
-                    e);
+            log.warn("Failed to register game server connection from {}.", socket.getRemoteSocketAddress(), e);
 
             try {
                 socket.close();
             } catch (IOException ioe) {
-                LOGGER.log(
-                        Level.FINE,
-                        getClass().getSimpleName() + ": Failed to close socket after registration failure.",
-                        ioe);
+                log.debug("Failed to close socket after registration failure.", ioe);
             }
         }
     }
@@ -110,15 +106,18 @@ public class GameServerListener extends FloodProtectorListener {
      */
     public void removeGameServer(GameServerThread gameServerThread) {
         if (gameServerThread == null) {
-            LOGGER.warning(getClass().getSimpleName() + ": Attempted to remove null game server thread.");
+            log.warn("Attempted to remove null game server thread.");
             return;
         }
 
-        final boolean removed = _gameServerThreads.remove(gameServerThread);
+        final boolean removed = gameServers.remove(gameServerThread);
 
-        if (LOGGER.isLoggable(Level.FINE)) {
-            LOGGER.fine(getClass().getSimpleName() + ": Removed game server thread " + gameServerThread + " (removed="
-                    + removed + "). Active game servers: " + _gameServerThreads.size() + ".");
+        if (log.isDebugEnabled()) {
+            log.debug(
+                    "Removed game server thread {} (removed={}). Active game servers: {}.",
+                    gameServerThread,
+                    removed,
+                    gameServers.size());
         }
     }
 
@@ -127,15 +126,6 @@ public class GameServerListener extends FloodProtectorListener {
      * @return The current game server count.
      */
     public static int getGameServerCount() {
-        return _gameServerThreads.size();
-    }
-
-    /**
-     * Returns the active game server threads collection for monitoring purposes.<br>
-     * The returned collection is concurrent and weakly consistent.
-     * @return The active game server threads collection.
-     */
-    public static Collection<GameServerThread> getGameServers() {
-        return _gameServerThreads;
+        return gameServers.size();
     }
 }

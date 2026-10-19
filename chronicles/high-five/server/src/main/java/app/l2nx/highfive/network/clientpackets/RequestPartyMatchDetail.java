@@ -33,26 +33,26 @@ import app.l2nx.highfive.network.serverpackets.SystemMessage;
  * @author Gnacik
  */
 public class RequestPartyMatchDetail extends ClientPacket {
-    private int _roomid;
+    private int roomid;
 
     @SuppressWarnings("unused")
-    private int _unk1;
+    private int unk1;
 
     @SuppressWarnings("unused")
-    private int _unk2;
+    private int unk2;
 
     @SuppressWarnings("unused")
-    private int _unk3;
+    private int unk3;
 
     @Override
     protected void readImpl() {
-        _roomid = readInt();
+        roomid = readInt();
 
         // If player click on Room all unk are 0
         // If player click AutoJoin values are -1 1 1
-        _unk1 = readInt();
-        _unk2 = readInt();
-        _unk3 = readInt();
+        unk1 = readInt();
+        unk2 = readInt();
+        unk3 = readInt();
     }
 
     @Override
@@ -62,7 +62,7 @@ public class RequestPartyMatchDetail extends ClientPacket {
             return;
         }
 
-        final PartyMatchRoom room = PartyMatchRoomList.getInstance().getRoom(_roomid);
+        final PartyMatchRoom room = PartyMatchRoomList.getInstance().getRoom(roomid);
         if (room == null) {
             return;
         }
@@ -71,7 +71,7 @@ public class RequestPartyMatchDetail extends ClientPacket {
             // Remove from waiting list
             PartyMatchWaitingList.getInstance().removePlayer(player);
 
-            player.setPartyRoom(_roomid);
+            player.setPartyRoom(roomid);
 
             player.sendPacket(new PartyMatchDetail(room));
             player.sendPacket(new ExPartyRoomMember(room, 0));

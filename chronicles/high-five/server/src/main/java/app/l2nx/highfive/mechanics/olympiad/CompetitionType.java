@@ -28,14 +28,14 @@ public enum CompetitionType {
     TEAMS("teams"),
     OTHER("other");
 
-    private final String _name;
+    private final String name;
 
     private CompetitionType(String name) {
-        _name = name;
+        this.name = name;
     }
 
     @Override
     public String toString() {
-        return _name;
+        return name;
     }
 }

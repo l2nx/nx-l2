@@ -40,12 +40,19 @@ import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.serverpackets.ActionFailed;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
 import app.l2nx.highfive.threads.ThreadPool;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.Setter;
 
 public class SiegeFlag extends Npc {
-    private Clan _clan;
-    private Siegable _siege;
-    private final boolean _isAdvanced;
-    private boolean _canTalk;
+    private Clan clan;
+    private Siegable siege;
+
+    @Getter
+    private final boolean advancedHeadquarter;
+
+    @Setter(AccessLevel.PACKAGE)
+    private boolean canTalk;
 
     /**
      * Creates a siege flag.
@@ -59,17 +66,17 @@ public class SiegeFlag extends Npc {
         setInstanceType(InstanceType.SiegeFlag);
 
         if (TerritoryWarManager.getInstance().isTWInProgress()) {
-            _clan = player.getClan();
-            _canTalk = false;
-            if (_clan == null) {
+            clan = player.getClan();
+            canTalk = false;
+            if (clan == null) {
                 deleteMe();
             }
 
             if (outPost) {
-                _isAdvanced = false;
+                advancedHeadquarter = false;
                 setInvul(true);
             } else {
-                _isAdvanced = advanced;
+                advancedHeadquarter = advanced;
                 setInvul(false);
             }
 
@@ -77,28 +84,28 @@ public class SiegeFlag extends Npc {
             return;
         }
 
-        _clan = player.getClan();
-        _canTalk = true;
-        _siege = SiegeManager.getInstance().getSiege(player.getX(), player.getY(), player.getZ());
-        if (_siege == null) {
-            _siege = FortSiegeManager.getInstance().getSiege(player.getX(), player.getY(), player.getZ());
+        clan = player.getClan();
+        canTalk = true;
+        siege = SiegeManager.getInstance().getSiege(player.getX(), player.getY(), player.getZ());
+        if (siege == null) {
+            siege = FortSiegeManager.getInstance().getSiege(player.getX(), player.getY(), player.getZ());
         }
 
-        if (_siege == null) {
-            _siege = CHSiegeManager.getInstance().getSiege(player);
+        if (siege == null) {
+            siege = CHSiegeManager.getInstance().getSiege(player);
         }
 
-        if ((_clan == null) || (_siege == null)) {
+        if ((clan == null) || (siege == null)) {
             throw new NullPointerException(getClass().getSimpleName() + ": Initialization failed.");
         }
 
-        final SiegeClan sc = _siege.getAttackerClan(_clan);
+        final SiegeClan sc = siege.getAttackerClan(clan);
         if (sc == null) {
             throw new NullPointerException(getClass().getSimpleName() + ": Cannot find siege clan.");
         }
 
         sc.addFlag(this);
-        _isAdvanced = advanced;
+        advancedHeadquarter = advanced;
         getStatus();
         setInvul(false);
     }
@@ -119,13 +126,13 @@ public class SiegeFlag extends Npc {
             return false;
         }
 
-        if ((_siege != null) && (_clan != null)) {
-            final SiegeClan sc = _siege.getAttackerClan(_clan);
+        if ((siege != null) && (clan != null)) {
+            final SiegeClan sc = siege.getAttackerClan(clan);
             if (sc != null) {
                 sc.removeFlag(this);
             }
-        } else if (_clan != null) {
-            TerritoryWarManager.getInstance().removeClanFlag(_clan);
+        } else if (clan != null) {
+            TerritoryWarManager.getInstance().removeClanFlag(clan);
         }
 
         return true;
@@ -157,10 +164,6 @@ public class SiegeFlag extends Npc {
         }
     }
 
-    public boolean isAdvancedHeadquarter() {
-        return _isAdvanced;
-    }
-
     @Override
     public SiegeFlagStatus getStatus() {
         return (SiegeFlagStatus) super.getStatus();
@@ -179,9 +182,9 @@ public class SiegeFlag extends Npc {
                         || ((getFort() != null) && getFort().getSiege().isInProgress())
                         || ((getConquerableHall() != null)
                                 && getConquerableHall().isInSiege()))
-                && (_clan != null)) {
+                && (clan != null)) {
             // Send warning to owners of headquarters that theirs base is under attack.
-            _clan.broadcastToOnlineMembers(new SystemMessage(SystemMessageId.YOUR_BASE_IS_BEING_ATTACKED));
+            clan.broadcastToOnlineMembers(new SystemMessage(SystemMessageId.YOUR_BASE_IS_BEING_ATTACKED));
             setCanTalk(false);
             ThreadPool.schedule(new ScheduleTalkTask(), 20000);
         }
@@ -196,11 +199,7 @@ public class SiegeFlag extends Npc {
         }
     }
 
-    void setCanTalk(boolean value) {
-        _canTalk = value;
-    }
-
     private boolean canTalk() {
-        return _canTalk;
+        return canTalk;
     }
 }

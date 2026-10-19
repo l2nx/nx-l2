@@ -22,13 +22,13 @@ package app.l2nx.login.network.gameserverpackets.receive;
 import app.l2nx.login.GameServerThread;
 import app.l2nx.login.controller.LoginController;
 import app.l2nx.network.packet.SimpleReadablePacket;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author -Wooden-
  */
+@Slf4j
 public class ChangeAccessLevel extends SimpleReadablePacket {
-    protected static final Logger LOGGER = Logger.getLogger(ChangeAccessLevel.class.getName());
 
     public ChangeAccessLevel(byte[] decrypt, GameServerThread server) {
         super(decrypt);
@@ -37,6 +37,6 @@ public class ChangeAccessLevel extends SimpleReadablePacket {
         final int level = readInt();
         final String account = readString();
         LoginController.getInstance().setAccountAccessLevel(account, level);
-        LOGGER.info("Changed " + account + " access level to " + level);
+        log.info("Changed {} access level to {}", account, level);
     }
 }

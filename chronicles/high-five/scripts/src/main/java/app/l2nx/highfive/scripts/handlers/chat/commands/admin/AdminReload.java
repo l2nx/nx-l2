@@ -89,15 +89,14 @@ import java.io.File;
 import java.util.Arrays;
 import java.util.List;
 import java.util.StringTokenizer;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 
 /**
  * @author NosBit, Mobius
  */
+@Slf4j
 public class AdminReload implements IAdminCommandHandler {
-    private static final Logger LOGGER = Logger.getLogger(AdminReload.class.getName());
 
     private static final String[] ADMIN_COMMANDS = {"admin_reload", "admin_reload_menu", "admin_reload_menu_page"};
 
@@ -186,7 +185,7 @@ public class AdminReload implements IAdminCommandHandler {
                         AdminData.getInstance()
                                 .broadcastMessageToGMs(activeChar.getName() + ": Reloaded effect master handler.");
                     } catch (Exception e) {
-                        LOGGER.log(Level.WARNING, "Failed executing effect master handler!", e);
+                        log.warn("Failed executing effect master handler!", e);
                         activeChar.sendSysMessage("Error reloading effect master handler!");
                     }
                     break;
@@ -262,7 +261,7 @@ public class AdminReload implements IAdminCommandHandler {
                         AdminData.getInstance()
                                 .broadcastMessageToGMs(activeChar.getName() + ": Reloaded master handler.");
                     } catch (Exception e) {
-                        LOGGER.log(Level.WARNING, "Failed executing master handler!", e);
+                        log.warn("Failed executing master handler!", e);
                         activeChar.sendSysMessage("Error reloading master handler!");
                     }
                     break;

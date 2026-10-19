@@ -30,11 +30,11 @@ import app.l2nx.highfive.network.SystemMessageId;
  * This packet is received from client when a party leader requests to change the leadership to another player in his party.
  */
 public class RequestChangePartyLeader extends ClientPacket {
-    private String _name;
+    private String name;
 
     @Override
     protected void readImpl() {
-        _name = readString();
+        name = readString();
     }
 
     @Override
@@ -46,10 +46,10 @@ public class RequestChangePartyLeader extends ClientPacket {
 
         final Party party = player.getParty();
         if (party != null) {
-            final Player newLeader = party.getPlayerByName(_name);
+            final Player newLeader = party.getPlayerByName(name);
             if (party.isLeader(player)) {
                 if ((newLeader != null) && party.getMembers().contains(newLeader)) {
-                    party.changePartyLeader(_name);
+                    party.changePartyLeader(name);
                 } else {
                     player.sendPacket(
                             SystemMessageId.YOU_MAY_ONLY_TRANSFER_PARTY_LEADERSHIP_TO_ANOTHER_MEMBER_OF_THE_PARTY);

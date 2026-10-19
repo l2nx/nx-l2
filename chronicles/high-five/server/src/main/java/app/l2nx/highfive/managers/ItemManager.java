@@ -43,16 +43,18 @@ import app.l2nx.highfive.util.GMAudit;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.util.concurrent.ScheduledFuture;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Manages the creation and destruction of items within the game.
  * @author Mobius
  */
+@Slf4j
 public class ItemManager {
-    private static final Logger LOGGER = Logger.getLogger(ItemManager.class.getName());
-    private static final Logger LOGGER_ITEMS = Logger.getLogger("item");
+
+    private static final Logger ITEM_LOG = LoggerFactory.getLogger("item");
 
     private ItemManager() {}
 
@@ -114,12 +116,24 @@ public class ItemManager {
                 || (GeneralConfig.LOG_ITEMS_SMALL_LOG && (item.isEquipable() || (item.getId() == Inventory.ADENA_ID)))
                 || (GeneralConfig.LOG_ITEMS_IDS_ONLY && GeneralConfig.LOG_ITEMS_IDS_LIST.contains(item.getId()))) {
             if (item.isEnchanted()) {
-                LOGGER_ITEMS.info("CREATE:" + process + ", item " + item.getObjectId() + ":+" + item.getEnchantLevel()
-                        + " " + item.getTemplate().getName() + "(" + item.getCount() + "), " + actor + ", "
-                        + reference);
+                ITEM_LOG.info(
+                        "CREATE:{}, item {}:+{} {}({}), {}, {}",
+                        process,
+                        item.getObjectId(),
+                        item.getEnchantLevel(),
+                        item.getTemplate().getName(),
+                        item.getCount(),
+                        actor,
+                        reference);
             } else {
-                LOGGER_ITEMS.info("CREATE:" + process + ", item " + item.getObjectId() + ":"
-                        + item.getTemplate().getName() + "(" + item.getCount() + "), " + actor + ", " + reference);
+                ITEM_LOG.info(
+                        "CREATE:{}, item {}:{}({}), {}, {}",
+                        process,
+                        item.getObjectId(),
+                        item.getTemplate().getName(),
+                        item.getCount(),
+                        actor,
+                        reference);
             }
         }
 
@@ -145,7 +159,13 @@ public class ItemManager {
         // Notify to scripts.
         if (EventDispatcher.getInstance().hasListener(EventType.ON_ITEM_CREATE, item.getTemplate())) {
             EventDispatcher.getInstance()
-                    .notifyEventAsync(new OnItemCreate(item, actor, reference), item.getTemplate());
+                    .notifyEventAsync(
+                            OnItemCreate.builder()
+                                    .item(item)
+                                    .activeChar(actor)
+                                    .reference(reference)
+                                    .build(),
+                            item.getTemplate());
         }
 
         return item;
@@ -178,14 +198,26 @@ public class ItemManager {
                         || (GeneralConfig.LOG_ITEMS_IDS_ONLY
                                 && GeneralConfig.LOG_ITEMS_IDS_LIST.contains(item.getId()))) {
                     if (item.isEnchanted()) {
-                        LOGGER_ITEMS.info(
-                                "DELETE:" + process + ", item " + item.getObjectId() + ":+" + item.getEnchantLevel()
-                                        + " " + item.getTemplate().getName() + "(" + item.getCount() + "), PrevCount("
-                                        + old + "), " + actor + ", " + reference);
+                        ITEM_LOG.info(
+                                "DELETE:{}, item {}:+{} {}({}), PrevCount({}), {}, {}",
+                                process,
+                                item.getObjectId(),
+                                item.getEnchantLevel(),
+                                item.getTemplate().getName(),
+                                item.getCount(),
+                                old,
+                                actor,
+                                reference);
                     } else {
-                        LOGGER_ITEMS.info("DELETE:" + process + ", item " + item.getObjectId() + ":"
-                                + item.getTemplate().getName() + "(" + item.getCount() + "), PrevCount(" + old + "), "
-                                + actor + ", " + reference);
+                        ITEM_LOG.info(
+                                "DELETE:{}, item {}:{}({}), PrevCount({}), {}, {}",
+                                process,
+                                item.getObjectId(),
+                                item.getTemplate().getName(),
+                                item.getCount(),
+                                old,
+                                actor,
+                                reference);
                     }
                 }
 
@@ -218,7 +250,7 @@ public class ItemManager {
                     statement.setInt(1, item.getObjectId());
                     statement.execute();
                 } catch (Exception e) {
-                    LOGGER.log(Level.WARNING, "ItemManager: Could not delete pet objectid:", e);
+                    log.warn("Could not delete pet objectid:", e);
                 }
             }
         }
@@ -229,20 +261,20 @@ public class ItemManager {
      * This is typically used for loot items that need a temporary owner before becoming free to collect.
      */
     protected static class ResetOwner implements Runnable {
-        Item _item;
+        Item item;
 
         public ResetOwner(Item item) {
-            _item = item;
+            this.item = item;
         }
 
         @Override
         public void run() {
             // Set owner id to 0 only when location is VOID.
-            if (_item.getItemLocation() == ItemLocation.VOID) {
-                _item.setOwnerId(0);
+            if (item.getItemLocation() == ItemLocation.VOID) {
+                item.setOwnerId(0);
             }
 
-            _item.setItemLootShedule(null);
+            item.setItemLootShedule(null);
         }
     }
 }

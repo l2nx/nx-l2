@@ -23,8 +23,8 @@ Inbound = outbound: a contribution comes under the license of the file it touche
 | upstream Mobius file, MIT      | MIT        | keep the upstream header, add the L2NX copyright line |
 | upstream Mobius file, GPLv3    | GPLv3      | keep the upstream header, add the L2NX copyright line |
 
-- Renaming packages or variables is not a rewrite. A purely mechanical change (package rename, header insertion)
-  adds no L2NX copyright line either.
+- Renaming packages or variables is not a rewrite. A purely mechanical change (package rename, header insertion,
+  the reformat of spec 005, the conversion to the Java canon of spec 007) adds no L2NX copyright line either.
 - An upstream file without a header (data, SQL, config) is MIT, labelled in [REUSE.toml](REUSE.toml)
   ([docs/provenance.md](docs/provenance.md#license-labels)).
 - **Rewriting a GPLv3 file** to move it to Apache 2.0 starts from the behaviour, not from editing the GPLv3 text. This
@@ -66,6 +66,8 @@ with the identifier the upstream header states (`MIT` or `GPL-3.0-or-later`).
   Spotless. Run `./gradlew spotlessApply` before a commit; `spotlessCheck` is part of `./gradlew build`, so CI fails
   on an unformatted file.
 - **Line endings are LF** (`.gitattributes`), Windows scripts excepted.
+- **Java conventions** (Lombok allow-list, field naming, records, SLF4J logging) are
+  [spec 007](docs/specs/007-java-conventions.md); `lombok.config` and an ArchUnit test enforce what they can.
 
 ## Workflow
 

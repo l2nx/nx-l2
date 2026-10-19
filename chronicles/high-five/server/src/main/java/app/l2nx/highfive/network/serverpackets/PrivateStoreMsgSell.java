@@ -28,25 +28,25 @@ import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.network.buffer.WriteBuffer;
 
 public class PrivateStoreMsgSell extends ServerPacket {
-    private final int _objectId;
-    private String _message;
+    private final int objectId;
+    private String message;
 
     public PrivateStoreMsgSell(Player player) {
-        _objectId = player.getObjectId();
+        objectId = player.getObjectId();
         if ((player.getSellList() != null) || player.isSellingBuffs()) {
-            _message = player.getSellList().getTitle();
+            message = player.getSellList().getTitle();
         }
     }
 
     public PrivateStoreMsgSell(int objectId, String message) {
-        _objectId = objectId;
-        _message = message;
+        this.objectId = objectId;
+        this.message = message;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.PRIVATE_STORE_SELL_MSG.writeId(this, buffer);
-        buffer.writeInt(_objectId);
-        buffer.writeString(_message);
+        buffer.writeInt(objectId);
+        buffer.writeString(message);
     }
 }

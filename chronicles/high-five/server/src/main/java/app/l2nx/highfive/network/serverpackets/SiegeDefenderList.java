@@ -51,28 +51,28 @@ import app.l2nx.network.buffer.WriteBuffer;
  * @author KenM
  */
 public class SiegeDefenderList extends ServerPacket {
-    private final Castle _castle;
+    private final Castle castle;
 
     public SiegeDefenderList(Castle castle) {
-        _castle = castle;
+        this.castle = castle;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.CASTLE_SIEGE_DEFENDER_LIST.writeId(this, buffer);
-        buffer.writeInt(_castle.getResidenceId());
+        buffer.writeInt(castle.getResidenceId());
         buffer.writeInt(0); // 0
         buffer.writeInt(1); // 1
         buffer.writeInt(0); // 0
-        final int size = _castle.getSiege().getDefenderClans().size()
-                + _castle.getSiege().getDefenderWaitingClans().size();
+        final int size = castle.getSiege().getDefenderClans().size()
+                + castle.getSiege().getDefenderWaitingClans().size();
         if (size > 0) {
             Clan clan;
             buffer.writeInt(size);
             buffer.writeInt(size);
 
             // Listing the Lord and the approved clans.
-            for (SiegeClan siegeclan : _castle.getSiege().getDefenderClans()) {
+            for (SiegeClan siegeclan : castle.getSiege().getDefenderClans()) {
                 clan = ClanTable.getInstance().getClan(siegeclan.getClanId());
                 if (clan == null) {
                     continue;
@@ -108,7 +108,7 @@ public class SiegeDefenderList extends ServerPacket {
                 buffer.writeInt(clan.getAllyCrestId());
             }
 
-            for (SiegeClan siegeclan : _castle.getSiege().getDefenderWaitingClans()) {
+            for (SiegeClan siegeclan : castle.getSiege().getDefenderWaitingClans()) {
                 clan = ClanTable.getInstance().getClan(siegeclan.getClanId());
                 buffer.writeInt(clan.getId());
                 buffer.writeString(clan.getName());

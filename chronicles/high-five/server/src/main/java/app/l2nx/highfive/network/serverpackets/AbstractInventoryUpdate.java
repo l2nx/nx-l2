@@ -26,12 +26,14 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import lombok.Getter;
 
 /**
  * @author UnAfraid
  */
 public abstract class AbstractInventoryUpdate extends AbstractItemPacket {
-    private final Map<Integer, ItemInfo> _items = new HashMap<>();
+    @Getter
+    private final Map<Integer, ItemInfo> itemEntries = new HashMap<>();
 
     public AbstractInventoryUpdate() {}
 
@@ -40,68 +42,64 @@ public abstract class AbstractInventoryUpdate extends AbstractItemPacket {
     }
 
     public AbstractInventoryUpdate(List<ItemInfo> items) {
-        synchronized (_items) {
+        synchronized (itemEntries) {
             for (ItemInfo item : items) {
-                _items.put(item.getObjectId(), item);
+                itemEntries.put(item.getObjectId(), item);
             }
         }
     }
 
     public void addItem(Item item) {
-        synchronized (_items) {
-            _items.put(item.getObjectId(), new ItemInfo(item));
+        synchronized (itemEntries) {
+            itemEntries.put(item.getObjectId(), new ItemInfo(item));
         }
     }
 
     public void addNewItem(Item item) {
-        synchronized (_items) {
-            _items.put(item.getObjectId(), new ItemInfo(item, 1));
+        synchronized (itemEntries) {
+            itemEntries.put(item.getObjectId(), new ItemInfo(item, 1));
         }
     }
 
     public void addModifiedItem(Item item) {
-        synchronized (_items) {
-            _items.put(item.getObjectId(), new ItemInfo(item, 2));
+        synchronized (itemEntries) {
+            itemEntries.put(item.getObjectId(), new ItemInfo(item, 2));
         }
     }
 
     public void addRemovedItem(Item item) {
-        synchronized (_items) {
-            _items.put(item.getObjectId(), new ItemInfo(item, 3));
+        synchronized (itemEntries) {
+            itemEntries.put(item.getObjectId(), new ItemInfo(item, 3));
         }
     }
 
     public void addItems(Collection<Item> items) {
-        synchronized (_items) {
+        synchronized (itemEntries) {
             for (Item item : items) {
-                _items.put(item.getObjectId(), new ItemInfo(item));
+                itemEntries.put(item.getObjectId(), new ItemInfo(item));
             }
         }
     }
 
     public void putAll(Map<Integer, ItemInfo> items) {
-        synchronized (_items) {
-            _items.putAll(items);
+        synchronized (itemEntries) {
+            itemEntries.putAll(items);
         }
     }
 
-    public Map<Integer, ItemInfo> getItemEntries() {
-        return _items;
-    }
-
     public Collection<ItemInfo> getItems() {
-        return _items.values();
+        return itemEntries.values();
     }
 
     protected void writeItems(WriteBuffer buffer) {
-        synchronized (_items) {
-            buffer.writeShort(_items.size());
-            for (ItemInfo item : _items.values()) {
+        synchronized (itemEntries) {
+            buffer.writeShort(itemEntries.size());
+            for (ItemInfo item : itemEntries.values()) {
                 buffer.writeShort(item.getChange()); // Update type : 01-add, 02-modify, 03-remove
                 writeItem(item, buffer);
             }
 
-            _items.clear();
+            itemEntries.clear();
         }
     }
 }

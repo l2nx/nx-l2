@@ -28,11 +28,11 @@ import app.l2nx.highfive.entity.clan.Clan;
 import app.l2nx.highfive.network.serverpackets.PledgeInfo;
 
 public class RequestPledgeInfo extends ClientPacket {
-    private int _clanId;
+    private int clanId;
 
     @Override
     protected void readImpl() {
-        _clanId = readInt();
+        clanId = readInt();
     }
 
     @Override
@@ -42,7 +42,7 @@ public class RequestPledgeInfo extends ClientPacket {
             return;
         }
 
-        final Clan clan = ClanTable.getInstance().getClan(_clanId);
+        final Clan clan = ClanTable.getInstance().getClan(clanId);
         if (clan == null) {
             return; // we have no clan data ?!? should not happen
         }

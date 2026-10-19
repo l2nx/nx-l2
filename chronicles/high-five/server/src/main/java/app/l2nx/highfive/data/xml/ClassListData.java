@@ -27,7 +27,8 @@ import app.l2nx.highfive.entity.actor.holders.player.ClassInfoHolder;
 import java.io.File;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.logging.Logger;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 
@@ -35,10 +36,11 @@ import org.w3c.dom.NamedNodeMap;
  * Loads and manages the list of player classes and their associated information.
  * @author Zoey76, Mobius
  */
+@Slf4j
 public class ClassListData implements IXmlReader {
-    private static final Logger LOGGER = Logger.getLogger(ClassListData.class.getName());
 
-    private final Map<PlayerClass, ClassInfoHolder> _classData = new ConcurrentHashMap<>();
+    @Getter
+    private final Map<PlayerClass, ClassInfoHolder> classList = new ConcurrentHashMap<>();
 
     protected ClassListData() {
         load();
@@ -46,9 +48,9 @@ public class ClassListData implements IXmlReader {
 
     @Override
     public void load() {
-        _classData.clear();
+        classList.clear();
         parseDatapackFile("data/stats/players/classList.xml");
-        LOGGER.info(getClass().getSimpleName() + ": Loaded " + _classData.size() + " class data.");
+        log.info("Loaded {} class data.", classList.size());
     }
 
     @Override
@@ -63,16 +65,14 @@ public class ClassListData implements IXmlReader {
                             ? PlayerClass.getPlayerClass(parseInteger(attrs, "parentClassId"))
                             : null;
                     final String className = parseString(attrs, "name");
-                    _classData.put(playerClass, new ClassInfoHolder(playerClass, parentPlayerClass, className));
+                    classList.put(
+                            playerClass,
+                            ClassInfoHolder.builder()
+                                    .playerClass(playerClass)
+                                    .parentClass(parentPlayerClass)
+                                    .className(className)
+                                    .build());
                 }));
-    }
-
-    /**
-     * Gets the complete map of all player classes and their associated information.
-     * @return an unmodifiable map containing all class data, where keys are {@link PlayerClass} enum values and values are their corresponding {@link ClassInfoHolder} objects
-     */
-    public Map<PlayerClass, ClassInfoHolder> getClassList() {
-        return _classData;
     }
 
     /**
@@ -81,7 +81,7 @@ public class ClassListData implements IXmlReader {
      * @return the {@link ClassInfoHolder} containing information about the specified class, or {@code null} if the class is not found
      */
     public ClassInfoHolder getClass(PlayerClass playerClass) {
-        return _classData.get(playerClass);
+        return classList.get(playerClass);
     }
 
     /**
@@ -91,7 +91,7 @@ public class ClassListData implements IXmlReader {
      */
     public ClassInfoHolder getClass(int classId) {
         final PlayerClass id = PlayerClass.getPlayerClass(classId);
-        return (id != null) ? _classData.get(id) : null;
+        return (id != null) ? classList.get(id) : null;
     }
 
     public static ClassListData getInstance() {

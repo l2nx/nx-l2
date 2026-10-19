@@ -27,15 +27,15 @@ import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.network.buffer.WriteBuffer;
 
 public class TradeDone extends ServerPacket {
-    private final int _num;
+    private final int num;
 
     public TradeDone(int num) {
-        _num = num;
+        this.num = num;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.TRADE_DONE.writeId(this, buffer);
-        buffer.writeInt(_num);
+        buffer.writeInt(num);
     }
 }

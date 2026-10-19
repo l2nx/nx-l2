@@ -31,15 +31,15 @@ import app.l2nx.highfive.network.serverpackets.SystemMessage;
  * @author -Wooden-
  */
 public class RequestPledgeSetAcademyMaster extends ClientPacket {
-    private String _currPlayerName;
-    private int _set; // 1 set, 0 delete
-    private String _targetPlayerName;
+    private String currPlayerName;
+    private int set; // 1 set, 0 delete
+    private String targetPlayerName;
 
     @Override
     protected void readImpl() {
-        _set = readInt();
-        _currPlayerName = readString();
-        _targetPlayerName = readString();
+        set = readInt();
+        currPlayerName = readString();
+        targetPlayerName = readString();
     }
 
     @Override
@@ -55,8 +55,8 @@ public class RequestPledgeSetAcademyMaster extends ClientPacket {
             return;
         }
 
-        final ClanMember currentMember = clan.getClanMember(_currPlayerName);
-        final ClanMember targetMember = clan.getClanMember(_targetPlayerName);
+        final ClanMember currentMember = clan.getClanMember(currPlayerName);
+        final ClanMember targetMember = clan.getClanMember(targetPlayerName);
         if ((currentMember == null) || (targetMember == null)) {
             return;
         }
@@ -74,7 +74,7 @@ public class RequestPledgeSetAcademyMaster extends ClientPacket {
         final Player apprentice = apprenticeMember.getPlayer();
         final Player sponsor = sponsorMember.getPlayer();
         SystemMessage sm = null;
-        if (_set == 0) {
+        if (set == 0) {
             // test: do we get the current sponsor & apprentice from this packet or no?
             if (apprentice != null) {
                 apprentice.setSponsor(0);

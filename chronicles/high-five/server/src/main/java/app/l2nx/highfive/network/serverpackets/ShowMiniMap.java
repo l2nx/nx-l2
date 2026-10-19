@@ -28,16 +28,16 @@ import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.network.buffer.WriteBuffer;
 
 public class ShowMiniMap extends ServerPacket {
-    private final int _mapId;
+    private final int mapId;
 
     public ShowMiniMap(int mapId) {
-        _mapId = mapId;
+        this.mapId = mapId;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.SHOW_MINIMAP.writeId(this, buffer);
-        buffer.writeInt(_mapId);
+        buffer.writeInt(mapId);
         buffer.writeByte(SevenSigns.getInstance().getCurrentPeriod());
     }
 }

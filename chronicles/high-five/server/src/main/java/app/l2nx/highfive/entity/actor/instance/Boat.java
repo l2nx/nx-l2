@@ -28,13 +28,11 @@ import app.l2nx.highfive.entity.actor.templates.CreatureTemplate;
 import app.l2nx.highfive.network.serverpackets.VehicleDeparture;
 import app.l2nx.highfive.network.serverpackets.VehicleInfo;
 import app.l2nx.highfive.network.serverpackets.VehicleStarted;
-import java.util.logging.Logger;
 
 /**
  * @author Maktakien, DS
  */
 public class Boat extends Vehicle {
-    protected static final Logger LOGGER_BOAT = Logger.getLogger(Boat.class.getName());
 
     /**
      * Creates a boat.

@@ -23,39 +23,13 @@ import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.mechanics.events.EventType;
 import app.l2nx.highfive.mechanics.events.holders.IBaseEvent;
 import app.l2nx.highfive.network.enums.ChatType;
+import lombok.Builder;
 
 /**
  * @author UnAfraid
  */
-public class OnPlayerChat implements IBaseEvent {
-    private final Player _player;
-    private final Player _target;
-    private final String _text;
-    private final ChatType _type;
-
-    public OnPlayerChat(Player player, Player target, String text, ChatType type) {
-        _player = player;
-        _target = target;
-        _text = text;
-        _type = type;
-    }
-
-    public Player getPlayer() {
-        return _player;
-    }
-
-    public Player getTarget() {
-        return _target;
-    }
-
-    public String getText() {
-        return _text;
-    }
-
-    public ChatType getChatType() {
-        return _type;
-    }
-
+@Builder(toBuilder = true)
+public record OnPlayerChat(Player player, Player target, String text, ChatType chatType) implements IBaseEvent {
     @Override
     public EventType getType() {
         return EventType.ON_PLAYER_CHAT;

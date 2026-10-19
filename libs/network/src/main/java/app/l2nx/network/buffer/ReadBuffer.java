@@ -35,7 +35,7 @@ import java.util.Objects;
  * @author Mobius
  */
 public class ReadBuffer {
-    private final ByteBuffer _buf;
+    private final ByteBuffer buf;
 
     /**
      * Wraps the supplied buffer. Its byte order and position are used as-is.
@@ -43,7 +43,7 @@ public class ReadBuffer {
      * @throws NullPointerException if {@code buffer} is {@code null}
      */
     public ReadBuffer(ByteBuffer buffer) {
-        _buf = Objects.requireNonNull(buffer);
+        buf = Objects.requireNonNull(buffer);
     }
 
     /**
@@ -64,7 +64,7 @@ public class ReadBuffer {
      * @return the char value
      */
     public char readChar() {
-        return _buf.getChar();
+        return buf.getChar();
     }
 
     /**
@@ -72,7 +72,7 @@ public class ReadBuffer {
      * @return the byte value
      */
     public byte readByte() {
-        return _buf.get();
+        return buf.get();
     }
 
     /**
@@ -80,7 +80,7 @@ public class ReadBuffer {
      * @return the short value
      */
     public short readShort() {
-        return _buf.getShort();
+        return buf.getShort();
     }
 
     /**
@@ -88,7 +88,7 @@ public class ReadBuffer {
      * @return the int value
      */
     public int readInt() {
-        return _buf.getInt();
+        return buf.getInt();
     }
 
     /**
@@ -96,7 +96,7 @@ public class ReadBuffer {
      * @return the long value
      */
     public long readLong() {
-        return _buf.getLong();
+        return buf.getLong();
     }
 
     /**
@@ -104,7 +104,7 @@ public class ReadBuffer {
      * @return the float value
      */
     public float readFloat() {
-        return _buf.getFloat();
+        return buf.getFloat();
     }
 
     /**
@@ -112,7 +112,7 @@ public class ReadBuffer {
      * @return the double value
      */
     public double readDouble() {
-        return _buf.getDouble();
+        return buf.getDouble();
     }
 
     /**
@@ -122,12 +122,12 @@ public class ReadBuffer {
      */
     public byte[] readBytes(int length) {
         // Validate before allocating, so a forged length cannot exhaust the heap.
-        if ((length < 0) || (length > _buf.remaining())) {
+        if ((length < 0) || (length > buf.remaining())) {
             throw new BufferUnderflowException();
         }
 
         final byte[] dst = new byte[length];
-        _buf.get(dst);
+        buf.get(dst);
         return dst;
     }
 
@@ -136,7 +136,7 @@ public class ReadBuffer {
      * @param dst destination array
      */
     public void readBytes(byte[] dst) {
-        _buf.get(dst);
+        buf.get(dst);
     }
 
     /**
@@ -146,7 +146,7 @@ public class ReadBuffer {
      * @param length number of bytes to transfer
      */
     public void readBytes(byte[] dst, int offset, int length) {
-        _buf.get(dst, offset, length);
+        buf.get(dst, offset, length);
     }
 
     /**
@@ -154,7 +154,7 @@ public class ReadBuffer {
      * @return remaining bytes available for reading
      */
     public int remaining() {
-        return _buf.remaining();
+        return buf.remaining();
     }
 
     // -------------------------------------------------------------------------
@@ -162,34 +162,34 @@ public class ReadBuffer {
     // -------------------------------------------------------------------------
 
     public byte readByte(int index) {
-        return _buf.get(index);
+        return buf.get(index);
     }
 
     public short readShort(int index) {
-        return _buf.getShort(index);
+        return buf.getShort(index);
     }
 
     public int readInt(int index) {
-        return _buf.getInt(index);
+        return buf.getInt(index);
     }
 
     public void writeByte(int index, byte value) {
-        _buf.put(index, value);
+        buf.put(index, value);
     }
 
     public void writeShort(int index, short value) {
-        _buf.putShort(index, value);
+        buf.putShort(index, value);
     }
 
     public void writeInt(int index, int value) {
-        _buf.putInt(index, value);
+        buf.putInt(index, value);
     }
 
     public int limit() {
-        return _buf.limit();
+        return buf.limit();
     }
 
     public void limit(int newLimit) {
-        _buf.limit(newLimit);
+        buf.limit(newLimit);
     }
 }

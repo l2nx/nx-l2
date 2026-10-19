@@ -25,7 +25,7 @@ import app.l2nx.highfive.entity.actor.Player;
  * @author Gnacik
  */
 public class RecoBonus {
-    private static final int[][] _recoBonus = {
+    private static final int[][] recoBonus = {
         {25, 50, 50, 50, 50, 50, 50, 50, 50, 50},
         {16, 33, 50, 50, 50, 50, 50, 50, 50, 50},
         {12, 25, 37, 50, 50, 50, 50, 50, 50, 50},
@@ -44,7 +44,7 @@ public class RecoBonus {
                 && (player.getNevitHourglassTime() > 0)) {
             final int level = player.getLevel() / 10;
             final int exp = (Math.min(100, player.getRecomHave()) - 1) / 10;
-            return _recoBonus[level][exp];
+            return recoBonus[level][exp];
         }
 
         return 0;

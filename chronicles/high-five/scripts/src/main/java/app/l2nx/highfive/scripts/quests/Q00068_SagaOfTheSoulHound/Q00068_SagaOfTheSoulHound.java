@@ -29,15 +29,15 @@ import app.l2nx.highfive.scripts.quests.AbstractSagaQuest;
 public class Q00068_SagaOfTheSoulHound extends AbstractSagaQuest {
     public Q00068_SagaOfTheSoulHound() {
         super(68);
-        _npc = new int[] {32138, 31272, 31269, 31317, 32235, 31646, 31648, 31652, 31654, 31655, 31657, 32241};
-        _items = new int[] {7080, 9802, 7081, 9741, 9723, 9726, 9729, 9732, 9735, 9738, 9719, 0};
-        _mob = new int[] {27327, 27329, 27328};
-        _classId = new int[] {132, 133};
-        _prevClass = new int[] {0x80, 0x81};
-        _npcSpawnLocations = new Location[] {
+        npc = new int[] {32138, 31272, 31269, 31317, 32235, 31646, 31648, 31652, 31654, 31655, 31657, 32241};
+        items = new int[] {7080, 9802, 7081, 9741, 9723, 9726, 9729, 9732, 9735, 9738, 9719, 0};
+        mob = new int[] {27327, 27329, 27328};
+        classId = new int[] {132, 133};
+        prevClass = new int[] {0x80, 0x81};
+        npcSpawnLocations = new Location[] {
             new Location(161719, -92823, -1893), new Location(46087, -36372, -1685), new Location(46066, -36396, -1685)
         };
-        _text = new String[] {
+        text = new String[] {
             "PLAYERNAME! Pursued to here! However, I jumped out of the Banshouren boundaries! You look at the giant as the sign of power!",
             "... Oh ... good! So it was ... let's begin!",
             "I do not have the patience ..! I have been a giant force ...! Cough chatter ah ah ah!",

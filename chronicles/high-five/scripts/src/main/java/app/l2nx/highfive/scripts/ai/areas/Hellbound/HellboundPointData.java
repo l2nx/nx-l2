@@ -23,6 +23,8 @@ import app.l2nx.highfive.data.xml.IXmlReader;
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
@@ -31,8 +33,10 @@ import org.w3c.dom.Node;
  * Point data parser.
  * @author Zoey76
  */
+@Slf4j
 public class HellboundPointData implements IXmlReader {
-    private final Map<Integer, int[]> _pointsInfo = new HashMap<>();
+    @Getter
+    private final Map<Integer, int[]> pointsInfo = new HashMap<>();
 
     public HellboundPointData() {
         load();
@@ -40,9 +44,9 @@ public class HellboundPointData implements IXmlReader {
 
     @Override
     public void load() {
-        _pointsInfo.clear();
+        pointsInfo.clear();
         parseDatapackFile("data/scripts/ai/areas/Hellbound/hellboundTrustPoints.xml");
-        LOGGER.info(getClass().getSimpleName() + ": Loaded " + _pointsInfo.size() + " trust point reward data.");
+        log.info("Loaded {} trust point reward data.", pointsInfo.size());
     }
 
     @Override
@@ -65,47 +69,42 @@ public class HellboundPointData implements IXmlReader {
             final NamedNodeMap attrs = d.getAttributes();
             Node att = attrs.getNamedItem("id");
             if (att == null) {
-                LOGGER.severe(getClass().getSimpleName() + ": Missing NPC ID, skipping record!");
+                log.error("Missing NPC ID, skipping record!");
                 return;
             }
 
             final int npcId = Integer.parseInt(att.getNodeValue());
             att = attrs.getNamedItem("points");
             if (att == null) {
-                LOGGER.severe("[Hellbound Trust Points Info] Missing reward point info for NPC ID " + npcId
-                        + ", skipping record");
+                log.error(
+                        "[Hellbound Trust Points Info] Missing reward point info for NPC ID {}, skipping record",
+                        npcId);
                 return;
             }
 
             final int points = Integer.parseInt(att.getNodeValue());
             att = attrs.getNamedItem("minHellboundLvl");
             if (att == null) {
-                LOGGER.severe("[Hellbound Trust Points Info] Missing minHellboundLvl info for NPC ID " + npcId
-                        + ", skipping record");
+                log.error(
+                        "[Hellbound Trust Points Info] Missing minHellboundLvl info for NPC ID {}, skipping record",
+                        npcId);
                 return;
             }
 
             final int minHbLvl = Integer.parseInt(att.getNodeValue());
             att = attrs.getNamedItem("maxHellboundLvl");
             if (att == null) {
-                LOGGER.severe("[Hellbound Trust Points Info] Missing maxHellboundLvl info for NPC ID " + npcId
-                        + ", skipping record");
+                log.error(
+                        "[Hellbound Trust Points Info] Missing maxHellboundLvl info for NPC ID {}, skipping record",
+                        npcId);
                 return;
             }
 
             final int maxHbLvl = Integer.parseInt(att.getNodeValue());
             att = attrs.getNamedItem("lowestTrustLimit");
             final int lowestTrustLimit = (att == null) ? 0 : Integer.parseInt(att.getNodeValue());
-            _pointsInfo.put(npcId, new int[] {points, minHbLvl, maxHbLvl, lowestTrustLimit});
+            pointsInfo.put(npcId, new int[] {points, minHbLvl, maxHbLvl, lowestTrustLimit});
         }
-    }
-
-    /**
-     * Gets all the points data.
-     * @return the points data
-     */
-    public Map<Integer, int[]> getPointsInfo() {
-        return _pointsInfo;
     }
 
     /**
@@ -114,7 +113,7 @@ public class HellboundPointData implements IXmlReader {
      * @return the points for an specific NPC ID
      */
     public int getPointsAmount(int npcId) {
-        return _pointsInfo.get(npcId)[0];
+        return pointsInfo.get(npcId)[0];
     }
 
     /**
@@ -123,7 +122,7 @@ public class HellboundPointData implements IXmlReader {
      * @return the minimum Hellbound level for the given NPC ID
      */
     public int getMinHbLvl(int npcId) {
-        return _pointsInfo.get(npcId)[1];
+        return pointsInfo.get(npcId)[1];
     }
 
     /**
@@ -132,7 +131,7 @@ public class HellboundPointData implements IXmlReader {
      * @return the maximum Hellbound level for the given NPC ID
      */
     public int getMaxHbLvl(int npcId) {
-        return _pointsInfo.get(npcId)[2];
+        return pointsInfo.get(npcId)[2];
     }
 
     /**
@@ -141,7 +140,7 @@ public class HellboundPointData implements IXmlReader {
      * @return the lowest trust limit for the given NPC ID
      */
     public int getLowestTrustLimit(int npcId) {
-        return _pointsInfo.get(npcId)[3];
+        return pointsInfo.get(npcId)[3];
     }
 
     public static HellboundPointData getInstance() {

@@ -29,29 +29,29 @@ import java.util.Map.Entry;
  * @author KenM
  */
 public class ExGetBossRecord extends ServerPacket {
-    private final Map<Integer, Integer> _bossRecordInfo;
-    private final int _ranking;
-    private final int _totalPoints;
+    private final Map<Integer, Integer> bossRecordInfo;
+    private final int ranking;
+    private final int totalPoints;
 
     public ExGetBossRecord(int ranking, int totalScore, Map<Integer, Integer> list) {
-        _ranking = ranking;
-        _totalPoints = totalScore;
-        _bossRecordInfo = list;
+        this.ranking = ranking;
+        totalPoints = totalScore;
+        bossRecordInfo = list;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_GET_BOSS_RECORD.writeId(this, buffer);
-        buffer.writeInt(_ranking);
-        buffer.writeInt(_totalPoints);
-        if (_bossRecordInfo == null) {
+        buffer.writeInt(ranking);
+        buffer.writeInt(totalPoints);
+        if (bossRecordInfo == null) {
             buffer.writeInt(0);
             buffer.writeInt(0);
             buffer.writeInt(0);
             buffer.writeInt(0);
         } else {
-            buffer.writeInt(_bossRecordInfo.size()); // list size
-            for (Entry<Integer, Integer> entry : _bossRecordInfo.entrySet()) {
+            buffer.writeInt(bossRecordInfo.size()); // list size
+            for (Entry<Integer, Integer> entry : bossRecordInfo.entrySet()) {
                 buffer.writeInt(entry.getKey());
                 buffer.writeInt(entry.getValue());
                 buffer.writeInt(0); // ??

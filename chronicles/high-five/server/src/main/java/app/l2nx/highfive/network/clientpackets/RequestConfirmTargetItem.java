@@ -29,11 +29,11 @@ import app.l2nx.highfive.network.serverpackets.ExPutItemResultForVariationMake;
  * @author -Wooden-
  */
 public class RequestConfirmTargetItem extends AbstractRefinePacket {
-    private int _itemObjId;
+    private int itemObjId;
 
     @Override
     protected void readImpl() {
-        _itemObjId = readInt();
+        itemObjId = readInt();
     }
 
     @Override
@@ -43,7 +43,7 @@ public class RequestConfirmTargetItem extends AbstractRefinePacket {
             return;
         }
 
-        final Item item = player.getInventory().getItemByObjectId(_itemObjId);
+        final Item item = player.getInventory().getItemByObjectId(itemObjId);
         if (item == null) {
             return;
         }
@@ -59,6 +59,6 @@ public class RequestConfirmTargetItem extends AbstractRefinePacket {
             return;
         }
 
-        player.sendPacket(new ExPutItemResultForVariationMake(_itemObjId, item.getId()));
+        player.sendPacket(new ExPutItemResultForVariationMake(itemObjId, item.getId()));
     }
 }

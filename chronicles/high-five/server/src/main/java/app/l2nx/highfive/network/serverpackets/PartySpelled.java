@@ -31,24 +31,24 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class PartySpelled extends ServerPacket {
-    private final List<BuffInfo> _effects = new ArrayList<>();
-    private final Creature _creature;
+    private final List<BuffInfo> effects = new ArrayList<>();
+    private final Creature creature;
 
     public PartySpelled(Creature creature) {
-        _creature = creature;
+        this.creature = creature;
     }
 
     public void addSkill(BuffInfo info) {
-        _effects.add(info);
+        effects.add(info);
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.PARTY_SPELLED.writeId(this, buffer);
-        buffer.writeInt(_creature.isServitor() ? 2 : _creature.isPet() ? 1 : 0);
-        buffer.writeInt(_creature.getObjectId());
-        buffer.writeInt(_effects.size());
-        for (BuffInfo info : _effects) {
+        buffer.writeInt(creature.isServitor() ? 2 : creature.isPet() ? 1 : 0);
+        buffer.writeInt(creature.getObjectId());
+        buffer.writeInt(effects.size());
+        for (BuffInfo info : effects) {
             if ((info != null) && info.isInUse()) {
                 buffer.writeInt(info.getSkill().getDisplayId());
                 buffer.writeShort(info.getSkill().getDisplayLevel());

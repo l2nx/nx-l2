@@ -27,50 +27,62 @@ import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.highfive.network.clientpackets.RequestAllyInfo;
 import app.l2nx.network.buffer.WriteBuffer;
 import java.util.Collection;
+import lombok.Getter;
 
 /**
  * Sent in response to {@link RequestAllyInfo}, if applicable.<br>
  * @author afk5min
  */
 public class AllianceInfo extends ServerPacket {
-    private final String _name;
-    private final int _total;
-    private final int _online;
-    private final String _leaderC;
-    private final String _leaderP;
-    private final ClanInfo[] _allies;
+    @Getter
+    private final String name;
+
+    @Getter
+    private final int total;
+
+    @Getter
+    private final int online;
+
+    @Getter
+    private final String leaderC;
+
+    @Getter
+    private final String leaderP;
+
+    @Getter
+    private final ClanInfo[] allies;
 
     public AllianceInfo(int allianceId) {
         final Clan leader = ClanTable.getInstance().getClan(allianceId);
-        _name = leader.getAllyName();
-        _leaderC = leader.getName();
-        _leaderP = leader.getLeaderName();
+        name = leader.getAllyName();
+        leaderC = leader.getName();
+        leaderP = leader.getLeaderName();
         final Collection<Clan> allies = ClanTable.getInstance().getClanAllies(allianceId);
-        _allies = new ClanInfo[allies.size()];
+        this.allies = new ClanInfo[allies.size()];
         int idx = 0;
         int total = 0;
         int online = 0;
         for (Clan clan : allies) {
             final ClanInfo ci = new ClanInfo(clan);
-            _allies[idx++] = ci;
+            this.allies[idx++] = ci;
             total += ci.getTotal();
             online += ci.getOnline();
         }
 
-        _total = total;
-        _online = online;
+        this.total = total;
+        this.online = online;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.ALLIANCE_INFO.writeId(this, buffer);
-        buffer.writeString(_name);
-        buffer.writeInt(_total);
-        buffer.writeInt(_online);
-        buffer.writeString(_leaderC);
-        buffer.writeString(_leaderP);
-        buffer.writeInt(_allies.length);
-        for (ClanInfo aci : _allies) {
+        buffer.writeString(name);
+        buffer.writeInt(total);
+        buffer.writeInt(online);
+        buffer.writeString(leaderC);
+        buffer.writeString(leaderP);
+        buffer.writeInt(allies.length);
+        for (ClanInfo aci : allies) {
             buffer.writeString(aci.getClan().getName());
             buffer.writeInt(0);
             buffer.writeInt(aci.getClan().getLevel());
@@ -78,29 +90,5 @@ public class AllianceInfo extends ServerPacket {
             buffer.writeInt(aci.getTotal());
             buffer.writeInt(aci.getOnline());
         }
-    }
-
-    public String getName() {
-        return _name;
-    }
-
-    public int getTotal() {
-        return _total;
-    }
-
-    public int getOnline() {
-        return _online;
-    }
-
-    public String getLeaderC() {
-        return _leaderC;
-    }
-
-    public String getLeaderP() {
-        return _leaderP;
-    }
-
-    public ClanInfo[] getAllies() {
-        return _allies;
     }
 }

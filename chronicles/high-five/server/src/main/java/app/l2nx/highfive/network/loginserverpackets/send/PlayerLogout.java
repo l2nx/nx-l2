@@ -37,13 +37,13 @@ public class PlayerLogout extends SimpleWritablePacket {
     private static final int OPCODE = 0x03;
 
     // Data.
-    private final String _player;
+    private final String player;
 
     /**
      * @param player player name
      */
     public PlayerLogout(String player) {
-        _player = (player != null) ? player : "";
+        this.player = (player != null) ? player : "";
     }
 
     /**
@@ -52,6 +52,6 @@ public class PlayerLogout extends SimpleWritablePacket {
     @Override
     public void write() {
         writeByte(OPCODE);
-        writeString(_player);
+        writeString(player);
     }
 }

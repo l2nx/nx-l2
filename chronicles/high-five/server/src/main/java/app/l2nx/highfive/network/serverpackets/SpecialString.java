@@ -27,33 +27,33 @@ import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.network.buffer.WriteBuffer;
 
 public class SpecialString extends ServerPacket {
-    private final int _strId;
-    private final int _fontSize;
-    private final int _x;
-    private final int _y;
-    private final int _color;
-    private final boolean _isDraw;
-    private final String _text;
+    private final int strId;
+    private final int fontSize;
+    private final int x;
+    private final int y;
+    private final int color;
+    private final boolean draw;
+    private final String text;
 
     public SpecialString(int strId, boolean isDraw, int fontSize, int x, int y, int color, String text) {
-        _strId = strId;
-        _isDraw = isDraw;
-        _fontSize = fontSize;
-        _x = x;
-        _y = y;
-        _color = color;
-        _text = text;
+        this.strId = strId;
+        draw = isDraw;
+        this.fontSize = fontSize;
+        this.x = x;
+        this.y = y;
+        this.color = color;
+        this.text = text;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.SERVER_CLOSE_SOCKET.writeId(this, buffer);
-        buffer.writeByte(_strId); // string ID
-        buffer.writeByte(_isDraw); // 1 - draw / 0 - hide
-        buffer.writeByte(_fontSize); // -1 to 3 (font size)
-        buffer.writeInt(_x); // ClientRight - x
-        buffer.writeInt(_y); // ClientTop + y
-        buffer.writeInt(_color); // AARRGGBB
-        buffer.writeString(_text); // wide string max len = 63
+        buffer.writeByte(strId); // string ID
+        buffer.writeByte(draw); // 1 - draw / 0 - hide
+        buffer.writeByte(fontSize); // -1 to 3 (font size)
+        buffer.writeInt(x); // ClientRight - x
+        buffer.writeInt(y); // ClientTop + y
+        buffer.writeInt(color); // AARRGGBB
+        buffer.writeString(text); // wide string max len = 63
     }
 }

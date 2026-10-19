@@ -30,38 +30,38 @@ import app.l2nx.network.buffer.WriteBuffer;
  * @author Steuf
  */
 public class AgitDecoInfo extends ServerPacket {
-    private final AuctionableHall _clanHall;
+    private final AuctionableHall clanHall;
 
     public AgitDecoInfo(AuctionableHall clanHall) {
-        _clanHall = clanHall;
+        this.clanHall = clanHall;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.AGIT_DECO_INFO.writeId(this, buffer);
-        buffer.writeInt(_clanHall.getId());
+        buffer.writeInt(clanHall.getId());
 
         // Fireplace
-        ClanHallFunction function = _clanHall.getFunction(ClanHall.FUNC_RESTORE_HP);
+        ClanHallFunction function = clanHall.getFunction(ClanHall.FUNC_RESTORE_HP);
         if ((function == null) || (function.getLevel() == 0)) {
             buffer.writeByte(0);
-        } else if (((_clanHall.getGrade() == 0) && (function.getLevel() < 220))
-                || ((_clanHall.getGrade() == 1) && (function.getLevel() < 160))
-                || ((_clanHall.getGrade() == 2) && (function.getLevel() < 260))
-                || ((_clanHall.getGrade() == 3) && (function.getLevel() < 300))) {
+        } else if (((clanHall.getGrade() == 0) && (function.getLevel() < 220))
+                || ((clanHall.getGrade() == 1) && (function.getLevel() < 160))
+                || ((clanHall.getGrade() == 2) && (function.getLevel() < 260))
+                || ((clanHall.getGrade() == 3) && (function.getLevel() < 300))) {
             buffer.writeByte(1);
         } else {
             buffer.writeByte(2);
         }
 
         // Carpet - Statue
-        function = _clanHall.getFunction(ClanHall.FUNC_RESTORE_MP);
+        function = clanHall.getFunction(ClanHall.FUNC_RESTORE_MP);
         if ((function == null) || (function.getLevel() == 0)) {
             buffer.writeByte(0);
             buffer.writeByte(0);
-        } else if ((((_clanHall.getGrade() == 0) || (_clanHall.getGrade() == 1)) && (function.getLevel() < 25))
-                || ((_clanHall.getGrade() == 2) && (function.getLevel() < 30))
-                || ((_clanHall.getGrade() == 3) && (function.getLevel() < 40))) {
+        } else if ((((clanHall.getGrade() == 0) || (clanHall.getGrade() == 1)) && (function.getLevel() < 25))
+                || ((clanHall.getGrade() == 2) && (function.getLevel() < 30))
+                || ((clanHall.getGrade() == 3) && (function.getLevel() < 40))) {
             buffer.writeByte(1);
             buffer.writeByte(1);
         } else {
@@ -70,20 +70,20 @@ public class AgitDecoInfo extends ServerPacket {
         }
 
         // Chandelier
-        function = _clanHall.getFunction(ClanHall.FUNC_RESTORE_EXP);
+        function = clanHall.getFunction(ClanHall.FUNC_RESTORE_EXP);
         if ((function == null) || (function.getLevel() == 0)) {
             buffer.writeByte(0);
-        } else if (((_clanHall.getGrade() == 0) && (function.getLevel() < 25))
-                || ((_clanHall.getGrade() == 1) && (function.getLevel() < 30))
-                || ((_clanHall.getGrade() == 2) && (function.getLevel() < 40))
-                || ((_clanHall.getGrade() == 3) && (function.getLevel() < 50))) {
+        } else if (((clanHall.getGrade() == 0) && (function.getLevel() < 25))
+                || ((clanHall.getGrade() == 1) && (function.getLevel() < 30))
+                || ((clanHall.getGrade() == 2) && (function.getLevel() < 40))
+                || ((clanHall.getGrade() == 3) && (function.getLevel() < 50))) {
             buffer.writeByte(1);
         } else {
             buffer.writeByte(2);
         }
 
         // Mirror
-        function = _clanHall.getFunction(ClanHall.FUNC_TELEPORT);
+        function = clanHall.getFunction(ClanHall.FUNC_TELEPORT);
         if ((function == null) || (function.getLevel() == 0)) {
             buffer.writeByte(0);
         } else if (function.getLevel() < 2) {
@@ -96,7 +96,7 @@ public class AgitDecoInfo extends ServerPacket {
         buffer.writeByte(0);
 
         // Curtain
-        function = _clanHall.getFunction(ClanHall.FUNC_DECO_CURTAINS);
+        function = clanHall.getFunction(ClanHall.FUNC_DECO_CURTAINS);
         if ((function == null) || (function.getLevel() == 0)) {
             buffer.writeByte(0);
         } else if (function.getLevel() <= 1) {
@@ -106,24 +106,24 @@ public class AgitDecoInfo extends ServerPacket {
         }
 
         // Magic Curtain
-        function = _clanHall.getFunction(ClanHall.FUNC_ITEM_CREATE);
+        function = clanHall.getFunction(ClanHall.FUNC_ITEM_CREATE);
         if ((function == null) || (function.getLevel() == 0)) {
             buffer.writeByte(0);
-        } else if (((_clanHall.getGrade() == 0) && (function.getLevel() < 2)) || (function.getLevel() < 3)) {
+        } else if (((clanHall.getGrade() == 0) && (function.getLevel() < 2)) || (function.getLevel() < 3)) {
             buffer.writeByte(1);
         } else {
             buffer.writeByte(2);
         }
 
         // Support? - Flag
-        function = _clanHall.getFunction(ClanHall.FUNC_SUPPORT);
+        function = clanHall.getFunction(ClanHall.FUNC_SUPPORT);
         if ((function == null) || (function.getLevel() == 0)) {
             buffer.writeByte(0);
             buffer.writeByte(0);
-        } else if (((_clanHall.getGrade() == 0) && (function.getLevel() < 2))
-                || ((_clanHall.getGrade() == 1) && (function.getLevel() < 4))
-                || ((_clanHall.getGrade() == 2) && (function.getLevel() < 5))
-                || ((_clanHall.getGrade() == 3) && (function.getLevel() < 8))) {
+        } else if (((clanHall.getGrade() == 0) && (function.getLevel() < 2))
+                || ((clanHall.getGrade() == 1) && (function.getLevel() < 4))
+                || ((clanHall.getGrade() == 2) && (function.getLevel() < 5))
+                || ((clanHall.getGrade() == 3) && (function.getLevel() < 8))) {
             buffer.writeByte(1);
             buffer.writeByte(1);
         } else {
@@ -132,7 +132,7 @@ public class AgitDecoInfo extends ServerPacket {
         }
 
         // Front platform
-        function = _clanHall.getFunction(ClanHall.FUNC_DECO_FRONTPLATEFORM);
+        function = clanHall.getFunction(ClanHall.FUNC_DECO_FRONTPLATEFORM);
         if ((function == null) || (function.getLevel() == 0)) {
             buffer.writeByte(0);
         } else if (function.getLevel() <= 1) {
@@ -142,10 +142,10 @@ public class AgitDecoInfo extends ServerPacket {
         }
 
         // Item create?
-        function = _clanHall.getFunction(ClanHall.FUNC_ITEM_CREATE);
+        function = clanHall.getFunction(ClanHall.FUNC_ITEM_CREATE);
         if ((function == null) || (function.getLevel() == 0)) {
             buffer.writeByte(0);
-        } else if (((_clanHall.getGrade() == 0) && (function.getLevel() < 2)) || (function.getLevel() < 3)) {
+        } else if (((clanHall.getGrade() == 0) && (function.getLevel() < 2)) || (function.getLevel() < 3)) {
             buffer.writeByte(1);
         } else {
             buffer.writeByte(2);

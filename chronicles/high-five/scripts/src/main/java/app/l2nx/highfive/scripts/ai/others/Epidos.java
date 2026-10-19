@@ -39,7 +39,7 @@ public class Epidos extends Script {
 
     private static final int[] MINIONS_COUNT = {3, 6, 11};
 
-    private final Map<Integer, Double> _lastHp = new ConcurrentHashMap<>();
+    private final Map<Integer, Double> lastHp = new ConcurrentHashMap<>();
 
     private Epidos() {
         addKillId(EPIDOSES);
@@ -49,9 +49,9 @@ public class Epidos extends Script {
     @Override
     public String onEvent(String event, Npc npc, Player player) {
         if (event.equalsIgnoreCase("check_minions")) {
-            if ((getRandom(1000) > 250) && _lastHp.containsKey(npc.getObjectId())) {
+            if ((getRandom(1000) > 250) && lastHp.containsKey(npc.getObjectId())) {
                 final int hpDecreasePercent =
-                        (int) (((_lastHp.get(npc.getObjectId()) - npc.getCurrentHp()) * 100) / npc.getMaxHp());
+                        (int) (((lastHp.get(npc.getObjectId()) - npc.getCurrentHp()) * 100) / npc.getMaxHp());
                 int minionsCount = 0;
                 final int spawnedMinions = npc.asMonster().getMinionList().getSpawnedMinionCount();
 
@@ -69,7 +69,7 @@ public class Epidos extends Script {
                     MinionList.spawnMinion(npc.asMonster(), MINIONS[Arrays.binarySearch(EPIDOSES, npc.getId())]);
                 }
 
-                _lastHp.put(npc.getObjectId(), npc.getCurrentHp());
+                lastHp.put(npc.getObjectId(), npc.getCurrentHp());
             }
 
             startQuestTimer("check_minions", 10000, npc, null);
@@ -90,14 +90,14 @@ public class Epidos extends Script {
             addSpawn(32376, -45482, 246277, -14184, 0, false, 0, false);
         }
 
-        _lastHp.remove(npc.getObjectId());
+        lastHp.remove(npc.getObjectId());
     }
 
     @Override
     public void onSpawn(Npc npc) {
         startQuestTimer("check_minions", 10000, npc, null);
         startQuestTimer("check_idle", 600000, npc, null);
-        _lastHp.put(npc.getObjectId(), (double) npc.getMaxHp());
+        lastHp.put(npc.getObjectId(), (double) npc.getMaxHp());
     }
 
     public static void main(String[] args) {

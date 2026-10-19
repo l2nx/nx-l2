@@ -45,9 +45,9 @@ public class PacketThreadFactory implements ThreadFactory {
     private static final AtomicInteger POOL_SEQUENCE = new AtomicInteger(INITIAL_SEQUENCE_VALUE);
 
     // Thread naming and priority.
-    private final AtomicInteger _threadSequence = new AtomicInteger(INITIAL_SEQUENCE_VALUE);
-    private final String _threadPrefix;
-    private final int _threadPriority;
+    private final AtomicInteger threadSequence = new AtomicInteger(INITIAL_SEQUENCE_VALUE);
+    private final String threadPrefix;
+    private final int threadPriority;
 
     /**
      * Creates a new network thread factory with specified base name and priority.
@@ -56,15 +56,15 @@ public class PacketThreadFactory implements ThreadFactory {
      */
     public PacketThreadFactory(String baseName, int priority) {
         final String safeBaseName = ((baseName == null) || baseName.isEmpty()) ? DEFAULT_BASE_NAME : baseName;
-        _threadPrefix = safeBaseName + "-network-pool-" + POOL_SEQUENCE.getAndIncrement() + "-thread-";
+        threadPrefix = safeBaseName + "-network-pool-" + POOL_SEQUENCE.getAndIncrement() + "-thread-";
 
         // Clamp priority to valid range.
         if (priority < Thread.MIN_PRIORITY) {
-            _threadPriority = Thread.MIN_PRIORITY;
+            threadPriority = Thread.MIN_PRIORITY;
         } else if (priority > Thread.MAX_PRIORITY) {
-            _threadPriority = Thread.MAX_PRIORITY;
+            threadPriority = Thread.MAX_PRIORITY;
         } else {
-            _threadPriority = priority;
+            threadPriority = priority;
         }
     }
 
@@ -76,12 +76,12 @@ public class PacketThreadFactory implements ThreadFactory {
     @Override
     public Thread newThread(Runnable task) {
         final int threadIndex = nextIndex();
-        final Thread thread = new Thread(null, task, _threadPrefix + threadIndex, STACK_SIZE);
+        final Thread thread = new Thread(null, task, threadPrefix + threadIndex, STACK_SIZE);
 
         // Apply priority respecting thread group constraints.
         final ThreadGroup threadGroup = thread.getThreadGroup();
         final int groupMaxPriority = (threadGroup != null) ? threadGroup.getMaxPriority() : Thread.MAX_PRIORITY;
-        final int effectivePriority = (_threadPriority > groupMaxPriority) ? groupMaxPriority : _threadPriority;
+        final int effectivePriority = (threadPriority > groupMaxPriority) ? groupMaxPriority : threadPriority;
 
         thread.setPriority(effectivePriority);
         thread.setDaemon(false);
@@ -94,9 +94,9 @@ public class PacketThreadFactory implements ThreadFactory {
      * @return next available thread index
      */
     private int nextIndex() {
-        final int currentValue = _threadSequence.getAndIncrement();
+        final int currentValue = threadSequence.getAndIncrement();
         return (currentValue == Integer.MIN_VALUE)
-                ? _threadSequence.updateAndGet(x -> (x <= 0) ? INITIAL_SEQUENCE_VALUE : x)
+                ? threadSequence.updateAndGet(x -> (x <= 0) ? INITIAL_SEQUENCE_VALUE : x)
                 : currentValue; // Handle integer overflow by resetting to 1.
     }
 }

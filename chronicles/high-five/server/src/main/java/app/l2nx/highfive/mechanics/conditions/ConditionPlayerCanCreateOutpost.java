@@ -37,16 +37,16 @@ import app.l2nx.highfive.network.SystemMessageId;
  * @author Adry_85
  */
 public class ConditionPlayerCanCreateOutpost extends Condition {
-    private final boolean _value;
+    private final boolean value;
 
     public ConditionPlayerCanCreateOutpost(boolean value) {
-        _value = value;
+        this.value = value;
     }
 
     @Override
     public boolean testImpl(Creature effector, Creature effected, Skill skill, ItemTemplate item) {
         if ((effector == null) || !effector.isPlayer()) {
-            return !_value;
+            return !value;
         }
 
         final Player player = effector.asPlayer();
@@ -83,6 +83,6 @@ public class ConditionPlayerCanCreateOutpost extends Condition {
             canCreateOutpost = false;
         }
 
-        return _value == canCreateOutpost;
+        return value == canCreateOutpost;
     }
 }

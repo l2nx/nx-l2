@@ -28,20 +28,22 @@ import app.l2nx.highfive.mechanics.conditions.Condition;
 import app.l2nx.highfive.mechanics.effects.AbstractEffect;
 import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.util.StatSet;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Summon Trap effect implementation.
  * @author Zoey76
  */
+@Slf4j
 public class SummonTrap extends AbstractEffect {
-    private final int _despawnTime;
-    private final int _npcId;
+    private final int despawnTime;
+    private final int npcId;
 
     public SummonTrap(Condition attachCond, Condition applyCond, StatSet set, StatSet params) {
         super(attachCond, applyCond, set, params);
 
-        _despawnTime = params.getInt("despawnTime", 0);
-        _npcId = params.getInt("npcId", 0);
+        despawnTime = params.getInt("despawnTime", 0);
+        npcId = params.getInt("npcId", 0);
     }
 
     @Override
@@ -55,9 +57,8 @@ public class SummonTrap extends AbstractEffect {
             return;
         }
 
-        if (_npcId <= 0) {
-            LOGGER.warning(
-                    SummonTrap.class.getSimpleName() + ": Invalid NPC ID:" + _npcId + " in skill ID: " + skill.getId());
+        if (npcId <= 0) {
+            log.warn("Invalid NPC ID:{} in skill ID: {}", npcId, skill.getId());
             return;
         }
 
@@ -71,14 +72,13 @@ public class SummonTrap extends AbstractEffect {
             player.getTrap().unSummon();
         }
 
-        final NpcTemplate npcTemplate = NpcData.getInstance().getTemplate(_npcId);
+        final NpcTemplate npcTemplate = NpcData.getInstance().getTemplate(npcId);
         if (npcTemplate == null) {
-            LOGGER.warning(SummonTrap.class.getSimpleName() + ": Spawn of the non-existing Trap ID: " + _npcId
-                    + " in skill ID:" + skill.getId());
+            log.warn("Spawn of the non-existing Trap ID: {} in skill ID:{}", npcId, skill.getId());
             return;
         }
 
-        final Trap trap = new Trap(npcTemplate, player, _despawnTime);
+        final Trap trap = new Trap(npcTemplate, player, despawnTime);
         trap.fullRestore();
         trap.setInvul(true);
         trap.setHeading(player.getHeading());

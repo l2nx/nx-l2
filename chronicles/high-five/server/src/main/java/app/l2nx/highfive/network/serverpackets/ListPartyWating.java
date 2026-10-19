@@ -32,16 +32,16 @@ import java.util.List;
  * @author Gnacik
  */
 public class ListPartyWating extends ServerPacket {
-    private final Player _player;
-    private final int _loc;
-    private final int _lim;
-    private final List<PartyMatchRoom> _rooms;
+    private final Player player;
+    private final int loc;
+    private final int lim;
+    private final List<PartyMatchRoom> rooms;
 
     public ListPartyWating(Player player, int auto, int location, int limit) {
-        _player = player;
-        _loc = location;
-        _lim = limit;
-        _rooms = new ArrayList<>();
+        this.player = player;
+        loc = location;
+        lim = limit;
+        rooms = new ArrayList<>();
     }
 
     @Override
@@ -55,19 +55,18 @@ public class ListPartyWating extends ServerPacket {
                 continue;
             }
 
-            if ((_loc > 0) && (_loc != room.getLocation())) {
+            if ((loc > 0) && (loc != room.getLocation())) {
                 continue;
             }
 
-            if ((_lim == 0)
-                    && ((_player.getLevel() < room.getMinLevel()) || (_player.getLevel() > room.getMaxLevel()))) {
+            if ((lim == 0) && ((player.getLevel() < room.getMinLevel()) || (player.getLevel() > room.getMaxLevel()))) {
                 continue;
             }
 
-            _rooms.add(room);
+            rooms.add(room);
         }
 
-        final int size = _rooms.size();
+        final int size = rooms.size();
         ServerPackets.LIST_PARTY_WAITING.writeId(this, buffer);
         if (size > 0) {
             buffer.writeInt(1);
@@ -75,8 +74,8 @@ public class ListPartyWating extends ServerPacket {
             buffer.writeInt(0);
         }
 
-        buffer.writeInt(_rooms.size());
-        for (PartyMatchRoom room : _rooms) {
+        buffer.writeInt(rooms.size());
+        for (PartyMatchRoom room : rooms) {
             buffer.writeInt(room.getId());
             buffer.writeString(room.getTitle());
             buffer.writeInt(room.getLocation());

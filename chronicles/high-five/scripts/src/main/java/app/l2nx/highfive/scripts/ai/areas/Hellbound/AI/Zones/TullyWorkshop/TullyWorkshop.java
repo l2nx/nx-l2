@@ -102,7 +102,7 @@ public class TullyWorkshop extends Script {
     private boolean allowAgentSpawn_7th = true;
     private boolean is7thFloorAttackBegan = false;
 
-    protected ScheduledFuture<?> _countdown = null;
+    protected ScheduledFuture<?> countdown = null;
 
     // NPCs, spawned after Tully's death are stored here
     protected static List<Npc> postMortemSpawn = new ArrayList<>();
@@ -851,7 +851,7 @@ public class TullyWorkshop extends Script {
             DoorData.getInstance().getDoor(19260052).openMe();
 
             countdownTime = 600000;
-            _countdown = ThreadPool.scheduleAtFixedRate(
+            countdown = ThreadPool.scheduleAtFixedRate(
                     () -> {
                         countdownTime -= 10000;
                         Npc npcSpawn = null;
@@ -869,9 +869,9 @@ public class TullyWorkshop extends Script {
                                         Integer.toString((countdownTime / 60000)));
                             }
                         } else if (countdownTime <= 0) {
-                            if (_countdown != null) {
-                                _countdown.cancel(false);
-                                _countdown = null;
+                            if (countdown != null) {
+                                countdown.cancel(false);
+                                countdown = null;
                             }
 
                             for (Npc spawnedNpc : postMortemSpawn) {
@@ -908,7 +908,7 @@ public class TullyWorkshop extends Script {
                             ChatType.NPC_SHOUT,
                             NpcStringId.DETONATOR_INITIALIZATION_TIME_SET_FOR_S1_MINUTE_S_FROM_NOW,
                             Integer.toString((countdownTime / 60000)));
-        } else if ((npcId == TIMETWISTER_GOLEM) && (_countdown != null)) {
+        } else if ((npcId == TIMETWISTER_GOLEM) && (countdown != null)) {
             if (getRandom(1000) >= 700) {
                 npc.broadcastSay(ChatType.NPC_GENERAL, NpcStringId.A_FATAL_ERROR_HAS_OCCURRED);
                 if (countdownTime > 180000) {
@@ -1164,21 +1164,21 @@ public class TullyWorkshop extends Script {
     }
 
     private static class DoorTask implements Runnable {
-        private final int[] _doorIds;
-        private final byte _state;
+        private final int[] doorIds;
+        private final byte state;
 
         public DoorTask(int[] doorIds, byte state) {
-            _doorIds = doorIds;
-            _state = state;
+            this.doorIds = doorIds;
+            this.state = state;
         }
 
         @Override
         public void run() {
             Door door;
-            for (int doorId : _doorIds) {
+            for (int doorId : doorIds) {
                 door = DoorData.getInstance().getDoor(doorId);
                 if (door != null) {
-                    switch (_state) {
+                    switch (state) {
                         case STATE_OPEN: {
                             door.openMe();
                             break;

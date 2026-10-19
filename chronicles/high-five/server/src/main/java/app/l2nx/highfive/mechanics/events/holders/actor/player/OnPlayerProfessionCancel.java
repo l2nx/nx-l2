@@ -22,28 +22,14 @@ package app.l2nx.highfive.mechanics.events.holders.actor.player;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.mechanics.events.EventType;
 import app.l2nx.highfive.mechanics.events.holders.IBaseEvent;
+import lombok.Builder;
 
 /**
  * @author Krunchy
  * @since 2.6.0.0
  */
-public class OnPlayerProfessionCancel implements IBaseEvent {
-    private final Player _player;
-    private final int _classId;
-
-    public OnPlayerProfessionCancel(Player player, int classId) {
-        _player = player;
-        _classId = classId;
-    }
-
-    public Player getPlayer() {
-        return _player;
-    }
-
-    public int getClassId() {
-        return _classId;
-    }
-
+@Builder(toBuilder = true)
+public record OnPlayerProfessionCancel(Player player, int classId) implements IBaseEvent {
     @Override
     public EventType getType() {
         return EventType.ON_PLAYER_PROFESSION_CANCEL;

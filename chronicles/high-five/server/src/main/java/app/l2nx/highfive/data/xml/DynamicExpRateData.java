@@ -25,7 +25,7 @@ package app.l2nx.highfive.data.xml;
 import app.l2nx.highfive.config.PlayerConfig;
 import java.io.File;
 import java.util.Arrays;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
@@ -33,12 +33,12 @@ import org.w3c.dom.Node;
 /**
  * @author MrNiceGuy
  */
+@Slf4j
 public class DynamicExpRateData implements IXmlReader {
-    private static final Logger LOGGER = Logger.getLogger(DynamicExpRateData.class.getName());
 
-    private static float[] _expRates = new float[PlayerConfig.PLAYER_MAXIMUM_LEVEL + 1];
-    private static float[] _spRates = new float[PlayerConfig.PLAYER_MAXIMUM_LEVEL + 1];
-    private static boolean _enabled = false;
+    private static float[] expRates = new float[PlayerConfig.PLAYER_MAXIMUM_LEVEL + 1];
+    private static float[] spRates = new float[PlayerConfig.PLAYER_MAXIMUM_LEVEL + 1];
+    private static boolean enabled = false;
 
     protected DynamicExpRateData() {
         load();
@@ -52,8 +52,8 @@ public class DynamicExpRateData implements IXmlReader {
     @Override
     public void parseDocument(Document document, File file) {
         int count = 0;
-        Arrays.fill(_expRates, 1f);
-        Arrays.fill(_spRates, 1f);
+        Arrays.fill(expRates, 1f);
+        Arrays.fill(spRates, 1f);
 
         for (Node n = document.getFirstChild(); n != null; n = n.getNextSibling()) {
             if ("list".equals(n.getNodeName())) {
@@ -64,8 +64,8 @@ public class DynamicExpRateData implements IXmlReader {
                         final float exp = parseFloat(attrs, "exp");
                         final float sp = parseFloat(attrs, "sp");
                         if ((exp != 1) || (sp != 1)) {
-                            _expRates[level] = exp;
-                            _spRates[level] = sp;
+                            expRates[level] = exp;
+                            spRates[level] = sp;
                             count++;
                         }
                     }
@@ -73,9 +73,9 @@ public class DynamicExpRateData implements IXmlReader {
             }
         }
 
-        _enabled = count > 0;
-        if (_enabled) {
-            LOGGER.info(getClass().getSimpleName() + ": Loaded dynamic rates for " + count + " levels.");
+        enabled = count > 0;
+        if (enabled) {
+            log.info("Loaded dynamic rates for {} levels.", count);
         }
     }
 
@@ -84,7 +84,7 @@ public class DynamicExpRateData implements IXmlReader {
      * @return the dynamic EXP rate for specified level.
      */
     public float getDynamicExpRate(int level) {
-        return _expRates[level];
+        return expRates[level];
     }
 
     /**
@@ -92,14 +92,14 @@ public class DynamicExpRateData implements IXmlReader {
      * @return the dynamic SP rate for specified level.
      */
     public float getDynamicSpRate(int level) {
-        return _spRates[level];
+        return spRates[level];
     }
 
     /**
      * @return if dynamic rates are enabled.
      */
     public boolean isEnabled() {
-        return _enabled;
+        return enabled;
     }
 
     public static DynamicExpRateData getInstance() {

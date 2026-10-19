@@ -45,10 +45,10 @@ public class Anais extends Script {
     private static final SkillHolder DIVINE_NOVA = new SkillHolder(6326, 1);
 
     // Instances
-    List<Npc> _divineBurners = new ArrayList<>(4);
-    private Player _nextTarget = null;
-    private Npc _current = null;
-    private int _pot = 0;
+    List<Npc> divineBurners = new ArrayList<>(4);
+    private Player nextTarget = null;
+    private Npc current = null;
+    private int pot = 0;
 
     private Anais() {
         addAttackId(ANAIS);
@@ -57,11 +57,11 @@ public class Anais extends Script {
     }
 
     private void burnerOnAttack(int pot, Npc anais) {
-        final Npc npc = _divineBurners.get(pot);
+        final Npc npc = divineBurners.get(pot);
         npc.setDisplayEffect(1);
         npc.setWalking();
         if (pot < 4) {
-            _current = npc;
+            current = npc;
             if (getQuestTimer("CHECK", anais, null) == null) {
                 startQuestTimer("CHECK", 3000, anais, null);
             }
@@ -78,26 +78,26 @@ public class Anais extends Script {
                     cancelQuestTimer("CHECK", npc, null);
                 }
 
-                if ((_current != null) || (_pot < 4)) {
+                if ((current != null) || (pot < 4)) {
                     final WorldObject target = npc.getTarget();
-                    _nextTarget = (target != null) && target.isPlayer() ? target.asPlayer() : null;
-                    final Npc b = _divineBurners.get(_pot);
-                    _pot += 1;
+                    nextTarget = (target != null) && target.isPlayer() ? target.asPlayer() : null;
+                    final Npc b = divineBurners.get(pot);
+                    pot += 1;
                     b.setDisplayEffect(1);
                     b.setWalking();
                     final Npc ward = addSpawn(GRAIL_WARD, new Location(b.getX(), b.getY(), b.getZ()), true, 0);
-                    ward.asAttackable().addDamageHate(_nextTarget, 0, 999);
+                    ward.asAttackable().addDamageHate(nextTarget, 0, 999);
                     ward.setRunning();
-                    ward.getAI().setIntentionAttack(_nextTarget);
-                    startQuestTimer("GUARD_ATTACK", 1000, ward, _nextTarget, true);
+                    ward.getAI().setIntentionAttack(nextTarget);
+                    startQuestTimer("GUARD_ATTACK", 1000, ward, nextTarget, true);
                     startQuestTimer("SUICIDE", 20000, ward, null);
-                    ward.getAI().setIntentionAttack(_nextTarget);
+                    ward.getAI().setIntentionAttack(nextTarget);
                 }
                 break;
             }
             case "GUARD_ATTACK": {
-                if (_nextTarget != null) {
-                    final double distance = npc.calculateDistance2D(_nextTarget);
+                if (nextTarget != null) {
+                    final double distance = npc.calculateDistance2D(nextTarget);
                     if (distance < 100) {
                         npc.doCast(DIVINE_NOVA.getSkill());
                     } else if (distance > 2000) {
@@ -109,11 +109,11 @@ public class Anais extends Script {
             }
             case "SUICIDE": {
                 npc.doCast(DIVINE_NOVA.getSkill());
-                cancelQuestTimer("GUARD_ATTACK", npc, _nextTarget);
-                if (_current != null) {
-                    _current.setDisplayEffect(2);
-                    _current.setWalking();
-                    _current = null;
+                cancelQuestTimer("GUARD_ATTACK", npc, nextTarget);
+                if (current != null) {
+                    current.setDisplayEffect(2);
+                    current.setWalking();
+                    current = null;
                 }
 
                 npc.doDie(null);
@@ -126,31 +126,31 @@ public class Anais extends Script {
 
     @Override
     public void onAttack(Npc npc, Player attacker, int damage, boolean isSummon) {
-        if (_pot == 0) {
+        if (pot == 0) {
             burnerOnAttack(0, npc);
-        } else if ((npc.getCurrentHp() <= (npc.getMaxRecoverableHp() * 0.75)) && (_pot == 1)) {
+        } else if ((npc.getCurrentHp() <= (npc.getMaxRecoverableHp() * 0.75)) && (pot == 1)) {
             burnerOnAttack(1, npc);
-        } else if ((npc.getCurrentHp() <= (npc.getMaxRecoverableHp() * 0.5)) && (_pot == 2)) {
+        } else if ((npc.getCurrentHp() <= (npc.getMaxRecoverableHp() * 0.5)) && (pot == 2)) {
             burnerOnAttack(2, npc);
-        } else if ((npc.getCurrentHp() <= (npc.getMaxRecoverableHp() * 0.25)) && (_pot == 3)) {
+        } else if ((npc.getCurrentHp() <= (npc.getMaxRecoverableHp() * 0.25)) && (pot == 3)) {
             burnerOnAttack(3, npc);
         }
     }
 
     @Override
     public void onSpawn(Npc npc) {
-        _divineBurners.add(npc);
+        divineBurners.add(npc);
     }
 
     @Override
     public void onKill(Npc npc, Player killer, boolean isSummon) {
         npc.doCast(DIVINE_NOVA.getSkill());
-        cancelQuestTimer("GUARD_ATTACK", npc, _nextTarget);
+        cancelQuestTimer("GUARD_ATTACK", npc, nextTarget);
         cancelQuestTimer("CHECK", npc, null);
-        if (_current != null) {
-            _current.setDisplayEffect(2);
-            _current.setWalking();
-            _current = null;
+        if (current != null) {
+            current.setDisplayEffect(2);
+            current.setWalking();
+            current = null;
         }
     }
 

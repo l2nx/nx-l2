@@ -60,15 +60,15 @@ import java.util.Map.Entry;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.StringTokenizer;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 
 /**
  * This class handles following admin commands: - show_spawns = shows menu - spawn_index lvl = shows menu for monsters with respective level - spawn_monster id = spawns monster id on target
  * @version $Revision: 1.2.2.5.2.5 $ $Date: 2005/04/11 10:06:06 $
  */
+@Slf4j
 public class AdminSpawn implements IAdminCommandHandler {
-    private static final Logger LOGGER = Logger.getLogger(AdminSpawn.class.getName());
 
     private static final String[] ADMIN_COMMANDS = {
         "admin_show_spawns",
@@ -270,7 +270,7 @@ public class AdminSpawn implements IAdminCommandHandler {
             ScriptManager.getInstance().reloadAllScripts();
             AdminData.getInstance().broadcastMessageToGMs("NPC respawn completed!");
         } else if (command.equals("admin_spawn_misc") || command.equals("admin_spawnmisc")) {
-            LOGGER.info(activeChar + " is spawning GM misc room...");
+            log.info("{} is spawning GM misc room...", activeChar);
             activeChar.sendSysMessage(
                     "WARNING: There are several known issues regarding this feature. Spawning all NPCs during runtime is STRONGLY NOT RECOMMENDED for live servers, just for developing environments.");
 
@@ -325,9 +325,10 @@ public class AdminSpawn implements IAdminCommandHandler {
             }
 
             activeChar.teleToLocation(new Location(currentX, currentY, spawnZ)); // Teleport player at GM Misc.
-            LOGGER.info(
-                    activeChar + " spawned all NPCs at GM misc room." + System.lineSeparator()
-                            + "WARNING: There are several known issues regarding this feature. Spawning all NPCs during runtime is STRONGLY NOT RECOMMENDED for live servers, just for developing environments.");
+            log.info(
+                    "{} spawned all NPCs at GM misc room.{}WARNING: There are several known issues regarding this feature. Spawning all NPCs during runtime is STRONGLY NOT RECOMMENDED for live servers, just for developing environments.",
+                    activeChar,
+                    System.lineSeparator());
         } else if (command.startsWith("admin_spawnat")) {
             final StringTokenizer st = new StringTokenizer(command, " ");
             try {
@@ -668,16 +669,21 @@ public class AdminSpawn implements IAdminCommandHandler {
         switch (type) {
             default:
             case 0: {
-                LOGGER.info("('',1," + i + "," + x + "," + y + "," + z + ",0,0," + h + ",60,0,0),");
+                log.info("('',1,{},{},{},{},0,0,{},60,0,0),", i, x, y, z, h);
                 break;
             }
             case 1: {
-                LOGGER.info("<spawn npcId=\"" + i + "\" x=\"" + x + "\" y=\"" + y + "\" z=\"" + z + "\" heading=\"" + h
-                        + "\" respawn=\"0\" />");
+                log.info(
+                        "<spawn npcId=\"{}\" x=\"{}\" y=\"{}\" z=\"{}\" heading=\"{}\" respawn=\"0\" />",
+                        i,
+                        x,
+                        y,
+                        z,
+                        h);
                 break;
             }
             case 2: {
-                LOGGER.info("{ " + i + ", " + x + ", " + y + ", " + z + ", " + h + " },");
+                log.info("{ {}, {}, {}, {}, {} },", i, x, y, z, h);
                 break;
             }
         }

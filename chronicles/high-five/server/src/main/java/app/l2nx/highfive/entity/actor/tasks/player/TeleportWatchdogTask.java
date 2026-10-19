@@ -26,18 +26,18 @@ import app.l2nx.highfive.entity.actor.Player;
  * @author UnAfraid
  */
 public class TeleportWatchdogTask implements Runnable {
-    private final Player _player;
+    private final Player player;
 
     public TeleportWatchdogTask(Player player) {
-        _player = player;
+        this.player = player;
     }
 
     @Override
     public void run() {
-        if ((_player == null) || !_player.isTeleporting()) {
+        if ((player == null) || !player.isTeleporting()) {
             return;
         }
 
-        _player.onTeleported();
+        player.onTeleported();
     }
 }

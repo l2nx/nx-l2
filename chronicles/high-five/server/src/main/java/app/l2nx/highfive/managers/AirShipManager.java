@@ -37,44 +37,37 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class AirShipManager {
-    private static final Logger LOGGER = Logger.getLogger(AirShipManager.class.getName());
 
     private static final String LOAD_DB = "SELECT * FROM airships";
     private static final String ADD_DB = "INSERT INTO airships (owner_id,fuel) VALUES (?,?)";
     private static final String UPDATE_DB = "UPDATE airships SET fuel=? WHERE owner_id=?";
 
     private static class AirShipTeleportList {
-        private final int _location;
-        private final int[] _fuel;
-        private final VehiclePathPoint[][] _routes;
+        @Getter
+        private final int location;
+
+        @Getter
+        private final int[] fuel;
+
+        @Getter
+        private final VehiclePathPoint[][] route;
 
         public AirShipTeleportList(int locationValue, int[] fuelValue, VehiclePathPoint[][] routesValue) {
-            _location = locationValue;
-            _fuel = fuelValue;
-            _routes = routesValue;
-        }
-
-        public int getLocation() {
-            return _location;
-        }
-
-        public int[] getFuel() {
-            return _fuel;
-        }
-
-        public VehiclePathPoint[][] getRoute() {
-            return _routes;
+            location = locationValue;
+            fuel = fuelValue;
+            route = routesValue;
         }
     }
 
-    private CreatureTemplate _airShipTemplate = null;
-    private final Map<Integer, StatSet> _airShipsInfo = new HashMap<>();
-    private final Map<Integer, AirShip> _airShips = new HashMap<>();
-    private final Map<Integer, AirShipTeleportList> _teleports = new HashMap<>();
+    private CreatureTemplate airShipTemplate = null;
+    private final Map<Integer, StatSet> airShipsInfo = new HashMap<>();
+    private final Map<Integer, AirShip> airShips = new HashMap<>();
+    private final Map<Integer, AirShipTeleportList> teleports = new HashMap<>();
 
     protected AirShipManager() {
         final StatSet npcDat = new StatSet();
@@ -111,12 +104,12 @@ public class AirShipManager {
         npcDat.set("baseMpReg", 3.e-3f);
         npcDat.set("basePDef", 100);
         npcDat.set("baseMDef", 100);
-        _airShipTemplate = new CreatureTemplate(npcDat);
+        airShipTemplate = new CreatureTemplate(npcDat);
         load();
     }
 
     public AirShip getNewAirShip(int x, int y, int z, int heading) {
-        final AirShip airShip = new AirShip(_airShipTemplate);
+        final AirShip airShip = new AirShip(airShipTemplate);
         airShip.setHeading(heading);
         airShip.setXYZInvisible(x, y, z);
         airShip.spawnMe();
@@ -126,17 +119,17 @@ public class AirShipManager {
     }
 
     public AirShip getNewAirShip(int x, int y, int z, int heading, int ownerId) {
-        final StatSet info = _airShipsInfo.get(ownerId);
+        final StatSet info = airShipsInfo.get(ownerId);
         if (info == null) {
             return null;
         }
 
-        AirShip airShip = _airShips.get(ownerId);
+        AirShip airShip = airShips.get(ownerId);
         if (airShip != null) {
             airShip.refreshId();
         } else {
-            airShip = new ControllableAirShip(_airShipTemplate, ownerId);
-            _airShips.put(ownerId, airShip);
+            airShip = new ControllableAirShip(airShipTemplate, ownerId);
+            airShips.put(ownerId, airShip);
 
             airShip.setMaxFuel(600);
             airShip.setFuel(info.getInt("fuel"));
@@ -156,41 +149,38 @@ public class AirShipManager {
         }
 
         storeInDb(ship.getOwnerId());
-        final StatSet info = _airShipsInfo.get(ship.getOwnerId());
+        final StatSet info = airShipsInfo.get(ship.getOwnerId());
         if (info != null) {
             info.set("fuel", ship.getFuel());
         }
     }
 
     public boolean hasAirShipLicense(int ownerId) {
-        return _airShipsInfo.containsKey(ownerId);
+        return airShipsInfo.containsKey(ownerId);
     }
 
     public void registerLicense(int ownerId) {
-        if (_airShipsInfo.containsKey(ownerId)) {
+        if (airShipsInfo.containsKey(ownerId)) {
             return;
         }
 
         final StatSet info = new StatSet();
         info.set("fuel", 600);
-        _airShipsInfo.put(ownerId, info);
+        airShipsInfo.put(ownerId, info);
         try (Connection con = DatabaseFactory.getConnection();
                 PreparedStatement ps = con.prepareStatement(ADD_DB)) {
             ps.setInt(1, ownerId);
             ps.setInt(2, info.getInt("fuel"));
             ps.executeUpdate();
         } catch (SQLException e) {
-            LOGGER.log(
-                    Level.WARNING,
-                    getClass().getSimpleName() + ": Could not add new airship license: " + e.getMessage(),
-                    e);
+            log.warn("Could not add new airship license: {}", e.getMessage(), e);
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, getClass().getSimpleName() + ": Error while initializing: " + e.getMessage(), e);
+            log.warn("Error while initializing: {}", e.getMessage(), e);
         }
     }
 
     public boolean hasAirShip(int ownerId) {
-        final AirShip ship = _airShips.get(ownerId);
+        final AirShip ship = airShips.get(ownerId);
         return (ship != null) && (ship.isSpawned() || ship.isTeleporting());
     }
 
@@ -200,7 +190,7 @@ public class AirShipManager {
             return;
         }
 
-        _teleports.put(dockId, new AirShipTeleportList(locationId, fuelConsumption, tp));
+        teleports.put(dockId, new AirShipTeleportList(locationId, fuelConsumption, tp));
     }
 
     public void sendAirShipTeleportList(Player player) {
@@ -214,21 +204,21 @@ public class AirShipManager {
         }
 
         final int dockId = ship.getDockId();
-        if (!_teleports.containsKey(dockId)) {
+        if (!teleports.containsKey(dockId)) {
             return;
         }
 
-        final AirShipTeleportList all = _teleports.get(dockId);
+        final AirShipTeleportList all = teleports.get(dockId);
         player.sendPacket(new ExAirShipTeleportList(all.getLocation(), all.getRoute(), all.getFuel()));
     }
 
     public VehiclePathPoint[] getTeleportDestination(int dockId, int index) {
-        final AirShipTeleportList all = _teleports.get(dockId);
+        final AirShipTeleportList all = teleports.get(dockId);
         return (all == null) || (index < -1) || (index >= all.getRoute().length) ? null : all.getRoute()[index + 1];
     }
 
     public int getFuelConsumption(int dockId, int index) {
-        final AirShipTeleportList all = _teleports.get(dockId);
+        final AirShipTeleportList all = teleports.get(dockId);
         return (all == null) || (index < -1) || (index >= all.getFuel().length) ? 0 : all.getFuel()[index + 1];
     }
 
@@ -240,22 +230,19 @@ public class AirShipManager {
             while (rs.next()) {
                 info = new StatSet();
                 info.set("fuel", rs.getInt("fuel"));
-                _airShipsInfo.put(rs.getInt("owner_id"), info);
+                airShipsInfo.put(rs.getInt("owner_id"), info);
             }
         } catch (SQLException e) {
-            LOGGER.log(
-                    Level.WARNING,
-                    getClass().getSimpleName() + ": Could not load airships table: " + e.getMessage(),
-                    e);
+            log.warn("Could not load airships table: {}", e.getMessage(), e);
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, getClass().getSimpleName() + ": Error while initializing: " + e.getMessage(), e);
+            log.warn("Error while initializing: {}", e.getMessage(), e);
         }
 
-        LOGGER.info(getClass().getSimpleName() + ": Loaded " + _airShipsInfo.size() + " private airships");
+        log.info("Loaded {} private airships", airShipsInfo.size());
     }
 
     private void storeInDb(int ownerId) {
-        final StatSet info = _airShipsInfo.get(ownerId);
+        final StatSet info = airShipsInfo.get(ownerId);
         if (info == null) {
             return;
         }
@@ -266,12 +253,9 @@ public class AirShipManager {
             ps.setInt(2, ownerId);
             ps.executeUpdate();
         } catch (SQLException e) {
-            LOGGER.log(
-                    Level.WARNING,
-                    getClass().getSimpleName() + ": Could not update airships table: " + e.getMessage(),
-                    e);
+            log.warn("Could not update airships table: {}", e.getMessage(), e);
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, getClass().getSimpleName() + ": Error while save: " + e.getMessage(), e);
+            log.warn("Error while save: {}", e.getMessage(), e);
         }
     }
 

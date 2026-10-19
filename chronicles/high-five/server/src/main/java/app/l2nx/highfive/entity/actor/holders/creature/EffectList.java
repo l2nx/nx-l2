@@ -53,7 +53,8 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.logging.Logger;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Effect lists.<br>
@@ -63,49 +64,50 @@ import java.util.logging.Logger;
  * Methods may resemble List interface, although it doesn't implement such interface.
  * @author Zoey76, Mobius
  */
+@Slf4j
 public class EffectList {
-    private static final Logger LOGGER = Logger.getLogger(EffectList.class.getName());
     /** Queue containing all effects from buffs for this effect list. */
-    private final Queue<BuffInfo> _buffs = new ConcurrentLinkedQueue<>();
+    private final Queue<BuffInfo> buffs = new ConcurrentLinkedQueue<>();
     /** Queue containing all triggered skills for this effect list. */
-    private final Queue<BuffInfo> _triggered = new ConcurrentLinkedQueue<>();
+    private final Queue<BuffInfo> triggered = new ConcurrentLinkedQueue<>();
     /** Queue containing all dances/songs for this effect list. */
-    private final Queue<BuffInfo> _dances = new ConcurrentLinkedQueue<>();
+    private final Queue<BuffInfo> dances = new ConcurrentLinkedQueue<>();
     /** Queue containing all toggle for this effect list. */
-    private final Queue<BuffInfo> _toggles = new ConcurrentLinkedQueue<>();
+    private final Queue<BuffInfo> toggles = new ConcurrentLinkedQueue<>();
     /** Queue containing all debuffs for this effect list. */
-    private final Queue<BuffInfo> _debuffs = new ConcurrentLinkedQueue<>();
+    private final Queue<BuffInfo> debuffs = new ConcurrentLinkedQueue<>();
     /** Queue containing all passives for this effect list. They bypass most of the actions and they are not included in most operations. */
-    private final Queue<BuffInfo> _passives = new ConcurrentLinkedQueue<>();
+    private final Queue<BuffInfo> passives = new ConcurrentLinkedQueue<>();
     /** Map containing the all stacked effect in progress for each abnormal type. */
-    private final Map<AbnormalType, BuffInfo> _stackedEffects = new ConcurrentHashMap<>();
+    private final Map<AbnormalType, BuffInfo> stackedEffects = new ConcurrentHashMap<>();
     /** Set containing all {@code AbnormalType}s that shouldn't be added to this creature effect list. */
-    private final Set<AbnormalType> _blockedAbnormalTypes = EnumSet.noneOf(AbnormalType.class);
+    private final Set<AbnormalType> blockedAbnormalTypes = EnumSet.noneOf(AbnormalType.class);
     /** Short buff skill ID. */
-    private BuffInfo _shortBuff = null;
+    @Getter
+    private BuffInfo shortBuff = null;
     /** If {@code true} this effect list has buffs removed on any action. */
-    private volatile boolean _hasBuffsRemovedOnAnyAction = false;
+    private volatile boolean hasBuffsRemovedOnAnyAction = false;
     /** If {@code true} this effect list has buffs removed on damage. */
-    private volatile boolean _hasBuffsRemovedOnDamage = false;
+    private volatile boolean hasBuffsRemovedOnDamage = false;
     /** If {@code true} this effect list has debuffs removed on damage. */
-    private volatile boolean _hasDebuffsRemovedOnDamage = false;
+    private volatile boolean hasDebuffsRemovedOnDamage = false;
     /** Effect flags. */
-    private int _effectFlags;
+    private int effectFlags;
     /** If {@code true} only party icons need to be updated. */
-    private boolean _partyOnly = false;
+    private boolean partyOnly = false;
     /** The owner of this effect list. */
-    private final Creature _owner;
+    private final Creature owner;
     /** Hidden buffs count, prevents iterations. */
-    private final AtomicInteger _hiddenBuffs = new AtomicInteger();
+    private final AtomicInteger hiddenBuffs = new AtomicInteger();
     /** Delay task **/
-    private ScheduledFuture<?> _updateEffectIconTask;
+    private ScheduledFuture<?> updateEffectIconTask;
 
     /**
      * Constructor for effect list.
      * @param owner the creature that owns this effect list
      */
     public EffectList(Creature owner) {
-        _owner = owner;
+        this.owner = owner;
     }
 
     /**
@@ -113,7 +115,7 @@ public class EffectList {
      * @return the buff skills
      */
     public Queue<BuffInfo> getBuffs() {
-        return _buffs;
+        return buffs;
     }
 
     /**
@@ -121,7 +123,7 @@ public class EffectList {
      * @return the triggered skill skills
      */
     public Queue<BuffInfo> getTriggered() {
-        return _triggered;
+        return triggered;
     }
 
     /**
@@ -129,7 +131,7 @@ public class EffectList {
      * @return the dance/song skills
      */
     public Queue<BuffInfo> getDances() {
-        return _dances;
+        return dances;
     }
 
     /**
@@ -137,7 +139,7 @@ public class EffectList {
      * @return the toggle skills
      */
     public Queue<BuffInfo> getToggles() {
-        return _toggles;
+        return toggles;
     }
 
     /**
@@ -145,7 +147,7 @@ public class EffectList {
      * @return the debuff skills
      */
     public Queue<BuffInfo> getDebuffs() {
-        return _debuffs;
+        return debuffs;
     }
 
     /**
@@ -153,7 +155,7 @@ public class EffectList {
      * @return the passive skills
      */
     public Queue<BuffInfo> getPassives() {
-        return _passives;
+        return passives;
     }
 
     /**
@@ -167,23 +169,23 @@ public class EffectList {
 
         final List<BuffInfo> buffs = new ArrayList<>();
         if (hasBuffs()) {
-            buffs.addAll(_buffs);
+            buffs.addAll(this.buffs);
         }
 
         if (hasTriggered()) {
-            buffs.addAll(_triggered);
+            buffs.addAll(triggered);
         }
 
         if (hasDances()) {
-            buffs.addAll(_dances);
+            buffs.addAll(dances);
         }
 
         if (hasToggles()) {
-            buffs.addAll(_toggles);
+            buffs.addAll(toggles);
         }
 
         if (hasDebuffs()) {
-            buffs.addAll(_debuffs);
+            buffs.addAll(debuffs);
         }
 
         return buffs;
@@ -201,17 +203,17 @@ public class EffectList {
 
         final Queue<BuffInfo> effects;
         if (skill.isPassive()) {
-            effects = _passives;
+            effects = passives;
         } else if (skill.isDebuff()) {
-            effects = _debuffs;
+            effects = debuffs;
         } else if (skill.isTriggeredSkill()) {
-            effects = _triggered;
+            effects = triggered;
         } else if (skill.isDance()) {
-            effects = _dances;
+            effects = dances;
         } else if (skill.isToggle()) {
-            effects = _toggles;
+            effects = toggles;
         } else {
-            effects = _buffs;
+            effects = buffs;
         }
 
         return effects;
@@ -226,7 +228,7 @@ public class EffectList {
      */
     public BuffInfo getFirstEffect(EffectType type) {
         if (hasBuffs()) {
-            for (BuffInfo info : _buffs) {
+            for (BuffInfo info : buffs) {
                 if (info != null) {
                     for (AbstractEffect effect : info.getEffects()) {
                         if ((effect != null) && (effect.getEffectType() == type)) {
@@ -238,7 +240,7 @@ public class EffectList {
         }
 
         if (hasTriggered()) {
-            for (BuffInfo info : _triggered) {
+            for (BuffInfo info : triggered) {
                 if (info != null) {
                     for (AbstractEffect effect : info.getEffects()) {
                         if ((effect != null) && (effect.getEffectType() == type)) {
@@ -250,7 +252,7 @@ public class EffectList {
         }
 
         if (hasDances()) {
-            for (BuffInfo info : _dances) {
+            for (BuffInfo info : dances) {
                 if (info != null) {
                     for (AbstractEffect effect : info.getEffects()) {
                         if ((effect != null) && (effect.getEffectType() == type)) {
@@ -262,7 +264,7 @@ public class EffectList {
         }
 
         if (hasToggles()) {
-            for (BuffInfo info : _toggles) {
+            for (BuffInfo info : toggles) {
                 if (info != null) {
                     for (AbstractEffect effect : info.getEffects()) {
                         if ((effect != null) && (effect.getEffectType() == type)) {
@@ -274,7 +276,7 @@ public class EffectList {
         }
 
         if (hasDebuffs()) {
-            for (BuffInfo info : _debuffs) {
+            for (BuffInfo info : debuffs) {
                 if (info != null) {
                     for (AbstractEffect effect : info.getEffects()) {
                         if ((effect != null) && (effect.getEffectType() == type)) {
@@ -308,7 +310,7 @@ public class EffectList {
         BuffInfo info = null;
 
         if (hasBuffs()) {
-            for (BuffInfo b : _buffs) {
+            for (BuffInfo b : buffs) {
                 if (b.getSkill().getId() == skillId) {
                     info = b;
                     break;
@@ -317,7 +319,7 @@ public class EffectList {
         }
 
         if (hasTriggered() && (info == null)) {
-            for (BuffInfo b : _triggered) {
+            for (BuffInfo b : triggered) {
                 if (b.getSkill().getId() == skillId) {
                     info = b;
                     break;
@@ -326,7 +328,7 @@ public class EffectList {
         }
 
         if (hasDances() && (info == null)) {
-            for (BuffInfo b : _dances) {
+            for (BuffInfo b : dances) {
                 if (b.getSkill().getId() == skillId) {
                     info = b;
                     break;
@@ -335,7 +337,7 @@ public class EffectList {
         }
 
         if (hasToggles() && (info == null)) {
-            for (BuffInfo b : _toggles) {
+            for (BuffInfo b : toggles) {
                 if (b.getSkill().getId() == skillId) {
                     info = b;
                     break;
@@ -344,7 +346,7 @@ public class EffectList {
         }
 
         if (hasDebuffs() && (info == null)) {
-            for (BuffInfo b : _debuffs) {
+            for (BuffInfo b : debuffs) {
                 if (b.getSkill().getId() == skillId) {
                     info = b;
                     break;
@@ -353,7 +355,7 @@ public class EffectList {
         }
 
         if (hasPassives() && (info == null)) {
-            for (BuffInfo b : _passives) {
+            for (BuffInfo b : passives) {
                 if (b.getSkill().getId() == skillId) {
                     info = b;
                     break;
@@ -371,7 +373,7 @@ public class EffectList {
      * @return the buff info if it's present, {@code null} otherwise
      */
     public BuffInfo getBuffInfoByAbnormalType(AbnormalType type) {
-        return _stackedEffects.get(type);
+        return stackedEffects.get(type);
     }
 
     /**
@@ -379,7 +381,7 @@ public class EffectList {
      * @param blockedAbnormalTypes the blocked buff slot set to add
      */
     public void addBlockedAbnormalTypes(Set<AbnormalType> blockedAbnormalTypes) {
-        _blockedAbnormalTypes.addAll(blockedAbnormalTypes);
+        this.blockedAbnormalTypes.addAll(blockedAbnormalTypes);
     }
 
     /**
@@ -388,7 +390,7 @@ public class EffectList {
      * @return {@code true} if the blocked buff slots set has been modified, {@code false} otherwise
      */
     public boolean removeBlockedAbnormalTypes(Set<AbnormalType> blockedBuffSlots) {
-        return _blockedAbnormalTypes.removeAll(blockedBuffSlots);
+        return blockedAbnormalTypes.removeAll(blockedBuffSlots);
     }
 
     /**
@@ -396,15 +398,7 @@ public class EffectList {
      * @return the current blocked {@code AbnormalType}s set in unmodifiable view.
      */
     public Set<AbnormalType> getBlockedAbnormalTypes() {
-        return Collections.unmodifiableSet(_blockedAbnormalTypes);
-    }
-
-    /**
-     * Gets the Short Buff info.
-     * @return the short buff info
-     */
-    public BuffInfo getShortBuff() {
-        return _shortBuff;
+        return Collections.unmodifiableSet(blockedAbnormalTypes);
     }
 
     /**
@@ -412,13 +406,13 @@ public class EffectList {
      * @param info the buff info
      */
     public void shortBuffStatusUpdate(BuffInfo info) {
-        if (_owner.isPlayer()) {
-            _shortBuff = info;
+        if (owner.isPlayer()) {
+            shortBuff = info;
             if (info != null) {
-                _owner.sendPacket(new ShortBuffStatusUpdate(
+                owner.sendPacket(new ShortBuffStatusUpdate(
                         info.getSkill().getId(), info.getSkill().getLevel(), info.getTime()));
             } else {
-                _owner.sendPacket(ShortBuffStatusUpdate.RESET_SHORT_BUFF);
+                owner.sendPacket(ShortBuffStatusUpdate.RESET_SHORT_BUFF);
             }
         }
     }
@@ -450,7 +444,7 @@ public class EffectList {
      * @return the number of buffs in this creature effect list
      */
     public int getBuffCount() {
-        return hasBuffs() ? _buffs.size() - _hiddenBuffs.get() - (_shortBuff != null ? 1 : 0) : 0;
+        return hasBuffs() ? buffs.size() - hiddenBuffs.get() - (shortBuff != null ? 1 : 0) : 0;
     }
 
     /**
@@ -459,7 +453,7 @@ public class EffectList {
      * @return the number of Songs/Dances in this creature effect list
      */
     public int getDanceCount() {
-        return hasDances() ? _dances.size() : 0;
+        return hasDances() ? dances.size() : 0;
     }
 
     /**
@@ -468,7 +462,7 @@ public class EffectList {
      * @return the number of triggered buffs in this creature effect list
      */
     public int getTriggeredBuffCount() {
-        return hasTriggered() ? _triggered.size() : 0;
+        return hasTriggered() ? triggered.size() : 0;
     }
 
     /**
@@ -476,7 +470,7 @@ public class EffectList {
      * @return the number of hidden buffs
      */
     public int getHiddenBuffsCount() {
-        return _hiddenBuffs.get();
+        return hiddenBuffs.get();
     }
 
     /**
@@ -520,15 +514,15 @@ public class EffectList {
 
         // If it's a hidden buff that ends, then decrease hidden buff count.
         if (!info.isInUse()) {
-            _hiddenBuffs.decrementAndGet();
+            hiddenBuffs.decrementAndGet();
         } else // Removes the buff from the stack.
         {
-            _stackedEffects.remove(info.getSkill().getAbnormalType(), info);
+            stackedEffects.remove(info.getSkill().getAbnormalType(), info);
         }
 
         // If it's an herb that ends, check if there are hidden buffs.
         if (info.getSkill().isAbnormalInstant() && hasBuffs()) {
-            for (BuffInfo buff : _buffs) {
+            for (BuffInfo buff : this.buffs) {
                 if ((buff != null)
                         && (buff.getSkill().getAbnormalType() == info.getSkill().getAbnormalType())
                         && !buff.isInUse()) {
@@ -539,10 +533,10 @@ public class EffectList {
                     buff.addStats();
 
                     // Adds the buff to the stack.
-                    _stackedEffects.put(buff.getSkill().getAbnormalType(), buff);
+                    stackedEffects.put(buff.getSkill().getAbnormalType(), buff);
 
                     // If it's a hidden buff that gets activated, then decrease hidden buff count.
-                    _hiddenBuffs.decrementAndGet();
+                    hiddenBuffs.decrementAndGet();
                     break;
                 }
             }
@@ -570,11 +564,11 @@ public class EffectList {
         // Stop debuffs.
         stopAllDebuffs(false);
 
-        _stackedEffects.clear();
+        stackedEffects.clear();
 
         // Update effect flags, icons and ave.
         updateEffectList(true);
-        _owner.updateAbnormalEffect();
+        owner.updateAbnormalEffect();
     }
 
     /**
@@ -583,9 +577,9 @@ public class EffectList {
     public void stopAllEffectsExceptThoseThatLastThroughDeath() {
         boolean update = false;
         if (hasBuffs()) {
-            for (BuffInfo info : _buffs) {
+            for (BuffInfo info : buffs) {
                 if (!info.getSkill().isStayAfterDeath()) {
-                    stopAndRemove(true, info, _buffs);
+                    stopAndRemove(true, info, buffs);
                 }
             }
 
@@ -593,9 +587,9 @@ public class EffectList {
         }
 
         if (hasTriggered()) {
-            for (BuffInfo info : _triggered) {
+            for (BuffInfo info : triggered) {
                 if (!info.getSkill().isStayAfterDeath()) {
-                    stopAndRemove(true, info, _triggered);
+                    stopAndRemove(true, info, triggered);
                 }
             }
 
@@ -603,9 +597,9 @@ public class EffectList {
         }
 
         if (hasDebuffs()) {
-            for (BuffInfo info : _debuffs) {
+            for (BuffInfo info : debuffs) {
                 if (!info.getSkill().isStayAfterDeath()) {
-                    stopAndRemove(true, info, _debuffs);
+                    stopAndRemove(true, info, debuffs);
                 }
             }
 
@@ -613,9 +607,9 @@ public class EffectList {
         }
 
         if (hasDances()) {
-            for (BuffInfo info : _dances) {
+            for (BuffInfo info : dances) {
                 if (!info.getSkill().isStayAfterDeath()) {
-                    stopAndRemove(true, info, _dances);
+                    stopAndRemove(true, info, dances);
                 }
             }
 
@@ -623,9 +617,9 @@ public class EffectList {
         }
 
         if (hasToggles()) {
-            for (BuffInfo info : _toggles) {
+            for (BuffInfo info : toggles) {
                 if (!info.getSkill().isStayAfterDeath()) {
-                    stopAndRemove(true, info, _toggles);
+                    stopAndRemove(true, info, toggles);
                 }
             }
 
@@ -643,28 +637,28 @@ public class EffectList {
      * @param broadcast {@code true} to broadcast update packets, {@code false} otherwise.
      */
     public void stopAllEffectsWithoutExclusions(boolean update, boolean broadcast) {
-        for (BuffInfo info : _buffs) {
-            stopAndRemove(broadcast, info, _buffs);
+        for (BuffInfo info : buffs) {
+            stopAndRemove(broadcast, info, buffs);
         }
 
-        for (BuffInfo info : _triggered) {
-            stopAndRemove(broadcast, info, _triggered);
+        for (BuffInfo info : triggered) {
+            stopAndRemove(broadcast, info, triggered);
         }
 
-        for (BuffInfo info : _dances) {
-            stopAndRemove(broadcast, info, _dances);
+        for (BuffInfo info : dances) {
+            stopAndRemove(broadcast, info, dances);
         }
 
-        for (BuffInfo info : _toggles) {
-            stopAndRemove(broadcast, info, _toggles);
+        for (BuffInfo info : toggles) {
+            stopAndRemove(broadcast, info, toggles);
         }
 
-        for (BuffInfo info : _debuffs) {
-            stopAndRemove(broadcast, info, _debuffs);
+        for (BuffInfo info : debuffs) {
+            stopAndRemove(broadcast, info, debuffs);
         }
 
-        for (BuffInfo info : _passives) {
-            stopAndRemove(broadcast, info, _passives);
+        for (BuffInfo info : passives) {
+            stopAndRemove(broadcast, info, passives);
         }
 
         // Update stats, effect flags and icons.
@@ -679,9 +673,9 @@ public class EffectList {
     public void stopAllEffectsNotStayOnSubclassChange() {
         boolean update = false;
         if (hasBuffs()) {
-            for (BuffInfo info : _buffs) {
+            for (BuffInfo info : buffs) {
                 if (!info.getSkill().isStayOnSubclassChange()) {
-                    stopAndRemove(true, info, _buffs);
+                    stopAndRemove(true, info, buffs);
                 }
             }
 
@@ -689,9 +683,9 @@ public class EffectList {
         }
 
         if (hasTriggered()) {
-            for (BuffInfo info : _triggered) {
+            for (BuffInfo info : triggered) {
                 if (!info.getSkill().isStayOnSubclassChange()) {
-                    stopAndRemove(true, info, _triggered);
+                    stopAndRemove(true, info, triggered);
                 }
             }
 
@@ -699,9 +693,9 @@ public class EffectList {
         }
 
         if (hasDebuffs()) {
-            for (BuffInfo info : _debuffs) {
+            for (BuffInfo info : debuffs) {
                 if (!info.getSkill().isStayOnSubclassChange()) {
-                    stopAndRemove(true, info, _debuffs);
+                    stopAndRemove(true, info, debuffs);
                 }
             }
 
@@ -709,9 +703,9 @@ public class EffectList {
         }
 
         if (hasDances()) {
-            for (BuffInfo info : _dances) {
+            for (BuffInfo info : dances) {
                 if (!info.getSkill().isStayOnSubclassChange()) {
-                    stopAndRemove(true, info, _dances);
+                    stopAndRemove(true, info, dances);
                 }
             }
 
@@ -719,9 +713,9 @@ public class EffectList {
         }
 
         if (hasToggles()) {
-            for (BuffInfo info : _toggles) {
+            for (BuffInfo info : toggles) {
                 if (!info.getSkill().isStayOnSubclassChange()) {
-                    stopAndRemove(true, info, _toggles);
+                    stopAndRemove(true, info, toggles);
                 }
             }
 
@@ -739,11 +733,11 @@ public class EffectList {
      */
     public void stopAllBuffs(boolean update, boolean triggered) {
         if (hasBuffs()) {
-            _buffs.forEach(b -> stopAndRemove(update, b, _buffs));
+            buffs.forEach(b -> stopAndRemove(update, b, buffs));
         }
 
         if (triggered && hasTriggered()) {
-            _triggered.forEach(b -> stopAndRemove(update, b, _triggered));
+            this.triggered.forEach(b -> stopAndRemove(update, b, this.triggered));
         }
 
         // Update effect flags and icons.
@@ -767,7 +761,7 @@ public class EffectList {
             return;
         }
 
-        _toggles.forEach(b -> stopAndRemove(update, b, _toggles));
+        toggles.forEach(b -> stopAndRemove(update, b, toggles));
 
         // Update effect flags and icons.
         updateEffectList(update);
@@ -782,7 +776,7 @@ public class EffectList {
             return;
         }
 
-        _dances.forEach(b -> stopAndRemove(update, b, _dances));
+        dances.forEach(b -> stopAndRemove(update, b, dances));
 
         // Update effect flags and icons.
         updateEffectList(update);
@@ -797,7 +791,7 @@ public class EffectList {
             return;
         }
 
-        _debuffs.forEach(b -> stopAndRemove(update, b, _debuffs));
+        debuffs.forEach(b -> stopAndRemove(update, b, debuffs));
 
         // Update effect flags and icons.
         updateEffectList(update);
@@ -819,7 +813,7 @@ public class EffectList {
         };
 
         if (hasBuffs()) {
-            for (BuffInfo info : _buffs) {
+            for (BuffInfo info : buffs) {
                 if (info != null) {
                     action.accept(info);
                 }
@@ -829,7 +823,7 @@ public class EffectList {
         }
 
         if (hasTriggered()) {
-            for (BuffInfo info : _triggered) {
+            for (BuffInfo info : triggered) {
                 if (info != null) {
                     action.accept(info);
                 }
@@ -839,7 +833,7 @@ public class EffectList {
         }
 
         if (hasDances()) {
-            for (BuffInfo info : _dances) {
+            for (BuffInfo info : dances) {
                 if (info != null) {
                     action.accept(info);
                 }
@@ -849,7 +843,7 @@ public class EffectList {
         }
 
         if (hasToggles()) {
-            for (BuffInfo info : _toggles) {
+            for (BuffInfo info : toggles) {
                 if (info != null) {
                     action.accept(info);
                 }
@@ -859,7 +853,7 @@ public class EffectList {
         }
 
         if (hasDebuffs()) {
-            for (BuffInfo info : _debuffs) {
+            for (BuffInfo info : debuffs) {
                 if (info != null) {
                     action.accept(info);
                 }
@@ -909,7 +903,7 @@ public class EffectList {
      * @return {@code true} if there was a buff info with the given abnormal type
      */
     public boolean stopSkillEffects(SkillFinishType removeType, AbnormalType abnormalType) {
-        final BuffInfo old = _stackedEffects.remove(abnormalType);
+        final BuffInfo old = stackedEffects.remove(abnormalType);
         if (old != null) {
             remove(removeType, old);
             return true;
@@ -923,16 +917,16 @@ public class EffectList {
      * Called on any action except movement (attack, cast).
      */
     public void stopEffectsOnAction() {
-        if (!_hasBuffsRemovedOnAnyAction) {
+        if (!hasBuffsRemovedOnAnyAction) {
             return;
         }
 
         boolean update = false;
 
         if (hasBuffs()) {
-            for (BuffInfo info : _buffs) {
+            for (BuffInfo info : buffs) {
                 if (info.getSkill().isRemovedOnAnyActionExceptMove()) {
-                    stopAndRemove(true, info, _buffs);
+                    stopAndRemove(true, info, buffs);
                 }
             }
 
@@ -940,9 +934,9 @@ public class EffectList {
         }
 
         if (hasTriggered()) {
-            for (BuffInfo info : _triggered) {
+            for (BuffInfo info : triggered) {
                 if (info.getSkill().isRemovedOnAnyActionExceptMove()) {
-                    stopAndRemove(true, info, _triggered);
+                    stopAndRemove(true, info, triggered);
                 }
             }
 
@@ -950,9 +944,9 @@ public class EffectList {
         }
 
         if (hasDebuffs()) {
-            for (BuffInfo info : _debuffs) {
+            for (BuffInfo info : debuffs) {
                 if (info.getSkill().isRemovedOnAnyActionExceptMove()) {
-                    stopAndRemove(true, info, _debuffs);
+                    stopAndRemove(true, info, debuffs);
                 }
             }
 
@@ -960,9 +954,9 @@ public class EffectList {
         }
 
         if (hasDances()) {
-            for (BuffInfo info : _dances) {
+            for (BuffInfo info : dances) {
                 if (info.getSkill().isRemovedOnAnyActionExceptMove()) {
-                    stopAndRemove(true, info, _dances);
+                    stopAndRemove(true, info, dances);
                 }
             }
 
@@ -970,9 +964,9 @@ public class EffectList {
         }
 
         if (hasToggles()) {
-            for (BuffInfo info : _toggles) {
+            for (BuffInfo info : toggles) {
                 if (info.getSkill().isRemovedOnAnyActionExceptMove()) {
-                    stopAndRemove(true, info, _toggles);
+                    stopAndRemove(true, info, toggles);
                 }
             }
 
@@ -989,11 +983,11 @@ public class EffectList {
         }
 
         boolean update = false;
-        if (_hasBuffsRemovedOnDamage) {
+        if (hasBuffsRemovedOnDamage) {
             if (hasBuffs()) {
-                for (BuffInfo info : _buffs) {
+                for (BuffInfo info : buffs) {
                     if ((info != null) && info.getSkill().isRemovedOnDamage()) {
-                        stopAndRemove(true, info, _buffs);
+                        stopAndRemove(true, info, buffs);
                     }
                 }
 
@@ -1001,9 +995,9 @@ public class EffectList {
             }
 
             if (hasTriggered()) {
-                for (BuffInfo info : _triggered) {
+                for (BuffInfo info : triggered) {
                     if ((info != null) && info.getSkill().isRemovedOnDamage()) {
-                        stopAndRemove(true, info, _triggered);
+                        stopAndRemove(true, info, triggered);
                     }
                 }
 
@@ -1011,9 +1005,9 @@ public class EffectList {
             }
 
             if (hasDances()) {
-                for (BuffInfo info : _dances) {
+                for (BuffInfo info : dances) {
                     if ((info != null) && info.getSkill().isRemovedOnDamage()) {
-                        stopAndRemove(true, info, _dances);
+                        stopAndRemove(true, info, dances);
                     }
                 }
 
@@ -1021,9 +1015,9 @@ public class EffectList {
             }
 
             if (hasToggles()) {
-                for (BuffInfo info : _toggles) {
+                for (BuffInfo info : toggles) {
                     if ((info != null) && info.getSkill().isRemovedOnDamage()) {
-                        stopAndRemove(true, info, _toggles);
+                        stopAndRemove(true, info, toggles);
                     }
                 }
 
@@ -1031,10 +1025,10 @@ public class EffectList {
             }
         }
 
-        if (_hasDebuffsRemovedOnDamage && hasDebuffs()) {
-            for (BuffInfo info : _debuffs) {
+        if (hasDebuffsRemovedOnDamage && hasDebuffs()) {
+            for (BuffInfo info : debuffs) {
                 if ((info != null) && info.getSkill().isRemovedOnDamage()) {
-                    stopAndRemove(true, info, _debuffs);
+                    stopAndRemove(true, info, debuffs);
                 }
             }
 
@@ -1050,7 +1044,7 @@ public class EffectList {
      */
     public void updateEffectIcons(boolean partyOnly) {
         if (partyOnly) {
-            _partyOnly = true;
+            this.partyOnly = true;
         }
 
         // Update effect flags and icons.
@@ -1069,55 +1063,55 @@ public class EffectList {
     /**
      * Verify if this effect list has buffs skills.<br>
      * Prevents initialization.
-     * @return {@code true} if {@link #_buffs} is not {@code null} and is not empty
+     * @return {@code true} if {@link #buffs} is not {@code null} and is not empty
      */
     public boolean hasBuffs() {
-        return !_buffs.isEmpty();
+        return !buffs.isEmpty();
     }
 
     /**
      * Verify if this effect list has triggered skills.<br>
      * Prevents initialization.
-     * @return {@code true} if {@link #_triggered} is not {@code null} and is not empty
+     * @return {@code true} if {@link #triggered} is not {@code null} and is not empty
      */
     public boolean hasTriggered() {
-        return !_triggered.isEmpty();
+        return !triggered.isEmpty();
     }
 
     /**
      * Verify if this effect list has dance/song skills.<br>
      * Prevents initialization.
-     * @return {@code true} if {@link #_dances} is not {@code null} and is not empty
+     * @return {@code true} if {@link #dances} is not {@code null} and is not empty
      */
     public boolean hasDances() {
-        return !_dances.isEmpty();
+        return !dances.isEmpty();
     }
 
     /**
      * Verify if this effect list has toggle skills.<br>
      * Prevents initialization.
-     * @return {@code true} if {@link #_toggles} is not {@code null} and is not empty
+     * @return {@code true} if {@link #toggles} is not {@code null} and is not empty
      */
     public boolean hasToggles() {
-        return !_toggles.isEmpty();
+        return !toggles.isEmpty();
     }
 
     /**
      * Verify if this effect list has debuffs skills.<br>
      * Prevents initialization.
-     * @return {@code true} if {@link #_debuffs} is not {@code null} and is not empty
+     * @return {@code true} if {@link #debuffs} is not {@code null} and is not empty
      */
     public boolean hasDebuffs() {
-        return !_debuffs.isEmpty();
+        return !debuffs.isEmpty();
     }
 
     /**
      * Verify if this effect list has passive skills.<br>
      * Prevents initialization.
-     * @return {@code true} if {@link #_passives} is not {@code null} and is not empty
+     * @return {@code true} if {@link #passives} is not {@code null} and is not empty
      */
     public boolean hasPassives() {
-        return !_passives.isEmpty();
+        return !passives.isEmpty();
     }
 
     /**
@@ -1129,31 +1123,31 @@ public class EffectList {
     public void forEach(Function<BuffInfo, Boolean> function, boolean dances) {
         boolean update = false;
         if (hasBuffs()) {
-            for (BuffInfo info : _buffs) {
+            for (BuffInfo info : buffs) {
                 update |= function.apply(info);
             }
         }
 
         if (hasTriggered()) {
-            for (BuffInfo info : _triggered) {
+            for (BuffInfo info : triggered) {
                 update |= function.apply(info);
             }
         }
 
         if (dances && hasDances()) {
-            for (BuffInfo info : _dances) {
+            for (BuffInfo info : this.dances) {
                 update |= function.apply(info);
             }
         }
 
         if (hasToggles()) {
-            for (BuffInfo info : _toggles) {
+            for (BuffInfo info : toggles) {
                 update |= function.apply(info);
             }
         }
 
         if (hasDebuffs()) {
-            for (BuffInfo info : _debuffs) {
+            for (BuffInfo info : debuffs) {
                 update |= function.apply(info);
             }
         }
@@ -1190,7 +1184,7 @@ public class EffectList {
 
         // Support for blocked buff slots.
         final Skill skill = info.getSkill();
-        if (_blockedAbnormalTypes.contains(skill.getAbnormalType())) {
+        if (blockedAbnormalTypes.contains(skill.getAbnormalType())) {
             return;
         }
 
@@ -1198,7 +1192,7 @@ public class EffectList {
         if (skill.isPassive()) {
             // Passive effects don't need stack type!
             if (!skill.getAbnormalType().isNone()) {
-                LOGGER.warning("Passive " + skill + " with abnormal type: " + skill.getAbnormalType() + "!");
+                log.warn("Passive {} with abnormal type: {}!", skill, skill.getAbnormalType());
             }
 
             // Check for passive skill conditions.
@@ -1207,16 +1201,16 @@ public class EffectList {
             }
 
             // Puts the effects in the list.
-            for (BuffInfo b : _passives) {
+            for (BuffInfo b : passives) {
                 // Removes the old stats from the creature if the skill was present.
                 if (b.getSkill().getId() == skill.getId()) {
                     b.setInUse(false);
                     b.removeStats();
-                    _passives.remove(b);
+                    passives.remove(b);
                 }
             }
 
-            _passives.add(info);
+            passives.add(info);
 
             // Initialize effects.
             info.initializeEffects();
@@ -1238,8 +1232,8 @@ public class EffectList {
         } else // Verify stacked skills.
         {
             synchronized (this) {
-                if (_stackedEffects.containsKey(skill.getAbnormalType())) {
-                    BuffInfo stackedInfo = _stackedEffects.get(skill.getAbnormalType());
+                if (stackedEffects.containsKey(skill.getAbnormalType())) {
+                    BuffInfo stackedInfo = stackedEffects.get(skill.getAbnormalType());
 
                     // Skills are only replaced if the incoming buff has greater or equal abnormal level.
                     if ((stackedInfo != null)
@@ -1252,7 +1246,7 @@ public class EffectList {
                         if (skill.isAbnormalInstant()) {
                             if (stackedInfo.getSkill().isAbnormalInstant()) {
                                 stopSkillEffects(SkillFinishType.NORMAL, skill.getAbnormalType());
-                                stackedInfo = _stackedEffects.get(skill.getAbnormalType());
+                                stackedInfo = stackedEffects.get(skill.getAbnormalType());
                             }
 
                             if (stackedInfo != null) {
@@ -1260,7 +1254,7 @@ public class EffectList {
 
                                 // Remove stats
                                 stackedInfo.removeStats();
-                                _hiddenBuffs.incrementAndGet();
+                                hiddenBuffs.incrementAndGet();
                             }
                         } else // Remove buff that will stack with the abnormal type.
                         {
@@ -1276,7 +1270,7 @@ public class EffectList {
                     }
                 }
 
-                _stackedEffects.put(skill.getAbnormalType(), info);
+                stackedEffects.put(skill.getAbnormalType(), info);
             }
         }
 
@@ -1291,7 +1285,7 @@ public class EffectList {
             } else if (skill.isTriggeredSkill()) {
                 buffsToRemove = getTriggeredBuffCount() - PlayerConfig.TRIGGERED_BUFFS_MAX_AMOUNT;
             } else if (!skill.isHealingPotionSkill()) {
-                buffsToRemove = getBuffCount() - _owner.getStat().getMaxBuffCount();
+                buffsToRemove = getBuffCount() - owner.getStat().getMaxBuffCount();
             }
 
             for (BuffInfo bi : effects) {
@@ -1324,18 +1318,18 @@ public class EffectList {
      * Prevents initialization.
      */
     private void updateEffectIcons() {
-        if (_owner == null) {
+        if (owner == null) {
             return;
         }
 
         updateEffectFlags();
 
-        if (!_owner.isPlayable()) {
+        if (!owner.isPlayable()) {
             return;
         }
 
-        if (_updateEffectIconTask == null) {
-            _updateEffectIconTask = ThreadPool.schedule(
+        if (updateEffectIconTask == null) {
+            updateEffectIconTask = ThreadPool.schedule(
                     () -> {
                         AbnormalStatusUpdate asu = null;
                         PartySpelled ps = null;
@@ -1343,30 +1337,30 @@ public class EffectList {
                         ExOlympiadSpelledInfo os = null;
                         boolean isSummon = false;
 
-                        if (_owner.isPlayer()) {
-                            if (_partyOnly) {
-                                _partyOnly = false;
+                        if (owner.isPlayer()) {
+                            if (partyOnly) {
+                                partyOnly = false;
                             } else {
                                 asu = new AbnormalStatusUpdate();
                             }
 
-                            if (_owner.isInParty()) {
-                                ps = new PartySpelled(_owner);
+                            if (owner.isInParty()) {
+                                ps = new PartySpelled(owner);
                             }
 
-                            final Player player = _owner.asPlayer();
+                            final Player player = owner.asPlayer();
                             if (player.isInOlympiadMode() && player.isOlympiadStart()) {
                                 os = new ExOlympiadSpelledInfo(player);
                             }
-                        } else if (_owner.isSummon()) {
+                        } else if (owner.isSummon()) {
                             isSummon = true;
-                            ps = new PartySpelled(_owner);
-                            psSummon = new PartySpelled(_owner);
+                            ps = new PartySpelled(owner);
+                            psSummon = new PartySpelled(owner);
                         }
 
                         // Buffs.
                         if (hasBuffs()) {
-                            for (BuffInfo info : _buffs) {
+                            for (BuffInfo info : buffs) {
                                 if (info.getSkill().isHealingPotionSkill()) {
                                     shortBuffStatusUpdate(info);
                                 } else {
@@ -1377,39 +1371,39 @@ public class EffectList {
 
                         // Triggered buffs.
                         if (hasTriggered()) {
-                            for (BuffInfo info : _triggered) {
+                            for (BuffInfo info : triggered) {
                                 addIcon(info, asu, ps, psSummon, os, isSummon);
                             }
                         }
 
                         // Songs and dances.
                         if (hasDances()) {
-                            for (BuffInfo info : _dances) {
+                            for (BuffInfo info : dances) {
                                 addIcon(info, asu, ps, psSummon, os, isSummon);
                             }
                         }
 
                         // Toggles.
                         if (hasToggles()) {
-                            for (BuffInfo info : _toggles) {
+                            for (BuffInfo info : toggles) {
                                 addIcon(info, asu, ps, psSummon, os, isSummon);
                             }
                         }
 
                         // Debuffs.
                         if (hasDebuffs()) {
-                            for (BuffInfo info : _debuffs) {
+                            for (BuffInfo info : debuffs) {
                                 addIcon(info, asu, ps, psSummon, os, isSummon);
                             }
                         }
 
                         if (asu != null) {
-                            _owner.sendPacket(asu);
+                            owner.sendPacket(asu);
                         }
 
                         if (ps != null) {
-                            if (_owner.isSummon()) {
-                                final Player summonOwner = _owner.asSummon().getOwner();
+                            if (owner.isSummon()) {
+                                final Player summonOwner = owner.asSummon().getOwner();
                                 if (summonOwner != null) {
                                     if (summonOwner.isInParty()) {
                                         summonOwner
@@ -1421,20 +1415,20 @@ public class EffectList {
                                         summonOwner.sendPacket(ps);
                                     }
                                 }
-                            } else if (_owner.isPlayer() && _owner.isInParty()) {
-                                _owner.getParty().broadcastPacket(ps);
+                            } else if (owner.isPlayer() && owner.isInParty()) {
+                                owner.getParty().broadcastPacket(ps);
                             }
                         }
 
                         if (os != null) {
                             final OlympiadGameTask game = OlympiadGameManager.getInstance()
-                                    .getOlympiadTask(_owner.asPlayer().getOlympiadGameId());
+                                    .getOlympiadTask(owner.asPlayer().getOlympiadGameId());
                             if ((game != null) && game.isBattleStarted()) {
                                 game.getZone().broadcastPacketToObservers(os);
                             }
                         }
 
-                        _updateEffectIconTask = null;
+                        updateEffectIconTask = null;
                     },
                     300);
         }
@@ -1487,57 +1481,57 @@ public class EffectList {
      */
     private void updateEffectFlags() {
         if (hasBuffs()) {
-            for (BuffInfo info : _buffs) {
+            for (BuffInfo info : buffs) {
                 if (info == null) {
                     continue;
                 }
 
                 if (info.getSkill().isRemovedOnAnyActionExceptMove()) {
-                    _hasBuffsRemovedOnAnyAction = true;
+                    hasBuffsRemovedOnAnyAction = true;
                 }
 
                 if (info.getSkill().isRemovedOnDamage()) {
-                    _hasBuffsRemovedOnDamage = true;
+                    hasBuffsRemovedOnDamage = true;
                 }
             }
         }
 
         if (hasTriggered()) {
-            for (BuffInfo info : _triggered) {
+            for (BuffInfo info : triggered) {
                 if (info == null) {
                     continue;
                 }
 
                 if (info.getSkill().isRemovedOnAnyActionExceptMove()) {
-                    _hasBuffsRemovedOnAnyAction = true;
+                    hasBuffsRemovedOnAnyAction = true;
                 }
 
                 if (info.getSkill().isRemovedOnDamage()) {
-                    _hasBuffsRemovedOnDamage = true;
+                    hasBuffsRemovedOnDamage = true;
                 }
             }
         }
 
         if (hasToggles()) {
-            for (BuffInfo info : _toggles) {
+            for (BuffInfo info : toggles) {
                 if (info == null) {
                     continue;
                 }
 
                 if (info.getSkill().isRemovedOnAnyActionExceptMove()) {
-                    _hasBuffsRemovedOnAnyAction = true;
+                    hasBuffsRemovedOnAnyAction = true;
                 }
 
                 if (info.getSkill().isRemovedOnDamage()) {
-                    _hasBuffsRemovedOnDamage = true;
+                    hasBuffsRemovedOnDamage = true;
                 }
             }
         }
 
         if (hasDebuffs()) {
-            for (BuffInfo info : _debuffs) {
+            for (BuffInfo info : debuffs) {
                 if ((info != null) && info.getSkill().isRemovedOnDamage()) {
-                    _hasDebuffsRemovedOnDamage = true;
+                    hasDebuffsRemovedOnDamage = true;
                 }
             }
         }
@@ -1550,7 +1544,7 @@ public class EffectList {
     private void computeEffectFlags() {
         int flags = 0;
         if (hasBuffs()) {
-            for (BuffInfo info : _buffs) {
+            for (BuffInfo info : buffs) {
                 if (info != null) {
                     for (AbstractEffect e : info.getEffects()) {
                         flags |= e.getEffectFlags();
@@ -1560,7 +1554,7 @@ public class EffectList {
         }
 
         if (hasTriggered()) {
-            for (BuffInfo info : _triggered) {
+            for (BuffInfo info : triggered) {
                 if (info != null) {
                     for (AbstractEffect e : info.getEffects()) {
                         flags |= e.getEffectFlags();
@@ -1570,7 +1564,7 @@ public class EffectList {
         }
 
         if (hasDebuffs()) {
-            for (BuffInfo info : _debuffs) {
+            for (BuffInfo info : debuffs) {
                 if (info != null) {
                     for (AbstractEffect e : info.getEffects()) {
                         flags |= e.getEffectFlags();
@@ -1580,7 +1574,7 @@ public class EffectList {
         }
 
         if (hasDances()) {
-            for (BuffInfo info : _dances) {
+            for (BuffInfo info : dances) {
                 if (info != null) {
                     for (AbstractEffect e : info.getEffects()) {
                         flags |= e.getEffectFlags();
@@ -1590,7 +1584,7 @@ public class EffectList {
         }
 
         if (hasToggles()) {
-            for (BuffInfo info : _toggles) {
+            for (BuffInfo info : toggles) {
                 if (info != null) {
                     for (AbstractEffect e : info.getEffects()) {
                         flags |= e.getEffectFlags();
@@ -1599,7 +1593,7 @@ public class EffectList {
             }
         }
 
-        _effectFlags = flags;
+        effectFlags = flags;
     }
 
     /**
@@ -1608,7 +1602,7 @@ public class EffectList {
      * @return boolean true if affected
      */
     public boolean isAffected(EffectFlag flag) {
-        return (_effectFlags & flag.getMask()) != 0;
+        return (effectFlags & flag.getMask()) != 0;
     }
 
     /**
@@ -1617,6 +1611,6 @@ public class EffectList {
      * @return boolean true if affected
      */
     public boolean isAffectedByAbnormalType(AbnormalType type) {
-        return _stackedEffects.containsKey(type);
+        return stackedEffects.containsKey(type);
     }
 }

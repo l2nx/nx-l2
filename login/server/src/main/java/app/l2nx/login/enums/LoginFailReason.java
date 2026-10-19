@@ -22,6 +22,8 @@
  */
 package app.l2nx.login.enums;
 
+import lombok.Getter;
+
 public enum LoginFailReason {
     REASON_NO_MESSAGE(0x00),
     REASON_SYSTEM_ERROR_LOGIN_LATER(0x01),
@@ -64,13 +66,10 @@ public enum LoginFailReason {
     REASON_CERTIFICATION_DAILY_USE_EXCEEDED(0x37),
     REASON_CERTIFICATION_UNDERWAY_TRY_AGAIN_LATER(0x38);
 
-    private final int _code;
+    @Getter
+    private final int code;
 
     LoginFailReason(int code) {
-        _code = code;
-    }
-
-    public int getCode() {
-        return _code;
+        this.code = code;
     }
 }

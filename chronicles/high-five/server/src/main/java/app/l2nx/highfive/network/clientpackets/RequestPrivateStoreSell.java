@@ -30,29 +30,30 @@ import app.l2nx.highfive.data.sql.OfflineTraderTable;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.enums.player.PrivateStoreType;
-import app.l2nx.highfive.network.PacketLogger;
 import app.l2nx.highfive.network.holders.RequestTrade;
 import app.l2nx.highfive.network.holders.TradeList;
 import app.l2nx.highfive.network.serverpackets.ActionFailed;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @version $Revision: 1.2.2.1.2.4 $ $Date: 2005/03/27 15:29:30 $
  */
+@Slf4j
 public class RequestPrivateStoreSell extends ClientPacket {
     private static final int BATCH_LENGTH = 28; // length of the one item
 
-    private int _storePlayerId;
-    private RequestTrade[] _items = null;
+    private int storePlayerId;
+    private RequestTrade[] items = null;
 
     @Override
     protected void readImpl() {
-        _storePlayerId = readInt();
+        storePlayerId = readInt();
         final int count = readInt();
         if ((count <= 0) || (count > PlayerConfig.MAX_ITEM_IN_PACKET) || ((count * BATCH_LENGTH) != remaining())) {
             return;
         }
 
-        _items = new RequestTrade[count];
+        items = new RequestTrade[count];
         for (int i = 0; i < count; i++) {
             final int objectId = readInt();
             final int itemId = readInt();
@@ -61,11 +62,11 @@ public class RequestPrivateStoreSell extends ClientPacket {
             final long cnt = readLong();
             final long price = readLong();
             if ((objectId < 1) || (itemId < 1) || (cnt < 1) || (price < 0)) {
-                _items = null;
+                items = null;
                 return;
             }
 
-            _items[i] = new RequestTrade(objectId, itemId, cnt, price);
+            items[i] = new RequestTrade(objectId, itemId, cnt, price);
         }
     }
 
@@ -76,7 +77,7 @@ public class RequestPrivateStoreSell extends ClientPacket {
             return;
         }
 
-        if (_items == null) {
+        if (items == null) {
             player.sendPacket(ActionFailed.STATIC_PACKET);
             return;
         }
@@ -86,7 +87,7 @@ public class RequestPrivateStoreSell extends ClientPacket {
             return;
         }
 
-        final Player object = World.getPlayer(_storePlayerId);
+        final Player object = World.getPlayer(storePlayerId);
         if (object == null) {
             return;
         }
@@ -119,10 +120,12 @@ public class RequestPrivateStoreSell extends ClientPacket {
             return;
         }
 
-        if (!storeList.privateStoreSell(player, _items)) {
+        if (!storeList.privateStoreSell(player, items)) {
             player.sendPacket(ActionFailed.STATIC_PACKET);
-            PacketLogger.warning("PrivateStore sell has failed due to invalid list or request. Player: "
-                    + player.getName() + ", Private store of: " + storePlayer.getName());
+            log.warn(
+                    "PrivateStore sell has failed due to invalid list or request. Player: {}, Private store of: {}",
+                    player.getName(),
+                    storePlayer.getName());
             return;
         }
 

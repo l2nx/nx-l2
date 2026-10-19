@@ -31,16 +31,16 @@ import java.util.Collection;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 import org.w3c.dom.Document;
 
 /**
  * @author Mobius
  */
+@Slf4j
 public class InitialEquipmentData implements IXmlReader {
-    private static final Logger LOGGER = Logger.getLogger(InitialEquipmentData.class.getName());
 
-    private final Map<PlayerClass, List<InitialEquipment>> _classEquipment = new EnumMap<>(PlayerClass.class);
+    private final Map<PlayerClass, List<InitialEquipment>> classEquipment = new EnumMap<>(PlayerClass.class);
 
     protected InitialEquipmentData() {
         load();
@@ -48,9 +48,9 @@ public class InitialEquipmentData implements IXmlReader {
 
     @Override
     public void load() {
-        _classEquipment.clear();
+        classEquipment.clear();
         parseDatapackFile("data/stats/players/initialEquipment.xml");
-        LOGGER.info(getClass().getSimpleName() + ": Loaded " + _classEquipment.size() + " initial equipment data.");
+        log.info("Loaded {} initial equipment data.", classEquipment.size());
     }
 
     @Override
@@ -69,7 +69,7 @@ public class InitialEquipmentData implements IXmlReader {
 
                     final PlayerClass playerClass =
                             PlayerClass.getPlayerClass(Integer.parseInt((String) attributes.get("classId")));
-                    _classEquipment.put(playerClass, equipment);
+                    classEquipment.put(playerClass, equipment);
                 }));
     }
 
@@ -79,7 +79,7 @@ public class InitialEquipmentData implements IXmlReader {
      * @return a {@link Collection} of {@link InitialEquipment} objects representing the initial equipment for the specified class, or {@code null} if no equipment is found for the given class
      */
     public Collection<InitialEquipment> getClassEquipment(PlayerClass playerClass) {
-        return _classEquipment.get(playerClass);
+        return classEquipment.get(playerClass);
     }
 
     public static InitialEquipmentData getInstance() {

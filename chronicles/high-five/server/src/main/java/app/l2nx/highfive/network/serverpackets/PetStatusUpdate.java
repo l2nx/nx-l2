@@ -33,41 +33,41 @@ import app.l2nx.network.buffer.WriteBuffer;
  * @version $Revision: 1.5.2.3.2.5 $ $Date: 2005/03/29 23:15:10 $
  */
 public class PetStatusUpdate extends ServerPacket {
-    private final Summon _summon;
-    private int _maxFed;
-    private int _curFed;
+    private final Summon summon;
+    private int maxFed;
+    private int curFed;
 
     public PetStatusUpdate(Summon summon) {
-        _summon = summon;
-        if (_summon.isPet()) {
-            final Pet pet = _summon.asPet();
-            _curFed = pet.getCurrentFed(); // how fed it is
-            _maxFed = pet.getMaxFed(); // max fed it can be
-        } else if (_summon.isServitor()) {
-            final Servitor sum = _summon.asServitor();
-            _curFed = sum.getLifeTimeRemaining();
-            _maxFed = sum.getLifeTime();
+        this.summon = summon;
+        if (this.summon.isPet()) {
+            final Pet pet = this.summon.asPet();
+            curFed = pet.getCurrentFed(); // how fed it is
+            maxFed = pet.getMaxFed(); // max fed it can be
+        } else if (this.summon.isServitor()) {
+            final Servitor sum = this.summon.asServitor();
+            curFed = sum.getLifeTimeRemaining();
+            maxFed = sum.getLifeTime();
         }
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.PET_STATUS_UPDATE.writeId(this, buffer);
-        buffer.writeInt(_summon.getSummonType());
-        buffer.writeInt(_summon.getObjectId());
-        buffer.writeInt(_summon.getX());
-        buffer.writeInt(_summon.getY());
-        buffer.writeInt(_summon.getZ());
-        buffer.writeString(_summon.getTitle());
-        buffer.writeInt(_curFed);
-        buffer.writeInt(_maxFed);
-        buffer.writeInt((int) _summon.getCurrentHp());
-        buffer.writeInt(_summon.getMaxHp());
-        buffer.writeInt((int) _summon.getCurrentMp());
-        buffer.writeInt(_summon.getMaxMp());
-        buffer.writeInt(_summon.getLevel());
-        buffer.writeLong(_summon.getStat().getExp());
-        buffer.writeLong(_summon.getExpForThisLevel()); // 0% absolute value
-        buffer.writeLong(_summon.getExpForNextLevel()); // 100% absolute value
+        buffer.writeInt(summon.getSummonType());
+        buffer.writeInt(summon.getObjectId());
+        buffer.writeInt(summon.getX());
+        buffer.writeInt(summon.getY());
+        buffer.writeInt(summon.getZ());
+        buffer.writeString(summon.getTitle());
+        buffer.writeInt(curFed);
+        buffer.writeInt(maxFed);
+        buffer.writeInt((int) summon.getCurrentHp());
+        buffer.writeInt(summon.getMaxHp());
+        buffer.writeInt((int) summon.getCurrentMp());
+        buffer.writeInt(summon.getMaxMp());
+        buffer.writeInt(summon.getLevel());
+        buffer.writeLong(summon.getStat().getExp());
+        buffer.writeLong(summon.getExpForThisLevel()); // 0% absolute value
+        buffer.writeLong(summon.getExpForNextLevel()); // 100% absolute value
     }
 }

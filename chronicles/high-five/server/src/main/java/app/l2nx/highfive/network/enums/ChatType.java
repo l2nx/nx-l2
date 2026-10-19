@@ -19,6 +19,8 @@
  */
 package app.l2nx.highfive.network.enums;
 
+import lombok.Getter;
+
 /**
  * @author St3eT
  */
@@ -48,17 +50,11 @@ public enum ChatType {
     NPC_GENERAL(22),
     NPC_SHOUT(23);
 
-    private final int _clientId;
+    @Getter
+    private final int clientId;
 
     private ChatType(int clientId) {
-        _clientId = clientId;
-    }
-
-    /**
-     * @return the client id.
-     */
-    public int getClientId() {
-        return _clientId;
+        this.clientId = clientId;
     }
 
     /**
@@ -67,9 +63,9 @@ public enum ChatType {
      * @return the {@code ChatType} if it is found, {@code null} otherwise.
      */
     public static ChatType findByClientId(int clientId) {
-        for (ChatType ChatType : values()) {
-            if (ChatType.getClientId() == clientId) {
-                return ChatType;
+        for (ChatType chatType : values()) {
+            if (chatType.getClientId() == clientId) {
+                return chatType;
             }
         }
 

@@ -20,19 +20,17 @@
 package app.l2nx.highfive.entity.actor.transform;
 
 import app.l2nx.highfive.mechanics.skill.holders.SkillHolder;
+import lombok.Getter;
 
 /**
  * @author UnAfraid
  */
 public class AdditionalSkillHolder extends SkillHolder {
-    private final int _minLevel;
+    @Getter
+    private final int minLevel;
 
     public AdditionalSkillHolder(int skillId, int skillLevel, int minLevel) {
         super(skillId, skillLevel);
-        _minLevel = minLevel;
-    }
-
-    public int getMinLevel() {
-        return _minLevel;
+        this.minLevel = minLevel;
     }
 }

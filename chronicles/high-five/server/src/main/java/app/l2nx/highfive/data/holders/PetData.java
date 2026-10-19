@@ -27,41 +27,48 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * Class hold information about basic pet stats which are same on each level.
  * @author JIV
  */
 public class PetData {
-    private final Map<Integer, PetLevelData> _levelStats = new HashMap<>();
-    private final List<PetSkillLearn> _skills = new ArrayList<>();
+    private final Map<Integer, PetLevelData> levelStats = new HashMap<>();
 
-    private final int _npcId;
-    private final int _itemId;
-    private int _load = 20000;
-    private int _hungryLimit = 1;
-    private int _minLevel = Byte.MAX_VALUE;
-    private int _maxLevel = 0;
-    private boolean _syncLevel = false;
-    private final Set<Integer> _food = new HashSet<>();
+    @Getter
+    private final List<PetSkillLearn> availableSkills = new ArrayList<>();
+
+    @Getter
+    private final int npcId;
+
+    @Getter
+    private final int itemId;
+
+    @Getter
+    @Setter
+    private int load = 20000;
+
+    @Getter
+    @Setter
+    private int hungryLimit = 1;
+
+    @Getter
+    private int minLevel = Byte.MAX_VALUE;
+
+    @Getter
+    private int maxLevel = 0;
+
+    @Getter
+    private boolean synchLevel = false;
+
+    @Getter
+    private final Set<Integer> food = new HashSet<>();
 
     public PetData(int npcId, int itemId) {
-        _npcId = npcId;
-        _itemId = itemId;
-    }
-
-    /**
-     * @return the npc id representing this pet.
-     */
-    public int getNpcId() {
-        return _npcId;
-    }
-
-    /**
-     * @return the item id that could summon this pet.
-     */
-    public int getItemId() {
-        return _itemId;
+        this.npcId = npcId;
+        this.itemId = itemId;
     }
 
     /**
@@ -69,15 +76,15 @@ public class PetData {
      * @param data the pet's data.
      */
     public void addNewStat(int level, PetLevelData data) {
-        if (_minLevel > level) {
-            _minLevel = level;
+        if (minLevel > level) {
+            minLevel = level;
         }
 
-        if (_maxLevel < level) {
-            _maxLevel = level;
+        if (maxLevel < level) {
+            maxLevel = level;
         }
 
-        _levelStats.put(level, data);
+        levelStats.put(level, data);
     }
 
     /**
@@ -85,77 +92,21 @@ public class PetData {
      * @return the pet data associated to that pet level.
      */
     public PetLevelData getPetLevelData(int petLevel) {
-        return _levelStats.get(petLevel);
-    }
-
-    /**
-     * @return the pet's weight load.
-     */
-    public int getLoad() {
-        return _load;
-    }
-
-    /**
-     * @return the pet's hunger limit.
-     */
-    public int getHungryLimit() {
-        return _hungryLimit;
-    }
-
-    /**
-     * @return {@code true} if pet synchronizes it's level with his master's
-     */
-    public boolean isSynchLevel() {
-        return _syncLevel;
-    }
-
-    /**
-     * @return the pet's minimum level.
-     */
-    public int getMinLevel() {
-        return _minLevel;
-    }
-
-    /**
-     * @return the pet's maximum level.
-     */
-    public int getMaxLevel() {
-        return _maxLevel;
-    }
-
-    /**
-     * @return the pet's food list.
-     */
-    public Set<Integer> getFood() {
-        return _food;
+        return levelStats.get(petLevel);
     }
 
     /**
      * @param foodId the pet's food Id to add.
      */
     public void addFood(Integer foodId) {
-        _food.add(foodId);
-    }
-
-    /**
-     * @param load the weight load to set.
-     */
-    public void setLoad(int load) {
-        _load = load;
-    }
-
-    /**
-     * @param limit the hunger limit to set.
-     */
-    public void setHungryLimit(int limit) {
-        _hungryLimit = limit;
+        food.add(foodId);
     }
 
     /**
      * @param value synchronizes level with master or not.
      */
     public void setSyncLevel(boolean value) {
-        _syncLevel = value;
+        synchLevel = value;
     }
 
     // SKILS
@@ -166,7 +117,7 @@ public class PetData {
      * @param petLvl the pet's level when this skill is available.
      */
     public void addNewSkill(int skillId, int skillLevel, int petLvl) {
-        _skills.add(new PetSkillLearn(skillId, skillLevel, petLvl));
+        availableSkills.add(new PetSkillLearn(skillId, skillLevel, petLvl));
     }
 
     /**
@@ -177,7 +128,7 @@ public class PetData {
     public int getAvailableLevel(int skillId, int petLvl) {
         int lvl = 0;
         boolean found = false;
-        for (PetSkillLearn temp : _skills) {
+        for (PetSkillLearn temp : availableSkills) {
             if (temp.getSkillId() != skillId) {
                 continue;
             }
@@ -211,15 +162,9 @@ public class PetData {
         return lvl;
     }
 
-    /**
-     * @return the list with the pet's skill data.
-     */
-    public List<PetSkillLearn> getAvailableSkills() {
-        return _skills;
-    }
-
     public static class PetSkillLearn extends SkillHolder {
-        private final int _minLevel;
+        @Getter
+        private final int minLevel;
 
         /**
          * @param id the skill Id.
@@ -228,14 +173,7 @@ public class PetData {
          */
         public PetSkillLearn(int id, int lvl, int minLevel) {
             super(id, lvl);
-            _minLevel = minLevel;
-        }
-
-        /**
-         * @return the minimum level for the pet to get the skill.
-         */
-        public int getMinLevel() {
-            return _minLevel;
+            this.minLevel = minLevel;
         }
     }
 }

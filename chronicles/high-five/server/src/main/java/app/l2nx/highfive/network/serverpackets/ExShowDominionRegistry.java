@@ -34,53 +34,53 @@ import java.util.List;
 public class ExShowDominionRegistry extends ServerPacket {
     private static final int MINID = 80;
 
-    private final int _castleId;
-    private int _clanReq = 0;
-    private int _mercReq = 0;
-    private boolean _isMercRegistered = false;
-    private boolean _isClanRegistered = false;
-    private int _warTime = (int) (System.currentTimeMillis() / 1000);
-    private final int _currentTime = (int) (System.currentTimeMillis() / 1000);
+    private final int castleId;
+    private int clanReq = 0;
+    private int mercReq = 0;
+    private boolean mercRegistered = false;
+    private boolean clanRegistered = false;
+    private int warTime = (int) (System.currentTimeMillis() / 1000);
+    private final int currentTime = (int) (System.currentTimeMillis() / 1000);
 
     public ExShowDominionRegistry(int castleId, Player player) {
-        _castleId = castleId;
+        this.castleId = castleId;
         if (TerritoryWarManager.getInstance().getRegisteredClans(castleId) != null) {
-            _clanReq = TerritoryWarManager.getInstance()
+            clanReq = TerritoryWarManager.getInstance()
                     .getRegisteredClans(castleId)
                     .size();
 
             final Clan clan = player.getClan();
             if (clan != null) {
-                _isClanRegistered = (TerritoryWarManager.getInstance()
+                clanRegistered = (TerritoryWarManager.getInstance()
                         .getRegisteredClans(castleId)
                         .contains(clan));
             }
         }
 
         if (TerritoryWarManager.getInstance().getRegisteredMercenaries(castleId) != null) {
-            _mercReq = TerritoryWarManager.getInstance()
+            mercReq = TerritoryWarManager.getInstance()
                     .getRegisteredMercenaries(castleId)
                     .size();
-            _isMercRegistered = (TerritoryWarManager.getInstance()
+            mercRegistered = (TerritoryWarManager.getInstance()
                     .getRegisteredMercenaries(castleId)
                     .contains(player.getObjectId()));
         }
 
-        _warTime = (int) (TerritoryWarManager.getInstance().getTWStartTimeInMillis() / 1000);
+        warTime = (int) (TerritoryWarManager.getInstance().getTWStartTimeInMillis() / 1000);
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_SHOW_DOMINION_REGISTRY.writeId(this, buffer);
-        buffer.writeInt(MINID + _castleId); // Current Territory Id
-        if (TerritoryWarManager.getInstance().getTerritory(_castleId) == null) {
+        buffer.writeInt(MINID + castleId); // Current Territory Id
+        if (TerritoryWarManager.getInstance().getTerritory(castleId) == null) {
             // something is wrong
             buffer.writeString("No Owner"); // Owners Clan
             buffer.writeString("No Owner"); // Owner Clan Leader
             buffer.writeString("No Ally"); // Owner Alliance
         } else {
             final Clan clan =
-                    TerritoryWarManager.getInstance().getTerritory(_castleId).getOwnerClan();
+                    TerritoryWarManager.getInstance().getTerritory(castleId).getOwnerClan();
             if (clan == null) {
                 // something is wrong
                 buffer.writeString("No Owner"); // Owners Clan
@@ -93,12 +93,12 @@ public class ExShowDominionRegistry extends ServerPacket {
             }
         }
 
-        buffer.writeInt(_clanReq); // Clan Request
-        buffer.writeInt(_mercReq); // Merc Request
-        buffer.writeInt(_warTime); // War Time
-        buffer.writeInt(_currentTime); // Current Time
-        buffer.writeInt(_isClanRegistered); // is Cancel clan registration
-        buffer.writeInt(_isMercRegistered); // is Cancel mercenaries registration
+        buffer.writeInt(clanReq); // Clan Request
+        buffer.writeInt(mercReq); // Merc Request
+        buffer.writeInt(warTime); // War Time
+        buffer.writeInt(currentTime); // Current Time
+        buffer.writeInt(clanRegistered); // is Cancel clan registration
+        buffer.writeInt(mercRegistered); // is Cancel mercenaries registration
         buffer.writeInt(1); // unknown
         final List<Territory> territoryList = TerritoryWarManager.getInstance().getAllTerritories();
         buffer.writeInt(territoryList.size()); // Territory Count

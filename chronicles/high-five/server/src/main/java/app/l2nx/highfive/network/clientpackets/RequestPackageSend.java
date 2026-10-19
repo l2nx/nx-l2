@@ -30,46 +30,47 @@ import app.l2nx.highfive.entity.itemcontainer.Inventory;
 import app.l2nx.highfive.entity.itemcontainer.ItemContainer;
 import app.l2nx.highfive.entity.itemcontainer.PlayerFreight;
 import app.l2nx.highfive.managers.PunishmentManager;
-import app.l2nx.highfive.network.PacketLogger;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.serverpackets.InventoryUpdate;
 import app.l2nx.highfive.network.serverpackets.StatusUpdate;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author -Wooden-, UnAfraid, mrTJO
  */
+@Slf4j
 public class RequestPackageSend extends ClientPacket {
     private static final int BATCH_LENGTH = 12; // length of the one item
 
-    private ItemHolder[] _items = null;
-    private int _objectId;
+    private ItemHolder[] items = null;
+    private int objectId;
 
     @Override
     protected void readImpl() {
-        _objectId = readInt();
+        objectId = readInt();
 
         final int count = readInt();
         if ((count <= 0) || (count > PlayerConfig.MAX_ITEM_IN_PACKET) || ((count * BATCH_LENGTH) != remaining())) {
             return;
         }
 
-        _items = new ItemHolder[count];
+        items = new ItemHolder[count];
         for (int i = 0; i < count; i++) {
             final int objId = readInt();
             final long cnt = readLong();
             if ((objId < 1) || (cnt < 0)) {
-                _items = null;
+                items = null;
                 return;
             }
 
-            _items[i] = new ItemHolder(objId, cnt);
+            items[i] = new ItemHolder(objId, cnt);
         }
     }
 
     @Override
     protected void runImpl() {
         final Player player = getPlayer();
-        if ((_items == null) || (player == null) || !player.getAccountChars().containsKey(_objectId)) {
+        if ((items == null) || (player == null) || !player.getAccountChars().containsKey(objectId)) {
             return;
         }
 
@@ -100,17 +101,16 @@ public class RequestPackageSend extends ClientPacket {
         }
 
         // Freight price from config per item slot.
-        final int fee = _items.length * PlayerConfig.ALT_FREIGHT_PRICE;
+        final int fee = items.length * PlayerConfig.ALT_FREIGHT_PRICE;
         long currentAdena = player.getAdena();
         int slots = 0;
 
-        final ItemContainer warehouse = new PlayerFreight(_objectId);
-        for (ItemHolder i : _items) {
+        final ItemContainer warehouse = new PlayerFreight(objectId);
+        for (ItemHolder i : items) {
             // Check validity of requested item.
             final Item item = player.checkItemManipulation(i.getId(), i.getCount(), "freight");
             if (item == null) {
-                PacketLogger.warning(
-                        "Error depositing a warehouse object for char " + player.getName() + " (validity check)");
+                log.warn("Error depositing a warehouse object for char {} (validity check)", player.getName());
                 warehouse.deleteMe();
                 return;
             } else if (!item.isFreightable()) {
@@ -144,12 +144,11 @@ public class RequestPackageSend extends ClientPacket {
 
         // Proceed to the transfer.
         final InventoryUpdate playerIU = new InventoryUpdate();
-        for (ItemHolder i : _items) {
+        for (ItemHolder i : items) {
             // Check validity of requested item.
             final Item oldItem = player.checkItemManipulation(i.getId(), i.getCount(), "deposit");
             if (oldItem == null) {
-                PacketLogger.warning(
-                        "Error depositing a warehouse object for char " + player.getName() + " (olditem == null)");
+                log.warn("Error depositing a warehouse object for char {} (olditem == null)", player.getName());
                 warehouse.deleteMe();
                 return;
             }
@@ -157,8 +156,7 @@ public class RequestPackageSend extends ClientPacket {
             final Item newItem = player.getInventory()
                     .transferItem(ItemProcessType.TRANSFER, i.getId(), i.getCount(), warehouse, player, null);
             if (newItem == null) {
-                PacketLogger.warning(
-                        "Error depositing a warehouse object for char " + player.getName() + " (newitem == null)");
+                log.warn("Error depositing a warehouse object for char {} (newitem == null)", player.getName());
                 continue;
             }
 

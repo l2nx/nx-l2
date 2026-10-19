@@ -25,14 +25,14 @@ package app.l2nx.highfive.config.custom;
 import app.l2nx.highfive.config.ConfigReader;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * This class loads all the custom premium system related configurations.
  * @author Mobius
  */
+@Slf4j
 public class PremiumSystemConfig {
-    private static final Logger LOGGER = Logger.getLogger(PremiumSystemConfig.class.getName());
 
     // File
     private static final String PREMIUM_SYSTEM_CONFIG_FILE = "./config/Custom/PremiumSystem.ini";
@@ -109,18 +109,18 @@ public class PremiumSystemConfig {
             for (String item : premiumDropChanceMultiplier) {
                 final String[] itemSplit = item.split(",");
                 if (itemSplit.length != 2) {
-                    LOGGER.warning(
-                            "PremiumSystemConfig.load(): invalid config property -> PremiumRateDropChanceByItemId \""
-                                    + item + "\"");
+                    log.warn(
+                            "PremiumSystemConfig.load(): invalid config property -> PremiumRateDropChanceByItemId \"{}\"",
+                            item);
                 } else {
                     try {
                         PREMIUM_RATE_DROP_CHANCE_BY_ID.put(
                                 Integer.parseInt(itemSplit[0]), Float.parseFloat(itemSplit[1]));
                     } catch (NumberFormatException nfe) {
                         if (!item.isEmpty()) {
-                            LOGGER.warning(
-                                    "PremiumSystemConfig.load(): invalid config property -> PremiumRateDropChanceByItemId \""
-                                            + item + "\"");
+                            log.warn(
+                                    "PremiumSystemConfig.load(): invalid config property -> PremiumRateDropChanceByItemId \"{}\"",
+                                    item);
                         }
                     }
                 }
@@ -133,18 +133,18 @@ public class PremiumSystemConfig {
             for (String item : premiumDropAmountMultiplier) {
                 final String[] itemSplit = item.split(",");
                 if (itemSplit.length != 2) {
-                    LOGGER.warning(
-                            "PremiumSystemConfig.load(): invalid config property -> PremiumRateDropAmountByItemId \""
-                                    + item + "\"");
+                    log.warn(
+                            "PremiumSystemConfig.load(): invalid config property -> PremiumRateDropAmountByItemId \"{}\"",
+                            item);
                 } else {
                     try {
                         PREMIUM_RATE_DROP_AMOUNT_BY_ID.put(
                                 Integer.parseInt(itemSplit[0]), Float.parseFloat(itemSplit[1]));
                     } catch (NumberFormatException nfe) {
                         if (!item.isEmpty()) {
-                            LOGGER.warning(
-                                    "PremiumSystemConfig.load(): invalid config property -> PremiumRateDropAmountByItemId \""
-                                            + item + "\"");
+                            log.warn(
+                                    "PremiumSystemConfig.load(): invalid config property -> PremiumRateDropAmountByItemId \"{}\"",
+                                    item);
                         }
                     }
                 }

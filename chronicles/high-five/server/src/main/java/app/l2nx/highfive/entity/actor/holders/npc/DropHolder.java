@@ -23,42 +23,32 @@
 package app.l2nx.highfive.entity.actor.holders.npc;
 
 import app.l2nx.highfive.entity.actor.enums.npc.DropType;
+import lombok.Getter;
 
 /**
  * @author Mobius
  */
 public class DropHolder {
-    private final DropType _dropType;
-    private final int _itemId;
-    private final long _min;
-    private final long _max;
-    private final double _chance;
+    @Getter
+    private final DropType dropType;
+
+    @Getter
+    private final int itemId;
+
+    @Getter
+    private final long min;
+
+    @Getter
+    private final long max;
+
+    @Getter
+    private final double chance;
 
     public DropHolder(DropType dropType, int itemId, long min, long max, double chance) {
-        _dropType = dropType;
-        _itemId = itemId;
-        _min = min;
-        _max = max;
-        _chance = chance;
-    }
-
-    public DropType getDropType() {
-        return _dropType;
-    }
-
-    public int getItemId() {
-        return _itemId;
-    }
-
-    public long getMin() {
-        return _min;
-    }
-
-    public long getMax() {
-        return _max;
-    }
-
-    public double getChance() {
-        return _chance;
+        this.dropType = dropType;
+        this.itemId = itemId;
+        this.min = min;
+        this.max = max;
+        this.chance = chance;
     }
 }

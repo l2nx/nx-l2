@@ -85,7 +85,6 @@ import app.l2nx.highfive.mechanics.variables.AccountVariables;
 import app.l2nx.highfive.network.ConnectionState;
 import app.l2nx.highfive.network.Disconnection;
 import app.l2nx.highfive.network.GameClient;
-import app.l2nx.highfive.network.PacketLogger;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.enums.ChatType;
 import app.l2nx.highfive.network.holders.ClientHardwareInfoHolder;
@@ -121,6 +120,7 @@ import app.l2nx.highfive.taskmanagers.GameTimeTaskManager;
 import app.l2nx.highfive.threads.ThreadPool;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Enter World Packet Handler
@@ -131,10 +131,11 @@ import java.util.concurrent.ConcurrentHashMap;
  * packet format rev87 bddddbdcccccccccccccccccccc
  * <p>
  */
+@Slf4j
 public class EnterWorld extends ClientPacket {
     private static final Map<String, ClientHardwareInfoHolder> TRACE_HWINFO = new ConcurrentHashMap<>();
 
-    private final int[][] _tracert = new int[5][4];
+    private final int[][] tracert = new int[5][4];
 
     @Override
     protected void readImpl() {
@@ -147,7 +148,7 @@ public class EnterWorld extends ClientPacket {
         readInt(); // Unknown Value
         for (int i = 0; i < 5; i++) {
             for (int o = 0; o < 4; o++) {
-                _tracert[i][o] = readUnsignedByte();
+                tracert[i][o] = readUnsignedByte();
             }
         }
     }
@@ -157,7 +158,7 @@ public class EnterWorld extends ClientPacket {
         final GameClient client = getClient();
         final Player player = client.getPlayer();
         if (player == null) {
-            PacketLogger.warning("EnterWorld failed! player returned 'null'.");
+            log.warn("EnterWorld failed! player returned 'null'.");
             Disconnection.of(client).storeAndDeleteWith(LeaveWorld.STATIC_PACKET);
             return;
         }
@@ -166,11 +167,11 @@ public class EnterWorld extends ClientPacket {
 
         final String[] adress = new String[5];
         for (int i = 0; i < 5; i++) {
-            adress[i] = _tracert[i][0] + "." + _tracert[i][1] + "." + _tracert[i][2] + "." + _tracert[i][3];
+            adress[i] = tracert[i][0] + "." + tracert[i][1] + "." + tracert[i][2] + "." + tracert[i][3];
         }
 
         LoginServerThread.getInstance().sendClientTracert(player.getAccountName(), adress);
-        client.setClientTracert(_tracert);
+        client.setClientTracert(tracert);
 
         player.sendPacket(new UserInfo(player));
 
@@ -559,8 +560,7 @@ public class EnterWorld extends ClientPacket {
                                         && (item.getEnchantLevel()
                                                 > EnchantItemGroupsData.getInstance()
                                                         .getMaxArmorEnchant())))) {
-                    PacketLogger.info("Over-enchanted (+" + item.getEnchantLevel() + ") " + item
-                            + " has been removed from " + player);
+                    log.info("Over-enchanted (+{}) {} has been removed from {}", item.getEnchantLevel(), item, player);
                     player.getInventory().destroyItem(ItemProcessType.DESTROY, item, player, null);
                     punish = true;
                 }
@@ -634,7 +634,7 @@ public class EnterWorld extends ClientPacket {
                     () -> {
                         // Generate trace string.
                         final StringBuilder sb = new StringBuilder();
-                        for (int[] i : _tracert) {
+                        for (int[] i : tracert) {
                             for (int j : i) {
                                 sb.append(j);
                                 sb.append('.');
@@ -669,8 +669,10 @@ public class EnterWorld extends ClientPacket {
                                         client.setHardwareInfo(hwInfo);
                                     } catch (Exception e) {
                                         // Malformed or legacy stored hardware info; treat as missing.
-                                        PacketLogger.warning("Could not parse stored hardware info for account "
-                                                + player.getAccountName() + ": " + e.getMessage());
+                                        log.warn(
+                                                "Could not parse stored hardware info for account {}: {}",
+                                                player.getAccountName(),
+                                                e.getMessage());
                                     }
                                 }
                             }

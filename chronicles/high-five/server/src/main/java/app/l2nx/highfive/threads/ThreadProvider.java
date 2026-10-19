@@ -31,10 +31,10 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @since October 18th 2022
  */
 public class ThreadProvider implements ThreadFactory {
-    private final AtomicInteger _id = new AtomicInteger();
-    private final String _prefix;
-    private final int _priority;
-    private final boolean _daemon;
+    private final AtomicInteger id = new AtomicInteger();
+    private final String prefix;
+    private final int priority;
+    private final boolean daemon;
 
     /**
      * Creates a new ThreadProvider with the specified prefix, normal thread priority, and non-daemon threads.
@@ -69,9 +69,9 @@ public class ThreadProvider implements ThreadFactory {
      * @param daemon whether the threads should be daemon threads
      */
     public ThreadProvider(String prefix, ThreadPriority priority, boolean daemon) {
-        _prefix = prefix + " ";
-        _priority = priority.getId();
-        _daemon = daemon;
+        this.prefix = prefix + " ";
+        this.priority = priority.getId();
+        this.daemon = daemon;
     }
 
     /**
@@ -81,9 +81,9 @@ public class ThreadProvider implements ThreadFactory {
      */
     @Override
     public Thread newThread(Runnable runnable) {
-        final Thread thread = new Thread(runnable, _prefix + _id.incrementAndGet());
-        thread.setPriority(_priority);
-        thread.setDaemon(_daemon);
+        final Thread thread = new Thread(runnable, prefix + id.incrementAndGet());
+        thread.setPriority(priority);
+        thread.setDaemon(daemon);
         return thread;
     }
 }

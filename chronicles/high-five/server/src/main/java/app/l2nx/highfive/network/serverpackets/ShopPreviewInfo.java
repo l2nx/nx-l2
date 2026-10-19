@@ -29,10 +29,10 @@ import java.util.Map;
  ** @author Gnacik
  */
 public class ShopPreviewInfo extends ServerPacket {
-    private final Map<Integer, Integer> _itemlist;
+    private final Map<Integer, Integer> itemlist;
 
     public ShopPreviewInfo(Map<Integer, Integer> itemlist) {
-        _itemlist = itemlist;
+        this.itemlist = itemlist;
     }
 
     @Override
@@ -63,6 +63,6 @@ public class ShopPreviewInfo extends ServerPacket {
     }
 
     private int getFromList(int key) {
-        return (_itemlist.getOrDefault(key, 0));
+        return (itemlist.getOrDefault(key, 0));
     }
 }

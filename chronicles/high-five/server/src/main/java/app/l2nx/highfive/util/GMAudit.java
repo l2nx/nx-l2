@@ -27,14 +27,14 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Audits Game Master's actions.
  */
 public class GMAudit {
-    private static final Logger LOGGER = Logger.getLogger("gmaudit");
+    private static final Logger GMAUDIT_LOG = LoggerFactory.getLogger("gmaudit");
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("dd/MM/yyyy H:mm:ss");
 
     static {
@@ -71,7 +71,7 @@ public class GMAudit {
             writer.write(
                     timestamp + ">" + gmName + ">" + action + ">" + target + ">" + params + System.lineSeparator());
         } catch (IOException e) {
-            LOGGER.log(Level.SEVERE, "Could not save GMAudit log for GM " + gmName + ":", e);
+            GMAUDIT_LOG.error("Could not save GMAudit log for GM {}:", gmName, e);
         }
     }
 

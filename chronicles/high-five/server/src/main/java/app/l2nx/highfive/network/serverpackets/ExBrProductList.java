@@ -33,14 +33,14 @@ import java.util.Collection;
  * @author Mobius
  */
 public class ExBrProductList extends ServerPacket {
-    private final Collection<PrimeShopProductHolder> _itemList =
+    private final Collection<PrimeShopProductHolder> itemList =
             PrimeShopData.getInstance().getAllItems();
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_BR_PRODUCT_LIST.writeId(this, buffer);
-        buffer.writeInt(_itemList.size());
-        for (PrimeShopProductHolder product : _itemList) {
+        buffer.writeInt(itemList.size());
+        for (PrimeShopProductHolder product : itemList) {
             final int category = product.getCategory();
             buffer.writeInt(product.getProductId()); // product id
             buffer.writeShort(category); // category id

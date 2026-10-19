@@ -29,29 +29,29 @@ import app.l2nx.network.buffer.WriteBuffer;
  * @author Luca Baldi
  */
 public class EtcStatusUpdate extends ServerPacket {
-    private final Player _player;
+    private final Player player;
 
     public EtcStatusUpdate(Player player) {
-        _player = player;
+        this.player = player;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.ETC_STATUS_UPDATE.writeId(this, buffer);
-        buffer.writeInt(_player.getCharges()); // 1-7 increase force, level
-        buffer.writeInt(_player.getWeightPenalty()); // 1-4 weight penalty, level (1=50%, 2=66.6%, 3=80%, 4=100%)
+        buffer.writeInt(player.getCharges()); // 1-7 increase force, level
+        buffer.writeInt(player.getWeightPenalty()); // 1-4 weight penalty, level (1=50%, 2=66.6%, 3=80%, 4=100%)
         buffer.writeInt(
-                _player.getMessageRefusal() || _player.isChatBanned() || _player.isSilenceMode()); // 1 = block all chat
-        buffer.writeInt(_player.isInsideZone(ZoneId.DANGER_AREA)); // 1 = danger area
-        buffer.writeInt(_player.getExpertiseWeaponPenalty()); // Weapon Grade Penalty [1-4]
-        buffer.writeInt(_player.getExpertiseArmorPenalty()); // Armor Grade Penalty [1-4]
+                player.getMessageRefusal() || player.isChatBanned() || player.isSilenceMode()); // 1 = block all chat
+        buffer.writeInt(player.isInsideZone(ZoneId.DANGER_AREA)); // 1 = danger area
+        buffer.writeInt(player.getExpertiseWeaponPenalty()); // Weapon Grade Penalty [1-4]
+        buffer.writeInt(player.getExpertiseArmorPenalty()); // Armor Grade Penalty [1-4]
         buffer.writeInt(
-                _player.hasCharmOfCourage()); // 1 = charm of courage (allows resurrection on the same spot upon death
+                player.hasCharmOfCourage()); // 1 = charm of courage (allows resurrection on the same spot upon death
         // on the
         // siege battlefield)
         buffer.writeInt(
-                _player.getDeathPenaltyBuffLevel()); // 1-15 death penalty, level (combat ability decreased due to
+                player.getDeathPenaltyBuffLevel()); // 1-15 death penalty, level (combat ability decreased due to
         // death)
-        buffer.writeInt(_player.getChargedSouls());
+        buffer.writeInt(player.getChargedSouls());
     }
 }

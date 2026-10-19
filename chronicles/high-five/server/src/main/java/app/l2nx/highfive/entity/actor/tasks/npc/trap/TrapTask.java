@@ -23,54 +23,54 @@ import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.instance.Trap;
 import app.l2nx.highfive.network.serverpackets.SocialAction;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Trap task.
  * @author Zoey76
  */
+@Slf4j
 public class TrapTask implements Runnable {
-    private static final Logger LOGGER = Logger.getLogger(TrapTask.class.getName());
     private static final int TICK = 1000; // 1s
-    private final Trap _trap;
+    private final Trap trap;
 
     public TrapTask(Trap trap) {
-        _trap = trap;
+        this.trap = trap;
     }
 
     @Override
     public void run() {
         try {
-            if (!_trap.isTriggered()) {
-                if (_trap.hasLifeTime()) {
-                    _trap.setRemainingTime(_trap.getRemainingTime() - TICK);
-                    if (_trap.getRemainingTime() < (_trap.getLifeTime() - 15000)) {
-                        _trap.broadcastPacket(new SocialAction(_trap.getObjectId(), 2));
+            if (!trap.isTriggered()) {
+                if (trap.hasLifeTime()) {
+                    trap.setRemainingTime(trap.getRemainingTime() - TICK);
+                    if (trap.getRemainingTime() < (trap.getLifeTime() - 15000)) {
+                        trap.broadcastPacket(new SocialAction(trap.getObjectId(), 2));
                     }
 
-                    if (_trap.getRemainingTime() <= 0) {
-                        switch (_trap.getSkill().getTargetType()) {
+                    if (trap.getRemainingTime() <= 0) {
+                        switch (trap.getSkill().getTargetType()) {
                             case AURA:
                             case FRONT_AURA:
                             case BEHIND_AURA: {
-                                _trap.triggerTrap(_trap);
+                                trap.triggerTrap(trap);
                                 break;
                             }
                             default: {
-                                _trap.unSummon();
+                                trap.unSummon();
                             }
                         }
                         return;
                     }
                 }
 
-                World.forFirstVisibleObject(_trap, Creature.class, target -> _trap.checkTarget(target), target -> {
-                    _trap.triggerTrap(target);
+                World.forFirstVisibleObject(trap, Creature.class, target -> trap.checkTarget(target), target -> {
+                    trap.triggerTrap(target);
                 });
             }
         } catch (Exception e) {
-            LOGGER.severe(TrapTask.class.getSimpleName() + ": " + e.getMessage());
-            _trap.unSummon();
+            log.error("{}", e.getMessage());
+            trap.unSummon();
         }
     }
 }

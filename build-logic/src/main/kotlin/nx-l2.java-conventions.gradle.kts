@@ -30,10 +30,18 @@ tasks.withType<JavaCompile>().configureEach {
 
 dependencies {
     implementation(platform(libs.findLibrary("spring-boot-dependencies").get()))
+    implementation(libs.findLibrary("slf4j-api").get())
     testImplementation(platform(libs.findLibrary("junit-bom").get()))
     testImplementation(libs.findLibrary("junit-jupiter").get())
     testImplementation(libs.findLibrary("assertj-core").get())
     testRuntimeOnly(libs.findLibrary("junit-platform-launcher").get())
+}
+
+// Lombok is compile-time only and processes every source set, including testFixtures and jmh added by other plugins.
+val lombok = libs.findLibrary("lombok").get()
+sourceSets.configureEach {
+    dependencies.add(compileOnlyConfigurationName, lombok)
+    dependencies.add(annotationProcessorConfigurationName, lombok)
 }
 
 tasks.withType<Test>().configureEach {

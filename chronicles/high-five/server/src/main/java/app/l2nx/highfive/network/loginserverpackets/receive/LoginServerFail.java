@@ -23,6 +23,7 @@
 package app.l2nx.highfive.network.loginserverpackets.receive;
 
 import app.l2nx.network.packet.SimpleReadablePacket;
+import lombok.Getter;
 
 public class LoginServerFail extends SimpleReadablePacket {
     private static final String[] REASONS = {
@@ -35,20 +36,18 @@ public class LoginServerFail extends SimpleReadablePacket {
         "Not authed",
         "Reason: already logged in"
     };
-    private final int _reason;
+
+    @Getter
+    private final int reason;
 
     public LoginServerFail(byte[] decrypt) {
         super(decrypt);
         readByte(); // Packet id, it is already processed.
 
-        _reason = readByte();
+        reason = readByte();
     }
 
     public String getReasonString() {
-        return REASONS[_reason];
-    }
-
-    public int getReason() {
-        return _reason;
+        return REASONS[reason];
     }
 }

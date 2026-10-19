@@ -28,18 +28,18 @@ import app.l2nx.network.buffer.WriteBuffer;
  * @author JIV
  */
 public class ExSetPartyLooting extends ServerPacket {
-    private final int _result;
-    private final PartyDistributionType _partyDistributionType;
+    private final int result;
+    private final PartyDistributionType partyDistributionType;
 
     public ExSetPartyLooting(int result, PartyDistributionType partyDistributionType) {
-        _result = result;
-        _partyDistributionType = partyDistributionType;
+        this.result = result;
+        this.partyDistributionType = partyDistributionType;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_SET_PARTY_LOOTING.writeId(this, buffer);
-        buffer.writeInt(_result);
-        buffer.writeInt(_partyDistributionType.getId());
+        buffer.writeInt(result);
+        buffer.writeInt(partyDistributionType.getId());
     }
 }

@@ -23,39 +23,14 @@ import app.l2nx.highfive.entity.WorldObject;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.mechanics.events.EventType;
 import app.l2nx.highfive.mechanics.events.holders.IBaseEvent;
+import lombok.Builder;
 
 /**
  * @author UnAfraid
  */
-public class OnNpcEventReceived implements IBaseEvent {
-    private final String _eventName;
-    private final Npc _sender;
-    private final Npc _receiver;
-    private final WorldObject _reference;
-
-    public OnNpcEventReceived(String eventName, Npc sender, Npc receiver, WorldObject reference) {
-        _eventName = eventName;
-        _sender = sender;
-        _receiver = receiver;
-        _reference = reference;
-    }
-
-    public String getEventName() {
-        return _eventName;
-    }
-
-    public Npc getSender() {
-        return _sender;
-    }
-
-    public Npc getReceiver() {
-        return _receiver;
-    }
-
-    public WorldObject getReference() {
-        return _reference;
-    }
-
+@Builder(toBuilder = true)
+public record OnNpcEventReceived(String eventName, Npc sender, Npc receiver, WorldObject reference)
+        implements IBaseEvent {
     @Override
     public EventType getType() {
         return EventType.ON_NPC_EVENT_RECEIVED;

@@ -31,14 +31,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class HennaInfo extends ServerPacket {
-    private final Player _player;
-    private final List<Henna> _hennas = new ArrayList<>();
+    private final Player player;
+    private final List<Henna> hennas = new ArrayList<>();
 
     public HennaInfo(Player player) {
-        _player = player;
-        for (Henna henna : _player.getHennaList()) {
+        this.player = player;
+        for (Henna henna : this.player.getHennaList()) {
             if (henna != null) {
-                _hennas.add(henna);
+                hennas.add(henna);
             }
         }
     }
@@ -46,15 +46,15 @@ public class HennaInfo extends ServerPacket {
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.HENNA_INFO.writeId(this, buffer);
-        buffer.writeByte(_player.getHennaStatINT()); // equip INT
-        buffer.writeByte(_player.getHennaStatSTR()); // equip STR
-        buffer.writeByte(_player.getHennaStatCON()); // equip CON
-        buffer.writeByte(_player.getHennaStatMEN()); // equip MEN
-        buffer.writeByte(_player.getHennaStatDEX()); // equip DEX
-        buffer.writeByte(_player.getHennaStatWIT()); // equip WIT
+        buffer.writeByte(player.getHennaStatINT()); // equip INT
+        buffer.writeByte(player.getHennaStatSTR()); // equip STR
+        buffer.writeByte(player.getHennaStatCON()); // equip CON
+        buffer.writeByte(player.getHennaStatMEN()); // equip MEN
+        buffer.writeByte(player.getHennaStatDEX()); // equip DEX
+        buffer.writeByte(player.getHennaStatWIT()); // equip WIT
         buffer.writeInt(3); // Slots
-        buffer.writeInt(_hennas.size()); // Size
-        for (Henna henna : _hennas) {
+        buffer.writeInt(hennas.size()); // Size
+        for (Henna henna : hennas) {
             buffer.writeInt(henna.getDyeId());
             buffer.writeInt(1);
         }

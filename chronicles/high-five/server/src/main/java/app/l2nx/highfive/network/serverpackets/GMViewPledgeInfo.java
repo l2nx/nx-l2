@@ -31,38 +31,38 @@ import app.l2nx.network.buffer.WriteBuffer;
 import java.util.Collection;
 
 public class GMViewPledgeInfo extends ServerPacket {
-    private final Clan _clan;
-    private final Player _player;
+    private final Clan clan;
+    private final Player player;
 
     public GMViewPledgeInfo(Clan clan, Player player) {
-        _clan = clan;
-        _player = player;
+        this.clan = clan;
+        this.player = player;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.GM_VIEW_PLEDGE_INFO.writeId(this, buffer);
-        buffer.writeString(_player.getName());
-        buffer.writeInt(_clan.getId());
+        buffer.writeString(player.getName());
+        buffer.writeInt(clan.getId());
         buffer.writeInt(0);
-        buffer.writeString(_clan.getName());
-        buffer.writeString(_clan.getLeaderName());
-        buffer.writeInt(_clan.getCrestId()); // -> no, it's no longer used (nuocnam) fix by game
-        buffer.writeInt(_clan.getLevel());
-        buffer.writeInt(_clan.getCastleId());
-        buffer.writeInt(_clan.getHideoutId());
-        buffer.writeInt(_clan.getFortId());
-        buffer.writeInt(_clan.getRank());
-        buffer.writeInt(_clan.getReputationScore());
+        buffer.writeString(clan.getName());
+        buffer.writeString(clan.getLeaderName());
+        buffer.writeInt(clan.getCrestId()); // -> no, it's no longer used (nuocnam) fix by game
+        buffer.writeInt(clan.getLevel());
+        buffer.writeInt(clan.getCastleId());
+        buffer.writeInt(clan.getHideoutId());
+        buffer.writeInt(clan.getFortId());
+        buffer.writeInt(clan.getRank());
+        buffer.writeInt(clan.getReputationScore());
         buffer.writeInt(0);
         buffer.writeInt(0);
-        buffer.writeInt(_clan.getAllyId()); // c2
-        buffer.writeString(_clan.getAllyName()); // c2
-        buffer.writeInt(_clan.getAllyCrestId()); // c2
-        buffer.writeInt(_clan.isAtWar()); // c3
+        buffer.writeInt(clan.getAllyId()); // c2
+        buffer.writeString(clan.getAllyName()); // c2
+        buffer.writeInt(clan.getAllyCrestId()); // c2
+        buffer.writeInt(clan.isAtWar()); // c3
         buffer.writeInt(0); // T3 Unknown
 
-        final Collection<ClanMember> members = _clan.getMembers();
+        final Collection<ClanMember> members = clan.getMembers();
         buffer.writeInt(members.size());
         for (ClanMember member : members) {
             if (member != null) {

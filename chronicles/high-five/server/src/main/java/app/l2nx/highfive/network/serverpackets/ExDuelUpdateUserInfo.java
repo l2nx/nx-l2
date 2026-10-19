@@ -28,24 +28,24 @@ import app.l2nx.network.buffer.WriteBuffer;
  * @author KenM
  */
 public class ExDuelUpdateUserInfo extends ServerPacket {
-    private final Player _player;
+    private final Player player;
 
     public ExDuelUpdateUserInfo(Player player) {
-        _player = player;
+        this.player = player;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_DUEL_UPDATE_USER_INFO.writeId(this, buffer);
-        buffer.writeString(_player.getName());
-        buffer.writeInt(_player.getObjectId());
-        buffer.writeInt(_player.getPlayerClass().getId());
-        buffer.writeInt(_player.getLevel());
-        buffer.writeInt((int) _player.getCurrentHp());
-        buffer.writeInt(_player.getMaxHp());
-        buffer.writeInt((int) _player.getCurrentMp());
-        buffer.writeInt(_player.getMaxMp());
-        buffer.writeInt((int) _player.getCurrentCp());
-        buffer.writeInt(_player.getMaxCp());
+        buffer.writeString(player.getName());
+        buffer.writeInt(player.getObjectId());
+        buffer.writeInt(player.getPlayerClass().getId());
+        buffer.writeInt(player.getLevel());
+        buffer.writeInt((int) player.getCurrentHp());
+        buffer.writeInt(player.getMaxHp());
+        buffer.writeInt((int) player.getCurrentMp());
+        buffer.writeInt(player.getMaxMp());
+        buffer.writeInt((int) player.getCurrentCp());
+        buffer.writeInt(player.getMaxCp());
     }
 }

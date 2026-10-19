@@ -33,27 +33,27 @@ import app.l2nx.highfive.network.serverpackets.ActionFailed;
 
 public class AttackRequest extends ClientPacket {
     // cddddc
-    private int _objectId;
+    private int objectId;
 
     @SuppressWarnings("unused")
-    private int _originX;
+    private int originX;
 
     @SuppressWarnings("unused")
-    private int _originY;
+    private int originY;
 
     @SuppressWarnings("unused")
-    private int _originZ;
+    private int originZ;
 
     @SuppressWarnings("unused")
-    private int _attackId;
+    private int attackId;
 
     @Override
     protected void readImpl() {
-        _objectId = readInt();
-        _originX = readInt();
-        _originY = readInt();
-        _originZ = readInt();
-        _attackId = readByte(); // 0 for simple click 1 for shift-click.
+        objectId = readInt();
+        originX = readInt();
+        originY = readInt();
+        originZ = readInt();
+        attackId = readByte(); // 0 for simple click 1 for shift-click.
     }
 
     @Override
@@ -89,10 +89,10 @@ public class AttackRequest extends ClientPacket {
 
         // Avoid using expensive operations if not needed.
         final WorldObject target;
-        if (player.getTargetId() == _objectId) {
+        if (player.getTargetId() == objectId) {
             target = player.getTarget();
         } else {
-            target = World.findObject(_objectId);
+            target = World.findObject(objectId);
         }
 
         if (target == null) {

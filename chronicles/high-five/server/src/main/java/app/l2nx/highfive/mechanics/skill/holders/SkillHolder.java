@@ -21,42 +21,39 @@ package app.l2nx.highfive.mechanics.skill.holders;
 
 import app.l2nx.highfive.data.xml.SkillData;
 import app.l2nx.highfive.mechanics.skill.Skill;
+import lombok.Getter;
 
 /**
  * Simple class for storing skill id/level.
  * @author BiggBoss
  */
 public class SkillHolder {
-    private final int _skillId;
-    private final int _skillLevel;
-    private Skill _skill;
+    @Getter
+    private final int skillId;
+
+    @Getter
+    private final int skillLevel;
+
+    private Skill skill;
 
     public SkillHolder(int skillId, int skillLevel) {
-        _skillId = skillId;
-        _skillLevel = skillLevel;
-        _skill = null;
+        this.skillId = skillId;
+        this.skillLevel = skillLevel;
+        skill = null;
     }
 
     public SkillHolder(Skill skill) {
-        _skillId = skill.getId();
-        _skillLevel = skill.getLevel();
-        _skill = skill;
-    }
-
-    public int getSkillId() {
-        return _skillId;
-    }
-
-    public int getSkillLevel() {
-        return _skillLevel;
+        skillId = skill.getId();
+        skillLevel = skill.getLevel();
+        this.skill = skill;
     }
 
     public Skill getSkill() {
-        if (_skill == null) {
-            _skill = SkillData.getInstance().getSkill(_skillId, Math.max(_skillLevel, 1));
+        if (skill == null) {
+            skill = SkillData.getInstance().getSkill(skillId, Math.max(skillLevel, 1));
         }
 
-        return _skill;
+        return skill;
     }
 
     @Override
@@ -70,20 +67,20 @@ public class SkillHolder {
         }
 
         final SkillHolder holder = (SkillHolder) obj;
-        return (holder.getSkillId() == _skillId) && (holder.getSkillLevel() == _skillLevel);
+        return (holder.getSkillId() == skillId) && (holder.getSkillLevel() == skillLevel);
     }
 
     @Override
     public int hashCode() {
         final int prime = 31;
         int result = 1;
-        result = (prime * result) + _skillId;
-        result = (prime * result) + _skillLevel;
+        result = (prime * result) + skillId;
+        result = (prime * result) + skillLevel;
         return result;
     }
 
     @Override
     public String toString() {
-        return "[SkillId: " + _skillId + " Level: " + _skillLevel + "]";
+        return "[SkillId: " + skillId + " Level: " + skillLevel + "]";
     }
 }

@@ -28,21 +28,21 @@ import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.network.buffer.WriteBuffer;
 
 public class GetItem extends ServerPacket {
-    private final Item _item;
-    private final int _playerId;
+    private final Item item;
+    private final int playerId;
 
     public GetItem(Item item, int playerId) {
-        _item = item;
-        _playerId = playerId;
+        this.item = item;
+        this.playerId = playerId;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.GET_ITEM.writeId(this, buffer);
-        buffer.writeInt(_playerId);
-        buffer.writeInt(_item.getObjectId());
-        buffer.writeInt(_item.getX());
-        buffer.writeInt(_item.getY());
-        buffer.writeInt(_item.getZ());
+        buffer.writeInt(playerId);
+        buffer.writeInt(item.getObjectId());
+        buffer.writeInt(item.getX());
+        buffer.writeInt(item.getY());
+        buffer.writeInt(item.getZ());
     }
 }

@@ -31,23 +31,23 @@ import java.util.List;
  * @author godson
  */
 public class ExOlympiadSpelledInfo extends ServerPacket {
-    private final int _playerId;
-    private final List<BuffInfo> _effects = new ArrayList<>();
+    private final int playerId;
+    private final List<BuffInfo> effects = new ArrayList<>();
 
     public ExOlympiadSpelledInfo(Player player) {
-        _playerId = player.getObjectId();
+        playerId = player.getObjectId();
     }
 
     public void addSkill(BuffInfo info) {
-        _effects.add(info);
+        effects.add(info);
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_OLYMPIAD_SPELLED_INFO.writeId(this, buffer);
-        buffer.writeInt(_playerId);
-        buffer.writeInt(_effects.size());
-        for (BuffInfo info : _effects) {
+        buffer.writeInt(playerId);
+        buffer.writeInt(effects.size());
+        for (BuffInfo info : effects) {
             if ((info != null) && info.isInUse()) {
                 buffer.writeInt(info.getSkill().getDisplayId());
                 buffer.writeShort(info.getSkill().getDisplayLevel());

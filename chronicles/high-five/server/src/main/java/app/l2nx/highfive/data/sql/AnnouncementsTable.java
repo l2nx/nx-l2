@@ -32,24 +32,23 @@ import java.sql.Statement;
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ConcurrentSkipListMap;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Loads announcements from database.
  * @author UnAfraid
  */
+@Slf4j
 public class AnnouncementsTable {
-    private static final Logger LOGGER = Logger.getLogger(AnnouncementsTable.class.getName());
 
-    private final Map<Integer, IAnnouncement> _announcements = new ConcurrentSkipListMap<>();
+    private final Map<Integer, IAnnouncement> announcements = new ConcurrentSkipListMap<>();
 
     protected AnnouncementsTable() {
         load();
     }
 
     private void load() {
-        _announcements.clear();
+        announcements.clear();
         try (Connection con = DatabaseFactory.getConnection();
                 Statement st = con.createStatement();
                 ResultSet rset = st.executeQuery("SELECT * FROM announcements")) {
@@ -72,10 +71,10 @@ public class AnnouncementsTable {
                     }
                 }
 
-                _announcements.put(announce.getId(), announce);
+                announcements.put(announce.getId(), announce);
             }
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, getClass().getSimpleName() + ": Failed loading announcements:", e);
+            log.warn("Failed loading announcements:", e);
         }
     }
 
@@ -95,7 +94,7 @@ public class AnnouncementsTable {
      * @param type
      */
     private void sendAnnouncements(Player player, AnnouncementType type) {
-        for (IAnnouncement announce : _announcements.values()) {
+        for (IAnnouncement announce : announcements.values()) {
             if (announce.isValid() && (announce.getType() == type)) {
                 player.sendPacket(new CreatureSay(
                         null,
@@ -112,7 +111,7 @@ public class AnnouncementsTable {
      */
     public void addAnnouncement(IAnnouncement announce) {
         if (announce.storeMe()) {
-            _announcements.put(announce.getId(), announce);
+            announcements.put(announce.getId(), announce);
         }
     }
 
@@ -122,7 +121,7 @@ public class AnnouncementsTable {
      * @return {@code true} if announcement exists and was deleted successfully, {@code false} otherwise.
      */
     public boolean deleteAnnouncement(int id) {
-        final IAnnouncement announce = _announcements.remove(id);
+        final IAnnouncement announce = announcements.remove(id);
         return (announce != null) && announce.deleteMe();
     }
 
@@ -131,14 +130,14 @@ public class AnnouncementsTable {
      * @return {@link IAnnouncement} by id
      */
     public IAnnouncement getAnnounce(int id) {
-        return _announcements.get(id);
+        return announcements.get(id);
     }
 
     /**
      * @return {@link Collection} containing all announcements
      */
     public Collection<IAnnouncement> getAllAnnouncements() {
-        return _announcements.values();
+        return announcements.values();
     }
 
     /**

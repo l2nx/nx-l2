@@ -30,15 +30,15 @@ import app.l2nx.network.buffer.WriteBuffer;
  * @author Mobius
  */
 public class ExPVPMatchCCMyRecord extends ServerPacket {
-    private final int _points;
+    private final int points;
 
     public ExPVPMatchCCMyRecord(int points) {
-        _points = points;
+        this.points = points;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_PVP_MATCH_CC_MY_RECORD.writeId(this, buffer);
-        buffer.writeInt(_points);
+        buffer.writeInt(points);
     }
 }

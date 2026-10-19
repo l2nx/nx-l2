@@ -28,18 +28,18 @@ import app.l2nx.network.buffer.WriteBuffer;
  * @author chris_00
  */
 public class ExAskJoinMPCC extends ServerPacket {
-    private final String _requestorName;
+    private final String requestorName;
 
     /**
      * @param requestorName
      */
     public ExAskJoinMPCC(String requestorName) {
-        _requestorName = requestorName;
+        this.requestorName = requestorName;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_ASK_JOIN_MPCC.writeId(this, buffer);
-        buffer.writeString(_requestorName); // name of CCLeader
+        buffer.writeString(requestorName); // name of CCLeader
     }
 }

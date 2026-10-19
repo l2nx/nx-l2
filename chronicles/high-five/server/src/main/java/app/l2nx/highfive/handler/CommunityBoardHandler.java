@@ -26,18 +26,18 @@ import app.l2nx.highfive.util.HtmlUtil;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Community Board handler.
  * @author Zoey76
  */
+@Slf4j
 public class CommunityBoardHandler implements IHandler<IParseBoardHandler, String> {
-    private static final Logger LOG = Logger.getLogger(CommunityBoardHandler.class.getName());
     /** The registered handlers. */
-    private final Map<String, IParseBoardHandler> _datatable = new HashMap<>();
+    private final Map<String, IParseBoardHandler> datatable = new HashMap<>();
     /** The bypasses used by the players. */
-    private final Map<Integer, String> _bypasses = new ConcurrentHashMap<>();
+    private final Map<Integer, String> bypasses = new ConcurrentHashMap<>();
 
     protected CommunityBoardHandler() {
         // Prevent external initialization.
@@ -46,20 +46,20 @@ public class CommunityBoardHandler implements IHandler<IParseBoardHandler, Strin
     @Override
     public void registerHandler(IParseBoardHandler handler) {
         for (String cmd : handler.getCommandList()) {
-            _datatable.put(cmd.toLowerCase(), handler);
+            datatable.put(cmd.toLowerCase(), handler);
         }
     }
 
     @Override
     public synchronized void removeHandler(IParseBoardHandler handler) {
         for (String cmd : handler.getCommandList()) {
-            _datatable.remove(cmd.toLowerCase());
+            datatable.remove(cmd.toLowerCase());
         }
     }
 
     @Override
     public IParseBoardHandler getHandler(String cmd) {
-        for (IParseBoardHandler cb : _datatable.values()) {
+        for (IParseBoardHandler cb : datatable.values()) {
             for (String command : cb.getCommandList()) {
                 if (cmd.toLowerCase().startsWith(command.toLowerCase())) {
                     return cb;
@@ -72,7 +72,7 @@ public class CommunityBoardHandler implements IHandler<IParseBoardHandler, Strin
 
     @Override
     public int size() {
-        return _datatable.size();
+        return datatable.size();
     }
 
     /**
@@ -101,8 +101,7 @@ public class CommunityBoardHandler implements IHandler<IParseBoardHandler, Strin
 
         final IParseBoardHandler cb = getHandler(command);
         if (cb == null) {
-            LOG.warning(CommunityBoardHandler.class.getSimpleName() + ": Couldn't find parse handler for command "
-                    + command + "!");
+            log.warn("Couldn't find parse handler for command {}!", command);
             return;
         }
 
@@ -159,14 +158,12 @@ public class CommunityBoardHandler implements IHandler<IParseBoardHandler, Strin
 
         final IParseBoardHandler cb = getHandler(cmd);
         if (cb == null) {
-            LOG.warning(CommunityBoardHandler.class.getSimpleName() + ": Couldn't find write handler for command " + cmd
-                    + "!");
+            log.warn("Couldn't find write handler for command {}!", cmd);
             return;
         }
 
         if (!(cb instanceof IWriteBoardHandler)) {
-            LOG.warning(CommunityBoardHandler.class.getSimpleName() + ": "
-                    + cb.getClass().getSimpleName() + " doesn't implement write!");
+            log.warn("Doesn't implement write!");
             return;
         }
 
@@ -180,7 +177,7 @@ public class CommunityBoardHandler implements IHandler<IParseBoardHandler, Strin
      * @param bypass the bypass
      */
     public void addBypass(Player player, String title, String bypass) {
-        _bypasses.put(player.getObjectId(), title + "&" + bypass);
+        bypasses.put(player.getObjectId(), title + "&" + bypass);
     }
 
     /**
@@ -189,7 +186,7 @@ public class CommunityBoardHandler implements IHandler<IParseBoardHandler, Strin
      * @return the last bypass used
      */
     public String removeBypass(Player player) {
-        return _bypasses.remove(player.getObjectId());
+        return bypasses.remove(player.getObjectId());
     }
 
     /**

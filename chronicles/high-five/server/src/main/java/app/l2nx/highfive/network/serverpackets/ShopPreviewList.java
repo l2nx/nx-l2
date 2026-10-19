@@ -32,22 +32,22 @@ import app.l2nx.network.buffer.WriteBuffer;
 import java.util.Collection;
 
 public class ShopPreviewList extends ServerPacket {
-    private final int _listId;
-    private final Collection<Product> _list;
-    private final long _money;
-    private int _expertise;
+    private final int listId;
+    private final Collection<Product> list;
+    private final long money;
+    private int expertise;
 
     public ShopPreviewList(BuyListHolder list, long currentMoney, int expertiseIndex) {
-        _listId = list.getListId();
-        _list = list.getProducts();
-        _money = currentMoney;
-        _expertise = expertiseIndex;
+        listId = list.getListId();
+        this.list = list.getProducts();
+        money = currentMoney;
+        expertise = expertiseIndex;
     }
 
     public ShopPreviewList(Collection<Product> lst, int listId, long currentMoney) {
-        _listId = listId;
-        _list = lst;
-        _money = currentMoney;
+        this.listId = listId;
+        list = lst;
+        money = currentMoney;
     }
 
     @Override
@@ -57,19 +57,19 @@ public class ShopPreviewList extends ServerPacket {
         buffer.writeByte(0x13); // ?
         buffer.writeByte(0); // ?
         buffer.writeByte(0); // ?
-        buffer.writeLong(_money); // current money
-        buffer.writeInt(_listId);
+        buffer.writeLong(money); // current money
+        buffer.writeInt(listId);
         int newlength = 0;
-        for (Product product : _list) {
-            if ((product.getItem().getCrystalType().getLevel() <= _expertise)
+        for (Product product : list) {
+            if ((product.getItem().getCrystalType().getLevel() <= expertise)
                     && product.getItem().isEquipable()) {
                 newlength++;
             }
         }
 
         buffer.writeShort(newlength);
-        for (Product product : _list) {
-            if ((product.getItem().getCrystalType().getLevel() <= _expertise)
+        for (Product product : list) {
+            if ((product.getItem().getCrystalType().getLevel() <= expertise)
                     && product.getItem().isEquipable()) {
                 buffer.writeInt(product.getItemId());
                 buffer.writeShort(product.getItem().getType2()); // item type2

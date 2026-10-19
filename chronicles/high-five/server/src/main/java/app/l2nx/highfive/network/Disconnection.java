@@ -27,18 +27,21 @@ import app.l2nx.highfive.managers.AntiFeedManager;
 import app.l2nx.highfive.network.serverpackets.ServerPacket;
 import app.l2nx.highfive.taskmanagers.AttackStanceTaskManager;
 import app.l2nx.highfive.threads.ThreadPool;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Handles the disconnection process for a player or client.
  * @author NB4L1, Mobius
  */
+@Slf4j
 public class Disconnection {
-    private static final Logger LOGGER = Logger.getLogger(Disconnection.class.getName());
-    private static final Logger LOGGER_ACCOUNTING = Logger.getLogger("accounting");
 
-    private final GameClient _client;
-    private final Player _player;
+    private static final Logger ACCOUNTING_LOG = LoggerFactory.getLogger("accounting");
+
+    private final GameClient client;
+    private final Player player;
 
     /**
      * Constructs a new Disconnection instance for the given client and player.<br>
@@ -48,23 +51,23 @@ public class Disconnection {
      */
     private Disconnection(GameClient client, Player player) {
         // Resolve client and player.
-        _client = client != null ? client : player != null ? player.getClient() : null;
-        _player = player != null ? player : client != null ? client.getPlayer() : null;
+        this.client = client != null ? client : player != null ? player.getClient() : null;
+        this.player = player != null ? player : client != null ? client.getPlayer() : null;
 
         // Stop player tasks.
-        if (_player != null) {
-            _player.stopAllTasks();
+        if (this.player != null) {
+            this.player.stopAllTasks();
         }
 
         // Anti Feed.
-        AntiFeedManager.getInstance().onDisconnect(_client);
+        AntiFeedManager.getInstance().onDisconnect(this.client);
 
-        if (_client != null) {
-            _client.setPlayer(null);
+        if (this.client != null) {
+            this.client.setPlayer(null);
         }
 
-        if (_player != null) {
-            _player.setClient(null);
+        if (this.player != null) {
+            this.player.setClient(null);
         }
     }
 
@@ -102,19 +105,19 @@ public class Disconnection {
      */
     public void storeAndDelete() {
         try {
-            if (_player != null) {
-                _player.storeMe();
+            if (player != null) {
+                player.storeMe();
 
-                if (_player.isOnline()) {
-                    _player.deleteMe();
+                if (player.isOnline()) {
+                    player.deleteMe();
 
-                    LOGGER_ACCOUNTING.info("Logged out, " + _player);
+                    ACCOUNTING_LOG.info("Logged out, {}", player);
                 }
-            } else if (_client != null) {
-                LOGGER_ACCOUNTING.info("Logged out, " + _client);
+            } else if (client != null) {
+                ACCOUNTING_LOG.info("Logged out, {}", client);
             }
         } catch (Exception e) {
-            LOGGER.warning(getClass().getSimpleName() + ": Problem with storeAndDelete: " + e.getMessage());
+            log.warn("Problem with storeAndDelete: {}", e.getMessage());
         }
     }
 
@@ -125,8 +128,8 @@ public class Disconnection {
     public void storeAndDeleteWith(ServerPacket packet) {
         storeAndDelete();
 
-        if (_client != null) {
-            _client.close(packet);
+        if (client != null) {
+            client.close(packet);
         }
     }
 
@@ -136,16 +139,16 @@ public class Disconnection {
      * Otherwise, the process is scheduled after a delay.
      */
     public void onDisconnection() {
-        if (_player == null) {
+        if (player == null) {
             return;
         }
 
-        if (_player.canLogout()) {
+        if (player.canLogout()) {
             storeAndDelete();
         } else {
             ThreadPool.schedule(
                     () -> {
-                        if (_player.isOnline()) {
+                        if (player.isOnline()) {
                             storeAndDelete();
                         }
                     },

@@ -44,7 +44,7 @@ import app.l2nx.highfive.util.StatSet;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.DateFormatUtils;
 
 /**
@@ -57,9 +57,8 @@ import org.apache.commons.lang3.time.DateFormatUtils;
  * </ul>
  * @author BazookaRpm
  */
+@Slf4j
 public class Orfen extends Script {
-    // Logging.
-    private static final Logger LOGGER = Logger.getLogger(Orfen.class.getName());
 
     // NPC identifiers.
     private static final int ORFEN_NPC_ID = 29014;
@@ -126,7 +125,7 @@ public class Orfen extends Script {
 
     // Runtime flags and collections.
     private static final Collection<Attackable> MINIONS = ConcurrentHashMap.newKeySet();
-    private static boolean _hasTeleported;
+    private static boolean hasTeleported;
     private static BossZone ZONE;
 
     /**
@@ -138,7 +137,7 @@ public class Orfen extends Script {
         addAttackId(ORFEN_NPC_ID, RAIKEL_LEOS_NPC_ID, RIBA_IREN_NPC_ID);
         addKillId(ORFEN_NPC_ID);
 
-        _hasTeleported = false;
+        hasTeleported = false;
         ZONE = GrandBossManager.getInstance().getZone(ORFEN_SPAWN_LOCATIONS[0]);
 
         final GrandBossManager bossManager = GrandBossManager.getInstance();
@@ -257,11 +256,11 @@ public class Orfen extends Script {
                 break;
             }
             case EVENT_CHECK_ORFEN_POSITION: {
-                if ((_hasTeleported && (npc.getCurrentHp() > (npc.getMaxHp() * ORFEN_RETURN_HP_FRACTION)))
-                        || (!ZONE.isInsideZone(npc) && !_hasTeleported)) {
+                if ((hasTeleported && (npc.getCurrentHp() > (npc.getMaxHp() * ORFEN_RETURN_HP_FRACTION)))
+                        || (!ZONE.isInsideZone(npc) && !hasTeleported)) {
                     setSpawnPoint(npc, getRandom(3) + 1);
-                    _hasTeleported = false;
-                } else if (_hasTeleported && !ZONE.isInsideZone(npc)) {
+                    hasTeleported = false;
+                } else if (hasTeleported && !ZONE.isInsideZone(npc)) {
                     setSpawnPoint(npc, 0);
                 }
                 break;
@@ -363,8 +362,8 @@ public class Orfen extends Script {
 
         final int npcId = npc.getId();
         if (npcId == ORFEN_NPC_ID) {
-            if (!_hasTeleported && ((npc.getCurrentHp() - damage) < (npc.getMaxHp() * ORFEN_TELEPORT_HP_FRACTION))) {
-                _hasTeleported = true;
+            if (!hasTeleported && ((npc.getCurrentHp() - damage) < (npc.getMaxHp() * ORFEN_TELEPORT_HP_FRACTION))) {
+                hasTeleported = true;
                 setSpawnPoint(npc, 0);
             } else if (npc.isInsideRadius2D(attacker, TELEPORT_SKILL_MAX_RANGE)
                     && !npc.isInsideRadius2D(attacker, TELEPORT_SKILL_MIN_RANGE)
@@ -403,7 +402,7 @@ public class Orfen extends Script {
 
             // Next respawn time.
             final long nextRespawnTime = System.currentTimeMillis() + respawnTime;
-            LOGGER.info("Orfen will respawn at: " + DateFormatUtils.format(nextRespawnTime, "dd/MM/yyyy HH:mm:ss"));
+            log.info("Orfen will respawn at: {}", DateFormatUtils.format(nextRespawnTime, "dd/MM/yyyy HH:mm:ss"));
 
             startQuestTimer(EVENT_ORFEN_UNLOCK, respawnTime, null, null);
 

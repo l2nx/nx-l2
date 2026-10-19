@@ -30,17 +30,17 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class NewCharacterSuccess extends ServerPacket {
-    private final List<PlayerTemplate> _chars = new ArrayList<>();
+    private final List<PlayerTemplate> chars = new ArrayList<>();
 
     public void addChar(PlayerTemplate template) {
-        _chars.add(template);
+        chars.add(template);
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.NEW_CHARACTER_SUCCESS.writeId(this, buffer);
-        buffer.writeInt(_chars.size());
-        for (PlayerTemplate chr : _chars) {
+        buffer.writeInt(chars.size());
+        for (PlayerTemplate chr : chars) {
             if (chr == null) {
                 continue;
             }

@@ -49,6 +49,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
@@ -57,11 +59,15 @@ import org.w3c.dom.Node;
  * NPC data parser.
  * @author NosBit, Mobius
  */
+@Slf4j
 public class NpcData implements IXmlReader {
-    private final Map<Integer, NpcTemplate> _npcs = new ConcurrentHashMap<>();
-    private final Map<String, Integer> _clans = new ConcurrentHashMap<>();
-    private static final Collection<Integer> _masterMonsterIDs = ConcurrentHashMap.newKeySet();
-    private static Integer _genericClanId = null;
+    private final Map<Integer, NpcTemplate> npcs = new ConcurrentHashMap<>();
+    private final Map<String, Integer> clans = new ConcurrentHashMap<>();
+
+    @Getter
+    private static final Collection<Integer> masterMonsterIDs = ConcurrentHashMap.newKeySet();
+
+    private static Integer genericClanId = null;
 
     protected NpcData() {
         load();
@@ -69,14 +75,14 @@ public class NpcData implements IXmlReader {
 
     @Override
     public synchronized void load() {
-        _masterMonsterIDs.clear();
+        masterMonsterIDs.clear();
 
         parseDatapackDirectory("data/stats/npcs", false);
-        LOGGER.info(getClass().getSimpleName() + ": Loaded " + _npcs.size() + " NPCs.");
+        log.info("Loaded {} NPCs.", npcs.size());
         if (GeneralConfig.CUSTOM_NPC_DATA) {
-            final int npcCount = _npcs.size();
+            final int npcCount = npcs.size();
             parseDatapackDirectory("data/stats/npcs/custom", true);
-            LOGGER.info(getClass().getSimpleName() + ": Loaded " + (_npcs.size() - npcCount) + " custom NPCs.");
+            log.info("Loaded {} custom NPCs.", (npcs.size() - npcCount));
         }
 
         loadNpcsSkillLearn();
@@ -390,9 +396,12 @@ public class NpcData implements IXmlReader {
                                             if (skill != null) {
                                                 skills.put(skill.getId(), skill);
                                             } else {
-                                                LOGGER.warning("[" + file.getName() + "] skill not found. NPC ID: "
-                                                        + npcId + " Skill ID:" + skillId + " Skill Level: "
-                                                        + skillLevel);
+                                                log.warn(
+                                                        "[{}] skill not found. NPC ID: {} Skill ID:{} Skill Level: {}",
+                                                        file.getName(),
+                                                        npcId,
+                                                        skillId,
+                                                        skillLevel);
                                             }
                                         }
                                     }
@@ -515,10 +524,7 @@ public class NpcData implements IXmlReader {
                                                             if (ItemData.getInstance()
                                                                             .getTemplate(itemId)
                                                                     == null) {
-                                                                LOGGER.warning(getClass()
-                                                                                .getSimpleName()
-                                                                        + ": Could not find drop with id " + itemId
-                                                                        + ".");
+                                                                log.warn("Could not find drop with id {}.", itemId);
                                                             } else {
                                                                 group.addDrop(new DropHolder(
                                                                         dropType,
@@ -542,9 +548,7 @@ public class NpcData implements IXmlReader {
                                                     final int itemId = parseInteger(dropAttrs, "id");
 
                                                     if (ItemData.getInstance().getTemplate(itemId) == null) {
-                                                        LOGGER.warning(getClass()
-                                                                        .getSimpleName()
-                                                                + ": Could not find drop with id " + itemId + ".");
+                                                        log.warn("Could not find drop with id {}.", itemId);
                                                     } else {
                                                         dropLists.add(new DropHolder(
                                                                 dropType,
@@ -586,10 +590,10 @@ public class NpcData implements IXmlReader {
                             continue;
                         }
 
-                        NpcTemplate template = _npcs.get(npcId);
+                        NpcTemplate template = npcs.get(npcId);
                         if (template == null) {
                             template = new NpcTemplate(set);
-                            _npcs.put(template.getId(), template);
+                            npcs.put(template.getId(), template);
                         } else {
                             template.set(set);
                         }
@@ -725,7 +729,7 @@ public class NpcData implements IXmlReader {
 
                         if (!template.getParameters().getMinionList("Privates").isEmpty()
                                 && (template.getParameters().getSet().get("SummonPrivateRate") == null)) {
-                            _masterMonsterIDs.add(template.getId());
+                            masterMonsterIDs.add(template.getId());
                         }
                     }
                 }
@@ -739,10 +743,10 @@ public class NpcData implements IXmlReader {
      * @return the clan id for the given clan name
      */
     private int getOrCreateClanId(String clanName) {
-        Integer id = _clans.get(clanName);
+        Integer id = clans.get(clanName);
         if (id == null) {
-            id = _clans.size();
-            _clans.put(clanName, id);
+            id = clans.size();
+            clans.put(clanName, id);
         }
 
         return id;
@@ -754,24 +758,24 @@ public class NpcData implements IXmlReader {
      * @return the clan id for the given clan name if it exists, -1 otherwise
      */
     public int getClanId(String clanName) {
-        final Integer id = _clans.get(clanName);
+        final Integer id = clans.get(clanName);
         return id != null ? id : -1;
     }
 
     public int getGenericClanId() {
-        if (_genericClanId != null) {
-            return _genericClanId;
+        if (genericClanId != null) {
+            return genericClanId;
         }
 
         synchronized (this) {
-            _genericClanId = _clans.get("ALL");
+            genericClanId = clans.get("ALL");
 
-            if (_genericClanId == null) {
-                _genericClanId = -1;
+            if (genericClanId == null) {
+                genericClanId = -1;
             }
         }
 
-        return _genericClanId;
+        return genericClanId;
     }
 
     /**
@@ -780,7 +784,7 @@ public class NpcData implements IXmlReader {
      * @return the template for the given id.
      */
     public NpcTemplate getTemplate(int id) {
-        return _npcs.get(id);
+        return npcs.get(id);
     }
 
     /**
@@ -789,7 +793,7 @@ public class NpcData implements IXmlReader {
      * @return the template for the given name.
      */
     public NpcTemplate getTemplateByName(String name) {
-        for (NpcTemplate npcTemplate : _npcs.values()) {
+        for (NpcTemplate npcTemplate : npcs.values()) {
             if (npcTemplate.getName().equalsIgnoreCase(name)) {
                 return npcTemplate;
             }
@@ -805,7 +809,7 @@ public class NpcData implements IXmlReader {
      */
     public List<NpcTemplate> getTemplates(Predicate<NpcTemplate> filter) {
         final List<NpcTemplate> result = new ArrayList<>();
-        for (NpcTemplate npcTemplate : _npcs.values()) {
+        for (NpcTemplate npcTemplate : npcs.values()) {
             if (filter.test(npcTemplate)) {
                 result.add(npcTemplate);
             }
@@ -852,19 +856,12 @@ public class NpcData implements IXmlReader {
     }
 
     public void loadNpcsSkillLearn() {
-        _npcs.values().forEach(template -> {
+        npcs.values().forEach(template -> {
             final List<PlayerClass> teachInfo = SkillLearnData.getInstance().getSkillLearnData(template.getId());
             if (teachInfo != null) {
                 template.addTeachInfo(teachInfo);
             }
         });
-    }
-
-    /**
-     * @return the IDs of monsters that have minions.
-     */
-    public static Collection<Integer> getMasterMonsterIDs() {
-        return _masterMonsterIDs;
     }
 
     /**

@@ -24,24 +24,20 @@ package app.l2nx.highfive.entity.itemcontainer;
 
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.item.enums.ItemLocation;
+import lombok.Getter;
 
 public class PlayerWarehouse extends Warehouse {
-    // private static final Logger LOGGER = Logger.getLogger(PcWarehouse.class.getName());
 
-    private final Player _owner;
+    @Getter
+    private final Player owner;
 
     public PlayerWarehouse(Player owner) {
-        _owner = owner;
+        this.owner = owner;
     }
 
     @Override
     public String getName() {
         return "Warehouse";
-    }
-
-    @Override
-    public Player getOwner() {
-        return _owner;
     }
 
     @Override
@@ -51,6 +47,6 @@ public class PlayerWarehouse extends Warehouse {
 
     @Override
     public boolean validateCapacity(long slots) {
-        return (_items.size() + slots) <= _owner.getWareHouseLimit();
+        return (items.size() + slots) <= owner.getWareHouseLimit();
     }
 }

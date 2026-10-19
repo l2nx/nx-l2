@@ -37,42 +37,39 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.StringTokenizer;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class MacroList {
-    private static final Logger LOGGER = Logger.getLogger(MacroList.class.getName());
 
-    private final Player _owner;
-    private int _revision;
-    private int _macroId;
-    private final Map<Integer, Macro> _macroses = Collections.synchronizedMap(new LinkedHashMap<>());
+    private final Player owner;
+
+    @Getter
+    private int revision;
+
+    private int macroId;
+
+    @Getter
+    private final Map<Integer, Macro> allMacroses = Collections.synchronizedMap(new LinkedHashMap<>());
 
     public MacroList(Player owner) {
-        _owner = owner;
-        _revision = 1;
-        _macroId = 1000;
-    }
-
-    public int getRevision() {
-        return _revision;
-    }
-
-    public Map<Integer, Macro> getAllMacroses() {
-        return _macroses;
+        this.owner = owner;
+        revision = 1;
+        macroId = 1000;
     }
 
     public void registerMacro(Macro macro) {
         if (macro.getId() == 0) {
-            macro.setId(_macroId++);
-            while (_macroses.containsKey(macro.getId())) {
-                macro.setId(_macroId++);
+            macro.setId(macroId++);
+            while (allMacroses.containsKey(macro.getId())) {
+                macro.setId(macroId++);
             }
 
-            _macroses.put(macro.getId(), macro);
+            allMacroses.put(macro.getId(), macro);
             registerMacroInDb(macro);
         } else {
-            final Macro old = _macroses.put(macro.getId(), macro);
+            final Macro old = allMacroses.put(macro.getId(), macro);
             if (old != null) {
                 deleteMacroFromDb(old);
             }
@@ -84,14 +81,14 @@ public class MacroList {
     }
 
     public void deleteMacro(int id) {
-        final Macro removed = _macroses.remove(id);
+        final Macro removed = allMacroses.remove(id);
         if (removed != null) {
             deleteMacroFromDb(removed);
         }
 
-        for (Shortcut sc : _owner.getAllShortcuts()) {
+        for (Shortcut sc : owner.getAllShortcuts()) {
             if ((sc.getId() == id) && (sc.getType() == ShortcutType.MACRO)) {
-                _owner.deleteShortcut(sc.getSlot(), sc.getPage());
+                owner.deleteShortcut(sc.getSlot(), sc.getPage());
             }
         }
 
@@ -99,14 +96,14 @@ public class MacroList {
     }
 
     public void sendUpdate() {
-        _revision++;
-        final Collection<Macro> allMacros = _macroses.values();
-        synchronized (_macroses) {
+        revision++;
+        final Collection<Macro> allMacros = allMacroses.values();
+        synchronized (allMacroses) {
             if (allMacros.isEmpty()) {
-                _owner.sendPacket(new SendMacroList(_revision, 0, null));
+                owner.sendPacket(new SendMacroList(revision, 0, null));
             } else {
                 for (Macro m : allMacros) {
-                    _owner.sendPacket(new SendMacroList(_revision, allMacros.size(), m));
+                    owner.sendPacket(new SendMacroList(revision, allMacros.size(), m));
                 }
             }
         }
@@ -116,7 +113,7 @@ public class MacroList {
         try (Connection con = DatabaseFactory.getConnection();
                 PreparedStatement ps = con.prepareStatement(
                         "INSERT INTO character_macroses (charId,id,icon,name,descr,acronym,commands) values(?,?,?,?,?,?,?)")) {
-            ps.setInt(1, _owner.getObjectId());
+            ps.setInt(1, owner.getObjectId());
             ps.setInt(2, macro.getId());
             ps.setInt(3, macro.getIcon());
             ps.setString(4, macro.getName());
@@ -138,27 +135,27 @@ public class MacroList {
             ps.setString(7, sb.toString());
             ps.execute();
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, "could not store macro:", e);
+            log.warn("could not store macro:", e);
         }
     }
 
     private void deleteMacroFromDb(Macro macro) {
         try (Connection con = DatabaseFactory.getConnection();
                 PreparedStatement ps = con.prepareStatement("DELETE FROM character_macroses WHERE charId=? AND id=?")) {
-            ps.setInt(1, _owner.getObjectId());
+            ps.setInt(1, owner.getObjectId());
             ps.setInt(2, macro.getId());
             ps.execute();
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, "could not delete macro:", e);
+            log.warn("could not delete macro:", e);
         }
     }
 
     public boolean restoreMe() {
-        _macroses.clear();
+        allMacroses.clear();
         try (Connection con = DatabaseFactory.getConnection();
                 PreparedStatement ps = con.prepareStatement(
                         "SELECT charId, id, icon, name, descr, acronym, commands FROM character_macroses WHERE charId=?")) {
-            ps.setInt(1, _owner.getObjectId());
+            ps.setInt(1, owner.getObjectId());
             try (ResultSet rset = ps.executeQuery()) {
                 while (rset.next()) {
                     final int id = rset.getInt("id");
@@ -185,11 +182,11 @@ public class MacroList {
                         commands.add(new MacroCmd(commands.size(), type, d1, d2, cmd));
                     }
 
-                    _macroses.put(id, new Macro(id, icon, name, descr, acronym, commands));
+                    allMacroses.put(id, new Macro(id, icon, name, descr, acronym, commands));
                 }
             }
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, "could not store shortcuts:", e);
+            log.warn("could not store shortcuts:", e);
             return false;
         }
 

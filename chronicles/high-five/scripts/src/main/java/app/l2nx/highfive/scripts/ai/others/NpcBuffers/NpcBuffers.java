@@ -28,10 +28,10 @@ import app.l2nx.highfive.threads.ThreadPool;
  * @author UnAfraid
  */
 public class NpcBuffers extends Script {
-    private final NpcBuffersData _npcBuffers = new NpcBuffersData();
+    private final NpcBuffersData npcBuffers = new NpcBuffersData();
 
     private NpcBuffers() {
-        for (int npcId : _npcBuffers.getNpcBufferIds()) {
+        for (int npcId : npcBuffers.getNpcBufferIds()) {
             // TODO: Cleanup once npc rework is finished and default html is configurable.
             addFirstTalkId(npcId);
             addSpawnId(npcId);
@@ -46,7 +46,7 @@ public class NpcBuffers extends Script {
 
     @Override
     public void onSpawn(Npc npc) {
-        final NpcBufferData data = _npcBuffers.getNpcBuffer(npc.getId());
+        final NpcBufferData data = npcBuffers.getNpcBuffer(npc.getId());
         for (NpcBufferSkillData skill : data.getSkills()) {
             ThreadPool.schedule(new NpcBufferAI(npc, skill), skill.getInitialDelay());
         }

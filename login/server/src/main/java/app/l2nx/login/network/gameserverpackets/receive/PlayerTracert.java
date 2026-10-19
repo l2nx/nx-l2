@@ -21,13 +21,11 @@ package app.l2nx.login.network.gameserverpackets.receive;
 
 import app.l2nx.login.controller.LoginController;
 import app.l2nx.network.packet.SimpleReadablePacket;
-import java.util.logging.Logger;
 
 /**
  * @author mrTJO
  */
 public class PlayerTracert extends SimpleReadablePacket {
-    protected static final Logger LOGGER = Logger.getLogger(PlayerTracert.class.getName());
 
     public PlayerTracert(byte[] decrypt) {
         super(decrypt);

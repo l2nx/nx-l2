@@ -29,16 +29,16 @@ import app.l2nx.highfive.security.SecondaryPasswordAuth;
  * @author mrTJO
  */
 public class RequestEx2ndPasswordReq extends ClientPacket {
-    private int _changePass;
-    private String _password;
-    private String _newPassword;
+    private int changePass;
+    private String password;
+    private String newPassword;
 
     @Override
     protected void readImpl() {
-        _changePass = readByte();
-        _password = readString();
-        if (_changePass == 2) {
-            _newPassword = readString();
+        changePass = readByte();
+        password = readString();
+        if (changePass == 2) {
+            newPassword = readString();
         }
     }
 
@@ -51,10 +51,10 @@ public class RequestEx2ndPasswordReq extends ClientPacket {
         final GameClient client = getClient();
         final SecondaryPasswordAuth secondAuth = client.getSecondaryAuth();
         boolean success = false;
-        if ((_changePass == 0) && !secondAuth.passwordExist()) {
-            success = secondAuth.savePassword(_password);
-        } else if ((_changePass == 2) && secondAuth.passwordExist()) {
-            success = secondAuth.changePassword(_password, _newPassword);
+        if ((changePass == 0) && !secondAuth.passwordExist()) {
+            success = secondAuth.savePassword(password);
+        } else if ((changePass == 2) && secondAuth.passwordExist()) {
+            success = secondAuth.changePassword(password, newPassword);
         }
 
         if (success) {

@@ -28,18 +28,18 @@ import app.l2nx.highfive.mechanics.skill.Skill;
  * @author mr
  */
 public class ConditionPlayerHp extends Condition {
-    private final int _hp;
+    private final int hp;
 
     /**
      * Instantiates a new condition player hp.
      * @param hp the hp
      */
     public ConditionPlayerHp(int hp) {
-        _hp = hp;
+        this.hp = hp;
     }
 
     @Override
     public boolean testImpl(Creature effector, Creature effected, Skill skill, ItemTemplate item) {
-        return (effector != null) && (((effector.getCurrentHp() * 100) / effector.getMaxHp()) <= _hp);
+        return (effector != null) && (((effector.getCurrentHp() * 100) / effector.getMaxHp()) <= hp);
     }
 }

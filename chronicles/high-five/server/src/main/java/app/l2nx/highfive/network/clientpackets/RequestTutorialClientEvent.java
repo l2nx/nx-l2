@@ -26,11 +26,11 @@ import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.mechanics.script.QuestState;
 
 public class RequestTutorialClientEvent extends ClientPacket {
-    private int _eventId = 0;
+    private int eventId = 0;
 
     @Override
     protected void readImpl() {
-        _eventId = readInt();
+        eventId = readInt();
     }
 
     @Override
@@ -42,7 +42,7 @@ public class RequestTutorialClientEvent extends ClientPacket {
 
         final QuestState qs = player.getQuestState("Q00255_Tutorial");
         if (qs != null) {
-            qs.getQuest().notifyEvent("CE:" + _eventId, null, player);
+            qs.getQuest().notifyEvent("CE:" + eventId, null, player);
         }
     }
 }

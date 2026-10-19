@@ -25,7 +25,7 @@ import java.io.File;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
@@ -34,10 +34,10 @@ import org.w3c.dom.Node;
 /**
  * @author UnAfraid
  */
+@Slf4j
 public class SiegeScheduleData implements IXmlReader {
-    private static final Logger LOGGER = Logger.getLogger(SiegeScheduleData.class.getName());
 
-    private final Map<Integer, SiegeScheduleDate> _scheduleData = new HashMap<>();
+    private final Map<Integer, SiegeScheduleDate> scheduleData = new HashMap<>();
 
     protected SiegeScheduleData() {
         load();
@@ -46,7 +46,7 @@ public class SiegeScheduleData implements IXmlReader {
     @Override
     public synchronized void load() {
         parseDatapackFile("config/SiegeSchedule.xml");
-        LOGGER.info(getClass().getSimpleName() + ": Loaded " + _scheduleData.size() + " siege schedulers.");
+        log.info("Loaded {} siege schedulers.", scheduleData.size());
     }
 
     @Override
@@ -69,7 +69,7 @@ public class SiegeScheduleData implements IXmlReader {
                                 set.set(key, val);
                             }
 
-                            _scheduleData.put(set.getInt("castleId"), new SiegeScheduleDate(set));
+                            scheduleData.put(set.getInt("castleId"), new SiegeScheduleDate(set));
                             break;
                         }
                     }
@@ -87,8 +87,7 @@ public class SiegeScheduleData implements IXmlReader {
         try {
             return Calendar.class.getField(field).getInt(Calendar.class.getName());
         } catch (Exception e) {
-            LOGGER.warning(
-                    getClass().getSimpleName() + ": Could not get value for field " + field + ". " + e.getMessage());
+            log.warn("Could not get value for field {}. {}", field, e.getMessage());
             return -1;
         }
     }
@@ -99,7 +98,7 @@ public class SiegeScheduleData implements IXmlReader {
      * @return the {@code SiegeScheduleDate} for the specified castle ID, or {@code null} if no schedule data is available for this castle ID
      */
     public SiegeScheduleDate getScheduleDateForCastleId(int castleId) {
-        return _scheduleData.get(castleId);
+        return scheduleData.get(castleId);
     }
 
     public static SiegeScheduleData getInstance() {

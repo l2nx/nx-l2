@@ -43,8 +43,9 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * This class manages the spawn and respawn of a group of Npcs that are in the same are and have the same type.<br>
@@ -53,41 +54,67 @@ import java.util.logging.Logger;
  * The heading of the Npc can be a random heading if not defined (value= -1) or an exact heading (ex : merchant...).
  * @author Nightmare, Mobius
  */
+@Slf4j
 public class Spawn extends Location {
-    protected static final Logger LOGGER = Logger.getLogger(Spawn.class.getName());
 
     /** String identifier of this spawn */
-    private String _name;
+    @Getter
+    @Setter
+    private String name;
     /** The link on the NpcTemplate object containing generic and static properties of this spawn (ex : RewardExp, RewardSP, AggroRange...) */
-    private NpcTemplate _template;
+    @Getter
+    private NpcTemplate template;
     /** The maximum number of Npc that can manage this Spawn */
-    private int _maximumCount;
+    @Getter
+    @Setter
+    private int amount;
     /** The current number of Npc managed by this Spawn */
-    private int _currentCount;
+    private int currentCount;
     /** The current number of SpawnTask in progress or stand by of this Spawn */
-    public int _scheduledCount;
+    public int scheduledCount;
     /** The identifier of the location area where Npc can be spawned */
-    private int _locationId;
+    @Getter
+    @Setter
+    private int locationId;
     /** Link to NPC spawn territory */
-    private NpcSpawnTerritory _spawnTerritory = null;
+    @Getter
+    @Setter
+    private NpcSpawnTerritory spawnTerritory = null;
     /** Minimum respawn delay */
-    private int _respawnMinDelay;
+    @Getter
+    @Setter
+    private int respawnMinDelay;
     /** Maximum respawn delay */
-    private int _respawnMaxDelay;
+    @Getter
+    @Setter
+    private int respawnMaxDelay;
     /** Maximum distance monsters can be pulled away from spawn. */
-    private int _chaseRange = 0;
+    @Getter
+    @Setter
+    private int chaseRange = 0;
     /** The generic constructor of Npc managed by this Spawn */
-    private Constructor<? extends Npc> _constructor;
+    private Constructor<? extends Npc> constructor;
     /** If True an Npc is respawned each time that another is killed */
-    private boolean _doRespawn = true;
+    @Getter
+    private boolean respawnEnabled = true;
 
-    private static Set<SevenSignsFestival> _spawnListeners = ConcurrentHashMap.newKeySet(1);
-    private final Deque<Npc> _spawnedNpcs = new ConcurrentLinkedDeque<>();
-    private boolean _randomWalk = false; // Is random walk
-    private int _spawnTemplateId = 0;
-    private Location _spawnLocation = null;
+    private static Set<SevenSignsFestival> spawnListeners = ConcurrentHashMap.newKeySet(1);
+
+    @Getter
+    private final Deque<Npc> spawnedNpcs = new ConcurrentLinkedDeque<>();
+
+    @Setter
+    private boolean randomWalking = false; // Is random walk
+
+    @Getter
+    private int npcSpawnTemplateId = 0;
+
+    @Getter
+    private Location spawnLocation = null;
     /** Spawn group this spawn is a slot of, null for regular spawns */
-    private SpawnGroup _group = null;
+    @Getter
+    @Setter
+    private SpawnGroup group = null;
 
     /**
      * Constructor of Spawn.<br>
@@ -97,12 +124,12 @@ public class Spawn extends Location {
      * Each Spawn owns generic and static properties (ex : RewardExp, RewardSP, AggroRange...).<br>
      * All of those properties are stored in a different NpcTemplate for each type of Spawn. Each template is loaded once in the server cache memory (reduce memory use).<br>
      * When a new instance of Spawn is created, server just create a link between the instance and the template.<br>
-     * This link is stored in <b>_template</b> Each Npc is linked to a Spawn that manages its spawn and respawn (delay, location...).<br>
-     * This link is stored in <b>_spawn</b> of the Npc.<br>
+     * This link is stored in <b>template</b> Each Npc is linked to a Spawn that manages its spawn and respawn (delay, location...).<br>
+     * This link is stored in <b>spawn</b> of the Npc.<br>
      * <br>
      * <b><u>Actions</u>:</b><br>
      * <ul>
-     * <li>Set the _template of the Spawn</li>
+     * <li>Set the template of the Spawn</li>
      * <li>Calculate the implementationName used to generate the generic constructor of Npc managed by this Spawn</li>
      * <li>Create the generic constructor of Npc managed by this Spawn</li>
      * </ul>
@@ -114,14 +141,14 @@ public class Spawn extends Location {
     public Spawn(NpcTemplate template) throws ClassNotFoundException, NoSuchMethodException, ClassCastException {
         super(0, 0, -10000);
 
-        // Set the _template of the Spawn.
-        _template = template;
+        // Set the template of the Spawn.
+        this.template = template;
 
-        if (_template == null) {
+        if (this.template == null) {
             return;
         }
 
-        _constructor = Class.forName("app.l2nx.highfive.entity.actor.instance." + _template.getType())
+        constructor = Class.forName("app.l2nx.highfive.entity.actor.instance." + this.template.getType())
                 .asSubclass(Npc.class)
                 .getConstructor(NpcTemplate.class);
     }
@@ -138,86 +165,11 @@ public class Spawn extends Location {
     }
 
     /**
-     * @return the maximum number of Npc that this Spawn can manage.
-     */
-    public int getAmount() {
-        return _maximumCount;
-    }
-
-    /**
-     * @return the String Identifier of this spawn.
-     */
-    public String getName() {
-        return _name;
-    }
-
-    /**
-     * Set the String Identifier of this spawn.
-     * @param name
-     */
-    public void setName(String name) {
-        _name = name;
-    }
-
-    /**
-     * @return the Identifier of the location area where Npc can be spawned.
-     */
-    public int getLocationId() {
-        return _locationId;
-    }
-
-    /**
      * Gets the NPC ID.
      * @return the NPC ID
      */
     public int getId() {
-        return _template.getId();
-    }
-
-    /**
-     * @return min respawn delay.
-     */
-    public int getRespawnMinDelay() {
-        return _respawnMinDelay;
-    }
-
-    /**
-     * @return max respawn delay.
-     */
-    public int getRespawnMaxDelay() {
-        return _respawnMaxDelay;
-    }
-
-    /**
-     * Set the maximum number of Npc that this Spawn can manage.
-     * @param amount
-     */
-    public void setAmount(int amount) {
-        _maximumCount = amount;
-    }
-
-    /**
-     * Set the Identifier of the location area where Npc can be spawned.
-     * @param id
-     */
-    public void setLocationId(int id) {
-        _locationId = id;
-    }
-
-    /**
-     * Set Minimum Respawn Delay.
-     * @param date
-     */
-    public void setRespawnMinDelay(int date) {
-        _respawnMinDelay = date;
-    }
-
-    /**
-     * Set Maximum Respawn Delay.
-     * @param date
-     */
-    public void setRespawnMaxDelay(int date) {
-        _respawnMaxDelay = date;
+        return template.getId();
     }
 
     /**
@@ -225,56 +177,40 @@ public class Spawn extends Location {
      * <li>Decrease the current number of Npc of this Spawn</li>
      * <li>Check if respawn is possible to prevent multiple respawning caused by lag</li>
      * <li>Update the current number of SpawnTask in progress or stand by of this Spawn</li>
-     * <li>Create a new SpawnTask to launch after the respawn Delay</li> <font color=#FF0000><b><u>Caution</u>: A respawn is possible ONLY if _doRespawn=True and _scheduledCount + _currentCount < _maximumCount</b></font>
+     * <li>Create a new SpawnTask to launch after the respawn Delay</li> <font color=#FF0000><b><u>Caution</u>: A respawn is possible ONLY if _doRespawn=True and scheduledCount + currentCount < _maximumCount</b></font>
      * @param oldNpc
      */
     public void decreaseCount(Npc oldNpc) {
         // sanity check
-        if (_currentCount <= 0) {
+        if (currentCount <= 0) {
             return;
         }
 
         // Decrease the current number of Npc of this Spawn.
-        _currentCount--;
+        currentCount--;
 
         // Remove this NPC from list of spawned.
-        _spawnedNpcs.remove(oldNpc);
+        spawnedNpcs.remove(oldNpc);
 
         // Check if respawn is possible to prevent multiple respawning caused by lag.
-        if (_doRespawn && ((_scheduledCount + _currentCount) < _maximumCount)) {
+        if (respawnEnabled && ((scheduledCount + currentCount) < amount)) {
             // Update the current number of SpawnTask in progress or stand by of this Spawn.
-            _scheduledCount++;
+            scheduledCount++;
 
             // Schedule the next respawn.
             RespawnTaskManager.getInstance()
                     .add(
                             oldNpc,
                             System.currentTimeMillis()
-                                    + (_respawnMinDelay < _respawnMaxDelay
-                                            ? ThreadLocalRandom.current()
-                                                    .nextInt(_respawnMinDelay, _respawnMaxDelay + 1)
-                                            : _respawnMinDelay));
+                                    + (respawnMinDelay < respawnMaxDelay
+                                            ? ThreadLocalRandom.current().nextInt(respawnMinDelay, respawnMaxDelay + 1)
+                                            : respawnMinDelay));
         }
 
         // Notify the spawn group, it rolls the replacement itself.
-        if (_group != null) {
-            _group.onUnitDeath(this);
+        if (group != null) {
+            group.onUnitDeath(this);
         }
-    }
-
-    /**
-     * @return the spawn group this spawn is a slot of, {@code null} for regular spawns
-     */
-    public SpawnGroup getGroup() {
-        return _group;
-    }
-
-    /**
-     * Sets the spawn group this spawn is a slot of.
-     * @param group the owning spawn group
-     */
-    public void setGroup(SpawnGroup group) {
-        _group = group;
     }
 
     /**
@@ -282,42 +218,35 @@ public class Spawn extends Location {
      * @return The number of Npc that were spawned
      */
     public int init() {
-        while (_currentCount < _maximumCount) {
-            final int previousCount = _currentCount;
-            if ((doSpawn() == null) && (_currentCount == previousCount)) {
+        while (currentCount < amount) {
+            final int previousCount = currentCount;
+            if ((doSpawn() == null) && (currentCount == previousCount)) {
                 // Respawn is disabled or the NPC could not be created, looping again would never end.
                 break;
             }
         }
 
-        _doRespawn = _respawnMinDelay > 0;
+        respawnEnabled = respawnMinDelay > 0;
 
-        return _currentCount;
-    }
-
-    /**
-     * @return true if respawn enabled
-     */
-    public boolean isRespawnEnabled() {
-        return _doRespawn;
+        return currentCount;
     }
 
     /**
      * Set _doRespawn to False to stop respawn in this Spawn.
      */
     public void stopRespawn() {
-        _doRespawn = false;
+        respawnEnabled = false;
     }
 
     /**
      * Set _doRespawn to True to start or restart respawn in this Spawn.
      */
     public void startRespawn() {
-        _doRespawn = true;
+        respawnEnabled = true;
     }
 
     public Npc doSpawn() {
-        return _doRespawn ? doSpawn(false) : null;
+        return respawnEnabled ? doSpawn(false) : null;
     }
 
     /**
@@ -347,13 +276,13 @@ public class Spawn extends Location {
     public Npc doSpawn(boolean isSummonSpawn) {
         try {
             // Check if the spawn is not a Pet, Decoy or Trap spawn.
-            if (_template.isType("Pet") || _template.isType("Decoy") || _template.isType("Trap")) {
-                _currentCount++;
+            if (template.isType("Pet") || template.isType("Decoy") || template.isType("Trap")) {
+                currentCount++;
                 return null;
             }
 
             // Call the constructor of the Npc.
-            final Npc npc = _constructor.newInstance(_template);
+            final Npc npc = constructor.newInstance(template);
             npc.setInstanceId(getInstanceId()); // Must be done before object is spawned into visible world.
             if (isSummonSpawn) {
                 npc.setShowSummonAnimation(isSummonSpawn);
@@ -361,7 +290,7 @@ public class Spawn extends Location {
 
             return initializeNpc(npc);
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, "NPC " + _template.getId() + " class not found", e);
+            log.warn("NPC {} class not found", template.getId(), e);
         }
 
         return null;
@@ -383,24 +312,24 @@ public class Spawn extends Location {
         int newlocz = -10000;
 
         // If Locx and Locy are not defined, the Npc must be spawned in an area defined by location or spawn territory.
-        if (_spawnTerritory != null) {
-            final Location loc = _spawnTerritory.getRandomPoint();
+        if (spawnTerritory != null) {
+            final Location loc = spawnTerritory.getRandomPoint();
             newlocx = loc.getX();
             newlocy = loc.getY();
             newlocz = loc.getZ();
             setLocation(loc);
             setHeading(-1);
         } else if ((getX() == 0) && (getY() == 0)) {
-            LOGGER.warning("NPC " + npc + " doesn't have spawn location!");
+            log.warn("NPC {} doesn't have spawn location!", npc);
             return null;
         } else {
             // The Npc is spawned at the exact position (Lox, Locy, Locz).
-            newlocx = _spawnLocation != null ? _spawnLocation.getX() : getX();
-            newlocy = _spawnLocation != null ? _spawnLocation.getY() : getY();
-            newlocz = _spawnLocation != null ? _spawnLocation.getZ() : getZ();
+            newlocx = spawnLocation != null ? spawnLocation.getX() : getX();
+            newlocy = spawnLocation != null ? spawnLocation.getY() : getY();
+            newlocz = spawnLocation != null ? spawnLocation.getZ() : getZ();
 
-            if (_spawnLocation == null) {
-                _spawnLocation = new Location(newlocx, newlocy, newlocz);
+            if (spawnLocation == null) {
+                spawnLocation = new Location(newlocx, newlocy, newlocz);
             }
         }
 
@@ -445,8 +374,8 @@ public class Spawn extends Location {
             }
 
             // Prevent new z exceeding spawn territory high z.
-            if (_spawnTerritory != null) {
-                final int highZ = _spawnTerritory.getHighZ();
+            if (spawnTerritory != null) {
+                final int highZ = spawnTerritory.getHighZ();
                 if (highZ < newlocz) {
                     newlocz = highZ;
                 }
@@ -464,7 +393,7 @@ public class Spawn extends Location {
         }
 
         // Set is not random walk default value.
-        npc.setRandomWalking(_randomWalk);
+        npc.setRandomWalking(randomWalking);
 
         // Set the heading of the Npc (random heading if not defined).
         if (getHeading() == -1) {
@@ -493,14 +422,14 @@ public class Spawn extends Location {
         notifyNpcSpawned(npc);
 
         // Check for overriden by spawnlist AIData.
-        if (_name != null) {
-            NpcPersonalAIData.getInstance().initializeNpcParameters(npc, this, _name);
+        if (name != null) {
+            NpcPersonalAIData.getInstance().initializeNpcParameters(npc, this, name);
         }
 
-        _spawnedNpcs.add(npc);
+        spawnedNpcs.add(npc);
 
         // Increase the current number of Npcs managed by this Spawn.
-        _currentCount++;
+        currentCount++;
 
         // Minions
         if (npc.isMonster() && NpcData.getMasterMonsterIDs().contains(npc.getId())) {
@@ -517,7 +446,7 @@ public class Spawn extends Location {
         if (ChampionMonstersConfig.CHAMPION_ENABLE
                 && npc.isMonster()
                 && !npc.isQuestMonster()
-                && !_template.isUndying()
+                && !template.isUndying()
                 && !npc.isRaid()
                 && !npc.isRaidMinion()
                 && (ChampionMonstersConfig.CHAMPION_FREQUENCY > 0)
@@ -532,15 +461,15 @@ public class Spawn extends Location {
     }
 
     public static void addSpawnListener(SevenSignsFestival listener) {
-        _spawnListeners.add(listener);
+        spawnListeners.add(listener);
     }
 
     public static void removeSpawnListener(SevenSignsFestival listener) {
-        _spawnListeners.remove(listener);
+        spawnListeners.remove(listener);
     }
 
     public static void notifyNpcSpawned(Npc npc) {
-        for (SevenSignsFestival listener : _spawnListeners) {
+        for (SevenSignsFestival listener : spawnListeners) {
             listener.npcSpawned(npc);
         }
     }
@@ -553,17 +482,17 @@ public class Spawn extends Location {
     public void setRespawnDelay(int delay, int randomInterval) {
         if (delay != 0) {
             if (delay < 0) {
-                LOGGER.warning("respawn delay is negative for spawn:" + this);
+                log.warn("respawn delay is negative for spawn:{}", this);
             }
 
             final int minDelay = delay - randomInterval;
             final int maxDelay = delay + randomInterval;
 
-            _respawnMinDelay = Math.max(1, minDelay) * 1000;
-            _respawnMaxDelay = Math.max(1, maxDelay) * 1000;
+            respawnMinDelay = Math.max(1, minDelay) * 1000;
+            respawnMaxDelay = Math.max(1, maxDelay) * 1000;
         } else {
-            _respawnMinDelay = 0;
-            _respawnMaxDelay = 0;
+            respawnMinDelay = 0;
+            respawnMaxDelay = 0;
         }
     }
 
@@ -572,75 +501,39 @@ public class Spawn extends Location {
     }
 
     public int getRespawnDelay() {
-        return (_respawnMinDelay + _respawnMaxDelay) / 2;
+        return (respawnMinDelay + respawnMaxDelay) / 2;
     }
 
     public boolean hasRespawnRandom() {
-        return _respawnMinDelay != _respawnMaxDelay;
-    }
-
-    public void setChaseRange(int chaseRange) {
-        _chaseRange = chaseRange;
-    }
-
-    public int getChaseRange() {
-        return _chaseRange;
-    }
-
-    public void setSpawnTerritory(NpcSpawnTerritory territory) {
-        _spawnTerritory = territory;
-    }
-
-    public NpcSpawnTerritory getSpawnTerritory() {
-        return _spawnTerritory;
+        return respawnMinDelay != respawnMaxDelay;
     }
 
     public boolean isTerritoryBased() {
-        return (_spawnTerritory != null) && (getX() == 0) && (getY() == 0);
+        return (spawnTerritory != null) && (getX() == 0) && (getY() == 0);
     }
 
     public Npc getLastSpawn() {
-        return _spawnedNpcs.peekLast();
-    }
-
-    public Deque<Npc> getSpawnedNpcs() {
-        return _spawnedNpcs;
+        return spawnedNpcs.peekLast();
     }
 
     public void respawnNpc(Npc oldNpc) {
-        if (_doRespawn) {
+        if (respawnEnabled) {
             // oldNpc.refreshId();
             initializeNpc(oldNpc);
         }
     }
 
-    public NpcTemplate getTemplate() {
-        return _template;
-    }
-
     public boolean getRandomWalking() {
-        return _randomWalk;
-    }
-
-    public void setRandomWalking(boolean value) {
-        _randomWalk = value;
+        return randomWalking;
     }
 
     public void setSpawnTemplateId(int npcSpawnTemplateId) {
-        _spawnTemplateId = npcSpawnTemplateId;
-    }
-
-    public int getNpcSpawnTemplateId() {
-        return _spawnTemplateId;
-    }
-
-    public Location getSpawnLocation() {
-        return _spawnLocation;
+        this.npcSpawnTemplateId = npcSpawnTemplateId;
     }
 
     @Override
     public String toString() {
-        return "Spawn ID: " + _template.getId() + " X: " + getX() + " Y: " + getY() + " Z: " + getZ() + " Heading: "
+        return "Spawn ID: " + template.getId() + " X: " + getX() + " Y: " + getY() + " Z: " + getZ() + " Heading: "
                 + getHeading();
     }
 }

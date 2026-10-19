@@ -29,11 +29,11 @@ import app.l2nx.highfive.network.serverpackets.SystemMessage;
  * @author -Wooden-
  */
 public class RequestExAcceptJoinMPCC extends ClientPacket {
-    private int _response;
+    private int response;
 
     @Override
     protected void readImpl() {
-        _response = readInt();
+        response = readInt();
     }
 
     @Override
@@ -46,7 +46,7 @@ public class RequestExAcceptJoinMPCC extends ClientPacket {
                 return;
             }
 
-            if (_response == 1) {
+            if (response == 1) {
                 boolean newCc = false;
                 if (!requestor.getParty().isInCommandChannel()) {
                     new CommandChannel(requestor); // Create new CC

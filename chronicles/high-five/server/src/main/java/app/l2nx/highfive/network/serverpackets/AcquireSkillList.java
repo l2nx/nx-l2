@@ -33,8 +33,8 @@ import java.util.List;
  * Acquire Skill List server packet implementation.
  */
 public class AcquireSkillList extends ServerPacket {
-    private final List<Skill> _skills;
-    private final AcquireSkillType _skillType;
+    private final List<Skill> skills;
+    private final AcquireSkillType skillType;
 
     /**
      * Private class containing learning skill information.
@@ -56,30 +56,30 @@ public class AcquireSkillList extends ServerPacket {
     }
 
     public AcquireSkillList(AcquireSkillType type) {
-        _skillType = type;
-        _skills = new ArrayList<>();
+        skillType = type;
+        skills = new ArrayList<>();
     }
 
     public void addSkill(int id, int nextLevel, int maxLevel, int spCost, int requirements) {
-        _skills.add(new Skill(id, nextLevel, maxLevel, spCost, requirements));
+        skills.add(new Skill(id, nextLevel, maxLevel, spCost, requirements));
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
-        if (_skills.isEmpty()) {
+        if (skills.isEmpty()) {
             return;
         }
 
         ServerPackets.ACQUIRE_SKILL_LIST.writeId(this, buffer);
-        buffer.writeInt(_skillType.ordinal());
-        buffer.writeInt(_skills.size());
-        for (Skill temp : _skills) {
+        buffer.writeInt(skillType.ordinal());
+        buffer.writeInt(skills.size());
+        for (Skill temp : skills) {
             buffer.writeInt(temp.id);
             buffer.writeInt(temp.nextLevel);
             buffer.writeInt(temp.maxLevel);
             buffer.writeInt(temp.spCost);
             buffer.writeInt(temp.requirements);
-            if (_skillType == AcquireSkillType.SUBPLEDGE) {
+            if (skillType == AcquireSkillType.SUBPLEDGE) {
                 buffer.writeInt(0); // TODO: ?
             }
         }

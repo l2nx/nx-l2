@@ -56,19 +56,19 @@ public class AutoUseTaskManager {
     protected AutoUseTaskManager() {}
 
     private class AutoUse implements Runnable {
-        private final Set<Player> _players;
+        private final Set<Player> players;
 
         public AutoUse(Set<Player> players) {
-            _players = players;
+            this.players = players;
         }
 
         @Override
         public void run() {
-            if (_players.isEmpty()) {
+            if (players.isEmpty()) {
                 return;
             }
 
-            for (Player player : _players) {
+            for (Player player : players) {
                 if (!player.isOnline() || (player.isInOfflineMode() && !player.isOfflinePlay())) {
                     stopAutoUseTask(player);
                     continue;

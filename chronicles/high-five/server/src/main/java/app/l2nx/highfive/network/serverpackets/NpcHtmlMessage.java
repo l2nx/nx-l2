@@ -29,25 +29,25 @@ import app.l2nx.network.buffer.WriteBuffer;
  * @author HorridoJoho
  */
 public class NpcHtmlMessage extends AbstractHtmlPacket {
-    private final int _itemId;
+    private final int itemId;
 
     public NpcHtmlMessage() {
-        _itemId = 0;
+        itemId = 0;
     }
 
     public NpcHtmlMessage(int npcObjId) {
         super(npcObjId);
-        _itemId = 0;
+        itemId = 0;
     }
 
     public NpcHtmlMessage(String html) {
         super(html);
-        _itemId = 0;
+        itemId = 0;
     }
 
     public NpcHtmlMessage(int npcObjId, String html) {
         super(npcObjId, html);
-        _itemId = 0;
+        itemId = 0;
     }
 
     public NpcHtmlMessage(int npcObjId, int itemId) {
@@ -56,7 +56,7 @@ public class NpcHtmlMessage extends AbstractHtmlPacket {
             throw new IllegalArgumentException();
         }
 
-        _itemId = itemId;
+        this.itemId = itemId;
     }
 
     public NpcHtmlMessage(int npcObjId, int itemId, String html) {
@@ -65,7 +65,7 @@ public class NpcHtmlMessage extends AbstractHtmlPacket {
             throw new IllegalArgumentException();
         }
 
-        _itemId = itemId;
+        this.itemId = itemId;
     }
 
     @Override
@@ -73,11 +73,11 @@ public class NpcHtmlMessage extends AbstractHtmlPacket {
         ServerPackets.NPC_HTML_MESSAGE.writeId(this, buffer);
         buffer.writeInt(getNpcObjId());
         buffer.writeString(getHtml());
-        buffer.writeInt(_itemId);
+        buffer.writeInt(itemId);
     }
 
     @Override
     public HtmlActionScope getScope() {
-        return _itemId == 0 ? HtmlActionScope.NPC_HTML : HtmlActionScope.NPC_ITEM_HTML;
+        return itemId == 0 ? HtmlActionScope.NPC_HTML : HtmlActionScope.NPC_ITEM_HTML;
     }
 }

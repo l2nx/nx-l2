@@ -32,7 +32,7 @@ import java.util.List;
  * The Class ConditionPlayerServitorNpcId.
  */
 public class ConditionPlayerServitorNpcId extends Condition {
-    private final List<Integer> _npcIds;
+    private final List<Integer> npcIds;
 
     /**
      * Instantiates a new condition player servitor npc id.
@@ -40,9 +40,9 @@ public class ConditionPlayerServitorNpcId extends Condition {
      */
     public ConditionPlayerServitorNpcId(List<Integer> npcIds) {
         if ((npcIds.size() == 1) && (npcIds.get(0) == 0)) {
-            _npcIds = null;
+            this.npcIds = null;
         } else {
-            _npcIds = npcIds;
+            this.npcIds = npcIds;
         }
     }
 
@@ -53,6 +53,6 @@ public class ConditionPlayerServitorNpcId extends Condition {
             return false;
         }
 
-        return (_npcIds == null) || _npcIds.contains(player.getSummon().getId());
+        return (npcIds == null) || npcIds.contains(player.getSummon().getId());
     }
 }

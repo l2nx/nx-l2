@@ -34,7 +34,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class ItemLifeTimeTaskManager implements Runnable {
     private static final Map<Item, Long> ITEMS = new ConcurrentHashMap<>();
-    private static boolean _working = false;
+    private static boolean working = false;
 
     protected ItemLifeTimeTaskManager() {
         ThreadPool.scheduleAtFixedRate(this, 1000, 1000);
@@ -42,11 +42,11 @@ public class ItemLifeTimeTaskManager implements Runnable {
 
     @Override
     public void run() {
-        if (_working) {
+        if (working) {
             return;
         }
 
-        _working = true;
+        working = true;
 
         if (!ITEMS.isEmpty()) {
             final long currentTime = System.currentTimeMillis();
@@ -62,7 +62,7 @@ public class ItemLifeTimeTaskManager implements Runnable {
             }
         }
 
-        _working = false;
+        working = false;
     }
 
     public void add(Item item, long endTime) {

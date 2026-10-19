@@ -28,17 +28,17 @@ import java.util.List;
  * @author -Wooden-
  */
 public class ExCursedWeaponList extends ServerPacket {
-    private final List<Integer> _cursedWeaponIds;
+    private final List<Integer> cursedWeaponIds;
 
     public ExCursedWeaponList(List<Integer> cursedWeaponIds) {
-        _cursedWeaponIds = cursedWeaponIds;
+        this.cursedWeaponIds = cursedWeaponIds;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_CURSED_WEAPON_LIST.writeId(this, buffer);
-        buffer.writeInt(_cursedWeaponIds.size());
-        for (int i : _cursedWeaponIds) {
+        buffer.writeInt(cursedWeaponIds.size());
+        for (int i : cursedWeaponIds) {
             buffer.writeInt(i);
         }
     }

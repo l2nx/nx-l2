@@ -30,6 +30,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
@@ -41,8 +42,9 @@ import org.w3c.dom.Node;
  * Allowed classes to wear each henna.
  * @author Zoey76
  */
+@Slf4j
 public class HennaData implements IXmlReader {
-    private final Map<Integer, Henna> _hennaList = new HashMap<>();
+    private final Map<Integer, Henna> hennaList = new HashMap<>();
 
     /**
      * Instantiates a new henna data.
@@ -53,9 +55,9 @@ public class HennaData implements IXmlReader {
 
     @Override
     public void load() {
-        _hennaList.clear();
+        hennaList.clear();
         parseDatapackFile("data/stats/hennaList.xml");
-        LOGGER.info(getClass().getSimpleName() + ": Loaded " + _hennaList.size() + " henna data.");
+        log.info("Loaded {} henna data.", hennaList.size());
     }
 
     @Override
@@ -119,7 +121,7 @@ public class HennaData implements IXmlReader {
 
         final Henna henna = new Henna(set);
         henna.setWearClassIds(wearClassIds);
-        _hennaList.put(henna.getDyeId(), henna);
+        hennaList.put(henna.getDyeId(), henna);
     }
 
     /**
@@ -128,7 +130,7 @@ public class HennaData implements IXmlReader {
      * @return the dye with that id.
      */
     public Henna getHenna(int id) {
-        return _hennaList.get(id);
+        return hennaList.get(id);
     }
 
     /**
@@ -138,7 +140,7 @@ public class HennaData implements IXmlReader {
      */
     public List<Henna> getHennaList(PlayerClass playerClass) {
         final List<Henna> list = new ArrayList<>();
-        for (Henna henna : _hennaList.values()) {
+        for (Henna henna : hennaList.values()) {
             if (henna.isAllowedClass(playerClass)) {
                 list.add(henna);
             }

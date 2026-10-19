@@ -36,40 +36,34 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import lombok.Getter;
 
 /**
  * @author DS
  */
 public class OlympiadManager {
-    private final List<Integer> _nonClassBasedRegisters;
-    private final Map<Integer, List<Integer>> _classBasedRegisters;
-    private final List<List<Integer>> _teamsBasedRegisters;
+    @Getter
+    private final List<Integer> registeredNonClassBased;
+
+    @Getter
+    private final Map<Integer, List<Integer>> registeredClassBased;
+
+    @Getter
+    private final List<List<Integer>> registeredTeamsBased;
 
     protected OlympiadManager() {
-        _nonClassBasedRegisters = new CopyOnWriteArrayList<>();
-        _classBasedRegisters = new ConcurrentHashMap<>();
-        _teamsBasedRegisters = new CopyOnWriteArrayList<>();
+        registeredNonClassBased = new CopyOnWriteArrayList<>();
+        registeredClassBased = new ConcurrentHashMap<>();
+        registeredTeamsBased = new CopyOnWriteArrayList<>();
     }
 
     public static OlympiadManager getInstance() {
         return SingletonHolder.INSTANCE;
     }
 
-    public List<Integer> getRegisteredNonClassBased() {
-        return _nonClassBasedRegisters;
-    }
-
-    public Map<Integer, List<Integer>> getRegisteredClassBased() {
-        return _classBasedRegisters;
-    }
-
-    public List<List<Integer>> getRegisteredTeamsBased() {
-        return _teamsBasedRegisters;
-    }
-
     protected List<List<Integer>> hasEnoughRegisteredClassed() {
         List<List<Integer>> result = null;
-        for (Entry<Integer, List<Integer>> classList : _classBasedRegisters.entrySet()) {
+        for (Entry<Integer, List<Integer>> classList : registeredClassBased.entrySet()) {
             if ((classList.getValue() != null) && (classList.getValue().size() >= OlympiadConfig.OLYMPIAD_CLASSED)) {
                 if (result == null) {
                     result = new CopyOnWriteArrayList<>();
@@ -83,17 +77,17 @@ public class OlympiadManager {
     }
 
     protected boolean hasEnoughRegisteredNonClassed() {
-        return _nonClassBasedRegisters.size() >= OlympiadConfig.OLYMPIAD_NONCLASSED;
+        return registeredNonClassBased.size() >= OlympiadConfig.OLYMPIAD_NONCLASSED;
     }
 
     protected boolean hasEnoughRegisteredTeams() {
-        return _teamsBasedRegisters.size() >= OlympiadConfig.OLYMPIAD_TEAMS;
+        return registeredTeamsBased.size() >= OlympiadConfig.OLYMPIAD_TEAMS;
     }
 
     protected void clearRegistered() {
-        _nonClassBasedRegisters.clear();
-        _classBasedRegisters.clear();
-        _teamsBasedRegisters.clear();
+        registeredNonClassBased.clear();
+        registeredClassBased.clear();
+        registeredTeamsBased.clear();
         AntiFeedManager.getInstance().clear(AntiFeedManager.OLYMPIAD_ID);
     }
 
@@ -105,7 +99,7 @@ public class OlympiadManager {
         final Integer objId = noble.getObjectId();
 
         // party may be already dispersed
-        for (List<Integer> team : _teamsBasedRegisters) {
+        for (List<Integer> team : registeredTeamsBased) {
             if ((team != null) && team.contains(objId)) {
                 if (showMessage) {
                     final SystemMessage sm = new SystemMessage(
@@ -119,7 +113,7 @@ public class OlympiadManager {
             }
         }
 
-        if (_nonClassBasedRegisters.contains(objId)) {
+        if (registeredNonClassBased.contains(objId)) {
             if (showMessage) {
                 final SystemMessage sm = new SystemMessage(
                         SystemMessageId
@@ -131,7 +125,7 @@ public class OlympiadManager {
             return true;
         }
 
-        final List<Integer> classed = _classBasedRegisters.get(noble.getBaseClass());
+        final List<Integer> classed = registeredClassBased.get(noble.getBaseClass());
         if ((classed != null) && classed.contains(objId)) {
             if (showMessage) {
                 final SystemMessage sm =
@@ -151,7 +145,7 @@ public class OlympiadManager {
     }
 
     private boolean isInCompetition(Player noble, Player player, boolean showMessage) {
-        if (!Olympiad._inCompPeriod) {
+        if (!Olympiad.inCompPeriod) {
             return false;
         }
 
@@ -201,7 +195,7 @@ public class OlympiadManager {
     }
 
     public boolean registerNoble(Player player, CompetitionType type) {
-        if (!Olympiad._inCompPeriod) {
+        if (!Olympiad.inCompPeriod) {
             player.sendPacket(SystemMessageId.THE_GRAND_OLYMPIAD_GAMES_ARE_NOT_CURRENTLY_IN_PROGRESS);
             return false;
         }
@@ -230,13 +224,13 @@ public class OlympiadManager {
                     return false;
                 }
 
-                List<Integer> classed = _classBasedRegisters.get(player.getBaseClass());
+                List<Integer> classed = registeredClassBased.get(player.getBaseClass());
                 if (classed != null) {
                     classed.add(charId);
                 } else {
                     classed = new CopyOnWriteArrayList<>();
                     classed.add(charId);
-                    _classBasedRegisters.put(player.getBaseClass(), classed);
+                    registeredClassBased.put(player.getBaseClass(), classed);
                 }
 
                 player.sendPacket(
@@ -256,7 +250,7 @@ public class OlympiadManager {
                     return false;
                 }
 
-                _nonClassBasedRegisters.add(charId);
+                registeredNonClassBased.add(charId);
                 player.sendPacket(SystemMessageId.YOU_ARE_CURRENTLY_REGISTERED_FOR_A_1V1_CLASS_IRRELEVANT_MATCH);
                 break;
             }
@@ -319,7 +313,7 @@ public class OlympiadManager {
 
                 party.broadcastPacket(new SystemMessage(
                         SystemMessageId.YOU_ARE_CURRENTLY_REGISTERED_FOR_A_3_VS_3_CLASS_IRRELEVANT_TEAM_MATCH));
-                _teamsBasedRegisters.add(team);
+                registeredTeamsBased.add(team);
                 break;
             }
         }
@@ -328,7 +322,7 @@ public class OlympiadManager {
     }
 
     public boolean unRegisterNoble(Player noble) {
-        if (!Olympiad._inCompPeriod) {
+        if (!Olympiad.inCompPeriod) {
             noble.sendPacket(SystemMessageId.THE_GRAND_OLYMPIAD_GAMES_ARE_NOT_CURRENTLY_IN_PROGRESS);
             return false;
         }
@@ -352,7 +346,7 @@ public class OlympiadManager {
         }
 
         final Integer objId = noble.getObjectId();
-        if (_nonClassBasedRegisters.remove(objId)) {
+        if (registeredNonClassBased.remove(objId)) {
             if (DualboxCheckConfig.DUALBOX_CHECK_MAX_OLYMPIAD_PARTICIPANTS_PER_IP > 0) {
                 AntiFeedManager.getInstance().removePlayer(AntiFeedManager.OLYMPIAD_ID, noble);
             }
@@ -361,9 +355,9 @@ public class OlympiadManager {
             return true;
         }
 
-        final List<Integer> classed = _classBasedRegisters.get(noble.getBaseClass());
+        final List<Integer> classed = registeredClassBased.get(noble.getBaseClass());
         if ((classed != null) && classed.remove(objId)) {
-            _classBasedRegisters.put(noble.getBaseClass(), classed);
+            registeredClassBased.put(noble.getBaseClass(), classed);
 
             if (DualboxCheckConfig.DUALBOX_CHECK_MAX_OLYMPIAD_PARTICIPANTS_PER_IP > 0) {
                 AntiFeedManager.getInstance().removePlayer(AntiFeedManager.OLYMPIAD_ID, noble);
@@ -373,9 +367,9 @@ public class OlympiadManager {
             return true;
         }
 
-        for (List<Integer> team : _teamsBasedRegisters) {
+        for (List<Integer> team : registeredTeamsBased) {
             if ((team != null) && team.contains(objId)) {
-                _teamsBasedRegisters.remove(team);
+                registeredTeamsBased.remove(team);
                 ThreadPool.execute(new AnnounceUnregToTeam(team));
                 return true;
             }
@@ -391,18 +385,18 @@ public class OlympiadManager {
         }
 
         final Integer objId = player.getObjectId();
-        if (_nonClassBasedRegisters.remove(objId)) {
+        if (registeredNonClassBased.remove(objId)) {
             return;
         }
 
-        final List<Integer> classed = _classBasedRegisters.get(player.getBaseClass());
+        final List<Integer> classed = registeredClassBased.get(player.getBaseClass());
         if ((classed != null) && classed.remove(objId)) {
             return;
         }
 
-        for (List<Integer> team : _teamsBasedRegisters) {
+        for (List<Integer> team : registeredTeamsBased) {
             if ((team != null) && team.contains(objId)) {
-                _teamsBasedRegisters.remove(team);
+                registeredTeamsBased.remove(team);
                 ThreadPool.execute(new AnnounceUnregToTeam(team));
                 return;
             }
@@ -511,17 +505,17 @@ public class OlympiadManager {
     }
 
     private static class AnnounceUnregToTeam implements Runnable {
-        private final List<Integer> _team;
+        private final List<Integer> team;
 
         public AnnounceUnregToTeam(List<Integer> t) {
-            _team = t;
+            team = t;
         }
 
         @Override
         public void run() {
             final SystemMessage sm =
                     new SystemMessage(SystemMessageId.YOU_HAVE_BEEN_REMOVED_FROM_THE_GRAND_OLYMPIAD_WAITING_LIST);
-            for (int objectId : _team) {
+            for (int objectId : team) {
                 final Player teamMember = World.getPlayer(objectId);
                 if (teamMember != null) {
                     teamMember.sendPacket(sm);
@@ -534,7 +528,7 @@ public class OlympiadManager {
     }
 
     public int getCountOpponents() {
-        return _nonClassBasedRegisters.size() + _classBasedRegisters.size() + _teamsBasedRegisters.size();
+        return registeredNonClassBased.size() + registeredClassBased.size() + registeredTeamsBased.size();
     }
 
     private static class SingletonHolder {

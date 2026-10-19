@@ -68,8 +68,8 @@ public final class SoldiersMountedTroop extends InstanceScript {
     private static final Location DOORMAN_SPAWN_LOC = new Location(-239504, 219984, -10112, 32767);
     private static final Location REMNANT_MACHINE_LOC = new Location(-238320, 219983, -10112, 0);
 
-    private static final PolygonTerritory _hallZone1 = new PolygonTerritory(1);
-    private static final PolygonTerritory _hallZone2 = new PolygonTerritory(2);
+    private static final PolygonTerritory hallZone1 = new PolygonTerritory(1);
+    private static final PolygonTerritory hallZone2 = new PolygonTerritory(2);
 
     private static final Map<Integer, Integer> HALL_1_SPAWNS = new HashMap<>();
 
@@ -115,11 +115,11 @@ public final class SoldiersMountedTroop extends InstanceScript {
         addTalkId(EDRIC);
         addKillId(DOORMAN, REMNANT_MACHINE);
         for (int[] coord : HALL_ZONE_1_COORDINATES) {
-            _hallZone1.add(coord[0], coord[1], coord[2], coord[3], 0);
+            hallZone1.add(coord[0], coord[1], coord[2], coord[3], 0);
         }
 
         for (int[] coord : HALL_ZONE_2_COORDINATES) {
-            _hallZone2.add(coord[0], coord[1], coord[2], coord[3], 0);
+            hallZone2.add(coord[0], coord[1], coord[2], coord[3], 0);
         }
     }
 
@@ -224,7 +224,7 @@ public final class SoldiersMountedTroop extends InstanceScript {
             // Spawn mobs in the 1st hall.
             for (Entry<Integer, Integer> entry : HALL_1_SPAWNS.entrySet()) {
                 for (int i = 0; i < entry.getValue(); i++) {
-                    final Location location = _hallZone1.getRandomPoint();
+                    final Location location = hallZone1.getRandomPoint();
                     location.setHeading(getRandom(65536));
                     final Attackable spawn =
                             (Attackable) addSpawn(entry.getKey(), location, false, 0, false, world.getInstanceId());
@@ -235,7 +235,7 @@ public final class SoldiersMountedTroop extends InstanceScript {
             // Spawn mobs in the 2nd hall.
             for (Entry<Integer, Integer> entry : HALL_2_SPAWNS.entrySet()) {
                 for (int i = 0; i < entry.getValue(); i++) {
-                    final Location location = _hallZone2.getRandomPoint();
+                    final Location location = hallZone2.getRandomPoint();
                     location.setHeading(getRandom(65536));
                     final Attackable spawn =
                             (Attackable) addSpawn(entry.getKey(), location, false, 0, false, world.getInstanceId());

@@ -24,26 +24,28 @@ package app.l2nx.highfive.mechanics.announce;
 
 import app.l2nx.highfive.managers.IdManager;
 import java.util.Date;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * @author UnAfraid, Mobius
  */
 public class EventAnnouncement implements IAnnouncement {
-    private final int _id;
-    private Date _startDate = null;
-    private Date _endDate = null;
-    private String _content;
+    @Getter
+    private final int id;
+
+    private Date startDate = null;
+    private Date endDate = null;
+
+    @Getter
+    @Setter
+    private String content;
 
     public EventAnnouncement(Date startDate, Date endDate, String content) {
-        _id = IdManager.getInstance().getNextId();
-        _startDate = startDate;
-        _endDate = endDate;
-        _content = content;
-    }
-
-    @Override
-    public int getId() {
-        return _id;
+        id = IdManager.getInstance().getNextId();
+        this.startDate = startDate;
+        this.endDate = endDate;
+        this.content = content;
     }
 
     @Override
@@ -59,17 +61,7 @@ public class EventAnnouncement implements IAnnouncement {
     @Override
     public boolean isValid() {
         final Date now = new Date();
-        return (_startDate != null) && (_endDate != null) && !now.before(_startDate) && !now.after(_endDate);
-    }
-
-    @Override
-    public String getContent() {
-        return _content;
-    }
-
-    @Override
-    public void setContent(String content) {
-        _content = content;
+        return (startDate != null) && (endDate != null) && !now.before(startDate) && !now.after(endDate);
     }
 
     @Override
@@ -84,7 +76,7 @@ public class EventAnnouncement implements IAnnouncement {
 
     @Override
     public boolean deleteMe() {
-        IdManager.getInstance().releaseId(_id);
+        IdManager.getInstance().releaseId(id);
         return true;
     }
 

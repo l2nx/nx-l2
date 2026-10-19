@@ -26,6 +26,7 @@ import app.l2nx.network.buffer.WriteBuffer;
 import java.awt.Color;
 import java.util.ArrayList;
 import java.util.List;
+import lombok.Getter;
 
 /**
  * A packet used to draw points and lines on client.<br/>
@@ -33,12 +34,12 @@ import java.util.List;
  * @author NosBit
  */
 public class ExServerPrimitive extends ServerPacket {
-    private final String _name;
-    private final int _x;
-    private final int _y;
-    private final int _z;
-    private final List<Point> _points = new ArrayList<>();
-    private final List<Line> _lines = new ArrayList<>();
+    private final String name;
+    private final int x;
+    private final int y;
+    private final int z;
+    private final List<Point> points = new ArrayList<>();
+    private final List<Line> lines = new ArrayList<>();
 
     /**
      * @param name A unique name this will be used to replace lines if second packet is sent
@@ -47,10 +48,10 @@ public class ExServerPrimitive extends ServerPacket {
      * @param z the z coordinate usually middle of drawing area
      */
     public ExServerPrimitive(String name, int x, int y, int z) {
-        _name = name;
-        _x = x;
-        _y = y;
-        _z = z;
+        this.name = name;
+        this.x = x;
+        this.y = y;
+        this.z = z;
     }
 
     /**
@@ -71,7 +72,7 @@ public class ExServerPrimitive extends ServerPacket {
      * @param z the z coordinate for this point
      */
     public void addPoint(String name, int color, boolean isNameColored, int x, int y, int z) {
-        _points.add(new Point(name, color, isNameColored, x, y, z));
+        points.add(new Point(name, color, isNameColored, x, y, z));
     }
 
     /**
@@ -162,7 +163,7 @@ public class ExServerPrimitive extends ServerPacket {
      * @param z2 the z coordinate for this line end point
      */
     public void addLine(String name, int color, boolean isNameColored, int x, int y, int z, int x2, int y2, int z2) {
-        _lines.add(new Line(name, color, isNameColored, x, y, z, x2, y2, z2));
+        lines.add(new Line(name, color, isNameColored, x, y, z, x2, y2, z2));
     }
 
     /**
@@ -363,14 +364,14 @@ public class ExServerPrimitive extends ServerPacket {
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_SERVER_PRIMITIVE.writeId(this, buffer);
-        buffer.writeString(_name);
-        buffer.writeInt(_x);
-        buffer.writeInt(_y);
-        buffer.writeInt(_z);
+        buffer.writeString(name);
+        buffer.writeInt(x);
+        buffer.writeInt(y);
+        buffer.writeInt(z);
         buffer.writeInt(65535); // Has to do something with display range and angle.
         buffer.writeInt(65535); // Has to do something with display range and angle.
-        buffer.writeInt(_points.size() + _lines.size());
-        for (Point point : _points) {
+        buffer.writeInt(points.size() + lines.size());
+        for (Point point : points) {
             buffer.writeByte(1); // It is the type in this case Point.
             buffer.writeString(point.getName());
             final int color = point.getColor();
@@ -383,7 +384,7 @@ public class ExServerPrimitive extends ServerPacket {
             buffer.writeInt(point.getZ());
         }
 
-        for (Line line : _lines) {
+        for (Line line : lines) {
             buffer.writeByte(2); // It is the type in this case Line.
             buffer.writeString(line.getName());
             final int color = line.getColor();
@@ -401,96 +402,49 @@ public class ExServerPrimitive extends ServerPacket {
     }
 
     private static class Point {
-        private final String _name;
-        private final int _color;
-        private final boolean _isNameColored;
-        private final int _x;
-        private final int _y;
-        private final int _z;
+        @Getter
+        private final String name;
+
+        @Getter
+        private final int color;
+
+        @Getter
+        private final boolean nameColored;
+
+        @Getter
+        private final int x;
+
+        @Getter
+        private final int y;
+
+        @Getter
+        private final int z;
 
         public Point(String name, int color, boolean isNameColored, int x, int y, int z) {
-            _name = name;
-            _color = color;
-            _isNameColored = isNameColored;
-            _x = x;
-            _y = y;
-            _z = z;
-        }
-
-        /**
-         * @return the name
-         */
-        public String getName() {
-            return _name;
-        }
-
-        /**
-         * @return the color
-         */
-        public int getColor() {
-            return _color;
-        }
-
-        /**
-         * @return the isNameColored
-         */
-        public boolean isNameColored() {
-            return _isNameColored;
-        }
-
-        /**
-         * @return the x
-         */
-        public int getX() {
-            return _x;
-        }
-
-        /**
-         * @return the y
-         */
-        public int getY() {
-            return _y;
-        }
-
-        /**
-         * @return the z
-         */
-        public int getZ() {
-            return _z;
+            this.name = name;
+            this.color = color;
+            nameColored = isNameColored;
+            this.x = x;
+            this.y = y;
+            this.z = z;
         }
     }
 
     private static class Line extends Point {
-        private final int _x2;
-        private final int _y2;
-        private final int _z2;
+        @Getter
+        private final int x2;
+
+        @Getter
+        private final int y2;
+
+        @Getter
+        private final int z2;
 
         public Line(String name, int color, boolean isNameColored, int x, int y, int z, int x2, int y2, int z2) {
             super(name, color, isNameColored, x, y, z);
-            _x2 = x2;
-            _y2 = y2;
-            _z2 = z2;
-        }
-
-        /**
-         * @return the x2
-         */
-        public int getX2() {
-            return _x2;
-        }
-
-        /**
-         * @return the y2
-         */
-        public int getY2() {
-            return _y2;
-        }
-
-        /**
-         * @return the z2
-         */
-        public int getZ2() {
-            return _z2;
+            this.x2 = x2;
+            this.y2 = y2;
+            this.z2 = z2;
         }
     }
 }

@@ -23,27 +23,13 @@ import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.mechanics.events.EventType;
 import app.l2nx.highfive.mechanics.events.holders.IBaseEvent;
+import lombok.Builder;
 
 /**
  * @author UnAfraid
  */
-public class OnPlayerMoveRequest implements IBaseEvent {
-    private final Player _player;
-    private final Location _location;
-
-    public OnPlayerMoveRequest(Player player, Location loc) {
-        _player = player;
-        _location = loc;
-    }
-
-    public Player getPlayer() {
-        return _player;
-    }
-
-    public Location getLocation() {
-        return _location;
-    }
-
+@Builder(toBuilder = true)
+public record OnPlayerMoveRequest(Player player, Location location) implements IBaseEvent {
     @Override
     public EventType getType() {
         return EventType.ON_PLAYER_MOVE_REQUEST;

@@ -29,27 +29,27 @@ import app.l2nx.network.buffer.WriteBuffer;
  * @author Gnacik
  */
 public class ExVoteSystemInfo extends ServerPacket {
-    private final int _recomLeft;
-    private final int _recomHave;
-    private final int _bonusTime;
-    private final int _bonusVal;
-    private final int _bonusType;
+    private final int recomLeft;
+    private final int recomHave;
+    private final int bonusTime;
+    private final int bonusVal;
+    private final int bonusType;
 
     public ExVoteSystemInfo(Player player) {
-        _recomLeft = player.getRecomLeft();
-        _recomHave = player.getRecomHave();
-        _bonusTime = player.getNevitHourglassTime();
-        _bonusVal = player.getNevitHourglassBonus();
-        _bonusType = player.getNevitHourglassStatus();
+        recomLeft = player.getRecomLeft();
+        recomHave = player.getRecomHave();
+        bonusTime = player.getNevitHourglassTime();
+        bonusVal = player.getNevitHourglassBonus();
+        bonusType = player.getNevitHourglassStatus();
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_VOTE_SYSTEM_INFO.writeId(this, buffer);
-        buffer.writeInt(_recomLeft);
-        buffer.writeInt(_recomHave);
-        buffer.writeInt(_bonusTime);
-        buffer.writeInt(_bonusVal);
-        buffer.writeInt(_bonusType);
+        buffer.writeInt(recomLeft);
+        buffer.writeInt(recomHave);
+        buffer.writeInt(bonusTime);
+        buffer.writeInt(bonusVal);
+        buffer.writeInt(bonusType);
     }
 }

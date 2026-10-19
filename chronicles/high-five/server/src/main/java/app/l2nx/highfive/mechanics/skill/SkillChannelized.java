@@ -28,10 +28,10 @@ import java.util.concurrent.ConcurrentHashMap;
  * @author UnAfraid
  */
 public class SkillChannelized {
-    private final Map<Integer, Map<Integer, Creature>> _channelizers = new ConcurrentHashMap<>();
+    private final Map<Integer, Map<Integer, Creature>> channelizers = new ConcurrentHashMap<>();
 
     public void addChannelizer(int skillId, Creature channelizer) {
-        _channelizers
+        channelizers
                 .computeIfAbsent(skillId, _ -> new ConcurrentHashMap<>())
                 .put(channelizer.getObjectId(), channelizer);
     }
@@ -45,21 +45,21 @@ public class SkillChannelized {
     }
 
     public Map<Integer, Creature> getChannelizers(int skillId) {
-        return _channelizers.getOrDefault(skillId, Collections.emptyMap());
+        return channelizers.getOrDefault(skillId, Collections.emptyMap());
     }
 
     public void abortChannelization() {
-        for (Map<Integer, Creature> map : _channelizers.values()) {
+        for (Map<Integer, Creature> map : channelizers.values()) {
             for (Creature channelizer : map.values()) {
                 channelizer.abortCast();
             }
         }
 
-        _channelizers.clear();
+        channelizers.clear();
     }
 
     public boolean isChannelized() {
-        for (Map<Integer, Creature> map : _channelizers.values()) {
+        for (Map<Integer, Creature> map : channelizers.values()) {
             if (!map.isEmpty()) {
                 return true;
             }

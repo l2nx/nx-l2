@@ -34,16 +34,16 @@ import java.util.Map.Entry;
  * @author l3x
  */
 public class ExShowProcureCropDetail extends ServerPacket {
-    private final int _cropId;
-    private final Map<Integer, CropProcure> _castleCrops = new HashMap<>();
+    private final int cropId;
+    private final Map<Integer, CropProcure> castleCrops = new HashMap<>();
 
     public ExShowProcureCropDetail(int cropId) {
-        _cropId = cropId;
+        this.cropId = cropId;
         for (Castle c : CastleManager.getInstance().getCastles()) {
             final CropProcure cropItem =
                     CastleManorManager.getInstance().getCropProcure(c.getResidenceId(), cropId, false);
             if ((cropItem != null) && (cropItem.getAmount() > 0)) {
-                _castleCrops.put(c.getResidenceId(), cropItem);
+                castleCrops.put(c.getResidenceId(), cropItem);
             }
         }
     }
@@ -51,9 +51,9 @@ public class ExShowProcureCropDetail extends ServerPacket {
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_SHOW_PROCURE_CROP_DETAIL.writeId(this, buffer);
-        buffer.writeInt(_cropId); // crop id
-        buffer.writeInt(_castleCrops.size()); // size
-        for (Entry<Integer, CropProcure> entry : _castleCrops.entrySet()) {
+        buffer.writeInt(cropId); // crop id
+        buffer.writeInt(castleCrops.size()); // size
+        for (Entry<Integer, CropProcure> entry : castleCrops.entrySet()) {
             final CropProcure crop = entry.getValue();
             buffer.writeInt(entry.getKey()); // manor name
             buffer.writeLong(crop.getAmount()); // buy residual

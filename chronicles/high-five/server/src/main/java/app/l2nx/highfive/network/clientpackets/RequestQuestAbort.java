@@ -32,11 +32,11 @@ import app.l2nx.highfive.network.serverpackets.QuestList;
  * @version $Revision: 1.3.4.2 $ $Date: 2005/03/27 15:29:30 $
  */
 public class RequestQuestAbort extends ClientPacket {
-    private int _questId;
+    private int questId;
 
     @Override
     protected void readImpl() {
-        _questId = readInt();
+        questId = readInt();
     }
 
     @Override
@@ -46,7 +46,7 @@ public class RequestQuestAbort extends ClientPacket {
             return;
         }
 
-        final Quest qe = ScriptManager.getInstance().getQuest(_questId);
+        final Quest qe = ScriptManager.getInstance().getQuest(questId);
         if (qe != null) {
             final QuestState qs = player.getQuestState(qe.getName());
             if (qs != null) {

@@ -22,63 +22,36 @@ package app.l2nx.highfive.mechanics.conditions;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.item.ItemTemplate;
 import app.l2nx.highfive.mechanics.skill.Skill;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * The Class Condition.
  * @author mkizub
  */
 public abstract class Condition implements ConditionListener {
-    private ConditionListener _listener;
-    private String _msg;
-    private int _msgId;
-    private boolean _addName = false;
-    private boolean _result;
+    @Getter(AccessLevel.PACKAGE)
+    private ConditionListener listener;
 
-    /**
-     * Sets the message.
-     * @param msg the new message
-     */
-    public void setMessage(String msg) {
-        _msg = msg;
-    }
+    @Getter
+    @Setter
+    private String message;
 
-    /**
-     * Gets the message.
-     * @return the message
-     */
-    public String getMessage() {
-        return _msg;
-    }
+    @Getter
+    @Setter
+    private int messageId;
 
-    /**
-     * Sets the message id.
-     * @param msgId the new message id
-     */
-    public void setMessageId(int msgId) {
-        _msgId = msgId;
-    }
+    @Getter
+    private boolean addName = false;
 
-    /**
-     * Gets the message id.
-     * @return the message id
-     */
-    public int getMessageId() {
-        return _msgId;
-    }
+    private boolean result;
 
     /**
      * Adds the name.
      */
     public void addName() {
-        _addName = true;
-    }
-
-    /**
-     * Checks if is adds the name.
-     * @return true, if is adds the name
-     */
-    public boolean isAddName() {
-        return _addName;
+        addName = true;
     }
 
     /**
@@ -86,16 +59,8 @@ public abstract class Condition implements ConditionListener {
      * @param listener the new listener
      */
     void setListener(ConditionListener listener) {
-        _listener = listener;
+        this.listener = listener;
         notifyChanged();
-    }
-
-    /**
-     * Gets the listener.
-     * @return the listener
-     */
-    ConditionListener getListener() {
-        return _listener;
     }
 
     public boolean test(Creature caster, Creature target, Skill skill) {
@@ -108,8 +73,8 @@ public abstract class Condition implements ConditionListener {
 
     public boolean test(Creature caster, Creature target, Skill skill, ItemTemplate item) {
         final boolean res = testImpl(caster, target, skill, item);
-        if ((_listener != null) && (res != _result)) {
-            _result = res;
+        if ((listener != null) && (res != result)) {
+            result = res;
             notifyChanged();
         }
 
@@ -128,8 +93,8 @@ public abstract class Condition implements ConditionListener {
 
     @Override
     public void notifyChanged() {
-        if (_listener != null) {
-            _listener.notifyChanged();
+        if (listener != null) {
+            listener.notifyChanged();
         }
     }
 }

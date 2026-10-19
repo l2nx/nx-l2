@@ -22,23 +22,10 @@
  */
 package app.l2nx.highfive.data.holders;
 
+import lombok.Builder;
+
 /**
  * @author Mobius
  */
-public class StringStringHolder {
-    private final String _string1;
-    private final String _string2;
-
-    public StringStringHolder(String string1, String string2) {
-        _string1 = string1;
-        _string2 = string2;
-    }
-
-    public String getString1() {
-        return _string1;
-    }
-
-    public String getString2() {
-        return _string2;
-    }
-}
+@Builder(toBuilder = true)
+public record StringStringHolder(String string1, String string2) {}

@@ -28,17 +28,17 @@ import app.l2nx.highfive.network.serverpackets.ExBrLoadEventTopRankers;
  * Halloween rank list client Format: (ch)ddd
  */
 public class BrEventRankerList extends ClientPacket {
-    private int _eventId;
-    private int _day;
+    private int eventId;
+    private int day;
 
     @SuppressWarnings("unused")
-    private int _ranking;
+    private int ranking;
 
     @Override
     protected void readImpl() {
-        _eventId = readInt();
-        _day = readInt(); // 0 - current, 1 - previous
-        _ranking = readInt();
+        eventId = readInt();
+        day = readInt(); // 0 - current, 1 - previous
+        ranking = readInt();
     }
 
     @Override
@@ -47,6 +47,6 @@ public class BrEventRankerList extends ClientPacket {
         final int count = 0;
         final int bestScore = 0;
         final int myScore = 0;
-        getClient().sendPacket(new ExBrLoadEventTopRankers(_eventId, _day, count, bestScore, myScore));
+        getClient().sendPacket(new ExBrLoadEventTopRankers(eventId, day, count, bestScore, myScore));
     }
 }

@@ -45,7 +45,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
@@ -54,8 +54,8 @@ import org.w3c.dom.Node;
  * This class manages walking monsters.
  * @author GKR
  */
+@Slf4j
 public class WalkingManager implements IXmlReader {
-    private static final Logger LOGGER = Logger.getLogger(WalkingManager.class.getName());
 
     // Repeat style:
     // -1 - no repeat
@@ -69,15 +69,15 @@ public class WalkingManager implements IXmlReader {
     public static final byte REPEAT_TELE_FIRST = 2;
     public static final byte REPEAT_RANDOM = 3;
 
-    private final Set<Integer> _targetedNpcIds = new HashSet<>();
-    private final Map<String, WalkRoute> _routes = new HashMap<>(); // all available routes
-    private final Map<Integer, WalkInfo> _activeRoutes =
+    private final Set<Integer> targetedNpcIds = new HashSet<>();
+    private final Map<String, WalkRoute> routes = new HashMap<>(); // all available routes
+    private final Map<Integer, WalkInfo> activeRoutes =
             new HashMap<>(); // each record represents NPC, moving by predefined route from _routes, and moving progress
-    private final Map<Integer, NpcRoutesHolder> _routesToAttach =
+    private final Map<Integer, NpcRoutesHolder> routesToAttach =
             new HashMap<>(); // each record represents NPC and all available routes for it
-    private final Map<Npc, ScheduledFuture<?>> _startMoveTasks = new ConcurrentHashMap<>();
-    private final Map<Npc, ScheduledFuture<?>> _repeatMoveTasks = new ConcurrentHashMap<>();
-    private final Map<Npc, ScheduledFuture<?>> _arriveTasks = new ConcurrentHashMap<>();
+    private final Map<Npc, ScheduledFuture<?>> startMoveTasks = new ConcurrentHashMap<>();
+    private final Map<Npc, ScheduledFuture<?>> repeatMoveTasks = new ConcurrentHashMap<>();
+    private final Map<Npc, ScheduledFuture<?>> arriveTasks = new ConcurrentHashMap<>();
 
     protected WalkingManager() {
         load();
@@ -86,7 +86,7 @@ public class WalkingManager implements IXmlReader {
     @Override
     public void load() {
         parseDatapackFile("data/Routes.xml");
-        LOGGER.info(getClass().getSimpleName() + ": Loaded " + _routes.size() + " walking routes.");
+        log.info("Loaded {} walking routes.", routes.size());
     }
 
     @Override
@@ -142,8 +142,7 @@ public class WalkingManager implements IXmlReader {
                             if (node != null) {
                                 npcString = NpcStringId.getNpcStringId(node.getNodeValue());
                                 if (npcString == null) {
-                                    LOGGER.warning(getClass().getSimpleName() + ": Unknown npcString '"
-                                            + node.getNodeValue() + "' for route '" + routeName + "'");
+                                    log.warn("Unknown npcString '{}' for route '{}'", node.getNodeValue(), routeName);
                                     continue;
                                 }
                             } else {
@@ -151,8 +150,10 @@ public class WalkingManager implements IXmlReader {
                                 if (node != null) {
                                     npcString = NpcStringId.getNpcStringId(Integer.parseInt(node.getNodeValue()));
                                     if (npcString == null) {
-                                        LOGGER.warning(getClass().getSimpleName() + ": Unknown npcString '"
-                                                + node.getNodeValue() + "' for route '" + routeName + "'");
+                                        log.warn(
+                                                "Unknown npcString '{}' for route '{}'",
+                                                node.getNodeValue(),
+                                                routeName);
                                         continue;
                                     }
                                 }
@@ -172,14 +173,14 @@ public class WalkingManager implements IXmlReader {
                             final int z = Integer.parseInt(
                                     attrs.getNamedItem("spawnZ").getNodeValue());
                             if (NpcData.getInstance().getTemplate(npcId) != null) {
-                                final NpcRoutesHolder holder = _routesToAttach.containsKey(npcId)
-                                        ? _routesToAttach.get(npcId)
+                                final NpcRoutesHolder holder = routesToAttach.containsKey(npcId)
+                                        ? routesToAttach.get(npcId)
                                         : new NpcRoutesHolder();
                                 holder.addRoute(routeName, new Location(x, y, z));
-                                _routesToAttach.put(npcId, holder);
+                                routesToAttach.put(npcId, holder);
 
-                                if (!_targetedNpcIds.contains(npcId)) {
-                                    _targetedNpcIds.add(npcId);
+                                if (!targetedNpcIds.contains(npcId)) {
+                                    targetedNpcIds.add(npcId);
                                 }
                             }
                             // else
@@ -188,13 +189,12 @@ public class WalkingManager implements IXmlReader {
                             // routeName + "' does not exist.");
                             // }
                         } catch (Exception e) {
-                            LOGGER.warning(getClass().getSimpleName() + ": Error in target definition for route '"
-                                    + routeName + "'");
+                            log.warn("Error in target definition for route '{}'", routeName);
                         }
                     }
                 }
 
-                _routes.put(routeName, new WalkRoute(routeName, list, repeat, repeatType));
+                routes.put(routeName, new WalkRoute(routeName, list, repeat, repeatType));
             }
         }
     }
@@ -215,7 +215,7 @@ public class WalkingManager implements IXmlReader {
         }
 
         final WalkInfo walk =
-                monster != null ? _activeRoutes.get(monster.getObjectId()) : _activeRoutes.get(npc.getObjectId());
+                monster != null ? activeRoutes.get(monster.getObjectId()) : activeRoutes.get(npc.getObjectId());
         return !walk.isStoppedByAttack() && !walk.isSuspended();
     }
 
@@ -225,7 +225,7 @@ public class WalkingManager implements IXmlReader {
      * @return the {@link WalkRoute} associated with the specified name, or {@code null} if not found
      */
     public WalkRoute getRoute(String route) {
-        return _routes.get(route);
+        return routes.get(route);
     }
 
     /**
@@ -234,7 +234,7 @@ public class WalkingManager implements IXmlReader {
      * @return {@code true} if the NPC is targeted in a route, {@code false} otherwise
      */
     public boolean isTargeted(Npc npc) {
-        return _targetedNpcIds.contains(npc.getId());
+        return targetedNpcIds.contains(npc.getId());
     }
 
     /**
@@ -243,7 +243,7 @@ public class WalkingManager implements IXmlReader {
      * @return {@code true} if the NPC is registered, {@code false} otherwise
      */
     private boolean isRegistered(Npc npc) {
-        return _activeRoutes.containsKey(npc.getObjectId());
+        return activeRoutes.containsKey(npc.getObjectId());
     }
 
     /**
@@ -252,8 +252,8 @@ public class WalkingManager implements IXmlReader {
      * @return the name of the route, or an empty string if the NPC is not on a route
      */
     public String getRouteName(Npc npc) {
-        return _activeRoutes.containsKey(npc.getObjectId())
-                ? _activeRoutes.get(npc.getObjectId()).getRoute().getName()
+        return activeRoutes.containsKey(npc.getObjectId())
+                ? activeRoutes.get(npc.getObjectId()).getRoute().getName()
                 : "";
     }
 
@@ -263,9 +263,9 @@ public class WalkingManager implements IXmlReader {
      * @param routeName the name of the route to follow
      */
     public void startMoving(Npc npc, String routeName) {
-        if (_routes.containsKey(routeName) && (npc != null) && !npc.isDead()) // Check, if these route and NPC present.
+        if (routes.containsKey(routeName) && (npc != null) && !npc.isDead()) // Check, if these route and NPC present.
         {
-            if (!_activeRoutes.containsKey(npc.getObjectId())) // New walk task.
+            if (!activeRoutes.containsKey(npc.getObjectId())) // New walk task.
             {
                 // Only if not already moved / not engaged in battle... should not happens if called on spawn.
                 if ((npc.getAI().getIntention() == Intention.ACTIVE)
@@ -280,11 +280,17 @@ public class WalkingManager implements IXmlReader {
                     }
 
                     if (!npc.isInsideRadius3D(node, 3000)) {
-                        LOGGER.warning(getClass().getSimpleName() + ": " + "Route '" + routeName + "': NPC (id="
-                                + npc.getId() + ", x=" + npc.getX() + ", y=" + npc.getY() + ", z=" + npc.getZ()
-                                + ") is too far from starting point (node x=" + node.getX() + ", y=" + node.getY()
-                                + ", z=" + node.getZ() + ", range=" + npc.calculateDistance3D(node)
-                                + "). Teleporting to proper location.");
+                        log.warn(
+                                "Route '{}': NPC (id={}, x={}, y={}, z={}) is too far from starting point (node x={}, y={}, z={}, range={}). Teleporting to proper location.",
+                                routeName,
+                                npc.getId(),
+                                npc.getX(),
+                                npc.getY(),
+                                npc.getZ(),
+                                node.getX(),
+                                node.getY(),
+                                node.getZ(),
+                                npc.calculateDistance3D(node));
                         npc.teleToLocation(node);
                     }
 
@@ -296,29 +302,29 @@ public class WalkingManager implements IXmlReader {
 
                     npc.getAI().setIntentionMoveTo(node);
 
-                    final ScheduledFuture<?> task = _repeatMoveTasks.get(npc);
+                    final ScheduledFuture<?> task = repeatMoveTasks.get(npc);
                     if ((task == null) || task.isCancelled() || task.isDone()) {
                         final ScheduledFuture<?> newTask =
                                 ThreadPool.scheduleAtFixedRate(() -> startMoving(npc, routeName), 10000, 10000);
-                        _repeatMoveTasks.put(npc, newTask);
+                        repeatMoveTasks.put(npc, newTask);
                         walk.setWalkCheckTask(newTask); // Start walk check task, for resuming walk after fight.
                     }
 
                     npc.setWalker();
-                    _activeRoutes.put(npc.getObjectId(), walk); // register route
+                    activeRoutes.put(npc.getObjectId(), walk); // register route
                 } else {
-                    final ScheduledFuture<?> task = _startMoveTasks.get(npc);
+                    final ScheduledFuture<?> task = startMoveTasks.get(npc);
                     if ((task == null) || task.isCancelled() || task.isDone()) {
-                        _startMoveTasks.put(npc, ThreadPool.schedule(() -> startMoving(npc, routeName), 10000));
+                        startMoveTasks.put(npc, ThreadPool.schedule(() -> startMoving(npc, routeName), 10000));
                     }
                 }
             } else // Walk was stopped due to some reason (arrived to node, script action, fight or something else),
             // resume it.
             {
-                if (_activeRoutes.containsKey(npc.getObjectId())
+                if (activeRoutes.containsKey(npc.getObjectId())
                         && ((npc.getAI().getIntention() == Intention.ACTIVE)
                                 || (npc.getAI().getIntention() == Intention.IDLE))) {
-                    final WalkInfo walk = _activeRoutes.get(npc.getObjectId());
+                    final WalkInfo walk = activeRoutes.get(npc.getObjectId());
                     if (walk == null) {
                         return;
                     }
@@ -350,7 +356,7 @@ public class WalkingManager implements IXmlReader {
      * @param npc the {@link Npc} whose movement is to be canceled
      */
     public synchronized void cancelMoving(Npc npc) {
-        final WalkInfo walk = _activeRoutes.remove(npc.getObjectId());
+        final WalkInfo walk = activeRoutes.remove(npc.getObjectId());
         if (walk != null) {
             final ScheduledFuture<?> task = walk.getWalkCheckTask();
             if (task != null) {
@@ -364,7 +370,7 @@ public class WalkingManager implements IXmlReader {
      * @param npc the {@link Npc} to resume moving
      */
     public void resumeMoving(Npc npc) {
-        final WalkInfo walk = _activeRoutes.get(npc.getObjectId());
+        final WalkInfo walk = activeRoutes.get(npc.getObjectId());
         if (walk != null) {
             walk.setSuspended(false);
             walk.setStoppedByAttack(false);
@@ -389,7 +395,7 @@ public class WalkingManager implements IXmlReader {
         }
 
         final WalkInfo walk =
-                monster != null ? _activeRoutes.get(monster.getObjectId()) : _activeRoutes.get(npc.getObjectId());
+                monster != null ? activeRoutes.get(monster.getObjectId()) : activeRoutes.get(npc.getObjectId());
         walk.setSuspended(suspend);
         walk.setStoppedByAttack(stoppedByAttack);
 
@@ -410,7 +416,7 @@ public class WalkingManager implements IXmlReader {
      * @param npc the {@link Npc} that has arrived at a node
      */
     public void onArrived(Npc npc) {
-        if (!_activeRoutes.containsKey(npc.getObjectId())) {
+        if (!activeRoutes.containsKey(npc.getObjectId())) {
             return;
         }
 
@@ -419,7 +425,7 @@ public class WalkingManager implements IXmlReader {
             EventDispatcher.getInstance().notifyEventAsync(new OnNpcMoveNodeArrived(npc), npc);
         }
 
-        final WalkInfo walk = _activeRoutes.get(npc.getObjectId());
+        final WalkInfo walk = activeRoutes.get(npc.getObjectId());
 
         // Opposite should not happen... but happens sometime.
         if ((walk.getCurrentNodeId() < 0)
@@ -441,9 +447,9 @@ public class WalkingManager implements IXmlReader {
             npc.broadcastSay(ChatType.NPC_GENERAL, node.getChatText());
         }
 
-        final ScheduledFuture<?> task = _arriveTasks.get(npc);
+        final ScheduledFuture<?> task = arriveTasks.get(npc);
         if ((task == null) || task.isCancelled() || task.isDone()) {
-            _arriveTasks.put(npc, ThreadPool.schedule(new ArrivedTask(npc, walk), 100 + (node.getDelay() * 1000)));
+            arriveTasks.put(npc, ThreadPool.schedule(new ArrivedTask(npc, walk), 100 + (node.getDelay() * 1000)));
         }
     }
 
@@ -460,8 +466,8 @@ public class WalkingManager implements IXmlReader {
      * @param npc the {@link Npc} that has spawned
      */
     public void onSpawn(Npc npc) {
-        if (_routesToAttach.containsKey(npc.getId())) {
-            final String routeName = _routesToAttach.get(npc.getId()).getRouteName(npc);
+        if (routesToAttach.containsKey(npc.getId())) {
+            final String routeName = routesToAttach.get(npc.getId()).getRouteName(npc);
             if (!routeName.isEmpty()) {
                 startMoving(npc, routeName);
             }

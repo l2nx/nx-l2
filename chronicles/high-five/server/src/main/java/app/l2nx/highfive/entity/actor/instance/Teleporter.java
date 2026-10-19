@@ -30,14 +30,14 @@ import app.l2nx.highfive.managers.CastleManager;
 import app.l2nx.highfive.mechanics.skill.CommonSkill;
 import app.l2nx.highfive.network.serverpackets.NpcHtmlMessage;
 import java.util.StringTokenizer;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 
 /**
  * @author NightMarez
  */
+@Slf4j
 public class Teleporter extends Merchant {
-    private static final Logger LOGGER = Logger.getLogger(Teleporter.class.getName());
 
     private static final CommonSkill[] FORBIDDEN_TRANSFORM = {
         CommonSkill.FROG_TRANSFORM, CommonSkill.CHILD_TRANSFORM, CommonSkill.NATIVE_TRANSFORM
@@ -75,8 +75,7 @@ public class Teleporter extends Merchant {
                 final String listName = (st.hasMoreTokens()) ? st.nextToken() : TeleportType.NORMAL.name();
                 final TeleportHolder holder = TeleporterData.getInstance().getHolder(getId(), listName);
                 if (holder == null) {
-                    LOGGER.warning(player + " requested show teleports for list with name " + listName + " at NPC "
-                            + getId() + "!");
+                    log.warn("{} requested show teleports for list with name {} at NPC {}!", player, listName, getId());
                     return;
                 }
 
@@ -86,15 +85,14 @@ public class Teleporter extends Merchant {
             case "teleport": {
                 // Check for required count of params.
                 if (st.countTokens() != 2) {
-                    LOGGER.warning(player + " send unhandled teleport command: " + command);
+                    log.warn("{} send unhandled teleport command: {}", player, command);
                     return;
                 }
 
                 final String listName = st.nextToken();
                 final TeleportHolder holder = TeleporterData.getInstance().getHolder(getId(), listName);
                 if (holder == null) {
-                    LOGGER.warning(
-                            player + " requested unknown teleport list: " + listName + " for npc: " + getId() + "!");
+                    log.warn("{} requested unknown teleport list: {} for npc: {}!", player, listName, getId());
                     return;
                 }
 

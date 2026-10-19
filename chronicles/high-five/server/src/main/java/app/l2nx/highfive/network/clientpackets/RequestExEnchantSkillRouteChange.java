@@ -36,28 +36,29 @@ import app.l2nx.highfive.network.serverpackets.ExEnchantSkillInfoDetail;
 import app.l2nx.highfive.network.serverpackets.ExEnchantSkillResult;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Format (ch) dd c: (id) 0xD0 h: (subid) 0x34 d: skill id d: skill level
  * @author -Wooden-
  */
 public class RequestExEnchantSkillRouteChange extends ClientPacket {
-    private static final Logger LOGGER_ENCHANT = Logger.getLogger("enchant.skills");
 
-    private int _skillId;
-    private int _skillLevel;
+    private static final Logger ENCHANT_SKILLS_LOG = LoggerFactory.getLogger("enchant.skills");
+
+    private int skillId;
+    private int skillLevel;
 
     @Override
     protected void readImpl() {
-        _skillId = readInt();
-        _skillLevel = readInt();
+        skillId = readInt();
+        skillLevel = readInt();
     }
 
     @Override
     protected void runImpl() {
-        if ((_skillId <= 0) || (_skillLevel <= 0)) {
+        if ((skillId <= 0) || (skillLevel <= 0)) {
             return;
         }
 
@@ -88,18 +89,18 @@ public class RequestExEnchantSkillRouteChange extends ClientPacket {
             return;
         }
 
-        Skill skill = SkillData.getInstance().getSkill(_skillId, _skillLevel);
+        Skill skill = SkillData.getInstance().getSkill(skillId, skillLevel);
         if (skill == null) {
             return;
         }
 
         final int reqItemId = EnchantSkillGroupsData.CHANGE_ENCHANT_BOOK;
-        final EnchantSkillLearn s = EnchantSkillGroupsData.getInstance().getSkillEnchantmentBySkillId(_skillId);
+        final EnchantSkillLearn s = EnchantSkillGroupsData.getInstance().getSkillEnchantmentBySkillId(skillId);
         if (s == null) {
             return;
         }
 
-        final int beforeEnchantSkillLevel = player.getSkillLevel(_skillId);
+        final int beforeEnchantSkillLevel = player.getSkillLevel(skillId);
 
         // do you have this skill enchanted?
         if (beforeEnchantSkillLevel <= 100) {
@@ -109,11 +110,11 @@ public class RequestExEnchantSkillRouteChange extends ClientPacket {
         final int currentEnchantLevel = beforeEnchantSkillLevel % 100;
 
         // is the requested level valid?
-        if (currentEnchantLevel != (_skillLevel % 100)) {
+        if (currentEnchantLevel != (skillLevel % 100)) {
             return;
         }
 
-        final EnchantSkillHolder esd = s.getEnchantSkillHolder(_skillLevel);
+        final EnchantSkillHolder esd = s.getEnchantSkillHolder(skillLevel);
         final int requiredSp = esd.getSpCost();
         final int requireditems = esd.getAdenaCost();
         if (player.getSp() >= requiredSp) {
@@ -147,19 +148,22 @@ public class RequestExEnchantSkillRouteChange extends ClientPacket {
             final int maxPenalty = Math.min(4, currentEnchantLevel);
             final int levelPenalty =
                     maxPenalty > 0 ? ThreadLocalRandom.current().nextInt(maxPenalty) : 0;
-            _skillLevel -= levelPenalty;
-            if ((_skillLevel % 100) == 0) {
-                _skillLevel = s.getBaseLevel();
+            skillLevel -= levelPenalty;
+            if ((skillLevel % 100) == 0) {
+                skillLevel = s.getBaseLevel();
             }
 
-            skill = SkillData.getInstance().getSkill(_skillId, _skillLevel);
+            skill = SkillData.getInstance().getSkill(skillId, skillLevel);
             if (skill != null) {
                 if (GeneralConfig.LOG_SKILL_ENCHANTS) {
-                    LOGGER_ENCHANT.log(
-                            Level.INFO,
-                            "Route Change:" + player.getName() + " [" + player.getObjectId() + "] Account:"
-                                    + player.getAccountName() + " IP:" + player.getIPAddress() + ", Skill:" + skill
-                                    + ", SPB:" + spb);
+                    ENCHANT_SKILLS_LOG.info(
+                            "Route Change:{} [{}] Account:{} IP:{}, Skill:{}, SPB:{}",
+                            player.getName(),
+                            player.getObjectId(),
+                            player.getAccountName(),
+                            player.getIPAddress(),
+                            skill,
+                            spb);
                 }
 
                 player.addSkill(skill, true);
@@ -170,22 +174,22 @@ public class RequestExEnchantSkillRouteChange extends ClientPacket {
             if (levelPenalty == 0) {
                 final SystemMessage sm = new SystemMessage(
                         SystemMessageId.ENCHANT_SKILL_ROUTE_CHANGE_WAS_SUCCESSFUL_LV_OF_ENCHANT_SKILL_S1_WILL_REMAIN);
-                sm.addSkillName(_skillId);
+                sm.addSkillName(skillId);
                 player.sendPacket(sm);
             } else {
                 final SystemMessage sm = new SystemMessage(
                         SystemMessageId
                                 .ENCHANT_SKILL_ROUTE_CHANGE_WAS_SUCCESSFUL_LV_OF_ENCHANT_SKILL_S1_HAS_BEEN_DECREASED_BY_S2);
-                sm.addSkillName(_skillId);
+                sm.addSkillName(skillId);
                 sm.addInt(levelPenalty);
                 player.sendPacket(sm);
             }
 
             player.sendSkillList();
-            final int afterEnchantSkillLevel = player.getSkillLevel(_skillId);
-            player.sendPacket(new ExEnchantSkillInfo(_skillId, afterEnchantSkillLevel));
-            player.sendPacket(new ExEnchantSkillInfoDetail(3, _skillId, afterEnchantSkillLevel, player));
-            player.updateShortcuts(_skillId, afterEnchantSkillLevel);
+            final int afterEnchantSkillLevel = player.getSkillLevel(skillId);
+            player.sendPacket(new ExEnchantSkillInfo(skillId, afterEnchantSkillLevel));
+            player.sendPacket(new ExEnchantSkillInfoDetail(3, skillId, afterEnchantSkillLevel, player));
+            player.updateShortcuts(skillId, afterEnchantSkillLevel);
         } else {
             player.sendPacket(SystemMessageId.YOU_DO_NOT_HAVE_ENOUGH_SP_TO_ENCHANT_THAT_SKILL);
         }

@@ -39,6 +39,7 @@ import app.l2nx.highfive.mechanics.events.returns.TerminateReturn;
 import app.l2nx.highfive.mechanics.script.QuestState;
 import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.network.serverpackets.EtcStatusUpdate;
+import lombok.Setter;
 
 /**
  * This class represents all Playable characters in the world.<br>
@@ -49,7 +50,9 @@ import app.l2nx.highfive.network.serverpackets.EtcStatusUpdate;
  * </ul>
  */
 public abstract class Playable extends Creature {
-    private Creature _lockedTarget = null;
+    @Setter
+    private Creature lockedTarget = null;
+
     private Player transferDmgTo = null;
 
     /**
@@ -93,7 +96,13 @@ public abstract class Playable extends Creature {
     public boolean doDie(Creature killer) {
         if (EventDispatcher.getInstance().hasListener(EventType.ON_CREATURE_DEATH, this)) {
             final TerminateReturn returnBack = EventDispatcher.getInstance()
-                    .notifyEvent(new OnCreatureDeath(killer, this), this, TerminateReturn.class);
+                    .notifyEvent(
+                            OnCreatureDeath.builder()
+                                    .attacker(killer)
+                                    .target(this)
+                                    .build(),
+                            this,
+                            TerminateReturn.class);
             if ((returnBack != null) && returnBack.terminate()) {
                 return false;
             }
@@ -260,15 +269,11 @@ public abstract class Playable extends Creature {
     }
 
     public boolean isLockedTarget() {
-        return _lockedTarget != null;
+        return lockedTarget != null;
     }
 
     public Creature getLockedTarget() {
-        return _lockedTarget;
-    }
-
-    public void setLockedTarget(Creature creature) {
-        _lockedTarget = creature;
+        return lockedTarget;
     }
 
     public void setTransferDamageTo(Player val) {

@@ -36,12 +36,12 @@ import app.l2nx.highfive.util.StatSet;
  * @author Adry_85
  */
 public class Escape extends AbstractEffect {
-    private final TeleportWhereType _escapeType;
+    private final TeleportWhereType escapeType;
 
     public Escape(Condition attachCond, Condition applyCond, StatSet set, StatSet params) {
         super(attachCond, applyCond, set, params);
 
-        _escapeType = params.getEnum("escapeType", TeleportWhereType.class, null);
+        escapeType = params.getEnum("escapeType", TeleportWhereType.class, null);
     }
 
     @Override
@@ -56,7 +56,7 @@ public class Escape extends AbstractEffect {
 
     @Override
     public void onStart(Creature effector, Creature effected, Skill skill) {
-        if (_escapeType == null) {
+        if (escapeType == null) {
             return;
         }
 
@@ -74,7 +74,7 @@ public class Escape extends AbstractEffect {
             effected.teleToLocation(effected.asNpc().getSpawn());
             effected.setHeading(effected.asNpc().getSpawn().getHeading());
         } else {
-            effected.teleToLocation(MapRegionData.getInstance().getTeleToLocation(effected, _escapeType), true);
+            effected.teleToLocation(MapRegionData.getInstance().getTeleToLocation(effected, escapeType), true);
             effected.asPlayer().setIn7sDungeon(false);
             effected.setInstanceId(0);
         }

@@ -24,36 +24,36 @@ import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.instance.Pet;
 import app.l2nx.highfive.threads.ThreadPool;
 import java.util.concurrent.ScheduledFuture;
+import lombok.Getter;
 
 /**
  * @author DrHouse
  */
 public class DropProtection implements Runnable {
-    private volatile boolean _isProtected = false;
-    private Creature _owner = null;
-    private ScheduledFuture<?> _task = null;
+    private volatile boolean protectedDrop = false;
+
+    @Getter
+    private Creature owner = null;
+
+    private ScheduledFuture<?> task = null;
 
     private static final long PROTECTED_MILLIS_TIME = 15000;
 
     @Override
     public synchronized void run() {
-        _isProtected = false;
-        _owner = null;
-        _task = null;
+        protectedDrop = false;
+        owner = null;
+        task = null;
     }
 
     public boolean isProtected() {
-        return _isProtected;
-    }
-
-    public Creature getOwner() {
-        return _owner;
+        return protectedDrop;
     }
 
     public synchronized boolean tryPickUp(Player actor) {
-        return !_isProtected
-                || (_owner == actor)
-                || ((_owner.getParty() != null) && (_owner.getParty() == actor.getParty()));
+        return !protectedDrop
+                || (owner == actor)
+                || ((owner.getParty() != null) && (owner.getParty() == actor.getParty()));
     }
 
     public boolean tryPickUp(Pet pet) {
@@ -61,24 +61,24 @@ public class DropProtection implements Runnable {
     }
 
     public synchronized void unprotect() {
-        if (_task != null) {
-            _task.cancel(false);
+        if (task != null) {
+            task.cancel(false);
         }
 
-        _isProtected = false;
-        _owner = null;
-        _task = null;
+        protectedDrop = false;
+        owner = null;
+        task = null;
     }
 
     public synchronized void protect(Creature creature) {
         unprotect();
 
-        _isProtected = true;
-        _owner = creature;
-        if (_owner == null) {
+        protectedDrop = true;
+        owner = creature;
+        if (owner == null) {
             throw new NullPointerException("Trying to protect dropped item to null owner");
         }
 
-        _task = ThreadPool.schedule(this, PROTECTED_MILLIS_TIME);
+        task = ThreadPool.schedule(this, PROTECTED_MILLIS_TIME);
     }
 }

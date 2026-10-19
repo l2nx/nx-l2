@@ -37,11 +37,11 @@ import app.l2nx.highfive.util.StatSet;
  * @author UnAfraid
  */
 public class Summon extends AbstractEffect {
-    private final int _npcId;
-    private final float _expMultiplier;
-    private final ItemHolder _consumeItem;
-    private final int _lifeTime;
-    private final int _consumeItemInterval;
+    private final int npcId;
+    private final float expMultiplier;
+    private final ItemHolder consumeItem;
+    private final int lifeTime;
+    private final int consumeItemInterval;
 
     public Summon(Condition attachCond, Condition applyCond, StatSet set, StatSet params) {
         super(attachCond, applyCond, set, params);
@@ -50,11 +50,11 @@ public class Summon extends AbstractEffect {
             throw new IllegalArgumentException("Summon effect without parameters!");
         }
 
-        _npcId = params.getInt("npcId");
-        _expMultiplier = params.getFloat("expMultiplier", 1);
-        _consumeItem = new ItemHolder(params.getInt("consumeItemId", 0), params.getInt("consumeItemCount", 1));
-        _consumeItemInterval = params.getInt("consumeItemInterval", 0);
-        _lifeTime = params.getInt("lifeTime", 3600) * 1000;
+        npcId = params.getInt("npcId");
+        expMultiplier = params.getFloat("expMultiplier", 1);
+        consumeItem = new ItemHolder(params.getInt("consumeItemId", 0), params.getInt("consumeItemCount", 1));
+        consumeItemInterval = params.getInt("consumeItemInterval", 0);
+        lifeTime = params.getInt("lifeTime", 3600) * 1000;
     }
 
     @Override
@@ -69,17 +69,18 @@ public class Summon extends AbstractEffect {
         }
 
         final Player player = effected.asPlayer();
-        final NpcTemplate template = NpcData.getInstance().getTemplate(_npcId);
+        final NpcTemplate template = NpcData.getInstance().getTemplate(npcId);
         final Servitor summon = new Servitor(template, player);
-        final int consumeItemInterval =
-                (_consumeItemInterval > 0 ? _consumeItemInterval : (template.getRace() != Race.SIEGE_WEAPON ? 240 : 60))
-                        * 1000;
+        final int consumeItemInterval = (this.consumeItemInterval > 0
+                        ? this.consumeItemInterval
+                        : (template.getRace() != Race.SIEGE_WEAPON ? 240 : 60))
+                * 1000;
         summon.setName(template.getName());
         summon.setTitle(effected.getName());
         summon.setReferenceSkill(skill.getId());
-        summon.setExpMultiplier(_expMultiplier);
-        summon.setLifeTime(_lifeTime);
-        summon.setItemConsume(_consumeItem);
+        summon.setExpMultiplier(expMultiplier);
+        summon.setLifeTime(lifeTime);
+        summon.setItemConsume(consumeItem);
         summon.setItemConsumeInterval(consumeItemInterval);
 
         final int maxPetLevel = ExperienceData.getInstance().getMaxPetLevel();

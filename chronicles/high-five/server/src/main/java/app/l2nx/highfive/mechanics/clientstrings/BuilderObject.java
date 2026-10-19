@@ -19,18 +19,21 @@
  */
 package app.l2nx.highfive.mechanics.clientstrings;
 
+import lombok.Getter;
+
 /**
  * @author Forsaiken
  */
 public class BuilderObject extends Builder {
-    private final int _index;
+    @Getter
+    private final int index;
 
     BuilderObject(int id) {
         if ((id < 1) || (id > 9)) {
             throw new RuntimeException("Illegal Id: " + id);
         }
 
-        _index = id - 1;
+        index = id - 1;
     }
 
     @Override
@@ -48,12 +51,7 @@ public class BuilderObject extends Builder {
     }
 
     @Override
-    public int getIndex() {
-        return _index;
-    }
-
-    @Override
     public String toString() {
-        return "[PARAM-" + (_index + 1) + "]";
+        return "[PARAM-" + (index + 1) + "]";
     }
 }

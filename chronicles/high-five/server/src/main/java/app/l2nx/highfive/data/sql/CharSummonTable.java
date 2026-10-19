@@ -38,15 +38,15 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author Nyaran
  */
+@Slf4j
 public class CharSummonTable {
-    private static final Logger LOGGER = Logger.getLogger(CharSummonTable.class.getName());
-    private static final Map<Integer, Integer> _pets = new ConcurrentHashMap<>();
-    private static final Map<Integer, Integer> _servitors = new ConcurrentHashMap<>();
+    private static final Map<Integer, Integer> pets = new ConcurrentHashMap<>();
+    private static final Map<Integer, Integer> servitors = new ConcurrentHashMap<>();
 
     // SQL
     private static final String INIT_PET = "SELECT ownerId, item_obj_id FROM pets WHERE restore = 'true'";
@@ -58,11 +58,11 @@ public class CharSummonTable {
             "REPLACE INTO character_summons (ownerId,summonSkillId,curHp,curMp,time) VALUES (?,?,?,?,?)";
 
     public Map<Integer, Integer> getPets() {
-        return _pets;
+        return pets;
     }
 
     public Map<Integer, Integer> getServitors() {
-        return _servitors;
+        return servitors;
     }
 
     public void init() {
@@ -71,10 +71,10 @@ public class CharSummonTable {
                     Statement s = con.createStatement();
                     ResultSet rs = s.executeQuery(INIT_SUMMONS)) {
                 while (rs.next()) {
-                    _servitors.put(rs.getInt("ownerId"), rs.getInt("summonSkillId"));
+                    servitors.put(rs.getInt("ownerId"), rs.getInt("summonSkillId"));
                 }
             } catch (Exception e) {
-                LOGGER.warning(getClass().getSimpleName() + ": Error while loading saved servitor: " + e);
+                log.warn("Error while loading saved servitor", e);
             }
         }
 
@@ -83,50 +83,47 @@ public class CharSummonTable {
                     Statement s = con.createStatement();
                     ResultSet rs = s.executeQuery(INIT_PET)) {
                 while (rs.next()) {
-                    _pets.put(rs.getInt("ownerId"), rs.getInt("item_obj_id"));
+                    pets.put(rs.getInt("ownerId"), rs.getInt("item_obj_id"));
                 }
             } catch (Exception e) {
-                LOGGER.warning(getClass().getSimpleName() + ": Error while loading saved pet: " + e);
+                log.warn("Error while loading saved pet", e);
             }
         }
     }
 
     public void removeServitor(Player player) {
-        _servitors.remove(player.getObjectId());
+        servitors.remove(player.getObjectId());
         try (Connection con = DatabaseFactory.getConnection();
                 PreparedStatement ps = con.prepareStatement(REMOVE_SUMMON)) {
             ps.setInt(1, player.getObjectId());
             ps.execute();
         } catch (SQLException e) {
-            LOGGER.warning(getClass().getSimpleName() + ": Summon cannot be removed: " + e);
+            log.warn("Summon cannot be removed", e);
         }
     }
 
     public void restorePet(Player player) {
-        final Item item = player.getInventory().getItemByObjectId(_pets.get(player.getObjectId()));
+        final Item item = player.getInventory().getItemByObjectId(pets.get(player.getObjectId()));
         if (item == null) {
-            LOGGER.warning(getClass().getSimpleName() + ": Null pet summoning item for: " + player);
+            log.warn("Null pet summoning item for: {}", player);
             return;
         }
 
         final PetData petData = PetDataTable.getInstance().getPetDataByItemId(item.getId());
         if (petData == null) {
-            LOGGER.warning(
-                    getClass().getSimpleName() + ": Null pet data for: " + player + " and summoning item: " + item);
+            log.warn("Null pet data for: {} and summoning item: {}", player, item);
             return;
         }
 
         final NpcTemplate npcTemplate = NpcData.getInstance().getTemplate(petData.getNpcId());
         if (npcTemplate == null) {
-            LOGGER.warning(getClass().getSimpleName() + ": Null pet NPC template for: " + player + " and pet Id:"
-                    + petData.getNpcId());
+            log.warn("Null pet NPC template for: {} and pet Id:{}", player, petData.getNpcId());
             return;
         }
 
         final Pet pet = Pet.spawnPet(npcTemplate, player, item);
         if (pet == null) {
-            LOGGER.warning(getClass().getSimpleName() + ": Null pet instance for: " + player + " and pet NPC template:"
-                    + npcTemplate);
+            log.warn("Null pet instance for: {} and pet NPC template:{}", player, npcTemplate);
             return;
         }
 
@@ -156,7 +153,7 @@ public class CharSummonTable {
     }
 
     public void restoreServitor(Player player) {
-        final int skillId = _servitors.get(player.getObjectId());
+        final int skillId = servitors.get(player.getObjectId());
         try (Connection con = DatabaseFactory.getConnection();
                 PreparedStatement ps = con.prepareStatement(LOAD_SUMMON)) {
             ps.setInt(1, player.getObjectId());
@@ -184,7 +181,7 @@ public class CharSummonTable {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.warning(getClass().getSimpleName() + ": Servitor cannot be restored: " + e);
+            log.warn("Servitor cannot be restored", e);
         }
     }
 
@@ -193,7 +190,7 @@ public class CharSummonTable {
             return;
         }
 
-        _servitors.put(summon.getOwner().getObjectId(), summon.getReferenceSkill());
+        servitors.put(summon.getOwner().getObjectId(), summon.getReferenceSkill());
 
         try (Connection con = DatabaseFactory.getConnection();
                 PreparedStatement ps = con.prepareStatement(SAVE_SUMMON)) {
@@ -204,8 +201,7 @@ public class CharSummonTable {
             ps.setInt(5, summon.getLifeTimeRemaining());
             ps.execute();
         } catch (Exception e) {
-            LOGGER.warning(getClass().getSimpleName() + ": Failed to store summon: " + summon + " from "
-                    + summon.getOwner() + ", error: " + e);
+            log.warn("Failed to store summon: {} from {}, error", summon, summon.getOwner(), e);
         }
     }
 

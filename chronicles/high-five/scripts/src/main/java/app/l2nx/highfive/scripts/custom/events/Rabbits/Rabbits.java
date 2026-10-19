@@ -32,12 +32,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Rabbits event.<br>
  * Chests are hidden at Fantasy Isle and players must use the Rabbit transformation's skills to find and open them.
  * @author Gnacik, Zoey76
  */
+@Slf4j
 public class Rabbits extends Event {
     // NPCs
     private static final int NPC_MANAGER = 900101;
@@ -53,9 +55,9 @@ public class Rabbits extends Event {
     private static final int EVENT_TIME = 10;
     private static final int TOTAL_CHEST_COUNT = 75;
     private static final int TRANSFORMATION_ID = 105;
-    private final Set<Npc> _npcs = ConcurrentHashMap.newKeySet(TOTAL_CHEST_COUNT + 1);
-    private final List<Player> _players = new ArrayList<>();
-    private boolean _isActive = false;
+    private final Set<Npc> npcs = ConcurrentHashMap.newKeySet(TOTAL_CHEST_COUNT + 1);
+    private final List<Player> players = new ArrayList<>();
+    private boolean active = false;
 
     /**
      * Drop data:<br>
@@ -97,28 +99,28 @@ public class Rabbits extends Event {
     @Override
     public boolean eventStart(Player eventMaker) {
         // Don't start event if it is active.
-        if (_isActive) {
+        if (active) {
             eventMaker.sendMessage("Event " + getName() + " is already started!");
             return false;
         }
 
         // Check starting conditions
         if (!GeneralConfig.CUSTOM_NPC_DATA) {
-            LOGGER.info(getName() + ": Event can't be started, because custom NPCs are disabled!");
+            log.info("{}: Event can't be started, because custom NPCs are disabled!", getName());
             eventMaker.sendMessage("Event " + getName() + " can't be started because custom NPCs are disabled!");
             return false;
         }
 
         // Set Event active
-        _isActive = true;
+        active = true;
 
         // Spawn Manager
-        recordSpawn(_npcs, NPC_MANAGER, -59227, -56939, -2039, 64106, false, 0);
+        recordSpawn(npcs, NPC_MANAGER, -59227, -56939, -2039, 64106, false, 0);
 
         // Spawn Chests
         for (int i = 0; i <= TOTAL_CHEST_COUNT; i++) {
             recordSpawn(
-                    _npcs,
+                    npcs,
                     CHEST,
                     getRandom(-60653, -58772),
                     getRandom(-55830, -58146),
@@ -142,30 +144,30 @@ public class Rabbits extends Event {
     @Override
     public boolean eventStop() {
         // Don't stop inactive event.
-        if (!_isActive) {
+        if (!active) {
             return false;
         }
 
         // Set inactive
-        _isActive = false;
+        active = false;
 
         // Cancel timer
         cancelQuestTimers("END_RABBITS_EVENT");
 
         // Despawn NPCs
-        for (Npc npc : _npcs) {
+        for (Npc npc : npcs) {
             npc.deleteMe();
         }
 
-        _npcs.clear();
+        npcs.clear();
 
-        for (Player player : _players) {
+        for (Player player : players) {
             if (player.getTransformationId() == TRANSFORMATION_ID) {
                 player.untransform();
             }
         }
 
-        _players.clear();
+        players.clear();
 
         // Announce event end
         World.broadcastToAllOnlinePlayers("Rabbits Event: Event has finished.");
@@ -186,7 +188,7 @@ public class Rabbits extends Event {
                 }
 
                 RABBIT_TRANSFORMATION.getSkill().applyEffects(npc, player);
-                _players.add(player);
+                players.add(player);
                 break;
             }
             case "END_RABBITS_EVENT": {
@@ -210,9 +212,9 @@ public class Rabbits extends Event {
             if (!npc.isInvisible() && targets.contains(npc)) {
                 dropItem(npc, caster, DROPLIST);
                 npc.deleteMe();
-                _npcs.remove(npc);
+                npcs.remove(npc);
 
-                if (_npcs.isEmpty()) {
+                if (npcs.isEmpty()) {
                     World.broadcastToAllOnlinePlayers("Rabbits Event: No more chests...");
                     eventStop();
                 }
@@ -226,7 +228,7 @@ public class Rabbits extends Event {
 
     @Override
     public void onAttack(Npc npc, Player attacker, int damage, boolean isSummon, Skill skill) {
-        if (_isActive && ((skill == null) || (skill.getId() != RABBIT_TORNADO.getSkillId()))) {
+        if (active && ((skill == null) || (skill.getId() != RABBIT_TORNADO.getSkillId()))) {
             RAID_CURSE.getSkill().applyEffects(npc, attacker);
         }
     }

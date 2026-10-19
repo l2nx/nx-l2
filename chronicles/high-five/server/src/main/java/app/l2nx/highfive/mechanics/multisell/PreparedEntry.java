@@ -23,22 +23,24 @@ import static app.l2nx.highfive.entity.itemcontainer.Inventory.ADENA_ID;
 
 import app.l2nx.highfive.entity.item.instance.Item;
 import java.util.ArrayList;
+import lombok.Getter;
 
 /**
  * @author DS
  */
 public class PreparedEntry extends Entry {
-    private long _taxAmount = 0;
+    @Getter
+    private long taxAmount = 0;
 
     public PreparedEntry(Entry template, Item item, boolean applyTaxes, boolean maintainEnchantment, double taxRate) {
-        _entryId = template.getEntryId() * 100000;
+        entryId = template.getEntryId() * 100000;
         if (maintainEnchantment && (item != null)) {
-            _entryId += item.getEnchantLevel();
+            entryId += item.getEnchantLevel();
         }
 
         ItemInfo info = null;
         long adenaAmount = 0;
-        _ingredients = new ArrayList<>(template.getIngredients().size());
+        ingredients = new ArrayList<>(template.getIngredients().size());
         for (Ingredient ing : template.getIngredients()) {
             if (ing.getItemId() == ADENA_ID) {
                 // Tax ingredients added only if taxes enabled.
@@ -46,7 +48,7 @@ public class PreparedEntry extends Entry {
                     // if taxes are to be applied, modify/add the adena count based on the template adena/ancient adena
                     // count
                     if (applyTaxes) {
-                        _taxAmount += Math.round(ing.getItemCount() * taxRate);
+                        taxAmount += Math.round(ing.getItemCount() * taxRate);
                     }
                 } else {
                     adenaAmount += ing.getItemCount();
@@ -61,23 +63,23 @@ public class PreparedEntry extends Entry {
                 info = new ItemInfo(item);
                 final Ingredient newIngredient = ing.getCopy();
                 newIngredient.setItemInfo(info);
-                _ingredients.add(newIngredient);
+                ingredients.add(newIngredient);
             } else {
-                _ingredients.add(ing.getCopy());
+                ingredients.add(ing.getCopy());
             }
         }
 
         // now add the adena, if any.
-        adenaAmount += _taxAmount; // do not forget tax
+        adenaAmount += taxAmount; // do not forget tax
         if (adenaAmount > 0) {
-            _ingredients.add(new Ingredient(ADENA_ID, adenaAmount, 0, false, false));
+            ingredients.add(new Ingredient(ADENA_ID, adenaAmount, 0, false, false));
         }
 
         // now copy products
-        _products = new ArrayList<>(template.getProducts().size());
+        products = new ArrayList<>(template.getProducts().size());
         for (Ingredient ing : template.getProducts()) {
             if (!ing.isStackable()) {
-                _stackable = false;
+                stackable = false;
             }
 
             final Ingredient newProduct = ing.getCopy();
@@ -88,12 +90,7 @@ public class PreparedEntry extends Entry {
                 newProduct.setItemInfo(info);
             }
 
-            _products.add(newProduct);
+            products.add(newProduct);
         }
-    }
-
-    @Override
-    public long getTaxAmount() {
-        return _taxAmount;
     }
 }

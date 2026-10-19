@@ -28,18 +28,18 @@ import app.l2nx.highfive.mechanics.skill.Skill;
  * @author Steuf
  */
 public class ConditionWithSkill extends Condition {
-    private final boolean _skill;
+    private final boolean skill;
 
     /**
      * Instantiates a new condition with skill.
      * @param skill the skill
      */
     public ConditionWithSkill(boolean skill) {
-        _skill = skill;
+        this.skill = skill;
     }
 
     @Override
     public boolean testImpl(Creature effector, Creature effected, Skill skill, ItemTemplate item) {
-        return (skill != null) == _skill;
+        return (skill != null) == this.skill;
     }
 }

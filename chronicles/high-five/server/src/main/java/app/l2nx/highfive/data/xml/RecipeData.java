@@ -29,6 +29,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
@@ -37,8 +38,9 @@ import org.w3c.dom.Node;
  * The Class RecipeData.
  * @author Zoey76
  */
+@Slf4j
 public class RecipeData implements IXmlReader {
-    private final Map<Integer, RecipeList> _recipes = new HashMap<>();
+    private final Map<Integer, RecipeList> recipes = new HashMap<>();
 
     /**
      * Instantiates a new recipe data.
@@ -49,9 +51,9 @@ public class RecipeData implements IXmlReader {
 
     @Override
     public void load() {
-        _recipes.clear();
+        recipes.clear();
         parseDatapackFile("data/Recipes.xml");
-        LOGGER.info(getClass().getSimpleName() + ": Loaded " + _recipes.size() + " recipes.");
+        log.info("Loaded {} recipes.", recipes.size());
     }
 
     @Override
@@ -75,7 +77,7 @@ public class RecipeData implements IXmlReader {
 
                         att = attrs.getNamedItem("id");
                         if (att == null) {
-                            LOGGER.severe(getClass().getSimpleName() + ": Missing id for recipe item, skipping");
+                            log.error("Missing id for recipe item, skipping");
                             continue;
                         }
 
@@ -85,8 +87,7 @@ public class RecipeData implements IXmlReader {
 
                         att = attrs.getNamedItem("recipeId");
                         if (att == null) {
-                            LOGGER.severe(getClass().getSimpleName() + ": Missing recipeId for recipe item id: " + id
-                                    + ", skipping");
+                            log.error("Missing recipeId for recipe item id: {}, skipping", id);
                             continue;
                         }
 
@@ -94,8 +95,7 @@ public class RecipeData implements IXmlReader {
 
                         att = attrs.getNamedItem("name");
                         if (att == null) {
-                            LOGGER.severe(getClass().getSimpleName() + ": Missing name for recipe item id: " + id
-                                    + ", skipping");
+                            log.error("Missing name for recipe item id: {}, skipping", id);
                             continue;
                         }
 
@@ -103,8 +103,7 @@ public class RecipeData implements IXmlReader {
 
                         att = attrs.getNamedItem("craftLevel");
                         if (att == null) {
-                            LOGGER.severe(getClass().getSimpleName() + ": Missing level for recipe item id: " + id
-                                    + ", skipping");
+                            log.error("Missing level for recipe item id: {}, skipping", id);
                             continue;
                         }
 
@@ -112,8 +111,7 @@ public class RecipeData implements IXmlReader {
 
                         att = attrs.getNamedItem("type");
                         if (att == null) {
-                            LOGGER.severe(getClass().getSimpleName() + ": Missing type for recipe item id: " + id
-                                    + ", skipping");
+                            log.error("Missing type for recipe item id: {}, skipping", id);
                             continue;
                         }
 
@@ -121,8 +119,7 @@ public class RecipeData implements IXmlReader {
 
                         att = attrs.getNamedItem("successRate");
                         if (att == null) {
-                            LOGGER.severe(getClass().getSimpleName() + ": Missing successRate for recipe item id: " + id
-                                    + ", skipping");
+                            log.error("Missing successRate for recipe item id: {}, skipping", id);
                             continue;
                         }
 
@@ -137,8 +134,7 @@ public class RecipeData implements IXmlReader {
                                 try {
                                     recipeStatUseList.add(new RecipeStatHolder(statName, value));
                                 } catch (Exception e) {
-                                    LOGGER.severe(getClass().getSimpleName()
-                                            + ": Error in StatUse parameter for recipe item id: " + id + ", skipping");
+                                    log.error("Error in StatUse parameter for recipe item id: {}, skipping", id);
                                     continue RECIPES_FILE;
                                 }
                             } else if ("altStatChange".equalsIgnoreCase(c.getNodeName())) {
@@ -149,9 +145,7 @@ public class RecipeData implements IXmlReader {
                                 try {
                                     recipeAltStatChangeList.add(new RecipeStatHolder(statName, value));
                                 } catch (Exception e) {
-                                    LOGGER.severe(getClass().getSimpleName()
-                                            + ": Error in AltStatChange parameter for recipe item id: " + id
-                                            + ", skipping");
+                                    log.error("Error in AltStatChange parameter for recipe item id: {}, skipping", id);
                                     continue RECIPES_FILE;
                                 }
                             } else if ("ingredient".equalsIgnoreCase(c.getNodeName())) {
@@ -159,7 +153,10 @@ public class RecipeData implements IXmlReader {
                                         c.getAttributes().getNamedItem("id").getNodeValue());
                                 final int ingCount = Integer.parseInt(
                                         c.getAttributes().getNamedItem("count").getNodeValue());
-                                recipePartList.add(new RecipeHolder(ingId, ingCount));
+                                recipePartList.add(RecipeHolder.builder()
+                                        .itemId(ingId)
+                                        .quantity(ingCount)
+                                        .build());
                             } else if ("production".equalsIgnoreCase(c.getNodeName())) {
                                 set.set(
                                         "itemId",
@@ -204,7 +201,7 @@ public class RecipeData implements IXmlReader {
                             recipeList.addAltStatChange(recipeAltStatChange);
                         }
 
-                        _recipes.put(id, recipeList);
+                        recipes.put(id, recipeList);
                     }
                 }
             }
@@ -217,7 +214,7 @@ public class RecipeData implements IXmlReader {
      * @return the recipe list
      */
     public RecipeList getRecipeList(int listId) {
-        return _recipes.get(listId);
+        return recipes.get(listId);
     }
 
     /**
@@ -226,7 +223,7 @@ public class RecipeData implements IXmlReader {
      * @return the recipe by item id
      */
     public RecipeList getRecipeByItemId(int itemId) {
-        for (RecipeList find : _recipes.values()) {
+        for (RecipeList find : recipes.values()) {
             if (find.getRecipeId() == itemId) {
                 return find;
             }
@@ -240,9 +237,9 @@ public class RecipeData implements IXmlReader {
      * @return the all item ids
      */
     public int[] getAllItemIds() {
-        final int[] idList = new int[_recipes.size()];
+        final int[] idList = new int[recipes.size()];
         int i = 0;
-        for (RecipeList rec : _recipes.values()) {
+        for (RecipeList rec : recipes.values()) {
             idList[i++] = rec.getRecipeId();
         }
 
@@ -256,7 +253,7 @@ public class RecipeData implements IXmlReader {
      * @return the valid recipe list
      */
     public RecipeList getValidRecipeList(Player player, int id) {
-        final RecipeList recipeList = _recipes.get(id);
+        final RecipeList recipeList = recipes.get(id);
         if ((recipeList == null) || (recipeList.getRecipes().length == 0)) {
             player.sendMessage(getClass().getSimpleName() + ": No recipe for: " + id);
             player.setCrafting(false);

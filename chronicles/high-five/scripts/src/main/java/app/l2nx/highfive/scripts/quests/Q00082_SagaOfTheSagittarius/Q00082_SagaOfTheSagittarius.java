@@ -29,15 +29,15 @@ import app.l2nx.highfive.scripts.quests.AbstractSagaQuest;
 public class Q00082_SagaOfTheSagittarius extends AbstractSagaQuest {
     public Q00082_SagaOfTheSagittarius() {
         super(82);
-        _npc = new int[] {30702, 31627, 31604, 31640, 31633, 31646, 31647, 31650, 31654, 31655, 31657, 31641};
-        _items = new int[] {7080, 7519, 7081, 7497, 7280, 7311, 7342, 7373, 7404, 7435, 7105, 0};
-        _mob = new int[] {27296, 27231, 27305};
-        _classId = new int[] {92};
-        _prevClass = new int[] {0x09};
-        _npcSpawnLocations = new Location[] {
+        npc = new int[] {30702, 31627, 31604, 31640, 31633, 31646, 31647, 31650, 31654, 31655, 31657, 31641};
+        items = new int[] {7080, 7519, 7081, 7497, 7280, 7311, 7342, 7373, 7404, 7435, 7105, 0};
+        mob = new int[] {27296, 27231, 27305};
+        classId = new int[] {92};
+        prevClass = new int[] {0x09};
+        npcSpawnLocations = new Location[] {
             new Location(191046, -40640, -3042), new Location(46066, -36396, -1685), new Location(46066, -36396, -1685)
         };
-        _text = new String[] {
+        text = new String[] {
             "PLAYERNAME! Pursued to here! However, I jumped out of the Banshouren boundaries! You look at the giant as the sign of power!",
             "... Oh ... good! So it was ... let's begin!",
             "I do not have the patience ..! I have been a giant force ...! Cough chatter ah ah ah!",

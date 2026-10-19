@@ -30,13 +30,15 @@ import app.l2nx.highfive.entity.actor.enums.creature.InstanceType;
 import app.l2nx.highfive.entity.actor.instance.StaticObject;
 import app.l2nx.highfive.handler.IActionClickHandler;
 import app.l2nx.highfive.network.serverpackets.NpcHtmlMessage;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class StaticObjectClick implements IActionClickHandler {
     @Override
     public boolean onAction(Player player, WorldObject target, boolean interact) {
         final StaticObject staticObject = (StaticObject) target;
         if (staticObject.getType() < 0) {
-            LOGGER.info("StaticObject: StaticObject with invalid type! StaticObjectId: " + staticObject.getId());
+            log.info("StaticObject: StaticObject with invalid type! StaticObjectId: {}", staticObject.getId());
         }
 
         // Check if the Player already target the Npc.

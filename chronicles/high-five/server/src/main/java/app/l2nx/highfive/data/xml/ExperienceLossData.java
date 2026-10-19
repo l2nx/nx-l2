@@ -25,17 +25,17 @@ package app.l2nx.highfive.data.xml;
 import app.l2nx.highfive.config.PlayerConfig;
 import java.io.File;
 import java.util.Arrays;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 
 /**
  * @author Mobius
  */
+@Slf4j
 public class ExperienceLossData implements IXmlReader {
-    private static final Logger LOGGER = Logger.getLogger(ExperienceLossData.class.getName());
 
-    private final double[] _levelPercentLost = new double[PlayerConfig.PLAYER_MAXIMUM_LEVEL];
+    private final double[] levelPercentLost = new double[PlayerConfig.PLAYER_MAXIMUM_LEVEL];
 
     protected ExperienceLossData() {
         load();
@@ -43,9 +43,9 @@ public class ExperienceLossData implements IXmlReader {
 
     @Override
     public void load() {
-        Arrays.fill(_levelPercentLost, 1d);
+        Arrays.fill(levelPercentLost, 1d);
         parseDatapackFile("data/stats/players/experienceLoss.xml");
-        LOGGER.info(getClass().getSimpleName() + ": Loaded " + (_levelPercentLost.length - 1) + " levels.");
+        log.info("Loaded {} levels.", (levelPercentLost.length - 1));
     }
 
     @Override
@@ -60,7 +60,7 @@ public class ExperienceLossData implements IXmlReader {
                         return;
                     }
 
-                    _levelPercentLost[level] = parseDouble(attrs, "val");
+                    levelPercentLost[level] = parseDouble(attrs, "val");
                 }));
     }
 
@@ -71,11 +71,11 @@ public class ExperienceLossData implements IXmlReader {
      */
     public double getPercentLost(int level) {
         if (level >= PlayerConfig.PLAYER_MAXIMUM_LEVEL) {
-            LOGGER.warning(getClass().getSimpleName() + ": Requested too high level (" + level + ").");
-            return _levelPercentLost[_levelPercentLost.length - 1];
+            log.warn("Requested too high level ({}).", level);
+            return levelPercentLost[levelPercentLost.length - 1];
         }
 
-        return _levelPercentLost[level];
+        return levelPercentLost[level];
     }
 
     public static ExperienceLossData getInstance() {

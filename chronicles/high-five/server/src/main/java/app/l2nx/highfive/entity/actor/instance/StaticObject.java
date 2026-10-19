@@ -32,6 +32,8 @@ import app.l2nx.highfive.entity.item.instance.Item;
 import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.network.serverpackets.ShowTownMap;
 import app.l2nx.highfive.network.serverpackets.StaticObjectInfo;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * Static Object instance.
@@ -41,10 +43,18 @@ public class StaticObject extends Creature {
     /** The interaction distance of the StaticObject */
     public static final int INTERACTION_DISTANCE = 150;
 
-    private final int _staticObjectId;
-    private int _meshIndex = 0; // 0 - static objects, alternate static objects
-    private int _type = -1; // 0 - map signs, 1 - throne , 2 - arena signs
-    private ShowTownMap _map;
+    @Getter
+    private final int id;
+
+    @Getter
+    private int meshIndex = 0; // 0 - static objects, alternate static objects
+
+    @Getter
+    @Setter
+    private int type = -1; // 0 - map signs, 1 - throne , 2 - arena signs
+
+    @Getter
+    private ShowTownMap map;
 
     /**
      * Creates a static object.
@@ -54,21 +64,12 @@ public class StaticObject extends Creature {
     public StaticObject(CreatureTemplate template, int staticId) {
         super(template);
         setInstanceType(InstanceType.StaticObject);
-        _staticObjectId = staticId;
+        id = staticId;
     }
 
     @Override
     protected CreatureAI initAI() {
         return null;
-    }
-
-    /**
-     * Gets the static object ID.
-     * @return the static object ID
-     */
-    @Override
-    public int getId() {
-        return _staticObjectId;
     }
 
     @Override
@@ -91,20 +92,8 @@ public class StaticObject extends Creature {
         setStatus(new StaticObjectStatus(this));
     }
 
-    public int getType() {
-        return _type;
-    }
-
-    public void setType(int type) {
-        _type = type;
-    }
-
     public void setMap(String texture, int x, int y) {
-        _map = new ShowTownMap("town_map." + texture, x, y);
-    }
-
-    public ShowTownMap getMap() {
-        return _map;
+        map = new ShowTownMap("town_map." + texture, x, y);
     }
 
     @Override
@@ -148,20 +137,8 @@ public class StaticObject extends Creature {
      * @param meshIndex
      */
     public void setMeshIndex(int meshIndex) {
-        _meshIndex = meshIndex;
+        this.meshIndex = meshIndex;
         broadcastPacket(new StaticObjectInfo(this));
-    }
-
-    /**
-     * <b><u>Values</u>:</b>
-     * <ul>
-     * <li>default textures : 0</li>
-     * <li>alternate textures : 1</li>
-     * </ul>
-     * @return the meshIndex of the object
-     */
-    public int getMeshIndex() {
-        return _meshIndex;
     }
 
     @Override

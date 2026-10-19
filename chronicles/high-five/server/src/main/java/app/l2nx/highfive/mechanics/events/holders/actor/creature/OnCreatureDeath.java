@@ -22,28 +22,14 @@ package app.l2nx.highfive.mechanics.events.holders.actor.creature;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.mechanics.events.EventType;
 import app.l2nx.highfive.mechanics.events.holders.IBaseEvent;
+import lombok.Builder;
 
 /**
  * An instantly executed event when Creature is killed by Creature.
  * @author UnAfraid
  */
-public class OnCreatureDeath implements IBaseEvent {
-    private final Creature _attacker;
-    private final Creature _target;
-
-    public OnCreatureDeath(Creature attacker, Creature target) {
-        _attacker = attacker;
-        _target = target;
-    }
-
-    public Creature getAttacker() {
-        return _attacker;
-    }
-
-    public Creature getTarget() {
-        return _target;
-    }
-
+@Builder(toBuilder = true)
+public record OnCreatureDeath(Creature attacker, Creature target) implements IBaseEvent {
     @Override
     public EventType getType() {
         return EventType.ON_CREATURE_DEATH;

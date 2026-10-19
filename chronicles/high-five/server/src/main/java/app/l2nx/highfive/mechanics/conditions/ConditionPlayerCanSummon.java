@@ -32,10 +32,10 @@ import app.l2nx.highfive.network.SystemMessageId;
  * @author Zoey76
  */
 public class ConditionPlayerCanSummon extends Condition {
-    private final boolean _value;
+    private final boolean value;
 
     public ConditionPlayerCanSummon(boolean value) {
-        _value = value;
+        this.value = value;
     }
 
     @Override
@@ -61,6 +61,6 @@ public class ConditionPlayerCanSummon extends Condition {
             canSummon = false;
         }
 
-        return (_value == canSummon);
+        return (value == canSummon);
     }
 }

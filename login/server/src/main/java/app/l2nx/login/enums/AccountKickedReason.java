@@ -22,19 +22,18 @@
  */
 package app.l2nx.login.enums;
 
+import lombok.Getter;
+
 public enum AccountKickedReason {
     REASON_DATA_STEALER(0x01),
     REASON_GENERIC_VIOLATION(0x08),
     REASON_7_DAYS_SUSPENDED(0x10),
     REASON_PERMANENTLY_BANNED(0x20);
 
-    private final int _code;
+    @Getter
+    private final int code;
 
     AccountKickedReason(int code) {
-        _code = code;
-    }
-
-    public int getCode() {
-        return _code;
+        this.code = code;
     }
 }

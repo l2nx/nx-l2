@@ -29,15 +29,15 @@ import app.l2nx.highfive.scripts.quests.AbstractSagaQuest;
 public class Q00098_SagaOfTheShillienSaint extends AbstractSagaQuest {
     public Q00098_SagaOfTheShillienSaint() {
         super(98);
-        _npc = new int[] {31581, 31626, 31588, 31287, 31621, 31646, 31647, 31651, 31654, 31655, 31658, 31287};
-        _items = new int[] {7080, 7525, 7081, 7513, 7296, 7327, 7358, 7389, 7420, 7451, 7090, 0};
-        _mob = new int[] {27270, 27247, 27277};
-        _classId = new int[] {112};
-        _prevClass = new int[] {0x2b};
-        _npcSpawnLocations = new Location[] {
+        npc = new int[] {31581, 31626, 31588, 31287, 31621, 31646, 31647, 31651, 31654, 31655, 31658, 31287};
+        items = new int[] {7080, 7525, 7081, 7513, 7296, 7327, 7358, 7389, 7420, 7451, 7090, 0};
+        mob = new int[] {27270, 27247, 27277};
+        classId = new int[] {112};
+        prevClass = new int[] {0x2b};
+        npcSpawnLocations = new Location[] {
             new Location(119518, -28658, -3811), new Location(181215, 36676, -4812), new Location(181227, 36703, -4816)
         };
-        _text = new String[] {
+        text = new String[] {
             "PLAYERNAME! Pursued to here! However, I jumped out of the Banshouren boundaries! You look at the giant as the sign of power!",
             "... Oh ... good! So it was ... let's begin!",
             "I do not have the patience ..! I have been a giant force ...! Cough chatter ah ah ah!",

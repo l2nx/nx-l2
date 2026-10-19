@@ -44,8 +44,8 @@ import java.security.GeneralSecurityException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.ScheduledFuture;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.SmartLifecycle;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.stereotype.Component;
@@ -60,9 +60,8 @@ import org.springframework.stereotype.Component;
  * @author BazookaRpm
  */
 @Component
+@Slf4j
 public class LoginServer implements SmartLifecycle {
-    // Logger.
-    public static final Logger LOGGER = Logger.getLogger(LoginServer.class.getName());
 
     // Configuration paths.
     private static final String BANNED_IPS_CONFIGURATION_PATH = "./banned_ip.cfg";
@@ -71,22 +70,29 @@ public class LoginServer implements SmartLifecycle {
     public static final int PROTOCOL_REV = 0x0106;
 
     // Singleton instance.
-    private static LoginServer _instance;
+    @Getter
+    private static LoginServer instance;
 
     // Network listeners.
-    private GameServerListener _gameServerListener;
+    @Getter
+    private GameServerListener gameServerListener;
+
     private ConnectionManager<LoginClient> clientConnectionManager;
 
     // Login server status.
-    private static volatile int _loginStatus = ServerStatus.STATUS_NORMAL;
+    private static volatile int status = ServerStatus.STATUS_NORMAL;
 
+    @Getter
     private final LoginProperties properties;
+
     private final LoginController loginController;
     private final GameServerTable gameServerTable;
     private final TaskScheduler taskScheduler;
     private final ServerExit serverExit;
     private final MeterRegistry meterRegistry;
     private ScheduledFuture<?> restartTask;
+
+    @Getter
     private volatile boolean running;
 
     public LoginServer(
@@ -102,7 +108,7 @@ public class LoginServer implements SmartLifecycle {
         this.taskScheduler = taskScheduler;
         this.serverExit = serverExit;
         this.meterRegistry = meterRegistry;
-        _instance = this;
+        instance = this;
     }
 
     /**
@@ -129,19 +135,14 @@ public class LoginServer implements SmartLifecycle {
         running = false;
     }
 
-    @Override
-    public boolean isRunning() {
-        return running;
-    }
-
     private void shutdownServices() {
         if (clientConnectionManager != null) {
             clientConnectionManager.shutdown();
             clientConnectionManager = null;
         }
 
-        if (_gameServerListener != null) {
-            _gameServerListener.close();
+        if (gameServerListener != null) {
+            gameServerListener.close();
         }
 
         if (restartTask != null) {
@@ -179,7 +180,7 @@ public class LoginServer implements SmartLifecycle {
         }
 
         final Duration restartDelay = properties.scheduledRestart().delay();
-        LOGGER.info("Login server restart scheduled in " + restartDelay + ".");
+        log.info("Login server restart scheduled in {}.", restartDelay);
         restartTask = taskScheduler.schedule(() -> shutdown(true), Instant.now().plus(restartDelay));
     }
 
@@ -197,10 +198,10 @@ public class LoginServer implements SmartLifecycle {
     private void startGameServerListener() {
         final LoginProperties.GameServer gameServer = properties.gameServer();
         try {
-            _gameServerListener = new GameServerListener(gameServer, properties.floodProtection());
-            _gameServerListener.start();
+            gameServerListener = new GameServerListener(gameServer, properties.floodProtection());
+            gameServerListener.start();
 
-            LOGGER.info("Game server listener is listening on " + gameServer.host() + ":" + gameServer.port() + ".");
+            log.info("Game server listener is listening on {}:{}.", gameServer.host(), gameServer.port());
         } catch (IOException e) {
             throw new UncheckedIOException(
                     "Game server listener could not be started on " + gameServer.host() + ":" + gameServer.port() + ".",
@@ -220,24 +221,11 @@ public class LoginServer implements SmartLifecycle {
                     new LoginPacketHandler(),
                     properties.network());
             clientConnectionManager.bindMetrics(meterRegistry, "l2nx-login");
-            LOGGER.info(getClass().getSimpleName() + ": Login client listener started on " + client.host() + ":"
-                    + client.port() + ".");
+            log.info("Login client listener started on {}:{}.", client.host(), client.port());
         } catch (IOException e) {
             throw new UncheckedIOException(
                     "Login client listener could not be started on " + client.host() + ":" + client.port() + ".", e);
         }
-    }
-
-    public LoginProperties getProperties() {
-        return properties;
-    }
-
-    /**
-     * Gets the game server listener instance.
-     * @return The game server listener instance.
-     */
-    public GameServerListener getGameServerListener() {
-        return _gameServerListener;
     }
 
     /**
@@ -246,8 +234,9 @@ public class LoginServer implements SmartLifecycle {
     public void loadBanFile() {
         final File bannedIpConfigurationFile = new File(BANNED_IPS_CONFIGURATION_PATH);
         if (!bannedIpConfigurationFile.exists() || !bannedIpConfigurationFile.isFile()) {
-            LOGGER.warning("IP bans configuration file (" + bannedIpConfigurationFile.getAbsolutePath()
-                    + ") does not exist or is not a regular file. No IP bans have been loaded.");
+            log.warn(
+                    "IP bans configuration file ({}) does not exist or is not a regular file. No IP bans have been loaded.",
+                    bannedIpConfigurationFile.getAbsolutePath());
             return;
         }
 
@@ -259,14 +248,16 @@ public class LoginServer implements SmartLifecycle {
                 processBanLine(bannedIpConfigurationFile, bannedIpLineReader, rawLine);
             }
         } catch (IOException e) {
-            LOGGER.log(
-                    Level.WARNING,
-                    "Error while reading IP bans configuration file (" + bannedIpConfigurationFile.getAbsolutePath()
-                            + "). Details: " + e.getMessage(),
+            log.warn(
+                    "Error while reading IP bans configuration file ({}). Details: {}",
+                    bannedIpConfigurationFile.getAbsolutePath(),
+                    e.getMessage(),
                     e);
         }
 
-        LOGGER.info("Loaded " + LoginController.getInstance().getBannedIps().size() + " IP Bans.");
+        log.info(
+                "Loaded {} IP Bans.",
+                LoginController.getInstance().getBannedIps().size());
     }
 
     /**
@@ -293,15 +284,19 @@ public class LoginServer implements SmartLifecycle {
         final String definitionPart =
                 (commentIndex >= 0) ? trimmedLine.substring(0, commentIndex).trim() : trimmedLine;
         if (definitionPart.isEmpty()) {
-            LOGGER.warning("Skipped IP ban entry with empty definition in file (" + sourceFile.getAbsolutePath()
-                    + ") at line " + lineReader.getLineNumber() + ".");
+            log.warn(
+                    "Skipped IP ban entry with empty definition in file ({}) at line {}.",
+                    sourceFile.getAbsolutePath(),
+                    lineReader.getLineNumber());
             return;
         }
 
         final String[] tokens = definitionPart.split("\\s+");
         if (tokens.length == 0) {
-            LOGGER.warning("Skipped IP ban entry with no address token in file (" + sourceFile.getAbsolutePath()
-                    + ") at line " + lineReader.getLineNumber() + ".");
+            log.warn(
+                    "Skipped IP ban entry with no address token in file ({}) at line {}.",
+                    sourceFile.getAbsolutePath(),
+                    lineReader.getLineNumber());
             return;
         }
 
@@ -313,8 +308,11 @@ public class LoginServer implements SmartLifecycle {
             try {
                 durationMillis = Long.parseLong(durationToken);
             } catch (NumberFormatException e) {
-                LOGGER.warning("Skipped IP ban entry due to invalid duration token '" + durationToken + "' in file ("
-                        + sourceFile.getAbsolutePath() + ") at line " + lineReader.getLineNumber() + ".");
+                log.warn(
+                        "Skipped IP ban entry due to invalid duration token '{}' in file ({}) at line {}.",
+                        durationToken,
+                        sourceFile.getAbsolutePath(),
+                        lineReader.getLineNumber());
                 return;
             }
         }
@@ -322,9 +320,12 @@ public class LoginServer implements SmartLifecycle {
         try {
             LoginController.getInstance().addBanForAddress(ipAddress, durationMillis);
         } catch (Exception e) {
-            LOGGER.warning("Skipped IP ban registration for address '" + ipAddress + "' from file ("
-                    + sourceFile.getAbsolutePath() + ") at line " + lineReader.getLineNumber() + ". Reason: "
-                    + e.getMessage() + ".");
+            log.warn(
+                    "Skipped IP ban registration for address '{}' from file ({}) at line {}. Reason: {}.",
+                    ipAddress,
+                    sourceFile.getAbsolutePath(),
+                    lineReader.getLineNumber(),
+                    e.getMessage());
         }
     }
 
@@ -341,7 +342,7 @@ public class LoginServer implements SmartLifecycle {
      * @return The current login server status.
      */
     public int getStatus() {
-        return _loginStatus;
+        return status;
     }
 
     /**
@@ -349,14 +350,6 @@ public class LoginServer implements SmartLifecycle {
      * @param status The new login server status.
      */
     public void setStatus(int status) {
-        _loginStatus = status;
-    }
-
-    /**
-     * Gets the login server singleton instance.
-     * @return The login server singleton instance.
-     */
-    public static LoginServer getInstance() {
-        return _instance;
+        LoginServer.status = status;
     }
 }

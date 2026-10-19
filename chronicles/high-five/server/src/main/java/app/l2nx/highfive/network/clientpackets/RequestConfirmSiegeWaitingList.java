@@ -33,15 +33,15 @@ import app.l2nx.highfive.network.serverpackets.SiegeDefenderList;
  * @version $Revision: 1.3.4.2 $ $Date: 2005/03/27 15:29:30 $
  */
 public class RequestConfirmSiegeWaitingList extends ClientPacket {
-    private int _approved;
-    private int _castleId;
-    private int _clanId;
+    private int approved;
+    private int castleId;
+    private int clanId;
 
     @Override
     protected void readImpl() {
-        _castleId = readInt();
-        _clanId = readInt();
-        _approved = readInt();
+        castleId = readInt();
+        clanId = readInt();
+        approved = readInt();
     }
 
     @Override
@@ -56,7 +56,7 @@ public class RequestConfirmSiegeWaitingList extends ClientPacket {
             return;
         }
 
-        final Castle castle = CastleManager.getInstance().getCastleById(_castleId);
+        final Castle castle = CastleManager.getInstance().getCastleById(castleId);
         if (castle == null) {
             return;
         }
@@ -66,22 +66,22 @@ public class RequestConfirmSiegeWaitingList extends ClientPacket {
             return;
         }
 
-        final Clan clan = ClanTable.getInstance().getClan(_clanId);
+        final Clan clan = ClanTable.getInstance().getClan(clanId);
         if (clan == null) {
             return;
         }
 
         if (!castle.getSiege().isRegistrationOver()) {
-            if (_approved == 1) {
+            if (approved == 1) {
                 if (castle.getSiege().checkIsDefenderWaiting(clan)) {
-                    castle.getSiege().approveSiegeDefenderClan(_clanId);
+                    castle.getSiege().approveSiegeDefenderClan(clanId);
                 } else {
                     return;
                 }
             } else {
                 if ((castle.getSiege().checkIsDefenderWaiting(clan))
                         || (castle.getSiege().checkIsDefender(clan))) {
-                    castle.getSiege().removeSiegeClan(_clanId);
+                    castle.getSiege().removeSiegeClan(clanId);
                 }
             }
         }

@@ -27,16 +27,18 @@ import app.l2nx.highfive.mechanics.script.Quest;
 import app.l2nx.highfive.scripting.ScriptEngine;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class ScriptManager {
-    private static final Logger LOGGER = Logger.getLogger(ScriptManager.class.getName());
 
     /** Map containing all the quests. */
-    private final Map<String, Quest> _quests = new ConcurrentHashMap<>();
+    @Getter
+    private final Map<String, Quest> quests = new ConcurrentHashMap<>();
     /** Map containing all the scripts. */
-    private final Map<String, Quest> _scripts = new ConcurrentHashMap<>();
+    @Getter
+    private final Map<String, Quest> scripts = new ConcurrentHashMap<>();
 
     protected ScriptManager() {}
 
@@ -64,12 +66,12 @@ public class ScriptManager {
     public void reloadAllScripts() {
         unloadAllScripts();
 
-        LOGGER.info("Reloading all server scripts.");
+        log.info("Reloading all server scripts.");
 
         try {
             ScriptEngine.getInstance().executeScriptList();
         } catch (Exception e) {
-            LOGGER.log(Level.SEVERE, "Failed executing script list!", e);
+            log.error("Failed executing script list!", e);
         }
 
         getInstance().report();
@@ -79,33 +81,33 @@ public class ScriptManager {
      * Unload all quests and scripts.
      */
     public void unloadAllScripts() {
-        LOGGER.info("Unloading all server scripts.");
+        log.info("Unloading all server scripts.");
 
         // Unload quests.
-        for (Quest quest : _quests.values()) {
+        for (Quest quest : quests.values()) {
             if (quest != null) {
                 quest.unload(false);
             }
         }
 
-        _quests.clear();
+        quests.clear();
 
         // Unload scripts.
-        for (Quest script : _scripts.values()) {
+        for (Quest script : scripts.values()) {
             if (script != null) {
                 script.unload(false);
             }
         }
 
-        _scripts.clear();
+        scripts.clear();
     }
 
     /**
      * Logs how many quests and scripts are loaded.
      */
     public void report() {
-        LOGGER.info(getClass().getSimpleName() + ": Loaded " + _quests.size() + " quests.");
-        LOGGER.info(getClass().getSimpleName() + ": Loaded " + _scripts.size() + " scripts.");
+        log.info("Loaded {} quests.", quests.size());
+        log.info("Loaded {} scripts.", scripts.size());
     }
 
     /**
@@ -113,26 +115,26 @@ public class ScriptManager {
      */
     public void save() {
         // Save quests.
-        for (Quest quest : _quests.values()) {
+        for (Quest quest : quests.values()) {
             quest.onSave();
         }
 
         // Save scripts.
-        for (Quest script : _scripts.values()) {
+        for (Quest script : scripts.values()) {
             script.onSave();
         }
     }
 
     /**
-     * Retrieves a Quest object by its name from either the _quests or _scripts map.<br>
-     * This method first checks the _quests map for the specified name.<br>
-     * If not found, it falls back to checking the _scripts map.
+     * Retrieves a Quest object by its name from either the quests or scripts map.<br>
+     * This method first checks the quests map for the specified name.<br>
+     * If not found, it falls back to checking the scripts map.
      * @param name the name of the quest/script to retrieve
      * @return the Quest object associated with the given name if found in either map, or null if the name is not present in either map
      */
     public Quest getScript(String name) {
-        final Quest quest = _quests.get(name);
-        return (quest != null) ? quest : _scripts.get(name);
+        final Quest quest = quests.get(name);
+        return (quest != null) ? quest : scripts.get(name);
     }
 
     /**
@@ -141,7 +143,7 @@ public class ScriptManager {
      * @return if found, the quest, {@code null} otherwise
      */
     public Quest getQuest(int questId) {
-        for (Quest q : _quests.values()) {
+        for (Quest q : quests.values()) {
             if (q.getId() == questId) {
                 return q;
             }
@@ -168,17 +170,17 @@ public class ScriptManager {
         // or taken any other action which it might re-take by re-reading the data.
         // the current solution properly closes the running tasks of the old quest but
         // ignores the data; perhaps the least of all evils...
-        final Quest old = _quests.put(quest.getName(), quest);
+        final Quest old = quests.put(quest.getName(), quest);
         if (old != null) {
             old.unload();
-            LOGGER.info("Replaced quest " + old.getName() + " (" + old.getId() + ") with a new version!");
+            log.info("Replaced quest {} ({}) with a new version!", old.getName(), old.getId());
         }
 
         if (DevelopmentConfig.SHOW_QUEST_LOAD_IN_LOGS) {
             final String questName = quest.getName().contains("_")
                     ? quest.getName().substring(quest.getName().indexOf('_') + 1)
                     : quest.getName();
-            LOGGER.info("Loaded quest " + separateWords(questName) + ".");
+            log.info("Loaded quest {}.", separateWords(questName));
         }
     }
 
@@ -188,19 +190,15 @@ public class ScriptManager {
      * @return {@code true} if the script was removed, {@code false} otherwise
      */
     public boolean removeScript(Quest script) {
-        if (_quests.containsKey(script.getName())) {
-            _quests.remove(script.getName());
+        if (quests.containsKey(script.getName())) {
+            quests.remove(script.getName());
             return true;
-        } else if (_scripts.containsKey(script.getName())) {
-            _scripts.remove(script.getName());
+        } else if (scripts.containsKey(script.getName())) {
+            scripts.remove(script.getName());
             return true;
         }
 
         return false;
-    }
-
-    public Map<String, Quest> getQuests() {
-        return _quests;
     }
 
     public boolean unload(Quest ms) {
@@ -209,26 +207,18 @@ public class ScriptManager {
     }
 
     /**
-     * Gets all the registered scripts.
-     * @return all the scripts
-     */
-    public Map<String, Quest> getScripts() {
-        return _scripts;
-    }
-
-    /**
      * Adds a script.
      * @param script the script to be added
      */
     public void addScript(Quest script) {
-        final Quest old = _scripts.put(script.getClass().getSimpleName(), script);
+        final Quest old = scripts.put(script.getClass().getSimpleName(), script);
         if (old != null) {
             old.unload();
-            LOGGER.info("Replaced script " + old.getName() + " with a new version!");
+            log.info("Replaced script {} with a new version!", old.getName());
         }
 
         if (DevelopmentConfig.SHOW_SCRIPT_LOAD_IN_LOGS) {
-            LOGGER.info("Loaded script " + separateWords(script.getClass().getSimpleName()) + ".");
+            log.info("Loaded script {}.", separateWords(script.getClass().getSimpleName()));
         }
     }
 

@@ -53,12 +53,12 @@ public class BankingAutoConvert {
             return;
         }
 
-        final Item item = event.getItem();
+        final Item item = event.item();
         if ((item == null) || (item.getId() != Inventory.ADENA_ID)) {
             return;
         }
 
-        final Player player = event.getPlayer();
+        final Player player = event.player();
         if ((player == null) || (player.getAdena() <= BankingConfig.BANKING_SYSTEM_AUTO_CONVERT_ADENA_LIMIT)) {
             return;
         }

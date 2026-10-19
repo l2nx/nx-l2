@@ -23,34 +23,14 @@ import app.l2nx.highfive.entity.actor.Attackable;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.mechanics.events.EventType;
 import app.l2nx.highfive.mechanics.events.holders.IBaseEvent;
+import lombok.Builder;
 
 /**
  * An instantly executed event when Attackable is killed by Player.
  * @author UnAfraid
  */
-public class OnAttackableKill implements IBaseEvent {
-    private final Player _attacker;
-    private final Attackable _target;
-    private final boolean _isSummon;
-
-    public OnAttackableKill(Player attacker, Attackable target, boolean isSummon) {
-        _attacker = attacker;
-        _target = target;
-        _isSummon = isSummon;
-    }
-
-    public Player getAttacker() {
-        return _attacker;
-    }
-
-    public Attackable getTarget() {
-        return _target;
-    }
-
-    public boolean isSummon() {
-        return _isSummon;
-    }
-
+@Builder(toBuilder = true)
+public record OnAttackableKill(Player attacker, Attackable target, boolean summon) implements IBaseEvent {
     @Override
     public EventType getType() {
         return EventType.ON_ATTACKABLE_KILL;

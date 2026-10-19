@@ -24,6 +24,7 @@ import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.mechanics.script.Script;
 import java.util.HashMap;
 import java.util.Map;
+import lombok.Getter;
 import org.apache.commons.lang3.StringUtils;
 
 /**
@@ -39,9 +40,16 @@ public class EchoCrystals extends Script {
     private static final Map<Integer, ScoreData> SCORES = new HashMap<>();
 
     private class ScoreData {
+        @Getter
         private final int crystalId;
+
+        @Getter
         private final String okMsg;
+
+        @Getter
         private final String noAdenaMsg;
+
+        @Getter
         private final String noScoreMsg;
 
         public ScoreData(int crystalId, String okMsg, String noAdenaMsg, String noScoreMsg) {
@@ -50,22 +58,6 @@ public class EchoCrystals extends Script {
             this.okMsg = okMsg;
             this.noAdenaMsg = noAdenaMsg;
             this.noScoreMsg = noScoreMsg;
-        }
-
-        public int getCrystalId() {
-            return crystalId;
-        }
-
-        public String getOkMsg() {
-            return okMsg;
-        }
-
-        public String getNoAdenaMsg() {
-            return noAdenaMsg;
-        }
-
-        public String getNoScoreMsg() {
-            return noScoreMsg;
         }
     }
 

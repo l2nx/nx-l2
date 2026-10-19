@@ -63,7 +63,7 @@ public class Q00708_PathToBecomingALordGludio extends Quest {
         addStartNpc(SAYRES);
         addKillId(MOBS);
         addTalkId(SAYRES, PINTER, BATHIS);
-        _questItemIds = new int[] {HEADLESS_KNIGHT_ARMOR};
+        registeredItemIds = new int[] {HEADLESS_KNIGHT_ARMOR};
     }
 
     @Override

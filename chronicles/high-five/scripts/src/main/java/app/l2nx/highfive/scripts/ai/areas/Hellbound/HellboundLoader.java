@@ -60,14 +60,14 @@ import app.l2nx.highfive.scripts.handlers.chat.commands.admin.AdminHellbound;
 import app.l2nx.highfive.scripts.handlers.chat.commands.voiced.Hellbound;
 import app.l2nx.highfive.scripts.quests.Q00130_PathToHellbound.Q00130_PathToHellbound;
 import app.l2nx.highfive.scripts.quests.Q00133_ThatsBloodyHot.Q00133_ThatsBloodyHot;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Hellbound class-loader.
  * @author Zoey76
  */
+@Slf4j
 public class HellboundLoader {
-    private static final Logger LOGGER = Logger.getLogger(HellboundLoader.class.getName());
 
     private static final Class<?>[] SCRIPTS = {
         // Commands
@@ -120,7 +120,7 @@ public class HellboundLoader {
     };
 
     public static void main(String[] args) {
-        LOGGER.info(HellboundLoader.class.getSimpleName() + ": Loading Hellbound related scripts:");
+        log.info("Loading Hellbound related scripts:");
 
         // Data
         HellboundPointData.getInstance();
@@ -137,8 +137,7 @@ public class HellboundLoader {
                     VoicedCommandHandler.getInstance().registerHandler((IVoicedCommandHandler) instance);
                 }
             } catch (Exception e) {
-                LOGGER.severe(HellboundLoader.class.getSimpleName() + ": Failed loading " + script.getSimpleName() + ":"
-                        + e.getMessage());
+                log.error("Failed loading {}:{}", script.getSimpleName(), e.getMessage());
             }
         }
     }

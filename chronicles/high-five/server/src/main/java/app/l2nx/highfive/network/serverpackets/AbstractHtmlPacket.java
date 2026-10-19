@@ -21,22 +21,28 @@ package app.l2nx.highfive.network.serverpackets;
 
 import app.l2nx.highfive.cache.HtmCache;
 import app.l2nx.highfive.entity.actor.Player;
-import app.l2nx.highfive.network.PacketLogger;
 import app.l2nx.highfive.network.enums.HtmlActionScope;
 import app.l2nx.highfive.util.HtmlUtil;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author HorridoJoho
  */
+@Slf4j
 public abstract class AbstractHtmlPacket extends ServerPacket {
     public static final char VAR_PARAM_START_CHAR = '$';
 
-    private final int _npcObjId;
-    private String _html = null;
-    private boolean _disabledValidation = false;
+    @Getter
+    private final int npcObjId;
+
+    @Getter
+    private String html = null;
+
+    private boolean disabledValidation = false;
 
     protected AbstractHtmlPacket() {
-        _npcObjId = 0;
+        npcObjId = 0;
     }
 
     protected AbstractHtmlPacket(int npcObjId) {
@@ -44,11 +50,11 @@ public abstract class AbstractHtmlPacket extends ServerPacket {
             throw new IllegalArgumentException();
         }
 
-        _npcObjId = npcObjId;
+        this.npcObjId = npcObjId;
     }
 
     protected AbstractHtmlPacket(String html) {
-        _npcObjId = 0;
+        npcObjId = 0;
         setHtml(html);
     }
 
@@ -57,23 +63,25 @@ public abstract class AbstractHtmlPacket extends ServerPacket {
             throw new IllegalArgumentException();
         }
 
-        _npcObjId = npcObjId;
+        this.npcObjId = npcObjId;
         setHtml(html);
     }
 
     public void disableValidation() {
-        _disabledValidation = true;
+        disabledValidation = true;
     }
 
     public void setHtml(String html) {
         if (html.length() > 17200) {
-            PacketLogger.warning(getClass().getSimpleName() + ": Html is too long! this will crash the client!");
-            _html = html.substring(0, 17200);
+            log.warn(
+                    "{}: Html is too long! this will crash the client!",
+                    getClass().getSimpleName());
+            this.html = html.substring(0, 17200);
         } else {
             if (!html.contains("<html") && !html.startsWith("..\\L2")) {
-                _html = "<html><body>" + html + "</body></html>";
+                this.html = "<html><body>" + html + "</body></html>";
             } else {
-                _html = html;
+                this.html = html;
             }
         }
     }
@@ -82,7 +90,7 @@ public abstract class AbstractHtmlPacket extends ServerPacket {
         final String content = HtmCache.getInstance().getHtm(player, path);
         if (content == null) {
             setHtml("<html><body>My Text is missing:<br>" + path + "</body></html>");
-            PacketLogger.warning(getClass().getSimpleName() + ": Missing html page " + path);
+            log.warn("{}: Missing html page {}", getClass().getSimpleName(), path);
             return false;
         }
 
@@ -91,7 +99,7 @@ public abstract class AbstractHtmlPacket extends ServerPacket {
     }
 
     public void replace(String pattern, String value) {
-        _html = _html.replaceAll(pattern, value.replaceAll("\\$", "\\\\\\$"));
+        html = html.replaceAll(pattern, value.replaceAll("\\$", "\\\\\\$"));
     }
 
     public void replace(String pattern, CharSequence value) {
@@ -120,21 +128,13 @@ public abstract class AbstractHtmlPacket extends ServerPacket {
             player.clearHtmlActions(getScope());
         }
 
-        if (_disabledValidation) {
+        if (disabledValidation) {
             return;
         }
 
         if (player != null) {
-            HtmlUtil.buildHtmlActionCache(player, getScope(), _npcObjId, _html);
+            HtmlUtil.buildHtmlActionCache(player, getScope(), npcObjId, html);
         }
-    }
-
-    public int getNpcObjId() {
-        return _npcObjId;
-    }
-
-    public String getHtml() {
-        return _html;
     }
 
     public abstract HtmlActionScope getScope();

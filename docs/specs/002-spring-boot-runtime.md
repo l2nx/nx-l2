@@ -26,7 +26,7 @@ the database pool, logging, the HTTP management surface, packaging and tests. In
   - the `org.springframework.boot` plugin for the BOM and `springBoot { buildInfo() }`; `bootJar` is disabled, the
     plain `jar` and the Gradle `application` distribution stay (§8);
   - `com.gorylenko.gradle-git-properties` for the git section of `info`;
-  - `spring-boot-starter-logging` excluded from every configuration; `spring-boot-starter-log4j2`, `log4j-jul` and
+  - `spring-boot-starter-logging` excluded from every configuration; `spring-boot-starter-log4j2` and
     `com.lmax:disruptor` instead (§6);
   - starters `actuator`, `webmvc` (Tomcat), `jdbc`, plus `micrometer-registry-prometheus`;
   - tests: `spring-boot-starter-test`, `spring-boot-testcontainers`, Testcontainers (`testcontainers-mysql`, see §9).
@@ -124,10 +124,10 @@ and `systemctl stop` are not restarted.
 - **Log4j2 behind Spring Boot.** One `log4j2-spring.xml` in `libs/boot`, shared by both servers (a channel file
   is created on first use only); an operator replaces
   it with the standard `logging.config`.
-- **JUL calls keep working** through `-Djava.util.logging.manager=org.apache.logging.log4j.jul.LogManager`, which
-  replaces `ServerLogManager`. `log.cfg`, `ServerLogManager` and the JUL handlers, formatters and filters of the
-  former `commons/log` are removed. Moving the code to the SLF4J API is
-  [#14](https://github.com/l2nx/nx-l2/issues/14).
+- **The code logs through SLF4J** (`@Slf4j`, spec 007 §6). JDK platform logging that still goes to JUL reaches
+  Log4j2 through the `Log4jBridgeHandler` that Boot installs (`log4j-jul` comes with `spring-boot-starter-log4j2`);
+  no `java.util.logging.manager` flag is set. `log.cfg`, `ServerLogManager` and the JUL handlers, formatters and
+  filters of the former `commons/log` are removed.
 - **Async throughout:** `AsyncLoggerContextSelector` with the LMAX Disruptor; logging does not block game
   threads and does not allocate on the hot path. Boot's `LoggingSystem` stops Log4j2 on shutdown, so the queue
   is flushed.
@@ -135,7 +135,8 @@ and `systemctl stop` are not restarted.
   (`logging.structured.format.console: ecs | logstash | gelf`).
 - **Channels:** `accounting`, `audit`, `chat`, `enchant.items`, `enchant.skills`, `gmaudit`, `item`, `olympiad`
   are named loggers with `additivity="false"`, each with its own `RollingFile` in `./log/`, rolled daily and by
-  size. `PatternLayout` replaces the custom JUL formatters; the message text is built by the code, as today.
+  size. A class writes to a channel through its own `private static final Logger X_LOG` field (spec 007 §6).
+  `PatternLayout` replaces the custom JUL formatters.
 - **`server.log`** takes everything the console shows. Every file in `./log` is rolled daily and at 100 MB and
   compressed; compressed files older than 30 days are deleted.
 - **`error.log`** takes every event at `WARN` and above (`ThresholdFilter`). Mobius kept there only records with

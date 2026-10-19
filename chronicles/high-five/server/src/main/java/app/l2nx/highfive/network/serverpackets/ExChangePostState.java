@@ -27,30 +27,30 @@ import app.l2nx.network.buffer.WriteBuffer;
  * @author Migi
  */
 public class ExChangePostState extends ServerPacket {
-    private final boolean _receivedBoard;
-    private final int[] _changedMsgIds;
-    private final int _changeId;
+    private final boolean receivedBoard;
+    private final int[] changedMsgIds;
+    private final int changeId;
 
     public ExChangePostState(boolean receivedBoard, int[] changedMsgIds, int changeId) {
-        _receivedBoard = receivedBoard;
-        _changedMsgIds = changedMsgIds;
-        _changeId = changeId;
+        this.receivedBoard = receivedBoard;
+        this.changedMsgIds = changedMsgIds;
+        this.changeId = changeId;
     }
 
     public ExChangePostState(boolean receivedBoard, int changedMsgId, int changeId) {
-        _receivedBoard = receivedBoard;
-        _changedMsgIds = new int[] {changedMsgId};
-        _changeId = changeId;
+        this.receivedBoard = receivedBoard;
+        changedMsgIds = new int[] {changedMsgId};
+        this.changeId = changeId;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_CHANGE_POST_STATE.writeId(this, buffer);
-        buffer.writeInt(_receivedBoard);
-        buffer.writeInt(_changedMsgIds.length);
-        for (int postId : _changedMsgIds) {
+        buffer.writeInt(receivedBoard);
+        buffer.writeInt(changedMsgIds.length);
+        for (int postId : changedMsgIds) {
             buffer.writeInt(postId); // postId
-            buffer.writeInt(_changeId); // state
+            buffer.writeInt(changeId); // state
         }
     }
 }

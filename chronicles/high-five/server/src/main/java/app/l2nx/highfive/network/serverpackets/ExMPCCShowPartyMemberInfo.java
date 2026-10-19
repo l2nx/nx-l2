@@ -29,17 +29,17 @@ import app.l2nx.network.buffer.WriteBuffer;
  * @author chris_00
  */
 public class ExMPCCShowPartyMemberInfo extends ServerPacket {
-    private final Party _party;
+    private final Party party;
 
     public ExMPCCShowPartyMemberInfo(Party party) {
-        _party = party;
+        this.party = party;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_MPCC_SHOW_PARTY_MEMBER_INFO.writeId(this, buffer);
-        buffer.writeInt(_party.getMemberCount());
-        for (Player pc : _party.getMembers()) {
+        buffer.writeInt(party.getMemberCount());
+        for (Player pc : party.getMembers()) {
             buffer.writeString(pc.getName());
             buffer.writeInt(pc.getObjectId());
             buffer.writeInt(pc.getPlayerClass().getId());

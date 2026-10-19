@@ -29,28 +29,28 @@ import app.l2nx.network.buffer.WriteBuffer;
  * @author -Wooden-
  */
 public class ExPledgeEmblem extends ServerPacket {
-    private final int _crestId;
-    private final byte[] _data;
+    private final int crestId;
+    private final byte[] data;
 
     public ExPledgeEmblem(int crestId) {
-        _crestId = crestId;
+        this.crestId = crestId;
         final Crest crest = CrestTable.getInstance().getCrest(crestId);
-        _data = crest != null ? crest.getData() : null;
+        data = crest != null ? crest.getData() : null;
     }
 
     public ExPledgeEmblem(int crestId, byte[] data) {
-        _crestId = crestId;
-        _data = data;
+        this.crestId = crestId;
+        this.data = data;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_PLEDGE_EMBLEM.writeId(this, buffer);
         buffer.writeInt(0);
-        buffer.writeInt(_crestId);
-        if (_data != null) {
-            buffer.writeInt(_data.length);
-            buffer.writeBytes(_data);
+        buffer.writeInt(crestId);
+        if (data != null) {
+            buffer.writeInt(data.length);
+            buffer.writeBytes(data);
         } else {
             buffer.writeInt(0);
         }

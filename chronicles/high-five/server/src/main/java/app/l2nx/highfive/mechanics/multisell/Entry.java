@@ -21,21 +21,30 @@ package app.l2nx.highfive.mechanics.multisell;
 
 import java.util.ArrayList;
 import java.util.List;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * @author DS
  */
 public class Entry {
-    protected int _entryId;
-    protected boolean _stackable = true;
+    @Getter
+    @Setter
+    protected int entryId;
 
-    protected List<Ingredient> _products;
-    protected List<Ingredient> _ingredients;
+    @Getter
+    protected boolean stackable = true;
+
+    @Getter
+    protected List<Ingredient> products;
+
+    @Getter
+    protected List<Ingredient> ingredients;
 
     public Entry(int entryId) {
-        _entryId = entryId;
-        _products = new ArrayList<>();
-        _ingredients = new ArrayList<>();
+        this.entryId = entryId;
+        products = new ArrayList<>();
+        ingredients = new ArrayList<>();
     }
 
     /**
@@ -43,36 +52,16 @@ public class Entry {
      */
     protected Entry() {}
 
-    public void setEntryId(int id) {
-        _entryId = id;
-    }
-
-    public int getEntryId() {
-        return _entryId;
-    }
-
     public void addProduct(Ingredient product) {
-        _products.add(product);
+        products.add(product);
 
         if (!product.isStackable()) {
-            _stackable = false;
+            stackable = false;
         }
     }
 
-    public List<Ingredient> getProducts() {
-        return _products;
-    }
-
     public void addIngredient(Ingredient ingredient) {
-        _ingredients.add(ingredient);
-    }
-
-    public List<Ingredient> getIngredients() {
-        return _ingredients;
-    }
-
-    public boolean isStackable() {
-        return _stackable;
+        ingredients.add(ingredient);
     }
 
     public long getTaxAmount() {

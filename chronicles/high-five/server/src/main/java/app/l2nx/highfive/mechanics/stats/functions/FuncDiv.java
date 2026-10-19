@@ -23,11 +23,13 @@ import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.mechanics.conditions.Condition;
 import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.mechanics.stats.Stat;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Returns the initial value divided the function value, if the condition are met.
  * @author Zoey76
  */
+@Slf4j
 public class FuncDiv extends AbstractFunction {
     public FuncDiv(Stat stat, int order, Object owner, double value, Condition applyCond) {
         super(stat, order, owner, value, applyCond);
@@ -39,7 +41,7 @@ public class FuncDiv extends AbstractFunction {
             try {
                 return initVal / getValue();
             } catch (Exception e) {
-                LOG.warning(FuncDiv.class.getSimpleName() + ": Division by zero: " + getValue() + "!");
+                log.warn("Division by zero: {}!", getValue());
             }
         }
 

@@ -384,9 +384,9 @@ public class SSQMonasteryOfSilence extends InstanceScript {
 
                     addSpawn(
                             GUARDIAN_OF_THE_TOMB_1, GUARDIAN_OF_THE_TOMB_1_LOC, false, 0, false, world.getInstanceId());
-                    for (Location LOC : SLAVE_SPAWN_1_LOC) {
+                    for (Location loc : SLAVE_SPAWN_1_LOC) {
                         sendSlaveAtPlayer(
-                                addSpawn(TRAINEE_OF_REST, LOC, false, 0, false, world.getInstanceId()), player);
+                                addSpawn(TRAINEE_OF_REST, loc, false, 0, false, world.getInstanceId()), player);
                     }
 
                     addSpawn(

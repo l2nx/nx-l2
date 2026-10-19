@@ -48,11 +48,16 @@ import app.l2nx.highfive.mechanics.siege.clanhalls.SiegableHall;
 import app.l2nx.highfive.mechanics.skill.BuffInfo;
 import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.network.SystemMessageId;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * A siege zone
  * @author durgus, Skache
  */
+@Slf4j
 public class SiegeZone extends ZoneType {
     private static final int DISMOUNT_DELAY = 5;
 
@@ -67,41 +72,25 @@ public class SiegeZone extends ZoneType {
     }
 
     public class Settings extends AbstractZoneSettings {
-        private int _siegableId = -1;
-        private Siegable _siege = null;
-        private boolean _isActiveSiege = false;
+        @Getter
+        @Setter(AccessLevel.PROTECTED)
+        private int siegeableId = -1;
+
+        @Getter
+        @Setter
+        private Siegable siege = null;
+
+        @Getter
+        @Setter
+        private boolean activeSiege = false;
 
         protected Settings() {}
 
-        public int getSiegeableId() {
-            return _siegableId;
-        }
-
-        protected void setSiegeableId(int id) {
-            _siegableId = id;
-        }
-
-        public Siegable getSiege() {
-            return _siege;
-        }
-
-        public void setSiege(Siegable s) {
-            _siege = s;
-        }
-
-        public boolean isActiveSiege() {
-            return _isActiveSiege;
-        }
-
-        public void setActiveSiege(boolean value) {
-            _isActiveSiege = value;
-        }
-
         @Override
         public void clear() {
-            _siegableId = -1;
-            _siege = null;
-            _isActiveSiege = false;
+            siegeableId = -1;
+            siege = null;
+            activeSiege = false;
         }
     }
 
@@ -136,7 +125,7 @@ public class SiegeZone extends ZoneType {
             if (hall != null) {
                 hall.setSiegeZone(this);
             } else {
-                LOGGER.warning("SiegeZone: Siegable clan hall with id " + value + " does not exist!");
+                log.warn("Siegable clan hall with id {} does not exist!", value);
             }
         } else {
             super.setParameter(name, value);

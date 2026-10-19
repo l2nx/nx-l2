@@ -26,14 +26,17 @@ import java.math.BigInteger;
 import java.security.Key;
 import java.security.KeyPair;
 import java.security.interfaces.RSAPublicKey;
+import lombok.Getter;
 
 public class ScrambledKeyPair {
-    private final KeyPair _pair;
-    private final byte[] _scrambledModulus;
+    private final KeyPair pair;
+
+    @Getter
+    private final byte[] scrambledModulus;
 
     public ScrambledKeyPair(KeyPair pair) {
-        _pair = pair;
-        _scrambledModulus = scrambleModulus(((RSAPublicKey) _pair.getPublic()).getModulus());
+        this.pair = pair;
+        scrambledModulus = scrambleModulus(((RSAPublicKey) this.pair.getPublic()).getModulus());
     }
 
     private byte[] scrambleModulus(BigInteger modulus) {
@@ -69,15 +72,11 @@ public class ScrambledKeyPair {
         return scrambledMod;
     }
 
-    public byte[] getScrambledModulus() {
-        return _scrambledModulus;
-    }
-
     public Key getPrivateKey() {
-        return _pair.getPrivate();
+        return pair.getPrivate();
     }
 
     public Key getPublicKey() {
-        return _pair.getPublic();
+        return pair.getPublic();
     }
 }

@@ -33,26 +33,26 @@ import java.util.Set;
  * @author l3x
  */
 public class ExShowSeedSetting extends ServerPacket {
-    private final int _manorId;
-    private final Set<Seed> _seeds;
-    private final Map<Integer, SeedProduction> _current = new HashMap<>();
-    private final Map<Integer, SeedProduction> _next = new HashMap<>();
+    private final int manorId;
+    private final Set<Seed> seeds;
+    private final Map<Integer, SeedProduction> current = new HashMap<>();
+    private final Map<Integer, SeedProduction> next = new HashMap<>();
 
     public ExShowSeedSetting(int manorId) {
         final CastleManorManager manor = CastleManorManager.getInstance();
-        _manorId = manorId;
-        _seeds = manor.getSeedsForCastle(_manorId);
-        for (Seed s : _seeds) {
+        this.manorId = manorId;
+        seeds = manor.getSeedsForCastle(this.manorId);
+        for (Seed s : seeds) {
             // Current period
             SeedProduction sp = manor.getSeedProduct(manorId, s.getSeedId(), false);
             if (sp != null) {
-                _current.put(s.getSeedId(), sp);
+                current.put(s.getSeedId(), sp);
             }
 
             // Next period
             sp = manor.getSeedProduct(manorId, s.getSeedId(), true);
             if (sp != null) {
-                _next.put(s.getSeedId(), sp);
+                next.put(s.getSeedId(), sp);
             }
         }
     }
@@ -60,10 +60,10 @@ public class ExShowSeedSetting extends ServerPacket {
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_SHOW_SEED_SETTING.writeId(this, buffer);
-        buffer.writeInt(_manorId); // manor id
-        buffer.writeInt(_seeds.size()); // size
+        buffer.writeInt(manorId); // manor id
+        buffer.writeInt(seeds.size()); // size
         SeedProduction sp;
-        for (Seed s : _seeds) {
+        for (Seed s : seeds) {
             buffer.writeInt(s.getSeedId()); // seed id
             buffer.writeInt(s.getLevel()); // level
             buffer.writeByte(1);
@@ -76,8 +76,8 @@ public class ExShowSeedSetting extends ServerPacket {
             buffer.writeInt(s.getSeedMaxPrice()); // max seed price
 
             // Current period
-            if (_current.containsKey(s.getSeedId())) {
-                sp = _current.get(s.getSeedId());
+            if (current.containsKey(s.getSeedId())) {
+                sp = current.get(s.getSeedId());
                 buffer.writeLong(sp.getStartAmount()); // sales
                 buffer.writeLong(sp.getPrice()); // price
             } else {
@@ -86,8 +86,8 @@ public class ExShowSeedSetting extends ServerPacket {
             }
 
             // Next period
-            if (_next.containsKey(s.getSeedId())) {
-                sp = _next.get(s.getSeedId());
+            if (next.containsKey(s.getSeedId())) {
+                sp = next.get(s.getSeedId());
                 buffer.writeLong(sp.getStartAmount()); // sales
                 buffer.writeLong(sp.getPrice()); // price
             } else {
@@ -96,7 +96,7 @@ public class ExShowSeedSetting extends ServerPacket {
             }
         }
 
-        _current.clear();
-        _next.clear();
+        current.clear();
+        next.clear();
     }
 }

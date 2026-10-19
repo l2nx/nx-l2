@@ -33,26 +33,26 @@ import java.util.Set;
  * @author l3x
  */
 public class ExShowCropSetting extends ServerPacket {
-    private final int _manorId;
-    private final Set<Seed> _seeds;
-    private final Map<Integer, CropProcure> _current = new HashMap<>();
-    private final Map<Integer, CropProcure> _next = new HashMap<>();
+    private final int manorId;
+    private final Set<Seed> seeds;
+    private final Map<Integer, CropProcure> current = new HashMap<>();
+    private final Map<Integer, CropProcure> next = new HashMap<>();
 
     public ExShowCropSetting(int manorId) {
         final CastleManorManager manor = CastleManorManager.getInstance();
-        _manorId = manorId;
-        _seeds = manor.getSeedsForCastle(_manorId);
-        for (Seed s : _seeds) {
+        this.manorId = manorId;
+        seeds = manor.getSeedsForCastle(this.manorId);
+        for (Seed s : seeds) {
             // Current period
             CropProcure cp = manor.getCropProcure(manorId, s.getCropId(), false);
             if (cp != null) {
-                _current.put(s.getCropId(), cp);
+                current.put(s.getCropId(), cp);
             }
 
             // Next period
             cp = manor.getCropProcure(manorId, s.getCropId(), true);
             if (cp != null) {
-                _next.put(s.getCropId(), cp);
+                next.put(s.getCropId(), cp);
             }
         }
     }
@@ -60,10 +60,10 @@ public class ExShowCropSetting extends ServerPacket {
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_SHOW_CROP_SETTING.writeId(this, buffer);
-        buffer.writeInt(_manorId); // manor id
-        buffer.writeInt(_seeds.size()); // size
+        buffer.writeInt(manorId); // manor id
+        buffer.writeInt(seeds.size()); // size
         CropProcure cp;
-        for (Seed s : _seeds) {
+        for (Seed s : seeds) {
             buffer.writeInt(s.getCropId()); // crop id
             buffer.writeInt(s.getLevel()); // seed level
             buffer.writeByte(1);
@@ -76,8 +76,8 @@ public class ExShowCropSetting extends ServerPacket {
             buffer.writeInt(s.getCropMaxPrice()); // max crop price
 
             // Current period
-            if (_current.containsKey(s.getCropId())) {
-                cp = _current.get(s.getCropId());
+            if (current.containsKey(s.getCropId())) {
+                cp = current.get(s.getCropId());
                 buffer.writeLong(cp.getStartAmount()); // buy
                 buffer.writeLong(cp.getPrice()); // price
                 buffer.writeByte(cp.getReward()); // reward
@@ -88,8 +88,8 @@ public class ExShowCropSetting extends ServerPacket {
             }
 
             // Next period
-            if (_next.containsKey(s.getCropId())) {
-                cp = _next.get(s.getCropId());
+            if (next.containsKey(s.getCropId())) {
+                cp = next.get(s.getCropId());
                 buffer.writeLong(cp.getStartAmount()); // buy
                 buffer.writeLong(cp.getPrice()); // price
                 buffer.writeByte(cp.getReward()); // reward
@@ -100,7 +100,7 @@ public class ExShowCropSetting extends ServerPacket {
             }
         }
 
-        _next.clear();
-        _current.clear();
+        next.clear();
+        current.clear();
     }
 }

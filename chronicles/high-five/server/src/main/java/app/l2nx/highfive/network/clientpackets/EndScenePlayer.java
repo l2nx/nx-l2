@@ -27,17 +27,17 @@ import app.l2nx.highfive.network.enums.Movie;
  * @author JIV
  */
 public class EndScenePlayer extends ClientPacket {
-    private int _movieId;
+    private int movieId;
 
     @Override
     protected void readImpl() {
-        _movieId = readInt();
+        movieId = readInt();
     }
 
     @Override
     protected void runImpl() {
         final Player player = getPlayer();
-        if ((player == null) || (_movieId == 0)) {
+        if ((player == null) || (movieId == 0)) {
             return;
         }
 
@@ -47,7 +47,7 @@ public class EndScenePlayer extends ClientPacket {
         }
 
         final Movie movie = movieHolder.getMovie();
-        if (movie.getClientId() != _movieId) {
+        if (movie.getClientId() != movieId) {
             return;
         }
 

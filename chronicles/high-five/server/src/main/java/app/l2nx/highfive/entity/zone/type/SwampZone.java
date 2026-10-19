@@ -29,50 +29,53 @@ import app.l2nx.highfive.entity.zone.ZoneType;
 import app.l2nx.highfive.managers.CastleManager;
 import app.l2nx.highfive.mechanics.siege.Castle;
 import app.l2nx.highfive.network.serverpackets.OnEventTrigger;
+import lombok.Getter;
 
 /**
  * another type of zone where your speed is changed
  * @author Kerberos, Mobius
  */
 public class SwampZone extends ZoneType {
-    private double _move_bonus;
-    private int _castleId;
-    private Castle _castle;
-    private int _eventId;
+    @Getter
+    private double moveBonus;
+
+    private int castleId;
+    private Castle castle;
+    private int eventId;
 
     public SwampZone(int id) {
         super(id);
 
         // Setup default speed reduce (in %).
-        _move_bonus = 0.5;
+        moveBonus = 0.5;
 
         // no castle by default
-        _castleId = 0;
-        _castle = null;
+        castleId = 0;
+        castle = null;
 
         // no event by default
-        _eventId = 0;
+        eventId = 0;
     }
 
     @Override
     public void setParameter(String name, String value) {
         if (name.equals("move_bonus")) {
-            _move_bonus = Double.parseDouble(value);
+            moveBonus = Double.parseDouble(value);
         } else if (name.equals("castleId")) {
-            _castleId = Integer.parseInt(value);
+            castleId = Integer.parseInt(value);
         } else if (name.equals("eventId")) {
-            _eventId = Integer.parseInt(value);
+            eventId = Integer.parseInt(value);
         } else {
             super.setParameter(name, value);
         }
     }
 
     private Castle getCastle() {
-        if ((_castleId > 0) && (_castle == null)) {
-            _castle = CastleManager.getInstance().getCastleById(_castleId);
+        if ((castleId > 0) && (castle == null)) {
+            castle = CastleManager.getInstance().getCastleById(castleId);
         }
 
-        return _castle;
+        return castle;
     }
 
     @Override
@@ -92,8 +95,8 @@ public class SwampZone extends ZoneType {
 
         creature.setInsideZone(ZoneId.SWAMP, true);
         if (creature.isPlayer()) {
-            if (_eventId > 0) {
-                creature.sendPacket(new OnEventTrigger(_eventId, true));
+            if (eventId > 0) {
+                creature.sendPacket(new OnEventTrigger(eventId, true));
             }
 
             creature.asPlayer().broadcastUserInfo();
@@ -106,8 +109,8 @@ public class SwampZone extends ZoneType {
         if (creature.isInsideZone(ZoneId.SWAMP)) {
             creature.setInsideZone(ZoneId.SWAMP, false);
             if (creature.isPlayer()) {
-                if (_eventId > 0) {
-                    creature.sendPacket(new OnEventTrigger(_eventId, false));
+                if (eventId > 0) {
+                    creature.sendPacket(new OnEventTrigger(eventId, false));
                 }
 
                 if (!creature.isTeleporting()) {
@@ -115,9 +118,5 @@ public class SwampZone extends ZoneType {
                 }
             }
         }
-    }
-
-    public double getMoveBonus() {
-        return _move_bonus;
     }
 }

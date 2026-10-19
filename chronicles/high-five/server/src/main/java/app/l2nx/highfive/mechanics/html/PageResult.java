@@ -19,29 +19,24 @@
  */
 package app.l2nx.highfive.mechanics.html;
 
+import lombok.Getter;
+
 /**
  * @author UnAfraid
  */
 public class PageResult {
-    private final int _pages;
-    private final StringBuilder _pagerTemplate;
-    private final StringBuilder _bodyTemplate;
+    @Getter
+    private final int pages;
+
+    @Getter
+    private final StringBuilder pagerTemplate;
+
+    @Getter
+    private final StringBuilder bodyTemplate;
 
     public PageResult(int pages, StringBuilder pagerTemplate, StringBuilder bodyTemplate) {
-        _pages = pages;
-        _pagerTemplate = pagerTemplate;
-        _bodyTemplate = bodyTemplate;
-    }
-
-    public int getPages() {
-        return _pages;
-    }
-
-    public StringBuilder getPagerTemplate() {
-        return _pagerTemplate;
-    }
-
-    public StringBuilder getBodyTemplate() {
-        return _bodyTemplate;
+        this.pages = pages;
+        this.pagerTemplate = pagerTemplate;
+        this.bodyTemplate = bodyTemplate;
     }
 }

@@ -23,12 +23,14 @@ import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.instance.Defender;
 import java.util.ArrayList;
 import java.util.List;
+import lombok.Getter;
 
 /**
  * @author BiggBoss
  */
 public class SpecialSiegeGuardAI extends SiegeGuardAI {
-    private final List<Integer> _allied = new ArrayList<>();
+    @Getter
+    private final List<Integer> ally = new ArrayList<>();
 
     /**
      * @param creature
@@ -37,13 +39,9 @@ public class SpecialSiegeGuardAI extends SiegeGuardAI {
         super(creature);
     }
 
-    public List<Integer> getAlly() {
-        return _allied;
-    }
-
     @Override
     protected boolean autoAttackCondition(Creature target) {
-        if (_allied.contains(target.getObjectId())) {
+        if (ally.contains(target.getObjectId())) {
             return false;
         }
 

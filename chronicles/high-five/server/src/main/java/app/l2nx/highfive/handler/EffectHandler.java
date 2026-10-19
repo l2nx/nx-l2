@@ -28,30 +28,30 @@ import java.util.Map;
  * @author BiggBoss
  */
 public class EffectHandler implements IHandler<Class<? extends AbstractEffect>, String> {
-    private final Map<String, Class<? extends AbstractEffect>> _handlers;
+    private final Map<String, Class<? extends AbstractEffect>> handlers;
 
     protected EffectHandler() {
-        _handlers = new HashMap<>();
+        handlers = new HashMap<>();
     }
 
     @Override
     public void registerHandler(Class<? extends AbstractEffect> handler) {
-        _handlers.put(handler.getSimpleName(), handler);
+        handlers.put(handler.getSimpleName(), handler);
     }
 
     @Override
     public synchronized void removeHandler(Class<? extends AbstractEffect> handler) {
-        _handlers.remove(handler.getSimpleName());
+        handlers.remove(handler.getSimpleName());
     }
 
     @Override
     public Class<? extends AbstractEffect> getHandler(String name) {
-        return _handlers.get(name);
+        return handlers.get(name);
     }
 
     @Override
     public int size() {
-        return _handlers.size();
+        return handlers.size();
     }
 
     public void executeScript() {

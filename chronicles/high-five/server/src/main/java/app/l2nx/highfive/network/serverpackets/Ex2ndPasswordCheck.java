@@ -31,16 +31,16 @@ public class Ex2ndPasswordCheck extends ServerPacket {
     public static final int PASSWORD_PROMPT = 1;
     public static final int PASSWORD_OK = 2;
 
-    private final int _windowType;
+    private final int windowType;
 
     public Ex2ndPasswordCheck(int windowType) {
-        _windowType = windowType;
+        this.windowType = windowType;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_2ND_PASSWORD_CHECK.writeId(this, buffer);
-        buffer.writeInt(_windowType);
+        buffer.writeInt(windowType);
         buffer.writeInt(0);
     }
 }

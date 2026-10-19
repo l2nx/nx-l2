@@ -25,49 +25,41 @@ package app.l2nx.highfive.mechanics.siege;
 import app.l2nx.highfive.entity.actor.Npc;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import lombok.Getter;
+import lombok.Setter;
 
 public class SiegeClan {
-    private int _clanId = 0;
-    private final Set<Npc> _flag = ConcurrentHashMap.newKeySet();
-    private SiegeClanType _type;
+    @Getter
+    private int clanId = 0;
+
+    @Getter
+    private final Set<Npc> flag = ConcurrentHashMap.newKeySet();
+
+    @Getter
+    @Setter
+    private SiegeClanType type;
 
     public SiegeClan(int clanId, SiegeClanType type) {
-        _clanId = clanId;
-        _type = type;
+        this.clanId = clanId;
+        this.type = type;
     }
 
     public int getNumFlags() {
-        return _flag.size();
+        return flag.size();
     }
 
     public void addFlag(Npc flag) {
-        _flag.add(flag);
+        this.flag.add(flag);
     }
 
     public boolean removeFlag(Npc flag) {
-        final boolean ret = _flag.remove(flag);
+        final boolean ret = this.flag.remove(flag);
         flag.deleteMe();
         return ret;
     }
 
     public void removeFlags() {
-        _flag.forEach(Npc::decayMe);
-        _flag.clear();
-    }
-
-    public int getClanId() {
-        return _clanId;
-    }
-
-    public Set<Npc> getFlag() {
-        return _flag;
-    }
-
-    public SiegeClanType getType() {
-        return _type;
-    }
-
-    public void setType(SiegeClanType setType) {
-        _type = setType;
+        flag.forEach(Npc::decayMe);
+        flag.clear();
     }
 }

@@ -26,18 +26,18 @@ import app.l2nx.highfive.entity.actor.Player;
  * @author UnAfraid
  */
 public class TeleportTask implements Runnable {
-    private final Player _player;
-    private final Location _loc;
+    private final Player player;
+    private final Location loc;
 
     public TeleportTask(Player player, Location loc) {
-        _player = player;
-        _loc = loc;
+        this.player = player;
+        this.loc = loc;
     }
 
     @Override
     public void run() {
-        if ((_player != null) && _player.isOnline()) {
-            _player.teleToLocation(_loc, true);
+        if ((player != null) && player.isOnline()) {
+            player.teleToLocation(loc, true);
         }
     }
 }

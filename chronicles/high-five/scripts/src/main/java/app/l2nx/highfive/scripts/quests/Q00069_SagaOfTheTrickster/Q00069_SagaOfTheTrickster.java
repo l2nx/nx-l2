@@ -29,15 +29,15 @@ import app.l2nx.highfive.scripts.quests.AbstractSagaQuest;
 public class Q00069_SagaOfTheTrickster extends AbstractSagaQuest {
     public Q00069_SagaOfTheTrickster() {
         super(69);
-        _npc = new int[] {32138, 31270, 31282, 32228, 32263, 31646, 31649, 31653, 31654, 31655, 31659, 31283};
-        _items = new int[] {7080, 9761, 7081, 9742, 9724, 9727, 9730, 9733, 9736, 9739, 9718, 0};
-        _mob = new int[] {27333, 27334, 27335};
-        _classId = new int[] {134};
-        _prevClass = new int[] {0x82};
-        _npcSpawnLocations = new Location[] {
+        npc = new int[] {32138, 31270, 31282, 32228, 32263, 31646, 31649, 31653, 31654, 31655, 31659, 31283};
+        items = new int[] {7080, 9761, 7081, 9742, 9724, 9727, 9730, 9733, 9736, 9739, 9718, 0};
+        mob = new int[] {27333, 27334, 27335};
+        classId = new int[] {134};
+        prevClass = new int[] {0x82};
+        npcSpawnLocations = new Location[] {
             new Location(164014, -74733, -3093), new Location(124355, 82155, -2803), new Location(124376, 82127, -2796)
         };
-        _text = new String[] {
+        text = new String[] {
             "PLAYERNAME! Pursued to here! However, I jumped out of the Banshouren boundaries! You look at the giant as the sign of power!",
             "... Oh ... good! So it was ... let's begin!",
             "I do not have the patience ..! I have been a giant force ...! Cough chatter ah ah ah!",

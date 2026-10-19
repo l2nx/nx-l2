@@ -25,9 +25,8 @@ package app.l2nx.highfive.network.loginserverpackets.send;
 import app.l2nx.network.packet.SimpleWritablePacket;
 import java.security.GeneralSecurityException;
 import java.security.interfaces.RSAPublicKey;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.crypto.Cipher;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Sends the Blowfish session key encrypted to the login server during the initial handshake.<br>
@@ -39,9 +38,8 @@ import javax.crypto.Cipher;
  * </ul>
  * @author BazookaRpm
  */
+@Slf4j
 public final class BlowFishKey extends SimpleWritablePacket {
-    // Logger.
-    private static final Logger LOGGER = Logger.getLogger(BlowFishKey.class.getName());
 
     // Constants.
     private static final int PACKET_OPCODE = 0x00; // Opcode for Blowfish key packet.
@@ -66,7 +64,7 @@ public final class BlowFishKey extends SimpleWritablePacket {
 
         // Non-intrusive sanity log to help field diagnostics without enforcing exact sizes.
         if ((blowfishKey.length < EXPECTED_MIN_BF_LEN) || (blowfishKey.length > EXPECTED_MAX_BF_LEN)) {
-            LOGGER.warning(LOG_PREFIX + "Unexpected Blowfish key length: " + blowfishKey.length + " bytes.");
+            log.warn("{}Unexpected Blowfish key length: {} bytes.", LOG_PREFIX, blowfishKey.length);
         }
 
         try {
@@ -80,7 +78,7 @@ public final class BlowFishKey extends SimpleWritablePacket {
             writeBytes(encryptedKey);
         } catch (GeneralSecurityException e) {
             // Keep concise; avoid leaking sensitive material. Caller compatibility requires no checked throws here.
-            LOGGER.log(Level.SEVERE, LOG_PREFIX + "RSA encryption failed.", e);
+            log.error("{}RSA encryption failed.", LOG_PREFIX, e);
         }
     }
 }

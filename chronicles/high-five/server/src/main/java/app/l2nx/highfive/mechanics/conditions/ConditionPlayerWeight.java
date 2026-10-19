@@ -29,14 +29,14 @@ import app.l2nx.highfive.mechanics.skill.Skill;
  * @author Kerberos
  */
 public class ConditionPlayerWeight extends Condition {
-    private final int _weight;
+    private final int weight;
 
     /**
      * Instantiates a new condition player weight.
      * @param weight the weight
      */
     public ConditionPlayerWeight(int weight) {
-        _weight = weight;
+        this.weight = weight;
     }
 
     @Override
@@ -45,7 +45,7 @@ public class ConditionPlayerWeight extends Condition {
         if ((player != null) && (player.getMaxLoad() > 0)) {
             final int weightproc =
                     ((player.getCurrentLoad() - player.getBonusWeightPenalty()) * 100) / player.getMaxLoad();
-            return (weightproc < _weight) || player.getDietMode();
+            return (weightproc < weight) || player.getDietMode();
         }
 
         return true;

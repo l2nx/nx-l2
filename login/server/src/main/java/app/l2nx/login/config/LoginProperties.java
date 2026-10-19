@@ -14,11 +14,13 @@ import jakarta.validation.constraints.Positive;
 import java.io.File;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
+import lombok.Builder;
 import org.hibernate.validator.constraints.time.DurationMin;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.convert.DurationUnit;
 import org.springframework.validation.annotation.Validated;
 
+@Builder(toBuilder = true)
 @Validated
 @ConfigurationProperties("l2nx.login")
 public record LoginProperties(
@@ -31,6 +33,7 @@ public record LoginProperties(
         boolean autoCreateAccounts,
         @NotNull File datapackRoot,
         @NotNull NetworkSettings network) {
+    @Builder(toBuilder = true)
     public record Client(
             @NotBlank String host, @Min(1) @Max(65535) int port) {}
 
@@ -38,6 +41,7 @@ public record LoginProperties(
      * @param host {@code *} listens on all interfaces
      * @param acceptNew whether a game server may take a free id that is not registered yet
      */
+    @Builder(toBuilder = true)
     public record GameServer(
             @NotBlank String host, @Min(1) @Max(65535) int port, boolean acceptNew) {}
 
@@ -45,12 +49,14 @@ public record LoginProperties(
      * @param failedLogins failed logins from one address before the address is banned
      * @param duration zero bans the address permanently
      */
+    @Builder(toBuilder = true)
     public record Ban(
             @Positive int failedLogins,
 
             @NotNull @DurationMin(nanos = 0) @DurationUnit(ChronoUnit.SECONDS)
             Duration duration) {}
 
+    @Builder(toBuilder = true)
     public record FloodProtection(
             boolean enabled,
             @Positive int fastConnectionLimit,
@@ -58,6 +64,7 @@ public record LoginProperties(
             @NotNull Duration fastConnectionTime,
             @Positive int maxConnectionsPerIp) {}
 
+    @Builder(toBuilder = true)
     public record ScheduledRestart(
             boolean enabled,
 

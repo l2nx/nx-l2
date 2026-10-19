@@ -22,27 +22,13 @@ package app.l2nx.highfive.mechanics.events.holders.actor.player;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.mechanics.events.EventType;
 import app.l2nx.highfive.mechanics.events.holders.IBaseEvent;
+import lombok.Builder;
 
 /**
  * @author UnAfraid
  */
-public class OnPlayerTransform implements IBaseEvent {
-    private final Player _player;
-    private final int _transformId;
-
-    public OnPlayerTransform(Player player, int transformId) {
-        _player = player;
-        _transformId = transformId;
-    }
-
-    public Player getPlayer() {
-        return _player;
-    }
-
-    public int getTransformId() {
-        return _transformId;
-    }
-
+@Builder(toBuilder = true)
+public record OnPlayerTransform(Player player, int transformId) implements IBaseEvent {
     @Override
     public EventType getType() {
         return EventType.ON_PLAYER_TRANSFORM;

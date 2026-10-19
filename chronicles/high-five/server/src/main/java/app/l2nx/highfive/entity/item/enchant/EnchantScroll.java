@@ -33,46 +33,36 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author UnAfraid, Mobius
  */
+@Slf4j
 public class EnchantScroll extends AbstractEnchantItem {
-    private final boolean _isWeapon;
-    private final boolean _isBlessed;
-    private final boolean _isSafe;
-    private final int _scrollGroupId;
-    private final Map<Integer, Integer> _items = new HashMap<>();
+    @Getter
+    private final boolean weapon;
+
+    @Getter
+    private final boolean blessed;
+
+    @Getter
+    private final boolean safe;
+
+    private final int scrollGroupId;
+    private final Map<Integer, Integer> items = new HashMap<>();
 
     public EnchantScroll(StatSet set) {
         super(set);
-        _scrollGroupId = set.getInt("scrollGroupId", 0);
+        scrollGroupId = set.getInt("scrollGroupId", 0);
 
         final ItemType type = getItem().getItemType();
-        _isWeapon = (type == EtcItemType.ANCIENT_CRYSTAL_ENCHANT_WP)
+        weapon = (type == EtcItemType.ANCIENT_CRYSTAL_ENCHANT_WP)
                 || (type == EtcItemType.BLESS_SCRL_ENCHANT_WP)
                 || (type == EtcItemType.SCRL_ENCHANT_WP);
-        _isBlessed = (type == EtcItemType.BLESS_SCRL_ENCHANT_AM) || (type == EtcItemType.BLESS_SCRL_ENCHANT_WP);
-        _isSafe = (type == EtcItemType.ANCIENT_CRYSTAL_ENCHANT_AM) || (type == EtcItemType.ANCIENT_CRYSTAL_ENCHANT_WP);
-    }
-
-    @Override
-    public boolean isWeapon() {
-        return _isWeapon;
-    }
-
-    /**
-     * @return {@code true} for blessed scrolls (enchanted item will remain on failure), {@code false} otherwise
-     */
-    public boolean isBlessed() {
-        return _isBlessed;
-    }
-
-    /**
-     * @return {@code true} for safe-enchant scrolls (enchant level will remain on failure), {@code false} otherwise
-     */
-    public boolean isSafe() {
-        return _isSafe;
+        blessed = (type == EtcItemType.BLESS_SCRL_ENCHANT_AM) || (type == EtcItemType.BLESS_SCRL_ENCHANT_WP);
+        safe = (type == EtcItemType.ANCIENT_CRYSTAL_ENCHANT_AM) || (type == EtcItemType.ANCIENT_CRYSTAL_ENCHANT_WP);
     }
 
     /**
@@ -81,11 +71,11 @@ public class EnchantScroll extends AbstractEnchantItem {
      * @param scrollGroupId
      */
     public void addItem(int itemId, int scrollGroupId) {
-        _items.put(itemId, scrollGroupId > -1 ? scrollGroupId : _scrollGroupId);
+        items.put(itemId, scrollGroupId > -1 ? scrollGroupId : this.scrollGroupId);
     }
 
     public Collection<Integer> getItems() {
-        return _items.keySet();
+        return items.keySet();
     }
 
     /**
@@ -95,10 +85,10 @@ public class EnchantScroll extends AbstractEnchantItem {
      */
     @Override
     public boolean isValid(Item itemToEnchant, EnchantSupportItem supportItem) {
-        if (!_items.isEmpty() && !_items.containsKey(itemToEnchant.getId())) {
+        if (!items.isEmpty() && !items.containsKey(itemToEnchant.getId())) {
             return false;
         } else if (supportItem != null) {
-            if (_isBlessed) {
+            if (blessed) {
                 return false;
             } else if (!supportItem.isValid(itemToEnchant, supportItem)) {
                 return false;
@@ -107,7 +97,7 @@ public class EnchantScroll extends AbstractEnchantItem {
             }
         }
 
-        if (_items.isEmpty()) {
+        if (items.isEmpty()) {
             for (EnchantScroll scroll : EnchantItemData.getInstance().getScrolls()) {
                 if (scroll.getId() == getId()) {
                     continue;
@@ -133,18 +123,16 @@ public class EnchantScroll extends AbstractEnchantItem {
             return -1;
         }
 
-        final int scrollGroupId = _items.getOrDefault(enchantItem.getId(), _scrollGroupId);
+        final int scrollGroupId = items.getOrDefault(enchantItem.getId(), this.scrollGroupId);
         if (EnchantItemGroupsData.getInstance().getScrollGroup(scrollGroupId) == null) {
-            LOGGER.warning(getClass().getSimpleName()
-                    + ": Unexistent enchant scroll group specified for enchant scroll: " + getId());
+            log.warn("Unexistent enchant scroll group specified for enchant scroll: {}", getId());
             return -1;
         }
 
         final EnchantItemGroup group =
                 EnchantItemGroupsData.getInstance().getItemGroup(enchantItem.getTemplate(), scrollGroupId);
         if (group == null) {
-            LOGGER.warning(getClass().getSimpleName() + ": Couldn't find enchant item group for scroll: " + getId()
-                    + " requested by: " + player);
+            log.warn("Couldn't find enchant item group for scroll: {} requested by: {}", getId(), player);
             return -1;
         }
 

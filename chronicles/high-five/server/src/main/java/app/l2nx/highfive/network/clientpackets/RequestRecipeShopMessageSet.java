@@ -32,11 +32,11 @@ import app.l2nx.highfive.managers.PunishmentManager;
 public class RequestRecipeShopMessageSet extends ClientPacket {
     private static final int MAX_MSG_LENGTH = 29;
 
-    private String _name;
+    private String name;
 
     @Override
     protected void readImpl() {
-        _name = readString();
+        name = readString();
     }
 
     @Override
@@ -46,12 +46,12 @@ public class RequestRecipeShopMessageSet extends ClientPacket {
             return;
         }
 
-        if ((_name != null) && (_name.length() > MAX_MSG_LENGTH)) {
+        if ((name != null) && (name.length() > MAX_MSG_LENGTH)) {
             PunishmentManager.handleIllegalPlayerAction(
                     player, player + " tried to overflow recipe shop message", GeneralConfig.DEFAULT_PUNISH);
             return;
         }
 
-        player.setStoreName(_name);
+        player.setStoreName(name);
     }
 }

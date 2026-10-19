@@ -347,20 +347,20 @@ public class UrbanArea extends InstanceScript {
     }
 
     private static class CallAmaskari implements Runnable {
-        private final Npc _caller;
+        private final Npc caller;
 
         public CallAmaskari(Npc caller) {
-            _caller = caller;
+            this.caller = caller;
         }
 
         @Override
         public void run() {
-            if ((_caller != null) && !_caller.isDead()) {
-                final InstanceWorld world = InstanceManager.getInstance().getWorld(_caller);
+            if ((caller != null) && !caller.isDead()) {
+                final InstanceWorld world = InstanceManager.getInstance().getWorld(caller);
                 if (world != null) {
                     final Npc spawnedAmaskari = world.getParameters().getObject("spawnedAmaskari", Npc.class);
                     if ((spawnedAmaskari != null) && !spawnedAmaskari.isDead()) {
-                        spawnedAmaskari.teleToLocation(_caller.getLocation());
+                        spawnedAmaskari.teleToLocation(caller.getLocation());
                         spawnedAmaskari.broadcastPacket(new NpcSay(
                                 spawnedAmaskari.getObjectId(),
                                 ChatType.NPC_GENERAL,
@@ -373,20 +373,20 @@ public class UrbanArea extends InstanceScript {
     }
 
     private class ExitInstance implements Runnable {
-        private final Party _party;
-        private final InstanceWorld _world;
+        private final Party party;
+        private final InstanceWorld world;
 
         public ExitInstance(Party party, InstanceWorld world) {
-            _party = party;
-            _world = world;
+            this.party = party;
+            this.world = world;
         }
 
         @Override
         public void run() {
-            if ((_party != null) && (_world != null)) {
-                for (Player partyMember : _party.getMembers()) {
+            if ((party != null) && (world != null)) {
+                for (Player partyMember : party.getMembers()) {
                     if ((partyMember != null) && !partyMember.isDead()) {
-                        _world.removeAllowed(partyMember);
+                        world.removeAllowed(partyMember);
                         teleportPlayer(partyMember, EXIT_POINT, 0);
                     }
                 }

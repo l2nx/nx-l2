@@ -34,7 +34,7 @@ import app.l2nx.highfive.network.serverpackets.InventoryUpdate;
  * @author Tempy
  */
 public class FestivalMonster extends Monster {
-    protected int _bonusMultiplier = 1;
+    protected int bonusMultiplier = 1;
 
     /**
      * Creates a festival monster.
@@ -46,7 +46,7 @@ public class FestivalMonster extends Monster {
     }
 
     public void setOfferingBonus(int bonusMultiplier) {
-        _bonusMultiplier = bonusMultiplier;
+        this.bonusMultiplier = bonusMultiplier;
     }
 
     /**
@@ -100,11 +100,11 @@ public class FestivalMonster extends Monster {
                 .addItem(
                         ItemProcessType.REWARD,
                         SevenSignsFestival.FESTIVAL_OFFERING_ID,
-                        _bonusMultiplier,
+                        bonusMultiplier,
                         partyLeader,
                         this);
         final InventoryUpdate iu = new InventoryUpdate();
-        if (addedOfferings.getCount() != _bonusMultiplier) {
+        if (addedOfferings.getCount() != bonusMultiplier) {
             iu.addModifiedItem(addedOfferings);
         } else {
             iu.addNewItem(addedOfferings);

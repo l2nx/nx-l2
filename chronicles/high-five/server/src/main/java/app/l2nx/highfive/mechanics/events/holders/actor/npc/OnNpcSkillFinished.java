@@ -24,33 +24,13 @@ import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.mechanics.events.EventType;
 import app.l2nx.highfive.mechanics.events.holders.IBaseEvent;
 import app.l2nx.highfive.mechanics.skill.Skill;
+import lombok.Builder;
 
 /**
  * @author UnAfraid
  */
-public class OnNpcSkillFinished implements IBaseEvent {
-    private final Npc _caster;
-    private final Player _target;
-    private final Skill _skill;
-
-    public OnNpcSkillFinished(Npc caster, Player target, Skill skill) {
-        _caster = caster;
-        _target = target;
-        _skill = skill;
-    }
-
-    public Player getTarget() {
-        return _target;
-    }
-
-    public Npc getCaster() {
-        return _caster;
-    }
-
-    public Skill getSkill() {
-        return _skill;
-    }
-
+@Builder(toBuilder = true)
+public record OnNpcSkillFinished(Npc caster, Player target, Skill skill) implements IBaseEvent {
     @Override
     public EventType getType() {
         return EventType.ON_NPC_SKILL_FINISHED;

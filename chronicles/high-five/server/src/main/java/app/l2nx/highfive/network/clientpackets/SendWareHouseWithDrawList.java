@@ -34,19 +34,20 @@ import app.l2nx.highfive.entity.itemcontainer.ClanWarehouse;
 import app.l2nx.highfive.entity.itemcontainer.ItemContainer;
 import app.l2nx.highfive.entity.itemcontainer.PlayerWarehouse;
 import app.l2nx.highfive.managers.PunishmentManager;
-import app.l2nx.highfive.network.PacketLogger;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.serverpackets.EnchantResult;
 import app.l2nx.highfive.network.serverpackets.InventoryUpdate;
 import app.l2nx.highfive.network.serverpackets.StatusUpdate;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @version $Revision: 1.2.2.1.2.4 $ $Date: 2005/03/29 23:15:16 $
  */
+@Slf4j
 public class SendWareHouseWithDrawList extends ClientPacket {
     private static final int BATCH_LENGTH = 12; // length of the one item
 
-    private ItemHolder[] _items = null;
+    private ItemHolder[] items = null;
 
     @Override
     protected void readImpl() {
@@ -55,22 +56,22 @@ public class SendWareHouseWithDrawList extends ClientPacket {
             return;
         }
 
-        _items = new ItemHolder[count];
+        items = new ItemHolder[count];
         for (int i = 0; i < count; i++) {
             final int objId = readInt();
             final long cnt = readLong();
             if ((objId < 1) || (cnt < 0)) {
-                _items = null;
+                items = null;
                 return;
             }
 
-            _items[i] = new ItemHolder(objId, cnt);
+            items[i] = new ItemHolder(objId, cnt);
         }
     }
 
     @Override
     protected void runImpl() {
-        if (_items == null) {
+        if (items == null) {
             return;
         }
 
@@ -128,7 +129,7 @@ public class SendWareHouseWithDrawList extends ClientPacket {
 
         int weight = 0;
         int slots = 0;
-        for (ItemHolder i : _items) {
+        for (ItemHolder i : items) {
             // Calculate needed slots
             final Item item = warehouse.getItemByObjectId(i.getId());
             if ((item == null) || (item.getCount() < i.getCount())) {
@@ -162,19 +163,17 @@ public class SendWareHouseWithDrawList extends ClientPacket {
 
         // Proceed to the transfer.
         final InventoryUpdate playerIU = new InventoryUpdate();
-        for (ItemHolder i : _items) {
+        for (ItemHolder i : items) {
             final Item oldItem = warehouse.getItemByObjectId(i.getId());
             if ((oldItem == null) || (oldItem.getCount() < i.getCount())) {
-                PacketLogger.warning(
-                        "Error withdrawing a warehouse object for char " + player.getName() + " (olditem == null)");
+                log.warn("Error withdrawing a warehouse object for char {} (olditem == null)", player.getName());
                 return;
             }
 
             final Item newItem = warehouse.transferItem(
                     ItemProcessType.TRANSFER, i.getId(), i.getCount(), player.getInventory(), player, manager);
             if (newItem == null) {
-                PacketLogger.warning(
-                        "Error withdrawing a warehouse object for char " + player.getName() + " (newitem == null)");
+                log.warn("Error withdrawing a warehouse object for char {} (newitem == null)", player.getName());
                 return;
             }
 

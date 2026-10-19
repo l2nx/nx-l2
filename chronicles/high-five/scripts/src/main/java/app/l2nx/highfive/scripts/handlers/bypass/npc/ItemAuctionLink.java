@@ -35,8 +35,9 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.StringTokenizer;
-import java.util.logging.Level;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class ItemAuctionLink implements IBypassHandler {
     private static final DateTimeFormatter SDF = DateTimeFormatter.ofPattern("HH:mm:ss dd.MM.yyyy");
 
@@ -106,7 +107,7 @@ public class ItemAuctionLink implements IBypassHandler {
                 return false;
             }
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, "Exception in " + getClass().getSimpleName(), e);
+            log.warn("Bypass failed", e);
         }
 
         return true;

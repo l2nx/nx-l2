@@ -215,7 +215,7 @@ public class PrimevalIsle extends Script {
         if (ArrayUtil.contains(MONSTERS, npc.getId())) {
             if (creature.isPlayer()) {
                 final Attackable mob = npc.asAttackable();
-                final int ag_type = npc.getTemplate().getParameters().getInt("ag_type", 0);
+                final int agType = npc.getTemplate().getParameters().getInt("ag_type", 0);
                 final int probPhysicalSpecial1 =
                         npc.getTemplate().getParameters().getInt("ProbPhysicalSpecial1", 0);
                 final int probPhysicalSpecial2 =
@@ -243,7 +243,7 @@ public class PrimevalIsle extends Script {
                             .getValidLocation(
                                     npc.getX(), npc.getY(), npc.getZ(), newX, newY, npc.getZ(), npc.getInstanceId());
                     npc.getAI().setIntentionMoveTo(loc);
-                } else if (ag_type == 1) {
+                } else if (agType == 1) {
                     if (getRandom(100)
                             <= (probPhysicalSpecial1 * npc.getVariables().getInt("SKILL_MULTIPLER"))) {
                         if (!npc.isSkillDisabled(physicalSpecial1.getSkill())) {

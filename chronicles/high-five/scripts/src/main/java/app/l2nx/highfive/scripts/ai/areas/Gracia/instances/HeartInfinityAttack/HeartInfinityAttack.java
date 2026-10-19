@@ -52,7 +52,9 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 import java.util.concurrent.ScheduledFuture;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class HeartInfinityAttack extends Script {
     private class HIAWorld extends InstanceWorld {
         public List<Npc> npcList = new ArrayList<>();
@@ -62,7 +64,7 @@ public class HeartInfinityAttack extends Script {
         protected Npc deadTumor;
         protected List<Npc> hounds = new ArrayList<>(2);
         public int tumorCount = 0;
-        public boolean isBossAttacked = false;
+        public boolean bossAttacked = false;
         public long startTime = 0;
         protected ScheduledFuture<?> timerTask;
 
@@ -293,8 +295,11 @@ public class HeartInfinityAttack extends Script {
             world = new HIAWorld();
             world.setInstance(InstanceManager.getInstance().createDynamicInstance(INSTANCEID));
             InstanceManager.getInstance().addWorld(world);
-            LOGGER.info("Heart Infinity Attack started " + INSTANCEID + " Instance: " + world.getInstanceId()
-                    + " created by player: " + player.getName());
+            log.info(
+                    "Heart Infinity Attack started {} Instance: {} created by player: {}",
+                    INSTANCEID,
+                    world.getInstanceId(),
+                    player.getName());
 
             final Party party = player.getParty();
             if ((party == null) || (party.getCommandChannel() == null)) {
@@ -483,8 +488,8 @@ public class HeartInfinityAttack extends Script {
         final InstanceWorld tmpworld = InstanceManager.getInstance().getWorld(npc);
         if (tmpworld instanceof HIAWorld) {
             final HIAWorld world = (HIAWorld) tmpworld;
-            if (!world.isBossAttacked) {
-                world.isBossAttacked = true;
+            if (!world.bossAttacked) {
+                world.bossAttacked = true;
                 final Calendar reenter = Calendar.getInstance();
                 reenter.add(Calendar.HOUR, INSTANCEPENALTY);
 
@@ -593,12 +598,12 @@ public class HeartInfinityAttack extends Script {
     }
 
     private class TumorRevival implements Runnable {
-        private final Npc _deadTumor;
-        private final HIAWorld _world;
+        private final Npc deadTumor;
+        private final HIAWorld world;
 
         public TumorRevival(Npc deadTumor, HIAWorld world) {
-            _deadTumor = world.deadTumor;
-            _world = world;
+            this.deadTumor = world.deadTumor;
+            this.world = world;
         }
 
         @Override
@@ -607,34 +612,34 @@ public class HeartInfinityAttack extends Script {
                 return;
             }
 
-            final Npc alivetumor = addSpawn(ALIVETUMOR, _deadTumor.getLocation(), _world.getInstanceId());
+            final Npc alivetumor = addSpawn(ALIVETUMOR, deadTumor.getLocation(), world.getInstanceId());
             alivetumor.setCurrentHp(alivetumor.getMaxHp() * .25);
-            notifyTumorRevival(_world);
-            _world.npcList.add(alivetumor);
-            _deadTumor.deleteMe();
-            final int tag = _world.getParameters().getInt("tag", -1);
-            _world.setParameter("tag", tag - 1);
+            notifyTumorRevival(world);
+            world.npcList.add(alivetumor);
+            deadTumor.deleteMe();
+            final int tag = world.getParameters().getInt("tag", -1);
+            world.setParameter("tag", tag - 1);
         }
     }
 
     private class TimerTask implements Runnable {
-        private final HIAWorld _world;
+        private final HIAWorld world;
 
         TimerTask(HIAWorld world) {
-            _world = world;
+            this.world = world;
         }
 
         @Override
         public void run() {
-            final long time = ((_world.startTime + (25 * 60 * 1000)) - System.currentTimeMillis()) / 60000;
+            final long time = ((world.startTime + (25 * 60 * 1000)) - System.currentTimeMillis()) / 60000;
             if (time == 0) {
                 broadCastPacket(
-                        _world,
+                        world,
                         new ExShowScreenMessage(
                                 NpcStringId.YOU_HAVE_FAILED_AT_S1_S2_THE_INSTANCE_WILL_SHORTLY_EXPIRE, 2, 8000));
-                if (_world != null) {
+                if (world != null) {
                     conquestEnded = true;
-                    final Instance inst = InstanceManager.getInstance().getInstance(_world.getInstanceId());
+                    final Instance inst = InstanceManager.getInstance().getInstance(world.getInstanceId());
                     if (inst != null) {
                         inst.removeNpcs();
                         if (inst.getPlayers().isEmpty()) {
@@ -657,7 +662,7 @@ public class HeartInfinityAttack extends Script {
                                 false,
                                 0,
                                 false,
-                                _world.getInstanceId());
+                                world.getInstanceId());
                     }
                 }
             }
@@ -692,12 +697,12 @@ public class HeartInfinityAttack extends Script {
     }
 
     private class RegenerationCoffinSpawn implements Runnable {
-        private final Npc _deadTumor;
-        private final HIAWorld _world;
+        private final Npc deadTumor;
+        private final HIAWorld world;
 
         public RegenerationCoffinSpawn(Npc deadTumor, HIAWorld world) {
-            _deadTumor = world.deadTumor;
-            _world = world;
+            this.deadTumor = world.deadTumor;
+            this.world = world;
         }
 
         @Override
@@ -707,8 +712,8 @@ public class HeartInfinityAttack extends Script {
             }
 
             for (int i = 0; i < 4; i++) {
-                final Npc worm = addSpawn(COFFIN, _deadTumor.getLocation(), _world.getInstanceId());
-                _world.npcList.add(worm);
+                final Npc worm = addSpawn(COFFIN, deadTumor.getLocation(), world.getInstanceId());
+                world.npcList.add(worm);
             }
         }
     }

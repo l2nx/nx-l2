@@ -54,158 +54,128 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
+import lombok.Getter;
 
 /**
  * @author LordWinter
  */
 public class KrateiArena {
-    private final int _id;
-    private final int _minLevel;
-    private final int _maxLevel;
-    private final int _minPlayers;
-    private final int _maxPlayers;
-    private KrateisMatchManager _manager = null;
-    private final Map<Player, KrateiCubePlayer> _players = new ConcurrentHashMap<>();
-    private final List<Skill> _buffs = new ArrayList<>();
-    private final List<Door> _doorListA = new ArrayList<>();
-    private final List<Door> _doorListB = new ArrayList<>();
-    private final List<Location> _waitLoc = new ArrayList<>();
-    private final List<Location> _battleLoc = new ArrayList<>();
-    private final List<Location> _watcherLoc = new ArrayList<>();
-    private final List<KrateisReward> _rewards = new ArrayList<>();
-    private final List<Npc> _watchers = new ArrayList<>();
+    @Getter
+    private final int id;
 
-    private StatSet _params;
+    @Getter
+    private final int minLevel;
 
-    private ScheduledFuture<?> _eventTask = null;
-    private ScheduledFuture<?> _timeTask = null;
-    private ScheduledFuture<?> _watcherTask = null;
-    private ScheduledFuture<?> _doorTask = null;
+    @Getter
+    private final int maxLevel;
 
-    private boolean _doorsRotation = false;
-    private boolean _watcherRotation = false;
-    private boolean _isBattleNow = false;
-    private boolean _isActiveNow = false;
+    @Getter
+    private final int minPlayers;
+
+    @Getter
+    private final int maxPlayers;
+
+    @Getter
+    private KrateisMatchManager manager = null;
+
+    @Getter
+    private final Map<Player, KrateiCubePlayer> players = new ConcurrentHashMap<>();
+
+    @Getter
+    private final List<Skill> buffList = new ArrayList<>();
+
+    @Getter
+    private final List<Door> doorListA = new ArrayList<>();
+
+    @Getter
+    private final List<Door> doorListB = new ArrayList<>();
+
+    @Getter
+    private final List<Location> waitLoc = new ArrayList<>();
+
+    @Getter
+    private final List<Location> battleLoc = new ArrayList<>();
+
+    @Getter
+    private final List<Location> watcherLoc = new ArrayList<>();
+
+    @Getter
+    private final List<KrateisReward> rewards = new ArrayList<>();
+
+    private final List<Npc> watchers = new ArrayList<>();
+
+    @Getter
+    private StatSet params;
+
+    private ScheduledFuture<?> eventTask = null;
+    private ScheduledFuture<?> timeTask = null;
+    private ScheduledFuture<?> watcherTask = null;
+    private ScheduledFuture<?> doorTask = null;
+
+    private boolean doorsRotation = false;
+    private boolean watcherRotation = false;
+
+    @Getter
+    private boolean battleNow = false;
+
+    @Getter
+    private boolean activeNow = false;
 
     public KrateiArena(int id, int manager, int minLevel, int maxLevel, int minPlayers, int maxPlayers) {
-        _id = id;
-        _minLevel = minLevel;
-        _maxLevel = maxLevel;
-        _minPlayers = minPlayers;
-        _maxPlayers = maxPlayers;
-        _rewards.clear();
+        this.id = id;
+        this.minLevel = minLevel;
+        this.maxLevel = maxLevel;
+        this.minPlayers = minPlayers;
+        this.maxPlayers = maxPlayers;
+        rewards.clear();
 
         final Spawn spawn = SpawnTable.getInstance().getAnySpawn(manager);
         if (spawn != null) {
-            _manager = (KrateisMatchManager) spawn.getLastSpawn();
-            _manager.setArenaId(getId());
+            this.manager = (KrateisMatchManager) spawn.getLastSpawn();
+            this.manager.setArenaId(getId());
         }
     }
 
-    public int getId() {
-        return _id;
-    }
-
-    public int getMinLevel() {
-        return _minLevel;
-    }
-
-    public int getMaxLevel() {
-        return _maxLevel;
-    }
-
-    public int getMinPlayers() {
-        return _minPlayers;
-    }
-
-    public int getMaxPlayers() {
-        return _maxPlayers;
-    }
-
-    public KrateisMatchManager getManager() {
-        return _manager;
-    }
-
-    public boolean isBattleNow() {
-        return _isBattleNow;
-    }
-
     public void setIsBattleNow(boolean value) {
-        _isBattleNow = value;
-    }
-
-    public boolean isActiveNow() {
-        return _isActiveNow;
+        battleNow = value;
     }
 
     public void setReward(KrateisReward ucReward) {
-        _rewards.add(ucReward);
-    }
-
-    public List<KrateisReward> getRewards() {
-        return _rewards;
+        rewards.add(ucReward);
     }
 
     public void addBuff(Skill skill) {
-        _buffs.add(skill);
-    }
-
-    public List<Skill> getBuffList() {
-        return _buffs;
+        buffList.add(skill);
     }
 
     public void addDoorA(Door door) {
-        _doorListA.add(door);
-    }
-
-    public List<Door> getDoorListA() {
-        return _doorListA;
+        doorListA.add(door);
     }
 
     public void addDoorB(Door door) {
-        _doorListB.add(door);
-    }
-
-    public List<Door> getDoorListB() {
-        return _doorListB;
-    }
-
-    public List<Location> getWaitLoc() {
-        return _waitLoc;
+        doorListB.add(door);
     }
 
     public void addWaitLoc(Location loc) {
-        _waitLoc.add(loc);
-    }
-
-    public List<Location> getBattleLoc() {
-        return _battleLoc;
+        waitLoc.add(loc);
     }
 
     public void addBattleLoc(Location loc) {
-        _battleLoc.add(loc);
-    }
-
-    public List<Location> getWatcherLoc() {
-        return _watcherLoc;
+        battleLoc.add(loc);
     }
 
     public void addWatcherLoc(Location loc) {
-        _watcherLoc.add(loc);
+        watcherLoc.add(loc);
     }
 
     public void addParam(StatSet params) {
-        _params = params;
-    }
-
-    public StatSet getParams() {
-        return _params;
+        this.params = params;
     }
 
     public boolean addRegisterPlayer(Player player) {
-        if (!_players.containsKey(player)) {
-            final KrateiCubePlayer pl = _players.computeIfAbsent(player, _ -> new KrateiCubePlayer(player));
-            _players.put(player, pl);
+        if (!players.containsKey(player)) {
+            final KrateiCubePlayer pl = players.computeIfAbsent(player, _ -> new KrateiCubePlayer(player));
+            players.put(player, pl);
             pl.setIsRegister(true);
             player.setKrateiArena(this);
             player.setRegisteredOnEvent(true);
@@ -216,8 +186,8 @@ public class KrateiArena {
     }
 
     public boolean removePlayer(Player player) {
-        if (_players.containsKey(player)) {
-            _players.remove(player);
+        if (players.containsKey(player)) {
+            players.remove(player);
             player.setKrateiArena(null);
             player.setRegisteredOnEvent(false);
             return true;
@@ -227,31 +197,27 @@ public class KrateiArena {
     }
 
     public boolean isRegisterPlayer(Player player) {
-        return _players.containsKey(player);
-    }
-
-    public Map<Player, KrateiCubePlayer> getPlayers() {
-        return _players;
+        return players.containsKey(player);
     }
 
     public void startEvent() {
-        if (_eventTask != null) {
-            _eventTask.cancel(false);
+        if (eventTask != null) {
+            eventTask.cancel(false);
         }
 
-        if (_timeTask != null) {
-            _timeTask.cancel(false);
+        if (timeTask != null) {
+            timeTask.cancel(false);
         }
 
-        if (_watcherTask != null) {
-            _watcherTask.cancel(false);
+        if (watcherTask != null) {
+            watcherTask.cancel(false);
         }
 
-        if (_doorTask != null) {
-            _doorTask.cancel(false);
+        if (doorTask != null) {
+            doorTask.cancel(false);
         }
 
-        _doorsRotation = true;
+        doorsRotation = true;
         changeDoorStatus(true);
 
         if (!getWatcherLoc().isEmpty()) {
@@ -260,48 +226,48 @@ public class KrateiArena {
                     final Npc npc = Quest.addSpawn(18601, loc, false, 0);
                     npc.disableCoreAI(true);
                     npc.setImmobilized(true);
-                    _watchers.add(npc);
+                    watchers.add(npc);
                 }
             }
 
-            _watcherRotation = true;
+            watcherRotation = true;
         }
 
         teleportAllPlayers();
         final long time = 1200000;
-        _eventTask = ThreadPool.schedule(this::endEvent, time);
-        _timeTask = ThreadPool.schedule(this::timeLeftInfo, time - 11000);
-        _watcherTask = ThreadPool.schedule(this::changeWatchers, getParams().getInt("watcherRotationTime") * 1000);
-        _isActiveNow = true;
+        eventTask = ThreadPool.schedule(this::endEvent, time);
+        timeTask = ThreadPool.schedule(this::timeLeftInfo, time - 11000);
+        watcherTask = ThreadPool.schedule(this::changeWatchers, getParams().getInt("watcherRotationTime") * 1000);
+        activeNow = true;
     }
 
     public void endEvent() {
-        if (_eventTask != null) {
-            _eventTask.cancel(true);
-            _eventTask = null;
+        if (eventTask != null) {
+            eventTask.cancel(true);
+            eventTask = null;
         }
 
-        if (_watcherTask != null) {
-            _watcherTask.cancel(true);
-            _watcherTask = null;
+        if (watcherTask != null) {
+            watcherTask.cancel(true);
+            watcherTask = null;
         }
 
-        if (_doorTask != null) {
-            _doorTask.cancel(true);
-            _doorTask = null;
+        if (doorTask != null) {
+            doorTask.cancel(true);
+            doorTask = null;
         }
 
-        _watcherRotation = false;
+        watcherRotation = false;
         changeDoorStatus(false);
 
-        if (!_watchers.isEmpty()) {
-            for (Npc npc : _watchers) {
+        if (!watchers.isEmpty()) {
+            for (Npc npc : watchers) {
                 if (npc != null) {
                     npc.deleteMe();
                 }
             }
 
-            _watchers.clear();
+            watchers.clear();
         }
 
         final Set<Player> participants = getPlayers().keySet();
@@ -320,46 +286,46 @@ public class KrateiArena {
             checkRewardPlayers(getPlayers());
         }
 
-        _players.clear();
-        _isBattleNow = false;
-        _isActiveNow = false;
+        players.clear();
+        battleNow = false;
+        activeNow = false;
         KrateisCubeManager.getInstance().setIsActivate(false);
     }
 
     private void changeWatchers() {
-        if (_watcherTask != null) {
-            _watcherTask.cancel(true);
-            _watcherTask = null;
+        if (watcherTask != null) {
+            watcherTask.cancel(true);
+            watcherTask = null;
         }
 
-        if (!_watchers.isEmpty()) {
-            for (Npc npc : _watchers) {
+        if (!watchers.isEmpty()) {
+            for (Npc npc : watchers) {
                 if (npc != null) {
                     npc.deleteMe();
                 }
             }
 
-            _watchers.clear();
+            watchers.clear();
         }
 
         if (!getWatcherLoc().isEmpty()) {
             for (Location loc : getWatcherLoc()) {
                 if (loc != null) {
-                    final Npc npc = Quest.addSpawn(_watcherRotation ? 18602 : 18601, loc, false, 0);
+                    final Npc npc = Quest.addSpawn(watcherRotation ? 18602 : 18601, loc, false, 0);
                     npc.disableCoreAI(true);
                     npc.setImmobilized(true);
-                    _watchers.add(npc);
+                    watchers.add(npc);
                 }
             }
         }
 
-        if (_watcherRotation) {
-            _watcherRotation = false;
+        if (watcherRotation) {
+            watcherRotation = false;
         } else {
-            _watcherRotation = true;
+            watcherRotation = true;
         }
 
-        _watcherTask = ThreadPool.schedule(this::changeWatchers, getParams().getInt("watcherRotationTime") * 1000);
+        watcherTask = ThreadPool.schedule(this::changeWatchers, getParams().getInt("watcherRotationTime") * 1000);
     }
 
     private Map<Player, Integer> getParticipants() {
@@ -441,19 +407,19 @@ public class KrateiArena {
     }
 
     private void changeDoorStatus(boolean active) {
-        if (_doorTask != null) {
-            _doorTask.cancel(false);
+        if (doorTask != null) {
+            doorTask.cancel(false);
         }
 
-        if (_doorsRotation) {
-            _doorsRotation = false;
+        if (doorsRotation) {
+            doorsRotation = false;
         } else {
-            _doorsRotation = true;
+            doorsRotation = true;
         }
 
         if (!getDoorListA().isEmpty() && !getDoorListB().isEmpty()) {
-            final List<Door> doorsA = (_doorsRotation) ? getDoorListA() : getDoorListB();
-            final List<Door> doorsB = (_doorsRotation) ? getDoorListB() : getDoorListA();
+            final List<Door> doorsA = (doorsRotation) ? getDoorListA() : getDoorListB();
+            final List<Door> doorsB = (doorsRotation) ? getDoorListB() : getDoorListA();
             if (active) {
                 changeDoorsStatus(doorsA, true);
                 changeDoorsStatus(doorsB, false);
@@ -463,7 +429,7 @@ public class KrateiArena {
             }
         }
 
-        _doorTask =
+        doorTask =
                 ThreadPool.schedule(() -> changeDoorStatus(active), (getParams().getInt("doorRotationTime") * 1000));
     }
 
@@ -569,8 +535,8 @@ public class KrateiArena {
                         if (!getRewards().isEmpty()) {
                             for (KrateisReward reward : getRewards()) {
                                 if (reward != null) {
-                                    long amount = reward.isAllowMidifier() ? count : reward.getAmount();
-                                    if (reward.getId() == -100) {
+                                    long amount = reward.allowMidifier() ? count : reward.amount();
+                                    if (reward.id() == -100) {
                                         if ((pl.getPlayer().getPcCafePoints() + amount)
                                                 > PremiumSystemConfig.PC_CAFE_MAX_POINTS) {
                                             amount = PremiumSystemConfig.PC_CAFE_MAX_POINTS
@@ -586,11 +552,11 @@ public class KrateiArena {
                                         pl.getPlayer()
                                                 .sendPacket(new ExPCCafePointInfo(
                                                         pl.getPlayer().getPcCafePoints(), (int) amount, 1));
-                                    } else if (reward.getId() == -200) {
+                                    } else if (reward.id() == -200) {
                                         if (pl.getPlayer().getClan() != null) {
                                             pl.getPlayer().getClan().addReputationScore((int) amount);
                                         }
-                                    } else if (reward.getId() == -300) {
+                                    } else if (reward.id() == -300) {
                                         pl.getPlayer()
                                                 .setFame((int) (pl.getPlayer().getFame() + amount));
                                         final SystemMessage sm =
@@ -598,11 +564,11 @@ public class KrateiArena {
                                         sm.addInt((int) amount);
                                         pl.getPlayer().sendPacket(sm);
                                         pl.getPlayer().updateUserInfo();
-                                    } else if (reward.getId() > 0) {
+                                    } else if (reward.id() > 0) {
                                         pl.getPlayer()
                                                 .addItem(
                                                         ItemProcessType.REWARD,
-                                                        reward.getId(),
+                                                        reward.id(),
                                                         amount,
                                                         pl.getPlayer(),
                                                         true);
@@ -659,9 +625,9 @@ public class KrateiArena {
     }
 
     private void timeLeftInfo() {
-        if (_timeTask != null) {
-            _timeTask.cancel(true);
-            _timeTask = null;
+        if (timeTask != null) {
+            timeTask.cancel(true);
+            timeTask = null;
         }
 
         if (!getPlayers().isEmpty()) {
@@ -676,40 +642,40 @@ public class KrateiArena {
     }
 
     public class MessageTask implements Runnable {
-        private final Map<Player, KrateiCubePlayer> _players;
-        private int _time;
-        private final int _type;
+        private final Map<Player, KrateiCubePlayer> players;
+        private int time;
+        private final int type;
 
         public MessageTask(Map<Player, KrateiCubePlayer> players, int time, int type) {
-            _players = players;
-            _time = time;
-            _type = type;
+            this.players = players;
+            this.time = time;
+            this.type = type;
         }
 
         @Override
         public void run() {
-            if (((_players != null) && !_players.isEmpty()) && (_time > 0)) {
+            if (((players != null) && !players.isEmpty()) && (time > 0)) {
                 SystemMessage msg = null;
-                switch (_type) {
+                switch (type) {
                     case 0: {
-                        msg = new SystemMessage(SystemMessageId.THE_MATCH_WILL_START_IN_S1_SECOND_S).addInt(_time);
+                        msg = new SystemMessage(SystemMessageId.THE_MATCH_WILL_START_IN_S1_SECOND_S).addInt(time);
                         break;
                     }
                     case 1: {
-                        msg = new SystemMessage(SystemMessageId.THE_GAME_WILL_END_IN_S1_SECOND_S_2).addInt(_time);
+                        msg = new SystemMessage(SystemMessageId.THE_GAME_WILL_END_IN_S1_SECOND_S_2).addInt(time);
                         break;
                     }
                 }
 
-                for (Player player : _players.keySet()) {
+                for (Player player : players.keySet()) {
                     if ((player != null) && (msg != null)) {
                         player.sendPacket(msg);
                     }
                 }
 
-                _time--;
-                if (_time > 0) {
-                    ThreadPool.schedule(new MessageTask(_players, _time, _type), 1000);
+                time--;
+                if (time > 0) {
+                    ThreadPool.schedule(new MessageTask(players, time, type), 1000);
                 }
             }
         }
@@ -722,26 +688,26 @@ public class KrateiArena {
     }
 
     private class RespawnTask implements Runnable {
-        private final Player _player;
-        private int _time;
+        private final Player player;
+        private int time;
 
         public RespawnTask(Player player, int time) {
-            _player = player;
-            _time = time;
+            this.player = player;
+            this.time = time;
         }
 
         @Override
         public void run() {
-            if ((_player != null) && (_time > 0)) {
-                _player.sendPacket(new SystemMessage(
+            if ((player != null) && (time > 0)) {
+                player.sendPacket(new SystemMessage(
                                 SystemMessageId.RESURRECTION_WILL_TAKE_PLACE_IN_THE_WAITING_ROOM_AFTER_S1_SECONDS)
-                        .addInt(_time));
-                _time--;
-                if (_time > 0) {
-                    ThreadPool.schedule(new RespawnTask(_player, _time), 1000);
+                        .addInt(time));
+                time--;
+                if (time > 0) {
+                    ThreadPool.schedule(new RespawnTask(player, time), 1000);
                 } else {
-                    respawnEffects(_player);
-                    _player.teleToLocation(
+                    respawnEffects(player);
+                    player.teleToLocation(
                             getWaitLoc()
                                     .get(ThreadLocalRandom.current()
                                             .nextInt(getWaitLoc().size())),

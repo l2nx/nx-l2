@@ -26,16 +26,16 @@ import app.l2nx.highfive.entity.actor.Player;
  * @author UnAfraid
  */
 public class RentPetTask implements Runnable {
-    private final Player _player;
+    private final Player player;
 
     public RentPetTask(Player player) {
-        _player = player;
+        this.player = player;
     }
 
     @Override
     public void run() {
-        if (_player != null) {
-            _player.stopRentPet();
+        if (player != null) {
+            player.stopRentPet();
         }
     }
 }

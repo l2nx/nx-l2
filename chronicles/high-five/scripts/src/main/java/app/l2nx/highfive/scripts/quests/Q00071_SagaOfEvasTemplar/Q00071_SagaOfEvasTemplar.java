@@ -29,15 +29,15 @@ import app.l2nx.highfive.scripts.quests.AbstractSagaQuest;
 public class Q00071_SagaOfEvasTemplar extends AbstractSagaQuest {
     public Q00071_SagaOfEvasTemplar() {
         super(71);
-        _npc = new int[] {30852, 31624, 31278, 30852, 31638, 31646, 31648, 31651, 31654, 31655, 31658, 31281};
-        _items = new int[] {7080, 7535, 7081, 7486, 7269, 7300, 7331, 7362, 7393, 7424, 7094, 6482};
-        _mob = new int[] {27287, 27220, 27279};
-        _classId = new int[] {99};
-        _prevClass = new int[] {0x14};
-        _npcSpawnLocations = new Location[] {
+        npc = new int[] {30852, 31624, 31278, 30852, 31638, 31646, 31648, 31651, 31654, 31655, 31658, 31281};
+        items = new int[] {7080, 7535, 7081, 7486, 7269, 7300, 7331, 7362, 7393, 7424, 7094, 6482};
+        mob = new int[] {27287, 27220, 27279};
+        classId = new int[] {99};
+        prevClass = new int[] {0x14};
+        npcSpawnLocations = new Location[] {
             new Location(119518, -28658, -3811), new Location(181215, 36676, -4812), new Location(181227, 36703, -4816)
         };
-        _text = new String[] {
+        text = new String[] {
             "PLAYERNAME! Pursued to here! However, I jumped out of the Banshouren boundaries! You look at the giant as the sign of power!",
             "... Oh ... good! So it was ... let's begin!",
             "I do not have the patience ..! I have been a giant force ...! Cough chatter ah ah ah!",

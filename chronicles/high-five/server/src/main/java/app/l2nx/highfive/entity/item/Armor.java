@@ -27,17 +27,21 @@ import app.l2nx.highfive.entity.item.type.ArmorType;
 import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.mechanics.skill.holders.SkillHolder;
 import app.l2nx.highfive.util.StatSet;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * This class is dedicated to the management of armors.
  */
+@Slf4j
 public class Armor extends ItemTemplate {
     /**
      * Skill that activates when armor is enchanted +4.
      */
-    private SkillHolder _enchant4Skill = null;
+    private SkillHolder enchant4Skill = null;
 
-    private ArmorType _type;
+    @Getter
+    private ArmorType itemType;
 
     /**
      * Constructor for Armor.
@@ -50,7 +54,7 @@ public class Armor extends ItemTemplate {
     @Override
     public void set(StatSet set) {
         super.set(set);
-        _type = set.getEnum("armor_type", ArmorType.class, ArmorType.NONE);
+        itemType = set.getEnum("armor_type", ArmorType.class, ArmorType.NONE);
 
         final BodyPart bodyPart = getBodyPart();
         if ((bodyPart == BodyPart.NECK) //
@@ -62,15 +66,15 @@ public class Armor extends ItemTemplate {
                 || (bodyPart == BodyPart.LR_FINGER) //
                 || (bodyPart == BodyPart.R_BRACELET) //
                 || (bodyPart == BodyPart.L_BRACELET)) {
-            _type1 = ItemTemplate.TYPE1_WEAPON_RING_EARRING_NECKLACE;
-            _type2 = ItemTemplate.TYPE2_ACCESSORY;
+            type1 = ItemTemplate.TYPE1_WEAPON_RING_EARRING_NECKLACE;
+            type2 = ItemTemplate.TYPE2_ACCESSORY;
         } else {
-            if ((_type == ArmorType.NONE) && (bodyPart == BodyPart.L_HAND)) {
-                _type = ArmorType.SHIELD;
+            if ((itemType == ArmorType.NONE) && (bodyPart == BodyPart.L_HAND)) {
+                itemType = ArmorType.SHIELD;
             }
 
-            _type1 = ItemTemplate.TYPE1_SHIELD_ARMOR;
-            _type2 = ItemTemplate.TYPE2_SHIELD_ARMOR;
+            type1 = ItemTemplate.TYPE1_SHIELD_ARMOR;
+            type2 = ItemTemplate.TYPE2_SHIELD_ARMOR;
         }
 
         final String skill = set.getString("enchant4_skill", null);
@@ -90,20 +94,12 @@ public class Armor extends ItemTemplate {
             level = Integer.parseInt(info[1]);
         } catch (Exception nfe) {
             // Incorrect syntax, don't add new skill.
-            LOGGER.info("> Could not parse " + skill + " in armor enchant skills! item " + this);
+            log.info("> Could not parse {} in armor enchant skills! item {}", skill, this);
         }
 
         if ((id > 0) && (level > 0)) {
-            _enchant4Skill = new SkillHolder(id, level);
+            enchant4Skill = new SkillHolder(id, level);
         }
-    }
-
-    /**
-     * @return the type of the armor.
-     */
-    @Override
-    public ArmorType getItemType() {
-        return _type;
     }
 
     /**
@@ -111,7 +107,7 @@ public class Armor extends ItemTemplate {
      */
     @Override
     public int getItemMask() {
-        return _type.mask();
+        return itemType.mask();
     }
 
     /**
@@ -127,6 +123,6 @@ public class Armor extends ItemTemplate {
      */
     @Override
     public Skill getEnchant4Skill() {
-        return _enchant4Skill == null ? null : _enchant4Skill.getSkill();
+        return enchant4Skill == null ? null : enchant4Skill.getSkill();
     }
 }

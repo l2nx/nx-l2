@@ -29,50 +29,47 @@ import app.l2nx.highfive.entity.item.ItemTemplate;
 import app.l2nx.highfive.entity.item.instance.Item;
 import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.network.GameClient;
-import app.l2nx.highfive.network.PacketLogger;
 import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.SystemMessageId.SMLocalisation;
 import app.l2nx.network.buffer.WriteBuffer;
 import java.util.Arrays;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author Forsaiken
  */
+@Slf4j
 public class SystemMessage extends ServerPacket {
     private static final SMParam[] EMPTY_PARAM_ARRAY = new SMParam[0];
 
     public class SMParam {
-        private final byte _type;
-        private final Object _value;
+        @Getter
+        private final byte type;
+
+        @Getter
+        private final Object value;
 
         public SMParam(byte type, Object value) {
-            _type = type;
-            _value = value;
-        }
-
-        public byte getType() {
-            return _type;
-        }
-
-        public Object getValue() {
-            return _value;
+            this.type = type;
+            this.value = value;
         }
 
         public String getStringValue() {
-            return (String) _value;
+            return (String) value;
         }
 
         public int getIntValue() {
-            return ((Integer) _value).intValue();
+            return ((Integer) value).intValue();
         }
 
         public long getLongValue() {
-            return ((Long) _value).longValue();
+            return ((Long) value).longValue();
         }
 
         public int[] getIntArrayValue() {
-            return (int[]) _value;
+            return (int[]) value;
         }
     }
 
@@ -96,13 +93,17 @@ public class SystemMessage extends ServerPacket {
     public static final byte TYPE_INT_NUMBER = 1;
     public static final byte TYPE_TEXT = 0;
 
-    private SMParam[] _params;
-    private final SystemMessageId _smId;
-    private int _paramIndex;
+    @Getter
+    private SMParam[] params;
+
+    @Getter
+    private final SystemMessageId systemMessageId;
+
+    private int paramIndex;
 
     public SystemMessage(int id) {
-        _smId = SystemMessageId.getSystemMessageId(id);
-        _params = _smId.getParamCount() > 0 ? new SMParam[_smId.getParamCount()] : EMPTY_PARAM_ARRAY;
+        systemMessageId = SystemMessageId.getSystemMessageId(id);
+        params = systemMessageId.getParamCount() > 0 ? new SMParam[systemMessageId.getParamCount()] : EMPTY_PARAM_ARRAY;
     }
 
     public SystemMessage(SystemMessageId smId) {
@@ -110,8 +111,8 @@ public class SystemMessage extends ServerPacket {
             throw new NullPointerException("SystemMessageId cannot be null!");
         }
 
-        _smId = smId;
-        _params = smId.getParamCount() > 0 ? new SMParam[smId.getParamCount()] : EMPTY_PARAM_ARRAY;
+        systemMessageId = smId;
+        params = smId.getParamCount() > 0 ? new SMParam[smId.getParamCount()] : EMPTY_PARAM_ARRAY;
     }
 
     public SystemMessage(String text) {
@@ -119,27 +120,23 @@ public class SystemMessage extends ServerPacket {
             throw new NullPointerException();
         }
 
-        _smId = SystemMessageId.getSystemMessageId(SystemMessageId.S1_2.getId());
-        _params = new SMParam[1];
+        systemMessageId = SystemMessageId.getSystemMessageId(SystemMessageId.S1_2.getId());
+        params = new SMParam[1];
         addString(text);
     }
 
     public int getId() {
-        return _smId.getId();
-    }
-
-    public SystemMessageId getSystemMessageId() {
-        return _smId;
+        return systemMessageId.getId();
     }
 
     private void append(SMParam param) {
-        if (_paramIndex >= _params.length) {
-            _params = Arrays.copyOf(_params, _paramIndex + 1);
-            _smId.setParamCount(_paramIndex + 1);
-            PacketLogger.info("Wrong parameter count '" + (_paramIndex + 1) + "' for SystemMessageId: " + _smId);
+        if (paramIndex >= params.length) {
+            params = Arrays.copyOf(params, paramIndex + 1);
+            systemMessageId.setParamCount(paramIndex + 1);
+            log.info("Wrong parameter count '{}' for SystemMessageId: {}", (paramIndex + 1), systemMessageId);
         }
 
-        _params[_paramIndex++] = param;
+        params[paramIndex++] = param;
     }
 
     public SystemMessage addString(String text) {
@@ -287,10 +284,6 @@ public class SystemMessage extends ServerPacket {
         return this;
     }
 
-    public SMParam[] getParams() {
-        return _params;
-    }
-
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.SYSTEM_MESSAGE.writeId(this, buffer);
@@ -301,11 +294,11 @@ public class SystemMessage extends ServerPacket {
             if (player != null) {
                 final String lang = player.getLang();
                 if ((lang != null) && !lang.equals("en")) {
-                    final SMLocalisation sml = _smId.getLocalisation(lang);
+                    final SMLocalisation sml = systemMessageId.getLocalisation(lang);
                     if (sml != null) {
-                        final Object[] params = new Object[_paramIndex];
-                        for (int i = 0; i < _paramIndex; i++) {
-                            params[i] = _params[i].getValue();
+                        final Object[] params = new Object[paramIndex];
+                        for (int i = 0; i < paramIndex; i++) {
+                            params[i] = this.params[i].getValue();
                         }
 
                         buffer.writeInt(SystemMessageId.S1_2.getId());
@@ -318,11 +311,11 @@ public class SystemMessage extends ServerPacket {
             }
         }
 
-        buffer.writeInt(_smId.getId());
-        buffer.writeInt(_params.length);
-        for (SMParam param : _params) {
+        buffer.writeInt(systemMessageId.getId());
+        buffer.writeInt(this.params.length);
+        for (SMParam param : this.params) {
             if (param == null) {
-                PacketLogger.warning("Found null parameter for SystemMessageId " + _smId);
+                log.warn("Found null parameter for SystemMessageId {}", systemMessageId);
                 continue;
             }
 

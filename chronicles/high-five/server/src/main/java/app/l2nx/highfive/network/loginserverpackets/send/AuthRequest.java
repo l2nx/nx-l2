@@ -40,14 +40,14 @@ public class AuthRequest extends SimpleWritablePacket {
     private static final int OPCODE = 0x01;
 
     // Data.
-    private final int _id;
-    private final boolean _acceptAlternate;
-    private final byte[] _hexId;
-    private final int _port;
-    private final boolean _reserveHost;
-    private final int _maxPlayers;
-    private final List<String> _subnets;
-    private final List<String> _hosts;
+    private final int id;
+    private final boolean acceptAlternate;
+    private final byte[] hexId;
+    private final int port;
+    private final boolean reserveHost;
+    private final int maxPlayers;
+    private final List<String> subnets;
+    private final List<String> hosts;
 
     /**
      * Auth constructor matching (id, acceptAlternate, hexid, port, reserveHost, maxplayer, subnets, hosts).
@@ -69,14 +69,14 @@ public class AuthRequest extends SimpleWritablePacket {
             int maxplayer,
             List<String> subnets,
             List<String> hosts) {
-        _id = id;
-        _acceptAlternate = acceptAlternate;
-        _hexId = (hexid != null) ? hexid : new byte[0];
-        _port = port;
-        _reserveHost = reserveHost;
-        _maxPlayers = maxplayer;
-        _subnets = (subnets != null) ? subnets : Collections.emptyList();
-        _hosts = (hosts != null) ? hosts : Collections.emptyList();
+        this.id = id;
+        this.acceptAlternate = acceptAlternate;
+        hexId = (hexid != null) ? hexid : new byte[0];
+        this.port = port;
+        this.reserveHost = reserveHost;
+        maxPlayers = maxplayer;
+        this.subnets = (subnets != null) ? subnets : Collections.emptyList();
+        this.hosts = (hosts != null) ? hosts : Collections.emptyList();
     }
 
     /**
@@ -84,20 +84,20 @@ public class AuthRequest extends SimpleWritablePacket {
      */
     @Override
     public void write() {
-        final int pairs = Math.min(_subnets.size(), _hosts.size());
+        final int pairs = Math.min(subnets.size(), hosts.size());
 
         writeByte(OPCODE);
-        writeByte(_id);
-        writeByte(_acceptAlternate ? 0x01 : 0x00);
-        writeByte(_reserveHost ? 0x01 : 0x00);
-        writeShort(_port);
-        writeInt(_maxPlayers);
-        writeInt(_hexId.length);
-        writeBytes(_hexId);
+        writeByte(id);
+        writeByte(acceptAlternate ? 0x01 : 0x00);
+        writeByte(reserveHost ? 0x01 : 0x00);
+        writeShort(port);
+        writeInt(maxPlayers);
+        writeInt(hexId.length);
+        writeBytes(hexId);
         writeInt(pairs);
         for (int i = 0; i < pairs; i++) {
-            writeString((_subnets.get(i) != null) ? _subnets.get(i) : "");
-            writeString((_hosts.get(i) != null) ? _hosts.get(i) : "");
+            writeString((subnets.get(i) != null) ? subnets.get(i) : "");
+            writeString((hosts.get(i) != null) ? hosts.get(i) : "");
         }
     }
 }

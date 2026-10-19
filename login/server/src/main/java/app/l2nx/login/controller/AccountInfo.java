@@ -23,6 +23,7 @@
 package app.l2nx.login.controller;
 
 import java.util.Objects;
+import lombok.Getter;
 
 /**
  * Immutable snapshot of login account information used by the login server.<br>
@@ -35,16 +36,19 @@ import java.util.Objects;
  */
 public class AccountInfo {
     // Account login name (normalized to lower case).
-    private final String _login;
+    @Getter
+    private final String login;
 
     // Encoded password hash associated with this account.
-    private final String _passwordHash;
+    private final String passwordHash;
 
     // Access level granted to this account.
-    private final int _accessLevel;
+    @Getter
+    private final int accessLevel;
 
     // Identifier of the last game server used by this account.
-    private final int _lastServer;
+    @Getter
+    private final int lastServer;
 
     /**
      * Creates a new immutable account information instance.
@@ -59,10 +63,10 @@ public class AccountInfo {
         Objects.requireNonNull(login, "login");
         Objects.requireNonNull(passwordHash, "passwordHash");
 
-        _login = requireNonEmpty(login, "login").toLowerCase();
-        _passwordHash = requireNonEmpty(passwordHash, "passwordHash");
-        _accessLevel = accessLevel;
-        _lastServer = lastServer;
+        this.login = requireNonEmpty(login, "login").toLowerCase();
+        this.passwordHash = requireNonEmpty(passwordHash, "passwordHash");
+        this.accessLevel = accessLevel;
+        this.lastServer = lastServer;
     }
 
     /**
@@ -85,31 +89,7 @@ public class AccountInfo {
      * @return {@code true} if the hash matches, {@code false} otherwise
      */
     public boolean checkPassHash(String passwordHash) {
-        return _passwordHash.equals(passwordHash);
-    }
-
-    /**
-     * Gets the normalized account login name.
-     * @return the login name in lower case
-     */
-    public String getLogin() {
-        return _login;
-    }
-
-    /**
-     * Gets the access level of this account.
-     * @return the access level
-     */
-    public int getAccessLevel() {
-        return _accessLevel;
-    }
-
-    /**
-     * Gets the identifier of the last server used by this account.
-     * @return the last server identifier
-     */
-    public int getLastServer() {
-        return _lastServer;
+        return this.passwordHash.equals(passwordHash);
     }
 
     /**
@@ -118,6 +98,6 @@ public class AccountInfo {
      */
     @Override
     public String toString() {
-        return "AccountInfo[login=" + _login + ", accessLevel=" + _accessLevel + ", lastServer=" + _lastServer + "]";
+        return "AccountInfo[login=" + login + ", accessLevel=" + accessLevel + ", lastServer=" + lastServer + "]";
     }
 }

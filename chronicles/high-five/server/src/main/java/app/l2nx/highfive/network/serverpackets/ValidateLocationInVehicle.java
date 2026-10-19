@@ -29,26 +29,26 @@ import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.network.buffer.WriteBuffer;
 
 public class ValidateLocationInVehicle extends ServerPacket {
-    private final int _objectId;
-    private final int _boatObjId;
-    private final int _heading;
-    private final Location _pos;
+    private final int objectId;
+    private final int boatObjId;
+    private final int heading;
+    private final Location pos;
 
     public ValidateLocationInVehicle(Player player) {
-        _objectId = player.getObjectId();
-        _boatObjId = player.getBoat().getObjectId();
-        _heading = player.getHeading();
-        _pos = player.getInVehiclePosition();
+        objectId = player.getObjectId();
+        boatObjId = player.getBoat().getObjectId();
+        heading = player.getHeading();
+        pos = player.getInVehiclePosition();
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.VALIDATE_LOCATION_IN_VEHICLE.writeId(this, buffer);
-        buffer.writeInt(_objectId);
-        buffer.writeInt(_boatObjId);
-        buffer.writeInt(_pos.getX());
-        buffer.writeInt(_pos.getY());
-        buffer.writeInt(_pos.getZ());
-        buffer.writeInt(_heading);
+        buffer.writeInt(objectId);
+        buffer.writeInt(boatObjId);
+        buffer.writeInt(pos.getX());
+        buffer.writeInt(pos.getY());
+        buffer.writeInt(pos.getZ());
+        buffer.writeInt(heading);
     }
 }

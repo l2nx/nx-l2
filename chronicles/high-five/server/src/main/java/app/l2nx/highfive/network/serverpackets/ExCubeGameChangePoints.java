@@ -27,9 +27,9 @@ import app.l2nx.network.buffer.WriteBuffer;
  * @author mrTJO
  */
 public class ExCubeGameChangePoints extends ServerPacket {
-    private final int _timeLeft;
-    private final int _bluePoints;
-    private final int _redPoints;
+    private final int timeLeft;
+    private final int bluePoints;
+    private final int redPoints;
 
     /**
      * Change Client Point Counter
@@ -38,17 +38,17 @@ public class ExCubeGameChangePoints extends ServerPacket {
      * @param redPoints Current Red Team Points
      */
     public ExCubeGameChangePoints(int timeLeft, int bluePoints, int redPoints) {
-        _timeLeft = timeLeft;
-        _bluePoints = bluePoints;
-        _redPoints = redPoints;
+        this.timeLeft = timeLeft;
+        this.bluePoints = bluePoints;
+        this.redPoints = redPoints;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_BLOCK_UP_SET_STATE.writeId(this, buffer);
         buffer.writeInt(2);
-        buffer.writeInt(_timeLeft);
-        buffer.writeInt(_bluePoints);
-        buffer.writeInt(_redPoints);
+        buffer.writeInt(timeLeft);
+        buffer.writeInt(bluePoints);
+        buffer.writeInt(redPoints);
     }
 }

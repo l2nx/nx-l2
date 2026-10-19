@@ -34,72 +34,74 @@ import app.l2nx.highfive.mechanics.skill.holders.SkillHolder;
 import app.l2nx.highfive.mechanics.skill.targets.TargetType;
 import app.l2nx.highfive.util.StatSet;
 import java.util.concurrent.ThreadLocalRandom;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Trigger skill by damage received effect implementation.
  * @author UnAfraid
  */
+@Slf4j
 public class TriggerSkillByDamageReceived extends AbstractEffect {
-    private final int _minAttackerLevel;
-    private final int _maxAttackerLevel;
-    private final int _minDamage;
-    private final int _chance;
-    private final SkillHolder _skill;
-    private final TargetType _targetType;
-    private final InstanceType _attackerType;
+    private final int minAttackerLevel;
+    private final int maxAttackerLevel;
+    private final int minDamage;
+    private final int chance;
+    private final SkillHolder skill;
+    private final TargetType targetType;
+    private final InstanceType attackerType;
 
     public TriggerSkillByDamageReceived(Condition attachCond, Condition applyCond, StatSet set, StatSet params) {
         super(attachCond, applyCond, set, params);
 
-        _minAttackerLevel = params.getInt("minAttackerLevel", 1);
-        _maxAttackerLevel = params.getInt("maxAttackerLevel", 100);
-        _minDamage = params.getInt("minDamage", 1);
-        _chance = params.getInt("chance", 100);
-        _skill = new SkillHolder(params.getInt("skillId"), params.getInt("skillLevel", 1));
-        _targetType = params.getEnum("targetType", TargetType.class, TargetType.SELF);
-        _attackerType = params.getEnum("attackerType", InstanceType.class, InstanceType.Creature);
+        minAttackerLevel = params.getInt("minAttackerLevel", 1);
+        maxAttackerLevel = params.getInt("maxAttackerLevel", 100);
+        minDamage = params.getInt("minDamage", 1);
+        chance = params.getInt("chance", 100);
+        skill = new SkillHolder(params.getInt("skillId"), params.getInt("skillLevel", 1));
+        targetType = params.getEnum("targetType", TargetType.class, TargetType.SELF);
+        attackerType = params.getEnum("attackerType", InstanceType.class, InstanceType.Creature);
     }
 
     private void onDamageReceivedEvent(OnCreatureDamageReceived event) {
-        if (event.isDamageOverTime() || (_chance == 0) || (_skill.getSkillLevel() == 0)) {
+        if (event.damageOverTime() || (chance == 0) || (skill.getSkillLevel() == 0)) {
             return;
         }
 
-        if ((_targetType == TargetType.ONE) && (event.getAttacker().getTarget() != event.getTarget())) {
+        if ((targetType == TargetType.ONE) && (event.attacker().getTarget() != event.target())) {
             return;
         }
 
-        final ITargetTypeHandler targetHandler = TargetHandler.getInstance().getHandler(_targetType);
+        final ITargetTypeHandler targetHandler = TargetHandler.getInstance().getHandler(targetType);
         if (targetHandler == null) {
-            LOGGER.warning("Handler for target type: " + _targetType + " does not exist.");
+            log.warn("Handler for target type: {} does not exist.", targetType);
             return;
         }
 
-        if (event.getAttacker() == event.getTarget()) {
+        if (event.attacker() == event.target()) {
             return;
         }
 
-        if ((event.getAttacker().getLevel() < _minAttackerLevel)
-                || (event.getAttacker().getLevel() > _maxAttackerLevel)) {
+        if ((event.attacker().getLevel() < minAttackerLevel)
+                || (event.attacker().getLevel() > maxAttackerLevel)) {
             return;
         }
 
-        if ((event.getDamage() < _minDamage)
-                || (ThreadLocalRandom.current().nextInt(100) > _chance)
-                || !event.getAttacker().getInstanceType().isType(_attackerType)) {
+        if ((event.damage() < minDamage)
+                || (ThreadLocalRandom.current().nextInt(100) > chance)
+                || !event.attacker().getInstanceType().isType(attackerType)) {
             return;
         }
 
-        final Skill triggerSkill = _skill.getSkill();
+        final Skill triggerSkill = skill.getSkill();
         for (WorldObject triggerTarget :
-                targetHandler.getTargetList(triggerSkill, event.getTarget(), false, event.getAttacker())) {
+                targetHandler.getTargetList(triggerSkill, event.target(), false, event.attacker())) {
             if ((triggerTarget == null) || !triggerTarget.isCreature()) {
                 continue;
             }
 
             final Creature targetChar = triggerTarget.asCreature();
             if (!targetChar.isInvul()) {
-                event.getTarget().makeTriggerCast(triggerSkill, targetChar);
+                event.target().makeTriggerCast(triggerSkill, targetChar);
             }
         }
     }

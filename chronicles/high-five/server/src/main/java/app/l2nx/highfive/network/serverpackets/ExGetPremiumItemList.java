@@ -30,20 +30,20 @@ import java.util.Map.Entry;
  * @author Gnacik
  */
 public class ExGetPremiumItemList extends ServerPacket {
-    private final Player _player;
+    private final Player player;
 
     public ExGetPremiumItemList(Player player) {
-        _player = player;
+        this.player = player;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_GET_PREMIUM_ITEM_LIST.writeId(this, buffer);
-        buffer.writeInt(_player.getPremiumItemList().size());
-        for (Entry<Integer, PremiumItem> entry : _player.getPremiumItemList().entrySet()) {
+        buffer.writeInt(player.getPremiumItemList().size());
+        for (Entry<Integer, PremiumItem> entry : player.getPremiumItemList().entrySet()) {
             final PremiumItem item = entry.getValue();
             buffer.writeInt(entry.getKey());
-            buffer.writeInt(_player.getObjectId());
+            buffer.writeInt(player.getObjectId());
             buffer.writeInt(item.getItemId());
             buffer.writeLong(item.getCount());
             buffer.writeInt(0); // ?

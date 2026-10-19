@@ -27,21 +27,21 @@ import app.l2nx.highfive.util.PrimeCapacityAllocator;
 import java.util.BitSet;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Manages unique IDs for objects.
  * @author Mobius
  */
+@Slf4j
 public class IdManager {
-    private static final Logger LOGGER = Logger.getLogger(IdManager.class.getName());
 
     private static final int TOTAL_ID_COUNT = IdManagerConfig.LAST_OBJECT_ID - IdManagerConfig.FIRST_OBJECT_ID;
 
-    private BitSet _freeIds;
-    private int _freeIdCount;
-    private int _nextFreeId;
-    private final Lock _lock = new ReentrantLock();
+    private BitSet freeIds;
+    private int freeIdCount;
+    private int nextFreeId;
+    private final Lock lock = new ReentrantLock();
 
     public IdManager() {
         // Cleanup database.
@@ -51,9 +51,9 @@ public class IdManager {
 
         // Initialize BitSet with initial capacity or next prime.
         try {
-            _freeIds = new BitSet(PrimeCapacityAllocator.nextCapacity(IdManagerConfig.INITIAL_CAPACITY));
-            _freeIds.clear();
-            _freeIdCount = TOTAL_ID_COUNT;
+            freeIds = new BitSet(PrimeCapacityAllocator.nextCapacity(IdManagerConfig.INITIAL_CAPACITY));
+            freeIds.clear();
+            freeIdCount = TOTAL_ID_COUNT;
 
             // Register used ids.
             for (int usedObjectId : DatabaseIdManager.getUsedIds()) {
@@ -62,16 +62,16 @@ public class IdManager {
                     continue;
                 }
 
-                _freeIds.set(objectId);
-                _freeIdCount--;
+                freeIds.set(objectId);
+                freeIdCount--;
             }
 
-            _nextFreeId = _freeIds.nextClearBit(0);
+            nextFreeId = freeIds.nextClearBit(0);
         } catch (Exception e) {
-            LOGGER.severe("IdManager: Could not be initialized properly: " + e.getMessage());
+            log.error("Could not be initialized properly: {}", e.getMessage());
         }
 
-        LOGGER.info("IdManager: " + _freeIds.size() + " ids available.");
+        log.info("{} ids available.", freeIds.size());
     }
 
     /**
@@ -79,7 +79,7 @@ public class IdManager {
      * Uses the next prime number for optimal BitSet size, up to the maximum allowed ID range.
      */
     private void increaseBitSetCapacity() {
-        final int currentSize = _freeIds.size();
+        final int currentSize = freeIds.size();
         final int newSize = Math.min(
                 PrimeCapacityAllocator.nextCapacity((int) (currentSize * IdManagerConfig.RESIZE_MULTIPLIER)),
                 TOTAL_ID_COUNT);
@@ -87,9 +87,9 @@ public class IdManager {
         // Only resize if the new size is larger than the current size.
         if (newSize > currentSize) {
             final BitSet newBitSet = new BitSet(newSize);
-            newBitSet.or(_freeIds);
-            _freeIds = newBitSet;
-            LOGGER.info("IdManager: Increased BitSet capacity to " + newSize);
+            newBitSet.or(freeIds);
+            freeIds = newBitSet;
+            log.info("Increased BitSet capacity to {}", newSize);
         }
     }
 
@@ -100,38 +100,38 @@ public class IdManager {
      * @throws NullPointerException if there are no valid IDs remaining in the configured range
      */
     public int getNextId() {
-        _lock.lock();
+        lock.lock();
         try {
-            final int newId = _nextFreeId;
-            _freeIds.set(newId);
-            _freeIdCount--;
+            final int newId = nextFreeId;
+            freeIds.set(newId);
+            freeIdCount--;
 
             // Check utilization and increase capacity if needed.
-            final double utilization = (double) (TOTAL_ID_COUNT - _freeIdCount) / _freeIds.size();
+            final double utilization = (double) (TOTAL_ID_COUNT - freeIdCount) / freeIds.size();
             if (utilization >= IdManagerConfig.RESIZE_THRESHOLD) {
                 increaseBitSetCapacity();
-                _nextFreeId = _freeIds.nextClearBit(0); // Reset to the first available ID in the resized BitSet.
+                nextFreeId = freeIds.nextClearBit(0); // Reset to the first available ID in the resized BitSet.
             }
 
-            int nextFree = _freeIds.nextClearBit(newId);
+            int nextFree = freeIds.nextClearBit(newId);
             if (nextFree < 0) {
-                nextFree = _freeIds.nextClearBit(0);
+                nextFree = freeIds.nextClearBit(0);
             }
 
             if (nextFree < 0) {
-                if (_freeIds.size() < TOTAL_ID_COUNT) {
+                if (freeIds.size() < TOTAL_ID_COUNT) {
                     increaseBitSetCapacity();
-                    _nextFreeId = _freeIds.nextClearBit(0); // Reset again if resizing occurred.
+                    nextFreeId = freeIds.nextClearBit(0); // Reset again if resizing occurred.
                 } else {
                     throw new NullPointerException("IdManager: Ran out of valid ids.");
                 }
             }
 
-            _nextFreeId = nextFree;
+            nextFreeId = nextFree;
 
             return newId + IdManagerConfig.FIRST_OBJECT_ID;
         } finally {
-            _lock.unlock();
+            lock.unlock();
         }
     }
 
@@ -140,17 +140,16 @@ public class IdManager {
      * @param objectId the ID to release
      */
     public void releaseId(int objectId) {
-        _lock.lock();
+        lock.lock();
         try {
             if ((objectId - IdManagerConfig.FIRST_OBJECT_ID) > -1) {
-                _freeIds.clear(objectId - IdManagerConfig.FIRST_OBJECT_ID);
-                _freeIdCount++;
+                freeIds.clear(objectId - IdManagerConfig.FIRST_OBJECT_ID);
+                freeIdCount++;
             } else {
-                LOGGER.warning("IdManager: Release objectID " + objectId + " failed (< "
-                        + IdManagerConfig.FIRST_OBJECT_ID + ")");
+                log.warn("Release objectID {} failed (< {})", objectId, IdManagerConfig.FIRST_OBJECT_ID);
             }
         } finally {
-            _lock.unlock();
+            lock.unlock();
         }
     }
 
@@ -159,11 +158,11 @@ public class IdManager {
      * @return the number of available IDs
      */
     public int getAvailableIdCount() {
-        _lock.lock();
+        lock.lock();
         try {
-            return _freeIdCount;
+            return freeIdCount;
         } finally {
-            _lock.unlock();
+            lock.unlock();
         }
     }
 

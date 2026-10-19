@@ -32,11 +32,11 @@ import app.l2nx.highfive.network.serverpackets.ExPutItemResultForVariationCancel
  * @author -Wooden-
  */
 public class RequestConfirmCancelItem extends ClientPacket {
-    private int _objectId;
+    private int objectId;
 
     @Override
     protected void readImpl() {
-        _objectId = readInt();
+        objectId = readInt();
     }
 
     @Override
@@ -46,7 +46,7 @@ public class RequestConfirmCancelItem extends ClientPacket {
             return;
         }
 
-        final Item item = player.getInventory().getItemByObjectId(_objectId);
+        final Item item = player.getInventory().getItemByObjectId(objectId);
         if (item == null) {
             return;
         }

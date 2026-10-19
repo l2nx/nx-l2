@@ -40,21 +40,39 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
+import org.slf4j.LoggerFactory;
 
+@Slf4j
 public abstract class ClanHall {
-    protected static final Logger LOGGER = Logger.getLogger(ClanHall.class.getName());
 
-    final int _clanHallId;
-    private List<Door> _doors;
-    private final String _name;
-    private int _ownerId;
-    private final String _desc;
-    private final String _location;
-    private ClanHallZone _zone;
-    protected boolean _isFree = true;
-    private final Map<Integer, ClanHallFunction> _functions;
+    @Getter
+    final int id;
+
+    private List<Door> doors;
+
+    @Getter
+    private final String name;
+
+    @Getter
+    private int ownerId;
+
+    @Getter
+    private final String desc;
+
+    @Getter
+    private final String location;
+
+    @Getter
+    @Setter
+    private ClanHallZone zone;
+
+    @Getter
+    protected boolean free = true;
+
+    private final Map<Integer, ClanHallFunction> functions;
 
     /** Clan Hall Functions */
     public static final int FUNC_TELEPORT = 1;
@@ -68,66 +86,48 @@ public abstract class ClanHall {
     public static final int FUNC_DECO_CURTAINS = 8; // Only Auctionable Halls
 
     public class ClanHallFunction {
-        final int _type;
-        private int _level;
-        protected int _fee;
-        protected int _tempFee;
-        final long _rate;
-        long _endDate;
-        protected boolean _inDebt;
-        public boolean _cwh; // first activating clanhall function is payed from player inventory, any others from clan
+        @Getter
+        final int type;
+
+        @Getter
+        @Setter
+        private int level;
+
+        @Getter
+        @Setter
+        protected int lease;
+
+        protected int tempFee;
+
+        @Getter
+        final long rate;
+
+        @Getter
+        @Setter
+        long endTime;
+
+        protected boolean inDebt;
+        public boolean cwh; // first activating clanhall function is payed from player inventory, any others from clan
         // warehouse
 
         public ClanHallFunction(int type, int lvl, int lease, int tempLease, long rate, long time, boolean cwh) {
-            _type = type;
-            _level = lvl;
-            _fee = lease;
-            _tempFee = tempLease;
-            _rate = rate;
-            _endDate = time;
+            this.type = type;
+            level = lvl;
+            this.lease = lease;
+            tempFee = tempLease;
+            this.rate = rate;
+            endTime = time;
             initializeTask(cwh);
         }
 
-        public int getType() {
-            return _type;
-        }
-
-        public int getLevel() {
-            return _level;
-        }
-
-        public int getLease() {
-            return _fee;
-        }
-
-        public long getRate() {
-            return _rate;
-        }
-
-        public long getEndTime() {
-            return _endDate;
-        }
-
-        public void setLevel(int level) {
-            _level = level;
-        }
-
-        public void setLease(int lease) {
-            _fee = lease;
-        }
-
-        public void setEndTime(long time) {
-            _endDate = time;
-        }
-
         private void initializeTask(boolean cwh) {
-            if (_isFree) {
+            if (free) {
                 return;
             }
 
             final long currentTime = System.currentTimeMillis();
-            if (_endDate > currentTime) {
-                ThreadPool.schedule(new FunctionTask(cwh), _endDate - currentTime);
+            if (endTime > currentTime) {
+                ThreadPool.schedule(new FunctionTask(cwh), endTime - currentTime);
             } else {
                 ThreadPool.schedule(new FunctionTask(cwh), 0);
             }
@@ -135,13 +135,13 @@ public abstract class ClanHall {
 
         private class FunctionTask implements Runnable {
             public FunctionTask(boolean cwh) {
-                _cwh = cwh;
+                ClanHall.ClanHallFunction.this.cwh = cwh;
             }
 
             @Override
             public void run() {
                 try {
-                    if (_isFree) {
+                    if (free) {
                         return;
                     }
 
@@ -149,24 +149,24 @@ public abstract class ClanHall {
                                             .getClan(getOwnerId())
                                             .getWarehouse()
                                             .getAdena()
-                                    >= _fee)
-                            || !_cwh) {
-                        final int fee = _endDate == -1 ? _tempFee : _fee;
-                        setEndTime(System.currentTimeMillis() + _rate);
+                                    >= lease)
+                            || !cwh) {
+                        final int fee = endTime == -1 ? tempFee : lease;
+                        setEndTime(System.currentTimeMillis() + rate);
                         dbSave();
-                        if (_cwh) {
+                        if (cwh) {
                             ClanTable.getInstance()
                                     .getClan(getOwnerId())
                                     .getWarehouse()
                                     .destroyItemByItemId(ItemProcessType.FEE, Inventory.ADENA_ID, fee, null, null);
                         }
 
-                        ThreadPool.schedule(new FunctionTask(true), _rate);
+                        ThreadPool.schedule(new FunctionTask(true), rate);
                     } else {
-                        removeFunction(_type);
+                        removeFunction(type);
                     }
                 } catch (Exception e) {
-                    LOGGER.log(Level.SEVERE, "", e);
+                    log.error("", e);
                 }
             }
         }
@@ -175,86 +175,50 @@ public abstract class ClanHall {
             try (Connection con = DatabaseFactory.getConnection();
                     PreparedStatement ps = con.prepareStatement(
                             "REPLACE INTO clanhall_functions (hall_id, type, lvl, lease, rate, endTime) VALUES (?,?,?,?,?,?)")) {
-                ps.setInt(1, _clanHallId);
-                ps.setInt(2, _type);
-                ps.setInt(3, _level);
-                ps.setInt(4, _fee);
-                ps.setLong(5, _rate);
-                ps.setLong(6, _endDate);
+                ps.setInt(1, id);
+                ps.setInt(2, type);
+                ps.setInt(3, level);
+                ps.setInt(4, lease);
+                ps.setLong(5, rate);
+                ps.setLong(6, endTime);
                 ps.execute();
             } catch (Exception e) {
-                LOGGER.log(
-                        Level.SEVERE,
-                        "Exception: ClanHall.updateFunctions(int type, int lvl, int lease, long rate, long time, boolean addNew): "
-                                + e.getMessage(),
+                log.error(
+                        "Exception: ClanHall.updateFunctions(int type, int lvl, int lease, long rate, long time, boolean addNew): {}",
+                        e.getMessage(),
                         e);
             }
         }
     }
 
     public ClanHall(StatSet set) {
-        _clanHallId = set.getInt("id");
-        _name = set.getString("name");
-        _ownerId = set.getInt("ownerId");
-        _desc = set.getString("desc");
-        _location = set.getString("location");
-        _functions = new ConcurrentHashMap<>();
-        if (_ownerId <= 0) {
+        id = set.getInt("id");
+        name = set.getString("name");
+        ownerId = set.getInt("ownerId");
+        desc = set.getString("desc");
+        location = set.getString("location");
+        functions = new ConcurrentHashMap<>();
+        if (ownerId <= 0) {
             return;
         }
 
-        final Clan clan = ClanTable.getInstance().getClan(_ownerId);
+        final Clan clan = ClanTable.getInstance().getClan(ownerId);
         if (clan != null) {
-            clan.setHideoutId(_clanHallId);
+            clan.setHideoutId(id);
         } else {
             free();
         }
     }
 
     /**
-     * @return Id Of Clan hall
-     */
-    public int getId() {
-        return _clanHallId;
-    }
-
-    /**
-     * @return the Clan Hall name.
-     */
-    public String getName() {
-        return _name;
-    }
-
-    /**
-     * @return OwnerId
-     */
-    public int getOwnerId() {
-        return _ownerId;
-    }
-
-    /**
-     * @return Desc
-     */
-    public String getDesc() {
-        return _desc;
-    }
-
-    /**
-     * @return Location
-     */
-    public String getLocation() {
-        return _location;
-    }
-
-    /**
      * @return all Door
      */
     public List<Door> getDoors() {
-        if (_doors == null) {
-            _doors = new ArrayList<>();
+        if (doors == null) {
+            doors = new ArrayList<>();
         }
 
-        return _doors;
+        return doors;
     }
 
     /**
@@ -280,15 +244,7 @@ public abstract class ClanHall {
      * @return function with id
      */
     public ClanHallFunction getFunction(int type) {
-        return _functions.get(type);
-    }
-
-    /**
-     * Sets this clan halls zone
-     * @param zone
-     */
-    public void setZone(ClanHallZone zone) {
-        _zone = zone;
+        return functions.get(type);
     }
 
     /**
@@ -298,25 +254,18 @@ public abstract class ClanHall {
      * @return true if object is inside the zone
      */
     public boolean checkIfInZone(int x, int y, int z) {
-        return _zone.isInsideZone(x, y, z);
-    }
-
-    /**
-     * @return the zone of this clan hall
-     */
-    public ClanHallZone getZone() {
-        return _zone;
+        return zone.isInsideZone(x, y, z);
     }
 
     /** Free this clan hall */
     public void free() {
-        _ownerId = 0;
-        _isFree = true;
-        for (Integer fc : _functions.keySet()) {
+        ownerId = 0;
+        free = true;
+        for (Integer fc : functions.keySet()) {
             removeFunction(fc);
         }
 
-        _functions.clear();
+        functions.clear();
         updateDb();
     }
 
@@ -326,13 +275,13 @@ public abstract class ClanHall {
      */
     public void setOwner(Clan clan) {
         // Verify that this ClanHall is Free and Clan isn't null.
-        if ((_ownerId > 0) || (clan == null)) {
+        if ((ownerId > 0) || (clan == null)) {
             return;
         }
 
-        _ownerId = clan.getId();
-        _isFree = false;
-        clan.setHideoutId(_clanHallId);
+        ownerId = clan.getId();
+        free = false;
+        clan.setHideoutId(id);
 
         // Announce to Online member new ClanHall.
         clan.broadcastToOnlineMembers(new PledgeShowInfoUpdate(clan));
@@ -346,7 +295,7 @@ public abstract class ClanHall {
      * @param open
      */
     public void openCloseDoor(Player player, int doorId, boolean open) {
-        if ((player != null) && (player.getClanId() == _ownerId)) {
+        if ((player != null) && (player.getClanId() == ownerId)) {
             openCloseDoor(doorId, open);
         }
     }
@@ -366,7 +315,7 @@ public abstract class ClanHall {
     }
 
     public void openCloseDoors(Player player, boolean open) {
-        if ((player != null) && (player.getClanId() == _ownerId)) {
+        if ((player != null) && (player.getClanId() == ownerId)) {
             openCloseDoors(open);
         }
     }
@@ -385,12 +334,10 @@ public abstract class ClanHall {
 
     /** Banish Foreigner */
     public void banishForeigners() {
-        if (_zone != null) {
-            _zone.banishForeigners(_ownerId);
+        if (zone != null) {
+            zone.banishForeigners(ownerId);
         } else {
-            LOGGER.log(
-                    Level.WARNING,
-                    getClass().getSimpleName() + ": Zone is null for clan hall: " + _clanHallId + " " + _name);
+            LoggerFactory.getLogger(getClass()).warn("Zone is null for clan hall: {} {}", id, name);
         }
     }
 
@@ -398,10 +345,10 @@ public abstract class ClanHall {
     protected void loadFunctions() {
         try (Connection con = DatabaseFactory.getConnection();
                 PreparedStatement ps = con.prepareStatement("SELECT * FROM clanhall_functions WHERE hall_id = ?")) {
-            ps.setInt(1, _clanHallId);
+            ps.setInt(1, id);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
-                    _functions.put(
+                    functions.put(
                             rs.getInt("type"),
                             new ClanHallFunction(
                                     rs.getInt("type"),
@@ -414,7 +361,7 @@ public abstract class ClanHall {
                 }
             }
         } catch (Exception e) {
-            LOGGER.log(Level.SEVERE, "Exception: ClanHall.loadFunctions(): " + e.getMessage(), e);
+            log.error("Exception: ClanHall.loadFunctions(): {}", e.getMessage(), e);
         }
     }
 
@@ -423,15 +370,15 @@ public abstract class ClanHall {
      * @param functionType
      */
     public void removeFunction(int functionType) {
-        _functions.remove(functionType);
+        functions.remove(functionType);
         try (Connection con = DatabaseFactory.getConnection();
                 PreparedStatement ps =
                         con.prepareStatement("DELETE FROM clanhall_functions WHERE hall_id=? AND type=?")) {
-            ps.setInt(1, _clanHallId);
+            ps.setInt(1, id);
             ps.setInt(2, functionType);
             ps.execute();
         } catch (Exception e) {
-            LOGGER.log(Level.SEVERE, "Exception: ClanHall.removeFunctions(int functionType): " + e.getMessage(), e);
+            log.error("Exception: ClanHall.removeFunctions(int functionType): {}", e.getMessage(), e);
         }
     }
 
@@ -442,16 +389,16 @@ public abstract class ClanHall {
         }
 
         if (addNew) {
-            _functions.put(type, new ClanHallFunction(type, level, lease, 0, rate, 0, false));
+            functions.put(type, new ClanHallFunction(type, level, lease, 0, rate, 0, false));
         } else if ((level == 0) && (lease == 0)) {
             removeFunction(type);
-        } else if ((lease - _functions.get(type).getLease()) > 0) {
-            _functions.remove(type);
-            _functions.put(type, new ClanHallFunction(type, level, lease, 0, rate, -1, false));
+        } else if ((lease - functions.get(type).getLease()) > 0) {
+            functions.remove(type);
+            functions.put(type, new ClanHallFunction(type, level, lease, 0, rate, -1, false));
         } else {
-            _functions.get(type).setLease(lease);
-            _functions.get(type).setLevel(level);
-            _functions.get(type).dbSave();
+            functions.get(type).setLease(lease);
+            functions.get(type).setLevel(level);
+            functions.get(type).dbSave();
         }
 
         return true;
@@ -471,10 +418,6 @@ public abstract class ClanHall {
 
     public boolean isSiegableHall() {
         return false;
-    }
-
-    public boolean isFree() {
-        return _isFree;
     }
 
     public abstract void updateDb();

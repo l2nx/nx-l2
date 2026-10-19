@@ -24,37 +24,29 @@ import app.l2nx.highfive.entity.item.instance.Item;
 import app.l2nx.highfive.mechanics.events.EventType;
 import app.l2nx.highfive.mechanics.events.holders.IBaseEvent;
 import app.l2nx.highfive.mechanics.options.Augmentation;
+import lombok.Getter;
 
 /**
  * @author UnAfraid
  */
 public class OnPlayerAugment implements IBaseEvent {
-    private final Player _player;
-    private final Item _item;
-    private final Augmentation _augmentation;
-    private final boolean _isAugment; // true = is being augmented // false = augment is being removed
+    @Getter
+    private final Player player;
+
+    @Getter
+    private final Item item;
+
+    @Getter
+    private final Augmentation augmentation;
+
+    @Getter
+    private final boolean augment; // true = is being augmented // false = augment is being removed
 
     public OnPlayerAugment(Player player, Item item, Augmentation augment, boolean isAugment) {
-        _player = player;
-        _item = item;
-        _augmentation = augment;
-        _isAugment = isAugment;
-    }
-
-    public Player getPlayer() {
-        return _player;
-    }
-
-    public Item getItem() {
-        return _item;
-    }
-
-    public Augmentation getAugmentation() {
-        return _augmentation;
-    }
-
-    public boolean isAugment() {
-        return _isAugment;
+        this.player = player;
+        this.item = item;
+        augmentation = augment;
+        this.augment = isAugment;
     }
 
     @Override

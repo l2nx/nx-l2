@@ -50,7 +50,7 @@ import java.util.concurrent.ThreadLocalRandom;
  * @author Zoey76, Mobius
  */
 public class RestorationRandom extends AbstractEffect {
-    private final List<ExtractableProductItem> _products = new ArrayList<>();
+    private final List<ExtractableProductItem> products = new ArrayList<>();
 
     public RestorationRandom(Condition attachCond, Condition applyCond, StatSet set, StatSet params) {
         super(attachCond, applyCond, set, params);
@@ -58,14 +58,15 @@ public class RestorationRandom extends AbstractEffect {
         for (StatSet group : params.getList("items", StatSet.class)) {
             final List<RestorationItemHolder> items = new ArrayList<>();
             for (StatSet item : group.getList(".", StatSet.class)) {
-                items.add(new RestorationItemHolder(
-                        item.getInt(".id"),
-                        item.getLong(".count"),
-                        item.getInt(".minEnchant", 0),
-                        item.getInt(".maxEnchant", 0)));
+                items.add(RestorationItemHolder.builder()
+                        .id(item.getInt(".id"))
+                        .count(item.getLong(".count"))
+                        .minEnchant(item.getInt(".minEnchant", 0))
+                        .maxEnchant(item.getInt(".maxEnchant", 0))
+                        .build());
             }
 
-            _products.add(new ExtractableProductItem(items, group.getFloat(".chance")));
+            products.add(new ExtractableProductItem(items, group.getFloat(".chance")));
         }
     }
 
@@ -91,7 +92,7 @@ public class RestorationRandom extends AbstractEffect {
         // If you get chance equal 45% you fall into the second zone 30-80.
         // Meaning you get the second production list.
         // Calculate extraction
-        for (ExtractableProductItem expi : _products) {
+        for (ExtractableProductItem expi : products) {
             chance = expi.getChance();
             if ((rndNum >= chanceFrom) && (rndNum <= (chance + chanceFrom))) {
                 creationList.addAll(expi.getItems());
@@ -109,17 +110,16 @@ public class RestorationRandom extends AbstractEffect {
 
         final Map<Item, Long> extractedItems = new HashMap<>();
         for (RestorationItemHolder createdItem : creationList) {
-            if ((createdItem.getId() <= 0) || (createdItem.getCount() <= 0)) {
+            if ((createdItem.id() <= 0) || (createdItem.count() <= 0)) {
                 continue;
             }
 
-            final long itemCount = (long) (createdItem.getCount() * RatesConfig.RATE_EXTRACTABLE);
-            final Item newItem =
-                    player.addItem(ItemProcessType.REWARD, createdItem.getId(), itemCount, effector, false);
+            final long itemCount = (long) (createdItem.count() * RatesConfig.RATE_EXTRACTABLE);
+            final Item newItem = player.addItem(ItemProcessType.REWARD, createdItem.id(), itemCount, effector, false);
 
-            if (createdItem.getMaxEnchant() > 0) {
-                final int minEnchant = createdItem.getMinEnchant();
-                final int maxEnchant = createdItem.getMaxEnchant();
+            if (createdItem.maxEnchant() > 0) {
+                final int minEnchant = createdItem.minEnchant();
+                final int maxEnchant = createdItem.maxEnchant();
                 newItem.setEnchantLevel(
                         minEnchant < maxEnchant ? random.nextInt(minEnchant, maxEnchant + 1) : minEnchant);
             }

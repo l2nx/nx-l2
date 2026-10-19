@@ -27,14 +27,20 @@ import app.l2nx.highfive.mechanics.events.EventType;
 import app.l2nx.highfive.mechanics.events.holders.actor.npc.attackable.OnAttackableAttack;
 import app.l2nx.highfive.mechanics.events.holders.actor.npc.attackable.OnAttackableKill;
 import app.l2nx.highfive.mechanics.skill.Skill;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * This class extends Guard class for quests, that require tracking of onAttack and onKill events from monsters' attacks.
  * @author GKR
  */
 public class QuestGuard extends Guard {
-    private boolean _isAutoAttackable = true;
-    private boolean _isPassive = false;
+    @Setter
+    private boolean autoAttackable = true;
+
+    @Getter
+    @Setter
+    private boolean passive = false;
 
     /**
      * Creates a quest guard.
@@ -53,7 +59,15 @@ public class QuestGuard extends Guard {
         if (attacker.isAttackable()
                 && EventDispatcher.getInstance().hasListener(EventType.ON_ATTACKABLE_ATTACK, this)) {
             EventDispatcher.getInstance()
-                    .notifyEventAsync(new OnAttackableAttack(null, this, damage, skill, false), this);
+                    .notifyEventAsync(
+                            OnAttackableAttack.builder()
+                                    .attacker(null)
+                                    .target(this)
+                                    .damage(damage)
+                                    .skill(skill)
+                                    .summon(false)
+                                    .build(),
+                            this);
         }
     }
 
@@ -67,7 +81,14 @@ public class QuestGuard extends Guard {
         // Delayed notification
         if (killer.isAttackable() && EventDispatcher.getInstance().hasListener(EventType.ON_ATTACKABLE_KILL, this)) {
             EventDispatcher.getInstance()
-                    .notifyEventAsyncDelayed(new OnAttackableKill(null, this, false), this, _onKillDelay);
+                    .notifyEventAsyncDelayed(
+                            OnAttackableKill.builder()
+                                    .attacker(null)
+                                    .target(this)
+                                    .summon(false)
+                                    .build(),
+                            this,
+                            onKillDelay);
         }
 
         return true;
@@ -75,26 +96,13 @@ public class QuestGuard extends Guard {
 
     @Override
     public void addDamageHate(Creature attacker, long damage, long aggro) {
-        if (!_isPassive && !attacker.isPlayer()) {
+        if (!passive && !attacker.isPlayer()) {
             super.addDamageHate(attacker, damage, aggro);
         }
     }
 
-    public void setPassive(boolean value) {
-        _isPassive = value;
-    }
-
     @Override
     public boolean isAutoAttackable(Creature attacker) {
-        return _isAutoAttackable && !attacker.isPlayer();
-    }
-
-    @Override
-    public void setAutoAttackable(boolean value) {
-        _isAutoAttackable = value;
-    }
-
-    public boolean isPassive() {
-        return _isPassive;
+        return autoAttackable && !attacker.isPlayer();
     }
 }

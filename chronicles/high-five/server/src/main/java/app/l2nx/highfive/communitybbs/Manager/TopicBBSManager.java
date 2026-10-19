@@ -37,32 +37,32 @@ import java.util.StringTokenizer;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class TopicBBSManager extends BaseBBSManager {
-    private final Collection<Topic> _table = ConcurrentHashMap.newKeySet();
-    private final Map<Forum, Integer> _maxId = new ConcurrentHashMap<>();
+    private final Collection<Topic> table = ConcurrentHashMap.newKeySet();
+    private final Map<Forum, Integer> maxId = new ConcurrentHashMap<>();
 
     protected TopicBBSManager() {
         // Prevent external initialization.
     }
 
     public void addTopic(Topic tt) {
-        _table.add(tt);
+        table.add(tt);
     }
 
     public void delTopic(Topic topic) {
-        _table.remove(topic);
+        table.remove(topic);
     }
 
     public void setMaxID(int id, Forum f) {
-        _maxId.put(f, id);
+        maxId.put(f, id);
     }
 
     public int getMaxID(Forum f) {
-        final Integer i = _maxId.get(f);
+        final Integer i = maxId.get(f);
         return i == null ? 0 : i;
     }
 
     public Topic getTopicByID(int idf) {
-        for (Topic t : _table) {
+        for (Topic t : table) {
             if (t.getID() == idf) {
                 return t;
             }

@@ -22,27 +22,13 @@ package app.l2nx.highfive.mechanics.events.holders.actor.player;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.mechanics.events.EventType;
 import app.l2nx.highfive.mechanics.events.holders.IBaseEvent;
+import lombok.Builder;
 
 /**
  * @author St3eT
  */
-public class OnPlayerPressTutorialMark implements IBaseEvent {
-    private final Player _player;
-    private final int _markId;
-
-    public OnPlayerPressTutorialMark(Player player, int markId) {
-        _player = player;
-        _markId = markId;
-    }
-
-    public Player getPlayer() {
-        return _player;
-    }
-
-    public int getMarkId() {
-        return _markId;
-    }
-
+@Builder(toBuilder = true)
+public record OnPlayerPressTutorialMark(Player player, int markId) implements IBaseEvent {
     @Override
     public EventType getType() {
         return EventType.ON_PLAYER_PRESS_TUTORIAL_MARK;

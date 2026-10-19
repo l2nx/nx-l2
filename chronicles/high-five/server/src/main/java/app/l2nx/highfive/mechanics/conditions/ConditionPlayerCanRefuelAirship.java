@@ -30,10 +30,10 @@ import app.l2nx.highfive.mechanics.skill.Skill;
  * @author Adry_85
  */
 public class ConditionPlayerCanRefuelAirship extends Condition {
-    private final int _value;
+    private final int value;
 
     public ConditionPlayerCanRefuelAirship(int value) {
-        _value = value;
+        this.value = value;
     }
 
     @Override
@@ -43,7 +43,7 @@ public class ConditionPlayerCanRefuelAirship extends Condition {
         if ((player == null)
                 || (player.getAirShip() == null)
                 || !(player.getAirShip() instanceof ControllableAirShip)
-                || ((player.getAirShip().getFuel() + _value)
+                || ((player.getAirShip().getFuel() + value)
                         > player.getAirShip().getMaxFuel())) {
             canRefuelAirship = false;
         }

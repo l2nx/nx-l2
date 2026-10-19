@@ -90,13 +90,13 @@ public class AndreasVanHalter extends Script {
     private static final int STATUS_CINEMATIC = 1;
     private static final int STATUS_FIGHT = 2;
 
-    private int _status = STATUS_DORMANT;
-    private final AtomicInteger _balconyKills = new AtomicInteger(0);
-    private long _lastAttack;
-    private Npc _boss;
-    private Npc _camera;
-    private Npc _ritualVictim;
-    private final List<Npc> _spawned = new CopyOnWriteArrayList<>();
+    private int status = STATUS_DORMANT;
+    private final AtomicInteger balconyKills = new AtomicInteger(0);
+    private long lastAttack;
+    private Npc boss;
+    private Npc camera;
+    private Npc ritualVictim;
+    private final List<Npc> spawned = new CopyOnWriteArrayList<>();
 
     private AndreasVanHalter() {
         addSpawnId(BOSS);
@@ -110,10 +110,10 @@ public class AndreasVanHalter extends Script {
         if (npc.getId() != BOSS) {
             return;
         }
-        _boss = npc;
-        _status = STATUS_DORMANT;
-        _balconyKills.set(0);
-        _lastAttack = System.currentTimeMillis();
+        boss = npc;
+        status = STATUS_DORMANT;
+        balconyKills.set(0);
+        lastAttack = System.currentTimeMillis();
 
         openDoor(BALCONY_DOOR_1);
         openDoor(BALCONY_DOOR_2);
@@ -128,7 +128,7 @@ public class AndreasVanHalter extends Script {
         if ((npc.getId() != BOSS) || (attacker == null)) {
             return;
         }
-        _lastAttack = System.currentTimeMillis();
+        lastAttack = System.currentTimeMillis();
 
         if (npc.getZ() <= ANTI_GLITCH_Z) {
             npc.teleToLocation(BOSS_FALLBACK, false);
@@ -154,21 +154,21 @@ public class AndreasVanHalter extends Script {
             return;
         }
 
-        if (_status != STATUS_DORMANT) {
+        if (status != STATUS_DORMANT) {
             return;
         }
 
         // Atomic to survive AOE wipes that kill several balcony mobs in the same tick.
-        if (_balconyKills.incrementAndGet() == BALCONY_KILLS_THRESHOLD) {
+        if (balconyKills.incrementAndGet() == BALCONY_KILLS_THRESHOLD) {
             triggerRitual();
         }
     }
 
     private void triggerRitual() {
-        if ((_boss == null) || _boss.isDead()) {
+        if ((boss == null) || boss.isDead()) {
             return;
         }
-        _status = STATUS_CINEMATIC;
+        status = STATUS_CINEMATIC;
 
         closeDoor(BALCONY_DOOR_1);
         closeDoor(BALCONY_DOOR_2);
@@ -178,16 +178,16 @@ public class AndreasVanHalter extends Script {
         for (Location loc : ALTAR_GATEKEEPER_SPAWNS) {
             final Npc gatekeeper = addSpawn(ALTAR_GATEKEEPER, loc, false, 0);
             if (gatekeeper != null) {
-                _spawned.add(gatekeeper);
+                spawned.add(gatekeeper);
             }
         }
 
-        _ritualVictim = addSpawn(RITUAL_OFFERING, RITUAL_VICTIM_SPAWN, false, 0);
-        if (_ritualVictim != null) {
-            _spawned.add(_ritualVictim);
+        ritualVictim = addSpawn(RITUAL_OFFERING, RITUAL_VICTIM_SPAWN, false, 0);
+        if (ritualVictim != null) {
+            spawned.add(ritualVictim);
         }
 
-        startQuestTimer("CINEMATIC_1", 3000, _boss, null);
+        startQuestTimer("CINEMATIC_1", 3000, boss, null);
     }
 
     @Override
@@ -197,91 +197,91 @@ public class AndreasVanHalter extends Script {
         }
         switch (event) {
             case "CINEMATIC_1": {
-                if ((_boss == null) || _boss.isDead() || (_ritualVictim == null)) {
+                if ((boss == null) || boss.isDead() || (ritualVictim == null)) {
                     return null;
                 }
 
-                _boss.setHeading(16384);
-                _camera = addSpawn(CAMERA_DUMMY, CAMERA_SPAWN, false, 30_000);
+                boss.setHeading(16384);
+                camera = addSpawn(CAMERA_DUMMY, CAMERA_SPAWN, false, 30_000);
 
-                if (_camera != null) {
-                    _spawned.add(_camera);
+                if (camera != null) {
+                    spawned.add(camera);
                 }
 
-                _boss.setTarget(_ritualVictim);
-                _boss.doCast(RITUAL_SKILL.getSkill());
-                _boss.setImmobilized(true);
+                boss.setTarget(ritualVictim);
+                boss.doCast(RITUAL_SKILL.getSkill());
+                boss.setImmobilized(true);
                 broadcastCinematic(
-                        new PlaySound(0, "BS04_A", 1, _boss.getObjectId(), _boss.getX(), _boss.getY(), _boss.getZ()));
+                        new PlaySound(0, "BS04_A", 1, boss.getObjectId(), boss.getX(), boss.getY(), boss.getZ()));
 
-                if (_camera != null) {
-                    broadcastCinematic(new SpecialCamera(_camera, 1500, 88, 89, 0, 5000, 0, 0, 1, 0, 0));
+                if (camera != null) {
+                    broadcastCinematic(new SpecialCamera(camera, 1500, 88, 89, 0, 5000, 0, 0, 1, 0, 0));
                 }
 
-                startQuestTimer("CINEMATIC_2", 300, _boss, null);
+                startQuestTimer("CINEMATIC_2", 300, boss, null);
                 break;
             }
             case "CINEMATIC_2": {
-                if ((_ritualVictim != null) && !_ritualVictim.isDead()) {
-                    _ritualVictim.broadcastPacket(new SocialAction(_ritualVictim.getObjectId(), 1));
-                    _ritualVictim.setCurrentHp(0);
+                if ((ritualVictim != null) && !ritualVictim.isDead()) {
+                    ritualVictim.broadcastPacket(new SocialAction(ritualVictim.getObjectId(), 1));
+                    ritualVictim.setCurrentHp(0);
                 }
 
-                if (_camera != null) {
-                    broadcastCinematic(new SpecialCamera(_camera, 1500, 88, 89, 0, 5000, 0, 0, 1, 0, 0));
+                if (camera != null) {
+                    broadcastCinematic(new SpecialCamera(camera, 1500, 88, 89, 0, 5000, 0, 0, 1, 0, 0));
                 }
 
-                startQuestTimer("CINEMATIC_3", 300, _boss, null);
+                startQuestTimer("CINEMATIC_3", 300, boss, null);
                 break;
             }
             case "CINEMATIC_3": {
-                if ((_ritualVictim != null) && !_ritualVictim.isDead()) {
-                    _ritualVictim.deleteMe();
+                if ((ritualVictim != null) && !ritualVictim.isDead()) {
+                    ritualVictim.deleteMe();
                 }
-                _ritualVictim = null;
+                ritualVictim = null;
 
-                if (_camera != null) {
-                    broadcastCinematic(new SpecialCamera(_camera, 450, 88, 3, 5500, 5000, 0, 0, 1, 0, 0));
+                if (camera != null) {
+                    broadcastCinematic(new SpecialCamera(camera, 450, 88, 3, 5500, 5000, 0, 0, 1, 0, 0));
                 }
 
-                startQuestTimer("CINEMATIC_4", 9400, _boss, null);
+                startQuestTimer("CINEMATIC_4", 9400, boss, null);
                 break;
             }
             case "CINEMATIC_4": {
-                if (_camera != null) {
-                    broadcastCinematic(new SpecialCamera(_camera, 500, 88, 4, 5000, 5000, 0, 0, 1, 0, 0));
+                if (camera != null) {
+                    broadcastCinematic(new SpecialCamera(camera, 500, 88, 4, 5000, 5000, 0, 0, 1, 0, 0));
                 }
 
-                startQuestTimer("CINEMATIC_5", 5000, _boss, null);
+                startQuestTimer("CINEMATIC_5", 5000, boss, null);
                 break;
             }
             case "CINEMATIC_5": {
-                if (_camera != null) {
-                    broadcastCinematic(new SpecialCamera(_camera, 3000, 88, 4, 6000, 5000, 0, 0, 1, 0, 0));
+                if (camera != null) {
+                    broadcastCinematic(new SpecialCamera(camera, 3000, 88, 4, 6000, 5000, 0, 0, 1, 0, 0));
                 }
 
-                startQuestTimer("CINEMATIC_END", 6000, _boss, null);
+                startQuestTimer("CINEMATIC_END", 6000, boss, null);
                 break;
             }
             case "CINEMATIC_END": {
                 // Acolyte minions (29063/29064) are spawned automatically from the boss <minions> stats.
-                if (_boss != null) {
-                    _boss.setImmobilized(false);
+                if (boss != null) {
+                    boss.setImmobilized(false);
                 }
 
-                if (_camera != null) {
-                    _camera.deleteMe();
-                    _camera = null;
+                if (camera != null) {
+                    camera.deleteMe();
+                    camera = null;
                 }
 
-                _status = STATUS_FIGHT;
+                status = STATUS_FIGHT;
                 break;
             }
             case "RESET_CHECK": {
-                if ((_boss != null)
-                        && !_boss.isDead()
-                        && !_boss.isAttackingNow()
-                        && ((System.currentTimeMillis() - _lastAttack) >= RAID_RESET_DELAY)) {
+                if ((boss != null)
+                        && !boss.isDead()
+                        && !boss.isAttackingNow()
+                        && ((System.currentTimeMillis() - lastAttack) >= RAID_RESET_DELAY)) {
                     resetRaid();
                 }
                 break;
@@ -291,9 +291,9 @@ public class AndreasVanHalter extends Script {
     }
 
     private void resetRaid() {
-        _status = STATUS_DORMANT;
-        _balconyKills.set(0);
-        _lastAttack = System.currentTimeMillis();
+        status = STATUS_DORMANT;
+        balconyKills.set(0);
+        lastAttack = System.currentTimeMillis();
         despawnEphemeral();
         openDoor(BALCONY_DOOR_1);
         openDoor(BALCONY_DOOR_2);
@@ -302,34 +302,34 @@ public class AndreasVanHalter extends Script {
     }
 
     private void cleanupRaid() {
-        _status = STATUS_DORMANT;
-        _balconyKills.set(0);
+        status = STATUS_DORMANT;
+        balconyKills.set(0);
         despawnEphemeral();
         openDoor(BALCONY_DOOR_1);
         openDoor(BALCONY_DOOR_2);
         closeDoor(ALTAR_DOOR_1);
         closeDoor(ALTAR_DOOR_2);
-        cancelQuestTimer("RESET_CHECK", _boss, null);
-        _boss = null;
+        cancelQuestTimer("RESET_CHECK", boss, null);
+        boss = null;
     }
 
     private void despawnEphemeral() {
-        for (Npc npc : _spawned) {
+        for (Npc npc : spawned) {
             if ((npc != null) && !npc.isDead()) {
                 npc.deleteMe();
             }
         }
-        _spawned.clear();
-        _camera = null;
-        _ritualVictim = null;
+        spawned.clear();
+        camera = null;
+        ritualVictim = null;
     }
 
     private void broadcastCinematic(ServerPacket packet) {
-        if (_boss == null) {
+        if (boss == null) {
             return;
         }
 
-        _boss.broadcastPacket(packet);
+        boss.broadcastPacket(packet);
     }
 
     private static void openDoor(int doorId) {

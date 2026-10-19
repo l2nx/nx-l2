@@ -23,33 +23,13 @@ import app.l2nx.highfive.entity.actor.Attackable;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.mechanics.events.EventType;
 import app.l2nx.highfive.mechanics.events.holders.IBaseEvent;
+import lombok.Builder;
 
 /**
  * @author UnAfraid
  */
-public class OnAttackableHate implements IBaseEvent {
-    private final Attackable _npc;
-    private final Player _player;
-    private final boolean _isSummon;
-
-    public OnAttackableHate(Attackable npc, Player player, boolean isSummon) {
-        _npc = npc;
-        _player = player;
-        _isSummon = isSummon;
-    }
-
-    public Attackable getNpc() {
-        return _npc;
-    }
-
-    public Player getPlayer() {
-        return _player;
-    }
-
-    public boolean isSummon() {
-        return _isSummon;
-    }
-
+@Builder(toBuilder = true)
+public record OnAttackableHate(Attackable npc, Player player, boolean summon) implements IBaseEvent {
     @Override
     public EventType getType() {
         return EventType.ON_NPC_HATE;

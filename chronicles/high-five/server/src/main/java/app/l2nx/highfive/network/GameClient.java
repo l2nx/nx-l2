@@ -47,60 +47,100 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import org.apache.commons.lang3.exception.ExceptionUtils;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Represents a client connected on GameServer.
  * @author KenM
  */
+@Slf4j
 public class GameClient extends Client<app.l2nx.network.Connection<GameClient>> {
-    private static final Logger LOGGER = Logger.getLogger(GameClient.class.getName());
-    private static final Logger LOGGER_ACCOUNTING = Logger.getLogger("accounting");
 
-    private final FloodProtectors _floodProtectors = new FloodProtectors(this);
-    private final ReentrantLock _playerLock = new ReentrantLock();
-    private ConnectionState _connectionState = ConnectionState.CONNECTED;
-    private Encryption _encryption = null;
-    private String _ip = "N/A";
-    private String _accountName;
-    private SessionKey _sessionKey;
-    private Player _player;
-    private SecondaryPasswordAuth _secondaryAuth;
-    private volatile ClientHardwareInfoHolder _hardwareInfo;
-    private List<CharacterInfoHolder> _charSlotMapping = null;
-    private volatile boolean _isDetached = false;
-    private boolean _isAuthedGG;
-    private boolean _protocolOk;
-    private int _protocolVersion;
-    private int[][] _trace;
+    private static final Logger ACCOUNTING_LOG = LoggerFactory.getLogger("accounting");
+
+    @Getter
+    private final FloodProtectors floodProtectors = new FloodProtectors(this);
+
+    @Getter
+    private final ReentrantLock playerLock = new ReentrantLock();
+
+    @Getter
+    @Setter
+    private ConnectionState connectionState = ConnectionState.CONNECTED;
+
+    @Getter
+    private Encryption encryption = null;
+
+    @Getter
+    private String ip = "N/A";
+
+    @Getter
+    private String accountName;
+
+    @Getter
+    @Setter
+    private SessionKey sessionId;
+
+    @Getter
+    @Setter
+    private Player player;
+
+    @Getter
+    private SecondaryPasswordAuth secondaryAuth;
+
+    @Getter
+    @Setter
+    private volatile ClientHardwareInfoHolder hardwareInfo;
+
+    private List<CharacterInfoHolder> charSlotMapping = null;
+
+    @Getter
+    @Setter
+    private volatile boolean detached = false;
+
+    @Getter
+    private boolean authedGG;
+
+    @Getter
+    @Setter
+    private boolean protocolOk;
+
+    @Getter
+    @Setter
+    private int protocolVersion;
+
+    @Getter
+    private int[][] trace;
 
     public GameClient(app.l2nx.network.Connection<GameClient> connection) {
         super(connection);
-        _ip = connection.getRemoteAddress();
+        ip = connection.getRemoteAddress();
     }
 
     @Override
     public void onConnected() {
-        LOGGER_ACCOUNTING.finer("Client connected: " + _ip);
+        ACCOUNTING_LOG.trace("Client connected: {}", ip);
     }
 
     @Override
     public void onDisconnection() {
-        LOGGER_ACCOUNTING.finer("Client disconnected: " + this);
-        LoginServerThread.getInstance().sendLogout(_accountName);
-        if ((_player == null) || !_player.isInOfflineMode()) {
+        ACCOUNTING_LOG.trace("Client disconnected: {}", this);
+        LoginServerThread.getInstance().sendLogout(accountName);
+        if ((player == null) || !player.isInOfflineMode()) {
             Disconnection.of(this).onDisconnection();
         }
 
-        _connectionState = ConnectionState.DISCONNECTED;
+        connectionState = ConnectionState.DISCONNECTED;
     }
 
     @Override
     public boolean encrypt(WriteBuffer data, int offset, int size) {
-        if (ServerConfig.PACKET_ENCRYPTION && (_encryption != null)) {
-            _encryption.encrypt(data, offset, size);
+        if (ServerConfig.PACKET_ENCRYPTION && (encryption != null)) {
+            encryption.encrypt(data, offset, size);
         }
 
         return true;
@@ -108,8 +148,8 @@ public class GameClient extends Client<app.l2nx.network.Connection<GameClient>> 
 
     @Override
     public boolean decrypt(ReadBuffer data, int offset, int size) {
-        if (ServerConfig.PACKET_ENCRYPTION && (_encryption != null)) {
-            _encryption.decrypt(data, offset, size);
+        if (ServerConfig.PACKET_ENCRYPTION && (encryption != null)) {
+            encryption.decrypt(data, offset, size);
         }
 
         return true;
@@ -134,64 +174,28 @@ public class GameClient extends Client<app.l2nx.network.Connection<GameClient>> 
     public byte[] enableCrypt() {
         final byte[] key = BlowFishKeygen.getRandomKey();
         if (ServerConfig.PACKET_ENCRYPTION) {
-            _encryption = new Encryption();
-            _encryption.setKey(key);
+            encryption = new Encryption();
+            encryption.setKey(key);
         }
 
         return key;
     }
 
-    public Player getPlayer() {
-        return _player;
-    }
-
-    public void setPlayer(Player player) {
-        _player = player;
-    }
-
-    public ReentrantLock getPlayerLock() {
-        return _playerLock;
-    }
-
-    public FloodProtectors getFloodProtectors() {
-        return _floodProtectors;
-    }
-
     public void setGameGuardOk(boolean value) {
-        _isAuthedGG = value;
-    }
-
-    public boolean isAuthedGG() {
-        return _isAuthedGG;
-    }
-
-    public String getIp() {
-        return _ip;
+        authedGG = value;
     }
 
     public void setAccountName(String accountName) {
-        _accountName = accountName;
+        this.accountName = accountName;
         if (SecondaryAuthData.getInstance().isEnabled()) {
-            _secondaryAuth = new SecondaryPasswordAuth(this);
+            secondaryAuth = new SecondaryPasswordAuth(this);
         }
-    }
-
-    public String getAccountName() {
-        return _accountName;
-    }
-
-    public void setSessionId(SessionKey sessionKey) {
-        _sessionKey = sessionKey;
-    }
-
-    public SessionKey getSessionId() {
-        return _sessionKey;
     }
 
     public void sendPacket(ServerPacket packet) {
         // Packet should never be null.
         if (packet == null) {
-            LOGGER.warning(ExceptionUtils.getStackTrace(new Exception()));
+            log.warn("Null packet sent", new Exception());
             return;
         }
 
@@ -199,19 +203,11 @@ public class GameClient extends Client<app.l2nx.network.Connection<GameClient>> 
         writePacket(packet);
 
         // Run packet implementation.
-        packet.runImpl(_player);
+        packet.runImpl(player);
     }
 
     public void sendPacket(SystemMessageId systemMessageId) {
         sendPacket(new SystemMessage(systemMessageId));
-    }
-
-    public boolean isDetached() {
-        return _isDetached;
-    }
-
-    public void setDetached(boolean value) {
-        _isDetached = value;
     }
 
     /**
@@ -262,13 +258,13 @@ public class GameClient extends Client<app.l2nx.network.Connection<GameClient>> 
                         }
                     }
 
-                    LOGGER_ACCOUNTING.info("Delete, " + objectId + ", " + this);
+                    ACCOUNTING_LOG.info("Delete, {}, {}", objectId, this);
                 }
             }
 
             return answer;
         } catch (Exception e) {
-            LOGGER.log(Level.SEVERE, "Error updating delete time of character.", e);
+            log.error("Error updating delete time of character.", e);
             return -1;
         }
     }
@@ -285,10 +281,10 @@ public class GameClient extends Client<app.l2nx.network.Connection<GameClient>> 
             statement.setInt(1, objectId);
             statement.execute();
         } catch (Exception e) {
-            LOGGER.log(Level.SEVERE, "Error restoring character.", e);
+            log.error("Error restoring character.", e);
         }
 
-        LOGGER_ACCOUNTING.info("Restore, " + objectId + ", " + this);
+        ACCOUNTING_LOG.info("Restore, {}, {}", objectId, this);
     }
 
     public static void deleteCharByObjId(int objectId) {
@@ -429,7 +425,7 @@ public class GameClient extends Client<app.l2nx.network.Connection<GameClient>> 
                 }
             }
         } catch (Exception e) {
-            LOGGER.log(Level.SEVERE, "Error deleting character.", e);
+            log.error("Error deleting character.", e);
         }
     }
 
@@ -443,7 +439,7 @@ public class GameClient extends Client<app.l2nx.network.Connection<GameClient>> 
         if (player != null) {
             // exploit prevention, should not happens in normal way
             if (player.isOnlineInt() == 1) {
-                LOGGER.severe("Attempt of double login: " + player.getName() + "(" + objectId + ") " + _accountName);
+                log.error("Attempt of double login: {}({}) {}", player.getName(), objectId, accountName);
             }
 
             if (player.getClient() != null) {
@@ -464,26 +460,22 @@ public class GameClient extends Client<app.l2nx.network.Connection<GameClient>> 
             player.refreshOverloaded();
             player.refreshExpertisePenalty();
         } else {
-            LOGGER.severe("Could not restore in slot: " + characterSlot);
+            log.error("Could not restore in slot: {}", characterSlot);
         }
 
         return player;
     }
 
     public void setCharSelection(List<CharacterInfoHolder> characters) {
-        _charSlotMapping = characters;
+        charSlotMapping = characters;
     }
 
     public CharacterInfoHolder getCharSelection(int charslot) {
-        if ((_charSlotMapping == null) || (charslot < 0) || (charslot >= _charSlotMapping.size())) {
+        if ((charSlotMapping == null) || (charslot < 0) || (charslot >= charSlotMapping.size())) {
             return null;
         }
 
-        return _charSlotMapping.get(charslot);
-    }
-
-    public SecondaryPasswordAuth getSecondaryAuth() {
-        return _secondaryAuth;
+        return charSlotMapping.get(charslot);
     }
 
     /**
@@ -493,62 +485,18 @@ public class GameClient extends Client<app.l2nx.network.Connection<GameClient>> 
     private int getObjectIdForSlot(int characterSlot) {
         final CharacterInfoHolder info = getCharSelection(characterSlot);
         if (info == null) {
-            LOGGER.warning(toString() + " tried to delete Character in slot " + characterSlot
-                    + " but no characters exits at that slot.");
+            log.warn(
+                    "{} tried to delete Character in slot {} but no characters exits at that slot.",
+                    toString(),
+                    characterSlot);
             return -1;
         }
 
         return info.getObjectId();
     }
 
-    public void setConnectionState(ConnectionState connectionState) {
-        _connectionState = connectionState;
-    }
-
-    public ConnectionState getConnectionState() {
-        return _connectionState;
-    }
-
-    public void setProtocolVersion(int version) {
-        _protocolVersion = version;
-    }
-
-    public int getProtocolVersion() {
-        return _protocolVersion;
-    }
-
-    public boolean isProtocolOk() {
-        return _protocolOk;
-    }
-
-    public void setProtocolOk(boolean value) {
-        _protocolOk = value;
-    }
-
     public void setClientTracert(int[][] tracert) {
-        _trace = tracert;
-    }
-
-    public int[][] getTrace() {
-        return _trace;
-    }
-
-    public Encryption getEncryption() {
-        return _encryption;
-    }
-
-    /**
-     * @return the hardwareInfo
-     */
-    public ClientHardwareInfoHolder getHardwareInfo() {
-        return _hardwareInfo;
-    }
-
-    /**
-     * @param hardwareInfo
-     */
-    public void setHardwareInfo(ClientHardwareInfoHolder hardwareInfo) {
-        _hardwareInfo = hardwareInfo;
+        trace = tracert;
     }
 
     /**
@@ -561,8 +509,8 @@ public class GameClient extends Client<app.l2nx.network.Connection<GameClient>> 
             final ConnectionState state = getConnectionState();
             switch (state) {
                 case DISCONNECTED: {
-                    if (_accountName != null) {
-                        return "[Account: " + _accountName + " - IP: " + (ip == null ? "disconnected" : ip) + "]";
+                    if (accountName != null) {
+                        return "[Account: " + accountName + " - IP: " + (ip == null ? "disconnected" : ip) + "]";
                     }
 
                     return "[IP: " + (ip == null ? "disconnected" : ip) + "]";
@@ -571,13 +519,13 @@ public class GameClient extends Client<app.l2nx.network.Connection<GameClient>> 
                     return "[IP: " + (ip == null ? "disconnected" : ip) + "]";
                 }
                 case AUTHENTICATED: {
-                    return "[Account: " + _accountName + " - IP: " + (ip == null ? "disconnected" : ip) + "]";
+                    return "[Account: " + accountName + " - IP: " + (ip == null ? "disconnected" : ip) + "]";
                 }
                 case ENTERING:
                 case IN_GAME: {
                     return "[Character: "
-                            + (_player == null ? "disconnected" : _player.getName() + "[" + _player.getObjectId() + "]")
-                            + " - Account: " + _accountName + " - IP: " + (ip == null ? "disconnected" : ip) + "]";
+                            + (player == null ? "disconnected" : player.getName() + "[" + player.getObjectId() + "]")
+                            + " - Account: " + accountName + " - IP: " + (ip == null ? "disconnected" : ip) + "]";
                 }
                 default: {
                     throw new IllegalStateException("Missing state on switch.");

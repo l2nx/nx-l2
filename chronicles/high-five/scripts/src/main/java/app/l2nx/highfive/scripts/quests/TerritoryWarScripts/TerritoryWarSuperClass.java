@@ -40,11 +40,14 @@ import app.l2nx.highfive.util.ArrayUtil;
 import app.l2nx.highfive.util.LocationUtil;
 import java.util.Calendar;
 import java.util.List;
+import lombok.extern.slf4j.Slf4j;
+import org.slf4j.LoggerFactory;
 
 /**
  * Territory War quests superclass.
  * @author Gigiikun
  */
+@Slf4j
 public class TerritoryWarSuperClass extends Quest {
     // "For the Sake of the Territory ..." quests variables
     public int CATAPULT_ID;
@@ -70,8 +73,10 @@ public class TerritoryWarSuperClass extends Quest {
 
             // Calculate next TW date.
             TerritoryWarManager.getInstance().setNextTWDate();
-            LOGGER.info(getClass().getSimpleName() + ": Siege date: "
-                    + TerritoryWarManager.getInstance().getTWStart().getTime());
+            LoggerFactory.getLogger(getClass())
+                    .info(
+                            "Siege date: {}",
+                            TerritoryWarManager.getInstance().getTWStart().getTime());
         }
     }
 
@@ -220,8 +225,10 @@ public class TerritoryWarSuperClass extends Quest {
 
                     player.addNotifyQuestOfDeath(qs);
                 } else {
-                    LOGGER.warning("TerritoryWar: Missing Kill the quest for " + player + " whose class id: "
-                            + player.getPlayerClass().getId());
+                    log.warn(
+                            "TerritoryWar: Missing Kill the quest for {} whose class id: {}",
+                            player,
+                            player.getPlayerClass().getId());
                 }
             }
         }
@@ -332,8 +339,10 @@ public class TerritoryWarSuperClass extends Quest {
 
                             player.addNotifyQuestOfDeath(qs);
                         } else {
-                            LOGGER.warning("TerritoryWar: Missing Kill the quest for " + player + " whose class id: "
-                                    + player.getPlayerClass().getId());
+                            log.warn(
+                                    "TerritoryWar: Missing Kill the quest for {} whose class id: {}",
+                                    player,
+                                    player.getPlayerClass().getId());
                         }
                     }
                 } else {

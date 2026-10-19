@@ -28,30 +28,32 @@ import app.l2nx.highfive.mechanics.conditions.Condition;
 import app.l2nx.highfive.mechanics.effects.AbstractEffect;
 import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.util.StatSet;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Summons a cubic from XML template data.<br>
  * Keeps High Five skill parameters as runtime overrides.
  * @author Zoey76
  */
+@Slf4j
 public class SummonCubic extends AbstractEffect {
-    private final int _cubicId;
-    private final int _cubicLevel;
-    private final int _cubicPower;
-    private final int _cubicDuration;
-    private final int _cubicDelay;
-    private final int _cubicMaxCount;
-    private final int _cubicSkillChance;
+    private final int cubicId;
+    private final int cubicLevel;
+    private final int cubicPower;
+    private final int cubicDuration;
+    private final int cubicDelay;
+    private final int cubicMaxCount;
+    private final int cubicSkillChance;
 
     public SummonCubic(Condition attachCond, Condition applyCond, StatSet set, StatSet params) {
         super(attachCond, applyCond, set, params);
-        _cubicId = params.getInt("cubicId", -1);
-        _cubicLevel = params.getInt("cubicLvl", params.getInt("cubicSkillLevel", 0));
-        _cubicPower = params.getInt("cubicPower", 0);
-        _cubicDuration = params.getInt("cubicDuration", 0);
-        _cubicDelay = params.getInt("cubicDelay", 0);
-        _cubicMaxCount = params.getInt("cubicMaxCount", -1);
-        _cubicSkillChance = params.getInt("cubicSkillChance", 0);
+        cubicId = params.getInt("cubicId", -1);
+        cubicLevel = params.getInt("cubicLvl", params.getInt("cubicSkillLevel", 0));
+        cubicPower = params.getInt("cubicPower", 0);
+        cubicDuration = params.getInt("cubicDuration", 0);
+        cubicDelay = params.getInt("cubicDelay", 0);
+        cubicMaxCount = params.getInt("cubicMaxCount", -1);
+        cubicSkillChance = params.getInt("cubicSkillChance", 0);
     }
 
     @Override
@@ -65,9 +67,8 @@ public class SummonCubic extends AbstractEffect {
             return;
         }
 
-        if (_cubicId < 0) {
-            LOGGER.warning(
-                    getClass().getSimpleName() + ": Invalid cubic id: " + _cubicId + " skillId: " + skill.getId());
+        if (cubicId < 0) {
+            log.warn("Invalid cubic id: {} skillId: {}", cubicId, skill.getId());
             return;
         }
 
@@ -76,21 +77,24 @@ public class SummonCubic extends AbstractEffect {
             return;
         }
 
-        int cubicTemplateLevel = _cubicLevel > 0 ? _cubicLevel : skill.getLevel();
-        if ((_cubicLevel <= 0) && (cubicTemplateLevel > 100)) {
+        int cubicTemplateLevel = cubicLevel > 0 ? cubicLevel : skill.getLevel();
+        if ((cubicLevel <= 0) && (cubicTemplateLevel > 100)) {
             cubicTemplateLevel = ((skill.getLevel() - 100) / 7) + 8;
         }
 
-        final CubicTemplate template = CubicData.getInstance().getCubicTemplate(_cubicId, cubicTemplateLevel);
+        final CubicTemplate template = CubicData.getInstance().getCubicTemplate(cubicId, cubicTemplateLevel);
         if (template == null) {
-            LOGGER.warning(getClass().getSimpleName() + ": Missing cubic template. cubicId: " + _cubicId + " level: "
-                    + cubicTemplateLevel + " skillId: " + skill.getId());
+            log.warn(
+                    "Missing cubic template. cubicId: {} level: {} skillId: {}",
+                    cubicId,
+                    cubicTemplateLevel,
+                    skill.getId());
             return;
         }
 
-        final Cubic cubic = player.getCubicById(_cubicId);
+        final Cubic cubic = player.getCubicById(cubicId);
         if (cubic != null) {
-            player.removeCubic(_cubicId);
+            player.removeCubic(cubicId);
         } else {
             final int allowedCubicCount = Math.max(1, player.getStat().getMaxCubicCount());
             while (player.getCubics().size() >= allowedCubicCount) {
@@ -101,13 +105,13 @@ public class SummonCubic extends AbstractEffect {
         }
 
         player.addCubic(
-                _cubicId,
+                cubicId,
                 template.getLevel(),
-                _cubicPower,
-                _cubicDelay,
-                _cubicSkillChance,
-                _cubicMaxCount,
-                _cubicDuration,
+                cubicPower,
+                cubicDelay,
+                cubicSkillChance,
+                cubicMaxCount,
+                cubicDuration,
                 effected != effector);
         player.broadcastUserInfo();
     }

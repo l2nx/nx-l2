@@ -34,20 +34,22 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author Layane, Mobius
  */
+@Slf4j
 public class HtmCache {
-    private static final Logger LOGGER = Logger.getLogger(HtmCache.class.getName());
 
     private static final Map<String, String> HTML_CACHE =
             GeneralConfig.HTM_CACHE ? new HashMap<>() : new ConcurrentHashMap<>();
 
-    private int _loadedFiles;
-    private long _bytesBuffLen;
+    @Getter
+    private int loadedFiles;
+
+    private long bytesBuffLen;
 
     protected HtmCache() {
         reload();
@@ -59,29 +61,27 @@ public class HtmCache {
 
     public void reload(File file) {
         if (GeneralConfig.HTM_CACHE) {
-            LOGGER.info("Html cache start...");
+            log.info("Html cache start...");
             parseDir(file);
-            LOGGER.info("Cache[HTML]: " + String.format("%.3f", getMemoryUsage()) + " megabytes on " + _loadedFiles
-                    + " files loaded.");
+            log.info(
+                    "Cache[HTML]: {} megabytes on {} files loaded.",
+                    String.format("%.3f", getMemoryUsage()),
+                    loadedFiles);
         } else {
             HTML_CACHE.clear();
-            _loadedFiles = 0;
-            _bytesBuffLen = 0;
-            LOGGER.info("Cache[HTML]: Running lazy cache.");
+            loadedFiles = 0;
+            bytesBuffLen = 0;
+            log.info("Cache[HTML]: Running lazy cache.");
         }
     }
 
     public void reloadPath(File file) {
         parseDir(file);
-        LOGGER.info("Cache[HTML]: Reloaded specified path.");
+        log.info("Cache[HTML]: Reloaded specified path.");
     }
 
     public double getMemoryUsage() {
-        return (float) _bytesBuffLen / 1048576;
-    }
-
-    public int getLoadedFiles() {
-        return _loadedFiles;
+        return (float) bytesBuffLen / 1048576;
     }
 
     private void parseDir(File dir) {
@@ -125,18 +125,18 @@ public class HtmCache {
             if (GeneralConfig.CHECK_HTML_ENCODING
                     && !filePath.startsWith("data/lang")
                     && !StandardCharsets.US_ASCII.newEncoder().canEncode(content)) {
-                LOGGER.warning("HTML encoding check: File " + filePath + " contains non ASCII content.");
+                log.warn("HTML encoding check: File {} contains non ASCII content.", filePath);
             }
 
             final String oldContent = HTML_CACHE.put(filePath, content);
             if (oldContent == null) {
-                _bytesBuffLen += bytes;
-                _loadedFiles++;
+                bytesBuffLen += bytes;
+                loadedFiles++;
             } else {
-                _bytesBuffLen = (_bytesBuffLen - oldContent.length()) + bytes;
+                bytesBuffLen = (bytesBuffLen - oldContent.length()) + bytes;
             }
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, "Problem with htm file:", e);
+            log.warn("Problem with htm file:", e);
         }
 
         return content;
@@ -145,7 +145,7 @@ public class HtmCache {
     public String getHtm(Player player, String path) {
         // Some page names come from client bypasses, a parent segment would leave the html folders.
         if (path.contains("..")) {
-            LOGGER.warning("HtmCache: Refused path " + path + " requested by " + player + ".");
+            log.warn("Refused path {} requested by {}.", path, player);
             return null;
         }
 

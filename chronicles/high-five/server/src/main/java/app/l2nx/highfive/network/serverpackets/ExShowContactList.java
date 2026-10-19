@@ -29,17 +29,17 @@ import java.util.Set;
  * @author UnAfraid, mrTJO
  */
 public class ExShowContactList extends ServerPacket {
-    private final Set<String> _contacts;
+    private final Set<String> contacts;
 
     public ExShowContactList(Player player) {
-        _contacts = player.getContactList().getAllContacts();
+        contacts = player.getContactList().getAllContacts();
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_RECEIVE_SHOW_POST_FRIEND.writeId(this, buffer);
-        buffer.writeInt(_contacts.size());
-        for (String name : _contacts) {
+        buffer.writeInt(contacts.size());
+        for (String name : contacts) {
             buffer.writeString(name);
         }
     }

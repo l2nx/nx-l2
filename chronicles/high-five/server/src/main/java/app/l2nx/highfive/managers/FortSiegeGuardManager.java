@@ -32,17 +32,20 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class FortSiegeGuardManager {
-    private static final Logger LOGGER = Logger.getLogger(FortSiegeGuardManager.class.getName());
 
-    private final Fort _fort;
-    private final Map<Integer, List<Spawn>> _siegeGuards = new HashMap<>();
+    @Getter
+    private final Fort fort;
+
+    @Getter
+    private final Map<Integer, List<Spawn>> siegeGuardSpawn = new HashMap<>();
 
     public FortSiegeGuardManager(Fort fort) {
-        _fort = fort;
+        this.fort = fort;
     }
 
     /**
@@ -50,7 +53,7 @@ public class FortSiegeGuardManager {
      */
     public void spawnSiegeGuard() {
         try {
-            final List<Spawn> monsterList = _siegeGuards.get(_fort.getResidenceId());
+            final List<Spawn> monsterList = siegeGuardSpawn.get(fort.getResidenceId());
             if (monsterList != null) {
                 for (Spawn spawnDat : monsterList) {
                     spawnDat.doSpawn(false);
@@ -62,8 +65,7 @@ public class FortSiegeGuardManager {
                 }
             }
         } catch (Exception e) {
-            LOGGER.log(
-                    Level.WARNING, "Error spawning siege guards for fort " + _fort.getName() + ":" + e.getMessage(), e);
+            log.warn("Error spawning siege guards for fort {}:{}", fort.getName(), e.getMessage(), e);
         }
     }
 
@@ -72,7 +74,7 @@ public class FortSiegeGuardManager {
      */
     public void unspawnSiegeGuard() {
         try {
-            final List<Spawn> monsterList = _siegeGuards.get(_fort.getResidenceId());
+            final List<Spawn> monsterList = siegeGuardSpawn.get(fort.getResidenceId());
             if (monsterList != null) {
                 for (Spawn spawnDat : monsterList) {
                     spawnDat.stopRespawn();
@@ -82,10 +84,7 @@ public class FortSiegeGuardManager {
                 }
             }
         } catch (Exception e) {
-            LOGGER.log(
-                    Level.WARNING,
-                    "Error unspawning siege guards for fort " + _fort.getName() + ":" + e.getMessage(),
-                    e);
+            log.warn("Error unspawning siege guards for fort {}:{}", fort.getName(), e.getMessage(), e);
         }
     }
 
@@ -93,11 +92,11 @@ public class FortSiegeGuardManager {
      * Load guards.
      */
     void loadSiegeGuard() {
-        _siegeGuards.clear();
+        siegeGuardSpawn.clear();
         try (Connection con = DatabaseFactory.getConnection();
                 PreparedStatement ps = con.prepareStatement(
                         "SELECT npcId, x, y, z, heading, respawnDelay FROM fort_siege_guards WHERE fortId = ?")) {
-            final int fortId = _fort.getResidenceId();
+            final int fortId = fort.getResidenceId();
             ps.setInt(1, fortId);
             try (ResultSet rs = ps.executeQuery()) {
                 final List<Spawn> siegeGuardSpawns = new ArrayList<>();
@@ -112,19 +111,10 @@ public class FortSiegeGuardManager {
                     siegeGuardSpawns.add(spawn);
                 }
 
-                _siegeGuards.put(fortId, siegeGuardSpawns);
+                siegeGuardSpawn.put(fortId, siegeGuardSpawns);
             }
         } catch (Exception e) {
-            LOGGER.log(
-                    Level.WARNING, "Error loading siege guard for fort " + _fort.getName() + ": " + e.getMessage(), e);
+            log.warn("Error loading siege guard for fort {}: {}", fort.getName(), e.getMessage(), e);
         }
-    }
-
-    public Fort getFort() {
-        return _fort;
-    }
-
-    public Map<Integer, List<Spawn>> getSiegeGuardSpawn() {
-        return _siegeGuards;
     }
 }

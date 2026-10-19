@@ -27,45 +27,46 @@ import app.l2nx.highfive.geoengine.GeoEngine;
 import app.l2nx.highfive.interfaces.ILocational;
 import app.l2nx.highfive.mechanics.script.Script;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.logging.Level;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author HorridoJoho, Janiko, FinalDestination, lion
  */
+@Slf4j
 public class AltarsOfSacrifice extends Script {
     private class Altar {
-        private final ILocational _middlePoint;
-        private final int[] _bossNpcIds;
-        private Npc _spawnedBoss;
+        private final ILocational middlePoint;
+        private final int[] bossNpcIds;
+        private Npc spawnedBoss;
 
         protected Altar(ILocational middlePoint, int... bossNpcIds) {
-            _middlePoint = middlePoint;
-            _bossNpcIds = bossNpcIds;
-            _spawnedBoss = null;
+            this.middlePoint = middlePoint;
+            this.bossNpcIds = bossNpcIds;
+            spawnedBoss = null;
         }
 
         protected void spawnBoss() throws Exception {
-            if (!hasBosses() || (_spawnedBoss != null)) {
+            if (!hasBosses() || (spawnedBoss != null)) {
                 throw new IllegalStateException();
             }
 
-            final Spawn spawn = new Spawn(getRandomEntry(_bossNpcIds));
+            final Spawn spawn = new Spawn(getRandomEntry(bossNpcIds));
             spawn.setAmount(1);
             spawn.setHeading(getRandom(65536));
 
             final int radius = getRandom(BOSS_MIN_SPAWN_RADIUS, BOSS_MAX_SPAWN_RADIUS);
             final double angleRadians = ThreadLocalRandom.current().nextDouble() * 2 * Math.PI;
-            final int spawnX = (int) (radius * Math.cos(angleRadians)) + _middlePoint.getX();
-            final int spawnY = (int) (radius * Math.sin(angleRadians)) + _middlePoint.getY();
-            spawn.setXYZ(spawnX, spawnY, GeoEngine.getInstance().getHeight(spawnX, spawnY, _middlePoint.getZ()));
+            final int spawnX = (int) (radius * Math.cos(angleRadians)) + middlePoint.getX();
+            final int spawnY = (int) (radius * Math.sin(angleRadians)) + middlePoint.getY();
+            spawn.setXYZ(spawnX, spawnY, GeoEngine.getInstance().getHeight(spawnX, spawnY, middlePoint.getZ()));
             spawn.stopRespawn();
-            _spawnedBoss = spawn.doSpawn(false);
+            spawnedBoss = spawn.doSpawn(false);
         }
 
         protected void despawnBoss() {
-            if (_spawnedBoss != null) {
-                _spawnedBoss.deleteMe();
-                _spawnedBoss = null;
+            if (spawnedBoss != null) {
+                spawnedBoss.deleteMe();
+                spawnedBoss = null;
             }
         }
 
@@ -74,11 +75,11 @@ public class AltarsOfSacrifice extends Script {
         }
 
         protected boolean hasBosses() {
-            return _bossNpcIds.length > 0;
+            return bossNpcIds.length > 0;
         }
 
         protected boolean isBossFighting() {
-            return (_spawnedBoss != null) && _spawnedBoss.isInCombat();
+            return (spawnedBoss != null) && spawnedBoss.isInCombat();
         }
     }
 
@@ -92,7 +93,7 @@ public class AltarsOfSacrifice extends Script {
 
     // disabling formatter here to make this easily readable
     // @formatter:off
-    private final Altar[] _altars = new Altar[] {
+    private final Altar[] altars = new Altar[] {
         // TalkingIsland
         new Altar(new Location(-92481, 244812, -3505)),
 
@@ -154,8 +155,8 @@ public class AltarsOfSacrifice extends Script {
     }
 
     private AltarsOfSacrifice() {
-        for (int i = 0; i < _altars.length; ++i) {
-            if (_altars[i].hasBosses()) {
+        for (int i = 0; i < altars.length; ++i) {
+            if (altars[i].hasBosses()) {
                 startQuestTimer(makeSpawnBossEvt(i), ALTAR_STATE_CHANGE_DELAY, null, null);
             }
         }
@@ -187,8 +188,8 @@ public class AltarsOfSacrifice extends Script {
 
     @Override
     public void unload(boolean removeFromList) {
-        LOGGER.info(getClass().getSimpleName() + ": Unloading altars due to script unloading.");
-        for (Altar altar : _altars) {
+        log.info("Unloading altars due to script unloading.");
+        for (Altar altar : altars) {
             altar.unload();
         }
 
@@ -199,19 +200,19 @@ public class AltarsOfSacrifice extends Script {
     public String onEvent(String event, Npc npc, Player player) {
         if (isSpawnBossEvt(event)) {
             final int altarIndex = getSpawnBossIndex(event);
-            final Altar altar = _altars[altarIndex];
+            final Altar altar = altars[altarIndex];
             try {
                 altar.spawnBoss();
                 startQuestTimer(makeDespawnBossEvt(altarIndex), ALTAR_STATE_CHANGE_DELAY, null, null);
             } catch (Exception e) {
-                LOGGER.log(Level.WARNING, getClass().getSimpleName() + ": Failed to spawn altar boss.", e);
+                log.warn("Failed to spawn altar boss.", e);
 
                 // let's try again to spawn it in 5 seconds
                 startQuestTimer(event, 5000, null, null);
             }
         } else if (isDespawnBossEvt(event)) {
             final int altarIndex = getDespawnBossIndex(event);
-            final Altar altar = _altars[altarIndex];
+            final Altar altar = altars[altarIndex];
             if (altar.isBossFighting()) {
                 // periodically check if the altar boss is fighting, only despawn when not fighting anymore
                 startQuestTimer(event, 5000, null, null);

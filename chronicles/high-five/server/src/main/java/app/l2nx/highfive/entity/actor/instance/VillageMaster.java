@@ -61,15 +61,15 @@ import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
-import java.util.logging.Logger;
 import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 
 /**
  * @version $Revision: 1.4.2.3.2.8 $ $Date: 2005/03/29 23:15:15 $
  */
+@Slf4j
 public class VillageMaster extends Folk {
-    private static final Logger LOGGER = Logger.getLogger(VillageMaster.class.getName());
 
     private static final Set<PlayerClass> mainSubclassSet;
     private static final Set<PlayerClass> neverSubclassed = EnumSet.of(PlayerClass.OVERLORD, PlayerClass.WARSMITH);
@@ -333,7 +333,7 @@ public class VillageMaster extends Folk {
                     }
                 }
             } catch (Exception nfe) {
-                LOGGER.warning(VillageMaster.class.getName() + ": Wrong numeric values for command " + command);
+                log.warn("{}: Wrong numeric values for command {}", VillageMaster.class.getName(), command);
             }
 
             Set<PlayerClass> subsAvailable = null;
@@ -360,10 +360,10 @@ public class VillageMaster extends Folk {
                                     + "\" msg=\"1268;"
                                     + ClassListData.getInstance()
                                             .getClass(subClass.getId())
-                                            .getClassName() + "\">"
+                                            .className() + "\">"
                                     + ClassListData.getInstance()
                                             .getClass(subClass.getId())
-                                            .getClassName() + "</a><br>");
+                                            .className() + "</a><br>");
                         }
 
                         html.replace("%list%", content1.toString());
@@ -392,7 +392,7 @@ public class VillageMaster extends Folk {
                             content2.append("<a action=\"bypass -h npc_%objectId%_Subclass 5 0\">"
                                     + ClassListData.getInstance()
                                             .getClass(player.getBaseClass())
-                                            .getClassName() + "</a><br>");
+                                            .className() + "</a><br>");
                         }
 
                         for (Iterator<SubClassHolder> subList = iterSubClasses(player); subList.hasNext(); ) {
@@ -402,7 +402,7 @@ public class VillageMaster extends Folk {
                                         + subClass.getClassIndex() + "\">"
                                         + ClassListData.getInstance()
                                                 .getClass(subClass.getId())
-                                                .getClassName() + "</a><br>");
+                                                .className() + "</a><br>");
                             }
                         }
 
@@ -435,7 +435,7 @@ public class VillageMaster extends Folk {
                                             + subClass.getClassIndex() + "\">"
                                             + ClassListData.getInstance()
                                                     .getClass(subClass.getId())
-                                                    .getClassName() + "</a><br>");
+                                                    .className() + "</a><br>");
                         }
 
                         html.replace("%list%", content3.toString());
@@ -449,7 +449,7 @@ public class VillageMaster extends Folk {
                                             .getClass(player.getSubClasses()
                                                     .get(1)
                                                     .getId())
-                                            .getClassName());
+                                            .className());
                         } else {
                             html.replace("<a action=\"bypass npc_%objectId%_Subclass 6 1\">%sub1%</a><br>", "");
                         }
@@ -461,7 +461,7 @@ public class VillageMaster extends Folk {
                                             .getClass(player.getSubClasses()
                                                     .get(2)
                                                     .getId())
-                                            .getClassName());
+                                            .className());
                         } else {
                             html.replace("<a action=\"bypass npc_%objectId%_Subclass 6 2\">%sub2%</a><br>", "");
                         }
@@ -473,7 +473,7 @@ public class VillageMaster extends Folk {
                                             .getClass(player.getSubClasses()
                                                     .get(3)
                                                     .getId())
-                                            .getClassName());
+                                            .className());
                         } else {
                             html.replace("<a action=\"bypass npc_%objectId%_Subclass 6 3\">%sub3%</a><br>", "");
                         }
@@ -586,7 +586,7 @@ public class VillageMaster extends Folk {
                                 + subClass.getId() + "\" msg=\"1445;\">"
                                 + ClassListData.getInstance()
                                         .getClass(subClass.getId())
-                                        .getClassName() + "</a><br>");
+                                        .className() + "</a><br>");
                     }
 
                     switch (paramOne) {
@@ -634,11 +634,11 @@ public class VillageMaster extends Folk {
                         html.setFile(player, "data/html/villagemaster/SubClass_ModifyOk.htm");
                         html.replace(
                                 "%name%",
-                                ClassListData.getInstance().getClass(paramTwo).getClassName());
+                                ClassListData.getInstance().getClass(paramTwo).className());
                         player.sendPacket(SystemMessageId.THE_NEW_SUBCLASS_HAS_BEEN_ADDED); // Subclass added.
                     } else {
                         /**
-                         * This isn't good! modifySubClass() removed subclass from memory we must update _classIndex! Else IndexOutOfBoundsException can turn up some place down the line along with other seemingly unrelated problems.
+                         * This isn't good! modifySubClass() removed subclass from memory we must update classIndex! Else IndexOutOfBoundsException can turn up some place down the line along with other seemingly unrelated problems.
                          */
                         player.setActiveClass(0); // Also updates _classIndex plus switching _classid to baseclass.
                         player.sendMessage(

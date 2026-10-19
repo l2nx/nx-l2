@@ -31,7 +31,7 @@ import app.l2nx.login.network.gameserverpackets.send.AuthResponse;
 import app.l2nx.login.network.gameserverpackets.send.LoginServerFail;
 import app.l2nx.network.packet.SimpleReadablePacket;
 import java.util.Arrays;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Authenticates a game server connection and binds it to a registered server entry.<br>
@@ -43,9 +43,8 @@ import java.util.logging.Logger;
  * </ul>
  * @author BazookaRpm
  */
+@Slf4j
 public class GameServerAuth extends SimpleReadablePacket {
-    // Logging.
-    protected static final Logger LOGGER = Logger.getLogger(GameServerAuth.class.getName());
 
     // Packet Limits.
     private static final int MAX_HEX_ID_BYTES = 64;
@@ -53,15 +52,15 @@ public class GameServerAuth extends SimpleReadablePacket {
     private static final int HOST_STRINGS_PER_PAIR = 2;
 
     // Connection Context.
-    private final GameServerThread _server;
+    private final GameServerThread server;
 
     // Packet Data.
-    private final int _desiredServerId;
-    private final boolean _acceptAlternativeId;
-    private final int _port;
-    private final int _maxPlayers;
-    private final byte[] _hexId;
-    private final String[] _hosts;
+    private final int desiredServerId;
+    private final boolean acceptAlternativeId;
+    private final int port;
+    private final int maxPlayers;
+    private final byte[] hexId;
+    private final String[] hosts;
 
     /**
      * Reads the authentication packet and completes the registration process when valid.<br>
@@ -73,7 +72,7 @@ public class GameServerAuth extends SimpleReadablePacket {
         super(decrypt);
         readByte(); // Packet id, it is already processed.
 
-        _server = server;
+        this.server = server;
 
         final int desiredServerId = readByte();
         final boolean acceptAlternativeId = readByte() != 0;
@@ -87,16 +86,19 @@ public class GameServerAuth extends SimpleReadablePacket {
 
         final int hexIdSize = readInt();
         if ((hexIdSize < 0) || (hexIdSize > MAX_HEX_ID_BYTES)) {
-            _desiredServerId = desiredServerId;
-            _acceptAlternativeId = acceptAlternativeId;
-            _port = port;
-            _maxPlayers = maxPlayers;
-            _hexId = hexId;
-            _hosts = hosts;
+            this.desiredServerId = desiredServerId;
+            this.acceptAlternativeId = acceptAlternativeId;
+            this.port = port;
+            this.maxPlayers = maxPlayers;
+            this.hexId = hexId;
+            this.hosts = hosts;
 
-            LOGGER.warning("Rejected GS auth due to invalid hexIdSize=" + hexIdSize + " for desiredServerId="
-                    + desiredServerId + " (maxHexIdBytes=" + MAX_HEX_ID_BYTES + ").");
-            _server.forceClose(LoginServerFail.REASON_WRONG_HEXID);
+            log.warn(
+                    "Rejected GS auth due to invalid hexIdSize={} for desiredServerId={} (maxHexIdBytes={}).",
+                    hexIdSize,
+                    desiredServerId,
+                    MAX_HEX_ID_BYTES);
+            this.server.forceClose(LoginServerFail.REASON_WRONG_HEXID);
             return;
         }
 
@@ -106,16 +108,19 @@ public class GameServerAuth extends SimpleReadablePacket {
 
         final int hostPairs = readInt();
         if ((hostPairs < 0) || (hostPairs > MAX_HOST_PAIRS)) {
-            _desiredServerId = desiredServerId;
-            _acceptAlternativeId = acceptAlternativeId;
-            _port = port;
-            _maxPlayers = maxPlayers;
-            _hexId = hexId;
-            _hosts = hosts;
+            this.desiredServerId = desiredServerId;
+            this.acceptAlternativeId = acceptAlternativeId;
+            this.port = port;
+            this.maxPlayers = maxPlayers;
+            this.hexId = hexId;
+            this.hosts = hosts;
 
-            LOGGER.warning("Rejected GS auth due to invalid hostPairs=" + hostPairs + " for desiredServerId="
-                    + desiredServerId + " (maxHostPairs=" + MAX_HOST_PAIRS + ").");
-            _server.forceClose(LoginServerFail.REASON_WRONG_HEXID);
+            log.warn(
+                    "Rejected GS auth due to invalid hostPairs={} for desiredServerId={} (maxHostPairs={}).",
+                    hostPairs,
+                    desiredServerId,
+                    MAX_HOST_PAIRS);
+            this.server.forceClose(LoginServerFail.REASON_WRONG_HEXID);
             return;
         }
 
@@ -127,75 +132,78 @@ public class GameServerAuth extends SimpleReadablePacket {
             }
         }
 
-        _desiredServerId = desiredServerId;
-        _acceptAlternativeId = acceptAlternativeId;
-        _port = port;
-        _maxPlayers = maxPlayers;
-        _hexId = hexId;
-        _hosts = hosts;
+        this.desiredServerId = desiredServerId;
+        this.acceptAlternativeId = acceptAlternativeId;
+        this.port = port;
+        this.maxPlayers = maxPlayers;
+        this.hexId = hexId;
+        this.hosts = hosts;
 
         if (handleRegProcess()) {
-            _server.sendPacket(new AuthResponse(_server.getGameServerInfo().getId()));
-            _server.setLoginConnectionState(GameServerState.AUTHED);
+            this.server.sendPacket(
+                    new AuthResponse(this.server.getGameServerInfo().getId()));
+            this.server.setLoginConnectionState(GameServerState.AUTHED);
         }
     }
 
     private boolean handleRegProcess() {
         final GameServerTable gameServerTable = GameServerTable.getInstance();
-        final int desiredId = _desiredServerId;
+        final int desiredId = desiredServerId;
 
         final GameServerInfo registeredInfo = gameServerTable.getRegisteredGameServerById(desiredId);
         if (registeredInfo == null) {
             if (!LoginServer.getInstance().getProperties().gameServer().acceptNew()) {
-                LOGGER.info("Rejected GS auth for desiredServerId=" + desiredId
-                        + " because new game servers are not accepted.");
-                _server.forceClose(LoginServerFail.REASON_WRONG_HEXID);
+                log.info(
+                        "Rejected GS auth for desiredServerId={} because new game servers are not accepted.",
+                        desiredId);
+                server.forceClose(LoginServerFail.REASON_WRONG_HEXID);
                 return false;
             }
 
-            final GameServerInfo newInfo = new GameServerInfo(desiredId, _hexId, _server);
+            final GameServerInfo newInfo = new GameServerInfo(desiredId, hexId, server);
             if (!gameServerTable.register(desiredId, newInfo)) {
-                LOGGER.info("Rejected GS auth for desiredServerId=" + desiredId
-                        + " because the id became reserved during registration.");
-                _server.forceClose(LoginServerFail.REASON_ID_RESERVED);
+                log.info(
+                        "Rejected GS auth for desiredServerId={} because the id became reserved during registration.",
+                        desiredId);
+                server.forceClose(LoginServerFail.REASON_ID_RESERVED);
                 return false;
             }
 
-            _server.attachGameServerInfo(newInfo, _port, _hosts, _maxPlayers);
+            server.attachGameServerInfo(newInfo, port, hosts, maxPlayers);
             gameServerTable.registerServerOnDB(newInfo);
             return true;
         }
 
-        if (Arrays.equals(registeredInfo.getHexId(), _hexId)) {
+        if (Arrays.equals(registeredInfo.getHexId(), hexId)) {
             synchronized (registeredInfo) {
                 if (registeredInfo.isAuthed()) {
-                    LOGGER.info("Rejected GS auth for desiredServerId=" + desiredId
-                            + " due to already authenticated session.");
-                    _server.forceClose(LoginServerFail.REASON_ALREADY_LOGGED8IN);
+                    log.info(
+                            "Rejected GS auth for desiredServerId={} due to already authenticated session.", desiredId);
+                    server.forceClose(LoginServerFail.REASON_ALREADY_LOGGED8IN);
                     return false;
                 }
 
-                _server.attachGameServerInfo(registeredInfo, _port, _hosts, _maxPlayers);
+                server.attachGameServerInfo(registeredInfo, port, hosts, maxPlayers);
                 return true;
             }
         }
 
-        if (!LoginServer.getInstance().getProperties().gameServer().acceptNew() || !_acceptAlternativeId) {
-            LOGGER.info("Rejected GS auth for desiredServerId=" + desiredId
-                    + " due to wrong hexId and no alternative id allowed.");
-            _server.forceClose(LoginServerFail.REASON_WRONG_HEXID);
+        if (!LoginServer.getInstance().getProperties().gameServer().acceptNew() || !acceptAlternativeId) {
+            log.info(
+                    "Rejected GS auth for desiredServerId={} due to wrong hexId and no alternative id allowed.",
+                    desiredId);
+            server.forceClose(LoginServerFail.REASON_WRONG_HEXID);
             return false;
         }
 
-        final GameServerInfo alternativeInfo = new GameServerInfo(desiredId, _hexId, _server);
+        final GameServerInfo alternativeInfo = new GameServerInfo(desiredId, hexId, server);
         if (!gameServerTable.registerWithFirstAvailableId(alternativeInfo)) {
-            LOGGER.info(
-                    "Rejected GS auth for desiredServerId=" + desiredId + " due to no free alternative id available.");
-            _server.forceClose(LoginServerFail.REASON_NO_FREE_ID);
+            log.info("Rejected GS auth for desiredServerId={} due to no free alternative id available.", desiredId);
+            server.forceClose(LoginServerFail.REASON_NO_FREE_ID);
             return false;
         }
 
-        _server.attachGameServerInfo(alternativeInfo, _port, _hosts, _maxPlayers);
+        server.attachGameServerInfo(alternativeInfo, port, hosts, maxPlayers);
         gameServerTable.registerServerOnDB(alternativeInfo);
         return true;
     }

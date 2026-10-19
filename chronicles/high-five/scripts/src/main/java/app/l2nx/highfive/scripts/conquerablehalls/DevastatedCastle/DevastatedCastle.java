@@ -40,7 +40,7 @@ public class DevastatedCastle extends ClanHallSiegeEngine {
     private static final int MIKHAIL = 35409;
     private static final int DIETRICH = 35408;
 
-    private final Map<Integer, Integer> _damageToGustav = new ConcurrentHashMap<>();
+    private final Map<Integer, Integer> damageToGustav = new ConcurrentHashMap<>();
 
     private DevastatedCastle() {
         super(DEVASTATED_CASTLE);
@@ -51,7 +51,7 @@ public class DevastatedCastle extends ClanHallSiegeEngine {
 
     @Override
     public void onSiegeStarts() {
-        _damageToGustav.clear();
+        damageToGustav.clear();
         super.onSiegeStarts();
     }
 
@@ -68,13 +68,13 @@ public class DevastatedCastle extends ClanHallSiegeEngine {
 
     @Override
     public void onAttack(Npc npc, Player attacker, int damage, boolean isSummon) {
-        if (!_hall.isInSiege()) {
+        if (!hall.isInSiege()) {
             return;
         }
 
         final Clan clan = attacker.getClan();
         if ((clan != null) && checkIsAttacker(clan)) {
-            _damageToGustav.merge(clan.getId(), damage, Integer::sum);
+            damageToGustav.merge(clan.getId(), damage, Integer::sum);
         }
 
         synchronized (this) {
@@ -89,22 +89,22 @@ public class DevastatedCastle extends ClanHallSiegeEngine {
 
     @Override
     public void onKill(Npc npc, Player killer, boolean isSummon) {
-        if (!_hall.isInSiege()) {
+        if (!hall.isInSiege()) {
             return;
         }
 
-        _missionAccomplished = true;
+        missionAccomplished = true;
         cancelSiegeTask();
         endSiege();
     }
 
     @Override
     public Clan getWinner() {
-        if (_damageToGustav.isEmpty()) {
+        if (damageToGustav.isEmpty()) {
             return null;
         }
 
-        final int clanId = Collections.max(_damageToGustav.entrySet(), Map.Entry.comparingByValue())
+        final int clanId = Collections.max(damageToGustav.entrySet(), Map.Entry.comparingByValue())
                 .getKey();
         return ClanTable.getInstance().getClan(clanId);
     }

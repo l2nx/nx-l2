@@ -32,7 +32,7 @@ import app.l2nx.highfive.mechanics.olympiad.Olympiad;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.serverpackets.NpcHtmlMessage;
 import java.util.StringTokenizer;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.DateFormatUtils;
 import org.apache.commons.lang3.time.DurationFormatUtils;
 
@@ -41,8 +41,8 @@ import org.apache.commons.lang3.time.DurationFormatUtils;
  * tradeoff = toggles trade acceptance mode - reload = reloads specified component from multisell|skill|npc|htm|item - set/set_menu/set_mod = alters specified server setting - saveolymp = saves olympiad state manually - manualhero = cycles olympiad and calculate new heroes.
  * @version $Revision: 1.3.2.1.2.4 $ $Date: 2007/07/28 10:06:06 $
  */
+@Slf4j
 public class AdminAdmin implements IAdminCommandHandler {
-    private static final Logger LOGGER = Logger.getLogger(AdminAdmin.class.getName());
 
     private static final String[] ADMIN_COMMANDS = {
         "admin_admin",
@@ -158,7 +158,7 @@ public class AdminAdmin implements IAdminCommandHandler {
             try {
                 Olympiad.getInstance().manualSelectHeroes();
             } catch (Exception e) {
-                LOGGER.warning("An error occurred while ending olympiad: " + e);
+                log.warn("An error occurred while ending olympiad", e);
             }
 
             activeChar.sendSysMessage("Heroes formed.");

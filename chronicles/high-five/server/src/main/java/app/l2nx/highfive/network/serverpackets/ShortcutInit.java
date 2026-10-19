@@ -30,21 +30,21 @@ import app.l2nx.network.buffer.WriteBuffer;
 import java.util.Collection;
 
 public class ShortcutInit extends ServerPacket {
-    private Collection<Shortcut> _shortcuts;
+    private Collection<Shortcut> shortcuts;
 
     public ShortcutInit(Player player) {
         if (player == null) {
             return;
         }
 
-        _shortcuts = player.getAllShortcuts();
+        shortcuts = player.getAllShortcuts();
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.SHORT_CUT_INIT.writeId(this, buffer);
-        buffer.writeInt(_shortcuts.size());
-        for (Shortcut sc : _shortcuts) {
+        buffer.writeInt(shortcuts.size());
+        for (Shortcut sc : shortcuts) {
             buffer.writeInt(sc.getType().ordinal());
             buffer.writeInt(sc.getSlot() + (sc.getPage() * 12));
             switch (sc.getType()) {

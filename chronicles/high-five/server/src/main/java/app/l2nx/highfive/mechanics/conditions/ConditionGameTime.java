@@ -29,14 +29,14 @@ import app.l2nx.highfive.taskmanagers.GameTimeTaskManager;
  * @author mkizub
  */
 public class ConditionGameTime extends Condition {
-    private final boolean _required;
+    private final boolean required;
 
     /**
      * Instantiates a new condition game time.
      * @param required the required
      */
     public ConditionGameTime(boolean required) {
-        _required = required;
+        this.required = required;
     }
 
     /**
@@ -45,6 +45,6 @@ public class ConditionGameTime extends Condition {
      */
     @Override
     public boolean testImpl(Creature effector, Creature effected, Skill skill, ItemTemplate item) {
-        return GameTimeTaskManager.getInstance().isNight() == _required;
+        return GameTimeTaskManager.getInstance().isNight() == required;
     }
 }

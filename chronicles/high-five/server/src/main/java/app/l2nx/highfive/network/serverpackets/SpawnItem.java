@@ -28,24 +28,24 @@ import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.network.buffer.WriteBuffer;
 
 public class SpawnItem extends ServerPacket {
-    private final Item _item;
+    private final Item item;
 
     public SpawnItem(Item item) {
-        _item = item;
+        this.item = item;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.SPAWN_ITEM.writeId(this, buffer);
-        buffer.writeInt(_item.getObjectId());
-        buffer.writeInt(_item.getDisplayId());
-        buffer.writeInt(_item.getX());
-        buffer.writeInt(_item.getY());
-        buffer.writeInt(_item.getZ());
+        buffer.writeInt(item.getObjectId());
+        buffer.writeInt(item.getDisplayId());
+        buffer.writeInt(item.getX());
+        buffer.writeInt(item.getY());
+        buffer.writeInt(item.getZ());
 
         // Only show item count if it is a stackable item.
-        buffer.writeInt(_item.isStackable());
-        buffer.writeLong(_item.getCount());
+        buffer.writeInt(item.isStackable());
+        buffer.writeLong(item.getCount());
         buffer.writeInt(0); // c2
         buffer.writeInt(0); // freya unk
     }

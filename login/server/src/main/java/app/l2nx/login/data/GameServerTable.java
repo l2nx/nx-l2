@@ -44,12 +44,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 /**
@@ -57,8 +58,8 @@ import org.springframework.stereotype.Component;
  * @author KenM
  */
 @Component
+@Slf4j
 public class GameServerTable {
-    private static final Logger LOGGER = Logger.getLogger(GameServerTable.class.getName());
 
     private static final String SERVER_NAMES_FILE = "data/servername.xml";
 
@@ -70,7 +71,7 @@ public class GameServerTable {
 
     // Configuration for RSA key pairs.
     private static final int KEYS_SIZE = 10;
-    private KeyPair[] _keyPairs;
+    private KeyPair[] keyPairs;
 
     private static GameServerTable INSTANCE;
 
@@ -87,10 +88,10 @@ public class GameServerTable {
         loadServerNames();
 
         loadRegisteredGameServers();
-        LOGGER.info("Loaded " + GAME_SERVER_TABLE.size() + " registered Game Servers.");
+        log.info("Loaded {} registered Game Servers.", GAME_SERVER_TABLE.size());
 
         initRSAKeys();
-        LOGGER.info("Cached " + _keyPairs.length + " RSA keys for Game Server communication.");
+        log.info("Cached {} RSA keys for Game Server communication.", keyPairs.length);
     }
 
     private void loadServerNames() {
@@ -112,10 +113,10 @@ public class GameServerTable {
                 reader.close();
             }
         } catch (IOException | XMLStreamException | RuntimeException e) {
-            LOGGER.log(Level.WARNING, "Error parsing " + file.getAbsolutePath() + ".", e);
+            log.warn("Error parsing {}.", file.getAbsolutePath(), e);
         }
 
-        LOGGER.info("Loaded " + SERVER_NAMES.size() + " server names.");
+        log.info("Loaded {} server names.", SERVER_NAMES.size());
     }
 
     /**
@@ -125,12 +126,12 @@ public class GameServerTable {
         try {
             final KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA");
             keyGen.initialize(new RSAKeyGenParameterSpec(512, RSAKeyGenParameterSpec.F4));
-            _keyPairs = new KeyPair[KEYS_SIZE];
+            keyPairs = new KeyPair[KEYS_SIZE];
             for (int i = 0; i < KEYS_SIZE; i++) {
-                _keyPairs[i] = keyGen.genKeyPair();
+                keyPairs[i] = keyGen.genKeyPair();
             }
         } catch (Exception e) {
-            LOGGER.severe("Error loading RSA keys for Game Server communication!");
+            log.error("Error loading RSA keys for Game Server communication!");
         }
     }
 
@@ -143,7 +144,7 @@ public class GameServerTable {
                     .findHexIds()
                     .forEach((id, hexId) -> GAME_SERVER_TABLE.put(id, new GameServerInfo(id, stringToHex(hexId))));
         } catch (Exception e) {
-            LOGGER.severe("Error loading registered game servers!");
+            log.error("Error loading registered game servers!");
         }
     }
 
@@ -230,7 +231,7 @@ public class GameServerTable {
         try {
             gameServers.create(id, hexToString(hexId), externalHost);
         } catch (Exception e) {
-            LOGGER.severe("Error while saving gameserver!");
+            log.error("Error while saving gameserver!");
         }
     }
 
@@ -256,7 +257,7 @@ public class GameServerTable {
      * @return a random key pair.
      */
     public KeyPair getKeyPair() {
-        return _keyPairs[ThreadLocalRandom.current().nextInt(_keyPairs.length)];
+        return keyPairs[ThreadLocalRandom.current().nextInt(keyPairs.length)];
     }
 
     /**
@@ -286,24 +287,50 @@ public class GameServerTable {
      */
     public static class GameServerInfo {
         // Authentication fields.
-        private int _id;
-        private final byte[] _hexId;
-        private boolean _isAuthed;
+        @Getter
+        @Setter
+        private int id;
+
+        @Getter
+        private final byte[] hexId;
+
+        @Getter
+        @Setter
+        private boolean authed;
 
         // Status information.
-        private GameServerThread _gst;
-        private int _status;
+        @Getter
+        @Setter
+        private GameServerThread gameServerThread;
+
+        @Getter
+        private int status;
 
         // Network configuration.
-        private final List<GameServerAddress> _addrs = new ArrayList<>(5);
-        private int _port;
+        private final List<GameServerAddress> addrs = new ArrayList<>(5);
+
+        @Getter
+        @Setter
+        private int port;
 
         // Configuration settings.
         private static final boolean IS_PVP = true;
-        private int _serverType;
-        private int _ageLimit;
-        private boolean _isShowingBrackets;
-        private int _maxPlayers;
+
+        @Getter
+        @Setter
+        private int serverType;
+
+        @Getter
+        @Setter
+        private int ageLimit;
+
+        @Getter
+        @Setter
+        private boolean showingBrackets;
+
+        @Getter
+        @Setter
+        private int maxPlayers;
 
         /**
          * Instantiates a new game server info.
@@ -312,10 +339,10 @@ public class GameServerTable {
          * @param gst the gst
          */
         public GameServerInfo(int id, byte[] hexId, GameServerThread gst) {
-            _id = id;
-            _hexId = hexId;
-            _gst = gst;
-            _status = ServerStatus.STATUS_DOWN;
+            this.id = id;
+            this.hexId = hexId;
+            gameServerThread = gst;
+            status = ServerStatus.STATUS_DOWN;
         }
 
         /**
@@ -327,65 +354,9 @@ public class GameServerTable {
             this(id, hexId, null);
         }
 
-        /**
-         * Sets the id.
-         * @param id the new id
-         */
-        public void setId(int id) {
-            _id = id;
-        }
-
-        /**
-         * Gets the id.
-         * @return the id
-         */
-        public int getId() {
-            return _id;
-        }
-
-        /**
-         * Gets the hex id.
-         * @return the hex id
-         */
-        public byte[] getHexId() {
-            return _hexId;
-        }
-
         public String getName() {
             // This value can't be stored in a private variable because the ID can be changed by setId().
-            return getInstance().getServerNameById(_id);
-        }
-
-        /**
-         * Sets the authed.
-         * @param isAuthed the new authed
-         */
-        public void setAuthed(boolean isAuthed) {
-            _isAuthed = isAuthed;
-        }
-
-        /**
-         * Checks if is authed.
-         * @return true, if is authed
-         */
-        public boolean isAuthed() {
-            return _isAuthed;
-        }
-
-        /**
-         * Sets the game server thread.
-         * @param gst the new game server thread
-         */
-        public void setGameServerThread(GameServerThread gst) {
-            _gst = gst;
-        }
-
-        /**
-         * Gets the game server thread.
-         * @return the game server thread
-         */
-        public GameServerThread getGameServerThread() {
-            return _gst;
+            return getInstance().getServerNameById(id);
         }
 
         /**
@@ -394,24 +365,16 @@ public class GameServerTable {
          */
         public void setStatus(int status) {
             if (LoginServer.getInstance().getStatus() == ServerStatus.STATUS_DOWN) {
-                _status = ServerStatus.STATUS_DOWN;
+                this.status = ServerStatus.STATUS_DOWN;
             } else if (LoginServer.getInstance().getStatus() == ServerStatus.STATUS_GM_ONLY) {
-                _status = ServerStatus.STATUS_GM_ONLY;
+                this.status = ServerStatus.STATUS_GM_ONLY;
             } else {
-                _status = status;
+                this.status = status;
             }
         }
 
-        /**
-         * Gets the status.
-         * @return the status
-         */
-        public int getStatus() {
-            return _status;
-        }
-
         public String getStatusName() {
-            switch (_status) {
+            switch (status) {
                 case 0: {
                     return "Auto";
                 }
@@ -441,21 +404,21 @@ public class GameServerTable {
          * @return the current player count
          */
         public int getCurrentPlayerCount() {
-            if (_gst == null) {
+            if (gameServerThread == null) {
                 return 0;
             }
 
-            return _gst.getPlayerCount();
+            return gameServerThread.getPlayerCount();
         }
 
         public boolean canLogin(LoginClient client) {
             // DOWN status doesn't allow anyone to login.
-            if (_status == ServerStatus.STATUS_DOWN) {
+            if (status == ServerStatus.STATUS_DOWN) {
                 return false;
             }
 
             // GM_ONLY status or full server only allows superior access levels accounts to login.
-            if ((_status == ServerStatus.STATUS_GM_ONLY) || (getCurrentPlayerCount() >= getMaxPlayers())) {
+            if ((status == ServerStatus.STATUS_GM_ONLY) || (getCurrentPlayerCount() >= getMaxPlayers())) {
                 return client.getAccessLevel() > 0;
             }
 
@@ -478,91 +441,11 @@ public class GameServerTable {
         }
 
         /**
-         * Gets the port.
-         * @return the port
-         */
-        public int getPort() {
-            return _port;
-        }
-
-        /**
-         * Sets the port.
-         * @param port the new port
-         */
-        public void setPort(int port) {
-            _port = port;
-        }
-
-        /**
-         * Sets the max players.
-         * @param maxPlayers the new max players
-         */
-        public void setMaxPlayers(int maxPlayers) {
-            _maxPlayers = maxPlayers;
-        }
-
-        /**
-         * Gets the max players.
-         * @return the max players
-         */
-        public int getMaxPlayers() {
-            return _maxPlayers;
-        }
-
-        /**
          * Checks if is pvp.
          * @return true, if is pvp
          */
         public boolean isPvp() {
             return IS_PVP;
-        }
-
-        /**
-         * Sets the age limit.
-         * @param value the new age limit
-         */
-        public void setAgeLimit(int value) {
-            _ageLimit = value;
-        }
-
-        /**
-         * Gets the age limit.
-         * @return the age limit
-         */
-        public int getAgeLimit() {
-            return _ageLimit;
-        }
-
-        /**
-         * Sets the server type.
-         * @param value the new server type
-         */
-        public void setServerType(int value) {
-            _serverType = value;
-        }
-
-        /**
-         * Gets the server type.
-         * @return the server type
-         */
-        public int getServerType() {
-            return _serverType;
-        }
-
-        /**
-         * Sets the showing brackets.
-         * @param value the new showing brackets
-         */
-        public void setShowingBrackets(boolean value) {
-            _isShowingBrackets = value;
-        }
-
-        /**
-         * Checks if is showing brackets.
-         * @return true, if is showing brackets
-         */
-        public boolean isShowingBrackets() {
-            return _isShowingBrackets;
         }
 
         /**
@@ -582,7 +465,7 @@ public class GameServerTable {
          * @throws UnknownHostException the unknown host exception
          */
         public void addServerAddress(String subnet, String addr) throws UnknownHostException {
-            _addrs.add(new GameServerAddress(subnet, addr));
+            addrs.add(new GameServerAddress(subnet, addr));
         }
 
         /**
@@ -592,7 +475,7 @@ public class GameServerTable {
          */
         @SuppressWarnings("unlikely-arg-type")
         public String getServerAddress(InetAddress addr) {
-            for (GameServerAddress a : _addrs) {
+            for (GameServerAddress a : addrs) {
                 if (a.equals(addr)) {
                     return a.getServerAddress();
                 }
@@ -606,9 +489,9 @@ public class GameServerTable {
          * @return the server addresses
          */
         public String[] getServerAddresses() {
-            final String[] result = new String[_addrs.size()];
+            final String[] result = new String[addrs.size()];
             for (int i = 0; i < result.length; i++) {
-                result[i] = _addrs.get(i).toString();
+                result[i] = addrs.get(i).toString();
             }
 
             return result;
@@ -618,14 +501,15 @@ public class GameServerTable {
          * Clear server addresses.
          */
         public void clearServerAddresses() {
-            _addrs.clear();
+            addrs.clear();
         }
 
         /**
          * The Class GameServerAddress.
          */
         private class GameServerAddress extends Subnet {
-            private final String _serverAddress;
+            @Getter
+            private final String serverAddress;
 
             /**
              * Instantiates a new game server address.
@@ -635,20 +519,12 @@ public class GameServerTable {
              */
             public GameServerAddress(String subnet, String address) throws UnknownHostException {
                 super(subnet);
-                _serverAddress = address;
-            }
-
-            /**
-             * Gets the server address.
-             * @return the server address
-             */
-            public String getServerAddress() {
-                return _serverAddress;
+                serverAddress = address;
             }
 
             @Override
             public String toString() {
-                return _serverAddress + "/" + super.toString();
+                return serverAddress + "/" + super.toString();
             }
         }
     }

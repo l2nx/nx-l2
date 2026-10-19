@@ -19,6 +19,8 @@
  */
 package app.l2nx.highfive.network.enums;
 
+import lombok.Getter;
+
 /**
  * This file contains all movies.
  * @author St3eT
@@ -60,16 +62,10 @@ public enum Movie {
     LAND_DISTRUCTION_A(1003),
     LAND_ANNIHILATION_A(1004);
 
-    private final int _clientId;
+    @Getter
+    private final int clientId;
 
     private Movie(int clientId) {
-        _clientId = clientId;
-    }
-
-    /**
-     * @return the client id.
-     */
-    public int getClientId() {
-        return _clientId;
+        this.clientId = clientId;
     }
 }

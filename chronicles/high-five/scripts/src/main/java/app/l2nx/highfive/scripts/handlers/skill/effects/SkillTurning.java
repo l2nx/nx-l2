@@ -33,17 +33,17 @@ import app.l2nx.highfive.util.StatSet;
  * Skill Turning effect implementation.
  */
 public class SkillTurning extends AbstractEffect {
-    private final int _chance;
+    private final int chance;
 
     public SkillTurning(Condition attachCond, Condition applyCond, StatSet set, StatSet params) {
         super(attachCond, applyCond, set, params);
 
-        _chance = params.getInt("chance", 100);
+        chance = params.getInt("chance", 100);
     }
 
     @Override
     public boolean calcSuccess(Creature effector, Creature effected, Skill skill) {
-        return Formulas.calcProbability(_chance, effector, effected, skill);
+        return Formulas.calcProbability(chance, effector, effected, skill);
     }
 
     @Override

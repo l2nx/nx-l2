@@ -29,14 +29,14 @@ import java.util.concurrent.ThreadLocalRandom;
  * @author Advi
  */
 public class ConditionGameChance extends Condition {
-    private final int _chance;
+    private final int chance;
 
     /**
      * Instantiates a new condition game chance.
      * @param chance the chance
      */
     public ConditionGameChance(int chance) {
-        _chance = chance;
+        this.chance = chance;
     }
 
     /**
@@ -45,6 +45,6 @@ public class ConditionGameChance extends Condition {
      */
     @Override
     public boolean testImpl(Creature effector, Creature effected, Skill skill, ItemTemplate item) {
-        return ThreadLocalRandom.current().nextInt(100) < _chance;
+        return ThreadLocalRandom.current().nextInt(100) < chance;
     }
 }

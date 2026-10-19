@@ -39,6 +39,7 @@ import app.l2nx.highfive.network.serverpackets.AcquireSkillList;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
 import app.l2nx.highfive.scripts.custom.Validators.SubClassSkills;
 import java.util.List;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 
 /**
@@ -47,6 +48,7 @@ import org.apache.commons.lang3.StringUtils;
  * Transformation skill learning and transformation scroll sell.
  * @author Zoey76
  */
+@Slf4j
 public class AvantGarde extends Script {
     // NPC
     private static final int AVANT_GARDE = 32323;
@@ -182,8 +184,7 @@ public class AvantGarde extends Script {
                                             player.getVariables().set(qvarName, "0");
                                         }
                                     } else {
-                                        LOGGER.warning(
-                                                "Invalid Sub-Class Skill Id: " + skillIdVar + " for " + player + "!");
+                                        log.warn("Invalid Sub-Class Skill Id: {} for {}!", skillIdVar, player);
                                     }
                                 } else if (!qvar.isEmpty() && !qvar.equals("0")) {
                                     if (StringUtils.isNumeric(qvar)) {
@@ -195,8 +196,9 @@ public class AvantGarde extends Script {
                                         } else {
                                             itemInstance = player.getWarehouse().getItemByObjectId(itemObjId);
                                             if (itemInstance != null) {
-                                                LOGGER.warning("Somehow " + player.getName()
-                                                        + " put a certification book into warehouse!");
+                                                log.warn(
+                                                        "Somehow {} put a certification book into warehouse!",
+                                                        player.getName());
                                                 player.getWarehouse()
                                                         .destroyItem(
                                                                 ItemProcessType.DESTROY,
@@ -205,14 +207,13 @@ public class AvantGarde extends Script {
                                                                 player,
                                                                 false);
                                             } else {
-                                                LOGGER.warning("Somehow " + player.getName()
-                                                        + " deleted a certification book!");
+                                                log.warn("Somehow {} deleted a certification book!", player.getName());
                                             }
                                         }
 
                                         player.getVariables().set(qvarName, "0");
                                     } else {
-                                        LOGGER.warning("Invalid item object Id: " + qvar + " for " + player + "!");
+                                        log.warn("Invalid item object Id: {} for {}!", qvar, player);
                                     }
                                 }
                             }
@@ -227,9 +228,10 @@ public class AvantGarde extends Script {
                     for (int itemId : ITEMS) {
                         final Item item = player.getInventory().getItemByItemId(itemId);
                         if (item != null) {
-                            LOGGER.warning(
-                                    getClass().getName() + ": " + player
-                                            + " had 'extra' certification skill books while cancelling sub-class certifications!");
+                            log.warn(
+                                    "{}: {} had 'extra' certification skill books while cancelling sub-class certifications!",
+                                    getClass().getName(),
+                                    player);
                             player.destroyItem(ItemProcessType.DESTROY, item, npc, false);
                         }
                     }

@@ -37,13 +37,13 @@ import app.l2nx.highfive.network.serverpackets.SystemMessage;
  * @author -Wooden-, TempyIncursion
  */
 public class RequestPetition extends ClientPacket {
-    private String _content;
-    private int _type; // 1 = on : 0 = off;
+    private String content;
+    private int type; // 1 = on : 0 = off;
 
     @Override
     protected void readImpl() {
-        _content = readString();
-        _type = readInt();
+        content = readString();
+        type = readInt();
     }
 
     @Override
@@ -53,7 +53,7 @@ public class RequestPetition extends ClientPacket {
             return;
         }
 
-        if ((_type <= 0) || (_type >= 10)) {
+        if ((type <= 0) || (type >= 10)) {
             return;
         }
 
@@ -91,12 +91,12 @@ public class RequestPetition extends ClientPacket {
             return;
         }
 
-        if (_content.length() > 255) {
+        if (content.length() > 255) {
             player.sendPacket(SystemMessageId.PETITIONS_CANNOT_EXCEED_255_CHARACTERS);
             return;
         }
 
-        final int petitionId = PetitionManager.getInstance().submitPetition(player, _content, _type);
+        final int petitionId = PetitionManager.getInstance().submitPetition(player, content, type);
         SystemMessage sm =
                 new SystemMessage(SystemMessageId.YOUR_PETITION_APPLICATION_HAS_BEEN_ACCEPTED_N_RECEIPT_NO_IS_S1);
         sm.addInt(petitionId);

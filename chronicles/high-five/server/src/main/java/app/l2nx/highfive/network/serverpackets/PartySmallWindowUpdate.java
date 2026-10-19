@@ -28,24 +28,24 @@ import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.network.buffer.WriteBuffer;
 
 public class PartySmallWindowUpdate extends ServerPacket {
-    private final Player _member;
+    private final Player member;
 
     public PartySmallWindowUpdate(Player member) {
-        _member = member;
+        this.member = member;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.PARTY_SMALL_WINDOW_UPDATE.writeId(this, buffer);
-        buffer.writeInt(_member.getObjectId());
-        buffer.writeString(_member.getName());
-        buffer.writeInt((int) _member.getCurrentCp()); // c4
-        buffer.writeInt(_member.getMaxCp()); // c4
-        buffer.writeInt((int) _member.getCurrentHp());
-        buffer.writeInt(_member.getMaxHp());
-        buffer.writeInt((int) _member.getCurrentMp());
-        buffer.writeInt(_member.getMaxMp());
-        buffer.writeInt(_member.getLevel());
-        buffer.writeInt(_member.getPlayerClass().getId());
+        buffer.writeInt(member.getObjectId());
+        buffer.writeString(member.getName());
+        buffer.writeInt((int) member.getCurrentCp()); // c4
+        buffer.writeInt(member.getMaxCp()); // c4
+        buffer.writeInt((int) member.getCurrentHp());
+        buffer.writeInt(member.getMaxHp());
+        buffer.writeInt((int) member.getCurrentMp());
+        buffer.writeInt(member.getMaxMp());
+        buffer.writeInt(member.getLevel());
+        buffer.writeInt(member.getPlayerClass().getId());
     }
 }

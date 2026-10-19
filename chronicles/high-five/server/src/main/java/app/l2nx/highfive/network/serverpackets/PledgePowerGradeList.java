@@ -29,17 +29,17 @@ import app.l2nx.network.buffer.WriteBuffer;
 import java.util.Collection;
 
 public class PledgePowerGradeList extends ServerPacket {
-    private final Collection<RankPrivs> _privs;
+    private final Collection<RankPrivs> privs;
 
     public PledgePowerGradeList(Collection<RankPrivs> privs) {
-        _privs = privs;
+        this.privs = privs;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.PLEDGE_POWER_GRADE_LIST.writeId(this, buffer);
-        buffer.writeInt(_privs.size());
-        for (RankPrivs temp : _privs) {
+        buffer.writeInt(privs.size());
+        for (RankPrivs temp : privs) {
             buffer.writeInt(temp.getRank());
             buffer.writeInt(temp.getParty());
         }

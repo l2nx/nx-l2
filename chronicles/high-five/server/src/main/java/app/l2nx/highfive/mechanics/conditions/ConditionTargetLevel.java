@@ -28,14 +28,14 @@ import app.l2nx.highfive.mechanics.skill.Skill;
  * @author mkizub
  */
 public class ConditionTargetLevel extends Condition {
-    private final int _level;
+    private final int level;
 
     /**
      * Instantiates a new condition target level.
      * @param level the level
      */
     public ConditionTargetLevel(int level) {
-        _level = level;
+        this.level = level;
     }
 
     @Override
@@ -44,6 +44,6 @@ public class ConditionTargetLevel extends Condition {
             return false;
         }
 
-        return effected.getLevel() >= _level;
+        return effected.getLevel() >= level;
     }
 }

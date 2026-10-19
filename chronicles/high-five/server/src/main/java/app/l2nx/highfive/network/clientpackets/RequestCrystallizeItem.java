@@ -33,23 +33,24 @@ import app.l2nx.highfive.entity.item.type.CrystalType;
 import app.l2nx.highfive.entity.itemcontainer.PlayerInventory;
 import app.l2nx.highfive.managers.PunishmentManager;
 import app.l2nx.highfive.mechanics.skill.CommonSkill;
-import app.l2nx.highfive.network.PacketLogger;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.serverpackets.ActionFailed;
 import app.l2nx.highfive.network.serverpackets.InventoryUpdate;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @version $Revision: 1.2.2.3.2.5 $ $Date: 2005/03/27 15:29:30 $
  */
+@Slf4j
 public class RequestCrystallizeItem extends ClientPacket {
-    private int _objectId;
-    private long _count;
+    private int objectId;
+    private long count;
 
     @Override
     protected void readImpl() {
-        _objectId = readInt();
-        _count = readLong();
+        objectId = readInt();
+        count = readLong();
     }
 
     @Override
@@ -65,10 +66,10 @@ public class RequestCrystallizeItem extends ClientPacket {
             return;
         }
 
-        if (_count < 1) {
+        if (count < 1) {
             PunishmentManager.handleIllegalPlayerAction(
                     player,
-                    "[RequestCrystallizeItem] count <= 0! ban! oid: " + _objectId + " owner: " + player.getName(),
+                    "[RequestCrystallizeItem] count <= 0! ban! oid: " + objectId + " owner: " + player.getName(),
                     GeneralConfig.DEFAULT_PUNISH);
             return;
         }
@@ -88,15 +89,17 @@ public class RequestCrystallizeItem extends ClientPacket {
             if ((player.getRace() != Race.DWARF)
                     && (player.getPlayerClass().getId() != 117)
                     && (player.getPlayerClass().getId() != 55)) {
-                PacketLogger.info("Player " + getClient() + " used crystalize with classid: "
-                        + player.getPlayerClass().getId());
+                log.info(
+                        "Player {} used crystalize with classid: {}",
+                        getClient(),
+                        player.getPlayerClass().getId());
             }
             return;
         }
 
         final PlayerInventory inventory = player.getInventory();
         if (inventory != null) {
-            final Item item = inventory.getItemByObjectId(_objectId);
+            final Item item = inventory.getItemByObjectId(objectId);
             if ((item == null)
                     || item.isHeroItem()
                     || (!PlayerConfig.ALT_ALLOW_AUGMENT_DESTROY && item.isAugmented())) {
@@ -104,12 +107,12 @@ public class RequestCrystallizeItem extends ClientPacket {
                 return;
             }
 
-            if (_count > item.getCount()) {
-                _count = player.getInventory().getItemByObjectId(_objectId).getCount();
+            if (count > item.getCount()) {
+                count = player.getInventory().getItemByObjectId(objectId).getCount();
             }
         }
 
-        final Item itemToRemove = player.getInventory().getItemByObjectId(_objectId);
+        final Item itemToRemove = player.getInventory().getItemByObjectId(objectId);
         if ((itemToRemove == null) || itemToRemove.isShadowItem() || itemToRemove.isTimeLimitedItem()) {
             return;
         }
@@ -117,8 +120,11 @@ public class RequestCrystallizeItem extends ClientPacket {
         if (!itemToRemove.getTemplate().isCrystallizable()
                 || (itemToRemove.getTemplate().getCrystalCount() <= 0)
                 || (itemToRemove.getTemplate().getCrystalType() == CrystalType.NONE)) {
-            PacketLogger.warning(player.getName() + " (" + player.getObjectId() + ") tried to crystallize "
-                    + itemToRemove.getTemplate().getId());
+            log.warn(
+                    "{} ({}) tried to crystallize {}",
+                    player.getName(),
+                    player.getObjectId(),
+                    itemToRemove.getTemplate().getId());
             return;
         }
 
@@ -190,7 +196,7 @@ public class RequestCrystallizeItem extends ClientPacket {
 
         // remove from inventory
         final Item removedItem =
-                player.getInventory().destroyItem(ItemProcessType.DESTROY, _objectId, _count, player, null);
+                player.getInventory().destroyItem(ItemProcessType.DESTROY, objectId, count, player, null);
         final InventoryUpdate iu = new InventoryUpdate();
         iu.addRemovedItem(removedItem);
         player.sendPacket(iu); // Sent inventory update for destruction instantly.

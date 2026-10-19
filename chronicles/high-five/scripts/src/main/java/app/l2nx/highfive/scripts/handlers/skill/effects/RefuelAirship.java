@@ -32,12 +32,12 @@ import app.l2nx.highfive.util.StatSet;
  * @author Adry_85
  */
 public class RefuelAirship extends AbstractEffect {
-    private final int _value;
+    private final int value;
 
     public RefuelAirship(Condition attachCond, Condition applyCond, StatSet set, StatSet params) {
         super(attachCond, applyCond, set, params);
 
-        _value = params.getInt("value", 0);
+        value = params.getInt("value", 0);
     }
 
     @Override
@@ -53,7 +53,7 @@ public class RefuelAirship extends AbstractEffect {
     @Override
     public void onStart(Creature effector, Creature effected, Skill skill) {
         final AirShip ship = effector.asPlayer().getAirShip();
-        ship.setFuel(ship.getFuel() + _value);
+        ship.setFuel(ship.getFuel() + value);
         ship.updateAbnormalEffect();
     }
 }

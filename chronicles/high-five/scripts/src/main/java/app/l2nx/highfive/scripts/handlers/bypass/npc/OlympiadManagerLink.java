@@ -38,12 +38,13 @@ import app.l2nx.highfive.network.serverpackets.MagicSkillUse;
 import app.l2nx.highfive.network.serverpackets.NpcHtmlMessage;
 import java.util.Collection;
 import java.util.List;
-import java.util.logging.Level;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 
 /**
  * @author DS
  */
+@Slf4j
 public class OlympiadManagerLink implements IBypassHandler {
     private static final String[] COMMANDS = {"olympiaddesc", "olympiadnoble", "olybuff", "olympiad"};
 
@@ -247,7 +248,7 @@ public class OlympiadManagerLink implements IBypassHandler {
                         break;
                     }
                     default: {
-                        LOGGER.warning("Olympiad System: Could not send packet for request " + val);
+                        log.warn("Olympiad System: Could not send packet for request {}", val);
                         break;
                     }
                 }
@@ -259,15 +260,19 @@ public class OlympiadManagerLink implements IBypassHandler {
 
                 final String[] params = command.split(" ");
                 if (!StringUtils.isNumeric(params[1])) {
-                    LOGGER.warning("Olympiad Buffer Warning: npcId = " + target.getId()
-                            + " has invalid buffGroup set in the bypass for the buff selected: " + params[1]);
+                    log.warn(
+                            "Olympiad Buffer Warning: npcId = {} has invalid buffGroup set in the bypass for the buff selected: {}",
+                            target.getId(),
+                            params[1]);
                     return false;
                 }
 
                 final int index = Integer.parseInt(params[1]);
                 if ((index < 0) || (index >= ALLOWED_BUFFS.length)) {
-                    LOGGER.warning("Olympiad Buffer Warning: npcId = " + target.getId()
-                            + " has invalid index sent in the bypass: " + index);
+                    log.warn(
+                            "Olympiad Buffer Warning: npcId = {} has invalid index sent in the bypass: {}",
+                            target.getId(),
+                            index);
                     return false;
                 }
 
@@ -399,13 +404,13 @@ public class OlympiadManagerLink implements IBypassHandler {
                         break;
                     }
                     default: {
-                        LOGGER.warning("Olympiad System: Could not send packet for request " + val);
+                        log.warn("Olympiad System: Could not send packet for request {}", val);
                         break;
                     }
                 }
             }
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, "Exception in " + getClass().getSimpleName(), e);
+            log.warn("Bypass failed", e);
         }
 
         return true;

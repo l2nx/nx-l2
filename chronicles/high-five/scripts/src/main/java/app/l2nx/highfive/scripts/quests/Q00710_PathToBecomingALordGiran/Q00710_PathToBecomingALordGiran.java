@@ -65,7 +65,7 @@ public class Q00710_PathToBecomingALordGiran extends Quest {
         addStartNpc(SAUL);
         addKillId(MOBS);
         addTalkId(SAUL, GESTO, FELTON, CARGO_BOX);
-        _questItemIds = new int[] {FREIGHT_CHESTS_SEAL, GESTOS_BOX};
+        registeredItemIds = new int[] {FREIGHT_CHESTS_SEAL, GESTOS_BOX};
     }
 
     @Override

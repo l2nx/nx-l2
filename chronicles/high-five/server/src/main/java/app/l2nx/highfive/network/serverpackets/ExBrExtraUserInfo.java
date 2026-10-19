@@ -29,23 +29,23 @@ import app.l2nx.network.buffer.WriteBuffer;
  */
 public class ExBrExtraUserInfo extends ServerPacket {
     /** Player object ID. */
-    private final int _objectId;
+    private final int objectId;
     /** Event abnormal visual effects map. */
-    private final int _abnormalVisualEffectsEvent;
+    private final int abnormalVisualEffectsEvent;
     /** Lecture mark. */
-    private final int _lectureMark;
+    private final int lectureMark;
 
     public ExBrExtraUserInfo(Player player) {
-        _objectId = player.getObjectId();
-        _abnormalVisualEffectsEvent = player.getAbnormalVisualEffectEvent();
-        _lectureMark = 1; // TODO: Implement.
+        objectId = player.getObjectId();
+        abnormalVisualEffectsEvent = player.getAbnormalVisualEffectEvent();
+        lectureMark = 1; // TODO: Implement.
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_BR_EXTRA_USER_INFO.writeId(this, buffer);
-        buffer.writeInt(_objectId);
-        buffer.writeInt(_abnormalVisualEffectsEvent);
-        buffer.writeByte(_lectureMark);
+        buffer.writeInt(objectId);
+        buffer.writeInt(abnormalVisualEffectsEvent);
+        buffer.writeByte(lectureMark);
     }
 }

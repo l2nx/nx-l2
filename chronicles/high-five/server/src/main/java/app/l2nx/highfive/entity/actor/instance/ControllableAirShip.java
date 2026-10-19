@@ -32,20 +32,30 @@ import app.l2nx.highfive.network.serverpackets.DeleteObject;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
 import app.l2nx.highfive.threads.ThreadPool;
 import java.util.concurrent.Future;
+import lombok.Getter;
+import lombok.Setter;
 
 public class ControllableAirShip extends AirShip {
     private static final int HELM = 13556;
     private static final int LOW_FUEL = 40;
 
-    private int _fuel = 0;
-    private int _maxFuel = 0;
+    @Getter
+    private int fuel = 0;
 
-    private final int _ownerId;
-    private int _helmId;
-    private Player _captain = null;
+    @Getter
+    @Setter
+    private int maxFuel = 0;
 
-    private Future<?> _consumeFuelTask;
-    private Future<?> _checkTask;
+    @Getter
+    private final int ownerId;
+
+    @Getter
+    private int helmObjectId;
+
+    private Player captain = null;
+
+    private Future<?> consumeFuelTask;
+    private Future<?> checkTask;
 
     /**
      * Creates a controllable air ship.
@@ -55,8 +65,8 @@ public class ControllableAirShip extends AirShip {
     public ControllableAirShip(CreatureTemplate template, int ownerId) {
         super(template);
         setInstanceType(InstanceType.ControllableAirShip);
-        _ownerId = ownerId;
-        _helmId = IdManager.getInstance().getNextId(); // not forget to release !
+        this.ownerId = ownerId;
+        helmObjectId = IdManager.getInstance().getNextId(); // not forget to release !
     }
 
     @Override
@@ -76,31 +86,21 @@ public class ControllableAirShip extends AirShip {
 
     @Override
     public boolean isOwner(Player player) {
-        if (_ownerId == 0) {
+        if (ownerId == 0) {
             return false;
         }
 
-        return (player.getClanId() == _ownerId) || (player.getObjectId() == _ownerId);
-    }
-
-    @Override
-    public int getOwnerId() {
-        return _ownerId;
+        return (player.getClanId() == ownerId) || (player.getObjectId() == ownerId);
     }
 
     @Override
     public boolean isCaptain(Player player) {
-        return (_captain != null) && (player == _captain);
+        return (captain != null) && (player == captain);
     }
 
     @Override
     public int getCaptainId() {
-        return _captain != null ? _captain.getObjectId() : 0;
-    }
-
-    @Override
-    public int getHelmObjectId() {
-        return _helmId;
+        return captain != null ? captain.getObjectId() : 0;
     }
 
     @Override
@@ -111,9 +111,9 @@ public class ControllableAirShip extends AirShip {
     @Override
     public boolean setCaptain(Player player) {
         if (player == null) {
-            _captain = null;
+            captain = null;
         } else {
-            if ((_captain == null) && (player.getAirShip() == this)) {
+            if ((captain == null) && (player.getAirShip() == this)) {
                 final int x = player.getInVehiclePosition().getX() - 0x16e;
                 final int y = player.getInVehiclePosition().getY();
                 final int z = player.getInVehiclePosition().getZ() - 0x6b;
@@ -155,7 +155,7 @@ public class ControllableAirShip extends AirShip {
                     return false;
                 }
 
-                _captain = player;
+                captain = player;
                 player.broadcastUserInfo();
             } else {
                 return false;
@@ -167,44 +167,29 @@ public class ControllableAirShip extends AirShip {
     }
 
     @Override
-    public int getFuel() {
-        return _fuel;
-    }
-
-    @Override
     public void setFuel(int f) {
-        final int old = _fuel;
+        final int old = fuel;
         if (f < 0) {
-            _fuel = 0;
-        } else if (f > _maxFuel) {
-            _fuel = _maxFuel;
+            fuel = 0;
+        } else if (f > maxFuel) {
+            fuel = maxFuel;
         } else {
-            _fuel = f;
+            fuel = f;
         }
 
-        if ((_fuel == 0) && (old > 0)) {
+        if ((fuel == 0) && (old > 0)) {
             broadcastToPassengers(
                     new SystemMessage(
                             SystemMessageId
                                     .THE_AIRSHIP_S_FUEL_EP_HAS_RUN_OUT_THE_AIRSHIP_S_SPEED_WILL_BE_GREATLY_DECREASED_IN_THIS_CONDITION));
-        } else if (_fuel < LOW_FUEL) {
+        } else if (fuel < LOW_FUEL) {
             broadcastToPassengers(new SystemMessage(SystemMessageId.THE_AIRSHIP_S_FUEL_EP_WILL_SOON_RUN_OUT));
         }
     }
 
     @Override
-    public int getMaxFuel() {
-        return _maxFuel;
-    }
-
-    @Override
-    public void setMaxFuel(int mf) {
-        _maxFuel = mf;
-    }
-
-    @Override
     public void oustPlayer(Player player) {
-        if (player == _captain) {
+        if (player == captain) {
             setCaptain(null); // no need to broadcast userinfo here
         }
 
@@ -214,8 +199,8 @@ public class ControllableAirShip extends AirShip {
     @Override
     public void onSpawn() {
         super.onSpawn();
-        _checkTask = ThreadPool.scheduleAtFixedRate(new CheckTask(), 60000, 10000);
-        _consumeFuelTask = ThreadPool.scheduleAtFixedRate(new ConsumeFuelTask(), 60000, 60000);
+        checkTask = ThreadPool.scheduleAtFixedRate(new CheckTask(), 60000, 10000);
+        consumeFuelTask = ThreadPool.scheduleAtFixedRate(new ConsumeFuelTask(), 60000, 60000);
     }
 
     @Override
@@ -224,32 +209,32 @@ public class ControllableAirShip extends AirShip {
             return false;
         }
 
-        if (_checkTask != null) {
-            _checkTask.cancel(false);
-            _checkTask = null;
+        if (checkTask != null) {
+            checkTask.cancel(false);
+            checkTask = null;
         }
 
-        if (_consumeFuelTask != null) {
-            _consumeFuelTask.cancel(false);
-            _consumeFuelTask = null;
+        if (consumeFuelTask != null) {
+            consumeFuelTask.cancel(false);
+            consumeFuelTask = null;
         }
 
-        broadcastPacket(new DeleteObject(_helmId));
+        broadcastPacket(new DeleteObject(helmObjectId));
         return true;
     }
 
     @Override
     public void refreshId() {
         super.refreshId();
-        IdManager.getInstance().releaseId(_helmId);
-        _helmId = IdManager.getInstance().getNextId();
+        IdManager.getInstance().releaseId(helmObjectId);
+        helmObjectId = IdManager.getInstance().getNextId();
     }
 
     @Override
     public void sendInfo(Player player) {
         super.sendInfo(player);
-        if (_captain != null) {
-            _captain.sendInfo(player);
+        if (captain != null) {
+            captain.sendInfo(player);
         }
     }
 

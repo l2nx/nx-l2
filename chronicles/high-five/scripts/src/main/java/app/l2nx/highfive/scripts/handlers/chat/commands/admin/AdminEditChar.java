@@ -65,14 +65,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.StringJoiner;
 import java.util.StringTokenizer;
-import java.util.logging.Logger;
 import java.util.regex.Pattern;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * EditChar admin command implementation.
  */
+@Slf4j
 public class AdminEditChar implements IAdminCommandHandler {
-    private static final Logger LOGGER = Logger.getLogger(AdminEditChar.class.getName());
 
     private static final Pattern IPV4_PATTERN = Pattern.compile(
             "^(?:(?:[0-9]|[1-9][0-9]|1[0-9][0-9]|2(?:[0-4][0-9]|5[0-5]))\\.){3}(?:[0-9]|[1-9][0-9]|1[0-9][0-9]|2(?:[0-4][0-9]|5[0-5]))$");
@@ -330,7 +330,7 @@ public class AdminEditChar implements IAdminCommandHandler {
 
                     final String newclass = ClassListData.getInstance()
                             .getClass(player.getPlayerClass())
-                            .getClassName();
+                            .className();
                     player.storeMe();
                     player.sendMessage("A GM changed your class to " + newclass + ".");
                     player.broadcastUserInfo();
@@ -508,7 +508,7 @@ public class AdminEditChar implements IAdminCommandHandler {
 
                 activeChar.sendSysMessage("Clan penalty successfully removed to character: " + playerName);
             } catch (Exception e) {
-                LOGGER.warning("Problem with AdminEditChar: " + e.getMessage());
+                log.warn("Problem with AdminEditChar: {}", e.getMessage());
             }
         } else if (command.startsWith("admin_find_dualbox")) {
             int multibox = 2;
@@ -610,7 +610,7 @@ public class AdminEditChar implements IAdminCommandHandler {
                         pet.getStat().addExp(newexp - oldexp);
                     }
                 } catch (Exception e) {
-                    LOGGER.warning("Problem with AdminEditChar: " + e.getMessage());
+                    log.warn("Problem with AdminEditChar: {}", e.getMessage());
                 }
             } else {
                 activeChar.sendSysMessage("Usable only with Pets");
@@ -764,7 +764,7 @@ public class AdminEditChar implements IAdminCommandHandler {
                     sb.append("<td width=110>"
                             + ClassListData.getInstance()
                                     .getClass(player.getPlayerClass())
-                                    .getClassName() + "</td><td width=40>" + player.getLevel() + "</td>");
+                                    .className() + "</td><td width=40>" + player.getLevel() + "</td>");
                     sb.append("</tr>");
                 })
                 .build();
@@ -833,12 +833,12 @@ public class AdminEditChar implements IAdminCommandHandler {
         adminReply.replace("%sp%", String.valueOf(player.getSp()));
         adminReply.replace(
                 "%class%",
-                ClassListData.getInstance().getClass(player.getPlayerClass()).getClassName());
+                ClassListData.getInstance().getClass(player.getPlayerClass()).className());
         adminReply.replace("%ordinal%", String.valueOf(player.getPlayerClass().getId()));
         adminReply.replace("%classid%", String.valueOf(player.getPlayerClass()));
         adminReply.replace(
                 "%baseclass%",
-                ClassListData.getInstance().getClass(player.getBaseClass()).getClassName());
+                ClassListData.getInstance().getClass(player.getBaseClass()).className());
         adminReply.replace("%x%", String.valueOf(player.getX()));
         adminReply.replace("%y%", String.valueOf(player.getY()));
         adminReply.replace("%z%", String.valueOf(player.getZ()));
@@ -966,7 +966,7 @@ public class AdminEditChar implements IAdminCommandHandler {
                 replyMSG.append("</a></td><td width=110>");
                 replyMSG.append(ClassListData.getInstance()
                         .getClass(player.getPlayerClass())
-                        .getClassName());
+                        .className());
                 replyMSG.append("</td><td width=40>");
                 replyMSG.append(player.getLevel());
                 replyMSG.append("</td></tr>");
@@ -1050,7 +1050,7 @@ public class AdminEditChar implements IAdminCommandHandler {
             replyMSG.append("</a></td><td width=110>");
             replyMSG.append(ClassListData.getInstance()
                     .getClass(player.getPlayerClass())
-                    .getClassName());
+                    .className());
             replyMSG.append("</td><td width=40>");
             replyMSG.append(player.getLevel());
             replyMSG.append("</td></tr>");
@@ -1359,7 +1359,7 @@ public class AdminEditChar implements IAdminCommandHandler {
             text.append("<td width=110 align=center>")
                     .append(ClassListData.getInstance()
                             .getClass(member.getPlayerClass())
-                            .getClassName())
+                            .className())
                     .append("</td>");
             text.append("</tr></table></td></tr>");
 
@@ -1375,15 +1375,15 @@ public class AdminEditChar implements IAdminCommandHandler {
     }
 
     private class Untransform implements Runnable {
-        private final Player _player;
+        private final Player player;
 
         protected Untransform(Player player) {
-            _player = player;
+            this.player = player;
         }
 
         @Override
         public void run() {
-            _player.untransform();
+            player.untransform();
         }
     }
 }

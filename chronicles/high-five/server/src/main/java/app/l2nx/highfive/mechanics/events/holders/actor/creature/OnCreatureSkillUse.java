@@ -25,58 +25,48 @@ import app.l2nx.highfive.mechanics.events.EventType;
 import app.l2nx.highfive.mechanics.events.holders.IBaseEvent;
 import app.l2nx.highfive.mechanics.skill.Skill;
 import java.util.Collection;
+import lombok.Getter;
 
 /**
  * An instantly executed event when Creature is attacked by Creature.
  * @author UnAfraid
  */
 public class OnCreatureSkillUse implements IBaseEvent {
-    private Creature _caster;
-    private Skill _skill;
-    private boolean _simultaneously;
-    private Creature _target;
-    private Collection<WorldObject> _targets;
+    @Getter
+    private Creature caster;
+
+    @Getter
+    private Skill skill;
+
+    @Getter
+    private boolean simultaneously;
+
+    @Getter
+    private Creature target;
+
+    @Getter
+    private Collection<WorldObject> targets;
 
     public OnCreatureSkillUse() {}
 
-    public Creature getCaster() {
-        return _caster;
-    }
-
     public synchronized void setCaster(Creature caster) {
-        _caster = caster;
-    }
-
-    public Skill getSkill() {
-        return _skill;
+        this.caster = caster;
     }
 
     public synchronized void setSkill(Skill skill) {
-        _skill = skill;
-    }
-
-    public boolean isSimultaneously() {
-        return _simultaneously;
+        this.skill = skill;
     }
 
     public synchronized void setSimultaneously(boolean simultaneously) {
-        _simultaneously = simultaneously;
-    }
-
-    public Creature getTarget() {
-        return _target;
+        this.simultaneously = simultaneously;
     }
 
     public synchronized void setTarget(Creature target) {
-        _target = target;
-    }
-
-    public Collection<WorldObject> getTargets() {
-        return _targets;
+        this.target = target;
     }
 
     public synchronized void setTargets(Collection<WorldObject> targets) {
-        _targets = targets;
+        this.targets = targets;
     }
 
     @Override

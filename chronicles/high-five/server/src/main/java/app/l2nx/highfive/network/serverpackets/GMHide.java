@@ -27,18 +27,18 @@ import app.l2nx.network.buffer.WriteBuffer;
  * @author Kerberos
  */
 public class GMHide extends ServerPacket {
-    private final int _mode;
+    private final int mode;
 
     /**
      * @param mode (0 = display windows, 1 = hide windows)
      */
     public GMHide(int mode) {
-        _mode = mode;
+        this.mode = mode;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.GM_HIDE.writeId(this, buffer);
-        buffer.writeInt(_mode);
+        buffer.writeInt(mode);
     }
 }

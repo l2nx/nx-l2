@@ -39,9 +39,9 @@ public class TempBan extends SimpleWritablePacket {
     private static final long MINUTE_MILLIS = 60000L;
 
     // Data.
-    private final String _accountName;
-    private final String _ip;
-    private final long _minutes;
+    private final String accountName;
+    private final String ip;
+    private final long minutes;
 
     /**
      * @param accountName account name
@@ -49,9 +49,9 @@ public class TempBan extends SimpleWritablePacket {
      * @param time minutes duration
      */
     public TempBan(String accountName, String ip, long time) {
-        _accountName = (accountName != null) ? accountName : "";
-        _ip = (ip != null) ? ip : "";
-        _minutes = (time > 0L) ? time : 0L;
+        this.accountName = (accountName != null) ? accountName : "";
+        this.ip = (ip != null) ? ip : "";
+        minutes = (time > 0L) ? time : 0L;
     }
 
     /**
@@ -60,9 +60,9 @@ public class TempBan extends SimpleWritablePacket {
     @Override
     public void write() {
         writeByte(OPCODE);
-        writeString(_accountName);
-        writeString(_ip);
-        writeLong(System.currentTimeMillis() + (_minutes * MINUTE_MILLIS));
+        writeString(accountName);
+        writeString(ip);
+        writeLong(System.currentTimeMillis() + (minutes * MINUTE_MILLIS));
         writeByte(0x00);
     }
 }

@@ -28,27 +28,27 @@ import app.l2nx.network.buffer.WriteBuffer;
  * @author Kerberos
  */
 public class ExStopMoveAirShip extends ServerPacket {
-    private final int _objectId;
-    private final int _x;
-    private final int _y;
-    private final int _z;
-    private final int _heading;
+    private final int objectId;
+    private final int x;
+    private final int y;
+    private final int z;
+    private final int heading;
 
     public ExStopMoveAirShip(Creature ship) {
-        _objectId = ship.getObjectId();
-        _x = ship.getX();
-        _y = ship.getY();
-        _z = ship.getZ();
-        _heading = ship.getHeading();
+        objectId = ship.getObjectId();
+        x = ship.getX();
+        y = ship.getY();
+        z = ship.getZ();
+        heading = ship.getHeading();
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_STOP_MOVE_AIRSHIP.writeId(this, buffer);
-        buffer.writeInt(_objectId);
-        buffer.writeInt(_x);
-        buffer.writeInt(_y);
-        buffer.writeInt(_z);
-        buffer.writeInt(_heading);
+        buffer.writeInt(objectId);
+        buffer.writeInt(x);
+        buffer.writeInt(y);
+        buffer.writeInt(z);
+        buffer.writeInt(heading);
     }
 }

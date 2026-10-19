@@ -30,12 +30,12 @@ import app.l2nx.highfive.util.StatSet;
  * @author Adry_85
  */
 public class AddHate extends AbstractEffect {
-    private final double _power;
+    private final double power;
 
     public AddHate(Condition attachCond, Condition applyCond, StatSet set, StatSet params) {
         super(attachCond, applyCond, set, params);
 
-        _power = params.getDouble("power", 0);
+        power = params.getDouble("power", 0);
     }
 
     @Override
@@ -49,7 +49,7 @@ public class AddHate extends AbstractEffect {
             return;
         }
 
-        final double val = _power;
+        final double val = power;
         if (val > 0) {
             effected.asAttackable().addDamageHate(effector, 0, (int) val);
         } else if (val < 0) {

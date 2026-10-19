@@ -27,21 +27,21 @@ import app.l2nx.network.buffer.WriteBuffer;
  * @author VISTALL
  */
 public class ExSubPledgeSkillAdd extends ServerPacket {
-    private final int _type;
-    private final int _skillId;
-    private final int _skillLevel;
+    private final int type;
+    private final int skillId;
+    private final int skillLevel;
 
     public ExSubPledgeSkillAdd(int type, int skillId, int skillLevel) {
-        _type = type;
-        _skillId = skillId;
-        _skillLevel = skillLevel;
+        this.type = type;
+        this.skillId = skillId;
+        this.skillLevel = skillLevel;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_SUB_PLEDGE_SKILL_ADD.writeId(this, buffer);
-        buffer.writeInt(_type);
-        buffer.writeInt(_skillId);
-        buffer.writeInt(_skillLevel);
+        buffer.writeInt(type);
+        buffer.writeInt(skillId);
+        buffer.writeInt(skillLevel);
     }
 }

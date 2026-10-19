@@ -29,19 +29,19 @@ import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.network.buffer.WriteBuffer;
 
 public class HennaRemoveList extends ServerPacket {
-    private final Player _player;
+    private final Player player;
 
     public HennaRemoveList(Player player) {
-        _player = player;
+        this.player = player;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.HENNA_UNEQUIP_LIST.writeId(this, buffer);
-        buffer.writeLong(_player.getAdena());
+        buffer.writeLong(player.getAdena());
         buffer.writeInt(0);
-        buffer.writeInt(3 - _player.getHennaEmptySlots());
-        for (Henna henna : _player.getHennaList()) {
+        buffer.writeInt(3 - player.getHennaEmptySlots());
+        for (Henna henna : player.getHennaList()) {
             if (henna != null) {
                 buffer.writeInt(henna.getDyeId());
                 buffer.writeInt(henna.getDyeItemId());

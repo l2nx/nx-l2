@@ -21,23 +21,24 @@ package app.l2nx.highfive.network.clientpackets;
 
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.managers.HandysBlockCheckerManager;
-import app.l2nx.highfive.network.PacketLogger;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Format: chddd d: Arena d: Answer
  * @author mrTJO
  */
+@Slf4j
 public class RequestExCubeGameReadyAnswer extends ClientPacket {
-    private int _arena;
-    private int _answer;
+    private int arena;
+    private int answer;
 
     @Override
     protected void readImpl() {
         // client sends -1,0,1,2 for arena parameter
-        _arena = readInt() + 1;
+        arena = readInt() + 1;
 
         // client sends 1 if clicked confirm on not clicked, 0 if clicked cancel
-        _answer = readInt();
+        answer = readInt();
     }
 
     @Override
@@ -47,18 +48,18 @@ public class RequestExCubeGameReadyAnswer extends ClientPacket {
             return;
         }
 
-        switch (_answer) {
+        switch (answer) {
             case 0: {
                 // Cancel - Answer No
                 break;
             }
             case 1: {
                 // OK or Time Over
-                HandysBlockCheckerManager.getInstance().increaseArenaVotes(_arena);
+                HandysBlockCheckerManager.getInstance().increaseArenaVotes(arena);
                 break;
             }
             default: {
-                PacketLogger.warning("Unknown Cube Game Answer ID: " + _answer);
+                log.warn("Unknown Cube Game Answer ID: {}", answer);
                 break;
             }
         }

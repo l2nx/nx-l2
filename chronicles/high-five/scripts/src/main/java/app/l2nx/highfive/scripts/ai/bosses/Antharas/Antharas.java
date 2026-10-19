@@ -49,6 +49,7 @@ import app.l2nx.highfive.util.StatSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.DateFormatUtils;
 
 /**
@@ -62,6 +63,7 @@ import org.apache.commons.lang3.time.DateFormatUtils;
  * </ul>
  * @author BazookaRpm
  */
+@Slf4j
 public class Antharas extends Script {
     // NPC IDs.
     private static final int ANTHARAS_NPC_ID = 29068; // Antharas.
@@ -181,18 +183,18 @@ public class Antharas extends Script {
 
     // Misc.
     private static final int MAX_PEOPLE = 200; // Max allowed players.
-    private GrandBoss _antharasBoss = null;
-    private static long _lastAttackTime = 0;
-    private static int _minionCount = 0;
-    private static int _minionMultiplier = 0;
-    private static int _moveRetryCount = 0;
-    private static int _sandStormState = 0;
-    private static Player _primaryAttacker = null;
-    private static Player _secondaryAttacker = null;
-    private static Player _tertiaryAttacker = null;
-    private static int _primaryAttackerHate = 0;
-    private static int _secondaryAttackerHate = 0;
-    private static int _tertiaryAttackerHate = 0;
+    private GrandBoss antharasBoss = null;
+    private static long lastAttackTime = 0;
+    private static int minionCount = 0;
+    private static int minionMultiplier = 0;
+    private static int moveRetryCount = 0;
+    private static int sandStormState = 0;
+    private static Player primaryAttacker = null;
+    private static Player secondaryAttacker = null;
+    private static Player tertiaryAttacker = null;
+    private static int primaryAttackerHate = 0;
+    private static int secondaryAttackerHate = 0;
+    private static int tertiaryAttackerHate = 0;
 
     /**
      * Instantiates Antharas AI and restores persisted state from GrandBossManager.
@@ -221,26 +223,26 @@ public class Antharas extends Script {
         switch (getStatus()) {
             case STATUS_ALIVE: {
                 resetFightState();
-                _antharasBoss = (GrandBoss) addSpawn(ANTHARAS_NPC_ID, ANTHARAS_IDLE_LOCATION, false, 0);
-                _antharasBoss.setCurrentHpMp(currentHp, currentMp);
-                addBoss(_antharasBoss);
+                antharasBoss = (GrandBoss) addSpawn(ANTHARAS_NPC_ID, ANTHARAS_IDLE_LOCATION, false, 0);
+                antharasBoss.setCurrentHpMp(currentHp, currentMp);
+                addBoss(antharasBoss);
                 break;
             }
             case STATUS_WAITING: {
                 resetFightState();
-                _antharasBoss = (GrandBoss) addSpawn(ANTHARAS_NPC_ID, ANTHARAS_IDLE_LOCATION, false, 0);
-                _antharasBoss.setCurrentHpMp(currentHp, currentMp);
-                addBoss(_antharasBoss);
+                antharasBoss = (GrandBoss) addSpawn(ANTHARAS_NPC_ID, ANTHARAS_IDLE_LOCATION, false, 0);
+                antharasBoss.setCurrentHpMp(currentHp, currentMp);
+                addBoss(antharasBoss);
                 startQuestTimer(EVENT_SPAWN_ANTHARAS, GrandBossConfig.ANTHARAS_WAIT_TIME * 60000L, null, null);
                 break;
             }
             case STATUS_IN_FIGHT: {
-                _antharasBoss = (GrandBoss) addSpawn(ANTHARAS_NPC_ID, savedX, savedY, savedZ, savedHeading, false, 0);
-                _antharasBoss.setCurrentHpMp(currentHp, currentMp);
-                addBoss(_antharasBoss);
-                _lastAttackTime = System.currentTimeMillis();
-                startQuestTimer(EVENT_CHECK_ATTACK, CHECK_ATTACK_INTERVAL, _antharasBoss, null);
-                startQuestTimer(EVENT_SPAWN_MINION, MINION_SPAWN_INTERVAL, _antharasBoss, null);
+                antharasBoss = (GrandBoss) addSpawn(ANTHARAS_NPC_ID, savedX, savedY, savedZ, savedHeading, false, 0);
+                antharasBoss.setCurrentHpMp(currentHp, currentMp);
+                addBoss(antharasBoss);
+                lastAttackTime = System.currentTimeMillis();
+                startQuestTimer(EVENT_CHECK_ATTACK, CHECK_ATTACK_INTERVAL, antharasBoss, null);
+                startQuestTimer(EVENT_SPAWN_MINION, MINION_SPAWN_INTERVAL, antharasBoss, null);
                 break;
             }
             case STATUS_DEAD: {
@@ -250,8 +252,8 @@ public class Antharas extends Script {
                 } else {
                     setStatus(STATUS_ALIVE);
                     resetFightState();
-                    _antharasBoss = (GrandBoss) addSpawn(ANTHARAS_NPC_ID, ANTHARAS_IDLE_LOCATION, false, 0);
-                    addBoss(_antharasBoss);
+                    antharasBoss = (GrandBoss) addSpawn(ANTHARAS_NPC_ID, ANTHARAS_IDLE_LOCATION, false, 0);
+                    addBoss(antharasBoss);
                 }
                 break;
             }
@@ -320,17 +322,17 @@ public class Antharas extends Script {
                 break;
             }
             case EVENT_SPAWN_ANTHARAS: {
-                if (_antharasBoss == null) {
+                if (antharasBoss == null) {
                     break;
                 }
 
-                _antharasBoss.disableCoreAI(true);
-                _antharasBoss.setRandomWalking(false);
-                _antharasBoss.teleToLocation(ANTHARAS_SPAWN_LOCATION);
+                antharasBoss.disableCoreAI(true);
+                antharasBoss.setRandomWalking(false);
+                antharasBoss.teleToLocation(ANTHARAS_SPAWN_LOCATION);
                 setStatus(STATUS_IN_FIGHT);
-                _lastAttackTime = System.currentTimeMillis();
+                lastAttackTime = System.currentTimeMillis();
                 ANTHARAS_NEST_ZONE.broadcastPacket(new PlaySound("BS02_A"));
-                startQuestTimer(EVENT_CAMERA_1, 23, _antharasBoss, null);
+                startQuestTimer(EVENT_CAMERA_1, 23, antharasBoss, null);
                 break;
             }
             case EVENT_CAMERA_1: {
@@ -447,7 +449,7 @@ public class Antharas extends Script {
                     break;
                 }
 
-                if ((_lastAttackTime + INACTIVITY_LIMIT) < System.currentTimeMillis()) {
+                if ((lastAttackTime + INACTIVITY_LIMIT) < System.currentTimeMillis()) {
                     setStatus(STATUS_ALIVE);
                     for (Creature creature : ANTHARAS_NEST_ZONE.getCharactersInside()) {
                         if (creature == null) {
@@ -476,16 +478,16 @@ public class Antharas extends Script {
                     cancelQuestTimer(EVENT_TID_FEAR_MOVE_TIMEOVER, npc, null);
                     cancelQuestTimer(EVENT_TID_FEAR_COOLTIME, npc, null);
                 } else {
-                    if (_primaryAttackerHate > 10) {
-                        _primaryAttackerHate -= getRandom(10);
+                    if (primaryAttackerHate > 10) {
+                        primaryAttackerHate -= getRandom(10);
                     }
 
-                    if (_secondaryAttackerHate > 10) {
-                        _secondaryAttackerHate -= getRandom(10);
+                    if (secondaryAttackerHate > 10) {
+                        secondaryAttackerHate -= getRandom(10);
                     }
 
-                    if (_tertiaryAttackerHate > 10) {
-                        _tertiaryAttackerHate -= getRandom(10);
+                    if (tertiaryAttackerHate > 10) {
+                        tertiaryAttackerHate -= getRandom(10);
                     }
 
                     manageSkills(npc);
@@ -498,24 +500,24 @@ public class Antharas extends Script {
                     break;
                 }
 
-                if ((_minionMultiplier > 1) && (_minionCount < (100 - (_minionMultiplier * 2)))) {
-                    for (int i = 0; i < _minionMultiplier; i++) {
+                if ((minionMultiplier > 1) && (minionCount < (100 - (minionMultiplier * 2)))) {
+                    for (int i = 0; i < minionMultiplier; i++) {
                         addSpawn(ANTHARAS_BEHEMOTH_ID, npc, true);
                         addSpawn(ANTHARAS_TERASQUE_ID, npc, true);
                     }
 
-                    _minionCount += _minionMultiplier * 2;
-                } else if (_minionCount < 98) {
+                    minionCount += minionMultiplier * 2;
+                } else if (minionCount < 98) {
                     addSpawn(ANTHARAS_BEHEMOTH_ID, npc, true);
                     addSpawn(ANTHARAS_TERASQUE_ID, npc, true);
-                    _minionCount += 2;
-                } else if (_minionCount < 99) {
+                    minionCount += 2;
+                } else if (minionCount < 99) {
                     addSpawn(getRandomBoolean() ? ANTHARAS_BEHEMOTH_ID : ANTHARAS_TERASQUE_ID, npc, true);
-                    _minionCount++;
+                    minionCount++;
                 }
 
-                if ((getRandom(100) > 10) && (_minionMultiplier < 4)) {
-                    _minionMultiplier++;
+                if ((getRandom(100) > 10) && (minionMultiplier < 4)) {
+                    minionMultiplier++;
                 }
 
                 startQuestTimer(EVENT_SPAWN_MINION, MINION_SPAWN_INTERVAL, npc, null);
@@ -539,8 +541,8 @@ public class Antharas extends Script {
                 break;
             }
             case EVENT_TID_USED_FEAR: {
-                if ((npc != null) && (_sandStormState == 0)) {
-                    _sandStormState = 1;
+                if ((npc != null) && (sandStormState == 0)) {
+                    sandStormState = 1;
                     npc.disableCoreAI(true);
                     npc.getAI()
                             .setIntentionMoveTo(
@@ -551,7 +553,7 @@ public class Antharas extends Script {
                 break;
             }
             case EVENT_TID_FEAR_COOLTIME: {
-                _sandStormState = 0;
+                sandStormState = 0;
                 break;
             }
             case EVENT_TID_FEAR_MOVE_TIMEOVER: {
@@ -559,18 +561,18 @@ public class Antharas extends Script {
                     break;
                 }
 
-                if ((_sandStormState == 1)
+                if ((sandStormState == 1)
                         && (npc.getX() == ANTHARAS_FEAR_MOVE_X)
                         && (npc.getY() == ANTHARAS_FEAR_MOVE_Y)) {
-                    _sandStormState = 2;
-                    _moveRetryCount = 0;
+                    sandStormState = 2;
+                    moveRetryCount = 0;
                     npc.disableCoreAI(false);
                     INVISIBLE_NPC_SPAWN_LOCATIONS
                             .entrySet()
                             .forEach(entry -> addSpawn(entry.getKey(), entry.getValue()));
-                } else if (_sandStormState == 1) {
-                    if (_moveRetryCount <= MAX_MOVE_RETRY_COUNT) {
-                        _moveRetryCount++;
+                } else if (sandStormState == 1) {
+                    if (moveRetryCount <= MAX_MOVE_RETRY_COUNT) {
+                        moveRetryCount++;
                         npc.getAI()
                                 .setIntentionMoveTo(
                                         new Location(ANTHARAS_FEAR_MOVE_X, ANTHARAS_FEAR_MOVE_Y, ANTHARAS_FEAR_MOVE_Z));
@@ -584,8 +586,8 @@ public class Antharas extends Script {
                 break;
             }
             case EVENT_CLEAR_STATUS: {
-                _antharasBoss = (GrandBoss) addSpawn(ANTHARAS_NPC_ID, ANTHARAS_IDLE_LOCATION, false, 0);
-                addBoss(_antharasBoss);
+                antharasBoss = (GrandBoss) addSpawn(ANTHARAS_NPC_ID, ANTHARAS_IDLE_LOCATION, false, 0);
+                addBoss(antharasBoss);
                 World.broadcastToAllOnlinePlayers(new Earthquake(
                         ANTHARAS_IDLE_LOCATION.getX(),
                         ANTHARAS_IDLE_LOCATION.getY(),
@@ -624,7 +626,7 @@ public class Antharas extends Script {
             }
             case EVENT_DESPAWN_MINIONS: {
                 if (getStatus() == STATUS_IN_FIGHT) {
-                    _minionCount = 0;
+                    minionCount = 0;
                     for (Creature creature : ANTHARAS_NEST_ZONE.getCharactersInside()) {
                         if ((creature != null)
                                 && creature.isNpc()
@@ -646,12 +648,12 @@ public class Antharas extends Script {
             case EVENT_ABORT_FIGHT: {
                 if (getStatus() == STATUS_IN_FIGHT) {
                     setStatus(STATUS_ALIVE);
-                    cancelQuestTimer(EVENT_CHECK_ATTACK, _antharasBoss, null);
-                    cancelQuestTimer(EVENT_SPAWN_MINION, _antharasBoss, null);
-                    cancelQuestTimer(EVENT_SET_REGEN, _antharasBoss, null);
-                    cancelQuestTimer(EVENT_TID_USED_FEAR, _antharasBoss, null);
-                    cancelQuestTimer(EVENT_TID_FEAR_MOVE_TIMEOVER, _antharasBoss, null);
-                    cancelQuestTimer(EVENT_TID_FEAR_COOLTIME, _antharasBoss, null);
+                    cancelQuestTimer(EVENT_CHECK_ATTACK, antharasBoss, null);
+                    cancelQuestTimer(EVENT_SPAWN_MINION, antharasBoss, null);
+                    cancelQuestTimer(EVENT_SET_REGEN, antharasBoss, null);
+                    cancelQuestTimer(EVENT_TID_USED_FEAR, antharasBoss, null);
+                    cancelQuestTimer(EVENT_TID_FEAR_MOVE_TIMEOVER, antharasBoss, null);
+                    cancelQuestTimer(EVENT_TID_FEAR_COOLTIME, antharasBoss, null);
 
                     for (Creature creature : ANTHARAS_NEST_ZONE.getCharactersInside()) {
                         if (creature == null) {
@@ -717,11 +719,10 @@ public class Antharas extends Script {
                 npc.doDie(attacker);
             }
         } else if (npcId == ANTHARAS_NPC_ID) {
-            _lastAttackTime = System.currentTimeMillis();
+            lastAttackTime = System.currentTimeMillis();
 
             if (!ANTHARAS_NEST_ZONE.isCharacterInZone(attacker) || (getStatus() != STATUS_IN_FIGHT)) {
-                LOGGER.warning(getClass().getSimpleName() + ": Player " + attacker.getName()
-                        + " attacked Antharas in invalid conditions!");
+                log.warn("Player {} attacked Antharas in invalid conditions!", attacker.getName());
                 attacker.teleToLocation(80464, 152294, -3534);
             }
 
@@ -755,12 +756,12 @@ public class Antharas extends Script {
         final int npcId = npc.getId();
         if (npcId == ANTHARAS_NPC_ID) {
             if ((killer == null) || !ANTHARAS_NEST_ZONE.isCharacterInZone(killer)) {
-                LOGGER.warning(getClass().getSimpleName() + ": Antharas was killed by "
-                        + ((killer != null) ? killer.getName() : "unknown")
-                        + " outside of nest zone. Forcing death handling.");
+                log.warn(
+                        "Antharas was killed by {} outside of nest zone. Forcing death handling.",
+                        ((killer != null) ? killer.getName() : "unknown"));
             }
 
-            _antharasBoss = null;
+            antharasBoss = null;
             notifyEvent(EVENT_DESPAWN_MINIONS, null, null);
             ANTHARAS_NEST_ZONE.broadcastPacket(new SpecialCamera(npc, 1200, 20, -10, 0, 10000, 13000, 0, 0, 0, 0, 0));
             ANTHARAS_NEST_ZONE.broadcastPacket(new PlaySound("BS01_D"));
@@ -779,13 +780,13 @@ public class Antharas extends Script {
             setStatus(STATUS_DEAD);
 
             final long nextRespawnTime = System.currentTimeMillis() + respawnDelay;
-            LOGGER.info("Antharas will respawn at: " + DateFormatUtils.format(nextRespawnTime, "dd/MM/yyyy HH:mm:ss"));
+            log.info("Antharas will respawn at: {}", DateFormatUtils.format(nextRespawnTime, "dd/MM/yyyy HH:mm:ss"));
 
             resetFightState();
         } else if ((npcId == ANTHARAS_BEHEMOTH_ID)
                 && (killer != null)
                 && ANTHARAS_NEST_ZONE.isCharacterInZone(killer)) {
-            _minionCount--;
+            minionCount--;
         }
     }
 
@@ -845,9 +846,9 @@ public class Antharas extends Script {
      */
     @Override
     public void unload(boolean removeFromList) {
-        if (_antharasBoss != null) {
-            _antharasBoss.deleteMe();
-            _antharasBoss = null;
+        if (antharasBoss != null) {
+            antharasBoss.deleteMe();
+            antharasBoss = null;
         }
 
         super.unload(removeFromList);
@@ -872,43 +873,43 @@ public class Antharas extends Script {
     }
 
     private void resetFightState() {
-        _lastAttackTime = 0;
-        _minionCount = 0;
-        _minionMultiplier = 0;
-        _moveRetryCount = 0;
-        _sandStormState = 0;
-        _primaryAttacker = null;
-        _secondaryAttacker = null;
-        _tertiaryAttacker = null;
-        _primaryAttackerHate = 0;
-        _secondaryAttackerHate = 0;
-        _tertiaryAttackerHate = 0;
+        lastAttackTime = 0;
+        minionCount = 0;
+        minionMultiplier = 0;
+        moveRetryCount = 0;
+        sandStormState = 0;
+        primaryAttacker = null;
+        secondaryAttacker = null;
+        tertiaryAttacker = null;
+        primaryAttackerHate = 0;
+        secondaryAttackerHate = 0;
+        tertiaryAttackerHate = 0;
     }
 
     private void refreshAiParams(Player attacker, int damage) {
-        if ((_primaryAttacker != null) && (attacker == _primaryAttacker)) {
-            if (_primaryAttackerHate < (damage + 1000)) {
-                _primaryAttackerHate = damage + getRandom(3000);
+        if ((primaryAttacker != null) && (attacker == primaryAttacker)) {
+            if (primaryAttackerHate < (damage + 1000)) {
+                primaryAttackerHate = damage + getRandom(3000);
             }
-        } else if ((_secondaryAttacker != null) && (attacker == _secondaryAttacker)) {
-            if (_secondaryAttackerHate < (damage + 1000)) {
-                _secondaryAttackerHate = damage + getRandom(3000);
+        } else if ((secondaryAttacker != null) && (attacker == secondaryAttacker)) {
+            if (secondaryAttackerHate < (damage + 1000)) {
+                secondaryAttackerHate = damage + getRandom(3000);
             }
-        } else if ((_tertiaryAttacker != null) && (attacker == _tertiaryAttacker)) {
-            if (_tertiaryAttackerHate < (damage + 1000)) {
-                _tertiaryAttackerHate = damage + getRandom(3000);
+        } else if ((tertiaryAttacker != null) && (attacker == tertiaryAttacker)) {
+            if (tertiaryAttackerHate < (damage + 1000)) {
+                tertiaryAttackerHate = damage + getRandom(3000);
             }
         } else {
-            final int minimumHate = MathUtil.min(_primaryAttackerHate, _secondaryAttackerHate, _tertiaryAttackerHate);
-            if (_primaryAttackerHate == minimumHate) {
-                _primaryAttackerHate = damage + getRandom(3000);
-                _primaryAttacker = attacker;
-            } else if (_secondaryAttackerHate == minimumHate) {
-                _secondaryAttackerHate = damage + getRandom(3000);
-                _secondaryAttacker = attacker;
-            } else if (_tertiaryAttackerHate == minimumHate) {
-                _tertiaryAttackerHate = damage + getRandom(3000);
-                _tertiaryAttacker = attacker;
+            final int minimumHate = MathUtil.min(primaryAttackerHate, secondaryAttackerHate, tertiaryAttackerHate);
+            if (primaryAttackerHate == minimumHate) {
+                primaryAttackerHate = damage + getRandom(3000);
+                primaryAttacker = attacker;
+            } else if (secondaryAttackerHate == minimumHate) {
+                secondaryAttackerHate = damage + getRandom(3000);
+                secondaryAttacker = attacker;
+            } else if (tertiaryAttackerHate == minimumHate) {
+                tertiaryAttackerHate = damage + getRandom(3000);
+                tertiaryAttacker = attacker;
             }
         }
     }
@@ -922,53 +923,53 @@ public class Antharas extends Script {
         int selectedSlot = 0;
         int selectedHate = 0;
 
-        if ((_primaryAttacker == null)
-                || (npc.calculateDistance3D(_primaryAttacker) > MAX_THREAT_DISTANCE)
-                || _primaryAttacker.isDead()) {
-            _primaryAttackerHate = 0;
+        if ((primaryAttacker == null)
+                || (npc.calculateDistance3D(primaryAttacker) > MAX_THREAT_DISTANCE)
+                || primaryAttacker.isDead()) {
+            primaryAttackerHate = 0;
         }
 
-        if ((_secondaryAttacker == null)
-                || (npc.calculateDistance3D(_secondaryAttacker) > MAX_THREAT_DISTANCE)
-                || _secondaryAttacker.isDead()) {
-            _secondaryAttackerHate = 0;
+        if ((secondaryAttacker == null)
+                || (npc.calculateDistance3D(secondaryAttacker) > MAX_THREAT_DISTANCE)
+                || secondaryAttacker.isDead()) {
+            secondaryAttackerHate = 0;
         }
 
-        if ((_tertiaryAttacker == null)
-                || (npc.calculateDistance3D(_tertiaryAttacker) > MAX_THREAT_DISTANCE)
-                || _tertiaryAttacker.isDead()) {
-            _tertiaryAttackerHate = 0;
+        if ((tertiaryAttacker == null)
+                || (npc.calculateDistance3D(tertiaryAttacker) > MAX_THREAT_DISTANCE)
+                || tertiaryAttacker.isDead()) {
+            tertiaryAttackerHate = 0;
         }
 
-        if (_primaryAttackerHate > _secondaryAttackerHate) {
+        if (primaryAttackerHate > secondaryAttackerHate) {
             selectedSlot = 2;
-            selectedHate = _primaryAttackerHate;
-            selectedTarget = _primaryAttacker;
-        } else if (_secondaryAttackerHate > 0) {
+            selectedHate = primaryAttackerHate;
+            selectedTarget = primaryAttacker;
+        } else if (secondaryAttackerHate > 0) {
             selectedSlot = 3;
-            selectedHate = _secondaryAttackerHate;
-            selectedTarget = _secondaryAttacker;
+            selectedHate = secondaryAttackerHate;
+            selectedTarget = secondaryAttacker;
         }
 
-        if (_tertiaryAttackerHate > selectedHate) {
+        if (tertiaryAttackerHate > selectedHate) {
             selectedSlot = 4;
-            selectedHate = _tertiaryAttackerHate;
-            selectedTarget = _tertiaryAttacker;
+            selectedHate = tertiaryAttackerHate;
+            selectedTarget = tertiaryAttacker;
         }
 
         if (selectedHate > 0) {
             if (getRandom(100) < 70) {
                 switch (selectedSlot) {
                     case 2: {
-                        _primaryAttackerHate = 500;
+                        primaryAttackerHate = 500;
                         break;
                     }
                     case 3: {
-                        _secondaryAttackerHate = 500;
+                        secondaryAttackerHate = 500;
                         break;
                     }
                     case 4: {
-                        _tertiaryAttackerHate = 500;
+                        tertiaryAttackerHate = 500;
                         break;
                     }
                 }

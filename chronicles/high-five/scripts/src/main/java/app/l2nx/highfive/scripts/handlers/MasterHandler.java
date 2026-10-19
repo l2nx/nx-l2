@@ -293,15 +293,14 @@ import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Master handler.
  * @author UnAfraid
  */
+@Slf4j
 public class MasterHandler {
-    private static final Logger LOGGER = Logger.getLogger(MasterHandler.class.getName());
 
     private static final IHandler<?, ?>[] LOAD_INSTANCES = {
         ActionClickHandler.getInstance(),
@@ -606,7 +605,7 @@ public class MasterHandler {
     };
 
     public static void main(String[] args) {
-        LOGGER.log(Level.INFO, "Loading Handlers...");
+        log.info("Loading Handlers...");
 
         final Map<IHandler<?, ?>, Method> registerHandlerMethods = new HashMap<>();
         for (IHandler<?, ?> loadInstance : LOAD_INSTANCES) {
@@ -620,10 +619,9 @@ public class MasterHandler {
 
         registerHandlerMethods.entrySet().stream()
                 .filter(e -> e.getValue() == null)
-                .forEach(e -> LOGGER.log(
-                        Level.WARNING,
-                        "Failed loading handlers of: " + e.getKey().getClass().getSimpleName()
-                                + " seems registerHandler function does not exist."));
+                .forEach(e -> log.warn(
+                        "Failed loading handlers of: {} seems registerHandler function does not exist.",
+                        e.getKey().getClass().getSimpleName()));
 
         for (Class<?>[] classes : HANDLERS) {
             for (Class<?> c : classes) {
@@ -640,17 +638,15 @@ public class MasterHandler {
                         }
                     }
                 } catch (Exception e) {
-                    LOGGER.log(Level.WARNING, "Failed loading handler: " + c.getSimpleName(), e);
+                    log.warn("Failed loading handler: {}", c.getSimpleName(), e);
                 }
             }
         }
 
         for (IHandler<?, ?> loadInstance : LOAD_INSTANCES) {
-            LOGGER.log(
-                    Level.INFO,
-                    loadInstance.getClass().getSimpleName() + ": Loaded " + loadInstance.size() + " handlers.");
+            log.info("{}: Loaded {} handlers.", loadInstance.getClass().getSimpleName(), loadInstance.size());
         }
 
-        LOGGER.log(Level.INFO, "Handlers Loaded...");
+        log.info("Handlers Loaded...");
     }
 }

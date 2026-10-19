@@ -34,18 +34,24 @@ import app.l2nx.highfive.util.StatSet;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
-import java.util.logging.Logger;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Teleport holder
  * @author UnAfraid
  */
+@Slf4j
 public class TeleportHolder {
-    private static final Logger LOGGER = Logger.getLogger(TeleportHolder.class.getName());
 
-    private final String _name;
-    private final TeleportType _type;
-    private final List<TeleportLocation> _teleportData = new ArrayList<>();
+    @Getter
+    private final String name;
+
+    @Getter
+    private final TeleportType type;
+
+    @Getter
+    private final List<TeleportLocation> locations = new ArrayList<>();
 
     /**
      * Constructor
@@ -53,24 +59,8 @@ public class TeleportHolder {
      * @param type type of teleport list
      */
     public TeleportHolder(String name, TeleportType type) {
-        _name = name;
-        _type = type;
-    }
-
-    /**
-     * Gets list identification (name).
-     * @return list name
-     */
-    public String getName() {
-        return _name;
-    }
-
-    /**
-     * Gets type of teleport list.
-     * @return type of list
-     */
-    public TeleportType getType() {
-        return _type;
+        this.name = name;
+        this.type = type;
     }
 
     /**
@@ -78,7 +68,7 @@ public class TeleportHolder {
      * @param locData information about teleport location
      */
     public void registerLocation(StatSet locData) {
-        _teleportData.add(new TeleportLocation(_teleportData.size(), locData));
+        locations.add(new TeleportLocation(locations.size(), locData));
     }
 
     /**
@@ -87,15 +77,7 @@ public class TeleportHolder {
      * @return instance of {@link TeleportLocation} if found otherwise {@code null}
      */
     public TeleportLocation getLocation(int locationId) {
-        return _teleportData.get(locationId);
-    }
-
-    /**
-     * Gets all teleport locations registered in current holder.
-     * @return collection of {@link TeleportLocation}
-     */
-    public List<TeleportLocation> getLocations() {
-        return _teleportData;
+        return locations.get(locationId);
     }
 
     /**
@@ -115,14 +97,14 @@ public class TeleportHolder {
      */
     public void showTeleportList(Player player, Npc npc, String bypass) {
         if (isNoblesse() && !player.isNoble()) {
-            LOGGER.warning(player + " requested noblesse teleport without being noble!");
+            log.warn("{} requested noblesse teleport without being noble!", player);
             return;
         }
 
         // Build html
         final StringBuilder sb = new StringBuilder();
         final StringBuilder sbF = new StringBuilder();
-        for (TeleportLocation loc : _teleportData) {
+        for (TeleportLocation loc : locations) {
             String finalName = loc.getName();
             String confirmDesc = loc.getName();
             if (shouldPayFee(player, loc)) {
@@ -132,8 +114,8 @@ public class TeleportHolder {
                 }
             }
 
-            sb.append("<a action=\"bypass -h " + bypass + " " + _name + " " + loc.getId() + "\" msg=\"811;"
-                    + confirmDesc + "\">" + finalName + "</a><br1>");
+            sb.append("<a action=\"bypass -h " + bypass + " " + name + " " + loc.getId() + "\" msg=\"811;" + confirmDesc
+                    + "\">" + finalName + "</a><br1>");
         }
         sbF.append(sb.toString());
 
@@ -157,13 +139,13 @@ public class TeleportHolder {
         }
 
         if (isNoblesse() && !player.isNoble()) {
-            LOGGER.warning(player + " requested noblesse teleport without being noble!");
+            log.warn("{} requested noblesse teleport without being noble!", player);
             return;
         }
 
         final TeleportLocation loc = getLocation(locId);
         if (loc == null) {
-            LOGGER.warning(player + " requested unknown teleport location " + locId + " within list " + _name + "!");
+            log.warn("{} requested unknown teleport location {} within list {}!", player, locId, name);
             return;
         }
 
@@ -251,7 +233,7 @@ public class TeleportHolder {
     }
 
     private boolean isNormalTeleport() {
-        return _type == TeleportType.NORMAL;
+        return type == TeleportType.NORMAL;
     }
 
     /**
@@ -259,7 +241,7 @@ public class TeleportHolder {
      * @return {@code true} if is for noblesse otherwise {@code false}
      */
     public boolean isNoblesse() {
-        return (_type == TeleportType.NOBLES_ADENA) || (_type == TeleportType.NOBLES_TOKEN);
+        return (type == TeleportType.NOBLES_ADENA) || (type == TeleportType.NOBLES_TOKEN);
     }
 
     /**

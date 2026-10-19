@@ -50,11 +50,13 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.StringTokenizer;
 import java.util.concurrent.TimeUnit;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 
 /**
  * @author NosBit, Mobius
  */
+@Slf4j
 public class NpcViewMod implements IBypassHandler {
     private static final String[] COMMANDS = {"NpcViewMod"};
 
@@ -66,7 +68,7 @@ public class NpcViewMod implements IBypassHandler {
         st.nextToken();
 
         if (!st.hasMoreTokens()) {
-            LOGGER.warning("Bypass[NpcViewMod] used without enough parameters.");
+            log.warn("Bypass[NpcViewMod] used without enough parameters.");
             return false;
         }
 
@@ -94,7 +96,7 @@ public class NpcViewMod implements IBypassHandler {
             }
             case "droplist": {
                 if (st.countTokens() < 2) {
-                    LOGGER.warning("Bypass[NpcViewMod] used without enough parameters.");
+                    log.warn("Bypass[NpcViewMod] used without enough parameters.");
                     return false;
                 }
 
@@ -112,7 +114,7 @@ public class NpcViewMod implements IBypassHandler {
                 } catch (NumberFormatException e) {
                     return false;
                 } catch (IllegalArgumentException e) {
-                    LOGGER.warning("Bypass[NpcViewMod] unknown drop list scope: " + dropListTypeString);
+                    log.warn("Bypass[NpcViewMod] unknown drop list scope: {}", dropListTypeString);
                     return false;
                 }
                 break;
@@ -534,8 +536,7 @@ public class NpcViewMod implements IBypassHandler {
 
         String html = HtmCache.getInstance().getHtm(player, "data/html/mods/NpcView/DropList.htm");
         if (html == null) {
-            LOGGER.warning(NpcViewMod.class.getSimpleName()
-                    + ": The html file data/html/mods/NpcView/DropList.htm could not be found.");
+            log.warn("The html file data/html/mods/NpcView/DropList.htm could not be found.");
             return;
         }
 

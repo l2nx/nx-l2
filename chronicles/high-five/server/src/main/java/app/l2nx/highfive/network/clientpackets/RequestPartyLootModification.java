@@ -27,11 +27,11 @@ import app.l2nx.highfive.entity.groups.PartyDistributionType;
  * @author JIV
  */
 public class RequestPartyLootModification extends ClientPacket {
-    private int _partyDistributionTypeId;
+    private int partyDistributionTypeId;
 
     @Override
     protected void readImpl() {
-        _partyDistributionTypeId = readInt();
+        partyDistributionTypeId = readInt();
     }
 
     @Override
@@ -41,7 +41,7 @@ public class RequestPartyLootModification extends ClientPacket {
             return;
         }
 
-        final PartyDistributionType partyDistributionType = PartyDistributionType.findById(_partyDistributionTypeId);
+        final PartyDistributionType partyDistributionType = PartyDistributionType.findById(partyDistributionTypeId);
         if (partyDistributionType == null) {
             return;
         }

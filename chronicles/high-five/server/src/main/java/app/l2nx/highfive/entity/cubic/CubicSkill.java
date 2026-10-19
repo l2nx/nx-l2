@@ -28,6 +28,7 @@ import app.l2nx.highfive.mechanics.skill.holders.SkillHolder;
 import app.l2nx.highfive.util.StatSet;
 import java.util.ArrayList;
 import java.util.List;
+import lombok.Getter;
 
 /**
  * Cubic skill data loaded from XML.<br>
@@ -35,30 +36,25 @@ import java.util.List;
  * @author UnAfraid
  */
 public class CubicSkill extends SkillHolder implements ICubicConditionHolder {
-    private final int _triggerRate;
-    private final CubicTargetType _targetType;
-    private final boolean _targetDebuff;
-    private final boolean _priority;
-    private final List<ICubicCondition> _conditions = new ArrayList<>();
+    @Getter
+    private final int triggerRate;
+
+    @Getter
+    private final CubicTargetType targetType;
+
+    private final boolean targetDebuff;
+
+    @Getter
+    private final boolean priority;
+
+    private final List<ICubicCondition> conditions = new ArrayList<>();
 
     public CubicSkill(StatSet set) {
         super(set.getInt("id"), set.getInt("level"));
-        _triggerRate = set.getInt("triggerRate", 100);
-        _targetType = set.getEnum("target", CubicTargetType.class, CubicTargetType.TARGET);
-        _targetDebuff = set.getBoolean("targetDebuff", false);
-        _priority = set.getBoolean("priority", false);
-    }
-
-    public int getTriggerRate() {
-        return _triggerRate;
-    }
-
-    public CubicTargetType getTargetType() {
-        return _targetType;
-    }
-
-    public boolean isPriority() {
-        return _priority;
+        triggerRate = set.getInt("triggerRate", 100);
+        targetType = set.getEnum("target", CubicTargetType.class, CubicTargetType.TARGET);
+        targetDebuff = set.getBoolean("targetDebuff", false);
+        priority = set.getBoolean("priority", false);
     }
 
     @Override
@@ -67,15 +63,15 @@ public class CubicSkill extends SkillHolder implements ICubicConditionHolder {
             return false;
         }
 
-        if (_targetDebuff && !hasDispellableDebuff(target)) {
+        if (targetDebuff && !hasDispellableDebuff(target)) {
             return false;
         }
 
-        if (_conditions.isEmpty()) {
+        if (conditions.isEmpty()) {
             return true;
         }
 
-        for (ICubicCondition condition : _conditions) {
+        for (ICubicCondition condition : conditions) {
             if (!condition.test(cubic, owner, target)) {
                 return false;
             }
@@ -100,6 +96,6 @@ public class CubicSkill extends SkillHolder implements ICubicConditionHolder {
 
     @Override
     public void addCondition(ICubicCondition condition) {
-        _conditions.add(condition);
+        conditions.add(condition);
     }
 }

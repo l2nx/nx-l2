@@ -28,31 +28,32 @@ import app.l2nx.highfive.entity.actor.instance.Pet;
 import app.l2nx.highfive.entity.item.enums.ItemProcessType;
 import app.l2nx.highfive.entity.item.instance.Item;
 import app.l2nx.highfive.managers.PunishmentManager;
-import app.l2nx.highfive.network.PacketLogger;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.serverpackets.EnchantResult;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @version $Revision: 1.3.4.4 $ $Date: 2005/03/29 23:15:33 $
  */
+@Slf4j
 public class RequestGetItemFromPet extends ClientPacket {
-    private int _objectId;
-    private long _amount;
+    private int objectId;
+    private long amount;
 
     @SuppressWarnings("unused")
-    private int _unknown;
+    private int unknown;
 
     @Override
     protected void readImpl() {
-        _objectId = readInt();
-        _amount = readLong();
-        _unknown = readInt(); // = 0 for most trades
+        objectId = readInt();
+        amount = readLong();
+        unknown = readInt(); // = 0 for most trades
     }
 
     @Override
     protected void runImpl() {
         final Player player = getPlayer();
-        if ((_amount <= 0) || (player == null) || !player.hasPet()) {
+        if ((amount <= 0) || (player == null) || !player.hasPet()) {
             return;
         }
 
@@ -69,24 +70,23 @@ public class RequestGetItemFromPet extends ClientPacket {
         }
 
         final Pet pet = player.getSummon().asPet();
-        final Item item = pet.getInventory().getItemByObjectId(_objectId);
+        final Item item = pet.getInventory().getItemByObjectId(objectId);
         if (item == null) {
             return;
         }
 
-        if (_amount > item.getCount()) {
+        if (amount > item.getCount()) {
             PunishmentManager.handleIllegalPlayerAction(
                     player,
                     getClass().getSimpleName() + ": Character " + player.getName() + " of account "
-                            + player.getAccountName() + " tried to get item with oid " + _objectId
-                            + " from pet but has invalid count " + _amount + " item count: " + item.getCount(),
+                            + player.getAccountName() + " tried to get item with oid " + objectId
+                            + " from pet but has invalid count " + amount + " item count: " + item.getCount(),
                     GeneralConfig.DEFAULT_PUNISH);
             return;
         }
 
-        if (pet.transferItem(ItemProcessType.TRANSFER, _objectId, _amount, player.getInventory(), player, pet)
-                == null) {
-            PacketLogger.warning("Invalid item transfer request: " + pet.getName() + "(pet) --> " + player.getName());
+        if (pet.transferItem(ItemProcessType.TRANSFER, objectId, amount, player.getInventory(), player, pet) == null) {
+            log.warn("Invalid item transfer request: {}(pet) --> {}", pet.getName(), player.getName());
         }
     }
 }

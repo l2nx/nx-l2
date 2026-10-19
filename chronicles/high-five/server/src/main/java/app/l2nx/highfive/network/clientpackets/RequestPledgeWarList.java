@@ -29,14 +29,14 @@ import app.l2nx.highfive.network.serverpackets.PledgeReceiveWarList;
  */
 public class RequestPledgeWarList extends ClientPacket {
     @SuppressWarnings("unused")
-    private int _unk1;
+    private int unk1;
 
-    private int _tab;
+    private int tab;
 
     @Override
     protected void readImpl() {
-        _unk1 = readInt();
-        _tab = readInt();
+        unk1 = readInt();
+        tab = readInt();
     }
 
     @Override
@@ -51,6 +51,6 @@ public class RequestPledgeWarList extends ClientPacket {
             return;
         }
 
-        player.sendPacket(new PledgeReceiveWarList(clan, _tab));
+        player.sendPacket(new PledgeReceiveWarList(clan, tab));
     }
 }

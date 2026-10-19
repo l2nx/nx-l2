@@ -24,34 +24,30 @@ package app.l2nx.highfive.entity.actor.holders.npc;
 
 import java.util.ArrayList;
 import java.util.List;
+import lombok.Getter;
 
 /**
  * @author Mobius
  */
 public class DropGroupHolder {
-    private final List<DropHolder> _dropList = new ArrayList<>();
-    private final double _chance;
+    @Getter
+    private final List<DropHolder> dropList = new ArrayList<>();
+
+    @Getter
+    private final double chance;
 
     public DropGroupHolder(double chance) {
-        _chance = chance;
-    }
-
-    public List<DropHolder> getDropList() {
-        return _dropList;
+        this.chance = chance;
     }
 
     public void addDrop(DropHolder holder) {
-        _dropList.add(holder);
-    }
-
-    public double getChance() {
-        return _chance;
+        dropList.add(holder);
     }
 
     /**
      * Sorts the drop list by chance in ascending order (low to high).
      */
     public void sortByChance() {
-        _dropList.sort((d1, d2) -> Double.compare(d1.getChance(), d2.getChance()));
+        dropList.sort((d1, d2) -> Double.compare(d1.getChance(), d2.getChance()));
     }
 }

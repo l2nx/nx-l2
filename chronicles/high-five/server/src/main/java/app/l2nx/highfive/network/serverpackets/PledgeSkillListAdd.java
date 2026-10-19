@@ -27,18 +27,18 @@ import app.l2nx.network.buffer.WriteBuffer;
  * @author -Wooden-
  */
 public class PledgeSkillListAdd extends ServerPacket {
-    private final int _id;
-    private final int _level;
+    private final int id;
+    private final int level;
 
     public PledgeSkillListAdd(int id, int level) {
-        _id = id;
-        _level = level;
+        this.id = id;
+        this.level = level;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.PLEDGE_SKILL_LIST_ADD.writeId(this, buffer);
-        buffer.writeInt(_id);
-        buffer.writeInt(_level);
+        buffer.writeInt(id);
+        buffer.writeInt(level);
     }
 }

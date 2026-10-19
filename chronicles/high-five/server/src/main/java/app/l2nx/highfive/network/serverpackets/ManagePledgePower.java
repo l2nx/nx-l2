@@ -28,23 +28,23 @@ import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.network.buffer.WriteBuffer;
 
 public class ManagePledgePower extends ServerPacket {
-    private final int _action;
-    private final Clan _clan;
-    private final int _rank;
+    private final int action;
+    private final Clan clan;
+    private final int rank;
 
     public ManagePledgePower(Clan clan, int action, int rank) {
-        _clan = clan;
-        _action = action;
-        _rank = rank;
+        this.clan = clan;
+        this.action = action;
+        this.rank = rank;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
-        if (_action == 1) {
+        if (action == 1) {
             ServerPackets.MANAGE_PLEDGE_POWER.writeId(this, buffer);
             buffer.writeInt(0);
             buffer.writeInt(0);
-            buffer.writeInt(_clan.getRankPrivs(_rank).getMask());
+            buffer.writeInt(clan.getRankPrivs(rank).getMask());
         }
     }
 }

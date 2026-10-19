@@ -26,17 +26,17 @@ import app.l2nx.highfive.entity.actor.instance.Cubic;
  * @author Zoey76
  */
 public class CubicDisappear implements Runnable {
-    private final Cubic _cubic;
+    private final Cubic cubic;
 
     public CubicDisappear(Cubic cubic) {
-        _cubic = cubic;
+        this.cubic = cubic;
     }
 
     @Override
     public void run() {
-        if (_cubic != null) {
-            _cubic.getOwner().removeCubic(_cubic.getId());
-            _cubic.getOwner().broadcastUserInfo();
+        if (cubic != null) {
+            cubic.getOwner().removeCubic(cubic.getId());
+            cubic.getOwner().broadcastUserInfo();
         }
     }
 }

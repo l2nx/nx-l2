@@ -35,13 +35,13 @@ import app.l2nx.highfive.network.serverpackets.SystemMessage;
  */
 public class RequestAutoSoulShot extends ClientPacket {
     // format cd
-    private int _itemId;
-    private int _type; // 1 = on : 0 = off;
+    private int itemId;
+    private int type; // 1 = on : 0 = off;
 
     @Override
     protected void readImpl() {
-        _itemId = readInt();
-        _type = readInt();
+        itemId = readInt();
+        type = readInt();
     }
 
     @Override
@@ -52,7 +52,7 @@ public class RequestAutoSoulShot extends ClientPacket {
         }
 
         if (!player.isInStoreMode() && (player.getActiveRequester() == null) && !player.isDead()) {
-            final Item item = player.getInventory().getItemByItemId(_itemId);
+            final Item item = player.getInventory().getItemByItemId(itemId);
             if (item == null) {
                 return;
             }
@@ -66,21 +66,21 @@ public class RequestAutoSoulShot extends ClientPacket {
                 return;
             }
 
-            if (_type == 1) {
+            if (type == 1) {
                 if (!player.getInventory().canManipulateWithItemId(item.getId())) {
                     player.sendMessage("Cannot use this item.");
                     return;
                 }
 
                 // Fishingshots are not automatic on retail
-                if ((_itemId < 6535) || (_itemId > 6540)) {
+                if ((itemId < 6535) || (itemId > 6540)) {
                     // Attempt to charge first shot on activation
-                    if ((_itemId == 6645)
-                            || (_itemId == 6646)
-                            || (_itemId == 6647)
-                            || (_itemId == 20332)
-                            || (_itemId == 20333)
-                            || (_itemId == 20334)) {
+                    if ((itemId == 6645)
+                            || (itemId == 6646)
+                            || (itemId == 6647)
+                            || (itemId == 20332)
+                            || (itemId == 20333)
+                            || (itemId == 20334)) {
                         if (player.hasSummon()) {
                             if (item.getEtcItem().getHandlerName().equals("BeastSoulShot")) {
                                 if (player.getSummon().getSoulShotsPerHit() > item.getCount()) {
@@ -96,8 +96,8 @@ public class RequestAutoSoulShot extends ClientPacket {
                                 }
                             }
 
-                            player.addAutoSoulShot(_itemId);
-                            player.sendPacket(new ExAutoSoulShot(_itemId, _type));
+                            player.addAutoSoulShot(itemId);
+                            player.sendPacket(new ExAutoSoulShot(itemId, type));
 
                             // start the auto soulshot use
                             final SystemMessage sm =
@@ -116,13 +116,13 @@ public class RequestAutoSoulShot extends ClientPacket {
                         if ((player.getActiveWeaponItem() != player.getFistsWeaponItem())
                                 && (item.getTemplate().getCrystalType()
                                         == player.getActiveWeaponItem().getCrystalTypePlus())) {
-                            player.addAutoSoulShot(_itemId);
-                            player.sendPacket(new ExAutoSoulShot(_itemId, _type));
+                            player.addAutoSoulShot(itemId);
+                            player.sendPacket(new ExAutoSoulShot(itemId, type));
                         } else {
-                            if (((_itemId >= 2509) && (_itemId <= 2514))
-                                    || ((_itemId >= 3947) && (_itemId <= 3952))
-                                    || (_itemId == 5790)
-                                    || ((_itemId >= 22072) && (_itemId <= 22081))) {
+                            if (((itemId >= 2509) && (itemId <= 2514))
+                                    || ((itemId >= 3947) && (itemId <= 3952))
+                                    || (itemId == 5790)
+                                    || ((itemId >= 22072) && (itemId <= 22081))) {
                                 player.sendPacket(SystemMessageId.YOUR_SPIRITSHOT_DOES_NOT_MATCH_THE_WEAPON_S_GRADE);
                             } else {
                                 player.sendPacket(
@@ -130,8 +130,8 @@ public class RequestAutoSoulShot extends ClientPacket {
                                                 .THE_SOULSHOT_YOU_ARE_ATTEMPTING_TO_USE_DOES_NOT_MATCH_THE_GRADE_OF_YOUR_EQUIPPED_WEAPON);
                             }
 
-                            player.addAutoSoulShot(_itemId);
-                            player.sendPacket(new ExAutoSoulShot(_itemId, _type));
+                            player.addAutoSoulShot(itemId);
+                            player.sendPacket(new ExAutoSoulShot(itemId, type));
                         }
 
                         // start the auto soulshot use
@@ -143,9 +143,9 @@ public class RequestAutoSoulShot extends ClientPacket {
                         player.rechargeShots(true, true);
                     }
                 }
-            } else if (_type == 0) {
-                player.removeAutoSoulShot(_itemId);
-                player.sendPacket(new ExAutoSoulShot(_itemId, _type));
+            } else if (type == 0) {
+                player.removeAutoSoulShot(itemId);
+                player.sendPacket(new ExAutoSoulShot(itemId, type));
 
                 // cancel the auto soulshot use
                 final SystemMessage sm =

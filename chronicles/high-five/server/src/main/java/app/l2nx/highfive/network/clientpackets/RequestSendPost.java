@@ -34,17 +34,19 @@ import app.l2nx.highfive.entity.item.instance.Item;
 import app.l2nx.highfive.entity.itemcontainer.Mail;
 import app.l2nx.highfive.entity.zone.ZoneId;
 import app.l2nx.highfive.managers.MailManager;
-import app.l2nx.highfive.network.PacketLogger;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.holders.MailMessage;
 import app.l2nx.highfive.network.serverpackets.ExNoticePostSent;
 import app.l2nx.highfive.network.serverpackets.InventoryUpdate;
 import app.l2nx.highfive.network.serverpackets.StatusUpdate;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author Migi, DS
  */
+@Slf4j
 public class RequestSendPost extends ClientPacket {
     private static final int BATCH_LENGTH = 12; // length of the one item
 
@@ -58,19 +60,19 @@ public class RequestSendPost extends ClientPacket {
     private static final int MESSAGE_FEE = 100;
     private static final int MESSAGE_FEE_PER_SLOT = 1000; // 100 adena message fee + 1000 per each item slot
 
-    private String _receiver;
-    private boolean _isCod;
-    private String _subject;
-    private String _text;
-    private AttachmentItem[] _items = null;
-    private long _reqAdena;
+    private String receiver;
+    private boolean cod;
+    private String subject;
+    private String text;
+    private AttachmentItem[] items = null;
+    private long reqAdena;
 
     @Override
     protected void readImpl() {
-        _receiver = readString();
-        _isCod = readInt() != 0;
-        _subject = readString();
-        _text = readString();
+        receiver = readString();
+        cod = readInt() != 0;
+        subject = readString();
+        text = readString();
 
         final int attachCount = readInt();
         if ((attachCount < 0)
@@ -80,22 +82,22 @@ public class RequestSendPost extends ClientPacket {
         }
 
         if (attachCount > 0) {
-            _items = new AttachmentItem[attachCount];
+            items = new AttachmentItem[attachCount];
             for (int i = 0; i < attachCount; i++) {
                 final int objectId = readInt();
                 final long count = readLong();
                 if ((objectId < 1) || (count < 1)) {
-                    _items = null;
+                    items = null;
                     return;
                 }
 
-                _items[i] = new AttachmentItem(objectId, count);
+                items[i] = new AttachmentItem(objectId, count);
             }
         }
 
-        _reqAdena = readLong();
-        if (_reqAdena < 0) {
-            _items = null;
+        reqAdena = readLong();
+        if (reqAdena < 0) {
+            items = null;
         }
     }
 
@@ -111,9 +113,9 @@ public class RequestSendPost extends ClientPacket {
         }
 
         if (!GeneralConfig.ALLOW_ATTACHMENTS) {
-            _items = null;
-            _isCod = false;
-            _reqAdena = 0;
+            items = null;
+            cod = false;
+            reqAdena = 0;
         }
 
         if (!player.getAccessLevel().allowTransaction()) {
@@ -121,7 +123,7 @@ public class RequestSendPost extends ClientPacket {
             return;
         }
 
-        if (!player.isInsideZone(ZoneId.PEACE) && (_items != null)) {
+        if (!player.isInsideZone(ZoneId.PEACE) && (items != null)) {
             player.sendPacket(SystemMessageId.YOU_CANNOT_FORWARD_IN_A_NON_PEACE_ZONE_LOCATION);
             return;
         }
@@ -146,45 +148,45 @@ public class RequestSendPost extends ClientPacket {
             return;
         }
 
-        if (_receiver.length() > MAX_RECV_LENGTH) {
+        if (receiver.length() > MAX_RECV_LENGTH) {
             player.sendPacket(SystemMessageId.THE_ALLOWED_LENGTH_FOR_RECIPIENT_EXCEEDED);
             return;
         }
 
-        if (_subject.length() > MAX_SUBJ_LENGTH) {
+        if (subject.length() > MAX_SUBJ_LENGTH) {
             player.sendPacket(SystemMessageId.THE_ALLOWED_LENGTH_FOR_A_TITLE_EXCEEDED);
             return;
         }
 
-        if (_text.length() > MAX_TEXT_LENGTH) {
+        if (text.length() > MAX_TEXT_LENGTH) {
             // not found message for this
             player.sendPacket(SystemMessageId.THE_ALLOWED_LENGTH_FOR_A_TITLE_EXCEEDED);
             return;
         }
 
-        if ((_items != null) && (_items.length > MAX_ATTACHMENTS)) {
+        if ((items != null) && (items.length > MAX_ATTACHMENTS)) {
             player.sendPacket(SystemMessageId.ITEM_SELECTION_IS_POSSIBLE_UP_TO_8);
             return;
         }
 
-        if ((_reqAdena < 0) || (_reqAdena > MAX_ADENA)) {
+        if ((reqAdena < 0) || (reqAdena > MAX_ADENA)) {
             return;
         }
 
-        if (_isCod) {
-            if (_reqAdena == 0) {
+        if (cod) {
+            if (reqAdena == 0) {
                 player.sendPacket(
                         SystemMessageId.WHEN_NOT_ENTERING_THE_AMOUNT_FOR_THE_PAYMENT_REQUEST_YOU_CANNOT_SEND_ANY_MAIL);
                 return;
             }
 
-            if ((_items == null) || (_items.length == 0)) {
+            if ((items == null) || (items.length == 0)) {
                 player.sendPacket(SystemMessageId.IT_S_A_PAYMENT_REQUEST_TRANSACTION_PLEASE_ATTACH_THE_ITEM);
                 return;
             }
         }
 
-        final int receiverId = CharInfoTable.getInstance().getIdByName(_receiver);
+        final int receiverId = CharInfoTable.getInstance().getIdByName(receiver);
         if (receiverId <= 0) {
             player.sendPacket(
                     SystemMessageId
@@ -203,20 +205,20 @@ public class RequestSendPost extends ClientPacket {
             final SystemMessage sm = new SystemMessage(
                     SystemMessageId
                             .YOUR_MESSAGE_TO_C1_DID_NOT_REACH_ITS_RECIPIENT_YOU_CANNOT_SEND_MAIL_TO_THE_GM_STAFF);
-            sm.addString(_receiver);
+            sm.addString(receiver);
             player.sendPacket(sm);
             return;
         }
 
         if (player.isJailed()
-                && ((GeneralConfig.JAIL_DISABLE_TRANSACTION && (_items != null)) || GeneralConfig.JAIL_DISABLE_CHAT)) {
+                && ((GeneralConfig.JAIL_DISABLE_TRANSACTION && (items != null)) || GeneralConfig.JAIL_DISABLE_CHAT)) {
             player.sendPacket(SystemMessageId.YOU_CANNOT_FORWARD_IN_A_NON_PEACE_ZONE_LOCATION);
             return;
         }
 
         if (BlockList.isInBlockList(receiverId, player.getObjectId())) {
             final SystemMessage sm = new SystemMessage(SystemMessageId.C1_HAS_BLOCKED_YOU_YOU_CANNOT_SEND_MAIL_TO_C1);
-            sm.addString(_receiver);
+            sm.addString(receiver);
             player.sendPacket(sm);
             return;
         }
@@ -238,7 +240,7 @@ public class RequestSendPost extends ClientPacket {
             return;
         }
 
-        final MailMessage msg = new MailMessage(player.getObjectId(), receiverId, _isCod, _subject, _text, _reqAdena);
+        final MailMessage msg = new MailMessage(player.getObjectId(), receiverId, cod, subject, text, reqAdena);
         if (removeItems(player, msg)) {
             player.setMultiSell(null); // Should not trade during mail.
 
@@ -251,8 +253,8 @@ public class RequestSendPost extends ClientPacket {
     private boolean removeItems(Player player, MailMessage msg) {
         long currentAdena = player.getAdena();
         long fee = MESSAGE_FEE;
-        if (_items != null) {
-            for (AttachmentItem i : _items) {
+        if (items != null) {
+            for (AttachmentItem i : items) {
                 // Check validity of requested item.
                 final Item item = player.checkItemManipulation(i.getObjectId(), i.getCount(), "attach");
                 if ((item == null) || !item.isTradeable() || item.isEquipped()) {
@@ -275,7 +277,7 @@ public class RequestSendPost extends ClientPacket {
             return false;
         }
 
-        if (_items == null) {
+        if (items == null) {
             return true;
         }
 
@@ -292,11 +294,11 @@ public class RequestSendPost extends ClientPacket {
 
         // Proceed to the transfer.
         final InventoryUpdate playerIU = new InventoryUpdate();
-        for (AttachmentItem i : _items) {
+        for (AttachmentItem i : items) {
             // Check validity of requested item.
             final Item oldItem = player.checkItemManipulation(i.getObjectId(), i.getCount(), "attach");
             if ((oldItem == null) || !oldItem.isTradeable() || oldItem.isEquipped()) {
-                PacketLogger.warning("Error adding attachment for char " + player.getName() + " (olditem == null)");
+                log.warn("Error adding attachment for char {} (olditem == null)", player.getName());
                 return false;
             }
 
@@ -304,7 +306,7 @@ public class RequestSendPost extends ClientPacket {
                     .transferItem(
                             ItemProcessType.TRANSFER, i.getObjectId(), i.getCount(), attachments, player, receiver);
             if (newItem == null) {
-                PacketLogger.warning("Error adding attachment for char " + player.getName() + " (newitem == null)");
+                log.warn("Error adding attachment for char {} (newitem == null)", player.getName());
                 continue;
             }
 
@@ -329,20 +331,15 @@ public class RequestSendPost extends ClientPacket {
     }
 
     private static class AttachmentItem {
-        private final int _objectId;
-        private final long _count;
+        @Getter
+        private final int objectId;
+
+        @Getter
+        private final long count;
 
         public AttachmentItem(int id, long num) {
-            _objectId = id;
-            _count = num;
-        }
-
-        public int getObjectId() {
-            return _objectId;
-        }
-
-        public long getCount() {
-            return _count;
+            objectId = id;
+            count = num;
         }
     }
 }

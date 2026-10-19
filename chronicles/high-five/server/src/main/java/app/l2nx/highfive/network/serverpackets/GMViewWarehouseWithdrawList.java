@@ -31,29 +31,29 @@ import app.l2nx.network.buffer.WriteBuffer;
 import java.util.Collection;
 
 public class GMViewWarehouseWithdrawList extends AbstractItemPacket {
-    private final Collection<Item> _items;
-    private final String _playerName;
-    private final long _money;
+    private final Collection<Item> items;
+    private final String playerName;
+    private final long money;
 
     public GMViewWarehouseWithdrawList(Player player) {
-        _items = player.getWarehouse().getItems();
-        _playerName = player.getName();
-        _money = player.getWarehouse().getAdena();
+        items = player.getWarehouse().getItems();
+        playerName = player.getName();
+        money = player.getWarehouse().getAdena();
     }
 
     public GMViewWarehouseWithdrawList(Clan clan) {
-        _playerName = clan.getLeaderName();
-        _items = clan.getWarehouse().getItems();
-        _money = clan.getWarehouse().getAdena();
+        playerName = clan.getLeaderName();
+        items = clan.getWarehouse().getItems();
+        money = clan.getWarehouse().getAdena();
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.GM_VIEW_WAREHOUSE_WITHDRAW_LIST.writeId(this, buffer);
-        buffer.writeString(_playerName);
-        buffer.writeLong(_money);
-        buffer.writeShort(_items.size());
-        for (Item item : _items) {
+        buffer.writeString(playerName);
+        buffer.writeLong(money);
+        buffer.writeShort(items.size());
+        for (Item item : items) {
             writeItem(item, buffer);
             buffer.writeInt(item.getObjectId());
         }

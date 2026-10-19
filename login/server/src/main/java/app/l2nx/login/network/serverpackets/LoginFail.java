@@ -30,15 +30,15 @@ import app.l2nx.network.buffer.WriteBuffer;
  * Format: d d: the failure reason
  */
 public class LoginFail extends LoginServerPacket {
-    private final LoginFailReason _reason;
+    private final LoginFailReason reason;
 
     public LoginFail(LoginFailReason reason) {
-        _reason = reason;
+        this.reason = reason;
     }
 
     @Override
     protected void writeImpl(LoginClient client, WriteBuffer buffer) {
         buffer.writeByte(0x01);
-        buffer.writeByte(_reason.getCode());
+        buffer.writeByte(reason.getCode());
     }
 }

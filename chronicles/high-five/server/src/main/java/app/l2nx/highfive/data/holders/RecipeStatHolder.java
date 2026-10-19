@@ -23,16 +23,19 @@
 package app.l2nx.highfive.data.holders;
 
 import app.l2nx.highfive.data.enums.StatType;
+import lombok.Getter;
 
 /**
  * This class describes a RecipeList statUse and altStatChange component.
  */
 public class RecipeStatHolder {
     /** The Identifier of the statType */
-    private final StatType _type;
+    @Getter
+    private final StatType type;
 
     /** The value of the statType */
-    private final int _value;
+    @Getter
+    private final int value;
 
     /**
      * Constructor of RecipeStatHolder.
@@ -40,21 +43,7 @@ public class RecipeStatHolder {
      * @param value
      */
     public RecipeStatHolder(String type, int value) {
-        _type = Enum.valueOf(StatType.class, type);
-        _value = value;
-    }
-
-    /**
-     * @return the the type of the RecipeStatHolder.
-     */
-    public StatType getType() {
-        return _type;
-    }
-
-    /**
-     * @return the value of the RecipeStatHolder.
-     */
-    public int getValue() {
-        return _value;
+        this.type = Enum.valueOf(StatType.class, type);
+        this.value = value;
     }
 }

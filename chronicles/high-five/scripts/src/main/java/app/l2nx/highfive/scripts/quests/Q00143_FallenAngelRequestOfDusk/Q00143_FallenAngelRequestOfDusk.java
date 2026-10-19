@@ -46,7 +46,7 @@ public class Q00143_FallenAngelRequestOfDusk extends Quest {
 
     // Misc
     private static final int MAX_REWARD_LEVEL = 43;
-    private boolean isAngelSpawned = false;
+    private boolean angelSpawned = false;
 
     public Q00143_FallenAngelRequestOfDusk() {
         super(143);
@@ -115,13 +115,13 @@ public class Q00143_FallenAngelRequestOfDusk extends Quest {
                 break;
             }
             case "32368-04.html": {
-                if (isAngelSpawned) {
+                if (angelSpawned) {
                     return "32368-03.html";
                 }
 
                 addSpawn(ANGEL, npc.getX() + 100, npc.getY() + 100, npc.getZ(), 0, false, 120000);
                 startQuestTimer("despawn", 120000, null, player);
-                isAngelSpawned = true;
+                angelSpawned = true;
                 break;
             }
             case "32369-03.html": {
@@ -139,12 +139,12 @@ public class Q00143_FallenAngelRequestOfDusk extends Quest {
                 giveItems(player, ANGELS_MESSAGE, 1);
                 qs.setCond(5, true);
                 npc.deleteMe();
-                isAngelSpawned = false;
+                angelSpawned = false;
                 break;
             }
             case "despawn": {
-                if (isAngelSpawned) {
-                    isAngelSpawned = false;
+                if (angelSpawned) {
+                    angelSpawned = false;
                 }
 
                 htmltext = null;

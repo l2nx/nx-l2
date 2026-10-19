@@ -34,30 +34,30 @@ import java.util.concurrent.Future;
  * @author durgus
  */
 public class DamageZone extends ZoneType {
-    private int _damageHPPerSec;
-    private int _damageMPPerSec;
+    private int hpDamagePerSecond;
+    private int mpDamagePerSecond;
 
-    private int _castleId;
-    private Castle _castle;
+    private int castleId;
+    private Castle castle;
 
-    private int _startTask;
-    private int _reuseTask;
-    protected volatile Future<?> _task;
+    private int startTask;
+    private int reuseTask;
+    protected volatile Future<?> task;
 
     public DamageZone(int id) {
         super(id);
 
         // Setup default damage
-        _damageHPPerSec = 200;
-        _damageMPPerSec = 0;
+        hpDamagePerSecond = 200;
+        mpDamagePerSecond = 0;
 
         // Setup default start / reuse time.
-        _startTask = 10;
-        _reuseTask = 5000;
+        startTask = 10;
+        reuseTask = 5000;
 
         // no castle by default
-        _castleId = 0;
-        _castle = null;
+        castleId = 0;
+        castle = null;
 
         setTargetType(InstanceType.Playable); // default only playabale
     }
@@ -65,15 +65,15 @@ public class DamageZone extends ZoneType {
     @Override
     public void setParameter(String name, String value) {
         if (name.equals("dmgHPSec")) {
-            _damageHPPerSec = Integer.parseInt(value);
+            hpDamagePerSecond = Integer.parseInt(value);
         } else if (name.equals("dmgMPSec")) {
-            _damageMPPerSec = Integer.parseInt(value);
+            mpDamagePerSecond = Integer.parseInt(value);
         } else if (name.equals("castleId")) {
-            _castleId = Integer.parseInt(value);
+            castleId = Integer.parseInt(value);
         } else if (name.equalsIgnoreCase("initialDelay")) {
-            _startTask = Integer.parseInt(value);
+            startTask = Integer.parseInt(value);
         } else if (name.equalsIgnoreCase("reuse")) {
-            _reuseTask = Integer.parseInt(value);
+            reuseTask = Integer.parseInt(value);
         } else {
             super.setParameter(name, value);
         }
@@ -81,8 +81,8 @@ public class DamageZone extends ZoneType {
 
     @Override
     protected void onEnter(Creature creature) {
-        Future<?> task = _task;
-        if ((task == null) && ((_damageHPPerSec != 0) || (_damageMPPerSec != 0))) {
+        Future<?> task = this.task;
+        if ((task == null) && ((hpDamagePerSecond != 0) || (mpDamagePerSecond != 0))) {
             final Player player = creature.asPlayer();
             final Castle castle = getCastle();
             if (castle != null) // Castle zone
@@ -96,9 +96,9 @@ public class DamageZone extends ZoneType {
             }
 
             synchronized (this) {
-                task = _task;
+                task = this.task;
                 if (task == null) {
-                    _task = task = ThreadPool.scheduleAtFixedRate(new ApplyDamage(), _startTask, _reuseTask);
+                    this.task = task = ThreadPool.scheduleAtFixedRate(new ApplyDamage(), startTask, reuseTask);
                 }
             }
         }
@@ -106,41 +106,41 @@ public class DamageZone extends ZoneType {
 
     @Override
     protected void onExit(Creature creature) {
-        if (getCharactersInside().isEmpty() && (_task != null)) {
-            _task.cancel(true);
-            _task = null;
+        if (getCharactersInside().isEmpty() && (task != null)) {
+            task.cancel(true);
+            task = null;
         }
     }
 
     protected int getHPDamagePerSecond() {
-        return _damageHPPerSec;
+        return hpDamagePerSecond;
     }
 
     protected int getMPDamagePerSecond() {
-        return _damageMPPerSec;
+        return mpDamagePerSecond;
     }
 
     protected Castle getCastle() {
-        if ((_castleId > 0) && (_castle == null)) {
-            _castle = CastleManager.getInstance().getCastleById(_castleId);
+        if ((castleId > 0) && (castle == null)) {
+            castle = CastleManager.getInstance().getCastleById(castleId);
         }
 
-        return _castle;
+        return castle;
     }
 
     private class ApplyDamage implements Runnable {
-        private final Castle _castle;
+        private final Castle castle;
 
         protected ApplyDamage() {
-            _castle = getCastle();
+            castle = getCastle();
         }
 
         @Override
         public void run() {
             if (getCharactersInside().isEmpty()) {
-                if (_task != null) {
-                    _task.cancel(false);
-                    _task = null;
+                if (task != null) {
+                    task.cancel(false);
+                    task = null;
                 }
                 return;
             }
@@ -150,13 +150,13 @@ public class DamageZone extends ZoneType {
             }
 
             boolean siege = false;
-            if (_castle != null) {
-                siege = _castle.getSiege().isInProgress();
+            if (castle != null) {
+                siege = castle.getSiege().isInProgress();
 
                 // Castle zones active only during siege.
                 if (!siege) {
-                    _task.cancel(false);
-                    _task = null;
+                    task.cancel(false);
+                    task = null;
                     return;
                 }
             }

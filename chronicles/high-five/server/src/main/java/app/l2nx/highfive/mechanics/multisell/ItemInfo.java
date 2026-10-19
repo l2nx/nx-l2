@@ -21,60 +21,50 @@ package app.l2nx.highfive.mechanics.multisell;
 
 import app.l2nx.highfive.entity.item.holders.Elementals;
 import app.l2nx.highfive.entity.item.instance.Item;
+import lombok.Getter;
 
 /**
  * @author DS
  */
 public class ItemInfo {
-    private final int _enchantLevel;
-    private final int _augmentId;
-    private final byte _elementId;
-    private final int _elementPower;
-    private final int[] _elementals = new int[6];
+    @Getter
+    private final int enchantLevel;
+
+    @Getter
+    private final int augmentId;
+
+    @Getter
+    private final byte elementId;
+
+    @Getter
+    private final int elementPower;
+
+    @Getter
+    private final int[] elementals = new int[6];
 
     public ItemInfo(Item item) {
-        _enchantLevel = item.getEnchantLevel();
-        _augmentId = item.getAugmentation() != null ? item.getAugmentation().getAugmentationId() : 0;
-        _elementId = item.getAttackElementType();
-        _elementPower = item.getAttackElementPower();
-        _elementals[0] = item.getElementDefAttr(Elementals.FIRE);
-        _elementals[1] = item.getElementDefAttr(Elementals.WATER);
-        _elementals[2] = item.getElementDefAttr(Elementals.WIND);
-        _elementals[3] = item.getElementDefAttr(Elementals.EARTH);
-        _elementals[4] = item.getElementDefAttr(Elementals.HOLY);
-        _elementals[5] = item.getElementDefAttr(Elementals.DARK);
+        enchantLevel = item.getEnchantLevel();
+        augmentId = item.getAugmentation() != null ? item.getAugmentation().getAugmentationId() : 0;
+        elementId = item.getAttackElementType();
+        elementPower = item.getAttackElementPower();
+        elementals[0] = item.getElementDefAttr(Elementals.FIRE);
+        elementals[1] = item.getElementDefAttr(Elementals.WATER);
+        elementals[2] = item.getElementDefAttr(Elementals.WIND);
+        elementals[3] = item.getElementDefAttr(Elementals.EARTH);
+        elementals[4] = item.getElementDefAttr(Elementals.HOLY);
+        elementals[5] = item.getElementDefAttr(Elementals.DARK);
     }
 
     public ItemInfo(int enchantLevel) {
-        _enchantLevel = enchantLevel;
-        _augmentId = 0;
-        _elementId = Elementals.NONE;
-        _elementPower = 0;
-        _elementals[0] = 0;
-        _elementals[1] = 0;
-        _elementals[2] = 0;
-        _elementals[3] = 0;
-        _elementals[4] = 0;
-        _elementals[5] = 0;
-    }
-
-    public int getEnchantLevel() {
-        return _enchantLevel;
-    }
-
-    public int getAugmentId() {
-        return _augmentId;
-    }
-
-    public byte getElementId() {
-        return _elementId;
-    }
-
-    public int getElementPower() {
-        return _elementPower;
-    }
-
-    public int[] getElementals() {
-        return _elementals;
+        this.enchantLevel = enchantLevel;
+        augmentId = 0;
+        elementId = Elementals.NONE;
+        elementPower = 0;
+        elementals[0] = 0;
+        elementals[1] = 0;
+        elementals[2] = 0;
+        elementals[3] = 0;
+        elementals[4] = 0;
+        elementals[5] = 0;
     }
 }

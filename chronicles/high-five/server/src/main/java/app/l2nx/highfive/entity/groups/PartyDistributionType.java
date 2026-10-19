@@ -19,6 +19,8 @@
  */
 package app.l2nx.highfive.entity.groups;
 
+import lombok.Getter;
+
 /**
  * @author NosBit
  */
@@ -29,8 +31,11 @@ public enum PartyDistributionType {
     BY_TURN(3, 799),
     BY_TURN_INCLUDING_SPOIL(4, 800);
 
-    private final int _id;
-    private final int _sysStringId;
+    @Getter
+    private final int id;
+
+    @Getter
+    private final int sysStringId;
 
     /**
      * Constructs a party distribution type.
@@ -38,24 +43,8 @@ public enum PartyDistributionType {
      * @param sysStringId the sysstring id
      */
     private PartyDistributionType(int id, int sysStringId) {
-        _id = id;
-        _sysStringId = sysStringId;
-    }
-
-    /**
-     * Gets the id used by packets.
-     * @return the id
-     */
-    public int getId() {
-        return _id;
-    }
-
-    /**
-     * Gets the sysstring id used by system messages.
-     * @return the sysstring-e id
-     */
-    public int getSysStringId() {
-        return _sysStringId;
+        this.id = id;
+        this.sysStringId = sysStringId;
     }
 
     /**

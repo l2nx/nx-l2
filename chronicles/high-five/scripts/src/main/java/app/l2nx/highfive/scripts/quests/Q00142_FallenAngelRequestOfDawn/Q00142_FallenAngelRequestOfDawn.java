@@ -64,7 +64,7 @@ public class Q00142_FallenAngelRequestOfDawn extends Quest {
     // Misc
     private static final int MAX_REWARD_LEVEL = 43;
     private static final int FRAGMENT_COUNT = 30;
-    private boolean isAngelSpawned = false;
+    private boolean angelSpawned = false;
 
     public Q00142_FallenAngelRequestOfDawn() {
         super(142);
@@ -116,18 +116,18 @@ public class Q00142_FallenAngelRequestOfDawn extends Quest {
                 break;
             }
             case "32368-04.html": {
-                if (isAngelSpawned) {
+                if (angelSpawned) {
                     return "32368-03.html";
                 }
 
                 addSpawn(FALLEN_ANGEL, npc.getX() + 100, npc.getY() + 100, npc.getZ(), 0, false, 120000);
-                isAngelSpawned = true;
+                angelSpawned = true;
                 startQuestTimer("despawn", 120000, null, player);
                 break;
             }
             case "despawn": {
-                if (isAngelSpawned) {
-                    isAngelSpawned = false;
+                if (angelSpawned) {
+                    angelSpawned = false;
                 }
                 break;
             }
@@ -148,7 +148,7 @@ public class Q00142_FallenAngelRequestOfDawn extends Quest {
             if (qs.isCond(5)) {
                 giveItems(player, FALLEN_ANGEL_BLOOD, 1);
                 qs.setCond(6, true);
-                isAngelSpawned = false;
+                angelSpawned = false;
             }
         } else {
             final Player member = getRandomPartyMember(player, 4);

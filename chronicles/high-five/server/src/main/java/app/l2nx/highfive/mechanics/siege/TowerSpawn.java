@@ -21,48 +21,34 @@ package app.l2nx.highfive.mechanics.siege;
 
 import app.l2nx.highfive.entity.Location;
 import java.util.List;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * @author malyelfik
  */
 public class TowerSpawn {
-    private final int _npcId;
-    private final Location _location;
-    private List<Integer> _zoneList = null;
-    private int _upgradeLevel = 0;
+    @Getter
+    private final int id;
+
+    @Getter
+    private final Location location;
+
+    @Getter
+    private List<Integer> zoneList = null;
+
+    @Getter
+    @Setter
+    private int upgradeLevel = 0;
 
     public TowerSpawn(int npcId, Location location) {
-        _location = location;
-        _npcId = npcId;
+        this.location = location;
+        id = npcId;
     }
 
     public TowerSpawn(int npcId, Location location, List<Integer> zoneList) {
-        _location = location;
-        _npcId = npcId;
-        _zoneList = zoneList;
-    }
-
-    /**
-     * Gets the NPC ID.
-     * @return the NPC ID
-     */
-    public int getId() {
-        return _npcId;
-    }
-
-    public Location getLocation() {
-        return _location;
-    }
-
-    public List<Integer> getZoneList() {
-        return _zoneList;
-    }
-
-    public void setUpgradeLevel(int level) {
-        _upgradeLevel = level;
-    }
-
-    public int getUpgradeLevel() {
-        return _upgradeLevel;
+        this.location = location;
+        id = npcId;
+        this.zoneList = zoneList;
     }
 }

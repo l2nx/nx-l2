@@ -26,11 +26,14 @@ import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.mechanics.skill.holders.SkillHolder;
 import java.util.HashMap;
 import java.util.Map;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Mercenary Medic Selina AI.
  * @author Zoey76
  */
+@Slf4j
 public class Selina extends Script {
     // NPC
     private static final int SELINA = 31556;
@@ -70,7 +73,7 @@ public class Selina extends Script {
                 return super.onEvent(event, npc, player);
             }
         } else {
-            LOGGER.warning(Selina.class.getSimpleName() + " AI: player " + player + " sent invalid bypass: " + event);
+            log.warn("AI: player {} sent invalid bypass: {}", player, event);
         }
 
         return "31556-02.html";
@@ -103,15 +106,12 @@ public class Selina extends Script {
     }
 
     private static class BuffHolder extends SkillHolder {
-        private final int _cost;
+        @Getter
+        private final int cost;
 
         public BuffHolder(int skillId, int skillLevel, int cost) {
             super(skillId, skillLevel);
-            _cost = cost;
-        }
-
-        public int getCost() {
-            return _cost;
+            this.cost = cost;
         }
     }
 }

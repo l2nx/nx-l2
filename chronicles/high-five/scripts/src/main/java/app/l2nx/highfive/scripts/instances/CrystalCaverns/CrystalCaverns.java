@@ -68,6 +68,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Crystal Caverns instance zone.<br>
@@ -77,17 +78,18 @@ import java.util.concurrent.ConcurrentHashMap;
  * 4. Baylor Raid is missing a lot of things This script takes the best elements of different versions and combines them into one script to get the most optimal and retail-like experience.<br>
  * Original sources: theone, L2JEmu, L2JOfficial, L2JFree Contributing authors: TGS, Lantoc, Janiii, Gigiikun, RosT Please maintain consistency between the Crystal Caverns scripts.
  */
+@Slf4j
 public class CrystalCaverns extends InstanceScript {
     protected static class CrystalGolem {
         protected Item foodItem = null;
-        protected boolean isAtDestination = false;
+        protected boolean atDestination = false;
         protected Location oldLoc = null;
     }
 
     private class CCWorld extends InstanceWorld {
         public Map<Npc, Boolean> npcList1 = new HashMap<>();
         public Npc tears;
-        public boolean isUsedInvulSkill = false;
+        public boolean usedInvulSkill = false;
         public long dragonScaleStart = 0;
         public int dragonScaleNeed = 0;
         public int cleanedRooms = 0;
@@ -106,14 +108,14 @@ public class CrystalCaverns extends InstanceScript {
         public List<Npc> oracle = new ArrayList<>();
 
         // baylor variables
-        protected final List<Player> _raiders = new ArrayList<>();
-        protected int _raidStatus = 0;
-        protected long _dragonClawStart = 0;
-        protected int _dragonClawNeed = 0;
-        protected final List<Npc> _animationMobs = new ArrayList<>();
-        protected Npc _camera = null;
-        protected Npc _baylor = null;
-        protected Npc _alarm = null;
+        protected final List<Player> raiders = new ArrayList<>();
+        protected int raidStatus = 0;
+        protected long dragonClawStart = 0;
+        protected int dragonClawNeed = 0;
+        protected final List<Npc> animationMobs = new ArrayList<>();
+        protected Npc camera = null;
+        protected Npc baylor = null;
+        protected Npc alarm = null;
 
         public CCWorld(Long time) {
             endTime = time;
@@ -611,12 +613,11 @@ public class CrystalCaverns extends InstanceScript {
         cos = dx / distance;
 
         // Calculate the new destination with offset included
-        final int _x = effector.getX() - (int) (offset * cos);
-        final int _y = effector.getY() - (int) (offset * sin);
-        final int _z = effected.getZ();
+        final int x = effector.getX() - (int) (offset * cos);
+        final int y = effector.getY() - (int) (offset * sin);
+        final int z = effected.getZ();
         final Location destination = GeoEngine.getInstance()
-                .getValidLocation(
-                        effected.getX(), effected.getY(), effected.getZ(), _x, _y, _z, effected.getInstanceId());
+                .getValidLocation(effected.getX(), effected.getY(), effected.getZ(), x, y, z, effected.getInstanceId());
         effected.broadcastPacket(new FlyToLocation(effected, destination, FlyType.THROW_UP));
 
         // maybe is need force set X,Y,Z
@@ -890,19 +891,19 @@ public class CrystalCaverns extends InstanceScript {
             final InstanceWorld tmpworld = InstanceManager.getInstance().getWorld(npc);
             if (tmpworld instanceof CCWorld) {
                 final CCWorld world = (CCWorld) tmpworld;
-                if (((world._dragonClawStart + DRAGONCLAWTIME) <= System.currentTimeMillis())
-                        || (world._dragonClawNeed <= 0)) {
-                    world._dragonClawStart = System.currentTimeMillis();
-                    world._dragonClawNeed = caster.getParty().getMemberCount() - 1;
+                if (((world.dragonClawStart + DRAGONCLAWTIME) <= System.currentTimeMillis())
+                        || (world.dragonClawNeed <= 0)) {
+                    world.dragonClawStart = System.currentTimeMillis();
+                    world.dragonClawNeed = caster.getParty().getMemberCount() - 1;
                 } else {
-                    world._dragonClawNeed--;
+                    world.dragonClawNeed--;
                 }
 
-                if (world._dragonClawNeed == 0) {
+                if (world.dragonClawNeed == 0) {
                     npc.stopSkillEffects(SkillFinishType.SILENT, 5225);
                     npc.broadcastPacket(new MagicSkillUse(npc, npc, 5480, 1, 4000, 0));
-                    if (world._raidStatus == 3) {
-                        world._raidStatus++;
+                    if (world.raidStatus == 3) {
+                        world.raidStatus++;
                     }
                 }
             }
@@ -993,10 +994,8 @@ public class CrystalCaverns extends InstanceScript {
                     copy.setCurrentHp(nowHp);
                     world.copys.add(copy);
                 }
-            } else if ((nowHp < (maxHp * 0.15))
-                    && !world.isUsedInvulSkill
-                    && ((rand > 994) || (nowHp < (maxHp * 0.1)))) {
-                world.isUsedInvulSkill = true;
+            } else if ((nowHp < (maxHp * 0.15)) && !world.usedInvulSkill && ((rand > 994) || (nowHp < (maxHp * 0.1)))) {
+                world.usedInvulSkill = true;
                 npc.setInvul(true);
             }
         }
@@ -1007,7 +1006,7 @@ public class CrystalCaverns extends InstanceScript {
         if ((npc.getId() == BAYLOR) && (skill.getId() == 5225)) {
             final InstanceWorld tmpworld = InstanceManager.getInstance().getWorld(npc);
             if (tmpworld instanceof CCWorld) {
-                ((CCWorld) tmpworld)._raidStatus++;
+                ((CCWorld) tmpworld).raidStatus++;
             }
         }
     }
@@ -1121,15 +1120,15 @@ public class CrystalCaverns extends InstanceScript {
                     final Npc mob =
                             addSpawn(29104, 153571 + x, 142075 + y, -12737, 0, false, 0, false, world.getInstanceId());
                     mob.getAI().setIntentionIdle();
-                    world._animationMobs.add(mob);
+                    world.animationMobs.add(mob);
                 }
 
                 startQuestTimer("baylorEffect0", 200, npc, null);
             } else if (event.equalsIgnoreCase("RaidStart")) {
-                world._camera.decayMe();
-                world._camera = null;
+                world.camera.decayMe();
+                world.camera = null;
                 npc.setParalyzed(false);
-                for (Player p : world._raiders) {
+                for (Player p : world.raiders) {
                     p.setParalyzed(false);
                     Throw(npc, p);
                     if (p.getSummon() != null) {
@@ -1137,12 +1136,12 @@ public class CrystalCaverns extends InstanceScript {
                     }
                 }
 
-                world._raidStatus = 0;
-                for (Npc mob : world._animationMobs) {
+                world.raidStatus = 0;
+                for (Npc mob : world.animationMobs) {
                     mob.doDie(mob);
                 }
 
-                world._animationMobs.clear();
+                world.animationMobs.clear();
                 startQuestTimer("baylor_despawn", 60000, npc, null, true);
                 startQuestTimer("checkBaylorAttack", 1000, npc, null);
             } else if (event.equalsIgnoreCase("checkBaylorAttack")) {
@@ -1150,16 +1149,16 @@ public class CrystalCaverns extends InstanceScript {
                     cancelQuestTimers("checkBaylorAttack");
                     startQuestTimer("baylor_alarm", 40000, npc, null);
                     startQuestTimer("baylor_skill", 5000, npc, null, true);
-                    world._raidStatus++;
+                    world.raidStatus++;
                 } else {
                     startQuestTimer("checkBaylorAttack", 1000, npc, null);
                 }
             } else if (event.equalsIgnoreCase("baylor_alarm")) {
-                if (world._alarm == null) {
+                if (world.alarm == null) {
                     final int[] spawnLoc = getRandomEntry(ALARMSPAWN);
                     npc.addSkill(SkillData.getInstance().getSkill(5244, 1));
                     npc.addSkill(SkillData.getInstance().getSkill(5245, 1));
-                    world._alarm = addSpawn(
+                    world.alarm = addSpawn(
                             ALARM,
                             spawnLoc[0],
                             spawnLoc[1],
@@ -1169,27 +1168,27 @@ public class CrystalCaverns extends InstanceScript {
                             0,
                             false,
                             world.getInstanceId());
-                    world._alarm.disableCoreAI(true);
-                    world._alarm.setImmobilized(true);
-                    world._alarm.broadcastPacket(
+                    world.alarm.disableCoreAI(true);
+                    world.alarm.setImmobilized(true);
+                    world.alarm.broadcastPacket(
                             new CreatureSay(
-                                    world._alarm,
+                                    world.alarm,
                                     ChatType.SHOUT,
                                     NpcStringId
                                             .AN_ALARM_HAS_BEEN_SET_OFF_EVERYBODY_WILL_BE_IN_DANGER_IF_THEY_ARE_NOT_TAKEN_CARE_OF_IMMEDIATELY));
                 }
             } else if (event.equalsIgnoreCase("baylor_skill")) {
-                if (world._baylor == null) {
+                if (world.baylor == null) {
                     cancelQuestTimers("baylor_skill");
                 } else {
                     final int maxHp = npc.getMaxHp();
                     final double nowHp = npc.getStatus().getCurrentHp();
                     final int rand = getRandom(100);
                     if ((nowHp < (maxHp * 0.2))
-                            && (world._raidStatus < 3)
+                            && (world.raidStatus < 3)
                             && !npc.isAffectedBySkill(5224)
                             && !npc.isAffectedBySkill(5225)) {
-                        if ((nowHp < (maxHp * 0.15)) && (world._raidStatus == 2)) {
+                        if ((nowHp < (maxHp * 0.15)) && (world.raidStatus == 2)) {
                             npc.doCast(SkillData.getInstance().getSkill(5225, 1));
                             npc.broadcastPacket(new CreatureSay(
                                     npc, ChatType.SHOUT, NpcStringId.DEMON_KING_BELETH_GIVE_ME_THE_POWER_AAAHH));
@@ -1197,7 +1196,7 @@ public class CrystalCaverns extends InstanceScript {
                             npc.doCast(SkillData.getInstance().getSkill(5225, 1));
                             npc.broadcastPacket(new CreatureSay(
                                     npc, ChatType.SHOUT, NpcStringId.DEMON_KING_BELETH_GIVE_ME_THE_POWER_AAAHH));
-                            startQuestTimer("baylor_remove_invul", 30000, world._baylor, null);
+                            startQuestTimer("baylor_remove_invul", 30000, world.baylor, null);
                         }
                     } else if ((nowHp < (maxHp * 0.3))
                             && (rand > 50)
@@ -1205,19 +1204,18 @@ public class CrystalCaverns extends InstanceScript {
                             && !npc.isAffectedBySkill(5224)) {
                         npc.doCast(SkillData.getInstance().getSkill(5224, 1));
                     } else if (rand < 33) {
-                        npc.setTarget(getRandomEntry(world._raiders));
+                        npc.setTarget(getRandomEntry(world.raiders));
                         npc.doCast(SkillData.getInstance().getSkill(5229, 1));
                     }
                 }
             } else if (event.equalsIgnoreCase("baylor_remove_invul")) {
                 npc.stopSkillEffects(SkillFinishType.SILENT, 5225);
             } else if (event.equalsIgnoreCase("Baylor")) {
-                world._baylor = addSpawn(29099, 153572, 142075, -12738, 10800, false, 0, false, world.getInstanceId());
-                world._baylor.setParalyzed(true);
-                world._camera = addSpawn(29120, 153273, 141400, -12738, 10800, false, 0, false, world.getInstanceId());
-                world._camera.broadcastPacket(
-                        new SpecialCamera(world._camera, 700, -45, 160, 500, 15200, 0, 0, 1, 0, 0));
-                startQuestTimer("baylorMinions", 2000, world._baylor, null);
+                world.baylor = addSpawn(29099, 153572, 142075, -12738, 10800, false, 0, false, world.getInstanceId());
+                world.baylor.setParalyzed(true);
+                world.camera = addSpawn(29120, 153273, 141400, -12738, 10800, false, 0, false, world.getInstanceId());
+                world.camera.broadcastPacket(new SpecialCamera(world.camera, 700, -45, 160, 500, 15200, 0, 0, 1, 0, 0));
+                startQuestTimer("baylorMinions", 2000, world.baylor, null);
             } else if (!event.endsWith("Food")) {
                 return null;
             } else if (event.equalsIgnoreCase("autoFood")) {
@@ -1228,7 +1226,7 @@ public class CrystalCaverns extends InstanceScript {
                 if ((world.getStatus() != 3)
                         || !world.crystalGolems.containsKey(npc)
                         || (world.crystalGolems.get(npc).foodItem != null)
-                        || world.crystalGolems.get(npc).isAtDestination) {
+                        || world.crystalGolems.get(npc).atDestination) {
                     return null;
                 }
 
@@ -1247,7 +1245,7 @@ public class CrystalCaverns extends InstanceScript {
                 }
 
                 return null;
-            } else if (!world.crystalGolems.containsKey(npc) || world.crystalGolems.get(npc).isAtDestination) {
+            } else if (!world.crystalGolems.containsKey(npc) || world.crystalGolems.get(npc).atDestination) {
                 return null;
             } else if (event.equalsIgnoreCase("backFood")) {
                 if (npc.getAI().getIntention() == Intention.ACTIVE) {
@@ -1278,7 +1276,7 @@ public class CrystalCaverns extends InstanceScript {
                     final int d2 = (dx * dx) + (dy * dy);
                     if ((d1 < 10000) || (d2 < 10000)) {
                         npc.broadcastPacket(new MagicSkillUse(npc, npc, 5441, 1, 1, 0));
-                        cryGolem.isAtDestination = true;
+                        cryGolem.atDestination = true;
                         world.correctGolems++;
                         if (world.correctGolems >= 2) {
                             world.openDoor(24220026);
@@ -1511,8 +1509,10 @@ public class CrystalCaverns extends InstanceScript {
                             return;
                         }
                         default: {
-                            LOGGER.warning("CrystalCavern-SteamCorridor: status " + world.getStatus()
-                                    + " error. OracleOrder not found in " + world.getInstanceId());
+                            log.warn(
+                                    "CrystalCavern-SteamCorridor: status {} error. OracleOrder not found in {}",
+                                    world.getStatus(),
+                                    world.getInstanceId());
                             return;
                         }
                     }
@@ -1539,19 +1539,19 @@ public class CrystalCaverns extends InstanceScript {
             }
 
             if (npc.getId() == ALARM) {
-                world._alarm = null;
-                if (world._baylor != null) {
-                    world._baylor.removeSkill(5244);
-                    world._baylor.removeSkill(5245);
+                world.alarm = null;
+                if (world.baylor != null) {
+                    world.baylor.removeSkill(5244);
+                    world.baylor.removeSkill(5245);
 
-                    if ((world._baylor.getMaxHp() * 0.3)
-                            < world._baylor.getStatus().getCurrentHp()) {
-                        startQuestTimer("baylor_alarm", 40000, world._baylor, null);
+                    if ((world.baylor.getMaxHp() * 0.3)
+                            < world.baylor.getStatus().getCurrentHp()) {
+                        startQuestTimer("baylor_alarm", 40000, world.baylor, null);
                     }
                 }
             } else if (npc.getId() == BAYLOR) {
                 world.setStatus(31);
-                world._baylor = null;
+                world.baylor = null;
                 npc.broadcastPacket(
                         new PlaySound(1, "BS01_D", 1, npc.getObjectId(), npc.getX(), npc.getY(), npc.getZ()));
                 final Instance baylorInstance = InstanceManager.getInstance().getInstance(npc.getInstanceId());
@@ -1709,17 +1709,17 @@ public class CrystalCaverns extends InstanceScript {
                 }
             } else if (npc.getId() == ORACLE_GUIDE_3) {
                 if ((world.getStatus() < 30) && checkBaylorConditions(player)) {
-                    world._raiders.clear();
+                    world.raiders.clear();
                     final Party party = player.getParty();
                     if (party == null) {
-                        world._raiders.add(player);
+                        world.raiders.add(player);
                     } else {
                         for (Player partyMember : party.getMembers()) {
                             // int rnd = getRandom(100);
                             // partyMember.destroyItemByItemId(ItemProcessType.QUEST, (rnd < 33 ? BLUE_CRYSTAL:(rnd < 67
                             // ? RED_CRYSTAL:CLEAR_CRYSTAL)), 1, partyMember, true); Crystals are no longer beign
                             // cunsumed while entering to Baylor Lair.
-                            world._raiders.add(partyMember);
+                            world.raiders.add(partyMember);
                         }
                     }
                 } else {
@@ -1733,8 +1733,8 @@ public class CrystalCaverns extends InstanceScript {
 
                 final int radius = 150;
                 int i = 0;
-                final int members = world._raiders.size();
-                for (Player p : world._raiders) {
+                final int members = world.raiders.size();
+                for (Player p : world.raiders) {
                     final int x = (int) (radius * Math.cos((i * 2 * Math.PI) / members));
                     final int y = (int) (radius * Math.sin((i++ * 2 * Math.PI) / members));
                     p.teleToLocation(new Location(153571 + x, 142075 + y, -12737));

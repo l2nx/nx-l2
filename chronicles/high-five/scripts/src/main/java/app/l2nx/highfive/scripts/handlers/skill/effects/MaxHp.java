@@ -31,32 +31,34 @@ import app.l2nx.highfive.mechanics.stats.functions.FuncMul;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
 import app.l2nx.highfive.util.StatSet;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author Zealar
  */
+@Slf4j
 public class MaxHp extends AbstractEffect {
-    private final double _power;
-    private final EffectCalculationType _type;
-    private final boolean _heal;
+    private final double power;
+    private final EffectCalculationType type;
+    private final boolean heal;
 
     public MaxHp(Condition attachCond, Condition applyCond, StatSet set, StatSet params) {
         super(attachCond, applyCond, set, params);
 
-        _type = params.getEnum("type", EffectCalculationType.class, EffectCalculationType.DIFF);
-        switch (_type) {
+        type = params.getEnum("type", EffectCalculationType.class, EffectCalculationType.DIFF);
+        switch (type) {
             case DIFF: {
-                _power = params.getInt("power", 0);
+                power = params.getInt("power", 0);
                 break;
             }
             default: {
-                _power = 1 + (params.getInt("power", 0) / 100.0);
+                power = 1 + (params.getInt("power", 0) / 100.0);
             }
         }
 
-        _heal = params.getBoolean("heal", false);
+        heal = params.getBoolean("heal", false);
         if (params.isEmpty()) {
-            LOGGER.warning(getClass().getSimpleName() + ": must have parameters.");
+            log.warn("Must have parameters.");
         }
     }
 
@@ -64,22 +66,22 @@ public class MaxHp extends AbstractEffect {
     public void onStart(Creature effector, Creature effected, Skill skill) {
         final CreatureStat charStat = effected.getStat();
         final double currentHp = effected.getCurrentHp();
-        double amount = _power;
+        double amount = power;
 
         synchronized (charStat) {
-            switch (_type) {
+            switch (type) {
                 case DIFF: {
-                    charStat.getActiveChar().addStatFunc(new FuncAdd(Stat.MAX_HP, 1, this, _power, null));
-                    if (_heal) {
-                        effected.setCurrentHp((currentHp + _power));
+                    charStat.getActiveChar().addStatFunc(new FuncAdd(Stat.MAX_HP, 1, this, power, null));
+                    if (heal) {
+                        effected.setCurrentHp((currentHp + power));
                     }
                     break;
                 }
                 case PER: {
                     final double maxHp = effected.getMaxHp();
-                    charStat.getActiveChar().addStatFunc(new FuncMul(Stat.MAX_HP, 1, this, _power, null));
-                    if (_heal) {
-                        amount = (_power - 1) * maxHp;
+                    charStat.getActiveChar().addStatFunc(new FuncMul(Stat.MAX_HP, 1, this, power, null));
+                    if (heal) {
+                        amount = (power - 1) * maxHp;
                         effected.setCurrentHp(currentHp + amount);
                     }
                     break;
@@ -87,7 +89,7 @@ public class MaxHp extends AbstractEffect {
             }
         }
 
-        if (_heal) {
+        if (heal) {
             if ((effector != null) && (effector != effected)) {
                 final SystemMessage sm = new SystemMessage(SystemMessageId.S2_HP_HAS_BEEN_RESTORED_BY_C1);
                 sm.addString(effector.getName());

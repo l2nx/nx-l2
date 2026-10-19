@@ -30,18 +30,18 @@ import app.l2nx.highfive.network.serverpackets.ExEnchantSkillInfo;
  * @author -Wooden-
  */
 public class RequestExEnchantSkillInfo extends ClientPacket {
-    private int _skillId;
-    private int _skillLevel;
+    private int skillId;
+    private int skillLevel;
 
     @Override
     protected void readImpl() {
-        _skillId = readInt();
-        _skillLevel = readInt();
+        skillId = readInt();
+        skillLevel = readInt();
     }
 
     @Override
     protected void runImpl() {
-        if ((_skillId <= 0) || (_skillLevel <= 0)) {
+        if ((skillId <= 0) || (skillLevel <= 0)) {
             return;
         }
 
@@ -54,20 +54,20 @@ public class RequestExEnchantSkillInfo extends ClientPacket {
             return;
         }
 
-        final Skill skill = SkillData.getInstance().getSkill(_skillId, _skillLevel);
-        if ((skill == null) || (skill.getId() != _skillId)) {
+        final Skill skill = SkillData.getInstance().getSkill(skillId, skillLevel);
+        if ((skill == null) || (skill.getId() != skillId)) {
             return;
         }
 
-        if (EnchantSkillGroupsData.getInstance().getSkillEnchantmentBySkillId(_skillId) == null) {
+        if (EnchantSkillGroupsData.getInstance().getSkillEnchantmentBySkillId(skillId) == null) {
             return;
         }
 
-        final int playerskillLevel = player.getSkillLevel(_skillId);
-        if ((playerskillLevel == -1) || (playerskillLevel != _skillLevel)) {
+        final int playerskillLevel = player.getSkillLevel(skillId);
+        if ((playerskillLevel == -1) || (playerskillLevel != skillLevel)) {
             return;
         }
 
-        player.sendPacket(new ExEnchantSkillInfo(_skillId, _skillLevel));
+        player.sendPacket(new ExEnchantSkillInfo(skillId, skillLevel));
     }
 }

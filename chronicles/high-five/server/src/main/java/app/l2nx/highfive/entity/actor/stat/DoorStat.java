@@ -23,9 +23,13 @@
 package app.l2nx.highfive.entity.actor.stat;
 
 import app.l2nx.highfive.entity.actor.instance.Door;
+import lombok.Getter;
+import lombok.Setter;
 
 public class DoorStat extends CreatureStat {
-    private int _upgradeHpRatio = 1;
+    @Getter
+    @Setter
+    private int upgradeHpRatio = 1;
 
     public DoorStat(Door activeChar) {
         super(activeChar);
@@ -38,14 +42,6 @@ public class DoorStat extends CreatureStat {
 
     @Override
     public int getMaxHp() {
-        return super.getMaxHp() * _upgradeHpRatio;
-    }
-
-    public void setUpgradeHpRatio(int ratio) {
-        _upgradeHpRatio = ratio;
-    }
-
-    public int getUpgradeHpRatio() {
-        return _upgradeHpRatio;
+        return super.getMaxHp() * upgradeHpRatio;
     }
 }

@@ -35,9 +35,9 @@ public class NextAction {
         void doAction();
     }
 
-    private final Action _action;
-    private final Intention _intention;
-    private final Callback _callback;
+    private final Action action;
+    private final Intention intention;
+    private final Callback callback;
 
     /**
      * Constructs a new NextAction with the specified action, intention and callback.
@@ -46,9 +46,9 @@ public class NextAction {
      * @param callback The {@link Callback} that will be executed when this next action is triggered.
      */
     public NextAction(Action action, Intention intention, Callback callback) {
-        _action = action;
-        _intention = intention;
-        _callback = callback;
+        this.action = action;
+        this.intention = intention;
+        this.callback = callback;
     }
 
     /**
@@ -57,7 +57,7 @@ public class NextAction {
      * @return if the provided action matches the action associated with this next action.
      */
     public boolean isTriggeredBy(Action action) {
-        return _action == action;
+        return this.action == action;
     }
 
     /**
@@ -66,13 +66,13 @@ public class NextAction {
      * @return if the provided intention matches the intention associated with this next action.
      */
     public boolean isRemovedBy(Intention intention) {
-        return _intention == intention;
+        return this.intention == intention;
     }
 
     /**
      * Executes the next action by invoking the {@link Callback#doAction()} method.
      */
     public void doAction() {
-        _callback.doAction();
+        callback.doAction();
     }
 }

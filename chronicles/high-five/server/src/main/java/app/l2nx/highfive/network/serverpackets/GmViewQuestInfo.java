@@ -31,17 +31,17 @@ import java.util.List;
  * @author Tempy
  */
 public class GmViewQuestInfo extends ServerPacket {
-    private final Player _player;
+    private final Player player;
 
     public GmViewQuestInfo(Player player) {
-        _player = player;
+        this.player = player;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.GM_VIEW_QUEST_INFO.writeId(this, buffer);
-        buffer.writeString(_player.getName());
-        final List<Quest> questList = _player.getAllActiveQuests();
+        buffer.writeString(player.getName());
+        final List<Quest> questList = player.getAllActiveQuests();
         if (questList.isEmpty()) {
             buffer.writeByte(0);
             buffer.writeShort(0);
@@ -52,7 +52,7 @@ public class GmViewQuestInfo extends ServerPacket {
         buffer.writeShort(questList.size()); // quest count
         for (Quest q : questList) {
             buffer.writeInt(q.getId());
-            final QuestState qs = _player.getQuestState(q.getName());
+            final QuestState qs = player.getQuestState(q.getName());
             if (qs == null) {
                 buffer.writeInt(0);
                 continue;

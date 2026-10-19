@@ -28,15 +28,15 @@ import app.l2nx.network.buffer.WriteBuffer;
  * @author Yme
  */
 public class PetStatusShow extends ServerPacket {
-    private final int _summonType;
+    private final int summonType;
 
     public PetStatusShow(Summon summon) {
-        _summonType = summon.getSummonType();
+        summonType = summon.getSummonType();
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.PET_STATUS_SHOW.writeId(this, buffer);
-        buffer.writeInt(_summonType);
+        buffer.writeInt(summonType);
     }
 }

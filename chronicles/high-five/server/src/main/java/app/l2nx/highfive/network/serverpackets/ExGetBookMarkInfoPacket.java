@@ -29,19 +29,19 @@ import app.l2nx.network.buffer.WriteBuffer;
  * @author ShanSoft
  */
 public class ExGetBookMarkInfoPacket extends ServerPacket {
-    private final Player _player;
+    private final Player player;
 
     public ExGetBookMarkInfoPacket(Player player) {
-        _player = player;
+        this.player = player;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_GET_BOOKMARK_INFO.writeId(this, buffer);
         buffer.writeInt(0); // Dummy
-        buffer.writeInt(_player.getBookmarkSlot());
-        buffer.writeInt(_player.getTeleportBookmarks().size());
-        for (TeleportBookmark tpbm : _player.getTeleportBookmarks()) {
+        buffer.writeInt(player.getBookmarkSlot());
+        buffer.writeInt(player.getTeleportBookmarks().size());
+        for (TeleportBookmark tpbm : player.getTeleportBookmarks()) {
             buffer.writeInt(tpbm.getId());
             buffer.writeInt(tpbm.getX());
             buffer.writeInt(tpbm.getY());

@@ -28,14 +28,14 @@ import app.l2nx.highfive.mechanics.skill.Skill;
  * @author mkizub
  */
 public class ConditionItemId extends Condition {
-    private final int _itemId;
+    private final int itemId;
 
     /**
      * Instantiates a new condition item id.
      * @param itemId the item id
      */
     public ConditionItemId(int itemId) {
-        _itemId = itemId;
+        this.itemId = itemId;
     }
 
     /**
@@ -44,6 +44,6 @@ public class ConditionItemId extends Condition {
      */
     @Override
     public boolean testImpl(Creature effector, Creature effected, Skill skill, ItemTemplate item) {
-        return (item != null) && (item.getId() == _itemId);
+        return (item != null) && (item.getId() == itemId);
     }
 }

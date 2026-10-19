@@ -34,22 +34,22 @@ import app.l2nx.network.buffer.WriteBuffer;
 public class ExUISetting extends ServerPacket {
     public static final String SPLIT_VAR = "	";
 
-    private final byte[] _uiKeyMapping;
+    private final byte[] uiKeyMapping;
 
     public ExUISetting(Player player) {
         if (player.getVariables().hasVariable(PlayerVariables.UI_KEY_MAPPING)) {
-            _uiKeyMapping = player.getVariables().getByteArray(PlayerVariables.UI_KEY_MAPPING, SPLIT_VAR);
+            uiKeyMapping = player.getVariables().getByteArray(PlayerVariables.UI_KEY_MAPPING, SPLIT_VAR);
         } else {
-            _uiKeyMapping = null;
+            uiKeyMapping = null;
         }
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_UI_SETTING.writeId(this, buffer);
-        if (_uiKeyMapping != null) {
-            buffer.writeInt(_uiKeyMapping.length);
-            buffer.writeBytes(_uiKeyMapping);
+        if (uiKeyMapping != null) {
+            buffer.writeInt(uiKeyMapping.length);
+            buffer.writeBytes(uiKeyMapping);
         } else {
             buffer.writeInt(0);
         }

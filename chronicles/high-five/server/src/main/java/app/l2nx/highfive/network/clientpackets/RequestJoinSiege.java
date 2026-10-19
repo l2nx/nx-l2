@@ -33,15 +33,15 @@ import app.l2nx.highfive.network.serverpackets.SiegeInfo;
  * @author KenM
  */
 public class RequestJoinSiege extends ClientPacket {
-    private int _castleId;
-    private int _isAttacker;
-    private int _isJoining;
+    private int castleId;
+    private int isAttacker;
+    private int isJoining;
 
     @Override
     protected void readImpl() {
-        _castleId = readInt();
-        _isAttacker = readInt();
-        _isJoining = readInt();
+        castleId = readInt();
+        isAttacker = readInt();
+        isJoining = readInt();
     }
 
     @Override
@@ -61,9 +61,9 @@ public class RequestJoinSiege extends ClientPacket {
             return;
         }
 
-        final Castle castle = CastleManager.getInstance().getCastleById(_castleId);
+        final Castle castle = CastleManager.getInstance().getCastleById(castleId);
         if (castle != null) {
-            if (_isJoining == 1) {
+            if (isJoining == 1) {
                 if (System.currentTimeMillis() < clan.getDissolvingExpiryTime()) {
                     player.sendPacket(
                             SystemMessageId
@@ -71,7 +71,7 @@ public class RequestJoinSiege extends ClientPacket {
                     return;
                 }
 
-                if (_isAttacker == 1) {
+                if (isAttacker == 1) {
                     castle.getSiege().registerAttacker(player);
                 } else {
                     castle.getSiege().registerDefender(player);
@@ -83,9 +83,9 @@ public class RequestJoinSiege extends ClientPacket {
             castle.getSiege().listRegisterClan(player);
         }
 
-        final SiegableHall hall = CHSiegeManager.getInstance().getSiegableHall(_castleId);
+        final SiegableHall hall = CHSiegeManager.getInstance().getSiegableHall(castleId);
         if (hall != null) {
-            if (_isJoining == 1) {
+            if (isJoining == 1) {
                 if (System.currentTimeMillis() < clan.getDissolvingExpiryTime()) {
                     player.sendPacket(
                             SystemMessageId

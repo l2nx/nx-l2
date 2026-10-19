@@ -41,9 +41,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.xml.parsers.DocumentBuilderFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
@@ -52,9 +51,9 @@ import org.w3c.dom.Node;
  * Dimensional Rift manager.
  * @author kombat
  */
+@Slf4j
 public class DimensionalRiftManager {
-    private static final Logger LOGGER = Logger.getLogger(DimensionalRiftManager.class.getName());
-    private final Map<Byte, Map<Byte, DimensionalRiftRoom>> _rooms = new HashMap<>(7);
+    private final Map<Byte, Map<Byte, DimensionalRiftRoom>> rooms = new HashMap<>(7);
     private static final int DIMENSIONAL_FRAGMENT_ITEM_ID = 7079;
 
     public static DimensionalRiftManager getInstance() {
@@ -67,7 +66,7 @@ public class DimensionalRiftManager {
     }
 
     public DimensionalRiftRoom getRoom(byte type, byte room) {
-        return _rooms.get(type) == null ? null : _rooms.get(type).get(room);
+        return rooms.get(type) == null ? null : rooms.get(type).get(room);
     }
 
     private void loadRooms() {
@@ -77,7 +76,7 @@ public class DimensionalRiftManager {
             while (rs.next()) {
                 // 0 waiting room, 1 recruit, 2 soldier, 3 officer, 4 captain , 5 commander, 6 hero
                 final byte type = rs.getByte("type");
-                final byte room_id = rs.getByte("room_id");
+                final byte roomId = rs.getByte("room_id");
 
                 // coords related
                 final int xMin = rs.getInt("xMin");
@@ -90,25 +89,25 @@ public class DimensionalRiftManager {
                 final int yT = rs.getInt("yT");
                 final int zT = rs.getInt("zT");
                 final boolean isBossRoom = rs.getByte("boss") > 0;
-                _rooms.computeIfAbsent(type, k -> new HashMap<>(9));
+                rooms.computeIfAbsent(type, k -> new HashMap<>(9));
 
-                _rooms.get(type)
+                rooms.get(type)
                         .put(
-                                room_id,
+                                roomId,
                                 new DimensionalRiftRoom(
-                                        type, room_id, xMin, xMax, yMin, yMax, z1, z2, xT, yT, zT, isBossRoom));
+                                        type, roomId, xMin, xMax, yMin, yMax, z1, z2, xT, yT, zT, isBossRoom));
             }
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, "Can't load Dimension Rift zones. " + e.getMessage(), e);
+            log.warn("Can't load Dimension Rift zones. {}", e.getMessage(), e);
         }
 
-        final int typeSize = _rooms.keySet().size();
+        final int typeSize = rooms.keySet().size();
         int roomSize = 0;
-        for (Map<Byte, DimensionalRiftRoom> room : _rooms.values()) {
+        for (Map<Byte, DimensionalRiftRoom> room : rooms.values()) {
             roomSize += room.keySet().size();
         }
 
-        LOGGER.info(getClass().getSimpleName() + ": Loaded " + typeSize + " room types with " + roomSize + " rooms.");
+        log.info("Loaded {} room types with {} rooms.", typeSize, roomSize);
     }
 
     public void loadSpawns() {
@@ -121,7 +120,7 @@ public class DimensionalRiftManager {
 
             final File file = new File(ServerConfig.DATAPACK_ROOT, "data/DimensionalRift.xml");
             if (!file.exists()) {
-                LOGGER.log(Level.WARNING, getClass().getSimpleName() + ": Couldn't find data/" + file.getName());
+                log.warn("Couldn't find data/{}", file.getName());
                 return;
             }
 
@@ -157,28 +156,28 @@ public class DimensionalRiftManager {
                                                     attrs.getNamedItem("delay").getNodeValue());
                                             count = Integer.parseInt(
                                                     attrs.getNamedItem("count").getNodeValue());
-                                            if (!_rooms.containsKey(type)) {
-                                                LOGGER.warning("Type " + type + " not found!");
-                                            } else if (!_rooms.get(type).containsKey(roomId)) {
-                                                LOGGER.warning("Room " + roomId + " in Type " + type + " not found!");
+                                            if (!rooms.containsKey(type)) {
+                                                log.warn("Type {} not found!", type);
+                                            } else if (!rooms.get(type).containsKey(roomId)) {
+                                                log.warn("Room {} in Type {} not found!", roomId, type);
                                             }
 
                                             for (int i = 0; i < count; i++) {
                                                 final DimensionalRiftRoom riftRoom =
-                                                        _rooms.get(type).get(roomId);
+                                                        rooms.get(type).get(roomId);
                                                 x = riftRoom.getRandomX();
                                                 y = riftRoom.getRandomY();
                                                 z = riftRoom.getTeleportCoorinates()
                                                         .getZ();
-                                                if (_rooms.containsKey(type)
-                                                        && _rooms.get(type).containsKey(roomId)) {
+                                                if (rooms.containsKey(type)
+                                                        && rooms.get(type).containsKey(roomId)) {
                                                     final Spawn spawnDat = new Spawn(mobId);
                                                     spawnDat.setAmount(1);
                                                     spawnDat.setXYZ(x, y, z);
                                                     spawnDat.setHeading(-1);
                                                     spawnDat.setRespawnDelay(delay);
                                                     SpawnTable.getInstance().addSpawn(spawnDat);
-                                                    _rooms.get(type)
+                                                    rooms.get(type)
                                                             .get(roomId)
                                                             .getSpawns()
                                                             .add(spawnDat);
@@ -196,15 +195,14 @@ public class DimensionalRiftManager {
                 }
             }
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, "Error on loading dimensional rift spawns: " + e.getMessage(), e);
+            log.warn("Error on loading dimensional rift spawns: {}", e.getMessage(), e);
         }
 
-        LOGGER.info(getClass().getSimpleName() + ": Loaded " + countGood + " dimensional rift spawns, " + countBad
-                + " errors.");
+        log.info("Loaded {} dimensional rift spawns, {} errors.", countGood, countBad);
     }
 
     public void reload() {
-        for (Map<Byte, DimensionalRiftRoom> rooms : _rooms.values()) {
+        for (Map<Byte, DimensionalRiftRoom> rooms : this.rooms.values()) {
             for (DimensionalRiftRoom room : rooms.values()) {
                 room.getSpawns().clear();
             }
@@ -212,22 +210,22 @@ public class DimensionalRiftManager {
             rooms.clear();
         }
 
-        _rooms.clear();
+        this.rooms.clear();
         loadRooms();
         loadSpawns();
     }
 
     public boolean checkIfInRiftZone(int x, int y, int z, boolean ignorePeaceZone) {
         if (ignorePeaceZone) {
-            return _rooms.get((byte) 0).get((byte) 1).checkIfInZone(x, y, z);
+            return rooms.get((byte) 0).get((byte) 1).checkIfInZone(x, y, z);
         }
 
-        return _rooms.get((byte) 0).get((byte) 1).checkIfInZone(x, y, z)
-                && !_rooms.get((byte) 0).get((byte) 0).checkIfInZone(x, y, z);
+        return rooms.get((byte) 0).get((byte) 1).checkIfInZone(x, y, z)
+                && !rooms.get((byte) 0).get((byte) 0).checkIfInZone(x, y, z);
     }
 
     public boolean checkIfInPeaceZone(int x, int y, int z) {
-        return _rooms.get((byte) 0).get((byte) 0).checkIfInZone(x, y, z);
+        return rooms.get((byte) 0).get((byte) 0).checkIfInZone(x, y, z);
     }
 
     public void teleportToWaitingRoom(Player player) {
@@ -328,7 +326,7 @@ public class DimensionalRiftManager {
         }
 
         // find empty room
-        while (_rooms.get(type).get(room).isPartyInside());
+        while (rooms.get(type).get(room).isPartyInside());
         new DimensionalRift(party, type, room);
     }
 
@@ -394,7 +392,7 @@ public class DimensionalRiftManager {
     public void handleCheat(Player player, Npc npc) {
         showHtmlFile(player, "data/html/seven_signs/rift/Cheater.htm", npc);
         if (!player.isGM()) {
-            LOGGER.warning(player + " was cheating in dimension rift area!");
+            log.warn("{} was cheating in dimension rift area!", player);
             PunishmentManager.handleIllegalPlayerAction(
                     player,
                     "Warning!! Character " + player.getName() + " tried to cheat in dimensional rift.",
@@ -404,18 +402,18 @@ public class DimensionalRiftManager {
 
     public boolean isAllowedEnter(byte type) {
         int count = 0;
-        for (DimensionalRiftRoom room : _rooms.get(type).values()) {
+        for (DimensionalRiftRoom room : rooms.get(type).values()) {
             if (room.isPartyInside()) {
                 count++;
             }
         }
 
-        return (count < (_rooms.get(type).size() - 1));
+        return (count < (rooms.get(type).size() - 1));
     }
 
     public List<Byte> getFreeRooms(byte type) {
         final List<Byte> list = new ArrayList<>();
-        for (DimensionalRiftRoom room : _rooms.get(type).values()) {
+        for (DimensionalRiftRoom room : rooms.get(type).values()) {
             if (!room.isPartyInside()) {
                 list.add(room.getRoom());
             }

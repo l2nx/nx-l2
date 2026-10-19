@@ -33,12 +33,14 @@ import app.l2nx.highfive.network.serverpackets.SystemMessage;
 import app.l2nx.highfive.scripting.annotations.Disabled;
 import app.l2nx.highfive.threads.ThreadPool;
 import app.l2nx.highfive.util.ArrayUtil;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Dummy AI for spawns/respawns only for testing.
  * @author Gnacik
  */
 @Disabled // Mobius: this needs to be rewritten.
+@Slf4j
 public class DenOfEvil extends Script {
     // private static final int _buffer_id = 32656;
     protected static final int[] EYE_IDS = {18812, 18813, 18814};
@@ -111,8 +113,12 @@ public class DenOfEvil extends Script {
         npc.setImmobilized(true);
         final EffectZone zone = ZoneManager.getInstance().getZone(npc, EffectZone.class);
         if (zone == null) {
-            LOGGER.warning("NPC " + npc + " spawned outside of EffectZone, check your zone coords! X:" + npc.getX()
-                    + " Y:" + npc.getY() + " Z:" + npc.getZ());
+            log.warn(
+                    "NPC {} spawned outside of EffectZone, check your zone coords! X:{} Y:{} Z:{}",
+                    npc,
+                    npc.getX(),
+                    npc.getY(),
+                    npc.getZ());
             return;
         }
 
@@ -136,8 +142,12 @@ public class DenOfEvil extends Script {
         ThreadPool.schedule(new RespawnNewEye(npc.getLocation()), 15000);
         final EffectZone zone = ZoneManager.getInstance().getZone(npc, EffectZone.class);
         if (zone == null) {
-            LOGGER.warning("NPC " + npc + " killed outside of EffectZone, check your zone coords! X:" + npc.getX()
-                    + " Y:" + npc.getY() + " Z:" + npc.getZ());
+            log.warn(
+                    "NPC {} killed outside of EffectZone, check your zone coords! X:{} Y:{} Z:{}",
+                    npc,
+                    npc.getX(),
+                    npc.getY(),
+                    npc.getZ());
             return;
         }
 
@@ -147,30 +157,30 @@ public class DenOfEvil extends Script {
     }
 
     private class RespawnNewEye implements Runnable {
-        private final Location _loc;
+        private final Location loc;
 
         public RespawnNewEye(Location loc) {
-            _loc = loc;
+            this.loc = loc;
         }
 
         @Override
         public void run() {
-            addSpawn(getRandomEntry(EYE_IDS), _loc, false, 0);
+            addSpawn(getRandomEntry(EYE_IDS), loc, false, 0);
         }
     }
 
     private class KashaDestruction implements Runnable {
-        EffectZone _zone;
+        EffectZone zone;
 
         public KashaDestruction(EffectZone zone) {
-            _zone = zone;
+            this.zone = zone;
         }
 
         @Override
         public void run() {
             for (int i = SKILL_ID; i <= (SKILL_ID + 4); i += 2) {
                 // test 3 skills if some is level 4
-                if (_zone.getSkillLevel(i) > 3) {
+                if (zone.getSkillLevel(i) > 3) {
                     destroyZone();
                     break;
                 }
@@ -178,7 +188,7 @@ public class DenOfEvil extends Script {
         }
 
         private void destroyZone() {
-            for (Creature creature : _zone.getCharactersInside()) {
+            for (Creature creature : zone.getCharactersInside()) {
                 if (creature == null) {
                     continue;
                 }
@@ -201,7 +211,7 @@ public class DenOfEvil extends Script {
             }
 
             for (int i = SKILL_ID; i <= (SKILL_ID + 4); i += 2) {
-                _zone.removeSkill(i);
+                zone.removeSkill(i);
             }
         }
     }

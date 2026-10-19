@@ -29,15 +29,15 @@ import app.l2nx.highfive.scripts.quests.AbstractSagaQuest;
 public class Q00092_SagaOfTheElementalMaster extends AbstractSagaQuest {
     public Q00092_SagaOfTheElementalMaster() {
         super(92);
-        _npc = new int[] {30174, 31281, 31614, 31614, 31629, 31646, 31648, 31652, 31654, 31655, 31659, 31614};
-        _items = new int[] {7080, 7605, 7081, 7507, 7290, 7321, 7352, 7383, 7414, 7445, 7111, 0};
-        _mob = new int[] {27314, 27241, 27311};
-        _classId = new int[] {104};
-        _prevClass = new int[] {0x1c};
-        _npcSpawnLocations = new Location[] {
+        npc = new int[] {30174, 31281, 31614, 31614, 31629, 31646, 31648, 31652, 31654, 31655, 31659, 31614};
+        items = new int[] {7080, 7605, 7081, 7507, 7290, 7321, 7352, 7383, 7414, 7445, 7111, 0};
+        mob = new int[] {27314, 27241, 27311};
+        classId = new int[] {104};
+        prevClass = new int[] {0x1c};
+        npcSpawnLocations = new Location[] {
             new Location(161719, -92823, -1893), new Location(124376, 82127, -2796), new Location(124355, 82155, -2803)
         };
-        _text = new String[] {
+        text = new String[] {
             "PLAYERNAME! Pursued to here! However, I jumped out of the Banshouren boundaries! You look at the giant as the sign of power!",
             "... Oh ... good! So it was ... let's begin!",
             "I do not have the patience ..! I have been a giant force ...! Cough chatter ah ah ah!",

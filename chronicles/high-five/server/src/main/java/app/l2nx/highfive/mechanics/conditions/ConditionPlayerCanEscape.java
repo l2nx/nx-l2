@@ -30,10 +30,10 @@ import app.l2nx.highfive.mechanics.skill.Skill;
  * @author Adry_85
  */
 public class ConditionPlayerCanEscape extends Condition {
-    private final boolean _value;
+    private final boolean value;
 
     public ConditionPlayerCanEscape(boolean value) {
-        _value = value;
+        this.value = value;
     }
 
     @Override
@@ -58,6 +58,6 @@ public class ConditionPlayerCanEscape extends Condition {
             canTeleport = false;
         }
 
-        return _value == canTeleport;
+        return value == canTeleport;
     }
 }

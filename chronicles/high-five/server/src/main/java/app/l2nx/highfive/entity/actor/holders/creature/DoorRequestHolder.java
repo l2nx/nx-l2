@@ -24,14 +24,4 @@ import app.l2nx.highfive.entity.actor.instance.Door;
 /**
  * @author UnAfraid
  */
-public class DoorRequestHolder {
-    private final Door _target;
-
-    public DoorRequestHolder(Door door) {
-        _target = door;
-    }
-
-    public Door getDoor() {
-        return _target;
-    }
-}
+public record DoorRequestHolder(Door door) {}

@@ -171,7 +171,7 @@ public class SchemeBuffer extends Npc {
                         continue;
                     }
 
-                    final Skill skill = skillData.getSkill(skillId, holder.getLevel());
+                    final Skill skill = skillData.getSkill(skillId, holder.level());
                     if (skill != null) {
                         skill.applyEffects(this, target);
                     }
@@ -335,7 +335,7 @@ public class SchemeBuffer extends Npc {
 
             final BuffSkillHolder holder = schemeBufferTable.getAvailableBuff(category, skillId);
             if (holder != null) {
-                final Skill skill = skillData.getSkill(skillId, holder.getLevel());
+                final Skill skill = skillData.getSkill(skillId, holder.level());
                 if (skill != null) {
                     skill.applyEffects(this, target);
                 }
@@ -529,7 +529,7 @@ public class SchemeBuffer extends Npc {
                 continue;
             }
 
-            final Skill skill = skillData.getSkill(skillId, holder.getLevel());
+            final Skill skill = skillData.getSkill(skillId, holder.level());
             if (skill == null) {
                 continue;
             }
@@ -552,7 +552,7 @@ public class SchemeBuffer extends Npc {
                     .append("<br1>");
             htmlBuilder
                     .append("<font color=\"B09878\">")
-                    .append(holder.getDescription())
+                    .append(holder.description())
                     .append("</font></td>");
             htmlBuilder
                     .append("<td width=")
@@ -681,7 +681,7 @@ public class SchemeBuffer extends Npc {
                 continue;
             }
 
-            final Skill skill = skillData.getSkill(skillId, holder.getLevel());
+            final Skill skill = skillData.getSkill(skillId, holder.level());
             if (skill != null) {
                 skill.applyEffects(this, target);
             }
@@ -750,7 +750,7 @@ public class SchemeBuffer extends Npc {
                     .append('>')
                     .append(skill.getName())
                     .append("<br1><font color=\"B09878\">")
-                    .append(holder.getDescription())
+                    .append(holder.description())
                     .append("</font></td>");
 
             if (schemeSkills.contains(skillId)) {
@@ -938,7 +938,7 @@ public class SchemeBuffer extends Npc {
         for (int skillId : list) {
             final BuffSkillHolder holder = SchemeBufferTable.getInstance().getAvailableBuff(skillId);
             if (holder != null) {
-                fee += holder.getPrice();
+                fee += holder.price();
             }
         }
         return fee;

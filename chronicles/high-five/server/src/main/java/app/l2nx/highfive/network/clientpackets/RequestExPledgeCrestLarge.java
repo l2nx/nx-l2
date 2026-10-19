@@ -27,11 +27,11 @@ import app.l2nx.highfive.network.serverpackets.ExPledgeEmblem;
  * @author -Wooden-
  */
 public class RequestExPledgeCrestLarge extends ClientPacket {
-    private int _crestId;
+    private int crestId;
 
     @Override
     protected void readImpl() {
-        _crestId = readInt();
+        crestId = readInt();
     }
 
     @Override
@@ -41,6 +41,6 @@ public class RequestExPledgeCrestLarge extends ClientPacket {
             return;
         }
 
-        player.sendPacket(new ExPledgeEmblem(_crestId));
+        player.sendPacket(new ExPledgeEmblem(crestId));
     }
 }

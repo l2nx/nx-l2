@@ -28,17 +28,17 @@ import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.network.buffer.WriteBuffer;
 
 public class PledgeInfo extends ServerPacket {
-    private final Clan _clan;
+    private final Clan clan;
 
     public PledgeInfo(Clan clan) {
-        _clan = clan;
+        this.clan = clan;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.PLEDGE_INFO.writeId(this, buffer);
-        buffer.writeInt(_clan.getId());
-        buffer.writeString(_clan.getName());
-        buffer.writeString(_clan.getAllyName());
+        buffer.writeInt(clan.getId());
+        buffer.writeString(clan.getName());
+        buffer.writeString(clan.getAllyName());
     }
 }

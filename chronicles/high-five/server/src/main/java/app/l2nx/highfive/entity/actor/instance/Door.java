@@ -57,8 +57,11 @@ import app.l2nx.highfive.threads.ThreadPool;
 import java.util.Set;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.logging.Level;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class Door extends Creature {
     public static final byte OPEN_BY_CLICK = 1;
     public static final byte OPEN_BY_TIME = 2;
@@ -67,18 +70,29 @@ public class Door extends Creature {
     public static final byte OPEN_BY_CYCLE = 16;
 
     /** The castle index in the array of Castle this Npc belongs to */
-    private int _castleIndex = -2;
+    private int castleIndex = -2;
     /** The fort index in the array of Fort this Npc belongs to */
-    private int _fortIndex = -2;
+    private int fortIndex = -2;
 
-    private ClanHall _clanHall;
-    boolean _open = false;
-    private boolean _isAttackableDoor = false;
-    private boolean _isTargetable;
-    private int _meshindex = 1;
+    @Getter
+    @Setter
+    private ClanHall clanHall;
+
+    @Getter
+    boolean open = false;
+
+    @Getter
+    private boolean attackableDoor = false;
+
+    @Getter
+    private boolean targetable;
+
+    @Getter
+    @Setter
+    private int meshIndex = 1;
 
     // used for autoclose on open
-    private Future<?> _autoCloseTask;
+    private Future<?> autoCloseTask;
 
     /**
      * Creates a door.
@@ -89,9 +103,9 @@ public class Door extends Creature {
         setInstanceType(InstanceType.Door);
         setInvul(false);
         setLethalable(false);
-        _open = template.isOpenByDefault();
-        _isAttackableDoor = template.isAttackable();
-        _isTargetable = template.isTargetable();
+        open = template.isOpenByDefault();
+        attackableDoor = template.isAttackable();
+        targetable = template.isTargetable();
         if (getGroupName() != null) {
             DoorData.addDoorGroup(getGroupName(), getId());
         }
@@ -116,7 +130,7 @@ public class Door extends Creature {
     }
 
     private void startTimerOpen() {
-        int delay = _open ? getTemplate().getOpenTime() : getTemplate().getCloseTime();
+        int delay = open ? getTemplate().getOpenTime() : getTemplate().getCloseTime();
         if (getTemplate().getRandomTime() > 0) {
             delay += ThreadLocalRandom.current().nextInt(getTemplate().getRandomTime());
         }
@@ -199,29 +213,18 @@ public class Door extends Creature {
     }
 
     /**
-     * @return Returns if the door is open.
-     */
-    public boolean isOpen() {
-        return _open;
-    }
-
-    /**
      * @param open The door open status.
      */
     public void setOpen(boolean open) {
-        _open = open;
+        this.open = open;
         if (getChildId() > 0) {
             final Door sibling = getSiblingDoor(getChildId());
             if (sibling != null) {
                 sibling.notifyChildEvent(open);
             } else {
-                LOGGER.log(Level.WARNING, getClass().getSimpleName() + ": cannot find child id: " + getChildId());
+                log.warn("Cannot find child id: {}", getChildId());
             }
         }
-    }
-
-    public boolean isAttackableDoor() {
-        return _isAttackableDoor;
     }
 
     public boolean isShowHp() {
@@ -229,7 +232,7 @@ public class Door extends Creature {
     }
 
     public void setIsAttackableDoor(boolean value) {
-        _isAttackableDoor = value;
+        attackableDoor = value;
     }
 
     public int getDamage() {
@@ -247,36 +250,28 @@ public class Door extends Creature {
 
     // TODO: Replace index with the castle id itself.
     public Castle getCastle() {
-        if (_castleIndex < 0) {
-            _castleIndex = CastleManager.getInstance().getCastleIndex(this);
+        if (castleIndex < 0) {
+            castleIndex = CastleManager.getInstance().getCastleIndex(this);
         }
 
-        if (_castleIndex < 0) {
+        if (castleIndex < 0) {
             return null;
         }
 
-        return CastleManager.getInstance().getCastles().get(_castleIndex);
+        return CastleManager.getInstance().getCastles().get(castleIndex);
     }
 
     // TODO: Replace index with the fort id itself.
     public Fort getFort() {
-        if (_fortIndex < 0) {
-            _fortIndex = FortManager.getInstance().getFortIndex(this);
+        if (fortIndex < 0) {
+            fortIndex = FortManager.getInstance().getFortIndex(this);
         }
 
-        if (_fortIndex < 0) {
+        if (fortIndex < 0) {
             return null;
         }
 
-        return FortManager.getInstance().getForts().get(_fortIndex);
-    }
-
-    public void setClanHall(ClanHall clanhall) {
-        _clanHall = clanhall;
-    }
-
-    public ClanHall getClanHall() {
-        return _clanHall;
+        return FortManager.getInstance().getForts().get(fortIndex);
     }
 
     public boolean isEnemy() {
@@ -294,9 +289,9 @@ public class Door extends Creature {
             return true;
         }
 
-        if ((_clanHall != null)
-                && _clanHall.isSiegableHall()
-                && ((SiegableHall) _clanHall).getSiegeZone().isActive()
+        if ((clanHall != null)
+                && clanHall.isSiegableHall()
+                && ((SiegableHall) clanHall).getSiegeZone().isActive()
                 && isShowHp()) {
             return true;
         }
@@ -311,7 +306,7 @@ public class Door extends Creature {
             return false;
         }
 
-        if (_isAttackableDoor) {
+        if (attackableDoor) {
             return true;
         }
 
@@ -320,8 +315,8 @@ public class Door extends Creature {
         }
 
         final Player actingPlayer = attacker.asPlayer();
-        if ((_clanHall != null) && _clanHall.isSiegableHall()) {
-            final SiegableHall hall = (SiegableHall) _clanHall;
+        if ((clanHall != null) && clanHall.isSiegableHall()) {
+            final SiegableHall hall = (SiegableHall) clanHall;
             if (!hall.isSiegableHall()) {
                 return false;
             }
@@ -393,7 +388,7 @@ public class Door extends Creature {
         final StaticObjectInfo su = new StaticObjectInfo(this, false);
         final StaticObjectInfo targetableSu = new StaticObjectInfo(this, true);
         final DoorStatusUpdate dsu = new DoorStatusUpdate(this);
-        final OnEventTrigger oe = (getEmitter() > 0) ? new OnEventTrigger(this, !_open) : null;
+        final OnEventTrigger oe = (getEmitter() > 0) ? new OnEventTrigger(this, !open) : null;
         final boolean useTargetable = ((getCastle() != null) && (getCastle().getResidenceId() > 0))
                 || ((getFort() != null) && (getFort().getResidenceId() > 0));
 
@@ -430,9 +425,9 @@ public class Door extends Creature {
 
     public void closeMe() {
         // Remove close task.
-        final Future<?> oldTask = _autoCloseTask;
+        final Future<?> oldTask = autoCloseTask;
         if (oldTask != null) {
-            _autoCloseTask = null;
+            autoCloseTask = null;
             oldTask.cancel(false);
         }
 
@@ -501,14 +496,6 @@ public class Door extends Creature {
         return getTemplate().getNodeZ() + getTemplate().getHeight();
     }
 
-    public void setMeshIndex(int mesh) {
-        _meshindex = mesh;
-    }
-
-    public int getMeshIndex() {
-        return _meshindex;
-    }
-
     public int getEmitter() {
         return getTemplate().getEmmiter();
     }
@@ -558,7 +545,7 @@ public class Door extends Creature {
                 && (getCastle().getResidenceId() > 0)
                 && getCastle().getSiege().isInProgress());
         final boolean isHall =
-                ((_clanHall != null) && _clanHall.isSiegableHall() && ((SiegableHall) _clanHall).isInSiege());
+                ((clanHall != null) && clanHall.isSiegableHall() && ((SiegableHall) clanHall).isInSiege());
         if (isFort || isCastle || isHall) {
             broadcastPacket(new SystemMessage(SystemMessageId.THE_CASTLE_GATE_HAS_BEEN_DESTROYED));
         }
@@ -584,19 +571,14 @@ public class Door extends Creature {
             player.sendPacket(new StaticObjectInfo(this, player.isGM()));
             player.sendPacket(new DoorStatusUpdate(this));
             if (getEmitter() > 0) {
-                player.sendPacket(new OnEventTrigger(this, !_open));
+                player.sendPacket(new OnEventTrigger(this, !open));
             }
         }
     }
 
     public void setTargetable(boolean value) {
-        _isTargetable = value;
+        targetable = value;
         broadcastStatusUpdate();
-    }
-
-    @Override
-    public boolean isTargetable() {
-        return _isTargetable;
     }
 
     public boolean checkCollision() {
@@ -632,19 +614,19 @@ public class Door extends Creature {
             return;
         }
 
-        final Future<?> oldTask = _autoCloseTask;
+        final Future<?> oldTask = autoCloseTask;
         if (oldTask != null) {
-            _autoCloseTask = null;
+            autoCloseTask = null;
             oldTask.cancel(false);
         }
 
-        _autoCloseTask = ThreadPool.schedule(new AutoClose(), getTemplate().getCloseTime() * 1000);
+        autoCloseTask = ThreadPool.schedule(new AutoClose(), getTemplate().getCloseTime() * 1000);
     }
 
     class AutoClose implements Runnable {
         @Override
         public void run() {
-            if (_open) {
+            if (open) {
                 closeMe();
             }
         }
@@ -653,13 +635,13 @@ public class Door extends Creature {
     class TimerOpen implements Runnable {
         @Override
         public void run() {
-            if (_open) {
+            if (open) {
                 closeMe();
             } else {
                 openMe();
             }
 
-            int delay = _open ? getTemplate().getCloseTime() : getTemplate().getOpenTime();
+            int delay = open ? getTemplate().getCloseTime() : getTemplate().getOpenTime();
             if (getTemplate().getRandomTime() > 0) {
                 delay += ThreadLocalRandom.current().nextInt(getTemplate().getRandomTime());
             }

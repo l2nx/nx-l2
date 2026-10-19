@@ -103,17 +103,17 @@ public class TowerOfNaia extends Script {
     private static Map<Integer, Integer> ZONES = new HashMap<>();
     private static Map<Integer, int[][]> SPAWNS = new HashMap<>();
 
-    private Monster _lock;
-    private final Npc _controller;
-    private int _counter;
-    private final AtomicInteger _despawnedSporesCount = new AtomicInteger();
-    private final int[] _indexCount = {0, 0};
-    private int _challengeState;
-    private int _winIndex;
+    private Monster lock;
+    private final Npc controller;
+    private int counter;
+    private final AtomicInteger despawnedSporesCount = new AtomicInteger();
+    private final int[] indexCount = {0, 0};
+    private int challengeState;
+    private int winIndex;
 
-    private final Map<Integer, Boolean> _activeRooms = new HashMap<>();
-    private final Map<Integer, Collection<Npc>> _spawns = new ConcurrentHashMap<>();
-    private final Set<Npc> _sporeSpawn = ConcurrentHashMap.newKeySet();
+    private final Map<Integer, Boolean> activeRooms = new HashMap<>();
+    private final Map<Integer, Collection<Npc>> spawns = new ConcurrentHashMap<>();
+    private final Set<Npc> sporeSpawn = ConcurrentHashMap.newKeySet();
 
     static {
         // Format: entrance_door, exit_door
@@ -262,9 +262,9 @@ public class TowerOfNaia extends Script {
             addKillId(npcId);
         }
 
-        _lock = addSpawn(LOCK, 16409, 244438, 11620, -1048, false, 0, false).asMonster();
-        _controller = addSpawn(CONTROLLER, 16608, 244420, 11620, 31264, false, 0, false);
-        _counter = 90;
+        lock = addSpawn(LOCK, 16409, 244438, 11620, -1048, false, 0, false).asMonster();
+        controller = addSpawn(CONTROLLER, 16608, 244420, 11620, 31264, false, 0, false);
+        counter = 90;
         initSporeChallenge();
         spawnElpy();
     }
@@ -273,15 +273,15 @@ public class TowerOfNaia extends Script {
     public String onFirstTalk(Npc npc, Player player) {
         final int npcId = npc.getId();
         if (npcId == CONTROLLER) {
-            if (_lock == null) {
+            if (lock == null) {
                 return "18492-02.htm";
             }
 
             return "18492-01.htm";
         } else if ((npcId >= ROOM_MANAGER_FIRST)
                 && (npcId <= ROOM_MANAGER_LAST)
-                && _activeRooms.containsKey(npcId)
-                && !_activeRooms.get(npcId)) {
+                && activeRooms.containsKey(npcId)
+                && !activeRooms.get(npcId)) {
             if (player.getParty() == null) {
                 player.sendPacket(SystemMessageId.YOU_MUST_BE_IN_A_PARTY_IN_ORDER_TO_OPERATE_THE_MACHINE);
                 return null;
@@ -300,30 +300,30 @@ public class TowerOfNaia extends Script {
         // Timer. Spawns Naia Lock
         if (event.equalsIgnoreCase("spawn_lock")) {
             htmltext = null;
-            _lock = addSpawn(LOCK, 16409, 244438, 11620, -1048, false, 0, false).asMonster();
-            _counter = 90;
+            lock = addSpawn(LOCK, 16409, 244438, 11620, -1048, false, 0, false).asMonster();
+            counter = 90;
         }
 
-        // Timer. Depending of _challengeState despans all spawned spores, or spores, reached assembly point
+        // Timer. Depending of challengeState despans all spawned spores, or spores, reached assembly point
         else if (event.equalsIgnoreCase("despawn_total")) {
             // Spores is not attacked too long - despawn them all, reinit values
-            if (_challengeState == STATE_SPORE_IDLE_TOO_LONG) {
+            if (challengeState == STATE_SPORE_IDLE_TOO_LONG) {
                 removeSpores();
                 initSporeChallenge();
             }
             // Spores are moving to assembly point. Despawn all reached, check for reached spores count.
-            else if ((_challengeState == STATE_SPORE_CHALLENGE_SUCCESSFULL) && (_winIndex >= 0)) {
+            else if ((challengeState == STATE_SPORE_CHALLENGE_SUCCESSFULL) && (winIndex >= 0)) {
                 // Requirements are met, despawn all spores, spawn Epidos
-                if ((_despawnedSporesCount.get() >= 10) || _sporeSpawn.isEmpty()) {
+                if ((despawnedSporesCount.get() >= 10) || sporeSpawn.isEmpty()) {
                     removeSpores();
-                    _despawnedSporesCount.set(0);
-                    final int[] coords = SPORES_MERGE_POSITION[_winIndex];
-                    addSpawn(EPIDOSES[_winIndex], coords[0], coords[1], coords[2], 0, false, 0, false);
+                    despawnedSporesCount.set(0);
+                    final int[] coords = SPORES_MERGE_POSITION[winIndex];
+                    addSpawn(EPIDOSES[winIndex], coords[0], coords[1], coords[2], 0, false, 0, false);
                     initSporeChallenge();
                 }
                 // Requirements aren't met, despawn reached spores
                 else {
-                    final Iterator<Npc> it = _sporeSpawn.iterator();
+                    final Iterator<Npc> it = sporeSpawn.iterator();
                     while (it.hasNext()) {
                         final Npc spore = it.next();
                         if ((spore != null)
@@ -332,7 +332,7 @@ public class TowerOfNaia extends Script {
                                 && (spore.getY() == spore.getSpawn().getY())) {
                             spore.deleteMe();
                             it.remove();
-                            _despawnedSporesCount.incrementAndGet();
+                            despawnedSporesCount.incrementAndGet();
                         }
                     }
 
@@ -348,32 +348,32 @@ public class TowerOfNaia extends Script {
         final int npcId = npc.getId();
         if (event.equalsIgnoreCase("despawn_spore")
                 && !npc.isDead()
-                && (_challengeState == STATE_SPORE_CHALLENGE_IN_PROGRESS)) {
+                && (challengeState == STATE_SPORE_CHALLENGE_IN_PROGRESS)) {
             htmltext = null;
-            _sporeSpawn.remove(npc);
+            sporeSpawn.remove(npc);
 
             if (npcId == SPORE_BASIC) {
                 spawnRandomSpore();
                 spawnRandomSpore();
             } else if ((npcId >= SPORE_FIRE) && (npcId <= SPORE_EARTH)) {
-                _despawnedSporesCount.incrementAndGet();
+                despawnedSporesCount.incrementAndGet();
 
-                if (_despawnedSporesCount.get() < SELF_DESPAWN_LIMIT) {
+                if (despawnedSporesCount.get() < SELF_DESPAWN_LIMIT) {
                     spawnOppositeSpore(npcId);
                 } else {
-                    _challengeState = STATE_SPORE_IDLE_TOO_LONG;
+                    challengeState = STATE_SPORE_IDLE_TOO_LONG;
                     startQuestTimer("despawn_total", 60000, null, null);
                 }
             }
 
             npc.deleteMe();
         } else if (event.equalsIgnoreCase("18492-05.htm")) {
-            if ((_lock == null) || (_lock.getCurrentHp() > (_lock.getMaxHp() / 10))) {
+            if ((lock == null) || (lock.getCurrentHp() > (lock.getMaxHp() / 10))) {
                 htmltext = null;
                 npc.setTarget(player);
                 npc.doCast(SkillData.getInstance().getSkill(5527, 1));
             }
-        } else if (event.equalsIgnoreCase("teleport") && (_lock != null)) {
+        } else if (event.equalsIgnoreCase("teleport") && (lock != null)) {
             htmltext = null;
             final Party party = player.getParty();
             if (party != null) {
@@ -384,8 +384,8 @@ public class TowerOfNaia extends Script {
                         }
                     }
 
-                    _lock.deleteMe();
-                    _lock = null;
+                    lock.deleteMe();
+                    lock = null;
                     cancelQuestTimers("spawn_lock");
                     startQuestTimer("spawn_lock", 1200000, null, null);
                 } else {
@@ -394,12 +394,12 @@ public class TowerOfNaia extends Script {
                 }
             } else {
                 player.teleToLocation(-47271, 246098, -9120);
-                _lock.deleteMe();
-                _lock = null;
+                lock.deleteMe();
+                lock = null;
                 cancelQuestTimers("spawn_lock");
                 startQuestTimer("spawn_lock", 1200000, null, null);
             }
-        } else if (event.equalsIgnoreCase("go") && _activeRooms.containsKey(npcId) && !_activeRooms.get(npcId)) {
+        } else if (event.equalsIgnoreCase("go") && activeRooms.containsKey(npcId) && !activeRooms.get(npcId)) {
             htmltext = null;
             final Party party = player.getParty();
             if (party != null) {
@@ -416,19 +416,19 @@ public class TowerOfNaia extends Script {
 
     @Override
     public void onAttack(Npc npc, Player attacker, int damage, boolean isSummon, Skill skill) {
-        if ((_lock != null) && (npc.getObjectId() == _lock.getObjectId())) {
+        if ((lock != null) && (npc.getObjectId() == lock.getObjectId())) {
             final int remaindedHpPercent = (int) ((npc.getCurrentHp() * 100) / npc.getMaxHp());
-            if ((remaindedHpPercent <= _counter) && (_controller != null)) {
-                if (_counter == 50) {
-                    MinionList.spawnMinion(_lock, 18493);
-                } else if (_counter == 10) {
-                    MinionList.spawnMinion(_lock, 18493);
-                    MinionList.spawnMinion(_lock, 18493);
+            if ((remaindedHpPercent <= counter) && (controller != null)) {
+                if (counter == 50) {
+                    MinionList.spawnMinion(lock, 18493);
+                } else if (counter == 10) {
+                    MinionList.spawnMinion(lock, 18493);
+                    MinionList.spawnMinion(lock, 18493);
                 }
 
-                _controller.broadcastSay(
+                controller.broadcastSay(
                         ChatType.NPC_GENERAL, NpcStringId.EMERGENCY_EMERGENCY_THE_OUTER_WALL_IS_WEAKENING_RAPIDLY);
-                _counter -= 10;
+                counter -= 10;
             }
         }
     }
@@ -437,7 +437,7 @@ public class TowerOfNaia extends Script {
     public void onKill(Npc npc, Player killer, boolean isSummon) {
         final int npcId = npc.getId();
         if (npcId == LOCK) {
-            _lock = null;
+            lock = null;
             cancelQuestTimers("spawn_lock");
             startQuestTimer("spawn_lock", 300000, null, null);
         } else if (Arrays.binarySearch(TOWER_MONSTERS, npcId) >= 0) {
@@ -453,17 +453,17 @@ public class TowerOfNaia extends Script {
                 }
             }
 
-            if ((managerId > 0) && _spawns.containsKey(managerId)) {
-                final Collection<Npc> spawned = _spawns.get(managerId);
+            if ((managerId > 0) && spawns.containsKey(managerId)) {
+                final Collection<Npc> spawned = spawns.get(managerId);
                 spawned.remove(npc);
                 if (spawned.isEmpty() && DOORS.containsKey(managerId)) {
                     final int[] doorList = DOORS.get(managerId);
                     DoorData.getInstance().getDoor(doorList[1]).openMe();
-                    _spawns.remove(managerId);
+                    spawns.remove(managerId);
                 }
             }
         } else if (npcId == MUTATED_ELPY) {
-            _challengeState = STATE_SPORE_CHALLENGE_IN_PROGRESS;
+            challengeState = STATE_SPORE_CHALLENGE_IN_PROGRESS;
             markElpyRespawn();
             DoorData.getInstance().getDoor(18250025).closeMe();
             ZoneManager.getInstance().getZoneById(200100).setEnabled(true);
@@ -471,47 +471,47 @@ public class TowerOfNaia extends Script {
             for (int i = 0; i < 10; i++) {
                 addSpawn(SPORE_BASIC, -45464, 246768, -14210, 49152, false, 0, false);
             }
-        } else if ((npcId == SPORE_BASIC) && (_challengeState == STATE_SPORE_CHALLENGE_IN_PROGRESS)) {
-            _sporeSpawn.remove(npc);
+        } else if ((npcId == SPORE_BASIC) && (challengeState == STATE_SPORE_CHALLENGE_IN_PROGRESS)) {
+            sporeSpawn.remove(npc);
             spawnRandomSpore();
             spawnRandomSpore();
         } else if ((npcId >= SPORE_FIRE)
                 && (npcId <= SPORE_EARTH)
-                && ((_challengeState == STATE_SPORE_CHALLENGE_IN_PROGRESS)
-                        || (_challengeState == STATE_SPORE_CHALLENGE_SUCCESSFULL))) {
-            _sporeSpawn.remove(npc);
+                && ((challengeState == STATE_SPORE_CHALLENGE_IN_PROGRESS)
+                        || (challengeState == STATE_SPORE_CHALLENGE_SUCCESSFULL))) {
+            sporeSpawn.remove(npc);
 
-            if (_challengeState == STATE_SPORE_CHALLENGE_IN_PROGRESS) {
-                _despawnedSporesCount.decrementAndGet();
+            if (challengeState == STATE_SPORE_CHALLENGE_IN_PROGRESS) {
+                despawnedSporesCount.decrementAndGet();
                 final int sporeGroup = getSporeGroup(npcId);
                 if (sporeGroup >= 0) {
                     if ((npcId == SPORE_FIRE) || (npcId == SPORE_WIND)) {
-                        _indexCount[sporeGroup] += 2;
+                        indexCount[sporeGroup] += 2;
                     } else {
-                        _indexCount[sporeGroup] -= 2;
+                        indexCount[sporeGroup] -= 2;
                     }
 
-                    if (_indexCount[Math.abs(sporeGroup - 1)] > 0) {
-                        _indexCount[Math.abs(sporeGroup - 1)]--;
-                    } else if (_indexCount[Math.abs(sporeGroup - 1)] < 0) {
-                        _indexCount[Math.abs(sporeGroup - 1)]++;
+                    if (indexCount[Math.abs(sporeGroup - 1)] > 0) {
+                        indexCount[Math.abs(sporeGroup - 1)]--;
+                    } else if (indexCount[Math.abs(sporeGroup - 1)] < 0) {
+                        indexCount[Math.abs(sporeGroup - 1)]++;
                     }
 
-                    if ((Math.abs(_indexCount[sporeGroup]) < ELEMENT_INDEX_LIMIT)
-                            && (Math.abs(_indexCount[sporeGroup]) > 0)
-                            && ((_indexCount[sporeGroup] % 20) == 0)
+                    if ((Math.abs(indexCount[sporeGroup]) < ELEMENT_INDEX_LIMIT)
+                            && (Math.abs(indexCount[sporeGroup]) > 0)
+                            && ((indexCount[sporeGroup] % 20) == 0)
                             && (getRandom(100) < 50)) {
                         final String el = ELEMENTS_NAME[Arrays.binarySearch(ELEMENTS, npcId)];
-                        for (Npc spore : _sporeSpawn) {
+                        for (Npc spore : sporeSpawn) {
                             if ((spore != null) && !spore.isDead() && (spore.getId() == npcId)) {
                                 spore.broadcastSay(ChatType.NPC_GENERAL, SPORES_NPCSTRING_ID[getRandom(4)], el);
                             }
                         }
                     }
 
-                    if (Math.abs(_indexCount[sporeGroup]) < ELEMENT_INDEX_LIMIT) {
-                        if ((((_indexCount[sporeGroup] > 0) && ((npcId == SPORE_FIRE) || (npcId == SPORE_WIND)))
-                                        || ((_indexCount[sporeGroup] <= 0)
+                    if (Math.abs(indexCount[sporeGroup]) < ELEMENT_INDEX_LIMIT) {
+                        if ((((indexCount[sporeGroup] > 0) && ((npcId == SPORE_FIRE) || (npcId == SPORE_WIND)))
+                                        || ((indexCount[sporeGroup] <= 0)
                                                 && ((npcId == SPORE_WATER) || (npcId == SPORE_EARTH))))
                                 && (getRandom(1000) > 200)) {
                             spawnOppositeSpore(npcId);
@@ -521,11 +521,11 @@ public class TowerOfNaia extends Script {
                     } else
                     // index value was reached
                     {
-                        _challengeState = STATE_SPORE_CHALLENGE_SUCCESSFULL;
-                        _despawnedSporesCount.set(0);
-                        _winIndex = Arrays.binarySearch(ELEMENTS, npcId);
-                        final int[] coord = SPORES_MERGE_POSITION[_winIndex];
-                        for (Npc spore : _sporeSpawn) {
+                        challengeState = STATE_SPORE_CHALLENGE_SUCCESSFULL;
+                        despawnedSporesCount.set(0);
+                        winIndex = Arrays.binarySearch(ELEMENTS, npcId);
+                        final int[] coord = SPORES_MERGE_POSITION[winIndex];
+                        for (Npc spore : sporeSpawn) {
                             if ((spore != null) && !spore.isDead()) {
                                 moveTo(spore, coord);
                             }
@@ -547,8 +547,8 @@ public class TowerOfNaia extends Script {
             ZoneManager.getInstance().getZoneById(200101).setEnabled(true);
             ZoneManager.getInstance().getZoneById(200101).setEnabled(false);
         } else if (((npcId == SPORE_BASIC) || ((npcId >= SPORE_FIRE) && (npcId <= SPORE_EARTH)))
-                && (_challengeState == STATE_SPORE_CHALLENGE_IN_PROGRESS)) {
-            _sporeSpawn.add(npc);
+                && (challengeState == STATE_SPORE_CHALLENGE_IN_PROGRESS)) {
+            sporeSpawn.add(npc);
             npc.setWalking();
             final int[] coord = getRandomEntry(SPORES_MOVE_POINTS);
             npc.getSpawn().setXYZ(coord[0], coord[1], coord[2]);
@@ -580,7 +580,7 @@ public class TowerOfNaia extends Script {
 
     protected void initRoom(int managerId) {
         removeAllPlayers(managerId);
-        _activeRooms.put(managerId, false);
+        activeRooms.put(managerId, false);
 
         final int[] doorListA = DOORS.get(managerId);
         if (doorListA != null) {
@@ -588,24 +588,24 @@ public class TowerOfNaia extends Script {
             DoorData.getInstance().getDoor(doorListA[1]).closeMe();
         }
 
-        if (_spawns.containsKey(managerId) && (_spawns.get(managerId) != null)) {
-            for (Npc npc : _spawns.get(managerId)) {
+        if (spawns.containsKey(managerId) && (spawns.get(managerId) != null)) {
+            for (Npc npc : spawns.get(managerId)) {
                 if ((npc != null) && !npc.isDead()) {
                     npc.deleteMe();
                 }
             }
 
-            _spawns.get(managerId).clear();
-            _spawns.remove(managerId);
+            spawns.get(managerId).clear();
+            spawns.remove(managerId);
         }
     }
 
     private void initSporeChallenge() {
-        _despawnedSporesCount.set(0);
-        _challengeState = 0;
-        _winIndex = -1;
-        _indexCount[0] = 0;
-        _indexCount[1] = 0;
+        despawnedSporesCount.set(0);
+        challengeState = 0;
+        winIndex = -1;
+        indexCount[0] = 0;
+        indexCount[1] = 0;
         ZoneManager.getInstance().getZoneById(200100).setEnabled(false);
         ZoneManager.getInstance().getZoneById(200101).setEnabled(false);
         ZoneManager.getInstance().getZoneById(200101).setEnabled(true);
@@ -653,7 +653,7 @@ public class TowerOfNaia extends Script {
     }
 
     private void startRoom(int managerId) {
-        _activeRooms.put(managerId, true);
+        activeRooms.put(managerId, true);
 
         final int[] doorListB = DOORS.get(managerId);
         if (doorListB != null) {
@@ -669,7 +669,7 @@ public class TowerOfNaia extends Script {
             }
 
             if (!spawned.isEmpty()) {
-                _spawns.put(managerId, spawned);
+                spawns.put(managerId, spawned);
             }
         }
     }
@@ -702,26 +702,26 @@ public class TowerOfNaia extends Script {
     }
 
     private void removeSpores() {
-        for (Npc spore : _sporeSpawn) {
+        for (Npc spore : sporeSpawn) {
             if ((spore != null) && !spore.isDead()) {
                 spore.deleteMe();
             }
         }
 
-        _sporeSpawn.clear();
+        sporeSpawn.clear();
         cancelQuestTimers("despawn_spore");
     }
 
     private class StopRoomTask implements Runnable {
-        private final int _managerId;
+        private final int managerId;
 
         public StopRoomTask(int managerId) {
-            _managerId = managerId;
+            this.managerId = managerId;
         }
 
         @Override
         public void run() {
-            initRoom(_managerId);
+            initRoom(managerId);
         }
     }
 }

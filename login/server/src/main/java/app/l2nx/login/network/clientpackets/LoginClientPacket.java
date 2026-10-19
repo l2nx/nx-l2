@@ -25,8 +25,7 @@ package app.l2nx.login.network.clientpackets;
 
 import app.l2nx.login.network.LoginClient;
 import app.l2nx.network.packet.ReadablePacket;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Base implementation for all incoming login client packets.<br>
@@ -38,9 +37,8 @@ import java.util.logging.Logger;
  * </ul>
  * @author BazookaRpm
  */
+@Slf4j
 public abstract class LoginClientPacket extends ReadablePacket<LoginClient> {
-    // Logger.
-    private static final Logger LOGGER = Logger.getLogger(LoginClientPacket.class.getName());
 
     /**
      * Executes the packet read logic with centralized exception handling.<br>
@@ -52,13 +50,13 @@ public abstract class LoginClientPacket extends ReadablePacket<LoginClient> {
         try {
             return readImpl();
         } catch (Exception e) {
-            if (LOGGER.isLoggable(Level.SEVERE)) {
+            if (log.isErrorEnabled()) {
                 final LoginClient client = getClient();
                 final String clientDescription = client != null ? client.toString() : "unknown client";
-                LOGGER.log(
-                        Level.SEVERE,
-                        "Error while reading login packet " + getClass().getSimpleName() + " from " + clientDescription
-                                + ".",
+                log.error(
+                        "Error while reading login packet {} from {}.",
+                        getClass().getSimpleName(),
+                        clientDescription,
                         e);
             }
 

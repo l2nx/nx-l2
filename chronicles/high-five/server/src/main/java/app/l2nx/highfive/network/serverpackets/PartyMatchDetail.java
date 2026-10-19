@@ -28,22 +28,22 @@ import app.l2nx.network.buffer.WriteBuffer;
  * @author Gnacik
  */
 public class PartyMatchDetail extends ServerPacket {
-    private final PartyMatchRoom _room;
+    private final PartyMatchRoom room;
 
     public PartyMatchDetail(PartyMatchRoom room) {
-        _room = room;
+        this.room = room;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.PARTY_ROOM_INFO.writeId(this, buffer);
-        buffer.writeInt(_room.getId());
-        buffer.writeInt(_room.getMaxMembers());
-        buffer.writeInt(_room.getMinLevel());
-        buffer.writeInt(_room.getMaxLevel());
-        buffer.writeInt(_room.getLootType());
-        buffer.writeInt(_room.getLocation());
-        buffer.writeString(_room.getTitle());
+        buffer.writeInt(room.getId());
+        buffer.writeInt(room.getMaxMembers());
+        buffer.writeInt(room.getMinLevel());
+        buffer.writeInt(room.getMaxLevel());
+        buffer.writeInt(room.getLootType());
+        buffer.writeInt(room.getLocation());
+        buffer.writeString(room.getTitle());
         buffer.writeShort(59064);
     }
 }

@@ -27,16 +27,16 @@ import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.network.buffer.WriteBuffer;
 
 public class FriendAddRequest extends ServerPacket {
-    private final String _requestorName;
+    private final String requestorName;
 
     public FriendAddRequest(String requestorName) {
-        _requestorName = requestorName;
+        this.requestorName = requestorName;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.FRIEND_ADD_REQUEST.writeId(this, buffer);
-        buffer.writeString(_requestorName);
+        buffer.writeString(requestorName);
         buffer.writeInt(0);
     }
 }

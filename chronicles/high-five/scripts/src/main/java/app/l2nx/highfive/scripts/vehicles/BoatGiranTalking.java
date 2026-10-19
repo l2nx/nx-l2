@@ -27,14 +27,13 @@ import app.l2nx.highfive.network.enums.ChatType;
 import app.l2nx.highfive.network.serverpackets.CreatureSay;
 import app.l2nx.highfive.network.serverpackets.PlaySound;
 import app.l2nx.highfive.threads.ThreadPool;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author DS
  */
+@Slf4j
 public class BoatGiranTalking implements Runnable {
-    private static final Logger LOGGER = Logger.getLogger(BoatGiranTalking.class.getName());
 
     // Time: 868s
     private static final VehiclePathPoint[] GIRAN_TO_TALKING = {
@@ -85,9 +84,9 @@ public class BoatGiranTalking implements Runnable {
 
     private static final VehiclePathPoint GIRAN_DOCK = TALKING_TO_GIRAN[TALKING_TO_GIRAN.length - 1];
 
-    private final Boat _boat;
-    private int _cycle = 0;
-    private int _shoutCount = 0;
+    private final Boat boat;
+    private int cycle = 0;
+    private int shoutCount = 0;
 
     private final CreatureSay ARRIVED_AT_GIRAN;
     private final CreatureSay ARRIVED_AT_GIRAN_2;
@@ -117,7 +116,7 @@ public class BoatGiranTalking implements Runnable {
     private final PlaySound TALKING_SOUND;
 
     public BoatGiranTalking(Boat boat) {
-        _boat = boat;
+        this.boat = boat;
 
         ARRIVED_AT_GIRAN = new CreatureSay(ChatType.BOAT, 801, SystemMessageId.THE_FERRY_HAS_ARRIVED_AT_GIRAN_HARBOR);
         ARRIVED_AT_GIRAN_2 = new CreatureSay(
@@ -198,7 +197,7 @@ public class BoatGiranTalking implements Runnable {
                 0,
                 "itemsound.ship_arrival_departure",
                 1,
-                _boat.getObjectId(),
+                this.boat.getObjectId(),
                 GIRAN_DOCK.getX(),
                 GIRAN_DOCK.getY(),
                 GIRAN_DOCK.getZ());
@@ -206,7 +205,7 @@ public class BoatGiranTalking implements Runnable {
                 0,
                 "itemsound.ship_arrival_departure",
                 1,
-                _boat.getObjectId(),
+                this.boat.getObjectId(),
                 TALKING_DOCK[0].getX(),
                 TALKING_DOCK[0].getY(),
                 TALKING_DOCK[0].getZ());
@@ -215,7 +214,7 @@ public class BoatGiranTalking implements Runnable {
     @Override
     public void run() {
         try {
-            switch (_cycle) {
+            switch (cycle) {
                 case 0: {
                     BoatManager.getInstance().broadcastPacket(GIRAN_DOCK, TALKING_DOCK[0], LEAVE_GIRAN5);
                     ThreadPool.schedule(this, 240000);
@@ -234,9 +233,9 @@ public class BoatGiranTalking implements Runnable {
                 case 3: {
                     BoatManager.getInstance()
                             .broadcastPackets(GIRAN_DOCK, TALKING_DOCK[0], LEAVING_GIRAN, ARRIVAL_TALKING15);
-                    _boat.broadcastPacket(GIRAN_SOUND);
-                    _boat.payForRide(3946, 1, 46763, 187041, -3451);
-                    _boat.executePath(GIRAN_TO_TALKING);
+                    boat.broadcastPacket(GIRAN_SOUND);
+                    boat.payForRide(3946, 1, 46763, 187041, -3451);
+                    boat.executePath(GIRAN_TO_TALKING);
                     ThreadPool.schedule(this, 250000);
                     break;
                 }
@@ -256,27 +255,27 @@ public class BoatGiranTalking implements Runnable {
                 }
                 case 7: {
                     if (BoatManager.getInstance().dockBusy(BoatManager.TALKING_ISLAND)) {
-                        if (_shoutCount == 0) {
+                        if (shoutCount == 0) {
                             BoatManager.getInstance().broadcastPacket(TALKING_DOCK[0], GIRAN_DOCK, BUSY_TALKING);
                         }
 
-                        _shoutCount++;
-                        if (_shoutCount > 35) {
-                            _shoutCount = 0;
+                        shoutCount++;
+                        if (shoutCount > 35) {
+                            shoutCount = 0;
                         }
 
                         ThreadPool.schedule(this, 5000);
                         return;
                     }
 
-                    _boat.executePath(TALKING_DOCK);
+                    boat.executePath(TALKING_DOCK);
                     break;
                 }
                 case 8: {
                     BoatManager.getInstance().dockShip(BoatManager.TALKING_ISLAND, true);
                     BoatManager.getInstance()
                             .broadcastPackets(TALKING_DOCK[0], GIRAN_DOCK, ARRIVED_AT_TALKING, ARRIVED_AT_TALKING_2);
-                    _boat.broadcastPacket(TALKING_SOUND);
+                    boat.broadcastPacket(TALKING_SOUND);
                     ThreadPool.schedule(this, 300000);
                     break;
                 }
@@ -298,9 +297,9 @@ public class BoatGiranTalking implements Runnable {
                 case 12: {
                     BoatManager.getInstance().dockShip(BoatManager.TALKING_ISLAND, false);
                     BoatManager.getInstance().broadcastPackets(TALKING_DOCK[0], GIRAN_DOCK, LEAVING_TALKING);
-                    _boat.broadcastPacket(TALKING_SOUND);
-                    _boat.payForRide(3945, 1, -96777, 258970, -3623);
-                    _boat.executePath(TALKING_TO_GIRAN);
+                    boat.broadcastPacket(TALKING_SOUND);
+                    boat.payForRide(3945, 1, -96777, 258970, -3623);
+                    boat.executePath(TALKING_TO_GIRAN);
                     ThreadPool.schedule(this, 200000);
                     break;
                 }
@@ -331,19 +330,19 @@ public class BoatGiranTalking implements Runnable {
                 case 18: {
                     BoatManager.getInstance()
                             .broadcastPackets(GIRAN_DOCK, TALKING_DOCK[0], ARRIVED_AT_GIRAN, ARRIVED_AT_GIRAN_2);
-                    _boat.broadcastPacket(GIRAN_SOUND);
+                    boat.broadcastPacket(GIRAN_SOUND);
                     ThreadPool.schedule(this, 300000);
                     break;
                 }
             }
 
-            _shoutCount = 0;
-            _cycle++;
-            if (_cycle > 18) {
-                _cycle = 0;
+            shoutCount = 0;
+            cycle++;
+            if (cycle > 18) {
+                cycle = 0;
             }
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, e.getMessage());
+            log.warn(e.getMessage());
         }
     }
 

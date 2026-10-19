@@ -41,12 +41,15 @@ import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 
 /**
  * Region board.
  * @author Zoey76, Skache
  */
+@Slf4j
 public class RegionBoard implements IWriteBoardHandler {
     private static final DateTimeFormatter SIEGE_FORMAT = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm");
 
@@ -59,20 +62,15 @@ public class RegionBoard implements IWriteBoardHandler {
     private static final String[] COMMANDS = {"_bbsloc"};
 
     private static class ClanHall {
+        @Getter
         private final String name;
+
+        @Getter
         private final int ownerId;
 
         public ClanHall(String name, int ownerId) {
             this.name = name;
             this.ownerId = ownerId;
-        }
-
-        public String getName() {
-            return name;
-        }
-
-        public int getOwnerId() {
-            return ownerId;
         }
     }
 
@@ -117,16 +115,14 @@ public class RegionBoard implements IWriteBoardHandler {
 
             final String id = command.replace("_bbsloc;", "");
             if (!StringUtils.isNumeric(id)) {
-                LOG.warning(RegionBoard.class.getSimpleName() + ": " + player + " sent an invalid region bypass "
-                        + command + "!");
+                log.warn("{} sent an invalid region bypass {}!", player, command);
                 return false;
             }
 
             final int regionId = Integer.parseInt(id);
             final List<Castle> castles = CastleManager.getInstance().getCastles();
             if ((regionId < 0) || (regionId >= castles.size())) {
-                LOG.warning(RegionBoard.class.getSimpleName() + ": " + player + " requested invalid region ID "
-                        + regionId + "!");
+                log.warn("{} requested invalid region ID {}!", player, regionId);
                 return false;
             }
 
@@ -199,7 +195,7 @@ public class RegionBoard implements IWriteBoardHandler {
                 }
             }
         } catch (SQLException e) {
-            LOG.warning(RegionBoard.class.getSimpleName() + ": Could not fetch clan halls data. " + e.getMessage());
+            log.warn("Could not fetch clan halls data. {}", e.getMessage());
         }
 
         return clanHalls;

@@ -32,6 +32,7 @@ import java.util.Collection;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 
@@ -39,8 +40,9 @@ import org.w3c.dom.Node;
  * This class holds the Enchant HP Bonus Data.
  * @author MrPoke, Zoey76
  */
+@Slf4j
 public class EnchantItemHPBonusData implements IXmlReader {
-    private final Map<CrystalType, List<Integer>> _armorHPBonuses = new EnumMap<>(CrystalType.class);
+    private final Map<CrystalType, List<Integer>> armorHPBonuses = new EnumMap<>(CrystalType.class);
 
     private static final float FULL_ARMOR_MODIFIER = 1.5f; // TODO: Move it to config!
 
@@ -64,13 +66,13 @@ public class EnchantItemHPBonusData implements IXmlReader {
                             }
                         }
 
-                        _armorHPBonuses.put(parseEnum(d.getAttributes(), CrystalType.class, "grade"), bonuses);
+                        armorHPBonuses.put(parseEnum(d.getAttributes(), CrystalType.class, "grade"), bonuses);
                     }
                 }
             }
         }
 
-        if (!_armorHPBonuses.isEmpty()) {
+        if (!armorHPBonuses.isEmpty()) {
             final ItemData it = ItemData.getInstance();
 
             // Armors
@@ -104,9 +106,9 @@ public class EnchantItemHPBonusData implements IXmlReader {
 
     @Override
     public void load() {
-        _armorHPBonuses.clear();
+        armorHPBonuses.clear();
         parseDatapackFile("data/stats/enchantHPBonus.xml");
-        LOGGER.info(getClass().getSimpleName() + ": Loaded " + _armorHPBonuses.size() + " enchant HP bonuses.");
+        log.info("Loaded {} enchant HP bonuses.", armorHPBonuses.size());
     }
 
     /**
@@ -115,7 +117,7 @@ public class EnchantItemHPBonusData implements IXmlReader {
      * @return the HP bonus
      */
     public int getHPBonus(Item item) {
-        final List<Integer> values = _armorHPBonuses.get(item.getTemplate().getCrystalTypePlus());
+        final List<Integer> values = armorHPBonuses.get(item.getTemplate().getCrystalTypePlus());
         if ((values == null) || values.isEmpty() || (item.getOlyEnchantLevel() <= 0)) {
             return 0;
         }

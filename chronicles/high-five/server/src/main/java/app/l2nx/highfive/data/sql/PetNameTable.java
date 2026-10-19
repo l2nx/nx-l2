@@ -28,12 +28,11 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 
+@Slf4j
 public class PetNameTable {
-    private static final Logger LOGGER = Logger.getLogger(PetNameTable.class.getName());
 
     // SQL
     private static final String CHECK_PET_NAME =
@@ -52,10 +51,7 @@ public class PetNameTable {
                 result = rs.next();
             }
         } catch (SQLException e) {
-            LOGGER.log(
-                    Level.WARNING,
-                    getClass().getSimpleName() + ": Could not check existing pet name: " + e.getMessage(),
-                    e);
+            log.warn("Could not check existing pet name: {}", e.getMessage(), e);
         }
 
         return result;

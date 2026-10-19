@@ -30,9 +30,9 @@ public class ExChangeClientEffectInfo extends ServerPacket {
     public static final ExChangeClientEffectInfo STATIC_FREYA_DEFAULT = new ExChangeClientEffectInfo(0, 0, 1);
     public static final ExChangeClientEffectInfo STATIC_FREYA_DESTROYED = new ExChangeClientEffectInfo(0, 0, 2);
 
-    private final int _type;
-    private final int _key;
-    private final int _value;
+    private final int type;
+    private final int key;
+    private final int value;
 
     /**
      * @param type
@@ -45,16 +45,16 @@ public class ExChangeClientEffectInfo extends ServerPacket {
      * @param value
      */
     public ExChangeClientEffectInfo(int type, int key, int value) {
-        _type = type;
-        _key = key;
-        _value = value;
+        this.type = type;
+        this.key = key;
+        this.value = value;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_CHANGE_CLIENT_EFFECT_INFO.writeId(this, buffer);
-        buffer.writeInt(_type);
-        buffer.writeInt(_key);
-        buffer.writeInt(_value);
+        buffer.writeInt(type);
+        buffer.writeInt(key);
+        buffer.writeInt(value);
     }
 }

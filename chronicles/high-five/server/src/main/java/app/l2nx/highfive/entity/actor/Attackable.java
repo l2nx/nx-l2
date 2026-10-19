@@ -82,47 +82,90 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.logging.Level;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class Attackable extends Npc {
     // Raid
-    private boolean _isRaid = false;
-    private boolean _isRaidMinion = false;
+    @Getter
+    private boolean raid = false;
+
+    @Getter
+    private boolean raidMinion = false;
 
     //
-    private boolean _champion = false;
-    private final Map<Creature, AggroInfo> _aggroList = new ConcurrentHashMap<>();
-    private boolean _canReturnToSpawnPoint = true;
-    private boolean _seeThroughSilentMove = false;
+    @Getter
+    private boolean champion = false;
+
+    @Getter
+    private final Map<Creature, AggroInfo> aggroList = new ConcurrentHashMap<>();
+
+    @Setter
+    private boolean canReturnToSpawnPoint = true;
+
+    @Setter
+    private boolean seeThroughSilentMove = false;
 
     // Manor
-    private boolean _seeded = false;
-    private Seed _seed = null;
-    private int _seederObjId = 0;
-    private final AtomicReference<ItemHolder> _harvestItem = new AtomicReference<>();
+    @Getter
+    private boolean seeded = false;
+
+    @Getter
+    private Seed seed = null;
+
+    @Getter
+    private int seederId = 0;
+
+    private final AtomicReference<ItemHolder> harvestItem = new AtomicReference<>();
 
     // Spoil
-    private int _spoilerObjectId;
-    private final AtomicReference<Collection<ItemHolder>> _sweepItems = new AtomicReference<>();
+    @Getter
+    @Setter
+    private int spoilerObjectId;
+
+    private final AtomicReference<Collection<ItemHolder>> sweepItems = new AtomicReference<>();
 
     // Over-hit
-    private boolean _overhit;
-    private double _overhitDamage;
-    private Creature _overhitAttacker;
+    @Getter
+    private boolean overhit;
+
+    @Getter
+    private double overhitDamage;
+
+    @Getter
+    private Creature overhitAttacker;
 
     // Command channel
-    private CommandChannel _firstCommandChannelAttacked = null;
-    private CommandChannelTimer _commandChannelTimer = null;
-    private long _commandChannelLastAttack = 0;
+    @Getter
+    @Setter
+    private CommandChannel firstCommandChannelAttacked = null;
+
+    @Getter
+    @Setter
+    private CommandChannelTimer commandChannelTimer = null;
+
+    @Getter
+    @Setter
+    private long commandChannelLastAttack = 0;
 
     // Soul crystal
-    private boolean _absorbed;
-    private final Map<Integer, AbsorberInfo> _absorbersList = new ConcurrentHashMap<>();
+    @Getter
+    private boolean absorbed;
+
+    @Getter
+    private final Map<Integer, AbsorberInfo> absorbersList = new ConcurrentHashMap<>();
 
     // Misc
-    private boolean _mustGiveExpSp;
-    private long _spawnTime = System.currentTimeMillis();
-    protected int _onKillDelay = 2500; // L2J uses 5000
+    private boolean mustGiveExpSp;
+
+    @Getter
+    private long spawnTime = System.currentTimeMillis();
+
+    @Getter
+    @Setter
+    protected int onKillDelay = 2500; // L2J uses 5000
 
     /**
      * Creates an attackable NPC.
@@ -132,7 +175,7 @@ public class Attackable extends Npc {
         super(template);
         setInstanceType(InstanceType.Attackable);
         setInvul(false);
-        _mustGiveExpSp = true;
+        mustGiveExpSp = true;
     }
 
     @Override
@@ -150,24 +193,12 @@ public class Attackable extends Npc {
         return new AttackableAI(this);
     }
 
-    public Map<Creature, AggroInfo> getAggroList() {
-        return _aggroList;
-    }
-
     public boolean canReturnToSpawnPoint() {
-        return _canReturnToSpawnPoint;
-    }
-
-    public void setCanReturnToSpawnPoint(boolean value) {
-        _canReturnToSpawnPoint = value;
+        return canReturnToSpawnPoint;
     }
 
     public boolean canSeeThroughSilentMove() {
-        return _seeThroughSilentMove;
-    }
-
-    public void setSeeThroughSilentMove(boolean value) {
-        _seeThroughSilentMove = value;
+        return seeThroughSilentMove;
     }
 
     /**
@@ -211,7 +242,7 @@ public class Attackable extends Npc {
     }
 
     /**
-     * Reduce the current HP of the Attackable, update its _aggroList and launch the doDie Task if necessary.
+     * Reduce the current HP of the Attackable, update its aggroList and launch the doDie Task if necessary.
      * @param damage The HP decrease value
      * @param attacker The Creature who attacks
      * @param awake The awake state (If True : stop sleeping)
@@ -220,35 +251,35 @@ public class Attackable extends Npc {
      */
     @Override
     public void reduceCurrentHp(double damage, Creature attacker, boolean awake, boolean isDOT, Skill skill) {
-        if (_isRaid
+        if (raid
                 && !isMinion()
                 && (attacker != null)
                 && (attacker.getParty() != null)
                 && attacker.getParty().isInCommandChannel()
                 && attacker.getParty().getCommandChannel().meetRaidWarCondition(this)) {
-            if (_firstCommandChannelAttacked == null) // looting right isn't set
+            if (firstCommandChannelAttacked == null) // looting right isn't set
             {
                 synchronized (this) {
-                    if (_firstCommandChannelAttacked == null) {
-                        _firstCommandChannelAttacked = attacker.getParty().getCommandChannel();
-                        if (_firstCommandChannelAttacked != null) {
-                            _commandChannelTimer = new CommandChannelTimer(this);
-                            _commandChannelLastAttack = System.currentTimeMillis();
-                            ThreadPool.schedule(_commandChannelTimer, 10000); // check for last attack
-                            _firstCommandChannelAttacked.broadcastPacket(new CreatureSay(
+                    if (firstCommandChannelAttacked == null) {
+                        firstCommandChannelAttacked = attacker.getParty().getCommandChannel();
+                        if (firstCommandChannelAttacked != null) {
+                            commandChannelTimer = new CommandChannelTimer(this);
+                            commandChannelLastAttack = System.currentTimeMillis();
+                            ThreadPool.schedule(commandChannelTimer, 10000); // check for last attack
+                            firstCommandChannelAttacked.broadcastPacket(new CreatureSay(
                                     null, ChatType.PARTYROOM_ALL, "", "You have looting rights!")); // TODO: retail msg
                         }
                     }
                 }
             } else if (attacker.getParty()
                     .getCommandChannel()
-                    .equals(_firstCommandChannelAttacked)) // is in same channel
+                    .equals(firstCommandChannelAttacked)) // is in same channel
             {
-                _commandChannelLastAttack = System.currentTimeMillis(); // update last attack time
+                commandChannelLastAttack = System.currentTimeMillis(); // update last attack time
             }
         }
 
-        // Add damage and hate to the attacker AggroInfo of the Attackable _aggroList.
+        // Add damage and hate to the attacker AggroInfo of the Attackable aggroList.
         if (attacker != null) {
             addDamage(attacker, (int) damage, skill);
         }
@@ -272,11 +303,11 @@ public class Attackable extends Npc {
     }
 
     public synchronized void setMustRewardExpSp(boolean value) {
-        _mustGiveExpSp = value;
+        mustGiveExpSp = value;
     }
 
     public synchronized boolean getMustRewardExpSP() {
-        return _mustGiveExpSp && !isFakePlayer();
+        return mustGiveExpSp && !isFakePlayer();
     }
 
     /**
@@ -301,7 +332,13 @@ public class Attackable extends Npc {
             if ((player != null) && EventDispatcher.getInstance().hasListener(EventType.ON_ATTACKABLE_KILL, this)) {
                 EventDispatcher.getInstance()
                         .notifyEventAsyncDelayed(
-                                new OnAttackableKill(player, this, killer.isSummon()), this, _onKillDelay);
+                                OnAttackableKill.builder()
+                                        .attacker(player)
+                                        .target(this)
+                                        .summon(killer.isSummon())
+                                        .build(),
+                                this,
+                                onKillDelay);
             }
         }
 
@@ -346,7 +383,7 @@ public class Attackable extends Npc {
     @Override
     protected void calculateRewards(Creature lastAttacker) {
         try {
-            if (_aggroList.isEmpty()) {
+            if (aggroList.isEmpty()) {
                 return;
             }
 
@@ -359,8 +396,8 @@ public class Attackable extends Npc {
             long totalDamage = 0;
 
             // While Iterating over This Map Removing Object is Not Allowed.
-            // Go through the _aggroList of the Attackable.
-            for (AggroInfo info : _aggroList.values()) {
+            // Go through the aggroList of the Attackable.
+            for (AggroInfo info : aggroList.values()) {
                 if (info == null) {
                     continue;
                 }
@@ -395,7 +432,7 @@ public class Attackable extends Npc {
             }
 
             final List<PartyContainer> damagingParties = new ArrayList<>();
-            for (AggroInfo info : _aggroList.values()) {
+            for (AggroInfo info : aggroList.values()) {
                 final Creature attacker = info.getAttacker();
                 if (attacker == null) {
                     continue;
@@ -419,7 +456,7 @@ public class Attackable extends Npc {
                 final PartyContainer container = found != null ? found : new PartyContainer(party, 0L);
                 final List<Player> members = party.getMembers();
                 for (Player e : members) {
-                    final AggroInfo memberAggro = _aggroList.get(e);
+                    final AggroInfo memberAggro = aggroList.get(e);
                     if (memberAggro == null) {
                         continue;
                     }
@@ -488,7 +525,7 @@ public class Attackable extends Npc {
                             double exp = expSp[0];
                             double sp = expSp[1];
 
-                            if (ChampionMonstersConfig.CHAMPION_ENABLE && _champion) {
+                            if (ChampionMonstersConfig.CHAMPION_ENABLE && champion) {
                                 exp *= ChampionMonstersConfig.CHAMPION_REWARDS_EXP_SP;
                                 sp *= ChampionMonstersConfig.CHAMPION_REWARDS_EXP_SP;
                             }
@@ -496,8 +533,8 @@ public class Attackable extends Npc {
                             exp *= penalty;
 
                             // Check for an over-hit enabled strike.
-                            final Creature overhitAttacker = _overhitAttacker;
-                            if (_overhit && (overhitAttacker != null)) {
+                            final Creature overhitAttacker = this.overhitAttacker;
+                            if (overhit && (overhitAttacker != null)) {
                                 final Player player = overhitAttacker.asPlayer();
                                 if ((player != null) && (attacker == player)) {
                                     attacker.sendPacket(SystemMessageId.OVER_HIT);
@@ -587,7 +624,7 @@ public class Attackable extends Npc {
                         double exp = expSp[0];
                         double sp = expSp[1];
 
-                        if (ChampionMonstersConfig.CHAMPION_ENABLE && _champion) {
+                        if (ChampionMonstersConfig.CHAMPION_ENABLE && champion) {
                             exp *= ChampionMonstersConfig.CHAMPION_REWARDS_EXP_SP;
                             sp *= ChampionMonstersConfig.CHAMPION_REWARDS_EXP_SP;
                         }
@@ -598,8 +635,8 @@ public class Attackable extends Npc {
                         // Check for an over-hit enabled strike.
                         // (When in party, the over-hit exp bonus is given to the whole party and splitted
                         // proportionally through the party members).
-                        final Creature overhitAttacker = _overhitAttacker;
-                        if (_overhit && (overhitAttacker != null)) {
+                        final Creature overhitAttacker = this.overhitAttacker;
+                        if (overhit && (overhitAttacker != null)) {
                             final Player player = overhitAttacker.asPlayer();
                             if ((player != null) && (attacker == player)) {
                                 attacker.sendPacket(SystemMessageId.OVER_HIT);
@@ -616,7 +653,7 @@ public class Attackable extends Npc {
                 }
             }
         } catch (Exception e) {
-            LOGGER.log(Level.SEVERE, "", e);
+            log.error("", e);
         }
     }
 
@@ -635,13 +672,13 @@ public class Attackable extends Npc {
     }
 
     public Creature getMainDamageDealer() {
-        if (_aggroList.isEmpty()) {
+        if (aggroList.isEmpty()) {
             return null;
         }
 
         long damage = 0;
         Creature damageDealer = null;
-        for (AggroInfo info : _aggroList.values()) {
+        for (AggroInfo info : aggroList.values()) {
             if ((info != null)
                     && (info.getDamage() > damage)
                     && (calculateDistance3D(info.getAttacker()) < PlayerConfig.ALT_PARTY_RANGE)) {
@@ -654,7 +691,7 @@ public class Attackable extends Npc {
     }
 
     /**
-     * Add damage and hate to the attacker AggroInfo of the Attackable _aggroList.
+     * Add damage and hate to the attacker AggroInfo of the Attackable aggroList.
      * @param attacker The Creature that gave damages to this Attackable
      * @param damage The number of damages given by the attacker Creature
      * @param skill
@@ -685,10 +722,17 @@ public class Attackable extends Npc {
                         && EventDispatcher.getInstance().hasListener(EventType.ON_ATTACKABLE_ATTACK, this)) {
                     EventDispatcher.getInstance()
                             .notifyEventAsync(
-                                    new OnAttackableAttack(player, this, damage, skill, attacker.isSummon()), this);
+                                    OnAttackableAttack.builder()
+                                            .attacker(player)
+                                            .target(this)
+                                            .damage(damage)
+                                            .skill(skill)
+                                            .summon(attacker.isSummon())
+                                            .build(),
+                                    this);
                 }
             } catch (Exception e) {
-                LOGGER.log(Level.SEVERE, "", e);
+                log.error("", e);
             }
         }
     }
@@ -743,8 +787,8 @@ public class Attackable extends Npc {
             return;
         }
 
-        // Get the AggroInfo of the attacker Creature from the _aggroList of the Attackable.
-        final AggroInfo ai = _aggroList.computeIfAbsent(attacker, AggroInfo::new);
+        // Get the AggroInfo of the attacker Creature from the aggroList of the Attackable.
+        final AggroInfo ai = aggroList.computeIfAbsent(attacker, AggroInfo::new);
         ai.addDamage(damage);
 
         // Traps does not cause aggro
@@ -770,7 +814,12 @@ public class Attackable extends Npc {
             if (EventDispatcher.getInstance().hasListener(EventType.ON_ATTACKABLE_AGGRO_RANGE_ENTER, this)) {
                 EventDispatcher.getInstance()
                         .notifyEventAsync(
-                                new OnAttackableAggroRangeEnter(this, targetPlayer, attacker.isSummon()), this);
+                                OnAttackableAggroRangeEnter.builder()
+                                        .npc(this)
+                                        .player(targetPlayer)
+                                        .summon(attacker.isSummon())
+                                        .build(),
+                                this);
             }
         } else if ((targetPlayer == null) && (aggro == 0)) {
             aggro = 1;
@@ -801,7 +850,7 @@ public class Attackable extends Npc {
                 return;
             }
 
-            for (AggroInfo ai : _aggroList.values()) {
+            for (AggroInfo ai : aggroList.values()) {
                 ai.addHate(amount);
             }
 
@@ -816,7 +865,7 @@ public class Attackable extends Npc {
             return;
         }
 
-        final AggroInfo ai = _aggroList.get(target);
+        final AggroInfo ai = aggroList.get(target);
         if (ai == null) {
             return;
         }
@@ -833,7 +882,7 @@ public class Attackable extends Npc {
     }
 
     /**
-     * Clears _aggroList hate of the Creature without removing from the list.
+     * Clears aggroList hate of the Creature without removing from the list.
      * @param target
      */
     public void stopHating(Creature target) {
@@ -841,17 +890,17 @@ public class Attackable extends Npc {
             return;
         }
 
-        final AggroInfo ai = _aggroList.get(target);
+        final AggroInfo ai = aggroList.get(target);
         if (ai != null) {
             ai.stopHate();
         }
     }
 
     /**
-     * @return the most hated Creature of the Attackable _aggroList.
+     * @return the most hated Creature of the Attackable aggroList.
      */
     public Creature getMostHated() {
-        if (_aggroList.isEmpty() || isAlikeDead()) {
+        if (aggroList.isEmpty() || isAlikeDead()) {
             return null;
         }
 
@@ -860,7 +909,7 @@ public class Attackable extends Npc {
 
         // While Interacting over This Map Removing Object is Not Allowed.
         // Go through the aggroList of the Attackable.
-        for (AggroInfo ai : _aggroList.values()) {
+        for (AggroInfo ai : aggroList.values()) {
             if (ai == null) {
                 continue;
             }
@@ -875,10 +924,10 @@ public class Attackable extends Npc {
     }
 
     /**
-     * @return the 2 most hated Creature of the Attackable _aggroList.
+     * @return the 2 most hated Creature of the Attackable aggroList.
      */
     public List<Creature> get2MostHated() {
-        if (_aggroList.isEmpty() || isAlikeDead()) {
+        if (aggroList.isEmpty() || isAlikeDead()) {
             return null;
         }
 
@@ -889,7 +938,7 @@ public class Attackable extends Npc {
 
         // While iterating over this map removing objects is not allowed.
         // Go through the aggroList of the Attackable.
-        for (AggroInfo ai : _aggroList.values()) {
+        for (AggroInfo ai : aggroList.values()) {
             if (ai == null) {
                 continue;
             }
@@ -913,12 +962,12 @@ public class Attackable extends Npc {
     }
 
     public List<Creature> getHateList() {
-        if (_aggroList.isEmpty() || isAlikeDead()) {
+        if (aggroList.isEmpty() || isAlikeDead()) {
             return null;
         }
 
         final List<Creature> result = new ArrayList<>();
-        for (AggroInfo ai : _aggroList.values()) {
+        for (AggroInfo ai : aggroList.values()) {
             if (ai == null) {
                 continue;
             }
@@ -933,14 +982,14 @@ public class Attackable extends Npc {
 
     /**
      * @param target The Creature whose hate level must be returned
-     * @return the hate level of the Attackable against this Creature contained in _aggroList.
+     * @return the hate level of the Attackable against this Creature contained in aggroList.
      */
     public long getHating(Creature target) {
-        if (_aggroList.isEmpty() || (target == null)) {
+        if (aggroList.isEmpty() || (target == null)) {
             return 0;
         }
 
-        final AggroInfo ai = _aggroList.get(target);
+        final AggroInfo ai = aggroList.get(target);
         if (ai == null) {
             return 0;
         }
@@ -949,13 +998,13 @@ public class Attackable extends Npc {
             final Player act = ai.getAttacker().asPlayer();
             if (act.isInvisible() || act.isInvul() || act.isSpawnProtected()) {
                 // Remove Object Should Use This Method and Can be Blocked While Interacting.
-                _aggroList.remove(target);
+                aggroList.remove(target);
                 return 0;
             }
         }
 
         if (!ai.getAttacker().isSpawned() || ai.getAttacker().isInvisible()) {
-            _aggroList.remove(target);
+            aggroList.remove(target);
             return 0;
         }
 
@@ -1009,8 +1058,8 @@ public class Attackable extends Npc {
                         if (PlayerConfig.AUTO_LOOT_ITEM_IDS.contains(item.getId())
                                 || isFlying()
                                 || (!item.hasExImmediateEffect()
-                                        && ((!_isRaid && PlayerConfig.AUTO_LOOT)
-                                                || (_isRaid && PlayerConfig.AUTO_LOOT_RAIDS)))) {
+                                        && ((!raid && PlayerConfig.AUTO_LOOT)
+                                                || (raid && PlayerConfig.AUTO_LOOT_RAIDS)))) {
                             // Do nothing.
                         } else if (PlayerConfig.AUTO_LOOT_HERBS && item.hasExImmediateEffect()) {
                             for (SkillHolder skillHolder : item.getSkills()) {
@@ -1035,7 +1084,7 @@ public class Attackable extends Npc {
         CursedWeaponsManager.getInstance().checkDrop(this, player);
 
         if (isSpoiled()) {
-            _sweepItems.set(npcTemplate.calculateDrops(DropType.SPOIL, this, player));
+            sweepItems.set(npcTemplate.calculateDrops(DropType.SPOIL, this, player));
         }
 
         final Collection<ItemHolder> deathItems = npcTemplate.calculateDrops(DropType.DROP, this, player);
@@ -1047,7 +1096,7 @@ public class Attackable extends Npc {
                 if (PlayerConfig.AUTO_LOOT_ITEM_IDS.contains(item.getId())
                         || isFlying()
                         || (!item.hasExImmediateEffect()
-                                && ((!_isRaid && PlayerConfig.AUTO_LOOT) || (_isRaid && PlayerConfig.AUTO_LOOT_RAIDS)))
+                                && ((!raid && PlayerConfig.AUTO_LOOT) || (raid && PlayerConfig.AUTO_LOOT_RAIDS)))
                         || (item.hasExImmediateEffect() && PlayerConfig.AUTO_LOOT_HERBS)) {
                     player.doAutoLoot(this, drop); // Give the item(s) to the Player that has killed the Attackable.
                 } else {
@@ -1055,7 +1104,7 @@ public class Attackable extends Npc {
                 }
 
                 // Broadcast message if RaidBoss was defeated.
-                if (_isRaid && !_isRaidMinion && (drop.getCount() > 0)) {
+                if (raid && !raidMinion && (drop.getCount() > 0)) {
                     final SystemMessage sm = new SystemMessage(SystemMessageId.C1_DIED_AND_DROPPED_S3_S2);
                     sm.addString(getName());
                     sm.addItemName(item);
@@ -1081,19 +1130,19 @@ public class Attackable extends Npc {
      * @return {@code true} if the creature is in the aggro list, {@code false} otherwise
      */
     public boolean isInAggroList(Creature creature) {
-        return (creature != null) && _aggroList.containsKey(creature);
+        return (creature != null) && aggroList.containsKey(creature);
     }
 
     /**
-     * Clear the _aggroList of the Attackable.
+     * Clear the aggroList of the Attackable.
      */
     public void clearAggroList() {
-        _aggroList.clear();
+        aggroList.clear();
 
         // clear overhit values
-        _overhit = false;
-        _overhitDamage = 0;
-        _overhitAttacker = null;
+        overhit = false;
+        overhitDamage = 0;
+        overhitAttacker = null;
     }
 
     /**
@@ -1101,14 +1150,14 @@ public class Attackable extends Npc {
      */
     @Override
     public boolean isSweepActive() {
-        return _sweepItems.get() != null;
+        return sweepItems.get() != null;
     }
 
     /**
      * @return a copy of dummy items for the spoil loot.
      */
     public List<ItemTemplate> getSpoilLootItems() {
-        final Collection<ItemHolder> sweepItems = _sweepItems.get();
+        final Collection<ItemHolder> sweepItems = this.sweepItems.get();
         final List<ItemTemplate> lootItems = new ArrayList<>();
         if (sweepItems != null) {
             for (ItemHolder item : sweepItems) {
@@ -1123,14 +1172,14 @@ public class Attackable extends Npc {
      * @return table containing all Item that can be spoiled.
      */
     public Collection<ItemHolder> takeSweep() {
-        return _sweepItems.getAndSet(null);
+        return sweepItems.getAndSet(null);
     }
 
     /**
      * @return table containing all Item that can be harvested.
      */
     public ItemHolder takeHarvest() {
-        return _harvestItem.getAndSet(null);
+        return harvestItem.getAndSet(null);
     }
 
     /**
@@ -1158,7 +1207,7 @@ public class Attackable extends Npc {
      * @return {@code true} if is the spoiler or is in the spoiler party.
      */
     public boolean checkSpoilOwner(Player sweeper, boolean sendMessage) {
-        if ((sweeper.getObjectId() == _spoilerObjectId) || sweeper.isInLooterParty(_spoilerObjectId)) {
+        if ((sweeper.getObjectId() == spoilerObjectId) || sweeper.isInLooterParty(spoilerObjectId)) {
             return true;
         }
 
@@ -1174,7 +1223,7 @@ public class Attackable extends Npc {
      * @param status The status of the over-hit flag
      */
     public void overhitEnabled(boolean status) {
-        _overhit = status;
+        overhit = status;
     }
 
     /**
@@ -1190,64 +1239,34 @@ public class Attackable extends Npc {
             // We didn't killed the mob with the over-hit strike. (it wasn't really an over-hit strike).
             // Let's just clear all the over-hit related values.
             overhitEnabled(false);
-            _overhitDamage = 0;
-            _overhitAttacker = null;
+            overhitDamage = 0;
+            overhitAttacker = null;
             return;
         }
 
         overhitEnabled(true);
-        _overhitDamage = overhitDmg;
-        _overhitAttacker = attacker;
-    }
-
-    /**
-     * Return the Creature who hit on the Attackable using an over-hit enabled skill.
-     * @return Creature attacker
-     */
-    public Creature getOverhitAttacker() {
-        return _overhitAttacker;
-    }
-
-    /**
-     * Return the amount of damage done on the Attackable using an over-hit enabled skill.
-     * @return double damage
-     */
-    public double getOverhitDamage() {
-        return _overhitDamage;
-    }
-
-    /**
-     * @return True if the Attackable was hit by an over-hit enabled skill.
-     */
-    public boolean isOverhit() {
-        return _overhit;
+        overhitDamage = overhitDmg;
+        overhitAttacker = attacker;
     }
 
     /**
      * Activate the absorbed soul condition on the Attackable.
      */
     public void absorbSoul() {
-        _absorbed = true;
+        absorbed = true;
     }
 
     /**
-     * @return True if the Attackable had his soul absorbed.
-     */
-    public boolean isAbsorbed() {
-        return _absorbed;
-    }
-
-    /**
-     * Adds an attacker that successfully absorbed the soul of this Attackable into the _absorbersList.
+     * Adds an attacker that successfully absorbed the soul of this Attackable into the absorbersList.
      * @param attacker
      */
     public void addAbsorber(Player attacker) {
-        // If we have no _absorbersList initiated, do it
-        final AbsorberInfo ai = _absorbersList.get(attacker.getObjectId());
+        // If we have no absorbersList initiated, do it
+        final AbsorberInfo ai = absorbersList.get(attacker.getObjectId());
 
-        // If the Creature attacker isn't already in the _absorbersList of this Attackable, add it
+        // If the Creature attacker isn't already in the absorbersList of this Attackable, add it
         if (ai == null) {
-            _absorbersList.put(attacker.getObjectId(), new AbsorberInfo(attacker.getObjectId(), getCurrentHp()));
+            absorbersList.put(attacker.getObjectId(), new AbsorberInfo(attacker.getObjectId(), getCurrentHp()));
         } else {
             ai.setAbsorbedHp(getCurrentHp());
         }
@@ -1257,12 +1276,8 @@ public class Attackable extends Npc {
     }
 
     public void resetAbsorbList() {
-        _absorbed = false;
-        _absorbersList.clear();
-    }
-
-    public Map<Integer, AbsorberInfo> getAbsorbersList() {
-        return _absorbersList;
+        absorbed = false;
+        absorbersList.clear();
     }
 
     /**
@@ -1334,7 +1349,7 @@ public class Attackable extends Npc {
     public double calculateOverhitExp(double exp) {
         // Get the percentage based on the total of extra (over-hit) damage done relative to the total (maximum) ammount
         // of HP on the Attackable.
-        double overhitPercentage = ((_overhitDamage * 100) / getMaxHp());
+        double overhitPercentage = ((overhitDamage * 100) / getMaxHp());
 
         // Over-hit damage percentages are limited to 25% max.
         if (overhitPercentage > 25) {
@@ -1357,7 +1372,7 @@ public class Attackable extends Npc {
     @Override
     public void onSpawn() {
         // Keep track of the spawn time.
-        _spawnTime = System.currentTimeMillis();
+        spawnTime = System.currentTimeMillis();
 
         super.onSpawn();
 
@@ -1368,7 +1383,7 @@ public class Attackable extends Npc {
         clearAggroList();
 
         // Clear Harvester reward
-        _harvestItem.set(null);
+        harvestItem.set(null);
 
         // fake players
         if (isFakePlayer()) {
@@ -1381,14 +1396,14 @@ public class Attackable extends Npc {
         }
 
         // Clear mod Seeded stat
-        _seeded = false;
-        _seed = null;
-        _seederObjId = 0;
+        seeded = false;
+        seed = null;
+        seederId = 0;
 
         // Clear overhit value
         overhitEnabled(false);
 
-        _sweepItems.set(null);
+        sweepItems.set(null);
         resetAbsorbList();
 
         setWalking();
@@ -1411,34 +1426,11 @@ public class Attackable extends Npc {
     }
 
     /**
-     * @return the time in milliseconds when this attackable was spawned.
-     */
-    public long getSpawnTime() {
-        return _spawnTime;
-    }
-
-    /**
      * Checks if it is spoiled.
      * @return {@code true} if it is spoiled, {@code false} otherwise
      */
     public boolean isSpoiled() {
-        return _spoilerObjectId != 0;
-    }
-
-    /**
-     * Gets the spoiler object ID.
-     * @return the spoiler object ID if it is spoiled, 0 otherwise
-     */
-    public int getSpoilerObjectId() {
-        return _spoilerObjectId;
-    }
-
-    /**
-     * Sets the spoiler object ID.
-     * @param spoilerObjectId spoilerObjectId the spoiler object ID
-     */
-    public void setSpoilerObjectId(int spoilerObjectId) {
-        _spoilerObjectId = spoilerObjectId;
+        return spoilerObjectId != 0;
     }
 
     /**
@@ -1446,11 +1438,11 @@ public class Attackable extends Npc {
      * @param seeder
      */
     public void setSeeded(Player seeder) {
-        if ((_seed == null) || (_seederObjId != seeder.getObjectId())) {
+        if ((seed == null) || (seederId != seeder.getObjectId())) {
             return;
         }
 
-        _seeded = true;
+        seeded = true;
         int count = 1;
         for (int skillId : getTemplate().getSkills().keySet()) {
             switch (skillId) {
@@ -1498,12 +1490,12 @@ public class Attackable extends Npc {
         }
 
         // hi-level mobs bonus
-        final int diff = getLevel() - _seed.getLevel() - 5;
+        final int diff = getLevel() - seed.getLevel() - 5;
         if (diff > 0) {
             count += diff;
         }
 
-        _harvestItem.set(new ItemHolder(_seed.getCropId(), count * RatesConfig.RATE_DROP_MANOR));
+        harvestItem.set(new ItemHolder(seed.getCropId(), count * RatesConfig.RATE_DROP_MANOR));
     }
 
     /**
@@ -1512,36 +1504,12 @@ public class Attackable extends Npc {
      * @param seeder - player who sows the seed
      */
     public void setSeeded(Seed seed, Player seeder) {
-        if (_seeded) {
+        if (seeded) {
             return;
         }
 
-        _seed = seed;
-        _seederObjId = seeder.getObjectId();
-    }
-
-    public int getSeederId() {
-        return _seederObjId;
-    }
-
-    public Seed getSeed() {
-        return _seed;
-    }
-
-    public boolean isSeeded() {
-        return _seeded;
-    }
-
-    /**
-     * Set delay for onKill() call, in ms Default: 5000 ms
-     * @param delay
-     */
-    public void setOnKillDelay(int delay) {
-        _onKillDelay = delay;
-    }
-
-    public int getOnKillDelay() {
-        return _onKillDelay;
+        this.seed = seed;
+        seederId = seeder.getObjectId();
     }
 
     /**
@@ -1554,36 +1522,6 @@ public class Attackable extends Npc {
         return ((GeneralConfig.MAX_MONSTER_ANIMATION > 0)
                 && isRandomAnimationEnabled()
                 && !(this instanceof GrandBoss));
-    }
-
-    public void setCommandChannelTimer(CommandChannelTimer commandChannelTimer) {
-        _commandChannelTimer = commandChannelTimer;
-    }
-
-    public CommandChannelTimer getCommandChannelTimer() {
-        return _commandChannelTimer;
-    }
-
-    public CommandChannel getFirstCommandChannelAttacked() {
-        return _firstCommandChannelAttacked;
-    }
-
-    public void setFirstCommandChannelAttacked(CommandChannel firstCommandChannelAttacked) {
-        _firstCommandChannelAttacked = firstCommandChannelAttacked;
-    }
-
-    /**
-     * @return the _commandChannelLastAttack
-     */
-    public long getCommandChannelLastAttack() {
-        return _commandChannelLastAttack;
-    }
-
-    /**
-     * @param channelLastAttack the _commandChannelLastAttack to set
-     */
-    public void setCommandChannelLastAttack(long channelLastAttack) {
-        _commandChannelLastAttack = channelLastAttack;
     }
 
     public void returnHome() {
@@ -1619,13 +1557,7 @@ public class Attackable extends Npc {
      * True if vitality rate for exp and sp should be applied
      */
     public boolean useVitalityRate() {
-        return !_champion || ChampionMonstersConfig.CHAMPION_ENABLE_VITALITY;
-    }
-
-    /** Return True if the Creature is RaidBoss or his minion. */
-    @Override
-    public boolean isRaid() {
-        return _isRaid;
+        return !champion || ChampionMonstersConfig.CHAMPION_ENABLE_VITALITY;
     }
 
     /**
@@ -1633,7 +1565,7 @@ public class Attackable extends Npc {
      * @param isRaid
      */
     public void setIsRaid(boolean isRaid) {
-        _isRaid = isRaid;
+        raid = isRaid;
     }
 
     /**
@@ -1641,13 +1573,8 @@ public class Attackable extends Npc {
      * @param value
      */
     public void setIsRaidMinion(boolean value) {
-        _isRaid = value;
-        _isRaidMinion = value;
-    }
-
-    @Override
-    public boolean isRaidMinion() {
-        return _isRaidMinion;
+        raid = value;
+        raidMinion = value;
     }
 
     @Override
@@ -1663,15 +1590,10 @@ public class Attackable extends Npc {
     }
 
     public void setChampion(boolean champ) {
-        _champion = champ;
+        champion = champ;
         if (ChampionMonstersConfig.SHOW_CHAMPION_AURA) {
             setTeam(champ ? Team.RED : Team.NONE);
         }
-    }
-
-    @Override
-    public boolean isChampion() {
-        return _champion;
     }
 
     @Override

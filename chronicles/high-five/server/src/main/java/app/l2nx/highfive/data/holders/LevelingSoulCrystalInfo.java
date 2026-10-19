@@ -23,27 +23,7 @@
 package app.l2nx.highfive.data.holders;
 
 import app.l2nx.highfive.data.enums.AbsorbCrystalType;
+import lombok.Builder;
 
-public final class LevelingSoulCrystalInfo {
-    private final AbsorbCrystalType _absorbCrystalType;
-    private final boolean _isSkillNeeded;
-    private final int _chance;
-
-    public LevelingSoulCrystalInfo(AbsorbCrystalType absorbCrystalType, boolean isSkillNeeded, int chance) {
-        _absorbCrystalType = absorbCrystalType;
-        _isSkillNeeded = isSkillNeeded;
-        _chance = chance;
-    }
-
-    public AbsorbCrystalType getAbsorbCrystalType() {
-        return _absorbCrystalType;
-    }
-
-    public int getChance() {
-        return _chance;
-    }
-
-    public boolean isSkillNeeded() {
-        return _isSkillNeeded;
-    }
-}
+@Builder(toBuilder = true)
+public record LevelingSoulCrystalInfo(AbsorbCrystalType absorbCrystalType, boolean skillNeeded, int chance) {}

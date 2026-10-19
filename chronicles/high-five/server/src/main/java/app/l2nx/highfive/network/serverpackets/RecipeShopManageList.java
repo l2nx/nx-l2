@@ -32,26 +32,26 @@ import java.util.Collection;
 import java.util.Iterator;
 
 public class RecipeShopManageList extends ServerPacket {
-    private final Player _seller;
-    private final boolean _isDwarven;
-    private Collection<RecipeList> _recipes;
+    private final Player seller;
+    private final boolean dwarven;
+    private Collection<RecipeList> recipes;
 
     public RecipeShopManageList(Player seller, boolean isDwarven) {
-        _seller = seller;
-        _isDwarven = isDwarven;
-        if (_isDwarven && _seller.hasDwarvenCraft()) {
-            _recipes = _seller.getDwarvenRecipeBook();
+        this.seller = seller;
+        dwarven = isDwarven;
+        if (dwarven && this.seller.hasDwarvenCraft()) {
+            recipes = this.seller.getDwarvenRecipeBook();
         } else {
-            _recipes = _seller.getCommonRecipeBook();
+            recipes = this.seller.getCommonRecipeBook();
         }
 
-        if (_seller.hasManufactureShop()) {
+        if (this.seller.hasManufactureShop()) {
             final Iterator<ManufactureItem> it =
-                    _seller.getManufactureItems().values().iterator();
+                    this.seller.getManufactureItems().values().iterator();
             ManufactureItem item;
             while (it.hasNext()) {
                 item = it.next();
-                if ((item.isDwarven() != _isDwarven) || !seller.hasRecipeList(item.getRecipeId())) {
+                if ((item.isDwarven() != dwarven) || !seller.hasRecipeList(item.getRecipeId())) {
                     it.remove();
                 }
             }
@@ -61,26 +61,26 @@ public class RecipeShopManageList extends ServerPacket {
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.RECIPE_SHOP_MANAGE_LIST.writeId(this, buffer);
-        buffer.writeInt(_seller.getObjectId());
-        buffer.writeInt((int) _seller.getAdena());
-        buffer.writeInt(!_isDwarven);
-        if (_recipes == null) {
+        buffer.writeInt(seller.getObjectId());
+        buffer.writeInt((int) seller.getAdena());
+        buffer.writeInt(!dwarven);
+        if (recipes == null) {
             buffer.writeInt(0);
         } else {
-            buffer.writeInt(_recipes.size()); // number of items in recipe book
+            buffer.writeInt(recipes.size()); // number of items in recipe book
             int count = 0;
-            for (RecipeList recipe : _recipes) {
+            for (RecipeList recipe : recipes) {
                 count++;
                 buffer.writeInt(recipe.getId());
                 buffer.writeInt(count);
             }
         }
 
-        if (!_seller.hasManufactureShop()) {
+        if (!seller.hasManufactureShop()) {
             buffer.writeInt(0);
         } else {
-            buffer.writeInt(_seller.getManufactureItems().size());
-            for (ManufactureItem item : _seller.getManufactureItems().values()) {
+            buffer.writeInt(seller.getManufactureItems().size());
+            for (ManufactureItem item : seller.getManufactureItems().values()) {
                 buffer.writeInt(item.getRecipeId());
                 buffer.writeInt(0);
                 buffer.writeLong(item.getCost());

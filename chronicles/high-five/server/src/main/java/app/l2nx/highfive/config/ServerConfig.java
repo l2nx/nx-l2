@@ -45,11 +45,10 @@ import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Properties;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import java.util.stream.IntStream;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
@@ -59,8 +58,8 @@ import org.w3c.dom.Node;
  * This class loads all the server related configurations.
  * @author Mobius
  */
+@Slf4j
 public class ServerConfig {
-    private static final Logger LOGGER = Logger.getLogger(ServerConfig.class.getName());
 
     // Files
     private static final String SERVER_CONFIG_FILE = "./config/Server.ini";
@@ -128,7 +127,7 @@ public class ServerConfig {
         try {
             DATAPACK_ROOT = new File(config.getString("DatapackRoot", ".").replace('\\', '/')).getCanonicalFile();
         } catch (IOException e) {
-            LOGGER.log(Level.WARNING, "Error setting datapack root!", e);
+            log.warn("Error setting datapack root!", e);
             DATAPACK_ROOT = new File(".");
         }
 
@@ -136,7 +135,7 @@ public class ServerConfig {
             SCRIPT_ROOT =
                     new File(config.getString("ScriptRoot", "./data/scripts").replace('\\', '/')).getCanonicalFile();
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, "Error setting script root!", e);
+            log.warn("Error setting script root!", e);
             SCRIPT_ROOT = new File(".");
         }
 
@@ -144,7 +143,7 @@ public class ServerConfig {
         try {
             charNamePattern = Pattern.compile(config.getString("CnameTemplate", ".*"));
         } catch (PatternSyntaxException e) {
-            LOGGER.log(Level.WARNING, "Character name pattern is invalid!", e);
+            log.warn("Character name pattern is invalid!", e);
             charNamePattern = Pattern.compile(".*");
         }
         CHARNAME_TEMPLATE_PATTERN = charNamePattern;
@@ -153,7 +152,7 @@ public class ServerConfig {
         try {
             petNamePattern = Pattern.compile(config.getString("PetNameTemplate", ".*"));
         } catch (PatternSyntaxException e) {
-            LOGGER.log(Level.WARNING, "Pet name pattern is invalid!", e);
+            log.warn("Pet name pattern is invalid!", e);
             petNamePattern = Pattern.compile(".*");
         }
         PET_NAME_TEMPLATE_PATTERN = petNamePattern;
@@ -162,7 +161,7 @@ public class ServerConfig {
         try {
             clanNamePattern = Pattern.compile(config.getString("ClanNameTemplate", ".*"));
         } catch (PatternSyntaxException e) {
-            LOGGER.log(Level.WARNING, "Clan name pattern is invalid!", e);
+            log.warn("Clan name pattern is invalid!", e);
             clanNamePattern = Pattern.compile(".*");
         }
 
@@ -185,7 +184,7 @@ public class ServerConfig {
             try {
                 PROTOCOL_LIST.add(Integer.parseInt(protocol.trim()));
             } catch (NumberFormatException e) {
-                LOGGER.warning("Wrong config protocol version: " + protocol + ". Skipped.");
+                log.warn("Wrong config protocol version: {}. Skipped.", protocol);
             }
         }
 
@@ -238,9 +237,9 @@ public class ServerConfig {
                     .map(String::trim)
                     .filter(line -> (!line.isEmpty() && (line.charAt(0) != '#')))
                     .toList();
-            LOGGER.info("Loaded " + FILTER_LIST.size() + " Filter Words.");
+            log.info("Loaded {} Filter Words.", FILTER_LIST.size());
         } catch (IOException e) {
-            LOGGER.log(Level.WARNING, "Error while loading chat filter words!", e);
+            log.warn("Error while loading chat filter words!", e);
         }
     }
 
@@ -260,13 +259,13 @@ public class ServerConfig {
                 try {
                     HEX_ID = new BigInteger(hexId.getString("HexID", null), 16).toByteArray();
                 } catch (Exception e) {
-                    LOGGER.warning("Could not load HexID file (" + HEXID_FILE + "). Hopefully login will give us one.");
+                    log.warn("Could not load HexID file ({}). Hopefully login will give us one.", HEXID_FILE);
                 }
             }
         }
 
         if (HEX_ID == null) {
-            LOGGER.warning("Could not load HexID file (" + HEXID_FILE + "). Hopefully login will give us one.");
+            log.warn("Could not load HexID file ({}). Hopefully login will give us one.", HEXID_FILE);
         }
     }
 
@@ -297,12 +296,12 @@ public class ServerConfig {
                     hexSetting.setProperty("ServerID", String.valueOf(serverId));
                     hexSetting.setProperty("HexID", hexId);
                     hexSetting.store(out, "The HexId to Auth into LoginServer");
-                    LOGGER.log(Level.INFO, "Gameserver: Generated new HexID file for server id " + serverId + ".");
+                    log.info("Gameserver: Generated new HexID file for server id {}.", serverId);
                 }
             }
         } catch (Exception e) {
-            LOGGER.warning("Failed to save hex id to " + fileName + " File.");
-            LOGGER.warning("Config: " + e.getMessage());
+            log.warn("Failed to save hex id to {} File.", fileName);
+            log.warn("Config: {}", e.getMessage());
         }
     }
 
@@ -358,9 +357,10 @@ public class ServerConfig {
      * If the configuration file exists, it parses the file to define subnets and hosts manually. If the file is missing, it attempts automatic configuration by retrieving the external IP address and identifying local network interfaces to configure internal IP addresses and subnets.
      * </p>
      */
+    @Slf4j
     private static class IPConfigData implements IXmlReader {
-        private static final List<String> _subnets = new ArrayList<>(5);
-        private static final List<String> _hosts = new ArrayList<>(5);
+        private static final List<String> subnets = new ArrayList<>(5);
+        private static final List<String> hosts = new ArrayList<>(5);
 
         public IPConfigData() {
             load();
@@ -370,11 +370,11 @@ public class ServerConfig {
         public void load() {
             final File file = new File(IPCONFIG_FILE);
             if (file.exists()) {
-                LOGGER.info("Network Config: ipconfig.xml exists, using manual configuration...");
+                log.info("Network Config: ipconfig.xml exists, using manual configuration...");
                 parseFile(new File(IPCONFIG_FILE));
             } else // Auto configuration...
             {
-                LOGGER.info("Network Config: ipconfig.xml does not exist, using automatic configuration...");
+                log.info("Network Config: ipconfig.xml does not exist, using automatic configuration...");
                 autoIpConfig();
             }
         }
@@ -387,26 +387,26 @@ public class ServerConfig {
                     for (Node d = n.getFirstChild(); d != null; d = d.getNextSibling()) {
                         if ("define".equalsIgnoreCase(d.getNodeName())) {
                             attrs = d.getAttributes();
-                            _subnets.add(attrs.getNamedItem("subnet").getNodeValue());
-                            _hosts.add(attrs.getNamedItem("address").getNodeValue());
+                            subnets.add(attrs.getNamedItem("subnet").getNodeValue());
+                            hosts.add(attrs.getNamedItem("address").getNodeValue());
 
-                            if (_hosts.size() != _subnets.size()) {
-                                LOGGER.warning("Failed to Load " + IPCONFIG_FILE
-                                        + " File - subnets does not match server addresses.");
+                            if (hosts.size() != subnets.size()) {
+                                log.warn(
+                                        "Failed to Load {} File - subnets does not match server addresses.",
+                                        IPCONFIG_FILE);
                             }
                         }
                     }
 
                     final Node att = n.getAttributes().getNamedItem("address");
                     if (att == null) {
-                        LOGGER.warning(
-                                "Failed to load " + IPCONFIG_FILE + " file - default server address is missing.");
-                        _hosts.add("127.0.0.1");
+                        log.warn("Failed to load {} file - default server address is missing.", IPCONFIG_FILE);
+                        hosts.add("127.0.0.1");
                     } else {
-                        _hosts.add(att.getNodeValue());
+                        hosts.add(att.getNodeValue());
                     }
 
-                    _subnets.add("0.0.0.0/0");
+                    subnets.add("0.0.0.0/0");
                 }
             }
         }
@@ -422,8 +422,7 @@ public class ServerConfig {
                     externalIp = in.readLine();
                 }
             } catch (IOException e) {
-                LOGGER.log(
-                        Level.INFO,
+                log.info(
                         "Failed to connect to checkip.amazonaws.com please check your internet connection using 127.0.0.1!");
                 externalIp = "127.0.0.1";
             }
@@ -461,18 +460,18 @@ public class ServerConfig {
                                 ((subnetAddressInt >> 24) & 0xFF) + "." + ((subnetAddressInt >> 16) & 0xFF) + "."
                                         + ((subnetAddressInt >> 8) & 0xFF) + "." + (subnetAddressInt & 0xFF);
                         final String subnet = subnetAddress + '/' + subnetPrefixLength;
-                        if (!_subnets.contains(subnet) && !subnet.equals("0.0.0.0/0")) {
-                            _subnets.add(subnet);
-                            _hosts.add(hostAddress);
-                            LOGGER.info("Network Config: Adding new subnet: " + subnet + " address: " + hostAddress);
+                        if (!subnets.contains(subnet) && !subnet.equals("0.0.0.0/0")) {
+                            subnets.add(subnet);
+                            hosts.add(hostAddress);
+                            log.info("Network Config: Adding new subnet: {} address: {}", subnet, hostAddress);
                         }
                     }
                 }
 
                 // External host and subnet.
-                _hosts.add(externalIp);
-                _subnets.add("0.0.0.0/0");
-                LOGGER.info("Network Config: Adding new subnet: 0.0.0.0/0 address: " + externalIp);
+                hosts.add(externalIp);
+                subnets.add("0.0.0.0/0");
+                log.info("Network Config: Adding new subnet: 0.0.0.0/0 address: {}", externalIp);
             } catch (SocketException e) {
                 throw new IllegalStateException(
                         "Network Config: Configuration failed please configure manually using ipconfig.xml", e);
@@ -480,19 +479,19 @@ public class ServerConfig {
         }
 
         protected List<String> getSubnets() {
-            if (_subnets.isEmpty()) {
+            if (subnets.isEmpty()) {
                 return Arrays.asList("0.0.0.0/0");
             }
 
-            return _subnets;
+            return subnets;
         }
 
         protected List<String> getHosts() {
-            if (_hosts.isEmpty()) {
+            if (hosts.isEmpty()) {
                 return Arrays.asList("127.0.0.1");
             }
 
-            return _hosts;
+            return hosts;
         }
     }
 }

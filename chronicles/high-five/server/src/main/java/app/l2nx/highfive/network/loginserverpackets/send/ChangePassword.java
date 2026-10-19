@@ -37,10 +37,10 @@ public class ChangePassword extends SimpleWritablePacket {
     private static final int OPCODE = 0x0B;
 
     // Data.
-    private final String _accountName;
-    private final String _characterName;
-    private final String _oldPass;
-    private final String _newPass;
+    private final String accountName;
+    private final String characterName;
+    private final String oldPass;
+    private final String newPass;
 
     /**
      * @param accountName account
@@ -49,10 +49,10 @@ public class ChangePassword extends SimpleWritablePacket {
      * @param newPass new password
      */
     public ChangePassword(String accountName, String characterName, String oldPass, String newPass) {
-        _accountName = (accountName != null) ? accountName : "";
-        _characterName = (characterName != null) ? characterName : "";
-        _oldPass = (oldPass != null) ? oldPass : "";
-        _newPass = (newPass != null) ? newPass : "";
+        this.accountName = (accountName != null) ? accountName : "";
+        this.characterName = (characterName != null) ? characterName : "";
+        this.oldPass = (oldPass != null) ? oldPass : "";
+        this.newPass = (newPass != null) ? newPass : "";
     }
 
     /**
@@ -61,9 +61,9 @@ public class ChangePassword extends SimpleWritablePacket {
     @Override
     public void write() {
         writeByte(OPCODE);
-        writeString(_accountName);
-        writeString(_characterName);
-        writeString(_oldPass);
-        writeString(_newPass);
+        writeString(accountName);
+        writeString(characterName);
+        writeString(oldPass);
+        writeString(newPass);
     }
 }

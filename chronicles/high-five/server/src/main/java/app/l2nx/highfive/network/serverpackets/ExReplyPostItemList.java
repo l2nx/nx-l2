@@ -30,19 +30,19 @@ import java.util.Collection;
  * @author Migi, DS
  */
 public class ExReplyPostItemList extends AbstractItemPacket {
-    private final Player _player;
-    private final Collection<Item> _itemList;
+    private final Player player;
+    private final Collection<Item> itemList;
 
     public ExReplyPostItemList(Player player) {
-        _player = player;
-        _itemList = _player.getInventory().getAvailableItems(true, false, false);
+        this.player = player;
+        itemList = this.player.getInventory().getAvailableItems(true, false, false);
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_REPLY_POST_ITEM_LIST.writeId(this, buffer);
-        buffer.writeInt(_itemList.size());
-        for (Item item : _itemList) {
+        buffer.writeInt(itemList.size());
+        for (Item item : itemList) {
             writeItem(item, buffer);
         }
     }

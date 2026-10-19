@@ -33,26 +33,26 @@ import java.util.List;
  * @author KenM
  */
 public class ExShowFortressMapInfo extends ServerPacket {
-    private final Fort _fortress;
-    private final FortSiege _siege;
-    private final List<FortSpawnHolder> _commanders;
+    private final Fort fortress;
+    private final FortSiege siege;
+    private final List<FortSpawnHolder> commanders;
 
     public ExShowFortressMapInfo(Fort fortress) {
-        _fortress = fortress;
-        _siege = fortress.getSiege();
-        _commanders = FortSiegeManager.getInstance().getCommanderSpawnList(fortress.getResidenceId());
+        this.fortress = fortress;
+        siege = fortress.getSiege();
+        commanders = FortSiegeManager.getInstance().getCommanderSpawnList(fortress.getResidenceId());
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_SHOW_FORTRESS_MAP_INFO.writeId(this, buffer);
-        buffer.writeInt(_fortress.getResidenceId());
-        buffer.writeInt(_siege.isInProgress()); // fortress siege status
-        buffer.writeInt(_fortress.getFortSize()); // barracks count
-        if ((_commanders != null) && !_commanders.isEmpty() && _siege.isInProgress()) {
-            switch (_commanders.size()) {
+        buffer.writeInt(fortress.getResidenceId());
+        buffer.writeInt(siege.isInProgress()); // fortress siege status
+        buffer.writeInt(fortress.getFortSize()); // barracks count
+        if ((commanders != null) && !commanders.isEmpty() && siege.isInProgress()) {
+            switch (commanders.size()) {
                 case 3: {
-                    for (FortSpawnHolder spawn : _commanders) {
+                    for (FortSpawnHolder spawn : commanders) {
                         if (isSpawned(spawn.getId())) {
                             buffer.writeInt(0);
                         } else {
@@ -64,7 +64,7 @@ public class ExShowFortressMapInfo extends ServerPacket {
                 case 4: // TODO: change 4 to 5 once control room supported
                 {
                     int count = 0;
-                    for (FortSpawnHolder spawn : _commanders) {
+                    for (FortSpawnHolder spawn : commanders) {
                         count++;
                         if (count == 4) {
                             buffer.writeInt(1); // TODO: control room emulated
@@ -80,7 +80,7 @@ public class ExShowFortressMapInfo extends ServerPacket {
                 }
             }
         } else {
-            for (int i = 0; i < _fortress.getFortSize(); i++) {
+            for (int i = 0; i < fortress.getFortSize(); i++) {
                 buffer.writeInt(0);
             }
         }
@@ -88,7 +88,7 @@ public class ExShowFortressMapInfo extends ServerPacket {
 
     private boolean isSpawned(int npcId) {
         boolean ret = false;
-        for (Spawn spawn : _siege.getCommanders()) {
+        for (Spawn spawn : siege.getCommanders()) {
             if (spawn.getId() == npcId) {
                 ret = true;
                 break;

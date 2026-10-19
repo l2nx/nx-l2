@@ -28,7 +28,7 @@ import java.util.Map;
  * @author durgus
  */
 public class ChatHandler implements IHandler<IChatHandler, ChatType> {
-    private final Map<ChatType, IChatHandler> _datatable = new EnumMap<>(ChatType.class);
+    private final Map<ChatType, IChatHandler> datatable = new EnumMap<>(ChatType.class);
 
     /**
      * Singleton constructor
@@ -42,14 +42,14 @@ public class ChatHandler implements IHandler<IChatHandler, ChatType> {
     @Override
     public void registerHandler(IChatHandler handler) {
         for (ChatType type : handler.getChatTypeList()) {
-            _datatable.put(type, handler);
+            datatable.put(type, handler);
         }
     }
 
     @Override
     public synchronized void removeHandler(IChatHandler handler) {
         for (ChatType type : handler.getChatTypeList()) {
-            _datatable.remove(type);
+            datatable.remove(type);
         }
     }
 
@@ -60,7 +60,7 @@ public class ChatHandler implements IHandler<IChatHandler, ChatType> {
      */
     @Override
     public IChatHandler getHandler(ChatType chatType) {
-        return _datatable.get(chatType);
+        return datatable.get(chatType);
     }
 
     /**
@@ -69,7 +69,7 @@ public class ChatHandler implements IHandler<IChatHandler, ChatType> {
      */
     @Override
     public int size() {
-        return _datatable.size();
+        return datatable.size();
     }
 
     public static ChatHandler getInstance() {

@@ -28,11 +28,11 @@ import app.l2nx.network.buffer.WriteBuffer;
 import java.util.List;
 
 public class ShowBoard extends ServerPacket {
-    private final String _content;
-    private int _showBoard = 1; // 1 show, 0 hide
+    private final String content;
+    private int showBoard = 1; // 1 show, 0 hide
 
     public ShowBoard(String htmlCode, String id) {
-        _content = id + "\u0008" + htmlCode;
+        content = id + "\u0008" + htmlCode;
     }
 
     public ShowBoard(List<String> arg) {
@@ -41,21 +41,21 @@ public class ShowBoard extends ServerPacket {
             builder.append(str).append("\u0008");
         }
 
-        _content = builder.toString();
+        content = builder.toString();
     }
 
     /**
      * Hides the community board
      */
     public ShowBoard() {
-        _showBoard = 0;
-        _content = "";
+        showBoard = 0;
+        content = "";
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.SHOW_BOARD.writeId(this, buffer);
-        buffer.writeByte(_showBoard); // c4 1 to show community 00 to hide
+        buffer.writeByte(showBoard); // c4 1 to show community 00 to hide
         buffer.writeString("bypass _bbshome"); // top
         buffer.writeString("bypass _bbsgetfav"); // favorite
         buffer.writeString("bypass _bbsloc"); // region
@@ -64,6 +64,6 @@ public class ShowBoard extends ServerPacket {
         buffer.writeString("bypass _bbsmail"); // mail
         buffer.writeString("bypass _bbsfriends"); // friends
         buffer.writeString("bypass bbs_add_fav"); // add fav.
-        buffer.writeString(_content);
+        buffer.writeString(content);
     }
 }

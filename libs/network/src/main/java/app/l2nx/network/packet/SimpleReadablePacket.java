@@ -31,11 +31,11 @@ import java.nio.charset.StandardCharsets;
  * @since October 29th 2020
  */
 public class SimpleReadablePacket {
-    private final byte[] _bytes;
-    private int _position = 0;
+    private final byte[] bytes;
+    private int position = 0;
 
     public SimpleReadablePacket(byte[] bytes) {
-        _bytes = bytes;
+        this.bytes = bytes;
     }
 
     /**
@@ -86,13 +86,13 @@ public class SimpleReadablePacket {
      */
     public byte[] readBytes(int length) {
         // Validate before allocating, so a forged length cannot exhaust the heap.
-        if ((length < 0) || (length > (_bytes.length - _position))) {
+        if ((length < 0) || (length > (bytes.length - position))) {
             throw new ArrayIndexOutOfBoundsException();
         }
 
         final byte[] result = new byte[length];
         for (int i = 0; i < length; i++) {
-            result[i] = _bytes[_position++];
+            result[i] = bytes[position++];
         }
 
         return result;
@@ -106,7 +106,7 @@ public class SimpleReadablePacket {
      */
     public byte[] readBytes(byte[] array) {
         for (int i = 0; i < array.length; i++) {
-            array[i] = _bytes[_position++];
+            array[i] = bytes[position++];
         }
 
         return array;
@@ -118,7 +118,7 @@ public class SimpleReadablePacket {
      * @return
      */
     public int readByte() {
-        return _bytes[_position++] & 0xff;
+        return bytes[position++] & 0xff;
     }
 
     /**
@@ -127,8 +127,8 @@ public class SimpleReadablePacket {
      * @return
      */
     public int readShort() {
-        return (_bytes[_position++] & 0xff) //
-                | ((_bytes[_position++] & 0xff) << 8);
+        return (bytes[position++] & 0xff) //
+                | ((bytes[position++] & 0xff) << 8);
     }
 
     /**
@@ -137,10 +137,10 @@ public class SimpleReadablePacket {
      * @return
      */
     public int readInt() {
-        return (_bytes[_position++] & 0xff) //
-                | ((_bytes[_position++] & 0xff) << 8) //
-                | ((_bytes[_position++] & 0xff) << 16) //
-                | ((_bytes[_position++] & 0xff) << 24);
+        return (bytes[position++] & 0xff) //
+                | ((bytes[position++] & 0xff) << 8) //
+                | ((bytes[position++] & 0xff) << 16) //
+                | ((bytes[position++] & 0xff) << 24);
     }
 
     /**
@@ -149,14 +149,14 @@ public class SimpleReadablePacket {
      * @return
      */
     public long readLong() {
-        return (_bytes[_position++] & 0xff) //
-                | ((_bytes[_position++] & 0xffL) << 8) //
-                | ((_bytes[_position++] & 0xffL) << 16) //
-                | ((_bytes[_position++] & 0xffL) << 24) //
-                | ((_bytes[_position++] & 0xffL) << 32) //
-                | ((_bytes[_position++] & 0xffL) << 40) //
-                | ((_bytes[_position++] & 0xffL) << 48) //
-                | ((_bytes[_position++] & 0xffL) << 56);
+        return (bytes[position++] & 0xff) //
+                | ((bytes[position++] & 0xffL) << 8) //
+                | ((bytes[position++] & 0xffL) << 16) //
+                | ((bytes[position++] & 0xffL) << 24) //
+                | ((bytes[position++] & 0xffL) << 32) //
+                | ((bytes[position++] & 0xffL) << 40) //
+                | ((bytes[position++] & 0xffL) << 48) //
+                | ((bytes[position++] & 0xffL) << 56);
     }
 
     /**
@@ -182,7 +182,7 @@ public class SimpleReadablePacket {
      * @return The number of unread bytes.
      */
     public int getRemainingLength() {
-        return _bytes.length - _position;
+        return bytes.length - position;
     }
 
     /**
@@ -190,6 +190,6 @@ public class SimpleReadablePacket {
      * @return The total byte size.
      */
     public int getLength() {
-        return _bytes.length;
+        return bytes.length;
     }
 }

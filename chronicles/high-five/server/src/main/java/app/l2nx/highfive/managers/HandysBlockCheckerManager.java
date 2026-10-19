@@ -46,16 +46,16 @@ import java.util.Set;
  */
 public class HandysBlockCheckerManager {
     // All the participants and their team classified by arena.
-    private static final ArenaParticipantsHolder[] _arenaPlayers = new ArenaParticipantsHolder[4];
+    private static final ArenaParticipantsHolder[] arenaPlayers = new ArenaParticipantsHolder[4];
 
     // Arena votes to start the game.
-    private static final Map<Integer, Integer> _arenaVotes = new HashMap<>();
+    private static final Map<Integer, Integer> arenaVotes = new HashMap<>();
 
     // Arena Status, True = is being used, otherwise, False
-    private static final Map<Integer, Boolean> _arenaStatus = new HashMap<>();
+    private static final Map<Integer, Boolean> arenaStatus = new HashMap<>();
 
     // Registration request penalty (10 seconds)
-    protected static Set<Integer> _registrationPenalty = Collections.synchronizedSet(new HashSet<>());
+    protected static Set<Integer> registrationPenalty = Collections.synchronizedSet(new HashSet<>());
 
     /**
      * Return the number of event-start votes for the specified arena id
@@ -63,7 +63,7 @@ public class HandysBlockCheckerManager {
      * @return int (number of votes)
      */
     public synchronized int getArenaVotes(int arenaId) {
-        return _arenaVotes.get(arenaId);
+        return arenaVotes.get(arenaId);
     }
 
     /**
@@ -71,8 +71,8 @@ public class HandysBlockCheckerManager {
      * @param arena
      */
     public synchronized void increaseArenaVotes(int arena) {
-        final int newVotes = _arenaVotes.get(arena) + 1;
-        final ArenaParticipantsHolder holder = _arenaPlayers[arena];
+        final int newVotes = arenaVotes.get(arena) + 1;
+        final ArenaParticipantsHolder holder = arenaPlayers[arena];
 
         if ((newVotes > (holder.getAllPlayers().size() / 2))
                 && !holder.getEvent().isStarted()) {
@@ -87,7 +87,7 @@ public class HandysBlockCheckerManager {
 
             ThreadPool.execute(holder.getEvent().new StartEvent());
         } else {
-            _arenaVotes.put(arena, newVotes);
+            arenaVotes.put(arena, newVotes);
         }
     }
 
@@ -96,21 +96,21 @@ public class HandysBlockCheckerManager {
      * @param arena
      */
     public synchronized void clearArenaVotes(int arena) {
-        _arenaVotes.put(arena, 0);
+        arenaVotes.put(arena, 0);
     }
 
     protected HandysBlockCheckerManager() {
         // Initialize arena status
-        _arenaStatus.put(0, false);
-        _arenaStatus.put(1, false);
-        _arenaStatus.put(2, false);
-        _arenaStatus.put(3, false);
+        arenaStatus.put(0, false);
+        arenaStatus.put(1, false);
+        arenaStatus.put(2, false);
+        arenaStatus.put(3, false);
 
         // Initialize arena votes
-        _arenaVotes.put(0, 0);
-        _arenaVotes.put(1, 0);
-        _arenaVotes.put(2, 0);
-        _arenaVotes.put(3, 0);
+        arenaVotes.put(0, 0);
+        arenaVotes.put(1, 0);
+        arenaVotes.put(2, 0);
+        arenaVotes.put(3, 0);
     }
 
     /**
@@ -119,7 +119,7 @@ public class HandysBlockCheckerManager {
      * @return ArenaParticipantsHolder
      */
     public ArenaParticipantsHolder getHolder(int arena) {
-        return _arenaPlayers[arena];
+        return arenaPlayers[arena];
     }
 
     /**
@@ -127,7 +127,7 @@ public class HandysBlockCheckerManager {
      */
     public void startUpParticipantsQueue() {
         for (int i = 0; i < 4; ++i) {
-            _arenaPlayers[i] = new ArenaParticipantsHolder(i);
+            arenaPlayers[i] = new ArenaParticipantsHolder(i);
         }
     }
 
@@ -138,13 +138,13 @@ public class HandysBlockCheckerManager {
      * @return
      */
     public boolean addPlayerToArena(Player player, int arenaId) {
-        final ArenaParticipantsHolder holder = _arenaPlayers[arenaId];
+        final ArenaParticipantsHolder holder = arenaPlayers[arenaId];
 
         synchronized (holder) {
             boolean isRed;
 
             for (int i = 0; i < 4; i++) {
-                if (_arenaPlayers[i].getAllPlayers().contains(player)) {
+                if (arenaPlayers[i].getAllPlayers().contains(player)) {
                     final SystemMessage msg =
                             new SystemMessage(SystemMessageId.C1_IS_ALREADY_REGISTERED_ON_THE_MATCH_WAITING_LIST);
                     msg.addString(player.getName());
@@ -181,7 +181,7 @@ public class HandysBlockCheckerManager {
             // player.sendPacket(SystemMessageId.COLISEUM_OLYMPIAD_KRATEIS_APPLICANTS_CANNOT_PARTICIPATE));
             // }
 
-            if (_registrationPenalty.contains(player.getObjectId())) {
+            if (registrationPenalty.contains(player.getObjectId())) {
                 player.sendPacket(SystemMessageId.YOU_MUST_WAIT_10_SECONDS_BEFORE_ATTEMPTING_TO_REGISTER_AGAIN);
                 return false;
             }
@@ -206,7 +206,7 @@ public class HandysBlockCheckerManager {
      * @param team
      */
     public void removePlayer(Player player, int arenaId, int team) {
-        final ArenaParticipantsHolder holder = _arenaPlayers[arenaId];
+        final ArenaParticipantsHolder holder = arenaPlayers[arenaId];
         synchronized (holder) {
             final boolean isRed = team == 0;
 
@@ -219,7 +219,7 @@ public class HandysBlockCheckerManager {
                 holder.getEvent().endEventAbnormally();
             }
 
-            _registrationPenalty.add(player.getObjectId());
+            registrationPenalty.add(player.getObjectId());
             schedulePenaltyRemoval(player.getObjectId());
         }
     }
@@ -230,7 +230,7 @@ public class HandysBlockCheckerManager {
      * @param arena
      */
     public void changePlayerToTeam(Player player, int arena) {
-        final ArenaParticipantsHolder holder = _arenaPlayers[arena];
+        final ArenaParticipantsHolder holder = arenaPlayers[arena];
 
         synchronized (holder) {
             final boolean isFromRed = holder.getRedPlayers().contains(player);
@@ -261,7 +261,7 @@ public class HandysBlockCheckerManager {
      * @param arenaId
      */
     public synchronized void clearPaticipantQueueByArenaId(int arenaId) {
-        _arenaPlayers[arenaId].clearPlayers();
+        arenaPlayers[arenaId].clearPlayers();
     }
 
     /**
@@ -274,7 +274,7 @@ public class HandysBlockCheckerManager {
             return false;
         }
 
-        return _arenaStatus.get(arenaId);
+        return arenaStatus.get(arenaId);
     }
 
     /**
@@ -282,7 +282,7 @@ public class HandysBlockCheckerManager {
      * @param arenaId
      */
     public void setArenaBeingUsed(int arenaId) {
-        _arenaStatus.put(arenaId, true);
+        arenaStatus.put(arenaId, true);
     }
 
     /**
@@ -290,7 +290,7 @@ public class HandysBlockCheckerManager {
      * @param arenaId
      */
     public void setArenaFree(int arenaId) {
-        _arenaStatus.put(arenaId, false);
+        arenaStatus.put(arenaId, false);
     }
 
     /**
@@ -328,7 +328,7 @@ public class HandysBlockCheckerManager {
     }
 
     public void removePenalty(int objectId) {
-        _registrationPenalty.remove(objectId);
+        registrationPenalty.remove(objectId);
     }
 
     private void schedulePenaltyRemoval(int objectId) {

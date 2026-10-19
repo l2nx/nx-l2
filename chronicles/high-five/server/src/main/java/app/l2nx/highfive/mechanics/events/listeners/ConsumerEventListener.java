@@ -30,18 +30,18 @@ import java.util.function.Consumer;
  * @author UnAfraid
  */
 public class ConsumerEventListener extends AbstractEventListener {
-    private final Consumer<IBaseEvent> _callback;
+    private final Consumer<IBaseEvent> callback;
 
     @SuppressWarnings("unchecked")
     public ConsumerEventListener(
             ListenersContainer container, EventType type, Consumer<? extends IBaseEvent> callback, Object owner) {
         super(container, type, owner);
-        _callback = (Consumer<IBaseEvent>) callback;
+        this.callback = (Consumer<IBaseEvent>) callback;
     }
 
     @Override
     public <R extends AbstractEventReturn> R executeEvent(IBaseEvent event, Class<R> returnBackClass) {
-        _callback.accept(event);
+        callback.accept(event);
         return null;
     }
 }

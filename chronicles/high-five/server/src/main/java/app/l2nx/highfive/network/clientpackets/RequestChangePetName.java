@@ -31,11 +31,11 @@ import app.l2nx.highfive.network.SystemMessageId;
  * @version $Revision: 1.3.4.4 $ $Date: 2005/04/06 16:13:48 $
  */
 public class RequestChangePetName extends ClientPacket {
-    private String _name;
+    private String name;
 
     @Override
     protected void readImpl() {
-        _name = readString();
+        name = readString();
     }
 
     @Override
@@ -60,29 +60,29 @@ public class RequestChangePetName extends ClientPacket {
             return;
         }
 
-        if (PetNameTable.getInstance().doesPetNameExist(_name, pet.getTemplate().getId())) {
+        if (PetNameTable.getInstance().doesPetNameExist(name, pet.getTemplate().getId())) {
             player.sendPacket(SystemMessageId.THIS_IS_ALREADY_IN_USE_BY_ANOTHER_PET);
             return;
         }
 
         // Pet name limit 1–8 characters.
-        if (_name.isEmpty() || (_name.length() > 8)) {
+        if (name.isEmpty() || (name.length() > 8)) {
             player.sendPacket(SystemMessageId.YOUR_PET_S_NAME_CAN_BE_UP_TO_8_CHARACTERS_IN_LENGTH);
             return;
         }
 
         // No spaces.
-        if (_name.contains(" ")) {
+        if (name.contains(" ")) {
             player.sendPacket(SystemMessageId.THERE_IS_A_SPACE_IN_THE_NAME);
             return;
         }
 
-        if (!PetNameTable.getInstance().isValidPetName(_name)) {
+        if (!PetNameTable.getInstance().isValidPetName(name)) {
             player.sendPacket(SystemMessageId.AN_INVALID_CHARACTER_IS_INCLUDED_IN_THE_PET_S_NAME);
             return;
         }
 
-        pet.setName(_name);
+        pet.setName(name);
         pet.storeMe(); // Save to DB immediately.
         pet.updateAndBroadcastStatus(1);
     }

@@ -30,19 +30,19 @@ import app.l2nx.highfive.mechanics.skill.Skill;
  * @author Zoey76
  */
 public class ConditionPlayerTransformationId extends Condition {
-    private final int _id;
+    private final int id;
 
     /**
      * Instantiates a new condition player is transformed.
      * @param id the transformation Id.
      */
     public ConditionPlayerTransformationId(int id) {
-        _id = id;
+        this.id = id;
     }
 
     @Override
     public boolean testImpl(Creature effector, Creature effected, Skill skill, ItemTemplate item) {
         final Player player = effector.asPlayer();
-        return (player != null) && (_id == -1 ? player.isTransformed() : player.getTransformationId() == _id);
+        return (player != null) && (id == -1 ? player.isTransformed() : player.getTransformationId() == id);
     }
 }

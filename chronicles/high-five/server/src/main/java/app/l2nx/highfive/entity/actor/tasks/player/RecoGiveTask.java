@@ -28,34 +28,34 @@ import app.l2nx.highfive.network.serverpackets.SystemMessage;
  * @author UnAfraid
  */
 public class RecoGiveTask implements Runnable {
-    private final Player _player;
+    private final Player player;
 
     public RecoGiveTask(Player player) {
-        _player = player;
+        this.player = player;
     }
 
     @Override
     public void run() {
-        if (_player == null) {
+        if (player == null) {
             return;
         }
 
         // 10 recommendations to give out after 2 hours of being logged in.
         // 1 more recommendation to give out every hour after that.
         int recoToGive = 1;
-        if (!_player.isRecoTwoHoursGiven()) {
+        if (!player.isRecoTwoHoursGiven()) {
             recoToGive = 10;
-            _player.setRecoTwoHoursGiven(true);
+            player.setRecoTwoHoursGiven(true);
         }
 
-        _player.setRecomLeft(_player.getRecomLeft() + recoToGive);
+        player.setRecomLeft(player.getRecomLeft() + recoToGive);
 
         final SystemMessage sm = new SystemMessage(SystemMessageId.YOU_OBTAINED_S1_RECOMMENDATION_S);
         sm.addInt(recoToGive);
-        _player.sendPacket(sm);
-        _player.updateUserInfo();
+        player.sendPacket(sm);
+        player.updateUserInfo();
 
         // Store player recommendations to avoid reseting them with Nevit peace zone check.
-        _player.storeRecommendationValues();
+        player.storeRecommendationValues();
     }
 }

@@ -44,11 +44,11 @@ import java.util.List;
  * @version 1.5
  */
 public class AcquireSkillInfo extends ServerPacket {
-    private final AcquireSkillType _type;
-    private final int _id;
-    private final int _level;
-    private final int _spCost;
-    private final List<Req> _reqs;
+    private final AcquireSkillType type;
+    private final int id;
+    private final int level;
+    private final int spCost;
+    private final List<Req> reqs;
 
     /**
      * Private class containing learning skill requisites.
@@ -73,18 +73,18 @@ public class AcquireSkillInfo extends ServerPacket {
      * @param skillLearn the skill learn.
      */
     public AcquireSkillInfo(AcquireSkillType skillType, SkillLearn skillLearn) {
-        _id = skillLearn.getSkillId();
-        _level = skillLearn.getSkillLevel();
-        _spCost = skillLearn.getLevelUpSp();
-        _type = skillType;
-        _reqs = new ArrayList<>();
+        id = skillLearn.getSkillId();
+        level = skillLearn.getSkillLevel();
+        spCost = skillLearn.getLevelUpSp();
+        type = skillType;
+        reqs = new ArrayList<>();
         if ((skillType != AcquireSkillType.PLEDGE) || PlayerConfig.LIFE_CRYSTAL_NEEDED) {
             for (ItemHolder item : skillLearn.getRequiredItems()) {
-                if (!PlayerConfig.DIVINE_SP_BOOK_NEEDED && (_id == CommonSkill.DIVINE_INSPIRATION.getId())) {
+                if (!PlayerConfig.DIVINE_SP_BOOK_NEEDED && (id == CommonSkill.DIVINE_INSPIRATION.getId())) {
                     continue;
                 }
 
-                _reqs.add(new Req(99, item.getId(), item.getCount(), 50));
+                reqs.add(new Req(99, item.getId(), item.getCount(), 50));
             }
         }
     }
@@ -97,25 +97,25 @@ public class AcquireSkillInfo extends ServerPacket {
      * @param sp the custom SP amount.
      */
     public AcquireSkillInfo(AcquireSkillType skillType, SkillLearn skillLearn, int sp) {
-        _id = skillLearn.getSkillId();
-        _level = skillLearn.getSkillLevel();
-        _spCost = sp;
-        _type = skillType;
-        _reqs = new ArrayList<>();
+        id = skillLearn.getSkillId();
+        level = skillLearn.getSkillLevel();
+        spCost = sp;
+        type = skillType;
+        reqs = new ArrayList<>();
         for (ItemHolder item : skillLearn.getRequiredItems()) {
-            _reqs.add(new Req(99, item.getId(), item.getCount(), 50));
+            reqs.add(new Req(99, item.getId(), item.getCount(), 50));
         }
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.ACQUIRE_SKILL_INFO.writeId(this, buffer);
-        buffer.writeInt(_id);
-        buffer.writeInt(_level);
-        buffer.writeInt(_spCost);
-        buffer.writeInt(_type.ordinal());
-        buffer.writeInt(_reqs.size());
-        for (Req temp : _reqs) {
+        buffer.writeInt(id);
+        buffer.writeInt(level);
+        buffer.writeInt(spCost);
+        buffer.writeInt(type.ordinal());
+        buffer.writeInt(reqs.size());
+        for (Req temp : reqs) {
             buffer.writeInt(temp.type);
             buffer.writeInt(temp.itemId);
             buffer.writeLong(temp.count);

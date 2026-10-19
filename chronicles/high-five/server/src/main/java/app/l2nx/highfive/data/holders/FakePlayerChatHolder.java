@@ -25,36 +25,28 @@ package app.l2nx.highfive.data.holders;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import lombok.Getter;
 
 /**
  * @author Mobius
  */
 public class FakePlayerChatHolder {
-    private final String _fpcName;
-    private final String _searchMethod;
-    private final List<String> _searchText;
-    private final List<String> _answers;
+    @Getter
+    private final String fpcName;
+
+    @Getter
+    private final String searchMethod;
+
+    @Getter
+    private final List<String> searchText;
+
+    @Getter
+    private final List<String> answers;
 
     public FakePlayerChatHolder(String fpcName, String searchMethod, String searchText, String answers) {
-        _fpcName = fpcName;
-        _searchMethod = searchMethod;
-        _searchText = new ArrayList<>(Arrays.asList(searchText.split(";")));
-        _answers = new ArrayList<>(Arrays.asList(answers.split(";")));
-    }
-
-    public String getFpcName() {
-        return _fpcName;
-    }
-
-    public String getSearchMethod() {
-        return _searchMethod;
-    }
-
-    public List<String> getSearchText() {
-        return _searchText;
-    }
-
-    public List<String> getAnswers() {
-        return _answers;
+        this.fpcName = fpcName;
+        this.searchMethod = searchMethod;
+        this.searchText = new ArrayList<>(Arrays.asList(searchText.split(";")));
+        this.answers = new ArrayList<>(Arrays.asList(answers.split(";")));
     }
 }

@@ -32,32 +32,46 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * @author UnAfraid
  */
 public class TransformTemplate {
-    private final float _collisionRadius;
-    private final float _collisionHeight;
-    private final WeaponType _baseAttackType;
-    private final int _baseAttackRange;
-    private final double _baseRandomDamage;
-    private List<SkillHolder> _skills;
-    private List<AdditionalSkillHolder> _additionalSkills;
-    private List<AdditionalItemHolder> _additionalItems;
-    private Map<Integer, Integer> _baseDefense;
-    private Map<Integer, Double> _baseStats;
-    private Map<Integer, Double> _baseSpeed;
+    @Getter
+    private final float collisionRadius;
 
-    private ExBasicActionList _list;
-    private final Map<Integer, TransformLevelData> _data = new LinkedHashMap<>(100);
+    @Getter
+    private final float collisionHeight;
+
+    @Getter
+    private final WeaponType baseAttackType;
+
+    @Getter
+    private final int baseAttackRange;
+
+    @Getter
+    private final double baseRandomDamage;
+
+    private List<SkillHolder> skills;
+    private List<AdditionalSkillHolder> additionalSkills;
+    private List<AdditionalItemHolder> additionalItems;
+    private Map<Integer, Integer> baseDefense;
+    private Map<Integer, Double> baseStats;
+    private Map<Integer, Double> baseSpeed;
+
+    @Setter
+    private ExBasicActionList basicActionList;
+
+    private final Map<Integer, TransformLevelData> data = new LinkedHashMap<>(100);
 
     public TransformTemplate(StatSet set) {
-        _collisionRadius = set.getFloat("radius", 0);
-        _collisionHeight = set.getFloat("height", 0);
-        _baseAttackType = set.getEnum("attackType", WeaponType.class, WeaponType.FIST);
-        _baseAttackRange = set.getInt("range", 40);
-        _baseRandomDamage = set.getDouble("randomDamage", 0);
+        collisionRadius = set.getFloat("radius", 0);
+        collisionHeight = set.getFloat("height", 0);
+        baseAttackType = set.getEnum("attackType", WeaponType.class, WeaponType.FIST);
+        baseAttackRange = set.getInt("range", 40);
+        baseRandomDamage = set.getDouble("randomDamage", 0);
 
         addSpeed(MoveType.WALK, set.getDouble("walk", 0));
         addSpeed(MoveType.RUN, set.getDouble("run", 0));
@@ -93,126 +107,102 @@ public class TransformTemplate {
     }
 
     private void addSpeed(MoveType type, double value) {
-        if (_baseSpeed == null) {
-            _baseSpeed = new HashMap<>();
+        if (baseSpeed == null) {
+            baseSpeed = new HashMap<>();
         }
 
-        _baseSpeed.put(type.ordinal(), value);
+        baseSpeed.put(type.ordinal(), value);
     }
 
     public double getBaseMoveSpeed(MoveType type) {
-        if ((_baseSpeed == null) || !_baseSpeed.containsKey(type.ordinal())) {
+        if ((baseSpeed == null) || !baseSpeed.containsKey(type.ordinal())) {
             return 0;
         }
 
-        return _baseSpeed.get(type.ordinal());
+        return baseSpeed.get(type.ordinal());
     }
 
     private void addDefense(int type, int value) {
-        if (_baseDefense == null) {
-            _baseDefense = new HashMap<>();
+        if (baseDefense == null) {
+            baseDefense = new HashMap<>();
         }
 
-        _baseDefense.put(type, value);
+        baseDefense.put(type, value);
     }
 
     public int getDefense(int type) {
-        if ((_baseDefense == null) || !_baseDefense.containsKey(type)) {
+        if ((baseDefense == null) || !baseDefense.containsKey(type)) {
             return 0;
         }
 
-        return _baseDefense.get(type);
+        return baseDefense.get(type);
     }
 
     private void addStats(Stat stat, double value) {
-        if (_baseStats == null) {
-            _baseStats = new HashMap<>();
+        if (baseStats == null) {
+            baseStats = new HashMap<>();
         }
 
-        _baseStats.put(stat.ordinal(), value);
+        baseStats.put(stat.ordinal(), value);
     }
 
     public double getStats(Stat stat) {
-        if ((_baseStats == null) || !_baseStats.containsKey(stat.ordinal())) {
+        if ((baseStats == null) || !baseStats.containsKey(stat.ordinal())) {
             return 0;
         }
 
-        return _baseStats.get(stat.ordinal());
-    }
-
-    public float getCollisionRadius() {
-        return _collisionRadius;
-    }
-
-    public float getCollisionHeight() {
-        return _collisionHeight;
-    }
-
-    public WeaponType getBaseAttackType() {
-        return _baseAttackType;
-    }
-
-    public int getBaseAttackRange() {
-        return _baseAttackRange;
-    }
-
-    public double getBaseRandomDamage() {
-        return _baseRandomDamage;
+        return baseStats.get(stat.ordinal());
     }
 
     public void addSkill(SkillHolder holder) {
-        if (_skills == null) {
-            _skills = new ArrayList<>();
+        if (skills == null) {
+            skills = new ArrayList<>();
         }
 
-        _skills.add(holder);
+        skills.add(holder);
     }
 
     public List<SkillHolder> getSkills() {
-        return _skills != null ? _skills : Collections.<SkillHolder>emptyList();
+        return skills != null ? skills : Collections.<SkillHolder>emptyList();
     }
 
     public void addAdditionalSkill(AdditionalSkillHolder holder) {
-        if (_additionalSkills == null) {
-            _additionalSkills = new ArrayList<>();
+        if (additionalSkills == null) {
+            additionalSkills = new ArrayList<>();
         }
 
-        _additionalSkills.add(holder);
+        additionalSkills.add(holder);
     }
 
     public List<AdditionalSkillHolder> getAdditionalSkills() {
-        return _additionalSkills != null ? _additionalSkills : Collections.<AdditionalSkillHolder>emptyList();
+        return additionalSkills != null ? additionalSkills : Collections.<AdditionalSkillHolder>emptyList();
     }
 
     public void addAdditionalItem(AdditionalItemHolder holder) {
-        if (_additionalItems == null) {
-            _additionalItems = new ArrayList<>();
+        if (additionalItems == null) {
+            additionalItems = new ArrayList<>();
         }
 
-        _additionalItems.add(holder);
+        additionalItems.add(holder);
     }
 
     public List<AdditionalItemHolder> getAdditionalItems() {
-        return _additionalItems != null ? _additionalItems : Collections.<AdditionalItemHolder>emptyList();
-    }
-
-    public void setBasicActionList(ExBasicActionList list) {
-        _list = list;
+        return additionalItems != null ? additionalItems : Collections.<AdditionalItemHolder>emptyList();
     }
 
     public ExBasicActionList getBasicActionList() {
-        return _list;
+        return basicActionList;
     }
 
     public boolean hasBasicActionList() {
-        return _list != null;
+        return basicActionList != null;
     }
 
     public void addLevelData(TransformLevelData data) {
-        _data.put(data.getLevel(), data);
+        this.data.put(data.getLevel(), data);
     }
 
     public TransformLevelData getData(int level) {
-        return _data.get(level);
+        return data.get(level);
     }
 }

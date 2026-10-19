@@ -28,12 +28,12 @@ import app.l2nx.highfive.entity.actor.instance.Cubic;
  * @author UnAfraid
  */
 public class HpCondition implements ICubicCondition {
-    private final HpConditionType _type;
-    private final int _hpPercent;
+    private final HpConditionType type;
+    private final int hpPercent;
 
     public HpCondition(HpConditionType type, int hpPercent) {
-        _type = type;
-        _hpPercent = hpPercent;
+        this.type = type;
+        this.hpPercent = hpPercent;
     }
 
     @Override
@@ -43,12 +43,12 @@ public class HpCondition implements ICubicCondition {
         }
 
         final double hpPercent = (target.isDoor() ? target.asDoor() : target.asCreature()).getCurrentHpPercent();
-        switch (_type) {
+        switch (type) {
             case GREATER: {
-                return hpPercent > _hpPercent;
+                return hpPercent > this.hpPercent;
             }
             case LESSER: {
-                return hpPercent < _hpPercent;
+                return hpPercent < this.hpPercent;
             }
         }
 

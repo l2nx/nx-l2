@@ -32,8 +32,7 @@ import java.security.MessageDigest;
 import java.util.Base64;
 import java.util.Base64.Encoder;
 import java.util.Collection;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Handles password change requests coming from game servers.<br>
@@ -45,9 +44,8 @@ import java.util.logging.Logger;
  * </ul>
  * @author BazookaRpm
  */
+@Slf4j
 public class ChangePassword extends SimpleReadablePacket {
-    // Logging.
-    protected static final Logger LOGGER = Logger.getLogger(ChangePassword.class.getName());
 
     // Password Hashing.
     private static final String PASSWORD_DIGEST_ALGORITHM = "SHA";
@@ -88,9 +86,12 @@ public class ChangePassword extends SimpleReadablePacket {
         }
 
         if (ownerThread == null) {
-            if (LOGGER.isLoggable(Level.FINER)) {
-                LOGGER.finer("Ignored ChangePassword packetId=" + packetId + " for account '" + loginName
-                        + "' requested by player '" + playerName + "'.");
+            if (log.isTraceEnabled()) {
+                log.trace(
+                        "Ignored ChangePassword packetId={} for account '{}' requested by player '{}'.",
+                        packetId,
+                        loginName,
+                        playerName);
             }
             return;
         }
@@ -115,17 +116,22 @@ public class ChangePassword extends SimpleReadablePacket {
             }
 
             if (currentHash.equals(loginController.getPasswordHash(loginName))) {
-                LOGGER.warning("Password change failed for account '" + loginName + "' requested by player '"
-                        + playerName + "' on GS " + ownerServerId + " (0 rows updated).");
+                log.warn(
+                        "Password change failed for account '{}' requested by player '{}' on GS {} (0 rows updated).",
+                        loginName,
+                        playerName,
+                        ownerServerId);
                 ownerThread.changePasswordResponse(playerName, MSG_PASSWORD_CHANGE_FAILED);
             } else {
                 ownerThread.changePasswordResponse(playerName, MSG_CURRENT_PASSWORD_MISMATCH);
             }
         } catch (Exception e) {
-            LOGGER.log(
-                    Level.WARNING,
-                    "Error while changing password for account '" + loginName + "' requested by player '" + playerName
-                            + "' on GS " + ownerServerId + " (packetId=" + packetId + ").",
+            log.warn(
+                    "Error while changing password for account '{}' requested by player '{}' on GS {} (packetId={}).",
+                    loginName,
+                    playerName,
+                    ownerServerId,
+                    packetId,
                     e);
         }
     }

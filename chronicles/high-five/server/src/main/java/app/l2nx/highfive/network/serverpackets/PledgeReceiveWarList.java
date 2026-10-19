@@ -29,30 +29,32 @@ import app.l2nx.network.buffer.WriteBuffer;
  * @author -Wooden-
  */
 public class PledgeReceiveWarList extends ServerPacket {
-    private final Clan _clan;
-    private final int _tab;
+    private final Clan clan;
+    private final int tab;
 
     public PledgeReceiveWarList(Clan clan, int tab) {
-        _clan = clan;
-        _tab = tab;
+        this.clan = clan;
+        this.tab = tab;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.PLEDGE_RECEIVE_WAR_LIST.writeId(this, buffer);
-        buffer.writeInt(_tab); // type : 0 = Declared, 1 = Under Attack
+        buffer.writeInt(tab); // type : 0 = Declared, 1 = Under Attack
         buffer.writeInt(0); // page
         buffer.writeInt(
-                _tab == 0 ? _clan.getWarList().size() : _clan.getAttackerList().size());
-        for (Integer i : _tab == 0 ? _clan.getWarList() : _clan.getAttackerList()) {
+                tab == 0
+                        ? this.clan.getWarList().size()
+                        : this.clan.getAttackerList().size());
+        for (Integer i : tab == 0 ? this.clan.getWarList() : this.clan.getAttackerList()) {
             final Clan clan = ClanTable.getInstance().getClan(i);
             if (clan == null) {
                 continue;
             }
 
             buffer.writeString(clan.getName());
-            buffer.writeInt(_tab); // ??
-            buffer.writeInt(_tab); // ??
+            buffer.writeInt(tab); // ??
+            buffer.writeInt(tab); // ??
         }
     }
 }

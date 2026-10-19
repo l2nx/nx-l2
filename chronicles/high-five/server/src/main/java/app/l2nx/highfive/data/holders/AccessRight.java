@@ -24,25 +24,30 @@ package app.l2nx.highfive.data.holders;
 
 import app.l2nx.highfive.data.xml.AdminData;
 import app.l2nx.highfive.util.StatSet;
+import lombok.Getter;
 
 /**
  * @author HorridoJoho, Mobius
  */
 public class AccessRight {
-    private final String _command;
-    private final String _description;
-    private final int _level;
-    private final boolean _confirmDlg;
+    @Getter
+    private final String command;
+
+    @Getter
+    private final String description;
+
+    private final int level;
+    private final boolean confirmDlg;
 
     /**
      * Initializes the access right for an admin command using a StatSet configuration.
      * @param set the StatSet containing configuration for the admin command
      */
     public AccessRight(StatSet set) {
-        _command = "admin_" + set.getString("command");
-        _description = set.getString("description", "");
-        _confirmDlg = set.getBoolean("confirmDlg", false);
-        _level = set.getInt("accessLevel", 100);
+        command = "admin_" + set.getString("command");
+        description = set.getString("description", "");
+        confirmDlg = set.getBoolean("confirmDlg", false);
+        level = set.getInt("accessLevel", 100);
     }
 
     /**
@@ -53,26 +58,10 @@ public class AccessRight {
      * @param level the access level required to execute the command
      */
     public AccessRight(String command, String description, boolean confirm, int level) {
-        _command = command;
-        _description = description;
-        _confirmDlg = confirm;
-        _level = level;
-    }
-
-    /**
-     * Gets the command associated with this access right.
-     * @return the full command string, prefixed with "admin_"
-     */
-    public String getCommand() {
-        return _command;
-    }
-
-    /**
-     * Gets the description associated with this command.
-     * @return the description string
-     */
-    public String getDescription() {
-        return _description;
+        this.command = command;
+        this.description = description;
+        confirmDlg = confirm;
+        this.level = level;
     }
 
     /**
@@ -80,7 +69,7 @@ public class AccessRight {
      * @return {@code true} if confirmation is required, {@code false} otherwise
      */
     public boolean requireConfirm() {
-        return _confirmDlg;
+        return confirmDlg;
     }
 
     /**
@@ -90,7 +79,7 @@ public class AccessRight {
      */
     public boolean hasAccess(AccessLevel playerAccessLevel) {
         // Check if the required access level is null.
-        final AccessLevel accessLevel = AdminData.getInstance().getAccessLevel(_level);
+        final AccessLevel accessLevel = AdminData.getInstance().getAccessLevel(level);
         if (accessLevel == null) {
             return false;
         }

@@ -32,8 +32,8 @@ import java.util.Collection;
 import java.util.List;
 
 public class RequestMakeMacro extends ClientPacket {
-    private Macro _macro;
-    private int _commandsLength = 0;
+    private Macro macro;
+    private int commandsLength = 0;
 
     private static final int MAX_MACRO_LENGTH = 12;
 
@@ -56,11 +56,11 @@ public class RequestMakeMacro extends ClientPacket {
             final int d1 = readInt(); // skill or page number for shortcuts
             final int d2 = readByte();
             final String command = readString();
-            _commandsLength += command.length();
+            commandsLength += command.length();
             commands.add(new MacroCmd(entry, MacroType.values()[(type < 1) || (type > 6) ? 0 : type], d1, d2, command));
         }
 
-        _macro = new Macro(id, icon, name, desc, acronym, commands);
+        macro = new Macro(id, icon, name, desc, acronym, commands);
     }
 
     @Override
@@ -71,13 +71,13 @@ public class RequestMakeMacro extends ClientPacket {
         }
 
         // Enter the name of the macro.
-        if (_macro.getName().isEmpty()) {
+        if (macro.getName().isEmpty()) {
             player.sendPacket(SystemMessageId.ENTER_THE_NAME_OF_THE_MACRO);
             return;
         }
 
         // Invalid macro. Refer to the Help file for instructions.
-        if (_commandsLength > 255) {
+        if (commandsLength > 255) {
             player.sendPacket(SystemMessageId.INVALID_MACRO_REFER_TO_THE_HELP_FILE_FOR_INSTRUCTIONS);
             return;
         }
@@ -91,17 +91,17 @@ public class RequestMakeMacro extends ClientPacket {
 
         // That name is already assigned to another macro.
         if (macros.stream()
-                .anyMatch(m -> m.getName().equalsIgnoreCase(_macro.getName()) && (m.getId() != _macro.getId()))) {
+                .anyMatch(m -> m.getName().equalsIgnoreCase(macro.getName()) && (m.getId() != macro.getId()))) {
             player.sendPacket(SystemMessageId.ENTER_THE_NAME_OF_THE_MACRO);
             return;
         }
 
         // Macro descriptions may contain up to 32 characters.
-        if (_macro.getDescr().length() > 32) {
+        if (macro.getDescr().length() > 32) {
             player.sendPacket(SystemMessageId.MACRO_DESCRIPTIONS_MAY_CONTAIN_UP_TO_32_CHARACTERS);
             return;
         }
 
-        player.registerMacro(_macro);
+        player.registerMacro(macro);
     }
 }

@@ -23,6 +23,7 @@
 package app.l2nx.highfive.entity.actor.holders.npc;
 
 import app.l2nx.highfive.entity.actor.Creature;
+import lombok.Getter;
 
 /**
  * Holds aggro-related information for a single aggressor against an NPC.
@@ -47,42 +48,29 @@ public class AggroInfo {
     /**
      * The aggressor (attacker) this aggro entry belongs to.
      */
-    private final Creature _aggressor;
+    @Getter
+    private final Creature attacker;
 
     /**
      * Total accumulated damage credited to the aggressor.
      */
-    private long _damageTotal;
+    @Getter
+    private long damage;
 
     /**
      * Total accumulated hate credited to the aggressor.
      */
-    private long _hateTotal;
+    @Getter
+    private long hate;
 
     /**
      * Creates a new aggro entry bound to a specific aggressor.
      * @param aggressor the attacker for this entry
      */
     public AggroInfo(Creature aggressor) {
-        _aggressor = aggressor;
-        _damageTotal = 0;
-        _hateTotal = 0;
-    }
-
-    /**
-     * Returns the aggressor this entry belongs to.
-     * @return the aggressor
-     */
-    public Creature getAttacker() {
-        return _aggressor;
-    }
-
-    /**
-     * Returns the total damage accumulated for this aggressor.
-     * @return the accumulated damage
-     */
-    public long getDamage() {
-        return _damageTotal;
+        attacker = aggressor;
+        damage = 0;
+        hate = 0;
     }
 
     /**
@@ -98,20 +86,12 @@ public class AggroInfo {
         }
 
         if (value > 0) {
-            final long current = _damageTotal;
-            _damageTotal = (current >= (LIMIT - value)) ? LIMIT : (current + value);
+            final long current = damage;
+            damage = (current >= (LIMIT - value)) ? LIMIT : (current + value);
             return;
         }
 
-        _damageTotal += value;
-    }
-
-    /**
-     * Returns the current hate accumulated for this aggressor.
-     * @return the accumulated hate
-     */
-    public long getHate() {
-        return _hateTotal;
+        damage += value;
     }
 
     /**
@@ -127,19 +107,19 @@ public class AggroInfo {
         }
 
         if (value > 0) {
-            final long current = _hateTotal;
-            _hateTotal = (current >= (LIMIT - value)) ? LIMIT : (current + value);
+            final long current = hate;
+            hate = (current >= (LIMIT - value)) ? LIMIT : (current + value);
             return;
         }
 
-        _hateTotal += value;
+        hate += value;
     }
 
     /**
      * Resets hate to zero.
      */
     public void stopHate() {
-        _hateTotal = 0;
+        hate = 0;
     }
 
     /**
@@ -156,27 +136,27 @@ public class AggroInfo {
      * @return the current hate value after validation
      */
     public long checkHate(Creature owner) {
-        final Creature attacker = _aggressor;
+        final Creature attacker = this.attacker;
         if ((attacker == null) || (owner == null)) {
-            _hateTotal = 0;
+            hate = 0;
             return 0;
         }
 
         if (attacker.isAlikeDead()) {
-            _hateTotal = 0;
+            hate = 0;
             return 0;
         }
 
         if (!attacker.isSpawned()) {
-            _hateTotal = 0;
+            hate = 0;
             return 0;
         }
 
         if (!owner.isInSurroundingRegion(attacker)) {
-            _hateTotal = 0;
+            hate = 0;
         }
 
-        return _hateTotal;
+        return hate;
     }
 
     /**
@@ -185,7 +165,7 @@ public class AggroInfo {
      */
     @Override
     public int hashCode() {
-        final Creature c = _aggressor;
+        final Creature c = attacker;
         return (c != null) ? c.getObjectId() : 0;
     }
 
@@ -204,7 +184,7 @@ public class AggroInfo {
             return false;
         }
 
-        return ((AggroInfo) other)._aggressor == _aggressor;
+        return ((AggroInfo) other).attacker == attacker;
     }
 
     /**
@@ -215,11 +195,11 @@ public class AggroInfo {
     public String toString() {
         final StringBuilder sb = new StringBuilder(96);
         sb.append("AggroInfo [attacker=");
-        sb.append(_aggressor);
+        sb.append(attacker);
         sb.append(", hate=");
-        sb.append(_hateTotal);
+        sb.append(hate);
         sb.append(", damage=");
-        sb.append(_damageTotal);
+        sb.append(damage);
         sb.append(']');
         return sb.toString();
     }

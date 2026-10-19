@@ -29,7 +29,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @author UnAfraid
  */
 public class PunishmentHolder {
-    private final Map<String, Map<PunishmentType, PunishmentTask>> _holder = new ConcurrentHashMap<>();
+    private final Map<String, Map<PunishmentType, PunishmentTask>> holder = new ConcurrentHashMap<>();
 
     /**
      * Stores the punishment task in the Map.
@@ -37,7 +37,7 @@ public class PunishmentHolder {
      */
     public void addPunishment(PunishmentTask task) {
         if (!task.isExpired()) {
-            _holder.computeIfAbsent(String.valueOf(task.getKey()), _ -> new ConcurrentHashMap<>())
+            holder.computeIfAbsent(String.valueOf(task.getKey()), _ -> new ConcurrentHashMap<>())
                     .put(task.getType(), task);
         }
     }
@@ -48,12 +48,12 @@ public class PunishmentHolder {
      */
     public void stopPunishment(PunishmentTask task) {
         final String key = String.valueOf(task.getKey());
-        final Map<PunishmentType, PunishmentTask> punishments = _holder.get(key);
+        final Map<PunishmentType, PunishmentTask> punishments = holder.get(key);
         if (punishments != null) {
             task.stopPunishment();
             punishments.remove(task.getType());
             if (punishments.isEmpty()) {
-                _holder.remove(key);
+                holder.remove(key);
             }
         }
     }
@@ -73,6 +73,6 @@ public class PunishmentHolder {
      * @return {@link PunishmentTask} by specified key and type if exists, null otherwise.
      */
     public PunishmentTask getPunishment(String key, PunishmentType type) {
-        return _holder.getOrDefault(key, Collections.emptyMap()).get(type);
+        return holder.getOrDefault(key, Collections.emptyMap()).get(type);
     }
 }

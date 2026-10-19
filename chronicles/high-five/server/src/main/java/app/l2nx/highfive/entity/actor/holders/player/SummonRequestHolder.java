@@ -24,26 +24,22 @@ package app.l2nx.highfive.entity.actor.holders.player;
 
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.actor.Player;
+import lombok.Getter;
 
 /**
  * @author Mobius
  */
 public class SummonRequestHolder {
-    private final Player _summoner;
-    private final Location _location;
+    @Getter
+    private final Player summoner;
+
+    @Getter
+    private final Location location;
 
     public SummonRequestHolder(Player summoner) {
-        _summoner = summoner;
-        _location = summoner == null
+        this.summoner = summoner;
+        location = summoner == null
                 ? null
                 : new Location(summoner.getX(), summoner.getY(), summoner.getZ(), summoner.getHeading());
-    }
-
-    public Player getSummoner() {
-        return _summoner;
-    }
-
-    public Location getLocation() {
-        return _location;
     }
 }

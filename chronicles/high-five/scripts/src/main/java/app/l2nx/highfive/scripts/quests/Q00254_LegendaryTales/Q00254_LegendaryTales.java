@@ -28,6 +28,7 @@ import app.l2nx.highfive.mechanics.script.Quest;
 import app.l2nx.highfive.mechanics.script.QuestSound;
 import app.l2nx.highfive.mechanics.script.QuestState;
 import app.l2nx.highfive.mechanics.script.State;
+import lombok.Getter;
 
 /**
  * Legendary Tales (254)
@@ -47,20 +48,15 @@ public class Q00254_LegendaryTales extends Quest {
         SPIKE_SLASHER(25723),
         MUSCLE_BOMBER(25724);
 
-        private final int _bossId;
-        private final int _mask;
+        @Getter
+        private final int id;
+
+        @Getter
+        private final int mask;
 
         private Bosses(int bossId) {
-            _bossId = bossId;
-            _mask = 1 << ordinal();
-        }
-
-        public int getId() {
-            return _bossId;
-        }
-
-        public int getMask() {
-            return _mask;
+            id = bossId;
+            mask = 1 << ordinal();
         }
 
         public static Bosses valueOf(int npcId) {

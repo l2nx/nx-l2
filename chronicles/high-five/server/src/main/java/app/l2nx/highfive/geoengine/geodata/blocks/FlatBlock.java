@@ -25,15 +25,17 @@ package app.l2nx.highfive.geoengine.geodata.blocks;
 import app.l2nx.highfive.geoengine.geodata.Cell;
 import app.l2nx.highfive.geoengine.geodata.IBlock;
 import java.nio.ByteBuffer;
+import lombok.Getter;
 
 /**
  * @author HorridoJoho, Mobius
  */
 public class FlatBlock implements IBlock {
-    private final short _height;
+    @Getter
+    private final short height;
 
     public FlatBlock(ByteBuffer bb) {
-        _height = bb.getShort();
+        height = bb.getShort();
     }
 
     @Override
@@ -58,20 +60,16 @@ public class FlatBlock implements IBlock {
 
     @Override
     public int getNearestZ(int geoX, int geoY, int worldZ) {
-        return _height;
+        return height;
     }
 
     @Override
     public int getNextLowerZ(int geoX, int geoY, int worldZ) {
-        return _height <= worldZ ? _height : worldZ;
+        return height <= worldZ ? height : worldZ;
     }
 
     @Override
     public int getNextHigherZ(int geoX, int geoY, int worldZ) {
-        return _height >= worldZ ? _height : worldZ;
-    }
-
-    public short getHeight() {
-        return _height;
+        return height >= worldZ ? height : worldZ;
     }
 }

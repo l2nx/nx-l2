@@ -37,21 +37,21 @@ public class ExPVPMatchCCRecord extends ServerPacket {
     public static final int UPDATE = 1;
     public static final int FINISH = 2;
 
-    private final int _state;
-    private final Map<Player, Integer> _players;
+    private final int state;
+    private final Map<Player, Integer> players;
 
     public ExPVPMatchCCRecord(int state, Map<Player, Integer> players) {
-        _state = state;
-        _players = players;
+        this.state = state;
+        this.players = players;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_PVP_MATCH_CC_RECORD.writeId(this, buffer);
-        buffer.writeInt(_state); // 0 - initialize, 1 - update, 2 - finish
-        buffer.writeInt(Math.min(_players.size(), 25));
+        buffer.writeInt(state); // 0 - initialize, 1 - update, 2 - finish
+        buffer.writeInt(Math.min(players.size(), 25));
         int counter = 0;
-        for (Entry<Player, Integer> entry : _players.entrySet()) {
+        for (Entry<Player, Integer> entry : players.entrySet()) {
             counter++;
             if (counter > 25) {
                 break;

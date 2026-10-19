@@ -27,19 +27,19 @@ import app.l2nx.highfive.mechanics.skill.Skill;
  * @author Zoey76
  */
 public class ConditionPlayerLevelRange extends Condition {
-    private final int[] _levels;
+    private final int[] levels;
 
     /**
      * Instantiates a new condition player levels range.
      * @param levels the {@code levels} range.
      */
     public ConditionPlayerLevelRange(int[] levels) {
-        _levels = levels;
+        this.levels = levels;
     }
 
     @Override
     public boolean testImpl(Creature effector, Creature effected, Skill skill, ItemTemplate item) {
         final int level = effector.getLevel();
-        return (level >= _levels[0]) && (level <= _levels[1]);
+        return (level >= levels[0]) && (level <= levels[1]);
     }
 }

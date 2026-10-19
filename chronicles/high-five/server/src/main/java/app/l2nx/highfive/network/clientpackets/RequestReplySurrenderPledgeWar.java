@@ -24,16 +24,17 @@ package app.l2nx.highfive.network.clientpackets;
 
 import app.l2nx.highfive.data.sql.ClanTable;
 import app.l2nx.highfive.entity.actor.Player;
-import app.l2nx.highfive.network.PacketLogger;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class RequestReplySurrenderPledgeWar extends ClientPacket {
-    private String _reqName;
-    private int _answer;
+    private String reqName;
+    private int answer;
 
     @Override
     protected void readImpl() {
-        _reqName = readString();
-        _answer = readInt();
+        reqName = readString();
+        answer = readInt();
     }
 
     @Override
@@ -48,11 +49,14 @@ public class RequestReplySurrenderPledgeWar extends ClientPacket {
             return;
         }
 
-        if (_answer == 1) {
+        if (answer == 1) {
             ClanTable.getInstance().deleteClanWars(requestor.getClanId(), player.getClanId());
         } else {
-            PacketLogger.info(getClass().getSimpleName() + ": Missing implementation for answer: " + _answer
-                    + " and name: " + _reqName + "!");
+            log.info(
+                    "{}: Missing implementation for answer: {} and name: {}!",
+                    getClass().getSimpleName(),
+                    answer,
+                    reqName);
         }
 
         player.onTransactionRequest(requestor);

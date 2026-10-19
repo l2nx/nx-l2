@@ -29,19 +29,18 @@ import java.io.File;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 import org.w3c.dom.Document;
 
 /**
  * @author Mobius
  */
+@Slf4j
 public class SendMessageLocalisationData implements IXmlReader {
-    private static final Logger LOGGER = Logger.getLogger(SendMessageLocalisationData.class.getName());
 
     private static final String SPLIT_STRING = "XXX";
     private static final Map<String, Map<String[], String[]>> SEND_MESSAGE_LOCALISATIONS = new ConcurrentHashMap<>();
-    private static String _lang;
+    private static String lang;
 
     protected SendMessageLocalisationData() {
         load();
@@ -59,13 +58,13 @@ public class SendMessageLocalisationData implements IXmlReader {
                 }
 
                 SEND_MESSAGE_LOCALISATIONS.put(lang, new ConcurrentHashMap<>());
-                _lang = lang;
+                SendMessageLocalisationData.lang = lang;
                 parseDatapackFile("data/lang/" + lang + "/SendMessageLocalisation.xml");
                 final int count = SEND_MESSAGE_LOCALISATIONS.get(lang).values().size();
                 if (count == 0) {
                     SEND_MESSAGE_LOCALISATIONS.remove(lang);
                 } else {
-                    LOGGER.log(Level.INFO, getClass().getSimpleName() + ": Loaded localisations for [" + lang + "].");
+                    log.info("Loaded localisations for [{}].", lang);
                 }
             }
         }
@@ -79,7 +78,7 @@ public class SendMessageLocalisationData implements IXmlReader {
                 listNode -> forEach(listNode, "localisation", localisationNode -> {
                     final StatSet set = new StatSet(parseAttributes(localisationNode));
                     SEND_MESSAGE_LOCALISATIONS
-                            .get(_lang)
+                            .get(lang)
                             .put(
                                     set.getString("message").split(SPLIT_STRING),
                                     set.getString("translation").split(SPLIT_STRING));

@@ -29,30 +29,30 @@ import app.l2nx.network.buffer.WriteBuffer;
  * @author Gnacik
  */
 public class ExPartyRoomMember extends ServerPacket {
-    private final PartyMatchRoom _room;
-    private final int _mode;
+    private final PartyMatchRoom room;
+    private final int mode;
 
     public ExPartyRoomMember(PartyMatchRoom room, int mode) {
-        _room = room;
-        _mode = mode;
+        this.room = room;
+        this.mode = mode;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_PARTY_ROOM_MEMBER.writeId(this, buffer);
-        buffer.writeInt(_mode);
-        buffer.writeInt(_room.getMembers());
-        for (Player member : _room.getPartyMembers()) {
+        buffer.writeInt(mode);
+        buffer.writeInt(room.getMembers());
+        for (Player member : room.getPartyMembers()) {
             buffer.writeInt(member.getObjectId());
             buffer.writeString(member.getName());
             buffer.writeInt(member.getActiveClass());
             buffer.writeInt(member.getLevel());
-            buffer.writeInt(_room.getLocation());
-            if (_room.getOwner().equals(member)) {
+            buffer.writeInt(room.getLocation());
+            if (room.getOwner().equals(member)) {
                 buffer.writeInt(1);
             } else {
-                if ((_room.getOwner().isInParty() && member.isInParty())
-                        && (_room.getOwner().getParty().getLeaderObjectId()
+                if ((room.getOwner().isInParty() && member.isInParty())
+                        && (room.getOwner().getParty().getLeaderObjectId()
                                 == member.getParty().getLeaderObjectId())) {
                     buffer.writeInt(2);
                 } else {

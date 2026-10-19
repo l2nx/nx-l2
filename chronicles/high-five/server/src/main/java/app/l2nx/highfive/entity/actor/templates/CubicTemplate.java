@@ -31,6 +31,7 @@ import app.l2nx.highfive.util.StatSet;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import lombok.Getter;
 
 /**
  * Cubic template loaded from datapack XML.<br>
@@ -43,94 +44,77 @@ import java.util.List;
  * @author UnAfraid
  */
 public class CubicTemplate extends CreatureTemplate implements ICubicConditionHolder {
-    private final int _id;
-    private final int _level;
-    private final int _slot;
-    private final int _duration;
-    private final int _delay;
-    private final int _maxCount;
-    private final int _useUp;
-    private final double _power;
-    private final CubicTargetType _targetType;
-    private final CubicSelectionMode _selectionMode;
-    private final List<ICubicCondition> _conditions = new ArrayList<>();
-    private final List<CubicSkill> _skills = new ArrayList<>();
+    @Getter
+    private final int id;
+
+    @Getter
+    private final int level;
+
+    @Getter
+    private final int slot;
+
+    @Getter
+    private final int duration;
+
+    @Getter
+    private final int delay;
+
+    @Getter
+    private final int maxCount;
+
+    @Getter
+    private final int useUp;
+
+    private final double power;
+
+    @Getter
+    private final CubicTargetType targetType;
+
+    @Getter
+    private final CubicSelectionMode selectionMode;
+
+    private final List<ICubicCondition> conditions = new ArrayList<>();
+    private final List<CubicSkill> skills = new ArrayList<>();
 
     public CubicTemplate(StatSet set) {
         super(set);
-        _id = set.getInt("id");
-        _level = set.getInt("level");
-        _slot = set.getInt("slot");
-        _duration = set.getInt("duration");
-        _delay = set.getInt("delay");
-        _maxCount = set.getInt("maxCount");
-        _useUp = set.getInt("useUp");
-        _power = set.getDouble("power", 0);
-        _targetType = set.getEnum("targetType", CubicTargetType.class, CubicTargetType.TARGET);
-        _selectionMode = set.getEnum("selectionMode", CubicSelectionMode.class, CubicSelectionMode.RANDOM);
-    }
-
-    public int getId() {
-        return _id;
-    }
-
-    public int getLevel() {
-        return _level;
-    }
-
-    public int getSlot() {
-        return _slot;
-    }
-
-    public int getDuration() {
-        return _duration;
-    }
-
-    public int getDelay() {
-        return _delay;
-    }
-
-    public int getMaxCount() {
-        return _maxCount;
-    }
-
-    public int getUseUp() {
-        return _useUp;
-    }
-
-    public CubicTargetType getTargetType() {
-        return _targetType;
-    }
-
-    public CubicSelectionMode getSelectionMode() {
-        return _selectionMode;
+        id = set.getInt("id");
+        level = set.getInt("level");
+        slot = set.getInt("slot");
+        duration = set.getInt("duration");
+        delay = set.getInt("delay");
+        maxCount = set.getInt("maxCount");
+        useUp = set.getInt("useUp");
+        power = set.getDouble("power", 0);
+        targetType = set.getEnum("targetType", CubicTargetType.class, CubicTargetType.TARGET);
+        selectionMode = set.getEnum("selectionMode", CubicSelectionMode.class, CubicSelectionMode.RANDOM);
     }
 
     public List<CubicSkill> getCubicSkills() {
-        return Collections.unmodifiableList(_skills);
+        return Collections.unmodifiableList(skills);
     }
 
     public void addCubicSkill(CubicSkill skill) {
-        _skills.add(skill);
+        skills.add(skill);
     }
 
     @Override
     public int getBasePAtk() {
-        return (int) _power;
+        return (int) power;
     }
 
     @Override
     public int getBaseMAtk() {
-        return (int) _power;
+        return (int) power;
     }
 
     @Override
     public boolean validateConditions(Cubic cubic, Creature owner, WorldObject target) {
-        if (_conditions.isEmpty()) {
+        if (conditions.isEmpty()) {
             return true;
         }
 
-        for (ICubicCondition condition : _conditions) {
+        for (ICubicCondition condition : conditions) {
             if (!condition.test(cubic, owner, target)) {
                 return false;
             }
@@ -141,6 +125,6 @@ public class CubicTemplate extends CreatureTemplate implements ICubicConditionHo
 
     @Override
     public void addCondition(ICubicCondition condition) {
-        _conditions.add(condition);
+        conditions.add(condition);
     }
 }

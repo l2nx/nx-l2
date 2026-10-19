@@ -33,10 +33,10 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author Mobius
  */
 public class BufferPool {
-    private final ArrayDeque<ByteBuffer> _buffers;
-    private final ReentrantLock _lock = new ReentrantLock();
-    private final int _bufferSize;
-    private int _maxSize;
+    private final ArrayDeque<ByteBuffer> buffers;
+    private final ReentrantLock lock = new ReentrantLock();
+    private final int bufferSize;
+    private int maxSize;
 
     /**
      * Creates a buffer pool with the specified capacity and buffer size.
@@ -44,9 +44,9 @@ public class BufferPool {
      * @param bufferSize the capacity (in bytes) of each pooled buffer
      */
     public BufferPool(int maxSize, int bufferSize) {
-        _maxSize = maxSize;
-        _bufferSize = bufferSize;
-        _buffers = new ArrayDeque<>(maxSize);
+        this.maxSize = maxSize;
+        this.bufferSize = bufferSize;
+        buffers = new ArrayDeque<>(maxSize);
     }
 
     /**
@@ -55,14 +55,14 @@ public class BufferPool {
      * @param factor the fraction of the pool to pre-fill (0 = none, 1.0 = full)
      */
     public void initialize(float factor) {
-        final int amount = (int) Math.min(_maxSize, _maxSize * factor);
-        _lock.lock();
+        final int amount = (int) Math.min(maxSize, maxSize * factor);
+        lock.lock();
         try {
             for (int i = 0; i < amount; i++) {
-                _buffers.offer(ByteBuffer.allocateDirect(_bufferSize).order(ByteOrder.LITTLE_ENDIAN));
+                buffers.offer(ByteBuffer.allocateDirect(bufferSize).order(ByteOrder.LITTLE_ENDIAN));
             }
         } finally {
-            _lock.unlock();
+            lock.unlock();
         }
     }
 
@@ -71,11 +71,11 @@ public class BufferPool {
      * @return a cleared buffer ready for use, or {@code null}
      */
     public ByteBuffer get() {
-        _lock.lock();
+        lock.lock();
         try {
-            return _buffers.poll();
+            return buffers.poll();
         } finally {
-            _lock.unlock();
+            lock.unlock();
         }
     }
 
@@ -86,16 +86,16 @@ public class BufferPool {
      * @return {@code true} if the buffer was accepted; {@code false} if the pool was full
      */
     public boolean recycle(ByteBuffer buffer) {
-        _lock.lock();
+        lock.lock();
         try {
-            if (_buffers.size() < _maxSize) {
-                _buffers.offer(buffer.clear());
+            if (buffers.size() < maxSize) {
+                buffers.offer(buffer.clear());
                 return true;
             }
 
             return false;
         } finally {
-            _lock.unlock();
+            lock.unlock();
         }
     }
 
@@ -107,24 +107,24 @@ public class BufferPool {
      * @param limit the pool only expands when its current max size does not exceed this value
      */
     public void expandCapacity(float factor, int limit) {
-        _lock.lock();
+        lock.lock();
         try {
-            if (_maxSize > limit) {
+            if (maxSize > limit) {
                 return;
             }
 
             if (factor > 0) {
-                final int amount = (int) (_maxSize * factor);
+                final int amount = (int) (maxSize * factor);
                 for (int i = 0; i < amount; i++) {
-                    _buffers.offer(ByteBuffer.allocateDirect(_bufferSize).order(ByteOrder.LITTLE_ENDIAN));
+                    buffers.offer(ByteBuffer.allocateDirect(bufferSize).order(ByteOrder.LITTLE_ENDIAN));
                 }
 
-                _maxSize += amount;
+                maxSize += amount;
             } else {
-                _maxSize *= 2;
+                maxSize *= 2;
             }
         } finally {
-            _lock.unlock();
+            lock.unlock();
         }
     }
 
@@ -133,11 +133,11 @@ public class BufferPool {
      * @return the maximum number of buffers that may be held
      */
     public int getMaxSize() {
-        _lock.lock();
+        lock.lock();
         try {
-            return _maxSize;
+            return maxSize;
         } finally {
-            _lock.unlock();
+            lock.unlock();
         }
     }
 
@@ -146,11 +146,11 @@ public class BufferPool {
      * @return {@code true} if the pool is at capacity
      */
     public boolean isFull() {
-        _lock.lock();
+        lock.lock();
         try {
-            return _buffers.size() >= _maxSize;
+            return buffers.size() >= maxSize;
         } finally {
-            _lock.unlock();
+            lock.unlock();
         }
     }
 
@@ -159,22 +159,21 @@ public class BufferPool {
      * @return {@code true} if the pool is empty
      */
     public boolean isEmpty() {
-        _lock.lock();
+        lock.lock();
         try {
-            return _buffers.isEmpty();
+            return buffers.isEmpty();
         } finally {
-            _lock.unlock();
+            lock.unlock();
         }
     }
 
     @Override
     public String toString() {
-        _lock.lock();
+        lock.lock();
         try {
-            return "Pool {maxSize=" + _maxSize + ", bufferSize=" + _bufferSize + ", currentSize=" + _buffers.size()
-                    + '}';
+            return "Pool {maxSize=" + maxSize + ", bufferSize=" + bufferSize + ", currentSize=" + buffers.size() + '}';
         } finally {
-            _lock.unlock();
+            lock.unlock();
         }
     }
 }

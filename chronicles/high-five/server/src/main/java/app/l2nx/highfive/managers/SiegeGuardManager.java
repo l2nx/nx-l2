@@ -31,17 +31,20 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class SiegeGuardManager {
-    private static final Logger LOGGER = Logger.getLogger(SiegeGuardManager.class.getName());
 
-    private final Castle _castle;
-    private final List<Spawn> _siegeGuardSpawn = new ArrayList<>();
+    @Getter
+    private final Castle castle;
+
+    @Getter
+    private final List<Spawn> siegeGuardSpawn = new ArrayList<>();
 
     public SiegeGuardManager(Castle castle) {
-        _castle = castle;
+        this.castle = castle;
     }
 
     /**
@@ -111,11 +114,7 @@ public class SiegeGuardManager {
             ps.setInt(4, z);
             ps.execute();
         } catch (Exception e) {
-            LOGGER.log(
-                    Level.WARNING,
-                    getClass().getSimpleName() + ": Error deleting hired siege guard at " + x + ',' + y + ',' + z + ": "
-                            + e.getMessage(),
-                    e);
+            log.warn("Error deleting hired siege guard at {},{},{}: {}", x, y, z, e.getMessage(), e);
         }
     }
 
@@ -126,14 +125,10 @@ public class SiegeGuardManager {
         try (Connection con = DatabaseFactory.getConnection();
                 PreparedStatement ps =
                         con.prepareStatement("Delete From castle_siege_guards Where castleId = ? And isHired = 1")) {
-            ps.setInt(1, _castle.getResidenceId());
+            ps.setInt(1, castle.getResidenceId());
             ps.execute();
         } catch (Exception e) {
-            LOGGER.log(
-                    Level.WARNING,
-                    getClass().getSimpleName() + ": Error deleting hired siege guard for castle " + _castle.getName()
-                            + ": " + e.getMessage(),
-                    e);
+            log.warn("Error deleting hired siege guard for castle {}: {}", castle.getName(), e.getMessage(), e);
         }
     }
 
@@ -143,10 +138,10 @@ public class SiegeGuardManager {
     public void spawnSiegeGuard() {
         try {
             int hiredCount = 0;
-            final int hiredMax = MercTicketManager.getInstance().getMaxAllowedMerc(_castle.getResidenceId());
-            final boolean isHired = _castle.getOwnerId() > 0;
+            final int hiredMax = MercTicketManager.getInstance().getMaxAllowedMerc(castle.getResidenceId());
+            final boolean isHired = castle.getOwnerId() > 0;
             loadSiegeGuard();
-            for (Spawn spawn : _siegeGuardSpawn) {
+            for (Spawn spawn : siegeGuardSpawn) {
                 if (spawn != null) {
                     spawn.init();
                     if (isHired) {
@@ -160,10 +155,7 @@ public class SiegeGuardManager {
                 }
             }
         } catch (Exception e) {
-            LOGGER.log(
-                    Level.SEVERE,
-                    getClass().getSimpleName() + ": Error spawning siege guards for castle " + _castle.getName(),
-                    e);
+            log.error("Error spawning siege guards for castle {}", castle.getName(), e);
         }
     }
 
@@ -171,14 +163,14 @@ public class SiegeGuardManager {
      * Unspawn guards.
      */
     public void unspawnSiegeGuard() {
-        for (Spawn spawn : _siegeGuardSpawn) {
+        for (Spawn spawn : siegeGuardSpawn) {
             if ((spawn != null) && (spawn.getLastSpawn() != null)) {
                 spawn.stopRespawn();
                 spawn.getLastSpawn().deleteMe();
             }
         }
 
-        _siegeGuardSpawn.clear();
+        siegeGuardSpawn.clear();
     }
 
     /**
@@ -188,8 +180,8 @@ public class SiegeGuardManager {
         try (Connection con = DatabaseFactory.getConnection();
                 PreparedStatement ps =
                         con.prepareStatement("SELECT * FROM castle_siege_guards Where castleId = ? And isHired = ?")) {
-            ps.setInt(1, _castle.getResidenceId());
-            ps.setInt(2, _castle.getOwnerId() > 0 ? 1 : 0);
+            ps.setInt(1, castle.getResidenceId());
+            ps.setInt(2, castle.getOwnerId() > 0 ? 1 : 0);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     final Spawn spawn = new Spawn(rs.getInt("npcId"));
@@ -199,15 +191,11 @@ public class SiegeGuardManager {
                     spawn.setRespawnDelay(rs.getInt("respawnDelay"));
                     spawn.setLocationId(0);
 
-                    _siegeGuardSpawn.add(spawn);
+                    siegeGuardSpawn.add(spawn);
                 }
             }
         } catch (Exception e) {
-            LOGGER.log(
-                    Level.WARNING,
-                    getClass().getSimpleName() + ": Error loading siege guard for castle " + _castle.getName() + ": "
-                            + e.getMessage(),
-                    e);
+            log.warn("Error loading siege guard for castle {}: {}", castle.getName(), e.getMessage(), e);
         }
     }
 
@@ -224,7 +212,7 @@ public class SiegeGuardManager {
         try (Connection con = DatabaseFactory.getConnection();
                 PreparedStatement ps = con.prepareStatement(
                         "Insert Into castle_siege_guards (castleId, npcId, x, y, z, heading, respawnDelay, isHired) Values (?, ?, ?, ?, ?, ?, ?, ?)")) {
-            ps.setInt(1, _castle.getResidenceId());
+            ps.setInt(1, castle.getResidenceId());
             ps.setInt(2, npcId);
             ps.setInt(3, x);
             ps.setInt(4, y);
@@ -234,19 +222,7 @@ public class SiegeGuardManager {
             ps.setInt(8, isHire);
             ps.execute();
         } catch (Exception e) {
-            LOGGER.log(
-                    Level.WARNING,
-                    getClass().getSimpleName() + ": Error adding siege guard for castle " + _castle.getName() + ": "
-                            + e.getMessage(),
-                    e);
+            log.warn("Error adding siege guard for castle {}: {}", castle.getName(), e.getMessage(), e);
         }
-    }
-
-    public Castle getCastle() {
-        return _castle;
-    }
-
-    public List<Spawn> getSiegeGuardSpawn() {
-        return _siegeGuardSpawn;
     }
 }

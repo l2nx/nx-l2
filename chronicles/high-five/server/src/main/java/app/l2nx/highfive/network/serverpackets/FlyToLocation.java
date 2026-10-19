@@ -30,24 +30,24 @@ import app.l2nx.network.buffer.WriteBuffer;
  * @author KenM
  */
 public class FlyToLocation extends ServerPacket {
-    private final int _destX;
-    private final int _destY;
-    private final int _destZ;
-    private final int _chaObjId;
-    private final int _orgX;
-    private final int _orgY;
-    private final int _orgZ;
-    private final FlyType _type;
+    private final int destX;
+    private final int destY;
+    private final int destZ;
+    private final int chaObjId;
+    private final int orgX;
+    private final int orgY;
+    private final int orgZ;
+    private final FlyType type;
 
     public FlyToLocation(Creature creature, int destX, int destY, int destZ, FlyType type) {
-        _chaObjId = creature.getObjectId();
-        _orgX = creature.getX();
-        _orgY = creature.getY();
-        _orgZ = creature.getZ();
-        _destX = destX;
-        _destY = destY;
-        _destZ = destZ;
-        _type = type;
+        chaObjId = creature.getObjectId();
+        orgX = creature.getX();
+        orgY = creature.getY();
+        orgZ = creature.getZ();
+        this.destX = destX;
+        this.destY = destY;
+        this.destZ = destZ;
+        this.type = type;
         if (creature.isPlayer()) {
             creature.asPlayer().setBlinkActive(true);
         }
@@ -60,13 +60,13 @@ public class FlyToLocation extends ServerPacket {
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.FLY_TO_LOCATION.writeId(this, buffer);
-        buffer.writeInt(_chaObjId);
-        buffer.writeInt(_destX);
-        buffer.writeInt(_destY);
-        buffer.writeInt(_destZ);
-        buffer.writeInt(_orgX);
-        buffer.writeInt(_orgY);
-        buffer.writeInt(_orgZ);
-        buffer.writeInt(_type.ordinal());
+        buffer.writeInt(chaObjId);
+        buffer.writeInt(destX);
+        buffer.writeInt(destY);
+        buffer.writeInt(destZ);
+        buffer.writeInt(orgX);
+        buffer.writeInt(orgY);
+        buffer.writeInt(orgZ);
+        buffer.writeInt(type.ordinal());
     }
 }

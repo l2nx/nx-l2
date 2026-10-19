@@ -116,23 +116,23 @@ public class Unstuck implements IUserCommandHandler {
     }
 
     private static class EscapeFinalizer implements Runnable {
-        private final Player _player;
+        private final Player player;
 
         protected EscapeFinalizer(Player player) {
-            _player = player;
+            this.player = player;
         }
 
         @Override
         public void run() {
-            if (_player.isDead()) {
+            if (player.isDead()) {
                 return;
             }
 
-            _player.setIn7sDungeon(false);
-            _player.enableAllSkills();
-            _player.setCastingNow(false);
-            _player.setInstanceId(0);
-            _player.teleToLocation(TeleportWhereType.TOWN);
+            player.setIn7sDungeon(false);
+            player.enableAllSkills();
+            player.setCastingNow(false);
+            player.setInstanceId(0);
+            player.teleToLocation(TeleportWhereType.TOWN);
         }
     }
 

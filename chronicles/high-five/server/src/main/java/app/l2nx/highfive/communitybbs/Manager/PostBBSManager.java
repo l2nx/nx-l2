@@ -35,25 +35,25 @@ import java.util.StringTokenizer;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class PostBBSManager extends BaseBBSManager {
-    private final Map<Topic, Post> _postByTopic = new ConcurrentHashMap<>();
+    private final Map<Topic, Post> postByTopic = new ConcurrentHashMap<>();
 
     public Post getGPosttByTopic(Topic t) {
-        Post post = _postByTopic.get(t);
+        Post post = postByTopic.get(t);
         if (post == null) {
             post = new Post(t);
-            _postByTopic.put(t, post);
+            postByTopic.put(t, post);
         }
 
         return post;
     }
 
     public void delPostByTopic(Topic t) {
-        _postByTopic.remove(t);
+        postByTopic.remove(t);
     }
 
     public void addPostByTopic(Post p, Topic t) {
-        if (_postByTopic.get(t) == null) {
-            _postByTopic.put(t, p);
+        if (postByTopic.get(t) == null) {
+            postByTopic.put(t, p);
         }
     }
 

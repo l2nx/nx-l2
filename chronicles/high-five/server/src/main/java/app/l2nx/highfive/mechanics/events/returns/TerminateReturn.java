@@ -23,17 +23,17 @@ package app.l2nx.highfive.mechanics.events.returns;
  * @author UnAfraid
  */
 public class TerminateReturn extends AbstractEventReturn {
-    private final boolean _terminate;
+    private final boolean terminate;
 
     public TerminateReturn(boolean terminate, boolean override, boolean abort) {
         super(override, abort);
-        _terminate = terminate;
+        this.terminate = terminate;
     }
 
     /**
      * @return {@code true} if execution has to be terminated, {@code false} otherwise.
      */
     public boolean terminate() {
-        return _terminate;
+        return terminate;
     }
 }

@@ -30,15 +30,15 @@ import app.l2nx.network.buffer.WriteBuffer;
  * @version $Revision: 1.2.4.1 $ $Date: 2005/03/27 15:30:11 $
  */
 public class PlayFail extends LoginServerPacket {
-    private final PlayFailReason _reason;
+    private final PlayFailReason reason;
 
     public PlayFail(PlayFailReason reason) {
-        _reason = reason;
+        this.reason = reason;
     }
 
     @Override
     protected void writeImpl(LoginClient client, WriteBuffer buffer) {
         buffer.writeByte(0x06);
-        buffer.writeByte(_reason.getCode());
+        buffer.writeByte(reason.getCode());
     }
 }

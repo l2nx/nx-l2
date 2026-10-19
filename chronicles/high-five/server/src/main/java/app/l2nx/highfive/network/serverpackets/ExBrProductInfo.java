@@ -32,25 +32,25 @@ import app.l2nx.network.buffer.WriteBuffer;
  * @author Mobius
  */
 public class ExBrProductInfo extends ServerPacket {
-    private final PrimeShopProductHolder _product;
+    private final PrimeShopProductHolder product;
 
     public ExBrProductInfo(int id) {
-        _product = PrimeShopData.getInstance().getProduct(id);
+        product = PrimeShopData.getInstance().getProduct(id);
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
-        if (_product == null) {
+        if (product == null) {
             return;
         }
 
         ServerPackets.EX_BR_PRODUCT_INFO.writeId(this, buffer);
-        buffer.writeInt(_product.getProductId()); // product id
-        buffer.writeInt(_product.getPrice()); // points
+        buffer.writeInt(product.getProductId()); // product id
+        buffer.writeInt(product.getPrice()); // points
         buffer.writeInt(1); // components size
-        buffer.writeInt(_product.getItemId()); // item id
-        buffer.writeInt(_product.getItemCount()); // quality
-        buffer.writeInt(_product.getItemWeight()); // weight
-        buffer.writeInt(_product.isTradable()); // 0 - do not drop/trade
+        buffer.writeInt(product.getItemId()); // item id
+        buffer.writeInt(product.getItemCount()); // quality
+        buffer.writeInt(product.getItemWeight()); // weight
+        buffer.writeInt(product.isTradable()); // 0 - do not drop/trade
     }
 }

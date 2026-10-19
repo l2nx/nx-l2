@@ -38,7 +38,6 @@ import java.util.StringTokenizer;
  * This class handles all siege commands: Todo: change the class name, and neaten it up
  */
 public class AdminFortSiege implements IAdminCommandHandler {
-    // private static final Logger LOGGER = Logger.getLogger(AdminFortSiege.class.getName());
 
     private static final String[] ADMIN_COMMANDS = {
         "admin_fortsiege",

@@ -29,15 +29,15 @@ import app.l2nx.highfive.scripts.quests.AbstractSagaQuest;
 public class Q00096_SagaOfTheSpectralDancer extends AbstractSagaQuest {
     public Q00096_SagaOfTheSpectralDancer() {
         super(96);
-        _npc = new int[] {31582, 31623, 31284, 31284, 31611, 31646, 31649, 31653, 31654, 31655, 31656, 31284};
-        _items = new int[] {7080, 7527, 7081, 7511, 7294, 7325, 7356, 7387, 7418, 7449, 7092, 0};
-        _mob = new int[] {27272, 27245, 27264};
-        _classId = new int[] {107};
-        _prevClass = new int[] {0x22};
-        _npcSpawnLocations = new Location[] {
+        npc = new int[] {31582, 31623, 31284, 31284, 31611, 31646, 31649, 31653, 31654, 31655, 31656, 31284};
+        items = new int[] {7080, 7527, 7081, 7511, 7294, 7325, 7356, 7387, 7418, 7449, 7092, 0};
+        mob = new int[] {27272, 27245, 27264};
+        classId = new int[] {107};
+        prevClass = new int[] {0x22};
+        npcSpawnLocations = new Location[] {
             new Location(164650, -74121, -2871), new Location(47429, -56923, -2383), new Location(47391, -56929, -2370)
         };
-        _text = new String[] {
+        text = new String[] {
             "PLAYERNAME! Pursued to here! However, I jumped out of the Banshouren boundaries! You look at the giant as the sign of power!",
             "... Oh ... good! So it was ... let's begin!",
             "I do not have the patience ..! I have been a giant force ...! Cough chatter ah ah ah!",

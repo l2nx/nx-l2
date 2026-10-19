@@ -27,15 +27,15 @@ import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.network.buffer.WriteBuffer;
 
 public class TutorialEnableClientEvent extends ServerPacket {
-    private int _eventId = 0;
+    private int eventId = 0;
 
     public TutorialEnableClientEvent(int event) {
-        _eventId = event;
+        eventId = event;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.TUTORIAL_ENABLE_CLIENT_EVENT.writeId(this, buffer);
-        buffer.writeInt(_eventId);
+        buffer.writeInt(eventId);
     }
 }

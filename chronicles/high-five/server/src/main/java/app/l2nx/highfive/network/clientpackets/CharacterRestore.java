@@ -34,11 +34,11 @@ import app.l2nx.highfive.network.serverpackets.CharSelectionInfo;
  */
 public class CharacterRestore extends ClientPacket {
     // cd
-    private int _charSlot;
+    private int charSlot;
 
     @Override
     protected void readImpl() {
-        _charSlot = readInt();
+        charSlot = readInt();
     }
 
     @Override
@@ -48,15 +48,19 @@ public class CharacterRestore extends ClientPacket {
             return;
         }
 
-        client.restore(_charSlot);
+        client.restore(charSlot);
         final CharSelectionInfo cl = new CharSelectionInfo(client.getAccountName(), client.getSessionId().playOkID1, 0);
         client.sendPacket(cl);
         client.setCharSelection(cl.getCharInfo());
 
         if (EventDispatcher.getInstance().hasListener(EventType.ON_PLAYER_RESTORE)) {
-            final CharacterInfoHolder charInfo = client.getCharSelection(_charSlot);
+            final CharacterInfoHolder charInfo = client.getCharSelection(charSlot);
             EventDispatcher.getInstance()
-                    .notifyEvent(new OnPlayerRestore(charInfo.getObjectId(), charInfo.getName(), client));
+                    .notifyEvent(OnPlayerRestore.builder()
+                            .objectId(charInfo.getObjectId())
+                            .name(charInfo.getName())
+                            .client(client)
+                            .build());
         }
     }
 }

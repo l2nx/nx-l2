@@ -32,14 +32,14 @@ import app.l2nx.highfive.mechanics.skill.Skill;
  */
 public class ConditionPlayerSex extends Condition {
     // male 0 female 1
-    private final int _sex;
+    private final int sex;
 
     /**
      * Instantiates a new condition player sex.
      * @param sex the sex
      */
     public ConditionPlayerSex(int sex) {
-        _sex = sex;
+        this.sex = sex;
     }
 
     @Override
@@ -49,6 +49,6 @@ public class ConditionPlayerSex extends Condition {
             return false;
         }
 
-        return (player.getAppearance().isFemale() ? 1 : 0) == _sex;
+        return (player.getAppearance().isFemale() ? 1 : 0) == sex;
     }
 }

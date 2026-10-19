@@ -31,13 +31,13 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class DuelManager {
-    private final Map<Integer, Duel> _duels = new ConcurrentHashMap<>();
-    private final AtomicInteger _currentDuelId = new AtomicInteger();
+    private final Map<Integer, Duel> duels = new ConcurrentHashMap<>();
+    private final AtomicInteger currentDuelId = new AtomicInteger();
 
     protected DuelManager() {}
 
     public Duel getDuel(int duelId) {
-        return _duels.get(duelId);
+        return duels.get(duelId);
     }
 
     public void addDuel(Player playerA, Player playerB, int partyDuel) {
@@ -84,12 +84,12 @@ public class DuelManager {
             }
         }
 
-        final int duelId = _currentDuelId.incrementAndGet();
-        _duels.put(duelId, new Duel(playerA, playerB, partyDuel, duelId));
+        final int duelId = currentDuelId.incrementAndGet();
+        duels.put(duelId, new Duel(playerA, playerB, partyDuel, duelId));
     }
 
     public void removeDuel(Duel duel) {
-        _duels.remove(duel.getId());
+        duels.remove(duel.getId());
     }
 
     public void doSurrender(Player player) {

@@ -27,19 +27,30 @@ import app.l2nx.highfive.mechanics.skill.holders.SkillHolder;
 import app.l2nx.highfive.mechanics.skill.holders.SkillLearn;
 import java.util.ArrayList;
 import java.util.List;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * @author xban1x
  */
 public abstract class AbstractResidence extends ListenersContainer {
-    private final int _residenceId;
-    private String _name;
+    @Getter
+    private final int residenceId;
 
-    private ResidenceZone _zone = null;
-    private final List<SkillHolder> _residentialSkills = new ArrayList<>();
+    @Getter
+    @Setter
+    private String name;
+
+    @Getter
+    @Setter(AccessLevel.PROTECTED)
+    private ResidenceZone residenceZone = null;
+
+    @Getter
+    private final List<SkillHolder> residentialSkills = new ArrayList<>();
 
     public AbstractResidence(int residenceId) {
-        _residenceId = residenceId;
+        this.residenceId = residenceId;
         initResidentialSkills();
     }
 
@@ -49,46 +60,21 @@ public abstract class AbstractResidence extends ListenersContainer {
 
     protected void initResidentialSkills() {
         for (SkillLearn s : SkillTreeData.getInstance().getAvailableResidentialSkills(getResidenceId())) {
-            _residentialSkills.add(new SkillHolder(s.getSkillId(), s.getSkillLevel()));
+            residentialSkills.add(new SkillHolder(s.getSkillId(), s.getSkillLevel()));
         }
     }
 
-    public int getResidenceId() {
-        return _residenceId;
-    }
-
-    public String getName() {
-        return _name;
-    }
-
-    // TODO: Remove it later when both castles and forts are loaded from same table.
-    public void setName(String name) {
-        _name = name;
-    }
-
-    public ResidenceZone getResidenceZone() {
-        return _zone;
-    }
-
-    protected void setResidenceZone(ResidenceZone zone) {
-        _zone = zone;
-    }
-
-    public List<SkillHolder> getResidentialSkills() {
-        return _residentialSkills;
-    }
-
     public void giveResidentialSkills(Player player) {
-        if (!_residentialSkills.isEmpty()) {
-            for (SkillHolder sh : _residentialSkills) {
+        if (!residentialSkills.isEmpty()) {
+            for (SkillHolder sh : residentialSkills) {
                 player.addSkill(sh.getSkill(), false);
             }
         }
     }
 
     public void removeResidentialSkills(Player player) {
-        if (!_residentialSkills.isEmpty()) {
-            for (SkillHolder sh : _residentialSkills) {
+        if (!residentialSkills.isEmpty()) {
+            for (SkillHolder sh : residentialSkills) {
                 player.removeSkill(sh.getSkill(), false);
             }
         }
@@ -101,6 +87,6 @@ public abstract class AbstractResidence extends ListenersContainer {
 
     @Override
     public String toString() {
-        return _name + "(" + _residenceId + ")";
+        return name + "(" + residenceId + ")";
     }
 }

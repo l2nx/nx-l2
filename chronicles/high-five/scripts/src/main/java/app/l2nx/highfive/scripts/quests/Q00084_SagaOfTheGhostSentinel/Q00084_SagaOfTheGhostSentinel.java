@@ -29,15 +29,15 @@ import app.l2nx.highfive.scripts.quests.AbstractSagaQuest;
 public class Q00084_SagaOfTheGhostSentinel extends AbstractSagaQuest {
     public Q00084_SagaOfTheGhostSentinel() {
         super(84);
-        _npc = new int[] {30702, 31587, 31604, 31640, 31635, 31646, 31649, 31652, 31654, 31655, 31659, 31641};
-        _items = new int[] {7080, 7521, 7081, 7499, 7282, 7313, 7344, 7375, 7406, 7437, 7107, 0};
-        _mob = new int[] {27298, 27233, 27307};
-        _classId = new int[] {109};
-        _prevClass = new int[] {0x25};
-        _npcSpawnLocations = new Location[] {
+        npc = new int[] {30702, 31587, 31604, 31640, 31635, 31646, 31649, 31652, 31654, 31655, 31659, 31641};
+        items = new int[] {7080, 7521, 7081, 7499, 7282, 7313, 7344, 7375, 7406, 7437, 7107, 0};
+        mob = new int[] {27298, 27233, 27307};
+        classId = new int[] {109};
+        prevClass = new int[] {0x25};
+        npcSpawnLocations = new Location[] {
             new Location(161719, -92823, -1893), new Location(124376, 82127, -2796), new Location(124376, 82127, -2796)
         };
-        _text = new String[] {
+        text = new String[] {
             "PLAYERNAME! Pursued to here! However, I jumped out of the Banshouren boundaries! You look at the giant as the sign of power!",
             "... Oh ... good! So it was ... let's begin!",
             "I do not have the patience ..! I have been a giant force ...! Cough chatter ah ah ah!",

@@ -40,16 +40,16 @@ import java.util.concurrent.ThreadLocalRandom;
  * @author NosBit
  */
 public class EnergyDamage extends AbstractEffect {
-    private final double _power;
-    private final int _criticalChance;
-    private final boolean _ignoreShieldDefence;
+    private final double power;
+    private final int criticalChance;
+    private final boolean ignoreShieldDefence;
 
     public EnergyDamage(Condition attachCond, Condition applyCond, StatSet set, StatSet params) {
         super(attachCond, applyCond, set, params);
 
-        _power = params.getDouble("power", 0);
-        _criticalChance = params.getInt("criticalChance", 0);
-        _ignoreShieldDefence = params.getBoolean("ignoreShieldDefence", false);
+        power = params.getDouble("power", 0);
+        criticalChance = params.getInt("criticalChance", 0);
+        ignoreShieldDefence = params.getBoolean("ignoreShieldDefence", false);
     }
 
     @Override
@@ -77,7 +77,7 @@ public class EnergyDamage extends AbstractEffect {
 
         double attack = attacker.getPAtk(effected);
         double defence = effected.getPDef(attacker);
-        if (!_ignoreShieldDefence) {
+        if (!ignoreShieldDefence) {
             final byte shield = Formulas.calcShldUse(attacker, effected, skill, true);
             switch (shield) {
                 case Formulas.SHIELD_DEFENSE_FAILED: {
@@ -114,7 +114,7 @@ public class EnergyDamage extends AbstractEffect {
             // charge count should be the count before casting the skill but since its reduced before calling effects
             // we add skill consume charges to current charges
             final double energyChargesBoost = (((attacker.getCharges() + skill.getChargeConsumeCount()) - 1) * 0.2) + 1;
-            attack += _power;
+            attack += power;
             attack *= ssBoost;
             attack *= energyChargesBoost;
             attack *= weaponTypeBoost;
@@ -137,7 +137,7 @@ public class EnergyDamage extends AbstractEffect {
                 damage = attacker.getStat().calcStat(Stat.PHYSICAL_SKILL_POWER, damage);
             }
 
-            critical = (BaseStat.STR.calcBonus(attacker) * _criticalChance)
+            critical = (BaseStat.STR.calcBonus(attacker) * criticalChance)
                     > (ThreadLocalRandom.current().nextDouble() * 100);
             if (critical) {
                 damage *= 2;

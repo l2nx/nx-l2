@@ -28,18 +28,18 @@ import app.l2nx.highfive.mechanics.skill.Skill;
  * @author Kerberos
  */
 public class ConditionPlayerFlyMounted extends Condition {
-    private final boolean _value;
+    private final boolean value;
 
     /**
      * Instantiates a new condition player fly mounted.
      * @param value the value
      */
     public ConditionPlayerFlyMounted(boolean value) {
-        _value = value;
+        this.value = value;
     }
 
     @Override
     public boolean testImpl(Creature effector, Creature effected, Skill skill, ItemTemplate item) {
-        return !effector.isPlayer() || (effector.asPlayer().isFlyingMounted() == _value);
+        return !effector.isPlayer() || (effector.asPlayer().isFlyingMounted() == value);
     }
 }

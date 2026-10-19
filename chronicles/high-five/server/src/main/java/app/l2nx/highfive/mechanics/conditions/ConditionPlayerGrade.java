@@ -22,14 +22,12 @@ package app.l2nx.highfive.mechanics.conditions;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.item.ItemTemplate;
 import app.l2nx.highfive.mechanics.skill.Skill;
-import java.util.logging.Logger;
 
 /**
  * The Class ConditionPlayerGrade.
  * @author Gigiikun
  */
 public class ConditionPlayerGrade extends Condition {
-    protected static final Logger LOGGER = Logger.getLogger(ConditionPlayerGrade.class.getName());
 
     // conditional values
     public static final int COND_NO_GRADE = 0x0001;
@@ -41,18 +39,18 @@ public class ConditionPlayerGrade extends Condition {
     public static final int COND_S80_GRADE = 0x0040;
     public static final int COND_S84_GRADE = 0x0080;
 
-    private final int _value;
+    private final int value;
 
     /**
      * Instantiates a new condition player grade.
      * @param value the value
      */
     public ConditionPlayerGrade(int value) {
-        _value = value;
+        this.value = value;
     }
 
     @Override
     public boolean testImpl(Creature effector, Creature effected, Skill skill, ItemTemplate item) {
-        return effector.isPlayer() && (_value == (byte) effector.asPlayer().getExpertiseLevel());
+        return effector.isPlayer() && (value == (byte) effector.asPlayer().getExpertiseLevel());
     }
 }

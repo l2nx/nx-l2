@@ -29,15 +29,15 @@ import app.l2nx.highfive.scripts.quests.AbstractSagaQuest;
 public class Q00095_SagaOfTheHellKnight extends AbstractSagaQuest {
     public Q00095_SagaOfTheHellKnight() {
         super(95);
-        _npc = new int[] {31582, 31623, 31297, 31297, 31599, 31646, 31647, 31653, 31654, 31655, 31656, 31297};
-        _items = new int[] {7080, 7532, 7081, 7510, 7293, 7324, 7355, 7386, 7417, 7448, 7086, 0};
-        _mob = new int[] {27258, 27244, 27263};
-        _classId = new int[] {91};
-        _prevClass = new int[] {0x06};
-        _npcSpawnLocations = new Location[] {
+        npc = new int[] {31582, 31623, 31297, 31297, 31599, 31646, 31647, 31653, 31654, 31655, 31656, 31297};
+        items = new int[] {7080, 7532, 7081, 7510, 7293, 7324, 7355, 7386, 7417, 7448, 7086, 0};
+        mob = new int[] {27258, 27244, 27263};
+        classId = new int[] {91};
+        prevClass = new int[] {0x06};
+        npcSpawnLocations = new Location[] {
             new Location(164650, -74121, -2871), new Location(47391, -56929, -2370), new Location(47429, -56923, -2383)
         };
-        _text = new String[] {
+        text = new String[] {
             "PLAYERNAME! Pursued to here! However, I jumped out of the Banshouren boundaries! You look at the giant as the sign of power!",
             "... Oh ... good! So it was ... let's begin!",
             "I do not have the patience ..! I have been a giant force ...! Cough chatter ah ah ah!",

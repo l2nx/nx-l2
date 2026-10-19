@@ -32,14 +32,14 @@ import app.l2nx.highfive.util.StatSet;
  * @author Adry_85
  */
 public class DamOverTimePercent extends AbstractEffect {
-    private final boolean _canKill;
-    private final double _power;
+    private final boolean canKill;
+    private final double power;
 
     public DamOverTimePercent(Condition attachCond, Condition applyCond, StatSet set, StatSet params) {
         super(attachCond, applyCond, set, params);
 
-        _canKill = params.getBoolean("canKill", false);
-        _power = params.getDouble("power", 0);
+        canKill = params.getBoolean("canKill", false);
+        power = params.getDouble("power", 0);
     }
 
     @Override
@@ -53,7 +53,7 @@ public class DamOverTimePercent extends AbstractEffect {
             return false;
         }
 
-        double damage = effected.getCurrentHp() * _power * getTicksMultiplier();
+        double damage = effected.getCurrentHp() * power * getTicksMultiplier();
         if (damage >= (effected.getCurrentHp() - 1)) {
             if (skill.isToggle()) {
                 effected.sendPacket(SystemMessageId.YOUR_SKILL_HAS_BEEN_CANCELED_DUE_TO_LACK_OF_HP);
@@ -61,7 +61,7 @@ public class DamOverTimePercent extends AbstractEffect {
             }
 
             // For DOT skills that will not kill effected player.
-            if (!_canKill) {
+            if (!canKill) {
                 // Fix for players dying by DOTs if HP < 1 since reduceCurrentHP method will kill them.
                 if (effected.getCurrentHp() <= 1) {
                     return skill.isToggle();

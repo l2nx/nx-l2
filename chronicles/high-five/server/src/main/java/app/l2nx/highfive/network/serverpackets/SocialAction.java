@@ -29,19 +29,19 @@ import app.l2nx.network.buffer.WriteBuffer;
 public class SocialAction extends ServerPacket {
     public static final int LEVEL_UP = 2122;
 
-    private final int _objectId;
-    private final int _actionId;
+    private final int objectId;
+    private final int actionId;
 
     public SocialAction(int objectId, int actionId) {
-        _objectId = objectId;
-        _actionId = actionId;
+        this.objectId = objectId;
+        this.actionId = actionId;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.SOCIAL_ACTION.writeId(this, buffer);
-        buffer.writeInt(_objectId);
-        buffer.writeInt(_actionId);
+        buffer.writeInt(objectId);
+        buffer.writeInt(actionId);
     }
 
     @Override

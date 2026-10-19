@@ -59,16 +59,15 @@ import app.l2nx.highfive.network.serverpackets.ServerClose;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
 import app.l2nx.highfive.taskmanagers.GameTimeTaskManager;
 import app.l2nx.highfive.threads.ThreadPool;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * This class provides the functions for shutting down and restarting the server.<br>
  * It closes all open client connections and saves all data.
  * @version $Revision: 1.2.4.5 $ $Date: 2005/03/27 15:29:09 $
  */
+@Slf4j
 public class Shutdown extends Thread {
-    private static final Logger LOGGER = Logger.getLogger(Shutdown.class.getName());
 
     private static final int SIGTERM = 0;
     private static final int GM_SHUTDOWN = 1;
@@ -76,12 +75,12 @@ public class Shutdown extends Thread {
     private static final int ABORT = 3;
     private static final String[] MODE_TEXT = {"SIGTERM", "shutting down", "restarting", "aborting"};
 
-    private static Shutdown _counterInstance;
-    private static volatile boolean _countdownFinished;
+    private static Shutdown counterInstance;
+    private static volatile boolean countdownFinished;
     private static volatile ServerExit serverExit;
 
-    private static volatile int _secondsShut;
-    private static volatile int _shutdownMode;
+    private static volatile int secondsShut;
+    private static volatile int shutdownMode;
 
     /**
      * This function starts a shutdown count down (Copied from Function startShutdown())
@@ -98,8 +97,8 @@ public class Shutdown extends Thread {
      * Default constructor is only used internal to create the singleton instance
      */
     protected Shutdown() {
-        _secondsShut = -1;
-        _shutdownMode = SIGTERM;
+        secondsShut = -1;
+        shutdownMode = SIGTERM;
     }
 
     /**
@@ -108,8 +107,8 @@ public class Shutdown extends Thread {
      * @param restart true is the server shall restart after shutdown
      */
     public Shutdown(int seconds, boolean restart) {
-        _secondsShut = Math.max(0, seconds);
-        _shutdownMode = restart ? GM_RESTART : GM_SHUTDOWN;
+        secondsShut = Math.max(0, seconds);
+        shutdownMode = restart ? GM_RESTART : GM_SHUTDOWN;
     }
 
     public static void bind(ServerExit exit) {
@@ -121,7 +120,7 @@ public class Shutdown extends Thread {
      */
     @Override
     public void run() {
-        if (_countdownFinished) {
+        if (countdownFinished) {
             return;
         }
 
@@ -129,13 +128,13 @@ public class Shutdown extends Thread {
         countdown();
 
         // The context may have been closed during the countdown.
-        if (_countdownFinished) {
+        if (countdownFinished) {
             return;
         }
 
-        LOGGER.warning("GM shutdown countdown is over. " + MODE_TEXT[_shutdownMode] + " NOW!");
+        log.warn("GM shutdown countdown is over. {} NOW!", MODE_TEXT[shutdownMode]);
 
-        switch (_shutdownMode) {
+        switch (shutdownMode) {
             case GM_SHUTDOWN: {
                 getInstance().setMode(GM_SHUTDOWN);
                 serverExit.exit(ServerExitCode.SHUTDOWN);
@@ -160,17 +159,23 @@ public class Shutdown extends Thread {
      * @param restart true if the server will restart after shutdown
      */
     public void startShutdown(Player player, int seconds, boolean restart) {
-        _shutdownMode = restart ? GM_RESTART : GM_SHUTDOWN;
+        shutdownMode = restart ? GM_RESTART : GM_SHUTDOWN;
 
         if (player != null) {
-            LOGGER.warning("GM: " + player.getName() + "(" + player.getObjectId() + ") issued shutdown command. "
-                    + MODE_TEXT[_shutdownMode] + " in " + seconds + " seconds!");
+            log.warn(
+                    "GM: {}({}) issued shutdown command. {} in {} seconds!",
+                    player.getName(),
+                    player.getObjectId(),
+                    MODE_TEXT[shutdownMode],
+                    seconds);
         } else {
-            LOGGER.warning("Server scheduled restart issued shutdown command. " + (restart ? "Restart" : "Shutdown")
-                    + " in " + seconds + " seconds!");
+            log.warn(
+                    "Server scheduled restart issued shutdown command. {} in {} seconds!",
+                    (restart ? "Restart" : "Shutdown"),
+                    seconds);
         }
 
-        if (_shutdownMode > 0) {
+        if (shutdownMode > 0) {
             switch (seconds) {
                 case 540:
                 case 480:
@@ -196,8 +201,8 @@ public class Shutdown extends Thread {
             }
         }
 
-        if (_counterInstance != null) {
-            _counterInstance.abort();
+        if (counterInstance != null) {
+            counterInstance.abort();
         }
 
         if (ServerConfig.PRECAUTIONARY_RESTART_ENABLED) {
@@ -205,8 +210,8 @@ public class Shutdown extends Thread {
         }
 
         // The main instance never runs, so we start a new instance.
-        _counterInstance = new Shutdown(seconds, restart);
-        _counterInstance.start();
+        counterInstance = new Shutdown(seconds, restart);
+        counterInstance.start();
     }
 
     /**
@@ -214,23 +219,26 @@ public class Shutdown extends Thread {
      * @param player GM who issued the abort command
      */
     public void abort(Player player) {
-        if (_countdownFinished) {
-            LOGGER.warning("GM: " + (player != null ? player.getName() + "(" + player.getObjectId() + ") " : "")
-                    + "shutdown ABORT failed because countdown has finished.");
+        if (countdownFinished) {
+            log.warn(
+                    "GM: {}shutdown ABORT failed because countdown has finished.",
+                    (player != null ? player.getName() + "(" + player.getObjectId() + ") " : ""));
             return;
         }
 
-        LOGGER.warning("GM: " + (player != null ? player.getName() + "(" + player.getObjectId() + ") " : "")
-                + "issued shutdown ABORT. " + MODE_TEXT[_shutdownMode] + " has been stopped!");
-        if (_counterInstance != null) {
-            _counterInstance.abort();
+        log.warn(
+                "GM: {}issued shutdown ABORT. {} has been stopped!",
+                (player != null ? player.getName() + "(" + player.getObjectId() + ") " : ""),
+                MODE_TEXT[shutdownMode]);
+        if (counterInstance != null) {
+            counterInstance.abort();
 
             if (ServerConfig.PRECAUTIONARY_RESTART_ENABLED) {
                 PrecautionaryRestartManager.getInstance().restartAborted();
             }
 
             World.broadcastToAllOnlinePlayers(
-                    "Server aborts " + MODE_TEXT[_shutdownMode] + " and continues normal operation!", false);
+                    "Server aborts " + MODE_TEXT[shutdownMode] + " and continues normal operation!", false);
         }
     }
 
@@ -239,14 +247,14 @@ public class Shutdown extends Thread {
      * @param mode what mode shall be set
      */
     private void setMode(int mode) {
-        _shutdownMode = mode;
+        shutdownMode = mode;
     }
 
     /**
      * Set shutdown mode to ABORT.
      */
     private void abort() {
-        _shutdownMode = ABORT;
+        shutdownMode = ABORT;
     }
 
     /**
@@ -254,9 +262,9 @@ public class Shutdown extends Thread {
      */
     private void countdown() {
         try {
-            while (_secondsShut > 0) {
+            while (secondsShut > 0) {
                 // Rehabilitate previous server status if shutdown is aborted.
-                if (_shutdownMode == ABORT) {
+                if (shutdownMode == ABORT) {
                     if (LoginServerThread.getInstance().getServerStatus() == ServerStatus.STATUS_DOWN) {
                         LoginServerThread.getInstance()
                                 .setServerStatus(
@@ -267,7 +275,7 @@ public class Shutdown extends Thread {
                     break;
                 }
 
-                switch (_secondsShut) {
+                switch (secondsShut) {
                     case 540:
                     case 480:
                     case 420:
@@ -284,17 +292,17 @@ public class Shutdown extends Thread {
                     case 3:
                     case 2:
                     case 1: {
-                        sendServerQuit(_secondsShut);
+                        sendServerQuit(secondsShut);
                     }
                 }
 
                 // Prevent players from logging in.
-                if ((_secondsShut <= 60)
+                if ((secondsShut <= 60)
                         && (LoginServerThread.getInstance().getServerStatus() != ServerStatus.STATUS_DOWN)) {
                     LoginServerThread.getInstance().setServerStatus(ServerStatus.STATUS_DOWN);
                 }
 
-                _secondsShut--;
+                secondsShut--;
 
                 Thread.sleep(1000);
             }
@@ -307,11 +315,11 @@ public class Shutdown extends Thread {
      * Actions performed when the server stops.
      */
     void startShutdownActions() {
-        if (_countdownFinished) {
+        if (countdownFinished) {
             return;
         }
 
-        _countdownFinished = true;
+        countdownFinished = true;
 
         final TimeCounter tc = new TimeCounter();
         final TimeCounter tc1 = new TimeCounter();
@@ -321,26 +329,26 @@ public class Shutdown extends Thread {
                     && OfflineTradeConfig.RESTORE_OFFLINERS
                     && !OfflineTradeConfig.STORE_OFFLINE_TRADE_IN_REALTIME) {
                 OfflineTraderTable.getInstance().storeOffliners();
-                LOGGER.info("Offline Traders Table: Offline shops stored(" + tc.getEstimatedTimeAndRestartCounter()
-                        + "ms).");
+                log.info("Offline Traders Table: Offline shops stored({}ms).", tc.getEstimatedTimeAndRestartCounter());
             }
         } catch (Throwable t) {
-            LOGGER.log(Level.WARNING, "Error saving offline shops.", t);
+            log.warn("Error saving offline shops.", t);
         }
 
         try {
             if (OfflinePlayConfig.RESTORE_AUTO_PLAY_OFFLINERS && AutoPlayConfig.ENABLE_AUTO_ASSIST) {
                 OfflinePlayTable.getInstance().storeOfflineGroups();
-                LOGGER.info("Offline Play Table: Offline play groups stored(" + tc.getEstimatedTimeAndRestartCounter()
-                        + "ms).");
+                log.info(
+                        "Offline Play Table: Offline play groups stored({}ms).",
+                        tc.getEstimatedTimeAndRestartCounter());
             }
         } catch (Throwable t) {
-            LOGGER.log(Level.WARNING, "Error saving offline play groups.", t);
+            log.warn("Error saving offline play groups.", t);
         }
 
         try {
             disconnectAllCharacters();
-            LOGGER.info("All players disconnected and saved(" + tc.getEstimatedTimeAndRestartCounter() + "ms).");
+            log.info("All players disconnected and saved({}ms).", tc.getEstimatedTimeAndRestartCounter());
         } catch (Throwable t) {
             // ignore
         }
@@ -349,7 +357,7 @@ public class Shutdown extends Thread {
 
         try {
             GameTimeTaskManager.getInstance().interrupt();
-            LOGGER.info("Game Time Task Manager: Thread interruped(" + tc.getEstimatedTimeAndRestartCounter() + "ms).");
+            log.info("Game Time Task Manager: Thread interruped({}ms).", tc.getEstimatedTimeAndRestartCounter());
         } catch (Throwable t) {
             // ignore
         }
@@ -357,15 +365,14 @@ public class Shutdown extends Thread {
         // stop all thread pools
         try {
             ThreadPool.shutdown();
-            LOGGER.info("Thread Pool Manager: Manager has been shut down(" + tc.getEstimatedTimeAndRestartCounter()
-                    + "ms).");
+            log.info("Thread Pool Manager: Manager has been shut down({}ms).", tc.getEstimatedTimeAndRestartCounter());
         } catch (Throwable t) {
             // ignore
         }
 
         try {
             LoginServerThread.getInstance().interrupt();
-            LOGGER.info("Login Server Thread: Thread interruped(" + tc.getEstimatedTimeAndRestartCounter() + "ms).");
+            log.info("Login Server Thread: Thread interruped({}ms).", tc.getEstimatedTimeAndRestartCounter());
         } catch (Throwable t) {
             // ignore
         }
@@ -373,24 +380,24 @@ public class Shutdown extends Thread {
         // last byebye, save all data and quit this server
         saveData();
 
-        LOGGER.info("The server has been successfully shut down in " + (tc1.getEstimatedTime() / 1000) + "seconds.");
+        log.info("The server has been successfully shut down in {}seconds.", (tc1.getEstimatedTime() / 1000));
     }
 
     /**
      * This sends a last byebye, disconnects all players and saves data.
      */
     private void saveData() {
-        switch (_shutdownMode) {
+        switch (shutdownMode) {
             case SIGTERM: {
-                LOGGER.info("SIGTERM received. Shutting down NOW!");
+                log.info("SIGTERM received. Shutting down NOW!");
                 break;
             }
             case GM_SHUTDOWN: {
-                LOGGER.info("GM shutdown received. Shutting down NOW!");
+                log.info("GM shutdown received. Shutting down NOW!");
                 break;
             }
             case GM_RESTART: {
-                LOGGER.info("GM restart received. Restarting NOW!");
+                log.info("GM restart received. Restarting NOW!");
                 break;
             }
         }
@@ -400,72 +407,72 @@ public class Shutdown extends Thread {
         // Seven Signs data is now saved along with Festival data.
         if (!SevenSigns.getInstance().isSealValidationPeriod()) {
             SevenSignsFestival.getInstance().saveFestivalData(false);
-            LOGGER.info("SevenSignsFestival: Festival data saved(" + tc.getEstimatedTimeAndRestartCounter() + "ms).");
+            log.info("SevenSignsFestival: Festival data saved({}ms).", tc.getEstimatedTimeAndRestartCounter());
         }
 
         // Save Seven Signs data before closing. :)
         SevenSigns.getInstance().saveSevenSignsData();
-        LOGGER.info("SevenSigns: Seven Signs data saved(" + tc.getEstimatedTimeAndRestartCounter() + "ms).");
+        log.info("SevenSigns: Seven Signs data saved({}ms).", tc.getEstimatedTimeAndRestartCounter());
         SevenSigns.getInstance().saveSevenSignsStatus();
-        LOGGER.info("SevenSigns: Seven Signs status saved(" + tc.getEstimatedTimeAndRestartCounter() + "ms).");
+        log.info("SevenSigns: Seven Signs status saved({}ms).", tc.getEstimatedTimeAndRestartCounter());
 
         // Save all raidboss and GrandBoss status ^_^
         RaidBossSpawnManager.getInstance().cleanUp();
-        LOGGER.info("RaidBossSpawnManager: All raidboss info saved(" + tc.getEstimatedTimeAndRestartCounter() + "ms).");
+        log.info("RaidBossSpawnManager: All raidboss info saved({}ms).", tc.getEstimatedTimeAndRestartCounter());
         GrandBossManager.getInstance().cleanUp();
-        LOGGER.info("GrandBossManager: All Grand Boss info saved(" + tc.getEstimatedTimeAndRestartCounter() + "ms).");
+        log.info("GrandBossManager: All Grand Boss info saved({}ms).", tc.getEstimatedTimeAndRestartCounter());
         ItemAuctionManager.getInstance().shutdown();
-        LOGGER.info("Item Auction Manager: All tasks stopped(" + tc.getEstimatedTimeAndRestartCounter() + "ms).");
+        log.info("Item Auction Manager: All tasks stopped({}ms).", tc.getEstimatedTimeAndRestartCounter());
         Olympiad.getInstance().saveOlympiadStatus();
-        LOGGER.info("Olympiad System: Data saved(" + tc.getEstimatedTimeAndRestartCounter() + "ms).");
+        log.info("Olympiad System: Data saved({}ms).", tc.getEstimatedTimeAndRestartCounter());
         Hero.getInstance().shutdown();
-        LOGGER.info("Hero System: Data saved(" + tc.getEstimatedTimeAndRestartCounter() + "ms).");
+        log.info("Hero System: Data saved({}ms).", tc.getEstimatedTimeAndRestartCounter());
         ClanTable.getInstance().shutdown();
-        LOGGER.info("Clan System: Data saved(" + tc.getEstimatedTimeAndRestartCounter() + "ms).");
+        log.info("Clan System: Data saved({}ms).", tc.getEstimatedTimeAndRestartCounter());
 
         // Save Cursed Weapons data before closing.
         CursedWeaponsManager.getInstance().saveData();
-        LOGGER.info("Cursed Weapons Manager: Data saved(" + tc.getEstimatedTimeAndRestartCounter() + "ms).");
+        log.info("Cursed Weapons Manager: Data saved({}ms).", tc.getEstimatedTimeAndRestartCounter());
 
         // Save all manor data.
         if (!GeneralConfig.ALT_MANOR_SAVE_ALL_ACTIONS) {
             CastleManorManager.getInstance().storeMe();
-            LOGGER.info("Castle Manor Manager: Data saved(" + tc.getEstimatedTimeAndRestartCounter() + "ms).");
+            log.info("Castle Manor Manager: Data saved({}ms).", tc.getEstimatedTimeAndRestartCounter());
         }
 
         CHSiegeManager.getInstance().onServerShutDown();
-        LOGGER.info("CHSiegeManager: Siegable hall attacker lists saved!");
+        log.info("CHSiegeManager: Siegable hall attacker lists saved!");
 
         // Save all global (non-player specific) Quest data that needs to persist after reboot.
         ScriptManager.getInstance().save();
-        LOGGER.info("Script Manager: Data saved(" + tc.getEstimatedTimeAndRestartCounter() + "ms).");
+        log.info("Script Manager: Data saved({}ms).", tc.getEstimatedTimeAndRestartCounter());
 
         // Save all global variables data.
         GlobalVariablesManager.getInstance().storeMe();
-        LOGGER.info("Global Variables Manager: Variables saved(" + tc.getEstimatedTimeAndRestartCounter() + "ms).");
+        log.info("Global Variables Manager: Variables saved({}ms).", tc.getEstimatedTimeAndRestartCounter());
 
         // Save Fishing tournament data.
         if (GeneralConfig.ALT_FISH_CHAMPIONSHIP_ENABLED) {
             FishingChampionshipManager.getInstance().shutdown();
-            LOGGER.info("Fishing Championship Manager: Data saved(" + tc.getEstimatedTimeAndRestartCounter() + "ms).");
+            log.info("Fishing Championship Manager: Data saved({}ms).", tc.getEstimatedTimeAndRestartCounter());
         }
 
         // Schemes save.
         SchemeBufferTable.getInstance().saveSchemes();
-        LOGGER.info("SchemeBufferTable: Data saved(" + tc.getEstimatedTimeAndRestartCounter() + "ms).");
+        log.info("SchemeBufferTable: Data saved({}ms).", tc.getEstimatedTimeAndRestartCounter());
 
         // Save items on ground before closing.
         if (GeneralConfig.SAVE_DROPPED_ITEM) {
             ItemsOnGroundManager.getInstance().saveInDb();
-            LOGGER.info("Items On Ground Manager: Data saved(" + tc.getEstimatedTimeAndRestartCounter() + "ms).");
+            log.info("Items On Ground Manager: Data saved({}ms).", tc.getEstimatedTimeAndRestartCounter());
             ItemsOnGroundManager.getInstance().cleanUp();
-            LOGGER.info("Items On Ground Manager: Cleaned up(" + tc.getEstimatedTimeAndRestartCounter() + "ms).");
+            log.info("Items On Ground Manager: Cleaned up({}ms).", tc.getEstimatedTimeAndRestartCounter());
         }
 
         // Save bot reports to database.
         if (GeneralConfig.BOTREPORT_ENABLE) {
             BotReportTable.getInstance().saveReportedCharData();
-            LOGGER.info("Bot Report Table: Successfully saved reports to database!");
+            log.info("Bot Report Table: Successfully saved reports to database!");
         }
 
         try {
@@ -489,24 +496,24 @@ public class Shutdown extends Thread {
      * Once this class is created, it saves the start time, and when you want to get the estimated time, use the getEstimatedTime() method.
      */
     private static class TimeCounter {
-        private long _startTime;
+        private long startTime;
 
         protected TimeCounter() {
             restartCounter();
         }
 
         public void restartCounter() {
-            _startTime = System.currentTimeMillis();
+            startTime = System.currentTimeMillis();
         }
 
         public long getEstimatedTimeAndRestartCounter() {
-            final long toReturn = System.currentTimeMillis() - _startTime;
+            final long toReturn = System.currentTimeMillis() - startTime;
             restartCounter();
             return toReturn;
         }
 
         public long getEstimatedTime() {
-            return System.currentTimeMillis() - _startTime;
+            return System.currentTimeMillis() - startTime;
         }
     }
 

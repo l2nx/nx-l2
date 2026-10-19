@@ -42,31 +42,32 @@ import app.l2nx.highfive.mechanics.siege.Castle;
 import app.l2nx.highfive.mechanics.siege.Fort;
 import app.l2nx.highfive.mechanics.siege.SiegeClan;
 import app.l2nx.highfive.mechanics.siege.clanhalls.SiegableHall;
-import app.l2nx.highfive.network.PacketLogger;
 import app.l2nx.highfive.threads.ThreadPool;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @version $Revision: 1.7.2.3.2.6 $ $Date: 2005/03/27 15:29:30 $
  */
+@Slf4j
 public class RequestRestartPoint extends ClientPacket {
-    protected int _requestedPointType;
-    protected boolean _continuation;
+    protected int requestedPointType;
+    protected boolean continuation;
 
     @Override
     protected void readImpl() {
-        _requestedPointType = readInt();
+        requestedPointType = readInt();
     }
 
     class DeathTask implements Runnable {
-        final Player _player;
+        final Player player;
 
         DeathTask(Player player) {
-            _player = player;
+            this.player = player;
         }
 
         @Override
         public void run() {
-            portPlayer(_player);
+            portPlayer(player);
         }
     }
 
@@ -125,18 +126,19 @@ public class RequestRestartPoint extends ClientPacket {
 
         // force jail
         if (player.isJailed()) {
-            _requestedPointType = 27;
+            requestedPointType = 27;
         } else if (player.isFestivalParticipant()) {
-            _requestedPointType = 5;
+            requestedPointType = 5;
         }
 
         final Clan clan = player.getClan();
-        switch (_requestedPointType) {
+        switch (requestedPointType) {
             case 1: // to clanhall
             {
                 if ((clan == null) || (clan.getHideoutId() == 0)) {
-                    PacketLogger.warning("Player [" + player.getName()
-                            + "] called RestartPointPacket - To Clanhall and he doesn't have Clanhall!");
+                    log.warn(
+                            "Player [{}] called RestartPointPacket - To Clanhall and he doesn't have Clanhall!",
+                            player.getName());
                     return;
                 }
 
@@ -161,8 +163,9 @@ public class RequestRestartPoint extends ClientPacket {
                     } else if (castle.getSiege().checkIsAttacker(clan)) {
                         loc = MapRegionData.getInstance().getTeleToLocation(player, TeleportWhereType.TOWN);
                     } else {
-                        PacketLogger.warning("Player [" + player.getName()
-                                + "] called RestartPointPacket - To Castle and he doesn't have Castle!");
+                        log.warn(
+                                "Player [{}] called RestartPointPacket - To Castle and he doesn't have Castle!",
+                                player.getName());
                         return;
                     }
                 } else {
@@ -186,8 +189,9 @@ public class RequestRestartPoint extends ClientPacket {
             case 3: // to fortress
             {
                 if (((clan == null) || (clan.getFortId() == 0)) && !isInDefense) {
-                    PacketLogger.warning("Player [" + player.getName()
-                            + "] called RestartPointPacket - To Fortress and he doesn't have Fortress!");
+                    log.warn(
+                            "Player [{}] called RestartPointPacket - To Fortress and he doesn't have Fortress!",
+                            player.getName());
                     return;
                 }
 
@@ -230,8 +234,9 @@ public class RequestRestartPoint extends ClientPacket {
                         }
                     }
 
-                    PacketLogger.warning("Player [" + player.getName()
-                            + "] called RestartPointPacket - To Siege HQ and he doesn't have Siege HQ!");
+                    log.warn(
+                            "Player [{}] called RestartPointPacket - To Siege HQ and he doesn't have Siege HQ!",
+                            player.getName());
                     return;
                 }
 
@@ -243,8 +248,9 @@ public class RequestRestartPoint extends ClientPacket {
                 if (!player.isGM()
                         && !player.isFestivalParticipant()
                         && !player.getInventory().haveItemForSelfResurrection()) {
-                    PacketLogger.warning("Player [" + player.getName()
-                            + "] called RestartPointPacket - Fixed and he isn't festival participant!");
+                    log.warn(
+                            "Player [{}] called RestartPointPacket - Fixed and he isn't festival participant!",
+                            player.getName());
                     return;
                 }
 

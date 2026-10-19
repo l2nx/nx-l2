@@ -28,10 +28,10 @@ import app.l2nx.highfive.mechanics.stats.functions.AbstractFunction;
  * @author UnAfraid
  */
 public class FuncAtkEvasion extends AbstractFunction {
-    private static final FuncAtkEvasion _fae_instance = new FuncAtkEvasion();
+    private static final FuncAtkEvasion instance = new FuncAtkEvasion();
 
     public static AbstractFunction getInstance() {
-        return _fae_instance;
+        return instance;
     }
 
     private FuncAtkEvasion() {

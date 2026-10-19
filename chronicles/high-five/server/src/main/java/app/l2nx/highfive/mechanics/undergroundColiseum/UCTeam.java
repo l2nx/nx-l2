@@ -40,79 +40,82 @@ import app.l2nx.highfive.network.serverpackets.SystemMessage;
 import app.l2nx.highfive.threads.ThreadPool;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
+import lombok.Getter;
+import lombok.Setter;
 
 public class UCTeam {
     public static final byte NOT_DECIDED = 0;
     public static final byte WIN = 1;
     public static final byte FAIL = 2;
 
-    private final int _index;
-    private final UCArena _baseArena;
-    protected final int _x;
-    protected final int _y;
-    protected final int _z;
-    private final int _npcId;
-    private UCTower _tower = null;
-    private Party _party;
-    private int _killCount;
-    private byte _status;
-    private Party _lastParty;
-    private int _consecutiveWins;
-    private long _registerTime;
+    @Getter
+    private final int index;
+
+    @Getter
+    private final UCArena baseArena;
+
+    protected final int x;
+    protected final int y;
+    protected final int z;
+    private final int npcId;
+    private UCTower tower = null;
+
+    @Getter
+    private Party party;
+
+    @Getter
+    private int killCount;
+
+    @Getter
+    private byte status;
+
+    @Setter
+    private Party lastParty;
+
+    @Getter
+    private int consecutiveWins;
+
+    @Getter
+    @Setter
+    private long registerTime;
 
     public UCTeam(int index, UCArena baseArena, int x, int y, int z, int npcId) {
-        _index = index;
-        _baseArena = baseArena;
-        _x = x;
-        _y = y;
-        _z = z;
-        _npcId = npcId;
+        this.index = index;
+        this.baseArena = baseArena;
+        this.x = x;
+        this.y = y;
+        this.z = z;
+        this.npcId = npcId;
 
         setStatus(NOT_DECIDED);
     }
 
-    public long getRegisterTime() {
-        return _registerTime;
-    }
-
-    public void setLastParty(Party party) {
-        _lastParty = party;
-    }
-
-    public void setRegisterTime(long time) {
-        _registerTime = time;
-    }
-
     public void increaseConsecutiveWins() {
-        _consecutiveWins++;
-        if ((_consecutiveWins > 1) && (_party != null) && (_party.getLeader() != null)) {
+        consecutiveWins++;
+        if ((consecutiveWins > 1) && (party != null) && (party.getLeader() != null)) {
             UndergroundColiseumManager.getInstance()
-                    .updateBestTeam(_baseArena.getId(), _party.getLeader().getName(), _consecutiveWins);
+                    .updateBestTeam(baseArena.getId(), party.getLeader().getName(), consecutiveWins);
         }
-    }
-
-    public int getConsecutiveWins() {
-        return _consecutiveWins;
     }
 
     public void spawnTower() {
-        if (_tower != null) {
+        if (tower != null) {
             return;
         }
 
-        final NpcTemplate template = NpcData.getInstance().getTemplate(_npcId);
+        final NpcTemplate template = NpcData.getInstance().getTemplate(npcId);
         if (template != null) {
-            _tower = new UCTower(this, template);
-            _tower.setInvul(false);
-            _tower.setCurrentHpMp(_tower.getMaxHp(), _tower.getMaxMp());
-            _tower.spawnMe(_x, _y, _z);
+            tower = new UCTower(this, template);
+            tower.setInvul(false);
+            tower.setCurrentHpMp(tower.getMaxHp(), tower.getMaxMp());
+            tower.spawnMe(x, y, z);
         }
     }
 
     public void deleteTower() {
-        if (_tower != null) {
-            _tower.deleteMe();
-            _tower = null;
+        if (tower != null) {
+            tower.deleteMe();
+            tower = null;
         }
     }
 
@@ -130,17 +133,17 @@ public class UCTeam {
         player.addDeathCountUC();
         killer.addKillCountUC();
 
-        _baseArena.broadcastToAll(new ExPVPMatchUserDie(_baseArena));
+        baseArena.broadcastToAll(new ExPVPMatchUserDie(baseArena));
 
         if (player.getUCState() == Player.UC_STATE_POINT) {
-            for (UCPoint point : _baseArena.getPoints()) {
+            for (UCPoint point : baseArena.getPoints()) {
                 if (point.checkPlayer(player)) {
                     break;
                 }
             }
         }
 
-        if (_tower == null) {
+        if (tower == null) {
             boolean flag = true;
             for (Player member : getParty().getMembers()) {
                 if ((member != null) && !member.isDead()) {
@@ -151,21 +154,21 @@ public class UCTeam {
             if (flag) {
                 setStatus(FAIL);
                 otherTeam.setStatus(WIN);
-                _baseArena.runTaskNow();
+                baseArena.runTaskNow();
             }
             return;
         }
 
         ThreadPool.schedule(
                 () -> {
-                    if (_tower == null) {
+                    if (tower == null) {
                         return;
                     }
 
                     if (player.isDead()) {
                         resPlayer(player);
                         final ThreadLocalRandom random = ThreadLocalRandom.current();
-                        player.teleToLocation(_x + random.nextInt(2, 51), _y + random.nextInt(10, 101), _z, true);
+                        player.teleToLocation(x + random.nextInt(2, 51), y + random.nextInt(10, 101), z, true);
                         if (player.hasSummon()) {
                             final Summon summon = player.getSummon();
                             summon.abortAttack();
@@ -173,8 +176,7 @@ public class UCTeam {
                             if (!summon.isDead()) {
                                 summon.setCurrentHp(summon.getMaxHp());
                                 summon.setCurrentMp(summon.getMaxMp());
-                                summon.teleToLocation(
-                                        _x + random.nextInt(2, 51), _y + random.nextInt(10, 101), _z, true);
+                                summon.teleToLocation(x + random.nextInt(2, 51), y + random.nextInt(10, 101), z, true);
                             }
                         }
                     }
@@ -183,7 +185,7 @@ public class UCTeam {
     }
 
     public void increaseKillCount() {
-        _killCount++;
+        killCount++;
     }
 
     public static void resPlayer(Player player) {
@@ -200,29 +202,21 @@ public class UCTeam {
     public void cleanUp() {
         if (getParty() != null) {
             getParty().setUCState(null);
-            _party = null;
+            party = null;
         }
 
-        _party = null;
-        _lastParty = null;
-        _consecutiveWins = 0;
+        party = null;
+        lastParty = null;
+        consecutiveWins = 0;
         setStatus(NOT_DECIDED);
-        _killCount = 0;
-    }
-
-    public byte getStatus() {
-        return _status;
-    }
-
-    public UCArena getBaseArena() {
-        return _baseArena;
+        killCount = 0;
     }
 
     public void computeReward() {
-        if ((_lastParty == null) || (_lastParty != getOtherTeam().getParty())) {
-            final List<UCReward> rewards = _baseArena.getRewards();
+        if ((lastParty == null) || (lastParty != getOtherTeam().getParty())) {
+            final List<UCReward> rewards = baseArena.getRewards();
             double modifier = 1;
-            switch (_consecutiveWins) {
+            switch (consecutiveWins) {
                 case 1: {
                     modifier = 1.0;
                     break;
@@ -264,7 +258,7 @@ public class UCTeam {
                     break;
                 }
                 default: {
-                    if (_consecutiveWins > 10) {
+                    if (consecutiveWins > 10) {
                         modifier = 1.4;
                     }
                     break;
@@ -278,10 +272,9 @@ public class UCTeam {
             for (Player member : getParty().getMembers()) {
                 if (member != null) {
                     for (UCReward reward : rewards) {
-                        if (reward.getId() == -100) {
-                            long amount = reward.isAllowMidifier()
-                                    ? (long) (reward.getAmount() * modifier)
-                                    : reward.getAmount();
+                        if (reward.id() == -100) {
+                            long amount =
+                                    reward.allowMidifier() ? (long) (reward.amount() * modifier) : reward.amount();
                             if ((member.getPcCafePoints() + amount) > PremiumSystemConfig.PC_CAFE_MAX_POINTS) {
                                 amount = PremiumSystemConfig.PC_CAFE_MAX_POINTS - member.getPcCafePoints();
                             }
@@ -292,27 +285,24 @@ public class UCTeam {
                             member.sendPacket(sm);
                             member.setPcCafePoints((int) (member.getPcCafePoints() + amount));
                             member.sendPacket(new ExPCCafePointInfo(member.getPcCafePoints(), (int) amount, 1));
-                        } else if (reward.getId() == -200) {
+                        } else if (reward.id() == -200) {
                             if (member.getClan() != null) {
-                                final long amount = reward.isAllowMidifier()
-                                        ? (long) (reward.getAmount() * modifier)
-                                        : reward.getAmount();
+                                final long amount =
+                                        reward.allowMidifier() ? (long) (reward.amount() * modifier) : reward.amount();
                                 member.getClan().addReputationScore((int) amount);
                             }
-                        } else if (reward.getId() == -300) {
-                            final long amount = reward.isAllowMidifier()
-                                    ? (long) (reward.getAmount() * modifier)
-                                    : reward.getAmount();
+                        } else if (reward.id() == -300) {
+                            final long amount =
+                                    reward.allowMidifier() ? (long) (reward.amount() * modifier) : reward.amount();
                             member.setFame((int) (member.getFame() + amount));
                             final SystemMessage sm = new SystemMessage(SystemMessageId.YOU_HAVE_ACQUIRED_S1_REPUTATION);
                             sm.addInt((int) amount);
                             member.sendPacket(sm);
                             member.updateUserInfo();
-                        } else if (reward.getId() > 0) {
-                            final long amount = reward.isAllowMidifier()
-                                    ? (long) (reward.getAmount() * modifier)
-                                    : reward.getAmount();
-                            member.addItem(ItemProcessType.REWARD, reward.getId(), amount, null, true);
+                        } else if (reward.id() > 0) {
+                            final long amount =
+                                    reward.allowMidifier() ? (long) (reward.amount() * modifier) : reward.amount();
+                            member.addItem(ItemProcessType.REWARD, reward.id(), amount, null, true);
                         }
                     }
                 }
@@ -321,17 +311,17 @@ public class UCTeam {
     }
 
     public void setStatus(byte status) {
-        _status = status;
+        this.status = status;
 
-        if (_status == WIN) {
+        if (this.status == WIN) {
             if (getIndex() == 0) {
-                _baseArena.broadcastToAll(new SystemMessage(SystemMessageId.THE_BLUE_TEAM_IS_VICTORIOUS));
+                baseArena.broadcastToAll(new SystemMessage(SystemMessageId.THE_BLUE_TEAM_IS_VICTORIOUS));
             } else {
-                _baseArena.broadcastToAll(new SystemMessage(SystemMessageId.THE_RED_TEAM_IS_VICTORIOUS));
+                baseArena.broadcastToAll(new SystemMessage(SystemMessageId.THE_RED_TEAM_IS_VICTORIOUS));
             }
         }
 
-        switch (_status) {
+        switch (this.status) {
             case NOT_DECIDED: {
                 break;
             }
@@ -349,7 +339,7 @@ public class UCTeam {
     }
 
     public void broadcastToTeam(ServerPacket packet) {
-        final Party party = _party;
+        final Party party = this.party;
         if (party != null) {
             for (Player member : party.getMembers()) {
                 if (member != null) {
@@ -360,34 +350,22 @@ public class UCTeam {
     }
 
     public UCTeam getOtherTeam() {
-        return _baseArena.getTeams()[getOtherTeamIndex()];
+        return baseArena.getTeams()[getOtherTeamIndex()];
     }
 
     public int getOtherTeamIndex() {
-        return _index == 0 ? 1 : 0;
-    }
-
-    public int getKillCount() {
-        return _killCount;
+        return index == 0 ? 1 : 0;
     }
 
     public void setParty(Party party) {
-        final Party oldParty = _party;
-        _party = party;
+        final Party oldParty = this.party;
+        this.party = party;
         if (oldParty != null) {
             oldParty.setUCState(null);
         }
 
-        if (_party != null) {
-            _party.setUCState(this);
+        if (this.party != null) {
+            this.party.setUCState(this);
         }
-    }
-
-    public Party getParty() {
-        return _party;
-    }
-
-    public int getIndex() {
-        return _index;
     }
 }

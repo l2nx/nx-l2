@@ -28,62 +28,50 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.concurrent.ScheduledFuture;
-import java.util.logging.Level;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author UnAfraid
  */
+@Slf4j
 public class AutoAnnouncement extends Announcement implements Runnable {
     private static final String INSERT_QUERY =
             "INSERT INTO announcements (`type`, `content`, `author`, `initial`, `delay`, `repeat`) VALUES (?, ?, ?, ?, ?, ?)";
     private static final String UPDATE_QUERY =
             "UPDATE announcements SET `type` = ?, `content` = ?, `author` = ?, `initial` = ?, `delay` = ?, `repeat` = ? WHERE id = ?";
 
-    private long _initial;
-    private long _delay;
-    private int _repeat = -1;
-    private int _currentState;
-    private ScheduledFuture<?> _task;
+    @Getter
+    @Setter
+    private long initial;
+
+    @Getter
+    @Setter
+    private long delay;
+
+    @Getter
+    @Setter
+    private int repeat = -1;
+
+    private int currentState;
+    private ScheduledFuture<?> task;
 
     public AutoAnnouncement(
             AnnouncementType type, String content, String author, long initial, long delay, int repeat) {
         super(type, content, author);
-        _initial = initial;
-        _delay = delay;
-        _repeat = repeat;
+        this.initial = initial;
+        this.delay = delay;
+        this.repeat = repeat;
         restartMe();
     }
 
     public AutoAnnouncement(ResultSet rset) throws SQLException {
         super(rset);
-        _initial = rset.getLong("initial");
-        _delay = rset.getLong("delay");
-        _repeat = rset.getInt("repeat");
+        initial = rset.getLong("initial");
+        delay = rset.getLong("delay");
+        repeat = rset.getInt("repeat");
         restartMe();
-    }
-
-    public long getInitial() {
-        return _initial;
-    }
-
-    public void setInitial(long initial) {
-        _initial = initial;
-    }
-
-    public long getDelay() {
-        return _delay;
-    }
-
-    public void setDelay(long delay) {
-        _delay = delay;
-    }
-
-    public int getRepeat() {
-        return _repeat;
-    }
-
-    public void setRepeat(int repeat) {
-        _repeat = repeat;
     }
 
     @Override
@@ -93,17 +81,17 @@ public class AutoAnnouncement extends Announcement implements Runnable {
             ps.setInt(1, getType().ordinal());
             ps.setString(2, getContent());
             ps.setString(3, getAuthor());
-            ps.setLong(4, _initial);
-            ps.setLong(5, _delay);
-            ps.setInt(6, _repeat);
+            ps.setLong(4, initial);
+            ps.setLong(5, delay);
+            ps.setInt(6, repeat);
             ps.execute();
             try (ResultSet rset = ps.getGeneratedKeys()) {
                 if (rset.next()) {
-                    _id = rset.getInt(1);
+                    id = rset.getInt(1);
                 }
             }
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, getClass().getSimpleName() + ": Couldn't store announcement: ", e);
+            log.warn("Couldn't store announcement: ", e);
             return false;
         }
 
@@ -117,13 +105,13 @@ public class AutoAnnouncement extends Announcement implements Runnable {
             ps.setInt(1, getType().ordinal());
             ps.setString(2, getContent());
             ps.setString(3, getAuthor());
-            ps.setLong(4, _initial);
-            ps.setLong(5, _delay);
-            ps.setLong(6, _repeat);
+            ps.setLong(4, initial);
+            ps.setLong(5, delay);
+            ps.setLong(6, repeat);
             ps.setLong(7, getId());
             ps.execute();
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, getClass().getSimpleName() + ": Couldn't update announcement: ", e);
+            log.warn("Couldn't update announcement: ", e);
             return false;
         }
 
@@ -132,25 +120,25 @@ public class AutoAnnouncement extends Announcement implements Runnable {
 
     @Override
     public boolean deleteMe() {
-        if ((_task != null) && !_task.isCancelled()) {
-            _task.cancel(false);
+        if ((task != null) && !task.isCancelled()) {
+            task.cancel(false);
         }
 
         return super.deleteMe();
     }
 
     public void restartMe() {
-        if ((_task != null) && !_task.isCancelled()) {
-            _task.cancel(false);
+        if ((task != null) && !task.isCancelled()) {
+            task.cancel(false);
         }
 
-        _currentState = _repeat;
-        _task = ThreadPool.schedule(this, _initial);
+        currentState = repeat;
+        task = ThreadPool.schedule(this, initial);
     }
 
     @Override
     public void run() {
-        if ((_currentState != -1) && (_currentState <= 0)) {
+        if ((currentState != -1) && (currentState <= 0)) {
             return;
         }
 
@@ -158,10 +146,10 @@ public class AutoAnnouncement extends Announcement implements Runnable {
             World.broadcastToAllOnlinePlayers(content, getType() == AnnouncementType.AUTO_CRITICAL);
         }
 
-        if (_currentState != -1) {
-            _currentState--;
+        if (currentState != -1) {
+            currentState--;
         }
 
-        _task = ThreadPool.schedule(this, _delay);
+        task = ThreadPool.schedule(this, delay);
     }
 }

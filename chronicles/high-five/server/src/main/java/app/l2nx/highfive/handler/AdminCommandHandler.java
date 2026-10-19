@@ -33,30 +33,29 @@ import app.l2nx.highfive.threads.ThreadPool;
 import app.l2nx.highfive.util.GMAudit;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.DurationFormatUtils;
 
+@Slf4j
 public class AdminCommandHandler implements IHandler<IAdminCommandHandler, String> {
-    private static final Logger LOGGER = Logger.getLogger(AdminCommandHandler.class.getName());
 
-    private final Map<String, IAdminCommandHandler> _datatable;
+    private final Map<String, IAdminCommandHandler> datatable;
 
     protected AdminCommandHandler() {
-        _datatable = new HashMap<>();
+        datatable = new HashMap<>();
     }
 
     @Override
     public void registerHandler(IAdminCommandHandler handler) {
         for (String id : handler.getCommandList()) {
-            _datatable.put(id, handler);
+            datatable.put(id, handler);
         }
     }
 
     @Override
     public synchronized void removeHandler(IAdminCommandHandler handler) {
         for (String id : handler.getCommandList()) {
-            _datatable.remove(id);
+            datatable.remove(id);
         }
     }
 
@@ -70,7 +69,7 @@ public class AdminCommandHandler implements IHandler<IAdminCommandHandler, Strin
             command = adminCommand.substring(0, adminCommand.indexOf(' '));
         }
 
-        return _datatable.get(command);
+        return datatable.get(command);
     }
 
     public void onCommand(Player player, String fullCommand, boolean useConfirm) {
@@ -83,13 +82,13 @@ public class AdminCommandHandler implements IHandler<IAdminCommandHandler, Strin
         final IAdminCommandHandler handler = getHandler(command);
         if (handler == null) {
             player.sendMessage("The command '" + commandNoPrefix + "' does not exist!");
-            LOGGER.warning("No handler registered for admin command '" + command + "'");
+            log.warn("No handler registered for admin command '{}'", command);
             return;
         }
 
         if (!AdminData.getInstance().hasAccess(command, player.getAccessLevel())) {
             player.sendMessage("You don't have the access rights to use this command!");
-            LOGGER.warning(player + " tried to use admin command '" + command + "', without proper access level!");
+            log.warn("{} tried to use admin command '{}', without proper access level!", player, command);
             return;
         }
 
@@ -116,7 +115,7 @@ public class AdminCommandHandler implements IHandler<IAdminCommandHandler, Strin
                     handler.onCommand(fullCommand, player);
                 } catch (RuntimeException e) {
                     player.sendMessage("Exception during execution of  '" + fullCommand + "': " + e.toString());
-                    LOGGER.log(Level.WARNING, "Exception during execution of " + fullCommand, e);
+                    log.warn("Exception during execution of {}", fullCommand, e);
                 } finally {
                     final long runtime = System.currentTimeMillis() - begin;
                     if (runtime > 5000) {
@@ -130,7 +129,7 @@ public class AdminCommandHandler implements IHandler<IAdminCommandHandler, Strin
 
     @Override
     public int size() {
-        return _datatable.size();
+        return datatable.size();
     }
 
     public static AdminCommandHandler getInstance() {

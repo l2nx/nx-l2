@@ -24,33 +24,13 @@ import app.l2nx.highfive.entity.item.instance.Item;
 import app.l2nx.highfive.entity.itemcontainer.ItemContainer;
 import app.l2nx.highfive.mechanics.events.EventType;
 import app.l2nx.highfive.mechanics.events.holders.IBaseEvent;
+import lombok.Builder;
 
 /**
  * @author UnAfraid
  */
-public class OnPlayerClanWHItemAdd implements IBaseEvent {
-    private final Player _player;
-    private final Item _item;
-    private final ItemContainer _container;
-
-    public OnPlayerClanWHItemAdd(Player player, Item item, ItemContainer container) {
-        _player = player;
-        _item = item;
-        _container = container;
-    }
-
-    public Player getPlayer() {
-        return _player;
-    }
-
-    public Item getItem() {
-        return _item;
-    }
-
-    public ItemContainer getContainer() {
-        return _container;
-    }
-
+@Builder(toBuilder = true)
+public record OnPlayerClanWHItemAdd(Player player, Item item, ItemContainer container) implements IBaseEvent {
     @Override
     public EventType getType() {
         return EventType.ON_PLAYER_CLAN_WH_ITEM_ADD;

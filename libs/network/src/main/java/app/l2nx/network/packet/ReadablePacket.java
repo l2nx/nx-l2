@@ -26,6 +26,7 @@ import app.l2nx.network.Client;
 import app.l2nx.network.Connection;
 import app.l2nx.network.buffer.ReadBuffer;
 import java.nio.charset.StandardCharsets;
+import lombok.Getter;
 
 /**
  * Base class for all packets received from a client.<br>
@@ -42,8 +43,10 @@ import java.nio.charset.StandardCharsets;
  * @author JoeAlisson, Mobius
  */
 public abstract class ReadablePacket<T extends Client<Connection<T>>> implements Runnable {
-    private ReadBuffer _buffer;
-    private T _client;
+    private ReadBuffer buffer;
+
+    @Getter
+    private T client;
 
     protected ReadablePacket() {}
 
@@ -53,8 +56,8 @@ public abstract class ReadablePacket<T extends Client<Connection<T>>> implements
      * @param buffer the decrypted payload buffer
      */
     public void init(T client, ReadBuffer buffer) {
-        _client = client;
-        _buffer = buffer;
+        this.client = client;
+        this.buffer = buffer;
     }
 
     // -------------------------------------------------------------------------
@@ -66,7 +69,7 @@ public abstract class ReadablePacket<T extends Client<Connection<T>>> implements
      * @return the char value
      */
     protected char readChar() {
-        return _buffer.readChar();
+        return buffer.readChar();
     }
 
     /**
@@ -74,7 +77,7 @@ public abstract class ReadablePacket<T extends Client<Connection<T>>> implements
      * @return the byte value
      */
     protected byte readByte() {
-        return _buffer.readByte();
+        return buffer.readByte();
     }
 
     /**
@@ -82,7 +85,7 @@ public abstract class ReadablePacket<T extends Client<Connection<T>>> implements
      * @return the unsigned byte value
      */
     protected int readUnsignedByte() {
-        return Byte.toUnsignedInt(_buffer.readByte());
+        return Byte.toUnsignedInt(buffer.readByte());
     }
 
     /**
@@ -90,7 +93,7 @@ public abstract class ReadablePacket<T extends Client<Connection<T>>> implements
      * @return {@code true} if the byte is non-zero
      */
     protected boolean readBoolean() {
-        return _buffer.readByte() != 0;
+        return buffer.readByte() != 0;
     }
 
     /**
@@ -99,7 +102,7 @@ public abstract class ReadablePacket<T extends Client<Connection<T>>> implements
      * @return the byte array
      */
     protected byte[] readBytes(int length) {
-        return _buffer.readBytes(length);
+        return buffer.readBytes(length);
     }
 
     /**
@@ -107,7 +110,7 @@ public abstract class ReadablePacket<T extends Client<Connection<T>>> implements
      * @param dst the destination array
      */
     protected void readBytes(byte[] dst) {
-        _buffer.readBytes(dst, 0, dst.length);
+        buffer.readBytes(dst, 0, dst.length);
     }
 
     /**
@@ -117,7 +120,7 @@ public abstract class ReadablePacket<T extends Client<Connection<T>>> implements
      * @param length the number of bytes to read
      */
     protected void readBytes(byte[] dst, int offset, int length) {
-        _buffer.readBytes(dst, offset, length);
+        buffer.readBytes(dst, offset, length);
     }
 
     /**
@@ -125,7 +128,7 @@ public abstract class ReadablePacket<T extends Client<Connection<T>>> implements
      * @return the short value
      */
     protected short readShort() {
-        return _buffer.readShort();
+        return buffer.readShort();
     }
 
     /**
@@ -133,7 +136,7 @@ public abstract class ReadablePacket<T extends Client<Connection<T>>> implements
      * @return the int value
      */
     protected int readInt() {
-        return _buffer.readInt();
+        return buffer.readInt();
     }
 
     /**
@@ -141,7 +144,7 @@ public abstract class ReadablePacket<T extends Client<Connection<T>>> implements
      * @return the long value
      */
     protected long readLong() {
-        return _buffer.readLong();
+        return buffer.readLong();
     }
 
     /**
@@ -149,7 +152,7 @@ public abstract class ReadablePacket<T extends Client<Connection<T>>> implements
      * @return the float value
      */
     protected float readFloat() {
-        return _buffer.readFloat();
+        return buffer.readFloat();
     }
 
     /**
@@ -157,7 +160,7 @@ public abstract class ReadablePacket<T extends Client<Connection<T>>> implements
      * @return the double value
      */
     protected double readDouble() {
-        return _buffer.readDouble();
+        return buffer.readDouble();
     }
 
     /**
@@ -200,15 +203,7 @@ public abstract class ReadablePacket<T extends Client<Connection<T>>> implements
      * @return remaining byte count
      */
     protected int remaining() {
-        return _buffer.remaining();
-    }
-
-    /**
-     * Returns the client that sent this packet.
-     * @return the client instance
-     */
-    public T getClient() {
-        return _client;
+        return buffer.remaining();
     }
 
     /**

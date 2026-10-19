@@ -129,9 +129,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.StringTokenizer;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.xml.parsers.DocumentBuilderFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
@@ -139,17 +138,17 @@ import org.w3c.dom.Node;
 /**
  * @author mkizub, Mobius
  */
+@Slf4j
 public abstract class DocumentBase {
-    protected final Logger LOGGER = Logger.getLogger(getClass().getName());
 
     private static final Set<String> IGNORED_ELEMENTS =
             Set.of("param", "conditions", "effect", "add", "sub", "mul", "div", "set", "share", "enchant", "enchanthp");
 
-    private final File _file;
-    protected final Map<String, String[]> _tables = new HashMap<>();
+    private final File file;
+    protected final Map<String, String[]> tables = new HashMap<>();
 
     protected DocumentBase(File pFile) {
-        _file = pFile;
+        file = pFile;
     }
 
     public Document parse() {
@@ -158,10 +157,10 @@ public abstract class DocumentBase {
             final DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
             factory.setValidating(false);
             factory.setIgnoringComments(true);
-            document = factory.newDocumentBuilder().parse(_file);
+            document = factory.newDocumentBuilder().parse(file);
             parseDocument(document);
         } catch (Exception e) {
-            LOGGER.log(Level.SEVERE, "Error loading file " + _file, e);
+            log.error("Error loading file {}", file, e);
         }
 
         return document;
@@ -176,11 +175,11 @@ public abstract class DocumentBase {
     protected abstract String getTableValue(String name, int idx);
 
     protected void resetTable() {
-        _tables.clear();
+        tables.clear();
     }
 
     protected void setTable(String name, String[] table) {
-        _tables.put(name, table);
+        tables.put(name, table);
     }
 
     protected void parseTemplate(Node node, Object template) {
@@ -342,14 +341,19 @@ public abstract class DocumentBase {
                         throw new RuntimeException("Attaching stat to a non-effect template!!!");
                     }
                 } catch (NumberFormatException e) {
-                    LOGGER.warning("Invalid numeric value: '" + valueString + "' for stat: " + statName + ": "
-                            + e.getMessage());
+                    log.warn("Invalid numeric value: '{}' for stat: {}: {}", valueString, statName, e.getMessage());
                 } catch (IllegalArgumentException e) {
-                    LOGGER.warning("Unknown stat name: " + statName + " in alternative " + functionName + " format: "
-                            + e.getMessage());
+                    log.warn(
+                            "Unknown stat name: {} in alternative {} format: {}",
+                            statName,
+                            functionName,
+                            e.getMessage());
                 } catch (Exception e) {
-                    LOGGER.warning("Error processing alternative " + functionName + " format for " + statName + ": "
-                            + e.getMessage());
+                    log.warn(
+                            "Error processing alternative {} format for {}: {}",
+                            functionName,
+                            statName,
+                            e.getMessage());
                 }
             }
 
@@ -449,7 +453,7 @@ public abstract class DocumentBase {
         parseTemplate(n, effect);
 
         if (template instanceof ItemTemplate) {
-            LOGGER.severe("Item " + template + " with effects!!!");
+            log.error("Item {} with effects!!!", template);
         } else if (template instanceof Skill) {
             final Skill skill = (Skill) template;
             if (effectScope != null) {
@@ -483,13 +487,13 @@ public abstract class DocumentBase {
                 // Get item ID (required).
                 final Node idNode = itemAttrs.getNamedItem("id");
                 if (idNode == null) {
-                    LOGGER.warning("Missing item ID in RestorationRandom effect");
+                    log.warn("Missing item ID in RestorationRandom effect");
                     continue;
                 }
 
                 final int id = Integer.parseInt(idNode.getNodeValue());
                 if (id <= 0) {
-                    LOGGER.warning("Invalid item ID found in RestorationRandom effect: " + id);
+                    log.warn("Invalid item ID found in RestorationRandom effect: {}", id);
                     continue;
                 }
 
@@ -646,7 +650,7 @@ public abstract class DocumentBase {
         }
 
         if ((cond.conditions == null) || (cond.conditions.length == 0)) {
-            LOGGER.severe("Empty <and> condition in " + _file);
+            log.error("Empty <and> condition in {}", file);
         }
 
         return cond;
@@ -662,7 +666,7 @@ public abstract class DocumentBase {
         }
 
         if ((cond.conditions == null) || (cond.conditions.length == 0)) {
-            LOGGER.severe("Empty <or> condition in " + _file);
+            log.error("Empty <or> condition in {}", file);
         }
 
         return cond;
@@ -676,7 +680,7 @@ public abstract class DocumentBase {
             }
         }
 
-        LOGGER.severe("Empty <not> condition in " + _file);
+        log.error("Empty <not> condition in {}", file);
         return null;
     }
 
@@ -887,27 +891,27 @@ public abstract class DocumentBase {
                     break;
                 }
                 case "active_effect_id": {
-                    final int effect_id = Integer.decode(getValue(a.getNodeValue(), template));
-                    cond = joinAnd(cond, new ConditionPlayerActiveEffectId(effect_id));
+                    final int effectId = Integer.decode(getValue(a.getNodeValue(), template));
+                    cond = joinAnd(cond, new ConditionPlayerActiveEffectId(effectId));
                     break;
                 }
                 case "active_effect_id_lvl": {
                     final String val = getValue(a.getNodeValue(), template);
                     final int effect_id = Integer.decode(getValue(val.split(",")[0], template));
-                    final int effect_lvl = Integer.decode(getValue(val.split(",")[1], template));
-                    cond = joinAnd(cond, new ConditionPlayerActiveEffectId(effect_id, effect_lvl));
+                    final int effectLvl = Integer.decode(getValue(val.split(",")[1], template));
+                    cond = joinAnd(cond, new ConditionPlayerActiveEffectId(effect_id, effectLvl));
                     break;
                 }
                 case "active_skill_id": {
-                    final int skill_id = Integer.decode(getValue(a.getNodeValue(), template));
-                    cond = joinAnd(cond, new ConditionPlayerActiveSkillId(skill_id));
+                    final int skillId = Integer.decode(getValue(a.getNodeValue(), template));
+                    cond = joinAnd(cond, new ConditionPlayerActiveSkillId(skillId));
                     break;
                 }
                 case "active_skill_id_lvl": {
                     final String val = getValue(a.getNodeValue(), template);
                     final int skill_id = Integer.decode(getValue(val.split(",")[0], template));
-                    final int skill_lvl = Integer.decode(getValue(val.split(",")[1], template));
-                    cond = joinAnd(cond, new ConditionPlayerActiveSkillId(skill_id, skill_lvl));
+                    final int skillLvl = Integer.decode(getValue(val.split(",")[1], template));
+                    cond = joinAnd(cond, new ConditionPlayerActiveSkillId(skill_id, skillLvl));
                     break;
                 }
                 case "class_id_restriction": {
@@ -1076,7 +1080,7 @@ public abstract class DocumentBase {
         }
 
         if (cond == null) {
-            LOGGER.severe("Unrecognized <player> condition in " + _file);
+            log.error("Unrecognized <player> condition in {}", file);
         }
 
         return cond;
@@ -1135,27 +1139,27 @@ public abstract class DocumentBase {
                     break;
                 }
                 case "active_effect_id": {
-                    final int effect_id = Integer.decode(getValue(a.getNodeValue(), template));
-                    cond = joinAnd(cond, new ConditionTargetActiveEffectId(effect_id));
+                    final int effectId = Integer.decode(getValue(a.getNodeValue(), template));
+                    cond = joinAnd(cond, new ConditionTargetActiveEffectId(effectId));
                     break;
                 }
                 case "active_effect_id_lvl": {
                     final String val = getValue(a.getNodeValue(), template);
                     final int effect_id = Integer.decode(getValue(val.split(",")[0], template));
-                    final int effect_lvl = Integer.decode(getValue(val.split(",")[1], template));
-                    cond = joinAnd(cond, new ConditionTargetActiveEffectId(effect_id, effect_lvl));
+                    final int effectLvl = Integer.decode(getValue(val.split(",")[1], template));
+                    cond = joinAnd(cond, new ConditionTargetActiveEffectId(effect_id, effectLvl));
                     break;
                 }
                 case "active_skill_id": {
-                    final int skill_id = Integer.decode(getValue(a.getNodeValue(), template));
-                    cond = joinAnd(cond, new ConditionTargetActiveSkillId(skill_id));
+                    final int skillId = Integer.decode(getValue(a.getNodeValue(), template));
+                    cond = joinAnd(cond, new ConditionTargetActiveSkillId(skillId));
                     break;
                 }
                 case "active_skill_id_lvl": {
                     final String val = getValue(a.getNodeValue(), template);
                     final int skill_id = Integer.decode(getValue(val.split(",")[0], template));
-                    final int skill_lvl = Integer.decode(getValue(val.split(",")[1], template));
-                    cond = joinAnd(cond, new ConditionTargetActiveSkillId(skill_id, skill_lvl));
+                    final int skillLvl = Integer.decode(getValue(val.split(",")[1], template));
+                    cond = joinAnd(cond, new ConditionTargetActiveSkillId(skill_id, skillLvl));
                     break;
                 }
                 case "abnormal": {
@@ -1237,7 +1241,7 @@ public abstract class DocumentBase {
         }
 
         if (cond == null) {
-            LOGGER.severe("Unrecognized <target> condition in " + _file);
+            log.error("Unrecognized <target> condition in {}", file);
         }
 
         return cond;
@@ -1268,7 +1272,7 @@ public abstract class DocumentBase {
                         }
 
                         if (old == mask) {
-                            LOGGER.info("[parseUsingCondition=\"kind\"] Unknown item type name: " + item);
+                            log.info("[parseUsingCondition=\"kind\"] Unknown item type name: {}", item);
                         }
                     }
 
@@ -1287,7 +1291,7 @@ public abstract class DocumentBase {
                         }
 
                         if (old == mask) {
-                            LOGGER.info("[parseUsingCondition=\"slot\"] Unknown item slot name: " + item);
+                            log.info("[parseUsingCondition=\"slot\"] Unknown item slot name: {}", item);
                         }
                     }
 
@@ -1320,7 +1324,7 @@ public abstract class DocumentBase {
         }
 
         if (cond == null) {
-            LOGGER.severe("Unrecognized <using> condition in " + _file);
+            log.error("Unrecognized <using> condition in {}", file);
         }
 
         return cond;
@@ -1348,7 +1352,7 @@ public abstract class DocumentBase {
         }
 
         if (cond == null) {
-            LOGGER.severe("Unrecognized <game> condition in " + _file);
+            log.error("Unrecognized <game> condition in {}", file);
         }
 
         return cond;

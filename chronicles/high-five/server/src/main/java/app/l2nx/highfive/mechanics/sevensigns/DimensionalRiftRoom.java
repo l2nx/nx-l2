@@ -26,25 +26,41 @@ import java.awt.Shape;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * Dimensional Rift Room.
  * @author xban1x
  */
 public class DimensionalRiftRoom {
-    private final byte _type;
-    private final byte _room;
-    private final int _xMin;
-    private final int _xMax;
-    private final int _yMin;
-    private final int _yMax;
-    private final int _zMin;
-    private final int _zMax;
-    private final Location _teleportCoords;
-    private final Shape _s;
-    private final boolean _isBossRoom;
-    private final List<Spawn> _roomSpawns = new ArrayList<>();
-    private boolean _partyInside = false;
+    @Getter
+    private final byte type;
+
+    @Getter
+    private final byte room;
+
+    private final int xMin;
+    private final int xMax;
+    private final int yMin;
+    private final int yMax;
+    private final int zMin;
+    private final int zMax;
+
+    @Getter
+    private final Location teleportCoorinates;
+
+    private final Shape s;
+
+    @Getter
+    private final boolean bossRoom;
+
+    @Getter
+    private final List<Spawn> spawns = new ArrayList<>();
+
+    @Getter
+    @Setter
+    private boolean partyInside = false;
 
     public DimensionalRiftRoom(
             byte type,
@@ -59,60 +75,40 @@ public class DimensionalRiftRoom {
             int yT,
             int zT,
             boolean isBossRoom) {
-        _type = type;
-        _room = room;
-        _xMin = (xMin + 128);
-        _xMax = (xMax - 128);
-        _yMin = (yMin + 128);
-        _yMax = (yMax - 128);
-        _zMin = zMin;
-        _zMax = zMax;
-        _teleportCoords = new Location(xT, yT, zT);
-        _isBossRoom = isBossRoom;
-        _s = new Polygon(new int[] {xMin, xMax, xMax, xMin}, new int[] {yMin, yMin, yMax, yMax}, 4);
-    }
-
-    public byte getType() {
-        return _type;
-    }
-
-    public byte getRoom() {
-        return _room;
+        this.type = type;
+        this.room = room;
+        this.xMin = (xMin + 128);
+        this.xMax = (xMax - 128);
+        this.yMin = (yMin + 128);
+        this.yMax = (yMax - 128);
+        this.zMin = zMin;
+        this.zMax = zMax;
+        teleportCoorinates = new Location(xT, yT, zT);
+        bossRoom = isBossRoom;
+        s = new Polygon(new int[] {xMin, xMax, xMax, xMin}, new int[] {yMin, yMin, yMax, yMax}, 4);
     }
 
     public int getRandomX() {
-        return _xMin < _xMax ? ThreadLocalRandom.current().nextInt(_xMin, _xMax + 1) : _xMin;
+        return xMin < xMax ? ThreadLocalRandom.current().nextInt(xMin, xMax + 1) : xMin;
     }
 
     public int getRandomY() {
-        return _yMin < _yMax ? ThreadLocalRandom.current().nextInt(_yMin, _yMax + 1) : _yMin;
-    }
-
-    public Location getTeleportCoorinates() {
-        return _teleportCoords;
+        return yMin < yMax ? ThreadLocalRandom.current().nextInt(yMin, yMax + 1) : yMin;
     }
 
     public boolean checkIfInZone(int x, int y, int z) {
-        return _s.contains(x, y) && (z >= _zMin) && (z <= _zMax);
-    }
-
-    public boolean isBossRoom() {
-        return _isBossRoom;
-    }
-
-    public List<Spawn> getSpawns() {
-        return _roomSpawns;
+        return s.contains(x, y) && (z >= zMin) && (z <= zMax);
     }
 
     public void spawn() {
-        for (Spawn spawn : _roomSpawns) {
+        for (Spawn spawn : spawns) {
             spawn.doSpawn(false);
             spawn.startRespawn();
         }
     }
 
     public DimensionalRiftRoom unspawn() {
-        for (Spawn spawn : _roomSpawns) {
+        for (Spawn spawn : spawns) {
             spawn.stopRespawn();
             if (spawn.getLastSpawn() != null) {
                 spawn.getLastSpawn().deleteMe();
@@ -120,21 +116,5 @@ public class DimensionalRiftRoom {
         }
 
         return this;
-    }
-
-    /**
-     * Returns if party is inside the room.
-     * @return {@code true} if there is a party inside, {@code false} otherwise
-     */
-    public boolean isPartyInside() {
-        return _partyInside;
-    }
-
-    /**
-     * Sets the party inside.
-     * @param partyInside
-     */
-    public void setPartyInside(boolean partyInside) {
-        _partyInside = partyInside;
     }
 }

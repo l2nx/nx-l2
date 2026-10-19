@@ -40,6 +40,9 @@ import app.l2nx.highfive.network.serverpackets.StopMove;
 import app.l2nx.highfive.taskmanagers.AttackStanceTaskManager;
 import app.l2nx.highfive.taskmanagers.CreatureFollowTaskManager;
 import app.l2nx.highfive.taskmanagers.GameTimeTaskManager;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * Mother class of all objects AI in the world.<br>
@@ -48,61 +51,48 @@ import app.l2nx.highfive.taskmanagers.GameTimeTaskManager;
  */
 public abstract class AbstractAI {
     /** The creature that this AI manages. */
-    protected final Creature _actor;
+    @Getter
+    protected final Creature actor;
 
     /** Current long-term intention. */
-    protected Intention _intention = Intention.IDLE;
+    @Getter
+    protected Intention intention = Intention.IDLE;
 
     /** Flags about client's state, in order to know which messages to send. */
-    protected volatile boolean _clientAutoAttacking;
+    @Getter
+    protected volatile boolean autoAttacking;
     /** Flags about client's state, in order to know which messages to send. */
-    protected int _clientMovingToPawnOffset;
+    @Getter
+    protected int clientMovingToPawnOffset;
 
     /** Different targets this AI maintains. */
-    private WorldObject _target;
+    @Getter(AccessLevel.PROTECTED)
+    @Setter(AccessLevel.PROTECTED)
+    private WorldObject target;
 
-    private Creature _castTarget;
-    protected Creature _attackTarget;
-    protected Creature _followTarget;
+    @Getter
+    @Setter(AccessLevel.PROTECTED)
+    private Creature castTarget;
+
+    @Getter
+    @Setter(AccessLevel.PROTECTED)
+    protected Creature attackTarget;
+
+    @Getter
+    protected Creature followTarget;
 
     /** The skill we are currently casting by INTENTION_CAST. */
-    protected Skill _skill;
+    protected Skill skill;
 
     /** Different internal state flags. */
-    private int _moveToPawnTimeout;
+    private int moveToPawnTimeout;
 
-    private NextAction _nextAction;
-
-    /**
-     * @return the _nextAction
-     */
-    public NextAction getNextAction() {
-        return _nextAction;
-    }
-
-    /**
-     * @param nextAction the next action to set.
-     */
-    public void setNextAction(NextAction nextAction) {
-        _nextAction = nextAction;
-    }
+    @Getter
+    @Setter
+    private NextAction nextAction;
 
     protected AbstractAI(Creature creature) {
-        _actor = creature;
-    }
-
-    /**
-     * @return the Creature managed by this Accessor AI.
-     */
-    public Creature getActor() {
-        return _actor;
-    }
-
-    /**
-     * @return the current Intention.
-     */
-    public Intention getIntention() {
-        return _intention;
+        actor = creature;
     }
 
     /**
@@ -182,8 +172,8 @@ public abstract class AbstractAI {
      * <font color=#FF0000><b><u>Caution</u>: Low level function, used by AI subclasses</b></font>
      */
     protected void clientActionFailed() {
-        if (_actor.isPlayer()) {
-            _actor.sendPacket(ActionFailed.STATIC_PACKET);
+        if (actor.isPlayer()) {
+            actor.sendPacket(ActionFailed.STATIC_PACKET);
         }
     }
 
@@ -195,7 +185,7 @@ public abstract class AbstractAI {
      */
     public void moveToPawn(WorldObject pawn, int offsetValue) {
         // Check if actor can move.
-        if (!_actor.isMovementDisabled() && !_actor.isAttackingNow() && !_actor.isCastingNow()) {
+        if (!actor.isMovementDisabled() && !actor.isAttackingNow() && !actor.isCastingNow()) {
             int offset = offsetValue;
             if (offset < 10) {
                 offset = 10;
@@ -204,23 +194,23 @@ public abstract class AbstractAI {
             // Prevent possible extra calls to this function (there is none?), also don't send movetopawn packets too
             // often.
             final int gameTime = GameTimeTaskManager.getInstance().getGameTicks();
-            if (_actor.isMoving() && (_target == pawn)) {
-                if (_clientMovingToPawnOffset == offset) {
-                    if (gameTime < _moveToPawnTimeout) {
+            if (actor.isMoving() && (target == pawn)) {
+                if (clientMovingToPawnOffset == offset) {
+                    if (gameTime < moveToPawnTimeout) {
                         return;
                     }
                 }
                 // Minimum time to calculate new route is 2 seconds.
-                else if (_actor.isOnGeodataPath() && (gameTime < (_moveToPawnTimeout + 10))) {
+                else if (actor.isOnGeodataPath() && (gameTime < (moveToPawnTimeout + 10))) {
                     return;
                 }
             }
 
             // Set AI movement data.
-            _clientMovingToPawnOffset = offset;
-            _target = pawn;
-            _moveToPawnTimeout = gameTime;
-            _moveToPawnTimeout += 1000 / GameTimeTaskManager.MILLIS_IN_TICK;
+            clientMovingToPawnOffset = offset;
+            target = pawn;
+            moveToPawnTimeout = gameTime;
+            moveToPawnTimeout += 1000 / GameTimeTaskManager.MILLIS_IN_TICK;
 
             if (pawn == null) {
                 return;
@@ -228,7 +218,7 @@ public abstract class AbstractAI {
 
             // Calculate movement data for a move to location action and add the actor to movingObjects of
             // GameTimeTaskManager.
-            _actor.moveToLocation(pawn.getX(), pawn.getY(), pawn.getZ(), offset);
+            actor.moveToLocation(pawn.getX(), pawn.getY(), pawn.getZ(), offset);
 
             // May result to make monsters stop moving.
             // if (!_actor.isMoving())
@@ -239,17 +229,17 @@ public abstract class AbstractAI {
 
             // Send a Server->Client packet MoveToPawn/MoveToLocation to the actor and all Player in its known players.
             if (pawn.isCreature()) {
-                if (_actor.isOnGeodataPath()) {
-                    _actor.broadcastMoveToLocation();
-                    _clientMovingToPawnOffset = 0;
+                if (actor.isOnGeodataPath()) {
+                    actor.broadcastMoveToLocation();
+                    clientMovingToPawnOffset = 0;
                 } else {
-                    final WorldRegion region = _actor.getWorldRegion();
+                    final WorldRegion region = actor.getWorldRegion();
                     if ((region != null) && region.isActive()) {
-                        _actor.broadcastPacket(new MoveToPawn(_actor, pawn, offset));
+                        actor.broadcastPacket(new MoveToPawn(actor, pawn, offset));
                     }
                 }
             } else {
-                _actor.broadcastMoveToLocation();
+                actor.broadcastMoveToLocation();
             }
         } else {
             clientActionFailed();
@@ -269,16 +259,16 @@ public abstract class AbstractAI {
      */
     protected void moveTo(int x, int y, int z) {
         // Check if actor can move.
-        if (!_actor.isMovementDisabled()) {
+        if (!actor.isMovementDisabled()) {
             // Set AI movement data.
-            _clientMovingToPawnOffset = 0;
+            clientMovingToPawnOffset = 0;
 
             // Calculate movement data for a move to location action and add the actor to movingObjects of
             // GameTimeTaskManager.
-            _actor.moveToLocation(x, y, z, 0);
+            actor.moveToLocation(x, y, z, 0);
 
             // Send a Server->Client packet MoveToLocation to the actor and all Player in its known players.
-            _actor.broadcastMoveToLocation();
+            actor.broadcastMoveToLocation();
         } else {
             clientActionFailed();
         }
@@ -291,38 +281,34 @@ public abstract class AbstractAI {
      */
     public void clientStopMoving(Location loc) {
         // Stop movement of the Creature.
-        if (_actor.isMoving()) {
-            _actor.stopMove(loc);
+        if (actor.isMoving()) {
+            actor.stopMove(loc);
         }
 
-        _clientMovingToPawnOffset = 0;
+        clientMovingToPawnOffset = 0;
     }
 
     /**
      * Client has already arrived to target, no need to force StopMove packet.
      */
     protected void clientStoppedMoving() {
-        if (_clientMovingToPawnOffset > 0) // movetoPawn needs to be stopped.
+        if (clientMovingToPawnOffset > 0) // movetoPawn needs to be stopped.
         {
-            _clientMovingToPawnOffset = 0;
-            _actor.broadcastPacket(new StopMove(_actor));
+            clientMovingToPawnOffset = 0;
+            actor.broadcastPacket(new StopMove(actor));
         }
     }
 
-    public boolean isAutoAttacking() {
-        return _clientAutoAttacking;
-    }
-
     public void setAutoAttacking(boolean isAutoAttacking) {
-        if (_actor.isSummon()) {
-            final Summon summon = _actor.asSummon();
+        if (actor.isSummon()) {
+            final Summon summon = actor.asSummon();
             if (summon.getOwner() != null) {
                 summon.getOwner().getAI().setAutoAttacking(isAutoAttacking);
             }
             return;
         }
 
-        _clientAutoAttacking = isAutoAttacking;
+        autoAttacking = isAutoAttacking;
     }
 
     /**
@@ -331,21 +317,21 @@ public abstract class AbstractAI {
      */
     public void clientStartAutoAttack() {
         // Non attackable NPCs should not get in combat.
-        if (_actor.isNpc() && (!_actor.isAttackable() || _actor.isCoreAIDisabled())) {
+        if (actor.isNpc() && (!actor.isAttackable() || actor.isCoreAIDisabled())) {
             return;
         }
 
-        if (_actor.isSummon()) {
-            final Summon summon = _actor.asSummon();
+        if (actor.isSummon()) {
+            final Summon summon = actor.asSummon();
             if (summon.getOwner() != null) {
                 summon.getOwner().getAI().clientStartAutoAttack();
             }
             return;
         }
 
-        if (!_clientAutoAttacking) {
-            if (_actor.isPlayer()) {
-                final Player player = _actor.asPlayer();
+        if (!autoAttacking) {
+            if (actor.isPlayer()) {
+                final Player player = actor.asPlayer();
                 if (player.hasSummon()) {
                     final Summon summon = player.getSummon();
                     summon.broadcastPacket(new AutoAttackStart(summon.getObjectId()));
@@ -353,11 +339,11 @@ public abstract class AbstractAI {
             }
 
             // Send a Server->Client packet AutoAttackStart to the actor and all Player in its known players.
-            _actor.broadcastPacket(new AutoAttackStart(_actor.getObjectId()));
+            actor.broadcastPacket(new AutoAttackStart(actor.getObjectId()));
             setAutoAttacking(true);
         }
 
-        AttackStanceTaskManager.getInstance().addAttackStanceTask(_actor);
+        AttackStanceTaskManager.getInstance().addAttackStanceTask(actor);
     }
 
     /**
@@ -365,26 +351,22 @@ public abstract class AbstractAI {
      * <font color=#FF0000><b><u>Caution</u>: Low level function, used by AI subclasses</b></font>
      */
     public void clientStopAutoAttack() {
-        if (_actor.isSummon()) {
-            final Summon summon = _actor.asSummon();
+        if (actor.isSummon()) {
+            final Summon summon = actor.asSummon();
             if (summon.getOwner() != null) {
                 summon.getOwner().getAI().clientStopAutoAttack();
             }
             return;
         }
 
-        if (_actor.isPlayer()) {
-            if (!AttackStanceTaskManager.getInstance().hasAttackStanceTask(_actor) && isAutoAttacking()) {
-                AttackStanceTaskManager.getInstance().addAttackStanceTask(_actor);
+        if (actor.isPlayer()) {
+            if (!AttackStanceTaskManager.getInstance().hasAttackStanceTask(actor) && isAutoAttacking()) {
+                AttackStanceTaskManager.getInstance().addAttackStanceTask(actor);
             }
-        } else if (_clientAutoAttacking) {
-            _actor.broadcastPacket(new AutoAttackStop(_actor.getObjectId()));
+        } else if (autoAttacking) {
+            actor.broadcastPacket(new AutoAttackStop(actor.getObjectId()));
             setAutoAttacking(false);
         }
-    }
-
-    public int getClientMovingToPawnOffset() {
-        return _clientMovingToPawnOffset;
     }
 
     /**
@@ -393,13 +375,13 @@ public abstract class AbstractAI {
      */
     protected void clientNotifyDead() {
         // Send a Server->Client packet Die to the actor and all Player in its known players.
-        _actor.broadcastPacket(new Die(_actor));
+        actor.broadcastPacket(new Die(actor));
 
         // Init AI
-        _intention = Intention.IDLE;
-        _target = null;
-        _castTarget = null;
-        _attackTarget = null;
+        intention = Intention.IDLE;
+        target = null;
+        castTarget = null;
+        attackTarget = null;
 
         // Cancel the follow task if necessary.
         stopFollow();
@@ -411,22 +393,22 @@ public abstract class AbstractAI {
      * @param player The PlayerIstance to notify with state of this Creature
      */
     public void describeStateToPlayer(Player player) {
-        if (_actor.isVisibleFor(player) && _actor.isMoving()) {
-            if ((_clientMovingToPawnOffset != 0) && isFollowing()) {
+        if (actor.isVisibleFor(player) && actor.isMoving()) {
+            if ((clientMovingToPawnOffset != 0) && isFollowing()) {
                 // Send a Server->Client packet MoveToPawn to the actor and all Player in its known players.
-                player.sendPacket(new MoveToPawn(_actor, _followTarget, _clientMovingToPawnOffset));
+                player.sendPacket(new MoveToPawn(actor, followTarget, clientMovingToPawnOffset));
             } else {
                 // Send a Server->Client packet MoveToLocation to the actor and all Player in its known players.
-                player.sendPacket(new MoveToLocation(_actor));
+                player.sendPacket(new MoveToLocation(actor));
             }
         }
     }
 
     public boolean isFollowing() {
-        return (_followTarget != null)
-                && _followTarget.isCreature()
-                && ((_intention == Intention.FOLLOW)
-                        || CreatureFollowTaskManager.getInstance().isFollowing(_actor));
+        return (followTarget != null)
+                && followTarget.isCreature()
+                && ((intention == Intention.FOLLOW)
+                        || CreatureFollowTaskManager.getInstance().isFollowing(actor));
     }
 
     /**
@@ -444,11 +426,11 @@ public abstract class AbstractAI {
      */
     public void startFollow(Creature target, int range) {
         stopFollow();
-        _followTarget = target;
+        followTarget = target;
         if (range == -1) {
-            CreatureFollowTaskManager.getInstance().addNormalFollow(_actor, range);
+            CreatureFollowTaskManager.getInstance().addNormalFollow(actor, range);
         } else {
-            CreatureFollowTaskManager.getInstance().addAttackFollow(_actor, range);
+            CreatureFollowTaskManager.getInstance().addAttackFollow(actor, range);
         }
     }
 
@@ -456,36 +438,8 @@ public abstract class AbstractAI {
      * Stop an AI Follow Task.
      */
     public void stopFollow() {
-        CreatureFollowTaskManager.getInstance().remove(_actor);
-        _followTarget = null;
-    }
-
-    public Creature getFollowTarget() {
-        return _followTarget;
-    }
-
-    protected WorldObject getTarget() {
-        return _target;
-    }
-
-    protected void setTarget(WorldObject target) {
-        _target = target;
-    }
-
-    protected void setCastTarget(Creature target) {
-        _castTarget = target;
-    }
-
-    public Creature getCastTarget() {
-        return _castTarget;
-    }
-
-    protected void setAttackTarget(Creature target) {
-        _attackTarget = target;
-    }
-
-    public Creature getAttackTarget() {
-        return _attackTarget;
+        CreatureFollowTaskManager.getInstance().remove(actor);
+        followTarget = null;
     }
 
     /**
@@ -497,6 +451,6 @@ public abstract class AbstractAI {
 
     @Override
     public String toString() {
-        return "Actor: " + _actor;
+        return "Actor: " + actor;
     }
 }

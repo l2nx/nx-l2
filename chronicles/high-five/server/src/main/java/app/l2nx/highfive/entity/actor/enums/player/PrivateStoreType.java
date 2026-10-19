@@ -19,6 +19,8 @@
  */
 package app.l2nx.highfive.entity.actor.enums.player;
 
+import lombok.Getter;
+
 /**
  * @author NosBit
  */
@@ -32,14 +34,11 @@ public enum PrivateStoreType {
     PACKAGE_SELL(8),
     SELL_BUFFS(9);
 
-    private int _id;
+    @Getter
+    private int id;
 
     private PrivateStoreType(int id) {
-        _id = id;
-    }
-
-    public int getId() {
-        return _id;
+        this.id = id;
     }
 
     public static PrivateStoreType findById(int id) {

@@ -75,36 +75,36 @@ public class CabaleBuffer extends Script {
     }
 
     protected class Talk implements Runnable {
-        private final Npc _npc;
+        private final Npc npc;
 
         protected Talk(Npc npc) {
-            _npc = npc;
+            this.npc = npc;
         }
 
         @Override
         public void run() {
-            if ((_npc != null) && !_npc.isDecayed()) {
+            if ((npc != null) && !npc.isDecayed()) {
                 NpcStringId[] messages = ORATOR_MSG;
-                if (_npc.getId() == SevenSigns.PREACHER_NPC_ID) {
+                if (npc.getId() == SevenSigns.PREACHER_NPC_ID) {
                     messages = PREACHER_MSG;
                 }
 
-                broadcastSay(_npc, getRandomEntry(messages), null, -1);
+                broadcastSay(npc, getRandomEntry(messages), null, -1);
                 ThreadPool.schedule(this, 60000);
             }
         }
     }
 
     protected class CabaleAI implements Runnable {
-        private final Npc _npc;
+        private final Npc npc;
 
         protected CabaleAI(Npc npc) {
-            _npc = npc;
+            this.npc = npc;
         }
 
         @Override
         public void run() {
-            if ((_npc == null) || !_npc.isSpawned()) {
+            if ((npc == null) || !npc.isSpawned()) {
                 return;
             }
 
@@ -119,7 +119,7 @@ public class CabaleBuffer extends Script {
                 losingCabal = SevenSigns.CABAL_DAWN;
             }
 
-            for (Player player : World.getVisibleObjects(_npc, Player.class)) {
+            for (Player player : World.getVisibleObjects(npc, Player.class)) {
                 if ((player == null) || player.isInvul()) {
                     continue;
                 }
@@ -127,17 +127,14 @@ public class CabaleBuffer extends Script {
                 final int playerCabal = SevenSigns.getInstance().getPlayerCabal(player.getObjectId());
                 if ((playerCabal == winningCabal)
                         && (playerCabal != SevenSigns.CABAL_NULL)
-                        && (_npc.getId() == SevenSigns.ORATOR_NPC_ID)) {
+                        && (npc.getId() == SevenSigns.ORATOR_NPC_ID)) {
                     if (!player.isMageClass()) {
                         if (handleCast(player, ORATOR_FIGTER)) {
                             if (getAbnormalLevel(player, ORATOR_FIGTER) == 2) {
                                 broadcastSay(
-                                        _npc,
-                                        NpcStringId.S1_I_GIVE_YOU_THE_BLESSING_OF_PROPHECY,
-                                        player.getName(),
-                                        500);
+                                        npc, NpcStringId.S1_I_GIVE_YOU_THE_BLESSING_OF_PROPHECY, player.getName(), 500);
                             } else {
-                                broadcastSay(_npc, NpcStringId.I_BESTOW_UPON_YOU_A_BLESSING, null, 1);
+                                broadcastSay(npc, NpcStringId.I_BESTOW_UPON_YOU_A_BLESSING, null, 1);
                             }
 
                             isBuffAWinner = true;
@@ -147,12 +144,12 @@ public class CabaleBuffer extends Script {
                         if (handleCast(player, ORATOR_MAGE)) {
                             if (getAbnormalLevel(player, ORATOR_MAGE) == 2) {
                                 broadcastSay(
-                                        _npc,
+                                        npc,
                                         NpcStringId.S1_I_BESTOW_UPON_YOU_THE_AUTHORITY_OF_THE_ABYSS,
                                         player.getName(),
                                         500);
                             } else {
-                                broadcastSay(_npc, NpcStringId.HERALD_OF_THE_NEW_ERA_OPEN_YOUR_EYES, null, 1);
+                                broadcastSay(npc, NpcStringId.HERALD_OF_THE_NEW_ERA_OPEN_YOUR_EYES, null, 1);
                             }
 
                             isBuffAWinner = true;
@@ -161,13 +158,13 @@ public class CabaleBuffer extends Script {
                     }
                 } else if ((playerCabal == losingCabal)
                         && (playerCabal != SevenSigns.CABAL_NULL)
-                        && (_npc.getId() == SevenSigns.PREACHER_NPC_ID)) {
+                        && (npc.getId() == SevenSigns.PREACHER_NPC_ID)) {
                     if (!player.isMageClass()) {
                         if (handleCast(player, PREACHER_FIGTER)) {
                             if (getAbnormalLevel(player, PREACHER_FIGTER) == 2) {
-                                broadcastSay(_npc, NpcStringId.A_CURSE_UPON_YOU, player.getName(), 500);
+                                broadcastSay(npc, NpcStringId.A_CURSE_UPON_YOU, player.getName(), 500);
                             } else {
-                                broadcastSay(_npc, NpcStringId.YOU_DON_T_HAVE_ANY_HOPE_YOUR_END_HAS_COME, null, 1);
+                                broadcastSay(npc, NpcStringId.YOU_DON_T_HAVE_ANY_HOPE_YOUR_END_HAS_COME, null, 1);
                             }
 
                             isBuffALoser = true;
@@ -176,9 +173,9 @@ public class CabaleBuffer extends Script {
                     } else {
                         if (handleCast(player, PREACHER_MAGE)) {
                             if (getAbnormalLevel(player, PREACHER_MAGE) == 2) {
-                                broadcastSay(_npc, NpcStringId.S1_YOU_MIGHT_AS_WELL_GIVE_UP, player.getName(), 500);
+                                broadcastSay(npc, NpcStringId.S1_YOU_MIGHT_AS_WELL_GIVE_UP, player.getName(), 500);
                             } else {
-                                broadcastSay(_npc, NpcStringId.S1_YOU_BRING_AN_ILL_WIND, player.getName(), 1);
+                                broadcastSay(npc, NpcStringId.S1_YOU_BRING_AN_ILL_WIND, player.getName(), 1);
                             }
 
                             isBuffALoser = true;
@@ -212,7 +209,7 @@ public class CabaleBuffer extends Script {
          * @return
          */
         private boolean handleCast(Player player, int skillId) {
-            if (player.isDead() || !player.isSpawned() || !_npc.isInsideRadius3D(player, DISTANCE_TO_WATCH_OBJECT)) {
+            if (player.isDead() || !player.isSpawned() || !npc.isInsideRadius3D(player, DISTANCE_TO_WATCH_OBJECT)) {
                 return false;
             }
 
@@ -229,8 +226,8 @@ public class CabaleBuffer extends Script {
 
             if (doCast) {
                 final Skill skill = SkillData.getInstance().getSkill(skillId, skillLevel);
-                _npc.setTarget(player);
-                _npc.doCast(skill);
+                npc.setTarget(player);
+                npc.doCast(skill);
                 return true;
             }
 

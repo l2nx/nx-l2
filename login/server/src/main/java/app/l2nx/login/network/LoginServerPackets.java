@@ -41,13 +41,13 @@ public enum LoginServerPackets {
     GG_AUTH(0x0b),
     LOGIN_OPT_FAIL(0x0D);
 
-    private final int _id;
+    private final int id;
 
     LoginServerPackets(int id) {
-        _id = id;
+        this.id = id;
     }
 
     public void writeId(SimpleWritablePacket packet) {
-        packet.writeByte(_id);
+        packet.writeByte(id);
     }
 }

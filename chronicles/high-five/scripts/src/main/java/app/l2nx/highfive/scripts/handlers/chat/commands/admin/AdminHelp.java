@@ -87,9 +87,9 @@ public class AdminHelp implements IAdminCommandHandler {
                     .style(ButtonsStyle.INSTANCE)
                     .bodyHandler((pages, templateInfo, sb) -> {
                         sb.append("<tr><td width=30 align=left>");
-                        sb.append(templateInfo.getString1()); // Id.
+                        sb.append(templateInfo.string1()); // Id.
                         sb.append("</td><td width=200>");
-                        sb.append(templateInfo.getString2()); // Name.
+                        sb.append(templateInfo.string2()); // Name.
                         sb.append("</td></tr>");
                     })
                     .build();

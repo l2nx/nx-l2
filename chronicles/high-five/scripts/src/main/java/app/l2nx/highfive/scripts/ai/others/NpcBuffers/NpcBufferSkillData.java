@@ -24,42 +24,35 @@ import app.l2nx.highfive.mechanics.skill.holders.SkillHolder;
 import app.l2nx.highfive.mechanics.skill.targets.AffectObject;
 import app.l2nx.highfive.mechanics.skill.targets.AffectScope;
 import app.l2nx.highfive.util.StatSet;
+import lombok.Getter;
 
 /**
  * @author UnAfraid
  */
 public class NpcBufferSkillData {
-    private final SkillHolder _skill;
-    private final int _initialDelay;
-    private final int _delay;
-    private final AffectScope _affectScope;
-    private final AffectObject _affectObject;
+    private final SkillHolder skill;
+
+    @Getter
+    private final int initialDelay;
+
+    @Getter
+    private final int delay;
+
+    @Getter
+    private final AffectScope affectScope;
+
+    @Getter
+    private final AffectObject affectObject;
 
     public NpcBufferSkillData(StatSet set) {
-        _skill = new SkillHolder(set.getInt("id"), set.getInt("level"));
-        _initialDelay = set.getInt("skillInitDelay", 0) * 1000;
-        _delay = set.getInt("delay") * 1000;
-        _affectScope = set.getEnum("affectScope", AffectScope.class);
-        _affectObject = set.getEnum("affectObject", AffectObject.class);
+        skill = new SkillHolder(set.getInt("id"), set.getInt("level"));
+        initialDelay = set.getInt("skillInitDelay", 0) * 1000;
+        delay = set.getInt("delay") * 1000;
+        affectScope = set.getEnum("affectScope", AffectScope.class);
+        affectObject = set.getEnum("affectObject", AffectObject.class);
     }
 
     public Skill getSkill() {
-        return _skill.getSkill();
-    }
-
-    public int getInitialDelay() {
-        return _initialDelay;
-    }
-
-    public int getDelay() {
-        return _delay;
-    }
-
-    public AffectScope getAffectScope() {
-        return _affectScope;
-    }
-
-    public AffectObject getAffectObject() {
-        return _affectObject;
+        return skill.getSkill();
     }
 }

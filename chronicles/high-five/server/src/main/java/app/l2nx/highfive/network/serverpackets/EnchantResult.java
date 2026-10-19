@@ -27,21 +27,21 @@ import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.network.buffer.WriteBuffer;
 
 public class EnchantResult extends ServerPacket {
-    private final int _result;
-    private final int _crystal;
-    private final int _count;
+    private final int result;
+    private final int crystal;
+    private final int count;
 
     public EnchantResult(int result, int crystal, int count) {
-        _result = result;
-        _crystal = crystal;
-        _count = count;
+        this.result = result;
+        this.crystal = crystal;
+        this.count = count;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.ENCHANT_RESULT.writeId(this, buffer);
-        buffer.writeInt(_result);
-        buffer.writeInt(_crystal);
-        buffer.writeLong(_count);
+        buffer.writeInt(result);
+        buffer.writeInt(crystal);
+        buffer.writeLong(count);
     }
 }

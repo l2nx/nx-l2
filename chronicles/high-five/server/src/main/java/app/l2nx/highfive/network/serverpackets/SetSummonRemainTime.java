@@ -27,18 +27,18 @@ import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.network.buffer.WriteBuffer;
 
 public class SetSummonRemainTime extends ServerPacket {
-    private final int _maxTime;
-    private final int _remainingTime;
+    private final int maxTime;
+    private final int remainingTime;
 
     public SetSummonRemainTime(int maxTime, int remainingTime) {
-        _remainingTime = remainingTime;
-        _maxTime = maxTime;
+        this.remainingTime = remainingTime;
+        this.maxTime = maxTime;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.SET_SUMMON_REMAIN_TIME.writeId(this, buffer);
-        buffer.writeInt(_maxTime);
-        buffer.writeInt(_remainingTime);
+        buffer.writeInt(maxTime);
+        buffer.writeInt(remainingTime);
     }
 }

@@ -27,15 +27,15 @@ import app.l2nx.network.buffer.WriteBuffer;
  * @author Luca Baldi
  */
 public class ExShowQuestMark extends ServerPacket {
-    private final int _questId;
+    private final int questId;
 
     public ExShowQuestMark(int questId) {
-        _questId = questId;
+        this.questId = questId;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_SHOW_QUEST_MARK.writeId(this, buffer);
-        buffer.writeInt(_questId);
+        buffer.writeInt(questId);
     }
 }

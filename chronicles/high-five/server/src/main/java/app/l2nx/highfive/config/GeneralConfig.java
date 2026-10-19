@@ -27,15 +27,14 @@ import app.l2nx.highfive.entity.actor.enums.player.IllegalActionPunishmentType;
 import app.l2nx.highfive.network.enums.ChatType;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * This class loads all the general related configurations.
  * @author Mobius
  */
+@Slf4j
 public class GeneralConfig {
-    private static final Logger LOGGER = Logger.getLogger(GeneralConfig.class.getName());
 
     // File
     private static final String GENERAL_CONFIG_FILE = "./config/General.ini";
@@ -299,7 +298,7 @@ public class GeneralConfig {
                 BAN_CHAT_CHANNELS.add(Enum.valueOf(ChatType.class, chatId));
             }
         } catch (NumberFormatException nfe) {
-            LOGGER.log(Level.WARNING, "There was an error while parsing ban chat channels: ", nfe);
+            log.warn("There was an error while parsing ban chat channels: ", nfe);
         }
         ALT_MANOR_REFRESH_TIME = config.getInt("AltManorRefreshTime", 20);
         ALT_MANOR_REFRESH_MIN = config.getInt("AltManorRefreshMin", 0);

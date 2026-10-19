@@ -32,7 +32,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class CreatureSeeTaskManager implements Runnable {
     private static final Set<Creature> CREATURES = ConcurrentHashMap.newKeySet();
-    private static boolean _working = false;
+    private static boolean working = false;
 
     protected CreatureSeeTaskManager() {
         ThreadPool.scheduleAtFixedRate(this, 1000, 1000);
@@ -40,17 +40,17 @@ public class CreatureSeeTaskManager implements Runnable {
 
     @Override
     public void run() {
-        if (_working) {
+        if (working) {
             return;
         }
 
-        _working = true;
+        working = true;
 
         for (Creature creature : CREATURES) {
             creature.updateSeenCreatures();
         }
 
-        _working = false;
+        working = false;
     }
 
     public void add(Creature creature) {

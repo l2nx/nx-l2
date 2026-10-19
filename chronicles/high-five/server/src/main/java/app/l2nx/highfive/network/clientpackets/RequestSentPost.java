@@ -32,11 +32,11 @@ import app.l2nx.highfive.network.serverpackets.ExReplySentPost;
  * @author Migi, DS
  */
 public class RequestSentPost extends ClientPacket {
-    private int _msgId;
+    private int msgId;
 
     @Override
     protected void readImpl() {
-        _msgId = readInt();
+        msgId = readInt();
     }
 
     @Override
@@ -46,7 +46,7 @@ public class RequestSentPost extends ClientPacket {
             return;
         }
 
-        final MailMessage msg = MailManager.getInstance().getMessage(_msgId);
+        final MailMessage msg = MailManager.getInstance().getMessage(msgId);
         if (msg == null) {
             return;
         }

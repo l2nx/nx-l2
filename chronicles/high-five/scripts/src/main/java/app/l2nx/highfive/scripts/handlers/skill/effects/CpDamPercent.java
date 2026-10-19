@@ -32,12 +32,12 @@ import app.l2nx.highfive.util.StatSet;
  * @author Zoey76, Adry_85
  */
 public class CpDamPercent extends AbstractEffect {
-    private final double _power;
+    private final double power;
 
     public CpDamPercent(Condition attachCond, Condition applyCond, StatSet set, StatSet params) {
         super(attachCond, applyCond, set, params);
 
-        _power = params.getDouble("power", 0);
+        power = params.getDouble("power", 0);
     }
 
     @Override
@@ -55,7 +55,7 @@ public class CpDamPercent extends AbstractEffect {
             effected.stopFakeDeath(true);
         }
 
-        final int damage = (int) ((effected.getCurrentCp() * _power) / 100);
+        final int damage = (int) ((effected.getCurrentCp() * power) / 100);
 
         // Manage attack or cast break of the target (calculating rate, sending message)
         if (!effected.isRaid() && Formulas.calcAtkBreak(effected, damage)) {

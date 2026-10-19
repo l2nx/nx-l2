@@ -27,15 +27,15 @@ import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.network.buffer.WriteBuffer;
 
 public class ChooseInventoryItem extends ServerPacket {
-    private final int _itemId;
+    private final int itemId;
 
     public ChooseInventoryItem(int itemId) {
-        _itemId = itemId;
+        this.itemId = itemId;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.CHOOSE_INVENTORY_ITEM.writeId(this, buffer);
-        buffer.writeInt(_itemId);
+        buffer.writeInt(itemId);
     }
 }

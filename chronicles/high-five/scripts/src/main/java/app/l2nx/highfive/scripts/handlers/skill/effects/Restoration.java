@@ -32,22 +32,24 @@ import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.serverpackets.PetItemList;
 import app.l2nx.highfive.util.StatSet;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Restoration effect implementation.
  * @author Zoey76, Mobius
  */
+@Slf4j
 public class Restoration extends AbstractEffect {
-    private final int _itemId;
-    private final long _itemCount;
-    private final int _itemEnchantmentLevel;
+    private final int itemId;
+    private final long itemCount;
+    private final int itemEnchantmentLevel;
 
     public Restoration(Condition attachCond, Condition applyCond, StatSet set, StatSet params) {
         super(attachCond, applyCond, set, params);
 
-        _itemId = params.getInt("itemId", 0);
-        _itemCount = params.getLong("itemCount", 0);
-        _itemEnchantmentLevel = params.getInt("itemEnchantmentLevel", 0);
+        itemId = params.getInt("itemId", 0);
+        itemCount = params.getLong("itemCount", 0);
+        itemEnchantmentLevel = params.getInt("itemEnchantmentLevel", 0);
     }
 
     @Override
@@ -61,25 +63,23 @@ public class Restoration extends AbstractEffect {
             return;
         }
 
-        if ((_itemId <= 0) || (_itemCount <= 0)) {
+        if ((itemId <= 0) || (itemCount <= 0)) {
             effected.sendPacket(SystemMessageId.THERE_WAS_NOTHING_FOUND_INSIDE);
-            LOGGER.warning(Restoration.class.getSimpleName() + " effect with wrong item Id/count: " + _itemId + "/"
-                    + _itemCount + "!");
+            log.warn("Effect with wrong item Id/count: {}/{}!", itemId, itemCount);
             return;
         }
 
         if (effected.isPlayer()) {
-            final Item newItem =
-                    effected.asPlayer().addItem(ItemProcessType.REWARD, _itemId, _itemCount, effector, true);
-            if (_itemEnchantmentLevel > 0) {
-                newItem.setEnchantLevel(_itemEnchantmentLevel);
+            final Item newItem = effected.asPlayer().addItem(ItemProcessType.REWARD, itemId, itemCount, effector, true);
+            if (itemEnchantmentLevel > 0) {
+                newItem.setEnchantLevel(itemEnchantmentLevel);
             }
         } else if (effected.isPet()) {
             final Player target = effected.asPlayer();
             final Item newItem =
-                    effected.getInventory().addItem(ItemProcessType.REWARD, _itemId, _itemCount, target, effector);
-            if (_itemEnchantmentLevel > 0) {
-                newItem.setEnchantLevel(_itemEnchantmentLevel);
+                    effected.getInventory().addItem(ItemProcessType.REWARD, itemId, itemCount, target, effector);
+            if (itemEnchantmentLevel > 0) {
+                newItem.setEnchantLevel(itemEnchantmentLevel);
             }
 
             target.sendPacket(new PetItemList(effected.getInventory().getItems()));

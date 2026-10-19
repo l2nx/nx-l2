@@ -142,7 +142,7 @@ public class Q00402_PathOfTheHumanKnight extends Quest {
         }
 
         String htmltext = null;
-        final long CoinCount = getQuestItemsCount(
+        final long coinCount = getQuestItemsCount(
                 player, COIN_OF_LORDS1, COIN_OF_LORDS2, COIN_OF_LORDS3, COIN_OF_LORDS4, COIN_OF_LORDS5, COIN_OF_LORDS6);
         switch (event) {
             case "ACCEPT": {
@@ -177,7 +177,7 @@ public class Q00402_PathOfTheHumanKnight extends Quest {
                 break;
             }
             case "30417-13.html": {
-                if (hasQuestItems(player, SQUIRES_MARK) && ((CoinCount) == 3)) {
+                if (hasQuestItems(player, SQUIRES_MARK) && ((coinCount) == 3)) {
                     giveAdena(player, 81900, true);
                     giveItems(player, SWORD_OF_RITUAL, 1);
 
@@ -197,7 +197,7 @@ public class Q00402_PathOfTheHumanKnight extends Quest {
                 break;
             }
             case "30417-14.html": {
-                if (hasQuestItems(player, SQUIRES_MARK) && ((CoinCount) > 3) && ((CoinCount) < 6)) {
+                if (hasQuestItems(player, SQUIRES_MARK) && ((coinCount) > 3) && ((coinCount) < 6)) {
                     giveAdena(player, 81900, true);
                     giveItems(player, SWORD_OF_RITUAL, 1);
 
@@ -355,7 +355,7 @@ public class Q00402_PathOfTheHumanKnight extends Quest {
         } else if (qs.isStarted()) {
             switch (npc.getId()) {
                 case SIR_KLAUS_VASPER: {
-                    final long CoinCount = getQuestItemsCount(
+                    final long coinCount = getQuestItemsCount(
                             player,
                             COIN_OF_LORDS1,
                             COIN_OF_LORDS2,
@@ -364,11 +364,11 @@ public class Q00402_PathOfTheHumanKnight extends Quest {
                             COIN_OF_LORDS5,
                             COIN_OF_LORDS6);
                     if (hasQuestItems(player, SQUIRES_MARK)) {
-                        if ((CoinCount) < 3) {
+                        if ((coinCount) < 3) {
                             htmltext = "30417-09.html";
-                        } else if ((CoinCount) == 3) {
+                        } else if ((coinCount) == 3) {
                             htmltext = "30417-10.html";
-                        } else if (((CoinCount) > 3) && ((CoinCount) < 6)) {
+                        } else if (((coinCount) > 3) && ((coinCount) < 6)) {
                             htmltext = "30417-11.html";
                         } else {
                             giveAdena(player, 163800, true);

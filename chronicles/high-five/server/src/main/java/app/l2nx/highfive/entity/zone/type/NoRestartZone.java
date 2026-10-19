@@ -25,14 +25,21 @@ import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.enums.player.TeleportWhereType;
 import app.l2nx.highfive.entity.zone.ZoneId;
 import app.l2nx.highfive.entity.zone.ZoneType;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * A simple no restart zone
  * @author GKR
  */
 public class NoRestartZone extends ZoneType {
-    private int _restartAllowedTime = 0;
-    private int _restartTime = 0;
+    @Getter
+    @Setter
+    private int restartAllowedTime = 0;
+
+    @Getter
+    @Setter
+    private int restartTime = 0;
 
     public NoRestartZone(int id) {
         super(id);
@@ -41,9 +48,9 @@ public class NoRestartZone extends ZoneType {
     @Override
     public void setParameter(String name, String value) {
         if (name.equalsIgnoreCase("restartAllowedTime")) {
-            _restartAllowedTime = Integer.parseInt(value) * 1000;
+            restartAllowedTime = Integer.parseInt(value) * 1000;
         } else if (name.equalsIgnoreCase("restartTime")) {
-            _restartTime = Integer.parseInt(value) * 1000;
+            restartTime = Integer.parseInt(value) * 1000;
         } else if (name.equalsIgnoreCase("instanceId")) {
             // Do nothing.
         } else {
@@ -72,25 +79,9 @@ public class NoRestartZone extends ZoneType {
         }
 
         final long currentTime = System.currentTimeMillis();
-        if (((currentTime - player.getLastAccess()) > _restartTime)
-                && ((currentTime - GameServer.getStartTime()) > _restartAllowedTime)) {
+        if (((currentTime - player.getLastAccess()) > restartTime)
+                && ((currentTime - GameServer.getStartTime()) > restartAllowedTime)) {
             player.teleToLocation(TeleportWhereType.TOWN);
         }
-    }
-
-    public int getRestartAllowedTime() {
-        return _restartAllowedTime;
-    }
-
-    public void setRestartAllowedTime(int time) {
-        _restartAllowedTime = time;
-    }
-
-    public int getRestartTime() {
-        return _restartTime;
-    }
-
-    public void setRestartTime(int time) {
-        _restartTime = time;
     }
 }

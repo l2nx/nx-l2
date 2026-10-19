@@ -32,12 +32,12 @@ import app.l2nx.highfive.util.StatSet;
  * Mana Heal Over Time effect implementation.
  */
 public class ManaHealOverTime extends AbstractEffect {
-    private final double _power;
+    private final double power;
 
     public ManaHealOverTime(Condition attachCond, Condition applyCond, StatSet set, StatSet params) {
         super(attachCond, applyCond, set, params);
 
-        _power = params.getDouble("power", 0);
+        power = params.getDouble("power", 0);
     }
 
     @Override
@@ -54,7 +54,7 @@ public class ManaHealOverTime extends AbstractEffect {
             return true;
         }
 
-        mp += _power * getTicksMultiplier();
+        mp += power * getTicksMultiplier();
         mp = Math.min(mp, maxmp);
         effected.setCurrentMp(mp);
         return skill.isToggle();

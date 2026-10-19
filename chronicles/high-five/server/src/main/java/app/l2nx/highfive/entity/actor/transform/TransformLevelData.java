@@ -23,18 +23,23 @@ import app.l2nx.highfive.mechanics.stats.Stat;
 import app.l2nx.highfive.util.StatSet;
 import java.util.HashMap;
 import java.util.Map;
+import lombok.Getter;
 
 /**
  * @author UnAfraid
  */
 public class TransformLevelData {
-    private final int _level;
-    private final double _levelMod;
-    private Map<Integer, Double> _stats;
+    @Getter
+    private final int level;
+
+    @Getter
+    private final double levelMod;
+
+    private Map<Integer, Double> stats;
 
     public TransformLevelData(StatSet set) {
-        _level = set.getInt("val");
-        _levelMod = set.getDouble("levelMod");
+        level = set.getInt("val");
+        levelMod = set.getDouble("levelMod");
         addStats(Stat.MAX_HP, set.getDouble("hp"));
         addStats(Stat.MAX_MP, set.getDouble("mp"));
         addStats(Stat.MAX_CP, set.getDouble("cp"));
@@ -44,26 +49,18 @@ public class TransformLevelData {
     }
 
     private void addStats(Stat stat, double value) {
-        if (_stats == null) {
-            _stats = new HashMap<>();
+        if (stats == null) {
+            stats = new HashMap<>();
         }
 
-        _stats.put(stat.ordinal(), value);
+        stats.put(stat.ordinal(), value);
     }
 
     public double getStats(Stat stat) {
-        if ((_stats == null) || !_stats.containsKey(stat.ordinal())) {
+        if ((stats == null) || !stats.containsKey(stat.ordinal())) {
             return 0;
         }
 
-        return _stats.get(stat.ordinal());
-    }
-
-    public int getLevel() {
-        return _level;
-    }
-
-    public double getLevelMod() {
-        return _levelMod;
+        return stats.get(stat.ordinal());
     }
 }

@@ -42,49 +42,50 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ScheduledFuture;
+import lombok.Getter;
 
 public class UCArena {
     private static final long MINUTES_IN_MILISECONDS = 10 * 60000;
 
-    private final int _id;
-    private final int _minLevel;
-    private final int _maxLevel;
+    @Getter
+    private final int id;
 
-    private final UCPoint[] _points = new UCPoint[4];
-    private final UCTeam[] _teams = new UCTeam[2];
-    private Npc _manager = null;
+    @Getter
+    private final int minLevel;
 
-    private ScheduledFuture<?> _taskFuture = null;
-    private final List<UCWaiting> _waitingPartys = new CopyOnWriteArrayList<>();
-    private final List<UCReward> _rewards = new ArrayList<>();
-    private boolean _isBattleNow = false;
+    @Getter
+    private final int maxLevel;
+
+    @Getter
+    private final UCPoint[] points = new UCPoint[4];
+
+    @Getter
+    private final UCTeam[] teams = new UCTeam[2];
+
+    @Getter
+    private Npc manager = null;
+
+    private ScheduledFuture<?> taskFuture = null;
+
+    @Getter
+    private final List<UCWaiting> waitingList = new CopyOnWriteArrayList<>();
+
+    @Getter
+    private final List<UCReward> rewards = new ArrayList<>();
+
+    @Getter
+    private boolean battleNow = false;
 
     public UCArena(int id, int curator, int minLevel, int maxLevel) {
-        _id = id;
+        this.id = id;
         final Spawn spawn = SpawnTable.getInstance().getAnySpawn(curator);
         if (spawn != null) {
-            _manager = spawn.getLastSpawn();
+            manager = spawn.getLastSpawn();
         }
 
-        _minLevel = minLevel;
-        _maxLevel = maxLevel;
-        _rewards.clear();
-    }
-
-    public int getId() {
-        return _id;
-    }
-
-    public int getMinLevel() {
-        return _minLevel;
-    }
-
-    public int getMaxLevel() {
-        return _maxLevel;
-    }
-
-    public Npc getManager() {
-        return _manager;
+        this.minLevel = minLevel;
+        this.maxLevel = maxLevel;
+        rewards.clear();
     }
 
     public void setUCPoint(int index, UCPoint point) {
@@ -92,7 +93,7 @@ public class UCArena {
             return;
         }
 
-        _points[index] = point;
+        points[index] = point;
     }
 
     public void setUCTeam(int index, UCTeam team) {
@@ -100,28 +101,16 @@ public class UCArena {
             return;
         }
 
-        _teams[index] = team;
-    }
-
-    public UCTeam[] getTeams() {
-        return _teams;
-    }
-
-    public UCPoint[] getPoints() {
-        return _points;
-    }
-
-    public List<UCWaiting> getWaitingList() {
-        return _waitingPartys;
+        teams[index] = team;
     }
 
     public void switchStatus(boolean start) {
-        if ((_taskFuture == null) && start) {
+        if ((taskFuture == null) && start) {
             runNewTask(false);
         } else {
-            if (_taskFuture != null) {
-                _taskFuture.cancel(true);
-                _taskFuture = null;
+            if (taskFuture != null) {
+                taskFuture.cancel(true);
+                taskFuture = null;
             }
 
             generateWinner();
@@ -135,27 +124,27 @@ public class UCArena {
                 point.getPlayers().clear();
             }
 
-            _isBattleNow = false;
+            battleNow = false;
         }
     }
 
     public void runNewTask(boolean isFullTime) {
         final long time = isFullTime ? MINUTES_IN_MILISECONDS : MINUTES_IN_MILISECONDS - 60000L;
-        _taskFuture = ThreadPool.schedule(new UCRunningTask(this), time);
+        taskFuture = ThreadPool.schedule(new UCRunningTask(this), time);
     }
 
     public void runTaskNow() {
-        if (_taskFuture != null) {
-            _taskFuture.cancel(true);
-            _taskFuture = null;
+        if (taskFuture != null) {
+            taskFuture.cancel(true);
+            taskFuture = null;
         }
 
-        _taskFuture = ThreadPool.schedule(new UCRunningTask(this), 0);
+        taskFuture = ThreadPool.schedule(new UCRunningTask(this), 0);
     }
 
     public void generateWinner() {
-        final UCTeam blueTeam = _teams[0];
-        final UCTeam redTeam = _teams[1];
+        final UCTeam blueTeam = teams[0];
+        final UCTeam redTeam = teams[1];
         UCTeam winnerTeam = null;
 
         if ((blueTeam.getStatus() == UCTeam.WIN) || (redTeam.getStatus() == UCTeam.WIN)) {
@@ -214,7 +203,7 @@ public class UCArena {
     }
 
     public void prepareStart() {
-        _isBattleNow = true;
+        battleNow = true;
         broadcastToAll(new ExShowScreenMessage(
                 NpcStringId.MATCH_BEGINS_IN_S1_MINUTE_S_PLEASE_GATHER_AROUND_THE_ADMINISTRATOR, 2, 5000, "1"));
         try {
@@ -271,7 +260,7 @@ public class UCArena {
         }
 
         boolean isValid = true;
-        for (UCTeam team : _teams) {
+        for (UCTeam team : teams) {
             if (team.getParty() == null) {
                 isValid = false;
                 continue;
@@ -283,7 +272,7 @@ public class UCArena {
             }
 
             for (Player pl : team.getParty().getMembers()) {
-                if ((pl != null) && (pl.calculateDistance3D(_manager) > PlayerConfig.ALT_PARTY_RANGE)) {
+                if ((pl != null) && (pl.calculateDistance3D(manager) > PlayerConfig.ALT_PARTY_RANGE)) {
                     isValid = false;
                     break;
                 }
@@ -295,12 +284,12 @@ public class UCArena {
                     NpcStringId.THE_MATCH_IS_AUTOMATICALLY_CANCELED_BECAUSE_YOU_ARE_TOO_FAR_FROM_THE_ADMISSION_MANAGER,
                     2,
                     5000));
-            for (UCTeam team : _teams) {
+            for (UCTeam team : teams) {
                 team.setParty(null);
                 team.setRegisterTime(0);
             }
 
-            _isBattleNow = false;
+            battleNow = false;
             runNewTask(false);
             return;
         }
@@ -357,7 +346,7 @@ public class UCArena {
     }
 
     public void startFight() {
-        for (UCTeam team : _teams) {
+        for (UCTeam team : teams) {
             team.spawnTower();
             for (Player player : team.getParty().getMembers()) {
                 if (player != null) {
@@ -368,7 +357,7 @@ public class UCArena {
     }
 
     public void removeTeams() {
-        for (UCTeam team : _teams) {
+        for (UCTeam team : teams) {
             if (team.getParty() != null) {
                 for (Player player : team.getParty().getMembers()) {
                     if (player == null) {
@@ -398,19 +387,11 @@ public class UCArena {
         }
     }
 
-    public boolean isBattleNow() {
-        return _isBattleNow;
-    }
-
     public void setIsBattleNow(boolean value) {
-        _isBattleNow = value;
+        battleNow = value;
     }
 
     public void setReward(UCReward ucReward) {
-        _rewards.add(ucReward);
-    }
-
-    public List<UCReward> getRewards() {
-        return _rewards;
+        rewards.add(ucReward);
     }
 }

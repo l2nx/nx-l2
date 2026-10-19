@@ -29,14 +29,14 @@ import app.l2nx.highfive.mechanics.skill.Skill;
  * @author Zoey76
  */
 public class ConditionTargetWeight extends Condition {
-    private final int _weight;
+    private final int weight;
 
     /**
      * Instantiates a new condition player weight.
      * @param weight the weight
      */
     public ConditionTargetWeight(int weight) {
-        _weight = weight;
+        this.weight = weight;
     }
 
     @Override
@@ -45,7 +45,7 @@ public class ConditionTargetWeight extends Condition {
             final Player target = effected.asPlayer();
             if (!target.getDietMode() && (target.getMaxLoad() > 0)) {
                 return (((target.getCurrentLoad() - target.getBonusWeightPenalty()) * 100) / target.getMaxLoad())
-                        < _weight;
+                        < weight;
             }
         }
 

@@ -54,72 +54,179 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.logging.Logger;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author NosBit, Nobius
  */
+@Slf4j
 public class NpcTemplate extends CreatureTemplate {
-    private static final Logger LOGGER = Logger.getLogger(NpcTemplate.class.getName());
 
-    private int _id;
-    private int _displayId;
-    private byte _level;
-    private String _type;
-    private String _name;
-    private boolean _usingServerSideName;
-    private String _title;
-    private boolean _usingServerSideTitle;
-    private StatSet _parameters;
-    private Sex _sex;
-    private int _chestId;
-    private int _rhandId;
-    private int _lhandId;
-    private int _weaponEnchant;
-    private double _exp;
-    private double _sp;
-    private double _raidPoints;
-    private boolean _unique;
-    private boolean _attackable;
-    private boolean _targetable;
-    private boolean _talkable;
-    private boolean _isQuestMonster;
-    private boolean _undying;
-    private boolean _showName;
-    private boolean _randomWalk;
-    private boolean _randomAnimation;
-    private boolean _flying;
-    private boolean _fakePlayer;
-    private FakePlayerHolder _fakePlayerInfo;
-    private boolean _canMove;
-    private boolean _noSleepMode;
-    private boolean _passableDoor;
-    private boolean _hasSummoner;
-    private boolean _canBeSown;
-    private int _corpseTime;
-    private AIType _aiType;
-    private int _aggroRange;
-    private int _clanHelpRange;
-    private boolean _isChaos;
-    private boolean _isAggressive;
-    private int _soulShot;
-    private int _spiritShot;
-    private int _soulShotChance;
-    private int _spiritShotChance;
-    private int _minSkillChance;
-    private int _maxSkillChance;
-    private int _baseAttackAngle;
-    private Map<Integer, Skill> _skills;
-    private Map<AISkillScope, List<Skill>> _aiSkillLists;
-    private Set<Integer> _clans;
-    private Set<Integer> _ignoreClanNpcIds;
-    private List<DropGroupHolder> _dropGroups;
-    private List<DropHolder> _dropListDeath;
-    private List<DropHolder> _dropListSpoil;
-    private double _collisionRadiusGrown;
-    private double _collisionHeightGrown;
+    @Getter
+    private int id;
 
-    private final List<PlayerClass> _teachInfo = new ArrayList<>();
+    @Getter
+    private int displayId;
+
+    @Getter
+    private byte level;
+
+    @Getter
+    private String type;
+
+    @Getter
+    private String name;
+
+    @Getter
+    private boolean usingServerSideName;
+
+    @Getter
+    private String title;
+
+    @Getter
+    private boolean usingServerSideTitle;
+
+    @Getter
+    @Setter
+    private StatSet parameters;
+
+    @Getter
+    private Sex sex;
+
+    @Getter
+    private int chestId;
+
+    @Getter
+    private int rHandId;
+
+    @Getter
+    private int lHandId;
+
+    @Getter
+    private int weaponEnchant;
+
+    @Getter
+    private double exp;
+
+    private double sp;
+
+    @Getter
+    private double raidPoints;
+
+    @Getter
+    private boolean unique;
+
+    @Getter
+    private boolean attackable;
+
+    @Getter
+    private boolean targetable;
+
+    @Getter
+    private boolean talkable;
+
+    @Getter
+    private boolean questMonster;
+
+    @Getter
+    private boolean undying;
+
+    @Getter
+    private boolean showName;
+
+    private boolean randomWalk;
+
+    @Getter
+    private boolean randomAnimationEnabled;
+
+    @Getter
+    private boolean flying;
+
+    @Getter
+    private boolean fakePlayer;
+
+    @Getter
+    private FakePlayerHolder fakePlayerInfo;
+
+    private boolean canMove;
+
+    @Getter
+    private boolean noSleepMode;
+
+    @Getter
+    private boolean passableDoor;
+
+    private boolean hasSummoner;
+    private boolean canBeSown;
+
+    @Getter
+    private int corpseTime;
+
+    private AIType aiType;
+
+    @Getter
+    private int aggroRange;
+
+    @Getter
+    private int clanHelpRange;
+
+    @Getter
+    private boolean chaos;
+
+    @Getter
+    private boolean aggressive;
+
+    @Getter
+    private int soulShot;
+
+    @Getter
+    private int spiritShot;
+
+    @Getter
+    private int soulShotChance;
+
+    @Getter
+    private int spiritShotChance;
+
+    @Getter
+    private int minSkillChance;
+
+    @Getter
+    private int maxSkillChance;
+
+    @Getter
+    private int baseAttackAngle;
+
+    @Getter
+    private Map<Integer, Skill> skills;
+
+    private Map<AISkillScope, List<Skill>> aiSkillLists;
+
+    @Getter
+    private Set<Integer> clans;
+
+    private Set<Integer> ignoreClanNpcIds;
+
+    @Getter
+    @Setter
+    private List<DropGroupHolder> dropGroups;
+
+    @Getter
+    private List<DropHolder> dropList;
+
+    @Getter
+    private List<DropHolder> spoilList;
+
+    @Getter
+    private double collisionRadiusGrown;
+
+    @Getter
+    private double collisionHeightGrown;
+
+    @Getter
+    private final List<PlayerClass> teachInfo = new ArrayList<>();
 
     /**
      * Constructor of Creature.
@@ -132,347 +239,169 @@ public class NpcTemplate extends CreatureTemplate {
     @Override
     public void set(StatSet set) {
         super.set(set);
-        _id = set.getInt("id");
-        _displayId = set.getInt("displayId", _id);
-        _level = set.getByte("level", (byte) 70);
-        _type = set.getString("type", "Folk");
-        _name = set.getString("name", "");
-        _usingServerSideName = set.getBoolean("usingServerSideName", false);
-        _title = set.getString("title", "");
-        _usingServerSideTitle = set.getBoolean("usingServerSideTitle", false);
+        id = set.getInt("id");
+        displayId = set.getInt("displayId", id);
+        level = set.getByte("level", (byte) 70);
+        type = set.getString("type", "Folk");
+        name = set.getString("name", "");
+        usingServerSideName = set.getBoolean("usingServerSideName", false);
+        title = set.getString("title", "");
+        usingServerSideTitle = set.getBoolean("usingServerSideTitle", false);
         setRace(set.getEnum("race", Race.class, Race.NONE));
-        _sex = set.getEnum("sex", Sex.class, Sex.ETC);
-        _chestId = set.getInt("chestId", 0);
-        _rhandId = set.getInt("rhandId", 0);
-        _lhandId = set.getInt("lhandId", 0);
-        _weaponEnchant = set.getInt("weaponEnchant", 0);
-        _exp = set.getDouble("exp", 0);
-        _sp = set.getDouble("sp", 0);
-        _raidPoints = set.getDouble("raidPoints", 0);
-        _unique = set.getBoolean("unique", false);
-        _attackable = set.getBoolean("attackable", true);
-        _targetable = set.getBoolean("targetable", true);
-        _talkable = set.getBoolean("talkable", true);
-        _isQuestMonster = _title.contains("Quest");
-        _undying = set.getBoolean(
-                "undying", !_type.equals("Monster") && !_type.equals("RaidBoss") && !_type.equals("GrandBoss"));
-        _showName = set.getBoolean("showName", true);
-        _randomWalk = set.getBoolean("randomWalk", !_type.equals("Guard"));
-        _randomAnimation = set.getBoolean("randomAnimation", true);
-        _flying = set.getBoolean("flying", false);
-        _fakePlayer = set.getBoolean("fakePlayer", false);
-        if (_fakePlayer) {
-            _fakePlayerInfo = new FakePlayerHolder(set);
+        sex = set.getEnum("sex", Sex.class, Sex.ETC);
+        chestId = set.getInt("chestId", 0);
+        rHandId = set.getInt("rhandId", 0);
+        lHandId = set.getInt("lhandId", 0);
+        weaponEnchant = set.getInt("weaponEnchant", 0);
+        exp = set.getDouble("exp", 0);
+        sp = set.getDouble("sp", 0);
+        raidPoints = set.getDouble("raidPoints", 0);
+        unique = set.getBoolean("unique", false);
+        attackable = set.getBoolean("attackable", true);
+        targetable = set.getBoolean("targetable", true);
+        talkable = set.getBoolean("talkable", true);
+        questMonster = title.contains("Quest");
+        undying = set.getBoolean(
+                "undying", !type.equals("Monster") && !type.equals("RaidBoss") && !type.equals("GrandBoss"));
+        showName = set.getBoolean("showName", true);
+        randomWalk = set.getBoolean("randomWalk", !type.equals("Guard"));
+        randomAnimationEnabled = set.getBoolean("randomAnimation", true);
+        flying = set.getBoolean("flying", false);
+        fakePlayer = set.getBoolean("fakePlayer", false);
+        if (fakePlayer) {
+            fakePlayerInfo = new FakePlayerHolder(set);
 
             // Check if a character with the same name already exists.
-            if (CharInfoTable.getInstance().getIdByName(_name) > 0) {
-                LOGGER.info(getClass().getSimpleName() + ": Fake player id [" + _id
-                        + "] conflict. A real player with name [" + _name + "] already exists.");
+            if (CharInfoTable.getInstance().getIdByName(name) > 0) {
+                log.info("Fake player id [{}] conflict. A real player with name [{}] already exists.", id, name);
             }
         }
 
-        _canMove = (set.getDouble("baseWalkSpd", 1d) <= 0.1) || set.getBoolean("canMove", true);
-        _noSleepMode = set.getBoolean("noSleepMode", false);
-        _passableDoor = set.getBoolean("passableDoor", false);
-        _hasSummoner = set.getBoolean("hasSummoner", false);
-        _canBeSown = set.getBoolean("canBeSown", false);
-        _corpseTime = set.getInt("corpseTime", NpcConfig.DEFAULT_CORPSE_TIME);
-        _aiType = set.getEnum("aiType", AIType.class, AIType.FIGHTER);
+        canMove = (set.getDouble("baseWalkSpd", 1d) <= 0.1) || set.getBoolean("canMove", true);
+        noSleepMode = set.getBoolean("noSleepMode", false);
+        passableDoor = set.getBoolean("passableDoor", false);
+        hasSummoner = set.getBoolean("hasSummoner", false);
+        canBeSown = set.getBoolean("canBeSown", false);
+        corpseTime = set.getInt("corpseTime", NpcConfig.DEFAULT_CORPSE_TIME);
+        aiType = set.getEnum("aiType", AIType.class, AIType.FIGHTER);
 
         // L2J aggro range tempfix
         final int aggroValue = set.getInt("aggroRange", 0);
-        if (_type.equalsIgnoreCase("Monster") && (aggroValue > NpcConfig.MAX_AGGRO_RANGE)) {
-            _aggroRange = NpcConfig.MAX_AGGRO_RANGE;
+        if (type.equalsIgnoreCase("Monster") && (aggroValue > NpcConfig.MAX_AGGRO_RANGE)) {
+            aggroRange = NpcConfig.MAX_AGGRO_RANGE;
         } else {
-            _aggroRange = aggroValue;
+            aggroRange = aggroValue;
         }
 
-        _clanHelpRange = set.getInt("clanHelpRange", 0);
-        _isChaos = set.getBoolean("isChaos", false);
-        _isAggressive = set.getBoolean("isAggressive", true);
-        _soulShot = set.getInt("soulShot", 0);
-        _spiritShot = set.getInt("spiritShot", 0);
-        _soulShotChance = set.getInt("soulShotChance", 0);
-        _spiritShotChance = set.getInt("spiritShotChance", 0);
-        _minSkillChance = set.getInt("minSkillChance", 7);
-        _maxSkillChance = set.getInt("maxSkillChance", 15);
-        _baseAttackAngle = set.getInt("width", 120);
-        _collisionRadiusGrown = set.getDouble("collisionRadiusGrown", 0);
-        _collisionHeightGrown = set.getDouble("collisionHeightGrown", 0);
+        clanHelpRange = set.getInt("clanHelpRange", 0);
+        chaos = set.getBoolean("isChaos", false);
+        aggressive = set.getBoolean("isAggressive", true);
+        soulShot = set.getInt("soulShot", 0);
+        spiritShot = set.getInt("spiritShot", 0);
+        soulShotChance = set.getInt("soulShotChance", 0);
+        spiritShotChance = set.getInt("spiritShotChance", 0);
+        minSkillChance = set.getInt("minSkillChance", 7);
+        maxSkillChance = set.getInt("maxSkillChance", 15);
+        baseAttackAngle = set.getInt("width", 120);
+        collisionRadiusGrown = set.getDouble("collisionRadiusGrown", 0);
+        collisionHeightGrown = set.getDouble("collisionHeightGrown", 0);
         if (NpcStatMultipliersConfig.ENABLE_NPC_STAT_MULTIPLIERS) // Custom NPC Stat Multipliers
         {
-            switch (_type) {
+            switch (type) {
                 case "Monster": {
-                    _baseHpMax *= NpcStatMultipliersConfig.MONSTER_HP_MULTIPLIER;
-                    _baseMpMax *= NpcStatMultipliersConfig.MONSTER_MP_MULTIPLIER;
-                    _basePAtk *= NpcStatMultipliersConfig.MONSTER_PATK_MULTIPLIER;
-                    _baseMAtk *= NpcStatMultipliersConfig.MONSTER_MATK_MULTIPLIER;
-                    _basePDef *= NpcStatMultipliersConfig.MONSTER_PDEF_MULTIPLIER;
-                    _baseMDef *= NpcStatMultipliersConfig.MONSTER_MDEF_MULTIPLIER;
-                    _aggroRange *= NpcStatMultipliersConfig.MONSTER_AGRRO_RANGE_MULTIPLIER;
-                    _clanHelpRange *= NpcStatMultipliersConfig.MONSTER_CLAN_HELP_RANGE_MULTIPLIER;
+                    baseHpMax *= NpcStatMultipliersConfig.MONSTER_HP_MULTIPLIER;
+                    baseMpMax *= NpcStatMultipliersConfig.MONSTER_MP_MULTIPLIER;
+                    basePAtk *= NpcStatMultipliersConfig.MONSTER_PATK_MULTIPLIER;
+                    baseMAtk *= NpcStatMultipliersConfig.MONSTER_MATK_MULTIPLIER;
+                    basePDef *= NpcStatMultipliersConfig.MONSTER_PDEF_MULTIPLIER;
+                    baseMDef *= NpcStatMultipliersConfig.MONSTER_MDEF_MULTIPLIER;
+                    aggroRange *= NpcStatMultipliersConfig.MONSTER_AGRRO_RANGE_MULTIPLIER;
+                    clanHelpRange *= NpcStatMultipliersConfig.MONSTER_CLAN_HELP_RANGE_MULTIPLIER;
                     break;
                 }
                 case "RaidBoss":
                 case "GrandBoss": {
-                    _baseHpMax *= NpcStatMultipliersConfig.RAIDBOSS_HP_MULTIPLIER;
-                    _baseMpMax *= NpcStatMultipliersConfig.RAIDBOSS_MP_MULTIPLIER;
-                    _basePAtk *= NpcStatMultipliersConfig.RAIDBOSS_PATK_MULTIPLIER;
-                    _baseMAtk *= NpcStatMultipliersConfig.RAIDBOSS_MATK_MULTIPLIER;
-                    _basePDef *= NpcStatMultipliersConfig.RAIDBOSS_PDEF_MULTIPLIER;
-                    _baseMDef *= NpcStatMultipliersConfig.RAIDBOSS_MDEF_MULTIPLIER;
-                    _aggroRange *= NpcStatMultipliersConfig.RAIDBOSS_AGRRO_RANGE_MULTIPLIER;
-                    _clanHelpRange *= NpcStatMultipliersConfig.RAIDBOSS_CLAN_HELP_RANGE_MULTIPLIER;
+                    baseHpMax *= NpcStatMultipliersConfig.RAIDBOSS_HP_MULTIPLIER;
+                    baseMpMax *= NpcStatMultipliersConfig.RAIDBOSS_MP_MULTIPLIER;
+                    basePAtk *= NpcStatMultipliersConfig.RAIDBOSS_PATK_MULTIPLIER;
+                    baseMAtk *= NpcStatMultipliersConfig.RAIDBOSS_MATK_MULTIPLIER;
+                    basePDef *= NpcStatMultipliersConfig.RAIDBOSS_PDEF_MULTIPLIER;
+                    baseMDef *= NpcStatMultipliersConfig.RAIDBOSS_MDEF_MULTIPLIER;
+                    aggroRange *= NpcStatMultipliersConfig.RAIDBOSS_AGRRO_RANGE_MULTIPLIER;
+                    clanHelpRange *= NpcStatMultipliersConfig.RAIDBOSS_CLAN_HELP_RANGE_MULTIPLIER;
                     break;
                 }
                 case "Guard": {
-                    _baseHpMax *= NpcStatMultipliersConfig.GUARD_HP_MULTIPLIER;
-                    _baseMpMax *= NpcStatMultipliersConfig.GUARD_MP_MULTIPLIER;
-                    _basePAtk *= NpcStatMultipliersConfig.GUARD_PATK_MULTIPLIER;
-                    _baseMAtk *= NpcStatMultipliersConfig.GUARD_MATK_MULTIPLIER;
-                    _basePDef *= NpcStatMultipliersConfig.GUARD_PDEF_MULTIPLIER;
-                    _baseMDef *= NpcStatMultipliersConfig.GUARD_MDEF_MULTIPLIER;
-                    _aggroRange *= NpcStatMultipliersConfig.GUARD_AGRRO_RANGE_MULTIPLIER;
-                    _clanHelpRange *= NpcStatMultipliersConfig.GUARD_CLAN_HELP_RANGE_MULTIPLIER;
+                    baseHpMax *= NpcStatMultipliersConfig.GUARD_HP_MULTIPLIER;
+                    baseMpMax *= NpcStatMultipliersConfig.GUARD_MP_MULTIPLIER;
+                    basePAtk *= NpcStatMultipliersConfig.GUARD_PATK_MULTIPLIER;
+                    baseMAtk *= NpcStatMultipliersConfig.GUARD_MATK_MULTIPLIER;
+                    basePDef *= NpcStatMultipliersConfig.GUARD_PDEF_MULTIPLIER;
+                    baseMDef *= NpcStatMultipliersConfig.GUARD_MDEF_MULTIPLIER;
+                    aggroRange *= NpcStatMultipliersConfig.GUARD_AGRRO_RANGE_MULTIPLIER;
+                    clanHelpRange *= NpcStatMultipliersConfig.GUARD_CLAN_HELP_RANGE_MULTIPLIER;
                     break;
                 }
                 case "Defender": {
-                    _baseHpMax *= NpcStatMultipliersConfig.DEFENDER_HP_MULTIPLIER;
-                    _baseMpMax *= NpcStatMultipliersConfig.DEFENDER_MP_MULTIPLIER;
-                    _basePAtk *= NpcStatMultipliersConfig.DEFENDER_PATK_MULTIPLIER;
-                    _baseMAtk *= NpcStatMultipliersConfig.DEFENDER_MATK_MULTIPLIER;
-                    _basePDef *= NpcStatMultipliersConfig.DEFENDER_PDEF_MULTIPLIER;
-                    _baseMDef *= NpcStatMultipliersConfig.DEFENDER_MDEF_MULTIPLIER;
-                    _aggroRange *= NpcStatMultipliersConfig.DEFENDER_AGRRO_RANGE_MULTIPLIER;
-                    _clanHelpRange *= NpcStatMultipliersConfig.DEFENDER_CLAN_HELP_RANGE_MULTIPLIER;
+                    baseHpMax *= NpcStatMultipliersConfig.DEFENDER_HP_MULTIPLIER;
+                    baseMpMax *= NpcStatMultipliersConfig.DEFENDER_MP_MULTIPLIER;
+                    basePAtk *= NpcStatMultipliersConfig.DEFENDER_PATK_MULTIPLIER;
+                    baseMAtk *= NpcStatMultipliersConfig.DEFENDER_MATK_MULTIPLIER;
+                    basePDef *= NpcStatMultipliersConfig.DEFENDER_PDEF_MULTIPLIER;
+                    baseMDef *= NpcStatMultipliersConfig.DEFENDER_MDEF_MULTIPLIER;
+                    aggroRange *= NpcStatMultipliersConfig.DEFENDER_AGRRO_RANGE_MULTIPLIER;
+                    clanHelpRange *= NpcStatMultipliersConfig.DEFENDER_CLAN_HELP_RANGE_MULTIPLIER;
                     break;
                 }
             }
         }
     }
 
-    public int getId() {
-        return _id;
-    }
-
-    public int getDisplayId() {
-        return _displayId;
-    }
-
-    public byte getLevel() {
-        return _level;
-    }
-
-    public String getType() {
-        return _type;
-    }
-
     public boolean isType(String type) {
-        return _type.equalsIgnoreCase(type);
-    }
-
-    public String getName() {
-        return _name;
-    }
-
-    public boolean isUsingServerSideName() {
-        return _usingServerSideName;
-    }
-
-    public String getTitle() {
-        return _title;
-    }
-
-    public boolean isUsingServerSideTitle() {
-        return _usingServerSideTitle;
-    }
-
-    public StatSet getParameters() {
-        return _parameters;
-    }
-
-    public void setParameters(StatSet set) {
-        _parameters = set;
-    }
-
-    public Sex getSex() {
-        return _sex;
-    }
-
-    public int getChestId() {
-        return _chestId;
-    }
-
-    public int getRHandId() {
-        return _rhandId;
-    }
-
-    public int getLHandId() {
-        return _lhandId;
-    }
-
-    public int getWeaponEnchant() {
-        return _weaponEnchant;
-    }
-
-    public double getExp() {
-        return _exp;
+        return this.type.equalsIgnoreCase(type);
     }
 
     public double getSP() {
-        return _sp;
-    }
-
-    public double getRaidPoints() {
-        return _raidPoints;
-    }
-
-    public boolean isUnique() {
-        return _unique;
-    }
-
-    public boolean isAttackable() {
-        return _attackable;
-    }
-
-    public boolean isTargetable() {
-        return _targetable;
-    }
-
-    public boolean isTalkable() {
-        return _talkable;
-    }
-
-    public boolean isQuestMonster() {
-        return _isQuestMonster;
-    }
-
-    public boolean isUndying() {
-        return _undying;
-    }
-
-    public boolean isShowName() {
-        return _showName;
+        return sp;
     }
 
     public boolean isRandomWalkEnabled() {
-        return _randomWalk && (getParameters().getInt("MoveArounding", 1) != 0);
-    }
-
-    public boolean isRandomAnimationEnabled() {
-        return _randomAnimation;
-    }
-
-    public boolean isFlying() {
-        return _flying;
-    }
-
-    public boolean isFakePlayer() {
-        return _fakePlayer;
-    }
-
-    public FakePlayerHolder getFakePlayerInfo() {
-        return _fakePlayerInfo;
+        return randomWalk && (getParameters().getInt("MoveArounding", 1) != 0);
     }
 
     public boolean canMove() {
-        return _canMove;
-    }
-
-    public boolean isNoSleepMode() {
-        return _noSleepMode;
-    }
-
-    public boolean isPassableDoor() {
-        return _passableDoor;
+        return canMove;
     }
 
     public boolean hasSummoner() {
-        return _hasSummoner;
+        return hasSummoner;
     }
 
     public boolean canBeSown() {
-        return _canBeSown;
-    }
-
-    public int getCorpseTime() {
-        return _corpseTime;
+        return canBeSown;
     }
 
     public AIType getAIType() {
-        return _aiType;
-    }
-
-    public int getAggroRange() {
-        return _aggroRange;
-    }
-
-    public int getClanHelpRange() {
-        return _clanHelpRange;
-    }
-
-    public boolean isChaos() {
-        return _isChaos;
-    }
-
-    public boolean isAggressive() {
-        return _isAggressive;
-    }
-
-    public int getSoulShot() {
-        return _soulShot;
-    }
-
-    public int getSpiritShot() {
-        return _spiritShot;
-    }
-
-    public int getSoulShotChance() {
-        return _soulShotChance;
-    }
-
-    public int getSpiritShotChance() {
-        return _spiritShotChance;
-    }
-
-    public int getMinSkillChance() {
-        return _minSkillChance;
-    }
-
-    public int getMaxSkillChance() {
-        return _maxSkillChance;
-    }
-
-    public int getBaseAttackAngle() {
-        return _baseAttackAngle;
-    }
-
-    @Override
-    public Map<Integer, Skill> getSkills() {
-        return _skills;
+        return aiType;
     }
 
     public void setSkills(Map<Integer, Skill> skills) {
-        _skills = skills != null ? Collections.unmodifiableMap(skills) : Collections.emptyMap();
+        this.skills = skills != null ? Collections.unmodifiableMap(skills) : Collections.emptyMap();
     }
 
     public List<Skill> getAISkills(AISkillScope aiSkillScope) {
-        return _aiSkillLists.getOrDefault(aiSkillScope, Collections.emptyList());
+        return aiSkillLists.getOrDefault(aiSkillScope, Collections.emptyList());
     }
 
     public void setAISkillLists(Map<AISkillScope, List<Skill>> aiSkillLists) {
-        _aiSkillLists = aiSkillLists != null ? Collections.unmodifiableMap(aiSkillLists) : Collections.emptyMap();
-    }
-
-    public Set<Integer> getClans() {
-        return _clans;
+        this.aiSkillLists = aiSkillLists != null ? Collections.unmodifiableMap(aiSkillLists) : Collections.emptyMap();
     }
 
     /**
      * @param clans A sorted array of clan ids
      */
     public void setClans(Set<Integer> clans) {
-        _clans = clans != null ? Collections.unmodifiableSet(clans) : null;
+        this.clans = clans != null ? Collections.unmodifiableSet(clans) : null;
     }
 
     /**
@@ -482,7 +411,7 @@ public class NpcTemplate extends CreatureTemplate {
      */
     public boolean isClan(String clanName, String... clanNames) {
         // Using local variable for the sake of reloading since it can be turned to null.
-        final Set<Integer> clans = _clans;
+        final Set<Integer> clans = this.clans;
         if (clans == null) {
             return false;
         }
@@ -513,7 +442,7 @@ public class NpcTemplate extends CreatureTemplate {
      */
     public boolean isClan(Set<Integer> clans) {
         // Using local variable for the sake of reloading since it can be turned to null.
-        final Set<Integer> clanSet = _clans;
+        final Set<Integer> clanSet = this.clans;
         if ((clanSet == null) || (clans == null)) {
             return false;
         }
@@ -533,66 +462,50 @@ public class NpcTemplate extends CreatureTemplate {
     }
 
     public Set<Integer> getIgnoreClanNpcIds() {
-        return _ignoreClanNpcIds;
+        return ignoreClanNpcIds;
     }
 
     public boolean hasIgnoreClanNpcIds() {
-        return _ignoreClanNpcIds != null;
+        return ignoreClanNpcIds != null;
     }
 
     /**
      * @param ignoreClanNpcIds the ignore clan npc ids
      */
     public void setIgnoreClanNpcIds(Set<Integer> ignoreClanNpcIds) {
-        _ignoreClanNpcIds = ignoreClanNpcIds != null ? Collections.unmodifiableSet(ignoreClanNpcIds) : null;
+        this.ignoreClanNpcIds = ignoreClanNpcIds != null ? Collections.unmodifiableSet(ignoreClanNpcIds) : null;
     }
 
     public void removeDropGroups() {
-        _dropGroups = null;
+        dropGroups = null;
     }
 
     public void removeDrops() {
-        _dropListDeath = null;
-        _dropListSpoil = null;
-    }
-
-    public void setDropGroups(List<DropGroupHolder> groups) {
-        _dropGroups = groups;
+        dropList = null;
+        spoilList = null;
     }
 
     public void addDrop(DropHolder dropHolder) {
-        if (_dropListDeath == null) {
-            _dropListDeath = new ArrayList<>(1);
+        if (dropList == null) {
+            dropList = new ArrayList<>(1);
         }
 
-        _dropListDeath.add(dropHolder);
+        dropList.add(dropHolder);
     }
 
     public void addSpoil(DropHolder dropHolder) {
-        if (_dropListSpoil == null) {
-            _dropListSpoil = new ArrayList<>(1);
+        if (spoilList == null) {
+            spoilList = new ArrayList<>(1);
         }
 
-        _dropListSpoil.add(dropHolder);
-    }
-
-    public List<DropGroupHolder> getDropGroups() {
-        return _dropGroups;
-    }
-
-    public List<DropHolder> getDropList() {
-        return _dropListDeath;
-    }
-
-    public List<DropHolder> getSpoilList() {
-        return _dropListSpoil;
+        spoilList.add(dropHolder);
     }
 
     public List<ItemHolder> calculateDrops(DropType dropType, Creature victim, Creature killer) {
         if (dropType == DropType.DROP) {
             // calculate group drops
             List<ItemHolder> groupDrops = null;
-            if (_dropGroups != null) {
+            if (dropGroups != null) {
                 groupDrops = calculateGroupDrops(victim, killer);
 
                 if ((groupDrops != null)
@@ -607,7 +520,7 @@ public class NpcTemplate extends CreatureTemplate {
 
             // calculate ungrouped drops
             List<ItemHolder> ungroupedDrops = null;
-            if (_dropListDeath != null) {
+            if (dropList != null) {
                 ungroupedDrops = calculateUngroupedDrops(dropType, victim, killer);
 
                 if ((ungroupedDrops != null)
@@ -634,7 +547,7 @@ public class NpcTemplate extends CreatureTemplate {
             if (ungroupedDrops != null) {
                 return ungroupedDrops;
             }
-        } else if ((dropType == DropType.SPOIL) && (_dropListSpoil != null)) {
+        } else if ((dropType == DropType.SPOIL) && (spoilList != null)) {
             return calculateUngroupedDrops(dropType, victim, killer);
         }
 
@@ -666,7 +579,7 @@ public class NpcTemplate extends CreatureTemplate {
             List<ItemHolder> randomDrops = null;
             ItemHolder cachedItem = null;
             double totalChance; // total group chance is 100
-            for (DropGroupHolder group : _dropGroups) {
+            for (DropGroupHolder group : dropGroups) {
                 totalChance = 0;
                 GROUP_DROP:
                 for (DropHolder dropItem : group.getDropList()) {
@@ -823,7 +736,7 @@ public class NpcTemplate extends CreatureTemplate {
     }
 
     private List<ItemHolder> calculateUngroupedDrops(DropType dropType, Creature victim, Creature killer) {
-        final List<DropHolder> dropList = dropType == DropType.SPOIL ? _dropListSpoil : _dropListDeath;
+        final List<DropHolder> dropList = dropType == DropType.SPOIL ? spoilList : this.dropList;
 
         // level difference calculations
         final int levelDifference = victim.getLevel() - killer.getLevel();
@@ -1131,14 +1044,6 @@ public class NpcTemplate extends CreatureTemplate {
         return null;
     }
 
-    public double getCollisionRadiusGrown() {
-        return _collisionRadiusGrown;
-    }
-
-    public double getCollisionHeightGrown() {
-        return _collisionHeightGrown;
-    }
-
     public static boolean isAssignableTo(Class<?> subValue, Class<?> clazz) {
         // If clazz represents an interface.
         if (clazz.isInterface()) {
@@ -1176,17 +1081,13 @@ public class NpcTemplate extends CreatureTemplate {
     public boolean canTeach(PlayerClass playerClass) {
         // If the player is on a third class, fetch the class teacher information for its parent class.
         if (playerClass.level() == 3) {
-            return _teachInfo.contains(playerClass.getParent());
+            return teachInfo.contains(playerClass.getParent());
         }
 
-        return _teachInfo.contains(playerClass);
-    }
-
-    public List<PlayerClass> getTeachInfo() {
-        return _teachInfo;
+        return teachInfo.contains(playerClass);
     }
 
     public void addTeachInfo(List<PlayerClass> teachInfo) {
-        _teachInfo.addAll(teachInfo);
+        this.teachInfo.addAll(teachInfo);
     }
 }

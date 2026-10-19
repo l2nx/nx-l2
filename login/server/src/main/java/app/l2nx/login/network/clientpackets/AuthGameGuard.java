@@ -26,8 +26,7 @@ package app.l2nx.login.network.clientpackets;
 import app.l2nx.login.enums.LoginFailReason;
 import app.l2nx.login.network.ConnectionState;
 import app.l2nx.login.network.serverpackets.GGAuth;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Handles the client GameGuard authentication packet.<br>
@@ -41,13 +40,13 @@ import java.util.logging.Logger;
  * Format: ddddd.
  * @author BazookaRpm
  */
+@Slf4j
 public class AuthGameGuard extends LoginClientPacket {
-    private static final Logger LOGGER = Logger.getLogger(AuthGameGuard.class.getName());
 
     private static final int GAME_GUARD_PAYLOAD_SIZE = 20;
     private static final int GAME_GUARD_RESERVED_DWORD_COUNT = 4;
 
-    private int _receivedSessionId;
+    private int receivedSessionId;
 
     /**
      * Reads and validates the GameGuard authentication payload.<br>
@@ -58,14 +57,13 @@ public class AuthGameGuard extends LoginClientPacket {
     protected boolean readImpl() {
         final int remainingBytes = remaining();
         if (remainingBytes < GAME_GUARD_PAYLOAD_SIZE) {
-            if (LOGGER.isLoggable(Level.FINE)) {
-                LOGGER.fine("AuthGameGuard: Invalid payload length " + remainingBytes + " (expected "
-                        + GAME_GUARD_PAYLOAD_SIZE + ").");
+            if (log.isDebugEnabled()) {
+                log.debug("Invalid payload length {} (expected {}).", remainingBytes, GAME_GUARD_PAYLOAD_SIZE);
             }
             return false;
         }
 
-        _receivedSessionId = readInt();
+        receivedSessionId = readInt();
 
         for (int i = 0; i < GAME_GUARD_RESERVED_DWORD_COUNT; i++) {
             readInt(); // Reserved GameGuard data.
@@ -80,10 +78,9 @@ public class AuthGameGuard extends LoginClientPacket {
     @Override
     public void run() {
         final int clientSessionId = getClient().getSessionId();
-        if (_receivedSessionId != clientSessionId) {
-            if (LOGGER.isLoggable(Level.FINE)) {
-                LOGGER.fine("AuthGameGuard: Session mismatch. Received=" + _receivedSessionId + ", expected="
-                        + clientSessionId + ".");
+        if (receivedSessionId != clientSessionId) {
+            if (log.isDebugEnabled()) {
+                log.debug("Session mismatch. Received={}, expected={}.", receivedSessionId, clientSessionId);
             }
 
             getClient().close(LoginFailReason.REASON_ACCESS_FAILED);

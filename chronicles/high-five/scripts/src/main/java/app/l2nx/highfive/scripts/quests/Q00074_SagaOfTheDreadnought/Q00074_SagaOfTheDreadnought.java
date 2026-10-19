@@ -29,15 +29,15 @@ import app.l2nx.highfive.scripts.quests.AbstractSagaQuest;
 public class Q00074_SagaOfTheDreadnought extends AbstractSagaQuest {
     public Q00074_SagaOfTheDreadnought() {
         super(74);
-        _npc = new int[] {30850, 31624, 31298, 31276, 31595, 31646, 31648, 31650, 31654, 31655, 31657, 31522};
-        _items = new int[] {7080, 7538, 7081, 7489, 7272, 7303, 7334, 7365, 7396, 7427, 7097, 6480};
-        _mob = new int[] {27290, 27223, 27282};
-        _classId = new int[] {89};
-        _prevClass = new int[] {0x03};
-        _npcSpawnLocations = new Location[] {
+        npc = new int[] {30850, 31624, 31298, 31276, 31595, 31646, 31648, 31650, 31654, 31655, 31657, 31522};
+        items = new int[] {7080, 7538, 7081, 7489, 7272, 7303, 7334, 7365, 7396, 7427, 7097, 6480};
+        mob = new int[] {27290, 27223, 27282};
+        classId = new int[] {89};
+        prevClass = new int[] {0x03};
+        npcSpawnLocations = new Location[] {
             new Location(191046, -40640, -3042), new Location(46087, -36372, -1685), new Location(46066, -36396, -1685)
         };
-        _text = new String[] {
+        text = new String[] {
             "PLAYERNAME! Pursued to here! However, I jumped out of the Banshouren boundaries! You look at the giant as the sign of power!",
             "... Oh ... good! So it was ... let's begin!",
             "I do not have the patience ..! I have been a giant force ...! Cough chatter ah ah ah!",

@@ -28,22 +28,22 @@ import app.l2nx.network.buffer.WriteBuffer;
  * @author Kerberos
  */
 public class VehicleStarted extends ServerPacket {
-    private final int _objectId;
-    private final int _state;
+    private final int objectId;
+    private final int state;
 
     /**
      * @param boat
      * @param state
      */
     public VehicleStarted(Creature boat, int state) {
-        _objectId = boat.getObjectId();
-        _state = state;
+        objectId = boat.getObjectId();
+        this.state = state;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.VEHICLE_START.writeId(this, buffer);
-        buffer.writeInt(_objectId);
-        buffer.writeInt(_state);
+        buffer.writeInt(objectId);
+        buffer.writeInt(state);
     }
 }

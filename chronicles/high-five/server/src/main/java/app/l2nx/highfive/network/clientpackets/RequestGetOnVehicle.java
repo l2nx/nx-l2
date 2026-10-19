@@ -34,13 +34,13 @@ import app.l2nx.highfive.network.serverpackets.GetOnVehicle;
  * @version $Revision: 1.1.4.3 $ $Date: 2005/03/27 15:29:30 $
  */
 public class RequestGetOnVehicle extends ClientPacket {
-    private int _boatId;
-    private Location _pos;
+    private int boatId;
+    private Location pos;
 
     @Override
     protected void readImpl() {
-        _boatId = readInt();
-        _pos = new Location(readInt(), readInt(), readInt());
+        boatId = readInt();
+        pos = new Location(readInt(), readInt(), readInt());
     }
 
     @Override
@@ -53,21 +53,21 @@ public class RequestGetOnVehicle extends ClientPacket {
         Boat boat;
         if (player.isInBoat()) {
             boat = player.getBoat();
-            if (boat.getObjectId() != _boatId) {
+            if (boat.getObjectId() != boatId) {
                 player.sendPacket(ActionFailed.STATIC_PACKET);
                 return;
             }
         } else {
-            boat = BoatManager.getInstance().getBoat(_boatId);
+            boat = BoatManager.getInstance().getBoat(boatId);
             if ((boat == null) || boat.isMoving() || !player.isInsideRadius3D(boat, 1000)) {
                 player.sendPacket(ActionFailed.STATIC_PACKET);
                 return;
             }
         }
 
-        player.setInVehiclePosition(_pos);
+        player.setInVehiclePosition(pos);
         player.setVehicle(boat);
-        player.broadcastPacket(new GetOnVehicle(player.getObjectId(), boat.getObjectId(), _pos));
+        player.broadcastPacket(new GetOnVehicle(player.getObjectId(), boat.getObjectId(), pos));
         player.setXYZ(boat.getX(), boat.getY(), boat.getZ());
         player.setInsideZone(ZoneId.PEACE, true);
         player.revalidateZone(true);

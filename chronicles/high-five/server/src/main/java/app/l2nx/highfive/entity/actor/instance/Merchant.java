@@ -32,12 +32,16 @@ import app.l2nx.highfive.mechanics.buylist.BuyListHolder;
 import app.l2nx.highfive.network.serverpackets.ActionFailed;
 import app.l2nx.highfive.network.serverpackets.BuyList;
 import app.l2nx.highfive.network.serverpackets.ExBuySellList;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @version $Revision: 1.10.4.9 $ $Date: 2005/04/11 10:06:08 $
  */
+@Slf4j
 public class Merchant extends Folk {
-    private MerchantPriceConfig _mpc;
+    @Getter
+    private MerchantPriceConfig mpc;
 
     /**
      * Creates a merchant,
@@ -51,7 +55,7 @@ public class Merchant extends Folk {
     @Override
     public void onSpawn() {
         super.onSpawn();
-        _mpc = MerchantPriceConfigTable.getInstance().getMerchantPriceConfig(this);
+        mpc = MerchantPriceConfigTable.getInstance().getMerchantPriceConfig(this);
     }
 
     @Override
@@ -66,13 +70,6 @@ public class Merchant extends Folk {
         return "data/html/merchant/" + pom + ".htm";
     }
 
-    /**
-     * @return Returns the mpc.
-     */
-    public MerchantPriceConfig getMpc() {
-        return _mpc;
-    }
-
     public void showBuyWindow(Player player, int value) {
         showBuyWindow(player, value, true);
     }
@@ -80,18 +77,18 @@ public class Merchant extends Folk {
     public void showBuyWindow(Player player, int value, boolean applyTax) {
         final BuyListHolder buyList = BuyListData.getInstance().getBuyList(value);
         if (buyList == null) {
-            LOGGER.warning("BuyList not found! BuyListId:" + value);
+            log.warn("BuyList not found! BuyListId:{}", value);
             player.sendPacket(ActionFailed.STATIC_PACKET);
             return;
         }
 
         if (!buyList.isNpcAllowed(getId())) {
-            LOGGER.warning("Npc not allowed in BuyList! BuyListId:" + value + " NpcId:" + getId());
+            log.warn("Npc not allowed in BuyList! BuyListId:{} NpcId:{}", value, getId());
             player.sendPacket(ActionFailed.STATIC_PACKET);
             return;
         }
 
-        final double taxRate = (applyTax) ? _mpc.getTotalTaxRate() : 0;
+        final double taxRate = (applyTax) ? mpc.getTotalTaxRate() : 0;
         player.setInventoryBlockingStatus(true);
 
         player.sendPacket(new BuyList(buyList, player.getAdena(), taxRate));

@@ -24,16 +24,21 @@ import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.zone.ZoneId;
 import app.l2nx.highfive.entity.zone.ZoneType;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
+import lombok.Getter;
 
 /**
  * A mother-trees zone Basic type zone for Hp, MP regen
  * @author durgus
  */
 public class MotherTreeZone extends ZoneType {
-    private int _enterMsg;
-    private int _leaveMsg;
-    private int _mpRegen;
-    private int _hpRegen;
+    private int enterMsg;
+    private int leaveMsg;
+
+    @Getter
+    private int mpRegenBonus;
+
+    @Getter
+    private int hpRegenBonus;
 
     public MotherTreeZone(int id) {
         super(id);
@@ -42,13 +47,13 @@ public class MotherTreeZone extends ZoneType {
     @Override
     public void setParameter(String name, String value) {
         if (name.equals("enterMsgId")) {
-            _enterMsg = Integer.parseInt(value);
+            enterMsg = Integer.parseInt(value);
         } else if (name.equals("leaveMsgId")) {
-            _leaveMsg = Integer.parseInt(value);
+            leaveMsg = Integer.parseInt(value);
         } else if (name.equals("MpRegenBonus")) {
-            _mpRegen = Integer.parseInt(value);
+            mpRegenBonus = Integer.parseInt(value);
         } else if (name.equals("HpRegenBonus")) {
-            _hpRegen = Integer.parseInt(value);
+            hpRegenBonus = Integer.parseInt(value);
         } else {
             super.setParameter(name, value);
         }
@@ -59,8 +64,8 @@ public class MotherTreeZone extends ZoneType {
         if (creature.isPlayer()) {
             final Player player = creature.asPlayer();
             creature.setInsideZone(ZoneId.MOTHER_TREE, true);
-            if (_enterMsg != 0) {
-                player.sendPacket(new SystemMessage(_enterMsg));
+            if (enterMsg != 0) {
+                player.sendPacket(new SystemMessage(enterMsg));
             }
         }
     }
@@ -70,23 +75,9 @@ public class MotherTreeZone extends ZoneType {
         if (creature.isPlayer()) {
             final Player player = creature.asPlayer();
             player.setInsideZone(ZoneId.MOTHER_TREE, false);
-            if (_leaveMsg != 0) {
-                player.sendPacket(new SystemMessage(_leaveMsg));
+            if (leaveMsg != 0) {
+                player.sendPacket(new SystemMessage(leaveMsg));
             }
         }
-    }
-
-    /**
-     * @return the _mpRegen
-     */
-    public int getMpRegenBonus() {
-        return _mpRegen;
-    }
-
-    /**
-     * @return the _hpRegen
-     */
-    public int getHpRegenBonus() {
-        return _hpRegen;
     }
 }

@@ -24,47 +24,46 @@ import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.serverpackets.SystemMessage.SMParam;
 import app.l2nx.network.buffer.WriteBuffer;
+import lombok.Getter;
 
 /**
  * @author kombat
  */
 public class ConfirmDlg extends ServerPacket {
-    private int _time;
-    private int _requesterId;
-    private final SystemMessage _systemMessage;
+    private int time;
+    private int requesterId;
+
+    @Getter
+    private final SystemMessage systemMessage;
 
     public ConfirmDlg(SystemMessageId smId) {
-        _systemMessage = new SystemMessage(smId);
+        systemMessage = new SystemMessage(smId);
     }
 
     public ConfirmDlg(int id) {
-        _systemMessage = new SystemMessage(id);
+        systemMessage = new SystemMessage(id);
     }
 
     public ConfirmDlg(String text) {
-        _systemMessage = new SystemMessage(SystemMessageId.S1_3);
-        _systemMessage.addString(text);
+        systemMessage = new SystemMessage(SystemMessageId.S1_3);
+        systemMessage.addString(text);
     }
 
     public ConfirmDlg addTime(int time) {
-        _time = time;
+        this.time = time;
         return this;
     }
 
     public ConfirmDlg addRequesterId(int id) {
-        _requesterId = id;
+        requesterId = id;
         return this;
-    }
-
-    public SystemMessage getSystemMessage() {
-        return _systemMessage;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.CONFIRM_DLG.writeId(this, buffer);
-        final SMParam[] params = _systemMessage.getParams();
-        buffer.writeInt(_systemMessage.getId());
+        final SMParam[] params = systemMessage.getParams();
+        buffer.writeInt(systemMessage.getId());
         buffer.writeInt(params.length);
         for (SMParam param : params) {
             buffer.writeInt(param.getType());
@@ -105,7 +104,7 @@ public class ConfirmDlg extends ServerPacket {
             }
         }
 
-        buffer.writeInt(_time);
-        buffer.writeInt(_requesterId);
+        buffer.writeInt(time);
+        buffer.writeInt(requesterId);
     }
 }

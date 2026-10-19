@@ -23,75 +23,69 @@ import app.l2nx.highfive.data.xml.OptionData;
 import app.l2nx.highfive.entity.actor.Player;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Used to store an augmentation and its bonuses.
  * @author durgus
  */
 public class Augmentation {
-    private int _effectsId = 0;
-    private AugmentationStatBonus _bonus = null;
+    @Getter
+    private int augmentationId = 0;
+
+    private AugmentationStatBonus bonus = null;
 
     public Augmentation(int effects) {
-        _effectsId = effects;
-        _bonus = new AugmentationStatBonus(_effectsId);
+        augmentationId = effects;
+        bonus = new AugmentationStatBonus(augmentationId);
     }
 
+    @Slf4j
     public static class AugmentationStatBonus {
-        private static final Logger LOGGER = Logger.getLogger(AugmentationStatBonus.class.getName());
-        private final List<Options> _options = new ArrayList<>();
-        private boolean _active;
+        private final List<Options> options = new ArrayList<>();
+        private boolean active;
 
         public AugmentationStatBonus(int augmentationId) {
-            _active = false;
+            active = false;
             final int[] stats = new int[2];
             stats[0] = 0x0000FFFF & augmentationId;
             stats[1] = (augmentationId >> 16);
             for (int stat : stats) {
                 final Options op = OptionData.getInstance().getOptions(stat);
                 if (op != null) {
-                    _options.add(op);
+                    options.add(op);
                 } else {
-                    LOGGER.log(Level.WARNING, getClass().getSimpleName() + ": Couldn't find option: " + stat);
+                    log.warn("Couldn't find option: {}", stat);
                 }
             }
         }
 
         public void applyBonus(Player player) {
             // make sure the bonuses are not applied twice..
-            if (_active) {
+            if (active) {
                 return;
             }
 
-            for (Options op : _options) {
+            for (Options op : options) {
                 op.apply(player);
             }
 
-            _active = true;
+            active = true;
         }
 
         public void removeBonus(Player player) {
             // make sure the bonuses are not removed twice
-            if (!_active) {
+            if (!active) {
                 return;
             }
 
-            for (Options op : _options) {
+            for (Options op : options) {
                 op.remove(player);
             }
 
-            _active = false;
+            active = false;
         }
-    }
-
-    /**
-     * Get the augmentation "id" used in serverpackets.
-     * @return augmentationId
-     */
-    public int getAugmentationId() {
-        return _effectsId;
     }
 
     /**
@@ -99,7 +93,7 @@ public class Augmentation {
      * @param player
      */
     public void applyBonus(Player player) {
-        _bonus.applyBonus(player);
+        bonus.applyBonus(player);
     }
 
     /**
@@ -107,6 +101,6 @@ public class Augmentation {
      * @param player
      */
     public void removeBonus(Player player) {
-        _bonus.removeBonus(player);
+        bonus.removeBonus(player);
     }
 }

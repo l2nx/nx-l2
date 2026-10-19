@@ -28,12 +28,12 @@ import app.l2nx.network.buffer.WriteBuffer;
  * @author mrTJO
  */
 public class ExCubeGameExtendedChangePoints extends ServerPacket {
-    private final int _timeLeft;
-    private final int _bluePoints;
-    private final int _redPoints;
-    private final boolean _isRedTeam;
-    private final Player _player;
-    private final int _playerPoints;
+    private final int timeLeft;
+    private final int bluePoints;
+    private final int redPoints;
+    private final boolean redTeam;
+    private final Player player;
+    private final int playerPoints;
 
     /**
      * Update a Secret Point Counter (used by client when receive ExCubeGameEnd)
@@ -46,23 +46,23 @@ public class ExCubeGameExtendedChangePoints extends ServerPacket {
      */
     public ExCubeGameExtendedChangePoints(
             int timeLeft, int bluePoints, int redPoints, boolean isRedTeam, Player player, int playerPoints) {
-        _timeLeft = timeLeft;
-        _bluePoints = bluePoints;
-        _redPoints = redPoints;
-        _isRedTeam = isRedTeam;
-        _player = player;
-        _playerPoints = playerPoints;
+        this.timeLeft = timeLeft;
+        this.bluePoints = bluePoints;
+        this.redPoints = redPoints;
+        redTeam = isRedTeam;
+        this.player = player;
+        this.playerPoints = playerPoints;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_BLOCK_UP_SET_STATE.writeId(this, buffer);
         buffer.writeInt(0);
-        buffer.writeInt(_timeLeft);
-        buffer.writeInt(_bluePoints);
-        buffer.writeInt(_redPoints);
-        buffer.writeInt(_isRedTeam);
-        buffer.writeInt(_player.getObjectId());
-        buffer.writeInt(_playerPoints);
+        buffer.writeInt(timeLeft);
+        buffer.writeInt(bluePoints);
+        buffer.writeInt(redPoints);
+        buffer.writeInt(redTeam);
+        buffer.writeInt(player.getObjectId());
+        buffer.writeInt(playerPoints);
     }
 }

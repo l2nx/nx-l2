@@ -65,20 +65,20 @@ public class KeucereusSouthController extends AirShipController {
         addFirstTalkId(CONTROLLER_ID);
         addTalkId(CONTROLLER_ID);
 
-        _dockZone = DOCK_ZONE;
+        dockZone = DOCK_ZONE;
         addEnterZoneId(DOCK_ZONE);
         addExitZoneId(DOCK_ZONE);
 
-        _shipSpawnX = -184527;
-        _shipSpawnY = 243611;
-        _shipSpawnZ = 3000;
-        _locationId = LOCATION;
-        _arrivalPath = ARRIVAL;
-        _departPath = DEPART;
-        _teleportsTable = TELEPORTS;
-        _fuelTable = FUEL;
-        _oustLoc = new Location(-186148, 246296, 1360);
-        _movie = Movie.LAND_KSERTH_A;
+        shipSpawnX = -184527;
+        shipSpawnY = 243611;
+        shipSpawnZ = 3000;
+        locationId = LOCATION;
+        arrivalPath = ARRIVAL;
+        departPath = DEPART;
+        teleportsTable = TELEPORTS;
+        fuelTable = FUEL;
+        oustLoc = new Location(-186148, 246296, 1360);
+        movie = Movie.LAND_KSERTH_A;
         validityCheck();
     }
 }

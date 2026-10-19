@@ -29,24 +29,24 @@ import app.l2nx.network.buffer.WriteBuffer;
  * @author chris_00
  */
 public class ExMultiPartyCommandChannelInfo extends ServerPacket {
-    private final CommandChannel _channel;
+    private final CommandChannel channel;
 
     public ExMultiPartyCommandChannelInfo(CommandChannel channel) {
-        _channel = channel;
+        this.channel = channel;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
-        if (_channel == null) {
+        if (channel == null) {
             return;
         }
 
         ServerPackets.EX_MULTI_PARTY_COMMAND_CHANNEL_INFO.writeId(this, buffer);
-        buffer.writeString(_channel.getLeader().getName());
+        buffer.writeString(channel.getLeader().getName());
         buffer.writeInt(0); // Channel loot 0 or 1
-        buffer.writeInt(_channel.getMemberCount());
-        buffer.writeInt(_channel.getParties().size());
-        for (Party p : _channel.getParties()) {
+        buffer.writeInt(channel.getMemberCount());
+        buffer.writeInt(channel.getParties().size());
+        for (Party p : channel.getParties()) {
             buffer.writeString(p.getLeader().getName());
             buffer.writeInt(p.getLeaderObjectId());
             buffer.writeInt(p.getMemberCount());

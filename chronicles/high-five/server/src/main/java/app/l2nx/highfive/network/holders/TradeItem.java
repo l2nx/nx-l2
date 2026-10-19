@@ -25,139 +25,105 @@ package app.l2nx.highfive.network.holders;
 import app.l2nx.highfive.entity.item.ItemTemplate;
 import app.l2nx.highfive.entity.item.holders.Elementals;
 import app.l2nx.highfive.entity.item.instance.Item;
+import lombok.Getter;
+import lombok.Setter;
 
 public class TradeItem {
-    private int _objectId;
-    private final ItemTemplate _item;
-    private final int _location;
-    private int _enchant;
-    private final int _type1;
-    private final int _type2;
-    private long _count;
-    private long _storeCount;
-    private long _price;
-    private final byte _elemAtkType;
-    private final int _elemAtkPower;
-    private final int[] _elemDefAttr = {0, 0, 0, 0, 0, 0};
-    private final int[] _enchantOptions;
+    @Getter
+    @Setter
+    private int objectId;
+
+    @Getter
+    private final ItemTemplate item;
+
+    @Getter
+    private final int locationSlot;
+
+    @Getter
+    @Setter
+    private int enchant;
+
+    @Getter
+    private final int customType1;
+
+    @Getter
+    private final int customType2;
+
+    @Getter
+    @Setter
+    private long count;
+
+    @Getter
+    private long storeCount;
+
+    @Getter
+    @Setter
+    private long price;
+
+    @Getter
+    private final byte attackElementType;
+
+    @Getter
+    private final int attackElementPower;
+
+    private final int[] elemDefAttr = {0, 0, 0, 0, 0, 0};
+
+    @Getter
+    private final int[] enchantOptions;
 
     public TradeItem(Item item, long count, long price) {
-        _objectId = item.getObjectId();
-        _item = item.getTemplate();
-        _location = item.getLocationSlot();
-        _enchant = item.getEnchantLevel();
-        _type1 = item.getCustomType1();
-        _type2 = item.getCustomType2();
-        _count = count;
-        _price = price;
-        _elemAtkType = item.getAttackElementType();
-        _elemAtkPower = item.getAttackElementPower();
+        objectId = item.getObjectId();
+        this.item = item.getTemplate();
+        locationSlot = item.getLocationSlot();
+        enchant = item.getEnchantLevel();
+        customType1 = item.getCustomType1();
+        customType2 = item.getCustomType2();
+        this.count = count;
+        this.price = price;
+        attackElementType = item.getAttackElementType();
+        attackElementPower = item.getAttackElementPower();
         for (byte i = 0; i < 6; i++) {
-            _elemDefAttr[i] = item.getElementDefAttr(i);
+            elemDefAttr[i] = item.getElementDefAttr(i);
         }
 
-        _enchantOptions = item.getEnchantOptions();
+        enchantOptions = item.getEnchantOptions();
     }
 
     public TradeItem(ItemTemplate item, long count, long price) {
-        _objectId = 0;
-        _item = item;
-        _location = 0;
-        _enchant = 0;
-        _type1 = 0;
-        _type2 = 0;
-        _count = count;
-        _storeCount = count;
-        _price = price;
-        _elemAtkType = Elementals.NONE;
-        _elemAtkPower = 0;
-        _enchantOptions = Item.DEFAULT_ENCHANT_OPTIONS;
+        objectId = 0;
+        this.item = item;
+        locationSlot = 0;
+        enchant = 0;
+        customType1 = 0;
+        customType2 = 0;
+        this.count = count;
+        storeCount = count;
+        this.price = price;
+        attackElementType = Elementals.NONE;
+        attackElementPower = 0;
+        enchantOptions = Item.DEFAULT_ENCHANT_OPTIONS;
     }
 
     public TradeItem(TradeItem item, long count, long price) {
-        _objectId = item.getObjectId();
-        _item = item.getItem();
-        _location = item.getLocationSlot();
-        _enchant = item.getEnchant();
-        _type1 = item.getCustomType1();
-        _type2 = item.getCustomType2();
-        _count = count;
-        _storeCount = count;
-        _price = price;
-        _elemAtkType = item.getAttackElementType();
-        _elemAtkPower = item.getAttackElementPower();
+        objectId = item.getObjectId();
+        this.item = item.getItem();
+        locationSlot = item.getLocationSlot();
+        enchant = item.getEnchant();
+        customType1 = item.getCustomType1();
+        customType2 = item.getCustomType2();
+        this.count = count;
+        storeCount = count;
+        this.price = price;
+        attackElementType = item.getAttackElementType();
+        attackElementPower = item.getAttackElementPower();
         for (byte i = 0; i < 6; i++) {
-            _elemDefAttr[i] = item.getElementDefAttr(i);
+            elemDefAttr[i] = item.getElementDefAttr(i);
         }
 
-        _enchantOptions = item.getEnchantOptions();
-    }
-
-    public void setObjectId(int objectId) {
-        _objectId = objectId;
-    }
-
-    public int getObjectId() {
-        return _objectId;
-    }
-
-    public ItemTemplate getItem() {
-        return _item;
-    }
-
-    public int getLocationSlot() {
-        return _location;
-    }
-
-    public void setEnchant(int enchant) {
-        _enchant = enchant;
-    }
-
-    public int getEnchant() {
-        return _enchant;
-    }
-
-    public int getCustomType1() {
-        return _type1;
-    }
-
-    public int getCustomType2() {
-        return _type2;
-    }
-
-    public void setCount(long count) {
-        _count = count;
-    }
-
-    public long getCount() {
-        return _count;
-    }
-
-    public long getStoreCount() {
-        return _storeCount;
-    }
-
-    public void setPrice(long price) {
-        _price = price;
-    }
-
-    public long getPrice() {
-        return _price;
-    }
-
-    public byte getAttackElementType() {
-        return _elemAtkType;
-    }
-
-    public int getAttackElementPower() {
-        return _elemAtkPower;
+        enchantOptions = item.getEnchantOptions();
     }
 
     public int getElementDefAttr(byte i) {
-        return _elemDefAttr[i];
-    }
-
-    public int[] getEnchantOptions() {
-        return _enchantOptions;
+        return elemDefAttr[i];
     }
 }

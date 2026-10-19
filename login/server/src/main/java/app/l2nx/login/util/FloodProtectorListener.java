@@ -30,8 +30,8 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
+import org.slf4j.LoggerFactory;
 
 /**
  * Listens for incoming login connections and applies basic IP based flood protection.<br>
@@ -42,17 +42,17 @@ import java.util.logging.Logger;
  * </ul>
  * @author BazookaRpm
  */
+@Slf4j
 public abstract class FloodProtectorListener extends Thread {
-    private static final Logger LOGGER = Logger.getLogger(FloodProtectorListener.class.getName());
 
     // Server socket backlog size.
     private static final int SERVER_SOCKET_BACKLOG = 50;
 
     // Flood protection state per remote IP.
-    private final Map<String, ForeignConnection> _floodProtection = new ConcurrentHashMap<>();
+    private final Map<String, ForeignConnection> floodProtection = new ConcurrentHashMap<>();
 
     // Login server listening socket.
-    private final ServerSocket _serverSocket;
+    private final ServerSocket serverSocket;
 
     private final LoginProperties.FloodProtection floodProtectionSettings;
 
@@ -68,10 +68,10 @@ public abstract class FloodProtectorListener extends Thread {
 
         // If listening IP is "*", listen on all interfaces.
         if ("*".equals(listenIp)) {
-            _serverSocket = new ServerSocket(port);
+            serverSocket = new ServerSocket(port);
         } else {
             // Listen on the specified IP with a fixed backlog size.
-            _serverSocket = new ServerSocket(port, SERVER_SOCKET_BACKLOG, InetAddress.getByName(listenIp));
+            serverSocket = new ServerSocket(port, SERVER_SOCKET_BACKLOG, InetAddress.getByName(listenIp));
         }
     }
 
@@ -84,12 +84,12 @@ public abstract class FloodProtectorListener extends Thread {
         while (!isInterrupted()) {
             try {
                 // Accept incoming connections.
-                clientSocket = _serverSocket.accept();
+                clientSocket = serverSocket.accept();
 
                 if (floodProtectionSettings.enabled()) {
                     // Check flood protection for this remote address.
                     final String clientAddress = clientSocket.getInetAddress().getHostAddress();
-                    ForeignConnection foreignConnection = _floodProtection.get(clientAddress);
+                    ForeignConnection foreignConnection = floodProtection.get(clientAddress);
                     if (foreignConnection != null) {
                         foreignConnection.connectionNumber += 1;
 
@@ -108,25 +108,25 @@ public abstract class FloodProtectorListener extends Thread {
                             clientSocket.close();
                             foreignConnection.connectionNumber -= 1;
 
-                            if (!foreignConnection.isFlooding) {
-                                LOGGER.warning("Potential flood from address " + clientAddress + ".");
+                            if (!foreignConnection.flooding) {
+                                log.warn("Potential flood from address {}.", clientAddress);
                             }
 
-                            foreignConnection.isFlooding = true;
+                            foreignConnection.flooding = true;
                             continue;
                         }
 
                         // If the connection was previously considered flooding but now passes the check.
-                        if (foreignConnection.isFlooding) {
-                            foreignConnection.isFlooding = false;
-                            LOGGER.info("Address " + clientAddress + " is no longer considered as flooding.");
+                        if (foreignConnection.flooding) {
+                            foreignConnection.flooding = false;
+                            log.info("Address {} is no longer considered as flooding.", clientAddress);
                         }
 
                         foreignConnection.lastConnection = System.currentTimeMillis();
                     } else {
                         // Initialize flood protection state for the new remote address.
                         foreignConnection = new ForeignConnection(System.currentTimeMillis());
-                        _floodProtection.put(clientAddress, foreignConnection);
+                        floodProtection.put(clientAddress, foreignConnection);
                     }
                 }
 
@@ -137,19 +137,15 @@ public abstract class FloodProtectorListener extends Thread {
                 if (isInterrupted()) {
                     // Close server socket and break the loop on thread interruption.
                     try {
-                        _serverSocket.close();
+                        serverSocket.close();
                     } catch (IOException io) {
-                        LOGGER.log(
-                                Level.INFO,
-                                "Error while closing server socket on interruption in "
-                                        + getClass().getSimpleName() + ".",
-                                io);
+                        LoggerFactory.getLogger(getClass())
+                                .info("Error while closing server socket on interruption", io);
                     }
                     break;
                 }
 
-                LOGGER.log(
-                        Level.WARNING, "Unexpected exception in " + getClass().getSimpleName() + " main loop.", e);
+                LoggerFactory.getLogger(getClass()).warn("Unexpected exception in the main loop", e);
             }
         }
     }
@@ -160,7 +156,7 @@ public abstract class FloodProtectorListener extends Thread {
     protected static class ForeignConnection {
         public int connectionNumber;
         public long lastConnection;
-        public boolean isFlooding = false;
+        public boolean flooding = false;
 
         /**
          * Creates a new foreign connection record with an initial timestamp.
@@ -191,14 +187,14 @@ public abstract class FloodProtectorListener extends Thread {
         }
 
         // Decrement connection count or remove if no more connections exist.
-        final ForeignConnection foreignConnection = _floodProtection.get(ip);
+        final ForeignConnection foreignConnection = floodProtection.get(ip);
         if (foreignConnection != null) {
             foreignConnection.connectionNumber -= 1;
             if (foreignConnection.connectionNumber == 0) {
-                _floodProtection.remove(ip);
+                floodProtection.remove(ip);
             }
         } else {
-            LOGGER.warning("Attempted to remove flood protection for unknown IP " + ip + ".");
+            log.warn("Attempted to remove flood protection for unknown IP {}.", ip);
         }
     }
 
@@ -210,9 +206,9 @@ public abstract class FloodProtectorListener extends Thread {
         // busy loop.
         interrupt();
         try {
-            _serverSocket.close();
+            serverSocket.close();
         } catch (IOException e) {
-            LOGGER.warning(getClass().getSimpleName() + ": " + e.getMessage());
+            LoggerFactory.getLogger(getClass()).warn("Error while closing server socket", e);
         }
     }
 }

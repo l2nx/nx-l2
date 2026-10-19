@@ -25,10 +25,12 @@ package app.l2nx.highfive.network;
 import app.l2nx.highfive.config.DevelopmentConfig;
 import app.l2nx.highfive.network.serverpackets.ServerPacket;
 import app.l2nx.network.buffer.WriteBuffer;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author Mobius
  */
+@Slf4j
 public enum ServerPackets {
     DIE(0x00),
     REVIVE(0x01),
@@ -517,29 +519,29 @@ public enum ServerPackets {
     EX_2ND_PASSWORD_ACK(0xFE, 0xE7),
     EX_SAY2_FAIL(0xFE, 0xE8);
 
-    private final int _id1;
-    private final int _id2;
+    private final int id1;
+    private final int id2;
 
     ServerPackets(int id1) {
         this(id1, -1);
     }
 
     ServerPackets(int id1, int id2) {
-        _id1 = id1;
-        _id2 = id2;
+        this.id1 = id1;
+        this.id2 = id2;
     }
 
     public void writeId(ServerPacket packet, WriteBuffer buffer) {
         if (DevelopmentConfig.DEBUG_SERVER_PACKETS) {
             final String name = packet.getClass().getSimpleName();
             if (!DevelopmentConfig.EXCLUDED_DEBUG_PACKETS.contains(name)) {
-                PacketLogger.info((_id2 > 0 ? "[S EX] " : "[S] ") + name);
+                log.info("{}{}", (id2 > 0 ? "[S EX] " : "[S] "), name);
             }
         }
 
-        buffer.writeByte(_id1);
-        if (_id2 > 0) {
-            buffer.writeShort(_id2);
+        buffer.writeByte(id1);
+        if (id2 > 0) {
+            buffer.writeShort(id2);
         }
     }
 }

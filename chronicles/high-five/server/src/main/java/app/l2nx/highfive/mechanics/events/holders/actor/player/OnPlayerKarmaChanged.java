@@ -22,33 +22,13 @@ package app.l2nx.highfive.mechanics.events.holders.actor.player;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.mechanics.events.EventType;
 import app.l2nx.highfive.mechanics.events.holders.IBaseEvent;
+import lombok.Builder;
 
 /**
  * @author UnAfraid
  */
-public class OnPlayerKarmaChanged implements IBaseEvent {
-    private final Player _player;
-    private final int _oldKarma;
-    private final int _newKarma;
-
-    public OnPlayerKarmaChanged(Player player, int oldKarma, int newKarma) {
-        _player = player;
-        _oldKarma = oldKarma;
-        _newKarma = newKarma;
-    }
-
-    public Player getPlayer() {
-        return _player;
-    }
-
-    public int getOldKarma() {
-        return _oldKarma;
-    }
-
-    public int getNewKarma() {
-        return _newKarma;
-    }
-
+@Builder(toBuilder = true)
+public record OnPlayerKarmaChanged(Player player, int oldKarma, int newKarma) implements IBaseEvent {
     @Override
     public EventType getType() {
         return EventType.ON_PLAYER_KARMA_CHANGED;

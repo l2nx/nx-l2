@@ -48,7 +48,7 @@ import app.l2nx.highfive.network.serverpackets.PlaySound;
 import app.l2nx.highfive.network.serverpackets.SocialAction;
 import app.l2nx.highfive.util.MathUtil;
 import app.l2nx.highfive.util.StatSet;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.DateFormatUtils;
 
 /**
@@ -63,9 +63,8 @@ import org.apache.commons.lang3.time.DateFormatUtils;
  * </ul>
  * @author BazookaRpm
  */
+@Slf4j
 public class Baium extends Script {
-    // Logging facilities.
-    private static final Logger LOGGER = Logger.getLogger(Baium.class.getName());
 
     // NPC definitions.
     private static final int BAIUM_NPC_ID = 29020; // GranbossBaium Npc
@@ -146,8 +145,8 @@ public class Baium extends Script {
     private static final String EVENT_MANAGE_SKILLS = "MANAGE_SKILLS";
 
     // Runtime state for Baium encounter.
-    private volatile GrandBoss _baiumInstance;
-    private static volatile long _lastAttackTime;
+    private volatile GrandBoss baiumInstance;
+    private static volatile long lastAttackTime;
 
     /**
      * Initializes Baium AI, registers handlers and restores state from boss manager.<br>
@@ -186,17 +185,17 @@ public class Baium extends Script {
             case STATUS_IN_FIGHT: {
                 final GrandBoss restoredBaium =
                         (GrandBoss) addSpawn(BAIUM_NPC_ID, storedX, storedY, storedZ, storedHeading, false, 0);
-                _baiumInstance = restoredBaium;
-                _baiumInstance.setCurrentHpMp(storedHp, storedMp);
-                _lastAttackTime = System.currentTimeMillis();
-                addBoss(_baiumInstance);
+                baiumInstance = restoredBaium;
+                baiumInstance.setCurrentHpMp(storedHp, storedMp);
+                lastAttackTime = System.currentTimeMillis();
+                addBoss(baiumInstance);
 
                 for (Location archangelLocation : ARCHANGEL_SPAWN_LOCATIONS) {
                     final Npc archangelNpc = addSpawn(ARCHANGEL_NPC_ID, archangelLocation, false, 0, true);
                     startQuestTimer(EVENT_SELECT_TARGET, SELECT_TARGET_INTERVAL_MILLIS, archangelNpc, null);
                 }
 
-                startQuestTimer(EVENT_CHECK_ATTACK, CHECK_ATTACK_INTERVAL_MILLIS, _baiumInstance, null);
+                startQuestTimer(EVENT_CHECK_ATTACK, CHECK_ATTACK_INTERVAL_MILLIS, baiumInstance, null);
                 break;
             }
             case STATUS_DEAD: {
@@ -258,25 +257,25 @@ public class Baium extends Script {
                 if (getStatus() == STATUS_ALIVE) {
                     setStatus(STATUS_IN_FIGHT);
 
-                    _baiumInstance = (GrandBoss) addSpawn(BAIUM_NPC_ID, LOCATION_BAIUM_SPAWN, false, 0);
-                    _baiumInstance.disableCoreAI(true);
-                    _baiumInstance.setRandomWalking(false);
+                    baiumInstance = (GrandBoss) addSpawn(BAIUM_NPC_ID, LOCATION_BAIUM_SPAWN, false, 0);
+                    baiumInstance.disableCoreAI(true);
+                    baiumInstance.setRandomWalking(false);
 
-                    addBoss(_baiumInstance);
-                    _lastAttackTime = System.currentTimeMillis();
+                    addBoss(baiumInstance);
+                    lastAttackTime = System.currentTimeMillis();
 
-                    startQuestTimer(EVENT_WAKEUP_ACTION, 50, _baiumInstance, null);
-                    startQuestTimer(EVENT_MANAGE_EARTHQUAKE, 2000, _baiumInstance, null);
-                    startQuestTimer(EVENT_SOCIAL_ACTION, 10000, _baiumInstance, player);
-                    startQuestTimer(EVENT_CHECK_ATTACK, CHECK_ATTACK_INTERVAL_MILLIS, _baiumInstance, null);
+                    startQuestTimer(EVENT_WAKEUP_ACTION, 50, baiumInstance, null);
+                    startQuestTimer(EVENT_MANAGE_EARTHQUAKE, 2000, baiumInstance, null);
+                    startQuestTimer(EVENT_SOCIAL_ACTION, 10000, baiumInstance, player);
+                    startQuestTimer(EVENT_CHECK_ATTACK, CHECK_ATTACK_INTERVAL_MILLIS, baiumInstance, null);
 
                     npc.deleteMe();
                 }
                 break;
             }
             case EVENT_WAKEUP_ACTION: {
-                if ((npc != null) && (_baiumInstance != null) && !_baiumInstance.isDead()) {
-                    BAIUM_RIM_ZONE.broadcastPacket(new SocialAction(_baiumInstance.getObjectId(), 2));
+                if ((npc != null) && (baiumInstance != null) && !baiumInstance.isDead()) {
+                    BAIUM_RIM_ZONE.broadcastPacket(new SocialAction(baiumInstance.getObjectId(), 2));
                 }
                 break;
             }
@@ -337,12 +336,12 @@ public class Baium extends Script {
             }
             // Archangel minion management.
             case EVENT_SPAWN_ARCHANGELS: {
-                if ((_baiumInstance == null) || _baiumInstance.isDead() || (getStatus() != STATUS_IN_FIGHT)) {
+                if ((baiumInstance == null) || baiumInstance.isDead() || (getStatus() != STATUS_IN_FIGHT)) {
                     break;
                 }
 
-                _baiumInstance.disableCoreAI(false);
-                _baiumInstance.setRandomWalking(true);
+                baiumInstance.disableCoreAI(false);
+                baiumInstance.setRandomWalking(true);
 
                 for (Location archangelLocation : ARCHANGEL_SPAWN_LOCATIONS) {
                     final Npc archangelNpc = addSpawn(ARCHANGEL_NPC_ID, archangelLocation, false, 0, true);
@@ -361,7 +360,7 @@ public class Baium extends Script {
             }
             case EVENT_SELECT_TARGET: {
                 if (npc != null) {
-                    if ((_baiumInstance == null) || _baiumInstance.isDead()) {
+                    if ((baiumInstance == null) || baiumInstance.isDead()) {
                         npc.asAttackable().deleteMe();
                         break;
                     }
@@ -387,14 +386,14 @@ public class Baium extends Script {
 
                             addAttackDesire(archangel, candidate);
                         } else {
-                            if (archangel.isInsideRadius3D(_baiumInstance, 40)) {
-                                if (archangel.getTarget() != _baiumInstance) {
+                            if (archangel.isInsideRadius3D(baiumInstance, 40)) {
+                                if (archangel.getTarget() != baiumInstance) {
                                     archangel.clearAggroList();
                                 }
 
-                                addAttackDesire(archangel, _baiumInstance);
+                                addAttackDesire(archangel, baiumInstance);
                             } else {
-                                archangel.getAI().setIntentionFollow(_baiumInstance);
+                                archangel.getAI().setIntentionFollow(baiumInstance);
                             }
                         }
                     }
@@ -405,13 +404,13 @@ public class Baium extends Script {
             }
             // Inactivity handling, self-heal checks and status reset.
             case EVENT_CHECK_ATTACK: {
-                if ((npc != null) && ((_lastAttackTime + INACTIVITY_LIMIT_MILLIS) < System.currentTimeMillis())) {
+                if ((npc != null) && ((lastAttackTime + INACTIVITY_LIMIT_MILLIS) < System.currentTimeMillis())) {
                     cancelQuestTimers(EVENT_SELECT_TARGET);
                     notifyEvent(EVENT_CLEAR_ZONE, null, null);
                     addSpawn(BAIUM_STONE_NPC_ID, LOCATION_BAIUM_SPAWN, false, 0);
                     setStatus(STATUS_ALIVE);
                 } else if (npc != null) {
-                    final long healCheckTime = _lastAttackTime + 300000;
+                    final long healCheckTime = lastAttackTime + 300000;
                     final double healThresholdHp = npc.getMaxHp() * 0.75;
 
                     if ((healCheckTime < System.currentTimeMillis()) && (npc.getCurrentHp() < healThresholdHp)) {
@@ -457,7 +456,7 @@ public class Baium extends Script {
             }
             case EVENT_ABORT_FIGHT: {
                 if (getStatus() == STATUS_IN_FIGHT) {
-                    _baiumInstance = null;
+                    baiumInstance = null;
                     notifyEvent(EVENT_CLEAR_ZONE, null, null);
                     notifyEvent(EVENT_CLEAR_STATUS, null, null);
 
@@ -511,7 +510,7 @@ public class Baium extends Script {
      */
     @Override
     public void onAttack(Npc npc, Player attacker, int damage, boolean isSummon, Skill skill) {
-        _lastAttackTime = System.currentTimeMillis();
+        lastAttackTime = System.currentTimeMillis();
         final int npcId = npc.getId();
 
         if (npcId == BAIUM_NPC_ID) {
@@ -585,7 +584,7 @@ public class Baium extends Script {
         final long respawnDelayMillis = baseIntervalMillis + getRandom(-randomRangeMillis, randomRangeMillis);
         final long nextRespawnTime = System.currentTimeMillis() + respawnDelayMillis;
 
-        LOGGER.info("Baium will respawn at: " + DateFormatUtils.format(nextRespawnTime, "dd/MM/yyyy HH:mm:ss"));
+        log.info("Baium will respawn at: {}", DateFormatUtils.format(nextRespawnTime, "dd/MM/yyyy HH:mm:ss"));
 
         setRespawn(respawnDelayMillis);
         startQuestTimer(EVENT_CLEAR_STATUS, respawnDelayMillis, null, null);
@@ -639,10 +638,10 @@ public class Baium extends Script {
         }
 
         if ((npc != null)
-                && (_baiumInstance != null)
-                && !_baiumInstance.isDead()
+                && (baiumInstance != null)
+                && !baiumInstance.isDead()
                 && !BAIUM_RIM_ZONE.isCharacterInZone(npc)) {
-            _baiumInstance.teleToLocation(LOCATION_BAIUM_SPAWN);
+            baiumInstance.teleToLocation(LOCATION_BAIUM_SPAWN);
         }
     }
 
@@ -653,8 +652,8 @@ public class Baium extends Script {
      */
     @Override
     public void unload(boolean removeFromList) {
-        if (_baiumInstance != null) {
-            _baiumInstance.deleteMe();
+        if (baiumInstance != null) {
+            baiumInstance.deleteMe();
         }
 
         super.unload(removeFromList);

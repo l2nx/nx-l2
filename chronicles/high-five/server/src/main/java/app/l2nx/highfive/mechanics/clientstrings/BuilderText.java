@@ -23,10 +23,10 @@ package app.l2nx.highfive.mechanics.clientstrings;
  * @author Forsaiken
  */
 public class BuilderText extends Builder {
-    private final String _text;
+    private final String text;
 
     BuilderText(String text) {
-        _text = text;
+        this.text = text;
     }
 
     @Override
@@ -46,6 +46,6 @@ public class BuilderText extends Builder {
 
     @Override
     public String toString() {
-        return _text;
+        return text;
     }
 }

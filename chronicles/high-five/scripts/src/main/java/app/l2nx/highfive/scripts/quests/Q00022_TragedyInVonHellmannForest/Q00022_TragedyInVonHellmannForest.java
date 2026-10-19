@@ -68,8 +68,8 @@ public class Q00022_TragedyInVonHellmannForest extends Quest {
     private static final int MIN_LEVEL = 63;
     private static final Location PRIEST_LOC = new Location(38354, -49777, -1128);
     private static final Location SOUL_WELL_LOC = new Location(34706, -54590, -2054);
-    private static int _tifarenOwner = 0;
-    private static Npc _soulWellNpc = null;
+    private static int tifarenOwner = 0;
+    private static Npc soulWellNpc = null;
 
     public Q00022_TragedyInVonHellmannForest() {
         super(22);
@@ -161,8 +161,8 @@ public class Q00022_TragedyInVonHellmannForest extends Quest {
             case "31334-13.html": {
                 final int cond = qs.getCond();
                 if (((5 <= cond) && (cond <= 7)) && hasQuestItems(player, CROSS_OF_EINHASAD)) {
-                    if (_tifarenOwner == 0) {
-                        _tifarenOwner = player.getObjectId();
+                    if (tifarenOwner == 0) {
+                        tifarenOwner = player.getObjectId();
                         final Npc ghost2 = addSpawn(GHOST_OF_PRIEST, PRIEST_LOC, true, 0);
                         ghost2.setScriptValue(player.getObjectId());
                         startQuestTimer("DESPAWN_GHOST2", 1000 * 120, ghost2, player);
@@ -204,7 +204,7 @@ public class Q00022_TragedyInVonHellmannForest extends Quest {
                 break;
             }
             case "DESPAWN_GHOST2": {
-                _tifarenOwner = 0;
+                tifarenOwner = 0;
                 if (npc.getScriptValue() != 0) {
                     npc.broadcastPacket(new NpcSay(
                             npc.getObjectId(),
@@ -247,11 +247,11 @@ public class Q00022_TragedyInVonHellmannForest extends Quest {
                 break;
             }
             case "31527-02.html": {
-                if (qs.isCond(10) && (_soulWellNpc == null)) {
-                    _soulWellNpc = addSpawn(SOUL_OF_WELL, SOUL_WELL_LOC, true, 0);
-                    startQuestTimer("activateSoulOfWell", 90000, _soulWellNpc, player);
-                    startQuestTimer("despawnSoulOfWell", 120000, _soulWellNpc, player);
-                    _soulWellNpc.getAI().setIntentionAttack(player);
+                if (qs.isCond(10) && (soulWellNpc == null)) {
+                    soulWellNpc = addSpawn(SOUL_OF_WELL, SOUL_WELL_LOC, true, 0);
+                    startQuestTimer("activateSoulOfWell", 90000, soulWellNpc, player);
+                    startQuestTimer("despawnSoulOfWell", 120000, soulWellNpc, player);
+                    soulWellNpc.getAI().setIntentionAttack(player);
                     playSound(player, QuestSound.SKILLSOUND_ANTARAS_FEAR);
                     htmltext = event;
                 } else {
@@ -267,7 +267,7 @@ public class Q00022_TragedyInVonHellmannForest extends Quest {
             case "despawnSoulOfWell": {
                 // if the player fails to proceed the quest in 2 minutes, the soul is unspawned
                 if (!npc.isDead()) {
-                    _soulWellNpc = null;
+                    soulWellNpc = null;
                 }
 
                 npc.deleteMe();
@@ -319,7 +319,7 @@ public class Q00022_TragedyInVonHellmannForest extends Quest {
     public void onKill(Npc npc, Player killer, boolean isSummon) {
         if (LocationUtil.checkIfInRange(PlayerConfig.ALT_PARTY_RANGE, killer, npc, true)) {
             if (npc.getId() == SOUL_OF_WELL) {
-                _soulWellNpc = null;
+                soulWellNpc = null;
             } else {
                 final QuestState qs = getQuestState(killer, false);
                 if ((qs != null)
@@ -359,7 +359,7 @@ public class Q00022_TragedyInVonHellmannForest extends Quest {
                         if (hasQuestItems(talker, CROSS_OF_EINHASAD)) {
                             if (!hasQuestItems(talker, LOST_SKULL_OF_ELF)) {
                                 htmltext = "31334-09.html";
-                            } else if (_tifarenOwner == 0) {
+                            } else if (tifarenOwner == 0) {
                                 htmltext = "31334-10.html";
                             } else {
                                 htmltext = "31334-11.html";
@@ -370,9 +370,9 @@ public class Q00022_TragedyInVonHellmannForest extends Quest {
                     case 6:
                     case 7: {
                         if (hasQuestItems(talker, CROSS_OF_EINHASAD)) {
-                            if (_tifarenOwner == 0) {
+                            if (tifarenOwner == 0) {
                                 htmltext = "31334-17.html";
-                            } else if (_tifarenOwner == talker.getObjectId()) {
+                            } else if (tifarenOwner == talker.getObjectId()) {
                                 htmltext = "31334-15.html";
                             } else {
                                 htmltext = "31334-16.html";

@@ -20,25 +20,21 @@
 package app.l2nx.highfive.mechanics.skill.holders;
 
 import app.l2nx.highfive.mechanics.skill.Skill;
+import lombok.Getter;
 
 /**
  * @author UnAfraid
  */
 public class SkillUseHolder extends SkillHolder {
-    private final boolean _ctrlPressed;
-    private final boolean _shiftPressed;
+    @Getter
+    private final boolean ctrlPressed;
+
+    @Getter
+    private final boolean shiftPressed;
 
     public SkillUseHolder(Skill skill, boolean ctrlPressed, boolean shiftPressed) {
         super(skill);
-        _ctrlPressed = ctrlPressed;
-        _shiftPressed = shiftPressed;
-    }
-
-    public boolean isCtrlPressed() {
-        return _ctrlPressed;
-    }
-
-    public boolean isShiftPressed() {
-        return _shiftPressed;
+        this.ctrlPressed = ctrlPressed;
+        this.shiftPressed = shiftPressed;
     }
 }

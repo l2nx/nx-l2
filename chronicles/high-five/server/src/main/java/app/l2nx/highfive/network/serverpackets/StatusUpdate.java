@@ -59,8 +59,8 @@ public class StatusUpdate extends ServerPacket {
     public static final int CUR_CP = 0x21;
     public static final int MAX_CP = 0x22;
 
-    private final int _objectId;
-    private final List<Attribute> _attributes = new ArrayList<>();
+    private final int objectId;
+    private final List<Attribute> attributes = new ArrayList<>();
 
     private static class Attribute {
         /**
@@ -81,7 +81,7 @@ public class StatusUpdate extends ServerPacket {
      * @param objectId
      */
     public StatusUpdate(int objectId) {
-        _objectId = objectId;
+        this.objectId = objectId;
     }
 
     /**
@@ -89,23 +89,23 @@ public class StatusUpdate extends ServerPacket {
      * @param object
      */
     public StatusUpdate(WorldObject object) {
-        _objectId = object.getObjectId();
+        objectId = object.getObjectId();
     }
 
     public void addAttribute(int id, int level) {
-        _attributes.add(new Attribute(id, level));
+        attributes.add(new Attribute(id, level));
     }
 
     public boolean hasAttributes() {
-        return !_attributes.isEmpty();
+        return !attributes.isEmpty();
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.STATUS_UPDATE.writeId(this, buffer);
-        buffer.writeInt(_objectId);
-        buffer.writeInt(_attributes.size());
-        for (Attribute temp : _attributes) {
+        buffer.writeInt(objectId);
+        buffer.writeInt(attributes.size());
+        for (Attribute temp : attributes) {
             buffer.writeInt(temp.id);
             buffer.writeInt(temp.value);
         }

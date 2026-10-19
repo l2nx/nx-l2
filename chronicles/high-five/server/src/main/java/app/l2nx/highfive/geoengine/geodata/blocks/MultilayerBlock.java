@@ -25,12 +25,14 @@ package app.l2nx.highfive.geoengine.geodata.blocks;
 import app.l2nx.highfive.geoengine.geodata.Cell;
 import app.l2nx.highfive.geoengine.geodata.IBlock;
 import java.nio.ByteBuffer;
+import lombok.Getter;
 
 /**
  * @author HorridoJoho, Mobius
  */
 public class MultilayerBlock implements IBlock {
-    private final byte[] _data;
+    @Getter
+    private final byte[] data;
 
     /**
      * Initializes a new instance of this block reading the specified buffer.
@@ -48,14 +50,14 @@ public class MultilayerBlock implements IBlock {
             bb.position(bb.position() + (nLayers * 2));
         }
 
-        _data = new byte[bb.position() - start];
+        data = new byte[bb.position() - start];
         bb.position(start);
-        bb.get(_data);
+        bb.get(data);
     }
 
     private short getNearestLayer(int geoX, int geoY, int worldZ) {
         final int startOffset = getCellDataOffset(geoX, geoY);
-        final byte nLayers = _data[startOffset];
+        final byte nLayers = data[startOffset];
         final int endOffset = startOffset + 1 + (nLayers * 2);
 
         // One layer at least was required on loading so this is set at least once on the loop below.
@@ -86,7 +88,7 @@ public class MultilayerBlock implements IBlock {
 
         // Move index to cell, we need to parse on each request, OR we parse on creation and save indexes.
         for (int i = 0; i < cellLocalOffset; i++) {
-            cellDataOffset += 1 + (_data[cellDataOffset] * 2);
+            cellDataOffset += 1 + (data[cellDataOffset] * 2);
         }
 
         // Now the index points to the cell we need.
@@ -95,7 +97,7 @@ public class MultilayerBlock implements IBlock {
     }
 
     private short extractLayerData(int dataOffset) {
-        return (short) ((_data[dataOffset] & 0xff) | (_data[dataOffset + 1] << 8));
+        return (short) ((data[dataOffset] & 0xff) | (data[dataOffset + 1] << 8));
     }
 
     private int getNearestNSWE(int geoX, int geoY, int worldZ) {
@@ -110,7 +112,7 @@ public class MultilayerBlock implements IBlock {
     @Override
     public void setNearestNswe(int geoX, int geoY, int worldZ, byte nswe) {
         final int startOffset = getCellDataOffset(geoX, geoY);
-        final byte nLayers = _data[startOffset];
+        final byte nLayers = data[startOffset];
         final int endOffset = startOffset + 1 + (nLayers * 2);
 
         int nearestDZ = 0;
@@ -138,15 +140,15 @@ public class MultilayerBlock implements IBlock {
             final short encodedHeight = (short) (nearestLayerZ << 1); // Shift left by 1 bit.
             final short newNswe = (short) (currentNswe | nswe); // Combine NSWE.
             final short newCombinedData = (short) (encodedHeight | newNswe); // Combine height and NSWE.
-            _data[nearestOffset] = (byte) (newCombinedData & 0xff); // Update the first byte at offset.
-            _data[nearestOffset + 1] = (byte) ((newCombinedData >> 8) & 0xff); // Update the second byte at offset + 1.
+            data[nearestOffset] = (byte) (newCombinedData & 0xff); // Update the first byte at offset.
+            data[nearestOffset + 1] = (byte) ((newCombinedData >> 8) & 0xff); // Update the second byte at offset + 1.
         }
     }
 
     @Override
     public void unsetNearestNswe(int geoX, int geoY, int worldZ, byte nswe) {
         final int startOffset = getCellDataOffset(geoX, geoY);
-        final byte nLayers = _data[startOffset];
+        final byte nLayers = data[startOffset];
         final int endOffset = startOffset + 1 + (nLayers * 2);
 
         int nearestDZ = 0;
@@ -174,8 +176,8 @@ public class MultilayerBlock implements IBlock {
             final short encodedHeight = (short) (nearestLayerZ << 1); // Shift left by 1 bit.
             final short newNswe = (short) (currentNswe & ~nswe); // Subtract NSWE.
             final short newCombinedData = (short) (encodedHeight | newNswe); // Combine height and NSWE.
-            _data[nearestOffset] = (byte) (newCombinedData & 0xff); // Update the first byte at offset.
-            _data[nearestOffset + 1] = (byte) ((newCombinedData >> 8) & 0xff); // Update the second byte at offset + 1.
+            data[nearestOffset] = (byte) (newCombinedData & 0xff); // Update the first byte at offset.
+            data[nearestOffset + 1] = (byte) ((newCombinedData >> 8) & 0xff); // Update the second byte at offset + 1.
         }
     }
 
@@ -226,7 +228,7 @@ public class MultilayerBlock implements IBlock {
     @Override
     public int getNextLowerZ(int geoX, int geoY, int worldZ) {
         final int startOffset = getCellDataOffset(geoX, geoY);
-        final byte nLayers = _data[startOffset];
+        final byte nLayers = data[startOffset];
         final int endOffset = startOffset + 1 + (nLayers * 2);
 
         int lowerZ = Integer.MIN_VALUE;
@@ -250,7 +252,7 @@ public class MultilayerBlock implements IBlock {
     @Override
     public int getNextHigherZ(int geoX, int geoY, int worldZ) {
         final int startOffset = getCellDataOffset(geoX, geoY);
-        final byte nLayers = _data[startOffset];
+        final byte nLayers = data[startOffset];
         final int endOffset = startOffset + 1 + (nLayers * 2);
 
         int higherZ = Integer.MAX_VALUE;
@@ -269,9 +271,5 @@ public class MultilayerBlock implements IBlock {
         }
 
         return higherZ == Integer.MAX_VALUE ? worldZ : higherZ;
-    }
-
-    public byte[] getData() {
-        return _data;
     }
 }

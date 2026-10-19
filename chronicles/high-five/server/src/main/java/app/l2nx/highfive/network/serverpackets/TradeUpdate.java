@@ -29,19 +29,19 @@ import app.l2nx.network.buffer.WriteBuffer;
  * @author daemon
  */
 public class TradeUpdate extends AbstractItemPacket {
-    private final TradeItem _item;
-    private final long _newCount;
+    private final TradeItem item;
+    private final long newCount;
 
     public TradeUpdate(Player player, TradeItem item) {
-        _item = item;
-        _newCount = player.getInventory().getItemByObjectId(item.getObjectId()).getCount() - item.getCount();
+        this.item = item;
+        newCount = player.getInventory().getItemByObjectId(item.getObjectId()).getCount() - item.getCount();
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.TRADE_UPDATE.writeId(this, buffer);
         buffer.writeShort(1);
-        buffer.writeShort((_newCount > 0) && _item.getItem().isStackable() ? 3 : 2);
-        writeTradeItem(_item, buffer);
+        buffer.writeShort((newCount > 0) && item.getItem().isStackable() ? 3 : 2);
+        writeTradeItem(item, buffer);
     }
 }

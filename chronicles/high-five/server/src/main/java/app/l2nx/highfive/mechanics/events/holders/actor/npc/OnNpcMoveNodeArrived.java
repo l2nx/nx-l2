@@ -26,17 +26,7 @@ import app.l2nx.highfive.mechanics.events.holders.IBaseEvent;
 /**
  * @author UnAfraid
  */
-public class OnNpcMoveNodeArrived implements IBaseEvent {
-    private final Npc _npc;
-
-    public OnNpcMoveNodeArrived(Npc npc) {
-        _npc = npc;
-    }
-
-    public Npc getNpc() {
-        return _npc;
-    }
-
+public record OnNpcMoveNodeArrived(Npc npc) implements IBaseEvent {
     @Override
     public EventType getType() {
         return EventType.ON_NPC_MOVE_NODE_ARRIVED;

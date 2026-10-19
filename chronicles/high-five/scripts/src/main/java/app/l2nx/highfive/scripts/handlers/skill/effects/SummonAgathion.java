@@ -25,22 +25,24 @@ import app.l2nx.highfive.mechanics.conditions.Condition;
 import app.l2nx.highfive.mechanics.effects.AbstractEffect;
 import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.util.StatSet;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Summon Agathion effect implementation.
  * @author Zoey76
  */
+@Slf4j
 public class SummonAgathion extends AbstractEffect {
-    private final int _npcId;
+    private final int npcId;
 
     public SummonAgathion(Condition attachCond, Condition applyCond, StatSet set, StatSet params) {
         super(attachCond, applyCond, set, params);
 
         if (params.isEmpty()) {
-            LOGGER.warning(getClass().getSimpleName() + ": must have parameters.");
+            log.warn("Must have parameters.");
         }
 
-        _npcId = params.getInt("npcId", 0);
+        npcId = params.getInt("npcId", 0);
     }
 
     @Override
@@ -55,7 +57,7 @@ public class SummonAgathion extends AbstractEffect {
         }
 
         final Player player = effected.asPlayer();
-        player.setAgathionId(_npcId);
+        player.setAgathionId(npcId);
         player.broadcastUserInfo();
     }
 }

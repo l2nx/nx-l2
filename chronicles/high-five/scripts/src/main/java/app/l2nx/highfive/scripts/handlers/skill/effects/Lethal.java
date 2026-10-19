@@ -33,14 +33,14 @@ import java.util.concurrent.ThreadLocalRandom;
  * @author Adry_85
  */
 public class Lethal extends AbstractEffect {
-    private final int _fullLethal;
-    private final int _halfLethal;
+    private final int fullLethal;
+    private final int halfLethal;
 
     public Lethal(Condition attachCond, Condition applyCond, StatSet set, StatSet params) {
         super(attachCond, applyCond, set, params);
 
-        _fullLethal = params.getInt("fullLethal", 0);
-        _halfLethal = params.getInt("halfLethal", 0);
+        fullLethal = params.getInt("fullLethal", 0);
+        halfLethal = params.getInt("halfLethal", 0);
     }
 
     @Override
@@ -66,7 +66,7 @@ public class Lethal extends AbstractEffect {
                 * Formulas.calcGeneralTraitBonus(effector, effected, skill.getTraitType(), false);
 
         // Lethal Strike
-        if (ThreadLocalRandom.current().nextInt(100) < (_fullLethal * chanceMultiplier)) {
+        if (ThreadLocalRandom.current().nextInt(100) < (fullLethal * chanceMultiplier)) {
             // for Players CP and HP is set to 1.
             if (effected.isPlayer()) {
                 effected.notifyDamageReceived(effected.getCurrentHp() - 1, effector, skill, true, false);
@@ -83,7 +83,7 @@ public class Lethal extends AbstractEffect {
             effector.sendPacket(SystemMessageId.YOUR_LETHAL_STRIKE_WAS_SUCCESSFUL);
         }
         // Half-Kill
-        else if (ThreadLocalRandom.current().nextInt(100) < (_halfLethal * chanceMultiplier)) {
+        else if (ThreadLocalRandom.current().nextInt(100) < (halfLethal * chanceMultiplier)) {
             // for Players CP is set to 1.
             if (effected.isPlayer()) {
                 effected.setCurrentCp(1);

@@ -28,28 +28,28 @@ import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.network.buffer.WriteBuffer;
 
 public class TargetUnselected extends ServerPacket {
-    private final int _targetObjId;
-    private final int _x;
-    private final int _y;
-    private final int _z;
+    private final int targetObjId;
+    private final int x;
+    private final int y;
+    private final int z;
 
     /**
      * @param creature
      */
     public TargetUnselected(Creature creature) {
-        _targetObjId = creature.getObjectId();
-        _x = creature.getX();
-        _y = creature.getY();
-        _z = creature.getZ();
+        targetObjId = creature.getObjectId();
+        x = creature.getX();
+        y = creature.getY();
+        z = creature.getZ();
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.TARGET_UNSELECTED.writeId(this, buffer);
-        buffer.writeInt(_targetObjId);
-        buffer.writeInt(_x);
-        buffer.writeInt(_y);
-        buffer.writeInt(_z);
+        buffer.writeInt(targetObjId);
+        buffer.writeInt(x);
+        buffer.writeInt(y);
+        buffer.writeInt(z);
         buffer.writeInt(0); // ?
     }
 }

@@ -46,8 +46,9 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.logging.Level;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class ScriptLink implements IBypassHandler {
     private static final int TO_LEAD_AND_BE_LED = 118;
     private static final int THE_LEADER_AND_THE_FOLLOWER = 123;
@@ -249,17 +250,14 @@ public class ScriptLink implements IBypassHandler {
     /**
      * @param player
      * @param npcId The Identifier of the NPC
-     * @return a table containing all QuestState from the table _quests in which the Player must talk to the NPC.
+     * @return a table containing all QuestState from the table quests in which the Player must talk to the NPC.
      */
     private static List<QuestState> getQuestsForTalk(Player player, int npcId) {
         // Create a QuestState table that will contain all QuestState to modify
         final List<QuestState> states = new ArrayList<>();
         final NpcTemplate template = NpcData.getInstance().getTemplate(npcId);
         if (template == null) {
-            LOGGER.log(
-                    Level.WARNING,
-                    ScriptLink.class.getSimpleName() + ": " + player.getName()
-                            + " requested quests for talk on non existing npc " + npcId);
+            log.warn("{} requested quests for talk on non existing npc {}", player.getName(), npcId);
             return states;
         }
 
@@ -291,9 +289,7 @@ public class ScriptLink implements IBypassHandler {
         for (QuestState state : getQuestsForTalk(player, npc.getId())) {
             final Quest quest = state.getQuest();
             if (quest == null) {
-                LOGGER.log(
-                        Level.WARNING,
-                        player + " Requested incorrect quest state for non existing quest: " + state.getQuestName());
+                log.warn("{} Requested incorrect quest state for non existing quest: {}", player, state.getQuestName());
                 continue;
             }
 

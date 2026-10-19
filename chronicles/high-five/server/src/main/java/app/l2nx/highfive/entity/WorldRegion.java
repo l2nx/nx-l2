@@ -35,38 +35,49 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicInteger;
+import lombok.Getter;
 
 public class WorldRegion {
     /** Set containing visible objects in this world region. */
-    private final Set<WorldObject> _visibleObjects = ConcurrentHashMap.newKeySet();
+    private final Set<WorldObject> visibleObjects = ConcurrentHashMap.newKeySet();
     /** Set containing doors in this world region. */
-    private final Set<Door> _doors = ConcurrentHashMap.newKeySet();
+    private final Set<Door> doors = ConcurrentHashMap.newKeySet();
     /** Set containing fences in this world region. */
-    private final Set<Fence> _fences = ConcurrentHashMap.newKeySet();
+    private final Set<Fence> fences = ConcurrentHashMap.newKeySet();
     /** Array containing nearby regions forming this world region's effective area. */
-    private WorldRegion[] _surroundingRegions;
+    @Getter
+    private WorldRegion[] surroundingRegions;
 
-    private final ConcurrentHashMap<WorldRegion, Boolean> _surroundingRegionCache = new ConcurrentHashMap<>();
-    private final int _regionX;
-    private final int _regionY;
-    private final int _regionZ;
-    private boolean _active = GeneralConfig.GRIDS_ALWAYS_ON;
-    private ScheduledFuture<?> _neighborsTask = null;
-    private final AtomicInteger _activeNeighbors = new AtomicInteger();
+    private final ConcurrentHashMap<WorldRegion, Boolean> surroundingRegionCache = new ConcurrentHashMap<>();
+
+    @Getter
+    private final int regionX;
+
+    @Getter
+    private final int regionY;
+
+    @Getter
+    private final int regionZ;
+
+    @Getter
+    private boolean active = GeneralConfig.GRIDS_ALWAYS_ON;
+
+    private ScheduledFuture<?> neighborsTask = null;
+    private final AtomicInteger activeNeighbors = new AtomicInteger();
 
     public WorldRegion(int regionX, int regionY, int regionZ) {
-        _regionX = regionX;
-        _regionY = regionY;
-        _regionZ = regionZ;
+        this.regionX = regionX;
+        this.regionY = regionY;
+        this.regionZ = regionZ;
     }
 
     private void switchAI(boolean isOn) {
-        if (_visibleObjects.isEmpty()) {
+        if (visibleObjects.isEmpty()) {
             return;
         }
 
         if (!isOn) {
-            for (WorldObject wo : _visibleObjects) {
+            for (WorldObject wo : visibleObjects) {
                 if (wo.isAttackable()) {
                     final Attackable mob = wo.asAttackable();
 
@@ -103,7 +114,7 @@ public class WorldRegion {
                 }
             }
         } else {
-            for (WorldObject wo : _visibleObjects) {
+            for (WorldObject wo : visibleObjects) {
                 if (wo.isAttackable()) {
                     // Start HP/MP/CP regeneration task.
                     wo.asAttackable().getStatus().startHpMpRegeneration();
@@ -115,25 +126,21 @@ public class WorldRegion {
         }
     }
 
-    public boolean isActive() {
-        return _active;
-    }
-
     public void incrementActiveNeighbors() {
-        _activeNeighbors.incrementAndGet();
+        activeNeighbors.incrementAndGet();
     }
 
     public void decrementActiveNeighbors() {
-        _activeNeighbors.decrementAndGet();
+        activeNeighbors.decrementAndGet();
     }
 
     public boolean areNeighborsActive() {
-        return GeneralConfig.GRIDS_ALWAYS_ON || (_activeNeighbors.get() > 0);
+        return GeneralConfig.GRIDS_ALWAYS_ON || (activeNeighbors.get() > 0);
     }
 
     public boolean areNeighborsEmpty() {
-        for (int i = 0; i < _surroundingRegions.length; i++) {
-            final WorldRegion worldRegion = _surroundingRegions[i];
+        for (int i = 0; i < surroundingRegions.length; i++) {
+            final WorldRegion worldRegion = surroundingRegions[i];
             if (worldRegion.isActive()) {
                 final Collection<WorldObject> regionObjects = worldRegion.getVisibleObjects();
                 if (regionObjects.isEmpty()) {
@@ -156,19 +163,19 @@ public class WorldRegion {
      * @param value
      */
     public synchronized void setActive(boolean value) {
-        if (_active == value) {
+        if (active == value) {
             return;
         }
 
-        _active = value;
+        active = value;
 
         if (value) {
-            for (int i = 0; i < _surroundingRegions.length; i++) {
-                _surroundingRegions[i].incrementActiveNeighbors();
+            for (int i = 0; i < surroundingRegions.length; i++) {
+                surroundingRegions[i].incrementActiveNeighbors();
             }
         } else {
-            for (int i = 0; i < _surroundingRegions.length; i++) {
-                _surroundingRegions[i].decrementActiveNeighbors();
+            for (int i = 0; i < surroundingRegions.length; i++) {
+                surroundingRegions[i].decrementActiveNeighbors();
             }
         }
 
@@ -185,16 +192,16 @@ public class WorldRegion {
 
         // If the timer to deactivate neighbors is running, cancel it.
         synchronized (this) {
-            if (_neighborsTask != null) {
-                _neighborsTask.cancel(true);
-                _neighborsTask = null;
+            if (neighborsTask != null) {
+                neighborsTask.cancel(true);
+                neighborsTask = null;
             }
 
             // Then, set a timer to activate the neighbors.
-            _neighborsTask = ThreadPool.schedule(
+            neighborsTask = ThreadPool.schedule(
                     () -> {
-                        for (int i = 0; i < _surroundingRegions.length; i++) {
-                            _surroundingRegions[i].setActive(true);
+                        for (int i = 0; i < surroundingRegions.length; i++) {
+                            surroundingRegions[i].setActive(true);
                         }
                     },
                     1000 * GeneralConfig.GRID_NEIGHBOR_TURNON_TIME);
@@ -207,17 +214,17 @@ public class WorldRegion {
     private void startDeactivation() {
         // If the timer to activate neighbors is running, cancel it.
         synchronized (this) {
-            if (_neighborsTask != null) {
-                _neighborsTask.cancel(true);
-                _neighborsTask = null;
+            if (neighborsTask != null) {
+                neighborsTask.cancel(true);
+                neighborsTask = null;
             }
 
             // Start a timer to "suggest" a deactivate to self and neighbors.
             // Suggest means: first check if a neighbor has Players in it. If not, deactivate.
-            _neighborsTask = ThreadPool.schedule(
+            neighborsTask = ThreadPool.schedule(
                     () -> {
-                        for (int i = 0; i < _surroundingRegions.length; i++) {
-                            final WorldRegion worldRegion = _surroundingRegions[i];
+                        for (int i = 0; i < surroundingRegions.length; i++) {
+                            final WorldRegion worldRegion = surroundingRegions[i];
                             if (worldRegion.areNeighborsEmpty()) {
                                 worldRegion.setActive(false);
                             }
@@ -228,7 +235,7 @@ public class WorldRegion {
     }
 
     /**
-     * Add the WorldObject in the WorldObjectHashSet(WorldObject) _visibleObjects containing WorldObject visible in this WorldRegion<br>
+     * Add the WorldObject in the WorldObjectHashSet(WorldObject) visibleObjects containing WorldObject visible in this WorldRegion<br>
      * If WorldObject is a Player, Add the Player in the HashSet(Player) _allPlayable containing Player of all player in game in this WorldRegion
      * @param object
      */
@@ -237,26 +244,26 @@ public class WorldRegion {
             return;
         }
 
-        _visibleObjects.add(object);
+        visibleObjects.add(object);
 
         if (object.isDoor()) {
-            for (int i = 0; i < _surroundingRegions.length; i++) {
-                _surroundingRegions[i].addDoor(object.asDoor());
+            for (int i = 0; i < surroundingRegions.length; i++) {
+                surroundingRegions[i].addDoor(object.asDoor());
             }
         } else if (object.isFence()) {
-            for (int i = 0; i < _surroundingRegions.length; i++) {
-                _surroundingRegions[i].addFence((Fence) object);
+            for (int i = 0; i < surroundingRegions.length; i++) {
+                surroundingRegions[i].addFence((Fence) object);
             }
         }
 
         // If this is the first player to enter the region, activate self and neighbors.
-        if (object.isPlayable() && !_active && !GeneralConfig.GRIDS_ALWAYS_ON) {
+        if (object.isPlayable() && !active && !GeneralConfig.GRIDS_ALWAYS_ON) {
             startActivation();
         }
     }
 
     /**
-     * Remove the WorldObject from the WorldObjectHashSet(WorldObject) _visibleObjects in this WorldRegion. If WorldObject is a Player, remove it from the HashSet(Player) _allPlayable of this WorldRegion
+     * Remove the WorldObject from the WorldObjectHashSet(WorldObject) visibleObjects in this WorldRegion. If WorldObject is a Player, remove it from the HashSet(Player) _allPlayable of this WorldRegion
      * @param object
      */
     public synchronized void removeVisibleObject(WorldObject object) {
@@ -264,19 +271,19 @@ public class WorldRegion {
             return;
         }
 
-        if (_visibleObjects.isEmpty()) {
+        if (visibleObjects.isEmpty()) {
             return;
         }
 
-        _visibleObjects.remove(object);
+        visibleObjects.remove(object);
 
         if (object.isDoor()) {
-            for (int i = 0; i < _surroundingRegions.length; i++) {
-                _surroundingRegions[i].removeDoor(object.asDoor());
+            for (int i = 0; i < surroundingRegions.length; i++) {
+                surroundingRegions[i].removeDoor(object.asDoor());
             }
         } else if (object.isFence()) {
-            for (int i = 0; i < _surroundingRegions.length; i++) {
-                _surroundingRegions[i].removeFence((Fence) object);
+            for (int i = 0; i < surroundingRegions.length; i++) {
+                surroundingRegions[i].removeFence((Fence) object);
             }
         }
 
@@ -286,49 +293,45 @@ public class WorldRegion {
     }
 
     public Collection<WorldObject> getVisibleObjects() {
-        return _visibleObjects;
+        return visibleObjects;
     }
 
     public void addDoor(Door door) {
-        _doors.add(door);
+        doors.add(door);
     }
 
     private void removeDoor(Door door) {
-        _doors.remove(door);
+        doors.remove(door);
     }
 
     public Collection<Door> getDoors() {
-        return _doors;
+        return doors;
     }
 
     public void addFence(Fence fence) {
-        _fences.add(fence);
+        fences.add(fence);
     }
 
     private void removeFence(Fence fence) {
-        _fences.remove(fence);
+        fences.remove(fence);
     }
 
     public Collection<Fence> getFences() {
-        return _fences;
+        return fences;
     }
 
     public void setSurroundingRegions(WorldRegion[] regions) {
-        _surroundingRegions = regions;
+        surroundingRegions = regions;
 
         // Make sure that this region is always the first region to improve bulk operations when this region should be
         // updated first.
-        for (int i = 0; i < _surroundingRegions.length; i++) {
-            if (_surroundingRegions[i] == this) {
-                final WorldRegion first = _surroundingRegions[0];
-                _surroundingRegions[0] = this;
-                _surroundingRegions[i] = first;
+        for (int i = 0; i < surroundingRegions.length; i++) {
+            if (surroundingRegions[i] == this) {
+                final WorldRegion first = surroundingRegions[0];
+                surroundingRegions[0] = this;
+                surroundingRegions[i] = first;
             }
         }
-    }
-
-    public WorldRegion[] getSurroundingRegions() {
-        return _surroundingRegions;
     }
 
     /**
@@ -341,30 +344,18 @@ public class WorldRegion {
             return false;
         }
 
-        return _surroundingRegionCache.computeIfAbsent(
+        return surroundingRegionCache.computeIfAbsent(
                 region,
-                r -> (_regionX >= (r.getRegionX() - 1))
-                        && (_regionX <= (r.getRegionX() + 1))
-                        && (_regionY >= (r.getRegionY() - 1))
-                        && (_regionY <= (r.getRegionY() + 1))
-                        && (_regionZ >= (r.getRegionZ() - 1))
-                        && (_regionZ <= (r.getRegionZ() + 1)));
-    }
-
-    public int getRegionX() {
-        return _regionX;
-    }
-
-    public int getRegionY() {
-        return _regionY;
-    }
-
-    public int getRegionZ() {
-        return _regionZ;
+                r -> (regionX >= (r.getRegionX() - 1))
+                        && (regionX <= (r.getRegionX() + 1))
+                        && (regionY >= (r.getRegionY() - 1))
+                        && (regionY <= (r.getRegionY() + 1))
+                        && (regionZ >= (r.getRegionZ() - 1))
+                        && (regionZ <= (r.getRegionZ() + 1)));
     }
 
     @Override
     public String toString() {
-        return "(" + _regionX + ", " + _regionY + ", " + _regionZ + ")";
+        return "(" + regionX + ", " + regionY + ", " + regionZ + ")";
     }
 }

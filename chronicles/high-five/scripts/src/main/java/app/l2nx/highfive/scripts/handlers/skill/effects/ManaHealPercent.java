@@ -33,12 +33,12 @@ import app.l2nx.highfive.util.StatSet;
  * @author UnAfraid
  */
 public class ManaHealPercent extends AbstractEffect {
-    private final double _power;
+    private final double power;
 
     public ManaHealPercent(Condition attachCond, Condition applyCond, StatSet set, StatSet params) {
         super(attachCond, applyCond, set, params);
 
-        _power = params.getDouble("power", 0);
+        power = params.getDouble("power", 0);
     }
 
     @Override
@@ -58,7 +58,7 @@ public class ManaHealPercent extends AbstractEffect {
         }
 
         double amount = 0;
-        final double power = _power;
+        final double power = this.power;
         final boolean full = (power == 100.0);
         amount = full ? effected.getMaxMp() : (effected.getMaxMp() * power) / 100.0;
 

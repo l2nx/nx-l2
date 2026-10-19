@@ -31,12 +31,12 @@ import app.l2nx.highfive.util.StatSet;
  * @author Zoey76
  */
 public class CrystalGradeModify extends AbstractEffect {
-    private final int _grade;
+    private final int grade;
 
     public CrystalGradeModify(Condition attachCond, Condition applyCond, StatSet set, StatSet params) {
         super(attachCond, applyCond, set, params);
 
-        _grade = params.getInt("grade", 0);
+        grade = params.getInt("grade", 0);
     }
 
     @Override
@@ -54,6 +54,6 @@ public class CrystalGradeModify extends AbstractEffect {
 
     @Override
     public void onStart(Creature effector, Creature effected, Skill skill) {
-        effected.asPlayer().setExpertisePenaltyBonus(_grade);
+        effected.asPlayer().setExpertisePenaltyBonus(grade);
     }
 }

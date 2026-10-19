@@ -22,48 +22,39 @@
  */
 package app.l2nx.highfive.network.holders;
 
+import lombok.Getter;
+import lombok.Setter;
+
 public class RequestTrade {
-    int _objectId;
-    int _itemId;
-    long _count;
-    long _price;
+    @Getter
+    int objectId;
+
+    @Getter
+    int itemId;
+
+    @Getter
+    @Setter
+    long count;
+
+    @Getter
+    long price;
 
     public RequestTrade(int objectId, long count, long price) {
-        _objectId = objectId;
-        _count = count;
-        _price = price;
+        this.objectId = objectId;
+        this.count = count;
+        this.price = price;
     }
 
     public RequestTrade(int objectId, int itemId, long count, long price) {
-        _objectId = objectId;
-        _itemId = itemId;
-        _count = count;
-        _price = price;
-    }
-
-    public int getObjectId() {
-        return _objectId;
-    }
-
-    public int getItemId() {
-        return _itemId;
-    }
-
-    public void setCount(long count) {
-        _count = count;
-    }
-
-    public long getCount() {
-        return _count;
-    }
-
-    public long getPrice() {
-        return _price;
+        this.objectId = objectId;
+        this.itemId = itemId;
+        this.count = count;
+        this.price = price;
     }
 
     @Override
     public int hashCode() {
-        return _objectId;
+        return objectId;
     }
 
     @Override
@@ -76,6 +67,6 @@ public class RequestTrade {
             return false;
         }
 
-        return (_objectId != ((RequestTrade) obj)._objectId);
+        return (objectId != ((RequestTrade) obj).objectId);
     }
 }

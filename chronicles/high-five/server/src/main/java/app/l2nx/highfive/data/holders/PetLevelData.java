@@ -21,161 +21,87 @@ package app.l2nx.highfive.data.holders;
 
 import app.l2nx.highfive.mechanics.stats.MoveType;
 import app.l2nx.highfive.util.StatSet;
+import lombok.Getter;
 
 /**
  * Stats definition for each pet level.
  * @author JIV
  */
 public class PetLevelData {
-    private final int _ownerExpTaken;
-    private final int _petFeedBattle;
-    private final int _petFeedNormal;
-    private final float _petMAtk;
-    private final long _petMaxExp;
-    private final int _petMaxFeed;
-    private final float _petMaxHP;
-    private final float _petMaxMP;
-    private final float _petMDef;
-    private final float _petPAtk;
-    private final float _petPDef;
-    private final float _petRegenHP;
-    private final float _petRegenMP;
-    private final short _petSoulShot;
-    private final short _petSpiritShot;
-    private final double _walkSpeedOnRide;
-    private final double _runSpeedOnRide;
-    private final double _slowSwimSpeedOnRide;
-    private final double _fastSwimSpeedOnRide;
-    private final double _slowFlySpeedOnRide;
-    private final double _fastFlySpeedOnRide;
+    @Getter
+    private final int ownerExpTaken;
+
+    @Getter
+    private final int petFeedBattle;
+
+    @Getter
+    private final int petFeedNormal;
+
+    @Getter
+    private final float petMAtk;
+
+    @Getter
+    private final long petMaxExp;
+
+    @Getter
+    private final int petMaxFeed;
+
+    @Getter
+    private final float petMaxHP;
+
+    @Getter
+    private final float petMaxMP;
+
+    @Getter
+    private final float petMDef;
+
+    @Getter
+    private final float petPAtk;
+
+    @Getter
+    private final float petPDef;
+
+    @Getter
+    private final float petRegenHP;
+
+    @Getter
+    private final float petRegenMP;
+
+    @Getter
+    private final short petSoulShot;
+
+    @Getter
+    private final short petSpiritShot;
+
+    private final double walkSpeedOnRide;
+    private final double runSpeedOnRide;
+    private final double slowSwimSpeedOnRide;
+    private final double fastSwimSpeedOnRide;
+    private final double slowFlySpeedOnRide;
+    private final double fastFlySpeedOnRide;
 
     public PetLevelData(StatSet set) {
-        _ownerExpTaken = set.getInt("get_exp_type");
-        _petMaxExp = (long) set.getDouble("exp");
-        _petMaxHP = set.getFloat("org_hp");
-        _petMaxMP = set.getFloat("org_mp");
-        _petPAtk = set.getFloat("org_pattack");
-        _petPDef = set.getFloat("org_pdefend");
-        _petMAtk = set.getFloat("org_mattack");
-        _petMDef = set.getFloat("org_mdefend");
-        _petMaxFeed = set.getInt("max_meal");
-        _petFeedBattle = set.getInt("consume_meal_in_battle");
-        _petFeedNormal = set.getInt("consume_meal_in_normal");
-        _petRegenHP = set.getFloat("org_hp_regen");
-        _petRegenMP = set.getFloat("org_mp_regen");
-        _petSoulShot = set.getShort("soulshot_count");
-        _petSpiritShot = set.getShort("spiritshot_count");
-        _walkSpeedOnRide = set.getDouble("walkSpeedOnRide", 0);
-        _runSpeedOnRide = set.getDouble("runSpeedOnRide", 0);
-        _slowSwimSpeedOnRide = set.getDouble("slowSwimSpeedOnRide", 0);
-        _fastSwimSpeedOnRide = set.getDouble("fastSwimSpeedOnRide", 0);
-        _slowFlySpeedOnRide = set.getDouble("slowFlySpeedOnRide", 0);
-        _fastFlySpeedOnRide = set.getDouble("fastFlySpeedOnRide", 0);
-    }
-
-    /**
-     * @return the owner's experience points consumed by the pet.
-     */
-    public int getOwnerExpTaken() {
-        return _ownerExpTaken;
-    }
-
-    /**
-     * @return the pet's food consume rate at battle state.
-     */
-    public int getPetFeedBattle() {
-        return _petFeedBattle;
-    }
-
-    /**
-     * @return the pet's food consume rate at normal state.
-     */
-    public int getPetFeedNormal() {
-        return _petFeedNormal;
-    }
-
-    /**
-     * @return the pet's Magical Attack.
-     */
-    public float getPetMAtk() {
-        return _petMAtk;
-    }
-
-    /**
-     * @return the pet's maximum experience points.
-     */
-    public long getPetMaxExp() {
-        return _petMaxExp;
-    }
-
-    /**
-     * @return the pet's maximum feed points.
-     */
-    public int getPetMaxFeed() {
-        return _petMaxFeed;
-    }
-
-    /**
-     * @return the pet's maximum HP.
-     */
-    public float getPetMaxHP() {
-        return _petMaxHP;
-    }
-
-    /**
-     * @return the pet's maximum MP.
-     */
-    public float getPetMaxMP() {
-        return _petMaxMP;
-    }
-
-    /**
-     * @return the pet's Magical Defense.
-     */
-    public float getPetMDef() {
-        return _petMDef;
-    }
-
-    /**
-     * @return the pet's Physical Attack.
-     */
-    public float getPetPAtk() {
-        return _petPAtk;
-    }
-
-    /**
-     * @return the pet's Physical Defense.
-     */
-    public float getPetPDef() {
-        return _petPDef;
-    }
-
-    /**
-     * @return the pet's HP regeneration rate.
-     */
-    public float getPetRegenHP() {
-        return _petRegenHP;
-    }
-
-    /**
-     * @return the pet's MP regeneration rate.
-     */
-    public float getPetRegenMP() {
-        return _petRegenMP;
-    }
-
-    /**
-     * @return the pet's soulshot use count.
-     */
-    public short getPetSoulShot() {
-        return _petSoulShot;
-    }
-
-    /**
-     * @return the pet's spiritshot use count.
-     */
-    public short getPetSpiritShot() {
-        return _petSpiritShot;
+        ownerExpTaken = set.getInt("get_exp_type");
+        petMaxExp = (long) set.getDouble("exp");
+        petMaxHP = set.getFloat("org_hp");
+        petMaxMP = set.getFloat("org_mp");
+        petPAtk = set.getFloat("org_pattack");
+        petPDef = set.getFloat("org_pdefend");
+        petMAtk = set.getFloat("org_mattack");
+        petMDef = set.getFloat("org_mdefend");
+        petMaxFeed = set.getInt("max_meal");
+        petFeedBattle = set.getInt("consume_meal_in_battle");
+        petFeedNormal = set.getInt("consume_meal_in_normal");
+        petRegenHP = set.getFloat("org_hp_regen");
+        petRegenMP = set.getFloat("org_mp_regen");
+        petSoulShot = set.getShort("soulshot_count");
+        petSpiritShot = set.getShort("spiritshot_count");
+        walkSpeedOnRide = set.getDouble("walkSpeedOnRide", 0);
+        runSpeedOnRide = set.getDouble("runSpeedOnRide", 0);
+        slowSwimSpeedOnRide = set.getDouble("slowSwimSpeedOnRide", 0);
+        fastSwimSpeedOnRide = set.getDouble("fastSwimSpeedOnRide", 0);
+        slowFlySpeedOnRide = set.getDouble("slowFlySpeedOnRide", 0);
+        fastFlySpeedOnRide = set.getDouble("fastFlySpeedOnRide", 0);
     }
 
     /**
@@ -185,22 +111,22 @@ public class PetLevelData {
     public double getSpeedOnRide(MoveType mt) {
         switch (mt) {
             case WALK: {
-                return _walkSpeedOnRide;
+                return walkSpeedOnRide;
             }
             case RUN: {
-                return _runSpeedOnRide;
+                return runSpeedOnRide;
             }
             case SLOW_SWIM: {
-                return _slowSwimSpeedOnRide;
+                return slowSwimSpeedOnRide;
             }
             case FAST_SWIM: {
-                return _fastSwimSpeedOnRide;
+                return fastSwimSpeedOnRide;
             }
             case SLOW_FLY: {
-                return _slowFlySpeedOnRide;
+                return slowFlySpeedOnRide;
             }
             case FAST_FLY: {
-                return _fastFlySpeedOnRide;
+                return fastFlySpeedOnRide;
             }
         }
 

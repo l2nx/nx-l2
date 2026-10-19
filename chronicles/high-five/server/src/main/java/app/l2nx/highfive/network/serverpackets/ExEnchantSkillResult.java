@@ -34,15 +34,15 @@ public class ExEnchantSkillResult extends ServerPacket {
         return result ? STATIC_PACKET_TRUE : STATIC_PACKET_FALSE;
     }
 
-    private final boolean _enchanted;
+    private final boolean enchanted;
 
     public ExEnchantSkillResult(boolean enchanted) {
-        _enchanted = enchanted;
+        this.enchanted = enchanted;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_ENCHANT_SKILL_RESULT.writeId(this, buffer);
-        buffer.writeInt(_enchanted);
+        buffer.writeInt(enchanted);
     }
 }

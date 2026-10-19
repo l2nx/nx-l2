@@ -26,104 +26,90 @@ import app.l2nx.highfive.config.RatesConfig;
 import app.l2nx.highfive.data.xml.ItemData;
 import app.l2nx.highfive.entity.item.ItemTemplate;
 import app.l2nx.highfive.util.StatSet;
+import lombok.Getter;
 
 public class Seed {
-    private final int _seedId;
-    private final int _cropId; // crop type
-    private final int _level; // seed level
-    private final int _matureId; // mature crop type
-    private final int _reward1;
-    private final int _reward2;
-    private final int _castleId; // id of manor (castle id) where seed can be farmed
-    private final boolean _isAlternative;
-    private final int _limitSeeds;
-    private final int _limitCrops;
-    private final int _seedReferencePrice;
-    private final int _cropReferencePrice;
+    @Getter
+    private final int seedId;
+
+    @Getter
+    private final int cropId; // crop type
+
+    @Getter
+    private final int level; // seed level
+
+    @Getter
+    private final int matureId; // mature crop type
+
+    private final int reward1;
+    private final int reward2;
+
+    @Getter
+    private final int castleId; // id of manor (castle id) where seed can be farmed
+
+    @Getter
+    private final boolean alternative;
+
+    private final int limitSeeds;
+    private final int limitCrops;
+
+    @Getter
+    private final int seedReferencePrice;
+
+    @Getter
+    private final int cropReferencePrice;
 
     public Seed(StatSet set) {
-        _cropId = set.getInt("id");
-        _seedId = set.getInt("seedId");
-        _level = set.getInt("level");
-        _matureId = set.getInt("mature_Id");
-        _reward1 = set.getInt("reward1");
-        _reward2 = set.getInt("reward2");
-        _castleId = set.getInt("castleId");
-        _isAlternative = set.getBoolean("alternative");
-        _limitCrops = set.getInt("limit_crops");
-        _limitSeeds = set.getInt("limit_seed");
+        cropId = set.getInt("id");
+        seedId = set.getInt("seedId");
+        level = set.getInt("level");
+        matureId = set.getInt("mature_Id");
+        reward1 = set.getInt("reward1");
+        reward2 = set.getInt("reward2");
+        castleId = set.getInt("castleId");
+        alternative = set.getBoolean("alternative");
+        limitCrops = set.getInt("limit_crops");
+        limitSeeds = set.getInt("limit_seed");
 
         // Set prices
-        ItemTemplate item = ItemData.getInstance().getTemplate(_cropId);
-        _cropReferencePrice = (item != null) ? item.getReferencePrice() : 1;
-        item = ItemData.getInstance().getTemplate(_seedId);
-        _seedReferencePrice = (item != null) ? item.getReferencePrice() : 1;
-    }
-
-    public int getCastleId() {
-        return _castleId;
-    }
-
-    public int getSeedId() {
-        return _seedId;
-    }
-
-    public int getCropId() {
-        return _cropId;
-    }
-
-    public int getMatureId() {
-        return _matureId;
+        ItemTemplate item = ItemData.getInstance().getTemplate(cropId);
+        cropReferencePrice = (item != null) ? item.getReferencePrice() : 1;
+        item = ItemData.getInstance().getTemplate(seedId);
+        seedReferencePrice = (item != null) ? item.getReferencePrice() : 1;
     }
 
     public int getReward(int type) {
-        return (type == 1) ? _reward1 : _reward2;
-    }
-
-    public int getLevel() {
-        return _level;
-    }
-
-    public boolean isAlternative() {
-        return _isAlternative;
+        return (type == 1) ? reward1 : reward2;
     }
 
     public int getSeedLimit() {
-        return _limitSeeds * RatesConfig.RATE_DROP_MANOR;
+        return limitSeeds * RatesConfig.RATE_DROP_MANOR;
     }
 
     public int getCropLimit() {
-        return _limitCrops * RatesConfig.RATE_DROP_MANOR;
-    }
-
-    public int getSeedReferencePrice() {
-        return _seedReferencePrice;
+        return limitCrops * RatesConfig.RATE_DROP_MANOR;
     }
 
     public int getSeedMaxPrice() {
-        return _seedReferencePrice * 10;
+        return seedReferencePrice * 10;
     }
 
     public int getSeedMinPrice() {
-        return (int) (_seedReferencePrice * 0.6);
-    }
-
-    public int getCropReferencePrice() {
-        return _cropReferencePrice;
+        return (int) (seedReferencePrice * 0.6);
     }
 
     public int getCropMaxPrice() {
-        return _cropReferencePrice * 10;
+        return cropReferencePrice * 10;
     }
 
     public int getCropMinPrice() {
-        return (int) (_cropReferencePrice * 0.6);
+        return (int) (cropReferencePrice * 0.6);
     }
 
     @Override
     public String toString() {
-        return "SeedData [_id=" + _seedId + ", _level=" + _level + ", _crop=" + _cropId + ", _mature=" + _matureId
-                + ", _type1=" + _reward1 + ", _type2=" + _reward2 + ", _manorId=" + _castleId + ", _isAlternative="
-                + _isAlternative + ", _limitSeeds=" + _limitSeeds + ", _limitCrops=" + _limitCrops + "]";
+        return "SeedData [_id=" + seedId + ", _level=" + level + ", _crop=" + cropId + ", _mature=" + matureId
+                + ", _type1=" + reward1 + ", _type2=" + reward2 + ", _manorId=" + castleId + ", _isAlternative="
+                + alternative + ", _limitSeeds=" + limitSeeds + ", _limitCrops=" + limitCrops + "]";
     }
 }

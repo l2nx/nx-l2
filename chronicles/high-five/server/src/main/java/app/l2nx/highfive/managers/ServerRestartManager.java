@@ -30,16 +30,18 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Calendar;
 import java.util.Locale;
-import java.util.logging.Logger;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author Gigi, Mobius
  */
+@Slf4j
 public class ServerRestartManager {
-    static final Logger LOGGER = Logger.getLogger(ServerRestartManager.class.getName());
 
     private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm");
 
+    @Getter
     private String nextRestartTime = "unknown";
 
     protected ServerRestartManager() {
@@ -92,10 +94,10 @@ public class ServerRestartManager {
 
                 ThreadPool.schedule(
                         new ServerRestartTask(), lastDelay - (ServerConfig.SERVER_RESTART_SCHEDULE_COUNTDOWN * 1000));
-                LOGGER.info("Scheduled server restart at " + lastRestart.getTime() + ".");
+                log.info("Scheduled server restart at {}.", lastRestart.getTime());
             }
         } catch (Exception e) {
-            LOGGER.info("The scheduled server restart config is not set properly, please correct it!");
+            log.info("The scheduled server restart config is not set properly, please correct it!");
         }
     }
 
@@ -118,10 +120,6 @@ public class ServerRestartManager {
                 return "th";
             }
         }
-    }
-
-    public String getNextRestartTime() {
-        return nextRestartTime;
     }
 
     class ServerRestartTask implements Runnable {

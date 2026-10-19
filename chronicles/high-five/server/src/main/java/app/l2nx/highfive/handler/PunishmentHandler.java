@@ -28,28 +28,28 @@ import java.util.Map;
  * @author UnAfraid
  */
 public class PunishmentHandler implements IHandler<IPunishmentHandler, PunishmentType> {
-    private final Map<PunishmentType, IPunishmentHandler> _handlers = new EnumMap<>(PunishmentType.class);
+    private final Map<PunishmentType, IPunishmentHandler> handlers = new EnumMap<>(PunishmentType.class);
 
     protected PunishmentHandler() {}
 
     @Override
     public void registerHandler(IPunishmentHandler handler) {
-        _handlers.put(handler.getType(), handler);
+        handlers.put(handler.getType(), handler);
     }
 
     @Override
     public synchronized void removeHandler(IPunishmentHandler handler) {
-        _handlers.remove(handler.getType());
+        handlers.remove(handler.getType());
     }
 
     @Override
     public IPunishmentHandler getHandler(PunishmentType val) {
-        return _handlers.get(val);
+        return handlers.get(val);
     }
 
     @Override
     public int size() {
-        return _handlers.size();
+        return handlers.size();
     }
 
     public static PunishmentHandler getInstance() {

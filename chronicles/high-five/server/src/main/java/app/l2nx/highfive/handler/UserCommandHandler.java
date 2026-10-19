@@ -26,34 +26,34 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class UserCommandHandler implements IHandler<IUserCommandHandler, Integer> {
-    private final Map<Integer, IUserCommandHandler> _datatable;
+    private final Map<Integer, IUserCommandHandler> datatable;
 
     protected UserCommandHandler() {
-        _datatable = new HashMap<>();
+        datatable = new HashMap<>();
     }
 
     @Override
     public void registerHandler(IUserCommandHandler handler) {
         for (int id : handler.getCommandList()) {
-            _datatable.put(id, handler);
+            datatable.put(id, handler);
         }
     }
 
     @Override
     public synchronized void removeHandler(IUserCommandHandler handler) {
         for (int id : handler.getCommandList()) {
-            _datatable.remove(id);
+            datatable.remove(id);
         }
     }
 
     @Override
     public IUserCommandHandler getHandler(Integer userCommand) {
-        return _datatable.get(userCommand);
+        return datatable.get(userCommand);
     }
 
     @Override
     public int size() {
-        return _datatable.size();
+        return datatable.size();
     }
 
     public static UserCommandHandler getInstance() {

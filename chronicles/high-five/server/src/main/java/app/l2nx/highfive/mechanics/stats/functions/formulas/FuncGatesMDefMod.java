@@ -30,10 +30,10 @@ import app.l2nx.highfive.mechanics.stats.functions.AbstractFunction;
  * @author UnAfraid
  */
 public class FuncGatesMDefMod extends AbstractFunction {
-    private static final FuncGatesMDefMod _fmm_instance = new FuncGatesMDefMod();
+    private static final FuncGatesMDefMod instance = new FuncGatesMDefMod();
 
     public static AbstractFunction getInstance() {
-        return _fmm_instance;
+        return instance;
     }
 
     private FuncGatesMDefMod() {

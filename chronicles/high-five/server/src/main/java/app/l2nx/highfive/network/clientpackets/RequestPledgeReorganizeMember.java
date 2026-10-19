@@ -29,22 +29,22 @@ import app.l2nx.highfive.entity.clan.ClanMember;
  * @author -Wooden-
  */
 public class RequestPledgeReorganizeMember extends ClientPacket {
-    private int _isMemberSelected;
-    private String _memberName;
-    private int _newPledgeType;
-    private String _selectedMember;
+    private int isMemberSelected;
+    private String memberName;
+    private int newPledgeType;
+    private String selectedMember;
 
     @Override
     protected void readImpl() {
-        _isMemberSelected = readInt();
-        _memberName = readString();
-        _newPledgeType = readInt();
-        _selectedMember = readString();
+        isMemberSelected = readInt();
+        memberName = readString();
+        newPledgeType = readInt();
+        selectedMember = readString();
     }
 
     @Override
     protected void runImpl() {
-        if (_isMemberSelected == 0) {
+        if (isMemberSelected == 0) {
             return;
         }
 
@@ -62,22 +62,22 @@ public class RequestPledgeReorganizeMember extends ClientPacket {
             return;
         }
 
-        final ClanMember member1 = clan.getClanMember(_memberName);
+        final ClanMember member1 = clan.getClanMember(memberName);
         if ((member1 == null) || (member1.getObjectId() == clan.getLeaderId())) {
             return;
         }
 
-        final ClanMember member2 = clan.getClanMember(_selectedMember);
+        final ClanMember member2 = clan.getClanMember(selectedMember);
         if ((member2 == null) || (member2.getObjectId() == clan.getLeaderId())) {
             return;
         }
 
         final int oldPledgeType = member1.getPledgeType();
-        if (oldPledgeType == _newPledgeType) {
+        if (oldPledgeType == newPledgeType) {
             return;
         }
 
-        member1.setPledgeType(_newPledgeType);
+        member1.setPledgeType(newPledgeType);
         member2.setPledgeType(oldPledgeType);
         clan.broadcastClanStatus();
     }

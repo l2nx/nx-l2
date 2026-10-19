@@ -41,7 +41,7 @@ import app.l2nx.highfive.util.StatSet;
  * @author UnAfraid
  */
 public class Pumping extends AbstractEffect {
-    private final double _power;
+    private final double power;
 
     public Pumping(Condition attachCond, Condition applyCond, StatSet set, StatSet params) {
         super(attachCond, applyCond, set, params);
@@ -50,7 +50,7 @@ public class Pumping extends AbstractEffect {
             throw new IllegalArgumentException(getClass().getSimpleName() + ": effect without power!");
         }
 
-        _power = params.getDouble("power");
+        power = params.getDouble("power");
     }
 
     @Override
@@ -93,7 +93,7 @@ public class Pumping extends AbstractEffect {
         final FishingRod fishingRod = FishingRodsData.getInstance().getFishingRod(weaponItem.getId());
         final double gradeBonus = fishingRod.getFishingRodLevel() * 0.1; // TODO: Check this formula (is guessed)
         int dmg = (int)
-                ((fishingRod.getFishingRodDamage() + player.calcStat(Stat.FISHING_EXPERTISE, 1, null, null) + _power)
+                ((fishingRod.getFishingRodDamage() + player.calcStat(Stat.FISHING_EXPERTISE, 1, null, null) + power)
                         * gradeBonus
                         * ss);
 

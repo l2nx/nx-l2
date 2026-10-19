@@ -45,8 +45,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.function.Function;
-import java.util.logging.Level;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class Kamaloka extends InstanceScript {
     /*
      * Reset time for all kamaloka Default: 6:30AM on server time
@@ -599,7 +600,7 @@ public class Kamaloka extends InstanceScript {
         try {
             templateId = TEMPLATE_IDS[index];
         } catch (ArrayIndexOutOfBoundsException e) {
-            LOGGER.warning("Problem with Kamaloka: " + e.getMessage());
+            log.warn("Problem with Kamaloka: {}", e.getMessage());
             return;
         }
 
@@ -828,7 +829,7 @@ public class Kamaloka extends InstanceScript {
             try {
                 enterKamalokaInstance(player, Integer.parseInt(event));
             } catch (Exception e) {
-                LOGGER.log(Level.WARNING, "", e);
+                log.warn("", e);
             }
         }
 

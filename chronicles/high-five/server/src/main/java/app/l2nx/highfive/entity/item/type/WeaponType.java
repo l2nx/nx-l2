@@ -20,6 +20,7 @@
 package app.l2nx.highfive.entity.item.type;
 
 import app.l2nx.highfive.mechanics.stats.TraitType;
+import lombok.Getter;
 
 /**
  * Weapon Type enumerated.
@@ -44,16 +45,18 @@ public enum WeaponType implements ItemType {
     OWNTHING(TraitType.NONE),
     DUALDAGGER(TraitType.DUALDAGGER);
 
-    private final int _mask;
-    private final TraitType _traitType;
+    private final int mask;
+
+    @Getter
+    private final TraitType traitType;
 
     /**
      * Constructor of the WeaponType.
      * @param traitType
      */
     WeaponType(TraitType traitType) {
-        _mask = 1 << ordinal();
-        _traitType = traitType;
+        mask = 1 << ordinal();
+        this.traitType = traitType;
     }
 
     /**
@@ -61,14 +64,7 @@ public enum WeaponType implements ItemType {
      */
     @Override
     public int mask() {
-        return _mask;
-    }
-
-    /**
-     * @return TraitType the type of the WeaponType
-     */
-    public TraitType getTraitType() {
-        return _traitType;
+        return mask;
     }
 
     public boolean isRanged() {

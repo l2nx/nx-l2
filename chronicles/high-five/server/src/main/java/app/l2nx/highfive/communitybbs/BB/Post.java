@@ -26,93 +26,61 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.Collection;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author Maktakien
  */
+@Slf4j
 public class Post {
-    private static final Logger LOGGER = Logger.getLogger(Post.class.getName());
 
     public static class CPost {
-        private int _postId;
-        private String _postOwner;
-        private int _postOwnerId;
-        private long _postDate;
-        private int _postTopicId;
-        private int _postForumId;
-        private String _postText;
+        @Getter
+        @Setter
+        private int postId;
 
-        public void setPostId(int postId) {
-            _postId = postId;
-        }
+        @Getter
+        @Setter
+        private String postOwner;
 
-        public int getPostId() {
-            return _postId;
-        }
+        @Getter
+        @Setter
+        private int postOwnerId;
 
-        public void setPostOwner(String postOwner) {
-            _postOwner = postOwner;
-        }
+        @Getter
+        @Setter
+        private long postDate;
 
-        public String getPostOwner() {
-            return _postOwner;
-        }
+        @Getter
+        @Setter
+        private int postTopicId;
 
-        public void setPostOwnerId(int postOwnerId) {
-            _postOwnerId = postOwnerId;
-        }
+        @Getter
+        @Setter
+        private int postForumId;
 
-        public int getPostOwnerId() {
-            return _postOwnerId;
-        }
-
-        public void setPostDate(long postDate) {
-            _postDate = postDate;
-        }
-
-        public long getPostDate() {
-            return _postDate;
-        }
-
-        public void setPostTopicId(int postTopicId) {
-            _postTopicId = postTopicId;
-        }
-
-        public int getPostTopicId() {
-            return _postTopicId;
-        }
-
-        public void setPostForumId(int postForumId) {
-            _postForumId = postForumId;
-        }
-
-        public int getPostForumId() {
-            return _postForumId;
-        }
-
-        public void setPostText(String postText) {
-            _postText = postText;
-        }
+        @Setter
+        private String postText;
 
         public String getPostText() {
-            if (_postText == null) {
+            if (postText == null) {
                 return "";
             }
 
             // Bypass exploit check.
-            final String text = _postText.toLowerCase();
+            final String text = postText.toLowerCase();
             if (text.contains("action") && text.contains("bypass")) {
                 return "";
             }
 
             // Returns text without tags.
-            return _postText.replaceAll("<.*?>", "");
+            return postText.replaceAll("<.*?>", "");
         }
     }
 
-    private final Collection<CPost> _post;
+    private final Collection<CPost> post;
 
     /**
      * @param postOwner
@@ -123,7 +91,7 @@ public class Post {
      * @param txt
      */
     public Post(String postOwner, int postOwnerId, long date, int tid, int postForumId, String txt) {
-        _post = ConcurrentHashMap.newKeySet();
+        post = ConcurrentHashMap.newKeySet();
         final CPost cp = new CPost();
         cp.setPostId(0);
         cp.setPostOwner(postOwner);
@@ -132,7 +100,7 @@ public class Post {
         cp.setPostTopicId(tid);
         cp.setPostForumId(postForumId);
         cp.setPostText(txt);
-        _post.add(cp);
+        post.add(cp);
         insertindb(cp);
     }
 
@@ -149,18 +117,18 @@ public class Post {
             ps.setString(7, cp.getPostText());
             ps.execute();
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, "Error while saving new Post to db " + e.getMessage(), e);
+            log.warn("Error while saving new Post to db {}", e.getMessage(), e);
         }
     }
 
     public Post(Topic t) {
-        _post = ConcurrentHashMap.newKeySet();
+        post = ConcurrentHashMap.newKeySet();
         load(t);
     }
 
     public CPost getCPost(int id) {
         int i = 0;
-        for (CPost cp : _post) {
+        for (CPost cp : post) {
             if (i++ == id) {
                 return cp;
             }
@@ -178,7 +146,7 @@ public class Post {
             ps.setInt(2, t.getID());
             ps.execute();
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, "Error while deleting post: " + e.getMessage(), e);
+            log.warn("Error while deleting post: {}", e.getMessage(), e);
         }
     }
 
@@ -198,14 +166,11 @@ public class Post {
                     cp.setPostTopicId(rs.getInt("post_topic_id"));
                     cp.setPostForumId(rs.getInt("post_forum_id"));
                     cp.setPostText(rs.getString("post_txt"));
-                    _post.add(cp);
+                    post.add(cp);
                 }
             }
         } catch (Exception e) {
-            LOGGER.log(
-                    Level.WARNING,
-                    "Data error on Post " + t.getForumID() + "/" + t.getID() + " : " + e.getMessage(),
-                    e);
+            log.warn("Data error on Post {}/{} : {}", t.getForumID(), t.getID(), e.getMessage(), e);
         }
     }
 
@@ -220,7 +185,7 @@ public class Post {
             ps.setInt(4, cp.getPostForumId());
             ps.execute();
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, "Error while saving new Post to db " + e.getMessage(), e);
+            log.warn("Error while saving new Post to db {}", e.getMessage(), e);
         }
     }
 }

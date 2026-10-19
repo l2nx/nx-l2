@@ -24,22 +24,24 @@ import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.serverpackets.L2FriendSay;
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Receive Private (Friend) Message - 0xCC Format: c SS S: Message S: Receiving Player
  * @author Tempy
  */
 public class RequestSendFriendMsg extends ClientPacket {
-    private static Logger LOGGER_CHAT = Logger.getLogger("chat");
 
-    private String _message;
-    private String _receiver;
+    private static final Logger CHAT_LOG = LoggerFactory.getLogger("chat");
+
+    private String message;
+    private String receiver;
 
     @Override
     protected void readImpl() {
-        _message = readString();
-        _receiver = readString();
+        message = readString();
+        receiver = readString();
     }
 
     @Override
@@ -49,11 +51,11 @@ public class RequestSendFriendMsg extends ClientPacket {
             return;
         }
 
-        if ((_message == null) || _message.isEmpty() || (_message.length() > 300)) {
+        if ((message == null) || message.isEmpty() || (message.length() > 300)) {
             return;
         }
 
-        final Player targetPlayer = World.getPlayer(_receiver);
+        final Player targetPlayer = World.getPlayer(receiver);
         if ((targetPlayer == null) || !targetPlayer.getFriendList().contains(player.getObjectId())) {
             player.sendPacket(SystemMessageId.THAT_PLAYER_IS_NOT_ONLINE);
             return;
@@ -66,10 +68,10 @@ public class RequestSendFriendMsg extends ClientPacket {
             sb.append(" to ");
             sb.append(targetPlayer);
             sb.append("] ");
-            sb.append(_message);
-            LOGGER_CHAT.info(sb.toString());
+            sb.append(message);
+            CHAT_LOG.info(sb.toString());
         }
 
-        targetPlayer.sendPacket(new L2FriendSay(player.getName(), _receiver, _message));
+        targetPlayer.sendPacket(new L2FriendSay(player.getName(), receiver, message));
     }
 }

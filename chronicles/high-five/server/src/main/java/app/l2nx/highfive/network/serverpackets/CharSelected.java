@@ -29,46 +29,46 @@ import app.l2nx.highfive.taskmanagers.GameTimeTaskManager;
 import app.l2nx.network.buffer.WriteBuffer;
 
 public class CharSelected extends ServerPacket {
-    private final Player _player;
-    private final int _sessionId;
+    private final Player player;
+    private final int sessionId;
 
     public CharSelected(Player player, int sessionId) {
-        _player = player;
-        _sessionId = sessionId;
+        this.player = player;
+        this.sessionId = sessionId;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.CHARACTER_SELECTED.writeId(this, buffer);
-        buffer.writeString(_player.getName());
-        buffer.writeInt(_player.getObjectId());
-        buffer.writeString(_player.getTitle());
-        buffer.writeInt(_sessionId);
-        buffer.writeInt(_player.getClanId());
+        buffer.writeString(player.getName());
+        buffer.writeInt(player.getObjectId());
+        buffer.writeString(player.getTitle());
+        buffer.writeInt(sessionId);
+        buffer.writeInt(player.getClanId());
         buffer.writeInt(0); // ??
-        buffer.writeInt(_player.getAppearance().isFemale());
-        buffer.writeInt(_player.getRace().ordinal());
-        buffer.writeInt(_player.getPlayerClass().getId());
+        buffer.writeInt(player.getAppearance().isFemale());
+        buffer.writeInt(player.getRace().ordinal());
+        buffer.writeInt(player.getPlayerClass().getId());
         buffer.writeInt(1); // active ??
-        buffer.writeInt(_player.getX());
-        buffer.writeInt(_player.getY());
-        buffer.writeInt(_player.getZ());
-        buffer.writeDouble(_player.getCurrentHp());
-        buffer.writeDouble(_player.getCurrentMp());
-        buffer.writeInt((int) _player.getSp());
-        buffer.writeLong(_player.getExp());
-        buffer.writeInt(_player.getLevel());
-        buffer.writeInt(_player.getKarma()); // thx evill33t
-        buffer.writeInt(_player.getPkKills());
-        buffer.writeInt(_player.getINT());
-        buffer.writeInt(_player.getSTR());
-        buffer.writeInt(_player.getCON());
-        buffer.writeInt(_player.getMEN());
-        buffer.writeInt(_player.getDEX());
-        buffer.writeInt(_player.getWIT());
+        buffer.writeInt(player.getX());
+        buffer.writeInt(player.getY());
+        buffer.writeInt(player.getZ());
+        buffer.writeDouble(player.getCurrentHp());
+        buffer.writeDouble(player.getCurrentMp());
+        buffer.writeInt((int) player.getSp());
+        buffer.writeLong(player.getExp());
+        buffer.writeInt(player.getLevel());
+        buffer.writeInt(player.getKarma()); // thx evill33t
+        buffer.writeInt(player.getPkKills());
+        buffer.writeInt(player.getINT());
+        buffer.writeInt(player.getSTR());
+        buffer.writeInt(player.getCON());
+        buffer.writeInt(player.getMEN());
+        buffer.writeInt(player.getDEX());
+        buffer.writeInt(player.getWIT());
         buffer.writeInt(GameTimeTaskManager.getInstance().getGameTime() % (24 * 60)); // "reset" on 24th hour
         buffer.writeInt(0);
-        buffer.writeInt(_player.getPlayerClass().getId());
+        buffer.writeInt(player.getPlayerClass().getId());
         buffer.writeInt(0);
         buffer.writeInt(0);
         buffer.writeInt(0);

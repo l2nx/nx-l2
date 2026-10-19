@@ -22,27 +22,13 @@ package app.l2nx.highfive.mechanics.events.holders.actor.creature;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.mechanics.events.EventType;
 import app.l2nx.highfive.mechanics.events.holders.IBaseEvent;
+import lombok.Builder;
 
 /**
  * @author UnAfraid
  */
-public class OnCreatureSee implements IBaseEvent {
-    private final Creature _creature;
-    private final Creature _seen;
-
-    public OnCreatureSee(Creature creature, Creature seen) {
-        _creature = creature;
-        _seen = seen;
-    }
-
-    public Creature getCreature() {
-        return _creature;
-    }
-
-    public Creature getSeen() {
-        return _seen;
-    }
-
+@Builder(toBuilder = true)
+public record OnCreatureSee(Creature creature, Creature seen) implements IBaseEvent {
     @Override
     public EventType getType() {
         return EventType.ON_CREATURE_SEE;

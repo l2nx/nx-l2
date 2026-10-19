@@ -30,11 +30,11 @@ import app.l2nx.highfive.handler.UserCommandHandler;
  * @version $Revision: 1.1.2.1.2.2 $ $Date: 2005/03/27 15:29:30 $
  */
 public class BypassUserCmd extends ClientPacket {
-    private int _command;
+    private int command;
 
     @Override
     protected void readImpl() {
-        _command = readInt();
+        command = readInt();
     }
 
     @Override
@@ -44,13 +44,13 @@ public class BypassUserCmd extends ClientPacket {
             return;
         }
 
-        final IUserCommandHandler handler = UserCommandHandler.getInstance().getHandler(_command);
+        final IUserCommandHandler handler = UserCommandHandler.getInstance().getHandler(command);
         if (handler == null) {
             if (player.isGM()) {
-                player.sendMessage("User commandID " + _command + " not implemented yet.");
+                player.sendMessage("User commandID " + command + " not implemented yet.");
             }
         } else {
-            handler.onCommand(_command, player);
+            handler.onCommand(command, player);
         }
     }
 }

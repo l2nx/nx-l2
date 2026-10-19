@@ -30,19 +30,19 @@ import java.util.List;
  * @author Migi, DS
  */
 public class ExShowSentPostList extends ServerPacket {
-    private final List<MailMessage> _outbox;
+    private final List<MailMessage> outbox;
 
     public ExShowSentPostList(int objectId) {
-        _outbox = MailManager.getInstance().getOutbox(objectId);
+        outbox = MailManager.getInstance().getOutbox(objectId);
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_SHOW_SENT_POST_LIST.writeId(this, buffer);
         buffer.writeInt((int) (System.currentTimeMillis() / 1000));
-        if ((_outbox != null) && !_outbox.isEmpty()) {
-            buffer.writeInt(_outbox.size());
-            for (MailMessage msg : _outbox) {
+        if ((outbox != null) && !outbox.isEmpty()) {
+            buffer.writeInt(outbox.size());
+            for (MailMessage msg : outbox) {
                 buffer.writeInt(msg.getId());
                 buffer.writeString(msg.getSubject());
                 buffer.writeString(msg.getReceiverName());

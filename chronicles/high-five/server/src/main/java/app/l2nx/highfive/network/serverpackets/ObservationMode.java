@@ -28,18 +28,18 @@ import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.network.buffer.WriteBuffer;
 
 public class ObservationMode extends ServerPacket {
-    private final Location _loc;
+    private final Location loc;
 
     public ObservationMode(Location loc) {
-        _loc = loc;
+        this.loc = loc;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.OBSERVER_START.writeId(this, buffer);
-        buffer.writeInt(_loc.getX());
-        buffer.writeInt(_loc.getY());
-        buffer.writeInt(_loc.getZ());
+        buffer.writeInt(loc.getX());
+        buffer.writeInt(loc.getY());
+        buffer.writeInt(loc.getZ());
         buffer.writeByte(0); // ?
         buffer.writeByte(0xc0); // ?
         buffer.writeByte(0); // ?

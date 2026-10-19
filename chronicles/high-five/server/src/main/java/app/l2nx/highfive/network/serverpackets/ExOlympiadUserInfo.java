@@ -29,62 +29,62 @@ import app.l2nx.network.buffer.WriteBuffer;
  * @author godson
  */
 public class ExOlympiadUserInfo extends ServerPacket {
-    private final Player _player;
-    private Participant _par = null;
-    private int _curHp;
-    private int _maxHp;
-    private int _curCp;
-    private int _maxCp;
+    private final Player player;
+    private Participant par = null;
+    private int curHp;
+    private int maxHp;
+    private int curCp;
+    private int maxCp;
 
     public ExOlympiadUserInfo(Player player) {
-        _player = player;
-        if (_player != null) {
-            _curHp = (int) _player.getCurrentHp();
-            _maxHp = _player.getMaxHp();
-            _curCp = (int) _player.getCurrentCp();
-            _maxCp = _player.getMaxCp();
+        this.player = player;
+        if (this.player != null) {
+            curHp = (int) this.player.getCurrentHp();
+            maxHp = this.player.getMaxHp();
+            curCp = (int) this.player.getCurrentCp();
+            maxCp = this.player.getMaxCp();
         } else {
-            _curHp = 0;
-            _maxHp = 100;
-            _curCp = 0;
-            _maxCp = 100;
+            curHp = 0;
+            maxHp = 100;
+            curCp = 0;
+            maxCp = 100;
         }
     }
 
     public ExOlympiadUserInfo(Participant par) {
-        _par = par;
-        _player = par.getPlayer();
-        if (_player != null) {
-            _curHp = (int) _player.getCurrentHp();
-            _maxHp = _player.getMaxHp();
-            _curCp = (int) _player.getCurrentCp();
-            _maxCp = _player.getMaxCp();
+        this.par = par;
+        player = par.getPlayer();
+        if (player != null) {
+            curHp = (int) player.getCurrentHp();
+            maxHp = player.getMaxHp();
+            curCp = (int) player.getCurrentCp();
+            maxCp = player.getMaxCp();
         } else {
-            _curHp = 0;
-            _maxHp = 100;
-            _curCp = 0;
-            _maxCp = 100;
+            curHp = 0;
+            maxHp = 100;
+            curCp = 0;
+            maxCp = 100;
         }
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_OLYMPIAD_USER_INFO.writeId(this, buffer);
-        if (_player != null) {
-            buffer.writeByte(_player.getOlympiadSide());
-            buffer.writeInt(_player.getObjectId());
-            buffer.writeString(_player.getName());
-            buffer.writeInt(_player.getPlayerClass().getId());
+        if (player != null) {
+            buffer.writeByte(player.getOlympiadSide());
+            buffer.writeInt(player.getObjectId());
+            buffer.writeString(player.getName());
+            buffer.writeInt(player.getPlayerClass().getId());
         } else {
-            buffer.writeByte(_par.getSide());
-            buffer.writeInt(_par.getObjectId());
-            buffer.writeString(_par.getName());
-            buffer.writeInt(_par.getBaseClass());
+            buffer.writeByte(par.getSide());
+            buffer.writeInt(par.getObjectId());
+            buffer.writeString(par.getName());
+            buffer.writeInt(par.getBaseClass());
         }
 
-        buffer.writeInt(_curHp);
-        buffer.writeInt(_maxHp);
-        buffer.writeInt(_curCp);
-        buffer.writeInt(_maxCp);
+        buffer.writeInt(curHp);
+        buffer.writeInt(maxHp);
+        buffer.writeInt(curCp);
+        buffer.writeInt(maxCp);
     }
 }

@@ -28,22 +28,22 @@ import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.network.buffer.WriteBuffer;
 
 public class AskJoinParty extends ServerPacket {
-    private final String _requestorName;
-    private final PartyDistributionType _partyDistributionType;
+    private final String requestorName;
+    private final PartyDistributionType partyDistributionType;
 
     /**
      * @param requestorName
      * @param partyDistributionType
      */
     public AskJoinParty(String requestorName, PartyDistributionType partyDistributionType) {
-        _requestorName = requestorName;
-        _partyDistributionType = partyDistributionType;
+        this.requestorName = requestorName;
+        this.partyDistributionType = partyDistributionType;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.ASK_JOIN_PARTY.writeId(this, buffer);
-        buffer.writeString(_requestorName);
-        buffer.writeInt(_partyDistributionType.getId());
+        buffer.writeString(requestorName);
+        buffer.writeInt(partyDistributionType.getId());
     }
 }

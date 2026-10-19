@@ -25,8 +25,7 @@ import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
@@ -34,10 +33,10 @@ import org.w3c.dom.Node;
 /**
  * @author NosBit, xban1x
  */
+@Slf4j
 public class CategoryData implements IXmlReader {
-    private static final Logger LOGGER = Logger.getLogger(CategoryData.class.getName());
 
-    private final Map<CategoryType, Set<Integer>> _categories = new EnumMap<>(CategoryType.class);
+    private final Map<CategoryType, Set<Integer>> categories = new EnumMap<>(CategoryType.class);
 
     protected CategoryData() {
         load();
@@ -45,9 +44,9 @@ public class CategoryData implements IXmlReader {
 
     @Override
     public void load() {
-        _categories.clear();
+        categories.clear();
         parseDatapackFile("data/CategoryData.xml");
-        LOGGER.info(getClass().getSimpleName() + ": Loaded " + _categories.size() + " categories.");
+        log.info("Loaded {} categories.", categories.size());
     }
 
     @Override
@@ -60,10 +59,9 @@ public class CategoryData implements IXmlReader {
                         final CategoryType categoryType = CategoryType.findByName(
                                 attrs.getNamedItem("name").getNodeValue());
                         if (categoryType == null) {
-                            LOGGER.log(
-                                    Level.WARNING,
-                                    getClass().getSimpleName() + ": Can't find category by name :"
-                                            + attrs.getNamedItem("name").getNodeValue());
+                            log.warn(
+                                    "Can't find category by name :{}",
+                                    attrs.getNamedItem("name").getNodeValue());
                             continue;
                         }
 
@@ -76,7 +74,7 @@ public class CategoryData implements IXmlReader {
                             }
                         }
 
-                        _categories.put(categoryType, ids);
+                        categories.put(categoryType, ids);
                     }
                 }
             }
@@ -92,7 +90,7 @@ public class CategoryData implements IXmlReader {
     public boolean isInCategory(CategoryType type, int id) {
         final Set<Integer> category = getCategoryByType(type);
         if (category == null) {
-            LOGGER.log(Level.WARNING, getClass().getSimpleName() + ": Can't find category type :" + type);
+            log.warn("Can't find category type :{}", type);
             return false;
         }
 
@@ -105,7 +103,7 @@ public class CategoryData implements IXmlReader {
      * @return a {@code Set} containing all IDs within the specified category, or {@code null} if the category does not exist
      */
     public Set<Integer> getCategoryByType(CategoryType type) {
-        return _categories.get(type);
+        return categories.get(type);
     }
 
     public static CategoryData getInstance() {

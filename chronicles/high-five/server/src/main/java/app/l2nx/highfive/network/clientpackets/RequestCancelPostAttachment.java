@@ -40,11 +40,11 @@ import app.l2nx.highfive.network.serverpackets.SystemMessage;
  * @author Migi, DS
  */
 public class RequestCancelPostAttachment extends ClientPacket {
-    private int _msgId;
+    private int msgId;
 
     @Override
     protected void readImpl() {
-        _msgId = readInt();
+        msgId = readInt();
     }
 
     @Override
@@ -58,7 +58,7 @@ public class RequestCancelPostAttachment extends ClientPacket {
             return;
         }
 
-        final MailMessage msg = MailManager.getInstance().getMessage(_msgId);
+        final MailMessage msg = MailManager.getInstance().getMessage(msgId);
         if (msg == null) {
             return;
         }
@@ -191,12 +191,12 @@ public class RequestCancelPostAttachment extends ClientPacket {
             final SystemMessage sm = new SystemMessage(SystemMessageId.S1_CANCELED_THE_SENT_MAIL);
             sm.addString(player.getName());
             receiver.sendPacket(sm);
-            receiver.sendPacket(new ExChangePostState(true, _msgId, MailMessage.DELETED));
+            receiver.sendPacket(new ExChangePostState(true, msgId, MailMessage.DELETED));
         }
 
-        MailManager.getInstance().deleteMessageInDb(_msgId);
+        MailManager.getInstance().deleteMessageInDb(msgId);
 
-        player.sendPacket(new ExChangePostState(false, _msgId, MailMessage.DELETED));
+        player.sendPacket(new ExChangePostState(false, msgId, MailMessage.DELETED));
         player.sendPacket(SystemMessageId.MAIL_SUCCESSFULLY_CANCELLED);
     }
 }

@@ -24,16 +24,15 @@ import app.l2nx.highfive.mechanics.events.ListenersContainer;
 import app.l2nx.highfive.mechanics.events.holders.IBaseEvent;
 import app.l2nx.highfive.mechanics.events.returns.AbstractEventReturn;
 import java.util.function.Function;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Function event listener provides callback operation with return object possibility.
  * @author UnAfraid
  */
+@Slf4j
 public class FunctionEventListener extends AbstractEventListener {
-    private static final Logger LOGGER = Logger.getLogger(FunctionEventListener.class.getName());
-    private final Function<IBaseEvent, ? extends AbstractEventReturn> _callback;
+    private final Function<IBaseEvent, ? extends AbstractEventReturn> callback;
 
     @SuppressWarnings("unchecked")
     public FunctionEventListener(
@@ -42,18 +41,15 @@ public class FunctionEventListener extends AbstractEventListener {
             Function<? extends IBaseEvent, ? extends AbstractEventReturn> callback,
             Object owner) {
         super(container, type, owner);
-        _callback = (Function<IBaseEvent, ? extends AbstractEventReturn>) callback;
+        this.callback = (Function<IBaseEvent, ? extends AbstractEventReturn>) callback;
     }
 
     @Override
     public <R extends AbstractEventReturn> R executeEvent(IBaseEvent event, Class<R> returnBackClass) {
         try {
-            return returnBackClass.cast(_callback.apply(event));
+            return returnBackClass.cast(callback.apply(event));
         } catch (Exception e) {
-            LOGGER.log(
-                    Level.WARNING,
-                    getClass().getSimpleName() + ": Error while invoking " + event + " on " + getOwner(),
-                    e);
+            log.warn("Error while invoking {} on {}", event, getOwner(), e);
         }
 
         return null;

@@ -36,6 +36,8 @@ import app.l2nx.highfive.network.serverpackets.SocialAction;
 import app.l2nx.highfive.util.LocationUtil;
 import java.util.HashMap;
 import java.util.Map;
+import lombok.AccessLevel;
+import lombok.Getter;
 
 /**
  * Test Of The Summoner (230)
@@ -1471,26 +1473,19 @@ public class Q00230_TestOfTheSummoner extends Quest {
     }
 
     private static class MonsterData {
-        private final int _crystalOfInprogress;
-        private final int _crystalOfVictory;
-        private final NpcStringId _npcStringId;
+        @Getter(AccessLevel.PROTECTED)
+        private final int crystalOfInprogress;
+
+        @Getter(AccessLevel.PROTECTED)
+        private final int crystalOfVictory;
+
+        @Getter(AccessLevel.PROTECTED)
+        private final NpcStringId npcStringId;
 
         protected MonsterData(int crystalOfInprogress, int crystalOfVictory, NpcStringId npcStringId) {
-            _crystalOfInprogress = crystalOfInprogress;
-            _crystalOfVictory = crystalOfVictory;
-            _npcStringId = npcStringId;
-        }
-
-        protected int getCrystalOfInprogress() {
-            return _crystalOfInprogress;
-        }
-
-        protected int getCrystalOfVictory() {
-            return _crystalOfVictory;
-        }
-
-        protected NpcStringId getNpcStringId() {
-            return _npcStringId;
+            this.crystalOfInprogress = crystalOfInprogress;
+            this.crystalOfVictory = crystalOfVictory;
+            this.npcStringId = npcStringId;
         }
     }
 }

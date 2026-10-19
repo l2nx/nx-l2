@@ -25,39 +25,14 @@ import app.l2nx.highfive.mechanics.events.EventType;
 import app.l2nx.highfive.mechanics.events.holders.IBaseEvent;
 import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.mechanics.skill.enums.AcquireSkillType;
+import lombok.Builder;
 
 /**
  * @author UnAfraid
  */
-public class OnPlayerSkillLearn implements IBaseEvent {
-    private final Npc _trainer;
-    private final Player _player;
-    private final Skill _skill;
-    private final AcquireSkillType _type;
-
-    public OnPlayerSkillLearn(Npc trainer, Player player, Skill skill, AcquireSkillType type) {
-        _trainer = trainer;
-        _player = player;
-        _skill = skill;
-        _type = type;
-    }
-
-    public Npc getTrainer() {
-        return _trainer;
-    }
-
-    public Player getPlayer() {
-        return _player;
-    }
-
-    public Skill getSkill() {
-        return _skill;
-    }
-
-    public AcquireSkillType getAcquireType() {
-        return _type;
-    }
-
+@Builder(toBuilder = true)
+public record OnPlayerSkillLearn(Npc trainer, Player player, Skill skill, AcquireSkillType acquireType)
+        implements IBaseEvent {
     @Override
     public EventType getType() {
         return EventType.ON_PLAYER_SKILL_LEARN;

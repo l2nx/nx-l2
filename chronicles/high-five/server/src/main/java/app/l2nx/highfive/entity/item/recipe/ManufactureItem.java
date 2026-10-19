@@ -23,27 +23,21 @@
 package app.l2nx.highfive.entity.item.recipe;
 
 import app.l2nx.highfive.data.xml.RecipeData;
+import lombok.Getter;
 
 public class ManufactureItem {
-    private final int _recipeId;
-    private final long _cost;
-    private final boolean _isDwarven;
+    @Getter
+    private final int recipeId;
+
+    @Getter
+    private final long cost;
+
+    @Getter
+    private final boolean dwarven;
 
     public ManufactureItem(int recipeId, long cost) {
-        _recipeId = recipeId;
-        _cost = cost;
-        _isDwarven = RecipeData.getInstance().getRecipeList(_recipeId).isDwarvenRecipe();
-    }
-
-    public int getRecipeId() {
-        return _recipeId;
-    }
-
-    public long getCost() {
-        return _cost;
-    }
-
-    public boolean isDwarven() {
-        return _isDwarven;
+        this.recipeId = recipeId;
+        this.cost = cost;
+        dwarven = RecipeData.getInstance().getRecipeList(this.recipeId).isDwarvenRecipe();
     }
 }

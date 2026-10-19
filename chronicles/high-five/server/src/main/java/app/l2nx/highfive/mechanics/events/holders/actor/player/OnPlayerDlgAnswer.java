@@ -22,39 +22,13 @@ package app.l2nx.highfive.mechanics.events.holders.actor.player;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.mechanics.events.EventType;
 import app.l2nx.highfive.mechanics.events.holders.IBaseEvent;
+import lombok.Builder;
 
 /**
  * @author UnAfraid
  */
-public class OnPlayerDlgAnswer implements IBaseEvent {
-    private final Player _player;
-    private final int _messageId;
-    private final int _answer;
-    private final int _requesterId;
-
-    public OnPlayerDlgAnswer(Player player, int messageId, int answer, int requesterId) {
-        _player = player;
-        _messageId = messageId;
-        _answer = answer;
-        _requesterId = requesterId;
-    }
-
-    public Player getPlayer() {
-        return _player;
-    }
-
-    public int getMessageId() {
-        return _messageId;
-    }
-
-    public int getAnswer() {
-        return _answer;
-    }
-
-    public int getRequesterId() {
-        return _requesterId;
-    }
-
+@Builder(toBuilder = true)
+public record OnPlayerDlgAnswer(Player player, int messageId, int answer, int requesterId) implements IBaseEvent {
     @Override
     public EventType getType() {
         return EventType.ON_PLAYER_DLG_ANSWER;

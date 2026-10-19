@@ -33,7 +33,10 @@ import app.l2nx.highfive.util.StatSet;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class Elpies extends Event {
     // NPC
     private static final int ELPY = 900100;
@@ -68,8 +71,8 @@ public class Elpies extends Event {
 
     // Non-final variables
     private static boolean EVENT_ACTIVE = false;
-    private ScheduledFuture<?> _eventTask = null;
-    private final Set<Npc> _elpies = ConcurrentHashMap.newKeySet(ELPY_AMOUNT);
+    private ScheduledFuture<?> eventTask = null;
+    private final Set<Npc> elpies = ConcurrentHashMap.newKeySet(ELPY_AMOUNT);
 
     private Elpies() {
         addSpawnId(ELPY);
@@ -99,7 +102,7 @@ public class Elpies extends Event {
 
         // Check Custom Table - we use custom NPCs.
         if (!GeneralConfig.CUSTOM_NPC_DATA) {
-            LOGGER.info(getName() + ": Event can't be started because custom NPC table is disabled!");
+            log.info("{}: Event can't be started because custom NPC table is disabled!", getName());
             eventMaker.sendMessage("Event " + getName() + " can't be started because custom NPC table is disabled!");
             return false;
         }
@@ -109,7 +112,7 @@ public class Elpies extends Event {
         final EventLocation randomLoc = getRandomEntry(EventLocation.values());
         final long despawnDelay = EVENT_DURATION_MINUTES * 60000;
         for (int i = 0; i < ELPY_AMOUNT; i++) {
-            _elpies.add(addSpawn(
+            elpies.add(addSpawn(
                     ELPY, randomLoc.getRandomX(), randomLoc.getRandomY(), randomLoc.getZ(), 0, true, despawnDelay));
         }
 
@@ -117,7 +120,7 @@ public class Elpies extends Event {
         World.broadcastToAllOnlinePlayers("Elpy invasion in " + randomLoc.getName());
         World.broadcastToAllOnlinePlayers("Help us exterminate them!");
         World.broadcastToAllOnlinePlayers("You have " + EVENT_DURATION_MINUTES + " minutes!");
-        _eventTask = ThreadPool.schedule(
+        eventTask = ThreadPool.schedule(
                 () -> {
                     World.broadcastToAllOnlinePlayers("Time is up!");
                     eventStop();
@@ -133,16 +136,16 @@ public class Elpies extends Event {
         }
 
         EVENT_ACTIVE = false;
-        if (_eventTask != null) {
-            _eventTask.cancel(true);
-            _eventTask = null;
+        if (eventTask != null) {
+            eventTask.cancel(true);
+            eventTask = null;
         }
 
-        for (Npc npc : _elpies) {
+        for (Npc npc : elpies) {
             npc.deleteMe();
         }
 
-        _elpies.clear();
+        elpies.clear();
 
         World.broadcastToAllOnlinePlayers("*Squeak Squeak*");
         World.broadcastToAllOnlinePlayers("Elpy Event finished!");
@@ -152,11 +155,11 @@ public class Elpies extends Event {
     @Override
     public void onKill(Npc npc, Player killer, boolean isSummon) {
         if (EVENT_ACTIVE) {
-            _elpies.remove(npc);
+            elpies.remove(npc);
 
             dropItem(npc, killer, DROPLIST_CONSUMABLES);
             dropItem(npc, killer, DROPLIST_CRYSTALS);
-            if (_elpies.isEmpty()) {
+            if (elpies.isEmpty()) {
                 World.broadcastToAllOnlinePlayers("All elpies have been killed!");
                 eventStop();
             }
@@ -176,36 +179,32 @@ public class Elpies extends Event {
         HV("Hunters Village", 116094, 117141, 75776, 77072, -2700),
         OREN("Oren", 82048, 82940, 53240, 54126, -1490);
 
-        private final String _name;
-        private final int _minX;
-        private final int _maxX;
-        private final int _minY;
-        private final int _maxY;
-        private final int _z;
+        @Getter
+        private final String name;
+
+        private final int minX;
+        private final int maxX;
+        private final int minY;
+        private final int maxY;
+
+        @Getter
+        private final int z;
 
         EventLocation(String name, int minX, int maxX, int minY, int maxY, int z) {
-            _name = name;
-            _minX = minX;
-            _maxX = maxX;
-            _minY = minY;
-            _maxY = maxY;
-            _z = z;
-        }
-
-        public String getName() {
-            return _name;
+            this.name = name;
+            this.minX = minX;
+            this.maxX = maxX;
+            this.minY = minY;
+            this.maxY = maxY;
+            this.z = z;
         }
 
         public int getRandomX() {
-            return getRandom(_minX, _maxX);
+            return getRandom(minX, maxX);
         }
 
         public int getRandomY() {
-            return getRandom(_minY, _maxY);
-        }
-
-        public int getZ() {
-            return _z;
+            return getRandom(minY, maxY);
         }
     }
 

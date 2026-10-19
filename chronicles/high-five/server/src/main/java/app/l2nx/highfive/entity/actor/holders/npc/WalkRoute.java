@@ -24,6 +24,7 @@ package app.l2nx.highfive.entity.actor.holders.npc;
 
 import java.util.List;
 import java.util.Objects;
+import lombok.Getter;
 
 /**
  * Defines an NPC walking route.<br>
@@ -42,32 +43,37 @@ public class WalkRoute {
     private static final byte REPEAT_MAX = 2;
 
     // Route Definition.
-    private final String _name;
-    private final List<WalkNode> _nodeList;
+    @Getter
+    private final String name;
+
+    @Getter
+    private final List<WalkNode> nodeList;
 
     // Repeat Policy.
-    private final boolean _repeatWalk;
-    private boolean _stopAfterCycle;
-    private final byte _repeatType;
+    private final boolean repeatWalk;
+    private boolean stopAfterCycle;
+
+    @Getter
+    private final byte repeatType;
 
     public WalkRoute(String name, List<WalkNode> route, boolean repeat, byte repeatType) {
-        _name = Objects.requireNonNull(name, "name");
-        _nodeList = Objects.requireNonNull(route, "route");
+        this.name = Objects.requireNonNull(name, "name");
+        nodeList = Objects.requireNonNull(route, "route");
 
-        if (_nodeList.isEmpty()) {
-            throw new IllegalArgumentException("WalkRoute node list is empty: " + _name);
+        if (nodeList.isEmpty()) {
+            throw new IllegalArgumentException("WalkRoute node list is empty: " + this.name);
         }
 
-        for (int i = 0; i < _nodeList.size(); i++) {
-            if (_nodeList.get(i) == null) {
-                throw new IllegalArgumentException("WalkRoute has null node at index " + i + ": " + _name);
+        for (int i = 0; i < nodeList.size(); i++) {
+            if (nodeList.get(i) == null) {
+                throw new IllegalArgumentException("WalkRoute has null node at index " + i + ": " + this.name);
             }
         }
 
-        _repeatType = repeatType;
+        this.repeatType = repeatType;
 
         boolean supported = false;
-        switch (_repeatType) {
+        switch (this.repeatType) {
             case REPEAT_MIN:
             case REPEAT_MID:
             case REPEAT_MAX: {
@@ -80,39 +86,27 @@ public class WalkRoute {
             }
         }
 
-        if ((_repeatType < REPEAT_MIN) || (_repeatType > REPEAT_MAX)) {
+        if ((this.repeatType < REPEAT_MIN) || (this.repeatType > REPEAT_MAX)) {
             supported = false;
         }
 
-        _repeatWalk = repeat && supported;
+        repeatWalk = repeat && supported;
     }
 
     public boolean repeatWalk() {
-        return _repeatWalk;
-    }
-
-    public byte getRepeatType() {
-        return _repeatType;
+        return repeatWalk;
     }
 
     public boolean doOnce() {
-        return _stopAfterCycle;
+        return stopAfterCycle;
     }
 
     public WalkNode getLastNode() {
-        final int lastIndex = _nodeList.size() - 1;
-        return _nodeList.get(lastIndex);
+        final int lastIndex = nodeList.size() - 1;
+        return nodeList.get(lastIndex);
     }
 
     public int getNodesCount() {
-        return _nodeList.size();
-    }
-
-    public List<WalkNode> getNodeList() {
-        return _nodeList;
-    }
-
-    public String getName() {
-        return _name;
+        return nodeList.size();
     }
 }

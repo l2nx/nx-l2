@@ -29,11 +29,13 @@ import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.serverpackets.ExCubeGameChangeTimeToStart;
 import app.l2nx.highfive.network.serverpackets.ExCubeGameRequestReady;
 import app.l2nx.highfive.network.serverpackets.ExCubeGameTeamList;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Handys Block Checker Event AI.
  * @authors BiggBoss, Gigiikun
  */
+@Slf4j
 public class HandysBlockCheckerEvent extends Script {
     // Arena Managers
     private static final int A_MANAGER_1 = 32521;
@@ -89,9 +91,9 @@ public class HandysBlockCheckerEvent extends Script {
     public static void main(String[] args) {
         if (GeneralConfig.ENABLE_BLOCK_CHECKER_EVENT) {
             new HandysBlockCheckerEvent();
-            LOGGER.info("Handy's Block Checker Event is enabled");
+            log.info("Handy's Block Checker Event is enabled");
         } else {
-            LOGGER.info("Handy's Block Checker Event is disabled");
+            log.info("Handy's Block Checker Event is disabled");
         }
     }
 }

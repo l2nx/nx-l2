@@ -35,12 +35,12 @@ import java.util.List;
  * @author Mobius
  */
 public class SkillCoolTime extends ServerPacket {
-    private final List<TimeStamp> _reuseTimestamps = new ArrayList<>();
+    private final List<TimeStamp> reuseTimestamps = new ArrayList<>();
 
     public SkillCoolTime(Player player) {
         for (TimeStamp ts : player.getSkillReuseTimeStamps().values()) {
             if (ts.hasNotPassed()) {
-                _reuseTimestamps.add(ts);
+                reuseTimestamps.add(ts);
             }
         }
     }
@@ -48,8 +48,8 @@ public class SkillCoolTime extends ServerPacket {
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.SKILL_COOL_TIME.writeId(this, buffer);
-        buffer.writeInt(_reuseTimestamps.size());
-        for (TimeStamp ts : _reuseTimestamps) {
+        buffer.writeInt(reuseTimestamps.size());
+        for (TimeStamp ts : reuseTimestamps) {
             final long reuse = ts.getReuse();
             final long remaining = ts.getRemaining();
             buffer.writeInt(ts.getSkillId());

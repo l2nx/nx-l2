@@ -35,11 +35,11 @@ import app.l2nx.highfive.network.serverpackets.SystemMessage;
  * @author -Wooden-, Tryskell
  */
 public class AnswerJoinPartyRoom extends ClientPacket {
-    private int _answer; // 1 or 0
+    private int answer; // 1 or 0
 
     @Override
     protected void readImpl() {
-        _answer = readInt();
+        answer = readInt();
     }
 
     @Override
@@ -63,7 +63,7 @@ public class AnswerJoinPartyRoom extends ClientPacket {
         }
 
         // If answer is positive, join the requester's PartyRoom.
-        if ((_answer == 1) && !partner.isRequestExpired()) {
+        if ((answer == 1) && !partner.isRequestExpired()) {
             final PartyMatchRoom room = PartyMatchRoomList.getInstance().getRoom(partner.getPartyRoom());
             if (room == null) {
                 return;

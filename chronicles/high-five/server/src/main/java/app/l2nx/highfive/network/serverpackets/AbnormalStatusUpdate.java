@@ -31,19 +31,19 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class AbnormalStatusUpdate extends ServerPacket {
-    private final List<BuffInfo> _effects = new ArrayList<>();
+    private final List<BuffInfo> effects = new ArrayList<>();
 
     public void addSkill(BuffInfo info) {
         if (!info.getSkill().isHealingPotionSkill()) {
-            _effects.add(info);
+            effects.add(info);
         }
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.ABNORMAL_STATUS_UPDATE.writeId(this, buffer);
-        buffer.writeShort(_effects.size());
-        for (BuffInfo info : _effects) {
+        buffer.writeShort(effects.size());
+        for (BuffInfo info : effects) {
             if ((info != null) && info.isInUse()) {
                 final Skill skill = info.getSkill();
                 buffer.writeInt(skill.getDisplayId());

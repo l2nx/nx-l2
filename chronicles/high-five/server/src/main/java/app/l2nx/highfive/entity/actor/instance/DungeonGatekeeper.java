@@ -35,7 +35,9 @@ import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.serverpackets.ActionFailed;
 import app.l2nx.highfive.network.serverpackets.NpcHtmlMessage;
 import java.util.StringTokenizer;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class DungeonGatekeeper extends Npc {
     /**
      * Creates a dungeon gatekeeper.
@@ -141,7 +143,7 @@ public class DungeonGatekeeper extends Npc {
         if (holder != null) {
             holder.doTeleport(player, this, value);
         } else {
-            LOGGER.warning("No teleport destination with id:" + value);
+            log.warn("No teleport destination with id:{}", value);
         }
 
         player.sendPacket(ActionFailed.STATIC_PACKET);

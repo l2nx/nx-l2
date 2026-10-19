@@ -30,39 +30,39 @@ import app.l2nx.network.buffer.WriteBuffer;
  * @author -Wooden-, KenM
  */
 public class ExStorageMaxCount extends ServerPacket {
-    private final int _inventory;
-    private final int _warehouse;
-    private final int _clan;
-    private final int _privateSell;
-    private final int _privateBuy;
-    private final int _receipeD;
-    private final int _recipe;
-    private final int _inventoryExtraSlots;
-    private final int _inventoryQuestItems;
+    private final int inventory;
+    private final int warehouse;
+    private final int clan;
+    private final int privateSell;
+    private final int privateBuy;
+    private final int receipeD;
+    private final int recipe;
+    private final int inventoryExtraSlots;
+    private final int inventoryQuestItems;
 
     public ExStorageMaxCount(Player player) {
-        _inventory = player.getInventoryLimit();
-        _warehouse = player.getWareHouseLimit();
-        _privateSell = player.getPrivateSellStoreLimit();
-        _privateBuy = player.getPrivateBuyStoreLimit();
-        _clan = PlayerConfig.WAREHOUSE_SLOTS_CLAN;
-        _receipeD = player.getDwarfRecipeLimit();
-        _recipe = player.getCommonRecipeLimit();
-        _inventoryExtraSlots = (int) player.getStat().calcStat(Stat.INV_LIM, 0, null, null);
-        _inventoryQuestItems = PlayerConfig.INVENTORY_MAXIMUM_QUEST_ITEMS;
+        inventory = player.getInventoryLimit();
+        warehouse = player.getWareHouseLimit();
+        privateSell = player.getPrivateSellStoreLimit();
+        privateBuy = player.getPrivateBuyStoreLimit();
+        clan = PlayerConfig.WAREHOUSE_SLOTS_CLAN;
+        receipeD = player.getDwarfRecipeLimit();
+        recipe = player.getCommonRecipeLimit();
+        inventoryExtraSlots = (int) player.getStat().calcStat(Stat.INV_LIM, 0, null, null);
+        inventoryQuestItems = PlayerConfig.INVENTORY_MAXIMUM_QUEST_ITEMS;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_STORAGE_MAX_COUNT.writeId(this, buffer);
-        buffer.writeInt(_inventory);
-        buffer.writeInt(_warehouse);
-        buffer.writeInt(_clan);
-        buffer.writeInt(_privateSell);
-        buffer.writeInt(_privateBuy);
-        buffer.writeInt(_receipeD);
-        buffer.writeInt(_recipe);
-        buffer.writeInt(_inventoryExtraSlots); // Belt inventory slots increase count
-        buffer.writeInt(_inventoryQuestItems);
+        buffer.writeInt(inventory);
+        buffer.writeInt(warehouse);
+        buffer.writeInt(clan);
+        buffer.writeInt(privateSell);
+        buffer.writeInt(privateBuy);
+        buffer.writeInt(receipeD);
+        buffer.writeInt(recipe);
+        buffer.writeInt(inventoryExtraSlots); // Belt inventory slots increase count
+        buffer.writeInt(inventoryQuestItems);
     }
 }

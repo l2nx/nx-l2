@@ -26,35 +26,35 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class VoicedCommandHandler implements IHandler<IVoicedCommandHandler, String> {
-    private final Map<String, IVoicedCommandHandler> _datatable;
+    private final Map<String, IVoicedCommandHandler> datatable;
 
     protected VoicedCommandHandler() {
-        _datatable = new HashMap<>();
+        datatable = new HashMap<>();
     }
 
     @Override
     public void registerHandler(IVoicedCommandHandler handler) {
         for (String id : handler.getCommandList()) {
-            _datatable.put(id, handler);
+            datatable.put(id, handler);
         }
     }
 
     @Override
     public synchronized void removeHandler(IVoicedCommandHandler handler) {
         for (String id : handler.getCommandList()) {
-            _datatable.remove(id);
+            datatable.remove(id);
         }
     }
 
     @Override
     public IVoicedCommandHandler getHandler(String voicedCommand) {
-        return _datatable.get(
+        return datatable.get(
                 voicedCommand.contains(" ") ? voicedCommand.substring(0, voicedCommand.indexOf(' ')) : voicedCommand);
     }
 
     @Override
     public int size() {
-        return _datatable.size();
+        return datatable.size();
     }
 
     public static VoicedCommandHandler getInstance() {

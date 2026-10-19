@@ -30,14 +30,14 @@ import app.l2nx.highfive.mechanics.skill.Skill;
  * @author nBd
  */
 public class ConditionChangeWeapon extends Condition {
-    private final boolean _required;
+    private final boolean required;
 
     /**
      * Instantiates a new condition change weapon.
      * @param required the required
      */
     public ConditionChangeWeapon(boolean required) {
-        _required = required;
+        this.required = required;
     }
 
     /**
@@ -51,7 +51,7 @@ public class ConditionChangeWeapon extends Condition {
             return false;
         }
 
-        if (_required) {
+        if (required) {
             final Weapon weaponItem = effector.getActiveWeaponItem();
             if (weaponItem == null) {
                 return false;

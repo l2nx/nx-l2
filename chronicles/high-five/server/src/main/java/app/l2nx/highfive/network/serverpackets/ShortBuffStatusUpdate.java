@@ -29,21 +29,21 @@ import app.l2nx.network.buffer.WriteBuffer;
 public class ShortBuffStatusUpdate extends ServerPacket {
     public static final ShortBuffStatusUpdate RESET_SHORT_BUFF = new ShortBuffStatusUpdate(0, 0, 0);
 
-    private final int _skillId;
-    private final int _skillLevel;
-    private final int _duration;
+    private final int skillId;
+    private final int skillLevel;
+    private final int duration;
 
     public ShortBuffStatusUpdate(int skillId, int skillLevel, int duration) {
-        _skillId = skillId;
-        _skillLevel = skillLevel;
-        _duration = duration;
+        this.skillId = skillId;
+        this.skillLevel = skillLevel;
+        this.duration = duration;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.SHORT_BUFF_STATUS_UPDATE.writeId(this, buffer);
-        buffer.writeInt(_skillId);
-        buffer.writeInt(_skillLevel);
-        buffer.writeInt(_duration);
+        buffer.writeInt(skillId);
+        buffer.writeInt(skillLevel);
+        buffer.writeInt(duration);
     }
 }

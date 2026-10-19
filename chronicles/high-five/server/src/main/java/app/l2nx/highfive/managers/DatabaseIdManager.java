@@ -37,14 +37,14 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Manages database cleanup operations and retrieval of used IDs for ID allocation.
  * @author Mobius
  */
+@Slf4j
 public class DatabaseIdManager {
-    private static final Logger LOGGER = Logger.getLogger(DatabaseIdManager.class.getName());
 
     private static final String[] CLEANUP_QUERIES = {
         "DELETE FROM account_gsdata WHERE account_gsdata.account_name NOT IN (SELECT account_name FROM characters)",
@@ -144,7 +144,7 @@ public class DatabaseIdManager {
                 statement.executeUpdate(
                         "DELETE FROM mods_wedding WHERE player2Id NOT IN (SELECT charId FROM characters)");
             } catch (Exception e) {
-                LOGGER.warning("DatabaseIdManager: Could not clean up invalid weddings: " + e);
+                log.warn("Could not clean up invalid weddings", e);
             }
         }
 
@@ -153,19 +153,19 @@ public class DatabaseIdManager {
                     Statement statement = con.createStatement()) {
                 cleanCount += statement.executeUpdate(query);
             } catch (Exception e) {
-                LOGGER.warning("DatabaseIdManager: Could not execute cleanup query: " + query + " - " + e);
+                log.warn("Could not execute cleanup query: {}", query, e);
             }
         }
 
-        LOGGER.info("DatabaseIdManager: Cleaned " + cleanCount + " elements in "
-                + ((System.currentTimeMillis() - cleanupStart) / 1000) + " seconds.");
+        log.info(
+                "Cleaned {} elements in {} seconds.", cleanCount, ((System.currentTimeMillis() - cleanupStart) / 1000));
 
         for (String query : UPDATE_QUERIES) {
             try (Connection con = DatabaseFactory.getConnection();
                     Statement statement = con.createStatement()) {
                 statement.executeUpdate(query);
             } catch (Exception e) {
-                LOGGER.warning("DatabaseIdManager: Could not execute update query: " + query + " - " + e);
+                log.warn("Could not execute update query: {}", query, e);
             }
         }
     }
@@ -177,9 +177,9 @@ public class DatabaseIdManager {
         try (Connection con = DatabaseFactory.getConnection();
                 Statement statement = con.createStatement()) {
             statement.executeUpdate(UPDATE_CHARACTER_STATUS_QUERY);
-            LOGGER.info("DatabaseIdManager: Updated character online status.");
+            log.info("Updated character online status.");
         } catch (Exception e) {
-            LOGGER.warning("DatabaseIdManager: Could not update characters online status: " + e);
+            log.warn("Could not update characters online status", e);
         }
     }
 
@@ -196,9 +196,9 @@ public class DatabaseIdManager {
                 }
             }
 
-            LOGGER.info("DatabaseIdManager: Cleaned " + cleanCount + " expired timestamps.");
+            log.info("Cleaned {} expired timestamps.", cleanCount);
         } catch (Exception e) {
-            LOGGER.warning("DatabaseIdManager: Could not clean expired timestamps from database: " + e);
+            log.warn("Could not clean expired timestamps from database", e);
         }
     }
 
@@ -222,13 +222,15 @@ public class DatabaseIdManager {
                         if ((id >= IdManagerConfig.FIRST_OBJECT_ID) && (id <= IdManagerConfig.LAST_OBJECT_ID)) {
                             usedIds.add(id);
                         } else {
-                            LOGGER.warning("DatabaseIdManager: ID " + id + " in database is out of valid range ("
-                                    + IdManagerConfig.FIRST_OBJECT_ID + " - " + IdManagerConfig.LAST_OBJECT_ID + ")");
+                            log.warn(
+                                    "ID {} in database is out of valid range ({} - {})",
+                                    id,
+                                    IdManagerConfig.FIRST_OBJECT_ID,
+                                    IdManagerConfig.LAST_OBJECT_ID);
                         }
                     }
                 } catch (Exception e) {
-                    LOGGER.severe("DatabaseIdManager: Could not initialize used IDs for query " + query + ": "
-                            + e.getMessage());
+                    log.error("Could not initialize used IDs for query {}: {}", query, e.getMessage());
                 }
             }));
         }
@@ -237,7 +239,7 @@ public class DatabaseIdManager {
             try {
                 future.get();
             } catch (Exception e) {
-                LOGGER.warning("Failed to parse file: " + e.getMessage());
+                log.warn("Failed to parse file: {}", e.getMessage());
             }
         }
 
@@ -246,7 +248,7 @@ public class DatabaseIdManager {
             executor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            LOGGER.warning("DatabaseIdManager: Extraction interrupted: " + e.getMessage());
+            log.warn("Extraction interrupted: {}", e.getMessage());
         }
 
         return usedIds;

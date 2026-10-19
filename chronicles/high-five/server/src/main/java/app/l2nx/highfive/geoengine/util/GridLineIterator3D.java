@@ -31,31 +31,31 @@ package app.l2nx.highfive.geoengine.util;
  */
 public class GridLineIterator3D {
     // Current position of the iterator.
-    private int _currentX; // Current X position of the iterator.
-    private int _currentY; // Current Y position of the iterator.
-    private int _currentZ; // Current Z position of the iterator.
+    private int currentX; // Current X position of the iterator.
+    private int currentY; // Current Y position of the iterator.
+    private int currentZ; // Current Z position of the iterator.
 
     // Target endpoint of the line.
-    private final int _targetX; // Target X endpoint of the line.
-    private final int _targetY; // Target Y endpoint of the line.
-    private final int _targetZ; // Target Z endpoint of the line.
+    private final int targetX; // Target X endpoint of the line.
+    private final int targetY; // Target Y endpoint of the line.
+    private final int targetZ; // Target Z endpoint of the line.
 
     // Absolute distances along X, Y, and Z axes.
-    private final int _deltaX; // Absolute difference in X coordinates.
-    private final int _deltaY; // Absolute difference in Y coordinates.
-    private final int _deltaZ; // Absolute difference in Z coordinates.
+    private final int deltaX; // Absolute difference in X coordinates.
+    private final int deltaY; // Absolute difference in Y coordinates.
+    private final int deltaZ; // Absolute difference in Z coordinates.
 
     // Step directions for movement along the X, Y, and Z axes.
-    private final int _stepX; // Step direction for X (-1 or 1).
-    private final int _stepY; // Step direction for Y (-1 or 1).
-    private final int _stepZ; // Step direction for Z (-1 or 1).
+    private final int stepX; // Step direction for X (-1 or 1).
+    private final int stepY; // Step direction for Y (-1 or 1).
+    private final int stepZ; // Step direction for Z (-1 or 1).
 
     // Tracks the accumulated error terms for adjusting the minor axes.
-    private int _accumulatedErrorXY; // Accumulated error for the Y axis relative to X.
-    private int _accumulatedErrorXZ; // Accumulated error for the Z axis relative to X.
+    private int accumulatedErrorXY; // Accumulated error for the Y axis relative to X.
+    private int accumulatedErrorXZ; // Accumulated error for the Z axis relative to X.
 
     // Indicates whether the iteration has started.
-    private boolean _hasStarted;
+    private boolean hasStarted;
 
     /**
      * Initializes the iterator to step through points along a 3D line from (startX, startY, startZ) to (endX, endY, endZ).
@@ -68,37 +68,37 @@ public class GridLineIterator3D {
      */
     public GridLineIterator3D(int startX, int startY, int startZ, int endX, int endY, int endZ) {
         // Initialize current position to the starting point.
-        _currentX = startX;
-        _currentY = startY;
-        _currentZ = startZ;
+        currentX = startX;
+        currentY = startY;
+        currentZ = startZ;
 
         // Initialize target position.
-        _targetX = endX;
-        _targetY = endY;
-        _targetZ = endZ;
+        targetX = endX;
+        targetY = endY;
+        targetZ = endZ;
 
         // Calculate absolute differences in X, Y, and Z coordinates.
-        _deltaX = Math.abs(endX - startX);
-        _deltaY = Math.abs(endY - startY);
-        _deltaZ = Math.abs(endZ - startZ);
+        deltaX = Math.abs(endX - startX);
+        deltaY = Math.abs(endY - startY);
+        deltaZ = Math.abs(endZ - startZ);
 
         // Determine step directions for X, Y, and Z based on the sign of the difference.
-        _stepX = startX < endX ? 1 : -1;
-        _stepY = startY < endY ? 1 : -1;
-        _stepZ = startZ < endZ ? 1 : -1;
+        stepX = startX < endX ? 1 : -1;
+        stepY = startY < endY ? 1 : -1;
+        stepZ = startZ < endZ ? 1 : -1;
 
         // Initialize accumulated error terms based on the dominant axis.
         // The dominant axis is the one with the largest delta, as it determines the primary iteration direction.
-        if ((_deltaX >= _deltaY) && (_deltaX >= _deltaZ)) {
-            _accumulatedErrorXY = _accumulatedErrorXZ = _deltaX / 2;
-        } else if ((_deltaY >= _deltaX) && (_deltaY >= _deltaZ)) {
-            _accumulatedErrorXY = _accumulatedErrorXZ = _deltaY / 2;
+        if ((deltaX >= deltaY) && (deltaX >= deltaZ)) {
+            accumulatedErrorXY = accumulatedErrorXZ = deltaX / 2;
+        } else if ((deltaY >= deltaX) && (deltaY >= deltaZ)) {
+            accumulatedErrorXY = accumulatedErrorXZ = deltaY / 2;
         } else {
-            _accumulatedErrorXY = _accumulatedErrorXZ = _deltaZ / 2;
+            accumulatedErrorXY = accumulatedErrorXZ = deltaZ / 2;
         }
 
         // Set the initial iteration state to indicate the first point has not yet been processed.
-        _hasStarted = false;
+        hasStarted = false;
     }
 
     /**
@@ -111,68 +111,68 @@ public class GridLineIterator3D {
      *         {@code false} if the end of the line has been reached.
      */
     public boolean next() {
-        if (!_hasStarted) {
+        if (!hasStarted) {
             // On the first call, mark the iteration as started but do not move.
-            _hasStarted = true;
+            hasStarted = true;
             return true;
         }
 
         // Stop the iteration if the current position equals the target.
-        if ((_currentX == _targetX) && (_currentY == _targetY) && (_currentZ == _targetZ)) {
+        if ((currentX == targetX) && (currentY == targetY) && (currentZ == targetZ)) {
             return false;
         }
 
         // Move along the dominant axis and adjust minor axes as needed.
-        if ((_deltaX >= _deltaY) && (_deltaX >= _deltaZ)) {
+        if ((deltaX >= deltaY) && (deltaX >= deltaZ)) {
             // Dominant axis X.
-            _currentX += _stepX;
+            currentX += stepX;
 
             // Adjust Y based on accumulated error.
-            _accumulatedErrorXY += _deltaY;
-            if (_accumulatedErrorXY >= _deltaX) {
-                _currentY += _stepY;
-                _accumulatedErrorXY -= _deltaX;
+            accumulatedErrorXY += deltaY;
+            if (accumulatedErrorXY >= deltaX) {
+                currentY += stepY;
+                accumulatedErrorXY -= deltaX;
             }
 
             // Adjust Z based on accumulated error.
-            _accumulatedErrorXZ += _deltaZ;
-            if (_accumulatedErrorXZ >= _deltaX) {
-                _currentZ += _stepZ;
-                _accumulatedErrorXZ -= _deltaX;
+            accumulatedErrorXZ += deltaZ;
+            if (accumulatedErrorXZ >= deltaX) {
+                currentZ += stepZ;
+                accumulatedErrorXZ -= deltaX;
             }
-        } else if ((_deltaY >= _deltaX) && (_deltaY >= _deltaZ)) {
+        } else if ((deltaY >= deltaX) && (deltaY >= deltaZ)) {
             // Dominant axis Y.
-            _currentY += _stepY;
+            currentY += stepY;
 
             // Adjust X based on accumulated error.
-            _accumulatedErrorXY += _deltaX;
-            if (_accumulatedErrorXY >= _deltaY) {
-                _currentX += _stepX;
-                _accumulatedErrorXY -= _deltaY;
+            accumulatedErrorXY += deltaX;
+            if (accumulatedErrorXY >= deltaY) {
+                currentX += stepX;
+                accumulatedErrorXY -= deltaY;
             }
 
             // Adjust Z based on accumulated error.
-            _accumulatedErrorXZ += _deltaZ;
-            if (_accumulatedErrorXZ >= _deltaY) {
-                _currentZ += _stepZ;
-                _accumulatedErrorXZ -= _deltaY;
+            accumulatedErrorXZ += deltaZ;
+            if (accumulatedErrorXZ >= deltaY) {
+                currentZ += stepZ;
+                accumulatedErrorXZ -= deltaY;
             }
         } else {
             // Dominant axis Z.
-            _currentZ += _stepZ;
+            currentZ += stepZ;
 
             // Adjust X based on accumulated error.
-            _accumulatedErrorXY += _deltaX;
-            if (_accumulatedErrorXY >= _deltaZ) {
-                _currentX += _stepX;
-                _accumulatedErrorXY -= _deltaZ;
+            accumulatedErrorXY += deltaX;
+            if (accumulatedErrorXY >= deltaZ) {
+                currentX += stepX;
+                accumulatedErrorXY -= deltaZ;
             }
 
             // Adjust Y based on accumulated error.
-            _accumulatedErrorXZ += _deltaY;
-            if (_accumulatedErrorXZ >= _deltaZ) {
-                _currentY += _stepY;
-                _accumulatedErrorXZ -= _deltaZ;
+            accumulatedErrorXZ += deltaY;
+            if (accumulatedErrorXZ >= deltaZ) {
+                currentY += stepY;
+                accumulatedErrorXZ -= deltaZ;
             }
         }
 
@@ -184,7 +184,7 @@ public class GridLineIterator3D {
      * @return the current X-coordinate
      */
     public int x() {
-        return _currentX;
+        return currentX;
     }
 
     /**
@@ -192,7 +192,7 @@ public class GridLineIterator3D {
      * @return the current Y-coordinate
      */
     public int y() {
-        return _currentY;
+        return currentY;
     }
 
     /**
@@ -200,11 +200,11 @@ public class GridLineIterator3D {
      * @return the current Z-coordinate
      */
     public int z() {
-        return _currentZ;
+        return currentZ;
     }
 
     @Override
     public String toString() {
-        return "[" + _currentX + ", " + _currentY + ", " + _currentZ + "]";
+        return "[" + currentX + ", " + currentY + ", " + currentZ + "]";
     }
 }

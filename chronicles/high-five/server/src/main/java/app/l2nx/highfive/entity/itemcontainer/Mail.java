@@ -28,18 +28,23 @@ import app.l2nx.highfive.entity.item.instance.Item;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.util.logging.Level;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author DS
  */
+@Slf4j
 public class Mail extends ItemContainer {
-    private final int _ownerId;
-    private int _messageId;
+    @Getter
+    private final int ownerId;
+
+    @Getter
+    private int messageId;
 
     public Mail(int objectId, int messageId) {
-        _ownerId = objectId;
-        _messageId = messageId;
+        ownerId = objectId;
+        this.messageId = messageId;
     }
 
     @Override
@@ -57,13 +62,9 @@ public class Mail extends ItemContainer {
         return ItemLocation.MAIL;
     }
 
-    public int getMessageId() {
-        return _messageId;
-    }
-
     public void setNewMessageId(int messageId) {
-        _messageId = messageId;
-        for (Item item : _items) {
+        this.messageId = messageId;
+        for (Item item : items) {
             if (item == null) {
                 continue;
             }
@@ -75,7 +76,7 @@ public class Mail extends ItemContainer {
     }
 
     public void returnToWh(ItemContainer wh) {
-        for (Item item : _items) {
+        for (Item item : items) {
             if (item == null) {
                 continue;
             }
@@ -91,13 +92,13 @@ public class Mail extends ItemContainer {
     @Override
     protected void addItem(Item item) {
         super.addItem(item);
-        item.setItemLocation(getBaseLocation(), _messageId);
+        item.setItemLocation(getBaseLocation(), messageId);
         item.updateDatabase(true);
     }
 
     @Override
     public void updateDatabase() {
-        _items.forEach(i -> i.updateDatabase(true));
+        items.forEach(i -> i.updateDatabase(true));
     }
 
     @Override
@@ -105,13 +106,13 @@ public class Mail extends ItemContainer {
         try (Connection con = DatabaseFactory.getConnection();
                 PreparedStatement ps = con.prepareStatement(
                         "SELECT object_id, item_id, count, enchant_level, loc, loc_data, custom_type1, custom_type2, mana_left, time FROM items WHERE owner_id=? AND loc=? AND loc_data=?")) {
-            ps.setInt(1, _ownerId);
+            ps.setInt(1, ownerId);
             ps.setString(2, getBaseLocation().name());
-            ps.setInt(3, _messageId);
+            ps.setInt(3, messageId);
             try (ResultSet inv = ps.executeQuery()) {
                 Item item;
                 while (inv.next()) {
-                    item = Item.restoreFromDb(_ownerId, inv);
+                    item = Item.restoreFromDb(ownerId, inv);
                     if (item == null) {
                         continue;
                     }
@@ -127,22 +128,17 @@ public class Mail extends ItemContainer {
                 }
             }
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, "could not restore container:", e);
+            log.warn("could not restore container:", e);
         }
     }
 
     @Override
-    public int getOwnerId() {
-        return _ownerId;
-    }
-
-    @Override
     public void deleteMe() {
-        _items.forEach(item -> {
+        items.forEach(item -> {
             item.updateDatabase(true);
             item.stopAllTasks();
             World.removeObject(item);
         });
-        _items.clear();
+        items.clear();
     }
 }

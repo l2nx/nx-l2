@@ -50,7 +50,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.logging.Logger;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * This class contains all informations concerning the item (weapon, armor, etc).<br>
@@ -61,8 +62,8 @@ import java.util.logging.Logger;
  * <li>Weapon</li>
  * </ul>
  */
+@Slf4j
 public abstract class ItemTemplate extends ListenersContainer {
-    protected static final Logger LOGGER = Logger.getLogger(ItemTemplate.class.getName());
 
     public static final int TYPE1_WEAPON_RING_EARRING_NECKLACE = 0;
     public static final int TYPE1_SHIELD_ARMOR = 1;
@@ -75,52 +76,124 @@ public abstract class ItemTemplate extends ListenersContainer {
     public static final int TYPE2_MONEY = 4;
     public static final int TYPE2_OTHER = 5;
 
-    private int _itemId;
-    private int _displayId;
-    private String _name;
-    private String _icon;
-    private int _weight;
-    private boolean _stackable;
-    private MaterialType _materialType;
-    private CrystalType _crystalType;
-    private int _equipReuseDelay;
-    private int _duration;
-    private long _time;
-    private int _autoDestroyTime;
-    private BodyPart _bodyPart;
-    private int _referencePrice;
-    private int _crystalCount;
-    private boolean _sellable;
-    private boolean _dropable;
-    private boolean _destroyable;
-    private boolean _tradeable;
-    private boolean _depositable;
-    private boolean _enchantable;
-    private boolean _elementable;
-    private boolean _questItem;
-    private boolean _freightable;
-    private boolean _allowSelfResurrection;
-    private boolean _isOlyRestricted;
-    private boolean _forNpc;
-    private boolean _common;
-    private boolean _heroItem;
-    private boolean _pvpItem;
-    private boolean _immediateEffect;
-    private boolean _exImmediateEffect;
-    private int _defaultEnchantLevel;
-    private ActionType _defaultAction;
+    @Getter
+    private int id;
 
-    protected int _type1; // Needed for item list (inventory).
-    protected int _type2; // Different lists for armor, weapon, etc.
-    protected Elementals[] _elementals = null;
-    protected List<FuncTemplate> _funcTemplates;
-    protected List<Condition> _preConditions;
-    private SkillHolder[] _skillHolder;
-    private SkillHolder _unequipSkill = null;
+    @Getter
+    private int displayId;
 
-    private int _useSkillDisTime;
-    protected int _reuseDelay;
-    private int _sharedReuseGroup;
+    @Getter
+    private String name;
+
+    @Getter
+    private String icon;
+
+    @Getter
+    private int weight;
+
+    @Getter
+    private boolean stackable;
+
+    @Getter
+    private MaterialType materialType;
+
+    @Getter
+    private CrystalType crystalType;
+
+    @Getter
+    private int equipReuseDelay;
+
+    @Getter
+    private int duration;
+
+    @Getter
+    private long time;
+
+    @Getter
+    private int autoDestroyTime;
+
+    @Getter
+    private BodyPart bodyPart;
+
+    @Getter
+    private int referencePrice;
+
+    @Getter
+    private int crystalCount;
+
+    @Getter
+    private boolean sellable;
+
+    @Getter
+    private boolean dropable;
+
+    @Getter
+    private boolean destroyable;
+
+    @Getter
+    private boolean tradeable;
+
+    @Getter
+    private boolean depositable;
+
+    private boolean enchantable;
+
+    @Getter
+    private boolean elementable;
+
+    @Getter
+    private boolean questItem;
+
+    @Getter
+    private boolean freightable;
+
+    @Getter
+    private boolean allowSelfResurrection;
+
+    private boolean olyRestricted;
+
+    @Getter
+    private boolean forNpc;
+
+    @Getter
+    private boolean common;
+
+    @Getter
+    private boolean heroItem;
+
+    @Getter
+    private boolean pvpItem;
+
+    private boolean immediateEffect;
+    private boolean exImmediateEffect;
+
+    @Getter
+    private int defaultEnchantLevel;
+
+    @Getter
+    private ActionType defaultAction;
+
+    @Getter
+    protected int type1; // Needed for item list (inventory).
+
+    @Getter
+    protected int type2; // Different lists for armor, weapon, etc.
+
+    @Getter
+    protected Elementals[] elementals = null;
+
+    protected List<FuncTemplate> funcTemplates;
+    protected List<Condition> preConditions;
+    private SkillHolder[] skills;
+    private SkillHolder unequipSkill = null;
+
+    private int useSkillDisTime;
+
+    @Getter
+    protected int reuseDelay;
+
+    @Getter
+    private int sharedReuseGroup;
 
     /**
      * Constructor of the Item that fill class variables.
@@ -131,74 +204,76 @@ public abstract class ItemTemplate extends ListenersContainer {
     }
 
     public void set(StatSet set) {
-        _itemId = set.getInt("item_id");
-        _displayId = set.getInt("displayId", _itemId);
-        _name = set.getString("name");
-        _icon = set.getString("icon", null);
-        _weight = set.getInt("weight", 0);
-        _materialType = set.getEnum("material", MaterialType.class, MaterialType.STEEL);
-        _equipReuseDelay = set.getInt("equip_reuse_delay", 0) * 1000;
-        _duration = set.getInt("duration", -1);
-        _time = set.getInt("time", -1);
-        _autoDestroyTime = set.getInt("auto_destroy_time", -1) * 1000;
-        _bodyPart = BodyPart.fromName(set.getString("bodypart", "none"));
-        _referencePrice = set.getInt("price", 0);
-        _crystalType = set.getEnum("crystal_type", CrystalType.class, CrystalType.NONE);
-        _crystalCount = set.getInt("crystal_count", 0);
-        _stackable = set.getBoolean("is_stackable", false);
-        _sellable = set.getBoolean("is_sellable", true);
-        _dropable = set.getBoolean("is_dropable", true);
-        _destroyable = set.getBoolean("is_destroyable", true);
-        _tradeable = set.getBoolean("is_tradable", true);
-        _questItem = set.getBoolean("is_questitem", false);
-        _depositable = set.getBoolean("is_depositable", true);
-        _elementable = set.getBoolean("element_enabled", false);
-        _enchantable = set.getBoolean("enchant_enabled", false);
-        _freightable = set.getBoolean("is_freightable", false);
-        _allowSelfResurrection = set.getBoolean("allow_self_resurrection", false);
-        _isOlyRestricted = set.getBoolean("is_oly_restricted", false);
-        _forNpc = set.getBoolean("for_npc", false);
-        _immediateEffect = set.getBoolean("immediate_effect", false);
-        _exImmediateEffect = set.getBoolean("ex_immediate_effect", false);
-        _defaultAction = set.getEnum("default_action", ActionType.class, ActionType.NONE);
-        _useSkillDisTime = set.getInt("useSkillDisTime", 0);
-        _defaultEnchantLevel = set.getInt("enchanted", 0);
-        _reuseDelay = set.getInt("reuse_delay", 0);
-        _sharedReuseGroup = set.getInt("shared_reuse_group", 0);
+        this.id = set.getInt("item_id");
+        displayId = set.getInt("displayId", this.id);
+        name = set.getString("name");
+        icon = set.getString("icon", null);
+        weight = set.getInt("weight", 0);
+        materialType = set.getEnum("material", MaterialType.class, MaterialType.STEEL);
+        equipReuseDelay = set.getInt("equip_reuse_delay", 0) * 1000;
+        duration = set.getInt("duration", -1);
+        time = set.getInt("time", -1);
+        autoDestroyTime = set.getInt("auto_destroy_time", -1) * 1000;
+        bodyPart = BodyPart.fromName(set.getString("bodypart", "none"));
+        referencePrice = set.getInt("price", 0);
+        crystalType = set.getEnum("crystal_type", CrystalType.class, CrystalType.NONE);
+        crystalCount = set.getInt("crystal_count", 0);
+        stackable = set.getBoolean("is_stackable", false);
+        sellable = set.getBoolean("is_sellable", true);
+        dropable = set.getBoolean("is_dropable", true);
+        destroyable = set.getBoolean("is_destroyable", true);
+        tradeable = set.getBoolean("is_tradable", true);
+        questItem = set.getBoolean("is_questitem", false);
+        depositable = set.getBoolean("is_depositable", true);
+        elementable = set.getBoolean("element_enabled", false);
+        enchantable = set.getBoolean("enchant_enabled", false);
+        freightable = set.getBoolean("is_freightable", false);
+        allowSelfResurrection = set.getBoolean("allow_self_resurrection", false);
+        olyRestricted = set.getBoolean("is_oly_restricted", false);
+        forNpc = set.getBoolean("for_npc", false);
+        immediateEffect = set.getBoolean("immediate_effect", false);
+        exImmediateEffect = set.getBoolean("ex_immediate_effect", false);
+        defaultAction = set.getEnum("default_action", ActionType.class, ActionType.NONE);
+        useSkillDisTime = set.getInt("useSkillDisTime", 0);
+        defaultEnchantLevel = set.getInt("enchanted", 0);
+        reuseDelay = set.getInt("reuse_delay", 0);
+        sharedReuseGroup = set.getInt("shared_reuse_group", 0);
 
         String skills = set.getString("item_skill", null);
         if (skills != null) {
             final String[] skillsSplit = skills.split(";");
-            _skillHolder = new SkillHolder[skillsSplit.length];
+            this.skills = new SkillHolder[skillsSplit.length];
             int used = 0;
             for (String element : skillsSplit) {
                 try {
                     final String[] skillSplit = element.split("-");
                     final int id = Integer.parseInt(skillSplit[0]);
                     if (id == 0) {
-                        LOGGER.info("Ignoring item_skill(" + element + ") for item " + this + ". Skill id is 0!");
+                        log.info("Ignoring item_skill({}) for item {}. Skill id is 0!", element, this);
                         continue;
                     }
 
                     final int level = Integer.parseInt(skillSplit[1]);
                     if (level == 0) {
-                        LOGGER.info("Ignoring item_skill(" + element + ") for item " + this + ". Skill level is 0!");
+                        log.info("Ignoring item_skill({}) for item {}. Skill level is 0!", element, this);
                         continue;
                     }
 
-                    _skillHolder[used] = new SkillHolder(id, level);
+                    this.skills[used] = new SkillHolder(id, level);
                     ++used;
                 } catch (Exception e) {
-                    LOGGER.warning("Failed to parse item_skill(" + element + ") for item " + this
-                            + "! Format: SkillId0-SkillLevel0[;SkillIdN-SkillLevelN]");
+                    log.warn(
+                            "Failed to parse item_skill({}) for item {}! Format: SkillId0-SkillLevel0[;SkillIdN-SkillLevelN]",
+                            element,
+                            this);
                 }
             }
 
             // this is only loading? just don't leave a null or use a collection?
-            if (used != _skillHolder.length) {
+            if (used != this.skills.length) {
                 final SkillHolder[] skillHolder = new SkillHolder[used];
-                System.arraycopy(_skillHolder, 0, skillHolder, 0, used);
-                _skillHolder = skillHolder;
+                System.arraycopy(this.skills, 0, skillHolder, 0, used);
+                this.skills = skillHolder;
             }
         }
 
@@ -213,40 +288,40 @@ public abstract class ItemTemplate extends ListenersContainer {
                     level = Integer.parseInt(info[1]);
                 } catch (Exception nfe) {
                     // Incorrect syntax, don't add new skill.
-                    LOGGER.info("Could not parse " + skills + " in weapon unequip skills! item " + this);
+                    log.info("Could not parse {} in weapon unequip skills! item {}", skills, this);
                 }
 
                 if ((id > 0) && (level > 0)) {
-                    _unequipSkill = new SkillHolder(id, level);
+                    unequipSkill = new SkillHolder(id, level);
                 }
             }
         }
 
-        _common = ((_itemId >= 11605) && (_itemId <= 12361));
-        _heroItem = ((_itemId >= 6611) && (_itemId <= 6621))
-                || ((_itemId >= 9388) && (_itemId <= 9390))
-                || (_itemId == 6842);
-        _pvpItem = ((_itemId >= 10667) && (_itemId <= 10835))
-                || ((_itemId >= 12852) && (_itemId <= 12977))
-                || ((_itemId >= 14363) && (_itemId <= 14525))
-                || (_itemId == 14528)
-                || (_itemId == 14529)
-                || (_itemId == 14558)
-                || ((_itemId >= 15913) && (_itemId <= 16024))
-                || ((_itemId >= 16134) && (_itemId <= 16147))
-                || (_itemId == 16149)
-                || (_itemId == 16151)
-                || (_itemId == 16153)
-                || (_itemId == 16155)
-                || (_itemId == 16157)
-                || (_itemId == 16159)
-                || ((_itemId >= 16168) && (_itemId <= 16176))
-                || ((_itemId >= 16179) && (_itemId <= 16220))
-                || ((_itemId >= 21932) && (_itemId <= 21934))
-                || (_itemId == 21938)
-                || ((_itemId >= 21952) && (_itemId <= 21954))
-                || (_itemId == 21958)
-                || ((_itemId >= 21970) && (_itemId <= 21972));
+        common = ((this.id >= 11605) && (this.id <= 12361));
+        heroItem = ((this.id >= 6611) && (this.id <= 6621))
+                || ((this.id >= 9388) && (this.id <= 9390))
+                || (this.id == 6842);
+        pvpItem = ((this.id >= 10667) && (this.id <= 10835))
+                || ((this.id >= 12852) && (this.id <= 12977))
+                || ((this.id >= 14363) && (this.id <= 14525))
+                || (this.id == 14528)
+                || (this.id == 14529)
+                || (this.id == 14558)
+                || ((this.id >= 15913) && (this.id <= 16024))
+                || ((this.id >= 16134) && (this.id <= 16147))
+                || (this.id == 16149)
+                || (this.id == 16151)
+                || (this.id == 16153)
+                || (this.id == 16155)
+                || (this.id == 16157)
+                || (this.id == 16159)
+                || ((this.id >= 16168) && (this.id <= 16176))
+                || ((this.id >= 16179) && (this.id <= 16220))
+                || ((this.id >= 21932) && (this.id <= 21934))
+                || (this.id == 21938)
+                || ((this.id >= 21952) && (this.id <= 21954))
+                || (this.id == 21958)
+                || ((this.id >= 21970) && (this.id <= 21972));
     }
 
     /**
@@ -287,99 +362,21 @@ public abstract class ItemTemplate extends ListenersContainer {
         return false;
     }
 
-    /**
-     * @return the _equipReuseDelay
-     */
-    public int getEquipReuseDelay() {
-        return _equipReuseDelay;
-    }
-
-    /**
-     * Returns the duration of the item
-     * @return int
-     */
-    public int getDuration() {
-        return _duration;
-    }
-
-    /**
-     * Returns the time of the item
-     * @return long
-     */
-    public long getTime() {
-        return _time;
-    }
-
-    /**
-     * @return the auto destroy time of the item in seconds: 0 or less - default
-     */
-    public int getAutoDestroyTime() {
-        return _autoDestroyTime;
-    }
-
-    /**
-     * Returns the ID of the item
-     * @return int
-     */
-    public int getId() {
-        return _itemId;
-    }
-
-    /**
-     * Returns the ID of the item
-     * @return int
-     */
-    public int getDisplayId() {
-        return _displayId;
-    }
-
     public abstract int getItemMask();
-
-    /**
-     * Return the type of material of the item
-     * @return MaterialType
-     */
-    public MaterialType getMaterialType() {
-        return _materialType;
-    }
-
-    /**
-     * Returns the type 2 of the item
-     * @return int
-     */
-    public int getType2() {
-        return _type2;
-    }
-
-    /**
-     * Returns the weight of the item
-     * @return int
-     */
-    public int getWeight() {
-        return _weight;
-    }
 
     /**
      * Returns if the item is crystallizable
      * @return boolean
      */
     public boolean isCrystallizable() {
-        return (_crystalType != CrystalType.NONE) && (_crystalCount > 0);
+        return (crystalType != CrystalType.NONE) && (crystalCount > 0);
     }
 
     /**
      * @return return General item grade (No S80, S84)
      */
     public ItemGrade getItemGrade() {
-        return ItemGrade.valueOf(_crystalType);
-    }
-
-    /**
-     * Return the type of crystal if item is crystallizable
-     * @return CrystalType
-     */
-    public CrystalType getCrystalType() {
-        return _crystalType;
+        return ItemGrade.valueOf(crystalType);
     }
 
     /**
@@ -387,7 +384,7 @@ public abstract class ItemTemplate extends ListenersContainer {
      * @return int
      */
     public int getCrystalItemId() {
-        return _crystalType.getCrystalId();
+        return crystalType.getCrystalId();
     }
 
     /**
@@ -395,22 +392,15 @@ public abstract class ItemTemplate extends ListenersContainer {
      * @return the grade of the item.
      */
     public CrystalType getCrystalTypePlus() {
-        switch (_crystalType) {
+        switch (crystalType) {
             case S80:
             case S84: {
                 return CrystalType.S;
             }
             default: {
-                return _crystalType;
+                return crystalType;
             }
         }
-    }
-
-    /**
-     * @return the quantity of crystals for crystallization.
-     */
-    public int getCrystalCount() {
-        return _crystalCount;
     }
 
     /**
@@ -419,54 +409,40 @@ public abstract class ItemTemplate extends ListenersContainer {
      */
     public int getCrystalCount(int enchantLevel) {
         if (enchantLevel > 3) {
-            switch (_type2) {
+            switch (type2) {
                 case TYPE2_SHIELD_ARMOR:
                 case TYPE2_ACCESSORY: {
-                    return _crystalCount + (_crystalType.getCrystalEnchantBonusArmor() * ((3 * enchantLevel) - 6));
+                    return crystalCount + (crystalType.getCrystalEnchantBonusArmor() * ((3 * enchantLevel) - 6));
                 }
                 case TYPE2_WEAPON: {
-                    return _crystalCount + (_crystalType.getCrystalEnchantBonusWeapon() * ((2 * enchantLevel) - 3));
+                    return crystalCount + (crystalType.getCrystalEnchantBonusWeapon() * ((2 * enchantLevel) - 3));
                 }
                 default: {
-                    return _crystalCount;
+                    return crystalCount;
                 }
             }
         }
 
         if (enchantLevel <= 0) {
-            return _crystalCount;
+            return crystalCount;
         }
 
-        switch (_type2) {
+        switch (type2) {
             case TYPE2_SHIELD_ARMOR:
             case TYPE2_ACCESSORY: {
-                return _crystalCount + (_crystalType.getCrystalEnchantBonusArmor() * enchantLevel);
+                return crystalCount + (crystalType.getCrystalEnchantBonusArmor() * enchantLevel);
             }
             case TYPE2_WEAPON: {
-                return _crystalCount + (_crystalType.getCrystalEnchantBonusWeapon() * enchantLevel);
+                return crystalCount + (crystalType.getCrystalEnchantBonusWeapon() * enchantLevel);
             }
             default: {
-                return _crystalCount;
+                return crystalCount;
             }
         }
-    }
-
-    /**
-     * @return the name of the item.
-     */
-    public String getName() {
-        return _name;
-    }
-
-    /**
-     * @return the base elemental of the item.
-     */
-    public Elementals[] getElementals() {
-        return _elementals;
     }
 
     public Elementals getElemental(byte attribute) {
-        for (Elementals elm : _elementals) {
+        for (Elementals elm : elementals) {
             if (elm.getElement() == attribute) {
                 return elm;
             }
@@ -480,91 +456,28 @@ public abstract class ItemTemplate extends ListenersContainer {
      * @param element the element to set.
      */
     public void setElementals(Elementals element) {
-        if (_elementals == null) {
-            _elementals = new Elementals[1];
-            _elementals[0] = element;
+        if (elementals == null) {
+            elementals = new Elementals[1];
+            elementals[0] = element;
         } else {
             Elementals elm = getElemental(element.getElement());
             if (elm != null) {
                 elm.setValue(element.getValue());
             } else {
                 elm = element;
-                final Elementals[] array = new Elementals[_elementals.length + 1];
-                System.arraycopy(_elementals, 0, array, 0, _elementals.length);
-                array[_elementals.length] = elm;
-                _elementals = array;
+                final Elementals[] array = new Elementals[elementals.length + 1];
+                System.arraycopy(elementals, 0, array, 0, elementals.length);
+                array[elementals.length] = elm;
+                elementals = array;
             }
         }
-    }
-
-    /**
-     * @return the part of the body used with the item.
-     */
-    public BodyPart getBodyPart() {
-        return _bodyPart;
-    }
-
-    /**
-     * @return the type 1 of the item.
-     */
-    public int getType1() {
-        return _type1;
-    }
-
-    /**
-     * @return {@code true} if the item is stackable, {@code false} otherwise.
-     */
-    public boolean isStackable() {
-        return _stackable;
     }
 
     /**
      * @return {@code true} if the item can be equipped, {@code false} otherwise.
      */
     public boolean isEquipable() {
-        return (_bodyPart != BodyPart.NONE) && !(getItemType() instanceof EtcItemType);
-    }
-
-    /**
-     * @return the price of reference of the item.
-     */
-    public int getReferencePrice() {
-        return _referencePrice;
-    }
-
-    /**
-     * @return {@code true} if the item can be sold, {@code false} otherwise.
-     */
-    public boolean isSellable() {
-        return _sellable;
-    }
-
-    /**
-     * @return {@code true} if the item can be dropped, {@code false} otherwise.
-     */
-    public boolean isDropable() {
-        return _dropable;
-    }
-
-    /**
-     * @return {@code true} if the item can be destroyed, {@code false} otherwise.
-     */
-    public boolean isDestroyable() {
-        return _destroyable;
-    }
-
-    /**
-     * @return {@code true} if the item can be traded, {@code false} otherwise.
-     */
-    public boolean isTradeable() {
-        return _tradeable;
-    }
-
-    /**
-     * @return {@code true} if the item can be put into warehouse, {@code false} otherwise.
-     */
-    public boolean isDepositable() {
-        return _depositable;
+        return (bodyPart != BodyPart.NONE) && !(getItemType() instanceof EtcItemType);
     }
 
     /**
@@ -572,38 +485,7 @@ public abstract class ItemTemplate extends ListenersContainer {
      * @return {@code true} if the item can be enchanted, {@code false} otherwise.
      */
     public boolean isEnchantable() {
-        return (Arrays.binarySearch(PlayerConfig.ENCHANT_BLACKLIST, _itemId) < 0) && _enchantable;
-    }
-
-    /**
-     * @return {@code true} if the item can be elemented, {@code false} otherwise.
-     */
-    public boolean isElementable() {
-        return _elementable;
-    }
-
-    /**
-     * Returns if item is common
-     * @return boolean
-     */
-    public boolean isCommon() {
-        return _common;
-    }
-
-    /**
-     * Returns if item is hero-only
-     * @return
-     */
-    public boolean isHeroItem() {
-        return _heroItem;
-    }
-
-    /**
-     * Returns if item is pvp
-     * @return
-     */
-    public boolean isPvpItem() {
-        return _pvpItem;
+        return (Arrays.binarySearch(PlayerConfig.ENCHANT_BLACKLIST, id) < 0) && enchantable;
     }
 
     public boolean isPotion() {
@@ -625,12 +507,12 @@ public abstract class ItemTemplate extends ListenersContainer {
      * @return the list of functions
      */
     public List<AbstractFunction> getStatFuncs(Item item, Creature creature) {
-        if ((_funcTemplates == null) || _funcTemplates.isEmpty()) {
+        if ((funcTemplates == null) || funcTemplates.isEmpty()) {
             return Collections.<AbstractFunction>emptyList();
         }
 
-        final List<AbstractFunction> funcs = new ArrayList<>(_funcTemplates.size());
-        for (FuncTemplate t : _funcTemplates) {
+        final List<AbstractFunction> funcs = new ArrayList<>(funcTemplates.size());
+        for (FuncTemplate t : funcTemplates) {
             final AbstractFunction f = t.getFunc(creature, creature, item, item);
             if (f != null) {
                 funcs.add(f);
@@ -646,11 +528,11 @@ public abstract class ItemTemplate extends ListenersContainer {
      * @return {@code true} if a function of the specified class exists, {@code false} otherwise
      */
     public boolean hasFunction(Class<? extends AbstractFunction> functionClass) {
-        if ((_funcTemplates == null) || _funcTemplates.isEmpty()) {
+        if ((funcTemplates == null) || funcTemplates.isEmpty()) {
             return false;
         }
 
-        for (FuncTemplate template : _funcTemplates) {
+        for (FuncTemplate template : funcTemplates) {
             if (template.getClass().equals(functionClass)) {
                 return true;
             }
@@ -697,25 +579,25 @@ public abstract class ItemTemplate extends ListenersContainer {
             }
         }
 
-        if (_funcTemplates == null) {
-            _funcTemplates = new ArrayList<>(1);
+        if (funcTemplates == null) {
+            funcTemplates = new ArrayList<>(1);
         }
 
-        _funcTemplates.add(f);
+        funcTemplates.add(f);
     }
 
     public void attach(Condition c) {
-        if (_preConditions == null) {
-            _preConditions = new ArrayList<>(1);
+        if (preConditions == null) {
+            preConditions = new ArrayList<>(1);
         }
 
-        if (!_preConditions.contains(c)) {
-            _preConditions.add(c);
+        if (!preConditions.contains(c)) {
+            preConditions.add(c);
         }
     }
 
     public boolean hasSkills() {
-        return _skillHolder != null;
+        return skills != null;
     }
 
     /**
@@ -723,14 +605,14 @@ public abstract class ItemTemplate extends ListenersContainer {
      * @return Skills linked to this item as SkillHolder[]
      */
     public SkillHolder[] getSkills() {
-        return _skillHolder;
+        return skills;
     }
 
     /**
      * @return skill that activates, when player unequip this weapon or armor
      */
     public Skill getUnequipSkill() {
-        return _unequipSkill == null ? null : _unequipSkill.getSkill();
+        return unequipSkill == null ? null : unequipSkill.getSkill();
     }
 
     public boolean checkCondition(Creature creature, WorldObject object, boolean sendMessage) {
@@ -739,7 +621,7 @@ public abstract class ItemTemplate extends ListenersContainer {
         }
 
         // Don't allow hero equipment and restricted items during Olympiad.
-        if ((isOlyRestrictedItem() || _heroItem)
+        if ((isOlyRestrictedItem() || heroItem)
                 && creature.isPlayer()
                 && creature.asPlayer().isInOlympiadMode()) {
             if (isEquipable()) {
@@ -756,7 +638,7 @@ public abstract class ItemTemplate extends ListenersContainer {
         }
 
         final Creature target = object.isCreature() ? object.asCreature() : null;
-        for (Condition preCondition : _preConditions) {
+        for (Condition preCondition : preConditions) {
             if (preCondition == null) {
                 continue;
             }
@@ -775,7 +657,7 @@ public abstract class ItemTemplate extends ListenersContainer {
                     } else if (msgId != 0) {
                         final SystemMessage sm = new SystemMessage(msgId);
                         if (preCondition.isAddName()) {
-                            sm.addItemName(_itemId);
+                            sm.addItemName(id);
                         }
 
                         creature.sendPacket(sm);
@@ -790,27 +672,11 @@ public abstract class ItemTemplate extends ListenersContainer {
     }
 
     public boolean isConditionAttached() {
-        return (_preConditions != null) && !_preConditions.isEmpty();
-    }
-
-    public boolean isQuestItem() {
-        return _questItem;
-    }
-
-    public boolean isFreightable() {
-        return _freightable;
-    }
-
-    public boolean isAllowSelfResurrection() {
-        return _allowSelfResurrection;
+        return (preConditions != null) && !preConditions.isEmpty();
     }
 
     public boolean isOlyRestrictedItem() {
-        return _isOlyRestricted || OlympiadConfig.LIST_OLY_RESTRICTED_ITEMS.contains(_itemId);
-    }
-
-    public boolean isForNpc() {
-        return _forNpc;
+        return olyRestricted || OlympiadConfig.LIST_OLY_RESTRICTED_ITEMS.contains(id);
     }
 
     /**
@@ -819,7 +685,7 @@ public abstract class ItemTemplate extends ListenersContainer {
      * @return {@code true} if the item applies effects immediately, {@code false} otherwise
      */
     public boolean hasExImmediateEffect() {
-        return _exImmediateEffect;
+        return exImmediateEffect;
     }
 
     /**
@@ -827,47 +693,11 @@ public abstract class ItemTemplate extends ListenersContainer {
      * @return {@code true} if the item applies effects immediately, {@code false} otherwise
      */
     public boolean hasImmediateEffect() {
-        return _immediateEffect;
-    }
-
-    /**
-     * @return the _default_action
-     */
-    public ActionType getDefaultAction() {
-        return _defaultAction;
+        return immediateEffect;
     }
 
     public int useSkillDisTime() {
-        return _useSkillDisTime;
-    }
-
-    /**
-     * Gets the item reuse delay time in seconds.
-     * @return the reuse delay time
-     */
-    public int getReuseDelay() {
-        return _reuseDelay;
-    }
-
-    /**
-     * Gets the shared reuse group.<br>
-     * Items with the same reuse group will render reuse delay upon those items when used.
-     * @return the shared reuse group
-     */
-    public int getSharedReuseGroup() {
-        return _sharedReuseGroup;
-    }
-
-    /**
-     * Usable in HTML windows.
-     * @return the icon link in client files
-     */
-    public String getIcon() {
-        return _icon;
-    }
-
-    public int getDefaultEnchantLevel() {
-        return _defaultEnchantLevel;
+        return useSkillDisTime;
     }
 
     public boolean isPetItem() {
@@ -889,6 +719,6 @@ public abstract class ItemTemplate extends ListenersContainer {
      */
     @Override
     public String toString() {
-        return _name + "(" + _itemId + ")";
+        return name + "(" + id + ")";
     }
 }

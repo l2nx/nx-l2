@@ -34,23 +34,23 @@ import app.l2nx.highfive.network.serverpackets.MoveToLocationInVehicle;
 import app.l2nx.highfive.network.serverpackets.StopMoveInVehicle;
 
 public class RequestMoveToLocationInVehicle extends ClientPacket {
-    private int _boatId;
-    private int _targetX;
-    private int _targetY;
-    private int _targetZ;
-    private int _originX;
-    private int _originY;
-    private int _originZ;
+    private int boatId;
+    private int targetX;
+    private int targetY;
+    private int targetZ;
+    private int originX;
+    private int originY;
+    private int originZ;
 
     @Override
     protected void readImpl() {
-        _boatId = readInt(); // objectId of boat
-        _targetX = readInt();
-        _targetY = readInt();
-        _targetZ = readInt();
-        _originX = readInt();
-        _originY = readInt();
-        _originZ = readInt();
+        boatId = readInt(); // objectId of boat
+        targetX = readInt();
+        targetY = readInt();
+        targetZ = readInt();
+        originX = readInt();
+        originY = readInt();
+        originZ = readInt();
     }
 
     @Override
@@ -68,8 +68,8 @@ public class RequestMoveToLocationInVehicle extends ClientPacket {
             return;
         }
 
-        if ((_targetX == _originX) && (_targetY == _originY) && (_targetZ == _originZ)) {
-            player.sendPacket(new StopMoveInVehicle(player, _boatId));
+        if ((targetX == originX) && (targetY == originY) && (targetZ == originZ)) {
+            player.sendPacket(new StopMoveInVehicle(player, boatId));
             return;
         }
 
@@ -102,17 +102,17 @@ public class RequestMoveToLocationInVehicle extends ClientPacket {
         Boat boat;
         if (player.isInBoat()) {
             boat = player.getBoat();
-            if (boat.getObjectId() != _boatId) {
-                boat = BoatManager.getInstance().getBoat(_boatId);
+            if (boat.getObjectId() != boatId) {
+                boat = BoatManager.getInstance().getBoat(boatId);
                 player.setVehicle(boat);
             }
         } else {
-            boat = BoatManager.getInstance().getBoat(_boatId);
+            boat = BoatManager.getInstance().getBoat(boatId);
             player.setVehicle(boat);
         }
 
-        final Location pos = new Location(_targetX, _targetY, _targetZ);
-        final Location originPos = new Location(_originX, _originY, _originZ);
+        final Location pos = new Location(targetX, targetY, targetZ);
+        final Location originPos = new Location(originX, originY, originZ);
         player.setInVehiclePosition(pos);
         player.broadcastPacket(new MoveToLocationInVehicle(player, pos, originPos));
     }

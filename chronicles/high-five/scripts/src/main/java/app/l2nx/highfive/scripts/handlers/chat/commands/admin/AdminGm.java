@@ -25,14 +25,14 @@ package app.l2nx.highfive.scripts.handlers.chat.commands.admin;
 import app.l2nx.highfive.data.xml.AdminData;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.handler.IAdminCommandHandler;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * This class handles following admin commands: - GM = turns GM mode off
  * @version $Revision: 1.2.4.4 $ $Date: 2005/04/11 10:06:06 $
  */
+@Slf4j
 public class AdminGm implements IAdminCommandHandler {
-    private static final Logger LOGGER = Logger.getLogger(AdminGm.class.getName());
     private static final String[] ADMIN_COMMANDS = {"admin_gm"};
 
     @Override
@@ -41,7 +41,7 @@ public class AdminGm implements IAdminCommandHandler {
             AdminData.getInstance().deleteGm(activeChar);
             activeChar.setAccessLevel(0);
             activeChar.sendSysMessage("You no longer have GM status.");
-            LOGGER.info("GM: " + activeChar.getName() + "(" + activeChar.getObjectId() + ") turned his GM status off");
+            log.info("GM: {}({}) turned his GM status off", activeChar.getName(), activeChar.getObjectId());
         }
 
         return true;

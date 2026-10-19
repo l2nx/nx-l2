@@ -33,15 +33,15 @@ import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.serverpackets.ActionFailed;
 
 public class RequestMagicSkillUse extends ClientPacket {
-    private int _magicId;
-    private boolean _ctrlPressed;
-    private boolean _shiftPressed;
+    private int magicId;
+    private boolean ctrlPressed;
+    private boolean shiftPressed;
 
     @Override
     protected void readImpl() {
-        _magicId = readInt(); // Identifier of the used skill.
-        _ctrlPressed = readInt() != 0; // True if it's a ForceAttack : Ctrl pressed.
-        _shiftPressed = readByte() != 0; // True if Shift pressed.
+        magicId = readInt(); // Identifier of the used skill.
+        ctrlPressed = readInt() != 0; // True if it's a ForceAttack : Ctrl pressed.
+        shiftPressed = readByte() != 0; // True if Shift pressed.
     }
 
     @Override
@@ -57,7 +57,7 @@ public class RequestMagicSkillUse extends ClientPacket {
         }
 
         if (player.isFakeDeath()) {
-            if (_magicId != CommonSkill.FAKE_DEATH.getId()) {
+            if (magicId != CommonSkill.FAKE_DEATH.getId()) {
                 player.sendPacket(SystemMessageId.YOU_CANNOT_MOVE_WHILE_SITTING);
                 player.sendPacket(ActionFailed.STATIC_PACKET);
                 return;
@@ -68,12 +68,12 @@ public class RequestMagicSkillUse extends ClientPacket {
         }
 
         // Get the level of the used skill.
-        Skill skill = player.getKnownSkill(_magicId);
+        Skill skill = player.getKnownSkill(magicId);
         if (skill == null) {
             // Player doesn't know this skill, maybe it's the display Id.
-            skill = player.getCustomSkill(_magicId);
+            skill = player.getCustomSkill(magicId);
             if (skill == null) {
-                skill = player.getTransformSkill(_magicId);
+                skill = player.getTransformSkill(magicId);
                 if (skill == null) {
                     player.sendPacket(ActionFailed.STATIC_PACKET);
 
@@ -120,6 +120,6 @@ public class RequestMagicSkillUse extends ClientPacket {
             player.getAI().setIntentionMoveTo(player.getLocation());
         }
 
-        player.useMagic(skill, _ctrlPressed, _shiftPressed);
+        player.useMagic(skill, ctrlPressed, shiftPressed);
     }
 }

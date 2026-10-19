@@ -29,34 +29,34 @@ import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.network.buffer.WriteBuffer;
 
 public class HennaItemRemoveInfo extends ServerPacket {
-    private final Player _player;
-    private final Henna _henna;
+    private final Player player;
+    private final Henna henna;
 
     public HennaItemRemoveInfo(Henna henna, Player player) {
-        _henna = henna;
-        _player = player;
+        this.henna = henna;
+        this.player = player;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.HENNA_UNEQUIP_INFO.writeId(this, buffer);
-        buffer.writeInt(_henna.getDyeId()); // symbol Id
-        buffer.writeInt(_henna.getDyeItemId()); // item id of dye
-        buffer.writeLong(_henna.getCancelCount()); // total amount of dye require
-        buffer.writeLong(_henna.getCancelFee()); // total amount of Adena require to remove symbol
-        buffer.writeInt(_henna.isAllowedClass(_player.getPlayerClass())); // able to remove or not
-        buffer.writeLong(_player.getAdena());
-        buffer.writeInt(_player.getINT()); // current INT
-        buffer.writeByte(_player.getINT() - _henna.getStatINT()); // equip INT
-        buffer.writeInt(_player.getSTR()); // current STR
-        buffer.writeByte(_player.getSTR() - _henna.getStatSTR()); // equip STR
-        buffer.writeInt(_player.getCON()); // current CON
-        buffer.writeByte(_player.getCON() - _henna.getStatCON()); // equip CON
-        buffer.writeInt(_player.getMEN()); // current MEN
-        buffer.writeByte(_player.getMEN() - _henna.getStatMEN()); // equip MEN
-        buffer.writeInt(_player.getDEX()); // current DEX
-        buffer.writeByte(_player.getDEX() - _henna.getStatDEX()); // equip DEX
-        buffer.writeInt(_player.getWIT()); // current WIT
-        buffer.writeByte(_player.getWIT() - _henna.getStatWIT()); // equip WIT
+        buffer.writeInt(henna.getDyeId()); // symbol Id
+        buffer.writeInt(henna.getDyeItemId()); // item id of dye
+        buffer.writeLong(henna.getCancelCount()); // total amount of dye require
+        buffer.writeLong(henna.getCancelFee()); // total amount of Adena require to remove symbol
+        buffer.writeInt(henna.isAllowedClass(player.getPlayerClass())); // able to remove or not
+        buffer.writeLong(player.getAdena());
+        buffer.writeInt(player.getINT()); // current INT
+        buffer.writeByte(player.getINT() - henna.getStatINT()); // equip INT
+        buffer.writeInt(player.getSTR()); // current STR
+        buffer.writeByte(player.getSTR() - henna.getStatSTR()); // equip STR
+        buffer.writeInt(player.getCON()); // current CON
+        buffer.writeByte(player.getCON() - henna.getStatCON()); // equip CON
+        buffer.writeInt(player.getMEN()); // current MEN
+        buffer.writeByte(player.getMEN() - henna.getStatMEN()); // equip MEN
+        buffer.writeInt(player.getDEX()); // current DEX
+        buffer.writeByte(player.getDEX() - henna.getStatDEX()); // equip DEX
+        buffer.writeInt(player.getWIT()); // current WIT
+        buffer.writeByte(player.getWIT() - henna.getStatWIT()); // equip WIT
     }
 }

@@ -30,16 +30,16 @@ import app.l2nx.highfive.network.serverpackets.SystemMessage;
  * @author -Wooden-
  */
 public class RequestExOustFromMPCC extends ClientPacket {
-    private String _name;
+    private String name;
 
     @Override
     protected void readImpl() {
-        _name = readString();
+        name = readString();
     }
 
     @Override
     protected void runImpl() {
-        final Player target = World.getPlayer(_name);
+        final Player target = World.getPlayer(name);
         final Player player = getPlayer();
         final Party party = player.getParty();
         if ((target != null)

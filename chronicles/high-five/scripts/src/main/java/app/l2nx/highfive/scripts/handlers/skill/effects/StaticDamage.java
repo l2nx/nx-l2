@@ -30,12 +30,12 @@ import app.l2nx.highfive.util.StatSet;
  * @author Adry_85
  */
 public class StaticDamage extends AbstractEffect {
-    private final int _power;
+    private final int power;
 
     public StaticDamage(Condition attachCond, Condition applyCond, StatSet set, StatSet params) {
         super(attachCond, applyCond, set, params);
 
-        _power = params.getInt("power", 0);
+        power = params.getInt("power", 0);
     }
 
     @Override
@@ -49,10 +49,10 @@ public class StaticDamage extends AbstractEffect {
             return;
         }
 
-        effected.reduceCurrentHp(_power, effector, skill);
-        effected.notifyDamageReceived(_power, effector, skill, false, false);
+        effected.reduceCurrentHp(power, effector, skill);
+        effected.notifyDamageReceived(power, effector, skill, false, false);
         if (effector.isPlayer()) {
-            effector.sendDamageMessage(effected, _power, false, false, false);
+            effector.sendDamageMessage(effected, power, false, false, false);
         }
     }
 }

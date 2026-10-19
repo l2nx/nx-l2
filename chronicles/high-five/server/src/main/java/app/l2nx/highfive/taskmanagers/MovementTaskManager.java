@@ -27,15 +27,14 @@ import app.l2nx.highfive.threads.ThreadPool;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.logging.Logger;
-import org.apache.commons.lang3.exception.ExceptionUtils;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Movement task manager class.
  * @author Mobius
  */
+@Slf4j
 public class MovementTaskManager {
-    protected static final Logger LOGGER = Logger.getLogger(MovementTaskManager.class.getName());
 
     private static final Set<Set<Creature>> POOLS_CREATURE = ConcurrentHashMap.newKeySet();
     private static final Set<Set<Creature>> POOLS_PLAYER = ConcurrentHashMap.newKeySet();
@@ -47,20 +46,20 @@ public class MovementTaskManager {
     protected MovementTaskManager() {}
 
     private class Movement implements Runnable {
-        private final Set<Creature> _creatures;
+        private final Set<Creature> creatures;
 
         public Movement(Set<Creature> creatures) {
-            _creatures = creatures;
+            this.creatures = creatures;
         }
 
         @Override
         public void run() {
-            if (_creatures.isEmpty()) {
+            if (creatures.isEmpty()) {
                 return;
             }
 
             Creature creature;
-            final Iterator<Creature> iterator = _creatures.iterator();
+            final Iterator<Creature> iterator = creatures.iterator();
             while (iterator.hasNext()) {
                 creature = iterator.next();
                 boolean removed = false;
@@ -74,8 +73,7 @@ public class MovementTaskManager {
                     if (!removed) {
                         iterator.remove();
                     }
-                    LOGGER.warning("MovementTaskManager: Problem updating position of " + creature);
-                    LOGGER.warning(ExceptionUtils.getStackTrace(e));
+                    log.warn("Problem updating position of {}", creature, e);
                 }
             }
         }

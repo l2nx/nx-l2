@@ -31,10 +31,10 @@ import java.util.List;
  * @author KenM
  */
 public class ExShowTrace extends ServerPacket {
-    private final List<Location> _locations = new ArrayList<>();
+    private final List<Location> locations = new ArrayList<>();
 
     public void addLocation(int x, int y, int z) {
-        _locations.add(new Location(x, y, z));
+        locations.add(new Location(x, y, z));
     }
 
     public void addLocation(ILocational loc) {
@@ -46,8 +46,8 @@ public class ExShowTrace extends ServerPacket {
         ServerPackets.EX_SHOW_TRACE.writeId(this, buffer);
         buffer.writeShort(0); // type broken in H5
         buffer.writeInt(0); // time broken in H5
-        buffer.writeShort(_locations.size());
-        for (Location loc : _locations) {
+        buffer.writeShort(locations.size());
+        for (Location loc : locations) {
             buffer.writeInt(loc.getX());
             buffer.writeInt(loc.getY());
             buffer.writeInt(loc.getZ());

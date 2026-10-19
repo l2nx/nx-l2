@@ -31,14 +31,14 @@ import app.l2nx.highfive.mechanics.skill.Skill;
  * The Class ConditionTargetNpcType.
  */
 public class ConditionTargetNpcType extends Condition {
-    private final InstanceType[] _npcType;
+    private final InstanceType[] npcType;
 
     /**
      * Instantiates a new condition target npc type.
      * @param type the type
      */
     public ConditionTargetNpcType(InstanceType[] type) {
-        _npcType = type;
+        npcType = type;
     }
 
     @Override
@@ -47,6 +47,6 @@ public class ConditionTargetNpcType extends Condition {
             return false;
         }
 
-        return effected.getInstanceType().isTypes(_npcType);
+        return effected.getInstanceType().isTypes(npcType);
     }
 }

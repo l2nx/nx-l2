@@ -28,28 +28,28 @@ import app.l2nx.highfive.network.enums.ChatType;
 import app.l2nx.network.buffer.WriteBuffer;
 
 public class Snoop extends ServerPacket {
-    private final int _convoId;
-    private final String _name;
-    private final ChatType _type;
-    private final String _speaker;
-    private final String _msg;
+    private final int convoId;
+    private final String name;
+    private final ChatType type;
+    private final String speaker;
+    private final String msg;
 
     public Snoop(int id, String name, ChatType type, String speaker, String msg) {
-        _convoId = id;
-        _name = name;
-        _type = type;
-        _speaker = speaker;
-        _msg = msg;
+        convoId = id;
+        this.name = name;
+        this.type = type;
+        this.speaker = speaker;
+        this.msg = msg;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.SNOOP.writeId(this, buffer);
-        buffer.writeInt(_convoId);
-        buffer.writeString(_name);
+        buffer.writeInt(convoId);
+        buffer.writeString(name);
         buffer.writeInt(0); // ??
-        buffer.writeInt(_type.getClientId());
-        buffer.writeString(_speaker);
-        buffer.writeString(_msg);
+        buffer.writeInt(type.getClientId());
+        buffer.writeString(speaker);
+        buffer.writeString(msg);
     }
 }

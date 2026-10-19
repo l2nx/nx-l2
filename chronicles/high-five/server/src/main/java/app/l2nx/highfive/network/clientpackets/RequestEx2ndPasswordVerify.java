@@ -26,11 +26,11 @@ import app.l2nx.highfive.data.xml.SecondaryAuthData;
  * @author mrTJO
  */
 public class RequestEx2ndPasswordVerify extends ClientPacket {
-    private String _password;
+    private String password;
 
     @Override
     protected void readImpl() {
-        _password = readString();
+        password = readString();
     }
 
     @Override
@@ -39,6 +39,6 @@ public class RequestEx2ndPasswordVerify extends ClientPacket {
             return;
         }
 
-        getClient().getSecondaryAuth().checkPassword(_password, false);
+        getClient().getSecondaryAuth().checkPassword(password, false);
     }
 }

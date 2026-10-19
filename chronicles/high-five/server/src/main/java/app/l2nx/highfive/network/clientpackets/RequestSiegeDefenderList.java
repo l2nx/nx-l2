@@ -31,16 +31,16 @@ import app.l2nx.highfive.network.serverpackets.SiegeDefenderList;
  * @version $Revision: 1.3.4.2 $ $Date: 2005/03/27 15:29:30 $
  */
 public class RequestSiegeDefenderList extends ClientPacket {
-    private int _castleId;
+    private int castleId;
 
     @Override
     protected void readImpl() {
-        _castleId = readInt();
+        castleId = readInt();
     }
 
     @Override
     protected void runImpl() {
-        final Castle castle = CastleManager.getInstance().getCastleById(_castleId);
+        final Castle castle = CastleManager.getInstance().getCastleById(castleId);
         if (castle == null) {
             return;
         }

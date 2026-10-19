@@ -27,15 +27,15 @@ import app.l2nx.network.buffer.WriteBuffer;
  * @author KenM
  */
 public class ExAskJoinPartyRoom extends ServerPacket {
-    private final String _charName;
+    private final String charName;
 
     public ExAskJoinPartyRoom(String charName) {
-        _charName = charName;
+        this.charName = charName;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_ASK_JOIN_PARTY_ROOM.writeId(this, buffer);
-        buffer.writeString(_charName);
+        buffer.writeString(charName);
     }
 }

@@ -36,6 +36,7 @@ import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
 import app.l2nx.highfive.threads.ThreadPool;
 import java.util.Calendar;
+import lombok.Getter;
 
 /**
  * GameTime task manager class.
@@ -49,11 +50,19 @@ public class GameTimeTaskManager extends Thread {
     public static final int SECONDS_PER_IG_DAY = MILLIS_PER_IG_DAY / 1000;
     public static final int TICKS_PER_IG_DAY = SECONDS_PER_IG_DAY * TICKS_PER_SECOND;
 
-    private final long _referenceTime;
-    private boolean _isNight;
-    private int _gameTicks;
-    private int _gameTime;
-    private int _gameHour;
+    private final long referenceTime;
+
+    @Getter
+    private boolean night;
+
+    @Getter
+    private int gameTicks;
+
+    @Getter
+    private int gameTime;
+
+    @Getter
+    private int gameHour;
 
     protected GameTimeTaskManager() {
         super("GameTimeTaskManager");
@@ -65,7 +74,7 @@ public class GameTimeTaskManager extends Thread {
         c.set(Calendar.MINUTE, 0);
         c.set(Calendar.SECOND, 0);
         c.set(Calendar.MILLISECOND, 0);
-        _referenceTime = c.getTimeInMillis();
+        referenceTime = c.getTimeInMillis();
 
         super.start();
     }
@@ -73,19 +82,19 @@ public class GameTimeTaskManager extends Thread {
     @Override
     public void run() {
         while (true) {
-            _gameTicks = (int) ((System.currentTimeMillis() - _referenceTime) / MILLIS_IN_TICK);
-            _gameTime = (_gameTicks % TICKS_PER_IG_DAY) / MILLIS_IN_TICK;
-            _gameHour = _gameTime / 60;
+            gameTicks = (int) ((System.currentTimeMillis() - referenceTime) / MILLIS_IN_TICK);
+            gameTime = (gameTicks % TICKS_PER_IG_DAY) / MILLIS_IN_TICK;
+            gameHour = gameTime / 60;
 
-            if ((_gameHour < 6) != _isNight) {
-                _isNight = !_isNight;
+            if ((gameHour < 6) != night) {
+                night = !night;
 
                 // Shadow Sense skill for Dark Elf players.
                 for (Player player : World.getPlayers()) {
                     if (player.getRace() == Race.DARK_ELF) {
                         final Skill shadowSense = player.getKnownSkill(CommonSkill.SHADOW_SENSE.getId());
                         if (shadowSense != null) {
-                            if (_isNight) {
+                            if (night) {
                                 // It is night, apply the skill.
                                 player.sendPacket(new SystemMessage(
                                                 SystemMessageId.IT_IS_NOW_MIDNIGHT_AND_THE_EFFECT_OF_S1_CAN_BE_FELT)
@@ -105,7 +114,7 @@ public class GameTimeTaskManager extends Thread {
                 ThreadPool.execute(() -> DayNightSpawnManager.getInstance().notifyChangeMode());
 
                 if (EventDispatcher.getInstance().hasListener(EventType.ON_DAY_NIGHT_CHANGE)) {
-                    EventDispatcher.getInstance().notifyEventAsync(new OnDayNightChange(_isNight));
+                    EventDispatcher.getInstance().notifyEventAsync(new OnDayNightChange(night));
                 }
             }
 
@@ -117,27 +126,8 @@ public class GameTimeTaskManager extends Thread {
         }
     }
 
-    public boolean isNight() {
-        return _isNight;
-    }
-
-    /**
-     * @return The actual GameTime tick. Directly taken from current time.
-     */
-    public int getGameTicks() {
-        return _gameTicks;
-    }
-
-    public int getGameTime() {
-        return _gameTime;
-    }
-
-    public int getGameHour() {
-        return _gameHour;
-    }
-
     public int getGameMinute() {
-        return _gameTime % 60;
+        return gameTime % 60;
     }
 
     public static GameTimeTaskManager getInstance() {

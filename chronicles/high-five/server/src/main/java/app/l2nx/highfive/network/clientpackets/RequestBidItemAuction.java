@@ -29,13 +29,13 @@ import app.l2nx.highfive.managers.ItemAuctionManager;
  * @author Forsaiken
  */
 public class RequestBidItemAuction extends ClientPacket {
-    private int _instanceId;
-    private long _bid;
+    private int instanceId;
+    private long bid;
 
     @Override
     protected void readImpl() {
-        _instanceId = readInt();
-        _bid = readLong();
+        instanceId = readInt();
+        bid = readLong();
     }
 
     @Override
@@ -51,15 +51,15 @@ public class RequestBidItemAuction extends ClientPacket {
             return;
         }
 
-        if ((_bid < 0) || (_bid > Inventory.MAX_ADENA)) {
+        if ((bid < 0) || (bid > Inventory.MAX_ADENA)) {
             return;
         }
 
-        final ItemAuctionInstance instance = ItemAuctionManager.getInstance().getManagerInstance(_instanceId);
+        final ItemAuctionInstance instance = ItemAuctionManager.getInstance().getManagerInstance(instanceId);
         if (instance != null) {
             final ItemAuction auction = instance.getCurrentAuction();
             if (auction != null) {
-                auction.registerBid(player, _bid);
+                auction.registerBid(player, bid);
             }
         }
     }

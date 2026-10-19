@@ -56,8 +56,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
@@ -65,14 +64,14 @@ import org.w3c.dom.Node;
 /**
  * @author Mobius
  */
+@Slf4j
 public class SpawnData implements IXmlReader {
-    private static final Logger LOGGER = Logger.getLogger(SpawnData.class.getName());
 
     private static final String OTHER_XML_FOLDER = "data/spawns/Others";
 
-    private final Map<Integer, String> _spawnTemplates = new ConcurrentHashMap<>();
-    private final Set<String> _parsedFiles = ConcurrentHashMap.newKeySet();
-    private int _spawnCount = 0;
+    private final Map<Integer, String> spawnTemplates = new ConcurrentHashMap<>();
+    private final Set<String> parsedFiles = ConcurrentHashMap.newKeySet();
+    private int spawnCount = 0;
 
     protected SpawnData() {
         load();
@@ -80,12 +79,12 @@ public class SpawnData implements IXmlReader {
 
     @Override
     public void load() {
-        _spawnTemplates.put(0, "None");
+        spawnTemplates.put(0, "None");
         if (!DevelopmentConfig.NO_SPAWNS) {
             // Reloading must not accumulate: groups respawn from scratch and pending replacements die with them.
             // Group slots are swept by iterator, their mutated coordinates make hash based removal unreliable.
-            _spawnCount = 0;
-            _parsedFiles.clear();
+            spawnCount = 0;
+            parsedFiles.clear();
             for (Set<Spawn> spawns : SpawnTable.getInstance().getSpawnTable().values()) {
                 final Iterator<Spawn> iterator = spawns.iterator();
                 while (iterator.hasNext()) {
@@ -98,20 +97,21 @@ public class SpawnData implements IXmlReader {
             SpawnGroupTable.getInstance().clear();
             SpawnGroupTaskManager.getInstance().clear();
 
-            LOGGER.info(getClass().getSimpleName() + ": Initializing spawns...");
+            log.info("Initializing spawns...");
             parseDatapackDirectory("data/spawns", true);
             checkMissingFiles(new File(".", "data/spawns"));
             for (SpawnGroup group : SpawnGroupTable.getInstance().getGroups()) {
-                _spawnCount += group.initialSpawn();
+                spawnCount += group.initialSpawn();
             }
 
             if (!SpawnGroupTable.getInstance().getGroups().isEmpty()) {
-                LOGGER.info(getClass().getSimpleName() + ": "
-                        + SpawnGroupTable.getInstance().getGroups().size() + " spawn groups initialized.");
+                log.info(
+                        "{} spawn groups initialized.",
+                        SpawnGroupTable.getInstance().getGroups().size());
             }
 
-            LOGGER.info(getClass().getSimpleName() + ": " + _parsedFiles.size() + " spawn files parsed.");
-            LOGGER.info(getClass().getSimpleName() + ": " + _spawnCount + " spawns have been initialized!");
+            log.info("{} spawn files parsed.", parsedFiles.size());
+            log.info("{} spawns have been initialized!", spawnCount);
         }
     }
 
@@ -128,9 +128,8 @@ public class SpawnData implements IXmlReader {
         for (File file : files) {
             if (file.isDirectory()) {
                 checkMissingFiles(file);
-            } else if (file.getName().toLowerCase().endsWith(".xml")
-                    && !_parsedFiles.contains(file.getAbsolutePath())) {
-                LOGGER.severe(getClass().getSimpleName() + ": " + file.getPath() + " was not parsed!");
+            } else if (file.getName().toLowerCase().endsWith(".xml") && !parsedFiles.contains(file.getAbsolutePath())) {
+                log.error("{} was not parsed!", file.getPath());
             }
         }
     }
@@ -146,7 +145,7 @@ public class SpawnData implements IXmlReader {
             // Log a warning for invalid NPC IDs outside the fake player range [80000, 89999].
             // This hardcoded check provides a resource-constrained solution to prevent unnecessary logging.
             if (FakePlayersConfig.FAKE_PLAYERS_ENABLED || ((npcId < 80000) && (npcId > 89999))) {
-                LOGGER.warning(getClass().getSimpleName() + ": Requested spawn for non-existing NPC: " + npcId + ".");
+                log.warn("Requested spawn for non-existing NPC: {}.", npcId);
             }
 
             return false;
@@ -166,7 +165,7 @@ public class SpawnData implements IXmlReader {
 
     @Override
     public void parseDocument(Document document, File file) {
-        _parsedFiles.add(file.getAbsolutePath());
+        parsedFiles.add(file.getAbsolutePath());
 
         NamedNodeMap attrs;
         for (Node list = document.getFirstChild(); list != null; list = list.getNextSibling()) {
@@ -199,8 +198,7 @@ public class SpawnData implements IXmlReader {
                         String[] territoryNames = null;
                         if (attrs.getNamedItem("zones") != null) {
                             if (territoryName != null) {
-                                LOGGER.warning(getClass().getSimpleName()
-                                        + ": zone and zones are exclusive, ignoring zones in " + file.getName());
+                                log.warn("Zone and zones are exclusive, ignoring zones in {}", file.getName());
                             } else {
                                 territoryNames = parseString(attrs, "zones").split(";");
                                 territoryName = territoryNames[0];
@@ -218,8 +216,10 @@ public class SpawnData implements IXmlReader {
                                 selection = SpawnSelection.RANDOM_FILL;
                             } else {
                                 if (!"all".equalsIgnoreCase(selectionValue)) {
-                                    LOGGER.warning(getClass().getSimpleName() + ": Unknown selection \""
-                                            + selectionValue + "\" in " + file.getName() + ", using all.");
+                                    log.warn(
+                                            "Unknown selection \"{}\" in {}, using all.",
+                                            selectionValue,
+                                            file.getName());
                                 }
 
                                 selection = SpawnSelection.ALL;
@@ -230,16 +230,16 @@ public class SpawnData implements IXmlReader {
                             if ((selection == SpawnSelection.RANDOM) && (maximumNpc > 0)) {
                                 // Retail random_spawn never reads the cap, accepting it silently would suggest
                                 // otherwise.
-                                LOGGER.warning(getClass().getSimpleName()
-                                        + ": maximumNpc is not read by random selection, ignoring it in "
-                                        + file.getName());
+                                log.warn(
+                                        "MaximumNpc is not read by random selection, ignoring it in {}",
+                                        file.getName());
                                 maximumNpc = 0;
                             }
 
                             if ((selection == SpawnSelection.RANDOM_FILL) && (maximumNpc <= 0)) {
-                                LOGGER.warning(
-                                        getClass().getSimpleName() + ": randomFill requires maximumNpc, the group in "
-                                                + file.getName() + " will spawn nothing.");
+                                log.warn(
+                                        "RandomFill requires maximumNpc, the group in {} will spawn nothing.",
+                                        file.getName());
                             }
 
                             final String groupName = spawnName != null
@@ -248,9 +248,9 @@ public class SpawnData implements IXmlReader {
                             group = new SpawnGroup(groupName, selection, maximumNpc);
                             SpawnGroupTable.getInstance().addGroup(group);
                         } else if (territoryNames != null) {
-                            LOGGER.warning(getClass().getSimpleName()
-                                    + ": zones requires an entry selection, using only the first territory in "
-                                    + file.getName());
+                            log.warn(
+                                    "Zones requires an entry selection, using only the first territory in {}",
+                                    file.getName());
                             territoryNames = null;
                         }
 
@@ -316,9 +316,10 @@ public class SpawnData implements IXmlReader {
                                     rs.clear();
 
                                     if ((coords == null) || (coords.length == 0)) {
-                                        LOGGER.warning(getClass().getSimpleName()
-                                                + ": SpawnTable: missing data for spawn territory: " + declaredName
-                                                + " XML file: " + file.getName());
+                                        log.warn(
+                                                "SpawnTable: missing data for spawn territory: {} XML file: {}",
+                                                declaredName,
+                                                file.getName());
                                         continue;
                                     }
 
@@ -330,9 +331,10 @@ public class SpawnData implements IXmlReader {
                                             zoneForm = new ZoneCuboid(
                                                     coords[0][0], coords[1][0], coords[0][1], coords[1][1], minZ, maxZ);
                                         } else {
-                                            LOGGER.warning(getClass().getSimpleName()
-                                                    + ": SpawnTable: Missing cuboid vertex data for territory: "
-                                                    + declaredName + " in file: " + file.getName());
+                                            log.warn(
+                                                    "SpawnTable: Missing cuboid vertex data for territory: {} in file: {}",
+                                                    declaredName,
+                                                    file.getName());
                                             continue;
                                         }
                                     } else if (zoneShape.equalsIgnoreCase("NPoly")) {
@@ -347,9 +349,10 @@ public class SpawnData implements IXmlReader {
 
                                             zoneForm = new ZoneNPoly(aX, aY, minZ, maxZ);
                                         } else {
-                                            LOGGER.warning(getClass().getSimpleName()
-                                                    + ": SpawnTable: Bad data for territory: " + declaredName
-                                                    + " in file: " + file.getName());
+                                            log.warn(
+                                                    "SpawnTable: Bad data for territory: {} in file: {}",
+                                                    declaredName,
+                                                    file.getName());
                                             continue;
                                         }
                                     } else if (zoneShape.equalsIgnoreCase("Cylinder")) {
@@ -360,22 +363,25 @@ public class SpawnData implements IXmlReader {
                                             zoneForm =
                                                     new ZoneCylinder(coords[0][0], coords[0][1], minZ, maxZ, zoneRad);
                                         } else {
-                                            LOGGER.warning(getClass().getSimpleName()
-                                                    + ": SpawnTable: Bad data for territory: " + declaredName
-                                                    + " in file: " + file.getName());
+                                            log.warn(
+                                                    "SpawnTable: Bad data for territory: {} in file: {}",
+                                                    declaredName,
+                                                    file.getName());
                                             continue;
                                         }
                                     } else {
-                                        LOGGER.warning(getClass().getSimpleName() + ": SpawnTable: Unknown shape: \""
-                                                + zoneShape + "\"  for territory: " + declaredName + " in file: "
-                                                + file.getName());
+                                        log.warn(
+                                                "SpawnTable: Unknown shape: \"{}\"  for territory: {} in file: {}",
+                                                zoneShape,
+                                                declaredName,
+                                                file.getName());
                                         continue;
                                     }
                                 } catch (Exception e) {
-                                    LOGGER.log(
-                                            Level.WARNING,
-                                            getClass().getSimpleName() + ": SpawnTable: Failed to load territory "
-                                                    + declaredName + " coordinates: " + e.getMessage(),
+                                    log.warn(
+                                            "SpawnTable: Failed to load territory {} coordinates: {}",
+                                            declaredName,
+                                            e.getMessage(),
                                             e);
                                 }
 
@@ -385,8 +391,9 @@ public class SpawnData implements IXmlReader {
                             // Check for NPC banned spawn territories.
                             else if (npctag.getNodeName().equalsIgnoreCase("banned_territory")) {
                                 if (!ZoneManager.getInstance().spawnTerritoryExists(territoryName)) {
-                                    LOGGER.warning(getClass().getSimpleName() + ": SpawnTable: banned_territory "
-                                            + territoryName + " must be set after normal territory.");
+                                    log.warn(
+                                            "SpawnTable: banned_territory {} must be set after normal territory.",
+                                            territoryName);
                                     continue;
                                 }
 
@@ -412,9 +419,10 @@ public class SpawnData implements IXmlReader {
                                     rs.clear();
 
                                     if ((coords == null) || (coords.length == 0)) {
-                                        LOGGER.warning(getClass().getSimpleName()
-                                                + ": SpawnTable: missing data for spawn banned_territory: "
-                                                + territoryName + " XML file: " + file.getName());
+                                        log.warn(
+                                                "SpawnTable: missing data for spawn banned_territory: {} XML file: {}",
+                                                territoryName,
+                                                file.getName());
                                         continue;
                                     }
 
@@ -426,9 +434,10 @@ public class SpawnData implements IXmlReader {
                                             zoneForm = new ZoneCuboid(
                                                     coords[0][0], coords[1][0], coords[0][1], coords[1][1], minZ, maxZ);
                                         } else {
-                                            LOGGER.warning(getClass().getSimpleName()
-                                                    + ": SpawnTable: Missing cuboid vertex data for banned_territory: "
-                                                    + territoryName + " in file: " + file.getName());
+                                            log.warn(
+                                                    "SpawnTable: Missing cuboid vertex data for banned_territory: {} in file: {}",
+                                                    territoryName,
+                                                    file.getName());
                                             continue;
                                         }
                                     } else if (zoneShape.equalsIgnoreCase("NPoly")) {
@@ -443,9 +452,10 @@ public class SpawnData implements IXmlReader {
 
                                             zoneForm = new ZoneNPoly(aX, aY, minZ, maxZ);
                                         } else {
-                                            LOGGER.warning(getClass().getSimpleName()
-                                                    + ": SpawnTable: Bad data for banned_territory: " + territoryName
-                                                    + " in file: " + file.getName());
+                                            log.warn(
+                                                    "SpawnTable: Bad data for banned_territory: {} in file: {}",
+                                                    territoryName,
+                                                    file.getName());
                                             continue;
                                         }
                                     } else if (zoneShape.equalsIgnoreCase("Cylinder")) {
@@ -456,23 +466,25 @@ public class SpawnData implements IXmlReader {
                                             zoneForm =
                                                     new ZoneCylinder(coords[0][0], coords[0][1], minZ, maxZ, zoneRad);
                                         } else {
-                                            LOGGER.warning(getClass().getSimpleName()
-                                                    + ": SpawnTable: Bad data for banned_territory: " + territoryName
-                                                    + " in file: " + file.getName());
+                                            log.warn(
+                                                    "SpawnTable: Bad data for banned_territory: {} in file: {}",
+                                                    territoryName,
+                                                    file.getName());
                                             continue;
                                         }
                                     } else {
-                                        LOGGER.warning(getClass().getSimpleName() + ": SpawnTable: Unknown shape: \""
-                                                + zoneShape + "\"  for banned_territory: " + territoryName
-                                                + " in file: " + file.getName());
+                                        log.warn(
+                                                "SpawnTable: Unknown shape: \"{}\"  for banned_territory: {} in file: {}",
+                                                zoneShape,
+                                                territoryName,
+                                                file.getName());
                                         continue;
                                     }
                                 } catch (Exception e) {
-                                    LOGGER.log(
-                                            Level.WARNING,
-                                            getClass().getSimpleName()
-                                                    + ": SpawnTable: Failed to load banned_territory " + territoryName
-                                                    + " coordinates: " + e.getMessage(),
+                                    log.warn(
+                                            "SpawnTable: Failed to load banned_territory {} coordinates: {}",
+                                            territoryName,
+                                            e.getMessage(),
                                             e);
                                 }
 
@@ -507,9 +519,9 @@ public class SpawnData implements IXmlReader {
                                         && (y == 0)
                                         && (territoryName == null)) // Both coordinates and zone are unspecified.
                                 {
-                                    LOGGER.warning(
-                                            "XML Spawnlist: Spawn could not be initialized, both coordinates and zone are unspecified for ID "
-                                                    + templateId);
+                                    log.warn(
+                                            "XML Spawnlist: Spawn could not be initialized, both coordinates and zone are unspecified for ID {}",
+                                            templateId);
                                     continue;
                                 }
 
@@ -557,9 +569,10 @@ public class SpawnData implements IXmlReader {
                                     if (spawnInfo.getInt("periodOfDay", 0) != 0) {
                                         // No retail maker mixes rolling with the day night gate and
                                         // DayNightSpawnManager bypasses decreaseCount.
-                                        LOGGER.warning(getClass().getSimpleName()
-                                                + ": periodOfDay cannot be combined with an entry selection, skipping NPC "
-                                                + templateId + " in " + file.getName());
+                                        log.warn(
+                                                "PeriodOfDay cannot be combined with an entry selection, skipping NPC {} in {}",
+                                                templateId,
+                                                file.getName());
                                         continue;
                                     }
 
@@ -568,7 +581,7 @@ public class SpawnData implements IXmlReader {
                                 }
 
                                 for (int i = 0; i < count; i++) {
-                                    _spawnCount += addSpawn(spawnInfo, map);
+                                    spawnCount += addSpawn(spawnInfo, map);
                                 }
                             }
                         }
@@ -612,7 +625,7 @@ public class SpawnData implements IXmlReader {
             registerSpawn(spawnDat, spawnInfo.getString("fileName", "None"));
         } catch (Exception e) {
             // Problem with initializing spawn, go to next one.
-            LOGGER.log(Level.WARNING, "Spawn could not be initialized: " + e.getMessage(), e);
+            log.warn("Spawn could not be initialized: {}", e.getMessage(), e);
         }
 
         return ret;
@@ -665,7 +678,7 @@ public class SpawnData implements IXmlReader {
             group.addEntry(entry);
         } catch (Exception e) {
             // Problem with initializing spawn, go to next one.
-            LOGGER.log(Level.WARNING, "Group spawn could not be initialized: " + e.getMessage(), e);
+            log.warn("Group spawn could not be initialized: {}", e.getMessage(), e);
         }
     }
 
@@ -705,16 +718,16 @@ public class SpawnData implements IXmlReader {
      * @param fileName the datapack file the spawn was declared in
      */
     private void registerSpawn(Spawn spawnDat, String fileName) {
-        if (_spawnTemplates.values().contains(fileName)) {
-            for (Entry<Integer, String> entry : _spawnTemplates.entrySet()) {
+        if (spawnTemplates.values().contains(fileName)) {
+            for (Entry<Integer, String> entry : spawnTemplates.entrySet()) {
                 if (entry.getValue().equals(fileName)) {
                     spawnDat.setSpawnTemplateId(entry.getKey());
                     break;
                 }
             }
         } else {
-            final int newId = _spawnTemplates.size();
-            _spawnTemplates.put(newId, fileName);
+            final int newId = spawnTemplates.size();
+            spawnTemplates.put(newId, fileName);
             spawnDat.setSpawnTemplateId(newId);
         }
 
@@ -742,7 +755,7 @@ public class SpawnData implements IXmlReader {
             }
 
             if (result) {
-                LOGGER.info(getClass().getSimpleName() + ": Created directory: " + OTHER_XML_FOLDER);
+                log.info("Created directory: {}", OTHER_XML_FOLDER);
             }
         }
 
@@ -793,7 +806,7 @@ public class SpawnData implements IXmlReader {
                 spawnFile.delete();
                 tempFile.renameTo(spawnFile);
             } catch (Exception e) {
-                LOGGER.warning(getClass().getSimpleName() + ": Could not store spawn in the spawn XML files: " + e);
+                log.warn("Could not store spawn in the spawn XML files", e);
             }
         } else // New file.
         {
@@ -814,11 +827,9 @@ public class SpawnData implements IXmlReader {
                 writer.write("	</spawn>" + System.lineSeparator());
                 writer.write("</list>" + System.lineSeparator());
                 writer.close();
-                LOGGER.info(getClass().getSimpleName() + ": Created file: " + OTHER_XML_FOLDER + "/" + x + "_" + y
-                        + ".xml");
+                log.info("Created file: {}/{}_{}.xml", OTHER_XML_FOLDER, x, y);
             } catch (Exception e) {
-                LOGGER.warning(getClass().getSimpleName() + ": Spawn " + spawn
-                        + " could not be added to the spawn XML files: " + e);
+                log.warn("Spawn {} could not be added to the spawn XML files", spawn, e);
             }
         }
     }
@@ -836,7 +847,7 @@ public class SpawnData implements IXmlReader {
         final int npcSpawnTemplateId = spawn.getNpcSpawnTemplateId();
         final Location spawnLocation = spawn.getSpawnLocation();
         final File spawnFile = npcSpawnTemplateId > 0
-                ? new File(_spawnTemplates.get(npcSpawnTemplateId))
+                ? new File(spawnTemplates.get(npcSpawnTemplateId))
                 : new File(OTHER_XML_FOLDER + "/" + x + "_" + y + ".xml");
         final File tempFile = new File(spawnFile
                         .getAbsolutePath()
@@ -926,8 +937,9 @@ public class SpawnData implements IXmlReader {
 
             // Delete empty file.
             if (lineCount < 5) {
-                LOGGER.info(getClass().getSimpleName() + ": Deleted empty file: "
-                        + spawnFile
+                log.info(
+                        "Deleted empty file: {}",
+                        spawnFile
                                 .getAbsolutePath()
                                 .substring(ServerConfig.DATAPACK_ROOT
                                                 .getAbsolutePath()
@@ -937,8 +949,7 @@ public class SpawnData implements IXmlReader {
                 spawnFile.delete();
             }
         } catch (Exception e) {
-            LOGGER.warning(getClass().getSimpleName() + ": Spawn " + spawn
-                    + " could not be removed from the spawn XML files: " + e);
+            log.warn("Spawn {} could not be removed from the spawn XML files", spawn, e);
         }
     }
 
@@ -948,7 +959,7 @@ public class SpawnData implements IXmlReader {
      * @return the file path corresponding to the specified template ID, or {@code null} if not found.
      */
     public String getSpawnFile(int templateId) {
-        return _spawnTemplates.get(templateId);
+        return spawnTemplates.get(templateId);
     }
 
     public static SpawnData getInstance() {

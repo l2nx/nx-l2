@@ -30,28 +30,41 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.concurrent.ScheduledFuture;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author UnAfraid
  */
+@Slf4j
 public class PunishmentTask implements Runnable {
-    protected static final Logger LOGGER = Logger.getLogger(PunishmentTask.class.getName());
 
     private static final String INSERT_QUERY =
             "INSERT INTO punishments (`key`, `affect`, `type`, `expiration`, `reason`, `punishedBy`) VALUES (?, ?, ?, ?, ?, ?)";
     private static final String UPDATE_QUERY = "UPDATE punishments SET expiration = ? WHERE id = ?";
 
-    private int _id;
-    private final String _key;
-    private final PunishmentAffect _affect;
-    private final PunishmentType _type;
-    private final long _expirationTime;
-    private final String _reason;
-    private final String _punishedBy;
-    private boolean _isStored;
-    private ScheduledFuture<?> _task = null;
+    private int id;
+    private final String key;
+
+    @Getter
+    private final PunishmentAffect affect;
+
+    @Getter
+    private final PunishmentType type;
+
+    @Getter
+    private final long expirationTime;
+
+    @Getter
+    private final String reason;
+
+    @Getter
+    private final String punishedBy;
+
+    @Getter
+    private boolean stored;
+
+    private ScheduledFuture<?> task = null;
 
     public PunishmentTask(
             Object key,
@@ -72,14 +85,14 @@ public class PunishmentTask implements Runnable {
             String reason,
             String punishedBy,
             boolean isStored) {
-        _id = id;
-        _key = String.valueOf(key);
-        _affect = affect;
-        _type = type;
-        _expirationTime = expirationTime;
-        _reason = reason;
-        _punishedBy = punishedBy;
-        _isStored = isStored;
+        this.id = id;
+        this.key = String.valueOf(key);
+        this.affect = affect;
+        this.type = type;
+        this.expirationTime = expirationTime;
+        this.reason = reason;
+        this.punishedBy = punishedBy;
+        stored = isStored;
         startPunishment();
     }
 
@@ -87,56 +100,14 @@ public class PunishmentTask implements Runnable {
      * @return affection value charId, account, ip, etc..
      */
     public Object getKey() {
-        return _key;
-    }
-
-    /**
-     * @return {@link PunishmentAffect} affection type, account, character, ip, etc..
-     */
-    public PunishmentAffect getAffect() {
-        return _affect;
-    }
-
-    /**
-     * @return {@link PunishmentType} type of current punishment.
-     */
-    public PunishmentType getType() {
-        return _type;
-    }
-
-    /**
-     * @return milliseconds to the end of the current punishment, -1 for infinity.
-     */
-    public long getExpirationTime() {
-        return _expirationTime;
-    }
-
-    /**
-     * @return the reason for this punishment.
-     */
-    public String getReason() {
-        return _reason;
-    }
-
-    /**
-     * @return name of the punishment issuer.
-     */
-    public String getPunishedBy() {
-        return _punishedBy;
-    }
-
-    /**
-     * @return {@code true} if current punishment task is stored in database, {@code false} otherwise.
-     */
-    public boolean isStored() {
-        return _isStored;
+        return key;
     }
 
     /**
      * @return {@code true} if current punishment task has expired, {@code false} otherwise.
      */
     public boolean isExpired() {
-        return (_expirationTime > 0) && (System.currentTimeMillis() > _expirationTime);
+        return (expirationTime > 0) && (System.currentTimeMillis() > expirationTime);
     }
 
     /**
@@ -148,9 +119,9 @@ public class PunishmentTask implements Runnable {
         }
 
         onStart();
-        if (_expirationTime > 0) // Has expiration?
+        if (expirationTime > 0) // Has expiration?
         {
-            _task = ThreadPool.schedule(this, _expirationTime - System.currentTimeMillis());
+            task = ThreadPool.schedule(this, expirationTime - System.currentTimeMillis());
         }
     }
 
@@ -166,47 +137,44 @@ public class PunishmentTask implements Runnable {
      * Aborts the scheduled task.
      */
     private void abortTask() {
-        if (_task == null) {
+        if (task == null) {
             return;
         }
 
-        if (!_task.isCancelled() && !_task.isDone()) {
-            _task.cancel(false);
+        if (!task.isCancelled() && !task.isDone()) {
+            task.cancel(false);
         }
 
-        _task = null;
+        task = null;
     }
 
     /**
      * Store and activate punishment upon start.
      */
     private void onStart() {
-        if (!_isStored) {
+        if (!stored) {
             try (Connection con = DatabaseFactory.getConnection();
                     PreparedStatement ps = con.prepareStatement(INSERT_QUERY, Statement.RETURN_GENERATED_KEYS)) {
-                ps.setString(1, _key);
-                ps.setString(2, _affect.name());
-                ps.setString(3, _type.name());
-                ps.setLong(4, _expirationTime);
-                ps.setString(5, _reason);
-                ps.setString(6, _punishedBy);
+                ps.setString(1, key);
+                ps.setString(2, affect.name());
+                ps.setString(3, type.name());
+                ps.setLong(4, expirationTime);
+                ps.setString(5, reason);
+                ps.setString(6, punishedBy);
                 ps.execute();
                 try (ResultSet rset = ps.getGeneratedKeys()) {
                     if (rset.next()) {
-                        _id = rset.getInt(1);
+                        id = rset.getInt(1);
                     }
                 }
 
-                _isStored = true;
+                stored = true;
             } catch (SQLException e) {
-                LOGGER.log(
-                        Level.WARNING,
-                        getClass().getSimpleName() + ": Couldn't store punishment task for: " + _affect + " " + _key,
-                        e);
+                log.warn("Couldn't store punishment task for: {} {}", affect, key, e);
             }
         }
 
-        final IPunishmentHandler handler = PunishmentHandler.getInstance().getHandler(_type);
+        final IPunishmentHandler handler = PunishmentHandler.getInstance().getHandler(type);
         if (handler != null) {
             handler.onStart(this);
         }
@@ -216,22 +184,18 @@ public class PunishmentTask implements Runnable {
      * Remove and deactivate punishment when it ends.
      */
     private void onEnd() {
-        if (_isStored) {
+        if (stored) {
             try (Connection con = DatabaseFactory.getConnection();
                     PreparedStatement ps = con.prepareStatement(UPDATE_QUERY)) {
                 ps.setLong(1, System.currentTimeMillis());
-                ps.setLong(2, _id);
+                ps.setLong(2, id);
                 ps.execute();
             } catch (SQLException e) {
-                LOGGER.log(
-                        Level.WARNING,
-                        getClass().getSimpleName() + ": Couldn't update punishment task for: " + _affect + " " + _key
-                                + " id: " + _id,
-                        e);
+                log.warn("Couldn't update punishment task for: {} {} id: {}", affect, key, id, e);
             }
         }
 
-        final IPunishmentHandler handler = PunishmentHandler.getInstance().getHandler(_type);
+        final IPunishmentHandler handler = PunishmentHandler.getInstance().getHandler(type);
         if (handler != null) {
             handler.onEnd(this);
         }
@@ -242,6 +206,6 @@ public class PunishmentTask implements Runnable {
      */
     @Override
     public void run() {
-        PunishmentManager.getInstance().stopPunishment(_key, _affect, _type);
+        PunishmentManager.getInstance().stopPunishment(key, affect, type);
     }
 }

@@ -26,14 +26,14 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * This class loads all the NPC related configurations.
  * @author Mobius
  */
+@Slf4j
 public class NpcConfig {
-    private static final Logger LOGGER = Logger.getLogger(NpcConfig.class.getName());
 
     // File
     private static final String NPC_CONFIG_FILE = "./config/NPC.ini";
@@ -174,15 +174,17 @@ public class NpcConfig {
         for (String prop : split) {
             final String[] propSplit = prop.split(",");
             if (propSplit.length != 2) {
-                LOGGER.warning("[CustomMinionsRespawnTime]: invalid config property -> CustomMinionsRespawnTime \""
-                        + prop + "\"");
+                log.warn(
+                        "[CustomMinionsRespawnTime]: invalid config property -> CustomMinionsRespawnTime \"{}\"", prop);
             }
             try {
                 MINIONS_RESPAWN_TIME.put(Integer.parseInt(propSplit[0]), Integer.parseInt(propSplit[1]));
             } catch (NumberFormatException nfe) {
                 if (!prop.isEmpty()) {
-                    LOGGER.warning("[CustomMinionsRespawnTime]: invalid config property -> CustomMinionsRespawnTime \""
-                            + propSplit[0] + "\"" + propSplit[1]);
+                    log.warn(
+                            "[CustomMinionsRespawnTime]: invalid config property -> CustomMinionsRespawnTime \"{}\"{}",
+                            propSplit[0],
+                            propSplit[1]);
                 }
             }
         }

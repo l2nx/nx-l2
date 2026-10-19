@@ -28,23 +28,24 @@ import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author evill33t
  */
+@Slf4j
 public class CoupleManager {
-    private static final Logger LOGGER = Logger.getLogger(CoupleManager.class.getName());
 
-    private final List<Couple> _couples = new CopyOnWriteArrayList<>();
+    @Getter
+    private final List<Couple> couples = new CopyOnWriteArrayList<>();
 
     protected CoupleManager() {
         load();
     }
 
     public void reload() {
-        _couples.clear();
+        couples.clear();
         load();
     }
 
@@ -53,18 +54,18 @@ public class CoupleManager {
                 Statement ps = con.createStatement();
                 ResultSet rs = ps.executeQuery("SELECT id FROM mods_wedding ORDER BY id")) {
             while (rs.next()) {
-                _couples.add(new Couple(rs.getInt("id")));
+                couples.add(new Couple(rs.getInt("id")));
             }
 
-            LOGGER.info(getClass().getSimpleName() + ": Loaded " + _couples.size() + " couples(s)");
+            log.info("Loaded {} couples(s)", couples.size());
         } catch (Exception e) {
-            LOGGER.log(Level.SEVERE, "Exception: CoupleManager.load(): " + e.getMessage(), e);
+            log.error("Exception: CoupleManager.load(): {}", e.getMessage(), e);
         }
     }
 
     public Couple getCouple(int coupleId) {
         final int index = getCoupleIndex(coupleId);
-        return index >= 0 ? _couples.get(index) : null;
+        return index >= 0 ? couples.get(index) : null;
     }
 
     public void createCouple(Player player1, Player player2) {
@@ -75,7 +76,7 @@ public class CoupleManager {
         final int player1id = player1.getObjectId();
         final int player2id = player2.getObjectId();
         final Couple couple = new Couple(player1, player2);
-        _couples.add(couple);
+        couples.add(couple);
         player1.setPartnerId(player2id);
         player2.setPartnerId(player1id);
         player1.setCoupleId(couple.getId());
@@ -84,7 +85,7 @@ public class CoupleManager {
 
     public void deleteCouple(int coupleId) {
         final int index = getCoupleIndex(coupleId);
-        final Couple couple = _couples.get(index);
+        final Couple couple = couples.get(index);
         if (couple == null) {
             return;
         }
@@ -104,12 +105,12 @@ public class CoupleManager {
         }
 
         couple.divorce();
-        _couples.remove(index);
+        couples.remove(index);
     }
 
     public int getCoupleIndex(int coupleId) {
         int i = 0;
-        for (Couple temp : _couples) {
+        for (Couple temp : couples) {
             if ((temp != null) && (temp.getId() == coupleId)) {
                 return i;
             }
@@ -118,10 +119,6 @@ public class CoupleManager {
         }
 
         return -1;
-    }
-
-    public List<Couple> getCouples() {
-        return _couples;
     }
 
     public static CoupleManager getInstance() {

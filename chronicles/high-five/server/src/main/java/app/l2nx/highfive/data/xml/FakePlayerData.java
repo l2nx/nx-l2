@@ -26,25 +26,25 @@ import app.l2nx.highfive.config.custom.FakePlayersConfig;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author Mobius
  */
+@Slf4j
 public class FakePlayerData {
-    private static final Logger LOGGER = Logger.getLogger(FakePlayerData.class.getName());
 
-    private final Map<String, String> _fakePlayerNames = new ConcurrentHashMap<>();
-    private final Map<String, Integer> _fakePlayerIds = new ConcurrentHashMap<>();
-    private final Set<String> _talkableFakePlayerNames = ConcurrentHashMap.newKeySet();
+    private final Map<String, String> fakePlayerNames = new ConcurrentHashMap<>();
+    private final Map<String, Integer> fakePlayerIds = new ConcurrentHashMap<>();
+    private final Set<String> talkableFakePlayerNames = ConcurrentHashMap.newKeySet();
 
     protected FakePlayerData() {}
 
     public void report() {
         if (FakePlayersConfig.FAKE_PLAYERS_ENABLED) {
-            LOGGER.info(getClass().getSimpleName() + ": Loaded " + _fakePlayerIds.size() + " templates.");
+            log.info("Loaded {} templates.", fakePlayerIds.size());
         } else {
-            LOGGER.info(getClass().getSimpleName() + ": Disabled.");
+            log.info("Disabled.");
         }
     }
 
@@ -54,7 +54,7 @@ public class FakePlayerData {
      * @param npcId the NPC ID to associate with the fake player
      */
     public void addFakePlayerId(String name, int npcId) {
-        _fakePlayerIds.put(name, npcId);
+        fakePlayerIds.put(name, npcId);
     }
 
     /**
@@ -63,7 +63,7 @@ public class FakePlayerData {
      * @return the NPC ID corresponding to the given name, or {@code null} if no match is found
      */
     public int getNpcIdByName(String name) {
-        return _fakePlayerIds.get(name);
+        return fakePlayerIds.get(name);
     }
 
     /**
@@ -72,7 +72,7 @@ public class FakePlayerData {
      * @param name the properly formatted name of the fake player
      */
     public void addFakePlayerName(String lowercaseName, String name) {
-        _fakePlayerNames.put(lowercaseName, name);
+        fakePlayerNames.put(lowercaseName, name);
     }
 
     /**
@@ -81,7 +81,7 @@ public class FakePlayerData {
      * @return the correctly formatted name of the fake player, or {@code null} if no match is found
      */
     public String getProperName(String name) {
-        return _fakePlayerNames.get(name.toLowerCase());
+        return fakePlayerNames.get(name.toLowerCase());
     }
 
     /**
@@ -89,7 +89,7 @@ public class FakePlayerData {
      * @param lowercaseName the lowercase version of the fake player name
      */
     public void addTalkableFakePlayerName(String lowercaseName) {
-        _talkableFakePlayerNames.add(lowercaseName);
+        talkableFakePlayerNames.add(lowercaseName);
     }
 
     /**
@@ -98,7 +98,7 @@ public class FakePlayerData {
      * @return {@code true} if the fake player with the given name is talkable, {@code false} otherwise
      */
     public boolean isTalkable(String name) {
-        return _talkableFakePlayerNames.contains(name.toLowerCase());
+        return talkableFakePlayerNames.contains(name.toLowerCase());
     }
 
     public static FakePlayerData getInstance() {

@@ -42,14 +42,14 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.NoSuchElementException;
 import java.util.StringTokenizer;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * This class handles following admin commands: - show_moves - show_teleport - teleport_to_character - move_to - teleport_character
  * @version $Revision: 1.3.2.6.2.4 $ $Date: 2005/04/11 10:06:06 $ con.close() change and small typo fix by Zoey76 24/02/2011
  */
+@Slf4j
 public class AdminTeleport implements IAdminCommandHandler {
-    private static final Logger LOGGER = Logger.getLogger(AdminTeleport.class.getName());
 
     private static final String[] ADMIN_COMMANDS = {
         "admin_show_moves",
@@ -428,7 +428,7 @@ public class AdminTeleport implements IAdminCommandHandler {
             Spawn spawn = target.getSpawn();
             if (spawn == null) {
                 activeChar.sendSysMessage("Incorrect monster spawn.");
-                LOGGER.warning("ERROR: NPC " + target.getObjectId() + " has a 'null' spawn.");
+                log.warn("ERROR: NPC {} has a 'null' spawn.", target.getObjectId());
                 return;
             }
 
@@ -463,7 +463,7 @@ public class AdminTeleport implements IAdminCommandHandler {
             final double curMP = target.getCurrentMp();
             if (spawn == null) {
                 activeChar.sendSysMessage("Incorrect raid spawn.");
-                LOGGER.warning("ERROR: NPC Id" + target.getId() + " has a 'null' spawn.");
+                log.warn("ERROR: NPC Id{} has a 'null' spawn.", target.getId());
                 return;
             }
 

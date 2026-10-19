@@ -19,12 +19,15 @@
  */
 package app.l2nx.highfive.entity.item.holders;
 
+import lombok.Getter;
+
 /**
  * A DTO for items; contains item ID, object ID and count.
  * @author xban1x
  */
 public class UniqueItemHolder extends ItemHolder {
-    private final int _objectId;
+    @Getter
+    private final int objectId;
 
     public UniqueItemHolder(int id, int objectId) {
         this(id, objectId, 1);
@@ -32,16 +35,12 @@ public class UniqueItemHolder extends ItemHolder {
 
     public UniqueItemHolder(int id, int objectId, long count) {
         super(id, count);
-        _objectId = objectId;
-    }
-
-    public int getObjectId() {
-        return _objectId;
+        this.objectId = objectId;
     }
 
     @Override
     public String toString() {
-        return "[" + getClass().getSimpleName() + "] ID: " + getId() + ", object ID: " + _objectId + ", count: "
+        return "[" + getClass().getSimpleName() + "] ID: " + getId() + ", object ID: " + objectId + ", count: "
                 + getCount();
     }
 }

@@ -26,17 +26,17 @@ import app.l2nx.highfive.entity.actor.Player;
  * @structure chddSdS
  */
 public class RequestModifyBookMarkSlot extends ClientPacket {
-    private int _id;
-    private int _icon;
-    private String _name;
-    private String _tag;
+    private int id;
+    private int icon;
+    private String name;
+    private String tag;
 
     @Override
     protected void readImpl() {
-        _id = readInt();
-        _name = readString();
-        _icon = readInt();
-        _tag = readString();
+        id = readInt();
+        name = readString();
+        icon = readInt();
+        tag = readString();
     }
 
     @Override
@@ -46,6 +46,6 @@ public class RequestModifyBookMarkSlot extends ClientPacket {
             return;
         }
 
-        player.teleportBookmarkModify(_id, _icon, _tag, _name);
+        player.teleportBookmarkModify(id, icon, tag, name);
     }
 }

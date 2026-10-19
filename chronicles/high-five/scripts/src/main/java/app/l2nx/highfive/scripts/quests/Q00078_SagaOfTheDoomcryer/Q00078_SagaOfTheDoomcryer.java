@@ -29,15 +29,15 @@ import app.l2nx.highfive.scripts.quests.AbstractSagaQuest;
 public class Q00078_SagaOfTheDoomcryer extends AbstractSagaQuest {
     public Q00078_SagaOfTheDoomcryer() {
         super(78);
-        _npc = new int[] {31336, 31624, 31589, 31290, 31642, 31646, 31649, 31650, 31654, 31655, 31657, 31290};
-        _items = new int[] {7080, 7539, 7081, 7493, 7276, 7307, 7338, 7369, 7400, 7431, 7101, 0};
-        _mob = new int[] {27295, 27227, 27285};
-        _classId = new int[] {116};
-        _prevClass = new int[] {0x34};
-        _npcSpawnLocations = new Location[] {
+        npc = new int[] {31336, 31624, 31589, 31290, 31642, 31646, 31649, 31650, 31654, 31655, 31657, 31290};
+        items = new int[] {7080, 7539, 7081, 7493, 7276, 7307, 7338, 7369, 7400, 7431, 7101, 0};
+        mob = new int[] {27295, 27227, 27285};
+        classId = new int[] {116};
+        prevClass = new int[] {0x34};
+        npcSpawnLocations = new Location[] {
             new Location(191046, -40640, -3042), new Location(46087, -36372, -1685), new Location(46066, -36396, -1685)
         };
-        _text = new String[] {
+        text = new String[] {
             "PLAYERNAME! Pursued to here! However, I jumped out of the Banshouren boundaries! You look at the giant as the sign of power!",
             "... Oh ... good! So it was ... let's begin!",
             "I do not have the patience ..! I have been a giant force ...! Cough chatter ah ah ah!",

@@ -30,18 +30,18 @@ import app.l2nx.highfive.mechanics.skill.Skill;
  * The Class ConditionPlayerCloakStatus.
  */
 public class ConditionPlayerCloakStatus extends Condition {
-    private final boolean _value;
+    private final boolean value;
 
     /**
      * Instantiates a new condition player cloak status.
      * @param value the value
      */
     public ConditionPlayerCloakStatus(boolean value) {
-        _value = value;
+        this.value = value;
     }
 
     @Override
     public boolean testImpl(Creature effector, Creature effected, Skill skill, ItemTemplate item) {
-        return effector.isPlayer() && (effector.asPlayer().getInventory().canEquipCloak() == _value);
+        return effector.isPlayer() && (effector.asPlayer().getInventory().canEquipCloak() == value);
     }
 }

@@ -38,6 +38,8 @@ import app.l2nx.highfive.network.enums.ChatType;
 import app.l2nx.highfive.util.LocationUtil;
 import java.util.ArrayList;
 import java.util.List;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * Monastery Minigame AI.
@@ -60,7 +62,7 @@ public class Minigame extends Script {
     private static final int TIMER_INTERVAL = 3;
     private static final int MAX_ATTEMPTS = 3;
 
-    private final List<MinigameRoom> _rooms = new ArrayList<>(2);
+    private final List<MinigameRoom> rooms = new ArrayList<>(2);
 
     private Minigame() {
         addStartNpc(SUMIEL);
@@ -209,7 +211,7 @@ public class Minigame extends Script {
     public void onSpawn(Npc npc) {
         switch (npc.getId()) {
             case SUMIEL: {
-                _rooms.add(initRoom(npc));
+                rooms.add(initRoom(npc));
                 break;
             }
             case TREASURE_BOX: {
@@ -299,7 +301,7 @@ public class Minigame extends Script {
      * @return MinigameRoom
      */
     private MinigameRoom getRoomByManager(Npc manager) {
-        for (MinigameRoom room : _rooms) {
+        for (MinigameRoom room : rooms) {
             if (room.getManager() == manager) {
                 return room;
             }
@@ -314,7 +316,7 @@ public class Minigame extends Script {
      * @return MinigameRoom
      */
     private MinigameRoom getRoomByParticipant(Player participant) {
-        for (MinigameRoom room : _rooms) {
+        for (MinigameRoom room : rooms) {
             if (room.getParticipant() == participant) {
                 return room;
             }
@@ -328,23 +330,40 @@ public class Minigame extends Script {
      * and game status for each secret room into Monastery of Silence.
      */
     private class MinigameRoom {
-        private final Npc[] _burners;
-        private final Npc _manager;
-        private Player _participant;
-        private boolean _started;
-        private int _attemptNumber;
-        private int _currentPot;
-        private final int[] _order;
-        private ConsumerEventListener _listener;
+        @Getter
+        private final Npc[] burners;
+
+        @Getter
+        private final Npc manager;
+
+        @Getter
+        @Setter
+        private Player participant;
+
+        @Setter
+        private boolean started;
+
+        @Getter
+        @Setter
+        private int attemptNumber;
+
+        @Getter
+        @Setter
+        private int currentPot;
+
+        @Getter
+        private final int[] order;
+
+        private ConsumerEventListener listener;
 
         public MinigameRoom(Npc[] burners, Npc manager) {
-            _burners = burners;
-            _manager = manager;
-            _participant = null;
-            _started = false;
-            _attemptNumber = 1;
-            _currentPot = 0;
-            _order = new int[9];
+            this.burners = burners;
+            this.manager = manager;
+            participant = null;
+            started = false;
+            attemptNumber = 1;
+            currentPot = 0;
+            order = new int[9];
         }
 
         /**
@@ -354,7 +373,7 @@ public class Minigame extends Script {
          */
         public int getBurnerPos(Npc npc) {
             for (int i = 0; i < 9; i++) {
-                if (npc.equals(_burners[i])) {
+                if (npc.equals(burners[i])) {
                     return i;
                 }
             }
@@ -366,42 +385,10 @@ public class Minigame extends Script {
          * Burn all the pots into the room
          */
         public void burnThemAll() {
-            for (Npc burner : _burners) {
+            for (Npc burner : burners) {
                 burner.setDisplayEffect(1);
                 burner.setWalking();
             }
-        }
-
-        /**
-         * Retrieve a list of burners
-         * @return An array of Npcs
-         */
-        public Npc[] getBurners() {
-            return _burners;
-        }
-
-        /**
-         * Retrieve the current game manager
-         * @return The Npc game instructor
-         */
-        public Npc getManager() {
-            return _manager;
-        }
-
-        /**
-         * Retrieve the current game participant
-         * @return The Player who is participating
-         */
-        public Player getParticipant() {
-            return _participant;
-        }
-
-        /**
-         * Set the current participant
-         * @param participant The Player participating
-         */
-        public void setParticipant(Player participant) {
-            _participant = participant;
         }
 
         /**
@@ -409,55 +396,7 @@ public class Minigame extends Script {
          * @return {@code true} if the game is started, {@code false} otherwise
          */
         public boolean getStarted() {
-            return _started;
-        }
-
-        /**
-         * Set the MinigameRoom status
-         * @param started The game status {@code true} if the game is started, {@code false} otherwise
-         */
-        public void setStarted(boolean started) {
-            _started = started;
-        }
-
-        /**
-         * Retrieve the current burner position
-         * @return The array index
-         */
-        public int getCurrentPot() {
-            return _currentPot;
-        }
-
-        /**
-         * Set the current burner position
-         * @param pot The position
-         */
-        public void setCurrentPot(int pot) {
-            _currentPot = pot;
-        }
-
-        /**
-         * Retrieve the current attempt Number
-         * @return The attempt number
-         */
-        public int getAttemptNumber() {
-            return _attemptNumber;
-        }
-
-        /**
-         * Set the attempt number
-         * @param attempt attempt number
-         */
-        public void setAttemptNumber(int attempt) {
-            _attemptNumber = attempt;
-        }
-
-        /**
-         * Retrieve the burning order
-         * @return an array of Ids
-         */
-        public int[] getOrder() {
-            return _order;
+            return started;
         }
 
         /**
@@ -465,20 +404,20 @@ public class Minigame extends Script {
          * @param listener
          */
         public void setListener(ConsumerEventListener listener) {
-            _listener = listener;
-            _participant.addListener(listener);
+            this.listener = listener;
+            participant.addListener(listener);
         }
 
         /**
          * Clean the room values
          */
         public void clean() {
-            if (_listener != null) {
-                _participant.removeListener(_listener);
-                _listener = null;
+            if (listener != null) {
+                participant.removeListener(listener);
+                listener = null;
             }
 
-            _manager.setTarget(null);
+            manager.setTarget(null);
             setParticipant(null);
             setStarted(false);
             setAttemptNumber(1);

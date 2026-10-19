@@ -35,16 +35,16 @@ import app.l2nx.highfive.mechanics.skill.Skill;
  * @author mkizub, naker
  */
 public class ConditionUsingItemType extends Condition {
-    private final boolean _armor;
-    private final int _mask;
+    private final boolean armor;
+    private final int mask;
 
     /**
      * Instantiates a new condition using item type.
      * @param mask the mask
      */
     public ConditionUsingItemType(int mask) {
-        _mask = mask;
-        _armor = (_mask & (ArmorType.MAGIC.mask() | ArmorType.LIGHT.mask() | ArmorType.HEAVY.mask())) != 0;
+        this.mask = mask;
+        armor = (this.mask & (ArmorType.MAGIC.mask() | ArmorType.LIGHT.mask() | ArmorType.HEAVY.mask())) != 0;
     }
 
     @Override
@@ -54,15 +54,15 @@ public class ConditionUsingItemType extends Condition {
         }
 
         if (!effector.isPlayer()) {
-            return !_armor && ((_mask & effector.getAttackType().mask()) != 0);
+            return !armor && ((mask & effector.getAttackType().mask()) != 0);
         }
 
         final Inventory inv = effector.getInventory();
-        if (_armor) {
+        if (armor) {
             final Item chest = inv.getPaperdollItem(Inventory.PAPERDOLL_CHEST);
             final Item legs = inv.getPaperdollItem(Inventory.PAPERDOLL_LEGS);
             if ((chest == null) && (legs == null)) {
-                return (ArmorType.NONE.mask() & _mask) == ArmorType.NONE.mask();
+                return (ArmorType.NONE.mask() & mask) == ArmorType.NONE.mask();
             }
 
             if (chest != null) {
@@ -70,22 +70,22 @@ public class ConditionUsingItemType extends Condition {
                     final BodyPart chestBodyPart = chest.getTemplate().getBodyPart();
                     if (chestBodyPart == BodyPart.FULL_ARMOR) {
                         final int chestMask = chest.getTemplate().getItemMask();
-                        return (_mask & chestMask) != 0;
+                        return (mask & chestMask) != 0;
                     }
 
-                    return (ArmorType.NONE.mask() & _mask) == ArmorType.NONE.mask();
+                    return (ArmorType.NONE.mask() & mask) == ArmorType.NONE.mask();
                 }
 
                 final int chestMask = chest.getTemplate().getItemMask();
                 final int legMask = legs.getTemplate().getItemMask();
                 if (chestMask == legMask) {
-                    return (_mask & chestMask) != 0;
+                    return (mask & chestMask) != 0;
                 }
 
-                return (ArmorType.NONE.mask() & _mask) == ArmorType.NONE.mask();
+                return (ArmorType.NONE.mask() & mask) == ArmorType.NONE.mask();
             }
         }
 
-        return (_mask & inv.getWearedMask()) != 0;
+        return (mask & inv.getWearedMask()) != 0;
     }
 }

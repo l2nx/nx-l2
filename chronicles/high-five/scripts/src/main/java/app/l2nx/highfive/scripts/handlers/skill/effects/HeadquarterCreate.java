@@ -34,12 +34,12 @@ import app.l2nx.highfive.util.StatSet;
  */
 public class HeadquarterCreate extends AbstractEffect {
     private static final int HQ_NPC_ID = 35062;
-    private final boolean _isAdvanced;
+    private final boolean advanced;
 
     public HeadquarterCreate(Condition attachCond, Condition applyCond, StatSet set, StatSet params) {
         super(attachCond, applyCond, set, params);
 
-        _isAdvanced = params.getBoolean("isAdvanced", false);
+        advanced = params.getBoolean("isAdvanced", false);
     }
 
     @Override
@@ -54,7 +54,7 @@ public class HeadquarterCreate extends AbstractEffect {
             return;
         }
 
-        final SiegeFlag flag = new SiegeFlag(player, NpcData.getInstance().getTemplate(HQ_NPC_ID), _isAdvanced, false);
+        final SiegeFlag flag = new SiegeFlag(player, NpcData.getInstance().getTemplate(HQ_NPC_ID), advanced, false);
         flag.setTitle(player.getClan().getName());
         flag.setCurrentHpMp(flag.getMaxHp(), flag.getMaxMp());
         flag.setHeading(player.getHeading());

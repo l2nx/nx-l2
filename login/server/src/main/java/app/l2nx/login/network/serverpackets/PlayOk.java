@@ -40,16 +40,16 @@ public class PlayOk extends LoginServerPacket {
     private static final int OPCODE_PLAY_OK = 0x07;
 
     // Session key parts.
-    private final int _playOkPart1;
-    private final int _playOkPart2;
+    private final int playOkPart1;
+    private final int playOkPart2;
 
     /**
      * Constructs the packet with the PlayOk pair.
      * @param sessionKey
      */
     public PlayOk(SessionKey sessionKey) {
-        _playOkPart1 = sessionKey.getPlayOkID1();
-        _playOkPart2 = sessionKey.getPlayOkID2();
+        playOkPart1 = sessionKey.getPlayOkID1();
+        playOkPart2 = sessionKey.getPlayOkID2();
     }
 
     /**
@@ -60,7 +60,7 @@ public class PlayOk extends LoginServerPacket {
     @Override
     protected void writeImpl(LoginClient client, WriteBuffer buffer) {
         buffer.writeByte(OPCODE_PLAY_OK);
-        buffer.writeInt(_playOkPart1);
-        buffer.writeInt(_playOkPart2);
+        buffer.writeInt(playOkPart1);
+        buffer.writeInt(playOkPart2);
     }
 }

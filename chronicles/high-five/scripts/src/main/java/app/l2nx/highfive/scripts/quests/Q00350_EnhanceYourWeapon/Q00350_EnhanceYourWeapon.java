@@ -47,12 +47,13 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Level;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Enhance Your Weapon (350)
  * @author Gigiikun, Skache
  */
+@Slf4j
 public class Q00350_EnhanceYourWeapon extends Quest {
     private static final int MIN_LEVEL = 40;
 
@@ -132,7 +133,7 @@ public class Q00350_EnhanceYourWeapon extends Quest {
         try {
             npc.asAttackable().addAbsorber(caster);
         } catch (Exception e) {
-            LOGGER.log(Level.SEVERE, "", e);
+            log.error("", e);
         }
     }
 
@@ -222,7 +223,7 @@ public class Q00350_EnhanceYourWeapon extends Quest {
     private static boolean isPartyLevelingMonster(int npcId) {
         for (LevelingSoulCrystalInfo info :
                 LevelUpCrystalData.getInstance().getNpcSoulInfo(npcId).values()) {
-            if (info.getAbsorbCrystalType() != AbsorbCrystalType.LAST_HIT) {
+            if (info.absorbCrystalType() != AbsorbCrystalType.LAST_HIT) {
                 return true;
             }
         }
@@ -236,7 +237,7 @@ public class Q00350_EnhanceYourWeapon extends Quest {
         }
 
         // If the crystal level is way too high for this mob, say that we can't increase it.
-        if (!LevelUpCrystalData.getInstance().getNpcsSoulInfo().get(mob.getId()).containsKey(sc.getLevel())) {
+        if (!LevelUpCrystalData.getInstance().getNpcsSoulInfo().get(mob.getId()).containsKey(sc.level())) {
             player.sendPacket(SystemMessageId.THE_SOUL_CRYSTAL_IS_REFUSING_TO_ABSORB_THE_SOUL);
             return;
         }
@@ -245,9 +246,9 @@ public class Q00350_EnhanceYourWeapon extends Quest {
                 <= LevelUpCrystalData.getInstance()
                         .getNpcsSoulInfo()
                         .get(mob.getId())
-                        .get(sc.getLevel())
-                        .getChance()) {
-            exchangeCrystal(player, mob, sc.getItemId(), sc.getLeveledItemId(), false);
+                        .get(sc.level())
+                        .chance()) {
+            exchangeCrystal(player, mob, sc.itemId(), sc.leveledItemId(), false);
         } else {
             player.sendPacket(SystemMessageId.THE_SOUL_CRYSTAL_WAS_NOT_ABLE_TO_ABSORB_THE_SOUL);
         }
@@ -282,24 +283,24 @@ public class Q00350_EnhanceYourWeapon extends Quest {
                 }
 
                 players.put(member, sc);
-                if ((sc.getLevel() > maxSCLevel)
+                if ((sc.level() > maxSCLevel)
                         && LevelUpCrystalData.getInstance()
                                 .getNpcsSoulInfo()
                                 .get(mob.getId())
-                                .containsKey(sc.getLevel())) {
-                    maxSCLevel = sc.getLevel(); // Track the highest-level Soul Crystal.
+                                .containsKey(sc.level())) {
+                    maxSCLevel = sc.level(); // Track the highest-level Soul Crystal.
                 }
             }
         } else {
             final SoulCrystal sc = getSCForPlayer(killer);
             if (sc != null) {
                 players.put(killer, sc);
-                if ((sc.getLevel() > maxSCLevel)
+                if ((sc.level() > maxSCLevel)
                         && LevelUpCrystalData.getInstance()
                                 .getNpcsSoulInfo()
                                 .get(mob.getId())
-                                .containsKey(sc.getLevel())) {
-                    maxSCLevel = sc.getLevel();
+                                .containsKey(sc.level())) {
+                    maxSCLevel = sc.level();
                 }
             }
         }
@@ -319,7 +320,7 @@ public class Q00350_EnhanceYourWeapon extends Quest {
         }
 
         // Handle special absorb skill checks.
-        if (levelInfo.isSkillNeeded()) {
+        if (levelInfo.skillNeeded()) {
             if (!mob.isAbsorbed()) {
                 mob.resetAbsorbList(); // Absorption not initialized.
                 return;
@@ -335,7 +336,7 @@ public class Q00350_EnhanceYourWeapon extends Quest {
         }
 
         // Process leveling based on absorb type.
-        switch (levelInfo.getAbsorbCrystalType()) {
+        switch (levelInfo.absorbCrystalType()) {
             case PARTY_ONE_RANDOM: {
                 if (killer.getParty() != null) {
                     final Player lucky = killer.getParty()

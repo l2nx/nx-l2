@@ -28,15 +28,20 @@ import app.l2nx.highfive.entity.actor.instance.Door;
 import app.l2nx.highfive.mechanics.variables.PlayerVariables;
 import java.util.ArrayList;
 import java.util.List;
+import lombok.Getter;
 
 public class UCPoint {
-    private final Location _loc;
-    private final List<Door> _doors;
-    private final List<Player> _players = new ArrayList<>();
+    @Getter
+    private final Location location;
+
+    private final List<Door> doors;
+
+    @Getter
+    private final List<Player> players = new ArrayList<>();
 
     public UCPoint(List<Door> doors, Location loc) {
-        _doors = doors;
-        _loc = loc;
+        this.doors = doors;
+        location = loc;
     }
 
     public void teleportPlayer(Player player) {
@@ -54,16 +59,16 @@ public class UCPoint {
             UCTeam.resPlayer(player);
         }
 
-        player.teleToLocation(_loc, true);
-        _players.add(player);
+        player.teleToLocation(location, true);
+        players.add(player);
     }
 
     public void actionDoors(boolean open) {
-        if (_doors.isEmpty()) {
+        if (doors.isEmpty()) {
             return;
         }
 
-        for (Door door : _doors) {
+        for (Door door : doors) {
             if (open) {
                 door.openMe();
             } else {
@@ -72,18 +77,10 @@ public class UCPoint {
         }
     }
 
-    public Location getLocation() {
-        return _loc;
-    }
-
-    public List<Player> getPlayers() {
-        return _players;
-    }
-
     public boolean checkPlayer(Player player) {
-        if (_players.contains(player)) {
+        if (players.contains(player)) {
             actionDoors(true);
-            for (Player pl : _players) {
+            for (Player pl : players) {
                 if (pl != null) {
                     pl.setUCState(Player.UC_STATE_ARENA);
                 }

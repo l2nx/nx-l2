@@ -52,43 +52,46 @@ import app.l2nx.highfive.mechanics.events.holders.actor.player.OnPlayerCreate;
 import app.l2nx.highfive.mechanics.skill.holders.SkillLearn;
 import app.l2nx.highfive.network.Disconnection;
 import app.l2nx.highfive.network.GameClient;
-import app.l2nx.highfive.network.PacketLogger;
 import app.l2nx.highfive.network.serverpackets.CharCreateFail;
 import app.l2nx.highfive.network.serverpackets.CharCreateOk;
 import app.l2nx.highfive.network.serverpackets.CharSelectionInfo;
 import java.util.Collection;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author Mobius
  */
+@Slf4j
 public class CharacterCreate extends ClientPacket {
-    protected static final Logger LOGGER_ACCOUNTING = Logger.getLogger("accounting");
+
+    private static final Logger ACCOUNTING_LOG = LoggerFactory.getLogger("accounting");
 
     // cSdddddddddddd
-    private String _name;
-    private boolean _isFemale;
-    private int _classId;
-    private byte _hairStyle;
-    private byte _hairColor;
-    private byte _face;
+    private String name;
+    private boolean female;
+    private int classId;
+    private byte hairStyle;
+    private byte hairColor;
+    private byte face;
 
     @Override
     protected void readImpl() {
-        _name = readString();
+        name = readString();
         readInt(); // race
-        _isFemale = readInt() != 0;
-        _classId = readInt();
+        female = readInt() != 0;
+        classId = readInt();
         readInt(); // _int
         readInt(); // _str
         readInt(); // _con
         readInt(); // _men
         readInt(); // _dex
         readInt(); // _wit
-        _hairStyle = (byte) readInt();
-        _hairColor = (byte) readInt();
-        _face = (byte) readInt();
+        hairStyle = (byte) readInt();
+        hairColor = (byte) readInt();
+        face = (byte) readInt();
     }
 
     @Override
@@ -97,48 +100,52 @@ public class CharacterCreate extends ClientPacket {
 
         // Last Verified: May 30, 2009 - Gracia Final - Players are able to create characters with names consisting of
         // as little as 1,2,3 letter/number combinations.
-        if (_name.isEmpty() || (_name.length() > 16)) {
+        if (name.isEmpty() || (name.length() > 16)) {
             client.sendPacket(new CharCreateFail(CharCreateFail.REASON_16_ENG_CHARS));
             return;
         }
 
         if (PlayerConfig.FORBIDDEN_NAMES.length > 0) {
             for (String st : PlayerConfig.FORBIDDEN_NAMES) {
-                if (_name.toLowerCase().contains(st.toLowerCase())) {
+                if (name.toLowerCase().contains(st.toLowerCase())) {
                     client.sendPacket(new CharCreateFail(CharCreateFail.REASON_INCORRECT_NAME));
                     return;
                 }
             }
         }
 
-        if (FakePlayerData.getInstance().getProperName(_name) != null) {
+        if (FakePlayerData.getInstance().getProperName(name) != null) {
             client.sendPacket(new CharCreateFail(CharCreateFail.REASON_INCORRECT_NAME));
             return;
         }
 
         // Last Verified: May 30, 2009 - Gracia Final.
-        if (!StringUtils.isAlphanumeric(_name) || !isValidName(_name)) {
+        if (!StringUtils.isAlphanumeric(name) || !isValidName(name)) {
             client.sendPacket(new CharCreateFail(CharCreateFail.REASON_INCORRECT_NAME));
             return;
         }
 
-        if ((_face > 2) || (_face < 0)) {
-            PacketLogger.warning("Character Creation Failure: Character face " + _face
-                    + " is invalid. Possible client hack. " + client);
+        if ((face > 2) || (face < 0)) {
+            log.warn(
+                    "Character Creation Failure: Character face {} is invalid. Possible client hack. {}", face, client);
             client.sendPacket(new CharCreateFail(CharCreateFail.REASON_CREATION_FAILED));
             return;
         }
 
-        if ((_hairStyle < 0) || (!_isFemale && (_hairStyle > 4)) || (_isFemale && (_hairStyle > 6))) {
-            PacketLogger.warning("Character Creation Failure: Character hair style " + _hairStyle
-                    + " is invalid. Possible client hack. " + client);
+        if ((hairStyle < 0) || (!female && (hairStyle > 4)) || (female && (hairStyle > 6))) {
+            log.warn(
+                    "Character Creation Failure: Character hair style {} is invalid. Possible client hack. {}",
+                    hairStyle,
+                    client);
             client.sendPacket(new CharCreateFail(CharCreateFail.REASON_CREATION_FAILED));
             return;
         }
 
-        if ((_hairColor > 3) || (_hairColor < 0)) {
-            PacketLogger.warning("Character Creation Failure: Character hair color " + _hairColor
-                    + " is invalid. Possible client hack. " + client);
+        if ((hairColor > 3) || (hairColor < 0)) {
+            log.warn(
+                    "Character Creation Failure: Character hair color {} is invalid. Possible client hack. {}",
+                    hairColor,
+                    client);
             client.sendPacket(new CharCreateFail(CharCreateFail.REASON_CREATION_FAILED));
             return;
         }
@@ -155,13 +162,13 @@ public class CharacterCreate extends ClientPacket {
                     && (ServerConfig.MAX_CHARACTERS_NUMBER_PER_ACCOUNT != 0)) {
                 client.sendPacket(new CharCreateFail(CharCreateFail.REASON_TOO_MANY_CHARACTERS));
                 return;
-            } else if (CharInfoTable.getInstance().doesCharNameExist(_name)) {
+            } else if (CharInfoTable.getInstance().doesCharNameExist(name)) {
                 client.sendPacket(new CharCreateFail(CharCreateFail.REASON_NAME_ALREADY_EXISTS));
                 return;
             }
 
-            template = PlayerTemplateData.getInstance().getTemplate(_classId);
-            if ((template == null) || (PlayerClass.getPlayerClass(_classId).level() > 0)) {
+            template = PlayerTemplateData.getInstance().getTemplate(classId);
+            if ((template == null) || (PlayerClass.getPlayerClass(classId).level() > 0)) {
                 client.sendPacket(new CharCreateFail(CharCreateFail.REASON_CREATION_FAILED));
                 return;
             }
@@ -214,10 +221,7 @@ public class CharacterCreate extends ClientPacket {
             }
 
             newChar = Player.create(
-                    template,
-                    client.getAccountName(),
-                    _name,
-                    new PlayerAppearance(_face, _hairColor, _hairStyle, _isFemale));
+                    template, client.getAccountName(), name, new PlayerAppearance(face, hairColor, hairStyle, female));
         }
 
         // HP and MP are at maximum and CP is zero by default.
@@ -228,7 +232,7 @@ public class CharacterCreate extends ClientPacket {
         initNewChar(client, newChar);
         client.sendPacket(CharCreateOk.STATIC_PACKET);
 
-        LOGGER_ACCOUNTING.info("Created new character, " + newChar + ", " + client);
+        ACCOUNTING_LOG.info("Created new character, {}, {}", newChar, client);
     }
 
     private boolean isValidName(String text) {
@@ -282,8 +286,10 @@ public class CharacterCreate extends ClientPacket {
                 final Item item = newChar.getInventory()
                         .addItem(ItemProcessType.REWARD, equipment.getId(), equipment.getCount(), newChar, null);
                 if (item == null) {
-                    PacketLogger.warning("Could not create item during player creation: itemId " + equipment.getId()
-                            + ", amount " + equipment.getCount() + ".");
+                    log.warn(
+                            "Could not create item during player creation: itemId {}, amount {}.",
+                            equipment.getId(),
+                            equipment.getCount());
                     continue;
                 }
 
@@ -304,7 +310,12 @@ public class CharacterCreate extends ClientPacket {
         if (EventDispatcher.getInstance().hasListener(EventType.ON_PLAYER_CREATE, Containers.Players())) {
             EventDispatcher.getInstance()
                     .notifyEvent(
-                            new OnPlayerCreate(newChar, newChar.getObjectId(), newChar.getName(), client),
+                            OnPlayerCreate.builder()
+                                    .player(newChar)
+                                    .objectId(newChar.getObjectId())
+                                    .name(newChar.getName())
+                                    .client(client)
+                                    .build(),
                             Containers.Players());
         }
 

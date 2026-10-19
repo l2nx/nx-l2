@@ -27,8 +27,9 @@ import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.handler.IBypassHandler;
 import app.l2nx.highfive.network.serverpackets.NpcHtmlMessage;
 import java.util.StringTokenizer;
-import java.util.logging.Level;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class PlayerHelp implements IBypassHandler {
     private static final String[] COMMANDS = {"player_help"};
 
@@ -57,7 +58,7 @@ public class PlayerHelp implements IBypassHandler {
             html.setFile(player, "data/html/help/" + cmd[0]);
             player.sendPacket(html);
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, "Exception in " + getClass().getSimpleName(), e);
+            log.warn("Bypass failed", e);
         }
 
         return true;

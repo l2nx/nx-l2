@@ -34,16 +34,16 @@ import app.l2nx.highfive.util.LocationUtil;
  * @author Adry_85
  */
 public class ConditionPlayerCanTakeFort extends Condition {
-    private final boolean _value;
+    private final boolean value;
 
     public ConditionPlayerCanTakeFort(boolean value) {
-        _value = value;
+        this.value = value;
     }
 
     @Override
     public boolean testImpl(Creature effector, Creature effected, Skill skill, ItemTemplate item) {
         if ((effector == null) || !effector.isPlayer()) {
-            return !_value;
+            return !value;
         }
 
         final Player player = effector.asPlayer();
@@ -70,6 +70,6 @@ public class ConditionPlayerCanTakeFort extends Condition {
             canTakeFort = false;
         }
 
-        return _value == canTakeFort;
+        return value == canTakeFort;
     }
 }

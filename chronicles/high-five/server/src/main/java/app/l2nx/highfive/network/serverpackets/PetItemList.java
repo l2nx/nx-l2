@@ -29,17 +29,17 @@ import app.l2nx.network.buffer.WriteBuffer;
 import java.util.Collection;
 
 public class PetItemList extends AbstractItemPacket {
-    private final Collection<Item> _items;
+    private final Collection<Item> items;
 
     public PetItemList(Collection<Item> collection) {
-        _items = collection;
+        items = collection;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.PET_ITEM_LIST.writeId(this, buffer);
-        buffer.writeShort(_items.size());
-        for (Item item : _items) {
+        buffer.writeShort(items.size());
+        for (Item item : items) {
             writeItem(item, buffer);
         }
     }

@@ -33,15 +33,17 @@ import app.l2nx.highfive.mechanics.skill.holders.SkillHolder;
 import app.l2nx.highfive.mechanics.skill.targets.TargetType;
 import app.l2nx.highfive.util.StatSet;
 import java.util.concurrent.ThreadLocalRandom;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Trigger Skill By Avoid effect implementation.
  * @author Zealar
  */
+@Slf4j
 public class TriggerSkillByAvoid extends AbstractEffect {
-    private final int _chance;
-    private final SkillHolder _skill;
-    private final TargetType _targetType;
+    private final int chance;
+    private final SkillHolder skill;
+    private final TargetType targetType;
 
     /**
      * @param attachCond
@@ -52,38 +54,36 @@ public class TriggerSkillByAvoid extends AbstractEffect {
     public TriggerSkillByAvoid(Condition attachCond, Condition applyCond, StatSet set, StatSet params) {
         super(attachCond, applyCond, set, params);
 
-        _chance = params.getInt("chance", 100);
-        _skill = new SkillHolder(params.getInt("skillId", 0), params.getInt("skillLevel", 0));
-        _targetType = params.getEnum("targetType", TargetType.class, TargetType.ONE);
+        chance = params.getInt("chance", 100);
+        skill = new SkillHolder(params.getInt("skillId", 0), params.getInt("skillLevel", 0));
+        targetType = params.getEnum("targetType", TargetType.class, TargetType.ONE);
     }
 
     public void onAvoidEvent(OnCreatureAttackAvoid event) {
-        if (event.isDamageOverTime()
-                || (_chance == 0)
-                || ((_skill.getSkillId() == 0) || (_skill.getSkillLevel() == 0))) {
+        if (event.damageOverTime() || (chance == 0) || ((skill.getSkillId() == 0) || (skill.getSkillLevel() == 0))) {
             return;
         }
 
-        final ITargetTypeHandler targetHandler = TargetHandler.getInstance().getHandler(_targetType);
+        final ITargetTypeHandler targetHandler = TargetHandler.getInstance().getHandler(targetType);
         if (targetHandler == null) {
-            LOGGER.warning("Handler for target type: " + _targetType + " does not exist.");
+            log.warn("Handler for target type: {} does not exist.", targetType);
             return;
         }
 
-        if (ThreadLocalRandom.current().nextInt(100) > _chance) {
+        if (ThreadLocalRandom.current().nextInt(100) > chance) {
             return;
         }
 
-        final Skill triggerSkill = _skill.getSkill();
+        final Skill triggerSkill = skill.getSkill();
         for (WorldObject triggerTarget :
-                targetHandler.getTargetList(triggerSkill, event.getTarget(), false, event.getAttacker())) {
+                targetHandler.getTargetList(triggerSkill, event.target(), false, event.attacker())) {
             if ((triggerTarget == null) || !triggerTarget.isCreature()) {
                 continue;
             }
 
             final Creature targetChar = triggerTarget.asCreature();
             if (!targetChar.isInvul()) {
-                event.getTarget().makeTriggerCast(triggerSkill, targetChar);
+                event.target().makeTriggerCast(triggerSkill, targetChar);
             }
         }
     }

@@ -50,7 +50,7 @@ public class Q00196_SevenSignsSealOfTheEmperor extends Quest {
 
     // Misc
     private static final int MIN_LEVEL = 79;
-    private boolean isBusy = false;
+    private boolean busy = false;
 
     public Q00196_SevenSignsSealOfTheEmperor() {
         super(196);
@@ -64,7 +64,7 @@ public class Q00196_SevenSignsSealOfTheEmperor extends Quest {
     @Override
     public String onEvent(String event, Npc npc, Player player) {
         if ((npc.getId() == MERCHANT_OF_MAMMON) && "DESPAWN".equals(event)) {
-            isBusy = false;
+            busy = false;
             npc.broadcastPacket(new NpcSay(
                     npc.getObjectId(),
                     ChatType.NPC_GENERAL,
@@ -94,8 +94,8 @@ public class Q00196_SevenSignsSealOfTheEmperor extends Quest {
             }
             case "ssq_mammon": {
                 if (qs.isCond(1)) {
-                    if (!isBusy) {
-                        isBusy = true;
+                    if (!busy) {
+                        busy = true;
                         npc.setScriptValue(1);
                         final Npc merchant = addSpawn(MERCHANT_OF_MAMMON, 109743, 219975, -3512, 0, false, 0, false);
                         merchant.broadcastPacket(new NpcSay(
@@ -138,7 +138,7 @@ public class Q00196_SevenSignsSealOfTheEmperor extends Quest {
                     htmltext = event;
                     cancelQuestTimers("DESPAWN");
                     npc.deleteMe();
-                    isBusy = false;
+                    busy = false;
                 }
                 break;
             }

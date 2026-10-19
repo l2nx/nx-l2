@@ -54,10 +54,12 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author Mobius
  */
+@Slf4j
 public class Transmog extends Script {
     private static final int NPC = 900009;
     private static final Map<Integer, Map<Integer, Set<Integer>>> PLAYER_TRANSMOGS = new ConcurrentHashMap<>();
@@ -228,7 +230,7 @@ public class Transmog extends Script {
     }
 
     public void onPlayerItemAdd(OnPlayerItemAdd event) {
-        final ItemTemplate itemTemplate = event.getItem().getTemplate();
+        final ItemTemplate itemTemplate = event.item().getTemplate();
         if ((itemTemplate instanceof EtcItem) || itemTemplate.isForNpc()) {
             return;
         }
@@ -242,7 +244,7 @@ public class Transmog extends Script {
             return;
         }
 
-        final Player player = event.getPlayer();
+        final Player player = event.player();
         final Integer playerObjectId = player.getObjectId();
         final Map<Integer, Set<Integer>> playerTransmogs =
                 PLAYER_TRANSMOGS.computeIfAbsent(playerObjectId, _ -> new HashMap<>());
@@ -257,7 +259,7 @@ public class Transmog extends Script {
     }
 
     private void onPlayerLogin(OnPlayerLogin event) {
-        final Player player = event.getPlayer();
+        final Player player = event.player();
         final String owner =
                 TransmogConfig.TRANSMOG_SHARE_ACCOUNT ? player.getAccountName() : String.valueOf(player.getObjectId());
         final Map<Integer, Set<Integer>> playerTransmogs = new HashMap<>();
@@ -278,7 +280,7 @@ public class Transmog extends Script {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.warning("Problem with Transmog: " + e.getMessage());
+            log.warn("Problem with Transmog: {}", e.getMessage());
         }
 
         if (!playerTransmogs.isEmpty()) {
@@ -287,7 +289,7 @@ public class Transmog extends Script {
     }
 
     private void onPlayerLogout(OnPlayerLogout event) {
-        final Player player = event.getPlayer();
+        final Player player = event.player();
         final Integer playerObjectId = player.getObjectId();
         final String owner =
                 TransmogConfig.TRANSMOG_SHARE_ACCOUNT ? player.getAccountName() : String.valueOf(player.getObjectId());
@@ -306,7 +308,7 @@ public class Transmog extends Script {
 
             statement.executeBatch();
         } catch (SQLException e) {
-            LOGGER.warning("Problem with Transmog: " + e.getMessage());
+            log.warn("Problem with Transmog: {}", e.getMessage());
         }
 
         PLAYER_TRANSMOGS.remove(playerObjectId);

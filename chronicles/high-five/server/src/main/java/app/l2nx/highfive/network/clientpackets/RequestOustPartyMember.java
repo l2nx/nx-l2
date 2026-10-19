@@ -30,11 +30,11 @@ import app.l2nx.highfive.entity.groups.PartyMessageType;
  * @version $Revision: 1.3.4.2 $ $Date: 2005/03/27 15:29:30 $
  */
 public class RequestOustPartyMember extends ClientPacket {
-    private String _name;
+    private String name;
 
     @Override
     protected void readImpl() {
-        _name = readString();
+        name = readString();
     }
 
     @Override
@@ -55,7 +55,7 @@ public class RequestOustPartyMember extends ClientPacket {
                             .contains(player)) {
                 player.sendMessage("You can't dismiss party member when you are in Dimensional Rift.");
             } else {
-                party.removePartyMember(_name, PartyMessageType.EXPELLED);
+                party.removePartyMember(name, PartyMessageType.EXPELLED);
             }
         }
     }

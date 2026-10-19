@@ -30,41 +30,66 @@ import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import lombok.Getter;
 
 /**
  * @author Zoey76
  */
 public class SkillLearn {
-    private final String _skillName;
-    private final int _skillId;
-    private final int _skillLevel;
-    private final int _getLevel;
-    private final boolean _autoGet;
-    private final int _levelUpSp;
-    private final Set<ItemHolder> _requiredItems = new HashSet<>(1);
-    private final Set<Race> _races = EnumSet.noneOf(Race.class);
-    private final Set<SkillHolder> _preReqSkills = new HashSet<>(1);
-    private SocialClass _socialClass;
-    private final boolean _residenceSkill;
-    private final Set<Integer> _residenceIds = new HashSet<>(1);
-    private final List<SubClassData> _subClassLvlNumber = new ArrayList<>(1);
-    private final boolean _learnedByNpc;
-    private final boolean _learnedByFS;
+    @Getter
+    private final String name;
+
+    @Getter
+    private final int skillId;
+
+    @Getter
+    private final int skillLevel;
+
+    @Getter
+    private final int getLevel;
+
+    @Getter
+    private final boolean autoGet;
+
+    @Getter
+    private final int levelUpSp;
+
+    @Getter
+    private final Set<ItemHolder> requiredItems = new HashSet<>(1);
+
+    @Getter
+    private final Set<Race> races = EnumSet.noneOf(Race.class);
+
+    @Getter
+    private final Set<SkillHolder> preReqSkills = new HashSet<>(1);
+
+    @Getter
+    private SocialClass socialClass;
+
+    @Getter
+    private final boolean residencialSkill;
+
+    @Getter
+    private final Set<Integer> residenceIds = new HashSet<>(1);
+
+    @Getter
+    private final List<SubClassData> subClassConditions = new ArrayList<>(1);
+
+    @Getter
+    private final boolean learnedByNpc;
+
+    @Getter
+    private final boolean learnedByFS;
 
     public class SubClassData {
+        @Getter
         private final int slot;
+
         private final int level;
 
         public SubClassData(int pSlot, int pLvl) {
             slot = pSlot;
             level = pLvl;
-        }
-
-        /**
-         * @return the sub-class slot.
-         */
-        public int getSlot() {
-            return slot;
         }
 
         /**
@@ -80,64 +105,15 @@ public class SkillLearn {
      * @param set the set with the SkillLearn data.
      */
     public SkillLearn(StatSet set) {
-        _skillName = set.getString("skillName");
-        _skillId = set.getInt("skillId");
-        _skillLevel = set.getInt("skillLevel");
-        _getLevel = set.getInt("getLevel");
-        _autoGet = set.getBoolean("autoGet", false);
-        _levelUpSp = set.getInt("levelUpSp", 0);
-        _residenceSkill = set.getBoolean("residenceSkill", false);
-        _learnedByNpc = set.getBoolean("learnedByNpc", false);
-        _learnedByFS = set.getBoolean("learnedByFS", false);
-    }
-
-    /**
-     * @return the name of this skill.
-     */
-    public String getName() {
-        return _skillName;
-    }
-
-    /**
-     * @return the ID of this skill.
-     */
-    public int getSkillId() {
-        return _skillId;
-    }
-
-    /**
-     * @return the level of this skill.
-     */
-    public int getSkillLevel() {
-        return _skillLevel;
-    }
-
-    /**
-     * @return the minimum level required to acquire this skill.
-     */
-    public int getGetLevel() {
-        return _getLevel;
-    }
-
-    /**
-     * @return the amount of SP/Clan Reputation to acquire this skill.
-     */
-    public int getLevelUpSp() {
-        return _levelUpSp;
-    }
-
-    /**
-     * @return {@code true} if the skill is auto-get, this skill is automatically delivered.
-     */
-    public boolean isAutoGet() {
-        return _autoGet;
-    }
-
-    /**
-     * @return the set with the item holders required to acquire this skill.
-     */
-    public Set<ItemHolder> getRequiredItems() {
-        return _requiredItems;
+        name = set.getString("skillName");
+        skillId = set.getInt("skillId");
+        skillLevel = set.getInt("skillLevel");
+        getLevel = set.getInt("getLevel");
+        autoGet = set.getBoolean("autoGet", false);
+        levelUpSp = set.getInt("levelUpSp", 0);
+        residencialSkill = set.getBoolean("residenceSkill", false);
+        learnedByNpc = set.getBoolean("learnedByNpc", false);
+        learnedByFS = set.getBoolean("learnedByFS", false);
     }
 
     /**
@@ -145,14 +121,7 @@ public class SkillLearn {
      * @param item the required item holder.
      */
     public void addRequiredItem(ItemHolder item) {
-        _requiredItems.add(item);
-    }
-
-    /**
-     * @return a set with the races that can acquire this skill.
-     */
-    public Set<Race> getRaces() {
-        return _races;
+        requiredItems.add(item);
     }
 
     /**
@@ -160,14 +129,7 @@ public class SkillLearn {
      * @param race the required race.
      */
     public void addRace(Race race) {
-        _races.add(race);
-    }
-
-    /**
-     * @return the set of skill holders required to acquire this skill.
-     */
-    public Set<SkillHolder> getPreReqSkills() {
-        return _preReqSkills;
+        races.add(race);
     }
 
     /**
@@ -175,14 +137,7 @@ public class SkillLearn {
      * @param skill the required skill holder.
      */
     public void addPreReqSkill(SkillHolder skill) {
-        _preReqSkills.add(skill);
-    }
-
-    /**
-     * @return the social class required to get this skill.
-     */
-    public SocialClass getSocialClass() {
-        return _socialClass;
+        preReqSkills.add(skill);
     }
 
     /**
@@ -190,23 +145,9 @@ public class SkillLearn {
      * @param socialClass the social class to set.
      */
     public void setSocialClass(SocialClass socialClass) {
-        if (_socialClass == null) {
-            _socialClass = socialClass;
+        if (this.socialClass == null) {
+            this.socialClass = socialClass;
         }
-    }
-
-    /**
-     * @return {@code true} if this skill is a Residence skill.
-     */
-    public boolean isResidencialSkill() {
-        return _residenceSkill;
-    }
-
-    /**
-     * @return a set with the Ids where this skill is available.
-     */
-    public Set<Integer> getResidenceIds() {
-        return _residenceIds;
     }
 
     /**
@@ -214,14 +155,7 @@ public class SkillLearn {
      * @param id the residence Id to add.
      */
     public void addResidenceId(Integer id) {
-        _residenceIds.add(id);
-    }
-
-    /**
-     * @return a list with Sub-Class conditions, amount of subclasses and level.
-     */
-    public List<SubClassData> getSubClassConditions() {
-        return _subClassLvlNumber;
+        residenceIds.add(id);
     }
 
     /**
@@ -230,21 +164,7 @@ public class SkillLearn {
      * @param level the required sub-class level.
      */
     public void addSubclassConditions(int slot, int level) {
-        _subClassLvlNumber.add(new SubClassData(slot, level));
-    }
-
-    /**
-     * @return {@code true} if this skill is learned from Npc.
-     */
-    public boolean isLearnedByNpc() {
-        return _learnedByNpc;
-    }
-
-    /**
-     * @return {@code true} if this skill is learned by Forgotten Scroll.
-     */
-    public boolean isLearnedByFS() {
-        return _learnedByFS;
+        subClassConditions.add(new SubClassData(slot, level));
     }
 
     /**
@@ -257,10 +177,10 @@ public class SkillLearn {
      */
     public int getCalculatedLevelUpSp(PlayerClass playerClass, PlayerClass learningClass) {
         if ((playerClass == null) || (learningClass == null)) {
-            return _levelUpSp;
+            return this.levelUpSp;
         }
 
-        int levelUpSp = _levelUpSp;
+        int levelUpSp = this.levelUpSp;
 
         // If the alternative skill learn system is enabled and the player is learning a skill from a different class
         // apply a fee.

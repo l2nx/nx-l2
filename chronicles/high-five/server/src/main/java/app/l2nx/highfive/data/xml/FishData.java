@@ -29,6 +29,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
@@ -37,10 +38,11 @@ import org.w3c.dom.Node;
  * This class holds the Fish information.
  * @author nonom
  */
+@Slf4j
 public class FishData implements IXmlReader {
-    private final Map<Integer, Fish> _fishNormal = new HashMap<>();
-    private final Map<Integer, Fish> _fishEasy = new HashMap<>();
-    private final Map<Integer, Fish> _fishHard = new HashMap<>();
+    private final Map<Integer, Fish> fishNormal = new HashMap<>();
+    private final Map<Integer, Fish> fishEasy = new HashMap<>();
+    private final Map<Integer, Fish> fishHard = new HashMap<>();
 
     /**
      * Instantiates a new fish data.
@@ -51,12 +53,11 @@ public class FishData implements IXmlReader {
 
     @Override
     public void load() {
-        _fishEasy.clear();
-        _fishNormal.clear();
-        _fishHard.clear();
+        fishEasy.clear();
+        fishNormal.clear();
+        fishHard.clear();
         parseDatapackFile("data/stats/fishing/fishes.xml");
-        LOGGER.info(getClass().getSimpleName() + ": Loaded "
-                + (_fishEasy.size() + _fishNormal.size() + _fishHard.size()) + " fishes.");
+        log.info("Loaded {} fishes.", (fishEasy.size() + fishNormal.size() + fishHard.size()));
     }
 
     @Override
@@ -75,15 +76,15 @@ public class FishData implements IXmlReader {
                         final Fish fish = new Fish(set);
                         switch (fish.getFishGrade()) {
                             case 0: {
-                                _fishEasy.put(fish.getFishId(), fish);
+                                fishEasy.put(fish.getFishId(), fish);
                                 break;
                             }
                             case 1: {
-                                _fishNormal.put(fish.getFishId(), fish);
+                                fishNormal.put(fish.getFishId(), fish);
                                 break;
                             }
                             case 2: {
-                                _fishHard.put(fish.getFishId(), fish);
+                                fishHard.put(fish.getFishId(), fish);
                                 break;
                             }
                         }
@@ -105,19 +106,19 @@ public class FishData implements IXmlReader {
         Map<Integer, Fish> fish = null;
         switch (grade) {
             case 0: {
-                fish = _fishEasy;
+                fish = fishEasy;
                 break;
             }
             case 1: {
-                fish = _fishNormal;
+                fish = fishNormal;
                 break;
             }
             case 2: {
-                fish = _fishHard;
+                fish = fishHard;
                 break;
             }
             default: {
-                LOGGER.warning(getClass().getSimpleName() + ": Unmanaged fish grade!");
+                log.warn("Unmanaged fish grade!");
                 return result;
             }
         }
@@ -131,8 +132,7 @@ public class FishData implements IXmlReader {
         }
 
         if (result.isEmpty()) {
-            LOGGER.warning(getClass().getSimpleName() + ": Cannot find any fish for level: " + level + " group: "
-                    + group + " and grade: " + grade + "!");
+            log.warn("Cannot find any fish for level: {} group: {} and grade: {}!", level, group, grade);
         }
 
         return result;

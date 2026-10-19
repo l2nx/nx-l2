@@ -31,17 +31,17 @@ import java.util.Map;
  * @author -Wooden-, KenM, godson
  */
 public class ExHeroList extends ServerPacket {
-    private final Map<Integer, StatSet> _heroList;
+    private final Map<Integer, StatSet> heroList;
 
     public ExHeroList() {
-        _heroList = Hero.getInstance().getHeroes();
+        heroList = Hero.getInstance().getHeroes();
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_HERO_LIST.writeId(this, buffer);
-        buffer.writeInt(_heroList.size());
-        for (StatSet hero : _heroList.values()) {
+        buffer.writeInt(heroList.size());
+        for (StatSet hero : heroList.values()) {
             buffer.writeString(hero.getString(Olympiad.CHAR_NAME));
             buffer.writeInt(hero.getInt(Olympiad.CLASS_ID));
             buffer.writeString(hero.getString(Hero.CLAN_NAME, ""));

@@ -33,12 +33,13 @@ import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.serverpackets.NpcHtmlMessage;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
 import java.util.StringTokenizer;
-import java.util.logging.Level;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Dawn/Dusk Seven Signs Priest Instance
  * @author Tempy
  */
+@Slf4j
 public class SignsPriest extends Npc {
     public SignsPriest(NpcTemplate template) {
         super(template);
@@ -78,8 +79,10 @@ public class SignsPriest extends Npc {
                             st.nextToken();
                             cabal = Integer.parseInt(st.nextToken());
                         } catch (Exception e3) {
-                            LOGGER.warning("Failed to retrieve cabal from bypass command. NpcId: " + getId()
-                                    + "; Command: " + command);
+                            log.warn(
+                                    "Failed to retrieve cabal from bypass command. NpcId: {}; Command: {}",
+                                    getId(),
+                                    command);
                         }
                     }
                 }
@@ -561,7 +564,7 @@ public class SignsPriest extends Npc {
                             html.setHtml(contentContr);
                             player.sendPacket(html);
                         } else {
-                            LOGGER.warning("Problem with HTML text " + path);
+                            log.warn("Problem with HTML text {}", path);
                         }
                     }
                     break;
@@ -637,10 +640,7 @@ public class SignsPriest extends Npc {
 
                         player.teleToLocation(x, y, z);
                     } catch (Exception e) {
-                        LOGGER.log(
-                                Level.WARNING,
-                                "SevenSigns: Error occurred while teleporting player: " + e.getMessage(),
-                                e);
+                        log.warn("SevenSigns: Error occurred while teleporting player: {}", e.getMessage(), e);
                     }
                     break;
                 }
@@ -761,8 +761,7 @@ public class SignsPriest extends Npc {
                         html.setHtml(content);
                         player.sendPacket(html);
                     } else {
-                        LOGGER.warning(
-                                "Problem with HTML text " + SevenSigns.SEVEN_SIGNS_HTML_PATH + "signs_17.htm: " + path);
+                        log.warn("Problem with HTML text {}signs_17.htm: {}", SevenSigns.SEVEN_SIGNS_HTML_PATH, path);
                     }
                     break;
                 }

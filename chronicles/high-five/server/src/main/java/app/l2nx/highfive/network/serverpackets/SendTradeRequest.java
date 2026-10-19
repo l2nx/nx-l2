@@ -27,15 +27,15 @@ import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.network.buffer.WriteBuffer;
 
 public class SendTradeRequest extends ServerPacket {
-    private final int _senderId;
+    private final int senderId;
 
     public SendTradeRequest(int senderId) {
-        _senderId = senderId;
+        this.senderId = senderId;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.TRADE_REQUEST.writeId(this, buffer);
-        buffer.writeInt(_senderId);
+        buffer.writeInt(senderId);
     }
 }

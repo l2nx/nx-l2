@@ -27,15 +27,15 @@ import app.l2nx.network.buffer.WriteBuffer;
  * @author KenM
  */
 public class ExRedSky extends ServerPacket {
-    private final int _duration;
+    private final int duration;
 
     public ExRedSky(int duration) {
-        _duration = duration;
+        this.duration = duration;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_RED_SKY.writeId(this, buffer);
-        buffer.writeInt(_duration);
+        buffer.writeInt(duration);
     }
 }

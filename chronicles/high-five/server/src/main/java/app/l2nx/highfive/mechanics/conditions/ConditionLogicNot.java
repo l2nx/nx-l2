@@ -28,25 +28,25 @@ import app.l2nx.highfive.mechanics.skill.Skill;
  * @author mkizub
  */
 public class ConditionLogicNot extends Condition {
-    private final Condition _condition;
+    private final Condition condition;
 
     /**
      * Instantiates a new condition logic not.
      * @param condition the condition
      */
     public ConditionLogicNot(Condition condition) {
-        _condition = condition;
+        this.condition = condition;
         if (getListener() != null) {
-            _condition.setListener(this);
+            this.condition.setListener(this);
         }
     }
 
     @Override
     void setListener(ConditionListener listener) {
         if (listener != null) {
-            _condition.setListener(this);
+            condition.setListener(this);
         } else {
-            _condition.setListener(null);
+            condition.setListener(null);
         }
 
         super.setListener(listener);
@@ -54,6 +54,6 @@ public class ConditionLogicNot extends Condition {
 
     @Override
     public boolean testImpl(Creature effector, Creature effected, Skill skill, ItemTemplate item) {
-        return !_condition.test(effector, effected, skill, item);
+        return !condition.test(effector, effected, skill, item);
     }
 }

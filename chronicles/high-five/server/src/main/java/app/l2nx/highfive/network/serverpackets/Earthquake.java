@@ -27,11 +27,11 @@ import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.network.buffer.WriteBuffer;
 
 public class Earthquake extends ServerPacket {
-    private final int _x;
-    private final int _y;
-    private final int _z;
-    private final int _intensity;
-    private final int _duration;
+    private final int x;
+    private final int y;
+    private final int z;
+    private final int intensity;
+    private final int duration;
 
     /**
      * @param x
@@ -41,21 +41,21 @@ public class Earthquake extends ServerPacket {
      * @param duration
      */
     public Earthquake(int x, int y, int z, int intensity, int duration) {
-        _x = x;
-        _y = y;
-        _z = z;
-        _intensity = intensity;
-        _duration = duration;
+        this.x = x;
+        this.y = y;
+        this.z = z;
+        this.intensity = intensity;
+        this.duration = duration;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EARTHQUAKE.writeId(this, buffer);
-        buffer.writeInt(_x);
-        buffer.writeInt(_y);
-        buffer.writeInt(_z);
-        buffer.writeInt(_intensity);
-        buffer.writeInt(_duration);
+        buffer.writeInt(x);
+        buffer.writeInt(y);
+        buffer.writeInt(z);
+        buffer.writeInt(intensity);
+        buffer.writeInt(duration);
         buffer.writeInt(0); // Unknown
     }
 }

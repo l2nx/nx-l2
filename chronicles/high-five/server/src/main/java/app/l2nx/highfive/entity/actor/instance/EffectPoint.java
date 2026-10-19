@@ -30,7 +30,7 @@ import app.l2nx.highfive.entity.actor.templates.NpcTemplate;
 import app.l2nx.highfive.network.serverpackets.ActionFailed;
 
 public class EffectPoint extends Npc {
-    private final Player _owner;
+    private final Player owner;
 
     /**
      * Creates an effect point.
@@ -41,7 +41,7 @@ public class EffectPoint extends Npc {
         super(template);
         setInstanceType(InstanceType.EffectPoint);
         setInvul(false);
-        _owner = owner == null ? null : owner.asPlayer();
+        this.owner = owner == null ? null : owner.asPlayer();
         if (owner != null) {
             setInstanceId(owner.getInstanceId());
         }
@@ -49,7 +49,7 @@ public class EffectPoint extends Npc {
 
     @Override
     public Player asPlayer() {
-        return _owner;
+        return owner;
     }
 
     /**

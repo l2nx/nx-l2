@@ -35,7 +35,7 @@ import java.util.List;
  * The Class ConditionPlayerHasPet.
  */
 public class ConditionPlayerHasPet extends Condition {
-    private final List<Integer> _controlItemIds;
+    private final List<Integer> controlItemIds;
 
     /**
      * Instantiates a new condition player has pet.
@@ -43,15 +43,15 @@ public class ConditionPlayerHasPet extends Condition {
      */
     public ConditionPlayerHasPet(List<Integer> itemIds) {
         if ((itemIds.size() == 1) && (itemIds.get(0) == 0)) {
-            _controlItemIds = null;
+            controlItemIds = null;
         } else {
-            _controlItemIds = itemIds;
+            controlItemIds = itemIds;
         }
     }
 
     @Override
     public boolean testImpl(Creature effector, Creature effected, Skill skill, ItemTemplate item) {
-        if (_controlItemIds == null) {
+        if (controlItemIds == null) {
             return true;
         }
 
@@ -66,6 +66,6 @@ public class ConditionPlayerHasPet extends Condition {
         }
 
         final Item controlItem = pet.asPet().getControlItem();
-        return (controlItem != null) && _controlItemIds.contains(controlItem.getId());
+        return (controlItem != null) && controlItemIds.contains(controlItem.getId());
     }
 }

@@ -35,12 +35,13 @@ import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.serverpackets.PetItemList;
 import app.l2nx.highfive.util.StatSet;
-import java.util.logging.Level;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Summon Pet effect implementation.
  * @author UnAfraid
  */
+@Slf4j
 public class SummonPet extends AbstractEffect {
     public SummonPet(Condition attachCond, Condition applyCond, StatSet set, StatSet params) {
         super(attachCond, applyCond, set, params);
@@ -74,13 +75,13 @@ public class SummonPet extends AbstractEffect {
 
         final PetItemHolder holder = player.removeScript(PetItemHolder.class);
         if (holder == null) {
-            LOGGER.log(Level.WARNING, "Summoning pet without attaching PetItemHandler!", new Throwable());
+            log.warn("Summoning pet without attaching PetItemHandler!", new Throwable());
             return;
         }
 
-        final Item item = holder.getItem();
+        final Item item = holder.item();
         if (player.getInventory().getItemByObjectId(item.getObjectId()) != item) {
-            LOGGER.log(Level.WARNING, "Player: " + player + " is trying to summon pet from item that he doesn't owns.");
+            log.warn("Player: {} is trying to summon pet from item that he doesn't owns.", player);
             return;
         }
 
@@ -92,7 +93,7 @@ public class SummonPet extends AbstractEffect {
         final NpcTemplate npcTemplate = NpcData.getInstance().getTemplate(petData.getNpcId());
         final Pet pet = Pet.spawnPet(npcTemplate, player, item);
         if (pet == null) {
-            LOGGER.log(Level.WARNING, "Could not spawn pet for player: " + player + " using item: " + item);
+            log.warn("Could not spawn pet for player: {} using item: {}", player, item);
             return;
         }
 

@@ -34,12 +34,12 @@ import app.l2nx.highfive.util.StatSet;
  * Heal Over Time effect implementation.
  */
 public class HealOverTime extends AbstractEffect {
-    private final double _power;
+    private final double power;
 
     public HealOverTime(Condition attachCond, Condition applyCond, StatSet set, StatSet params) {
         super(attachCond, applyCond, set, params);
 
-        _power = params.getDouble("power", 0);
+        power = params.getDouble("power", 0);
     }
 
     @Override
@@ -56,7 +56,7 @@ public class HealOverTime extends AbstractEffect {
             return false;
         }
 
-        hp += _power * getTicksMultiplier();
+        hp += power * getTicksMultiplier();
         hp = Math.min(hp, maxhp);
         effected.setCurrentHp(hp);
         return skill.isToggle();
@@ -65,7 +65,7 @@ public class HealOverTime extends AbstractEffect {
     @Override
     public void onStart(Creature effector, Creature effected, Skill skill) {
         if (effected.isPlayer() && (getTicks() > 0) && (skill.getAbnormalType() == AbnormalType.HP_RECOVER)) {
-            effected.sendPacket(new ExRegenMax(skill.getAbnormalTime(), getTicks(), _power));
+            effected.sendPacket(new ExRegenMax(skill.getAbnormalTime(), getTicks(), power));
         }
     }
 }

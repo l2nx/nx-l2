@@ -30,40 +30,40 @@ import java.util.Collection;
  * @author -Wooden-
  */
 public class PledgeSkillList extends ServerPacket {
-    private final Collection<Skill> _skills;
-    private final Collection<SubPledgeSkill> _subSkills;
+    private final Collection<Skill> skills;
+    private final Collection<SubPledgeSkill> subSkills;
 
     public static class SubPledgeSkill {
-        int _subType;
-        int _skillId;
-        int _skillLevel;
+        int subType;
+        int skillId;
+        int skillLevel;
 
         public SubPledgeSkill(int subType, int skillId, int skillLevel) {
-            _subType = subType;
-            _skillId = skillId;
-            _skillLevel = skillLevel;
+            this.subType = subType;
+            this.skillId = skillId;
+            this.skillLevel = skillLevel;
         }
     }
 
     public PledgeSkillList(Clan clan) {
-        _skills = clan.getAllSkills();
-        _subSkills = clan.getAllSubSkills();
+        skills = clan.getAllSkills();
+        subSkills = clan.getAllSubSkills();
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.PLEDGE_SKILL_LIST.writeId(this, buffer);
-        buffer.writeInt(_skills.size());
-        buffer.writeInt(_subSkills.size()); // Squad skill length
-        for (Skill sk : _skills) {
+        buffer.writeInt(skills.size());
+        buffer.writeInt(subSkills.size()); // Squad skill length
+        for (Skill sk : skills) {
             buffer.writeInt(sk.getDisplayId());
             buffer.writeInt(sk.getDisplayLevel());
         }
 
-        for (SubPledgeSkill sk : _subSkills) {
-            buffer.writeInt(sk._subType); // Clan Sub-unit types
-            buffer.writeInt(sk._skillId);
-            buffer.writeInt(sk._skillLevel);
+        for (SubPledgeSkill sk : subSkills) {
+            buffer.writeInt(sk.subType); // Clan Sub-unit types
+            buffer.writeInt(sk.skillId);
+            buffer.writeInt(sk.skillLevel);
         }
     }
 }

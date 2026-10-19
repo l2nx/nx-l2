@@ -24,33 +24,13 @@ import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.item.instance.Item;
 import app.l2nx.highfive.mechanics.events.EventType;
 import app.l2nx.highfive.mechanics.events.holders.IBaseEvent;
+import lombok.Builder;
 
 /**
  * @author UnAfraid
  */
-public class OnPlayerItemDrop implements IBaseEvent {
-    private final Player _player;
-    private final Item _item;
-    private final Location _loc;
-
-    public OnPlayerItemDrop(Player player, Item item, Location loc) {
-        _player = player;
-        _item = item;
-        _loc = loc;
-    }
-
-    public Player getPlayer() {
-        return _player;
-    }
-
-    public Item getItem() {
-        return _item;
-    }
-
-    public Location getLocation() {
-        return _loc;
-    }
-
+@Builder(toBuilder = true)
+public record OnPlayerItemDrop(Player player, Item item, Location location) implements IBaseEvent {
     @Override
     public EventType getType() {
         return EventType.ON_PLAYER_ITEM_DROP;

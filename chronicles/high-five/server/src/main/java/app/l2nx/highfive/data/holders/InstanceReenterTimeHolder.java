@@ -20,44 +20,36 @@
 package app.l2nx.highfive.data.holders;
 
 import java.time.DayOfWeek;
+import lombok.Getter;
 
 /**
  * Simple class for storing Reenter Data for Instances.
  * @author FallenAngel
  */
 public class InstanceReenterTimeHolder {
-    private final DayOfWeek _day;
-    private final int _hour;
-    private final int _minute;
-    private final long _time;
+    @Getter
+    private final DayOfWeek day;
+
+    @Getter
+    private final int hour;
+
+    @Getter
+    private final int minute;
+
+    @Getter
+    private final long time;
 
     public InstanceReenterTimeHolder(long time) {
-        _time = time;
-        _day = null;
-        _hour = -1;
-        _minute = -1;
+        this.time = time;
+        day = null;
+        hour = -1;
+        minute = -1;
     }
 
     public InstanceReenterTimeHolder(DayOfWeek day, int hour, int minute) {
-        _time = -1;
-        _day = day;
-        _hour = hour;
-        _minute = minute;
-    }
-
-    public long getTime() {
-        return _time;
-    }
-
-    public DayOfWeek getDay() {
-        return _day;
-    }
-
-    public int getHour() {
-        return _hour;
-    }
-
-    public int getMinute() {
-        return _minute;
+        time = -1;
+        this.day = day;
+        this.hour = hour;
+        this.minute = minute;
     }
 }

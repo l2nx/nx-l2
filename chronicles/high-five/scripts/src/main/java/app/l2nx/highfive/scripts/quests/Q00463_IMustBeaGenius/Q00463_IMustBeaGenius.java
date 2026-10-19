@@ -31,6 +31,7 @@ import app.l2nx.highfive.network.enums.ChatType;
 import app.l2nx.highfive.network.serverpackets.NpcSay;
 import java.util.HashMap;
 import java.util.Map;
+import lombok.Getter;
 
 /**
  * I Must Be a Genius (463)<br>
@@ -39,20 +40,15 @@ import java.util.Map;
  */
 public class Q00463_IMustBeaGenius extends Quest {
     private static class DropInfo {
-        private final int _count;
-        private final int _chance;
+        @Getter
+        private final int count;
+
+        @Getter
+        private final int specialChance;
 
         public DropInfo(int count, int chance) {
-            _count = count;
-            _chance = chance;
-        }
-
-        public int getCount() {
-            return _count;
-        }
-
-        public int getSpecialChance() {
-            return _chance;
+            this.count = count;
+            specialChance = chance;
         }
     }
 

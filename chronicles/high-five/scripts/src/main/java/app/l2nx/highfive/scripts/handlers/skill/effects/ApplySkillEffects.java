@@ -35,7 +35,7 @@ import java.util.List;
  * @author Mobius
  */
 public class ApplySkillEffects extends AbstractEffect {
-    private final List<SkillHolder> _skills = new ArrayList<>();
+    private final List<SkillHolder> skills = new ArrayList<>();
 
     public ApplySkillEffects(Condition attachCond, Condition applyCond, StatSet set, StatSet params) {
         super(attachCond, applyCond, set, params);
@@ -43,7 +43,7 @@ public class ApplySkillEffects extends AbstractEffect {
         final String skills = params.getString("skills", null);
         if (skills != null) {
             for (String skill : skills.split(";")) {
-                _skills.add(
+                this.skills.add(
                         new SkillHolder(Integer.parseInt(skill.split(",")[0]), Integer.parseInt(skill.split(",")[1])));
             }
         }
@@ -56,7 +56,7 @@ public class ApplySkillEffects extends AbstractEffect {
 
     @Override
     public void onStart(Creature effector, Creature effected, Skill skill) {
-        for (SkillHolder holder : _skills) {
+        for (SkillHolder holder : skills) {
             final Skill appliedSkill = holder.getSkill();
             if (appliedSkill != null) {
                 appliedSkill.applyEffects(effector, effected);

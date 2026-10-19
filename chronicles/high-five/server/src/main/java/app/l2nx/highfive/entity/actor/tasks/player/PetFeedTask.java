@@ -29,52 +29,51 @@ import app.l2nx.highfive.handler.ItemHandler;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
 import java.util.Set;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Task dedicated for feeding player's pet.
  * @author UnAfraid
  */
+@Slf4j
 public class PetFeedTask implements Runnable {
-    private static final Logger LOGGER = Logger.getLogger(PetFeedTask.class.getName());
 
-    private final Player _player;
+    private final Player player;
 
     public PetFeedTask(Player player) {
-        _player = player;
+        this.player = player;
     }
 
     @Override
     public void run() {
         try {
-            if (!_player.isMounted()
-                    || (_player.getMountNpcId() == 0)
-                    || (PetDataTable.getInstance().getPetData(_player.getMountNpcId()) == null)) {
-                _player.stopFeed();
+            if (!player.isMounted()
+                    || (player.getMountNpcId() == 0)
+                    || (PetDataTable.getInstance().getPetData(player.getMountNpcId()) == null)) {
+                player.stopFeed();
                 return;
             }
 
-            if (_player.getCurrentFeed() > _player.getFeedConsume()) {
+            if (player.getCurrentFeed() > player.getFeedConsume()) {
                 // eat
-                _player.setCurrentFeed(_player.getCurrentFeed() - _player.getFeedConsume());
+                player.setCurrentFeed(player.getCurrentFeed() - player.getFeedConsume());
             } else {
-                _player.setCurrentFeed(0);
-                _player.stopFeed();
+                player.setCurrentFeed(0);
+                player.stopFeed();
 
-                if (_player.isFlying() && (_player.getMountType() == MountType.WYVERN)) {
-                    _player.dismount();
-                    _player.teleToLocation(TeleportWhereType.TOWN); // Teleport to nearest village.
+                if (player.isFlying() && (player.getMountType() == MountType.WYVERN)) {
+                    player.dismount();
+                    player.teleToLocation(TeleportWhereType.TOWN); // Teleport to nearest village.
                 } else {
-                    _player.dismount();
+                    player.dismount();
                 }
 
-                _player.sendPacket(SystemMessageId.YOU_ARE_OUT_OF_FEED_MOUNT_STATUS_CANCELED);
+                player.sendPacket(SystemMessageId.YOU_ARE_OUT_OF_FEED_MOUNT_STATUS_CANCELED);
                 return;
             }
 
             final Set<Integer> foodIds = PetDataTable.getInstance()
-                    .getPetData(_player.getMountNpcId())
+                    .getPetData(player.getMountNpcId())
                     .getFood();
             if (foodIds.isEmpty()) {
                 return;
@@ -83,26 +82,23 @@ public class PetFeedTask implements Runnable {
             Item food = null;
             for (int id : foodIds) {
                 // TODO: possibly pet inv?
-                food = _player.getInventory().getItemByItemId(id);
+                food = player.getInventory().getItemByItemId(id);
                 if (food != null) {
                     break;
                 }
             }
 
-            if ((food != null) && _player.isHungry()) {
+            if ((food != null) && player.isHungry()) {
                 final IItemHandler handler = ItemHandler.getInstance().getHandler(food.getEtcItem());
                 if (handler != null) {
-                    handler.onItemUse(_player, food, false);
+                    handler.onItemUse(player, food, false);
                     final SystemMessage sm = new SystemMessage(SystemMessageId.YOUR_PET_WAS_HUNGRY_SO_IT_ATE_S1);
                     sm.addItemName(food.getId());
-                    _player.sendPacket(sm);
+                    player.sendPacket(sm);
                 }
             }
         } catch (Exception e) {
-            LOGGER.log(
-                    Level.SEVERE,
-                    "Mounted Pet [NpcId: " + _player.getMountNpcId() + "] a feed task error has occurred",
-                    e);
+            log.error("Mounted Pet [NpcId: {}] a feed task error has occurred", player.getMountNpcId(), e);
         }
     }
 }

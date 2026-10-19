@@ -33,22 +33,22 @@ import app.l2nx.network.buffer.WriteBuffer;
  * @author Mobius
  */
 public class MagicSkillUse extends ServerPacket {
-    private final int _skillId;
-    private final int _skillLevel;
-    private final int _hitTime;
-    private final int _reuseDelay;
-    private final Creature _creature;
-    private final Creature _target;
-    private final Location _groundLocation;
+    private final int skillId;
+    private final int skillLevel;
+    private final int hitTime;
+    private final int reuseDelay;
+    private final Creature creature;
+    private final Creature target;
+    private final Location groundLocation;
 
     public MagicSkillUse(Creature creature, Creature target, int skillId, int skillLevel, int hitTime, int reuseDelay) {
-        _creature = creature;
-        _target = target;
-        _skillId = skillId;
-        _skillLevel = skillLevel;
-        _hitTime = hitTime;
-        _reuseDelay = reuseDelay;
-        _groundLocation = creature.isPlayer() ? creature.asPlayer().getCurrentSkillWorldPosition() : null;
+        this.creature = creature;
+        this.target = target;
+        this.skillId = skillId;
+        this.skillLevel = skillLevel;
+        this.hitTime = hitTime;
+        this.reuseDelay = reuseDelay;
+        groundLocation = creature.isPlayer() ? creature.asPlayer().getCurrentSkillWorldPosition() : null;
     }
 
     public MagicSkillUse(Creature creature, int skillId, int skillLevel, int hitTime, int reuseDelay) {
@@ -58,27 +58,27 @@ public class MagicSkillUse extends ServerPacket {
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.MAGIC_SKILL_USE.writeId(this, buffer);
-        buffer.writeInt(_creature.getObjectId());
-        buffer.writeInt(_target.getObjectId());
-        buffer.writeInt(_skillId);
-        buffer.writeInt(_skillLevel);
-        buffer.writeInt(_hitTime);
-        buffer.writeInt(_reuseDelay);
-        buffer.writeInt(_creature.getX());
-        buffer.writeInt(_creature.getY());
-        buffer.writeInt(_creature.getZ());
+        buffer.writeInt(creature.getObjectId());
+        buffer.writeInt(target.getObjectId());
+        buffer.writeInt(skillId);
+        buffer.writeInt(skillLevel);
+        buffer.writeInt(hitTime);
+        buffer.writeInt(reuseDelay);
+        buffer.writeInt(creature.getX());
+        buffer.writeInt(creature.getY());
+        buffer.writeInt(creature.getZ());
         buffer.writeShort(0); // isGroundTargetSkill ? 65535 : 0
-        if (_groundLocation == null) {
+        if (groundLocation == null) {
             buffer.writeShort(0);
         } else {
             buffer.writeShort(1);
-            buffer.writeInt(_groundLocation.getX());
-            buffer.writeInt(_groundLocation.getY());
-            buffer.writeInt(_groundLocation.getZ());
+            buffer.writeInt(groundLocation.getX());
+            buffer.writeInt(groundLocation.getY());
+            buffer.writeInt(groundLocation.getZ());
         }
 
-        buffer.writeInt(_target.getX());
-        buffer.writeInt(_target.getY());
-        buffer.writeInt(_target.getZ());
+        buffer.writeInt(target.getX());
+        buffer.writeInt(target.getY());
+        buffer.writeInt(target.getZ());
     }
 }

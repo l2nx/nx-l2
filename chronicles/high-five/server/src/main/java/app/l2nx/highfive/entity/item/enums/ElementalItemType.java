@@ -22,6 +22,8 @@
  */
 package app.l2nx.highfive.entity.item.enums;
 
+import lombok.Getter;
+
 /**
  * @author Mobius
  */
@@ -32,13 +34,10 @@ public enum ElementalItemType {
     JEWEL(9),
     ENERGY(12);
 
-    private final int _maxLevel;
+    @Getter
+    private final int maxLevel;
 
     ElementalItemType(int maxLevel) {
-        _maxLevel = maxLevel;
-    }
-
-    public int getMaxLevel() {
-        return _maxLevel;
+        this.maxLevel = maxLevel;
     }
 }

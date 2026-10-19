@@ -27,7 +27,7 @@ import java.io.File;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.logging.Level;
+import lombok.extern.slf4j.Slf4j;
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
@@ -35,9 +35,10 @@ import org.w3c.dom.Node;
 /**
  * @author UnAfraid
  */
+@Slf4j
 public class EnchantItemData implements IXmlReader {
-    private final Map<Integer, EnchantScroll> _scrolls = new HashMap<>();
-    private final Map<Integer, EnchantSupportItem> _supports = new HashMap<>();
+    private final Map<Integer, EnchantScroll> scrolls = new HashMap<>();
+    private final Map<Integer, EnchantSupportItem> supports = new HashMap<>();
 
     public EnchantItemData() {
         load();
@@ -45,11 +46,11 @@ public class EnchantItemData implements IXmlReader {
 
     @Override
     public synchronized void load() {
-        _scrolls.clear();
-        _supports.clear();
+        scrolls.clear();
+        supports.clear();
         parseDatapackFile("data/EnchantItemData.xml");
-        LOGGER.info(getClass().getSimpleName() + ": Loaded " + _scrolls.size() + " enchant scrolls.");
-        LOGGER.info(getClass().getSimpleName() + ": Loaded " + _supports.size() + " support items.");
+        log.info("Loaded {} enchant scrolls.", scrolls.size());
+        log.info("Loaded {} support items.", supports.size());
     }
 
     @Override
@@ -78,17 +79,12 @@ public class EnchantItemData implements IXmlReader {
                                 }
                             }
 
-                            _scrolls.put(item.getId(), item);
+                            scrolls.put(item.getId(), item);
                         } catch (NullPointerException e) {
-                            LOGGER.log(
-                                    Level.WARNING,
-                                    getClass().getSimpleName() + ": Unexistent enchant scroll: " + set.getString("id")
-                                            + " defined in enchant data!");
+                            log.warn("Unexistent enchant scroll: {} defined in enchant data!", set.getString("id"));
                         } catch (IllegalAccessError e) {
-                            LOGGER.log(
-                                    Level.WARNING,
-                                    getClass().getSimpleName() + ": Wrong enchant scroll item type: "
-                                            + set.getString("id") + " defined in enchant data!");
+                            log.warn(
+                                    "Wrong enchant scroll item type: {} defined in enchant data!", set.getString("id"));
                         }
                     } else if ("support".equalsIgnoreCase(d.getNodeName())) {
                         attrs = d.getAttributes();
@@ -100,17 +96,15 @@ public class EnchantItemData implements IXmlReader {
 
                         try {
                             final EnchantSupportItem item = new EnchantSupportItem(set);
-                            _supports.put(item.getId(), item);
+                            supports.put(item.getId(), item);
                         } catch (NullPointerException e) {
-                            LOGGER.log(
-                                    Level.WARNING,
-                                    getClass().getSimpleName() + ": Unexistent enchant support item: "
-                                            + set.getString("id") + " defined in enchant data!");
+                            log.warn(
+                                    "Unexistent enchant support item: {} defined in enchant data!",
+                                    set.getString("id"));
                         } catch (IllegalAccessError e) {
-                            LOGGER.log(
-                                    Level.WARNING,
-                                    getClass().getSimpleName() + ": Wrong enchant support item type: "
-                                            + set.getString("id") + " defined in enchant data!");
+                            log.warn(
+                                    "Wrong enchant support item type: {} defined in enchant data!",
+                                    set.getString("id"));
                         }
                     }
                 }
@@ -123,7 +117,7 @@ public class EnchantItemData implements IXmlReader {
      * @return a collection of all {@link EnchantScroll} instances currently stored.
      */
     public Collection<EnchantScroll> getScrolls() {
-        return _scrolls.values();
+        return scrolls.values();
     }
 
     /**
@@ -136,7 +130,7 @@ public class EnchantItemData implements IXmlReader {
             return null;
         }
 
-        return _scrolls.get(item.getId());
+        return scrolls.get(item.getId());
     }
 
     /**
@@ -149,7 +143,7 @@ public class EnchantItemData implements IXmlReader {
             return null;
         }
 
-        return _supports.get(item.getId());
+        return supports.get(item.getId());
     }
 
     public static EnchantItemData getInstance() {

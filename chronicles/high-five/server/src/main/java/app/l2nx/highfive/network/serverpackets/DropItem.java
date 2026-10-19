@@ -28,8 +28,8 @@ import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.network.buffer.WriteBuffer;
 
 public class DropItem extends ServerPacket {
-    private final Item _item;
-    private final int _objectId;
+    private final Item item;
+    private final int objectId;
 
     /**
      * Constructor of the DropItem server packet
@@ -37,23 +37,23 @@ public class DropItem extends ServerPacket {
      * @param playerObjId : int designating the player ID who dropped the item
      */
     public DropItem(Item item, int playerObjId) {
-        _item = item;
-        _objectId = playerObjId;
+        this.item = item;
+        objectId = playerObjId;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.DROP_ITEM.writeId(this, buffer);
-        buffer.writeInt(_objectId);
-        buffer.writeInt(_item.getObjectId());
-        buffer.writeInt(_item.getDisplayId());
-        buffer.writeInt(_item.getX());
-        buffer.writeInt(_item.getY());
-        buffer.writeInt(_item.getZ());
+        buffer.writeInt(objectId);
+        buffer.writeInt(item.getObjectId());
+        buffer.writeInt(item.getDisplayId());
+        buffer.writeInt(item.getX());
+        buffer.writeInt(item.getY());
+        buffer.writeInt(item.getZ());
 
         // Only show item count if it is a stackable item.
-        buffer.writeInt(_item.isStackable());
-        buffer.writeLong(_item.getCount());
+        buffer.writeInt(item.isStackable());
+        buffer.writeLong(item.getCount());
         buffer.writeInt(1); // unknown
     }
 }

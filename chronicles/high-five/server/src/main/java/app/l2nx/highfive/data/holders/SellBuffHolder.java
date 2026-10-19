@@ -19,28 +19,25 @@
  */
 package app.l2nx.highfive.data.holders;
 
+import lombok.Getter;
+
 /**
  * Simple class for storing info for Selling Buffs system.
  * @author St3eT
  */
 public class SellBuffHolder {
-    private final int _skillId;
-    private long _price;
+    @Getter
+    private final int skillId;
+
+    @Getter
+    private long price;
 
     public SellBuffHolder(int skillId, long price) {
-        _skillId = skillId;
-        _price = price;
-    }
-
-    public int getSkillId() {
-        return _skillId;
+        this.skillId = skillId;
+        this.price = price;
     }
 
     public void setPrice(int price) {
-        _price = price;
-    }
-
-    public long getPrice() {
-        return _price;
+        this.price = price;
     }
 }

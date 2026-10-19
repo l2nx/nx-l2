@@ -25,33 +25,31 @@ package app.l2nx.highfive.data;
 import app.l2nx.highfive.entity.spawns.SpawnGroup;
 import java.util.Collection;
 import java.util.concurrent.CopyOnWriteArrayList;
+import lombok.Getter;
 
 /**
  * Registry of the spawn groups declared by the datapack.
  * @author Altur
  */
 public class SpawnGroupTable {
-    private final Collection<SpawnGroup> _groups = new CopyOnWriteArrayList<>();
+    @Getter
+    private final Collection<SpawnGroup> groups = new CopyOnWriteArrayList<>();
 
     protected SpawnGroupTable() {}
 
-    public Collection<SpawnGroup> getGroups() {
-        return _groups;
-    }
-
     public void addGroup(SpawnGroup group) {
-        _groups.add(group);
+        groups.add(group);
     }
 
     public void clear() {
-        _groups.clear();
+        groups.clear();
     }
 
     /**
      * Stops the unit replacement of every group, used by the unspawn admin commands.
      */
     public void deactivateAll() {
-        for (SpawnGroup group : _groups) {
+        for (SpawnGroup group : groups) {
             group.setActive(false);
         }
     }

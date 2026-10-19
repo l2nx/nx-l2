@@ -28,14 +28,14 @@ import app.l2nx.highfive.entity.actor.Player;
  * @version $Revision: 1.3.4.2 $ $Date: 2005/03/27 15:29:30 $
  */
 public class RequestShortcutDel extends ClientPacket {
-    private int _slot;
-    private int _page;
+    private int slot;
+    private int page;
 
     @Override
     protected void readImpl() {
         final int id = readInt();
-        _slot = id % 12;
-        _page = id / 12;
+        slot = id % 12;
+        page = id / 12;
     }
 
     @Override
@@ -45,11 +45,11 @@ public class RequestShortcutDel extends ClientPacket {
             return;
         }
 
-        if ((_page > 10) || (_page < 0)) {
+        if ((page > 10) || (page < 0)) {
             return;
         }
 
-        player.deleteShortcut(_slot, _page);
+        player.deleteShortcut(slot, page);
         // client needs no confirmation. this packet is just to inform the server
     }
 }

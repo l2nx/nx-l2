@@ -26,69 +26,51 @@ import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.util.StatSet;
 import java.util.ArrayList;
 import java.util.List;
+import lombok.Getter;
 
 public class EnchantSkillGroup {
-    private final int _id;
-    private final List<EnchantSkillHolder> _enchantDetails = new ArrayList<>();
+    @Getter
+    private final int id;
+
+    @Getter
+    private final List<EnchantSkillHolder> enchantGroupDetails = new ArrayList<>();
 
     public EnchantSkillGroup(int id) {
-        _id = id;
+        this.id = id;
     }
 
     public void addEnchantDetail(EnchantSkillHolder detail) {
-        _enchantDetails.add(detail);
-    }
-
-    public int getId() {
-        return _id;
-    }
-
-    public List<EnchantSkillHolder> getEnchantGroupDetails() {
-        return _enchantDetails;
+        enchantGroupDetails.add(detail);
     }
 
     public static class EnchantSkillHolder {
-        private final int _level;
-        private final int _adenaCost;
-        private final int _expCost;
-        private final int _spCost;
-        private final byte[] _rate;
+        @Getter
+        private final int level;
+
+        @Getter
+        private final int adenaCost;
+
+        @Getter
+        private final int expCost;
+
+        @Getter
+        private final int spCost;
+
+        private final byte[] rate;
 
         public EnchantSkillHolder(StatSet set) {
-            _level = set.getInt("level");
-            _adenaCost = set.getInt("adena", 0);
-            _expCost = set.getInt("exp", 0);
-            _spCost = set.getInt("sp", 0);
-            _rate = new byte[24];
+            level = set.getInt("level");
+            adenaCost = set.getInt("adena", 0);
+            expCost = set.getInt("exp", 0);
+            spCost = set.getInt("sp", 0);
+            rate = new byte[24];
             for (int i = 0; i < 24; i++) {
-                _rate[i] = set.getByte("chance" + (76 + i), (byte) 0);
+                rate[i] = set.getByte("chance" + (76 + i), (byte) 0);
             }
         }
 
-        /**
-         * @return Returns the level.
-         */
-        public int getLevel() {
-            return _level;
-        }
-
-        /**
-         * @return Returns the spCost.
-         */
-        public int getSpCost() {
-            return _spCost;
-        }
-
-        public int getExpCost() {
-            return _expCost;
-        }
-
-        public int getAdenaCost() {
-            return _adenaCost;
-        }
-
         public byte getRate(Player ply) {
-            return ply.getLevel() < 76 ? 0 : _rate[ply.getLevel() - 76];
+            return ply.getLevel() < 76 ? 0 : rate[ply.getLevel() - 76];
         }
     }
 }

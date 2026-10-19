@@ -27,15 +27,15 @@ import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.network.buffer.WriteBuffer;
 
 public class ExVariationCancelResult extends ServerPacket {
-    private final int _result;
+    private final int result;
 
     public ExVariationCancelResult(int result) {
-        _result = result;
+        this.result = result;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_VARIATION_CANCEL_RESULT.writeId(this, buffer);
-        buffer.writeInt(_result);
+        buffer.writeInt(result);
     }
 }

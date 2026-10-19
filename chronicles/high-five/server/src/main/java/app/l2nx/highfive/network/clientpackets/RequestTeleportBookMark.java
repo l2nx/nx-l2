@@ -25,11 +25,11 @@ import app.l2nx.highfive.entity.actor.Player;
  * @author ShanSoft
  */
 public class RequestTeleportBookMark extends ClientPacket {
-    private int _id;
+    private int id;
 
     @Override
     protected void readImpl() {
-        _id = readInt();
+        id = readInt();
     }
 
     @Override
@@ -39,6 +39,6 @@ public class RequestTeleportBookMark extends ClientPacket {
             return;
         }
 
-        player.teleportBookmarkGo(_id);
+        player.teleportBookmarkGo(id);
     }
 }

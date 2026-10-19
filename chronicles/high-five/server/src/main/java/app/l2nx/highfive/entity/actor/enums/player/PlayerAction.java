@@ -22,6 +22,8 @@
  */
 package app.l2nx.highfive.entity.actor.enums.player;
 
+import lombok.Getter;
+
 /**
  * @author UnAfraid, Mobius
  */
@@ -33,13 +35,10 @@ public enum PlayerAction {
     OFFLINE_TRADE,
     OFFLINE_PLAY;
 
-    private final int _mask;
+    @Getter
+    private final int mask;
 
     private PlayerAction() {
-        _mask = 1 << ordinal();
-    }
-
-    public int getMask() {
-        return _mask;
+        mask = 1 << ordinal();
     }
 }

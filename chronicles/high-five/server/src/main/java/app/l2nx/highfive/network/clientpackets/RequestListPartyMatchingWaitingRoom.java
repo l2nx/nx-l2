@@ -26,17 +26,17 @@ import app.l2nx.highfive.network.serverpackets.ExListPartyMatchingWaitingRoom;
  * @author Gnacik
  */
 public class RequestListPartyMatchingWaitingRoom extends ClientPacket {
-    private int _page;
-    private int _minLevel;
-    private int _maxLevel;
-    private int _mode; // 1 - waitlist 0 - room waitlist
+    private int page;
+    private int minLevel;
+    private int maxLevel;
+    private int mode; // 1 - waitlist 0 - room waitlist
 
     @Override
     protected void readImpl() {
-        _page = readInt();
-        _minLevel = readInt();
-        _maxLevel = readInt();
-        _mode = readInt();
+        page = readInt();
+        minLevel = readInt();
+        maxLevel = readInt();
+        mode = readInt();
     }
 
     @Override
@@ -46,6 +46,6 @@ public class RequestListPartyMatchingWaitingRoom extends ClientPacket {
             return;
         }
 
-        player.sendPacket(new ExListPartyMatchingWaitingRoom(player, _page, _minLevel, _maxLevel, _mode));
+        player.sendPacket(new ExListPartyMatchingWaitingRoom(player, page, minLevel, maxLevel, mode));
     }
 }

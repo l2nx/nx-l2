@@ -39,18 +39,18 @@ public class LoginFail extends ServerPacket {
     public static final int ACCESS_FAILED_TRY_LATER4 = 9;
     public static final int ACCESS_FAILED_TRY_LATER5 = 10;
 
-    private final int _reason;
+    private final int reason;
 
     /**
      * @param reason
      */
     public LoginFail(int reason) {
-        _reason = reason;
+        this.reason = reason;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.LOGIN_FAIL.writeId(this, buffer);
-        buffer.writeInt(_reason);
+        buffer.writeInt(reason);
     }
 }

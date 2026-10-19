@@ -21,19 +21,20 @@ package app.l2nx.highfive.network.clientpackets;
 
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
-import app.l2nx.highfive.network.PacketLogger;
 import app.l2nx.highfive.network.serverpackets.NpcHtmlMessage;
 import app.l2nx.highfive.util.LocationUtil;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author zabbix
  */
+@Slf4j
 public class RequestLinkHtml extends ClientPacket {
-    private String _link;
+    private String link;
 
     @Override
     protected void readImpl() {
-        _link = readString();
+        link = readString();
     }
 
     @Override
@@ -43,19 +44,19 @@ public class RequestLinkHtml extends ClientPacket {
             return;
         }
 
-        if (_link.isEmpty()) {
-            PacketLogger.warning(player + " sent empty html link!");
+        if (link.isEmpty()) {
+            log.warn("{} sent empty html link!", player);
             return;
         }
 
-        if (_link.contains("..")) {
-            PacketLogger.warning(player + " sent invalid html link: link " + _link);
+        if (link.contains("..")) {
+            log.warn("{} sent invalid html link: link {}", player, link);
             return;
         }
 
-        final int htmlObjectId = player.validateHtmlAction("link " + _link);
+        final int htmlObjectId = player.validateHtmlAction("link " + link);
         if (htmlObjectId == -1) {
-            PacketLogger.warning(player + " sent non cached html link: link " + _link);
+            log.warn("{} sent non cached html link: link {}", player, link);
             return;
         }
 
@@ -65,7 +66,7 @@ public class RequestLinkHtml extends ClientPacket {
             return;
         }
 
-        final String filename = "data/html/" + _link;
+        final String filename = "data/html/" + link;
         final NpcHtmlMessage msg = new NpcHtmlMessage(htmlObjectId);
         msg.setFile(player, filename);
         player.sendPacket(msg);

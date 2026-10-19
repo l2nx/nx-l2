@@ -32,15 +32,17 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.xml.parsers.DocumentBuilderFactory;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 
+@Slf4j
 public class SystemMessageId {
-    private static final Logger LOGGER = Logger.getLogger(SystemMessageId.class.getName());
 
     private static final SMLocalisation[] EMPTY_SML_ARRAY = new SMLocalisation[0];
     private static final Map<Integer, SystemMessageId> VALUES = new HashMap<>();
@@ -12028,7 +12030,7 @@ public class SystemMessageId {
                     field.set(null, smId);
                     VALUES.put(smId.getId(), smId);
                 } catch (Exception e) {
-                    LOGGER.log(Level.WARNING, "SystemMessageId: Failed field access for '" + field.getName() + "'", e);
+                    log.warn("Failed field access for '{}'", field.getName(), e);
                 }
             }
         }
@@ -12077,7 +12079,7 @@ public class SystemMessageId {
         }
 
         if (!MultilingualSupportConfig.MULTILANG_ENABLE) {
-            LOGGER.log(Level.INFO, "SystemMessageId: MultiLanguage disabled.");
+            log.info("MultiLanguage disabled.");
             return;
         }
 
@@ -12109,28 +12111,22 @@ public class SystemMessageId {
                                 if (node != null) {
                                     smId = getSystemMessageId(Integer.parseInt(node.getNodeValue()));
                                     if (smId == null) {
-                                        LOGGER.log(
-                                                Level.WARNING,
-                                                "SystemMessageId: Unknown SMID '" + node.getNodeValue() + "', lang '"
-                                                        + lang + "'.");
+                                        log.warn("Unknown SMID '{}', lang '{}'.", node.getNodeValue(), lang);
                                         continue;
                                     }
 
                                     node = nnmb.getNamedItem("translation");
                                     if (node == null) {
-                                        LOGGER.log(
-                                                Level.WARNING,
-                                                "SystemMessageId: No text defined for SMID '" + smId + "', lang '"
-                                                        + lang + "'.");
+                                        log.warn("No text defined for SMID '{}', lang '{}'.", smId, lang);
                                         continue;
                                     }
 
                                     text = node.getNodeValue();
                                     if (text.isEmpty() || (text.length() > 255)) {
-                                        LOGGER.log(
-                                                Level.WARNING,
-                                                "SystemMessageId: Invalid text defined for SMID '" + smId
-                                                        + "' (to long or empty), lang '" + lang + "'.");
+                                        log.warn(
+                                                "Invalid text defined for SMID '{}' (to long or empty), lang '{}'.",
+                                                smId,
+                                                lang);
                                         continue;
                                     }
 
@@ -12141,38 +12137,34 @@ public class SystemMessageId {
                     }
                 }
             } catch (Exception e) {
-                LOGGER.log(Level.SEVERE, "SystemMessageId: Failed loading '" + file + "'", e);
+                log.error("Failed loading '{}'", file, e);
             }
 
-            LOGGER.log(Level.INFO, "SystemMessageId: Loaded localisations for [" + lang + "].");
+            log.info("Loaded localisations for [{}].", lang);
         }
     }
 
-    private final int _id;
-    private String _name;
-    private byte _params;
-    private SMLocalisation[] _localisations;
-    private SystemMessage _staticSystemMessage;
+    @Getter
+    private final int id;
+
+    @Getter
+    @Setter(AccessLevel.PRIVATE)
+    private String name;
+
+    private byte paramCount;
+    private SMLocalisation[] localisations;
+
+    @Getter
+    @Setter
+    private SystemMessage staticSystemMessage;
 
     private SystemMessageId(int id) {
-        _id = id;
-        _localisations = EMPTY_SML_ARRAY;
-    }
-
-    public int getId() {
-        return _id;
-    }
-
-    private void setName(String name) {
-        _name = name;
-    }
-
-    public String getName() {
-        return _name;
+        this.id = id;
+        localisations = EMPTY_SML_ARRAY;
     }
 
     public int getParamCount() {
-        return _params;
+        return paramCount;
     }
 
     public void setParamCount(int params) {
@@ -12185,20 +12177,20 @@ public class SystemMessageId {
         }
 
         if (params != 0) {
-            _staticSystemMessage = null;
+            staticSystemMessage = null;
         }
 
-        _params = (byte) params;
+        paramCount = (byte) params;
     }
 
     public SMLocalisation getLocalisation(String lang) {
-        if (_localisations == null) {
+        if (localisations == null) {
             return null;
         }
 
         SMLocalisation sml;
-        for (int i = _localisations.length; i-- > 0; ) {
-            sml = _localisations[i];
+        for (int i = localisations.length; i-- > 0; ) {
+            sml = localisations[i];
             if (sml.getLanguage().hashCode() == lang.hashCode()) {
                 return sml;
             }
@@ -12208,22 +12200,14 @@ public class SystemMessageId {
     }
 
     public void attachLocalizedText(String lang, String text) {
-        final int length = _localisations.length;
-        final SMLocalisation[] localisations = Arrays.copyOf(_localisations, length + 1);
+        final int length = this.localisations.length;
+        final SMLocalisation[] localisations = Arrays.copyOf(this.localisations, length + 1);
         localisations[length] = new SMLocalisation(lang, text);
-        _localisations = localisations;
+        this.localisations = localisations;
     }
 
     public void removeAllLocalisations() {
-        _localisations = EMPTY_SML_ARRAY;
-    }
-
-    public SystemMessage getStaticSystemMessage() {
-        return _staticSystemMessage;
-    }
-
-    public void setStaticSystemMessage(SystemMessage sm) {
-        _staticSystemMessage = sm;
+        localisations = EMPTY_SML_ARRAY;
     }
 
     @Override
@@ -12232,20 +12216,18 @@ public class SystemMessageId {
     }
 
     public static class SMLocalisation {
-        private final String _lang;
-        private final Builder _builder;
+        @Getter
+        private final String language;
+
+        private final Builder builder;
 
         public SMLocalisation(String lang, String text) {
-            _lang = lang;
-            _builder = Builder.newBuilder(text);
-        }
-
-        public String getLanguage() {
-            return _lang;
+            language = lang;
+            builder = Builder.newBuilder(text);
         }
 
         public String getLocalisation(Object... params) {
-            return _builder.toString(params);
+            return builder.toString(params);
         }
     }
 }

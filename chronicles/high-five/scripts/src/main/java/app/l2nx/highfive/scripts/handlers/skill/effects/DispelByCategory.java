@@ -40,16 +40,16 @@ import java.util.List;
  * @author DS, Adry_85, Naker
  */
 public class DispelByCategory extends AbstractEffect {
-    private final String _slot;
-    private final int _rate;
-    private final int _max;
+    private final String slot;
+    private final int rate;
+    private final int max;
 
     public DispelByCategory(Condition attachCond, Condition applyCond, StatSet set, StatSet params) {
         super(attachCond, applyCond, set, params);
 
-        _slot = params.getString("slot", null);
-        _rate = params.getInt("rate", 0);
-        _max = params.getInt("max", 0);
+        slot = params.getString("slot", null);
+        rate = params.getInt("rate", 0);
+        max = params.getInt("max", 0);
     }
 
     @Override
@@ -86,7 +86,7 @@ public class DispelByCategory extends AbstractEffect {
             return;
         }
 
-        final List<BuffInfo> canceled = Formulas.calcCancelStealEffects(effector, effected, skill, _slot, _rate, _max);
+        final List<BuffInfo> canceled = Formulas.calcCancelStealEffects(effector, effected, skill, slot, rate, max);
         if (canceled.isEmpty()) {
             return;
         }
@@ -127,7 +127,7 @@ public class DispelByCategory extends AbstractEffect {
     }
 
     private void normalCancel(Creature effector, Creature effected, Skill skill) {
-        final List<BuffInfo> canceled = Formulas.calcCancelStealEffects(effector, effected, skill, _slot, _rate, _max);
+        final List<BuffInfo> canceled = Formulas.calcCancelStealEffects(effector, effected, skill, slot, rate, max);
         for (BuffInfo info : canceled) {
             effected.getEffectList().stopSkillEffects(SkillFinishType.REMOVED, info.getSkill());
         }

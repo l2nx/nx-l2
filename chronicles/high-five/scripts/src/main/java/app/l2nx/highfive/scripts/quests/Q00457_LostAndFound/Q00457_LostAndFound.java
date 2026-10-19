@@ -55,7 +55,7 @@ public class Q00457_LostAndFound extends Quest {
     private static final int PACKAGED_BOOK = 15716;
     private static final int CHANCE_SPAWN = 1; // 1%
     private static final int MIN_LV = 82;
-    private static Set<Spawn> _escortCheckers;
+    private static Set<Spawn> escortCheckers;
 
     public Q00457_LostAndFound() {
         super(457);
@@ -127,7 +127,7 @@ public class Q00457_LostAndFound extends Quest {
                     }
                 }
 
-                for (Spawn escortSpawn : _escortCheckers) {
+                for (Spawn escortSpawn : escortCheckers) {
                     final Npc escort = escortSpawn.getLastSpawn();
                     if ((escort != null) && npc.isInsideRadius2D(escort, 1000)) {
                         startQuestTimer("STOP", 1000, npc, player);
@@ -208,7 +208,7 @@ public class Q00457_LostAndFound extends Quest {
 
     @Override
     public void onSpawn(Npc npc) {
-        _escortCheckers = SpawnTable.getInstance().getSpawns(ESCORT_CHECKER);
+        escortCheckers = SpawnTable.getInstance().getSpawns(ESCORT_CHECKER);
     }
 
     private void broadcastNpcSay(Npc npc, Player player, NpcStringId stringId, boolean whisper) {

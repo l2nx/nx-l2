@@ -28,31 +28,31 @@ import app.l2nx.network.buffer.WriteBuffer;
  * @author -Wooden-
  */
 public class ExFishingStart extends ServerPacket {
-    private final Creature _creature;
-    private final int _x;
-    private final int _y;
-    private final int _z;
-    private final int _fishType;
-    private final boolean _isNightLure;
+    private final Creature creature;
+    private final int x;
+    private final int y;
+    private final int z;
+    private final int fishType;
+    private final boolean nightLure;
 
     public ExFishingStart(Creature creature, int fishType, int x, int y, int z, boolean isNightLure) {
-        _creature = creature;
-        _fishType = fishType;
-        _x = x;
-        _y = y;
-        _z = z;
-        _isNightLure = isNightLure;
+        this.creature = creature;
+        this.fishType = fishType;
+        this.x = x;
+        this.y = y;
+        this.z = z;
+        nightLure = isNightLure;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_FISHING_START.writeId(this, buffer);
-        buffer.writeInt(_creature.getObjectId());
-        buffer.writeInt(_fishType); // fish type
-        buffer.writeInt(_x); // x position
-        buffer.writeInt(_y); // y position
-        buffer.writeInt(_z); // z position
-        buffer.writeByte(_isNightLure); // night lure
+        buffer.writeInt(creature.getObjectId());
+        buffer.writeInt(fishType); // fish type
+        buffer.writeInt(x); // x position
+        buffer.writeInt(y); // y position
+        buffer.writeInt(z); // z position
+        buffer.writeByte(nightLure); // night lure
         buffer.writeByte(0); // show fish rank result button
     }
 }

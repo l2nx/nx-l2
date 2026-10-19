@@ -35,10 +35,10 @@ import app.l2nx.highfive.network.serverpackets.SystemMessage;
  * @author UnAfraid
  */
 public class ConditionPlayerCanResurrect extends Condition {
-    private final boolean _value;
+    private final boolean value;
 
     public ConditionPlayerCanResurrect(boolean value) {
-        _value = value;
+        this.value = value;
     }
 
     @Override
@@ -135,6 +135,6 @@ public class ConditionPlayerCanResurrect extends Condition {
             }
         }
 
-        return _value == canResurrect;
+        return value == canResurrect;
     }
 }

@@ -26,14 +26,14 @@ import app.l2nx.highfive.entity.actor.instance.Trap;
  * @author Zoey76
  */
 public class TrapUnsummonTask implements Runnable {
-    private final Trap _trap;
+    private final Trap trap;
 
     public TrapUnsummonTask(Trap trap) {
-        _trap = trap;
+        this.trap = trap;
     }
 
     @Override
     public void run() {
-        _trap.unSummon();
+        trap.unSummon();
     }
 }

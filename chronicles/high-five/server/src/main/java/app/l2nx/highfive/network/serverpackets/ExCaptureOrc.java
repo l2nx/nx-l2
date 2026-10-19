@@ -27,7 +27,7 @@ import app.l2nx.network.buffer.WriteBuffer;
  * @author KenM
  */
 public class ExCaptureOrc extends ServerPacket {
-    private static final byte[] _test =
+    private static final byte[] test =
     // @formatter:off
     {
         (byte) 0xE4, (byte) 0xAB, (byte) 0x8E, (byte) 0xC5, (byte) 0xE9, (byte) 0xF9, (byte) 0x86, (byte) 0x7B,
@@ -44,6 +44,6 @@ public class ExCaptureOrc extends ServerPacket {
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_SEARCH_ORC.writeId(this, buffer);
-        buffer.writeBytes(_test);
+        buffer.writeBytes(test);
     }
 }

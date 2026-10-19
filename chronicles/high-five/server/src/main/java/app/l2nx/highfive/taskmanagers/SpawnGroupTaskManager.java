@@ -36,7 +36,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  */
 public class SpawnGroupTaskManager implements Runnable {
     private static final Queue<PendingGroupSpawn> PENDING_SPAWNS = new ConcurrentLinkedQueue<>();
-    private static boolean _working = false;
+    private static boolean working = false;
 
     protected SpawnGroupTaskManager() {
         ThreadPool.scheduleAtFixedRate(this, 0, 1000);
@@ -44,25 +44,25 @@ public class SpawnGroupTaskManager implements Runnable {
 
     @Override
     public void run() {
-        if (_working) {
+        if (working) {
             return;
         }
 
-        _working = true;
+        working = true;
 
         if (!PENDING_SPAWNS.isEmpty()) {
             final long currentTime = System.currentTimeMillis();
             final Iterator<PendingGroupSpawn> iterator = PENDING_SPAWNS.iterator();
             while (iterator.hasNext()) {
                 final PendingGroupSpawn pending = iterator.next();
-                if (currentTime > pending._time) {
+                if (currentTime > pending.time) {
                     iterator.remove();
-                    pending._group.spawnUnits(pending._entry, 1);
+                    pending.group.spawnUnits(pending.entry, 1);
                 }
             }
         }
 
-        _working = false;
+        working = false;
     }
 
     public void add(SpawnGroup group, SpawnGroupEntry entry, long time) {
@@ -74,14 +74,14 @@ public class SpawnGroupTaskManager implements Runnable {
     }
 
     private static class PendingGroupSpawn {
-        final SpawnGroup _group;
-        final SpawnGroupEntry _entry;
-        final long _time;
+        final SpawnGroup group;
+        final SpawnGroupEntry entry;
+        final long time;
 
         PendingGroupSpawn(SpawnGroup group, SpawnGroupEntry entry, long time) {
-            _group = group;
-            _entry = entry;
-            _time = time;
+            this.group = group;
+            this.entry = entry;
+            this.time = time;
         }
     }
 

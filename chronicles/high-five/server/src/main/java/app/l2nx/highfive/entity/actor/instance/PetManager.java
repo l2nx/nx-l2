@@ -46,7 +46,7 @@ import app.l2nx.highfive.network.serverpackets.SystemMessage;
 import app.l2nx.highfive.threads.ThreadPool;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
-import java.util.logging.Level;
+import lombok.extern.slf4j.Slf4j;
 
 public class PetManager extends Merchant {
     /**
@@ -247,9 +247,9 @@ public class PetManager extends Merchant {
         }
 
         // Fix for non-linear baby pet exp.
-        final long _minimumexp = petSummon.getStat().getExpForLevel(petminLevel);
-        if (petexp < _minimumexp) {
-            petexp = _minimumexp;
+        final long minimumexp = petSummon.getStat().getExpForLevel(petminLevel);
+        if (petexp < minimumexp) {
+            petexp = minimumexp;
         }
 
         petSummon.getStat().addExp(petexp);
@@ -324,8 +324,8 @@ public class PetManager extends Merchant {
             return false;
         }
 
-        final long _maxexp = petSummon.getStat().getExpForLevel(oldpetlvl);
-        petSummon.getStat().addExp(_maxexp);
+        final long maxexp = petSummon.getStat().getExpForLevel(oldpetlvl);
+        petSummon.getStat().addExp(maxexp);
         petSummon.setCurrentHp(petSummon.getMaxHp());
         petSummon.setCurrentMp(petSummon.getMaxMp());
         petSummon.setCurrentFed(petSummon.getMaxFed());
@@ -375,46 +375,48 @@ public class PetManager extends Merchant {
         return true;
     }
 
+    @Slf4j
     public static class EvolveFeedWait implements Runnable {
-        private final Player _player;
-        private final Pet _petSummon;
+        private final Player player;
+        private final Pet petSummon;
 
         EvolveFeedWait(Player player, Pet petSummon) {
-            _player = player;
-            _petSummon = petSummon;
+            this.player = player;
+            this.petSummon = petSummon;
         }
 
         @Override
         public void run() {
             try {
-                if (_petSummon.getCurrentFed() <= 0) {
-                    _petSummon.unSummon(_player);
+                if (petSummon.getCurrentFed() <= 0) {
+                    petSummon.unSummon(player);
                 } else {
-                    _petSummon.startFeed();
+                    petSummon.startFeed();
                 }
             } catch (Exception e) {
-                LOGGER.log(Level.WARNING, "run: ", e);
+                log.warn("run: ", e);
             }
         }
     }
 
+    @Slf4j
     public static class EvolveFinalizer implements Runnable {
-        private final Player _player;
-        private final Pet _petSummon;
+        private final Player player;
+        private final Pet petSummon;
 
         EvolveFinalizer(Player player, Pet petSummon) {
-            _player = player;
-            _petSummon = petSummon;
+            this.player = player;
+            this.petSummon = petSummon;
         }
 
         @Override
         public void run() {
             try {
-                _player.sendPacket(new MagicSkillLaunched(_player, 2046, 1));
-                _petSummon.setFollowStatus(true);
-                _petSummon.setShowSummonAnimation(false);
+                player.sendPacket(new MagicSkillLaunched(player, 2046, 1));
+                petSummon.setFollowStatus(true);
+                petSummon.setShowSummonAnimation(false);
             } catch (Throwable e) {
-                LOGGER.log(Level.WARNING, "run: ", e);
+                log.warn("run: ", e);
             }
         }
     }

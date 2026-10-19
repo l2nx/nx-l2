@@ -34,14 +34,14 @@ import java.util.Set;
  * The Class ConditionPlayerInstanceId.
  */
 public class ConditionPlayerInstanceId extends Condition {
-    private final Set<Integer> _instanceIds;
+    private final Set<Integer> instanceIds;
 
     /**
      * Instantiates a new condition player instance id.
      * @param instanceIds the instance ids
      */
     public ConditionPlayerInstanceId(Set<Integer> instanceIds) {
-        _instanceIds = instanceIds;
+        this.instanceIds = instanceIds;
     }
 
     @Override
@@ -57,6 +57,6 @@ public class ConditionPlayerInstanceId extends Condition {
         }
 
         final InstanceWorld world = InstanceManager.getInstance().getPlayerWorld(player);
-        return (world != null) && (world.getInstanceId() == instanceId) && _instanceIds.contains(world.getTemplateId());
+        return (world != null) && (world.getInstanceId() == instanceId) && instanceIds.contains(world.getTemplateId());
     }
 }

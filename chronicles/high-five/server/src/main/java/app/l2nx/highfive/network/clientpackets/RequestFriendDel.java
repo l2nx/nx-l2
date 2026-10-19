@@ -26,22 +26,23 @@ import app.l2nx.highfive.data.sql.CharInfoTable;
 import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Player;
-import app.l2nx.highfive.network.PacketLogger;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.serverpackets.FriendPacket;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @version $Revision: 1.3.4.2 $ $Date: 2005/03/27 15:29:30 $
  */
+@Slf4j
 public class RequestFriendDel extends ClientPacket {
-    private String _name;
+    private String name;
 
     @Override
     protected void readImpl() {
-        _name = readString();
+        name = readString();
     }
 
     @Override
@@ -53,17 +54,17 @@ public class RequestFriendDel extends ClientPacket {
             return;
         }
 
-        final int id = CharInfoTable.getInstance().getIdByName(_name);
+        final int id = CharInfoTable.getInstance().getIdByName(name);
         if (id == -1) {
             sm = new SystemMessage(SystemMessageId.C1_IS_NOT_ON_YOUR_FRIEND_LIST);
-            sm.addString(_name);
+            sm.addString(name);
             player.sendPacket(sm);
             return;
         }
 
         if (!player.getFriendList().contains(id)) {
             sm = new SystemMessage(SystemMessageId.C1_IS_NOT_ON_YOUR_FRIEND_LIST);
-            sm.addString(_name);
+            sm.addString(name);
             player.sendPacket(sm);
             return;
         }
@@ -79,19 +80,19 @@ public class RequestFriendDel extends ClientPacket {
 
             // Player deleted from your friend list.
             sm = new SystemMessage(SystemMessageId.S1_HAS_BEEN_DELETED_FROM_YOUR_FRIENDS_LIST);
-            sm.addString(_name);
+            sm.addString(name);
             player.sendPacket(sm);
 
             player.getFriendList().remove(Integer.valueOf(id));
             player.sendPacket(new FriendPacket(false, id));
 
-            final Player target = World.getPlayer(_name);
+            final Player target = World.getPlayer(name);
             if (target != null) {
                 target.getFriendList().remove(Integer.valueOf(player.getObjectId()));
                 target.sendPacket(new FriendPacket(false, player.getObjectId()));
             }
         } catch (Exception e) {
-            PacketLogger.warning(getClass().getSimpleName() + ": Could not delele friend objectId: " + e.getMessage());
+            log.warn("{}: Could not delele friend objectId: {}", getClass().getSimpleName(), e.getMessage());
         }
     }
 }

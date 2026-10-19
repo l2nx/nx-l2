@@ -30,12 +30,12 @@ import app.l2nx.highfive.util.StatSet;
  * @author Adry_85
  */
 public class TalismanSlot extends AbstractEffect {
-    private final int _slots;
+    private final int slots;
 
     public TalismanSlot(Condition attachCond, Condition applyCond, StatSet set, StatSet params) {
         super(attachCond, applyCond, set, params);
 
-        _slots = params.getInt("slots", 0);
+        slots = params.getInt("slots", 0);
     }
 
     @Override
@@ -45,7 +45,7 @@ public class TalismanSlot extends AbstractEffect {
 
     @Override
     public void onStart(Creature effector, Creature effected, Skill skill) {
-        effected.asPlayer().getStat().addTalismanSlots(_slots);
+        effected.asPlayer().getStat().addTalismanSlots(slots);
     }
 
     @Override
@@ -55,6 +55,6 @@ public class TalismanSlot extends AbstractEffect {
 
     @Override
     public void onExit(Creature effector, Creature effected, Skill skill) {
-        effected.asPlayer().getStat().addTalismanSlots(-_slots);
+        effected.asPlayer().getStat().addTalismanSlots(-slots);
     }
 }

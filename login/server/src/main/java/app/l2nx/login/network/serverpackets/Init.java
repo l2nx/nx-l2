@@ -40,29 +40,29 @@ import app.l2nx.network.buffer.WriteBuffer;
  * </pre>
  */
 public class Init extends LoginServerPacket {
-    private final int _sessionId;
+    private final int sessionId;
 
-    private final byte[] _publicKey;
-    private final byte[] _blowfishKey;
+    private final byte[] publicKey;
+    private final byte[] blowfishKey;
 
     public Init(LoginClient client) {
         this(client.getScrambledModulus(), client.getBlowfishKey(), client.getSessionId());
     }
 
     public Init(byte[] publickey, byte[] blowfishkey, int sessionId) {
-        _sessionId = sessionId;
-        _publicKey = publickey;
-        _blowfishKey = blowfishkey;
+        this.sessionId = sessionId;
+        publicKey = publickey;
+        blowfishKey = blowfishkey;
     }
 
     @Override
     protected void writeImpl(LoginClient client, WriteBuffer buffer) {
         buffer.writeByte(0x00); // Init packet id.
 
-        buffer.writeInt(_sessionId); // Session id.
+        buffer.writeInt(sessionId); // Session id.
         buffer.writeInt(0x0000c621); // Protocol revision.
 
-        buffer.writeBytes(_publicKey); // RSA Public Key.
+        buffer.writeBytes(publicKey); // RSA Public Key.
 
         // GG related.
         buffer.writeInt(0x29DD954E);
@@ -70,7 +70,7 @@ public class Init extends LoginServerPacket {
         buffer.writeInt(0x97ADB620);
         buffer.writeInt(0x07BDE0F7);
 
-        buffer.writeBytes(_blowfishKey); // BlowFish key.
+        buffer.writeBytes(blowfishKey); // BlowFish key.
         buffer.writeByte(0); // Null termination.
     }
 }

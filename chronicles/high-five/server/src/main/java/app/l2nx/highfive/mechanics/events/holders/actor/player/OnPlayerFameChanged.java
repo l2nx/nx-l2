@@ -22,33 +22,13 @@ package app.l2nx.highfive.mechanics.events.holders.actor.player;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.mechanics.events.EventType;
 import app.l2nx.highfive.mechanics.events.holders.IBaseEvent;
+import lombok.Builder;
 
 /**
  * @author UnAfraid
  */
-public class OnPlayerFameChanged implements IBaseEvent {
-    private final Player _player;
-    private final int _oldFame;
-    private final int _newFame;
-
-    public OnPlayerFameChanged(Player player, int oldFame, int newFame) {
-        _player = player;
-        _oldFame = oldFame;
-        _newFame = newFame;
-    }
-
-    public Player getPlayer() {
-        return _player;
-    }
-
-    public int getOldFame() {
-        return _oldFame;
-    }
-
-    public int getNewFame() {
-        return _newFame;
-    }
-
+@Builder(toBuilder = true)
+public record OnPlayerFameChanged(Player player, int oldFame, int newFame) implements IBaseEvent {
     @Override
     public EventType getType() {
         return EventType.ON_PLAYER_FAME_CHANGED;

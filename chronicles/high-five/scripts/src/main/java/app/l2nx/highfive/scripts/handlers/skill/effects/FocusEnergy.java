@@ -30,12 +30,12 @@ import app.l2nx.highfive.util.StatSet;
  * @author DS
  */
 public class FocusEnergy extends AbstractEffect {
-    private final int _charge;
+    private final int charge;
 
     public FocusEnergy(Condition attachCond, Condition applyCond, StatSet set, StatSet params) {
         super(attachCond, applyCond, set, params);
 
-        _charge = params.getInt("charge", 0);
+        charge = params.getInt("charge", 0);
     }
 
     @Override
@@ -49,6 +49,6 @@ public class FocusEnergy extends AbstractEffect {
             return;
         }
 
-        effected.asPlayer().increaseCharges(1, _charge);
+        effected.asPlayer().increaseCharges(1, charge);
     }
 }

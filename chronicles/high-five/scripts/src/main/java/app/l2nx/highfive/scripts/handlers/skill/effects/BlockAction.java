@@ -37,14 +37,14 @@ import java.util.Set;
  * @author BiggBoss
  */
 public class BlockAction extends AbstractEffect {
-    private final Set<Integer> _blockedActions = new HashSet<>();
+    private final Set<Integer> blockedActions = new HashSet<>();
 
     public BlockAction(Condition attachCond, Condition applyCond, StatSet set, StatSet params) {
         super(attachCond, applyCond, set, params);
 
         final String[] actions = params.getString("blockedActions").split(",");
         for (String action : actions) {
-            _blockedActions.add(Integer.parseInt(action));
+            blockedActions.add(Integer.parseInt(action));
         }
     }
 
@@ -55,17 +55,17 @@ public class BlockAction extends AbstractEffect {
 
     @Override
     public boolean checkCondition(Object id) {
-        return !_blockedActions.contains(id);
+        return !blockedActions.contains(id);
     }
 
     @Override
     public void onExit(Creature effector, Creature effected, Skill skill) {
-        if (_blockedActions.contains(BotReportTable.PARTY_ACTION_BLOCK_ID)) {
+        if (blockedActions.contains(BotReportTable.PARTY_ACTION_BLOCK_ID)) {
             PunishmentManager.getInstance()
                     .stopPunishment(effected.getObjectId(), PunishmentAffect.CHARACTER, PunishmentType.PARTY_BAN);
         }
 
-        if (_blockedActions.contains(BotReportTable.CHAT_BLOCK_ID)) {
+        if (blockedActions.contains(BotReportTable.CHAT_BLOCK_ID)) {
             PunishmentManager.getInstance()
                     .stopPunishment(effected.getObjectId(), PunishmentAffect.CHARACTER, PunishmentType.CHAT_BAN);
         }
@@ -73,7 +73,7 @@ public class BlockAction extends AbstractEffect {
 
     @Override
     public void onStart(Creature effector, Creature effected, Skill skill) {
-        if (_blockedActions.contains(BotReportTable.PARTY_ACTION_BLOCK_ID)) {
+        if (blockedActions.contains(BotReportTable.PARTY_ACTION_BLOCK_ID)) {
             PunishmentManager.getInstance()
                     .startPunishment(new PunishmentTask(
                             0,
@@ -86,7 +86,7 @@ public class BlockAction extends AbstractEffect {
                             true));
         }
 
-        if (_blockedActions.contains(BotReportTable.CHAT_BLOCK_ID)) {
+        if (blockedActions.contains(BotReportTable.CHAT_BLOCK_ID)) {
             PunishmentManager.getInstance()
                     .startPunishment(new PunishmentTask(
                             0,

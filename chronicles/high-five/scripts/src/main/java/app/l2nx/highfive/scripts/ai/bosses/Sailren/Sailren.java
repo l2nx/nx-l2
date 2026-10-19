@@ -35,7 +35,7 @@ import app.l2nx.highfive.managers.ZoneManager;
 import app.l2nx.highfive.mechanics.script.Script;
 import app.l2nx.highfive.mechanics.skill.holders.SkillHolder;
 import app.l2nx.highfive.network.serverpackets.SpecialCamera;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Sailren raid boss AI handler.<br>
@@ -48,9 +48,8 @@ import java.util.logging.Logger;
  * This raid is managed as a normal raid using a {@link NoRestartZone} and global variables instead of the grand boss subsystem.
  * @author BazookaRpm
  */
+@Slf4j
 public class Sailren extends Script {
-    // Logging.
-    private static final Logger LOGGER = Logger.getLogger(Sailren.class.getName());
 
     // NPC identifiers.
     private static final int STATUE_NPC_ID = 32109; // Shilen's Stone Statue.
@@ -126,9 +125,9 @@ public class Sailren extends Script {
     private static final byte STATUS_DEAD = 2;
 
     // Runtime state.
-    private static byte _raidStatus = STATUS_ALIVE;
-    private static int _killCount = 0;
-    private static long _lastAttackTime = 0;
+    private static byte raidStatus = STATUS_ALIVE;
+    private static int killCount = 0;
+    private static long lastAttackTime = 0;
 
     /**
      * Initializes Sailren AI, validates the zone and restores respawn state from global variables.<br>
@@ -138,8 +137,7 @@ public class Sailren extends Script {
     public Sailren() {
         // Zone must exist; otherwise, disable AI cleanly.
         if (SAILREN_ZONE == null) {
-            LOGGER.warning(
-                    Sailren.class.getSimpleName() + ": Sailren zone " + SAILREN_ZONE_ID + " not found. AI disabled.");
+            log.warn("Sailren zone {} not found. AI disabled.", SAILREN_ZONE_ID);
             return;
         }
 
@@ -152,10 +150,10 @@ public class Sailren extends Script {
         final long storedRespawnTime = GlobalVariablesManager.getInstance().getLong(GLOBAL_VAR_RESPAWN_TIME, 0);
         final long remainingDelay = storedRespawnTime - System.currentTimeMillis();
         if (remainingDelay > 0) {
-            _raidStatus = STATUS_DEAD;
+            raidStatus = STATUS_DEAD;
             startQuestTimer(EVENT_CLEAR_STATUS, remainingDelay, null, null);
         } else {
-            _raidStatus = STATUS_ALIVE;
+            raidStatus = STATUS_ALIVE;
         }
     }
 
@@ -261,9 +259,9 @@ public class Sailren extends Script {
                 break;
             }
             case EVENT_CLEAR_STATUS: {
-                _raidStatus = STATUS_ALIVE;
-                _killCount = 0;
-                _lastAttackTime = 0;
+                raidStatus = STATUS_ALIVE;
+                killCount = 0;
+                lastAttackTime = 0;
                 break;
             }
             case EVENT_TIMEOUT: {
@@ -296,9 +294,9 @@ public class Sailren extends Script {
 
         if (party == null) {
             html = "32109-01.html";
-        } else if (_raidStatus == STATUS_DEAD) {
+        } else if (raidStatus == STATUS_DEAD) {
             html = "32109-04.html";
-        } else if (_raidStatus == STATUS_IN_FIGHT) {
+        } else if (raidStatus == STATUS_IN_FIGHT) {
             html = "32109-05.html";
         } else if (!party.isLeader(player)) {
             html = "32109-03.html";
@@ -307,9 +305,9 @@ public class Sailren extends Script {
         } else {
             // Valid entry: consume Gazkh and move the party inside.
             takeItems(player, GAZKH_ITEM_ID, 1);
-            _raidStatus = STATUS_IN_FIGHT;
-            _killCount = 0;
-            _lastAttackTime = System.currentTimeMillis();
+            raidStatus = STATUS_IN_FIGHT;
+            killCount = 0;
+            lastAttackTime = System.currentTimeMillis();
 
             for (Player member : party.getMembers()) {
                 if ((member != null) && member.isInsideRadius3D(npc, TELEPORT_STATUE_RADIUS)) {
@@ -344,8 +342,7 @@ public class Sailren extends Script {
     private void spawnSailrenWithCinematic() {
         final Npc sailrenNpc = addSpawn(SAILREN_NPC_ID, LAIR_CENTER, false, 0);
         if (!(sailrenNpc instanceof RaidBoss)) {
-            LOGGER.warning(Sailren.class.getSimpleName() + ": Failed to spawn Sailren raid boss (ID: " + SAILREN_NPC_ID
-                    + ").");
+            log.warn("Failed to spawn Sailren raid boss (ID: {}).", SAILREN_NPC_ID);
             return;
         }
 
@@ -353,8 +350,7 @@ public class Sailren extends Script {
         final Npc movieNpc = addSpawn(
                 MOVIE_NPC_ID, sailren.getX(), sailren.getY(), sailren.getZ() + 30, 0, false, MOVIE_NPC_LIFETIME_MILLIS);
         if (movieNpc == null) {
-            LOGGER.warning(Sailren.class.getSimpleName() + ": Failed to spawn Sailren cinematic NPC (ID: "
-                    + MOVIE_NPC_ID + ").");
+            log.warn("Failed to spawn Sailren cinematic NPC (ID: {}).", MOVIE_NPC_ID);
             return;
         }
 
@@ -381,8 +377,8 @@ public class Sailren extends Script {
      * It is invoked either when the fight duration expires or when an inactivity timeout is triggered.
      */
     private void handleTimeout() {
-        if (_raidStatus == STATUS_IN_FIGHT) {
-            _raidStatus = STATUS_ALIVE;
+        if (raidStatus == STATUS_IN_FIGHT) {
+            raidStatus = STATUS_ALIVE;
         }
 
         if (SAILREN_ZONE != null) {
@@ -399,8 +395,8 @@ public class Sailren extends Script {
             }
         }
 
-        _killCount = 0;
-        _lastAttackTime = 0;
+        killCount = 0;
+        lastAttackTime = 0;
     }
 
     /**
@@ -408,7 +404,7 @@ public class Sailren extends Script {
      * If no attacks have occurred during {@link #INACTIVITY_LIMIT_MILLIS}, the fight is forcefully terminated by triggering {@link #handleTimeout()}. If players are still active, the check is rescheduled.
      */
     private void handleInactivityCheck() {
-        if (_raidStatus != STATUS_IN_FIGHT) {
+        if (raidStatus != STATUS_IN_FIGHT) {
             return;
         }
 
@@ -417,7 +413,7 @@ public class Sailren extends Script {
             return;
         }
 
-        if ((_lastAttackTime + INACTIVITY_LIMIT_MILLIS) < System.currentTimeMillis()) {
+        if ((lastAttackTime + INACTIVITY_LIMIT_MILLIS) < System.currentTimeMillis()) {
             cancelQuestTimer(EVENT_TIMEOUT, null, null);
             cancelQuestTimer(EVENT_CHECK_INACTIVITY, null, null);
             notifyEvent(EVENT_TIMEOUT, null, null);
@@ -437,7 +433,7 @@ public class Sailren extends Script {
     @Override
     public void onAttack(Npc npc, Player attacker, int damage, boolean isSummon) {
         if ((attacker != null) && (SAILREN_ZONE != null) && SAILREN_ZONE.isCharacterInZone(attacker)) {
-            _lastAttackTime = System.currentTimeMillis();
+            lastAttackTime = System.currentTimeMillis();
         }
     }
 
@@ -462,7 +458,7 @@ public class Sailren extends Script {
 
         switch (npc.getId()) {
             case SAILREN_NPC_ID: {
-                _raidStatus = STATUS_DEAD;
+                raidStatus = STATUS_DEAD;
 
                 addSpawn(TELEPORT_CUBE_NPC_ID, TELEPORT_CUBE_SPAWN_LOCATION, false, TELEPORT_CUBE_LIFETIME_MILLIS);
 
@@ -477,13 +473,13 @@ public class Sailren extends Script {
                 break;
             }
             case VELOCIRAPTOR_NPC_ID: {
-                _killCount++;
-                if (_killCount == 3) {
+                killCount++;
+                if (killCount == 3) {
                     final Npc pterosaur = addSpawn(PTEROSAUR_NPC_ID, PTEROSAUR_SPAWN_LOCATION, false, 0);
                     if (pterosaur != null) {
                         addAttackDesire(pterosaur, killer);
                     }
-                    _killCount = 0;
+                    killCount = 0;
                 }
                 break;
             }
@@ -508,9 +504,8 @@ public class Sailren extends Script {
      */
     @Override
     public void unload(boolean removeFromList) {
-        if (_raidStatus == STATUS_IN_FIGHT) {
-            LOGGER.info(Sailren.class.getSimpleName()
-                    + ": Unloading script while Sailren is active. Forcing instance cleanup.");
+        if (raidStatus == STATUS_IN_FIGHT) {
+            log.info("Unloading script while Sailren is active. Forcing instance cleanup.");
             notifyEvent(EVENT_TIMEOUT, null, null);
         }
 

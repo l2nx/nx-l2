@@ -28,6 +28,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import lombok.Getter;
 
 /**
  * Alexandria (Armor Merchant) AI.
@@ -111,15 +112,12 @@ public class Alexandria extends Script {
     }
 
     private static class AdditionalItemChanceHolder extends ItemChanceHolder {
-        private final int _additionalId;
+        @Getter
+        private final int additionalId;
 
         AdditionalItemChanceHolder(int id, int chance, long count, int additionalId) {
             super(id, chance, count);
-            _additionalId = additionalId;
-        }
-
-        public int getAdditionalId() {
-            return _additionalId;
+            this.additionalId = additionalId;
         }
     }
 

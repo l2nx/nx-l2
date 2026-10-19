@@ -28,20 +28,20 @@ import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.network.buffer.WriteBuffer;
 
 public class KeyPacket extends ServerPacket {
-    private final byte[] _key;
-    private final int _result;
+    private final byte[] key;
+    private final int result;
 
     public KeyPacket(byte[] key, int result) {
-        _key = key;
-        _result = result;
+        this.key = key;
+        this.result = result;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.VERSION_CHECK.writeId(this, buffer);
-        buffer.writeByte(_result); // 0 - wrong protocol, 1 - protocol ok
+        buffer.writeByte(result); // 0 - wrong protocol, 1 - protocol ok
         for (int i = 0; i < 8; i++) {
-            buffer.writeByte(_key[i]); // key
+            buffer.writeByte(key[i]); // key
         }
 
         buffer.writeInt(ServerConfig.PACKET_ENCRYPTION); // use blowfish encryption

@@ -29,30 +29,30 @@ import app.l2nx.network.buffer.WriteBuffer;
 import java.util.Collection;
 
 public class RecipeBookItemList extends ServerPacket {
-    private Collection<RecipeList> _recipes;
-    private final boolean _isDwarvenCraft;
-    private final int _maxMp;
+    private Collection<RecipeList> recipes;
+    private final boolean dwarvenCraft;
+    private final int maxMp;
 
     public RecipeBookItemList(boolean isDwarvenCraft, int maxMp) {
-        _isDwarvenCraft = isDwarvenCraft;
-        _maxMp = maxMp;
+        dwarvenCraft = isDwarvenCraft;
+        this.maxMp = maxMp;
     }
 
     public void addRecipes(Collection<RecipeList> recipeBook) {
-        _recipes = recipeBook;
+        recipes = recipeBook;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.RECIPE_BOOK_ITEM_LIST.writeId(this, buffer);
-        buffer.writeInt(!_isDwarvenCraft); // 0 = Dwarven - 1 = Common
-        buffer.writeInt(_maxMp);
-        if (_recipes == null) {
+        buffer.writeInt(!dwarvenCraft); // 0 = Dwarven - 1 = Common
+        buffer.writeInt(maxMp);
+        if (recipes == null) {
             buffer.writeInt(0);
         } else {
-            buffer.writeInt(_recipes.size()); // number of items in recipe book
+            buffer.writeInt(recipes.size()); // number of items in recipe book
             int count = 0;
-            for (RecipeList recipe : _recipes) {
+            for (RecipeList recipe : recipes) {
                 count++;
                 buffer.writeInt(recipe.getId());
                 buffer.writeInt(count);

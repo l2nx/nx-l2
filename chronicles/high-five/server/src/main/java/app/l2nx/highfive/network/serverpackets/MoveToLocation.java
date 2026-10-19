@@ -28,34 +28,34 @@ import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.network.buffer.WriteBuffer;
 
 public class MoveToLocation extends ServerPacket {
-    private final int _objectId;
-    private final int _x;
-    private final int _y;
-    private final int _z;
-    private final int _xDst;
-    private final int _yDst;
-    private final int _zDst;
+    private final int objectId;
+    private final int x;
+    private final int y;
+    private final int z;
+    private final int xDst;
+    private final int yDst;
+    private final int zDst;
 
     public MoveToLocation(Creature creature) {
-        _objectId = creature.getObjectId();
-        _x = creature.getX();
-        _y = creature.getY();
-        _z = creature.getZ();
-        _xDst = creature.getXdestination();
-        _yDst = creature.getYdestination();
-        _zDst = creature.getZdestination();
+        objectId = creature.getObjectId();
+        x = creature.getX();
+        y = creature.getY();
+        z = creature.getZ();
+        xDst = creature.getXdestination();
+        yDst = creature.getYdestination();
+        zDst = creature.getZdestination();
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.MOVE_TO_LOCATION.writeId(this, buffer);
-        buffer.writeInt(_objectId);
-        buffer.writeInt(_xDst);
-        buffer.writeInt(_yDst);
-        buffer.writeInt(_zDst);
-        buffer.writeInt(_x);
-        buffer.writeInt(_y);
-        buffer.writeInt(_z);
+        buffer.writeInt(objectId);
+        buffer.writeInt(xDst);
+        buffer.writeInt(yDst);
+        buffer.writeInt(zDst);
+        buffer.writeInt(x);
+        buffer.writeInt(y);
+        buffer.writeInt(z);
     }
 
     @Override

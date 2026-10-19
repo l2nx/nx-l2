@@ -27,11 +27,11 @@ import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.network.serverpackets.StopRotation;
 
 public class FinishRotating extends ClientPacket {
-    private int _degree;
+    private int degree;
 
     @Override
     protected void readImpl() {
-        _degree = readInt();
+        degree = readInt();
         readInt(); // Unknown.
     }
 
@@ -47,12 +47,12 @@ public class FinishRotating extends ClientPacket {
         }
 
         if (player.isInAirShip() && player.getAirShip().isCaptain(player)) {
-            player.getAirShip().setHeading(_degree);
+            player.getAirShip().setHeading(degree);
             player.getAirShip()
-                    .broadcastPacket(new StopRotation(player.getAirShip().getObjectId(), _degree, 0));
+                    .broadcastPacket(new StopRotation(player.getAirShip().getObjectId(), degree, 0));
         } else {
-            player.setHeading(_degree);
-            player.broadcastPacket(new StopRotation(player.getObjectId(), _degree, 0));
+            player.setHeading(degree);
+            player.broadcastPacket(new StopRotation(player.getObjectId(), degree, 0));
         }
     }
 }

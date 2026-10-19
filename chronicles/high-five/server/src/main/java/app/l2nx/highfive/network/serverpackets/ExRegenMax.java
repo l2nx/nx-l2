@@ -27,22 +27,22 @@ import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.network.buffer.WriteBuffer;
 
 public class ExRegenMax extends ServerPacket {
-    private final int _time;
-    private final int _tickInterval;
-    private final double _amountPerTick;
+    private final int time;
+    private final int tickInterval;
+    private final double amountPerTick;
 
     public ExRegenMax(int time, int tickInterval, double amountPerTick) {
-        _time = time;
-        _tickInterval = tickInterval;
-        _amountPerTick = amountPerTick;
+        this.time = time;
+        this.tickInterval = tickInterval;
+        this.amountPerTick = amountPerTick;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_REGEN_MAX.writeId(this, buffer);
         buffer.writeInt(1);
-        buffer.writeInt(_time);
-        buffer.writeInt(_tickInterval);
-        buffer.writeDouble(_amountPerTick);
+        buffer.writeInt(time);
+        buffer.writeInt(tickInterval);
+        buffer.writeDouble(amountPerTick);
     }
 }

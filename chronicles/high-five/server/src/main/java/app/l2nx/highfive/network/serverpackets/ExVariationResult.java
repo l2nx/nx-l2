@@ -27,21 +27,21 @@ import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.network.buffer.WriteBuffer;
 
 public class ExVariationResult extends ServerPacket {
-    private final int _stat12;
-    private final int _stat34;
-    private final int _unk3;
+    private final int stat12;
+    private final int stat34;
+    private final int unk3;
 
     public ExVariationResult(int unk1, int unk2, int unk3) {
-        _stat12 = unk1;
-        _stat34 = unk2;
-        _unk3 = unk3;
+        stat12 = unk1;
+        stat34 = unk2;
+        this.unk3 = unk3;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_VARIATION_RESULT.writeId(this, buffer);
-        buffer.writeInt(_stat12);
-        buffer.writeInt(_stat34);
-        buffer.writeInt(_unk3);
+        buffer.writeInt(stat12);
+        buffer.writeInt(stat34);
+        buffer.writeInt(unk3);
     }
 }

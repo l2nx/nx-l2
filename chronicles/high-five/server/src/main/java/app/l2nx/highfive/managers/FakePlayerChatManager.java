@@ -39,14 +39,14 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 import org.w3c.dom.Document;
 
 /**
  * @author Mobius
  */
+@Slf4j
 public class FakePlayerChatManager implements IXmlReader {
-    private static final Logger LOGGER = Logger.getLogger(FakePlayerChatManager.class.getName());
 
     private static final List<FakePlayerChatHolder> MESSAGES = new ArrayList<>();
     private static final int MIN_DELAY = 5000;
@@ -63,7 +63,7 @@ public class FakePlayerChatManager implements IXmlReader {
             if (FakePlayersConfig.FAKE_PLAYER_CHAT) {
                 MESSAGES.clear();
                 parseDatapackFile("data/FakePlayerChatData.xml");
-                LOGGER.info(getClass().getSimpleName() + ": Loaded " + MESSAGES.size() + " chat templates.");
+                log.info("Loaded {} chat templates.", MESSAGES.size());
             }
         }
     }

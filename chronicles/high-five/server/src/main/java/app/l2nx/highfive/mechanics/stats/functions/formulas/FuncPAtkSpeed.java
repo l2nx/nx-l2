@@ -29,10 +29,10 @@ import app.l2nx.highfive.mechanics.stats.functions.AbstractFunction;
  * @author UnAfraid
  */
 public class FuncPAtkSpeed extends AbstractFunction {
-    private static final FuncPAtkSpeed _fas_instance = new FuncPAtkSpeed();
+    private static final FuncPAtkSpeed instance = new FuncPAtkSpeed();
 
     public static AbstractFunction getInstance() {
-        return _fas_instance;
+        return instance;
     }
 
     private FuncPAtkSpeed() {

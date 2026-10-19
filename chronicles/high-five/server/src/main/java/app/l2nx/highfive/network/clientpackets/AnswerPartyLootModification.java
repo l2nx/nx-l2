@@ -26,11 +26,11 @@ import app.l2nx.highfive.entity.groups.Party;
  * @author JIV
  */
 public class AnswerPartyLootModification extends ClientPacket {
-    public int _answer;
+    public int answer;
 
     @Override
     protected void readImpl() {
-        _answer = readInt();
+        answer = readInt();
     }
 
     @Override
@@ -42,7 +42,7 @@ public class AnswerPartyLootModification extends ClientPacket {
 
         final Party party = player.getParty();
         if (party != null) {
-            party.answerLootChangeRequest(player, _answer == 1);
+            party.answerLootChangeRequest(player, answer == 1);
         }
     }
 }

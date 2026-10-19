@@ -31,49 +31,49 @@ import java.util.List;
  * @author Gnacik
  */
 public class ExListPartyMatchingWaitingRoom extends ServerPacket {
-    private final Player _player;
+    private final Player player;
     // private final int _page;
-    private final int _minLevel;
-    private final int _maxLevel;
-    private final int _mode;
-    private final List<Player> _members;
+    private final int minLevel;
+    private final int maxLevel;
+    private final int mode;
+    private final List<Player> members;
 
     public ExListPartyMatchingWaitingRoom(Player player, int page, int minLevel, int maxLevel, int mode) {
-        _player = player;
+        this.player = player;
         // _page = page;
-        _minLevel = minLevel;
-        _maxLevel = maxLevel;
-        _mode = mode;
-        _members = new ArrayList<>();
+        this.minLevel = minLevel;
+        this.maxLevel = maxLevel;
+        this.mode = mode;
+        members = new ArrayList<>();
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_LIST_PARTY_MATCHING_WAITING_ROOM.writeId(this, buffer);
-        if (_mode == 0) {
+        if (mode == 0) {
             buffer.writeInt(0);
             buffer.writeInt(0);
             return;
         }
 
         for (Player cha : PartyMatchWaitingList.getInstance().getPlayers()) {
-            if ((cha == null) || (cha == _player)) {
+            if ((cha == null) || (cha == player)) {
                 continue;
             }
 
             if (!cha.isPartyWaiting()) {
                 PartyMatchWaitingList.getInstance().removePlayer(cha);
                 continue;
-            } else if ((cha.getLevel() < _minLevel) || (cha.getLevel() > _maxLevel)) {
+            } else if ((cha.getLevel() < minLevel) || (cha.getLevel() > maxLevel)) {
                 continue;
             }
 
-            _members.add(cha);
+            members.add(cha);
         }
 
         buffer.writeInt(1); // Page?
-        buffer.writeInt(_members.size());
-        for (Player member : _members) {
+        buffer.writeInt(members.size());
+        for (Player member : members) {
             buffer.writeString(member.getName());
             buffer.writeInt(member.getActiveClass());
             buffer.writeInt(member.getLevel());

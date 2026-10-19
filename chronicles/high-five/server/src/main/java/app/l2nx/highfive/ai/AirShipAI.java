@@ -40,30 +40,30 @@ public class AirShipAI extends CreatureAI {
 
     @Override
     protected void moveTo(int x, int y, int z) {
-        if (_actor.isMovementDisabled()) {
+        if (actor.isMovementDisabled()) {
             return;
         }
 
-        _actor.moveToLocation(x, y, z, 0);
-        _actor.broadcastPacket(new ExMoveToLocationAirShip(getActor()));
+        actor.moveToLocation(x, y, z, 0);
+        actor.broadcastPacket(new ExMoveToLocationAirShip(getActor()));
     }
 
     @Override
     public void clientStopMoving(Location loc) {
-        if (_actor.isMoving()) {
-            _actor.stopMove(loc);
-            _actor.broadcastPacket(new ExStopMoveAirShip(getActor()));
+        if (actor.isMoving()) {
+            actor.stopMove(loc);
+            actor.broadcastPacket(new ExStopMoveAirShip(getActor()));
             return;
         }
 
         if (loc != null) {
-            _actor.broadcastPacket(new ExStopMoveAirShip(getActor()));
+            actor.broadcastPacket(new ExStopMoveAirShip(getActor()));
         }
     }
 
     @Override
     public void describeStateToPlayer(Player player) {
-        if (!_actor.isMoving()) {
+        if (!actor.isMoving()) {
             return;
         }
 
@@ -126,6 +126,6 @@ public class AirShipAI extends CreatureAI {
 
     @Override
     public AirShip getActor() {
-        return (AirShip) _actor;
+        return (AirShip) actor;
     }
 }

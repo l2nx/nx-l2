@@ -28,15 +28,15 @@ import app.l2nx.network.buffer.WriteBuffer;
  * @author JIV
  */
 public class ExStartScenePlayer extends ServerPacket {
-    private final Movie _movie;
+    private final Movie movie;
 
     public ExStartScenePlayer(Movie movie) {
-        _movie = movie;
+        this.movie = movie;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_START_SCENE_PLAYER.writeId(this, buffer);
-        buffer.writeInt(_movie.getClientId());
+        buffer.writeInt(movie.getClientId());
     }
 }

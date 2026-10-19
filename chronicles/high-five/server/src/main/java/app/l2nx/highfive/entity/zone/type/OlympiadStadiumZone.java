@@ -40,13 +40,15 @@ import app.l2nx.highfive.network.serverpackets.SystemMessage;
 import app.l2nx.highfive.threads.ThreadPool;
 import java.util.ArrayList;
 import java.util.List;
+import lombok.Getter;
 
 /**
  * An olympiad stadium
  * @author durgus, DS
  */
 public class OlympiadStadiumZone extends ZoneRespawn {
-    private List<Location> _spectatorLocations;
+    @Getter
+    private List<Location> spectatorSpawns;
 
     public OlympiadStadiumZone(int id) {
         super(id);
@@ -57,25 +59,22 @@ public class OlympiadStadiumZone extends ZoneRespawn {
 
         setSettings(settings);
 
-        _checkAffected = true;
+        checkAffected = true;
     }
 
     public class Settings extends AbstractZoneSettings {
-        private OlympiadGameTask _task = null;
+        @Getter
+        private OlympiadGameTask olympiadTask = null;
 
         protected Settings() {}
 
-        public OlympiadGameTask getOlympiadTask() {
-            return _task;
-        }
-
         protected void setTask(OlympiadGameTask task) {
-            _task = task;
+            olympiadTask = task;
         }
 
         @Override
         public void clear() {
-            _task = null;
+            olympiadTask = null;
         }
     }
 
@@ -242,42 +241,38 @@ public class OlympiadStadiumZone extends ZoneRespawn {
     }
 
     private static class KickPlayer implements Runnable {
-        private Player _player;
+        private Player player;
 
         public KickPlayer(Player player) {
-            _player = player;
+            this.player = player;
         }
 
         @Override
         public void run() {
-            if (_player == null) {
+            if (player == null) {
                 return;
             }
 
-            if (_player.hasSummon()) {
-                _player.getSummon().unSummon(_player);
+            if (player.hasSummon()) {
+                player.getSummon().unSummon(player);
             }
 
-            _player.teleToLocation(TeleportWhereType.TOWN);
-            _player.setInstanceId(0);
-            _player = null;
+            player.teleToLocation(TeleportWhereType.TOWN);
+            player.setInstanceId(0);
+            player = null;
         }
     }
 
     @Override
     public void parseLoc(int x, int y, int z, String type) {
         if ((type != null) && type.equals("spectatorSpawn")) {
-            if (_spectatorLocations == null) {
-                _spectatorLocations = new ArrayList<>();
+            if (spectatorSpawns == null) {
+                spectatorSpawns = new ArrayList<>();
             }
 
-            _spectatorLocations.add(new Location(x, y, z));
+            spectatorSpawns.add(new Location(x, y, z));
         } else {
             super.parseLoc(x, y, z, type);
         }
-    }
-
-    public List<Location> getSpectatorSpawns() {
-        return _spectatorLocations;
     }
 }

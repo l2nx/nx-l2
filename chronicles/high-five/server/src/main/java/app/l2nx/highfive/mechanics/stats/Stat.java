@@ -20,6 +20,7 @@
 package app.l2nx.highfive.mechanics.stats;
 
 import java.util.NoSuchElementException;
+import lombok.Getter;
 
 /**
  * Enum of basic stats.
@@ -212,14 +213,11 @@ public enum Stat {
 
     public static final int NUM_STATS = values().length;
 
-    private final String _value;
-
-    public String getValue() {
-        return _value;
-    }
+    @Getter
+    private final String value;
 
     private Stat(String s) {
-        _value = s;
+        value = s;
     }
 
     public static Stat valueOfXml(String name) {

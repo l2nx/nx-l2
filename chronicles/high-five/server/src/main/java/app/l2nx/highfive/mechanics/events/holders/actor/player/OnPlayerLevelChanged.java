@@ -22,33 +22,13 @@ package app.l2nx.highfive.mechanics.events.holders.actor.player;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.mechanics.events.EventType;
 import app.l2nx.highfive.mechanics.events.holders.IBaseEvent;
+import lombok.Builder;
 
 /**
  * @author UnAfraid
  */
-public class OnPlayerLevelChanged implements IBaseEvent {
-    private final Player _player;
-    private final int _oldLevel;
-    private final int _newLevel;
-
-    public OnPlayerLevelChanged(Player player, int oldLevel, int newLevel) {
-        _player = player;
-        _oldLevel = oldLevel;
-        _newLevel = newLevel;
-    }
-
-    public Player getPlayer() {
-        return _player;
-    }
-
-    public int getOldLevel() {
-        return _oldLevel;
-    }
-
-    public int getNewLevel() {
-        return _newLevel;
-    }
-
+@Builder(toBuilder = true)
+public record OnPlayerLevelChanged(Player player, int oldLevel, int newLevel) implements IBaseEvent {
     @Override
     public EventType getType() {
         return EventType.ON_PLAYER_LEVEL_CHANGED;

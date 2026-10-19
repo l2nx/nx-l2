@@ -28,8 +28,7 @@ import app.l2nx.highfive.geoengine.GeoEngine;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Entry point for pathfinding.<br>
@@ -37,11 +36,11 @@ import java.util.logging.Logger;
  * Each thread lazily allocates one {@link NodeBuffer} per configured size class on first use; subsequent calls of compatible size reuse the same instance via {@link NodeBuffer#free()}.
  * @author Mobius
  */
+@Slf4j
 public class PathFinding {
-    private static final Logger LOGGER = Logger.getLogger(PathFinding.class.getName());
 
-    private final int[] _sizeClasses;
-    private final ThreadLocal<NodeBuffer[]> _tlBuffers;
+    private final int[] sizeClasses;
+    private final ThreadLocal<NodeBuffer[]> tlBuffers;
 
     protected PathFinding() {
         try {
@@ -57,10 +56,10 @@ public class PathFinding {
             }
 
             Arrays.sort(parsed);
-            _sizeClasses = parsed;
-            _tlBuffers = ThreadLocal.withInitial(() -> new NodeBuffer[_sizeClasses.length]);
+            sizeClasses = parsed;
+            tlBuffers = ThreadLocal.withInitial(() -> new NodeBuffer[sizeClasses.length]);
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, "CellPathFinding: Problem during buffer init: " + e.getMessage(), e);
+            log.warn("CellPathFinding: Problem during buffer init: {}", e.getMessage(), e);
             throw new Error("CellPathFinding: load aborted");
         }
     }
@@ -166,7 +165,7 @@ public class PathFinding {
         try {
             path = buffer.findPath(gx, gy, gz, gtx, gty, gtz);
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, "CellPathFinding: Problem finding path: " + e.getMessage(), e);
+            log.warn("CellPathFinding: Problem finding path: {}", e.getMessage(), e);
             return null;
         } finally {
             buffer.free();
@@ -243,12 +242,12 @@ public class PathFinding {
      * @return a usable buffer, or {@code null} when {@code size} exceeds the largest configured class
      */
     private NodeBuffer alloc(int size) {
-        final NodeBuffer[] perThread = _tlBuffers.get();
-        for (int i = 0; i < _sizeClasses.length; i++) {
-            if (_sizeClasses[i] >= size) {
+        final NodeBuffer[] perThread = tlBuffers.get();
+        for (int i = 0; i < sizeClasses.length; i++) {
+            if (sizeClasses[i] >= size) {
                 NodeBuffer buffer = perThread[i];
                 if (buffer == null) {
-                    buffer = new NodeBuffer(_sizeClasses[i]);
+                    buffer = new NodeBuffer(sizeClasses[i]);
                     perThread[i] = buffer;
                 }
 

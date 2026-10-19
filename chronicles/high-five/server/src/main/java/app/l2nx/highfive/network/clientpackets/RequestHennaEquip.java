@@ -25,20 +25,21 @@ import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.item.Henna;
 import app.l2nx.highfive.entity.item.enums.ItemProcessType;
 import app.l2nx.highfive.managers.PunishmentManager;
-import app.l2nx.highfive.network.PacketLogger;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.serverpackets.ActionFailed;
 import app.l2nx.highfive.network.serverpackets.InventoryUpdate;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author Zoey76
  */
+@Slf4j
 public class RequestHennaEquip extends ClientPacket {
-    private int _symbolId;
+    private int symbolId;
 
     @Override
     protected void readImpl() {
-        _symbolId = readInt();
+        symbolId = readInt();
     }
 
     @Override
@@ -58,9 +59,9 @@ public class RequestHennaEquip extends ClientPacket {
             return;
         }
 
-        final Henna henna = HennaData.getInstance().getHenna(_symbolId);
+        final Henna henna = HennaData.getInstance().getHenna(symbolId);
         if (henna == null) {
-            PacketLogger.warning(getClass().getName() + ": Invalid Henna Id: " + _symbolId + " from " + player);
+            log.warn("{}: Invalid Henna Id: {} from {}", getClass().getName(), symbolId, player);
             player.sendPacket(ActionFailed.STATIC_PACKET);
             return;
         }

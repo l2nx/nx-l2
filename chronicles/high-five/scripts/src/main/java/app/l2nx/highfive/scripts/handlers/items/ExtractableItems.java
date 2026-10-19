@@ -41,11 +41,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ThreadLocalRandom;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Extractable Items handler.
  * @author HorridoJoho, Mobius
  */
+@Slf4j
 public class ExtractableItems implements IItemHandler {
     @Override
     public boolean onItemUse(Playable playable, Item item, boolean forceUse) {
@@ -57,7 +59,7 @@ public class ExtractableItems implements IItemHandler {
         final EtcItem etcitem = (EtcItem) item.getTemplate();
         final List<ExtractableProduct> exitems = etcitem.getExtractableItems();
         if (exitems == null) {
-            LOGGER.info("No extractable data defined for " + etcitem);
+            log.info("No extractable data defined for {}", etcitem);
             return false;
         }
 
@@ -107,8 +109,7 @@ public class ExtractableItems implements IItemHandler {
 
                         final ItemTemplate template = ItemData.getInstance().getTemplate(expi.getId());
                         if (template == null) {
-                            LOGGER.warning("ExtractableItems: Could not find " + item + " product template with id "
-                                    + expi.getId() + "!");
+                            log.warn("Could not find {} product template with id {}!", item, expi.getId());
                             continue;
                         }
 
@@ -160,8 +161,7 @@ public class ExtractableItems implements IItemHandler {
 
                     final ItemTemplate template = ItemData.getInstance().getTemplate(expi.getId());
                     if (template == null) {
-                        LOGGER.warning("ExtractableItems: Could not find " + item + " product template with id "
-                                + expi.getId() + "!");
+                        log.warn("Could not find {} product template with id {}!", item, expi.getId());
                         continue;
                     }
 

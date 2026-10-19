@@ -42,13 +42,13 @@ import java.util.Map;
  * @author UnAfraid, Zoey76
  */
 public class ServitorShare extends AbstractEffect {
-    private final Map<Stat, Double> _stats = new HashMap<>(9);
+    private final Map<Stat, Double> stats = new HashMap<>(9);
 
     public ServitorShare(Condition attachCond, Condition applyCond, StatSet set, StatSet params) {
         super(attachCond, applyCond, set, params);
 
         for (String key : params.getSet().keySet()) {
-            _stats.put(Stat.valueOfXml(key), params.getDouble(key, 1.));
+            stats.put(Stat.valueOfXml(key), params.getDouble(key, 1.));
         }
     }
 
@@ -67,7 +67,7 @@ public class ServitorShare extends AbstractEffect {
         super.onStart(effector, effected, skill);
 
         final Player player = effected.asPlayer();
-        player.setServitorShare(_stats);
+        player.setServitorShare(stats);
 
         final Summon summon = player.getSummon();
         if (summon != null) {

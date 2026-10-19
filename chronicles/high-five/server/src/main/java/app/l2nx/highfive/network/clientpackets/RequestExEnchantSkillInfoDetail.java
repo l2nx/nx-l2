@@ -29,20 +29,20 @@ import app.l2nx.highfive.network.serverpackets.ExEnchantSkillInfoDetail;
  * @author -Wooden-
  */
 public class RequestExEnchantSkillInfoDetail extends ClientPacket {
-    private int _type;
-    private int _skillId;
-    private int _skillLevel;
+    private int type;
+    private int skillId;
+    private int skillLevel;
 
     @Override
     protected void readImpl() {
-        _type = readInt();
-        _skillId = readInt();
-        _skillLevel = readInt();
+        type = readInt();
+        skillId = readInt();
+        skillLevel = readInt();
     }
 
     @Override
     protected void runImpl() {
-        if ((_skillId <= 0) || (_skillLevel <= 0)) {
+        if ((skillId <= 0) || (skillLevel <= 0)) {
             return;
         }
 
@@ -52,15 +52,15 @@ public class RequestExEnchantSkillInfoDetail extends ClientPacket {
         }
 
         int reqskillLevel = -2;
-        if ((_type == 0) || (_type == 1)) {
-            reqskillLevel = _skillLevel - 1; // enchant
-        } else if (_type == 2) {
-            reqskillLevel = _skillLevel + 1; // untrain
-        } else if (_type == 3) {
-            reqskillLevel = _skillLevel; // change route
+        if ((type == 0) || (type == 1)) {
+            reqskillLevel = skillLevel - 1; // enchant
+        } else if (type == 2) {
+            reqskillLevel = skillLevel + 1; // untrain
+        } else if (type == 3) {
+            reqskillLevel = skillLevel; // change route
         }
 
-        final int playerskillLevel = player.getSkillLevel(_skillId);
+        final int playerskillLevel = player.getSkillLevel(skillId);
 
         // does not have such skill
         if (playerskillLevel == 0) {
@@ -69,7 +69,7 @@ public class RequestExEnchantSkillInfoDetail extends ClientPacket {
 
         // if reqlevel is 100,200,.. check base skill level enchant
         if ((reqskillLevel % 100) == 0) {
-            final EnchantSkillLearn esl = EnchantSkillGroupsData.getInstance().getSkillEnchantmentBySkillId(_skillId);
+            final EnchantSkillLearn esl = EnchantSkillGroupsData.getInstance().getSkillEnchantmentBySkillId(skillId);
             if (esl != null) {
                 // if player does not have min level to enchant
                 if (playerskillLevel != esl.getBaseLevel()) {
@@ -83,12 +83,12 @@ public class RequestExEnchantSkillInfoDetail extends ClientPacket {
         }
         // change route is different skill level but same enchant
         else if ((playerskillLevel != reqskillLevel)
-                && (_type == 3)
-                && ((playerskillLevel % 100) != (_skillLevel % 100))) {
+                && (type == 3)
+                && ((playerskillLevel % 100) != (skillLevel % 100))) {
             return;
         }
 
         // send skill enchantment detail
-        player.sendPacket(new ExEnchantSkillInfoDetail(_type, _skillId, _skillLevel, player));
+        player.sendPacket(new ExEnchantSkillInfoDetail(type, skillId, skillLevel, player));
     }
 }

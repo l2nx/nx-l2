@@ -35,28 +35,29 @@ import app.l2nx.highfive.network.serverpackets.ExEnchantSkillInfo;
 import app.l2nx.highfive.network.serverpackets.ExEnchantSkillInfoDetail;
 import app.l2nx.highfive.network.serverpackets.ExEnchantSkillResult;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Format (ch) dd c: (id) 0xD0 h: (subid) 0x33 d: skill id d: skill level
  * @author -Wooden-
  */
 public class RequestExEnchantSkillUntrain extends ClientPacket {
-    private static final Logger LOGGER_ENCHANT = Logger.getLogger("enchant.skills");
 
-    private int _skillId;
-    private int _skillLevel;
+    private static final Logger ENCHANT_SKILLS_LOG = LoggerFactory.getLogger("enchant.skills");
+
+    private int skillId;
+    private int skillLevel;
 
     @Override
     protected void readImpl() {
-        _skillId = readInt();
-        _skillLevel = readInt();
+        skillId = readInt();
+        skillLevel = readInt();
     }
 
     @Override
     protected void runImpl() {
-        if ((_skillId <= 0) || (_skillLevel <= 0)) {
+        if ((skillId <= 0) || (skillLevel <= 0)) {
             return;
         }
 
@@ -87,24 +88,24 @@ public class RequestExEnchantSkillUntrain extends ClientPacket {
             return;
         }
 
-        final EnchantSkillLearn s = EnchantSkillGroupsData.getInstance().getSkillEnchantmentBySkillId(_skillId);
+        final EnchantSkillLearn s = EnchantSkillGroupsData.getInstance().getSkillEnchantmentBySkillId(skillId);
         if (s == null) {
             return;
         }
 
-        if ((_skillLevel % 100) == 0) {
-            _skillLevel = s.getBaseLevel();
+        if ((skillLevel % 100) == 0) {
+            skillLevel = s.getBaseLevel();
         }
 
-        final Skill skill = SkillData.getInstance().getSkill(_skillId, _skillLevel);
+        final Skill skill = SkillData.getInstance().getSkill(skillId, skillLevel);
         if (skill == null) {
             return;
         }
 
         final int reqItemId = EnchantSkillGroupsData.UNTRAIN_ENCHANT_BOOK;
-        final int beforeUntrainSkillLevel = player.getSkillLevel(_skillId);
-        if (((beforeUntrainSkillLevel - 1) != _skillLevel)
-                && (((beforeUntrainSkillLevel % 100) != 1) || (_skillLevel != s.getBaseLevel()))) {
+        final int beforeUntrainSkillLevel = player.getSkillLevel(skillId);
+        if (((beforeUntrainSkillLevel - 1) != skillLevel)
+                && (((beforeUntrainSkillLevel % 100) != 1) || (skillLevel != s.getBaseLevel()))) {
             return;
         }
 
@@ -136,34 +137,38 @@ public class RequestExEnchantSkillUntrain extends ClientPacket {
 
         player.getStat().addSp((int) (esd.getSpCost() * 0.8));
         if (GeneralConfig.LOG_SKILL_ENCHANTS) {
-            LOGGER_ENCHANT.log(
-                    Level.INFO,
-                    "Untrain:" + player.getName() + " [" + player.getObjectId() + "] Account:" + player.getAccountName()
-                            + " IP:" + player.getIPAddress() + ", Skill:" + skill + ", SPB:" + spb);
+            ENCHANT_SKILLS_LOG.info(
+                    "Untrain:{} [{}] Account:{} IP:{}, Skill:{}, SPB:{}",
+                    player.getName(),
+                    player.getObjectId(),
+                    player.getAccountName(),
+                    player.getIPAddress(),
+                    skill,
+                    spb);
         }
 
         player.addSkill(skill, true);
         player.sendPacket(ExEnchantSkillResult.valueOf(true));
 
         player.updateUserInfo();
-        if (_skillLevel > 100) {
+        if (skillLevel > 100) {
             final SystemMessage sm = new SystemMessage(
                     SystemMessageId
                             .UNTRAIN_OF_ENCHANT_SKILL_WAS_SUCCESSFUL_CURRENT_LEVEL_OF_ENCHANT_SKILL_S1_HAS_BEEN_DECREASED_BY_1);
-            sm.addSkillName(_skillId);
+            sm.addSkillName(skillId);
             player.sendPacket(sm);
         } else {
             final SystemMessage sm = new SystemMessage(
                     SystemMessageId
                             .UNTRAIN_OF_ENCHANT_SKILL_WAS_SUCCESSFUL_CURRENT_LEVEL_OF_ENCHANT_SKILL_S1_BECAME_0_AND_ENCHANT_SKILL_WILL_BE_INITIALIZED);
-            sm.addSkillName(_skillId);
+            sm.addSkillName(skillId);
             player.sendPacket(sm);
         }
 
         player.sendSkillList();
-        final int afterUntrainSkillLevel = player.getSkillLevel(_skillId);
-        player.sendPacket(new ExEnchantSkillInfo(_skillId, afterUntrainSkillLevel));
-        player.sendPacket(new ExEnchantSkillInfoDetail(2, _skillId, afterUntrainSkillLevel - 1, player));
-        player.updateShortcuts(_skillId, afterUntrainSkillLevel);
+        final int afterUntrainSkillLevel = player.getSkillLevel(skillId);
+        player.sendPacket(new ExEnchantSkillInfo(skillId, afterUntrainSkillLevel));
+        player.sendPacket(new ExEnchantSkillInfoDetail(2, skillId, afterUntrainSkillLevel - 1, player));
+        player.updateShortcuts(skillId, afterUntrainSkillLevel);
     }
 }

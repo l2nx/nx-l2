@@ -39,13 +39,13 @@ import app.l2nx.highfive.network.serverpackets.GmViewQuestInfo;
  * @version $Revision: 1.1.2.2.2.2 $ $Date: 2005/03/27 15:29:30 $
  */
 public class RequestGMCommand extends ClientPacket {
-    private String _targetName;
-    private int _command;
+    private String targetName;
+    private int command;
 
     @Override
     protected void readImpl() {
-        _targetName = readString();
-        _command = readInt();
+        targetName = readString();
+        command = readInt();
         // _unknown = readInt();
     }
 
@@ -57,15 +57,15 @@ public class RequestGMCommand extends ClientPacket {
             return;
         }
 
-        final Player player = World.getPlayer(_targetName);
-        final Clan clan = ClanTable.getInstance().getClanByName(_targetName);
+        final Player player = World.getPlayer(targetName);
+        final Clan clan = ClanTable.getInstance().getClanByName(targetName);
 
         // player name was incorrect?
-        if ((player == null) && ((clan == null) || (_command != 6))) {
+        if ((player == null) && ((clan == null) || (command != 6))) {
             return;
         }
 
-        switch (_command) {
+        switch (command) {
             case 1: // player status
             {
                 client.sendPacket(new GMViewCharacterInfo(player));

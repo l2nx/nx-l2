@@ -35,15 +35,14 @@ import app.l2nx.highfive.network.Disconnection;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.serverpackets.LeaveWorld;
 import java.util.StringTokenizer;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * This class handles following admin commands: - handles every admin menu command
  * @version $Revision: 1.3.2.6.2.4 $ $Date: 2005/04/11 10:06:06 $
  */
+@Slf4j
 public class AdminMenu implements IAdminCommandHandler {
-    private static final Logger LOGGER = Logger.getLogger(AdminMenu.class.getName());
 
     private static final String[] ADMIN_COMMANDS = {
         "admin_char_manage",
@@ -116,7 +115,7 @@ public class AdminMenu implements IAdminCommandHandler {
                         + player.getParty().getLeader().getName() + " ("
                         + player.getParty().getMemberCount() + " members).");
             } catch (Exception e) {
-                LOGGER.log(Level.WARNING, "", e);
+                log.warn("", e);
             }
         } else if (command.startsWith("admin_recall_clan_menu")) {
             try {
@@ -147,7 +146,7 @@ public class AdminMenu implements IAdminCommandHandler {
                 activeChar.sendSysMessage("You have teleported the clan \"" + clan.getName() + "\" ("
                         + clan.getOnlineMembers(0).size() + " members).");
             } catch (Exception e) {
-                LOGGER.log(Level.WARNING, "", e);
+                log.warn("", e);
             }
         } else if (command.startsWith("admin_goto_char_menu")) {
             try {

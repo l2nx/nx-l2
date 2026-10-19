@@ -27,15 +27,15 @@ import app.l2nx.network.buffer.WriteBuffer;
  * @author GodKratos
  */
 public class ExVitalityPointInfo extends ServerPacket {
-    private final int _vitalityPoints;
+    private final int vitalityPoints;
 
     public ExVitalityPointInfo(int vitPoints) {
-        _vitalityPoints = vitPoints;
+        vitalityPoints = vitPoints;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_VITALITY_POINT_INFO.writeId(this, buffer);
-        buffer.writeInt(_vitalityPoints);
+        buffer.writeInt(vitalityPoints);
     }
 }

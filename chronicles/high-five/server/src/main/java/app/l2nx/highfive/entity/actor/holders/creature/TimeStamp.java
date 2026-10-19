@@ -24,6 +24,7 @@ package app.l2nx.highfive.entity.actor.holders.creature;
 
 import app.l2nx.highfive.entity.item.instance.Item;
 import app.l2nx.highfive.mechanics.skill.Skill;
+import lombok.Getter;
 
 /**
  * Simple class containing all necessary information to maintain<br>
@@ -33,15 +34,18 @@ import app.l2nx.highfive.mechanics.skill.Skill;
  */
 public class TimeStamp {
     /** Item or skill ID. */
-    private final int _id1;
+    private final int id1;
     /** Item object ID or skill level. */
-    private final int _id2;
+    private final int id2;
     /** Item or skill reuse time. */
-    private final long _reuse;
+    @Getter
+    private final long reuse;
     /** Time stamp. */
-    private volatile long _stamp;
+    @Getter
+    private volatile long stamp;
     /** Shared reuse group. */
-    private final int _group;
+    @Getter
+    private final int sharedReuseGroup;
 
     /**
      * Skill time stamp constructor.
@@ -50,11 +54,11 @@ public class TimeStamp {
      * @param systime overrides the system time with a customized one.
      */
     public TimeStamp(Skill skill, long reuse, long systime) {
-        _id1 = skill.getId();
-        _id2 = skill.getLevel();
-        _reuse = reuse;
-        _stamp = systime > 0 ? systime : reuse != 0 ? System.currentTimeMillis() + reuse : 0;
-        _group = -1;
+        id1 = skill.getId();
+        id2 = skill.getLevel();
+        this.reuse = reuse;
+        stamp = systime > 0 ? systime : reuse != 0 ? System.currentTimeMillis() + reuse : 0;
+        sharedReuseGroup = -1;
     }
 
     /**
@@ -64,19 +68,11 @@ public class TimeStamp {
      * @param systime overrides the system time with a customized one.
      */
     public TimeStamp(Item item, long reuse, long systime) {
-        _id1 = item.getId();
-        _id2 = item.getObjectId();
-        _reuse = reuse;
-        _stamp = systime > 0 ? systime : reuse != 0 ? System.currentTimeMillis() + reuse : 0;
-        _group = item.getSharedReuseGroup();
-    }
-
-    /**
-     * Gets the time stamp.
-     * @return the time stamp, either the system time where this time stamp was created or the custom time assigned
-     */
-    public long getStamp() {
-        return _stamp;
+        id1 = item.getId();
+        id2 = item.getObjectId();
+        this.reuse = reuse;
+        stamp = systime > 0 ? systime : reuse != 0 ? System.currentTimeMillis() + reuse : 0;
+        sharedReuseGroup = item.getSharedReuseGroup();
     }
 
     /**
@@ -84,7 +80,7 @@ public class TimeStamp {
      * @return the item ID
      */
     public int getItemId() {
-        return _id1;
+        return id1;
     }
 
     /**
@@ -92,7 +88,7 @@ public class TimeStamp {
      * @return the item object ID
      */
     public int getItemObjectId() {
-        return _id2;
+        return id2;
     }
 
     /**
@@ -100,7 +96,7 @@ public class TimeStamp {
      * @return the skill ID
      */
     public int getSkillId() {
-        return _id1;
+        return id1;
     }
 
     /**
@@ -108,24 +104,7 @@ public class TimeStamp {
      * @return the skill level
      */
     public int getSkillLevel() {
-        return _id2;
-    }
-
-    /**
-     * Gets the reuse.
-     * @return the reuse
-     */
-    public long getReuse() {
-        return _reuse;
-    }
-
-    /**
-     * Get the shared reuse group.<br>
-     * Only used on items.
-     * @return the shared reuse group
-     */
-    public int getSharedReuseGroup() {
-        return _group;
+        return id2;
     }
 
     /**
@@ -133,13 +112,13 @@ public class TimeStamp {
      * @return the remaining time for this time stamp to expire
      */
     public long getRemaining() {
-        if (_stamp == 0) {
+        if (stamp == 0) {
             return 0;
         }
 
-        final long remainingTime = _stamp - System.currentTimeMillis();
+        final long remainingTime = stamp - System.currentTimeMillis();
         if (remainingTime <= 0) {
-            _stamp = 0;
+            stamp = 0;
             return 0;
         }
 
@@ -151,12 +130,12 @@ public class TimeStamp {
      * @return {@code true} if this time stamp has expired, {@code false} otherwise
      */
     public boolean hasNotPassed() {
-        if (_stamp == 0) {
+        if (stamp == 0) {
             return false;
         }
 
-        if (System.currentTimeMillis() >= _stamp) {
-            _stamp = 0;
+        if (System.currentTimeMillis() >= stamp) {
+            stamp = 0;
             return false;
         }
 

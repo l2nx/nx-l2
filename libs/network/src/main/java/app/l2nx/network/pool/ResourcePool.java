@@ -28,6 +28,7 @@ import java.nio.ByteOrder;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListMap;
+import lombok.Getter;
 
 /**
  * Manages multiple {@link BufferPool}s indexed by buffer size for efficient {@link ByteBuffer} reuse.<br>
@@ -42,15 +43,17 @@ import java.util.concurrent.ConcurrentSkipListMap;
  */
 public class ResourcePool {
     /** Ordered map for ceiling-entry lookups (find smallest pool >= requested size). */
-    private final ConcurrentSkipListMap<Integer, BufferPool> _sizedPools = new ConcurrentSkipListMap<>();
+    private final ConcurrentSkipListMap<Integer, BufferPool> sizedPools = new ConcurrentSkipListMap<>();
 
     /** Fast O(1) exact-capacity lookup used by the recycle path. */
-    private final ConcurrentHashMap<Integer, BufferPool> _exactPools = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<Integer, BufferPool> exactPools = new ConcurrentHashMap<>();
 
-    private volatile boolean _autoExpandCapacity = true;
-    private volatile boolean _initBufferPools = false;
-    private volatile float _initBufferPoolFactor = 0;
-    private volatile int _bufferSegmentSize = 64;
+    private volatile boolean autoExpandCapacity = true;
+    private volatile boolean initBufferPools = false;
+    private volatile float initBufferPoolFactor = 0;
+
+    @Getter
+    private volatile int segmentSize = 64;
 
     public ResourcePool() {}
 
@@ -97,16 +100,16 @@ public class ResourcePool {
      * @return a direct {@link ByteBuffer} with the requested capacity
      */
     private ByteBuffer getSizedBuffer(int size) {
-        final Entry<Integer, BufferPool> entry = _sizedPools.ceilingEntry(size);
+        final Entry<Integer, BufferPool> entry = sizedPools.ceilingEntry(size);
         if (entry != null) {
             final BufferPool pool = entry.getValue();
-            if (_autoExpandCapacity) {
-                if (_initBufferPools) {
+            if (autoExpandCapacity) {
+                if (initBufferPools) {
                     if (pool.isEmpty()) {
-                        pool.expandCapacity(_initBufferPoolFactor, pool.getMaxSize());
+                        pool.expandCapacity(initBufferPoolFactor, pool.getMaxSize());
                     }
                 } else if (pool.isFull()) {
-                    pool.expandCapacity(_initBufferPoolFactor, pool.getMaxSize());
+                    pool.expandCapacity(initBufferPoolFactor, pool.getMaxSize());
                 }
             }
 
@@ -120,12 +123,12 @@ public class ResourcePool {
         if (entry == null) {
             // Unknown size: register a new pool so future requests are served from the pool.
             final BufferPool pool = new BufferPool(10, size);
-            if (_initBufferPools) {
-                pool.initialize(_initBufferPoolFactor);
+            if (initBufferPools) {
+                pool.initialize(initBufferPoolFactor);
             }
 
-            _sizedPools.putIfAbsent(size, pool);
-            _exactPools.putIfAbsent(size, _sizedPools.get(size));
+            sizedPools.putIfAbsent(size, pool);
+            exactPools.putIfAbsent(size, sizedPools.get(size));
         }
 
         return ByteBuffer.allocateDirect(size).order(ByteOrder.LITTLE_ENDIAN);
@@ -137,19 +140,19 @@ public class ResourcePool {
      * @return the capacity of the smallest pool that can satisfy {@code size}
      */
     private int determineBufferSize(int size) {
-        final Entry<Integer, BufferPool> entry = _sizedPools.ceilingEntry(size);
+        final Entry<Integer, BufferPool> entry = sizedPools.ceilingEntry(size);
         if (entry != null) {
             return entry.getKey();
         }
 
         // Unknown size - register a new pool.
         final BufferPool pool = new BufferPool(10, size);
-        if (_initBufferPools) {
-            pool.initialize(_initBufferPoolFactor);
+        if (initBufferPools) {
+            pool.initialize(initBufferPoolFactor);
         }
 
-        _sizedPools.putIfAbsent(size, pool);
-        _exactPools.putIfAbsent(size, _sizedPools.get(size));
+        sizedPools.putIfAbsent(size, pool);
+        exactPools.putIfAbsent(size, sizedPools.get(size));
         return size;
     }
 
@@ -163,7 +166,7 @@ public class ResourcePool {
             return;
         }
 
-        final BufferPool pool = _exactPools.get(buffer.capacity());
+        final BufferPool pool = exactPools.get(buffer.capacity());
         if (pool != null) {
             pool.recycle(buffer);
         }
@@ -176,8 +179,8 @@ public class ResourcePool {
      * @param bufferPool the pool to register
      */
     public void addBufferPool(int bufferSize, BufferPool bufferPool) {
-        _sizedPools.putIfAbsent(bufferSize, bufferPool);
-        _exactPools.putIfAbsent(bufferSize, bufferPool);
+        sizedPools.putIfAbsent(bufferSize, bufferPool);
+        exactPools.putIfAbsent(bufferSize, bufferPool);
     }
 
     /**
@@ -185,7 +188,7 @@ public class ResourcePool {
      * @return pool count
      */
     public int bufferPoolSize() {
-        return _sizedPools.size();
+        return sizedPools.size();
     }
 
     /**
@@ -194,20 +197,12 @@ public class ResourcePool {
      * @param initBufferPoolFactor fraction of each pool to pre-allocate (0 = none)
      */
     public void initializeBuffers(boolean autoExpandCapacity, float initBufferPoolFactor) {
-        _autoExpandCapacity = autoExpandCapacity;
-        _initBufferPoolFactor = initBufferPoolFactor;
-        _initBufferPools = initBufferPoolFactor > 0;
-        if (_initBufferPools) {
-            _sizedPools.values().forEach(pool -> pool.initialize(initBufferPoolFactor));
+        this.autoExpandCapacity = autoExpandCapacity;
+        this.initBufferPoolFactor = initBufferPoolFactor;
+        initBufferPools = initBufferPoolFactor > 0;
+        if (initBufferPools) {
+            sizedPools.values().forEach(pool -> pool.initialize(initBufferPoolFactor));
         }
-    }
-
-    /**
-     * Returns the configured buffer segment size (default 64).
-     * @return segment size in bytes
-     */
-    public int getSegmentSize() {
-        return _bufferSegmentSize;
     }
 
     /**
@@ -215,7 +210,7 @@ public class ResourcePool {
      * @param size the new segment size in bytes
      */
     public void setBufferSegmentSize(int size) {
-        _bufferSegmentSize = size;
+        segmentSize = size;
     }
 
     /**
@@ -224,7 +219,7 @@ public class ResourcePool {
      */
     public String stats() {
         final StringBuilder sb = new StringBuilder();
-        for (BufferPool pool : _sizedPools.values()) {
+        for (BufferPool pool : sizedPools.values()) {
             sb.append(pool.toString()).append(System.lineSeparator());
         }
 

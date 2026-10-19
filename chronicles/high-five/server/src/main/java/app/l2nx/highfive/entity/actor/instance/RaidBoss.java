@@ -35,14 +35,20 @@ import app.l2nx.highfive.mechanics.olympiad.Hero;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
 import java.util.concurrent.ThreadLocalRandom;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * This class manages all RaidBoss.<br>
  * In a group mob, there are one master called RaidBoss and several slaves called Minions.
  */
 public class RaidBoss extends Monster {
-    private RaidBossStatus _raidStatus;
-    private boolean _useRaidCurse = true;
+    @Getter
+    @Setter
+    private RaidBossStatus raidStatus;
+
+    @Setter
+    private boolean useRaidCurse = true;
 
     /**
      * Creates a raid boss.
@@ -101,14 +107,6 @@ public class RaidBoss extends Monster {
         return true;
     }
 
-    public void setRaidStatus(RaidBossStatus status) {
-        _raidStatus = status;
-    }
-
-    public RaidBossStatus getRaidStatus() {
-        return _raidStatus;
-    }
-
     @Override
     public float getVitalityPoints(int level, long damage) {
         return -super.getVitalityPoints(level, damage) / 100;
@@ -119,12 +117,8 @@ public class RaidBoss extends Monster {
         return PlayerConfig.RAIDBOSS_USE_VITALITY;
     }
 
-    public void setUseRaidCurse(boolean value) {
-        _useRaidCurse = value;
-    }
-
     @Override
     public boolean giveRaidCurse() {
-        return _useRaidCurse;
+        return useRaidCurse;
     }
 }

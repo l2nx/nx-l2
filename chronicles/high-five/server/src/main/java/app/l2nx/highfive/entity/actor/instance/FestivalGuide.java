@@ -28,17 +28,22 @@ import app.l2nx.highfive.mechanics.sevensigns.SevenSigns;
 import app.l2nx.highfive.mechanics.sevensigns.SevenSignsFestival;
 import app.l2nx.highfive.network.serverpackets.ActionFailed;
 import app.l2nx.highfive.network.serverpackets.NpcHtmlMessage;
+import lombok.Getter;
 
 /**
  * Festival of Darkness Guide (Seven Signs)
  * @author Tempy
  */
 public class FestivalGuide extends Npc {
-    private final int _festivalType;
-    private final int _festivalOracle;
-    private final int _blueStonesNeeded;
-    private final int _greenStonesNeeded;
-    private final int _redStonesNeeded;
+    @Getter
+    private final int festivalType;
+
+    @Getter
+    private final int festivalOracle;
+
+    private final int blueStonesNeeded;
+    private final int greenStonesNeeded;
+    private final int redStonesNeeded;
 
     /**
      * Creates a festival guide.
@@ -51,122 +56,114 @@ public class FestivalGuide extends Npc {
         switch (getId()) {
             case 31127:
             case 31132: {
-                _festivalType = SevenSignsFestival.FESTIVAL_LEVEL_MAX_31;
-                _festivalOracle = SevenSigns.CABAL_DAWN;
-                _blueStonesNeeded = 900;
-                _greenStonesNeeded = 540;
-                _redStonesNeeded = 270;
+                festivalType = SevenSignsFestival.FESTIVAL_LEVEL_MAX_31;
+                festivalOracle = SevenSigns.CABAL_DAWN;
+                blueStonesNeeded = 900;
+                greenStonesNeeded = 540;
+                redStonesNeeded = 270;
                 break;
             }
             case 31128:
             case 31133: {
-                _festivalType = SevenSignsFestival.FESTIVAL_LEVEL_MAX_42;
-                _festivalOracle = SevenSigns.CABAL_DAWN;
-                _blueStonesNeeded = 1500;
-                _greenStonesNeeded = 900;
-                _redStonesNeeded = 450;
+                festivalType = SevenSignsFestival.FESTIVAL_LEVEL_MAX_42;
+                festivalOracle = SevenSigns.CABAL_DAWN;
+                blueStonesNeeded = 1500;
+                greenStonesNeeded = 900;
+                redStonesNeeded = 450;
                 break;
             }
             case 31129:
             case 31134: {
-                _festivalType = SevenSignsFestival.FESTIVAL_LEVEL_MAX_53;
-                _festivalOracle = SevenSigns.CABAL_DAWN;
-                _blueStonesNeeded = 3000;
-                _greenStonesNeeded = 1800;
-                _redStonesNeeded = 900;
+                festivalType = SevenSignsFestival.FESTIVAL_LEVEL_MAX_53;
+                festivalOracle = SevenSigns.CABAL_DAWN;
+                blueStonesNeeded = 3000;
+                greenStonesNeeded = 1800;
+                redStonesNeeded = 900;
                 break;
             }
             case 31130:
             case 31135: {
-                _festivalType = SevenSignsFestival.FESTIVAL_LEVEL_MAX_64;
-                _festivalOracle = SevenSigns.CABAL_DAWN;
-                _blueStonesNeeded = 4500;
-                _greenStonesNeeded = 2700;
-                _redStonesNeeded = 1350;
+                festivalType = SevenSignsFestival.FESTIVAL_LEVEL_MAX_64;
+                festivalOracle = SevenSigns.CABAL_DAWN;
+                blueStonesNeeded = 4500;
+                greenStonesNeeded = 2700;
+                redStonesNeeded = 1350;
                 break;
             }
             case 31131:
             case 31136: {
-                _festivalType = SevenSignsFestival.FESTIVAL_LEVEL_MAX_NONE;
-                _festivalOracle = SevenSigns.CABAL_DAWN;
-                _blueStonesNeeded = 6000;
-                _greenStonesNeeded = 3600;
-                _redStonesNeeded = 1800;
+                festivalType = SevenSignsFestival.FESTIVAL_LEVEL_MAX_NONE;
+                festivalOracle = SevenSigns.CABAL_DAWN;
+                blueStonesNeeded = 6000;
+                greenStonesNeeded = 3600;
+                redStonesNeeded = 1800;
                 break;
             }
             case 31137:
             case 31142: {
-                _festivalType = SevenSignsFestival.FESTIVAL_LEVEL_MAX_31;
-                _festivalOracle = SevenSigns.CABAL_DUSK;
-                _blueStonesNeeded = 900;
-                _greenStonesNeeded = 540;
-                _redStonesNeeded = 270;
+                festivalType = SevenSignsFestival.FESTIVAL_LEVEL_MAX_31;
+                festivalOracle = SevenSigns.CABAL_DUSK;
+                blueStonesNeeded = 900;
+                greenStonesNeeded = 540;
+                redStonesNeeded = 270;
                 break;
             }
             case 31138:
             case 31143: {
-                _festivalType = SevenSignsFestival.FESTIVAL_LEVEL_MAX_42;
-                _festivalOracle = SevenSigns.CABAL_DUSK;
-                _blueStonesNeeded = 1500;
-                _greenStonesNeeded = 900;
-                _redStonesNeeded = 450;
+                festivalType = SevenSignsFestival.FESTIVAL_LEVEL_MAX_42;
+                festivalOracle = SevenSigns.CABAL_DUSK;
+                blueStonesNeeded = 1500;
+                greenStonesNeeded = 900;
+                redStonesNeeded = 450;
                 break;
             }
             case 31139:
             case 31144: {
-                _festivalType = SevenSignsFestival.FESTIVAL_LEVEL_MAX_53;
-                _festivalOracle = SevenSigns.CABAL_DUSK;
-                _blueStonesNeeded = 3000;
-                _greenStonesNeeded = 1800;
-                _redStonesNeeded = 900;
+                festivalType = SevenSignsFestival.FESTIVAL_LEVEL_MAX_53;
+                festivalOracle = SevenSigns.CABAL_DUSK;
+                blueStonesNeeded = 3000;
+                greenStonesNeeded = 1800;
+                redStonesNeeded = 900;
                 break;
             }
             case 31140:
             case 31145: {
-                _festivalType = SevenSignsFestival.FESTIVAL_LEVEL_MAX_64;
-                _festivalOracle = SevenSigns.CABAL_DUSK;
-                _blueStonesNeeded = 4500;
-                _greenStonesNeeded = 2700;
-                _redStonesNeeded = 1350;
+                festivalType = SevenSignsFestival.FESTIVAL_LEVEL_MAX_64;
+                festivalOracle = SevenSigns.CABAL_DUSK;
+                blueStonesNeeded = 4500;
+                greenStonesNeeded = 2700;
+                redStonesNeeded = 1350;
                 break;
             }
             case 31141:
             case 31146: {
-                _festivalType = SevenSignsFestival.FESTIVAL_LEVEL_MAX_NONE;
-                _festivalOracle = SevenSigns.CABAL_DUSK;
-                _blueStonesNeeded = 6000;
-                _greenStonesNeeded = 3600;
-                _redStonesNeeded = 1800;
+                festivalType = SevenSignsFestival.FESTIVAL_LEVEL_MAX_NONE;
+                festivalOracle = SevenSigns.CABAL_DUSK;
+                blueStonesNeeded = 6000;
+                greenStonesNeeded = 3600;
+                redStonesNeeded = 1800;
                 break;
             }
             default: {
-                _festivalType = SevenSignsFestival.FESTIVAL_LEVEL_MAX_NONE;
-                _festivalOracle = SevenSigns.CABAL_NULL;
-                _blueStonesNeeded = 0;
-                _greenStonesNeeded = 0;
-                _redStonesNeeded = 0;
+                festivalType = SevenSignsFestival.FESTIVAL_LEVEL_MAX_NONE;
+                festivalOracle = SevenSigns.CABAL_NULL;
+                blueStonesNeeded = 0;
+                greenStonesNeeded = 0;
+                redStonesNeeded = 0;
             }
         }
-    }
-
-    public int getFestivalType() {
-        return _festivalType;
-    }
-
-    public int getFestivalOracle() {
-        return _festivalOracle;
     }
 
     public int getStoneCount(int stoneType) {
         switch (stoneType) {
             case SevenSigns.SEAL_STONE_BLUE_ID: {
-                return _blueStonesNeeded;
+                return blueStonesNeeded;
             }
             case SevenSigns.SEAL_STONE_GREEN_ID: {
-                return _greenStonesNeeded;
+                return greenStonesNeeded;
             }
             case SevenSigns.SEAL_STONE_RED_ID: {
-                return _redStonesNeeded;
+                return redStonesNeeded;
             }
             default: {
                 return -1;
@@ -183,7 +180,7 @@ public class FestivalGuide extends Npc {
         final NpcHtmlMessage html = new NpcHtmlMessage(getObjectId());
         html.setFile(player, filename);
         html.replace("%objectId%", String.valueOf(getObjectId()));
-        html.replace("%festivalType%", SevenSignsFestival.getFestivalName(_festivalType));
+        html.replace("%festivalType%", SevenSignsFestival.getFestivalName(festivalType));
         html.replace(
                 "%cycleMins%", String.valueOf(SevenSignsFestival.getInstance().getMinsToNextCycle()));
         if (!isDescription && "2b".equals(value + suffix)) {
@@ -201,9 +198,9 @@ public class FestivalGuide extends Npc {
 
         // festival's fee
         if (value == 1) {
-            html.replace("%blueStoneNeeded%", String.valueOf(_blueStonesNeeded));
-            html.replace("%greenStoneNeeded%", String.valueOf(_greenStonesNeeded));
-            html.replace("%redStoneNeeded%", String.valueOf(_redStonesNeeded));
+            html.replace("%blueStoneNeeded%", String.valueOf(blueStonesNeeded));
+            html.replace("%greenStoneNeeded%", String.valueOf(greenStonesNeeded));
+            html.replace("%redStoneNeeded%", String.valueOf(redStonesNeeded));
         }
 
         player.sendPacket(html);

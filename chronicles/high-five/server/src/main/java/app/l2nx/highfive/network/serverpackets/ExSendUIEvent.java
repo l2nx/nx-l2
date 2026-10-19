@@ -31,13 +31,13 @@ import java.util.Arrays;
 import java.util.List;
 
 public class ExSendUIEvent extends ServerPacket {
-    private final int _objectId;
-    private final boolean _type;
-    private final boolean _countUp;
-    private final int _startTime;
-    private final int _endTime;
-    private final int _npcstringId;
-    private List<String> _params = null;
+    private final int objectId;
+    private final boolean type;
+    private final boolean countUp;
+    private final int startTime;
+    private final int endTime;
+    private final int npcstringId;
+    private List<String> params = null;
 
     /**
      * @param player
@@ -88,33 +88,33 @@ public class ExSendUIEvent extends ServerPacket {
             int endTime,
             int npcstringId,
             String... params) {
-        _objectId = player.getObjectId();
-        _type = hide;
-        _countUp = countUp;
-        _startTime = startTime;
-        _endTime = endTime;
-        _npcstringId = npcstringId;
-        _params = Arrays.asList(params);
+        objectId = player.getObjectId();
+        type = hide;
+        this.countUp = countUp;
+        this.startTime = startTime;
+        this.endTime = endTime;
+        this.npcstringId = npcstringId;
+        this.params = Arrays.asList(params);
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_SEND_UI_EVENT.writeId(this, buffer);
-        buffer.writeInt(_objectId);
+        buffer.writeInt(objectId);
         buffer.writeInt(
-                _type); // 0 = show, 1 = hide (there is 2 = pause and 3 = resume also but they don't work well you can
+                type); // 0 = show, 1 = hide (there is 2 = pause and 3 = resume also but they don't work well you can
         // only pause count down and you cannot resume it because resume hides the counter).
         buffer.writeInt(0); // unknown
         buffer.writeInt(0); // unknown
-        buffer.writeString(_countUp ? "1" : "0"); // 0 = count down, 1 = count up
+        buffer.writeString(countUp ? "1" : "0"); // 0 = count down, 1 = count up
         // timer always disappears 10 seconds before end
-        buffer.writeString(String.valueOf(_startTime / 60));
-        buffer.writeString(String.valueOf(_startTime % 60));
-        buffer.writeString(String.valueOf(_endTime / 60));
-        buffer.writeString(String.valueOf(_endTime % 60));
-        buffer.writeInt(_npcstringId);
-        if (_params != null) {
-            for (String param : _params) {
+        buffer.writeString(String.valueOf(startTime / 60));
+        buffer.writeString(String.valueOf(startTime % 60));
+        buffer.writeString(String.valueOf(endTime / 60));
+        buffer.writeString(String.valueOf(endTime % 60));
+        buffer.writeInt(npcstringId);
+        if (params != null) {
+            for (String param : params) {
                 buffer.writeString(param);
             }
         }

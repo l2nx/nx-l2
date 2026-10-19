@@ -28,17 +28,17 @@ import app.l2nx.network.buffer.WriteBuffer;
  * @author -Wooden-
  */
 public class PledgeReceivePowerInfo extends ServerPacket {
-    private final ClanMember _member;
+    private final ClanMember member;
 
     public PledgeReceivePowerInfo(ClanMember member) {
-        _member = member;
+        this.member = member;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.PLEDGE_RECEIVE_POWER_INFO.writeId(this, buffer);
-        buffer.writeInt(_member.getPowerGrade()); // power grade
-        buffer.writeString(_member.getName());
-        buffer.writeInt(_member.getClan().getRankPrivs(_member.getPowerGrade()).getMask()); // privileges
+        buffer.writeInt(member.getPowerGrade()); // power grade
+        buffer.writeString(member.getName());
+        buffer.writeInt(member.getClan().getRankPrivs(member.getPowerGrade()).getMask()); // privileges
     }
 }

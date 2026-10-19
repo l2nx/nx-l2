@@ -88,70 +88,94 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * This class manages items.
  * @version $Revision: 1.4.2.1.2.11 $ $Date: 2005/03/31 16:07:50 $
  */
+@Slf4j
 public class Item extends WorldObject {
-    private static final Logger LOGGER = Logger.getLogger(Item.class.getName());
-    private static final Logger LOG_ITEMS = Logger.getLogger("item");
+
+    private static final Logger ITEM_LOG = LoggerFactory.getLogger("item");
 
     /** Owner */
-    private int _ownerId;
+    @Getter
+    private int ownerId;
 
-    private Player _owner;
+    private Player owner;
 
     /** ID of who dropped the item last, used for knownlist */
-    private int _dropperObjectId = 0;
+    @Setter
+    private int dropperObjectId = 0;
 
     /** Quantity of the item */
-    private long _count;
+    @Getter
+    private long count;
     /** Initial Quantity of the item */
-    private long _initCount;
+    @Getter
+    private long initCount;
     /** Remaining time (in miliseconds) */
-    private long _time;
+    @Getter
+    private long time;
     /** Quantity of the item can decrease */
-    private boolean _decrease = false;
+    @Setter
+    private boolean countDecrease = false;
 
     /** ID of the item */
-    private final int _itemId;
+    @Getter
+    private final int id;
 
     /** ItemTemplate associated to the item */
-    private final ItemTemplate _itemTemplate;
+    @Getter
+    private final ItemTemplate template;
 
     /** Location of the item : Inventory, PaperDoll, WareHouse */
-    private ItemLocation _loc;
+    @Getter
+    private ItemLocation itemLocation;
 
     /** Slot where item is stored : Paperdoll slot, inventory order ... */
-    private int _locData;
+    @Getter
+    private int locationSlot;
 
     /** Level of enchantment of the item */
-    private int _enchantLevel;
+    @Getter
+    private int enchantLevel;
 
     /** Wear Item */
-    private boolean _wear;
+    private boolean wear;
 
     /** Augmented Item */
-    private Augmentation _augmentation = null;
+    @Getter
+    private Augmentation augmentation = null;
 
     /** Shadow item */
-    private int _mana = -1;
+    @Getter
+    private int mana = -1;
 
-    private boolean _consumingMana = false;
+    private boolean consumingMana = false;
 
     /** Custom item types (used loto, race tickets) */
-    private int _type1;
+    @Getter
+    @Setter
+    private int customType1;
 
-    private int _type2;
+    @Getter
+    @Setter
+    private int customType2;
 
-    private long _dropTime;
+    @Getter
+    @Setter
+    private long dropTime;
 
-    private boolean _published = false;
+    @Getter
+    private boolean published = false;
 
-    private boolean _protected;
+    private boolean protectedItem;
 
     public static final int UNCHANGED = 0;
     public static final int ADDED = 1;
@@ -162,21 +186,28 @@ public class Item extends WorldObject {
     public static final int[] DEFAULT_ENCHANT_OPTIONS = {0, 0, 0};
     // @formatter:on
 
-    private int _lastChange = 2; // 1 ??, 2 modified, 3 removed
-    private boolean _existsInDb; // If a record exists in DB.
-    private boolean _storedInDb; // If DB data is up-to-date.
+    @Getter
+    @Setter
+    private int lastChange = 2; // 1 ??, 2 modified, 3 removed
 
-    private final ReentrantLock _dbLock = new ReentrantLock();
+    private boolean existsInDb; // If a record exists in DB.
+    private boolean storedInDb; // If DB data is up-to-date.
 
-    private Elementals[] _elementals = null;
+    private final ReentrantLock dbLock = new ReentrantLock();
 
-    private ScheduledFuture<?> _itemLootShedule = null;
+    @Getter
+    private Elementals[] elementals = null;
 
-    private final DropProtection _dropProtection = new DropProtection();
+    @Getter
+    @Setter
+    private ScheduledFuture<?> itemLootShedule = null;
 
-    private int _shotsMask = 0;
+    @Getter
+    private final DropProtection dropProtection = new DropProtection();
 
-    private final List<Options> _enchantOptions = new ArrayList<>();
+    private int shotsMask = 0;
+
+    private final List<Options> enchantOptions = new ArrayList<>();
 
     /**
      * Constructor of the Item from the objectId and the itemId.
@@ -186,21 +217,21 @@ public class Item extends WorldObject {
     public Item(int objectId, int itemId) {
         super(objectId);
         setInstanceType(InstanceType.Item);
-        _itemId = itemId;
-        _itemTemplate = ItemData.getInstance().getTemplate(itemId);
-        if ((_itemId == 0) || (_itemTemplate == null)) {
+        id = itemId;
+        template = ItemData.getInstance().getTemplate(itemId);
+        if ((id == 0) || (template == null)) {
             throw new IllegalArgumentException();
         }
 
-        super.setName(_itemTemplate.getName());
+        super.setName(template.getName());
         setCount(1);
-        _loc = ItemLocation.VOID;
-        _type1 = 0;
-        _type2 = 0;
-        _dropTime = 0;
-        _mana = _itemTemplate.getDuration();
-        _time = _itemTemplate.getTime() == -1 ? -1 : System.currentTimeMillis() + (_itemTemplate.getTime() * 60 * 1000);
-        _enchantLevel = 0;
+        itemLocation = ItemLocation.VOID;
+        customType1 = 0;
+        customType2 = 0;
+        dropTime = 0;
+        mana = template.getDuration();
+        time = template.getTime() == -1 ? -1 : System.currentTimeMillis() + (template.getTime() * 60 * 1000);
+        enchantLevel = 0;
         scheduleLifeTimeTask();
     }
 
@@ -212,17 +243,17 @@ public class Item extends WorldObject {
     public Item(int objectId, ItemTemplate itemTemplate) {
         super(objectId);
         setInstanceType(InstanceType.Item);
-        _itemId = itemTemplate.getId();
-        _itemTemplate = itemTemplate;
-        if (_itemId == 0) {
+        id = itemTemplate.getId();
+        template = itemTemplate;
+        if (id == 0) {
             throw new IllegalArgumentException();
         }
 
-        super.setName(_itemTemplate.getName());
+        super.setName(template.getName());
         setCount(1);
-        _loc = ItemLocation.VOID;
-        _mana = _itemTemplate.getDuration();
-        _time = _itemTemplate.getTime() == -1 ? -1 : System.currentTimeMillis() + (_itemTemplate.getTime() * 60 * 1000);
+        itemLocation = ItemLocation.VOID;
+        mana = template.getDuration();
+        time = template.getTime() == -1 ? -1 : System.currentTimeMillis() + (template.getTime() * 60 * 1000);
         scheduleLifeTimeTask();
     }
 
@@ -259,7 +290,7 @@ public class Item extends WorldObject {
 
         // If this item is a mercenary ticket, remove the spawns!
 
-        if (MercTicketManager.getInstance().getTicketCastleId(_itemId) > 0) {
+        if (MercTicketManager.getInstance().getTicketCastleId(id) > 0) {
             MercTicketManager.getInstance().removeTicket(this);
             ItemsOnGroundManager.getInstance().removeObject(this);
         }
@@ -293,16 +324,27 @@ public class Item extends WorldObject {
         setOwnerId(ownerId);
 
         if ((GeneralConfig.LOG_ITEMS && ((!GeneralConfig.LOG_ITEMS_SMALL_LOG) && (!GeneralConfig.LOG_ITEMS_IDS_ONLY)))
-                || (GeneralConfig.LOG_ITEMS_SMALL_LOG
-                        && (_itemTemplate.isEquipable() || (_itemTemplate.getId() == ADENA_ID)))
-                || (GeneralConfig.LOG_ITEMS_IDS_ONLY
-                        && GeneralConfig.LOG_ITEMS_IDS_LIST.contains(_itemTemplate.getId()))) {
-            if (_enchantLevel > 0) {
-                LOG_ITEMS.info("SETOWNER:" + process + ", item " + getObjectId() + ":+" + _enchantLevel + " "
-                        + _itemTemplate.getName() + "(" + _count + "), " + creator + ", " + reference);
+                || (GeneralConfig.LOG_ITEMS_SMALL_LOG && (template.isEquipable() || (template.getId() == ADENA_ID)))
+                || (GeneralConfig.LOG_ITEMS_IDS_ONLY && GeneralConfig.LOG_ITEMS_IDS_LIST.contains(template.getId()))) {
+            if (enchantLevel > 0) {
+                ITEM_LOG.info(
+                        "SETOWNER:{}, item {}:+{} {}({}), {}, {}",
+                        process,
+                        getObjectId(),
+                        enchantLevel,
+                        template.getName(),
+                        count,
+                        creator,
+                        reference);
             } else {
-                LOG_ITEMS.info("SETOWNER:" + process + ", item " + getObjectId() + ":" + _itemTemplate.getName() + "("
-                        + _count + "), " + creator + ", " + reference);
+                ITEM_LOG.info(
+                        "SETOWNER:{}, item {}:{}({}), {}, {}",
+                        process,
+                        getObjectId(),
+                        template.getName(),
+                        count,
+                        creator,
+                        reference);
             }
         }
 
@@ -319,7 +361,7 @@ public class Item extends WorldObject {
 
             GMAudit.logAction(
                     creator.toString(),
-                    process + "(id: " + _itemId + " name: " + getName() + ")",
+                    process + "(id: " + id + " name: " + getName() + ")",
                     targetName,
                     "Object referencing this action is: " + referenceName);
         }
@@ -330,28 +372,20 @@ public class Item extends WorldObject {
      * @param ownerId : int designating the ID of the owner
      */
     public void setOwnerId(int ownerId) {
-        if (ownerId == _ownerId) {
+        if (ownerId == this.ownerId) {
             return;
         }
 
         // Remove any inventory skills from the old owner.
         removeSkillsFromOwner();
 
-        _owner = null;
-        _ownerId = ownerId;
-        _storedInDb = false;
+        owner = null;
+        this.ownerId = ownerId;
+        storedInDb = false;
 
         // Give any inventory skills to the new owner only if the item is in inventory.
         // else the skills will be given when location is set to inventory.
         giveSkillsToOwner();
-    }
-
-    /**
-     * Returns the ownerID of the item
-     * @return int : ownerID of the item
-     */
-    public int getOwnerId() {
-        return _ownerId;
     }
 
     /**
@@ -379,7 +413,7 @@ public class Item extends WorldObject {
      * @param checkSkills : boolean used to remove or give skills to owner.
      */
     public void setItemLocation(ItemLocation loc, int locData, boolean checkSkills) {
-        if ((loc == _loc) && (locData == _locData)) {
+        if ((loc == itemLocation) && (locData == locationSlot)) {
             return;
         }
 
@@ -388,9 +422,9 @@ public class Item extends WorldObject {
             removeSkillsFromOwner();
         }
 
-        _loc = loc;
-        _locData = locData;
-        _storedInDb = false;
+        itemLocation = loc;
+        locationSlot = locData;
+        storedInDb = false;
 
         if (checkSkills) {
             // Give any inventory skills to the new owner only if the item is in inventory.
@@ -399,28 +433,17 @@ public class Item extends WorldObject {
         }
     }
 
-    public ItemLocation getItemLocation() {
-        return _loc;
-    }
-
     /**
      * Sets the quantity of the item.
      * @param count the new count to set
      */
     public void setCount(long count) {
-        if (_count == count) {
+        if (this.count == count) {
             return;
         }
 
-        _count = count >= -1 ? count : 0;
-        _storedInDb = false;
-    }
-
-    /**
-     * @return Returns the count.
-     */
-    public long getCount() {
-        return _count;
+        this.count = count >= -1 ? count : 0;
+        storedInDb = false;
     }
 
     /**
@@ -436,34 +459,47 @@ public class Item extends WorldObject {
             return;
         }
 
-        final long old = _count;
-        final long max = _itemId == ADENA_ID ? MAX_ADENA : Long.MAX_VALUE;
-        if ((count > 0) && (_count > (max - count))) {
+        final long old = this.count;
+        final long max = id == ADENA_ID ? MAX_ADENA : Long.MAX_VALUE;
+        if ((count > 0) && (this.count > (max - count))) {
             setCount(max);
         } else {
-            setCount(_count + count);
+            setCount(this.count + count);
         }
 
-        if (_count < 0) {
+        if (this.count < 0) {
             setCount(0);
         }
 
-        _storedInDb = false;
+        storedInDb = false;
 
         if ((process != null) && (process != ItemProcessType.NONE)) {
             if ((GeneralConfig.LOG_ITEMS
                             && ((!GeneralConfig.LOG_ITEMS_SMALL_LOG) && (!GeneralConfig.LOG_ITEMS_IDS_ONLY)))
-                    || (GeneralConfig.LOG_ITEMS_SMALL_LOG
-                            && (_itemTemplate.isEquipable() || (_itemTemplate.getId() == ADENA_ID)))
+                    || (GeneralConfig.LOG_ITEMS_SMALL_LOG && (template.isEquipable() || (template.getId() == ADENA_ID)))
                     || (GeneralConfig.LOG_ITEMS_IDS_ONLY
-                            && GeneralConfig.LOG_ITEMS_IDS_LIST.contains(_itemTemplate.getId()))) {
-                if (_enchantLevel > 0) {
-                    LOG_ITEMS.info("CHANGE:" + process + ", item " + getObjectId() + ":+" + _enchantLevel + " "
-                            + _itemTemplate.getName() + "(" + _count + "), PrevCount(" + old + "), " + creator + ", "
-                            + reference);
+                            && GeneralConfig.LOG_ITEMS_IDS_LIST.contains(template.getId()))) {
+                if (enchantLevel > 0) {
+                    ITEM_LOG.info(
+                            "CHANGE:{}, item {}:+{} {}({}), PrevCount({}), {}, {}",
+                            process,
+                            getObjectId(),
+                            enchantLevel,
+                            template.getName(),
+                            this.count,
+                            old,
+                            creator,
+                            reference);
                 } else {
-                    LOG_ITEMS.info("CHANGE:" + process + ", item " + getObjectId() + ":" + _itemTemplate.getName() + "("
-                            + _count + "), PrevCount(" + old + "), " + creator + ", " + reference);
+                    ITEM_LOG.info(
+                            "CHANGE:{}, item {}:{}({}), PrevCount({}), {}, {}",
+                            process,
+                            getObjectId(),
+                            template.getName(),
+                            this.count,
+                            old,
+                            creator,
+                            reference);
                 }
             }
 
@@ -481,8 +517,8 @@ public class Item extends WorldObject {
 
                 GMAudit.logAction(
                         creator.toString(),
-                        process + "(id: " + _itemId + " objId: " + getObjectId() + " name: " + getName() + " count: "
-                                + count + ")",
+                        process + "(id: " + id + " objId: " + getObjectId() + " name: " + getName() + " count: " + count
+                                + ")",
                         targetName,
                         "Object referencing this action is: " + referenceName);
             }
@@ -494,8 +530,8 @@ public class Item extends WorldObject {
      * @return boolean
      */
     public boolean isEnchantable() {
-        if ((_loc == ItemLocation.INVENTORY) || (_loc == ItemLocation.PAPERDOLL)) {
-            return _itemTemplate.isEnchantable();
+        if ((itemLocation == ItemLocation.INVENTORY) || (itemLocation == ItemLocation.PAPERDOLL)) {
+            return template.isEnchantable();
         }
 
         return false;
@@ -506,10 +542,10 @@ public class Item extends WorldObject {
      * @return boolean
      */
     public boolean isEquipable() {
-        return (_itemTemplate.getBodyPart() != BodyPart.NONE)
-                && (_itemTemplate.getItemType() != EtcItemType.ARROW)
-                && (_itemTemplate.getItemType() != EtcItemType.BOLT)
-                && (_itemTemplate.getItemType() != EtcItemType.LURE);
+        return (template.getBodyPart() != BodyPart.NONE)
+                && (template.getItemType() != EtcItemType.ARROW)
+                && (template.getItemType() != EtcItemType.BOLT)
+                && (template.getItemType() != EtcItemType.LURE);
     }
 
     /**
@@ -517,99 +553,50 @@ public class Item extends WorldObject {
      * @return boolean
      */
     public boolean isEquipped() {
-        return (_loc == ItemLocation.PAPERDOLL) || (_loc == ItemLocation.PET_EQUIP);
-    }
-
-    /**
-     * Returns the slot where the item is stored
-     * @return int
-     */
-    public int getLocationSlot() {
-        return _locData;
-    }
-
-    /**
-     * Returns the characteristics of the item.
-     * @return ItemTemplate
-     */
-    public ItemTemplate getTemplate() {
-        return _itemTemplate;
-    }
-
-    public int getCustomType1() {
-        return _type1;
-    }
-
-    public int getCustomType2() {
-        return _type2;
-    }
-
-    public void setCustomType1(int newtype) {
-        _type1 = newtype;
-    }
-
-    public void setCustomType2(int newtype) {
-        _type2 = newtype;
-    }
-
-    public void setDropTime(long time) {
-        _dropTime = time;
-    }
-
-    public long getDropTime() {
-        return _dropTime;
+        return (itemLocation == ItemLocation.PAPERDOLL) || (itemLocation == ItemLocation.PET_EQUIP);
     }
 
     /**
      * @return the type of item.
      */
     public ItemType getItemType() {
-        return _itemTemplate.getItemType();
-    }
-
-    /**
-     * Gets the item ID.
-     * @return the item ID
-     */
-    @Override
-    public int getId() {
-        return _itemId;
+        return template.getItemType();
     }
 
     /**
      * @return the display Id of the item.
      */
     public int getDisplayId() {
-        return _itemTemplate.getDisplayId();
+        return template.getDisplayId();
     }
 
     /**
      * @return {@code true} if item is an EtcItem, {@code false} otherwise.
      */
     public boolean isEtcItem() {
-        return _itemTemplate instanceof EtcItem;
+        return template instanceof EtcItem;
     }
 
     /**
      * @return {@code true} if item is a Weapon/Shield, {@code false} otherwise.
      */
     public boolean isWeapon() {
-        return _itemTemplate instanceof Weapon;
+        return template instanceof Weapon;
     }
 
     /**
      * @return {@code true} if item is an Armor, {@code false} otherwise.
      */
     public boolean isArmor() {
-        return _itemTemplate instanceof Armor;
+        return template instanceof Armor;
     }
 
     /**
      * @return the characteristics of the EtcItem, {@code false} otherwise.
      */
     public EtcItem getEtcItem() {
-        if (_itemTemplate instanceof EtcItem) {
-            return (EtcItem) _itemTemplate;
+        if (template instanceof EtcItem) {
+            return (EtcItem) template;
         }
 
         return null;
@@ -619,8 +606,8 @@ public class Item extends WorldObject {
      * @return the characteristics of the Weapon.
      */
     public Weapon getWeaponItem() {
-        if (_itemTemplate instanceof Weapon) {
-            return (Weapon) _itemTemplate;
+        if (template instanceof Weapon) {
+            return (Weapon) template;
         }
 
         return null;
@@ -630,8 +617,8 @@ public class Item extends WorldObject {
      * @return the characteristics of the Armor.
      */
     public Armor getArmorItem() {
-        if (_itemTemplate instanceof Armor) {
-            return (Armor) _itemTemplate;
+        if (template instanceof Armor) {
+            return (Armor) template;
         }
 
         return null;
@@ -641,50 +628,35 @@ public class Item extends WorldObject {
      * @return the quantity of crystals for crystallization.
      */
     public int getCrystalCount() {
-        return _itemTemplate.getCrystalCount(_enchantLevel);
+        return template.getCrystalCount(enchantLevel);
     }
 
     /**
      * @return the reference price of the item.
      */
     public int getReferencePrice() {
-        return _itemTemplate.getReferencePrice();
+        return template.getReferencePrice();
     }
 
     /**
      * @return the name of the item.
      */
     public String getItemName() {
-        return _itemTemplate.getName();
+        return template.getName();
     }
 
     /**
      * @return the reuse delay of this item.
      */
     public int getReuseDelay() {
-        return _itemTemplate.getReuseDelay();
+        return template.getReuseDelay();
     }
 
     /**
      * @return the shared reuse item group.
      */
     public int getSharedReuseGroup() {
-        return _itemTemplate.getSharedReuseGroup();
-    }
-
-    /**
-     * @return the last change of the item
-     */
-    public int getLastChange() {
-        return _lastChange;
-    }
-
-    /**
-     * Sets the last change of the item
-     * @param lastChange : int
-     */
-    public void setLastChange(int lastChange) {
-        _lastChange = lastChange;
+        return template.getSharedReuseGroup();
     }
 
     /**
@@ -692,7 +664,7 @@ public class Item extends WorldObject {
      * @return boolean
      */
     public boolean isStackable() {
-        return _itemTemplate.isStackable();
+        return template.isStackable();
     }
 
     /**
@@ -700,7 +672,7 @@ public class Item extends WorldObject {
      * @return boolean
      */
     public boolean isDropable() {
-        if (!_itemTemplate.isDropable()) {
+        if (!template.isDropable()) {
             return false;
         }
 
@@ -720,7 +692,7 @@ public class Item extends WorldObject {
      * @return boolean
      */
     public boolean isDestroyable() {
-        if (!_itemTemplate.isDestroyable()) {
+        if (!template.isDestroyable()) {
             return false;
         }
 
@@ -736,7 +708,7 @@ public class Item extends WorldObject {
      * @return boolean
      */
     public boolean isTradeable() {
-        if (!_itemTemplate.isTradeable()) {
+        if (!template.isTradeable()) {
             return false;
         }
 
@@ -756,7 +728,7 @@ public class Item extends WorldObject {
      * @return boolean
      */
     public boolean isSellable() {
-        if (!_itemTemplate.isSellable()) {
+        if (!template.isSellable()) {
             return false;
         }
 
@@ -776,7 +748,7 @@ public class Item extends WorldObject {
      * @return if item can be deposited in warehouse or freight
      */
     public boolean isDepositable(boolean isPrivateWareHouse) {
-        if (!_itemTemplate.isDepositable() || isEquipped()) {
+        if (!template.isDepositable() || isEquipped()) {
             return false;
         }
 
@@ -788,23 +760,23 @@ public class Item extends WorldObject {
     }
 
     public boolean isPotion() {
-        return _itemTemplate.isPotion();
+        return template.isPotion();
     }
 
     public boolean isElixir() {
-        return _itemTemplate.isElixir();
+        return template.isElixir();
     }
 
     public boolean isScroll() {
-        return _itemTemplate.isScroll();
+        return template.isScroll();
     }
 
     public boolean isHeroItem() {
-        return _itemTemplate.isHeroItem();
+        return template.isHeroItem();
     }
 
     public boolean isCommonItem() {
-        return _itemTemplate.isCommon();
+        return template.isCommon();
     }
 
     /**
@@ -812,11 +784,11 @@ public class Item extends WorldObject {
      * @return boolean
      */
     public boolean isPvp() {
-        return _itemTemplate.isPvpItem();
+        return template.isPvpItem();
     }
 
     public boolean isOlyRestrictedItem() {
-        return _itemTemplate.isOlyRestrictedItem();
+        return template.isOlyRestrictedItem();
     }
 
     /**
@@ -827,9 +799,9 @@ public class Item extends WorldObject {
      */
     public boolean isAvailable(Player player, boolean allowAdena, boolean allowNonTradeable) {
         return ((!isEquipped()) // Not equipped
-                && (_itemTemplate.getType2() != ItemTemplate.TYPE2_QUEST) // Not Quest Item
-                && ((_itemTemplate.getType2() != ItemTemplate.TYPE2_MONEY)
-                        || (_itemTemplate.getType1() != ItemTemplate.TYPE1_SHIELD_ARMOR)) // not money, not shield
+                && (template.getType2() != ItemTemplate.TYPE2_QUEST) // Not Quest Item
+                && ((template.getType2() != ItemTemplate.TYPE2_MONEY)
+                        || (template.getType1() != ItemTemplate.TYPE1_SHIELD_ARMOR)) // not money, not shield
                 && (!player.hasSummon()
                         || (getObjectId()
                                 != player.getSummon()
@@ -838,31 +810,23 @@ public class Item extends WorldObject {
                 && (player.getActiveEnchantSupportItemId()
                         != getObjectId()) // Not momentarily used enchant support item
                 && (player.getActiveEnchantAttrItemId() != getObjectId()) // Not momentarily used enchant attribute item
-                && (allowAdena || (_itemId != ADENA_ID)) // Not Adena
+                && (allowAdena || (id != ADENA_ID)) // Not Adena
                 && ((player.getCurrentSkill() == null)
-                        || (player.getCurrentSkill().getSkill().getItemConsumeId() != _itemId))
+                        || (player.getCurrentSkill().getSkill().getItemConsumeId() != id))
                 && (!player.isCastingSimultaneouslyNow()
                         || (player.getLastSimultaneousSkillCast() == null)
-                        || (player.getLastSimultaneousSkillCast().getItemConsumeId() != _itemId))
+                        || (player.getLastSimultaneousSkillCast().getItemConsumeId() != id))
                 && (allowNonTradeable
                         || (isTradeable()
-                                && (!((_itemTemplate.getItemType() == EtcItemType.PET_COLLAR)
+                                && (!((template.getItemType() == EtcItemType.PET_COLLAR)
                                         && player.havePetInvItems())))));
-    }
-
-    /**
-     * Returns the level of enchantment of the item
-     * @return int
-     */
-    public int getEnchantLevel() {
-        return _enchantLevel;
     }
 
     /**
      * @return {@code true} if item is enchanted, {@code false} otherwise
      */
     public boolean isEnchanted() {
-        return _enchantLevel > 0;
+        return enchantLevel > 0;
     }
 
     /**
@@ -870,14 +834,14 @@ public class Item extends WorldObject {
      */
     public void setEnchantLevel(int level) {
         final int newLevel = Math.max(0, level);
-        if (_enchantLevel == newLevel) {
+        if (enchantLevel == newLevel) {
             return;
         }
 
         clearEnchantStats();
-        _enchantLevel = newLevel;
+        enchantLevel = newLevel;
         applyEnchantStats();
-        _storedInDb = false;
+        storedInDb = false;
     }
 
     /**
@@ -885,15 +849,7 @@ public class Item extends WorldObject {
      * @return true if augmented
      */
     public boolean isAugmented() {
-        return _augmentation != null;
-    }
-
-    /**
-     * Returns the augmentation object for this item
-     * @return augmentation
-     */
-    public Augmentation getAugmentation() {
-        return _augmentation;
+        return augmentation != null;
     }
 
     /**
@@ -903,16 +859,16 @@ public class Item extends WorldObject {
      */
     public boolean setAugmentation(Augmentation augmentation) {
         // there shall be no previous augmentation..
-        if (_augmentation != null) {
-            LOGGER.info("Warning: Augment set for (" + getObjectId() + ") " + getName() + " owner: " + _ownerId);
+        if (this.augmentation != null) {
+            log.info("Warning: Augment set for ({}) {} owner: {}", getObjectId(), getName(), ownerId);
             return false;
         }
 
-        _augmentation = augmentation;
+        this.augmentation = augmentation;
         try (Connection con = DatabaseFactory.getConnection()) {
             updateItemAttributes(con);
         } catch (SQLException e) {
-            LOGGER.log(Level.SEVERE, "Could not update atributes for item: " + this + " from DB:", e);
+            log.error("Could not update atributes for item: {} from DB:", this, e);
         }
 
         // Notify to scripts.
@@ -928,20 +884,20 @@ public class Item extends WorldObject {
      * Remove the augmentation
      */
     public void removeAugmentation() {
-        if (_augmentation == null) {
+        if (augmentation == null) {
             return;
         }
 
         // Copy augmentation before removing it.
-        final Augmentation augment = _augmentation;
-        _augmentation = null;
+        final Augmentation augment = augmentation;
+        augmentation = null;
 
         try (Connection con = DatabaseFactory.getConnection();
                 PreparedStatement ps = con.prepareStatement("DELETE FROM item_attributes WHERE itemId = ?")) {
             ps.setInt(1, getObjectId());
             ps.executeUpdate();
         } catch (Exception e) {
-            LOGGER.log(Level.SEVERE, "Could not remove augmentation for item: " + this + " from DB:", e);
+            log.error("Could not remove augmentation for item: {} from DB:", this, e);
         }
 
         // Notify to scripts.
@@ -960,9 +916,9 @@ public class Item extends WorldObject {
             ps1.setInt(1, getObjectId());
             try (ResultSet rs = ps1.executeQuery()) {
                 if (rs.next()) {
-                    final int aug_attributes = rs.getInt(1);
-                    if (aug_attributes != -1) {
-                        _augmentation = new Augmentation(rs.getInt("augAttributes"));
+                    final int augAttributes = rs.getInt(1);
+                    if (augAttributes != -1) {
+                        augmentation = new Augmentation(rs.getInt("augAttributes"));
                     }
                 }
             }
@@ -970,18 +926,18 @@ public class Item extends WorldObject {
             ps2.setInt(1, getObjectId());
             try (ResultSet rs = ps2.executeQuery()) {
                 while (rs.next()) {
-                    final byte elem_type = rs.getByte(1);
-                    final int elem_value = rs.getInt(2);
-                    if ((elem_type != -1) && (elem_value != -1)) {
-                        applyAttribute(elem_type, elem_value);
+                    final byte elemType = rs.getByte(1);
+                    final int elemValue = rs.getInt(2);
+                    if ((elemType != -1) && (elemValue != -1)) {
+                        applyAttribute(elemType, elemValue);
                     }
                 }
             }
         } catch (Exception e) {
-            LOGGER.log(
-                    Level.SEVERE,
-                    "Could not restore augmentation and elemental data for item " + this + " from DB: "
-                            + e.getMessage(),
+            log.error(
+                    "Could not restore augmentation and elemental data for item {} from DB: {}",
+                    this,
+                    e.getMessage(),
                     e);
         }
     }
@@ -989,10 +945,10 @@ public class Item extends WorldObject {
     private void updateItemAttributes(Connection con) {
         try (PreparedStatement ps = con.prepareStatement("REPLACE INTO item_attributes VALUES(?,?)")) {
             ps.setInt(1, getObjectId());
-            ps.setInt(2, _augmentation != null ? _augmentation.getAugmentationId() : -1);
+            ps.setInt(2, augmentation != null ? augmentation.getAugmentationId() : -1);
             ps.executeUpdate();
         } catch (SQLException e) {
-            LOGGER.log(Level.SEVERE, "Could not update atributes for item: " + this + " from DB:", e);
+            log.error("Could not update atributes for item: {} from DB:", this, e);
         }
     }
 
@@ -1001,15 +957,15 @@ public class Item extends WorldObject {
             ps.setInt(1, getObjectId());
             ps.executeUpdate();
         } catch (SQLException e) {
-            LOGGER.log(Level.SEVERE, "Could not update elementals for item: " + this + " from DB:", e);
+            log.error("Could not update elementals for item: {} from DB:", this, e);
         }
 
-        if (_elementals == null) {
+        if (elementals == null) {
             return;
         }
 
         try (PreparedStatement ps = con.prepareStatement("INSERT INTO item_elementals VALUES(?,?,?)")) {
-            for (Elementals elm : _elementals) {
+            for (Elementals elm : elementals) {
                 ps.setInt(1, getObjectId());
                 ps.setByte(2, elm.getElement());
                 ps.setInt(3, elm.getValue());
@@ -1017,20 +973,16 @@ public class Item extends WorldObject {
                 ps.clearParameters();
             }
         } catch (SQLException e) {
-            LOGGER.log(Level.SEVERE, "Could not update elementals for item: " + this + " from DB:", e);
+            log.error("Could not update elementals for item: {} from DB:", this, e);
         }
-    }
-
-    public Elementals[] getElementals() {
-        return _elementals;
     }
 
     public Elementals getElemental(byte attribute) {
-        if (_elementals == null) {
+        if (elementals == null) {
             return null;
         }
 
-        for (Elementals elm : _elementals) {
+        for (Elementals elm : elementals) {
             if (elm.getElement() == attribute) {
                 return elm;
             }
@@ -1042,10 +994,10 @@ public class Item extends WorldObject {
     public byte getAttackElementType() {
         if (!isWeapon()) {
             return -2;
-        } else if (_itemTemplate.getElementals() != null) {
-            return _itemTemplate.getElementals()[0].getElement();
-        } else if (_elementals != null) {
-            return _elementals[0].getElement();
+        } else if (template.getElementals() != null) {
+            return template.getElementals()[0].getElement();
+        } else if (elementals != null) {
+            return elementals[0].getElement();
         }
 
         return -2;
@@ -1054,10 +1006,10 @@ public class Item extends WorldObject {
     public int getAttackElementPower() {
         if (!isWeapon()) {
             return 0;
-        } else if (_itemTemplate.getElementals() != null) {
-            return _itemTemplate.getElementals()[0].getValue();
-        } else if (_elementals != null) {
-            return _elementals[0].getValue();
+        } else if (template.getElementals() != null) {
+            return template.getElementals()[0].getValue();
+        } else if (elementals != null) {
+            return elementals[0].getValue();
         }
 
         return 0;
@@ -1066,12 +1018,12 @@ public class Item extends WorldObject {
     public int getElementDefAttr(byte element) {
         if (!isArmor()) {
             return 0;
-        } else if (_itemTemplate.getElementals() != null) {
-            final Elementals elm = _itemTemplate.getElemental(element);
+        } else if (template.getElementals() != null) {
+            final Elementals elm = template.getElemental(element);
             if (elm != null) {
                 return elm.getValue();
             }
-        } else if (_elementals != null) {
+        } else if (elementals != null) {
             final Elementals elm = getElemental(element);
             if (elm != null) {
                 return elm.getValue();
@@ -1082,19 +1034,19 @@ public class Item extends WorldObject {
     }
 
     private void applyAttribute(byte element, int value) {
-        if (_elementals == null) {
-            _elementals = new Elementals[1];
-            _elementals[0] = new Elementals(element, value);
+        if (elementals == null) {
+            elementals = new Elementals[1];
+            elementals[0] = new Elementals(element, value);
         } else {
             Elementals elm = getElemental(element);
             if (elm != null) {
                 elm.setValue(value);
             } else {
                 elm = new Elementals(element, value);
-                final Elementals[] array = new Elementals[_elementals.length + 1];
-                System.arraycopy(_elementals, 0, array, 0, _elementals.length);
-                array[_elementals.length] = elm;
-                _elementals = array;
+                final Elementals[] array = new Elementals[elementals.length + 1];
+                System.arraycopy(elementals, 0, array, 0, elementals.length);
+                array[elementals.length] = elm;
+                elementals = array;
             }
         }
     }
@@ -1109,7 +1061,7 @@ public class Item extends WorldObject {
         try (Connection con = DatabaseFactory.getConnection()) {
             updateItemElements(con);
         } catch (SQLException e) {
-            LOGGER.log(Level.SEVERE, "Could not update elementals for item: " + this + " from DB:", e);
+            log.error("Could not update elementals for item: {} from DB:", this, e);
         }
     }
 
@@ -1123,17 +1075,17 @@ public class Item extends WorldObject {
         }
 
         Elementals[] array = null;
-        if ((element != -1) && (_elementals != null) && (_elementals.length > 1)) {
-            array = new Elementals[_elementals.length - 1];
+        if ((element != -1) && (elementals != null) && (elementals.length > 1)) {
+            array = new Elementals[elementals.length - 1];
             int i = 0;
-            for (Elementals elm : _elementals) {
+            for (Elementals elm : elementals) {
                 if (elm.getElement() != element) {
                     array[i++] = elm;
                 }
             }
         }
 
-        _elementals = array;
+        elementals = array;
 
         final String query = (element != -1)
                 ? "DELETE FROM item_elementals WHERE itemId = ? AND elemType = ?"
@@ -1148,7 +1100,7 @@ public class Item extends WorldObject {
             ps.setInt(1, getObjectId());
             ps.executeUpdate();
         } catch (Exception e) {
-            LOGGER.log(Level.SEVERE, "Could not remove elemental enchant for item: " + this + " from DB:", e);
+            log.error("Could not remove elemental enchant for item: {} from DB:", this, e);
         }
     }
 
@@ -1157,15 +1109,7 @@ public class Item extends WorldObject {
      * @return
      */
     public boolean isShadowItem() {
-        return _mana >= 0;
-    }
-
-    /**
-     * Returns the remaining mana of this shadow item
-     * @return lifeTime
-     */
-    public int getMana() {
-        return _mana;
+        return mana >= 0;
     }
 
     /**
@@ -1186,18 +1130,18 @@ public class Item extends WorldObject {
             return;
         }
 
-        if ((_mana - count) >= 0) {
-            _mana -= count;
+        if ((mana - count) >= 0) {
+            mana -= count;
         } else {
-            _mana = 0;
+            mana = 0;
         }
 
-        if (_storedInDb) {
-            _storedInDb = false;
+        if (storedInDb) {
+            storedInDb = false;
         }
 
         if (resetConsumingMana) {
-            _consumingMana = false;
+            consumingMana = false;
         }
 
         final Player player = asPlayer();
@@ -1206,31 +1150,31 @@ public class Item extends WorldObject {
         }
 
         SystemMessage sm;
-        switch (_mana) {
+        switch (mana) {
             case 10: {
                 sm = new SystemMessage(SystemMessageId.S1_S_REMAINING_MANA_IS_NOW_10);
-                sm.addItemName(_itemTemplate);
+                sm.addItemName(template);
                 player.sendPacket(sm);
                 break;
             }
             case 5: {
                 sm = new SystemMessage(SystemMessageId.S1_S_REMAINING_MANA_IS_NOW_5);
-                sm.addItemName(_itemTemplate);
+                sm.addItemName(template);
                 player.sendPacket(sm);
                 break;
             }
             case 1: {
                 sm = new SystemMessage(SystemMessageId.S1_S_REMAINING_MANA_IS_NOW_1_IT_WILL_DISAPPEAR_SOON);
-                sm.addItemName(_itemTemplate);
+                sm.addItemName(template);
                 player.sendPacket(sm);
                 break;
             }
         }
 
-        if (_mana == 0) // The life time has expired.
+        if (mana == 0) // The life time has expired.
         {
             sm = new SystemMessage(SystemMessageId.S1_S_REMAINING_MANA_IS_NOW_0_AND_THE_ITEM_HAS_DISAPPEARED);
-            sm.addItemName(_itemTemplate);
+            sm.addItemName(template);
             player.sendPacket(sm);
 
             // Unequip.
@@ -1245,7 +1189,7 @@ public class Item extends WorldObject {
                 player.broadcastUserInfo();
             }
 
-            if (_loc != ItemLocation.WAREHOUSE) {
+            if (itemLocation != ItemLocation.WAREHOUSE) {
                 // Destroy.
                 player.getInventory().destroyItem(ItemProcessType.DESTROY, this, player, null);
 
@@ -1265,11 +1209,11 @@ public class Item extends WorldObject {
             // World.removeObject(this);
         } else {
             // Reschedule if still equipped.
-            if (!_consumingMana && isEquipped()) {
+            if (!consumingMana && isEquipped()) {
                 scheduleConsumeManaTask();
             }
 
-            if (_loc != ItemLocation.WAREHOUSE) {
+            if (itemLocation != ItemLocation.WAREHOUSE) {
                 final InventoryUpdate iu = new InventoryUpdate();
                 iu.addModifiedItem(this);
                 player.sendInventoryUpdate(iu);
@@ -1278,11 +1222,11 @@ public class Item extends WorldObject {
     }
 
     public void scheduleConsumeManaTask() {
-        if (_consumingMana) {
+        if (consumingMana) {
             return;
         }
 
-        _consumingMana = true;
+        consumingMana = true;
         ItemManaTaskManager.getInstance().add(this);
     }
 
@@ -1301,7 +1245,7 @@ public class Item extends WorldObject {
      * @return the functions list
      */
     public List<AbstractFunction> getStatFuncs(Creature creature) {
-        return _itemTemplate.getStatFuncs(this, creature);
+        return template.getStatFuncs(this, creature);
     }
 
     /**
@@ -1316,30 +1260,30 @@ public class Item extends WorldObject {
      * @param force if the update should necessarily be done.
      */
     public void updateDatabase(boolean force) {
-        _dbLock.lock();
+        dbLock.lock();
 
         try {
-            if (_existsInDb) {
-                if ((_ownerId == 0)
-                        || (_loc == ItemLocation.VOID)
-                        || (_loc == ItemLocation.REFUND)
-                        || ((_count == 0) && (_loc != ItemLocation.LEASE))) {
+            if (existsInDb) {
+                if ((ownerId == 0)
+                        || (itemLocation == ItemLocation.VOID)
+                        || (itemLocation == ItemLocation.REFUND)
+                        || ((count == 0) && (itemLocation != ItemLocation.LEASE))) {
                     removeFromDb();
                 } else if (!GeneralConfig.LAZY_ITEMS_UPDATE || force) {
                     updateInDb();
                 }
             } else {
-                if ((_ownerId == 0)
-                        || (_loc == ItemLocation.VOID)
-                        || (_loc == ItemLocation.REFUND)
-                        || ((_count == 0) && (_loc != ItemLocation.LEASE))) {
+                if ((ownerId == 0)
+                        || (itemLocation == ItemLocation.VOID)
+                        || (itemLocation == ItemLocation.REFUND)
+                        || ((count == 0) && (itemLocation != ItemLocation.LEASE))) {
                     return;
                 }
 
                 insertIntoDb();
             }
         } finally {
-            _dbLock.unlock();
+            dbLock.unlock();
         }
     }
 
@@ -1373,30 +1317,30 @@ public class Item extends WorldObject {
             manaLeft = rs.getInt("mana_left");
             time = rs.getLong("time");
         } catch (Exception e) {
-            LOGGER.log(Level.SEVERE, "Could not restore an item owned by " + ownerId + " from DB:", e);
+            log.error("Could not restore an item owned by {} from DB:", ownerId, e);
             return null;
         }
 
         final ItemTemplate item = ItemData.getInstance().getTemplate(itemId);
         if (item == null) {
-            LOGGER.severe("Item item_id=" + itemId + " not known, object_id=" + objectId);
+            log.error("Item item_id={} not known, object_id={}", itemId, objectId);
             return null;
         }
 
         inst = new Item(objectId, item);
-        inst._ownerId = ownerId;
+        inst.ownerId = ownerId;
         inst.setCount(count);
-        inst._enchantLevel = enchantLevel;
-        inst._type1 = customType1;
-        inst._type2 = customType2;
-        inst._loc = loc;
-        inst._locData = locData;
-        inst._existsInDb = true;
-        inst._storedInDb = true;
+        inst.enchantLevel = enchantLevel;
+        inst.customType1 = customType1;
+        inst.customType2 = customType2;
+        inst.itemLocation = loc;
+        inst.locationSlot = locData;
+        inst.existsInDb = true;
+        inst.storedInDb = true;
 
         // Setup life time for shadow weapons.
-        inst._mana = manaLeft;
-        inst._time = time;
+        inst.mana = manaLeft;
+        inst.time = time;
 
         // load augmentation and elemental enchant
         if (inst.isEquipable()) {
@@ -1463,13 +1407,18 @@ public class Item extends WorldObject {
         setDropperObjectId(0); // Set the dropper Id back to 0 so it no longer shows the drop packet.
 
         if ((dropper != null) && dropper.isPlayer()) {
-            _owner = null;
+            owner = null;
 
             // Notify to scripts
             if (EventDispatcher.getInstance().hasListener(EventType.ON_PLAYER_ITEM_DROP, getTemplate())) {
                 EventDispatcher.getInstance()
                         .notifyEventAsync(
-                                new OnPlayerItemDrop(dropper.asPlayer(), this, new Location(x, y, z)), getTemplate());
+                                OnPlayerItemDrop.builder()
+                                        .player(dropper.asPlayer())
+                                        .item(this)
+                                        .location(new Location(x, y, z))
+                                        .build(),
+                                getTemplate());
             }
         }
     }
@@ -1478,28 +1427,28 @@ public class Item extends WorldObject {
      * Update the database with values of the item
      */
     private void updateInDb() {
-        if (!_existsInDb || _wear || _storedInDb) {
+        if (!existsInDb || wear || storedInDb) {
             return;
         }
 
         try (Connection con = DatabaseFactory.getConnection();
                 PreparedStatement ps = con.prepareStatement(
                         "UPDATE items SET owner_id=?,count=?,loc=?,loc_data=?,enchant_level=?,custom_type1=?,custom_type2=?,mana_left=?,time=? WHERE object_id = ?")) {
-            ps.setInt(1, _ownerId);
-            ps.setLong(2, _count);
-            ps.setString(3, _loc.name());
-            ps.setInt(4, _locData);
-            ps.setInt(5, _enchantLevel);
-            ps.setInt(6, _type1);
-            ps.setInt(7, _type2);
-            ps.setInt(8, _mana);
-            ps.setLong(9, _time);
+            ps.setInt(1, ownerId);
+            ps.setLong(2, count);
+            ps.setString(3, itemLocation.name());
+            ps.setInt(4, locationSlot);
+            ps.setInt(5, enchantLevel);
+            ps.setInt(6, customType1);
+            ps.setInt(7, customType2);
+            ps.setInt(8, mana);
+            ps.setLong(9, time);
             ps.setInt(10, getObjectId());
             ps.executeUpdate();
-            _existsInDb = true;
-            _storedInDb = true;
+            existsInDb = true;
+            storedInDb = true;
         } catch (Exception e) {
-            LOGGER.log(Level.SEVERE, "Could not update item " + this + " in DB: Reason: " + e.getMessage(), e);
+            log.error("Could not update item {} in DB: Reason: {}", this, e.getMessage(), e);
         }
     }
 
@@ -1507,38 +1456,38 @@ public class Item extends WorldObject {
      * Insert the item in database
      */
     private void insertIntoDb() {
-        if (_existsInDb || (getObjectId() == 0) || _wear) {
+        if (existsInDb || (getObjectId() == 0) || wear) {
             return;
         }
 
         try (Connection con = DatabaseFactory.getConnection();
                 PreparedStatement ps = con.prepareStatement(
                         "INSERT INTO items (owner_id,item_id,count,loc,loc_data,enchant_level,object_id,custom_type1,custom_type2,mana_left,time) VALUES (?,?,?,?,?,?,?,?,?,?,?)")) {
-            ps.setInt(1, _ownerId);
-            ps.setInt(2, _itemId);
-            ps.setLong(3, _count);
-            ps.setString(4, _loc.name());
-            ps.setInt(5, _locData);
-            ps.setInt(6, _enchantLevel);
+            ps.setInt(1, ownerId);
+            ps.setInt(2, id);
+            ps.setLong(3, count);
+            ps.setString(4, itemLocation.name());
+            ps.setInt(5, locationSlot);
+            ps.setInt(6, enchantLevel);
             ps.setInt(7, getObjectId());
-            ps.setInt(8, _type1);
-            ps.setInt(9, _type2);
-            ps.setInt(10, _mana);
-            ps.setLong(11, _time);
+            ps.setInt(8, customType1);
+            ps.setInt(9, customType2);
+            ps.setInt(10, mana);
+            ps.setLong(11, time);
 
             ps.executeUpdate();
-            _existsInDb = true;
-            _storedInDb = true;
+            existsInDb = true;
+            storedInDb = true;
 
-            if (_augmentation != null) {
+            if (augmentation != null) {
                 updateItemAttributes(con);
             }
 
-            if (_elementals != null) {
+            if (elementals != null) {
                 updateItemElements(con);
             }
         } catch (Exception e) {
-            LOGGER.log(Level.SEVERE, "Could not insert item " + this + " into DB: Reason: " + e.getMessage(), e);
+            log.error("Could not insert item {} into DB: Reason: {}", this, e.getMessage(), e);
         }
     }
 
@@ -1546,7 +1495,7 @@ public class Item extends WorldObject {
      * Delete item from database
      */
     private void removeFromDb() {
-        if (!_existsInDb || _wear) {
+        if (!existsInDb || wear) {
             return;
         }
 
@@ -1554,8 +1503,8 @@ public class Item extends WorldObject {
             try (PreparedStatement ps = con.prepareStatement("DELETE FROM items WHERE object_id = ?")) {
                 ps.setInt(1, getObjectId());
                 ps.executeUpdate();
-                _existsInDb = false;
-                _storedInDb = false;
+                existsInDb = false;
+                storedInDb = false;
             }
 
             try (PreparedStatement ps = con.prepareStatement("DELETE FROM item_attributes WHERE itemId = ?")) {
@@ -1573,73 +1522,49 @@ public class Item extends WorldObject {
                 ps.executeUpdate();
             }
         } catch (Exception e) {
-            LOGGER.log(Level.SEVERE, "Could not delete item " + this + " in DB: " + e.getMessage(), e);
+            log.error("Could not delete item {} in DB: {}", this, e.getMessage(), e);
         }
     }
 
     public void resetOwnerTimer() {
-        if (_itemLootShedule != null) {
-            _itemLootShedule.cancel(true);
-            _itemLootShedule = null;
+        if (itemLootShedule != null) {
+            itemLootShedule.cancel(true);
+            itemLootShedule = null;
         }
     }
 
-    public void setItemLootShedule(ScheduledFuture<?> sf) {
-        _itemLootShedule = sf;
-    }
-
-    public ScheduledFuture<?> getItemLootShedule() {
-        return _itemLootShedule;
-    }
-
     public void setProtected(boolean isProtected) {
-        _protected = isProtected;
+        protectedItem = isProtected;
     }
 
     public boolean isProtected() {
-        return _protected;
+        return protectedItem;
     }
 
     public boolean isNightLure() {
-        return (((_itemId >= 8505) && (_itemId <= 8513)) || (_itemId == 8485));
-    }
-
-    public void setCountDecrease(boolean decrease) {
-        _decrease = decrease;
+        return (((id >= 8505) && (id <= 8513)) || (id == 8485));
     }
 
     public boolean getCountDecrease() {
-        return _decrease;
+        return countDecrease;
     }
 
     public void setInitCount(int initCount) {
-        _initCount = initCount;
-    }
-
-    public long getInitCount() {
-        return _initCount;
+        this.initCount = initCount;
     }
 
     public void restoreInitCount() {
-        if (_decrease) {
-            setCount(_initCount);
+        if (countDecrease) {
+            setCount(initCount);
         }
     }
 
     public boolean isTimeLimitedItem() {
-        return _time > 0;
-    }
-
-    /**
-     * Returns (current system time + time) of this time limited item
-     * @return Time
-     */
-    public long getTime() {
-        return _time;
+        return time > 0;
     }
 
     public long getRemainingTime() {
-        return _time - System.currentTimeMillis();
+        return time - System.currentTimeMillis();
     }
 
     public void endOfLife() {
@@ -1659,7 +1584,7 @@ public class Item extends WorldObject {
             player.broadcastUserInfo();
         }
 
-        if (_loc != ItemLocation.WAREHOUSE) {
+        if (itemLocation != ItemLocation.WAREHOUSE) {
             // Destroy.
             player.getInventory().destroyItem(ItemProcessType.DESTROY, this, player, null);
 
@@ -1694,48 +1619,36 @@ public class Item extends WorldObject {
     }
 
     public void updateElementAttrBonus(Player player) {
-        if (_elementals == null) {
+        if (elementals == null) {
             return;
         }
 
-        for (Elementals elm : _elementals) {
+        for (Elementals elm : elementals) {
             elm.updateBonus(player, isArmor());
         }
     }
 
     public void removeElementAttrBonus(Player player) {
-        if (_elementals == null) {
+        if (elementals == null) {
             return;
         }
 
-        for (Elementals elm : _elementals) {
+        for (Elementals elm : elementals) {
             elm.removeBonus(player);
         }
     }
 
-    public void setDropperObjectId(int id) {
-        _dropperObjectId = id;
-    }
-
     @Override
     public void sendInfo(Player player) {
-        if (_dropperObjectId != 0) {
-            player.sendPacket(new DropItem(this, _dropperObjectId));
+        if (dropperObjectId != 0) {
+            player.sendPacket(new DropItem(this, dropperObjectId));
         } else {
             player.sendPacket(new SpawnItem(this));
         }
     }
 
-    public DropProtection getDropProtection() {
-        return _dropProtection;
-    }
-
-    public boolean isPublished() {
-        return _published;
-    }
-
     public void publish() {
-        _published = true;
+        published = true;
     }
 
     @Override
@@ -1748,24 +1661,25 @@ public class Item extends WorldObject {
     }
 
     public boolean isQuestItem() {
-        return _itemTemplate.isQuestItem();
+        return template.isQuestItem();
     }
 
     public boolean isElementable() {
-        return ((_loc == ItemLocation.INVENTORY) || (_loc == ItemLocation.PAPERDOLL)) && _itemTemplate.isElementable();
+        return ((itemLocation == ItemLocation.INVENTORY) || (itemLocation == ItemLocation.PAPERDOLL))
+                && template.isElementable();
     }
 
     public boolean isFreightable() {
-        return _itemTemplate.isFreightable();
+        return template.isFreightable();
     }
 
     public int useSkillDisTime() {
-        return _itemTemplate.useSkillDisTime();
+        return template.useSkillDisTime();
     }
 
     public int getOlyEnchantLevel() {
         final Player player = asPlayer();
-        int enchant = _enchantLevel;
+        int enchant = enchantLevel;
 
         if (player == null) {
             return enchant;
@@ -1781,18 +1695,18 @@ public class Item extends WorldObject {
     }
 
     public int getDefaultEnchantLevel() {
-        return _itemTemplate.getDefaultEnchantLevel();
+        return template.getDefaultEnchantLevel();
     }
 
     public boolean hasPassiveSkills() {
-        return (_itemTemplate.getItemType() == EtcItemType.RUNE)
-                && (_loc == ItemLocation.INVENTORY)
-                && (_ownerId > 0)
-                && _itemTemplate.hasSkills();
+        return (template.getItemType() == EtcItemType.RUNE)
+                && (itemLocation == ItemLocation.INVENTORY)
+                && (ownerId > 0)
+                && template.hasSkills();
     }
 
     public void giveSkillsToOwner() {
-        if (!_itemTemplate.hasSkills()) {
+        if (!template.hasSkills()) {
             return;
         }
 
@@ -1805,7 +1719,7 @@ public class Item extends WorldObject {
             return;
         }
 
-        for (SkillHolder holder : _itemTemplate.getSkills()) {
+        for (SkillHolder holder : template.getSkills()) {
             final Skill skill = holder.getSkill();
             if (skill.isPassive()) {
                 player.addSkill(skill, false);
@@ -1820,7 +1734,7 @@ public class Item extends WorldObject {
 
         final Player player = asPlayer();
         if (player != null) {
-            for (SkillHolder holder : _itemTemplate.getSkills()) {
+            for (SkillHolder holder : template.getSkills()) {
                 final Skill skill = holder.getSkill();
                 if (skill.isPassive()) {
                     player.removeSkill(skill, false, true);
@@ -1836,15 +1750,15 @@ public class Item extends WorldObject {
 
     @Override
     public Player asPlayer() {
-        if ((_owner == null) && (_ownerId != 0)) {
-            _owner = World.getPlayer(_ownerId);
+        if ((owner == null) && (ownerId != 0)) {
+            owner = World.getPlayer(ownerId);
         }
 
-        return _owner;
+        return owner;
     }
 
     public int getEquipReuseDelay() {
-        return _itemTemplate.getEquipReuseDelay();
+        return template.getEquipReuseDelay();
     }
 
     /**
@@ -1866,7 +1780,13 @@ public class Item extends WorldObject {
         if (event != null) {
             if (EventDispatcher.getInstance().hasListener(EventType.ON_ITEM_BYPASS_EVENT, getTemplate())) {
                 EventDispatcher.getInstance()
-                        .notifyEventAsync(new OnItemBypassEvent(this, player, event), getTemplate());
+                        .notifyEventAsync(
+                                OnItemBypassEvent.builder()
+                                        .item(this)
+                                        .player(player)
+                                        .event(event)
+                                        .build(),
+                                getTemplate());
             }
         } else if (EventDispatcher.getInstance().hasListener(EventType.ON_ITEM_TALK, getTemplate())) {
             EventDispatcher.getInstance().notifyEventAsync(new OnItemTalk(this, player), getTemplate());
@@ -1875,20 +1795,20 @@ public class Item extends WorldObject {
 
     @Override
     public boolean isChargedShot(ShotType type) {
-        return (_shotsMask & type.getMask()) == type.getMask();
+        return (shotsMask & type.getMask()) == type.getMask();
     }
 
     @Override
     public void setChargedShot(ShotType type, boolean charged) {
         if (charged) {
-            _shotsMask |= type.getMask();
+            shotsMask |= type.getMask();
         } else {
-            _shotsMask &= ~type.getMask();
+            shotsMask &= ~type.getMask();
         }
     }
 
     public void unChargeAllShots() {
-        _shotsMask = 0;
+        shotsMask = 0;
     }
 
     /**
@@ -1910,15 +1830,15 @@ public class Item extends WorldObject {
     public void clearEnchantStats() {
         final Player player = asPlayer();
         if (player == null) {
-            _enchantOptions.clear();
+            enchantOptions.clear();
             return;
         }
 
-        for (Options op : _enchantOptions) {
+        for (Options op : enchantOptions) {
             op.remove(player);
         }
 
-        _enchantOptions.clear();
+        enchantOptions.clear();
     }
 
     /**
@@ -1934,9 +1854,9 @@ public class Item extends WorldObject {
             final Options options = OptionData.getInstance().getOptions(id);
             if (options != null) {
                 options.apply(player);
-                _enchantOptions.add(options);
+                enchantOptions.add(options);
             } else if (id != 0) {
-                LOGGER.info("Item applyEnchantStats could not find option " + id + " " + this + " " + player);
+                log.info("Item applyEnchantStats could not find option {} {} {}", id, this, player);
             }
         }
     }
@@ -1978,7 +1898,7 @@ public class Item extends WorldObject {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder();
-        sb.append(_itemTemplate);
+        sb.append(template);
         sb.append('[');
         sb.append(getObjectId());
         sb.append(']');

@@ -36,108 +36,110 @@ import app.l2nx.highfive.mechanics.skill.holders.SkillHolder;
 import app.l2nx.highfive.mechanics.skill.targets.TargetType;
 import app.l2nx.highfive.util.StatSet;
 import java.util.concurrent.ThreadLocalRandom;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Trigger skill by damage dealt effect implementation.
  * @author Zealar
  */
+@Slf4j
 public class TriggerSkillByDamageDealt extends AbstractEffect {
-    private final int _minAttackerLevel;
-    private final int _maxAttackerLevel;
-    private final int _minDamage;
-    private final int _chance;
-    private final SkillHolder _skill;
-    private final TargetType _targetType;
-    private final InstanceType _attackerType;
-    private int _allowWeapons;
-    private final boolean _isCritical;
-    private final boolean _allowNormalAttack;
-    private final boolean _allowSkillAttack;
+    private final int minAttackerLevel;
+    private final int maxAttackerLevel;
+    private final int minDamage;
+    private final int chance;
+    private final SkillHolder skill;
+    private final TargetType targetType;
+    private final InstanceType attackerType;
+    private int allowWeapons;
+    private final boolean critical;
+    private final boolean allowNormalAttack;
+    private final boolean allowSkillAttack;
 
     public TriggerSkillByDamageDealt(Condition attachCond, Condition applyCond, StatSet set, StatSet params) {
         super(attachCond, applyCond, set, params);
 
-        _minAttackerLevel = params.getInt("minAttackerLevel", 1);
-        _maxAttackerLevel = params.getInt("maxAttackerLevel", 127);
-        _minDamage = params.getInt("minDamage", 1);
-        _chance = params.getInt("chance", 100);
-        _skill = new SkillHolder(params.getInt("skillId"), params.getInt("skillLevel", 1));
-        _targetType = params.getEnum("targetType", TargetType.class, TargetType.SELF);
-        _attackerType = params.getEnum("attackerType", InstanceType.class, InstanceType.Creature);
-        _isCritical = params.getBoolean("isCritical", false);
-        _allowNormalAttack = params.getBoolean("allowNormalAttack", true);
-        _allowSkillAttack = params.getBoolean("allowSkillAttack", false);
+        minAttackerLevel = params.getInt("minAttackerLevel", 1);
+        maxAttackerLevel = params.getInt("maxAttackerLevel", 127);
+        minDamage = params.getInt("minDamage", 1);
+        chance = params.getInt("chance", 100);
+        skill = new SkillHolder(params.getInt("skillId"), params.getInt("skillLevel", 1));
+        targetType = params.getEnum("targetType", TargetType.class, TargetType.SELF);
+        attackerType = params.getEnum("attackerType", InstanceType.class, InstanceType.Creature);
+        critical = params.getBoolean("isCritical", false);
+        allowNormalAttack = params.getBoolean("allowNormalAttack", true);
+        allowSkillAttack = params.getBoolean("allowSkillAttack", false);
 
         if (params.getString("allowWeapons", "ALL").equalsIgnoreCase("ALL")) {
-            _allowWeapons = 0;
+            allowWeapons = 0;
         } else {
             for (String s : params.getString("allowWeapons").split(",")) {
-                _allowWeapons |= WeaponType.valueOf(s).mask();
+                allowWeapons |= WeaponType.valueOf(s).mask();
             }
         }
     }
 
     private void onAttackEvent(OnCreatureDamageDealt event) {
-        if (event.isDamageOverTime()
-                || (_chance == 0)
-                || ((_skill.getSkillId() == 0) || (_skill.getSkillLevel() == 0))
-                || (!_allowNormalAttack && !_allowSkillAttack)) {
+        if (event.damageOverTime()
+                || (chance == 0)
+                || ((skill.getSkillId() == 0) || (skill.getSkillLevel() == 0))
+                || (!allowNormalAttack && !allowSkillAttack)) {
             return;
         }
 
         // Check if there is dependancy on critical.
-        if (_isCritical != event.isCritical()) {
+        if (critical != event.critical()) {
             return;
         }
 
-        final ITargetTypeHandler targetHandler = TargetHandler.getInstance().getHandler(_targetType);
+        final ITargetTypeHandler targetHandler = TargetHandler.getInstance().getHandler(targetType);
         if (targetHandler == null) {
-            LOGGER.warning("Handler for target type: " + _targetType + " does not exist.");
+            log.warn("Handler for target type: {} does not exist.", targetType);
             return;
         }
 
         // When no skill attacks are allowed.
-        if (!_allowSkillAttack && (event.getSkill() != null)) {
+        if (!allowSkillAttack && (event.skill() != null)) {
             return;
         }
 
         // When no normal attacks are allowed.
-        if (!_allowNormalAttack && (event.getSkill() == null)) {
+        if (!allowNormalAttack && (event.skill() == null)) {
             return;
         }
 
-        if (event.getAttacker() == event.getTarget()) {
+        if (event.attacker() == event.target()) {
             return;
         }
 
-        if ((event.getAttacker().getLevel() < _minAttackerLevel)
-                || (event.getAttacker().getLevel() > _maxAttackerLevel)) {
+        if ((event.attacker().getLevel() < minAttackerLevel)
+                || (event.attacker().getLevel() > maxAttackerLevel)) {
             return;
         }
 
-        if ((event.getDamage() < _minDamage)
-                || (ThreadLocalRandom.current().nextInt(100) > _chance)
-                || !event.getAttacker().getInstanceType().isType(_attackerType)) {
+        if ((event.damage() < minDamage)
+                || (ThreadLocalRandom.current().nextInt(100) > chance)
+                || !event.attacker().getInstanceType().isType(attackerType)) {
             return;
         }
 
-        if (_allowWeapons > 0) {
-            final Weapon weapon = event.getAttacker().getActiveWeaponItem();
-            if ((weapon == null) || ((weapon.getItemType().mask() & _allowWeapons) == 0)) {
+        if (allowWeapons > 0) {
+            final Weapon weapon = event.attacker().getActiveWeaponItem();
+            if ((weapon == null) || ((weapon.getItemType().mask() & allowWeapons) == 0)) {
                 return;
             }
         }
 
-        final Skill triggerSkill = _skill.getSkill();
+        final Skill triggerSkill = skill.getSkill();
         for (WorldObject triggerTarget :
-                targetHandler.getTargetList(triggerSkill, event.getAttacker(), false, event.getTarget())) {
+                targetHandler.getTargetList(triggerSkill, event.attacker(), false, event.target())) {
             if ((triggerTarget == null) || !triggerTarget.isCreature()) {
                 continue;
             }
 
             final Creature targetChar = triggerTarget.asCreature();
             if (!targetChar.isInvul()) {
-                event.getAttacker().makeTriggerCast(triggerSkill, targetChar);
+                event.attacker().makeTriggerCast(triggerSkill, targetChar);
             }
         }
     }

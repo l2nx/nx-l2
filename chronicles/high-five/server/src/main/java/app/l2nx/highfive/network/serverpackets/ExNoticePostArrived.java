@@ -34,15 +34,15 @@ public class ExNoticePostArrived extends ServerPacket {
         return result ? STATIC_PACKET_TRUE : STATIC_PACKET_FALSE;
     }
 
-    private final boolean _showAnim;
+    private final boolean showAnim;
 
     public ExNoticePostArrived(boolean showAnimation) {
-        _showAnim = showAnimation;
+        showAnim = showAnimation;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_NOTICE_POST_ARRIVED.writeId(this, buffer);
-        buffer.writeInt(_showAnim);
+        buffer.writeInt(showAnim);
     }
 }

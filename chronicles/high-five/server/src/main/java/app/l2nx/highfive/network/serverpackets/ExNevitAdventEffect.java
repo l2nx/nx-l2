@@ -27,15 +27,15 @@ import app.l2nx.network.buffer.WriteBuffer;
  * @author mochitto
  */
 public class ExNevitAdventEffect extends ServerPacket {
-    private final int _timeLeft;
+    private final int timeLeft;
 
     public ExNevitAdventEffect(int timeLeft) {
-        _timeLeft = timeLeft;
+        this.timeLeft = timeLeft;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_NAVIT_ADVENT_EFFECT.writeId(this, buffer);
-        buffer.writeInt(_timeLeft);
+        buffer.writeInt(timeLeft);
     }
 }

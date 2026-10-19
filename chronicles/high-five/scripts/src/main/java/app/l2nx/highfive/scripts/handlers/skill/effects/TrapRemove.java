@@ -36,7 +36,7 @@ import app.l2nx.highfive.util.StatSet;
  * @author UnAfraid
  */
 public class TrapRemove extends AbstractEffect {
-    private final int _power;
+    private final int power;
 
     public TrapRemove(Condition attachCond, Condition applyCond, StatSet set, StatSet params) {
         super(attachCond, applyCond, set, params);
@@ -45,7 +45,7 @@ public class TrapRemove extends AbstractEffect {
             throw new IllegalArgumentException(getClass().getSimpleName() + ": effect without power!");
         }
 
-        _power = params.getInt("power");
+        power = params.getInt("power");
     }
 
     @Override
@@ -71,14 +71,20 @@ public class TrapRemove extends AbstractEffect {
             return;
         }
 
-        if (trap.getLevel() > _power) {
+        if (trap.getLevel() > power) {
             return;
         }
 
         // Notify to scripts
         if (EventDispatcher.getInstance().hasListener(EventType.ON_TRAP_ACTION, trap)) {
             EventDispatcher.getInstance()
-                    .notifyEventAsync(new OnTrapAction(trap, effector, TrapAction.TRAP_DISARMED), trap);
+                    .notifyEventAsync(
+                            OnTrapAction.builder()
+                                    .trap(trap)
+                                    .trigger(effector)
+                                    .action(TrapAction.TRAP_DISARMED)
+                                    .build(),
+                            trap);
         }
 
         trap.unSummon();

@@ -36,8 +36,8 @@ public class WareHouseDepositList extends AbstractItemPacket {
     public static final int CASTLE = 3; // not sure
     public static final int FREIGHT = 1;
 
-    private final long _playerAdena;
-    private final List<Item> _items = new ArrayList<>();
+    private final long playerAdena;
+    private final List<Item> items = new ArrayList<>();
     /**
      * <ul>
      * <li>0x01-Private Warehouse</li>
@@ -46,15 +46,15 @@ public class WareHouseDepositList extends AbstractItemPacket {
      * <li>0x04-Warehouse</li>
      * </ul>
      */
-    private final int _whType;
+    private final int whType;
 
     public WareHouseDepositList(Player player, int type) {
-        _whType = type;
-        _playerAdena = player.getAdena();
-        final boolean isPrivate = _whType == PRIVATE;
+        whType = type;
+        playerAdena = player.getAdena();
+        final boolean isPrivate = whType == PRIVATE;
         for (Item temp : player.getInventory().getAvailableItems(true, isPrivate, false)) {
             if ((temp != null) && temp.isDepositable(isPrivate)) {
-                _items.add(temp);
+                items.add(temp);
             }
         }
     }
@@ -62,10 +62,10 @@ public class WareHouseDepositList extends AbstractItemPacket {
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.WAREHOUSE_DEPOSIT_LIST.writeId(this, buffer);
-        buffer.writeShort(_whType);
-        buffer.writeLong(_playerAdena);
-        buffer.writeShort(_items.size());
-        for (Item item : _items) {
+        buffer.writeShort(whType);
+        buffer.writeLong(playerAdena);
+        buffer.writeShort(items.size());
+        for (Item item : items) {
             writeItem(item, buffer);
             buffer.writeInt(item.getObjectId());
         }

@@ -38,51 +38,68 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.logging.Logger;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
+import org.slf4j.LoggerFactory;
 
 /**
  * Abstract base class for any zone type handles basic operations.
  * @author durgus
  */
+@Slf4j
 public abstract class ZoneType extends ListenersContainer {
-    protected static final Logger LOGGER = Logger.getLogger(ZoneType.class.getName());
 
-    private final int _id;
-    protected ZoneForm _zone;
-    private final Map<Integer, Creature> _characterList = new ConcurrentHashMap<>();
+    @Getter
+    private final int id;
+
+    @Getter
+    protected ZoneForm zone;
+
+    private final Map<Integer, Creature> characterList = new ConcurrentHashMap<>();
 
     /** Parameters to affect specific characters */
-    protected boolean _checkAffected = false;
+    protected boolean checkAffected = false;
 
-    private String _name = null;
-    private int _minLevel;
-    private int _maxLevel;
-    private int[] _race;
-    private int[] _class;
-    private char _classType;
-    private InstanceType _target = InstanceType.Creature; // Default all chars.
-    private boolean _allowStore;
-    private boolean _enabled;
-    private AbstractZoneSettings _settings;
-    private int _instanceTemplateId = -1;
-    private int _instanceId = -1;
+    @Getter
+    @Setter
+    private String name = null;
+
+    private int minLevel;
+    private int maxLevel;
+    private int[] race;
+    private int[] classIds;
+    private char classType;
+
+    @Getter
+    private InstanceType targetType = InstanceType.Creature; // Default all chars.
+
+    private boolean allowStore;
+
+    @Getter
+    @Setter
+    private boolean enabled;
+
+    @Getter
+    private AbstractZoneSettings settings;
+
+    @Getter
+    @Setter
+    private int instanceTemplateId = -1;
+
+    @Getter
+    @Setter
+    private int instanceId = -1;
 
     protected ZoneType(int id) {
-        _id = id;
-        _minLevel = 0;
-        _maxLevel = 0xFF;
-        _classType = 0;
-        _race = null;
-        _class = null;
-        _allowStore = true;
-        _enabled = true;
-    }
-
-    /**
-     * @return Returns the id.
-     */
-    public int getId() {
-        return _id;
+        this.id = id;
+        minLevel = 0;
+        maxLevel = 0xFF;
+        classType = 0;
+        race = null;
+        classIds = null;
+        allowStore = true;
+        enabled = true;
     }
 
     /**
@@ -91,71 +108,71 @@ public abstract class ZoneType extends ListenersContainer {
      * @param value
      */
     public void setParameter(String name, String value) {
-        _checkAffected = true;
+        checkAffected = true;
 
         // Zone name
         if (name.equals("name")) {
-            _name = value;
+            this.name = value;
         }
         // Minimum level
         else if (name.equals("affectedLvlMin")) {
-            _minLevel = Integer.parseInt(value);
+            minLevel = Integer.parseInt(value);
         }
         // Maximum level
         else if (name.equals("affectedLvlMax")) {
-            _maxLevel = Integer.parseInt(value);
+            maxLevel = Integer.parseInt(value);
         }
         // Affected Races
         else if (name.equals("affectedRace")) {
             // Create a new array holding the affected race.
-            if (_race == null) {
-                _race = new int[1];
-                _race[0] = Integer.parseInt(value);
+            if (race == null) {
+                race = new int[1];
+                race[0] = Integer.parseInt(value);
             } else {
-                final int[] temp = new int[_race.length + 1];
+                final int[] temp = new int[race.length + 1];
                 int i = 0;
-                for (; i < _race.length; i++) {
-                    temp[i] = _race[i];
+                for (; i < race.length; i++) {
+                    temp[i] = race[i];
                 }
 
                 temp[i] = Integer.parseInt(value);
-                _race = temp;
+                race = temp;
             }
         }
         // Affected classes
         else if (name.equals("affectedClassId")) {
             // Create a new array holding the affected classIds.
-            if (_class == null) {
-                _class = new int[1];
-                _class[0] = Integer.parseInt(value);
+            if (classIds == null) {
+                classIds = new int[1];
+                classIds[0] = Integer.parseInt(value);
             } else {
-                final int[] temp = new int[_class.length + 1];
+                final int[] temp = new int[classIds.length + 1];
                 int i = 0;
-                for (; i < _class.length; i++) {
-                    temp[i] = _class[i];
+                for (; i < classIds.length; i++) {
+                    temp[i] = classIds[i];
                 }
 
                 temp[i] = Integer.parseInt(value);
-                _class = temp;
+                classIds = temp;
             }
         }
         // Affected class type
         else if (name.equals("affectedClassType")) {
             if (value.equals("Fighter")) {
-                _classType = 1;
+                classType = 1;
             } else {
-                _classType = 2;
+                classType = 2;
             }
         } else if (name.equals("targetClass")) {
-            _target = Enum.valueOf(InstanceType.class, value);
+            targetType = Enum.valueOf(InstanceType.class, value);
         } else if (name.equals("allowStore")) {
-            _allowStore = Boolean.parseBoolean(value);
+            allowStore = Boolean.parseBoolean(value);
         } else if (name.equals("default_enabled")) {
-            _enabled = Boolean.parseBoolean(value);
+            enabled = Boolean.parseBoolean(value);
         } else if (name.equals("instanceId")) {
-            _instanceTemplateId = Integer.parseInt(value);
+            instanceTemplateId = Integer.parseInt(value);
         } else {
-            LOGGER.info(getClass().getSimpleName() + ": Unknown parameter - " + name + " in zone: " + _id);
+            LoggerFactory.getLogger(getClass()).info("Unknown parameter - {} in zone: {}", name, id);
         }
     }
 
@@ -165,9 +182,9 @@ public abstract class ZoneType extends ListenersContainer {
      */
     protected boolean isAffected(Creature creature) {
         // Check instance
-        if (_instanceTemplateId > 0) {
+        if (instanceTemplateId > 0) {
             final InstanceWorld world = InstanceManager.getInstance().getWorld(creature);
-            if ((world != null) && (world.getTemplateId() != _instanceTemplateId)) {
+            if ((world != null) && (world.getTemplateId() != instanceTemplateId)) {
                 return false;
             }
         }
@@ -177,31 +194,31 @@ public abstract class ZoneType extends ListenersContainer {
         }
 
         // Check level
-        if ((creature.getLevel() < _minLevel) || (creature.getLevel() > _maxLevel)) {
+        if ((creature.getLevel() < minLevel) || (creature.getLevel() > maxLevel)) {
             return false;
         }
 
         // Check obj class.
-        if (!creature.isInstanceTypes(_target)) {
+        if (!creature.isInstanceTypes(targetType)) {
             return false;
         }
 
         if (creature.isPlayer()) {
             // Check class type.
-            if (_classType != 0) {
+            if (classType != 0) {
                 if (creature.asPlayer().isMageClass()) {
-                    if (_classType == 1) {
+                    if (classType == 1) {
                         return false;
                     }
-                } else if (_classType == 2) {
+                } else if (classType == 2) {
                     return false;
                 }
             }
 
             // Check race
-            if (_race != null) {
+            if (race != null) {
                 boolean ok = false;
-                for (int element : _race) {
+                for (int element : race) {
                     if (creature.getRace().ordinal() == element) {
                         ok = true;
                         break;
@@ -214,10 +231,10 @@ public abstract class ZoneType extends ListenersContainer {
             }
 
             // Check class
-            if (_class != null) {
+            if (classIds != null) {
                 boolean ok = false;
-                for (int _clas : _class) {
-                    if (creature.asPlayer().getPlayerClass().getId() == _clas) {
+                for (int clas : classIds) {
+                    if (creature.asPlayer().getPlayerClass().getId() == clas) {
                         ok = true;
                         break;
                     }
@@ -237,67 +254,11 @@ public abstract class ZoneType extends ListenersContainer {
      * @param zone
      */
     public void setZone(ZoneForm zone) {
-        if (_zone != null) {
+        if (this.zone != null) {
             throw new IllegalStateException("Zone already set");
         }
 
-        _zone = zone;
-    }
-
-    /**
-     * Returns this zones zone form.
-     * @return {@link #_zone}
-     */
-    public ZoneForm getZone() {
-        return _zone;
-    }
-
-    /**
-     * Set the zone name.
-     * @param name
-     */
-    public void setName(String name) {
-        _name = name;
-    }
-
-    /**
-     * Returns zone name
-     * @return
-     */
-    public String getName() {
-        return _name;
-    }
-
-    /**
-     * Set the zone instanceId.
-     * @param instanceId
-     */
-    public void setInstanceId(int instanceId) {
-        _instanceId = instanceId;
-    }
-
-    /**
-     * Returns zone instanceId
-     * @return
-     */
-    public int getInstanceId() {
-        return _instanceId;
-    }
-
-    /**
-     * Set the zone instance Template Id .
-     * @param instanceTemplateId
-     */
-    public void setInstanceTemplateId(int instanceTemplateId) {
-        _instanceTemplateId = instanceTemplateId;
-    }
-
-    /**
-     * Returns zone instance TemplateId
-     * @return
-     */
-    public int getInstanceTemplateId() {
-        return _instanceTemplateId;
+        this.zone = zone;
     }
 
     /**
@@ -307,7 +268,7 @@ public abstract class ZoneType extends ListenersContainer {
      * @return
      */
     public boolean isInsideZone(int x, int y) {
-        return isInsideZone(x, y, _zone.getHighZ());
+        return isInsideZone(x, y, zone.getHighZ());
     }
 
     /**
@@ -327,26 +288,26 @@ public abstract class ZoneType extends ListenersContainer {
      * @return
      */
     public boolean isInsideZone(int x, int y, int z) {
-        return _zone.isInsideZone(x, y, z);
+        return zone.isInsideZone(x, y, z);
     }
 
     public double getDistanceToZone(int x, int y) {
-        return _zone.getDistanceToZone(x, y);
+        return zone.getDistanceToZone(x, y);
     }
 
     public double getDistanceToZone(WorldObject object) {
-        return _zone.getDistanceToZone(object.getX(), object.getY());
+        return zone.getDistanceToZone(object.getX(), object.getY());
     }
 
     public void revalidateInZone(Creature creature) {
         // If the object is inside the zone...
         if (isInsideZone(creature)) {
             // If the character can't be affected by this zone return.
-            if (_checkAffected && !isAffected(creature)) {
+            if (checkAffected && !isAffected(creature)) {
                 return;
             }
 
-            if (_characterList.putIfAbsent(creature.getObjectId(), creature) == null) {
+            if (characterList.putIfAbsent(creature.getObjectId(), creature) == null) {
                 // Notify to scripts.
                 if (EventDispatcher.getInstance().hasListener(EventType.ON_CREATURE_ZONE_ENTER, this)) {
                     EventDispatcher.getInstance().notifyEventAsync(new OnCreatureZoneEnter(creature, this), this);
@@ -366,14 +327,14 @@ public abstract class ZoneType extends ListenersContainer {
      */
     public void removeCharacter(Creature creature) {
         // Was the character inside this zone?
-        if (_characterList.containsKey(creature.getObjectId())) {
+        if (characterList.containsKey(creature.getObjectId())) {
             // Notify to scripts.
             if (EventDispatcher.getInstance().hasListener(EventType.ON_CREATURE_ZONE_EXIT, this)) {
                 EventDispatcher.getInstance().notifyEventAsync(new OnCreatureZoneExit(creature, this), this);
             }
 
             // Unregister player.
-            _characterList.remove(creature.getObjectId());
+            characterList.remove(creature.getObjectId());
 
             // Notify Zone implementation.
             onExit(creature);
@@ -386,19 +347,15 @@ public abstract class ZoneType extends ListenersContainer {
      * @return
      */
     public boolean isCharacterInZone(Creature creature) {
-        return _characterList.containsKey(creature.getObjectId());
-    }
-
-    public AbstractZoneSettings getSettings() {
-        return _settings;
+        return characterList.containsKey(creature.getObjectId());
     }
 
     public void setSettings(AbstractZoneSettings settings) {
-        if (_settings != null) {
-            _settings.clear();
+        if (this.settings != null) {
+            this.settings.clear();
         }
 
-        _settings = settings;
+        this.settings = settings;
     }
 
     protected abstract void onEnter(Creature creature);
@@ -414,12 +371,12 @@ public abstract class ZoneType extends ListenersContainer {
     public void onPlayerLogoutInside(Player player) {}
 
     public Collection<Creature> getCharactersInside() {
-        return _characterList.values();
+        return characterList.values();
     }
 
     public List<Player> getPlayersInside() {
         final List<Player> players = new ArrayList<>();
-        for (Creature ch : _characterList.values()) {
+        for (Creature ch : characterList.values()) {
             if ((ch != null) && ch.isPlayer()) {
                 players.add(ch.asPlayer());
             }
@@ -433,49 +390,37 @@ public abstract class ZoneType extends ListenersContainer {
      * @param packet
      */
     public void broadcastPacket(ServerPacket packet) {
-        if (_characterList.isEmpty()) {
+        if (characterList.isEmpty()) {
             return;
         }
 
-        for (Creature creature : _characterList.values()) {
+        for (Creature creature : characterList.values()) {
             if ((creature != null) && creature.isPlayer()) {
                 creature.sendPacket(packet);
             }
         }
     }
 
-    public InstanceType getTargetType() {
-        return _target;
-    }
-
     public void setTargetType(InstanceType type) {
-        _target = type;
-        _checkAffected = true;
+        targetType = type;
+        checkAffected = true;
     }
 
     public boolean getAllowStore() {
-        return _allowStore;
+        return allowStore;
     }
 
     @Override
     public String toString() {
-        return getClass().getSimpleName() + "[" + _id + "]";
+        return getClass().getSimpleName() + "[" + id + "]";
     }
 
     public void visualizeZone(int z) {
-        _zone.visualizeZone(z);
-    }
-
-    public void setEnabled(boolean value) {
-        _enabled = value;
-    }
-
-    public boolean isEnabled() {
-        return _enabled;
+        zone.visualizeZone(z);
     }
 
     public void oustAllPlayers() {
-        for (Creature obj : _characterList.values()) {
+        for (Creature obj : characterList.values()) {
             if ((obj != null) && obj.isPlayer()) {
                 final Player player = obj.asPlayer();
                 if (player.isOnline()) {

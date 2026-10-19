@@ -19,35 +19,26 @@
  */
 package app.l2nx.highfive.entity.item.holders;
 
+import lombok.Getter;
+
 /**
  * A simple DTO for items; contains item ID and count.
  * @author UnAfraid
  */
 public class ItemHolder {
-    private final int _id;
-    private final long _count;
+    @Getter
+    private final int id;
+
+    @Getter
+    private final long count;
 
     public ItemHolder(int id, long count) {
-        _id = id;
-        _count = count;
-    }
-
-    /**
-     * @return the ID of the item contained in this object
-     */
-    public int getId() {
-        return _id;
-    }
-
-    /**
-     * @return the count of items contained in this object
-     */
-    public long getCount() {
-        return _count;
+        this.id = id;
+        this.count = count;
     }
 
     @Override
     public String toString() {
-        return "[" + getClass().getSimpleName() + "] ID: " + _id + ", count: " + _count;
+        return "[" + getClass().getSimpleName() + "] ID: " + id + ", count: " + count;
     }
 }

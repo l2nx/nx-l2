@@ -23,4 +23,5 @@ and review findings left out of scope. The issue holds the failure scenario with
 - Specs index: [docs/CLAUDE.md](docs/CLAUDE.md); deferred work: [docs/TODO.md](docs/TODO.md).
 - Import mapping from Mobius: [docs/provenance.md](docs/provenance.md).
 - Code style (palantir, LF): [docs/specs/005-code-formatting.md](docs/specs/005-code-formatting.md).
+- Java canon (Lombok allow-list, field naming, records, SLF4J): [docs/specs/007-java-conventions.md](docs/specs/007-java-conventions.md).
 - Public pages (l2nx.dev/l2): `docs/public/{en,ru}/`.

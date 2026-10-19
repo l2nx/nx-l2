@@ -28,10 +28,10 @@ import app.l2nx.highfive.mechanics.stats.functions.AbstractFunction;
  * @author UnAfraid
  */
 public class FuncAtkAccuracy extends AbstractFunction {
-    private static final FuncAtkAccuracy _faa_instance = new FuncAtkAccuracy();
+    private static final FuncAtkAccuracy instance = new FuncAtkAccuracy();
 
     public static AbstractFunction getInstance() {
-        return _faa_instance;
+        return instance;
     }
 
     private FuncAtkAccuracy() {

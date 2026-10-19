@@ -27,15 +27,15 @@ import app.l2nx.highfive.entity.groups.matching.PartyMatchRoomList;
  * @author Gnacik
  */
 public class RequestDismissPartyRoom extends ClientPacket {
-    private int _roomid;
+    private int roomid;
 
     @SuppressWarnings("unused")
-    private int _data2;
+    private int data2;
 
     @Override
     protected void readImpl() {
-        _roomid = readInt();
-        _data2 = readInt();
+        roomid = readInt();
+        data2 = readInt();
     }
 
     @Override
@@ -45,11 +45,11 @@ public class RequestDismissPartyRoom extends ClientPacket {
             return;
         }
 
-        final PartyMatchRoom room = PartyMatchRoomList.getInstance().getRoom(_roomid);
+        final PartyMatchRoom room = PartyMatchRoomList.getInstance().getRoom(roomid);
         if (room == null) {
             return;
         }
 
-        PartyMatchRoomList.getInstance().deleteRoom(_roomid);
+        PartyMatchRoomList.getInstance().deleteRoom(roomid);
     }
 }

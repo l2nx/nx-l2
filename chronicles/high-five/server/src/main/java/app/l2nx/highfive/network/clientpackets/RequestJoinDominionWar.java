@@ -30,15 +30,15 @@ import app.l2nx.highfive.network.serverpackets.ExShowDominionRegistry;
  * @author Gigiikun
  */
 public class RequestJoinDominionWar extends ClientPacket {
-    private int _territoryId;
-    private int _isClan;
-    private int _isJoining;
+    private int territoryId;
+    private int isClan;
+    private int isJoining;
 
     @Override
     protected void readImpl() {
-        _territoryId = readInt();
-        _isClan = readInt();
-        _isJoining = readInt();
+        territoryId = readInt();
+        isClan = readInt();
+        isJoining = readInt();
     }
 
     @Override
@@ -56,7 +56,7 @@ public class RequestJoinDominionWar extends ClientPacket {
         }
 
         final Clan clan = player.getClan();
-        final int castleId = _territoryId - 80;
+        final int castleId = territoryId - 80;
         if ((clan != null)
                 && (TerritoryWarManager.getInstance().getTerritory(castleId).getOwnerClan() == clan)) {
             player.sendPacket(
@@ -65,7 +65,7 @@ public class RequestJoinDominionWar extends ClientPacket {
             return;
         }
 
-        if (_isClan == 0x01) {
+        if (isClan == 0x01) {
             if (!player.hasAccess(ClanAccess.CASTLE_SIEGE)) {
                 player.sendPacket(SystemMessageId.YOU_ARE_NOT_AUTHORIZED_TO_DO_THAT);
                 return;
@@ -75,7 +75,7 @@ public class RequestJoinDominionWar extends ClientPacket {
                 return;
             }
 
-            if (_isJoining == 1) {
+            if (isJoining == 1) {
                 if (System.currentTimeMillis() < clan.getDissolvingExpiryTime()) {
                     player.sendPacket(
                             SystemMessageId
@@ -97,7 +97,7 @@ public class RequestJoinDominionWar extends ClientPacket {
                 return;
             }
 
-            if (_isJoining == 1) {
+            if (isJoining == 1) {
                 if (TerritoryWarManager.getInstance().checkIsRegistered(-1, player.getObjectId())) {
                     player.sendPacket(
                             SystemMessageId.YOU_VE_ALREADY_REQUESTED_A_TERRITORY_WAR_IN_ANOTHER_TERRITORY_ELSEWHERE);

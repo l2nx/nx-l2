@@ -28,11 +28,11 @@ import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.threads.ThreadPool;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.DateFormatUtils;
 
+@Slf4j
 public class SeedOfInfinityManager {
-    protected static final Logger LOGGER = Logger.getLogger(SeedOfInfinityManager.class.getName());
 
     private static final long SOI_OPEN_TIME = 24 * 60 * 60 * 1000;
 
@@ -63,7 +63,7 @@ public class SeedOfInfinityManager {
             openSeed(getOpenedTime());
         }
 
-        LOGGER.info("Seed of Infinity Manager: Loaded. Current stage is: " + getCurrentStage());
+        log.info("Seed of Infinity Manager: Loaded. Current stage is: {}", getCurrentStage());
     }
 
     public static int getCurrentStage() {
@@ -94,7 +94,7 @@ public class SeedOfInfinityManager {
         setEkimusCount(0);
         setHoEDefCount(0);
         checkStageAndSpawn();
-        LOGGER.info("Seed of Infinity Manager: Set to stage " + stage);
+        log.info("Seed of Infinity Manager: Set to stage {}", stage);
     }
 
     public static boolean isSeedOpen() {
@@ -108,8 +108,9 @@ public class SeedOfInfinityManager {
 
         final long closeTime = System.currentTimeMillis() + time;
         GlobalVariablesManager.getInstance().set("SoI_opened", closeTime / 1000);
-        LOGGER.info("Seed of Infinity Manager: Opening the seed until "
-                + DateFormatUtils.format(time, "dd/MM/yyyy HH:mm:ss"));
+        log.info(
+                "Seed of Infinity Manager: Opening the seed until {}",
+                DateFormatUtils.format(time, "dd/MM/yyyy HH:mm:ss"));
         spawnOpenedSeed();
         DoorData.getInstance().getDoor(14240102).openMe();
 
@@ -122,7 +123,7 @@ public class SeedOfInfinityManager {
     }
 
     public static void closeSeed() {
-        LOGGER.info("Seed of Infinity Manager: Closing the seed.");
+        log.info("Seed of Infinity Manager: Closing the seed.");
         GlobalVariablesManager.getInstance().remove("SoI_opened");
 
         // EnergySeeds.SoiSeedStop();

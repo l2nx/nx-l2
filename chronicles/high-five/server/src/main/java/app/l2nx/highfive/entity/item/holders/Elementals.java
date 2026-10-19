@@ -27,6 +27,7 @@ import app.l2nx.highfive.data.xml.ElementalAttributeData;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.mechanics.stats.Stat;
 import app.l2nx.highfive.mechanics.stats.functions.FuncAdd;
+import lombok.Getter;
 
 public class Elementals {
     public static final byte NONE = -1;
@@ -150,122 +151,118 @@ public class Elementals {
     }
 
     public static class ElementalStatBonus {
-        private byte _elementalType;
-        private int _elementalValue;
-        private boolean _active;
+        private byte elementalType;
+        private int elementalValue;
+        private boolean active;
 
         public ElementalStatBonus(byte type, int value) {
-            _elementalType = type;
-            _elementalValue = value;
-            _active = false;
+            elementalType = type;
+            elementalValue = value;
+            active = false;
         }
 
         public void applyBonus(Player player, boolean isArmor) {
             // make sure the bonuses are not applied twice..
-            if (_active) {
+            if (active) {
                 return;
             }
 
-            switch (_elementalType) {
+            switch (elementalType) {
                 case FIRE: {
                     player.addStatFunc(
-                            new FuncAdd(isArmor ? Stat.FIRE_RES : Stat.FIRE_POWER, 0x40, this, _elementalValue, null));
+                            new FuncAdd(isArmor ? Stat.FIRE_RES : Stat.FIRE_POWER, 0x40, this, elementalValue, null));
                     break;
                 }
                 case WATER: {
-                    player.addStatFunc(new FuncAdd(
-                            isArmor ? Stat.WATER_RES : Stat.WATER_POWER, 0x40, this, _elementalValue, null));
+                    player.addStatFunc(
+                            new FuncAdd(isArmor ? Stat.WATER_RES : Stat.WATER_POWER, 0x40, this, elementalValue, null));
                     break;
                 }
                 case WIND: {
                     player.addStatFunc(
-                            new FuncAdd(isArmor ? Stat.WIND_RES : Stat.WIND_POWER, 0x40, this, _elementalValue, null));
+                            new FuncAdd(isArmor ? Stat.WIND_RES : Stat.WIND_POWER, 0x40, this, elementalValue, null));
                     break;
                 }
                 case EARTH: {
-                    player.addStatFunc(new FuncAdd(
-                            isArmor ? Stat.EARTH_RES : Stat.EARTH_POWER, 0x40, this, _elementalValue, null));
+                    player.addStatFunc(
+                            new FuncAdd(isArmor ? Stat.EARTH_RES : Stat.EARTH_POWER, 0x40, this, elementalValue, null));
                     break;
                 }
                 case DARK: {
                     player.addStatFunc(
-                            new FuncAdd(isArmor ? Stat.DARK_RES : Stat.DARK_POWER, 0x40, this, _elementalValue, null));
+                            new FuncAdd(isArmor ? Stat.DARK_RES : Stat.DARK_POWER, 0x40, this, elementalValue, null));
                     break;
                 }
                 case HOLY: {
                     player.addStatFunc(
-                            new FuncAdd(isArmor ? Stat.HOLY_RES : Stat.HOLY_POWER, 0x40, this, _elementalValue, null));
+                            new FuncAdd(isArmor ? Stat.HOLY_RES : Stat.HOLY_POWER, 0x40, this, elementalValue, null));
                     break;
                 }
             }
 
-            _active = true;
+            active = true;
         }
 
         public void removeBonus(Player player) {
             // Make sure the bonuses are not removed twice.
-            if (!_active) {
+            if (!active) {
                 return;
             }
 
             player.removeStatsOwner(this);
 
-            _active = false;
+            active = false;
         }
 
         public void setValue(int value) {
-            _elementalValue = value;
+            elementalValue = value;
         }
 
         public void setElement(byte type) {
-            _elementalType = type;
+            elementalType = type;
         }
     }
 
     // non static:
-    private ElementalStatBonus _bonus = null;
-    private byte _element = NONE;
-    private int _value = 0;
+    private ElementalStatBonus bonus = null;
 
-    public byte getElement() {
-        return _element;
-    }
+    @Getter
+    private byte element = NONE;
+
+    @Getter
+    private int value = 0;
 
     public void setElement(byte type) {
-        _element = type;
-        _bonus.setElement(type);
-    }
-
-    public int getValue() {
-        return _value;
+        element = type;
+        bonus.setElement(type);
     }
 
     public void setValue(int value) {
-        _value = value;
-        _bonus.setValue(value);
+        this.value = value;
+        bonus.setValue(value);
     }
 
     @Override
     public String toString() {
-        return getElementName(_element) + " +" + _value;
+        return getElementName(element) + " +" + value;
     }
 
     public Elementals(byte type, int value) {
-        _element = type;
-        _value = value;
-        _bonus = new ElementalStatBonus(_element, _value);
+        element = type;
+        this.value = value;
+        bonus = new ElementalStatBonus(element, this.value);
     }
 
     public void applyBonus(Player player, boolean isArmor) {
-        _bonus.applyBonus(player, isArmor);
+        bonus.applyBonus(player, isArmor);
     }
 
     public void removeBonus(Player player) {
-        _bonus.removeBonus(player);
+        bonus.removeBonus(player);
     }
 
     public void updateBonus(Player player, boolean isArmor) {
-        _bonus.removeBonus(player);
-        _bonus.applyBonus(player, isArmor);
+        bonus.removeBonus(player);
+        bonus.applyBonus(player, isArmor);
     }
 }

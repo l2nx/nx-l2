@@ -30,10 +30,10 @@ import java.util.Map;
  * @author GKR
  */
 public class NpcRoutesHolder {
-    private final Map<String, String> _correspondences;
+    private final Map<String, String> correspondences;
 
     public NpcRoutesHolder() {
-        _correspondences = new HashMap<>();
+        correspondences = new HashMap<>();
     }
 
     /**
@@ -42,7 +42,7 @@ public class NpcRoutesHolder {
      * @param loc Location of spawn point
      */
     public void addRoute(String routeName, Location loc) {
-        _correspondences.put(getUniqueKey(loc), routeName);
+        correspondences.put(getUniqueKey(loc), routeName);
     }
 
     /**
@@ -52,7 +52,7 @@ public class NpcRoutesHolder {
     public String getRouteName(Npc npc) {
         if (npc.getSpawn() != null) {
             final String key = getUniqueKey(npc.getSpawn().getLocation());
-            return _correspondences.getOrDefault(key, "");
+            return correspondences.getOrDefault(key, "");
         }
 
         return "";

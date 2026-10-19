@@ -27,22 +27,22 @@ import app.l2nx.highfive.mechanics.skill.Skill;
  * @author xban1x
  */
 public class QueuedMagicUseTask implements Runnable {
-    private final Player _currPlayer;
-    private final Skill _queuedSkill;
-    private final boolean _isCtrlPressed;
-    private final boolean _isShiftPressed;
+    private final Player currPlayer;
+    private final Skill queuedSkill;
+    private final boolean ctrlPressed;
+    private final boolean shiftPressed;
 
     public QueuedMagicUseTask(Player currPlayer, Skill queuedSkill, boolean isCtrlPressed, boolean isShiftPressed) {
-        _currPlayer = currPlayer;
-        _queuedSkill = queuedSkill;
-        _isCtrlPressed = isCtrlPressed;
-        _isShiftPressed = isShiftPressed;
+        this.currPlayer = currPlayer;
+        this.queuedSkill = queuedSkill;
+        ctrlPressed = isCtrlPressed;
+        shiftPressed = isShiftPressed;
     }
 
     @Override
     public void run() {
-        if (_currPlayer != null) {
-            _currPlayer.useMagic(_queuedSkill, _isCtrlPressed, _isShiftPressed);
+        if (currPlayer != null) {
+            currPlayer.useMagic(queuedSkill, ctrlPressed, shiftPressed);
         }
     }
 }

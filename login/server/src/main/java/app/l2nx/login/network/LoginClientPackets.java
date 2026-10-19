@@ -32,6 +32,7 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Set;
 import java.util.function.Supplier;
+import lombok.Getter;
 
 /**
  * @author Mobius
@@ -57,9 +58,11 @@ public enum LoginClientPackets {
         }
     }
 
-    private final short _packetId;
-    private final Supplier<LoginClientPacket> _packetSupplier;
-    private final Set<ConnectionState> _connectionStates;
+    private final short packetId;
+    private final Supplier<LoginClientPacket> packetSupplier;
+
+    @Getter
+    private final Set<ConnectionState> connectionStates;
 
     LoginClientPackets(int packetId, Supplier<LoginClientPacket> packetSupplier, ConnectionState... connectionStates) {
         // Packet id is an unsigned byte.
@@ -67,23 +70,19 @@ public enum LoginClientPackets {
             throw new IllegalArgumentException("Packet id must not be bigger than 0xFF");
         }
 
-        _packetId = (short) packetId;
-        _packetSupplier = packetSupplier != null ? packetSupplier : () -> null;
+        this.packetId = (short) packetId;
+        this.packetSupplier = packetSupplier != null ? packetSupplier : () -> null;
 
         final EnumSet<ConnectionState> states = EnumSet.noneOf(ConnectionState.class);
         Collections.addAll(states, connectionStates);
-        _connectionStates = states;
+        this.connectionStates = states;
     }
 
     public int getPacketId() {
-        return _packetId;
+        return packetId;
     }
 
     public LoginClientPacket newPacket() {
-        return _packetSupplier.get();
-    }
-
-    public Set<ConnectionState> getConnectionStates() {
-        return _connectionStates;
+        return packetSupplier.get();
     }
 }

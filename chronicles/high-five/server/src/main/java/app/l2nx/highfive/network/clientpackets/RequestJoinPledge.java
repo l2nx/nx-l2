@@ -27,18 +27,21 @@ import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.clan.Clan;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.serverpackets.AskJoinPledge;
+import lombok.Getter;
 
 /**
  * @version $Revision: 1.3.4.4 $ $Date: 2005/03/27 15:29:30 $
  */
 public class RequestJoinPledge extends ClientPacket {
-    private int _target;
-    private int _pledgeType;
+    private int target;
+
+    @Getter
+    private int pledgeType;
 
     @Override
     protected void readImpl() {
-        _target = readInt();
-        _pledgeType = readInt();
+        target = readInt();
+        pledgeType = readInt();
     }
 
     @Override
@@ -53,13 +56,13 @@ public class RequestJoinPledge extends ClientPacket {
             return;
         }
 
-        final Player target = World.getPlayer(_target);
+        final Player target = World.getPlayer(this.target);
         if (target == null) {
             player.sendPacket(SystemMessageId.YOU_HAVE_INVITED_THE_WRONG_TARGET);
             return;
         }
 
-        if (!clan.checkClanJoinCondition(player, target, _pledgeType)) {
+        if (!clan.checkClanJoinCondition(player, target, pledgeType)) {
             return;
         }
 
@@ -68,13 +71,9 @@ public class RequestJoinPledge extends ClientPacket {
         }
 
         final String pledgeName = player.getClan().getName();
-        final String subPledgeName = (player.getClan().getSubPledge(_pledgeType) != null
-                ? player.getClan().getSubPledge(_pledgeType).getName()
+        final String subPledgeName = (player.getClan().getSubPledge(pledgeType) != null
+                ? player.getClan().getSubPledge(pledgeType).getName()
                 : null);
-        target.sendPacket(new AskJoinPledge(player.getObjectId(), subPledgeName, _pledgeType, pledgeName));
-    }
-
-    public int getPledgeType() {
-        return _pledgeType;
+        target.sendPacket(new AskJoinPledge(player.getObjectId(), subPledgeName, pledgeType, pledgeName));
     }
 }

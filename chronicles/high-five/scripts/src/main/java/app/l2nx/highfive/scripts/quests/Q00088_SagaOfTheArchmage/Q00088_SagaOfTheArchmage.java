@@ -29,15 +29,15 @@ import app.l2nx.highfive.scripts.quests.AbstractSagaQuest;
 public class Q00088_SagaOfTheArchmage extends AbstractSagaQuest {
     public Q00088_SagaOfTheArchmage() {
         super(88);
-        _npc = new int[] {30176, 31627, 31282, 31282, 31590, 31646, 31647, 31650, 31654, 31655, 31657, 31282};
-        _items = new int[] {7080, 7529, 7081, 7503, 7286, 7317, 7348, 7379, 7410, 7441, 7082, 0};
-        _mob = new int[] {27250, 27237, 27254};
-        _classId = new int[] {94};
-        _prevClass = new int[] {0x0c};
-        _npcSpawnLocations = new Location[] {
+        npc = new int[] {30176, 31627, 31282, 31282, 31590, 31646, 31647, 31650, 31654, 31655, 31657, 31282};
+        items = new int[] {7080, 7529, 7081, 7503, 7286, 7317, 7348, 7379, 7410, 7441, 7082, 0};
+        mob = new int[] {27250, 27237, 27254};
+        classId = new int[] {94};
+        prevClass = new int[] {0x0c};
+        npcSpawnLocations = new Location[] {
             new Location(191046, -40640, -3042), new Location(46066, -36396, -1685), new Location(46087, -36372, -1685)
         };
-        _text = new String[] {
+        text = new String[] {
             "PLAYERNAME! Pursued to here! However, I jumped out of the Banshouren boundaries! You look at the giant as the sign of power!",
             "... Oh ... good! So it was ... let's begin!",
             "I do not have the patience ..! I have been a giant force ...! Cough chatter ah ah ah!",

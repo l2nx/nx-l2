@@ -56,6 +56,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.function.Consumer;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 
@@ -64,30 +66,38 @@ import org.w3c.dom.Node;
  * Maintains config reading, spawn of NPCs, adding of event's drop.
  * @author GKR, Mobius
  */
+@Slf4j
 public class LongTimeEvent extends Script {
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("dd MM yyyy", Locale.US);
 
-    protected String _eventName;
-    protected Date _startDate = null;
-    protected Date _endDate = null;
-    protected Date _dropStartDate = null;
-    protected Date _dropEndDate = null;
-    protected boolean _initialized = false;
-    protected boolean _active = false;
+    protected String eventName;
+
+    @Getter
+    protected Date startDate = null;
+
+    @Getter
+    protected Date endDate = null;
+
+    protected Date dropStartDate = null;
+    protected Date dropEndDate = null;
+    protected boolean initialized = false;
+
+    @Getter
+    protected boolean eventPeriod = false;
 
     // Messages
-    protected String _onEnterMsg = "";
-    protected String _endMsg = "";
-    protected int _enterAnnounceId = -1;
+    protected String onEnterMsg = "";
+    protected String endMsg = "";
+    protected int enterAnnounceId = -1;
 
     // NPCs to spawn and their spawn points.
-    protected final List<NpcSpawn> _spawnList = new ArrayList<>();
+    protected final List<NpcSpawn> spawnList = new ArrayList<>();
 
     // Drop data for event.
-    protected final List<EventDropHolder> _dropList = new ArrayList<>();
+    protected final List<EventDropHolder> dropList = new ArrayList<>();
 
     // Items to destroy when event ends.
-    protected final List<Integer> _destroyItemsOnEnd = new ArrayList<>();
+    protected final List<Integer> destroyItemsOnEnd = new ArrayList<>();
 
     protected class NpcSpawn {
         protected final int npcId;
@@ -104,23 +114,23 @@ public class LongTimeEvent extends Script {
     public LongTimeEvent() {
         loadConfig();
 
-        if ((_startDate != null) && (_endDate != null)) {
+        if ((startDate != null) && (endDate != null)) {
             final Date now = new Date();
             if (isWithinRange(now)) {
                 startEvent();
-                LOGGER.info("Event " + _eventName + " active till " + _endDate);
-            } else if (_startDate.after(now)) {
-                final long delay = _startDate.getTime() - System.currentTimeMillis();
+                log.info("Event {} active till {}", eventName, endDate);
+            } else if (startDate.after(now)) {
+                final long delay = startDate.getTime() - System.currentTimeMillis();
                 ThreadPool.schedule(new ScheduleStart(), delay);
-                LOGGER.info("Event " + _eventName + " will be started at " + _startDate);
+                log.info("Event {} will be started at {}", eventName, startDate);
             } else {
                 // Destroy items that must exist only on event period.
                 destroyItemsOnEnd();
-                LOGGER.info("Event " + _eventName + " has passed... Ignored ");
+                log.info("Event {} has passed... Ignored ", eventName);
             }
         }
 
-        _initialized = true;
+        initialized = true;
     }
 
     /**
@@ -129,12 +139,12 @@ public class LongTimeEvent extends Script {
      * @return {@code true} if the date is within range
      */
     private boolean isWithinRange(Date date) {
-        return (date.equals(_startDate) || date.after(_startDate)) && (date.equals(_endDate) || date.before(_endDate));
+        return (date.equals(startDate) || date.after(startDate)) && (date.equals(endDate) || date.before(endDate));
     }
 
     private boolean isWithinDropPeriod(Date date) {
-        return (date.equals(_dropStartDate) || date.after(_dropStartDate))
-                && (date.equals(_dropEndDate) || date.before(_dropEndDate));
+        return (date.equals(dropStartDate) || date.after(dropStartDate))
+                && (date.equals(dropEndDate) || date.before(dropEndDate));
     }
 
     /**
@@ -142,7 +152,7 @@ public class LongTimeEvent extends Script {
      * @return {@code true} if the period is valid
      */
     private boolean isValidPeriod() {
-        return (_startDate != null) && (_endDate != null) && _startDate.before(_endDate);
+        return (startDate != null) && (endDate != null) && startDate.before(endDate);
     }
 
     /**
@@ -163,7 +173,7 @@ public class LongTimeEvent extends Script {
                         .toInstant());
                 return new Date[] {start, end};
             } catch (Exception e) {
-                LOGGER.warning("Invalid Date Format: " + e.getMessage());
+                log.warn("Invalid Date Format: {}", e.getMessage());
             }
         }
 
@@ -186,7 +196,7 @@ public class LongTimeEvent extends Script {
                     throw new NullPointerException("WARNING!!! " + getName() + " event: bad config file!");
                 }
 
-                _eventName = document.getDocumentElement()
+                eventName = document.getDocumentElement()
                         .getAttributes()
                         .getNamedItem("name")
                         .getNodeValue();
@@ -212,8 +222,8 @@ public class LongTimeEvent extends Script {
                 if (period.length() == 21) {
                     final Date[] range = parseDateRange(period, DATE_FORMAT);
                     if (range != null) {
-                        _startDate = range[0];
-                        _endDate = range[1];
+                        startDate = range[0];
+                        endDate = range[1];
                     }
                 } else if (period.length() == 11) {
                     final String[] parts = period.split("-");
@@ -221,8 +231,8 @@ public class LongTimeEvent extends Script {
                     final String end = parts[1] + " " + currentYear;
                     final Date[] range = parseDateRange(start + "-" + end, DATE_FORMAT);
                     if (range != null) {
-                        _startDate = range[0];
-                        _endDate = range[1];
+                        startDate = range[0];
+                        endDate = range[1];
                     }
                 }
 
@@ -230,8 +240,8 @@ public class LongTimeEvent extends Script {
                 if (dropPeriod.length() == 21) {
                     final Date[] dropRange = parseDateRange(dropPeriod, DATE_FORMAT);
                     if (dropRange != null) {
-                        _dropStartDate = dropRange[0];
-                        _dropEndDate = dropRange[1];
+                        dropStartDate = dropRange[0];
+                        dropEndDate = dropRange[1];
                     }
                 } else if (dropPeriod.length() == 11) {
                     final String[] parts = dropPeriod.split("-");
@@ -239,14 +249,14 @@ public class LongTimeEvent extends Script {
                     final String end = parts[1] + " " + currentYear;
                     final Date[] dropRange = parseDateRange(start + "-" + end, DATE_FORMAT);
                     if (dropRange != null) {
-                        _dropStartDate = dropRange[0];
-                        _dropEndDate = dropRange[1];
+                        dropStartDate = dropRange[0];
+                        dropEndDate = dropRange[1];
                     }
                 }
 
                 // Check that drop period is inside active period.
-                if (((_dropStartDate != null) && _dropStartDate.before(_startDate))
-                        || ((_dropEndDate != null) && _dropEndDate.after(_endDate))) {
+                if (((dropStartDate != null) && dropStartDate.before(startDate))
+                        || ((dropEndDate != null) && dropEndDate.after(endDate))) {
                     throw new NullPointerException(
                             "WARNING!!! " + getName() + " event: drop period must be within the active period");
                 }
@@ -257,7 +267,7 @@ public class LongTimeEvent extends Script {
 
                 final Date today = new Date();
 
-                if (_startDate.after(today) || isWithinRange(today)) {
+                if (startDate.after(today) || isWithinRange(today)) {
                     for (Node n = document.getDocumentElement().getFirstChild(); n != null; n = n.getNextSibling()) {
                         // Loading droplist
                         if (n.getNodeName().equalsIgnoreCase("droplist")) {
@@ -301,24 +311,30 @@ public class LongTimeEvent extends Script {
                                         }
 
                                         if (ItemData.getInstance().getTemplate(itemId) == null) {
-                                            LOGGER.warning(getName() + " event: " + itemId
-                                                    + " is wrong item id, item was not added in droplist");
+                                            log.warn(
+                                                    "{} event: {} is wrong item id, item was not added in droplist",
+                                                    getName(),
+                                                    itemId);
                                             continue;
                                         }
 
                                         if (minCount > maxCount) {
-                                            LOGGER.warning(getName() + " event: item " + itemId
-                                                    + " - min greater than max, item was not added in droplist");
+                                            log.warn(
+                                                    "{} event: item {} - min greater than max, item was not added in droplist",
+                                                    getName(),
+                                                    itemId);
                                             continue;
                                         }
 
                                         if ((finalChance < 0) || (finalChance > 100)) {
-                                            LOGGER.warning(getName() + " event: item " + itemId
-                                                    + " - incorrect drop chance, item was not added in droplist");
+                                            log.warn(
+                                                    "{} event: item {} - incorrect drop chance, item was not added in droplist",
+                                                    getName(),
+                                                    itemId);
                                             continue;
                                         }
 
-                                        _dropList.add(new EventDropHolder(
+                                        dropList.add(new EventDropHolder(
                                                 itemId,
                                                 minCount,
                                                 maxCount,
@@ -327,8 +343,9 @@ public class LongTimeEvent extends Script {
                                                 maxLevel,
                                                 monsterIds));
                                     } catch (NumberFormatException nfe) {
-                                        LOGGER.warning("Wrong number format in config.xml droplist block for "
-                                                + getName() + " event");
+                                        log.warn(
+                                                "Wrong number format in config.xml droplist block for {} event",
+                                                getName());
                                     }
                                 }
                             }
@@ -341,8 +358,10 @@ public class LongTimeEvent extends Script {
                                                 .getNamedItem("npc")
                                                 .getNodeValue());
                                         if (NpcData.getInstance().getTemplate(npcId) == null) {
-                                            LOGGER.warning(getName() + " event: " + npcId
-                                                    + " is wrong NPC id, NPC was not added in spawnlist");
+                                            log.warn(
+                                                    "{} event: {} is wrong NPC id, NPC was not added in spawnlist",
+                                                    getName(),
+                                                    npcId);
                                             continue;
                                         }
 
@@ -366,11 +385,12 @@ public class LongTimeEvent extends Script {
                                                 respawnTimeNode == null ? null : respawnTimeNode.getNodeValue();
                                         final int respawnTime =
                                                 respawnTimeValue != null ? Integer.parseInt(respawnTimeValue) : 0;
-                                        _spawnList.add(new NpcSpawn(
+                                        spawnList.add(new NpcSpawn(
                                                 npcId, new Location(xPos, yPos, zPos, heading), respawnTime * 1000));
                                     } catch (NumberFormatException nfe) {
-                                        LOGGER.warning("Wrong number format in config.xml spawnlist block for "
-                                                + getName() + " event");
+                                        log.warn(
+                                                "Wrong number format in config.xml spawnlist block for {} event",
+                                                getName());
                                     }
                                 }
                             }
@@ -386,9 +406,9 @@ public class LongTimeEvent extends Script {
                                             .getNodeValue();
                                     if ((msgType != null) && (msgText != null)) {
                                         if (msgType.equalsIgnoreCase("onEnd")) {
-                                            _endMsg = msgText;
+                                            endMsg = msgText;
                                         } else if (msgType.equalsIgnoreCase("onEnter")) {
-                                            _onEnterMsg = msgText;
+                                            onEnterMsg = msgText;
                                         }
                                     }
                                 }
@@ -406,14 +426,15 @@ public class LongTimeEvent extends Script {
                                     final int itemId = Integer.parseInt(
                                             d.getAttributes().getNamedItem("id").getNodeValue());
                                     if (ItemData.getInstance().getTemplate(itemId) == null) {
-                                        LOGGER.warning(getName() + " event: Item " + itemId + " does not exist.");
+                                        log.warn("{} event: Item {} does not exist.", getName(), itemId);
                                         continue;
                                     }
 
-                                    _destroyItemsOnEnd.add(itemId);
+                                    destroyItemsOnEnd.add(itemId);
                                 } catch (NumberFormatException nfe) {
-                                    LOGGER.warning("Wrong number format in config.xml destroyItemsOnEnd block for "
-                                            + getName() + " event");
+                                    log.warn(
+                                            "Wrong number format in config.xml destroyItemsOnEnd block for {} event",
+                                            getName());
                                 }
                             }
                         }
@@ -432,52 +453,52 @@ public class LongTimeEvent extends Script {
 
     protected void startEvent() {
         // Set Active.
-        _active = true;
+        eventPeriod = true;
 
         // Add event drops if within the drop period.
-        if ((_dropStartDate != null) && (_dropEndDate != null) && isWithinDropPeriod(new Date())) {
-            EventDropManager.getInstance().addDrops(this, _dropList);
+        if ((dropStartDate != null) && (dropEndDate != null) && isWithinDropPeriod(new Date())) {
+            EventDropManager.getInstance().addDrops(this, dropList);
         }
 
-        if (!_spawnList.isEmpty()) {
-            if (_initialized) {
+        if (!spawnList.isEmpty()) {
+            if (initialized) {
                 // Add spawns on event start.
                 spawnNpcs();
             } else // Add spawns on server start.
             {
                 Containers.Global()
                         .addListener(new ConsumerEventListener(
-                                Containers.Global(), EventType.ON_SERVER_START, _spawnNpcs, this));
+                                Containers.Global(), EventType.ON_SERVER_START, spawnNpcs, this));
             }
         }
 
         // Event enter announcement.
-        if (!_onEnterMsg.isEmpty()) {
+        if (!onEnterMsg.isEmpty()) {
             // Send message on begin.
-            World.broadcastToAllOnlinePlayers(_onEnterMsg);
+            World.broadcastToAllOnlinePlayers(onEnterMsg);
 
             // Add announce for entering players.
-            final EventAnnouncement announce = new EventAnnouncement(_startDate, _endDate, _onEnterMsg);
+            final EventAnnouncement announce = new EventAnnouncement(startDate, endDate, onEnterMsg);
             AnnouncementsTable.getInstance().addAnnouncement(announce);
-            _enterAnnounceId = announce.getId();
+            enterAnnounceId = announce.getId();
         }
 
         // Schedule event end.
-        final Long millisToEventEnd = _endDate.getTime() - System.currentTimeMillis();
+        final Long millisToEventEnd = endDate.getTime() - System.currentTimeMillis();
         ThreadPool.schedule(new ScheduleEnd(), millisToEventEnd);
     }
 
     /**
      * Event spawns must initialize after server loads scripts.
      */
-    private final Consumer<OnServerStart> _spawnNpcs = _ -> {
+    private final Consumer<OnServerStart> spawnNpcs = _ -> {
         spawnNpcs();
         Containers.Global().removeListenerIf(EventType.ON_SERVER_START, listener -> listener.getOwner() == this);
     };
 
     protected void spawnNpcs() {
-        final Long millisToEventEnd = _endDate.getTime() - System.currentTimeMillis();
-        for (NpcSpawn npcSpawn : _spawnList) {
+        final Long millisToEventEnd = endDate.getTime() - System.currentTimeMillis();
+        for (NpcSpawn npcSpawn : spawnList) {
             final Npc npc = addSpawn(
                     npcSpawn.npcId,
                     npcSpawn.loc.getX(),
@@ -505,7 +526,7 @@ public class LongTimeEvent extends Script {
 
     protected void stopEvent() {
         // Set Active.
-        _active = false;
+        eventPeriod = false;
 
         // Stop event drops.
         EventDropManager.getInstance().removeDrops(this);
@@ -514,19 +535,19 @@ public class LongTimeEvent extends Script {
         destroyItemsOnEnd();
 
         // Send message on end.
-        if (!_endMsg.isEmpty()) {
-            World.broadcastToAllOnlinePlayers(_endMsg);
+        if (!endMsg.isEmpty()) {
+            World.broadcastToAllOnlinePlayers(endMsg);
         }
 
         // Remove announce for entering players.
-        if (_enterAnnounceId != -1) {
-            AnnouncementsTable.getInstance().deleteAnnouncement(_enterAnnounceId);
+        if (enterAnnounceId != -1) {
+            AnnouncementsTable.getInstance().deleteAnnouncement(enterAnnounceId);
         }
     }
 
     protected void destroyItemsOnEnd() {
-        if (!_destroyItemsOnEnd.isEmpty()) {
-            for (int itemId : _destroyItemsOnEnd) {
+        if (!destroyItemsOnEnd.isEmpty()) {
+            for (int itemId : destroyItemsOnEnd) {
                 // Remove item from online players.
                 for (Player player : World.getPlayers()) {
                     if (player != null) {
@@ -540,30 +561,9 @@ public class LongTimeEvent extends Script {
                     statement.setInt(1, itemId);
                     statement.execute();
                 } catch (SQLException e) {
-                    LOGGER.warning(e.toString());
+                    log.warn(e.toString());
                 }
             }
         }
-    }
-
-    /**
-     * @return the event start date
-     */
-    public Date getStartDate() {
-        return _startDate;
-    }
-
-    /**
-     * @return the event end date
-     */
-    public Date getEndDate() {
-        return _endDate;
-    }
-
-    /**
-     * @return {@code true} if now is event period
-     */
-    public boolean isEventPeriod() {
-        return _active;
     }
 }

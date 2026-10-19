@@ -39,17 +39,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class CastleManager {
-    private static final Logger LOGGER = Logger.getLogger(CastleManager.class.getName());
 
-    private static final List<Castle> _castles = new CopyOnWriteArrayList<>();
+    private static final List<Castle> castles = new CopyOnWriteArrayList<>();
 
-    private static final Map<Integer, Long> _castleSiegeDate = new ConcurrentHashMap<>();
+    private static final Map<Integer, Long> castleSiegeDate = new ConcurrentHashMap<>();
 
-    private static final int[] _castleCirclets = {0, 6838, 6835, 6839, 6837, 6840, 6834, 6836, 8182, 8183};
+    private static final int[] castleCirclets = {0, 6838, 6835, 6839, 6837, 6840, 6834, 6836, 8182, 8183};
 
     public int findNearestCastleIndex(WorldObject obj) {
         return findNearestCastleIndex(obj, Long.MAX_VALUE);
@@ -61,8 +60,8 @@ public class CastleManager {
             Castle castle;
             double distance;
             long maxDistance = maxDistanceValue;
-            for (int i = 0; i < _castles.size(); i++) {
-                castle = _castles.get(i);
+            for (int i = 0; i < castles.size(); i++) {
+                castle = castles.get(i);
                 if (castle == null) {
                     continue;
                 }
@@ -79,7 +78,7 @@ public class CastleManager {
     }
 
     public Castle getCastleById(int castleId) {
-        for (Castle temp : _castles) {
+        for (Castle temp : castles) {
             if (temp.getResidenceId() == castleId) {
                 return temp;
             }
@@ -93,7 +92,7 @@ public class CastleManager {
             return null;
         }
 
-        for (Castle temp : _castles) {
+        for (Castle temp : castles) {
             if (temp.getOwnerId() == clan.getId()) {
                 return temp;
             }
@@ -103,7 +102,7 @@ public class CastleManager {
     }
 
     public Castle getCastle(String name) {
-        for (Castle temp : _castles) {
+        for (Castle temp : castles) {
             if (temp.getName().equalsIgnoreCase(name.trim())) {
                 return temp;
             }
@@ -113,7 +112,7 @@ public class CastleManager {
     }
 
     public Castle getCastle(int x, int y, int z) {
-        for (Castle temp : _castles) {
+        for (Castle temp : castles) {
             if (temp.checkIfInZone(x, y, z)) {
                 return temp;
             }
@@ -128,8 +127,8 @@ public class CastleManager {
 
     public int getCastleIndex(int castleId) {
         Castle castle;
-        for (int i = 0; i < _castles.size(); i++) {
-            castle = _castles.get(i);
+        for (int i = 0; i < castles.size(); i++) {
+            castle = castles.get(i);
             if ((castle != null) && (castle.getResidenceId() == castleId)) {
                 return i;
             }
@@ -144,8 +143,8 @@ public class CastleManager {
 
     public int getCastleIndex(int x, int y, int z) {
         Castle castle;
-        for (int i = 0; i < _castles.size(); i++) {
-            castle = _castles.get(i);
+        for (int i = 0; i < castles.size(); i++) {
+            castle = castles.get(i);
             if ((castle != null) && castle.checkIfInZone(x, y, z)) {
                 return i;
             }
@@ -155,12 +154,12 @@ public class CastleManager {
     }
 
     public List<Castle> getCastles() {
-        return _castles;
+        return castles;
     }
 
     public boolean hasOwnedCastle() {
         boolean hasOwnedCastle = false;
-        for (Castle castle : _castles) {
+        for (Castle castle : castles) {
             if (castle.getOwnerId() > 0) {
                 hasOwnedCastle = true;
                 break;
@@ -188,7 +187,7 @@ public class CastleManager {
             }
         }
 
-        for (Castle castle : _castles) {
+        for (Castle castle : castles) {
             if (castle.getTaxPercent() > maxTax) {
                 castle.setTaxPercent(maxTax);
             }
@@ -201,7 +200,7 @@ public class CastleManager {
 
     public int getCircletByCastleId(int castleId) {
         if ((castleId > 0) && (castleId < 10)) {
-            return _castleCirclets[castleId];
+            return castleCirclets[castleId];
         }
 
         return 0;
@@ -246,10 +245,10 @@ public class CastleManager {
                 ps.setInt(2, circletId);
                 ps.execute();
             } catch (Exception e) {
-                LOGGER.log(
-                        Level.WARNING,
-                        "Failed to remove castle circlets offline for player " + member.getName() + ": "
-                                + e.getMessage(),
+                log.warn(
+                        "Failed to remove castle circlets offline for player {}: {}",
+                        member.getName(),
+                        e.getMessage(),
                         e);
             }
         }
@@ -260,28 +259,28 @@ public class CastleManager {
                 Statement s = con.createStatement();
                 ResultSet rs = s.executeQuery("SELECT id FROM castle ORDER BY id")) {
             while (rs.next()) {
-                _castles.add(new Castle(rs.getInt("id")));
+                castles.add(new Castle(rs.getInt("id")));
             }
 
-            LOGGER.info(getClass().getSimpleName() + ": Loaded " + _castles.size() + " castles");
+            log.info("Loaded {} castles", castles.size());
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, "Exception: loadCastleData(): " + e.getMessage(), e);
+            log.warn("Exception: loadCastleData(): {}", e.getMessage(), e);
         }
     }
 
     public void activateInstances() {
-        for (Castle castle : _castles) {
+        for (Castle castle : castles) {
             castle.activateInstance();
         }
     }
 
     public void registerSiegeDate(int castleId, long siegeDate) {
-        _castleSiegeDate.put(castleId, siegeDate);
+        castleSiegeDate.put(castleId, siegeDate);
     }
 
     public int getSiegeDates(long siegeDate) {
         int count = 0;
-        for (long date : _castleSiegeDate.values()) {
+        for (long date : castleSiegeDate.values()) {
             if (Math.abs(date - siegeDate) < 1000) {
                 count++;
             }

@@ -39,15 +39,15 @@ public class Q00073_SagaOfTheDuelist extends AbstractSagaQuest {
 
     public Q00073_SagaOfTheDuelist() {
         super(73);
-        _npc = new int[] {30849, 31624, 31226, 31331, 31639, 31646, 31647, 31653, 31654, 31655, 31656, 31277};
-        _items = new int[] {7080, 7537, 7081, 7488, 7271, 7302, 7333, 7364, 7395, 7426, 7096, 7546};
-        _mob = new int[] {27289, 27222, 27281};
-        _classId = new int[] {88};
-        _prevClass = new int[] {0x02};
-        _npcSpawnLocations = new Location[] {
+        npc = new int[] {30849, 31624, 31226, 31331, 31639, 31646, 31647, 31653, 31654, 31655, 31656, 31277};
+        items = new int[] {7080, 7537, 7081, 7488, 7271, 7302, 7333, 7364, 7395, 7426, 7096, 7546};
+        mob = new int[] {27289, 27222, 27281};
+        classId = new int[] {88};
+        prevClass = new int[] {0x02};
+        npcSpawnLocations = new Location[] {
             new Location(164650, -74121, -2871), new Location(47429, -56923, -2383), new Location(47391, -56929, -2370)
         };
-        _text = new String[] {
+        text = new String[] {
             "PLAYERNAME! Pursued to here! However, I jumped out of the Banshouren boundaries! You look at the giant as the sign of power!",
             "... Oh ... good! So it was ... let's begin!",
             "I do not have the patience ..! I have been a giant force ...! Cough chatter ah ah ah!",

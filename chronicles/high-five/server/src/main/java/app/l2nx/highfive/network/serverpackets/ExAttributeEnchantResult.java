@@ -27,15 +27,15 @@ import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.network.buffer.WriteBuffer;
 
 public class ExAttributeEnchantResult extends ServerPacket {
-    private final int _result;
+    private final int result;
 
     public ExAttributeEnchantResult(int result) {
-        _result = result;
+        this.result = result;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_ATTRIBUTE_ENCHANT_RESULT.writeId(this, buffer);
-        buffer.writeInt(_result);
+        buffer.writeInt(result);
     }
 }

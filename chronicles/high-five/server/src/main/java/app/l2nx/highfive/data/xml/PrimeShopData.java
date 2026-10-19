@@ -29,7 +29,7 @@ import java.io.File;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
@@ -37,9 +37,9 @@ import org.w3c.dom.Node;
 /**
  * @author Mobius
  */
+@Slf4j
 public class PrimeShopData implements IXmlReader {
-    private static final Logger LOGGER = Logger.getLogger(PrimeShopData.class.getName());
-    private final Map<Integer, PrimeShopProductHolder> _products = new HashMap<>();
+    private final Map<Integer, PrimeShopProductHolder> products = new HashMap<>();
 
     protected PrimeShopData() {
         load();
@@ -47,7 +47,7 @@ public class PrimeShopData implements IXmlReader {
 
     @Override
     public void load() {
-        _products.clear();
+        products.clear();
 
         if (!GeneralConfig.ENABLE_PRIME_SHOP) {
             return;
@@ -78,21 +78,21 @@ public class PrimeShopData implements IXmlReader {
                                 set.getInt("points"),
                                 set.getInt("item"),
                                 set.getInt("count"));
-                        _products.put(set.getInt("id"), product);
+                        products.put(set.getInt("id"), product);
                     }
                 }
             }
         }
 
-        LOGGER.info(getClass().getSimpleName() + ": Loaded " + _products.size() + " products.");
+        log.info("Loaded {} products.", products.size());
     }
 
     public Collection<PrimeShopProductHolder> getAllItems() {
-        return _products.values();
+        return products.values();
     }
 
     public PrimeShopProductHolder getProduct(int id) {
-        return _products.get(id);
+        return products.get(id);
     }
 
     public static PrimeShopData getInstance() {

@@ -25,54 +25,44 @@ import app.l2nx.highfive.util.StatSet;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import lombok.Getter;
 
 /**
  * @author UnAfraid
  */
 public class TeleportLocation extends Location {
-    private final int _id;
-    private final String _name;
-    private final int _feeId;
-    private final long _feeCount;
-    private final List<Integer> _castleId;
+    @Getter
+    private final int id;
+
+    @Getter
+    private final String name;
+
+    @Getter
+    private final int feeId;
+
+    @Getter
+    private final long feeCount;
+
+    @Getter
+    private final List<Integer> castleId;
 
     public TeleportLocation(int id, StatSet set) {
         super(set);
-        _id = id;
-        _name = set.getString("name", null);
-        _feeId = set.getInt("feeId", Inventory.ADENA_ID);
-        _feeCount = set.getLong("feeCount", 0);
+        this.id = id;
+        name = set.getString("name", null);
+        feeId = set.getInt("feeId", Inventory.ADENA_ID);
+        feeCount = set.getLong("feeCount", 0);
 
         final String castleIds = set.getString("castleId", "");
         if (castleIds.isEmpty()) {
-            _castleId = Collections.emptyList();
+            this.castleId = Collections.emptyList();
         } else if (!castleIds.contains(";")) {
-            _castleId = Collections.singletonList(Integer.parseInt(castleIds));
+            this.castleId = Collections.singletonList(Integer.parseInt(castleIds));
         } else {
-            _castleId = new ArrayList<>();
+            this.castleId = new ArrayList<>();
             for (String castleId : castleIds.split(";")) {
-                _castleId.add(Integer.parseInt(castleId));
+                this.castleId.add(Integer.parseInt(castleId));
             }
         }
-    }
-
-    public int getId() {
-        return _id;
-    }
-
-    public String getName() {
-        return _name;
-    }
-
-    public int getFeeId() {
-        return _feeId;
-    }
-
-    public long getFeeCount() {
-        return _feeCount;
-    }
-
-    public List<Integer> getCastleId() {
-        return _castleId;
     }
 }

@@ -22,27 +22,31 @@ package app.l2nx.highfive.entity.zone.type;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.zone.ZoneId;
 import app.l2nx.highfive.entity.zone.ZoneType;
+import lombok.Getter;
 
 /**
  * A Town zone
  * @author durgus
  */
 public class TownZone extends ZoneType {
-    private int _townId;
-    private int _taxById;
+    @Getter
+    private int townId;
+
+    @Getter
+    private int taxById;
 
     public TownZone(int id) {
         super(id);
 
-        _taxById = 0;
+        taxById = 0;
     }
 
     @Override
     public void setParameter(String name, String value) {
         if (name.equals("townId")) {
-            _townId = Integer.parseInt(value);
+            townId = Integer.parseInt(value);
         } else if (name.equals("taxById")) {
-            _taxById = Integer.parseInt(value);
+            taxById = Integer.parseInt(value);
         } else {
             super.setParameter(name, value);
         }
@@ -56,21 +60,5 @@ public class TownZone extends ZoneType {
     @Override
     protected void onExit(Creature creature) {
         creature.setInsideZone(ZoneId.TOWN, false);
-    }
-
-    /**
-     * Returns this zones town id (if any)
-     * @return
-     */
-    public int getTownId() {
-        return _townId;
-    }
-
-    /**
-     * Returns this town zones castle id
-     * @return
-     */
-    public int getTaxById() {
-        return _taxById;
     }
 }

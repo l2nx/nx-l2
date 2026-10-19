@@ -38,15 +38,15 @@ public class ExBrBuyProduct extends ServerPacket {
     public static final int RESULT_WRONG_USER_STATE = -9; // also -11
     public static final int RESULT_WRONG_PRODUCT_ITEM = -10;
 
-    private final int _result;
+    private final int result;
 
     public ExBrBuyProduct(int result) {
-        _result = result;
+        this.result = result;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_BR_BUY_PRODUCT.writeId(this, buffer);
-        buffer.writeInt(_result);
+        buffer.writeInt(result);
     }
 }

@@ -26,17 +26,7 @@ import app.l2nx.highfive.mechanics.siege.FortSiege;
 /**
  * @author UnAfraid
  */
-public class OnFortSiegeStart implements IBaseEvent {
-    private final FortSiege _siege;
-
-    public OnFortSiegeStart(FortSiege siege) {
-        _siege = siege;
-    }
-
-    public FortSiege getSiege() {
-        return _siege;
-    }
-
+public record OnFortSiegeStart(FortSiege siege) implements IBaseEvent {
     @Override
     public EventType getType() {
         return EventType.ON_FORT_SIEGE_START;

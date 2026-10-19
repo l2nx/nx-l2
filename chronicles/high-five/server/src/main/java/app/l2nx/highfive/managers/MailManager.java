@@ -35,16 +35,15 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author Migi, DS
  */
+@Slf4j
 public class MailManager {
-    private static final Logger LOGGER = Logger.getLogger(MailManager.class.getName());
 
-    private final Map<Integer, MailMessage> _messages = new ConcurrentHashMap<>();
+    private final Map<Integer, MailMessage> messages = new ConcurrentHashMap<>();
 
     protected MailManager() {
         load();
@@ -59,27 +58,27 @@ public class MailManager {
                 count++;
                 final MailMessage msg = new MailMessage(rs);
                 final int msgId = msg.getId();
-                _messages.put(msgId, msg);
+                messages.put(msgId, msg);
                 MessageDeletionTaskManager.getInstance().add(msgId, msg.getExpiration());
             }
         } catch (SQLException e) {
-            LOGGER.log(Level.WARNING, getClass().getSimpleName() + ": Error loading from database:", e);
+            log.warn("Error loading from database:", e);
         }
 
-        LOGGER.info(getClass().getSimpleName() + ": Loaded " + count + " messages.");
+        log.info("Loaded {} messages.", count);
     }
 
     public MailMessage getMessage(int msgId) {
-        return _messages.get(msgId);
+        return messages.get(msgId);
     }
 
     public Collection<MailMessage> getMessages() {
-        return _messages.values();
+        return messages.values();
     }
 
     public boolean hasUnreadPost(Player player) {
         final int objectId = player.getObjectId();
-        for (MailMessage msg : _messages.values()) {
+        for (MailMessage msg : messages.values()) {
             if ((msg != null) && (msg.getReceiverId() == objectId) && msg.isUnread()) {
                 return true;
             }
@@ -90,7 +89,7 @@ public class MailManager {
 
     public int getInboxSize(int objectId) {
         int size = 0;
-        for (MailMessage msg : _messages.values()) {
+        for (MailMessage msg : messages.values()) {
             if ((msg != null) && (msg.getReceiverId() == objectId) && !msg.isDeletedByReceiver()) {
                 size++;
             }
@@ -101,7 +100,7 @@ public class MailManager {
 
     public int getOutboxSize(int objectId) {
         int size = 0;
-        for (MailMessage msg : _messages.values()) {
+        for (MailMessage msg : messages.values()) {
             if ((msg != null) && (msg.getSenderId() == objectId) && !msg.isDeletedBySender()) {
                 size++;
             }
@@ -112,7 +111,7 @@ public class MailManager {
 
     public List<MailMessage> getInbox(int objectId) {
         final List<MailMessage> inbox = new ArrayList<>();
-        for (MailMessage msg : _messages.values()) {
+        for (MailMessage msg : messages.values()) {
             if ((msg != null) && (msg.getReceiverId() == objectId) && !msg.isDeletedByReceiver()) {
                 inbox.add(msg);
             }
@@ -123,7 +122,7 @@ public class MailManager {
 
     public List<MailMessage> getOutbox(int objectId) {
         final List<MailMessage> outbox = new ArrayList<>();
-        for (MailMessage msg : _messages.values()) {
+        for (MailMessage msg : messages.values()) {
             if ((msg != null) && (msg.getSenderId() == objectId) && !msg.isDeletedBySender()) {
                 outbox.add(msg);
             }
@@ -133,12 +132,12 @@ public class MailManager {
     }
 
     public void sendMessage(MailMessage msg) {
-        _messages.put(msg.getId(), msg);
+        messages.put(msg.getId(), msg);
         try (Connection con = DatabaseFactory.getConnection();
                 PreparedStatement ps = MailMessage.getStatement(msg, con)) {
             ps.execute();
         } catch (SQLException e) {
-            LOGGER.log(Level.WARNING, getClass().getSimpleName() + ": Error saving message:", e);
+            log.warn("Error saving message:", e);
         }
 
         final Player receiver = World.getPlayer(msg.getReceiverId());
@@ -156,7 +155,7 @@ public class MailManager {
             ps.setInt(1, msgId);
             ps.execute();
         } catch (SQLException e) {
-            LOGGER.log(Level.WARNING, getClass().getSimpleName() + ": Error marking as read message:", e);
+            log.warn("Error marking as read message:", e);
         }
     }
 
@@ -167,7 +166,7 @@ public class MailManager {
             ps.setInt(1, msgId);
             ps.execute();
         } catch (SQLException e) {
-            LOGGER.log(Level.WARNING, getClass().getSimpleName() + ": Error marking as deleted by sender message:", e);
+            log.warn("Error marking as deleted by sender message:", e);
         }
     }
 
@@ -178,8 +177,7 @@ public class MailManager {
             ps.setInt(1, msgId);
             ps.execute();
         } catch (SQLException e) {
-            LOGGER.log(
-                    Level.WARNING, getClass().getSimpleName() + ": Error marking as deleted by receiver message:", e);
+            log.warn("Error marking as deleted by receiver message:", e);
         }
     }
 
@@ -190,7 +188,7 @@ public class MailManager {
             ps.setInt(1, msgId);
             ps.execute();
         } catch (SQLException e) {
-            LOGGER.log(Level.WARNING, getClass().getSimpleName() + ": Error removing attachments in message:", e);
+            log.warn("Error removing attachments in message:", e);
         }
     }
 
@@ -200,10 +198,10 @@ public class MailManager {
             ps.setInt(1, msgId);
             ps.execute();
         } catch (SQLException e) {
-            LOGGER.log(Level.WARNING, getClass().getSimpleName() + ": Error deleting message:", e);
+            log.warn("Error deleting message:", e);
         }
 
-        _messages.remove(msgId);
+        messages.remove(msgId);
         IdManager.getInstance().releaseId(msgId);
     }
 

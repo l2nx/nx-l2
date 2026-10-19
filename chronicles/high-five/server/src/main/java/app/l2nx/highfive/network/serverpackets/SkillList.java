@@ -29,19 +29,19 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class SkillList extends ServerPacket {
-    private final List<Skill> _skills = new ArrayList<>();
+    private final List<Skill> skills = new ArrayList<>();
 
     public SkillList() {}
 
     public void addSkill(int id, int level, boolean passive, boolean disabled, boolean enchanted) {
-        _skills.add(new Skill(id, level, passive, disabled, enchanted));
+        skills.add(new Skill(id, level, passive, disabled, enchanted));
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.SKILL_LIST.writeId(this, buffer);
-        buffer.writeInt(_skills.size());
-        for (Skill temp : _skills) {
+        buffer.writeInt(skills.size());
+        for (Skill temp : skills) {
             buffer.writeInt(temp.passive);
             buffer.writeInt(temp.level);
             buffer.writeInt(temp.id);

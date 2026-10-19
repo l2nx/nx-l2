@@ -32,40 +32,42 @@ import app.l2nx.highfive.mechanics.punishment.PunishmentTask;
 import app.l2nx.highfive.mechanics.punishment.PunishmentType;
 import app.l2nx.highfive.network.Disconnection;
 import app.l2nx.highfive.network.serverpackets.LeaveWorld;
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Task that handles illegal player actions.
  */
 public class IllegalPlayerActionTask implements Runnable {
-    private static final Logger AUDIT_LOGGER = Logger.getLogger("audit");
 
-    private final String _message;
-    private final IllegalActionPunishmentType _punishment;
-    private final Player _actor;
+    private static final Logger AUDIT_LOG = LoggerFactory.getLogger("audit");
+
+    private final String message;
+    private final IllegalActionPunishmentType punishment;
+    private final Player actor;
 
     public IllegalPlayerActionTask(Player actor, String message, IllegalActionPunishmentType punishment) {
-        _message = message;
-        _punishment = punishment;
-        _actor = actor;
+        this.message = message;
+        this.punishment = punishment;
+        this.actor = actor;
 
         switch (punishment) {
             case KICK: {
-                _actor.sendMessage("You will be kicked for illegal action, GM informed.");
+                this.actor.sendMessage("You will be kicked for illegal action, GM informed.");
                 break;
             }
             case KICKBAN: {
-                if (!_actor.isGM()) {
-                    _actor.setAccessLevel(-1);
-                    _actor.setAccountAccesslevel(-1);
+                if (!this.actor.isGM()) {
+                    this.actor.setAccessLevel(-1);
+                    this.actor.setAccountAccesslevel(-1);
                 }
 
-                _actor.sendMessage("You are banned for illegal action, GM informed.");
+                this.actor.sendMessage("You are banned for illegal action, GM informed.");
                 break;
             }
             case JAIL: {
-                _actor.sendMessage("Illegal action performed!");
-                _actor.sendMessage("You will be teleported to GM Consultation Service area and jailed.");
+                this.actor.sendMessage("Illegal action performed!");
+                this.actor.sendMessage("You will be teleported to GM Consultation Service area and jailed.");
                 break;
             }
         }
@@ -75,42 +77,42 @@ public class IllegalPlayerActionTask implements Runnable {
     public void run() {
         final StringBuilder sb = new StringBuilder();
         sb.append("AUDIT, ");
-        sb.append(_message);
+        sb.append(message);
         sb.append(", ");
-        sb.append(_actor);
+        sb.append(actor);
         sb.append(", ");
-        sb.append(_punishment);
-        AUDIT_LOGGER.info(sb.toString());
+        sb.append(punishment);
+        AUDIT_LOG.info(sb.toString());
 
-        if (!_actor.isGM()) {
-            switch (_punishment) {
+        if (!actor.isGM()) {
+            switch (punishment) {
                 case BROADCAST: {
-                    AdminData.getInstance().broadcastMessageToGMs(_message);
+                    AdminData.getInstance().broadcastMessageToGMs(message);
                     return;
                 }
                 case KICK: {
-                    Disconnection.of(_actor).storeAndDeleteWith(LeaveWorld.STATIC_PACKET);
+                    Disconnection.of(actor).storeAndDeleteWith(LeaveWorld.STATIC_PACKET);
                     break;
                 }
                 case KICKBAN: {
                     PunishmentManager.getInstance()
                             .startPunishment(new PunishmentTask(
-                                    _actor.getObjectId(),
+                                    actor.getObjectId(),
                                     PunishmentAffect.CHARACTER,
                                     PunishmentType.BAN,
                                     System.currentTimeMillis() + (GeneralConfig.DEFAULT_PUNISH_PARAM * 1000),
-                                    _message,
+                                    message,
                                     getClass().getSimpleName()));
                     break;
                 }
                 case JAIL: {
                     PunishmentManager.getInstance()
                             .startPunishment(new PunishmentTask(
-                                    _actor.getObjectId(),
+                                    actor.getObjectId(),
                                     PunishmentAffect.CHARACTER,
                                     PunishmentType.JAIL,
                                     System.currentTimeMillis() + (GeneralConfig.DEFAULT_PUNISH_PARAM * 1000),
-                                    _message,
+                                    message,
                                     getClass().getSimpleName()));
                     break;
                 }

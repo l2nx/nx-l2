@@ -36,68 +36,69 @@ import app.l2nx.highfive.entity.itemcontainer.Inventory;
 import app.l2nx.highfive.managers.PunishmentManager;
 import app.l2nx.highfive.mechanics.buylist.BuyListHolder;
 import app.l2nx.highfive.mechanics.buylist.Product;
-import app.l2nx.highfive.network.PacketLogger;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.serverpackets.ActionFailed;
 import app.l2nx.highfive.network.serverpackets.ShopPreviewInfo;
 import app.l2nx.highfive.threads.ThreadPool;
 import java.util.HashMap;
 import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  ** @author Gnacik
  */
+@Slf4j
 public class RequestPreviewItem extends ClientPacket {
     @SuppressWarnings("unused")
-    private int _unk;
+    private int unk;
 
-    private int _listId;
-    private int _count;
-    private int[] _items;
+    private int listId;
+    private int count;
+    private int[] items;
 
     private class RemoveWearItemsTask implements Runnable {
-        private final Player _player;
+        private final Player player;
 
         protected RemoveWearItemsTask(Player player) {
-            _player = player;
+            this.player = player;
         }
 
         @Override
         public void run() {
             try {
-                _player.sendPacket(SystemMessageId.YOU_ARE_NO_LONGER_TRYING_ON_EQUIPMENT_2);
-                _player.updateUserInfo();
+                player.sendPacket(SystemMessageId.YOU_ARE_NO_LONGER_TRYING_ON_EQUIPMENT_2);
+                player.updateUserInfo();
             } catch (Exception e) {
-                PacketLogger.warning(getClass().getSimpleName() + ": " + e.getMessage());
+                log.warn("{}: {}", getClass().getSimpleName(), e.getMessage());
             }
         }
     }
 
     @Override
     protected void readImpl() {
-        _unk = readInt();
-        _listId = readInt();
-        _count = readInt();
-        if (_count < 0) {
-            _count = 0;
+        unk = readInt();
+        listId = readInt();
+        count = readInt();
+        if (count < 0) {
+            count = 0;
         }
 
-        if (_count > 100) {
+        if (count > 100) {
             return; // prevent too long lists
         }
 
-        // Create _items table that will contain all ItemID to Wear.
-        _items = new int[_count];
+        // Create items table that will contain all ItemID to Wear.
+        items = new int[count];
 
-        // Fill _items table with all ItemID to Wear.
-        for (int i = 0; i < _count; i++) {
-            _items[i] = readInt();
+        // Fill items table with all ItemID to Wear.
+        for (int i = 0; i < count; i++) {
+            items[i] = readInt();
         }
     }
 
     @Override
     protected void runImpl() {
-        if (_items == null) {
+        if (items == null) {
             return;
         }
 
@@ -135,7 +136,7 @@ public class RequestPreviewItem extends ClientPacket {
             return;
         }
 
-        if ((_count < 1) || (_listId >= 4000000)) {
+        if ((count < 1) || (listId >= 4000000)) {
             player.sendPacket(ActionFailed.STATIC_PACKET);
             return;
         }
@@ -143,30 +144,30 @@ public class RequestPreviewItem extends ClientPacket {
         // Get the current merchant targeted by the player.
         final Merchant merchant = (target instanceof Merchant) ? (Merchant) target : null;
         if (merchant == null) {
-            PacketLogger.warning(getClass().getName() + ": Null merchant!");
+            log.warn("{}: Null merchant!", getClass().getName());
             return;
         }
 
-        final BuyListHolder buyList = BuyListData.getInstance().getBuyList(_listId);
+        final BuyListHolder buyList = BuyListData.getInstance().getBuyList(listId);
         if (buyList == null) {
             PunishmentManager.handleIllegalPlayerAction(
                     player,
                     "Warning!! Character " + player.getName() + " of account " + player.getAccountName()
-                            + " sent a false BuyList list_id " + _listId,
+                            + " sent a false BuyList list_id " + listId,
                     GeneralConfig.DEFAULT_PUNISH);
             return;
         }
 
         long totalPrice = 0;
         final Map<Integer, Integer> itemList = new HashMap<>();
-        for (int i = 0; i < _count; i++) {
-            final int itemId = _items[i];
+        for (int i = 0; i < count; i++) {
+            final int itemId = items[i];
             final Product product = buyList.getProductByItemId(itemId);
             if (product == null) {
                 PunishmentManager.handleIllegalPlayerAction(
                         player,
                         "Warning!! Character " + player.getName() + " of account " + player.getAccountName()
-                                + " sent a false BuyList list_id " + _listId + " and item_id " + itemId,
+                                + " sent a false BuyList list_id " + listId + " and item_id " + itemId,
                         GeneralConfig.DEFAULT_PUNISH);
                 return;
             }

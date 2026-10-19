@@ -61,13 +61,13 @@ import java.util.concurrent.ConcurrentHashMap;
  * @author Zoey76, Mobius
  */
 public class SavingSanta extends LongTimeEvent {
-    private boolean _isSantaFree = true;
-    private boolean _isJackPot = false;
-    private boolean _isWaitingForPlayerSkill = false;
-    private static final List<Npc> _santaHelpers = new ArrayList<>();
-    private static final List<Npc> _specialTrees = new ArrayList<>();
-    private static final Map<String, Long> _rewardedPlayers = new ConcurrentHashMap<>();
-    private static final Map<String, Long> _blessedPlayers = new ConcurrentHashMap<>();
+    private boolean santaFree = true;
+    private boolean jackPot = false;
+    private boolean waitingForPlayerSkill = false;
+    private static final List<Npc> santaHelpers = new ArrayList<>();
+    private static final List<Npc> specialTrees = new ArrayList<>();
+    private static final Map<String, Long> rewardedPlayers = new ConcurrentHashMap<>();
+    private static final Map<String, Long> blessedPlayers = new ConcurrentHashMap<>();
 
     // Is Saving Santa event used?
     private static boolean SAVING_SANTA = true;
@@ -163,12 +163,12 @@ public class SavingSanta extends LongTimeEvent {
 
     @Override
     public void onSpawn(Npc npc) {
-        _specialTrees.add(npc);
+        specialTrees.add(npc);
     }
 
     @Override
     public void onSkillSee(Npc npc, Player caster, Skill skill, List<WorldObject> targets, boolean isSummon) {
-        if (_isWaitingForPlayerSkill && (skill.getId() > 21013) && (skill.getId() < 21017)) {
+        if (waitingForPlayerSkill && (skill.getId() > 21013) && (skill.getId() < 21017)) {
             caster.broadcastSkillPacket(
                     new MagicSkillUse(caster, caster, 23019, skill.getId() - 21013, 3000, 1), caster);
             SkillData.getInstance().getSkill(23019, skill.getId() - 21013).applyEffects(caster, caster);
@@ -182,7 +182,7 @@ public class SavingSanta extends LongTimeEvent {
         // Level 2: Rock
         // Level 3: Paper
         if (skill.getId() == 6100) {
-            _isWaitingForPlayerSkill = false;
+            waitingForPlayerSkill = false;
             for (Player pl : World.getVisibleObjectsInRange(npc, Player.class, 600)) {
                 // Level 1: Scissors
                 // Level 2: Rock
@@ -255,7 +255,7 @@ public class SavingSanta extends LongTimeEvent {
                                 holidaySled.getObjectId(), ChatType.NPC_GENERAL, holidaySled.getId(), NPC_STRINGS[17]));
 
                         if (getRandom(100) > 90) {
-                            _isJackPot = true;
+                            jackPot = true;
                             pl.addItem(ItemProcessType.REWARD, BR_XMAS_PRESENT_JACKPOT, 1, pl, true);
                         } else {
                             pl.addItem(ItemProcessType.REWARD, BR_XMAS_PRESENT_NORMAL, 1, pl, true);
@@ -263,7 +263,7 @@ public class SavingSanta extends LongTimeEvent {
 
                         ThreadPool.schedule(new SledAnimation(holidaySled), 7000);
                         npc.decayMe();
-                        _isSantaFree = true;
+                        santaFree = true;
                         break;
                     }
                 }
@@ -272,17 +272,17 @@ public class SavingSanta extends LongTimeEvent {
     }
 
     private static class SledAnimation implements Runnable {
-        private final Npc _sled;
+        private final Npc sled;
 
         public SledAnimation(Npc sled) {
-            _sled = sled;
+            this.sled = sled;
         }
 
         @Override
         public void run() {
             try {
-                _sled.getAI().setIntentionIdle();
-                _sled.broadcastPacket(new SocialAction(_sled.getObjectId(), 1));
+                sled.getAI().setIntentionIdle();
+                sled.broadcastPacket(new SocialAction(sled.getObjectId(), 1));
             } catch (Exception e) {
                 // Ignore.
             }
@@ -309,9 +309,9 @@ public class SavingSanta extends LongTimeEvent {
             World.broadcastToAllOnlinePlayers(
                     new SystemMessage(SystemMessageId.THOMAS_D_TURKEY_HAS_APPEARED_PLEASE_SAVE_SANTA));
             startQuestTimer("ThomasCast1", 15000, thomas, null);
-            _isSantaFree = false;
+            santaFree = false;
         } else if (event.equalsIgnoreCase("SantaSpawn")) {
-            if (_isSantaFree) {
+            if (santaFree) {
                 startQuestTimer("SantaSpawn", 120000, null, null);
 
                 // for (Player pl : L2World.getAllPlayers().values())
@@ -322,16 +322,16 @@ public class SavingSanta extends LongTimeEvent {
                             && pl.isInCombat()
                             && !pl.isInsideZone(ZoneId.PEACE)
                             && !pl.isFlyingMounted()) {
-                        if (_rewardedPlayers.containsKey(pl.getAccountName())) {
+                        if (rewardedPlayers.containsKey(pl.getAccountName())) {
                             final long elapsedTimeSinceLastRewarded =
-                                    System.currentTimeMillis() - _rewardedPlayers.get(pl.getAccountName());
+                                    System.currentTimeMillis() - rewardedPlayers.get(pl.getAccountName());
                             if (elapsedTimeSinceLastRewarded < MIN_TIME_BETWEEN_2_REWARDS) {
                                 continue;
                             }
                         } else {
                             final long time = player.getVariables().getLong("LAST_SANTA_REWARD", 0);
                             if ((System.currentTimeMillis() - time) < MIN_TIME_BETWEEN_2_REWARDS) {
-                                _rewardedPlayers.put(pl.getAccountName(), time);
+                                rewardedPlayers.put(pl.getAccountName(), time);
                                 continue;
                             }
                         }
@@ -340,7 +340,7 @@ public class SavingSanta extends LongTimeEvent {
                         final int locy = (int) (pl.getY() + (MathUtil.pow(-1, getRandom(1, 2)) * 50));
                         final int heading = LocationUtil.calculateHeadingFrom(locx, locy, pl.getX(), pl.getY());
                         final Npc santa = addSpawn(HOLIDAY_SANTA_ID, locx, locy, pl.getZ(), heading, false, 30000);
-                        _rewardedPlayers.put(pl.getAccountName(), System.currentTimeMillis());
+                        rewardedPlayers.put(pl.getAccountName(), System.currentTimeMillis());
                         player.getVariables().set("LAST_SANTA_REWARD", System.currentTimeMillis());
                         startQuestTimer("SantaRewarding0", 500, santa, pl);
                     }
@@ -348,7 +348,7 @@ public class SavingSanta extends LongTimeEvent {
             }
         } else if (event.equalsIgnoreCase("ThomasCast1")) {
             if (!npc.isDecayed()) {
-                _isWaitingForPlayerSkill = true;
+                waitingForPlayerSkill = true;
                 startQuestTimer("ThomasCast2", 4000, npc, null);
                 npc.doCast(SkillData.getInstance().getSkill(6116, 1));
 
@@ -361,10 +361,10 @@ public class SavingSanta extends LongTimeEvent {
                 npc.broadcastPacket(
                         new NpcSay(npc.getObjectId(), ChatType.NPC_GENERAL, npc.getId(), NPC_STRINGS[getRandom(6)]));
             } else {
-                if (!_isSantaFree) {
+                if (!santaFree) {
                     World.broadcastToAllOnlinePlayers(new SystemMessage(
                             SystemMessageId.YOU_DID_NOT_RESCUE_SANTA_AND_THOMAS_D_TURKEY_HAS_DISAPPEARED));
-                    _isWaitingForPlayerSkill = false;
+                    waitingForPlayerSkill = false;
                 }
             }
         } else if (event.equalsIgnoreCase("ThomasCast2")) {
@@ -381,10 +381,10 @@ public class SavingSanta extends LongTimeEvent {
                 npc.broadcastPacket(
                         new NpcSay(npc.getObjectId(), ChatType.NPC_GENERAL, npc.getId(), NPC_STRINGS[getRandom(6)]));
             } else {
-                if (!_isSantaFree) {
+                if (!santaFree) {
                     World.broadcastToAllOnlinePlayers(new SystemMessage(
                             SystemMessageId.YOU_DID_NOT_RESCUE_SANTA_AND_THOMAS_D_TURKEY_HAS_DISAPPEARED));
-                    _isWaitingForPlayerSkill = false;
+                    waitingForPlayerSkill = false;
                 }
             }
         } else if (event.equalsIgnoreCase("SantaRewarding0")) {
@@ -405,11 +405,11 @@ public class SavingSanta extends LongTimeEvent {
             npc.broadcastPacket(iHaveAGift);
         } else if (event.equalsIgnoreCase("SantaRewarding3")) {
             npc.broadcastPacket(new SocialAction(npc.getObjectId(), 2));
-            if (_isJackPot) {
+            if (jackPot) {
                 // Take a look at the inventory. Perhaps there might be a big present~
                 npc.broadcastPacket(new NpcSay(npc.getObjectId(), ChatType.NPC_GENERAL, npc.getId(), NPC_STRINGS[25]));
                 player.addItem(ItemProcessType.REWARD, BR_XMAS_PRESENT_JACKPOT, 1, player, true);
-                _isJackPot = false;
+                jackPot = false;
             } else {
                 // Take a look at the inventory. I hope you like the gift I gave you.
                 npc.broadcastPacket(new NpcSay(npc.getObjectId(), ChatType.NPC_GENERAL, npc.getId(), NPC_STRINGS[24]));
@@ -418,24 +418,24 @@ public class SavingSanta extends LongTimeEvent {
         } else if (event.equalsIgnoreCase("SantaBlessings") && SANTAS_HELPER_AUTOBUFF) {
             startQuestTimer("SantaBlessings", 15000, null, null);
             final long currentTime = System.currentTimeMillis();
-            for (Npc santaHelper1 : _santaHelpers) {
+            for (Npc santaHelper1 : santaHelpers) {
                 World.forEachVisibleObject(santaHelper1, Player.class, plb -> {
                     if ((plb.getLevel() >= 20) && !plb.isFlyingMounted()) {
-                        if (_blessedPlayers.containsKey(plb.getAccountName())) {
+                        if (blessedPlayers.containsKey(plb.getAccountName())) {
                             final long elapsedTimeSinceLastBlessed =
-                                    currentTime - _blessedPlayers.get(plb.getAccountName());
+                                    currentTime - blessedPlayers.get(plb.getAccountName());
                             if (elapsedTimeSinceLastBlessed < MIN_TIME_BETWEEN_2_BLESSINGS) {
                                 return;
                             }
                         } else {
                             final long time = player.getVariables().getLong("LAST_SANTA_BLESSING", 0);
                             if ((currentTime - time) < MIN_TIME_BETWEEN_2_BLESSINGS) {
-                                _blessedPlayers.put(plb.getAccountName(), time);
+                                blessedPlayers.put(plb.getAccountName(), time);
                                 return;
                             }
                         }
 
-                        for (Npc santaHelper : _santaHelpers) {
+                        for (Npc santaHelper : santaHelpers) {
                             World.forEachVisibleObject(santaHelper, Player.class, playerx -> {
                                 if (playerx.getPlayerClass().isMage()) {
                                     for (int buffId : SANTA_MAGE_BUFFS) {
@@ -446,7 +446,7 @@ public class SavingSanta extends LongTimeEvent {
                                             SkillData.getInstance()
                                                     .getSkill(buffId, 1)
                                                     .applyEffects(playerx, playerx);
-                                            _blessedPlayers.put(playerx.getAccountName(), currentTime);
+                                            blessedPlayers.put(playerx.getAccountName(), currentTime);
                                             playerx.getVariables().set("LAST_SANTA_BLESSING", currentTime);
                                         }
                                     }
@@ -459,7 +459,7 @@ public class SavingSanta extends LongTimeEvent {
                                             SkillData.getInstance()
                                                     .getSkill(buffId, 1)
                                                     .applyEffects(playerx, playerx);
-                                            _blessedPlayers.put(playerx.getAccountName(), currentTime);
+                                            blessedPlayers.put(playerx.getAccountName(), currentTime);
                                             playerx.getVariables().set("LAST_SANTA_BLESSING", currentTime);
                                         }
                                     }
@@ -471,7 +471,7 @@ public class SavingSanta extends LongTimeEvent {
             }
         } else if (event.equalsIgnoreCase("SpecialTreeHeal")) {
             startQuestTimer("SpecialTreeHeal", 9000, null, null);
-            for (Npc tree : _specialTrees) {
+            for (Npc tree : specialTrees) {
                 World.forEachVisibleObject(tree, Player.class, playerr -> {
                     final int xxMin = tree.getX() - 60;
                     final int yyMin = tree.getY() - 60;
@@ -638,7 +638,7 @@ public class SavingSanta extends LongTimeEvent {
                 player.reduceAdena(ItemProcessType.FEE, 50000, player, true);
                 player.addItem(ItemProcessType.BUY, BR_XMAS_GAWIBAWIBO_CAP, 1, player, true);
             } else if (event.equalsIgnoreCase("HolidayFestival")) {
-                if (_isSantaFree) {
+                if (santaFree) {
                     npc.broadcastPacket(new MagicSkillUse(npc, player, BR_XMAS_REWARD_BUFF, 1, 2000, 1));
                     SkillData.getInstance().getSkill(BR_XMAS_REWARD_BUFF, 1).applyEffects(player, player);
                 } else {
@@ -690,11 +690,11 @@ public class SavingSanta extends LongTimeEvent {
 
     @Override
     public void unload() {
-        for (Npc santaHelper : _santaHelpers) {
+        for (Npc santaHelper : santaHelpers) {
             santaHelper.deleteMe();
         }
 
-        for (Npc specialTree : _specialTrees) {
+        for (Npc specialTree : specialTrees) {
             specialTree.deleteMe();
         }
 

@@ -27,18 +27,18 @@ import app.l2nx.network.buffer.WriteBuffer;
  * @author GodKratos
  */
 public class PremiumState extends ServerPacket {
-    private final int _objectId;
-    private final int _state;
+    private final int objectId;
+    private final int state;
 
     public PremiumState(int objectId, int state) {
-        _objectId = objectId;
-        _state = state;
+        this.objectId = objectId;
+        this.state = state;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_BR_PREMIUM_STATE.writeId(this, buffer);
-        buffer.writeInt(_objectId);
-        buffer.writeByte(_state);
+        buffer.writeInt(objectId);
+        buffer.writeByte(state);
     }
 }

@@ -28,8 +28,8 @@ import app.l2nx.highfive.mechanics.skill.Skill;
  * @author mkizub
  */
 public class ConditionLogicAnd extends Condition {
-    private static Condition[] _emptyConditions = new Condition[0];
-    public Condition[] conditions = _emptyConditions;
+    private static Condition[] emptyConditions = new Condition[0];
+    public Condition[] conditions = emptyConditions;
 
     /**
      * Adds the.

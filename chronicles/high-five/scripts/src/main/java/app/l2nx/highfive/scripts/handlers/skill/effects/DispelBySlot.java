@@ -39,21 +39,21 @@ import java.util.Map.Entry;
  * @author Gnacik, Zoey76, Adry_85
  */
 public class DispelBySlot extends AbstractEffect {
-    private final String _dispel;
-    private final Map<AbnormalType, Short> _dispelAbnormals;
+    private final String dispel;
+    private final Map<AbnormalType, Short> dispelAbnormals;
 
     public DispelBySlot(Condition attachCond, Condition applyCond, StatSet set, StatSet params) {
         super(attachCond, applyCond, set, params);
 
-        _dispel = params.getString("dispel", null);
-        if ((_dispel != null) && !_dispel.isEmpty()) {
-            _dispelAbnormals = new EnumMap<>(AbnormalType.class);
-            for (String ngtStack : _dispel.split(";")) {
+        dispel = params.getString("dispel", null);
+        if ((dispel != null) && !dispel.isEmpty()) {
+            dispelAbnormals = new EnumMap<>(AbnormalType.class);
+            for (String ngtStack : dispel.split(";")) {
                 final String[] ngt = ngtStack.split(",");
-                _dispelAbnormals.put(AbnormalType.getAbnormalType(ngt[0]), Short.parseShort(ngt[1]));
+                dispelAbnormals.put(AbnormalType.getAbnormalType(ngt[0]), Short.parseShort(ngt[1]));
             }
         } else {
-            _dispelAbnormals = Collections.<AbnormalType, Short>emptyMap();
+            dispelAbnormals = Collections.<AbnormalType, Short>emptyMap();
         }
     }
 
@@ -69,7 +69,7 @@ public class DispelBySlot extends AbstractEffect {
 
     @Override
     public void onStart(Creature effector, Creature effected, Skill skill) {
-        if (_dispelAbnormals.isEmpty() || (effected == null) || effected.isRaid()) {
+        if (dispelAbnormals.isEmpty() || (effected == null) || effected.isRaid()) {
             return;
         }
 
@@ -78,7 +78,7 @@ public class DispelBySlot extends AbstractEffect {
         // There is no need to iterate over all buffs,
         // Just iterate once over all slots to dispel and get the buff with that abnormal if exists,
         // Operation of O(n) for the amount of slots to dispel (which is usually small) and O(1) to get the buff.
-        for (Entry<AbnormalType, Short> entry : _dispelAbnormals.entrySet()) {
+        for (Entry<AbnormalType, Short> entry : dispelAbnormals.entrySet()) {
             // Dispel transformations (buff and by GM).
             if ((entry.getKey() == AbnormalType.TRANSFORM)
                     && (effected.isTransformed()

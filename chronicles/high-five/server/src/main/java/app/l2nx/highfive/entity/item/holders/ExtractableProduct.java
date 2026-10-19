@@ -22,16 +22,29 @@
  */
 package app.l2nx.highfive.entity.item.holders;
 
+import lombok.Getter;
+
 /**
  * @author JIV, Mobius
  */
 public class ExtractableProduct {
-    private final int _id;
-    private final long _min;
-    private final long _max;
-    private final int _chance;
-    private final int _minEnchant;
-    private final int _maxEnchant;
+    @Getter
+    private final int id;
+
+    @Getter
+    private final long min;
+
+    @Getter
+    private final long max;
+
+    @Getter
+    private final int chance;
+
+    @Getter
+    private final int minEnchant;
+
+    @Getter
+    private final int maxEnchant;
 
     /**
      * Create Extractable product
@@ -43,35 +56,11 @@ public class ExtractableProduct {
      * @param maxEnchant item max enchant
      */
     public ExtractableProduct(int id, long min, long max, double chance, int minEnchant, int maxEnchant) {
-        _id = id;
-        _min = min;
-        _max = max;
-        _chance = (int) (chance * 1000);
-        _minEnchant = minEnchant;
-        _maxEnchant = maxEnchant;
-    }
-
-    public int getId() {
-        return _id;
-    }
-
-    public long getMin() {
-        return _min;
-    }
-
-    public long getMax() {
-        return _max;
-    }
-
-    public int getChance() {
-        return _chance;
-    }
-
-    public int getMinEnchant() {
-        return _minEnchant;
-    }
-
-    public int getMaxEnchant() {
-        return _maxEnchant;
+        this.id = id;
+        this.min = min;
+        this.max = max;
+        this.chance = (int) (chance * 1000);
+        this.minEnchant = minEnchant;
+        this.maxEnchant = maxEnchant;
     }
 }

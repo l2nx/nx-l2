@@ -27,10 +27,10 @@ import app.l2nx.highfive.entity.residences.ClanHall;
 import app.l2nx.highfive.managers.CHSiegeManager;
 import app.l2nx.highfive.mechanics.siege.Castle;
 import app.l2nx.highfive.network.GameClient;
-import app.l2nx.highfive.network.PacketLogger;
 import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.network.buffer.WriteBuffer;
 import java.util.Calendar;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Shows the Siege Info<br>
@@ -48,28 +48,29 @@ import java.util.Calendar;
  * d = (UNKNOW) Siege Time Select Related?
  * @author KenM
  */
+@Slf4j
 public class SiegeInfo extends ServerPacket {
-    private Castle _castle;
-    private ClanHall _hall;
-    private final Player _player;
+    private Castle castle;
+    private ClanHall hall;
+    private final Player player;
 
     public SiegeInfo(Castle castle, Player player) {
-        _castle = castle;
-        _player = player;
+        this.castle = castle;
+        this.player = player;
     }
 
     public SiegeInfo(ClanHall hall, Player player) {
-        _hall = hall;
-        _player = player;
+        this.hall = hall;
+        this.player = player;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.CASTLE_SIEGE_INFO.writeId(this, buffer);
-        if (_castle != null) {
-            buffer.writeInt(_castle.getResidenceId());
-            final int ownerId = _castle.getOwnerId();
-            buffer.writeInt((ownerId == _player.getClanId()) && (_player.isClanLeader()));
+        if (castle != null) {
+            buffer.writeInt(castle.getResidenceId());
+            final int ownerId = castle.getOwnerId();
+            buffer.writeInt((ownerId == player.getClanId()) && (player.isClanLeader()));
             buffer.writeInt(ownerId);
             if (ownerId > 0) {
                 final Clan owner = ClanTable.getInstance().getClan(ownerId);
@@ -79,7 +80,7 @@ public class SiegeInfo extends ServerPacket {
                     buffer.writeInt(owner.getAllyId()); // Ally ID
                     buffer.writeString(owner.getAllyName()); // Ally Name
                 } else {
-                    PacketLogger.warning("Null owner for castle: " + _castle.getName());
+                    log.warn("Null owner for castle: {}", castle.getName());
                 }
             } else {
                 buffer.writeString(""); // Clan Name
@@ -89,11 +90,11 @@ public class SiegeInfo extends ServerPacket {
             }
 
             buffer.writeInt((int) (System.currentTimeMillis() / 1000));
-            if (!_castle.isTimeRegistrationOver()
-                    && _player.isClanLeader()
-                    && (_player.getClanId() == _castle.getOwnerId())) {
+            if (!castle.isTimeRegistrationOver()
+                    && player.isClanLeader()
+                    && (player.getClanId() == castle.getOwnerId())) {
                 final Calendar cal = Calendar.getInstance();
-                cal.setTimeInMillis(_castle.getSiegeDate().getTimeInMillis());
+                cal.setTimeInMillis(castle.getSiegeDate().getTimeInMillis());
                 cal.set(Calendar.MINUTE, 0);
                 cal.set(Calendar.SECOND, 0);
                 buffer.writeInt(0);
@@ -103,13 +104,13 @@ public class SiegeInfo extends ServerPacket {
                     buffer.writeInt((int) (cal.getTimeInMillis() / 1000));
                 }
             } else {
-                buffer.writeInt((int) (_castle.getSiegeDate().getTimeInMillis() / 1000));
+                buffer.writeInt((int) (castle.getSiegeDate().getTimeInMillis() / 1000));
                 buffer.writeInt(0);
             }
         } else {
-            buffer.writeInt(_hall.getId());
-            final int ownerId = _hall.getOwnerId();
-            buffer.writeInt(((ownerId == _player.getClanId()) && (_player.isClanLeader())));
+            buffer.writeInt(hall.getId());
+            final int ownerId = hall.getOwnerId();
+            buffer.writeInt(((ownerId == player.getClanId()) && (player.isClanLeader())));
             buffer.writeInt(ownerId);
             if (ownerId > 0) {
                 final Clan owner = ClanTable.getInstance().getClan(ownerId);
@@ -119,7 +120,7 @@ public class SiegeInfo extends ServerPacket {
                     buffer.writeInt(owner.getAllyId()); // Ally ID
                     buffer.writeString(owner.getAllyName()); // Ally Name
                 } else {
-                    PacketLogger.warning("Null owner for siegable hall: " + _hall.getName());
+                    log.warn("Null owner for siegable hall: {}", hall.getName());
                 }
             } else {
                 buffer.writeString(""); // Clan Name
@@ -129,10 +130,8 @@ public class SiegeInfo extends ServerPacket {
             }
 
             buffer.writeInt((int) (System.currentTimeMillis() / 1000));
-            buffer.writeInt((int) ((CHSiegeManager.getInstance()
-                            .getSiegableHall(_hall.getId())
-                            .getNextSiegeTime())
-                    / 1000));
+            buffer.writeInt((int)
+                    ((CHSiegeManager.getInstance().getSiegableHall(hall.getId()).getNextSiegeTime()) / 1000));
             buffer.writeInt(0); // number of choices?
         }
     }

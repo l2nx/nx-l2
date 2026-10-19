@@ -36,6 +36,7 @@ import app.l2nx.highfive.network.serverpackets.ActionFailed;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
 import java.util.ArrayList;
 import java.util.List;
+import lombok.Getter;
 
 /**
  * @author l3x
@@ -43,7 +44,7 @@ import java.util.List;
 public class RequestProcureCropList extends ClientPacket {
     private static final int BATCH_LENGTH = 20; // length of the one item
 
-    private List<CropHolder> _items = null;
+    private List<CropHolder> items = null;
 
     @Override
     protected void readImpl() {
@@ -52,24 +53,24 @@ public class RequestProcureCropList extends ClientPacket {
             return;
         }
 
-        _items = new ArrayList<>(count);
+        items = new ArrayList<>(count);
         for (int i = 0; i < count; i++) {
             final int objId = readInt();
             final int itemId = readInt();
             final int manorId = readInt();
             final long cnt = readLong();
             if ((objId < 1) || (itemId < 1) || (manorId < 0) || (cnt < 0)) {
-                _items = null;
+                items = null;
                 return;
             }
 
-            _items.add(new CropHolder(objId, itemId, cnt, manorId));
+            items.add(new CropHolder(objId, itemId, cnt, manorId));
         }
     }
 
     @Override
     protected void runImpl() {
-        if (_items == null) {
+        if (items == null) {
             return;
         }
 
@@ -98,7 +99,7 @@ public class RequestProcureCropList extends ClientPacket {
 
         int slots = 0;
         int weight = 0;
-        for (CropHolder i : _items) {
+        for (CropHolder i : items) {
             final Item item = player.getInventory().getItemByObjectId(i.getObjectId());
             if ((item == null) || (item.getCount() < i.getCount()) || (item.getId() != i.getId())) {
                 player.sendPacket(ActionFailed.STATIC_PACKET);
@@ -129,11 +130,11 @@ public class RequestProcureCropList extends ClientPacket {
         }
 
         // Used when Config.ALT_MANOR_SAVE_ALL_ACTIONS == true.
-        final int updateListSize = GeneralConfig.ALT_MANOR_SAVE_ALL_ACTIONS ? _items.size() : 0;
+        final int updateListSize = GeneralConfig.ALT_MANOR_SAVE_ALL_ACTIONS ? items.size() : 0;
         final List<CropProcure> updateList = new ArrayList<>(updateListSize);
 
         // Proceed the purchase
-        for (CropHolder i : _items) {
+        for (CropHolder i : items) {
             final long rewardPrice =
                     ItemData.getInstance().getTemplate(i.getRewardId()).getReferencePrice();
             if (rewardPrice == 0) {
@@ -181,39 +182,37 @@ public class RequestProcureCropList extends ClientPacket {
     }
 
     private class CropHolder extends UniqueItemHolder {
-        private final int _manorId;
-        private CropProcure _cp;
-        private int _rewardId = 0;
+        @Getter
+        private final int manorId;
+
+        private CropProcure cp;
+        private int rewardId = 0;
 
         public CropHolder(int objectId, int id, long count, int manorId) {
             super(id, objectId, count);
-            _manorId = manorId;
-        }
-
-        public int getManorId() {
-            return _manorId;
+            this.manorId = manorId;
         }
 
         public long getPrice() {
-            return getCount() * _cp.getPrice();
+            return getCount() * cp.getPrice();
         }
 
         public CropProcure getCropProcure() {
-            if (_cp == null) {
-                _cp = CastleManorManager.getInstance().getCropProcure(_manorId, getId(), false);
+            if (cp == null) {
+                cp = CastleManorManager.getInstance().getCropProcure(manorId, getId(), false);
             }
 
-            return _cp;
+            return cp;
         }
 
         public int getRewardId() {
-            if (_rewardId == 0) {
-                _rewardId = CastleManorManager.getInstance()
-                        .getSeedByCrop(_cp.getId())
-                        .getReward(_cp.getReward());
+            if (rewardId == 0) {
+                rewardId = CastleManorManager.getInstance()
+                        .getSeedByCrop(cp.getId())
+                        .getReward(cp.getReward());
             }
 
-            return _rewardId;
+            return rewardId;
         }
     }
 }

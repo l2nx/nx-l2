@@ -30,18 +30,18 @@ import java.util.List;
  * @author -Wooden-
  */
 public class ExCursedWeaponLocation extends ServerPacket {
-    private final List<CursedWeaponInfo> _cursedWeaponInfo;
+    private final List<CursedWeaponInfo> cursedWeaponInfo;
 
     public ExCursedWeaponLocation(List<CursedWeaponInfo> cursedWeaponInfo) {
-        _cursedWeaponInfo = cursedWeaponInfo;
+        this.cursedWeaponInfo = cursedWeaponInfo;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_CURSED_WEAPON_LOCATION.writeId(this, buffer);
-        if (!_cursedWeaponInfo.isEmpty()) {
-            buffer.writeInt(_cursedWeaponInfo.size());
-            for (CursedWeaponInfo w : _cursedWeaponInfo) {
+        if (!cursedWeaponInfo.isEmpty()) {
+            buffer.writeInt(cursedWeaponInfo.size());
+            for (CursedWeaponInfo w : cursedWeaponInfo) {
                 buffer.writeInt(w.id);
                 buffer.writeInt(w.activated);
                 buffer.writeInt(w.pos.getX());

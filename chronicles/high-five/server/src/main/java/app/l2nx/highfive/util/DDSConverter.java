@@ -27,12 +27,11 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.imageio.ImageIO;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class DDSConverter {
-    private static final Logger LOGGER = Logger.getLogger(DDSConverter.class.getName());
 
     protected static class Color {
         @Override
@@ -95,14 +94,14 @@ public class DDSConverter {
     public static ByteBuffer convertToDDS(File file) {
         if (file == null) {
             String s = "nullValue.FileIsNull";
-            LOGGER.severe(s + " " + new IllegalArgumentException(s));
+            log.error("{}", s, new IllegalArgumentException(s));
             new IllegalArgumentException(s);
             return null;
         }
 
         if (!file.exists() || !file.canRead()) {
             String s1 = "DDSConverter.NoFileOrNoPermission";
-            LOGGER.severe(s1 + " " + new IllegalArgumentException(s1));
+            log.error("{}", s1, new IllegalArgumentException(s1));
             new IllegalArgumentException(s1);
             return null;
         }
@@ -111,7 +110,7 @@ public class DDSConverter {
         try {
             bufferedimage = ImageIO.read(file);
         } catch (IOException e) {
-            LOGGER.log(Level.WARNING, "Error while reading Image that needs to be DDSConverted: ", e);
+            log.warn("Error while reading Image that needs to be DDSConverted: ", e);
         }
 
         if (bufferedimage == null) {

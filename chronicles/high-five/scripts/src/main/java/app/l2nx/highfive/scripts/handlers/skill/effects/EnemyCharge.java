@@ -32,10 +32,12 @@ import app.l2nx.highfive.mechanics.skill.enums.FlyType;
 import app.l2nx.highfive.network.serverpackets.FlyToLocation;
 import app.l2nx.highfive.network.serverpackets.ValidateLocation;
 import app.l2nx.highfive.util.StatSet;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Enemy Charge effect implementation.
  */
+@Slf4j
 public class EnemyCharge extends AbstractEffect {
     public EnemyCharge(Condition attachCond, Condition applyCond, StatSet set, StatSet params) {
         super(attachCond, applyCond, set, params);
@@ -62,8 +64,12 @@ public class EnemyCharge extends AbstractEffect {
         final double dy = effected.getY() - curY;
         final double distance = Math.sqrt((dx * dx) + (dy * dy));
         if (distance > 2000) {
-            LOGGER.info("EffectEnemyCharge was going to use invalid coordinates for characters, getEffector: " + curX
-                    + "," + curY + " and getEffected: " + effected.getX() + "," + effected.getY());
+            log.info(
+                    "EffectEnemyCharge was going to use invalid coordinates for characters, getEffector: {},{} and getEffected: {},{}",
+                    curX,
+                    curY,
+                    effected.getX(),
+                    effected.getY());
             return;
         }
 

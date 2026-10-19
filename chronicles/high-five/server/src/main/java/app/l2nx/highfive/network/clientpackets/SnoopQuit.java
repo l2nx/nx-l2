@@ -26,16 +26,16 @@ import app.l2nx.highfive.entity.actor.Player;
  * @author -Wooden-
  */
 public class SnoopQuit extends ClientPacket {
-    private int _snoopID;
+    private int snoopID;
 
     @Override
     protected void readImpl() {
-        _snoopID = readInt();
+        snoopID = readInt();
     }
 
     @Override
     protected void runImpl() {
-        final Player target = World.getPlayer(_snoopID);
+        final Player target = World.getPlayer(snoopID);
         if (target == null) {
             return;
         }

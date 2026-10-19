@@ -28,8 +28,8 @@ import app.l2nx.network.buffer.WriteBuffer;
  * @author mrTJO
  */
 public class ExCubeGameAddPlayer extends ServerPacket {
-    private final Player _player;
-    private final boolean _isRedTeam;
+    private final Player player;
+    private final boolean redTeam;
 
     /**
      * Add Player To Minigame Waiting List
@@ -37,8 +37,8 @@ public class ExCubeGameAddPlayer extends ServerPacket {
      * @param isRedTeam Is Player from Red Team?
      */
     public ExCubeGameAddPlayer(Player player, boolean isRedTeam) {
-        _player = player;
-        _isRedTeam = isRedTeam;
+        this.player = player;
+        redTeam = isRedTeam;
     }
 
     @Override
@@ -46,8 +46,8 @@ public class ExCubeGameAddPlayer extends ServerPacket {
         ServerPackets.EX_BLOCK_UP_SET_LIST.writeId(this, buffer);
         buffer.writeInt(1);
         buffer.writeInt(0xffffffff);
-        buffer.writeInt(_isRedTeam);
-        buffer.writeInt(_player.getObjectId());
-        buffer.writeString(_player.getName());
+        buffer.writeInt(redTeam);
+        buffer.writeInt(player.getObjectId());
+        buffer.writeString(player.getName());
     }
 }

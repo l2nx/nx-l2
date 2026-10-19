@@ -34,22 +34,22 @@ import java.util.Map;
  * @author l3x
  */
 public class ExShowSellCropList extends ServerPacket {
-    private final int _manorId;
-    private final Map<Integer, Item> _cropsItems = new HashMap<>();
-    private final Map<Integer, CropProcure> _castleCrops = new HashMap<>();
+    private final int manorId;
+    private final Map<Integer, Item> cropsItems = new HashMap<>();
+    private final Map<Integer, CropProcure> castleCrops = new HashMap<>();
 
     public ExShowSellCropList(PlayerInventory inventory, int manorId) {
-        _manorId = manorId;
+        this.manorId = manorId;
         for (int cropId : CastleManorManager.getInstance().getCropIds()) {
             final Item item = inventory.getItemByItemId(cropId);
             if (item != null) {
-                _cropsItems.put(cropId, item);
+                cropsItems.put(cropId, item);
             }
         }
 
-        for (CropProcure crop : CastleManorManager.getInstance().getCropProcure(_manorId, false)) {
-            if (_cropsItems.containsKey(crop.getId()) && (crop.getAmount() > 0)) {
-                _castleCrops.put(crop.getId(), crop);
+        for (CropProcure crop : CastleManorManager.getInstance().getCropProcure(this.manorId, false)) {
+            if (cropsItems.containsKey(crop.getId()) && (crop.getAmount() > 0)) {
+                castleCrops.put(crop.getId(), crop);
             }
         }
     }
@@ -57,9 +57,9 @@ public class ExShowSellCropList extends ServerPacket {
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_SHOW_SELL_CROP_LIST.writeId(this, buffer);
-        buffer.writeInt(_manorId); // manor id
-        buffer.writeInt(_cropsItems.size()); // size
-        for (Item item : _cropsItems.values()) {
+        buffer.writeInt(manorId); // manor id
+        buffer.writeInt(cropsItems.size()); // size
+        for (Item item : cropsItems.values()) {
             final Seed seed = CastleManorManager.getInstance().getSeedByCrop(item.getId());
             buffer.writeInt(item.getObjectId()); // Object id
             buffer.writeInt(item.getId()); // crop id
@@ -68,9 +68,9 @@ public class ExShowSellCropList extends ServerPacket {
             buffer.writeInt(seed.getReward(1)); // reward 1 id
             buffer.writeByte(1);
             buffer.writeInt(seed.getReward(2)); // reward 2 id
-            if (_castleCrops.containsKey(item.getId())) {
-                final CropProcure crop = _castleCrops.get(item.getId());
-                buffer.writeInt(_manorId); // manor
+            if (castleCrops.containsKey(item.getId())) {
+                final CropProcure crop = castleCrops.get(item.getId());
+                buffer.writeInt(manorId); // manor
                 buffer.writeLong(crop.getAmount()); // buy residual
                 buffer.writeLong(crop.getPrice()); // buy price
                 buffer.writeByte(crop.getReward()); // reward

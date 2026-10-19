@@ -66,8 +66,8 @@ public class SeedOfAnnihilation extends Script {
     // @formatter:on
 
     // 0: Bistakon, 1: Reptilikon, 2: Cokrakon
-    private final SeedRegion[] _regionsData = new SeedRegion[3];
-    private Long _seedsNextStatusChange;
+    private final SeedRegion[] regionsData = new SeedRegion[3];
+    private Long seedsNextStatusChange;
 
     public SeedOfAnnihilation() {
         loadSeedRegionData();
@@ -75,9 +75,9 @@ public class SeedOfAnnihilation extends Script {
             addEnterZoneId(i);
         }
 
-        for (SeedRegion element : _regionsData) {
-            for (int elite_mob_id : element.elite_mob_ids) {
-                addSpawnId(elite_mob_id);
+        for (SeedRegion element : regionsData) {
+            for (int eliteMobId : element.elite_mob_ids) {
+                addSpawnId(eliteMobId);
             }
         }
 
@@ -88,7 +88,7 @@ public class SeedOfAnnihilation extends Script {
 
     public void loadSeedRegionData() {
         // Bistakon data
-        _regionsData[0] = new SeedRegion(
+        regionsData[0] = new SeedRegion(
                 new int[] {22750, 22751, 22752, 22753},
                 new int[][] {
                     {22746, 22746, 22746},
@@ -103,14 +103,14 @@ public class SeedOfAnnihilation extends Script {
                 });
 
         // Reptilikon data
-        _regionsData[1] = new SeedRegion(
+        regionsData[1] = new SeedRegion(
                 new int[] {22757, 22758, 22759}, new int[][] {{22754, 22755, 22756}}, 60007, new int[][] {
                     {-179600, 186998, -10704, 11632},
                     {-179295, 186444, -10704, 11632}
                 });
 
         // Cokrakon data
-        _regionsData[2] = new SeedRegion(
+        regionsData[2] = new SeedRegion(
                 new int[] {22763, 22764, 22765},
                 new int[][] {
                     {22760, 22760, 22761},
@@ -131,15 +131,15 @@ public class SeedOfAnnihilation extends Script {
         if (var < System.currentTimeMillis()) {
             buffsNow = getRandom(ZONE_BUFFS_LIST.length);
             GlobalVariablesManager.getInstance().set("SeedBuffsList", String.valueOf(buffsNow));
-            _seedsNextStatusChange = getNextSeedsStatusChangeTime();
-            GlobalVariablesManager.getInstance().set("SeedNextStatusChange", String.valueOf(_seedsNextStatusChange));
+            seedsNextStatusChange = getNextSeedsStatusChangeTime();
+            GlobalVariablesManager.getInstance().set("SeedNextStatusChange", String.valueOf(seedsNextStatusChange));
         } else {
-            _seedsNextStatusChange = var;
+            seedsNextStatusChange = var;
             buffsNow = GlobalVariablesManager.getInstance().getInt("SeedBuffsList", 0);
         }
 
-        for (int i = 0; i < _regionsData.length; i++) {
-            _regionsData[i].activeBuff = ZONE_BUFFS_LIST[buffsNow][i];
+        for (int i = 0; i < regionsData.length; i++) {
+            regionsData[i].activeBuff = ZONE_BUFFS_LIST[buffsNow][i];
         }
     }
 
@@ -157,25 +157,25 @@ public class SeedOfAnnihilation extends Script {
     }
 
     private void startEffectZonesControl() {
-        for (SeedRegion a_regionsData : _regionsData) {
-            for (int j = 0; j < a_regionsData.af_spawns.length; j++) {
-                a_regionsData.af_npcs[j] = addSpawn(
+        for (SeedRegion aRegionsData : regionsData) {
+            for (int j = 0; j < aRegionsData.af_spawns.length; j++) {
+                aRegionsData.af_npcs[j] = addSpawn(
                         ANNIHILATION_FURNACE,
-                        a_regionsData.af_spawns[j][0],
-                        a_regionsData.af_spawns[j][1],
-                        a_regionsData.af_spawns[j][2],
-                        a_regionsData.af_spawns[j][3],
+                        aRegionsData.af_spawns[j][0],
+                        aRegionsData.af_spawns[j][1],
+                        aRegionsData.af_spawns[j][2],
+                        aRegionsData.af_spawns[j][3],
                         false,
                         0);
-                a_regionsData.af_npcs[j].setDisplayEffect(a_regionsData.activeBuff);
+                aRegionsData.af_npcs[j].setDisplayEffect(aRegionsData.activeBuff);
             }
 
             ZoneManager.getInstance()
-                    .getZoneById(a_regionsData.buff_zone, EffectZone.class)
-                    .addSkill(ZONE_BUFFS[a_regionsData.activeBuff], 1);
+                    .getZoneById(aRegionsData.buff_zone, EffectZone.class)
+                    .addSkill(ZONE_BUFFS[aRegionsData.activeBuff], 1);
         }
 
-        startQuestTimer("ChangeSeedsStatus", _seedsNextStatusChange - System.currentTimeMillis(), null, null);
+        startQuestTimer("ChangeSeedsStatus", seedsNextStatusChange - System.currentTimeMillis(), null, null);
     }
 
     private void spawnGroupOfMinion(Monster npc, int[] mobIds) {
@@ -186,7 +186,7 @@ public class SeedOfAnnihilation extends Script {
 
     @Override
     public void onSpawn(Npc npc) {
-        for (SeedRegion element : _regionsData) {
+        for (SeedRegion element : regionsData) {
             if (ArrayUtil.contains(element.elite_mob_ids, npc.getId())) {
                 spawnGroupOfMinion(npc.asMonster(), getRandomEntry(element.minion_lists));
             }
@@ -198,22 +198,22 @@ public class SeedOfAnnihilation extends Script {
         if (event.equalsIgnoreCase("ChangeSeedsStatus")) {
             final int buffsNow = getRandom(ZONE_BUFFS_LIST.length);
             GlobalVariablesManager.getInstance().set("SeedBuffsList", String.valueOf(buffsNow));
-            _seedsNextStatusChange = getNextSeedsStatusChangeTime();
-            GlobalVariablesManager.getInstance().set("SeedNextStatusChange", String.valueOf(_seedsNextStatusChange));
-            for (int i = 0; i < _regionsData.length; i++) {
-                _regionsData[i].activeBuff = ZONE_BUFFS_LIST[buffsNow][i];
+            seedsNextStatusChange = getNextSeedsStatusChangeTime();
+            GlobalVariablesManager.getInstance().set("SeedNextStatusChange", String.valueOf(seedsNextStatusChange));
+            for (int i = 0; i < regionsData.length; i++) {
+                regionsData[i].activeBuff = ZONE_BUFFS_LIST[buffsNow][i];
 
-                for (Npc af : _regionsData[i].af_npcs) {
-                    af.setDisplayEffect(_regionsData[i].activeBuff);
+                for (Npc af : regionsData[i].af_npcs) {
+                    af.setDisplayEffect(regionsData[i].activeBuff);
                 }
 
                 final EffectZone zone =
-                        ZoneManager.getInstance().getZoneById(_regionsData[i].buff_zone, EffectZone.class);
+                        ZoneManager.getInstance().getZoneById(regionsData[i].buff_zone, EffectZone.class);
                 zone.clearSkills();
-                zone.addSkill(ZONE_BUFFS[_regionsData[i].activeBuff], 1);
+                zone.addSkill(ZONE_BUFFS[regionsData[i].activeBuff], 1);
             }
 
-            startQuestTimer("ChangeSeedsStatus", _seedsNextStatusChange - System.currentTimeMillis(), null, null);
+            startQuestTimer("ChangeSeedsStatus", seedsNextStatusChange - System.currentTimeMillis(), null, null);
         } else if (event.equalsIgnoreCase("transform")) {
             if (player.isAffectedBySkill(6408)) {
                 npc.showChatWindow(player, 2);

@@ -21,13 +21,11 @@ package app.l2nx.highfive.handler;
 
 import app.l2nx.highfive.mechanics.punishment.PunishmentTask;
 import app.l2nx.highfive.mechanics.punishment.PunishmentType;
-import java.util.logging.Logger;
 
 /**
  * @author UnAfraid
  */
 public interface IPunishmentHandler {
-    Logger LOGGER = Logger.getLogger(IPunishmentHandler.class.getName());
 
     void onStart(PunishmentTask task);
 

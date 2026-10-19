@@ -34,15 +34,15 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 public class SellListProcure extends ServerPacket {
-    private final long _money;
-    private final Map<Item, Long> _sellList = new HashMap<>();
+    private final long money;
+    private final Map<Item, Long> sellList = new HashMap<>();
 
     public SellListProcure(Player player, int castleId) {
-        _money = player.getAdena();
+        money = player.getAdena();
         for (CropProcure c : CastleManorManager.getInstance().getCropProcure(castleId, false)) {
             final Item item = player.getInventory().getItemByItemId(c.getId());
             if ((item != null) && (c.getAmount() > 0)) {
-                _sellList.put(item, c.getAmount());
+                sellList.put(item, c.getAmount());
             }
         }
     }
@@ -50,10 +50,10 @@ public class SellListProcure extends ServerPacket {
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.SELL_LIST_PROCURE.writeId(this, buffer);
-        buffer.writeLong(_money); // money
+        buffer.writeLong(money); // money
         buffer.writeInt(0); // lease ?
-        buffer.writeShort(_sellList.size()); // list size
-        for (Entry<Item, Long> entry : _sellList.entrySet()) {
+        buffer.writeShort(sellList.size()); // list size
+        for (Entry<Item, Long> entry : sellList.entrySet()) {
             final Item item = entry.getKey();
             buffer.writeShort(item.getTemplate().getType1());
             buffer.writeInt(item.getObjectId());

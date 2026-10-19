@@ -23,27 +23,13 @@ import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.mechanics.events.EventType;
 import app.l2nx.highfive.mechanics.events.holders.IBaseEvent;
+import lombok.Builder;
 
 /**
  * @author UnAfraid
  */
-public class OnNpcFirstTalk implements IBaseEvent {
-    private final Npc _npc;
-    private final Player _player;
-
-    public OnNpcFirstTalk(Npc npc, Player player) {
-        _npc = npc;
-        _player = player;
-    }
-
-    public Npc getNpc() {
-        return _npc;
-    }
-
-    public Player getPlayer() {
-        return _player;
-    }
-
+@Builder(toBuilder = true)
+public record OnNpcFirstTalk(Npc npc, Player player) implements IBaseEvent {
     @Override
     public EventType getType() {
         return EventType.ON_NPC_FIRST_TALK;

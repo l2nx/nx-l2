@@ -32,15 +32,17 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.xml.parsers.DocumentBuilderFactory;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 
+@Slf4j
 public class NpcStringId {
-    private static final Logger LOGGER = Logger.getLogger(NpcStringId.class.getName());
 
     private static final NSLocalisation[] EMPTY_NSL_ARRAY = new NSLocalisation[0];
     private static final Map<Integer, NpcStringId> VALUES = new HashMap<>();
@@ -19577,7 +19579,7 @@ public class NpcStringId {
                     field.set(null, nsId);
                     VALUES.put(nsId.getId(), nsId);
                 } catch (Exception e) {
-                    LOGGER.log(Level.WARNING, "NpcStringId: Failed field access for '" + field.getName() + "'", e);
+                    log.warn("Failed field access for '{}'", field.getName(), e);
                 }
             }
         }
@@ -19630,7 +19632,7 @@ public class NpcStringId {
         }
 
         if (!MultilingualSupportConfig.MULTILANG_ENABLE) {
-            LOGGER.log(Level.INFO, "NpcStringId: MultiLanguage disabled.");
+            log.info("MultiLanguage disabled.");
             return;
         }
 
@@ -19662,28 +19664,22 @@ public class NpcStringId {
                                 if (node != null) {
                                     nsId = getNpcStringId(Integer.parseInt(node.getNodeValue()));
                                     if (nsId == null) {
-                                        LOGGER.log(
-                                                Level.WARNING,
-                                                "NpcStringId: Unknown NSID '" + node.getNodeValue() + "', lang '" + lang
-                                                        + "'.");
+                                        log.warn("Unknown NSID '{}', lang '{}'.", node.getNodeValue(), lang);
                                         continue;
                                     }
 
                                     node = nnmb.getNamedItem("translation");
                                     if (node == null) {
-                                        LOGGER.log(
-                                                Level.WARNING,
-                                                "NpcStringId: No text defined for NSID '" + nsId + "', lang '" + lang
-                                                        + "'.");
+                                        log.warn("No text defined for NSID '{}', lang '{}'.", nsId, lang);
                                         continue;
                                     }
 
                                     text = node.getNodeValue();
                                     if (text.isEmpty() || (text.length() > 255)) {
-                                        LOGGER.log(
-                                                Level.WARNING,
-                                                "NpcStringId: Invalid text defined for NSID '" + nsId
-                                                        + "' (to long or empty), lang '" + lang + "'.");
+                                        log.warn(
+                                                "Invalid text defined for NSID '{}' (to long or empty), lang '{}'.",
+                                                nsId,
+                                                lang);
                                         continue;
                                     }
 
@@ -19694,49 +19690,44 @@ public class NpcStringId {
                     }
                 }
             } catch (Exception e) {
-                LOGGER.log(Level.SEVERE, "NpcStringId: Failed loading '" + file + "'", e);
+                log.error("Failed loading '{}'", file, e);
             }
 
-            LOGGER.log(Level.INFO, "NpcStringId: Loaded localisations for [" + lang + "].");
+            log.info("Loaded localisations for [{}].", lang);
         }
     }
 
-    private final int _id;
-    private String _name;
-    private byte _params;
-    private NSLocalisation[] _localisations;
-    private ExShowScreenMessage _staticScreenMessage;
+    @Getter
+    private final int id;
+
+    @Getter
+    @Setter(AccessLevel.PRIVATE)
+    private String name;
+
+    private byte paramCount;
+    private NSLocalisation[] localisations;
+
+    @Getter
+    private ExShowScreenMessage staticScreenMessage;
 
     protected NpcStringId(int id) {
-        _id = id;
-        _localisations = EMPTY_NSL_ARRAY;
-    }
-
-    public int getId() {
-        return _id;
-    }
-
-    private void setName(String name) {
-        _name = name;
-    }
-
-    public String getName() {
-        return _name;
+        this.id = id;
+        localisations = EMPTY_NSL_ARRAY;
     }
 
     public String getText() {
         String text = "";
         try {
-            text = getClass().getField(_name).getAnnotation(ClientString.class).message();
+            text = getClass().getField(name).getAnnotation(ClientString.class).message();
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, "getText: ", e);
+            log.warn("getText: ", e);
         }
 
         return text;
     }
 
     public int getParamCount() {
-        return _params;
+        return paramCount;
     }
 
     public void setParamCount(int params) {
@@ -19749,20 +19740,20 @@ public class NpcStringId {
         }
 
         if (params != 0) {
-            _staticScreenMessage = null;
+            staticScreenMessage = null;
         }
 
-        _params = (byte) params;
+        paramCount = (byte) params;
     }
 
     public NSLocalisation getLocalisation(String lang) {
-        if (_localisations == null) {
+        if (localisations == null) {
             return null;
         }
 
         NSLocalisation nsl;
-        for (int i = _localisations.length; i-- > 0; ) {
-            nsl = _localisations[i];
+        for (int i = localisations.length; i-- > 0; ) {
+            nsl = localisations[i];
             if (nsl.getLanguage().hashCode() == lang.hashCode()) {
                 return nsl;
             }
@@ -19772,22 +19763,18 @@ public class NpcStringId {
     }
 
     public void attachLocalizedText(String lang, String text) {
-        final int length = _localisations.length;
-        final NSLocalisation[] localisations = Arrays.copyOf(_localisations, length + 1);
+        final int length = this.localisations.length;
+        final NSLocalisation[] localisations = Arrays.copyOf(this.localisations, length + 1);
         localisations[length] = new NSLocalisation(lang, text);
-        _localisations = localisations;
+        this.localisations = localisations;
     }
 
     public void removeAllLocalisations() {
-        _localisations = EMPTY_NSL_ARRAY;
-    }
-
-    public ExShowScreenMessage getStaticScreenMessage() {
-        return _staticScreenMessage;
+        localisations = EMPTY_NSL_ARRAY;
     }
 
     public void setStaticSystemMessage(ExShowScreenMessage ns) {
-        _staticScreenMessage = ns;
+        staticScreenMessage = ns;
     }
 
     @Override
@@ -19796,20 +19783,18 @@ public class NpcStringId {
     }
 
     public static class NSLocalisation {
-        private final String _lang;
-        private final Builder _builder;
+        @Getter
+        private final String language;
+
+        private final Builder builder;
 
         public NSLocalisation(String lang, String text) {
-            _lang = lang;
-            _builder = Builder.newBuilder(text);
-        }
-
-        public String getLanguage() {
-            return _lang;
+            language = lang;
+            builder = Builder.newBuilder(text);
         }
 
         public String getLocalisation(Object... params) {
-            return _builder.toString(params);
+            return builder.toString(params);
         }
     }
 }

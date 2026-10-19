@@ -23,45 +23,14 @@ import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.mechanics.events.EventType;
 import app.l2nx.highfive.mechanics.events.holders.IBaseEvent;
+import lombok.Builder;
 
 /**
  * @author malyelfik
  */
-public class OnNpcManorBypass implements IBaseEvent {
-    private final Player _player;
-    private final Npc _target;
-    private final int _request;
-    private final int _manorId;
-    private final boolean _nextPeriod;
-
-    public OnNpcManorBypass(Player player, Npc target, int request, int manorId, boolean nextPeriod) {
-        _player = player;
-        _target = target;
-        _request = request;
-        _manorId = manorId;
-        _nextPeriod = nextPeriod;
-    }
-
-    public Player getPlayer() {
-        return _player;
-    }
-
-    public Npc getTarget() {
-        return _target;
-    }
-
-    public int getRequest() {
-        return _request;
-    }
-
-    public int getManorId() {
-        return _manorId;
-    }
-
-    public boolean isNextPeriod() {
-        return _nextPeriod;
-    }
-
+@Builder(toBuilder = true)
+public record OnNpcManorBypass(Player player, Npc target, int request, int manorId, boolean nextPeriod)
+        implements IBaseEvent {
     @Override
     public EventType getType() {
         return EventType.ON_NPC_MANOR_BYPASS;

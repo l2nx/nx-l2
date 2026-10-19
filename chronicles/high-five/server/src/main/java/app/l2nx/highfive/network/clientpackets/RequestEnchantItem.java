@@ -40,27 +40,29 @@ import app.l2nx.highfive.network.serverpackets.EnchantResult;
 import app.l2nx.highfive.network.serverpackets.InventoryUpdate;
 import app.l2nx.highfive.network.serverpackets.MagicSkillUse;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author Mobius
  */
 public class RequestEnchantItem extends ClientPacket {
-    protected static final Logger LOGGER_ENCHANT = Logger.getLogger("enchant.items");
 
-    private int _objectId;
+    private static final Logger ENCHANT_ITEMS_LOG = LoggerFactory.getLogger("enchant.items");
+
+    private int objectId;
     // private int _supportId;
 
     @Override
     protected void readImpl() {
-        _objectId = readInt();
+        objectId = readInt();
         // _supportId = readInt();
     }
 
     @Override
     protected void runImpl() {
         final Player player = getPlayer();
-        if ((player == null) || (_objectId == 0)) {
+        if ((player == null) || (objectId == 0)) {
             return;
         }
 
@@ -75,7 +77,7 @@ public class RequestEnchantItem extends ClientPacket {
             return;
         }
 
-        final Item item = player.getInventory().getItemByObjectId(_objectId);
+        final Item item = player.getInventory().getItemByObjectId(objectId);
         Item scroll = player.getInventory().getItemByObjectId(player.getActiveEnchantItemId());
         if ((item == null) || (scroll == null)) {
             player.setActiveEnchantItemId(Player.ID_NONE);
@@ -202,7 +204,7 @@ public class RequestEnchantItem extends ClientPacket {
                         final StringBuilder sb = new StringBuilder();
                         if (item.isEnchanted()) {
                             if (support == null) {
-                                LOGGER_ENCHANT.info(sb.append("Success, Character:")
+                                ENCHANT_ITEMS_LOG.info(sb.append("Success, Character:")
                                         .append(player.getName())
                                         .append(" [")
                                         .append(player.getObjectId())
@@ -227,7 +229,7 @@ public class RequestEnchantItem extends ClientPacket {
                                         .append(']')
                                         .toString());
                             } else {
-                                LOGGER_ENCHANT.info(sb.append("Success, Character:")
+                                ENCHANT_ITEMS_LOG.info(sb.append("Success, Character:")
                                         .append(player.getName())
                                         .append(" [")
                                         .append(player.getObjectId())
@@ -259,7 +261,7 @@ public class RequestEnchantItem extends ClientPacket {
                                         .toString());
                             }
                         } else if (support == null) {
-                            LOGGER_ENCHANT.info(sb.append("Success, Character:")
+                            ENCHANT_ITEMS_LOG.info(sb.append("Success, Character:")
                                     .append(player.getName())
                                     .append(" [")
                                     .append(player.getObjectId())
@@ -282,7 +284,7 @@ public class RequestEnchantItem extends ClientPacket {
                                     .append(']')
                                     .toString());
                         } else {
-                            LOGGER_ENCHANT.info(sb.append("Success, Character:")
+                            ENCHANT_ITEMS_LOG.info(sb.append("Success, Character:")
                                     .append(player.getName())
                                     .append(" [")
                                     .append(player.getObjectId())
@@ -362,7 +364,7 @@ public class RequestEnchantItem extends ClientPacket {
                             final StringBuilder sb = new StringBuilder();
                             if (item.isEnchanted()) {
                                 if (support == null) {
-                                    LOGGER_ENCHANT.info(sb.append("Safe Fail, Character:")
+                                    ENCHANT_ITEMS_LOG.info(sb.append("Safe Fail, Character:")
                                             .append(player.getName())
                                             .append(" [")
                                             .append(player.getObjectId())
@@ -387,7 +389,7 @@ public class RequestEnchantItem extends ClientPacket {
                                             .append(']')
                                             .toString());
                                 } else {
-                                    LOGGER_ENCHANT.info(sb.append("Safe Fail, Character:")
+                                    ENCHANT_ITEMS_LOG.info(sb.append("Safe Fail, Character:")
                                             .append(player.getName())
                                             .append(" [")
                                             .append(player.getObjectId())
@@ -419,7 +421,7 @@ public class RequestEnchantItem extends ClientPacket {
                                             .toString());
                                 }
                             } else if (support == null) {
-                                LOGGER_ENCHANT.info(sb.append("Safe Fail, Character:")
+                                ENCHANT_ITEMS_LOG.info(sb.append("Safe Fail, Character:")
                                         .append(player.getName())
                                         .append(" [")
                                         .append(player.getObjectId())
@@ -442,7 +444,7 @@ public class RequestEnchantItem extends ClientPacket {
                                         .append(']')
                                         .toString());
                             } else {
-                                LOGGER_ENCHANT.info(sb.append("Safe Fail, Character:")
+                                ENCHANT_ITEMS_LOG.info(sb.append("Safe Fail, Character:")
                                         .append(player.getName())
                                         .append(" [")
                                         .append(player.getObjectId())
@@ -513,7 +515,7 @@ public class RequestEnchantItem extends ClientPacket {
                                 final StringBuilder sb = new StringBuilder();
                                 if (item.isEnchanted()) {
                                     if (support == null) {
-                                        LOGGER_ENCHANT.info(sb.append("Blessed Fail, Character:")
+                                        ENCHANT_ITEMS_LOG.info(sb.append("Blessed Fail, Character:")
                                                 .append(player.getName())
                                                 .append(" [")
                                                 .append(player.getObjectId())
@@ -538,7 +540,7 @@ public class RequestEnchantItem extends ClientPacket {
                                                 .append(']')
                                                 .toString());
                                     } else {
-                                        LOGGER_ENCHANT.info(sb.append("Blessed Fail, Character:")
+                                        ENCHANT_ITEMS_LOG.info(sb.append("Blessed Fail, Character:")
                                                 .append(player.getName())
                                                 .append(" [")
                                                 .append(player.getObjectId())
@@ -570,7 +572,7 @@ public class RequestEnchantItem extends ClientPacket {
                                                 .toString());
                                     }
                                 } else if (support == null) {
-                                    LOGGER_ENCHANT.info(sb.append("Blessed Fail, Character:")
+                                    ENCHANT_ITEMS_LOG.info(sb.append("Blessed Fail, Character:")
                                             .append(player.getName())
                                             .append(" [")
                                             .append(player.getObjectId())
@@ -593,7 +595,7 @@ public class RequestEnchantItem extends ClientPacket {
                                             .append(']')
                                             .toString());
                                 } else {
-                                    LOGGER_ENCHANT.info(sb.append("Blessed Fail, Character:")
+                                    ENCHANT_ITEMS_LOG.info(sb.append("Blessed Fail, Character:")
                                             .append(player.getName())
                                             .append(" [")
                                             .append(player.getObjectId())
@@ -640,7 +642,7 @@ public class RequestEnchantItem extends ClientPacket {
                                     final StringBuilder sb = new StringBuilder();
                                     if (item.isEnchanted()) {
                                         if (support == null) {
-                                            LOGGER_ENCHANT.info(sb.append("Unable to destroy, Character:")
+                                            ENCHANT_ITEMS_LOG.info(sb.append("Unable to destroy, Character:")
                                                     .append(player.getName())
                                                     .append(" [")
                                                     .append(player.getObjectId())
@@ -665,7 +667,7 @@ public class RequestEnchantItem extends ClientPacket {
                                                     .append(']')
                                                     .toString());
                                         } else {
-                                            LOGGER_ENCHANT.info(sb.append("Unable to destroy, Character:")
+                                            ENCHANT_ITEMS_LOG.info(sb.append("Unable to destroy, Character:")
                                                     .append(player.getName())
                                                     .append(" [")
                                                     .append(player.getObjectId())
@@ -697,7 +699,7 @@ public class RequestEnchantItem extends ClientPacket {
                                                     .toString());
                                         }
                                     } else if (support == null) {
-                                        LOGGER_ENCHANT.info(sb.append("Unable to destroy, Character:")
+                                        ENCHANT_ITEMS_LOG.info(sb.append("Unable to destroy, Character:")
                                                 .append(player.getName())
                                                 .append(" [")
                                                 .append(player.getObjectId())
@@ -720,7 +722,7 @@ public class RequestEnchantItem extends ClientPacket {
                                                 .append(']')
                                                 .toString());
                                     } else {
-                                        LOGGER_ENCHANT.info(sb.append("Unable to destroy, Character:")
+                                        ENCHANT_ITEMS_LOG.info(sb.append("Unable to destroy, Character:")
                                                 .append(player.getName())
                                                 .append(" [")
                                                 .append(player.getObjectId())
@@ -786,7 +788,7 @@ public class RequestEnchantItem extends ClientPacket {
                                 final StringBuilder sb = new StringBuilder();
                                 if (item.isEnchanted()) {
                                     if (support == null) {
-                                        LOGGER_ENCHANT.info(sb.append("Fail, Character:")
+                                        ENCHANT_ITEMS_LOG.info(sb.append("Fail, Character:")
                                                 .append(player.getName())
                                                 .append(" [")
                                                 .append(player.getObjectId())
@@ -811,7 +813,7 @@ public class RequestEnchantItem extends ClientPacket {
                                                 .append(']')
                                                 .toString());
                                     } else {
-                                        LOGGER_ENCHANT.info(sb.append("Fail, Character:")
+                                        ENCHANT_ITEMS_LOG.info(sb.append("Fail, Character:")
                                                 .append(player.getName())
                                                 .append(" [")
                                                 .append(player.getObjectId())
@@ -843,7 +845,7 @@ public class RequestEnchantItem extends ClientPacket {
                                                 .toString());
                                     }
                                 } else if (support == null) {
-                                    LOGGER_ENCHANT.info(sb.append("Fail, Character:")
+                                    ENCHANT_ITEMS_LOG.info(sb.append("Fail, Character:")
                                             .append(player.getName())
                                             .append(" [")
                                             .append(player.getObjectId())
@@ -866,7 +868,7 @@ public class RequestEnchantItem extends ClientPacket {
                                             .append(']')
                                             .toString());
                                 } else {
-                                    LOGGER_ENCHANT.info(sb.append("Fail, Character:")
+                                    ENCHANT_ITEMS_LOG.info(sb.append("Fail, Character:")
                                             .append(player.getName())
                                             .append(" [")
                                             .append(player.getObjectId())

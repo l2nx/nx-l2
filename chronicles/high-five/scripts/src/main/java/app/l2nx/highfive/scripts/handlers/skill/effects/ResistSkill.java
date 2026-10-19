@@ -34,7 +34,7 @@ import java.util.List;
  * @author UnAfraid
  */
 public class ResistSkill extends AbstractEffect {
-    private final List<SkillHolder> _skills = new ArrayList<>();
+    private final List<SkillHolder> skills = new ArrayList<>();
 
     public ResistSkill(Condition attachCond, Condition applyCond, StatSet set, StatSet params) {
         super(attachCond, applyCond, set, params);
@@ -46,24 +46,24 @@ public class ResistSkill extends AbstractEffect {
             }
 
             final int skillLevel = params.getInt("skillLevel" + i, 0);
-            _skills.add(new SkillHolder(skillId, skillLevel));
+            skills.add(new SkillHolder(skillId, skillLevel));
         }
 
-        if (_skills.isEmpty()) {
+        if (skills.isEmpty()) {
             throw new IllegalArgumentException(getClass().getSimpleName() + ": Without parameters!");
         }
     }
 
     @Override
     public void onStart(Creature effector, Creature effected, Skill skill) {
-        for (SkillHolder holder : _skills) {
+        for (SkillHolder holder : skills) {
             effected.addInvulAgainst(holder);
         }
     }
 
     @Override
     public void onExit(Creature effector, Creature effected, Skill skill) {
-        for (SkillHolder holder : _skills) {
+        for (SkillHolder holder : skills) {
             effected.removeInvulAgainst(holder);
         }
     }

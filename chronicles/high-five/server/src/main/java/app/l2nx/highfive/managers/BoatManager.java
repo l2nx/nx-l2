@@ -34,8 +34,8 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class BoatManager {
-    private final Map<Integer, Boat> _boats = new ConcurrentHashMap<>();
-    private final boolean[] _docksBusy = new boolean[3];
+    private final Map<Integer, Boat> boats = new ConcurrentHashMap<>();
+    private final boolean[] docksBusy = new boolean[3];
 
     public static final int TALKING_ISLAND = 1;
     public static final int GLUDIN_HARBOR = 2;
@@ -46,8 +46,8 @@ public class BoatManager {
     }
 
     protected BoatManager() {
-        for (int i = 0; i < _docksBusy.length; i++) {
-            _docksBusy[i] = false;
+        for (int i = 0; i < docksBusy.length; i++) {
+            docksBusy[i] = false;
         }
     }
 
@@ -97,7 +97,7 @@ public class BoatManager {
         boat.setXYZInvisible(x, y, z);
         boat.spawnMe();
 
-        _boats.put(boat.getObjectId(), boat);
+        boats.put(boat.getObjectId(), boat);
         return boat;
     }
 
@@ -106,7 +106,7 @@ public class BoatManager {
      * @return
      */
     public Boat getBoat(int boatId) {
-        return _boats.get(boatId);
+        return boats.get(boatId);
     }
 
     /**
@@ -116,7 +116,7 @@ public class BoatManager {
      */
     public void dockShip(int h, boolean value) {
         try {
-            _docksBusy[h] = value;
+            docksBusy[h] = value;
         } catch (ArrayIndexOutOfBoundsException e) {
             // Ignore.
         }
@@ -129,7 +129,7 @@ public class BoatManager {
      */
     public boolean dockBusy(int h) {
         try {
-            return _docksBusy[h];
+            return docksBusy[h];
         } catch (ArrayIndexOutOfBoundsException e) {
             return false;
         }

@@ -39,16 +39,15 @@ import java.util.ArrayDeque;
 import java.util.Collection;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author Advi
  */
+@Slf4j
 public abstract class ItemContainer {
-    protected static final Logger LOGGER = Logger.getLogger(ItemContainer.class.getName());
 
-    protected final Set<Item> _items = ConcurrentHashMap.newKeySet(1);
+    protected final Set<Item> items = ConcurrentHashMap.newKeySet(1);
 
     protected ItemContainer() {}
 
@@ -71,7 +70,7 @@ public abstract class ItemContainer {
      * @return the quantity of items in the inventory
      */
     public int getSize() {
-        return _items.size();
+        return items.size();
     }
 
     /**
@@ -79,7 +78,7 @@ public abstract class ItemContainer {
      * @return the items in inventory.
      */
     public Collection<Item> getItems() {
-        return _items;
+        return items;
     }
 
     /**
@@ -87,7 +86,7 @@ public abstract class ItemContainer {
      * @return the item from inventory by itemId
      */
     public Item getItemByItemId(int itemId) {
-        for (Item item : _items) {
+        for (Item item : items) {
             if (item.getId() == itemId) {
                 return item;
             }
@@ -100,7 +99,7 @@ public abstract class ItemContainer {
      * @return true if player got item for self resurrection
      */
     public boolean haveItemForSelfResurrection() {
-        for (Item item : _items) {
+        for (Item item : items) {
             if ((item != null) && item.getTemplate().isAllowSelfResurrection()) {
                 return true;
             }
@@ -115,7 +114,7 @@ public abstract class ItemContainer {
      */
     public Collection<Item> getAllItemsByItemId(int itemId) {
         final Collection<Item> result = new ArrayDeque<>();
-        for (Item item : _items) {
+        for (Item item : items) {
             if (itemId == item.getId()) {
                 result.add(item);
             }
@@ -130,7 +129,7 @@ public abstract class ItemContainer {
      * @return the item from inventory by itemId
      */
     public Item getItemByItemId(int itemId, Item itemToIgnore) {
-        for (Item item : _items) {
+        for (Item item : items) {
             if ((item.getId() == itemId) && !item.equals(itemToIgnore)) {
                 return item;
             }
@@ -144,7 +143,7 @@ public abstract class ItemContainer {
      * @return item from inventory by objectId
      */
     public Item getItemByObjectId(int objectId) {
-        for (Item item : _items) {
+        for (Item item : items) {
             if (objectId == item.getObjectId()) {
                 return item;
             }
@@ -172,7 +171,7 @@ public abstract class ItemContainer {
      */
     public long getInventoryItemCount(int itemId, int enchantLevel, boolean includeEquipped) {
         long count = 0;
-        for (Item item : _items) {
+        for (Item item : items) {
             if ((item.getId() == itemId)
                     && ((item.getEnchantLevel() == enchantLevel) || (enchantLevel < 0))
                     && (includeEquipped || !item.isEquipped())) {
@@ -245,7 +244,7 @@ public abstract class ItemContainer {
             for (int i = 0; i < count; i++) {
                 final ItemTemplate template = ItemData.getInstance().getTemplate(itemId);
                 if (template == null) {
-                    LOGGER.warning("Invalid ItemId (" + itemId + ") requested by " + (actor != null ? actor : process));
+                    log.warn("Invalid ItemId ({}) requested by {}", itemId, (actor != null ? actor : process));
                     return null;
                 }
 
@@ -446,7 +445,7 @@ public abstract class ItemContainer {
      * @param reference : Object Object referencing current action like NPC selling item or previous item in transformation
      */
     public void destroyAllItems(ItemProcessType process, Player actor, Object reference) {
-        for (Item item : _items) {
+        for (Item item : items) {
             destroyItem(process, item, actor, reference);
         }
     }
@@ -455,7 +454,7 @@ public abstract class ItemContainer {
      * @return warehouse Adena.
      */
     public long getAdena() {
-        for (Item item : _items) {
+        for (Item item : items) {
             if (item.getId() == Inventory.ADENA_ID) {
                 return item.getCount();
             }
@@ -469,7 +468,7 @@ public abstract class ItemContainer {
      * @param item : Item to be added from inventory
      */
     protected void addItem(Item item) {
-        _items.add(item);
+        items.add(item);
     }
 
     /**
@@ -478,7 +477,7 @@ public abstract class ItemContainer {
      * @return
      */
     protected boolean removeItem(Item item) {
-        return _items.remove(item);
+        return items.remove(item);
     }
 
     /**
@@ -491,7 +490,7 @@ public abstract class ItemContainer {
      */
     public void deleteMe() {
         if ((this instanceof PlayerInventory) || (this instanceof PlayerWarehouse) || (getOwner() != null)) {
-            for (Item item : _items) {
+            for (Item item : items) {
                 item.updateDatabase(true);
                 item.stopAllTasks();
 
@@ -502,11 +501,11 @@ public abstract class ItemContainer {
             }
         }
 
-        for (Item item : _items) {
+        for (Item item : items) {
             World.removeObject(item);
         }
 
-        _items.clear();
+        items.clear();
     }
 
     /**
@@ -514,7 +513,7 @@ public abstract class ItemContainer {
      */
     public void updateDatabase() {
         if (getOwner() != null) {
-            for (Item item : _items) {
+            for (Item item : items) {
                 item.updateDatabase(true);
             }
         }
@@ -552,7 +551,7 @@ public abstract class ItemContainer {
 
             refreshWeight();
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, "Could not restore container:", e);
+            log.warn("Could not restore container:", e);
         }
     }
 

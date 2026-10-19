@@ -23,6 +23,7 @@
 package app.l2nx.login.controller;
 
 import app.l2nx.login.LoginServer;
+import lombok.Getter;
 
 /**
  * Session key used by the client to authenticate against the gameserver.<br>
@@ -41,10 +42,17 @@ public class SessionKey {
     private static final boolean CHECK_LOGIN_PAIR =
             LoginServer.getInstance().getProperties().showLicence();
     // Session key parts.
-    private final int _playOkID1;
-    private final int _playOkID2;
-    private final int _loginOkID1;
-    private final int _loginOkID2;
+    @Getter
+    private final int playOkID1;
+
+    @Getter
+    private final int playOkID2;
+
+    @Getter
+    private final int loginOkID1;
+
+    @Getter
+    private final int loginOkID2;
 
     /**
      * Creates a session key with both pairs.
@@ -54,10 +62,10 @@ public class SessionKey {
      * @param playOk2
      */
     public SessionKey(int loginOk1, int loginOk2, int playOk1, int playOk2) {
-        _playOkID1 = playOk1;
-        _playOkID2 = playOk2;
-        _loginOkID1 = loginOk1;
-        _loginOkID2 = loginOk2;
+        playOkID1 = playOk1;
+        playOkID2 = playOk2;
+        loginOkID1 = loginOk1;
+        loginOkID2 = loginOk2;
     }
 
     /**
@@ -67,8 +75,7 @@ public class SessionKey {
      */
     @Override
     public String toString() {
-        return LABEL_PLAY_OK + " " + _playOkID1 + " " + _playOkID2 + " " + LABEL_LOGIN_OK + _loginOkID1 + " "
-                + _loginOkID2;
+        return LABEL_PLAY_OK + " " + playOkID1 + " " + playOkID2 + " " + LABEL_LOGIN_OK + loginOkID1 + " " + loginOkID2;
     }
 
     /**
@@ -78,7 +85,7 @@ public class SessionKey {
      * @return {@code true} if both values match.
      */
     public boolean checkLoginPair(int loginOk1, int loginOk2) {
-        return (_loginOkID1 == loginOk1) && (_loginOkID2 == loginOk2);
+        return (loginOkID1 == loginOk1) && (loginOkID2 == loginOk2);
     }
 
     /**
@@ -98,12 +105,12 @@ public class SessionKey {
         }
 
         final SessionKey key = (SessionKey) object;
-        if ((_playOkID1 != key._playOkID1) || (_playOkID2 != key._playOkID2)) {
+        if ((playOkID1 != key.playOkID1) || (playOkID2 != key.playOkID2)) {
             return false;
         }
 
         if (CHECK_LOGIN_PAIR) {
-            return (_loginOkID1 == key._loginOkID1) && (_loginOkID2 == key._loginOkID2);
+            return (loginOkID1 == key.loginOkID1) && (loginOkID2 == key.loginOkID2);
         }
 
         return true;
@@ -116,42 +123,14 @@ public class SessionKey {
     @Override
     public int hashCode() {
         int h = 17;
-        h = (31 * h) + _playOkID1;
-        h = (31 * h) + _playOkID2;
+        h = (31 * h) + playOkID1;
+        h = (31 * h) + playOkID2;
 
         if (CHECK_LOGIN_PAIR) {
-            h = (31 * h) + _loginOkID1;
-            h = (31 * h) + _loginOkID2;
+            h = (31 * h) + loginOkID1;
+            h = (31 * h) + loginOkID2;
         }
 
         return h;
-    }
-
-    /**
-     * @return First PlayOk integer.
-     */
-    public int getPlayOkID1() {
-        return _playOkID1;
-    }
-
-    /**
-     * @return Second PlayOk integer.
-     */
-    public int getPlayOkID2() {
-        return _playOkID2;
-    }
-
-    /**
-     * @return First LoginOk integer.
-     */
-    public int getLoginOkID1() {
-        return _loginOkID1;
-    }
-
-    /**
-     * @return Second LoginOk integer.
-     */
-    public int getLoginOkID2() {
-        return _loginOkID2;
     }
 }

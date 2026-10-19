@@ -32,7 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
@@ -40,11 +40,11 @@ import org.w3c.dom.Node;
 /**
  * @author Forsaiken, Mobius
  */
+@Slf4j
 public class PlayerTemplateData implements IXmlReader {
-    private static final Logger LOGGER = Logger.getLogger(PlayerTemplateData.class.getName());
 
-    private final Map<PlayerClass, PlayerTemplate> _playerTemplates = new ConcurrentHashMap<>();
-    final AtomicInteger _levelUpGainCount = new AtomicInteger();
+    private final Map<PlayerClass, PlayerTemplate> playerTemplates = new ConcurrentHashMap<>();
+    final AtomicInteger levelUpGainCount = new AtomicInteger();
 
     protected PlayerTemplateData() {
         load();
@@ -52,12 +52,12 @@ public class PlayerTemplateData implements IXmlReader {
 
     @Override
     public void load() {
-        _playerTemplates.clear();
-        _levelUpGainCount.set(0);
+        playerTemplates.clear();
+        levelUpGainCount.set(0);
         parseDatapackDirectory("data/stats/players/templates", true);
 
-        LOGGER.info(getClass().getSimpleName() + ": Loaded " + _playerTemplates.size() + " player templates.");
-        LOGGER.info(getClass().getSimpleName() + ": Loaded " + _levelUpGainCount.get() + " level up gain records.");
+        log.info("Loaded {} player templates.", playerTemplates.size());
+        log.info("Loaded {} level up gain records.", levelUpGainCount.get());
     }
 
     @Override
@@ -133,11 +133,11 @@ public class PlayerTemplateData implements IXmlReader {
                                         + set.getInt("baseMDefrfinger", 0)
                                         + set.getInt("baseMDefrfinger", 0)
                                         + set.getInt("baseMDefneck", 0));
-                        _playerTemplates.put(
+                        playerTemplates.put(
                                 PlayerClass.getPlayerClass(classId), new PlayerTemplate(set, creationPoints));
                     } else if ("lvlUpgainData".equalsIgnoreCase(d.getNodeName())) {
                         int level = 0;
-                        final PlayerTemplate template = _playerTemplates.get(PlayerClass.getPlayerClass(classId));
+                        final PlayerTemplate template = playerTemplates.get(PlayerClass.getPlayerClass(classId));
                         for (Node lvlNode = d.getFirstChild(); lvlNode != null; lvlNode = lvlNode.getNextSibling()) {
                             if ("level".equalsIgnoreCase(lvlNode.getNodeName())) {
                                 attributes = lvlNode.getAttributes();
@@ -155,7 +155,7 @@ public class PlayerTemplateData implements IXmlReader {
                                             || nodeName.startsWith("cp")) {
                                         template.setUpgainValue(
                                                 nodeName, level, Double.parseDouble(valNode.getTextContent()));
-                                        _levelUpGainCount.incrementAndGet();
+                                        levelUpGainCount.incrementAndGet();
                                     }
                                 }
                             }
@@ -172,7 +172,7 @@ public class PlayerTemplateData implements IXmlReader {
      * @return the {@link PlayerTemplate} associated with the given {@link PlayerClass}, or {@code null} if no template is found.
      */
     public PlayerTemplate getTemplate(PlayerClass playerClass) {
-        return _playerTemplates.get(playerClass);
+        return playerTemplates.get(playerClass);
     }
 
     /**
@@ -181,7 +181,7 @@ public class PlayerTemplateData implements IXmlReader {
      * @return the {@link PlayerTemplate} associated with the given class ID, or {@code null} if no template is found.
      */
     public PlayerTemplate getTemplate(int classId) {
-        return _playerTemplates.get(PlayerClass.getPlayerClass(classId));
+        return playerTemplates.get(PlayerClass.getPlayerClass(classId));
     }
 
     public static PlayerTemplateData getInstance() {

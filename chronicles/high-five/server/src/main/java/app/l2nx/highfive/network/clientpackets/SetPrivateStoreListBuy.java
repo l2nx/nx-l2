@@ -43,7 +43,7 @@ import app.l2nx.highfive.taskmanagers.AttackStanceTaskManager;
 public class SetPrivateStoreListBuy extends ClientPacket {
     private static final int BATCH_LENGTH = 40; // length of the one item
 
-    private Item[] _items = null;
+    private Item[] items = null;
 
     @Override
     protected void readImpl() {
@@ -52,7 +52,7 @@ public class SetPrivateStoreListBuy extends ClientPacket {
             return;
         }
 
-        _items = new Item[count];
+        items = new Item[count];
         for (int i = 0; i < count; i++) {
             final int itemId = readInt();
             readInt(); // TODO analyse this
@@ -60,7 +60,7 @@ public class SetPrivateStoreListBuy extends ClientPacket {
             final long cnt = readLong();
             final long price = readLong();
             if ((itemId < 1) || (cnt < 1) || (price < 0)) {
-                _items = null;
+                items = null;
                 return;
             }
 
@@ -69,7 +69,7 @@ public class SetPrivateStoreListBuy extends ClientPacket {
             readInt(); // Unk
             readInt(); // Unk
 
-            _items[i] = new Item(itemId, cnt, price);
+            items[i] = new Item(itemId, cnt, price);
         }
     }
 
@@ -80,7 +80,7 @@ public class SetPrivateStoreListBuy extends ClientPacket {
             return;
         }
 
-        if (_items == null) {
+        if (items == null) {
             player.setPrivateStoreType(PrivateStoreType.NONE);
             player.broadcastUserInfo();
             return;
@@ -117,14 +117,14 @@ public class SetPrivateStoreListBuy extends ClientPacket {
         tradeList.clear();
 
         // Check maximum number of allowed slots for pvt shops.
-        if (_items.length > player.getPrivateBuyStoreLimit()) {
+        if (items.length > player.getPrivateBuyStoreLimit()) {
             player.sendPacket(new PrivateStoreManageListBuy(player));
             player.sendPacket(SystemMessageId.YOU_HAVE_EXCEEDED_THE_QUANTITY_THAT_CAN_BE_INPUTTED);
             return;
         }
 
         long totalCost = 0;
-        for (Item i : _items) {
+        for (Item i : items) {
             if (!i.addToTradeList(tradeList)) {
                 PunishmentManager.handleIllegalPlayerAction(
                         player,
@@ -161,27 +161,27 @@ public class SetPrivateStoreListBuy extends ClientPacket {
     }
 
     private static class Item {
-        private final int _itemId;
-        private final long _count;
-        private final long _price;
+        private final int itemId;
+        private final long count;
+        private final long price;
 
         public Item(int id, long num, long pri) {
-            _itemId = id;
-            _count = num;
-            _price = pri;
+            itemId = id;
+            count = num;
+            price = pri;
         }
 
         public boolean addToTradeList(TradeList list) {
-            if ((MAX_ADENA / _count) < _price) {
+            if ((MAX_ADENA / count) < price) {
                 return false;
             }
 
-            list.addItemByItemId(_itemId, _count, _price);
+            list.addItemByItemId(itemId, count, price);
             return true;
         }
 
         public long getCost() {
-            return _count * _price;
+            return count * price;
         }
     }
 }

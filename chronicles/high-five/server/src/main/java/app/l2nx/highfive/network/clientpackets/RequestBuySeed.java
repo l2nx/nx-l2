@@ -48,27 +48,27 @@ import java.util.Map;
  */
 public class RequestBuySeed extends ClientPacket {
     private static final int BATCH_LENGTH = 12; // length of the one item
-    private int _manorId;
-    private List<ItemHolder> _items = null;
+    private int manorId;
+    private List<ItemHolder> items = null;
 
     @Override
     protected void readImpl() {
-        _manorId = readInt();
+        manorId = readInt();
         final int count = readInt();
         if ((count <= 0) || (count > PlayerConfig.MAX_ITEM_IN_PACKET) || ((count * BATCH_LENGTH) != remaining())) {
             return;
         }
 
-        _items = new ArrayList<>(count);
+        items = new ArrayList<>(count);
         for (int i = 0; i < count; i++) {
             final int itemId = readInt();
             final long cnt = readLong();
             if ((cnt < 1) || (itemId < 1)) {
-                _items = null;
+                items = null;
                 return;
             }
 
-            _items.add(new ItemHolder(itemId, cnt));
+            items.add(new ItemHolder(itemId, cnt));
         }
     }
 
@@ -84,7 +84,7 @@ public class RequestBuySeed extends ClientPacket {
             return;
         }
 
-        if (_items == null) {
+        if (items == null) {
             player.sendPacket(ActionFailed.STATIC_PACKET);
             return;
         }
@@ -95,7 +95,7 @@ public class RequestBuySeed extends ClientPacket {
             return;
         }
 
-        final Castle castle = CastleManager.getInstance().getCastleById(_manorId);
+        final Castle castle = CastleManager.getInstance().getCastleById(manorId);
         if (castle == null) {
             player.sendPacket(ActionFailed.STATIC_PACKET);
             return;
@@ -104,7 +104,7 @@ public class RequestBuySeed extends ClientPacket {
         final Npc manager = player.getLastFolkNPC();
         if (!(manager instanceof Merchant)
                 || !manager.canInteract(player)
-                || (manager.getTemplate().getParameters().getInt("manor_id", -1) != _manorId)) {
+                || (manager.getTemplate().getParameters().getInt("manor_id", -1) != manorId)) {
             player.sendPacket(ActionFailed.STATIC_PACKET);
             return;
         }
@@ -114,8 +114,8 @@ public class RequestBuySeed extends ClientPacket {
         int totalWeight = 0;
 
         final Map<Integer, SeedProduction> productInfo = new HashMap<>();
-        for (ItemHolder ih : _items) {
-            final SeedProduction sp = manor.getSeedProduct(_manorId, ih.getId(), false);
+        for (ItemHolder ih : items) {
+            final SeedProduction sp = manor.getSeedProduct(manorId, ih.getId(), false);
             if ((sp == null)
                     || (sp.getPrice() <= 0)
                     || (sp.getAmount() < ih.getCount())
@@ -162,7 +162,7 @@ public class RequestBuySeed extends ClientPacket {
         }
 
         // Proceed the purchase
-        for (ItemHolder i : _items) {
+        for (ItemHolder i : items) {
             final SeedProduction sp = productInfo.get(i.getId());
             final long price = sp.getPrice() * i.getCount();
 
@@ -186,7 +186,7 @@ public class RequestBuySeed extends ClientPacket {
             player.sendPacket(sm);
 
             if (GeneralConfig.ALT_MANOR_SAVE_ALL_ACTIONS) {
-                manor.updateCurrentProduction(_manorId, productInfo.values());
+                manor.updateCurrentProduction(manorId, productInfo.values());
             }
         }
     }

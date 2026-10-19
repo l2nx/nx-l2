@@ -24,26 +24,24 @@ import app.l2nx.highfive.entity.item.enums.ItemLocation;
 import app.l2nx.highfive.entity.item.enums.ItemProcessType;
 import app.l2nx.highfive.entity.item.instance.Item;
 import app.l2nx.highfive.managers.ItemManager;
-import java.util.logging.Level;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author DS
  */
+@Slf4j
 public class PlayerRefund extends ItemContainer {
-    private final Player _owner;
+    @Getter
+    private final Player owner;
 
     public PlayerRefund(Player owner) {
-        _owner = owner;
+        this.owner = owner;
     }
 
     @Override
     public String getName() {
         return "Refund";
-    }
-
-    @Override
-    public Player getOwner() {
-        return _owner;
     }
 
     @Override
@@ -56,14 +54,14 @@ public class PlayerRefund extends ItemContainer {
         super.addItem(item);
         try {
             if (getSize() > 12) {
-                final Item removedItem = _items.stream().findFirst().get();
-                if (_items.remove(removedItem)) {
+                final Item removedItem = items.stream().findFirst().get();
+                if (items.remove(removedItem)) {
                     ItemManager.destroyItem(ItemProcessType.REFUND, removedItem, getOwner(), null);
                     removedItem.updateDatabase(true);
                 }
             }
         } catch (Exception e) {
-            LOGGER.log(Level.SEVERE, "addItem()", e);
+            log.error("addItem()", e);
         }
     }
 
@@ -73,17 +71,17 @@ public class PlayerRefund extends ItemContainer {
     @Override
     public void deleteMe() {
         try {
-            for (Item item : _items) {
+            for (Item item : items) {
                 if (item != null) {
                     ItemManager.destroyItem(ItemProcessType.REFUND, item, getOwner(), null);
                     item.updateDatabase(true);
                 }
             }
         } catch (Exception e) {
-            LOGGER.log(Level.SEVERE, "deleteMe()", e);
+            log.error("deleteMe()", e);
         }
 
-        _items.clear();
+        items.clear();
     }
 
     @Override

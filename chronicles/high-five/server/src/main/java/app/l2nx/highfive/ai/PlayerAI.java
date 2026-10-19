@@ -32,68 +32,66 @@ import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.mechanics.skill.targets.TargetType;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
+import lombok.Getter;
 
 public class PlayerAI extends PlayableAI {
-    private boolean _thinking; // To prevent recursive thinking.
+    private boolean thinking; // To prevent recursive thinking.
 
     // Saved intention to replay after a CAST completes (typed fields — no IntentionCommand).
-    private Intention _savedIntention = null;
-    private WorldObject _savedAttackTarget = null;
-    private ILocational _savedMoveTo = null;
-    private WorldObject _savedFollowTarget = null;
-    private WorldObject _savedPickUpTarget = null;
-    private WorldObject _savedInteractTarget = null;
-    private Skill _savedCastSkill = null;
-    private WorldObject _savedCastTarget = null;
+    @Getter
+    private Intention nextIntention = null;
+
+    private WorldObject savedAttackTarget = null;
+    private ILocational savedMoveTo = null;
+    private WorldObject savedFollowTarget = null;
+    private WorldObject savedPickUpTarget = null;
+    private WorldObject savedInteractTarget = null;
+    private Skill savedCastSkill = null;
+    private WorldObject savedCastTarget = null;
 
     public PlayerAI(Player player) {
         super(player);
     }
 
-    @Override
-    public Intention getNextIntention() {
-        return _savedIntention;
-    }
-
     private void clearSavedIntention() {
-        _savedIntention = null;
-        _savedAttackTarget = null;
-        _savedMoveTo = null;
-        _savedFollowTarget = null;
-        _savedPickUpTarget = null;
-        _savedInteractTarget = null;
-        _savedCastSkill = null;
-        _savedCastTarget = null;
+        nextIntention = null;
+        savedAttackTarget = null;
+        savedMoveTo = null;
+        savedFollowTarget = null;
+        savedPickUpTarget = null;
+        savedInteractTarget = null;
+        savedCastSkill = null;
+        savedCastTarget = null;
     }
 
     /**
      * Saves the current intention so it can be replayed once the upcoming CAST resolves.
      */
     private void saveCurrentIntentionForCast() {
-        _savedIntention = _intention;
-        _savedAttackTarget = getAttackTarget();
-        _savedCastSkill = _skill;
-        _savedCastTarget = getCastTarget();
+        nextIntention = intention;
+        savedAttackTarget = getAttackTarget();
+        savedCastSkill = skill;
+        savedCastTarget = getCastTarget();
         // Other typed targets are restored on replay via the same getters when possible.
-        _savedMoveTo = null;
-        _savedFollowTarget = getFollowTarget();
-        _savedPickUpTarget = null;
-        _savedInteractTarget = null;
+        savedMoveTo = null;
+        savedFollowTarget = getFollowTarget();
+        savedPickUpTarget = null;
+        savedInteractTarget = null;
     }
 
     private void replaySavedIntention() {
-        if (_savedIntention == null) {
+        if (nextIntention == null) {
             return;
         }
 
-        final Intention intention = _savedIntention;
-        final WorldObject attackTarget = _savedAttackTarget;
-        final ILocational moveToLoc = _savedMoveTo;
-        final WorldObject followTarget = _savedFollowTarget;
-        final WorldObject pickUpTarget = _savedPickUpTarget;
-        final WorldObject interactTarget = _savedInteractTarget;
-        final Skill castSkill = _savedCastSkill;
-        final WorldObject castTarget = _savedCastTarget;
+        final Intention intention = nextIntention;
+        final WorldObject attackTarget = savedAttackTarget;
+        final ILocational moveToLoc = savedMoveTo;
+        final WorldObject followTarget = savedFollowTarget;
+        final WorldObject pickUpTarget = savedPickUpTarget;
+        final WorldObject interactTarget = savedInteractTarget;
+        final Skill castSkill = savedCastSkill;
+        final WorldObject castTarget = savedCastTarget;
         clearSavedIntention();
 
         switch (intention) {
@@ -151,7 +149,7 @@ public class PlayerAI extends PlayableAI {
     @Override
     public void notifyActionReadyToAct() {
         // Replay any saved intention from before a CAST.
-        if (_savedIntention != null) {
+        if (nextIntention != null) {
             replaySavedIntention();
         }
 
@@ -191,8 +189,8 @@ public class PlayerAI extends PlayableAI {
     public void notifyActionFinishCasting() {
         if (getIntention() == Intention.CAST) {
             // Run interrupted or next intention.
-            if (_savedIntention != null) {
-                if (_savedIntention != Intention.CAST) {
+            if (nextIntention != null) {
+                if (nextIntention != Intention.CAST) {
                     replaySavedIntention();
                 } else {
                     clearSavedIntention();
@@ -214,7 +212,7 @@ public class PlayerAI extends PlayableAI {
         }
 
         clearSavedIntention();
-        _intention = Intention.REST;
+        intention = Intention.REST;
         setTarget(null);
         if (getAttackTarget() != null) {
             setAttackTarget(null);
@@ -246,18 +244,18 @@ public class PlayerAI extends PlayableAI {
             return;
         }
 
-        final Player player = _actor.asPlayer();
+        final Player player = actor.asPlayer();
         if (player.getDuelState() == Duel.DUELSTATE_DEAD) {
             clientActionFailed();
             player.sendPacket(new SystemMessage(SystemMessageId.YOU_CANNOT_MOVE_WHILE_FROZEN_PLEASE_WAIT));
             return;
         }
 
-        if (_actor.isAllSkillsDisabled() || _actor.isCastingNow() || _actor.isAttackingNow()) {
+        if (actor.isAllSkillsDisabled() || actor.isCastingNow() || actor.isAttackingNow()) {
             clientActionFailed();
             // Save the move-to as the next intention to replay once ready.
-            _savedIntention = Intention.MOVE_TO;
-            _savedMoveTo = loc;
+            nextIntention = Intention.MOVE_TO;
+            savedMoveTo = loc;
             return;
         }
 
@@ -265,13 +263,13 @@ public class PlayerAI extends PlayableAI {
 
         // Set the Intention of this AbstractAI to MOVE_TO.
         clearSavedIntention();
-        _intention = Intention.MOVE_TO;
+        intention = Intention.MOVE_TO;
 
         // Stop the actor auto-attack client side by sending Server->Client packet AutoAttackStop (broadcast).
         clientStopAutoAttack();
 
         // Abort the attack of the Creature and send Server->Client ActionFailed packet.
-        _actor.abortAttack();
+        actor.abortAttack();
 
         // Move the actor to Location (x,y,z) server side AND client side by sending Server->Client packet
         // MoveToLocation (broadcast).
@@ -283,7 +281,7 @@ public class PlayerAI extends PlayableAI {
         // Forget next if it's not cast or it's cast and skill is toggle.
         if ((skill == null) || !skill.isToggle()) {
             // New non-toggle cast: clear any stale saved intention and remember the current one if it differs.
-            if (_intention != Intention.CAST) {
+            if (intention != Intention.CAST) {
                 saveCurrentIntentionForCast();
             }
         }
@@ -293,7 +291,7 @@ public class PlayerAI extends PlayableAI {
 
     @Override
     protected void clientNotifyDead() {
-        _clientMovingToPawnOffset = 0;
+        clientMovingToPawnOffset = 0;
         super.clientNotifyDead();
     }
 
@@ -309,57 +307,57 @@ public class PlayerAI extends PlayableAI {
             return;
         }
 
-        if (maybeMoveToPawn(target, _actor.getPhysicalAttackRange())) {
+        if (maybeMoveToPawn(target, actor.getPhysicalAttackRange())) {
             return;
         }
 
         clientStopMoving(null);
-        _actor.doAttack(target);
+        actor.doAttack(target);
     }
 
     private void thinkCast() {
         final Creature target = getCastTarget();
-        if ((_skill.getTargetType() == TargetType.GROUND) && _actor.isPlayer()) {
+        if ((skill.getTargetType() == TargetType.GROUND) && actor.isPlayer()) {
             if (maybeMoveToPosition(
-                    _actor.asPlayer().getCurrentSkillWorldPosition(), _actor.getMagicalAttackRange(_skill))) {
-                _actor.setCastingNow(false);
+                    actor.asPlayer().getCurrentSkillWorldPosition(), actor.getMagicalAttackRange(skill))) {
+                actor.setCastingNow(false);
                 return;
             }
         } else {
             if (checkTargetLost(target)) {
-                if (_skill.hasNegativeEffect() && (getAttackTarget() != null)) {
+                if (skill.hasNegativeEffect() && (getAttackTarget() != null)) {
                     // Notify the target
                     setCastTarget(null);
                 }
 
-                _actor.setCastingNow(false);
+                actor.setCastingNow(false);
                 return;
             }
 
-            if ((target != null) && maybeMoveToPawn(target, _actor.getMagicalAttackRange(_skill))) {
-                _actor.setCastingNow(false);
+            if ((target != null) && maybeMoveToPawn(target, actor.getMagicalAttackRange(skill))) {
+                actor.setCastingNow(false);
                 return;
             }
         }
 
-        if ((_skill.getHitTime() > 50) && !_skill.isSimultaneousCast()) {
+        if ((skill.getHitTime() > 50) && !skill.isSimultaneousCast()) {
             clientStopMoving(null);
         }
 
         // Check if target has changed.
-        final WorldObject currentTarget = _actor.getTarget();
+        final WorldObject currentTarget = actor.getTarget();
         if ((currentTarget != target) && (currentTarget != null) && (target != null)) {
-            _actor.setTarget(target);
-            _actor.doCast(_skill);
-            _actor.setTarget(currentTarget);
+            actor.setTarget(target);
+            actor.doCast(skill);
+            actor.setTarget(currentTarget);
             return;
         }
 
-        _actor.doCast(_skill);
+        actor.doCast(skill);
     }
 
     private void thinkPickUp() {
-        if (_actor.isAllSkillsDisabled() || _actor.isCastingNow()) {
+        if (actor.isAllSkillsDisabled() || actor.isCastingNow()) {
             return;
         }
 
@@ -369,11 +367,11 @@ public class PlayerAI extends PlayableAI {
         }
 
         setIntentionIdle();
-        _actor.asPlayer().doPickupItem(target);
+        actor.asPlayer().doPickupItem(target);
     }
 
     private void thinkInteract() {
-        if (_actor.isAllSkillsDisabled() || _actor.isCastingNow()) {
+        if (actor.isAllSkillsDisabled() || actor.isCastingNow()) {
             return;
         }
 
@@ -383,7 +381,7 @@ public class PlayerAI extends PlayableAI {
         }
 
         if (!(target instanceof StaticObject)) {
-            _actor.asPlayer().doInteract(target.asCreature());
+            actor.asPlayer().doInteract(target.asCreature());
         }
 
         setIntentionIdle();
@@ -391,11 +389,11 @@ public class PlayerAI extends PlayableAI {
 
     @Override
     public void notifyActionThink() {
-        if (_thinking && (getIntention() != Intention.CAST)) {
+        if (thinking && (getIntention() != Intention.CAST)) {
             return;
         }
 
-        _thinking = true;
+        thinking = true;
         try {
             if (getIntention() == Intention.ATTACK) {
                 thinkAttack();
@@ -407,7 +405,7 @@ public class PlayerAI extends PlayableAI {
                 thinkInteract();
             }
         } finally {
-            _thinking = false;
+            thinking = false;
         }
     }
 }

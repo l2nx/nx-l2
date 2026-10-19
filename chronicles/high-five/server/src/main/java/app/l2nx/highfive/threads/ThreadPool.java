@@ -34,7 +34,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 
 /**
@@ -48,8 +48,8 @@ import org.apache.commons.lang3.exception.ExceptionUtils;
  * </ul>
  * @author Mobius
  */
+@Slf4j
 public class ThreadPool {
-    private static final Logger LOGGER = Logger.getLogger(ThreadPool.class.getName());
 
     // Constants.
     private static final long ONE_HUNDRED_YEARS_MS = 3155695200000L;
@@ -66,7 +66,7 @@ public class ThreadPool {
      * Initializes thread pool executors and starts maintenance tasks.
      */
     public static void init() {
-        LOGGER.info("ThreadPool: Initializing.");
+        log.info("Initializing.");
 
         // Load configurations.
         ThreadConfig.load();
@@ -77,8 +77,9 @@ public class ThreadPool {
                     ThreadConfig.HIGH_PRIORITY_SCHEDULED_THREAD_POOL_SIZE,
                     new ThreadProvider("l2nx High Priority ScheduledThread", ThreadPriority.PRIORITY_8),
                     new ThreadPoolExecutor.CallerRunsPolicy());
-            LOGGER.info("...scheduled pool executor with " + ThreadConfig.HIGH_PRIORITY_SCHEDULED_THREAD_POOL_SIZE
-                    + " high priority threads.");
+            log.info(
+                    "...scheduled pool executor with {} high priority threads.",
+                    ThreadConfig.HIGH_PRIORITY_SCHEDULED_THREAD_POOL_SIZE);
         }
 
         // Configure ScheduledThreadPoolExecutor.
@@ -105,8 +106,8 @@ public class ThreadPool {
         scheduleAtFixedRate(ThreadPool::purge, PURGE_INTERVAL_MS, PURGE_INTERVAL_MS);
 
         // Log thread pool configuration.
-        LOGGER.info("...scheduled pool executor with " + ThreadConfig.SCHEDULED_THREAD_POOL_SIZE + " total threads.");
-        LOGGER.info("...instant pool executor with " + ThreadConfig.INSTANT_THREAD_POOL_SIZE + " total threads.");
+        log.info("...scheduled pool executor with {} total threads.", ThreadConfig.SCHEDULED_THREAD_POOL_SIZE);
+        log.info("...instant pool executor with {} total threads.", ThreadConfig.INSTANT_THREAD_POOL_SIZE);
     }
 
     /**
@@ -142,9 +143,13 @@ public class ThreadPool {
         try {
             return SCHEDULED_POOL.schedule(new RunnableWrapper(runnable), validateDelay(delay), TimeUnit.MILLISECONDS);
         } catch (Exception e) {
-            LOGGER.warning("ThreadPool: Failed to schedule task "
-                    + runnable.getClass().getSimpleName() + " with delay " + delay + "ms: " + e.getMessage()
-                    + System.lineSeparator() + ExceptionUtils.getStackTrace(e));
+            log.warn(
+                    "Failed to schedule task {} with delay {}ms: {}{}{}",
+                    runnable.getClass().getSimpleName(),
+                    delay,
+                    e.getMessage(),
+                    System.lineSeparator(),
+                    ExceptionUtils.getStackTrace(e));
             return null;
         }
     }
@@ -164,9 +169,14 @@ public class ThreadPool {
                     validateDelay(period),
                     TimeUnit.MILLISECONDS);
         } catch (Exception e) {
-            LOGGER.warning("ThreadPool: Failed to schedule recurring task "
-                    + runnable.getClass().getSimpleName() + " with initial delay " + initialDelay + "ms and period "
-                    + period + "ms: " + e.getMessage() + System.lineSeparator() + ExceptionUtils.getStackTrace(e));
+            log.warn(
+                    "Failed to schedule recurring task {} with initial delay {}ms and period {}ms: {}{}{}",
+                    runnable.getClass().getSimpleName(),
+                    initialDelay,
+                    period,
+                    e.getMessage(),
+                    System.lineSeparator(),
+                    ExceptionUtils.getStackTrace(e));
             return null;
         }
     }
@@ -192,9 +202,14 @@ public class ThreadPool {
                     validateDelay(period),
                     TimeUnit.MILLISECONDS);
         } catch (Exception e) {
-            LOGGER.warning("ThreadPool: Failed to schedule high priority task "
-                    + runnable.getClass().getSimpleName() + " with initial delay " + initialDelay + "ms and period "
-                    + period + "ms: " + e.getMessage() + System.lineSeparator() + ExceptionUtils.getStackTrace(e));
+            log.warn(
+                    "Failed to schedule high priority task {} with initial delay {}ms and period {}ms: {}{}{}",
+                    runnable.getClass().getSimpleName(),
+                    initialDelay,
+                    period,
+                    e.getMessage(),
+                    System.lineSeparator(),
+                    ExceptionUtils.getStackTrace(e));
             return null;
         }
     }
@@ -207,9 +222,12 @@ public class ThreadPool {
         try {
             INSTANT_POOL.execute(new RunnableWrapper(runnable));
         } catch (Exception e) {
-            LOGGER.warning(
-                    "ThreadPool: Failed to execute task " + runnable.getClass().getSimpleName() + ": " + e.getMessage()
-                            + System.lineSeparator() + ExceptionUtils.getStackTrace(e));
+            log.warn(
+                    "Failed to execute task {}: {}{}{}",
+                    runnable.getClass().getSimpleName(),
+                    e.getMessage(),
+                    System.lineSeparator(),
+                    ExceptionUtils.getStackTrace(e));
         }
     }
 
@@ -220,16 +238,16 @@ public class ThreadPool {
      */
     private static long validateDelay(long delay) {
         if (delay < MIN_DELAY_MS) {
-            LOGGER.warning("ThreadPool: Invalid delay " + delay + "ms is below minimum, using " + MIN_DELAY_MS
-                    + "ms instead.");
-            LOGGER.warning(ExceptionUtils.getStackTrace(new Exception()));
+            log.warn("Invalid delay {}ms is below minimum, using {}ms instead.", delay, MIN_DELAY_MS, new Exception());
             return MIN_DELAY_MS;
         }
 
         if (delay > ONE_HUNDRED_YEARS_MS) {
-            LOGGER.warning("ThreadPool: Invalid delay " + delay + "ms exceeds maximum, using " + ONE_HUNDRED_YEARS_MS
-                    + "ms instead.");
-            LOGGER.warning(ExceptionUtils.getStackTrace(new Exception()));
+            log.warn(
+                    "Invalid delay {}ms exceeds maximum, using {}ms instead.",
+                    delay,
+                    ONE_HUNDRED_YEARS_MS,
+                    new Exception());
             return ONE_HUNDRED_YEARS_MS;
         }
 
@@ -241,14 +259,14 @@ public class ThreadPool {
      */
     public static void shutdown() {
         try {
-            LOGGER.info("ThreadPool: Shutting down all thread pools.");
+            log.info("Shutting down all thread pools.");
             SCHEDULED_POOL.shutdownNow();
             INSTANT_POOL.shutdownNow();
             if (HIGH_PRIORITY_SCHEDULED_POOL != null) {
                 HIGH_PRIORITY_SCHEDULED_POOL.shutdownNow();
             }
         } catch (Throwable t) {
-            LOGGER.warning("ThreadPool: Exception occurred during shutdown: " + t.getMessage());
+            log.warn("Exception occurred during shutdown: {}", t.getMessage());
         }
     }
 
@@ -256,8 +274,8 @@ public class ThreadPool {
      * Handles tasks rejected by ThreadPoolExecutor by running them in new thread or current thread.<br>
      * Decision based on current thread priority to prevent blocking high priority operations.
      */
+    @Slf4j
     private static class RejectedExecutionHandlerImpl implements RejectedExecutionHandler {
-        private static final Logger LOGGER = Logger.getLogger(RejectedExecutionHandlerImpl.class.getName());
 
         @Override
         public void rejectedExecution(Runnable runnable, ThreadPoolExecutor executor) {
@@ -265,8 +283,10 @@ public class ThreadPool {
                 return;
             }
 
-            LOGGER.warning("ThreadPool: Task " + runnable.getClass().getSimpleName() + " rejected by executor "
-                    + executor + ", attempting recovery execution.");
+            log.warn(
+                    "Task {} rejected by executor {}, attempting recovery execution.",
+                    runnable.getClass().getSimpleName(),
+                    executor);
 
             // Run in new thread for high priority contexts, current thread otherwise.
             if (Thread.currentThread().getPriority() > Thread.NORM_PRIORITY) {
@@ -282,20 +302,20 @@ public class ThreadPool {
      * Passes exceptions to the thread's uncaught exception handler for proper error management.
      */
     private static class RunnableWrapper implements Runnable {
-        private final Runnable _wrappedRunnable;
+        private final Runnable wrappedRunnable;
 
         /**
          * Creates a new RunnableWrapper for the specified runnable.
          * @param runnable the runnable to wrap
          */
         public RunnableWrapper(Runnable runnable) {
-            _wrappedRunnable = runnable;
+            wrappedRunnable = runnable;
         }
 
         @Override
         public void run() {
             try {
-                _wrappedRunnable.run();
+                wrappedRunnable.run();
             } catch (Throwable t) {
                 final Thread currentThread = Thread.currentThread();
                 final UncaughtExceptionHandler exceptionHandler = currentThread.getUncaughtExceptionHandler();

@@ -31,13 +31,13 @@ import app.l2nx.highfive.network.serverpackets.RecipeShopItemInfo;
  * @version $Revision: 1.1.2.1.2.2 $ $Date: 2005/03/27 15:29:30 $
  */
 public class RequestRecipeShopMakeInfo extends ClientPacket {
-    private int _playerObjectId;
-    private int _recipeId;
+    private int playerObjectId;
+    private int recipeId;
 
     @Override
     protected void readImpl() {
-        _playerObjectId = readInt();
-        _recipeId = readInt();
+        playerObjectId = readInt();
+        recipeId = readInt();
     }
 
     @Override
@@ -47,11 +47,11 @@ public class RequestRecipeShopMakeInfo extends ClientPacket {
             return;
         }
 
-        final Player shop = World.getPlayer(_playerObjectId);
+        final Player shop = World.getPlayer(playerObjectId);
         if ((shop == null) || (shop.getPrivateStoreType() != PrivateStoreType.MANUFACTURE)) {
             return;
         }
 
-        player.sendPacket(new RecipeShopItemInfo(shop, _recipeId));
+        player.sendPacket(new RecipeShopItemInfo(shop, recipeId));
     }
 }

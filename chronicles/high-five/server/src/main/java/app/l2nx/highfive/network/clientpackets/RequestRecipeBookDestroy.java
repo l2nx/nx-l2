@@ -28,11 +28,11 @@ import app.l2nx.highfive.entity.item.recipe.RecipeList;
 import app.l2nx.highfive.network.serverpackets.RecipeBookItemList;
 
 public class RequestRecipeBookDestroy extends ClientPacket {
-    private int _recipeID;
+    private int recipeID;
 
     @Override
     protected void readImpl() {
-        _recipeID = readInt();
+        recipeID = readInt();
     }
 
     @Override
@@ -46,12 +46,12 @@ public class RequestRecipeBookDestroy extends ClientPacket {
             return;
         }
 
-        final RecipeList rp = RecipeData.getInstance().getRecipeList(_recipeID);
+        final RecipeList rp = RecipeData.getInstance().getRecipeList(recipeID);
         if (rp == null) {
             return;
         }
 
-        player.unregisterRecipeList(_recipeID);
+        player.unregisterRecipeList(recipeID);
 
         final RecipeBookItemList response = new RecipeBookItemList(rp.isDwarvenRecipe(), player.getMaxMp());
         if (rp.isDwarvenRecipe()) {

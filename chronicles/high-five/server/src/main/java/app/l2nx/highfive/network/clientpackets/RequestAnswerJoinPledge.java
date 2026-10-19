@@ -39,11 +39,11 @@ import app.l2nx.highfive.network.serverpackets.SystemMessage;
  * @version $Revision: 1.4.2.1.2.3 $ $Date: 2005/03/27 15:29:30 $
  */
 public class RequestAnswerJoinPledge extends ClientPacket {
-    private int _answer;
+    private int answer;
 
     @Override
     protected void readImpl() {
-        _answer = readInt();
+        answer = readInt();
     }
 
     @Override
@@ -58,7 +58,7 @@ public class RequestAnswerJoinPledge extends ClientPacket {
             return;
         }
 
-        if (_answer == 0) {
+        if (answer == 0) {
             SystemMessage sm =
                     new SystemMessage(SystemMessageId.YOU_DIDN_T_RESPOND_TO_S1_S_INVITATION_JOINING_HAS_BEEN_CANCELLED);
             sm.addString(requestor.getName());

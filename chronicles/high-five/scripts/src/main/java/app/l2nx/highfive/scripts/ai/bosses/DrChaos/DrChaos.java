@@ -86,8 +86,8 @@ public class DrChaos extends Script {
     private static final int MILLIS_PER_HOUR = 3600000;
 
     // Runtime state.
-    private long _lastGolemAttackTime = 0;
-    private int _paranoiaCountdown;
+    private long lastGolemAttackTime = 0;
+    private int paranoiaCountdown;
 
     /**
      * Instantiates the Dr. Chaos AI and restores boss state from persistent storage.
@@ -132,7 +132,7 @@ public class DrChaos extends Script {
                 golem.setCurrentHpMp(currentHp, currentMp);
                 golem.setRunning();
 
-                _lastGolemAttackTime = System.currentTimeMillis();
+                lastGolemAttackTime = System.currentTimeMillis();
                 startQuestTimer("golem_despawn", GOLEM_DESPAWN_CHECK_DELAY_MS, golem, null, true);
             } else {
                 // Missing StatSet for CRAZY status, fallback to NORMAL spawn.
@@ -163,7 +163,7 @@ public class DrChaos extends Script {
                 // Despawn the Chaos Golem after 30 minutes of inactivity since last hit.
                 if ((npc != null)
                         && (npc.getId() == CHAOS_GOLEM_NPC_ID)
-                        && ((_lastGolemAttackTime + GOLEM_INACTIVITY_LIMIT_MS) < System.currentTimeMillis())) {
+                        && ((lastGolemAttackTime + GOLEM_INACTIVITY_LIMIT_MS) < System.currentTimeMillis())) {
                     final Npc chaos = addSpawn(DOCTOR_CHAOS_NPC_ID, CHAOS_SPAWN_LOCATION, false, 0, false);
                     GrandBossManager.getInstance().setStatus(CHAOS_GOLEM_NPC_ID, STATUS_NORMAL);
 
@@ -202,7 +202,7 @@ public class DrChaos extends Script {
                 golem.broadcastPacket(new SocialAction(npc.getObjectId(), 1));
                 golem.broadcastPacket(new PlaySound(1, "Rm03_A", 0, 0, 0, 0, 0));
 
-                _lastGolemAttackTime = System.currentTimeMillis();
+                lastGolemAttackTime = System.currentTimeMillis();
                 startQuestTimer("golem_despawn", GOLEM_DESPAWN_CHECK_DELAY_MS, golem, null, true);
 
                 npc.deleteMe();
@@ -215,14 +215,14 @@ public class DrChaos extends Script {
                             return;
                         }
 
-                        _paranoiaCountdown -= 1;
+                        paranoiaCountdown -= 1;
 
-                        if (_paranoiaCountdown == PARANOIA_FIRST_MESSAGE_THRESHOLD) {
+                        if (paranoiaCountdown == PARANOIA_FIRST_MESSAGE_THRESHOLD) {
                             npc.broadcastSay(
                                     ChatType.NPC_GENERAL, "How dare you trespass into my territory! Have you no fear?");
                         }
 
-                        if (_paranoiaCountdown <= 0) {
+                        if (paranoiaCountdown <= 0) {
                             crazyMidgetBecomesAngry(npc);
                         }
                     });
@@ -262,20 +262,20 @@ public class DrChaos extends Script {
     public String onFirstTalk(Npc npc, Player player) {
         String htmlText = "";
         if (GrandBossManager.getInstance().getStatus(CHAOS_GOLEM_NPC_ID) == STATUS_NORMAL) {
-            _paranoiaCountdown -= 1 + getRandom(5);
+            paranoiaCountdown -= 1 + getRandom(5);
 
-            if ((_paranoiaCountdown > PARANOIA_SECOND_MESSAGE_UPPER_BOUND)
-                    && (_paranoiaCountdown <= PARANOIA_INITIAL_TIME_SECONDS)) {
+            if ((paranoiaCountdown > PARANOIA_SECOND_MESSAGE_UPPER_BOUND)
+                    && (paranoiaCountdown <= PARANOIA_INITIAL_TIME_SECONDS)) {
                 htmlText =
                         "<html><body>Doctor Chaos:<br>What?! Who are you? How did you come here?<br>You really look suspicious... Aren't those filthy members of Black Anvil guild send you? No? Mhhhhh... I don't trust you!</body></html>";
-            } else if ((_paranoiaCountdown > PARANOIA_THIRD_MESSAGE_UPPER_BOUND)
-                    && (_paranoiaCountdown <= PARANOIA_SECOND_MESSAGE_UPPER_BOUND)) {
+            } else if ((paranoiaCountdown > PARANOIA_THIRD_MESSAGE_UPPER_BOUND)
+                    && (paranoiaCountdown <= PARANOIA_SECOND_MESSAGE_UPPER_BOUND)) {
                 htmlText =
                         "<html><body>Doctor Chaos:<br>Why are you standing here? Don't you see it's a private propertie? Don't look at him with those eyes... Did you smile?! Don't make fun of me! He will ... destroy ... you ... if you continue!</body></html>";
-            } else if ((_paranoiaCountdown > 0) && (_paranoiaCountdown <= PARANOIA_THIRD_MESSAGE_UPPER_BOUND)) {
+            } else if ((paranoiaCountdown > 0) && (paranoiaCountdown <= PARANOIA_THIRD_MESSAGE_UPPER_BOUND)) {
                 htmlText =
                         "<html><body>Doctor Chaos:<br>I know why you are here, traitor! He discovered your plans! You are assassin ... sent by the Black Anvil guild! But you won't kill the Emperor of Evil!</body></html>";
-            } else if (_paranoiaCountdown <= 0) {
+            } else if (paranoiaCountdown <= 0) {
                 crazyMidgetBecomesAngry(npc);
             }
         }
@@ -289,7 +289,7 @@ public class DrChaos extends Script {
      */
     @Override
     public void onSpawn(Npc npc) {
-        _paranoiaCountdown = PARANOIA_INITIAL_TIME_SECONDS;
+        paranoiaCountdown = PARANOIA_INITIAL_TIME_SECONDS;
 
         startQuestTimer("paranoia_activity", PARANOIA_TICK_DELAY_MS, npc, null, true);
 
@@ -339,7 +339,7 @@ public class DrChaos extends Script {
             return;
         }
 
-        _lastGolemAttackTime = System.currentTimeMillis();
+        lastGolemAttackTime = System.currentTimeMillis();
 
         final int chance = getRandom(300);
         if (chance < 3) {

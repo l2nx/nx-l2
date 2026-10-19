@@ -31,15 +31,15 @@ import app.l2nx.highfive.network.serverpackets.ExGetPremiumItemList;
  * @author Gnacik
  */
 public class RequestWithDrawPremiumItem extends ClientPacket {
-    private int _itemNum;
-    private int _charId;
-    private long _itemCount;
+    private int itemNum;
+    private int charId;
+    private long itemCount;
 
     @Override
     protected void readImpl() {
-        _itemNum = readInt();
-        _charId = readInt();
-        _itemCount = readLong();
+        itemNum = readInt();
+        charId = readInt();
+        itemCount = readLong();
     }
 
     @Override
@@ -47,9 +47,9 @@ public class RequestWithDrawPremiumItem extends ClientPacket {
         final Player player = getPlayer();
         if (player == null) {
             return;
-        } else if (_itemCount < 1) {
+        } else if (itemCount < 1) {
             return;
-        } else if (player.getObjectId() != _charId) {
+        } else if (player.getObjectId() != charId) {
             PunishmentManager.handleIllegalPlayerAction(
                     player,
                     "[RequestWithDrawPremiumItem] Incorrect owner, Player: " + player.getName(),
@@ -71,21 +71,21 @@ public class RequestWithDrawPremiumItem extends ClientPacket {
             return;
         }
 
-        final PremiumItem item = player.getPremiumItemList().get(_itemNum);
+        final PremiumItem item = player.getPremiumItemList().get(itemNum);
         if (item == null) {
             return;
-        } else if (item.getCount() < _itemCount) {
+        } else if (item.getCount() < itemCount) {
             return;
         }
 
-        final long itemsLeft = (item.getCount() - _itemCount);
-        player.addItem(ItemProcessType.TRANSFER, item.getItemId(), _itemCount, player.getTarget(), true);
+        final long itemsLeft = (item.getCount() - itemCount);
+        player.addItem(ItemProcessType.TRANSFER, item.getItemId(), itemCount, player.getTarget(), true);
         if (itemsLeft > 0) {
             item.updateCount(itemsLeft);
-            player.updatePremiumItem(_itemNum, itemsLeft);
+            player.updatePremiumItem(itemNum, itemsLeft);
         } else {
-            player.getPremiumItemList().remove(_itemNum);
-            player.deletePremiumItem(_itemNum);
+            player.getPremiumItemList().remove(itemNum);
+            player.deletePremiumItem(itemNum);
         }
 
         if (player.getPremiumItemList().isEmpty()) {

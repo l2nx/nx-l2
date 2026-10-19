@@ -34,14 +34,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author Mobius
  */
+@Slf4j
 public class ZoneBuildManager {
-    private static final Logger LOGGER = Logger.getLogger(ZoneBuildManager.class.getName());
 
     private static final String HTML_DELETE_BUTTON =
             "<button value=\"Delete\" action=\"bypass -h admin_zone_build_delete %d\" width=65 height=21 back=\"L2UI_CT1.Button_DF_Down\" fore=\"L2UI_CT1.Button_DF\">";
@@ -199,7 +198,7 @@ public class ZoneBuildManager {
             player.sendMessage("Zone saved at " + fileName);
             AdminCommandHandler.getInstance().onCommand(player, "admin_zone_build_clear", false);
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, getClass().getSimpleName() + ": Failed to save zone file " + fileName + ": ", e);
+            log.warn("Failed to save zone file {}: ", fileName, e);
             player.sendMessage("Failed to save zone: " + e.getMessage());
         }
     }

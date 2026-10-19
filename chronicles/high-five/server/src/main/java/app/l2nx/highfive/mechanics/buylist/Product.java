@@ -25,88 +25,81 @@ import app.l2nx.highfive.taskmanagers.BuyListTaskManager;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author NosBit
  */
+@Slf4j
 public class Product {
-    private static final Logger LOGGER = Logger.getLogger(Product.class.getName());
 
-    private final int _buyListId;
-    private final ItemTemplate _item;
-    private final long _price;
-    private final long _restockDelay;
-    private final long _maxCount;
-    private AtomicLong _count = null;
+    @Getter
+    private final int buyListId;
+
+    @Getter
+    private final ItemTemplate item;
+
+    private final long price;
+
+    @Getter
+    private final long restockDelay;
+
+    @Getter
+    private final long maxCount;
+
+    private AtomicLong count = null;
 
     public Product(int buyListId, ItemTemplate item, long price, long restockDelay, long maxCount) {
-        _buyListId = buyListId;
-        _item = item;
-        _price = price;
-        _restockDelay = restockDelay * 60000;
-        _maxCount = maxCount;
+        this.buyListId = buyListId;
+        this.item = item;
+        this.price = price;
+        this.restockDelay = restockDelay * 60000;
+        this.maxCount = maxCount;
         if (hasLimitedStock()) {
-            _count = new AtomicLong(maxCount);
+            count = new AtomicLong(maxCount);
         }
-    }
-
-    public int getBuyListId() {
-        return _buyListId;
-    }
-
-    public ItemTemplate getItem() {
-        return _item;
     }
 
     public int getItemId() {
-        return _item.getId();
+        return item.getId();
     }
 
     public long getPrice() {
-        return _price < 0 ? _item.getReferencePrice() : _price;
-    }
-
-    public long getRestockDelay() {
-        return _restockDelay;
-    }
-
-    public long getMaxCount() {
-        return _maxCount;
+        return price < 0 ? item.getReferencePrice() : price;
     }
 
     public long getCount() {
-        if (_count == null) {
+        if (this.count == null) {
             return 0;
         }
 
-        final long count = _count.get();
+        final long count = this.count.get();
         return count > 0 ? count : 0;
     }
 
     public void setCount(long currentCount) {
-        if (_count == null) {
-            _count = new AtomicLong();
+        if (count == null) {
+            count = new AtomicLong();
         }
 
-        _count.set(currentCount);
+        count.set(currentCount);
     }
 
     public boolean decreaseCount(long value) {
-        if (_count == null) {
+        if (count == null) {
             return false;
         }
 
-        BuyListTaskManager.getInstance().add(this, System.currentTimeMillis() + _restockDelay);
+        BuyListTaskManager.getInstance().add(this, System.currentTimeMillis() + restockDelay);
 
-        final boolean result = _count.addAndGet(-value) >= 0;
+        final boolean result = count.addAndGet(-value) >= 0;
         save();
         return result;
     }
 
     public boolean hasLimitedStock() {
-        return _maxCount > -1;
+        return maxCount > -1;
     }
 
     public void restartRestockTask(long nextRestockTime) {
@@ -119,7 +112,7 @@ public class Product {
     }
 
     public void restock() {
-        setCount(_maxCount);
+        setCount(maxCount);
         save();
     }
 
@@ -127,8 +120,8 @@ public class Product {
         try (Connection con = DatabaseFactory.getConnection();
                 PreparedStatement statement = con.prepareStatement(
                         "INSERT INTO `buylists`(`buylist_id`, `item_id`, `count`, `next_restock_time`) VALUES(?, ?, ?, ?) ON DUPLICATE KEY UPDATE `count` = ?, `next_restock_time` = ?")) {
-            statement.setInt(1, _buyListId);
-            statement.setInt(2, _item.getId());
+            statement.setInt(1, buyListId);
+            statement.setInt(2, item.getId());
             statement.setLong(3, getCount());
             statement.setLong(5, getCount());
 
@@ -143,8 +136,7 @@ public class Product {
 
             statement.executeUpdate();
         } catch (Exception e) {
-            LOGGER.log(
-                    Level.WARNING, "Failed to save Product buylist_id:" + _buyListId + " item_id:" + _item.getId(), e);
+            log.warn("Failed to save Product buylist_id:{} item_id:{}", buyListId, item.getId(), e);
         }
     }
 }

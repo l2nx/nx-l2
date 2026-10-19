@@ -38,26 +38,26 @@ import java.util.List;
  * @author mrTJO, UnAfraid
  */
 public class FriendListExtended extends ServerPacket {
-    private final List<FriendInfo> _info;
+    private final List<FriendInfo> info;
 
     private static class FriendInfo {
-        int _objId;
-        String _name;
-        boolean _online;
-        int _classid;
-        int _level;
+        int objId;
+        String name;
+        boolean online;
+        int classid;
+        int level;
 
         public FriendInfo(int objId, String name, boolean online, int classid, int level) {
-            _objId = objId;
-            _name = name;
-            _online = online;
-            _classid = classid;
-            _level = level;
+            this.objId = objId;
+            this.name = name;
+            this.online = online;
+            this.classid = classid;
+            this.level = level;
         }
     }
 
     public FriendListExtended(Player player) {
-        _info = new ArrayList<>(player.getFriendList().size());
+        info = new ArrayList<>(player.getFriendList().size());
         for (int objId : player.getFriendList()) {
             final String name = CharInfoTable.getInstance().getNameById(objId);
             final Player player1 = World.getPlayer(objId);
@@ -71,7 +71,7 @@ public class FriendListExtended extends ServerPacket {
                     statement.setInt(1, objId);
                     try (ResultSet rset = statement.executeQuery()) {
                         if (rset.next()) {
-                            _info.add(new FriendInfo(
+                            info.add(new FriendInfo(
                                     objId, rset.getString(1), rset.getInt(2) == 1, rset.getInt(3), rset.getInt(4)));
                         }
                     }
@@ -87,21 +87,21 @@ public class FriendListExtended extends ServerPacket {
 
             classid = player1.getPlayerClass().getId();
             level = player1.getLevel();
-            _info.add(new FriendInfo(objId, name, online, classid, level));
+            info.add(new FriendInfo(objId, name, online, classid, level));
         }
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.FRIEND_LIST.writeId(this, buffer);
-        buffer.writeInt(_info.size());
-        for (FriendInfo info : _info) {
-            buffer.writeInt(info._objId); // character id
-            buffer.writeString(info._name);
-            buffer.writeInt(info._online); // online
-            buffer.writeInt(info._online ? info._objId : 0); // object id if online
-            buffer.writeInt(info._classid);
-            buffer.writeInt(info._level);
+        buffer.writeInt(this.info.size());
+        for (FriendInfo info : this.info) {
+            buffer.writeInt(info.objId); // character id
+            buffer.writeString(info.name);
+            buffer.writeInt(info.online); // online
+            buffer.writeInt(info.online ? info.objId : 0); // object id if online
+            buffer.writeInt(info.classid);
+            buffer.writeInt(info.level);
         }
     }
 }

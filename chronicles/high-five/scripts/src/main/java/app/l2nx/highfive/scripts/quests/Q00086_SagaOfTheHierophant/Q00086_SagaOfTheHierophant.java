@@ -29,15 +29,15 @@ import app.l2nx.highfive.scripts.quests.AbstractSagaQuest;
 public class Q00086_SagaOfTheHierophant extends AbstractSagaQuest {
     public Q00086_SagaOfTheHierophant() {
         super(86);
-        _npc = new int[] {30191, 31626, 31588, 31280, 31591, 31646, 31648, 31652, 31654, 31655, 31659, 31280};
-        _items = new int[] {7080, 7523, 7081, 7501, 7284, 7315, 7346, 7377, 7408, 7439, 7089, 0};
-        _mob = new int[] {27269, 27235, 27275};
-        _classId = new int[] {98};
-        _prevClass = new int[] {0x11};
-        _npcSpawnLocations = new Location[] {
+        npc = new int[] {30191, 31626, 31588, 31280, 31591, 31646, 31648, 31652, 31654, 31655, 31659, 31280};
+        items = new int[] {7080, 7523, 7081, 7501, 7284, 7315, 7346, 7377, 7408, 7439, 7089, 0};
+        mob = new int[] {27269, 27235, 27275};
+        classId = new int[] {98};
+        prevClass = new int[] {0x11};
+        npcSpawnLocations = new Location[] {
             new Location(161719, -92823, -1893), new Location(124355, 82155, -2803), new Location(124376, 82127, -2796)
         };
-        _text = new String[] {
+        text = new String[] {
             "PLAYERNAME! Pursued to here! However, I jumped out of the Banshouren boundaries! You look at the giant as the sign of power!",
             "... Oh ... good! So it was ... let's begin!",
             "I do not have the patience ..! I have been a giant force ...! Cough chatter ah ah ah!",

@@ -28,11 +28,13 @@ import app.l2nx.highfive.mechanics.skill.holders.SkillHolder;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.serverpackets.ActionFailed;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Template for item skills handler.
  * @author Zoey76
  */
+@Slf4j
 public class ItemSkillsTemplate implements IItemHandler {
     @Override
     public boolean onItemUse(Playable playable, Item item, boolean forceUse) {
@@ -58,7 +60,7 @@ public class ItemSkillsTemplate implements IItemHandler {
 
         final SkillHolder[] skills = item.getEtcItem().getSkills();
         if (skills == null) {
-            LOGGER.info("Item " + item + " does not have registered any skill for handler.");
+            log.info("Item {} does not have registered any skill for handler.", item);
             return false;
         }
 

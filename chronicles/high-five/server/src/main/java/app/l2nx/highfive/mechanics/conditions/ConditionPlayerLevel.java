@@ -28,18 +28,18 @@ import app.l2nx.highfive.mechanics.skill.Skill;
  * @author mkizub
  */
 public class ConditionPlayerLevel extends Condition {
-    private final int _level;
+    private final int level;
 
     /**
      * Instantiates a new condition player level.
      * @param level the level
      */
     public ConditionPlayerLevel(int level) {
-        _level = level;
+        this.level = level;
     }
 
     @Override
     public boolean testImpl(Creature effector, Creature effected, Skill skill, ItemTemplate item) {
-        return effector.getLevel() >= _level;
+        return effector.getLevel() >= level;
     }
 }

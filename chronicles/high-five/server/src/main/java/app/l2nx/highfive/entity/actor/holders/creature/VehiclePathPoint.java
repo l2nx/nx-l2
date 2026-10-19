@@ -23,28 +23,24 @@
 package app.l2nx.highfive.entity.actor.holders.creature;
 
 import app.l2nx.highfive.entity.Location;
+import lombok.Getter;
 
 public class VehiclePathPoint extends Location {
-    private final int _moveSpeed;
-    private final int _rotationSpeed;
+    @Getter
+    private final int moveSpeed;
+
+    @Getter
+    private final int rotationSpeed;
 
     public VehiclePathPoint(int x, int y, int z) {
         super(x, y, z);
-        _moveSpeed = 350;
-        _rotationSpeed = 4000;
+        moveSpeed = 350;
+        rotationSpeed = 4000;
     }
 
     public VehiclePathPoint(int x, int y, int z, int moveSpeed, int rotationSpeed) {
         super(x, y, z);
-        _moveSpeed = moveSpeed;
-        _rotationSpeed = rotationSpeed;
-    }
-
-    public int getMoveSpeed() {
-        return _moveSpeed;
-    }
-
-    public int getRotationSpeed() {
-        return _rotationSpeed;
+        this.moveSpeed = moveSpeed;
+        this.rotationSpeed = rotationSpeed;
     }
 }

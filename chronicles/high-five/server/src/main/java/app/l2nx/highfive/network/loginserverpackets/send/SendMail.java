@@ -38,9 +38,9 @@ public class SendMail extends SimpleWritablePacket {
     private static final int OPCODE = 0x09;
 
     // Data.
-    private final String _accountName;
-    private final String _mailId;
-    private final String[] _args;
+    private final String accountName;
+    private final String mailId;
+    private final String[] args;
 
     /**
      * @param accountName target account
@@ -48,9 +48,9 @@ public class SendMail extends SimpleWritablePacket {
      * @param args template parameters
      */
     public SendMail(String accountName, String mailId, String... args) {
-        _accountName = (accountName != null) ? accountName : "";
-        _mailId = (mailId != null) ? mailId : "";
-        _args = (args != null) ? args : new String[0];
+        this.accountName = (accountName != null) ? accountName : "";
+        this.mailId = (mailId != null) ? mailId : "";
+        this.args = (args != null) ? args : new String[0];
     }
 
     /**
@@ -59,10 +59,10 @@ public class SendMail extends SimpleWritablePacket {
     @Override
     public void write() {
         writeByte(OPCODE);
-        writeString(_accountName);
-        writeString(_mailId);
-        writeByte(_args.length);
-        for (String a : _args) {
+        writeString(accountName);
+        writeString(mailId);
+        writeByte(args.length);
+        for (String a : args) {
             writeString((a != null) ? a : "");
         }
     }

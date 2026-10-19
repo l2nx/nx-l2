@@ -32,63 +32,63 @@ import app.l2nx.network.buffer.WriteBuffer;
 import java.util.Collection;
 
 public class PledgeShowMemberListAll extends ServerPacket {
-    private final Clan _clan;
-    private final Player _player;
-    private final Collection<ClanMember> _members;
-    private int _pledgeType;
+    private final Clan clan;
+    private final Player player;
+    private final Collection<ClanMember> members;
+    private int pledgeType;
 
     public PledgeShowMemberListAll(Clan clan, Player player) {
-        _clan = clan;
-        _player = player;
-        _members = _clan.getMembers();
+        this.clan = clan;
+        this.player = player;
+        members = this.clan.getMembers();
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
-        _pledgeType = 0;
+        pledgeType = 0;
 
         // FIXME: That's wrong on retail sends this whole packet few times (depending how much sub pledges it has)
         writePledge(0, buffer);
-        for (SubPledge subPledge : _clan.getAllSubPledges()) {
-            _player.sendPacket(new PledgeReceiveSubPledgeCreated(subPledge, _clan));
+        for (SubPledge subPledge : clan.getAllSubPledges()) {
+            player.sendPacket(new PledgeReceiveSubPledgeCreated(subPledge, clan));
         }
 
-        for (ClanMember m : _members) {
+        for (ClanMember m : members) {
             if (m.getPledgeType() == 0) {
                 continue;
             }
 
-            _player.sendPacket(new PledgeShowMemberListAdd(m));
+            player.sendPacket(new PledgeShowMemberListAdd(m));
         }
 
         // unless this is sent sometimes, the client doesn't recognise the player as the leader
-        _player.updateUserInfo();
+        player.updateUserInfo();
     }
 
     private void writePledge(int mainOrSubpledge, WriteBuffer buffer) {
         ServerPackets.PLEDGE_SHOW_MEMBER_LIST_ALL.writeId(this, buffer);
         buffer.writeInt(mainOrSubpledge);
-        buffer.writeInt(_clan.getId());
-        buffer.writeInt(_pledgeType);
-        buffer.writeString(_clan.getName());
-        buffer.writeString(_clan.getLeaderName());
-        buffer.writeInt(_clan.getCrestId()); // crest id .. is used again
-        buffer.writeInt(_clan.getLevel());
-        buffer.writeInt(_clan.getCastleId());
-        buffer.writeInt(_clan.getHideoutId());
-        buffer.writeInt(_clan.getFortId());
-        buffer.writeInt(_clan.getRank());
-        buffer.writeInt(_clan.getReputationScore());
+        buffer.writeInt(clan.getId());
+        buffer.writeInt(pledgeType);
+        buffer.writeString(clan.getName());
+        buffer.writeString(clan.getLeaderName());
+        buffer.writeInt(clan.getCrestId()); // crest id .. is used again
+        buffer.writeInt(clan.getLevel());
+        buffer.writeInt(clan.getCastleId());
+        buffer.writeInt(clan.getHideoutId());
+        buffer.writeInt(clan.getFortId());
+        buffer.writeInt(clan.getRank());
+        buffer.writeInt(clan.getReputationScore());
         buffer.writeInt(0); // 0
         buffer.writeInt(0); // 0
-        buffer.writeInt(_clan.getAllyId());
-        buffer.writeString(_clan.getAllyName());
-        buffer.writeInt(_clan.getAllyCrestId());
-        buffer.writeInt(_clan.isAtWar()); // new c3
+        buffer.writeInt(clan.getAllyId());
+        buffer.writeString(clan.getAllyName());
+        buffer.writeInt(clan.getAllyCrestId());
+        buffer.writeInt(clan.isAtWar()); // new c3
         buffer.writeInt(0); // Territory castle ID
-        buffer.writeInt(_clan.getSubPledgeMembersCount(_pledgeType));
-        for (ClanMember m : _members) {
-            if (m.getPledgeType() != _pledgeType) {
+        buffer.writeInt(clan.getSubPledgeMembersCount(pledgeType));
+        for (ClanMember m : members) {
+            if (m.getPledgeType() != pledgeType) {
                 continue;
             }
 

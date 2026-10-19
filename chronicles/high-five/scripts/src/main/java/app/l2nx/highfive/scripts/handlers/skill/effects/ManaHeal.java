@@ -33,12 +33,12 @@ import app.l2nx.highfive.util.StatSet;
  * @author UnAfraid
  */
 public class ManaHeal extends AbstractEffect {
-    private final double _power;
+    private final double power;
 
     public ManaHeal(Condition attachCond, Condition applyCond, StatSet set, StatSet params) {
         super(attachCond, applyCond, set, params);
 
-        _power = params.getDouble("power", 0);
+        power = params.getDouble("power", 0);
     }
 
     @Override
@@ -52,7 +52,7 @@ public class ManaHeal extends AbstractEffect {
             return;
         }
 
-        double amount = _power;
+        double amount = power;
         if (!skill.isStatic()) {
             amount = effected.calcStat(Stat.MANA_CHARGE, amount, null, null);
         }

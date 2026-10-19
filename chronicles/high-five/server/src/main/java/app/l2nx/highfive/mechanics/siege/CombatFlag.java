@@ -31,39 +31,45 @@ import app.l2nx.highfive.managers.ItemManager;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.serverpackets.InventoryUpdate;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
+import lombok.Getter;
 
 public class CombatFlag {
-    // private static final Logger LOGGER = Logger.getLogger(CombatFlag.class.getName());
 
-    private Player _player = null;
-    private int _playerId = 0;
-    private Item _item = null;
-    private Item _itemInstance;
-    private final Location _location;
-    private final int _itemId;
+    private Player player = null;
+
+    @Getter
+    private int playerObjectId = 0;
+
+    private Item item = null;
+
+    @Getter
+    private Item combatFlagInstance;
+
+    private final Location location;
+    private final int itemId;
 
     @SuppressWarnings("unused")
-    private final int _fortId;
+    private final int fortId;
 
     public CombatFlag(int fortId, int x, int y, int z, int heading, int itemId) {
-        _fortId = fortId;
-        _location = new Location(x, y, z, heading);
-        _itemId = itemId;
+        this.fortId = fortId;
+        location = new Location(x, y, z, heading);
+        this.itemId = itemId;
     }
 
     public synchronized void spawnMe() {
         // Init the dropped ItemInstance and add it in the world as a visible object at the position where mob was last.
-        _itemInstance = ItemManager.createItem(ItemProcessType.QUEST, _itemId, 1, null, null);
-        _itemInstance.dropMe(null, _location.getX(), _location.getY(), _location.getZ());
+        combatFlagInstance = ItemManager.createItem(ItemProcessType.QUEST, itemId, 1, null, null);
+        combatFlagInstance.dropMe(null, location.getX(), location.getY(), location.getZ());
     }
 
     public synchronized void unSpawnMe() {
-        if (_player != null) {
+        if (player != null) {
             dropIt();
         }
 
-        if (_itemInstance != null) {
-            _itemInstance.decayMe();
+        if (combatFlagInstance != null) {
+            combatFlagInstance.decayMe();
         }
     }
 
@@ -74,45 +80,37 @@ public class CombatFlag {
         }
 
         // Player holding it data.
-        _player = player;
-        _playerId = _player.getObjectId();
-        _itemInstance = null;
+        this.player = player;
+        playerObjectId = this.player.getObjectId();
+        combatFlagInstance = null;
 
         // Equip with the weapon.
-        _item = item;
-        _player.getInventory().equipItem(_item);
+        this.item = item;
+        this.player.getInventory().equipItem(this.item);
         final SystemMessage sm = new SystemMessage(SystemMessageId.YOU_HAVE_EQUIPPED_YOUR_S1);
-        sm.addItemName(_item);
-        _player.sendPacket(sm);
+        sm.addItemName(this.item);
+        this.player.sendPacket(sm);
 
         // Refresh inventory
         final InventoryUpdate iu = new InventoryUpdate();
-        iu.addItem(_item);
-        _player.sendInventoryUpdate(iu);
+        iu.addItem(this.item);
+        this.player.sendInventoryUpdate(iu);
 
         // Refresh player stats
-        _player.broadcastUserInfo();
-        _player.setCombatFlagEquipped(true);
+        this.player.broadcastUserInfo();
+        this.player.setCombatFlagEquipped(true);
         return true;
     }
 
     public void dropIt() {
         // Reset player stats
-        _player.setCombatFlagEquipped(false);
-        final BodyPart bodyPart = BodyPart.fromItem(_item);
-        _player.getInventory().unEquipItemInBodySlot(bodyPart);
-        _player.destroyItem(ItemProcessType.DESTROY, _item, null, true);
-        _item = null;
-        _player.broadcastUserInfo();
-        _player = null;
-        _playerId = 0;
-    }
-
-    public int getPlayerObjectId() {
-        return _playerId;
-    }
-
-    public Item getCombatFlagInstance() {
-        return _itemInstance;
+        player.setCombatFlagEquipped(false);
+        final BodyPart bodyPart = BodyPart.fromItem(item);
+        player.getInventory().unEquipItemInBodySlot(bodyPart);
+        player.destroyItem(ItemProcessType.DESTROY, item, null, true);
+        item = null;
+        player.broadcastUserInfo();
+        player = null;
+        playerObjectId = 0;
     }
 }

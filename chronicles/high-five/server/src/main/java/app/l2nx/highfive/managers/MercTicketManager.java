@@ -33,8 +33,7 @@ import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.Collection;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * This class is similar to the SiegeGuardManager, except it handles the loading of the mercenary tickets that are dropped on castle floors by the castle lords.<br>
@@ -43,8 +42,8 @@ import java.util.logging.Logger;
  * Finally, we provide auxiliary functions to identify the castle in which each item (and its corresponding NPC) belong to, in order to help avoid mixing them up.
  * @author yellowperil, Fulminus
  */
+@Slf4j
 public class MercTicketManager {
-    private static final Logger LOGGER = Logger.getLogger(MercTicketManager.class.getName());
 
     private static final Collection<Item> DROPPED_TICKETS = ConcurrentHashMap.newKeySet();
 
@@ -260,9 +259,9 @@ public class MercTicketManager {
             rs.close();
             s.close();
 
-            LOGGER.info(getClass().getSimpleName() + ": Loaded " + DROPPED_TICKETS.size() + " Mercenary Tickets");
+            log.info("Loaded {} Mercenary Tickets", DROPPED_TICKETS.size());
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, "Exception: loadMercenaryData(): " + e.getMessage(), e);
+            log.warn("Exception: loadMercenaryData(): {}", e.getMessage(), e);
         }
     }
 

@@ -24,101 +24,96 @@ package app.l2nx.highfive.geoengine.pathfinding;
 
 import app.l2nx.highfive.geoengine.GeoEngine;
 import app.l2nx.highfive.geoengine.geodata.Cell;
+import lombok.Getter;
 
 /**
  * @author Mobius
  */
 public class GeoLocation {
-    private int _x;
-    private int _y;
-    private int _nswe;
-    private int _geoHeight;
+    @Getter
+    private int nodeX;
+
+    @Getter
+    private int nodeY;
+
+    private int nswe;
+
+    @Getter
+    private int z;
 
     public GeoLocation(int x, int y, int z) {
         set(x, y, z);
     }
 
     public void set(int x, int y, int z) {
-        _x = x;
-        _y = y;
-        _nswe = 0; // Reset the bitmask.
+        nodeX = x;
+        nodeY = y;
+        nswe = 0; // Reset the bitmask.
 
         // Set the NSWE bitmask based on movement possibilities.
         final GeoEngine geoEngine = GeoEngine.getInstance();
         if (geoEngine.checkNearestNswe(x, y, z, Cell.NSWE_NORTH)) {
-            _nswe |= Cell.NSWE_NORTH;
+            nswe |= Cell.NSWE_NORTH;
         }
 
         if (geoEngine.checkNearestNswe(x, y, z, Cell.NSWE_EAST)) {
-            _nswe |= Cell.NSWE_EAST;
+            nswe |= Cell.NSWE_EAST;
         }
 
         if (geoEngine.checkNearestNswe(x, y, z, Cell.NSWE_SOUTH)) {
-            _nswe |= Cell.NSWE_SOUTH;
+            nswe |= Cell.NSWE_SOUTH;
         }
 
         if (geoEngine.checkNearestNswe(x, y, z, Cell.NSWE_WEST)) {
-            _nswe |= Cell.NSWE_WEST;
+            nswe |= Cell.NSWE_WEST;
         }
 
-        _geoHeight = geoEngine.getNearestZ(x, y, z);
+        this.z = geoEngine.getNearestZ(x, y, z);
     }
 
     public boolean canGoNorth() {
-        return (_nswe & Cell.NSWE_NORTH) != 0;
+        return (nswe & Cell.NSWE_NORTH) != 0;
     }
 
     public boolean canGoEast() {
-        return (_nswe & Cell.NSWE_EAST) != 0;
+        return (nswe & Cell.NSWE_EAST) != 0;
     }
 
     public boolean canGoSouth() {
-        return (_nswe & Cell.NSWE_SOUTH) != 0;
+        return (nswe & Cell.NSWE_SOUTH) != 0;
     }
 
     public boolean canGoWest() {
-        return (_nswe & Cell.NSWE_WEST) != 0;
+        return (nswe & Cell.NSWE_WEST) != 0;
     }
 
     public boolean canGoNone() {
-        return _nswe == 0;
+        return nswe == 0;
     }
 
     public boolean canGoAll() {
-        return _nswe == Cell.NSWE_ALL;
+        return nswe == Cell.NSWE_ALL;
     }
 
     public int getX() {
-        return GeoEngine.getWorldX(_x);
+        return GeoEngine.getWorldX(nodeX);
     }
 
     public int getY() {
-        return GeoEngine.getWorldY(_y);
-    }
-
-    public int getZ() {
-        return _geoHeight;
+        return GeoEngine.getWorldY(nodeY);
     }
 
     public void setZ(short z) {}
-
-    public int getNodeX() {
-        return _x;
-    }
-
-    public int getNodeY() {
-        return _y;
-    }
 
     @Override
     public int hashCode() {
         final int prime = 31;
         int result = 1;
-        result = (prime * result) + _x;
-        result = (prime * result) + _y;
+        result = (prime * result) + nodeX;
+        result = (prime * result) + nodeY;
 
         // Combine the geo height and the NSWE bitmask into the hash.
-        result = (prime * result) + (((_geoHeight & 0xFFFF) << 1) | _nswe);
+        result = (prime * result) + (((z & 0xFFFF) << 1) | nswe);
 
         return result;
     }
@@ -133,8 +128,8 @@ public class GeoLocation {
             return false;
         }
 
-        // Compare _x, _y, _geoHeight, and the bitmask _nswe directly.
+        // Compare _x, _y, _geoHeight, and the bitmask nswe directly.
         final GeoLocation other = (GeoLocation) obj;
-        return (_x == other._x) && (_y == other._y) && (_geoHeight == other._geoHeight) && (_nswe == other._nswe);
+        return (nodeX == other.nodeX) && (nodeY == other.nodeY) && (z == other.z) && (nswe == other.nswe);
     }
 }

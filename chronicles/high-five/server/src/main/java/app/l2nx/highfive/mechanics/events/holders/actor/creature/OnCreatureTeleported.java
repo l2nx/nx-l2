@@ -26,17 +26,7 @@ import app.l2nx.highfive.mechanics.events.holders.IBaseEvent;
 /**
  * @author UnAfraid
  */
-public class OnCreatureTeleported implements IBaseEvent {
-    private final Creature _creature;
-
-    public OnCreatureTeleported(Creature creature) {
-        _creature = creature;
-    }
-
-    public Creature getCreature() {
-        return _creature;
-    }
-
+public record OnCreatureTeleported(Creature creature) implements IBaseEvent {
     @Override
     public EventType getType() {
         return EventType.ON_CREATURE_TELEPORTED;

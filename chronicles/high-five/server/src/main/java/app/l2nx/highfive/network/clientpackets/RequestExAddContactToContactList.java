@@ -28,11 +28,11 @@ import app.l2nx.highfive.network.serverpackets.ExConfirmAddingContact;
  * @author UnAfraid, mrTJO
  */
 public class RequestExAddContactToContactList extends ClientPacket {
-    private String _name;
+    private String name;
 
     @Override
     protected void readImpl() {
-        _name = readString();
+        name = readString();
     }
 
     @Override
@@ -41,7 +41,7 @@ public class RequestExAddContactToContactList extends ClientPacket {
             return;
         }
 
-        if (_name == null) {
+        if (name == null) {
             return;
         }
 
@@ -50,7 +50,7 @@ public class RequestExAddContactToContactList extends ClientPacket {
             return;
         }
 
-        final boolean charAdded = player.getContactList().add(_name);
-        player.sendPacket(new ExConfirmAddingContact(_name, charAdded));
+        final boolean charAdded = player.getContactList().add(name);
+        player.sendPacket(new ExConfirmAddingContact(name, charAdded));
     }
 }

@@ -37,16 +37,18 @@ import java.sql.Statement;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.logging.Logger;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author BiggBoss
  */
+@Slf4j
 public class CHSiegeManager {
-    private static final Logger LOGGER = Logger.getLogger(CHSiegeManager.class.getName());
     private static final String SQL_LOAD_HALLS = "SELECT * FROM siegable_clanhall";
 
-    private final Map<Integer, SiegableHall> _siegableHalls = new HashMap<>();
+    @Getter
+    private final Map<Integer, SiegableHall> conquerableHalls = new HashMap<>();
 
     protected CHSiegeManager() {
         loadClanHalls();
@@ -56,7 +58,7 @@ public class CHSiegeManager {
         try (Connection con = DatabaseFactory.getConnection();
                 Statement s = con.createStatement();
                 ResultSet rs = s.executeQuery(SQL_LOAD_HALLS)) {
-            _siegableHalls.clear();
+            conquerableHalls.clear();
 
             while (rs.next()) {
                 final int id = rs.getInt("clanHallId");
@@ -70,22 +72,18 @@ public class CHSiegeManager {
                 set.set("siegeLength", rs.getLong("siegeLength"));
                 set.set("scheduleConfig", rs.getString("schedule_config"));
                 final SiegableHall hall = new SiegableHall(set);
-                _siegableHalls.put(id, hall);
+                conquerableHalls.put(id, hall);
                 ClanHallTable.addClanHall(hall);
             }
 
-            LOGGER.info(getClass().getSimpleName() + ": Loaded " + _siegableHalls.size() + " conquerable clan halls.");
+            log.info("Loaded {} conquerable clan halls.", conquerableHalls.size());
         } catch (Exception e) {
-            LOGGER.warning("CHSiegeManager: Could not load siegable clan halls!:" + e.getMessage());
+            log.warn("Could not load siegable clan halls!:{}", e.getMessage());
         }
     }
 
-    public Map<Integer, SiegableHall> getConquerableHalls() {
-        return _siegableHalls;
-    }
-
     public SiegableHall getSiegableHall(int clanHall) {
-        return _siegableHalls.get(clanHall);
+        return conquerableHalls.get(clanHall);
     }
 
     public SiegableHall getNearbyClanHall(Creature creature) {
@@ -94,7 +92,7 @@ public class CHSiegeManager {
 
     public SiegableHall getNearbyClanHall(int x, int y, int maxDist) {
         ClanHallZone zone = null;
-        for (Entry<Integer, SiegableHall> ch : _siegableHalls.entrySet()) {
+        for (Entry<Integer, SiegableHall> ch : conquerableHalls.entrySet()) {
             zone = ch.getValue().getZone();
             if ((zone != null) && (zone.getDistanceToZone(x, y) < maxDist)) {
                 return ch.getValue();
@@ -148,7 +146,7 @@ public class CHSiegeManager {
     }
 
     public boolean isClanParticipating(Clan clan) {
-        for (SiegableHall hall : _siegableHalls.values()) {
+        for (SiegableHall hall : conquerableHalls.values()) {
             if ((hall.getSiege() != null) && hall.getSiege().checkIsAttacker(clan)) {
                 return true;
             }
@@ -158,7 +156,7 @@ public class CHSiegeManager {
     }
 
     public void onServerShutDown() {
-        for (SiegableHall hall : _siegableHalls.values()) {
+        for (SiegableHall hall : conquerableHalls.values()) {
             if (hall.getSiege() == null) {
                 continue;
             }

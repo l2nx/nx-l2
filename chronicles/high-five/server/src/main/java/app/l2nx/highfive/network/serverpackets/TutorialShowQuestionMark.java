@@ -27,15 +27,15 @@ import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.network.buffer.WriteBuffer;
 
 public class TutorialShowQuestionMark extends ServerPacket {
-    private final int _markId;
+    private final int markId;
 
     public TutorialShowQuestionMark(int blink) {
-        _markId = blink;
+        markId = blink;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.SHOW_TUTORIAL_MARK.writeId(this, buffer);
-        buffer.writeInt(_markId);
+        buffer.writeInt(markId);
     }
 }

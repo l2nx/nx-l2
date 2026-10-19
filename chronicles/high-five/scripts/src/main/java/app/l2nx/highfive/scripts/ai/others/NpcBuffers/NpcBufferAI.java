@@ -33,51 +33,51 @@ import app.l2nx.highfive.util.LocationUtil;
  * @author UnAfraid
  */
 public class NpcBufferAI implements Runnable {
-    private final Npc _npc;
-    private final NpcBufferSkillData _skillData;
+    private final Npc npc;
+    private final NpcBufferSkillData skillData;
 
     protected NpcBufferAI(Npc npc, NpcBufferSkillData skill) {
-        _npc = npc;
-        _skillData = skill;
+        this.npc = npc;
+        skillData = skill;
     }
 
     @Override
     public void run() {
-        if ((_npc == null)
-                || !_npc.isSpawned()
-                || _npc.isDecayed()
-                || _npc.isDead()
-                || (_skillData == null)
-                || (_skillData.getSkill() == null)) {
+        if ((npc == null)
+                || !npc.isSpawned()
+                || npc.isDecayed()
+                || npc.isDead()
+                || (skillData == null)
+                || (skillData.getSkill() == null)) {
             return;
         }
 
-        if ((_npc.getSummoner() == null) || !_npc.getSummoner().isPlayer()) {
+        if ((npc.getSummoner() == null) || !npc.getSummoner().isPlayer()) {
             return;
         }
 
-        final Skill skill = _skillData.getSkill();
-        final Player player = _npc.getSummoner().asPlayer();
+        final Skill skill = skillData.getSkill();
+        final Player player = npc.getSummoner().asPlayer();
 
-        switch (_skillData.getAffectScope()) {
+        switch (skillData.getAffectScope()) {
             case PARTY: {
                 if (player.isInParty()) {
                     for (Player member : player.getParty().getMembers()) {
-                        if (LocationUtil.checkIfInRange(skill.getAffectRange(), _npc, member, true)
+                        if (LocationUtil.checkIfInRange(skill.getAffectRange(), npc, member, true)
                                 && !member.isDead()) {
                             skill.applyEffects(player, member);
                         }
                     }
                 } else {
-                    if (LocationUtil.checkIfInRange(skill.getAffectRange(), _npc, player, true) && !player.isDead()) {
+                    if (LocationUtil.checkIfInRange(skill.getAffectRange(), npc, player, true) && !player.isDead()) {
                         skill.applyEffects(player, player);
                     }
                 }
                 break;
             }
             case RANGE: {
-                World.forEachVisibleObjectInRange(_npc, Creature.class, skill.getAffectRange(), target -> {
-                    switch (_skillData.getAffectObject()) {
+                World.forEachVisibleObjectInRange(npc, Creature.class, skill.getAffectRange(), target -> {
+                    switch (skillData.getAffectObject()) {
                         case FRIEND: {
                             if (isFriendly(player, target) && !target.isDead()) {
                                 skill.applyEffects(target, target);
@@ -101,7 +101,7 @@ public class NpcBufferAI implements Runnable {
             }
         }
 
-        ThreadPool.schedule(this, _skillData.getDelay());
+        ThreadPool.schedule(this, skillData.getDelay());
     }
 
     /**

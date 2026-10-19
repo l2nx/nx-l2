@@ -32,12 +32,12 @@ import app.l2nx.highfive.util.StatSet;
  * Cp Heal Over Time effect implementation.
  */
 public class CpHealOverTime extends AbstractEffect {
-    private final double _power;
+    private final double power;
 
     public CpHealOverTime(Condition attachCond, Condition applyCond, StatSet set, StatSet params) {
         super(attachCond, applyCond, set, params);
 
-        _power = params.getDouble("power", 0);
+        power = params.getDouble("power", 0);
     }
 
     @Override
@@ -54,7 +54,7 @@ public class CpHealOverTime extends AbstractEffect {
             return false;
         }
 
-        cp += _power * getTicksMultiplier();
+        cp += power * getTicksMultiplier();
         cp = Math.min(cp, maxcp);
         effected.setCurrentCp(cp);
         return true;

@@ -23,19 +23,17 @@
 package app.l2nx.highfive.entity.item.holders;
 
 import app.l2nx.highfive.util.StatSet;
+import lombok.Getter;
 
 /**
  * @author Mobius
  */
 public class InitialEquipment extends ItemHolder {
-    private final boolean _equipped;
+    @Getter
+    private final boolean equipped;
 
     public InitialEquipment(StatSet set) {
         super(set.getInt("id"), set.getInt("count"));
-        _equipped = set.getBoolean("equipped", false);
-    }
-
-    public boolean isEquipped() {
-        return _equipped;
+        equipped = set.getBoolean("equipped", false);
     }
 }

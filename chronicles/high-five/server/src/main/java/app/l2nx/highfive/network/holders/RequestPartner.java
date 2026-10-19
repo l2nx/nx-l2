@@ -24,6 +24,7 @@ import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.clientpackets.ClientPacket;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
 import app.l2nx.highfive.threads.ThreadPool;
+import lombok.Getter;
 
 /**
  * This class manages requests (transactions) between two Player.
@@ -32,21 +33,26 @@ import app.l2nx.highfive.threads.ThreadPool;
 public class RequestPartner {
     private static final int REQUEST_TIMEOUT = 15; // in secs
 
-    protected Player _player;
-    protected Player _partner;
-    protected boolean _isRequestor;
-    protected boolean _isAnswerer;
-    protected ClientPacket _requestPacket;
+    protected Player player;
+
+    @Getter
+    protected Player partner;
+
+    protected boolean requestor;
+    protected boolean answerer;
+
+    @Getter
+    protected ClientPacket requestPacket;
 
     public RequestPartner(Player player) {
-        _player = player;
+        this.player = player;
     }
 
     protected void clear() {
-        _partner = null;
-        _requestPacket = null;
-        _isRequestor = false;
-        _isAnswerer = false;
+        partner = null;
+        requestPacket = null;
+        requestor = false;
+        answerer = false;
     }
 
     /**
@@ -54,14 +60,7 @@ public class RequestPartner {
      * @param partner
      */
     private synchronized void setPartner(Player partner) {
-        _partner = partner;
-    }
-
-    /**
-     * @return the Player member of a transaction (ex : FriendInvite, JoinAlly, JoinParty...).
-     */
-    public Player getPartner() {
-        return _partner;
+        this.partner = partner;
     }
 
     /**
@@ -69,15 +68,7 @@ public class RequestPartner {
      * @param packet
      */
     private synchronized void setRequestPacket(ClientPacket packet) {
-        _requestPacket = packet;
-    }
-
-    /**
-     * Return the packet originally the came from requester.
-     * @return
-     */
-    public ClientPacket getRequestPacket() {
-        return _requestPacket;
+        requestPacket = packet;
     }
 
     /**
@@ -88,34 +79,34 @@ public class RequestPartner {
      */
     public synchronized boolean setRequest(Player partner, ClientPacket packet) {
         if (partner == null) {
-            _player.sendPacket(SystemMessageId.YOU_HAVE_INVITED_THE_WRONG_TARGET);
+            player.sendPacket(SystemMessageId.YOU_HAVE_INVITED_THE_WRONG_TARGET);
             return false;
         }
 
         if (partner.getRequest().isProcessingRequest()) {
             final SystemMessage sm = new SystemMessage(SystemMessageId.C1_IS_ON_ANOTHER_TASK_PLEASE_TRY_AGAIN_LATER);
             sm.addString(partner.getName());
-            _player.sendPacket(sm);
+            player.sendPacket(sm);
             return false;
         }
 
         if (isProcessingRequest()) {
-            _player.sendPacket(SystemMessageId.WAITING_FOR_ANOTHER_REPLY);
+            player.sendPacket(SystemMessageId.WAITING_FOR_ANOTHER_REPLY);
             return false;
         }
 
-        _partner = partner;
-        _requestPacket = packet;
+        this.partner = partner;
+        requestPacket = packet;
         setOnRequestTimer(true);
-        _partner.getRequest().setPartner(_player);
-        _partner.getRequest().setRequestPacket(packet);
-        _partner.getRequest().setOnRequestTimer(false);
+        this.partner.getRequest().setPartner(player);
+        this.partner.getRequest().setRequestPacket(packet);
+        this.partner.getRequest().setOnRequestTimer(false);
         return true;
     }
 
     private void setOnRequestTimer(boolean isRequestor) {
-        _isRequestor = isRequestor;
-        _isAnswerer = !isRequestor;
+        requestor = isRequestor;
+        answerer = !isRequestor;
         ThreadPool.schedule(this::clear, REQUEST_TIMEOUT * 1000);
     }
 
@@ -123,8 +114,8 @@ public class RequestPartner {
      * Clears PC request state. Should be called after answer packet receive.
      */
     public void onRequestResponse() {
-        if (_partner != null) {
-            _partner.getRequest().clear();
+        if (partner != null) {
+            partner.getRequest().clear();
         }
 
         clear();
@@ -134,6 +125,6 @@ public class RequestPartner {
      * @return {@code true} if a transaction is in progress.
      */
     public boolean isProcessingRequest() {
-        return _partner != null;
+        return partner != null;
     }
 }

@@ -34,11 +34,12 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import lombok.Getter;
 
 /**
  * Abstract client entity that owns a {@link Connection} and manages packet I/O.<br>
  * <br>
- * <b>Fair-send mechanism:</b> a single global {@link ConcurrentLinkedQueue} ({@code PENDING_CLIENTS}) is used across all active clients. Whenever a client wants to send it atomically acquires the {@code _writing} flag, then adds itself to the pending queue.<br>
+ * <b>Fair-send mechanism:</b> a single global {@link ConcurrentLinkedQueue} ({@code PENDING_CLIENTS}) is used across all active clients. Whenever a client wants to send it atomically acquires the {@code writing} flag, then adds itself to the pending queue.<br>
  * The client polled from the front of the queue sends its next packet. This round-robin approach ensures no single client can monopolise the I/O threads when many clients are active simultaneously.<br>
  * <br>
  * <b>Packet dropping:</b> when {@link ConnectionConfig#dropPackets} is enabled, packets that return {@code true} from {@link WritablePacket#canBeDropped} are silently discarded once the estimated outbound queue exceeds {@link ConnectionConfig#dropPacketThreshold}.
@@ -52,17 +53,22 @@ public abstract class Client<T extends Connection<?>> {
      */
     private static final ConcurrentLinkedQueue<Client<?>> PENDING_CLIENTS = new ConcurrentLinkedQueue<>();
 
-    private final T _connection;
-    private final Queue<WritablePacket<? extends Client<T>>> _packetsToWrite = new ConcurrentLinkedQueue<>();
-    private final AtomicBoolean _writing = new AtomicBoolean();
-    private final AtomicBoolean _disconnecting = new AtomicBoolean();
-    private final AtomicBoolean _closing = new AtomicBoolean();
-    private final AtomicInteger _estimateQueueSize = new AtomicInteger();
-    private final AtomicInteger _dataSentSize = new AtomicInteger();
+    @Getter
+    private final T connection;
+
+    private final Queue<WritablePacket<? extends Client<T>>> packetsToWrite = new ConcurrentLinkedQueue<>();
+    private final AtomicBoolean writing = new AtomicBoolean();
+    private final AtomicBoolean disconnecting = new AtomicBoolean();
+    private final AtomicBoolean closing = new AtomicBoolean();
+    private final AtomicInteger estimateQueueSize = new AtomicInteger();
+    private final AtomicInteger dataSentSize = new AtomicInteger();
 
     // Read-side state (accessed only on the single async-read thread for this client).
-    private boolean _readingPayload;
-    private int _expectedReadSize;
+    @Getter
+    private boolean readingPayload;
+
+    @Getter
+    private int expectedReadSize;
 
     /**
      * Constructs a client bound to the given connection.
@@ -74,7 +80,7 @@ public abstract class Client<T extends Connection<?>> {
             throw new IllegalArgumentException("The connection is null or closed.");
         }
 
-        _connection = connection;
+        this.connection = connection;
     }
 
     /**
@@ -86,8 +92,8 @@ public abstract class Client<T extends Connection<?>> {
             return;
         }
 
-        _estimateQueueSize.incrementAndGet();
-        _packetsToWrite.add(packet);
+        estimateQueueSize.incrementAndGet();
+        packetsToWrite.add(packet);
         writeFairPacket();
     }
 
@@ -100,8 +106,8 @@ public abstract class Client<T extends Connection<?>> {
             return;
         }
 
-        _estimateQueueSize.addAndGet(packets.size());
-        _packetsToWrite.addAll(packets);
+        estimateQueueSize.addAndGet(packets.size());
+        packetsToWrite.addAll(packets);
         writeFairPacket();
     }
 
@@ -112,8 +118,8 @@ public abstract class Client<T extends Connection<?>> {
      */
     @SuppressWarnings({"unchecked", "rawtypes"})
     private boolean packetCanBeDropped(WritablePacket packet) {
-        return _connection.dropPackets()
-                && (_estimateQueueSize.get() > _connection.dropPacketThreshold())
+        return connection.dropPackets()
+                && (estimateQueueSize.get() > connection.dropPacketThreshold())
                 && packet.canBeDropped(this);
     }
 
@@ -121,7 +127,7 @@ public abstract class Client<T extends Connection<?>> {
      * Enters the send loop for this client if it is not already active.
      */
     private void writeFairPacket() {
-        if (_writing.compareAndSet(false, true)) {
+        if (writing.compareAndSet(false, true)) {
             sendFairPacket();
         }
     }
@@ -142,28 +148,28 @@ public abstract class Client<T extends Connection<?>> {
      * Sends the next queued packet, or releases the write lock if the queue is empty.
      */
     private void writeNextPacket() {
-        final WritablePacket<? extends Client<T>> packet = _packetsToWrite.poll();
+        final WritablePacket<? extends Client<T>> packet = packetsToWrite.poll();
         if (packet == null) {
             releaseWritingResource();
 
             // A packet may have been queued by another thread between the empty poll above and the release of the
             // writing flag; that thread's CAS failed, so this thread must restart the send loop.
-            if (!_packetsToWrite.isEmpty()) {
+            if (!packetsToWrite.isEmpty()) {
                 writeFairPacket();
                 return;
             }
 
-            if (_closing.get()) {
+            if (closing.get()) {
                 // A close(packet) may have queued its final packet concurrently, or another thread may be writing it
                 // right now; that thread's completion path will come back here and disconnect.
-                if (!_packetsToWrite.isEmpty() || _writing.get()) {
+                if (!packetsToWrite.isEmpty() || writing.get()) {
                     return;
                 }
 
                 disconnect();
             }
         } else {
-            _estimateQueueSize.decrementAndGet();
+            estimateQueueSize.decrementAndGet();
             write(packet);
         }
     }
@@ -187,13 +193,13 @@ public abstract class Client<T extends Connection<?>> {
 
             if (encrypt(buffer, ConnectionConfig.HEADER_SIZE, payloadSize)) {
                 final int bufferLimit = buffer.limit();
-                _dataSentSize.set(bufferLimit);
+                dataSentSize.set(bufferLimit);
                 if (bufferLimit <= ConnectionConfig.HEADER_SIZE) {
                     return;
                 }
 
                 packet.writeHeader(buffer, bufferLimit);
-                written = _connection.write(buffer.toByteBuffers());
+                written = connection.write(buffer.toByteBuffers());
             }
         } catch (Exception e) {
             // Intentionally silent - a broken packet must not crash the I/O thread.
@@ -223,9 +229,9 @@ public abstract class Client<T extends Connection<?>> {
      * Starts reading the next packet header from the connection.
      */
     public void read() {
-        _expectedReadSize = ConnectionConfig.HEADER_SIZE;
-        _readingPayload = false;
-        _connection.readHeader();
+        expectedReadSize = ConnectionConfig.HEADER_SIZE;
+        readingPayload = false;
+        connection.readHeader();
     }
 
     /**
@@ -233,9 +239,9 @@ public abstract class Client<T extends Connection<?>> {
      * @param dataSize the number of payload bytes to read
      */
     public void readPayload(int dataSize) {
-        _expectedReadSize = dataSize;
-        _readingPayload = true;
-        _connection.read(dataSize);
+        expectedReadSize = dataSize;
+        readingPayload = true;
+        connection.read(dataSize);
     }
 
     /**
@@ -255,12 +261,12 @@ public abstract class Client<T extends Connection<?>> {
             return;
         }
 
-        _packetsToWrite.clear();
+        packetsToWrite.clear();
         if (packet != null) {
-            _packetsToWrite.add(packet);
+            packetsToWrite.add(packet);
         }
 
-        _closing.set(true);
+        closing.set(true);
 
         writeFairPacket();
     }
@@ -270,21 +276,21 @@ public abstract class Client<T extends Connection<?>> {
      * @param result the number of bytes that were successfully sent
      */
     public void resumeSend(int result) {
-        _dataSentSize.addAndGet(-result);
-        _connection.write();
+        dataSentSize.addAndGet(-result);
+        connection.write();
     }
 
     /**
      * Called by {@link WriteHandler} after a complete write; releases buffers and sends the next packet.
      */
     public void finishWriting() {
-        _connection.releaseWritingBuffer();
+        connection.releaseWritingBuffer();
         sendFairPacket();
     }
 
     private boolean releaseWritingResource() {
-        final boolean released = _connection.releaseWritingBuffer();
-        _writing.set(false);
+        final boolean released = connection.releaseWritingBuffer();
+        writing.set(false);
         return released;
     }
 
@@ -292,22 +298,14 @@ public abstract class Client<T extends Connection<?>> {
      * Disconnects the client: calls {@link #onDisconnection()}, clears all pending packets, and closes the underlying channel. Guaranteed to execute at most once.
      */
     public void disconnect() {
-        if (_disconnecting.compareAndSet(false, true)) {
+        if (disconnecting.compareAndSet(false, true)) {
             try {
                 onDisconnection();
             } finally {
-                _packetsToWrite.clear();
-                _connection.close();
+                packetsToWrite.clear();
+                connection.close();
             }
         }
-    }
-
-    /**
-     * Returns the connection bound to this client.
-     * @return the connection
-     */
-    public T getConnection() {
-        return _connection;
     }
 
     /**
@@ -315,7 +313,7 @@ public abstract class Client<T extends Connection<?>> {
      * @return bytes currently in flight
      */
     public int getDataSentSize() {
-        return _dataSentSize.get();
+        return dataSentSize.get();
     }
 
     /**
@@ -323,7 +321,7 @@ public abstract class Client<T extends Connection<?>> {
      * @return IP string, or an empty string if unavailable
      */
     public String getHostAddress() {
-        return _connection == null ? "" : _connection.getRemoteAddress();
+        return connection == null ? "" : connection.getRemoteAddress();
     }
 
     /**
@@ -331,7 +329,7 @@ public abstract class Client<T extends Connection<?>> {
      * @return {@code true} if connected
      */
     public boolean isConnected() {
-        return _connection.isOpen() && !_closing.get();
+        return connection.isOpen() && !closing.get();
     }
 
     /**
@@ -339,7 +337,7 @@ public abstract class Client<T extends Connection<?>> {
      * @return estimated queue depth
      */
     public int getEstimateQueueSize() {
-        return _estimateQueueSize.get();
+        return estimateQueueSize.get();
     }
 
     /**
@@ -347,15 +345,7 @@ public abstract class Client<T extends Connection<?>> {
      * @return the resource pool
      */
     public ResourcePool getResourcePool() {
-        return _connection.getResourcePool();
-    }
-
-    /**
-     * Returns {@code true} when the client is in the middle of reading a packet payload (as opposed to reading a header).
-     * @return {@code true} if reading payload
-     */
-    public boolean isReadingPayload() {
-        return _readingPayload;
+        return connection.getResourcePool();
     }
 
     /**
@@ -363,16 +353,8 @@ public abstract class Client<T extends Connection<?>> {
      * @param bytesRead the number of bytes received in the partial read
      */
     public void resumeRead(int bytesRead) {
-        _expectedReadSize -= bytesRead;
-        _connection.read();
-    }
-
-    /**
-     * Returns the number of bytes still expected from the current read operation.
-     * @return remaining expected bytes
-     */
-    public int getExpectedReadSize() {
-        return _expectedReadSize;
+        expectedReadSize -= bytesRead;
+        connection.read();
     }
 
     /**

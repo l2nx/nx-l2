@@ -32,12 +32,12 @@ import app.l2nx.highfive.util.StatSet;
  * @author Liamxroy
  */
 public class Ride extends AbstractEffect {
-    private final int _npcId;
+    private final int npcId;
 
     public Ride(Condition attachCond, Condition applyCond, StatSet set, StatSet params) {
         super(attachCond, applyCond, set, params);
 
-        _npcId = params.getInt("npcId", 0);
+        npcId = params.getInt("npcId", 0);
     }
 
     @Override
@@ -51,6 +51,6 @@ public class Ride extends AbstractEffect {
             return;
         }
 
-        effected.asPlayer().mount(_npcId, 0, false);
+        effected.asPlayer().mount(npcId, 0, false);
     }
 }

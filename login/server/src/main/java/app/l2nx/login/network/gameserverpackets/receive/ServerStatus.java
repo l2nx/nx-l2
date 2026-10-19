@@ -23,13 +23,11 @@ import app.l2nx.login.GameServerThread;
 import app.l2nx.login.data.GameServerTable;
 import app.l2nx.login.data.GameServerTable.GameServerInfo;
 import app.l2nx.network.packet.SimpleReadablePacket;
-import java.util.logging.Logger;
 
 /**
  * @author -Wooden-
  */
 public class ServerStatus extends SimpleReadablePacket {
-    protected static final Logger LOGGER = Logger.getLogger(ServerStatus.class.getName());
 
     // Server list ids.
     public static final int SERVER_LIST_STATUS = 0x01;

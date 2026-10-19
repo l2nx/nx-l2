@@ -30,16 +30,16 @@ import app.l2nx.highfive.mechanics.skill.Skill;
  * The Class ConditionTargetActiveSkillId.
  */
 public class ConditionTargetActiveSkillId extends Condition {
-    private final int _skillId;
-    private final int _skillLevel;
+    private final int skillId;
+    private final int skillLevel;
 
     /**
      * Instantiates a new condition target active skill id.
      * @param skillId the skill id
      */
     public ConditionTargetActiveSkillId(int skillId) {
-        _skillId = skillId;
-        _skillLevel = -1;
+        this.skillId = skillId;
+        skillLevel = -1;
     }
 
     /**
@@ -48,14 +48,14 @@ public class ConditionTargetActiveSkillId extends Condition {
      * @param skillLevel the skill level
      */
     public ConditionTargetActiveSkillId(int skillId, int skillLevel) {
-        _skillId = skillId;
-        _skillLevel = skillLevel;
+        this.skillId = skillId;
+        this.skillLevel = skillLevel;
     }
 
     @Override
     public boolean testImpl(Creature effector, Creature effected, Skill skill, ItemTemplate item) {
         for (Skill sk : effected.getAllSkills()) {
-            if ((sk != null) && (sk.getId() == _skillId) && ((_skillLevel == -1) || (_skillLevel <= sk.getLevel()))) {
+            if ((sk != null) && (sk.getId() == skillId) && ((skillLevel == -1) || (skillLevel <= sk.getLevel()))) {
                 return true;
             }
         }

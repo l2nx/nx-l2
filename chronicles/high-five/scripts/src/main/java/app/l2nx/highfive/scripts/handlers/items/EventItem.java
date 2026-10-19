@@ -34,7 +34,9 @@ import app.l2nx.highfive.managers.HandysBlockCheckerManager;
 import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class EventItem implements IItemHandler {
     @Override
     public boolean onItemUse(Playable playable, Item item, boolean forceUse) {
@@ -59,7 +61,7 @@ public class EventItem implements IItemHandler {
                 break;
             }
             default: {
-                LOGGER.warning("EventItemHandler: Item with id: " + itemId + " is not handled");
+                log.warn("EventItemHandler: Item with id: {} is not handled", itemId);
             }
         }
 
@@ -99,7 +101,7 @@ public class EventItem implements IItemHandler {
             return true;
         }
 
-        LOGGER.warning("Char: " + caster.getName() + "[" + caster.getObjectId() + "] has unknown block checker arena");
+        log.warn("Char: {}[{}] has unknown block checker arena", caster.getName(), caster.getObjectId());
         return false;
     }
 }

@@ -29,7 +29,7 @@ import app.l2nx.highfive.util.StatSet;
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.logging.Level;
+import lombok.extern.slf4j.Slf4j;
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
@@ -38,6 +38,7 @@ import org.w3c.dom.Node;
  * This class holds the Enchant Groups information.
  * @author Micr0
  */
+@Slf4j
 public class EnchantSkillGroupsData implements IXmlReader {
     public static final int NORMAL_ENCHANT_COST_MULTIPLIER = GeneralConfig.NORMAL_ENCHANT_COST_MULTIPLIER;
     public static final int SAFE_ENCHANT_COST_MULTIPLIER = GeneralConfig.SAFE_ENCHANT_COST_MULTIPLIER;
@@ -47,8 +48,8 @@ public class EnchantSkillGroupsData implements IXmlReader {
     public static final int CHANGE_ENCHANT_BOOK = 9626;
     public static final int UNTRAIN_ENCHANT_BOOK = 9625;
 
-    private final Map<Integer, EnchantSkillGroup> _enchantSkillGroups = new HashMap<>();
-    private final Map<Integer, EnchantSkillLearn> _enchantSkillTrees = new HashMap<>();
+    private final Map<Integer, EnchantSkillGroup> enchantSkillGroups = new HashMap<>();
+    private final Map<Integer, EnchantSkillLearn> enchantSkillTrees = new HashMap<>();
 
     /**
      * Instantiates a new enchant groups table.
@@ -59,16 +60,15 @@ public class EnchantSkillGroupsData implements IXmlReader {
 
     @Override
     public void load() {
-        _enchantSkillGroups.clear();
-        _enchantSkillTrees.clear();
+        enchantSkillGroups.clear();
+        enchantSkillTrees.clear();
         parseDatapackFile("data/EnchantSkillGroups.xml");
         int routes = 0;
-        for (EnchantSkillGroup group : _enchantSkillGroups.values()) {
+        for (EnchantSkillGroup group : enchantSkillGroups.values()) {
             routes += group.getEnchantGroupDetails().size();
         }
 
-        LOGGER.info(getClass().getSimpleName() + ": Loaded " + _enchantSkillGroups.size() + " groups and " + routes
-                + " routes.");
+        log.info("Loaded {} groups and {} routes.", enchantSkillGroups.size(), routes);
     }
 
     @Override
@@ -79,10 +79,10 @@ public class EnchantSkillGroupsData implements IXmlReader {
                     if ("group".equalsIgnoreCase(d.getNodeName())) {
                         NamedNodeMap attrs = d.getAttributes();
                         final int id = parseInteger(attrs, "id");
-                        EnchantSkillGroup group = _enchantSkillGroups.get(id);
+                        EnchantSkillGroup group = enchantSkillGroups.get(id);
                         if (group == null) {
                             group = new EnchantSkillGroup(id);
-                            _enchantSkillGroups.put(id, group);
+                            enchantSkillGroups.put(id, group);
                         }
 
                         for (Node b = d.getFirstChild(); b != null; b = b.getNextSibling()) {
@@ -112,22 +112,23 @@ public class EnchantSkillGroupsData implements IXmlReader {
      * @return the int
      */
     public int addNewRouteForSkill(int skillId, int maxLvL, int route, int group) {
-        EnchantSkillLearn enchantableSkill = _enchantSkillTrees.get(skillId);
+        EnchantSkillLearn enchantableSkill = enchantSkillTrees.get(skillId);
         if (enchantableSkill == null) {
             enchantableSkill = new EnchantSkillLearn(skillId, maxLvL);
-            _enchantSkillTrees.put(skillId, enchantableSkill);
+            enchantSkillTrees.put(skillId, enchantableSkill);
         }
 
-        final EnchantSkillGroup groupData = _enchantSkillGroups.get(group);
+        final EnchantSkillGroup groupData = enchantSkillGroups.get(group);
         if (groupData != null) {
             enchantableSkill.addNewEnchantRoute(route, group);
             return groupData.getEnchantGroupDetails().size();
         }
 
-        LOGGER.log(
-                Level.SEVERE,
-                getClass().getSimpleName() + ": Error while loading generating enchant skill id: " + skillId
-                        + "; route: " + route + "; missing group: " + group);
+        log.error(
+                "Error while loading generating enchant skill id: {}; route: {}; missing group: {}",
+                skillId,
+                route,
+                group);
         return 0;
     }
 
@@ -148,7 +149,7 @@ public class EnchantSkillGroupsData implements IXmlReader {
      * @return the skill enchantment by skill id
      */
     public EnchantSkillLearn getSkillEnchantmentBySkillId(int skillId) {
-        return _enchantSkillTrees.get(skillId);
+        return enchantSkillTrees.get(skillId);
     }
 
     /**
@@ -157,7 +158,7 @@ public class EnchantSkillGroupsData implements IXmlReader {
      * @return the enchant skill group by id
      */
     public EnchantSkillGroup getEnchantSkillGroupById(int id) {
-        return _enchantSkillGroups.get(id);
+        return enchantSkillGroups.get(id);
     }
 
     /**
@@ -166,7 +167,7 @@ public class EnchantSkillGroupsData implements IXmlReader {
      * @return the enchant skill sp cost
      */
     public int getEnchantSkillSpCost(Skill skill) {
-        final EnchantSkillLearn enchantSkillLearn = _enchantSkillTrees.get(skill.getId());
+        final EnchantSkillLearn enchantSkillLearn = enchantSkillTrees.get(skill.getId());
         if (enchantSkillLearn != null) {
             final EnchantSkillHolder esh = enchantSkillLearn.getEnchantSkillHolder(skill.getLevel());
             if (esh != null) {
@@ -183,7 +184,7 @@ public class EnchantSkillGroupsData implements IXmlReader {
      * @return the enchant skill Adena cost
      */
     public int getEnchantSkillAdenaCost(Skill skill) {
-        final EnchantSkillLearn enchantSkillLearn = _enchantSkillTrees.get(skill.getId());
+        final EnchantSkillLearn enchantSkillLearn = enchantSkillTrees.get(skill.getId());
         if (enchantSkillLearn != null) {
             final EnchantSkillHolder esh = enchantSkillLearn.getEnchantSkillHolder(skill.getLevel());
             if (esh != null) {
@@ -201,7 +202,7 @@ public class EnchantSkillGroupsData implements IXmlReader {
      * @return the enchant skill rate
      */
     public byte getEnchantSkillRate(Player player, Skill skill) {
-        final EnchantSkillLearn enchantSkillLearn = _enchantSkillTrees.get(skill.getId());
+        final EnchantSkillLearn enchantSkillLearn = enchantSkillTrees.get(skill.getId());
         if (enchantSkillLearn != null) {
             final EnchantSkillHolder esh = enchantSkillLearn.getEnchantSkillHolder(skill.getLevel());
             if (esh != null) {

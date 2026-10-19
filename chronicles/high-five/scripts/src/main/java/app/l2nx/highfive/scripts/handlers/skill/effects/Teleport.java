@@ -34,12 +34,12 @@ import app.l2nx.highfive.util.StatSet;
  * @author Adry_85
  */
 public class Teleport extends AbstractEffect {
-    private final Location _loc;
+    private final Location loc;
 
     public Teleport(Condition attachCond, Condition applyCond, StatSet set, StatSet params) {
         super(attachCond, applyCond, set, params);
 
-        _loc = new Location(params.getInt("x", 0), params.getInt("y", 0), params.getInt("z", 0));
+        loc = new Location(params.getInt("x", 0), params.getInt("y", 0), params.getInt("z", 0));
     }
 
     @Override
@@ -64,6 +64,6 @@ public class Teleport extends AbstractEffect {
             }
         }
 
-        effected.teleToLocation(_loc, true);
+        effected.teleToLocation(loc, true);
     }
 }

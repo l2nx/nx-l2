@@ -31,15 +31,15 @@ public class CharDeleteFail extends ServerPacket {
     public static final int REASON_YOU_MAY_NOT_DELETE_CLAN_MEMBER = 2;
     public static final int REASON_CLAN_LEADERS_MAY_NOT_BE_DELETED = 3;
 
-    private final int _error;
+    private final int error;
 
     public CharDeleteFail(int errorCode) {
-        _error = errorCode;
+        error = errorCode;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.CHARACTER_DELETE_FAIL.writeId(this, buffer);
-        buffer.writeInt(_error);
+        buffer.writeInt(error);
     }
 }

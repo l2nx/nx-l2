@@ -29,15 +29,15 @@ import app.l2nx.highfive.scripts.quests.AbstractSagaQuest;
 public class Q00075_SagaOfTheTitan extends AbstractSagaQuest {
     public Q00075_SagaOfTheTitan() {
         super(75);
-        _npc = new int[] {31327, 31624, 31289, 31290, 31607, 31646, 31649, 31651, 31654, 31655, 31658, 31290};
-        _items = new int[] {7080, 7539, 7081, 7490, 7273, 7304, 7335, 7366, 7397, 7428, 7098, 0};
-        _mob = new int[] {27292, 27224, 27283};
-        _classId = new int[] {113};
-        _prevClass = new int[] {0x2e};
-        _npcSpawnLocations = new Location[] {
+        npc = new int[] {31327, 31624, 31289, 31290, 31607, 31646, 31649, 31651, 31654, 31655, 31658, 31290};
+        items = new int[] {7080, 7539, 7081, 7490, 7273, 7304, 7335, 7366, 7397, 7428, 7098, 0};
+        mob = new int[] {27292, 27224, 27283};
+        classId = new int[] {113};
+        prevClass = new int[] {0x2e};
+        npcSpawnLocations = new Location[] {
             new Location(119518, -28658, -3811), new Location(181215, 36676, -4812), new Location(181227, 36703, -4816)
         };
-        _text = new String[] {
+        text = new String[] {
             "PLAYERNAME! Pursued to here! However, I jumped out of the Banshouren boundaries! You look at the giant as the sign of power!",
             "... Oh ... good! So it was ... let's begin!",
             "I do not have the patience ..! I have been a giant force ...! Cough chatter ah ah ah!",

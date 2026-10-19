@@ -35,19 +35,19 @@ import java.util.concurrent.ThreadLocalRandom;
  * @author Adry_85
  */
 public class Unsummon extends AbstractEffect {
-    private final int _chance;
+    private final int chance;
 
     public Unsummon(Condition attachCond, Condition applyCond, StatSet set, StatSet params) {
         super(attachCond, applyCond, set, params);
 
-        _chance = params.getInt("chance", 100);
+        chance = params.getInt("chance", 100);
     }
 
     @Override
     public boolean calcSuccess(Creature effector, Creature effected, Skill skill) {
         final int magicLevel = skill.getMagicLevel();
         if ((magicLevel <= 0) || ((effected.getLevel() - 9) <= magicLevel)) {
-            final double chance = _chance
+            final double chance = this.chance
                     * Formulas.calcAttributeBonus(effector, effected, skill)
                     * Formulas.calcGeneralTraitBonus(effector, effected, skill.getTraitType(), false);
             if (chance > (ThreadLocalRandom.current().nextDouble() * 100)) {

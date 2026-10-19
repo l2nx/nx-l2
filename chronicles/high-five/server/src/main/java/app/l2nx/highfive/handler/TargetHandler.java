@@ -27,30 +27,30 @@ import java.util.Map;
  * @author UnAfraid
  */
 public class TargetHandler implements IHandler<ITargetTypeHandler, Enum<TargetType>> {
-    private final Map<Enum<TargetType>, ITargetTypeHandler> _datatable;
+    private final Map<Enum<TargetType>, ITargetTypeHandler> datatable;
 
     protected TargetHandler() {
-        _datatable = new HashMap<>();
+        datatable = new HashMap<>();
     }
 
     @Override
     public void registerHandler(ITargetTypeHandler handler) {
-        _datatable.put(handler.getTargetType(), handler);
+        datatable.put(handler.getTargetType(), handler);
     }
 
     @Override
     public synchronized void removeHandler(ITargetTypeHandler handler) {
-        _datatable.remove(handler.getTargetType());
+        datatable.remove(handler.getTargetType());
     }
 
     @Override
     public ITargetTypeHandler getHandler(Enum<TargetType> targetType) {
-        return _datatable.get(targetType);
+        return datatable.get(targetType);
     }
 
     @Override
     public int size() {
-        return _datatable.size();
+        return datatable.size();
     }
 
     public static TargetHandler getInstance() {

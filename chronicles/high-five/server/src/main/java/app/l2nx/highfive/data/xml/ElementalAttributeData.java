@@ -29,11 +29,13 @@ import app.l2nx.highfive.util.StatSet;
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
 import org.w3c.dom.Document;
 
 /**
  * @author Mobius
  */
+@Slf4j
 public class ElementalAttributeData implements IXmlReader {
     private static final Map<Integer, ElementalItemHolder> ELEMENTAL_ITEMS = new HashMap<>();
 
@@ -45,7 +47,7 @@ public class ElementalAttributeData implements IXmlReader {
     public void load() {
         ELEMENTAL_ITEMS.clear();
         parseDatapackFile("data/ElementalAttributeData.xml");
-        LOGGER.info(getClass().getSimpleName() + ": Loaded " + ELEMENTAL_ITEMS.size() + " elemental attribute items.");
+        log.info("Loaded {} elemental attribute items.", ELEMENTAL_ITEMS.size());
     }
 
     @Override
@@ -58,7 +60,7 @@ public class ElementalAttributeData implements IXmlReader {
 
                     final int id = set.getInt("id");
                     if (ItemData.getInstance().getTemplate(id) == null) {
-                        LOGGER.info(getClass().getSimpleName() + ": Could not find item with id " + id + ".");
+                        log.info("Could not find item with id {}.", id);
                         return;
                     }
 

@@ -24,30 +24,68 @@ package app.l2nx.highfive.network.holders;
 
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.mechanics.variables.AccountVariables;
+import lombok.Getter;
 
 /**
  * @author Mobius
  */
 public class ClientHardwareInfoHolder {
-    private final String _macAddress;
-    private final int _windowsPlatformId;
-    private final int _windowsMajorVersion;
-    private final int _windowsMinorVersion;
-    private final int _windowsBuildNumber;
-    private final int _directxVersion;
-    private final int _directxRevision;
-    private final String _cpuName;
-    private final int _cpuSpeed;
-    private final int _cpuCoreCount;
-    private final int _vgaCount;
-    private final int _vgaPcxSpeed;
-    private final int _physMemorySlot1;
-    private final int _physMemorySlot2;
-    private final int _physMemorySlot3;
-    private final int _videoMemory;
-    private final int _vgaVersion;
-    private final String _vgaName;
-    private final String _vgaDriverVersion;
+    @Getter
+    private final String macAddress;
+
+    @Getter
+    private final int windowsPlatformId;
+
+    @Getter
+    private final int windowsMajorVersion;
+
+    @Getter
+    private final int windowsMinorVersion;
+
+    @Getter
+    private final int windowsBuildNumber;
+
+    @Getter
+    private final int directxVersion;
+
+    @Getter
+    private final int directxRevision;
+
+    @Getter
+    private final String cpuName;
+
+    @Getter
+    private final int cpuSpeed;
+
+    @Getter
+    private final int cpuCoreCount;
+
+    @Getter
+    private final int vgaCount;
+
+    @Getter
+    private final int vgaPcxSpeed;
+
+    @Getter
+    private final int physMemorySlot1;
+
+    @Getter
+    private final int physMemorySlot2;
+
+    @Getter
+    private final int physMemorySlot3;
+
+    @Getter
+    private final int videoMemory;
+
+    @Getter
+    private final int vgaVersion;
+
+    @Getter
+    private final String vgaName;
+
+    @Getter
+    private final String vgaDriverVersion;
 
     public ClientHardwareInfoHolder(
             String macAddress,
@@ -69,48 +107,48 @@ public class ClientHardwareInfoHolder {
             int vgaVersion,
             String vgaName,
             String vgaDriverVersion) {
-        _macAddress = macAddress;
-        _windowsPlatformId = windowsPlatformId;
-        _windowsMajorVersion = windowsMajorVersion;
-        _windowsMinorVersion = windowsMinorVersion;
-        _windowsBuildNumber = windowsBuildNumber;
-        _directxVersion = directxVersion;
-        _directxRevision = directxRevision;
-        _cpuName = cpuName;
-        _cpuSpeed = cpuSpeed;
-        _cpuCoreCount = cpuCoreCount;
-        _vgaCount = vgaCount;
-        _vgaPcxSpeed = vgaPcxSpeed;
-        _physMemorySlot1 = physMemorySlot1;
-        _physMemorySlot2 = physMemorySlot2;
-        _physMemorySlot3 = physMemorySlot3;
-        _videoMemory = videoMemory;
-        _vgaVersion = vgaVersion;
-        _vgaName = vgaName;
-        _vgaDriverVersion = vgaDriverVersion;
+        this.macAddress = macAddress;
+        this.windowsPlatformId = windowsPlatformId;
+        this.windowsMajorVersion = windowsMajorVersion;
+        this.windowsMinorVersion = windowsMinorVersion;
+        this.windowsBuildNumber = windowsBuildNumber;
+        this.directxVersion = directxVersion;
+        this.directxRevision = directxRevision;
+        this.cpuName = cpuName;
+        this.cpuSpeed = cpuSpeed;
+        this.cpuCoreCount = cpuCoreCount;
+        this.vgaCount = vgaCount;
+        this.vgaPcxSpeed = vgaPcxSpeed;
+        this.physMemorySlot1 = physMemorySlot1;
+        this.physMemorySlot2 = physMemorySlot2;
+        this.physMemorySlot3 = physMemorySlot3;
+        this.videoMemory = videoMemory;
+        this.vgaVersion = vgaVersion;
+        this.vgaName = vgaName;
+        this.vgaDriverVersion = vgaDriverVersion;
     }
 
     public ClientHardwareInfoHolder(String info) {
         final String[] split = info.split(AccountVariables.HWIDSLIT_VAR);
-        _macAddress = split[0];
-        _windowsPlatformId = Integer.valueOf(split[1]);
-        _windowsMajorVersion = Integer.valueOf(split[2]);
-        _windowsMinorVersion = Integer.valueOf(split[3]);
-        _windowsBuildNumber = Integer.valueOf(split[4]);
-        _directxVersion = Integer.valueOf(split[5]);
-        _directxRevision = Integer.valueOf(split[6]);
-        _cpuName = split[7];
-        _cpuSpeed = Integer.valueOf(split[8]);
-        _cpuCoreCount = Integer.valueOf(split[9]);
-        _vgaCount = Integer.valueOf(split[10]);
-        _vgaPcxSpeed = Integer.valueOf(split[11]);
-        _physMemorySlot1 = Integer.valueOf(split[12]);
-        _physMemorySlot2 = Integer.valueOf(split[13]);
-        _physMemorySlot3 = Integer.valueOf(split[14]);
-        _videoMemory = Integer.valueOf(split[15]);
-        _vgaVersion = Integer.valueOf(split[16]);
-        _vgaName = split[17];
-        _vgaDriverVersion = split[18];
+        macAddress = split[0];
+        windowsPlatformId = Integer.valueOf(split[1]);
+        windowsMajorVersion = Integer.valueOf(split[2]);
+        windowsMinorVersion = Integer.valueOf(split[3]);
+        windowsBuildNumber = Integer.valueOf(split[4]);
+        directxVersion = Integer.valueOf(split[5]);
+        directxRevision = Integer.valueOf(split[6]);
+        cpuName = split[7];
+        cpuSpeed = Integer.valueOf(split[8]);
+        cpuCoreCount = Integer.valueOf(split[9]);
+        vgaCount = Integer.valueOf(split[10]);
+        vgaPcxSpeed = Integer.valueOf(split[11]);
+        physMemorySlot1 = Integer.valueOf(split[12]);
+        physMemorySlot2 = Integer.valueOf(split[13]);
+        physMemorySlot3 = Integer.valueOf(split[14]);
+        videoMemory = Integer.valueOf(split[15]);
+        vgaVersion = Integer.valueOf(split[16]);
+        vgaName = split[17];
+        vgaDriverVersion = split[18];
     }
 
     /**
@@ -119,182 +157,49 @@ public class ClientHardwareInfoHolder {
      */
     public void store(Player player) {
         final StringBuilder sb = new StringBuilder();
-        sb.append(_macAddress);
+        sb.append(macAddress);
         sb.append(AccountVariables.HWIDSLIT_VAR);
-        sb.append(_windowsPlatformId);
+        sb.append(windowsPlatformId);
         sb.append(AccountVariables.HWIDSLIT_VAR);
-        sb.append(_windowsMajorVersion);
+        sb.append(windowsMajorVersion);
         sb.append(AccountVariables.HWIDSLIT_VAR);
-        sb.append(_windowsMinorVersion);
+        sb.append(windowsMinorVersion);
         sb.append(AccountVariables.HWIDSLIT_VAR);
-        sb.append(_windowsBuildNumber);
+        sb.append(windowsBuildNumber);
         sb.append(AccountVariables.HWIDSLIT_VAR);
-        sb.append(_directxVersion);
+        sb.append(directxVersion);
         sb.append(AccountVariables.HWIDSLIT_VAR);
-        sb.append(_directxRevision);
+        sb.append(directxRevision);
         sb.append(AccountVariables.HWIDSLIT_VAR);
-        sb.append(_cpuName);
+        sb.append(cpuName);
         sb.append(AccountVariables.HWIDSLIT_VAR);
-        sb.append(_cpuSpeed);
+        sb.append(cpuSpeed);
         sb.append(AccountVariables.HWIDSLIT_VAR);
-        sb.append(_cpuCoreCount);
+        sb.append(cpuCoreCount);
         sb.append(AccountVariables.HWIDSLIT_VAR);
-        sb.append(_vgaCount);
+        sb.append(vgaCount);
         sb.append(AccountVariables.HWIDSLIT_VAR);
-        sb.append(_vgaPcxSpeed);
+        sb.append(vgaPcxSpeed);
         sb.append(AccountVariables.HWIDSLIT_VAR);
-        sb.append(_physMemorySlot1);
+        sb.append(physMemorySlot1);
         sb.append(AccountVariables.HWIDSLIT_VAR);
-        sb.append(_physMemorySlot2);
+        sb.append(physMemorySlot2);
         sb.append(AccountVariables.HWIDSLIT_VAR);
-        sb.append(_physMemorySlot3);
+        sb.append(physMemorySlot3);
         sb.append(AccountVariables.HWIDSLIT_VAR);
-        sb.append(_videoMemory);
+        sb.append(videoMemory);
         sb.append(AccountVariables.HWIDSLIT_VAR);
-        sb.append(_vgaVersion);
+        sb.append(vgaVersion);
         sb.append(AccountVariables.HWIDSLIT_VAR);
-        sb.append(_vgaName);
+        sb.append(vgaName);
         sb.append(AccountVariables.HWIDSLIT_VAR);
-        sb.append(_vgaDriverVersion);
+        sb.append(vgaDriverVersion);
         player.getAccountVariables().set(AccountVariables.HWID, sb.toString());
-    }
-
-    /**
-     * @return the macAddress
-     */
-    public String getMacAddress() {
-        return _macAddress;
-    }
-
-    /**
-     * @return the windowsPlatformId
-     */
-    public int getWindowsPlatformId() {
-        return _windowsPlatformId;
-    }
-
-    /**
-     * @return the windowsMajorVersion
-     */
-    public int getWindowsMajorVersion() {
-        return _windowsMajorVersion;
-    }
-
-    /**
-     * @return the windowsMinorVersion
-     */
-    public int getWindowsMinorVersion() {
-        return _windowsMinorVersion;
-    }
-
-    /**
-     * @return the windowsBuildNumber
-     */
-    public int getWindowsBuildNumber() {
-        return _windowsBuildNumber;
-    }
-
-    /**
-     * @return the directxVersion
-     */
-    public int getDirectxVersion() {
-        return _directxVersion;
-    }
-
-    /**
-     * @return the directxRevision
-     */
-    public int getDirectxRevision() {
-        return _directxRevision;
-    }
-
-    /**
-     * @return the cpuName
-     */
-    public String getCpuName() {
-        return _cpuName;
-    }
-
-    /**
-     * @return the cpuSpeed
-     */
-    public int getCpuSpeed() {
-        return _cpuSpeed;
-    }
-
-    /**
-     * @return the cpuCoreCount
-     */
-    public int getCpuCoreCount() {
-        return _cpuCoreCount;
-    }
-
-    /**
-     * @return the vgaCount
-     */
-    public int getVgaCount() {
-        return _vgaCount;
-    }
-
-    /**
-     * @return the vgaPcxSpeed
-     */
-    public int getVgaPcxSpeed() {
-        return _vgaPcxSpeed;
-    }
-
-    /**
-     * @return the physMemorySlot1
-     */
-    public int getPhysMemorySlot1() {
-        return _physMemorySlot1;
-    }
-
-    /**
-     * @return the physMemorySlot2
-     */
-    public int getPhysMemorySlot2() {
-        return _physMemorySlot2;
-    }
-
-    /**
-     * @return the physMemorySlot3
-     */
-    public int getPhysMemorySlot3() {
-        return _physMemorySlot3;
-    }
-
-    /**
-     * @return the videoMemory
-     */
-    public int getVideoMemory() {
-        return _videoMemory;
-    }
-
-    /**
-     * @return the vgaVersion
-     */
-    public int getVgaVersion() {
-        return _vgaVersion;
-    }
-
-    /**
-     * @return the vgaName
-     */
-    public String getVgaName() {
-        return _vgaName;
-    }
-
-    /**
-     * @return the vgaDriverVersion
-     */
-    public String getVgaDriverVersion() {
-        return _vgaDriverVersion;
     }
 
     @Override
     public boolean equals(Object obj) {
         return (obj instanceof ClientHardwareInfoHolder)
-                && _macAddress.equals(((ClientHardwareInfoHolder) obj).getMacAddress());
+                && macAddress.equals(((ClientHardwareInfoHolder) obj).getMacAddress());
     }
 }

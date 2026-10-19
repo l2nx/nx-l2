@@ -33,84 +33,83 @@ import app.l2nx.highfive.taskmanagers.AttackStanceTaskManager;
 import java.util.Collections;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Executes offensive and mixed cubic actions.<br>
  * Supports template-level and skill-level target routing.
  * @author UnAfraid, Mobius
  */
+@Slf4j
 public class CubicAction implements Runnable {
-    private static final Logger LOGGER = Logger.getLogger(CubicAction.class.getName());
 
-    private final Cubic _cubic;
-    private final AtomicInteger _currentCount = new AtomicInteger();
-    private final int _chance;
+    private final Cubic cubic;
+    private final AtomicInteger currentCount = new AtomicInteger();
+    private final int chance;
 
     public CubicAction(Cubic cubic, int chance) {
-        _cubic = cubic;
-        _chance = chance;
+        this.cubic = cubic;
+        this.chance = chance;
     }
 
     @Override
     public void run() {
-        if (_cubic == null) {
+        if (cubic == null) {
             return;
         }
 
-        if (_cubic.getOwner().isDead() || !_cubic.getOwner().isOnline()) {
-            _cubic.getOwner().removeCubic(_cubic.getId());
-            _cubic.getOwner().broadcastUserInfo();
+        if (cubic.getOwner().isDead() || !cubic.getOwner().isOnline()) {
+            cubic.getOwner().removeCubic(cubic.getId());
+            cubic.getOwner().broadcastUserInfo();
             return;
         }
 
         try {
-            if (!AttackStanceTaskManager.getInstance().hasAttackStanceTask(_cubic.getOwner())) {
-                if (_cubic.getOwner().hasSummon()) {
+            if (!AttackStanceTaskManager.getInstance().hasAttackStanceTask(cubic.getOwner())) {
+                if (cubic.getOwner().hasSummon()) {
                     if (!AttackStanceTaskManager.getInstance()
-                            .hasAttackStanceTask(_cubic.getOwner().getSummon())) {
-                        _cubic.stopAction();
+                            .hasAttackStanceTask(cubic.getOwner().getSummon())) {
+                        cubic.stopAction();
                         return;
                     }
                 } else {
-                    _cubic.stopAction();
+                    cubic.stopAction();
                     return;
                 }
             }
 
-            if ((_cubic.getCubicMaxCount() > -1) && (_currentCount.get() >= _cubic.getCubicMaxCount())) {
-                _cubic.stopAction();
-                if ((_cubic.getTemplate() != null) && (_cubic.getTemplate().getUseUp() > 0)) {
-                    _cubic.getOwner().removeCubic(_cubic.getId());
-                    _cubic.getOwner().broadcastUserInfo();
+            if ((cubic.getCubicMaxCount() > -1) && (currentCount.get() >= cubic.getCubicMaxCount())) {
+                cubic.stopAction();
+                if ((cubic.getTemplate() != null) && (cubic.getTemplate().getUseUp() > 0)) {
+                    cubic.getOwner().removeCubic(cubic.getId());
+                    cubic.getOwner().broadcastUserInfo();
                 }
                 return;
             }
 
             if (tryUsePrioritySkill()) {
-                _currentCount.incrementAndGet();
+                currentCount.incrementAndGet();
                 return;
             }
 
-            if (ThreadLocalRandom.current().nextInt(100) >= _chance) {
+            if (ThreadLocalRandom.current().nextInt(100) >= chance) {
                 return;
             }
 
-            if (tryUseSkill(_cubic.getCubicSkill())) {
-                _currentCount.incrementAndGet();
+            if (tryUseSkill(cubic.getCubicSkill())) {
+                currentCount.incrementAndGet();
             }
         } catch (Exception e) {
-            LOGGER.log(
-                    Level.SEVERE,
-                    "Cubic action failed. cubicId: " + _cubic.getId() + " ownerId: "
-                            + _cubic.getOwner().getObjectId(),
+            log.error(
+                    "Cubic action failed. cubicId: {} ownerId: {}",
+                    cubic.getId(),
+                    cubic.getOwner().getObjectId(),
                     e);
         }
     }
 
     private boolean tryUsePrioritySkill() {
-        for (CubicSkill cubicSkill : _cubic.getCubicSkills()) {
+        for (CubicSkill cubicSkill : cubic.getCubicSkills()) {
             if (cubicSkill.isPriority() && tryUseSkill(cubicSkill)) {
                 return true;
             }
@@ -134,12 +133,11 @@ public class CubicAction implements Runnable {
             return false;
         }
 
-        if ((_cubic.getTemplate() != null)
-                && !_cubic.getTemplate().validateConditions(_cubic, _cubic.getOwner(), target)) {
+        if ((cubic.getTemplate() != null) && !cubic.getTemplate().validateConditions(cubic, cubic.getOwner(), target)) {
             return false;
         }
 
-        if (!cubicSkill.validateConditions(_cubic, _cubic.getOwner(), target)) {
+        if (!cubicSkill.validateConditions(cubic, cubic.getOwner(), target)) {
             return false;
         }
 
@@ -149,50 +147,50 @@ public class CubicAction implements Runnable {
 
     private Creature resolveTarget(CubicSkill cubicSkill) {
         CubicTargetType targetType =
-                _cubic.getTemplate() != null ? _cubic.getTemplate().getTargetType() : CubicTargetType.TARGET;
+                cubic.getTemplate() != null ? cubic.getTemplate().getTargetType() : CubicTargetType.TARGET;
         if (targetType == CubicTargetType.BY_SKILL) {
             targetType = cubicSkill.getTargetType();
         }
 
         switch (targetType) {
             case HEAL: {
-                _cubic.cubicTargetForHeal();
-                return _cubic.getTarget();
+                cubic.cubicTargetForHeal();
+                return cubic.getTarget();
             }
             case MASTER: {
-                _cubic.setTarget(_cubic.getOwner());
-                return _cubic.getOwner();
+                cubic.setTarget(cubic.getOwner());
+                return cubic.getOwner();
             }
             case TARGET:
             default: {
-                _cubic.getCubicTarget();
-                if (!Cubic.isInCubicRange(_cubic.getOwner(), _cubic.getTarget())) {
-                    _cubic.setTarget(null);
+                cubic.getCubicTarget();
+                if (!Cubic.isInCubicRange(cubic.getOwner(), cubic.getTarget())) {
+                    cubic.setTarget(null);
                 }
-                return _cubic.getTarget();
+                return cubic.getTarget();
             }
         }
     }
 
     private void activateSkill(Skill skill, Creature target) {
-        _cubic.getOwner()
+        cubic.getOwner()
                 .broadcastSkillPacket(
-                        new MagicSkillUse(_cubic.getOwner(), target, skill.getId(), skill.getLevel(), 0, 0), target);
+                        new MagicSkillUse(cubic.getOwner(), target, skill.getId(), skill.getLevel(), 0, 0), target);
         if (skill.isContinuous()) {
-            _cubic.useCubicContinuous(skill, Collections.singletonList(target));
+            cubic.useCubicContinuous(skill, Collections.singletonList(target));
         } else {
             if (skill.hasEffectType(EffectType.MAGICAL_ATTACK)) {
-                _cubic.useCubicMdam(skill, Collections.singletonList(target));
+                cubic.useCubicMdam(skill, Collections.singletonList(target));
             } else if (skill.hasEffectType(EffectType.HP_DRAIN)) {
-                _cubic.useCubicDrain(skill, Collections.singletonList(target));
+                cubic.useCubicDrain(skill, Collections.singletonList(target));
             } else if (skill.hasEffectType(EffectType.STUN, EffectType.ROOT, EffectType.PARALYZE)) {
-                _cubic.useCubicDisabler(skill, Collections.singletonList(target));
+                cubic.useCubicDisabler(skill, Collections.singletonList(target));
             } else if (skill.hasEffectType(EffectType.DMG_OVER_TIME, EffectType.DMG_OVER_TIME_PERCENT)) {
-                _cubic.useCubicContinuous(skill, Collections.singletonList(target));
+                cubic.useCubicContinuous(skill, Collections.singletonList(target));
             } else if (skill.hasEffectType(EffectType.AGGRESSION)) {
-                _cubic.useCubicDisabler(skill, Collections.singletonList(target));
+                cubic.useCubicDisabler(skill, Collections.singletonList(target));
             } else {
-                skill.activateSkill(_cubic, Collections.singletonList(target));
+                skill.activateSkill(cubic, Collections.singletonList(target));
             }
         }
     }

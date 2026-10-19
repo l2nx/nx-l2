@@ -46,19 +46,19 @@ public class ExShowScreenMessage extends ServerPacket {
     public static final byte BOTTOM_CENTER = 7;
     public static final byte BOTTOM_RIGHT = 8;
 
-    private final int _type;
-    private final int _sysMessageId;
-    private final int _unk1;
-    private final int _unk2;
-    private final int _unk3;
-    private final boolean _fade;
-    private final int _size;
-    private final int _position;
-    private final boolean _effect;
-    private final String _text;
-    private final int _time;
-    private final int _npcString;
-    private List<String> _parameters;
+    private final int type;
+    private final int sysMessageId;
+    private final int unk1;
+    private final int unk2;
+    private final int unk3;
+    private final boolean fade;
+    private final int size;
+    private final int position;
+    private final boolean effect;
+    private final String text;
+    private final int time;
+    private final int npcString;
+    private List<String> parameters;
 
     /**
      * Display a String on the screen for a given time.
@@ -66,18 +66,18 @@ public class ExShowScreenMessage extends ServerPacket {
      * @param time the display time
      */
     public ExShowScreenMessage(String text, int time) {
-        _type = 2;
-        _sysMessageId = -1;
-        _unk1 = 0;
-        _unk2 = 0;
-        _unk3 = 0;
-        _fade = false;
-        _position = TOP_CENTER;
-        _text = text;
-        _time = time;
-        _size = 0;
-        _effect = false;
-        _npcString = -1;
+        type = 2;
+        sysMessageId = -1;
+        unk1 = 0;
+        unk2 = 0;
+        unk3 = 0;
+        fade = false;
+        position = TOP_CENTER;
+        this.text = text;
+        this.time = time;
+        size = 0;
+        effect = false;
+        npcString = -1;
     }
 
     /**
@@ -87,18 +87,18 @@ public class ExShowScreenMessage extends ServerPacket {
      * @param time the display time
      */
     public ExShowScreenMessage(String text, int position, int time) {
-        _type = 2;
-        _sysMessageId = -1;
-        _unk1 = 0;
-        _unk2 = 0;
-        _unk3 = 0;
-        _fade = false;
-        _position = position;
-        _text = text;
-        _time = time;
-        _size = 0;
-        _effect = false;
-        _npcString = -1;
+        type = 2;
+        sysMessageId = -1;
+        unk1 = 0;
+        unk2 = 0;
+        unk3 = 0;
+        fade = false;
+        this.position = position;
+        this.text = text;
+        this.time = time;
+        size = 0;
+        effect = false;
+        npcString = -1;
     }
 
     /**
@@ -111,18 +111,18 @@ public class ExShowScreenMessage extends ServerPacket {
      * @param showEffect upper effect
      */
     public ExShowScreenMessage(String text, int position, int time, int size, boolean fade, boolean showEffect) {
-        _type = 1;
-        _sysMessageId = -1;
-        _unk1 = 0;
-        _unk2 = 0;
-        _unk3 = 0;
-        _fade = fade;
-        _position = position;
-        _text = text;
-        _time = time;
-        _size = size;
-        _effect = showEffect;
-        _npcString = -1;
+        type = 1;
+        sysMessageId = -1;
+        unk1 = 0;
+        unk2 = 0;
+        unk3 = 0;
+        this.fade = fade;
+        this.position = position;
+        this.text = text;
+        this.time = time;
+        this.size = size;
+        effect = showEffect;
+        npcString = -1;
     }
 
     /**
@@ -133,18 +133,18 @@ public class ExShowScreenMessage extends ServerPacket {
      * @param params the String parameters
      */
     public ExShowScreenMessage(NpcStringId npcString, int position, int time, String... params) {
-        _type = 2;
-        _sysMessageId = -1;
-        _unk1 = 0x00;
-        _unk2 = 0x00;
-        _unk3 = 0x00;
-        _fade = false;
-        _position = position;
-        _text = null;
-        _time = time;
-        _size = 0x00;
-        _effect = false;
-        _npcString = npcString.getId();
+        type = 2;
+        sysMessageId = -1;
+        unk1 = 0x00;
+        unk2 = 0x00;
+        unk3 = 0x00;
+        fade = false;
+        this.position = position;
+        text = null;
+        this.time = time;
+        size = 0x00;
+        effect = false;
+        this.npcString = npcString.getId();
         if (params != null) {
             addStringParameter(params);
         }
@@ -158,18 +158,18 @@ public class ExShowScreenMessage extends ServerPacket {
      * @param params the String parameters
      */
     public ExShowScreenMessage(SystemMessageId systemMsg, int position, int time, String... params) {
-        _type = 2;
-        _sysMessageId = systemMsg.getId();
-        _unk1 = 0x00;
-        _unk2 = 0x00;
-        _unk3 = 0x00;
-        _fade = false;
-        _position = position;
-        _text = null;
-        _time = time;
-        _size = 0x00;
-        _effect = false;
-        _npcString = -1;
+        type = 2;
+        sysMessageId = systemMsg.getId();
+        unk1 = 0x00;
+        unk2 = 0x00;
+        unk3 = 0x00;
+        fade = false;
+        this.position = position;
+        text = null;
+        this.time = time;
+        size = 0x00;
+        effect = false;
+        npcString = -1;
         if (params != null) {
             addStringParameter(params);
         }
@@ -184,7 +184,7 @@ public class ExShowScreenMessage extends ServerPacket {
      * @param size the font size 0 - normal, 1 - small
      * @param unk2
      * @param unk3
-     * @param showEffect upper effect (0 - disabled, 1 enabled) - _position must be 2 (center) otherwise no effect
+     * @param showEffect upper effect (0 - disabled, 1 enabled) - position must be 2 (center) otherwise no effect
      * @param time the display time
      * @param fade the fade effect (0 - disabled, 1 enabled)
      * @param text the text to display
@@ -205,18 +205,18 @@ public class ExShowScreenMessage extends ServerPacket {
             String text,
             NpcStringId npcString,
             String params) {
-        _type = type;
-        _sysMessageId = messageId;
-        _unk1 = unk1;
-        _unk2 = unk2;
-        _unk3 = unk3;
-        _fade = fade;
-        _position = position;
-        _text = text;
-        _time = time;
-        _size = size;
-        _effect = showEffect;
-        _npcString = npcString == null ? -1 : npcString.getId();
+        this.type = type;
+        sysMessageId = messageId;
+        this.unk1 = unk1;
+        this.unk2 = unk2;
+        this.unk3 = unk3;
+        this.fade = fade;
+        this.position = position;
+        this.text = text;
+        this.time = time;
+        this.size = size;
+        effect = showEffect;
+        this.npcString = npcString == null ? -1 : npcString.getId();
     }
 
     /**
@@ -224,12 +224,12 @@ public class ExShowScreenMessage extends ServerPacket {
      * @param params the parameter
      */
     public void addStringParameter(String... params) {
-        if (_parameters == null) {
-            _parameters = new ArrayList<>();
+        if (parameters == null) {
+            parameters = new ArrayList<>();
         }
 
         for (String param : params) {
-            _parameters.add(param);
+            parameters.add(param);
         }
     }
 
@@ -243,45 +243,45 @@ public class ExShowScreenMessage extends ServerPacket {
             if (player != null) {
                 final String lang = player.getLang();
                 if ((lang != null) && !lang.equals("en")) {
-                    if (_sysMessageId > -1) {
-                        final SystemMessageId sm = SystemMessageId.getSystemMessageId(_sysMessageId);
+                    if (sysMessageId > -1) {
+                        final SystemMessageId sm = SystemMessageId.getSystemMessageId(sysMessageId);
                         if (sm != null) {
                             final SMLocalisation sml = sm.getLocalisation(lang);
                             if (sml != null) {
-                                buffer.writeInt(_type);
+                                buffer.writeInt(type);
                                 buffer.writeInt(-1);
-                                buffer.writeInt(_position);
-                                buffer.writeInt(_unk1);
-                                buffer.writeInt(_size);
-                                buffer.writeInt(_unk2);
-                                buffer.writeInt(_unk3);
-                                buffer.writeInt(_effect);
-                                buffer.writeInt(_time);
-                                buffer.writeInt(_fade);
+                                buffer.writeInt(position);
+                                buffer.writeInt(unk1);
+                                buffer.writeInt(size);
+                                buffer.writeInt(unk2);
+                                buffer.writeInt(unk3);
+                                buffer.writeInt(effect);
+                                buffer.writeInt(time);
+                                buffer.writeInt(fade);
                                 buffer.writeInt(-1);
-                                buffer.writeString(sml.getLocalisation(
-                                        _parameters != null ? _parameters : Collections.emptyList()));
+                                buffer.writeString(
+                                        sml.getLocalisation(parameters != null ? parameters : Collections.emptyList()));
                                 return;
                             }
                         }
-                    } else if (_npcString > -1) {
-                        final NpcStringId ns = NpcStringId.getNpcStringId(_npcString);
+                    } else if (npcString > -1) {
+                        final NpcStringId ns = NpcStringId.getNpcStringId(npcString);
                         if (ns != null) {
                             final NSLocalisation nsl = ns.getLocalisation(lang);
                             if (nsl != null) {
-                                buffer.writeInt(_type);
+                                buffer.writeInt(type);
                                 buffer.writeInt(-1);
-                                buffer.writeInt(_position);
-                                buffer.writeInt(_unk1);
-                                buffer.writeInt(_size);
-                                buffer.writeInt(_unk2);
-                                buffer.writeInt(_unk3);
-                                buffer.writeInt(_effect);
-                                buffer.writeInt(_time);
-                                buffer.writeInt(_fade);
+                                buffer.writeInt(position);
+                                buffer.writeInt(unk1);
+                                buffer.writeInt(size);
+                                buffer.writeInt(unk2);
+                                buffer.writeInt(unk3);
+                                buffer.writeInt(effect);
+                                buffer.writeInt(time);
+                                buffer.writeInt(fade);
                                 buffer.writeInt(-1);
-                                buffer.writeString(nsl.getLocalisation(
-                                        _parameters != null ? _parameters : Collections.emptyList()));
+                                buffer.writeString(
+                                        nsl.getLocalisation(parameters != null ? parameters : Collections.emptyList()));
                                 return;
                             }
                         }
@@ -290,21 +290,21 @@ public class ExShowScreenMessage extends ServerPacket {
             }
         }
 
-        buffer.writeInt(_type);
-        buffer.writeInt(_sysMessageId);
-        buffer.writeInt(_position);
-        buffer.writeInt(_unk1);
-        buffer.writeInt(_size);
-        buffer.writeInt(_unk2);
-        buffer.writeInt(_unk3);
-        buffer.writeInt(_effect);
-        buffer.writeInt(_time);
-        buffer.writeInt(_fade);
-        buffer.writeInt(_npcString);
-        if (_npcString == -1) {
-            buffer.writeString(_text);
-        } else if (_parameters != null) {
-            for (String s : _parameters) {
+        buffer.writeInt(type);
+        buffer.writeInt(sysMessageId);
+        buffer.writeInt(position);
+        buffer.writeInt(unk1);
+        buffer.writeInt(size);
+        buffer.writeInt(unk2);
+        buffer.writeInt(unk3);
+        buffer.writeInt(effect);
+        buffer.writeInt(time);
+        buffer.writeInt(fade);
+        buffer.writeInt(npcString);
+        if (npcString == -1) {
+            buffer.writeString(text);
+        } else if (parameters != null) {
+            for (String s : parameters) {
                 buffer.writeString(s);
             }
         }

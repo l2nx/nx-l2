@@ -42,28 +42,28 @@ import app.l2nx.highfive.taskmanagers.AttackStanceTaskManager;
 public class SetPrivateStoreListSell extends ClientPacket {
     private static final int BATCH_LENGTH = 20; // length of the one item
 
-    private boolean _packageSale;
-    private Item[] _items = null;
+    private boolean packageSale;
+    private Item[] items = null;
 
     @Override
     protected void readImpl() {
-        _packageSale = (readInt() == 1);
+        packageSale = (readInt() == 1);
         final int count = readInt();
         if ((count < 1) || (count > PlayerConfig.MAX_ITEM_IN_PACKET) || ((count * BATCH_LENGTH) != remaining())) {
             return;
         }
 
-        _items = new Item[count];
+        items = new Item[count];
         for (int i = 0; i < count; i++) {
             final int itemId = readInt();
             final long cnt = readLong();
             final long price = readLong();
             if ((itemId < 1) || (cnt < 1) || (price < 0)) {
-                _items = null;
+                items = null;
                 return;
             }
 
-            _items[i] = new Item(itemId, cnt, price);
+            items[i] = new Item(itemId, cnt, price);
         }
     }
 
@@ -74,7 +74,7 @@ public class SetPrivateStoreListSell extends ClientPacket {
             return;
         }
 
-        if (_items == null) {
+        if (items == null) {
             player.sendPacket(SystemMessageId.INCORRECT_ITEM_COUNT);
             player.setPrivateStoreType(PrivateStoreType.NONE);
             player.broadcastUserInfo();
@@ -90,37 +90,37 @@ public class SetPrivateStoreListSell extends ClientPacket {
             player.sendPacket(
                     SystemMessageId
                             .WHILE_YOU_ARE_ENGAGED_IN_COMBAT_YOU_CANNOT_OPERATE_A_PRIVATE_STORE_OR_PRIVATE_WORKSHOP);
-            player.sendPacket(new PrivateStoreManageListSell(player, _packageSale));
+            player.sendPacket(new PrivateStoreManageListSell(player, packageSale));
             player.sendPacket(ActionFailed.STATIC_PACKET);
             return;
         }
 
         if (player.isInsideZone(ZoneId.NO_STORE)) {
-            player.sendPacket(new PrivateStoreManageListSell(player, _packageSale));
+            player.sendPacket(new PrivateStoreManageListSell(player, packageSale));
             player.sendPacket(SystemMessageId.YOU_CANNOT_OPEN_A_PRIVATE_STORE_HERE);
             player.sendPacket(ActionFailed.STATIC_PACKET);
             return;
         }
 
         if (!player.canOpenPrivateStore()) {
-            player.sendPacket(new PrivateStoreManageListSell(player, _packageSale));
+            player.sendPacket(new PrivateStoreManageListSell(player, packageSale));
             player.sendPacket(ActionFailed.STATIC_PACKET);
             return;
         }
 
         // Check maximum number of allowed slots for pvt shops.
-        if (_items.length > player.getPrivateSellStoreLimit()) {
-            player.sendPacket(new PrivateStoreManageListSell(player, _packageSale));
+        if (items.length > player.getPrivateSellStoreLimit()) {
+            player.sendPacket(new PrivateStoreManageListSell(player, packageSale));
             player.sendPacket(SystemMessageId.YOU_HAVE_EXCEEDED_THE_QUANTITY_THAT_CAN_BE_INPUTTED);
             return;
         }
 
         final TradeList tradeList = player.getSellList();
         tradeList.clear();
-        tradeList.setPackaged(_packageSale);
+        tradeList.setPackaged(packageSale);
 
         long totalCost = player.getAdena();
-        for (Item i : _items) {
+        for (Item i : items) {
             if (!i.addToTradeList(tradeList)) {
                 player.sendPacket(SystemMessageId.YOU_HAVE_EXCEEDED_YOUR_OUT_OF_POCKET_ADENA_LIMIT);
                 return;
@@ -134,7 +134,7 @@ public class SetPrivateStoreListSell extends ClientPacket {
         }
 
         player.sitDown();
-        if (_packageSale) {
+        if (packageSale) {
             player.setPrivateStoreType(PrivateStoreType.PACKAGE_SELL);
         } else {
             player.setPrivateStoreType(PrivateStoreType.SELL);
@@ -142,7 +142,7 @@ public class SetPrivateStoreListSell extends ClientPacket {
 
         player.broadcastUserInfo();
 
-        if (_packageSale) {
+        if (packageSale) {
             player.broadcastPacket(new ExPrivateStoreSetWholeMsg(player));
         } else {
             player.broadcastPacket(new PrivateStoreMsgSell(player));
@@ -150,27 +150,27 @@ public class SetPrivateStoreListSell extends ClientPacket {
     }
 
     private static class Item {
-        private final int _itemId;
-        private final long _count;
-        private final long _price;
+        private final int itemId;
+        private final long count;
+        private final long price;
 
         public Item(int id, long num, long pri) {
-            _itemId = id;
-            _count = num;
-            _price = pri;
+            itemId = id;
+            count = num;
+            price = pri;
         }
 
         public boolean addToTradeList(TradeList list) {
-            if ((MAX_ADENA / _count) < _price) {
+            if ((MAX_ADENA / count) < price) {
                 return false;
             }
 
-            list.addItem(_itemId, _count, _price);
+            list.addItem(itemId, count, price);
             return true;
         }
 
         public long getPrice() {
-            return _count * _price;
+            return count * price;
         }
     }
 }

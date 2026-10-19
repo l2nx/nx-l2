@@ -28,17 +28,17 @@ import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.network.buffer.WriteBuffer;
 
 public class SpecialCamera extends ServerPacket {
-    private final int _id;
-    private final int _force;
-    private final int _angle1;
-    private final int _angle2;
-    private final int _time;
-    private final int _duration;
-    private final int _relYaw;
-    private final int _relPitch;
-    private final int _isWide;
-    private final int _relAngle;
-    private final int _unk;
+    private final int id;
+    private final int force;
+    private final int angle1;
+    private final int angle2;
+    private final int time;
+    private final int duration;
+    private final int relYaw;
+    private final int relPitch;
+    private final int isWide;
+    private final int relAngle;
+    private final int unk;
 
     /**
      * Special Camera packet constructor.
@@ -126,32 +126,32 @@ public class SpecialCamera extends ServerPacket {
             int isWide,
             int relAngle,
             int unk) {
-        _id = creature.getObjectId();
-        _force = force;
-        _angle1 = angle1;
-        _angle2 = angle2;
-        _time = time;
-        _duration = duration;
-        _relYaw = relYaw;
-        _relPitch = relPitch;
-        _isWide = isWide;
-        _relAngle = relAngle;
-        _unk = unk;
+        id = creature.getObjectId();
+        this.force = force;
+        this.angle1 = angle1;
+        this.angle2 = angle2;
+        this.time = time;
+        this.duration = duration;
+        this.relYaw = relYaw;
+        this.relPitch = relPitch;
+        this.isWide = isWide;
+        this.relAngle = relAngle;
+        this.unk = unk;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.SPECIAL_CAMERA.writeId(this, buffer);
-        buffer.writeInt(_id);
-        buffer.writeInt(_force);
-        buffer.writeInt(_angle1);
-        buffer.writeInt(_angle2);
-        buffer.writeInt(_time);
-        buffer.writeInt(_duration);
-        buffer.writeInt(_relYaw);
-        buffer.writeInt(_relPitch);
-        buffer.writeInt(_isWide);
-        buffer.writeInt(_relAngle);
-        buffer.writeInt(_unk);
+        buffer.writeInt(id);
+        buffer.writeInt(force);
+        buffer.writeInt(angle1);
+        buffer.writeInt(angle2);
+        buffer.writeInt(time);
+        buffer.writeInt(duration);
+        buffer.writeInt(relYaw);
+        buffer.writeInt(relPitch);
+        buffer.writeInt(isWide);
+        buffer.writeInt(relAngle);
+        buffer.writeInt(unk);
     }
 }

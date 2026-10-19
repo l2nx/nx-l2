@@ -23,117 +23,92 @@
 package app.l2nx.highfive.entity.actor.appearance;
 
 import app.l2nx.highfive.entity.actor.Player;
+import lombok.Getter;
+import lombok.Setter;
 
 public class PlayerAppearance {
     public static final int DEFAULT_TITLE_COLOR = 0xECF9A2;
 
-    private Player _owner;
+    @Getter
+    @Setter
+    private Player owner;
 
-    private byte _face;
+    @Getter
+    private byte face;
 
-    private byte _hairColor;
+    @Getter
+    private byte hairColor;
 
-    private byte _hairStyle;
+    @Getter
+    private byte hairStyle;
 
-    private boolean _isFemale;
+    @Getter
+    private boolean female;
 
     /** The current visible name of this player, not necessarily the real one */
-    private String _visibleName;
+    @Setter
+    private String visibleName;
 
     /** The current visible title of this player, not necessarily the real one */
-    private String _visibleTitle;
+    @Setter
+    private String visibleTitle;
 
     /** The default name color is 0xFFFFFF. */
-    private int _nameColor = 0xFFFFFF;
+    @Getter
+    private int nameColor = 0xFFFFFF;
 
     /** The default title color is 0xECF9A2. */
-    private int _titleColor = DEFAULT_TITLE_COLOR;
+    @Getter
+    private int titleColor = DEFAULT_TITLE_COLOR;
 
     public PlayerAppearance(byte face, byte hColor, byte hStyle, boolean isFemale) {
-        _face = face;
-        _hairColor = hColor;
-        _hairStyle = hStyle;
-        _isFemale = isFemale;
-    }
-
-    /**
-     * @param visibleName The visibleName to set.
-     */
-    public void setVisibleName(String visibleName) {
-        _visibleName = visibleName;
+        this.face = face;
+        hairColor = hColor;
+        hairStyle = hStyle;
+        female = isFemale;
     }
 
     /**
      * @return Returns the visibleName.
      */
     public String getVisibleName() {
-        return _visibleName == null ? _owner.getName() : _visibleName;
-    }
-
-    /**
-     * @param visibleTitle The visibleTitle to set.
-     */
-    public void setVisibleTitle(String visibleTitle) {
-        _visibleTitle = visibleTitle;
+        return visibleName == null ? owner.getName() : visibleName;
     }
 
     /**
      * @return Returns the visibleTitle.
      */
     public String getVisibleTitle() {
-        return _visibleTitle == null ? _owner.getTitle() : _visibleTitle;
-    }
-
-    public byte getFace() {
-        return _face;
+        return visibleTitle == null ? owner.getTitle() : visibleTitle;
     }
 
     /**
      * @param value
      */
     public void setFace(int value) {
-        _face = (byte) value;
-    }
-
-    public byte getHairColor() {
-        return _hairColor;
+        face = (byte) value;
     }
 
     /**
      * @param value
      */
     public void setHairColor(int value) {
-        _hairColor = (byte) value;
-    }
-
-    public byte getHairStyle() {
-        return _hairStyle;
+        hairColor = (byte) value;
     }
 
     /**
      * @param value
      */
     public void setHairStyle(int value) {
-        _hairStyle = (byte) value;
-    }
-
-    /**
-     * @return true if char is female
-     */
-    public boolean isFemale() {
-        return _isFemale;
+        hairStyle = (byte) value;
     }
 
     public void setFemale() {
-        _isFemale = true;
+        female = true;
     }
 
     public void setMale() {
-        _isFemale = false;
-    }
-
-    public int getNameColor() {
-        return _nameColor;
+        female = false;
     }
 
     public void setNameColor(int nameColor) {
@@ -141,15 +116,11 @@ public class PlayerAppearance {
             return;
         }
 
-        _nameColor = nameColor;
+        this.nameColor = nameColor;
     }
 
     public void setNameColor(int red, int green, int blue) {
-        _nameColor = (red & 0xFF) + ((green & 0xFF) << 8) + ((blue & 0xFF) << 16);
-    }
-
-    public int getTitleColor() {
-        return _titleColor;
+        nameColor = (red & 0xFF) + ((green & 0xFF) << 8) + ((blue & 0xFF) << 16);
     }
 
     public void setTitleColor(int titleColor) {
@@ -157,24 +128,10 @@ public class PlayerAppearance {
             return;
         }
 
-        _titleColor = titleColor;
+        this.titleColor = titleColor;
     }
 
     public void setTitleColor(int red, int green, int blue) {
-        _titleColor = (red & 0xFF) + ((green & 0xFF) << 8) + ((blue & 0xFF) << 16);
-    }
-
-    /**
-     * @param owner The owner to set.
-     */
-    public void setOwner(Player owner) {
-        _owner = owner;
-    }
-
-    /**
-     * @return Returns the owner.
-     */
-    public Player getOwner() {
-        return _owner;
+        titleColor = (red & 0xFF) + ((green & 0xFF) << 8) + ((blue & 0xFF) << 16);
     }
 }

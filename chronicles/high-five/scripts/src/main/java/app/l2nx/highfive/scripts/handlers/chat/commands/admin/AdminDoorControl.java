@@ -36,15 +36,15 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * This class handles following admin commands: - open1 = open coloseum door 24190001 - open2 = open coloseum door 24190002 - open3 = open coloseum door 24190003 - open4 = open coloseum door 24190004 - openall = open all coloseum door - close1 = close coloseum door 24190001 - close2 = close coloseum
  * door 24190002 - close3 = close coloseum door 24190003 - close4 = close coloseum door 24190004 - closeall = close all coloseum door - open = open selected door - close = close selected door
  * @version $Revision: 1.2.4.5 $ $Date: 2005/04/11 10:06:06 $
  */
+@Slf4j
 public class AdminDoorControl implements IAdminCommandHandler {
-    private static final Logger LOGGER = Logger.getLogger(AdminDoorControl.class.getName());
 
     private static final Map<Player, Set<Integer>> PLAYER_SHOWN_DOORS = new ConcurrentHashMap<>();
 
@@ -259,7 +259,7 @@ public class AdminDoorControl implements IAdminCommandHandler {
                 }
             }
         } catch (Exception e) {
-            LOGGER.warning("Problem with AdminDoorControl: " + e.getMessage());
+            log.warn("Problem with AdminDoorControl: {}", e.getMessage());
         }
 
         return true;

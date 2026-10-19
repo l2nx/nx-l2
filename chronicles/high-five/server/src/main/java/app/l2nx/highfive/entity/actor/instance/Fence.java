@@ -28,38 +28,53 @@ import app.l2nx.highfive.entity.actor.enums.creature.FenceState;
 import app.l2nx.highfive.managers.IdManager;
 import app.l2nx.highfive.network.serverpackets.DeleteObject;
 import app.l2nx.highfive.network.serverpackets.ExColosseumFenceInfo;
+import lombok.Getter;
 
 /**
  * @author HorridoJoho
  */
 public class Fence extends WorldObject {
-    private final int _xMin;
-    private final int _xMax;
-    private final int _yMin;
-    private final int _yMax;
+    @Getter
+    private final int xMin;
 
-    private final String _name;
-    private final int _width;
-    private final int _length;
+    @Getter
+    private final int xMax;
 
-    private FenceState _state;
-    private int[] _heightFences;
+    @Getter
+    private final int yMin;
+
+    @Getter
+    private final int yMax;
+
+    @Getter
+    private final String name;
+
+    @Getter
+    private final int width;
+
+    @Getter
+    private final int length;
+
+    @Getter
+    private FenceState state;
+
+    private int[] heightFences;
 
     public Fence(int x, int y, String name, int width, int length, int height, FenceState state) {
         super(IdManager.getInstance().getNextId());
 
-        _xMin = x - (width / 2);
-        _xMax = x + (width / 2);
-        _yMin = y - (length / 2);
-        _yMax = y + (length / 2);
-        _name = name;
-        _width = width;
-        _length = length;
-        _state = state;
+        xMin = x - (width / 2);
+        xMax = x + (width / 2);
+        yMin = y - (length / 2);
+        yMax = y + (length / 2);
+        this.name = name;
+        this.width = width;
+        this.length = length;
+        this.state = state;
         if (height > 1) {
-            _heightFences = new int[height - 1];
-            for (int i = 0; i < _heightFences.length; i++) {
-                _heightFences[i] = IdManager.getInstance().getNextId();
+            heightFences = new int[height - 1];
+            for (int i = 0; i < heightFences.length; i++) {
+                heightFences[i] = IdManager.getInstance().getNextId();
             }
         }
     }
@@ -70,11 +85,6 @@ public class Fence extends WorldObject {
     }
 
     @Override
-    public String getName() {
-        return _name;
-    }
-
-    @Override
     public boolean isAutoAttackable(Creature attacker) {
         return false;
     }
@@ -82,23 +92,23 @@ public class Fence extends WorldObject {
     @Override
     public void sendInfo(Player player) {
         player.sendPacket(new ExColosseumFenceInfo(this));
-        if (_heightFences != null) {
-            for (int objId : _heightFences) {
-                player.sendPacket(new ExColosseumFenceInfo(objId, getX(), getY(), getZ(), _width, _length, _state));
+        if (heightFences != null) {
+            for (int objId : heightFences) {
+                player.sendPacket(new ExColosseumFenceInfo(objId, getX(), getY(), getZ(), width, length, state));
             }
         }
     }
 
     @Override
     public boolean decayMe() {
-        if (_heightFences != null) {
-            final DeleteObject[] deleteObjects = new DeleteObject[_heightFences.length];
-            for (int i = 0; i < _heightFences.length; i++) {
-                deleteObjects[i] = new DeleteObject(_heightFences[i]);
+        if (heightFences != null) {
+            final DeleteObject[] deleteObjects = new DeleteObject[heightFences.length];
+            for (int i = 0; i < heightFences.length; i++) {
+                deleteObjects[i] = new DeleteObject(heightFences[i]);
             }
 
             World.forEachVisibleObject(this, Player.class, player -> {
-                for (int i = 0; i < _heightFences.length; i++) {
+                for (int i = 0; i < heightFences.length; i++) {
                     player.sendPacket(deleteObjects[i]);
                 }
             });
@@ -114,37 +124,9 @@ public class Fence extends WorldObject {
         return false;
     }
 
-    public FenceState getState() {
-        return _state;
-    }
-
     public void setState(FenceState type) {
-        _state = type;
+        state = type;
         broadcastInfo();
-    }
-
-    public int getWidth() {
-        return _width;
-    }
-
-    public int getLength() {
-        return _length;
-    }
-
-    public int getXMin() {
-        return _xMin;
-    }
-
-    public int getYMin() {
-        return _yMin;
-    }
-
-    public int getXMax() {
-        return _xMax;
-    }
-
-    public int getYMax() {
-        return _yMax;
     }
 
     @Override

@@ -17,7 +17,6 @@ dependencies {
     implementation(libs.findLibrary("spring-boot-starter-log4j2").get())
     implementation(libs.findLibrary("spring-boot-starter-webmvc").get())
     runtimeOnly(libs.findLibrary("disruptor").get())
-    runtimeOnly(libs.findLibrary("log4j-jul").get())
     runtimeOnly(libs.findLibrary("micrometer-registry-prometheus").get())
     runtimeOnly(libs.findLibrary("mysql-connector").get())
 
@@ -34,11 +33,9 @@ gitProperties {
     failOnNoGitDirectory = false
 }
 
-// JUL must be routed to Log4j2 before the first JUL logger exists, so it is a JVM flag, not configuration.
 val jvmFlags = listOf(
     "-Dfile.encoding=UTF-8",
     "-Djava.awt.headless=true",
-    "-Djava.util.logging.manager=org.apache.logging.log4j.jul.LogManager",
 )
 
 application {

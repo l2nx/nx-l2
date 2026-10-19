@@ -27,57 +27,56 @@ import app.l2nx.highfive.network.serverpackets.ServerPacket;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
 import java.util.ArrayList;
 import java.util.List;
+import lombok.Getter;
 
 /**
  * @author xban1x
  */
 public class ArenaParticipantsHolder {
-    private final int _arena;
-    private final List<Player> _redPlayers;
-    private final List<Player> _bluePlayers;
-    private final BlockCheckerManager _engine;
+    private final int arena;
+
+    @Getter
+    private final List<Player> redPlayers;
+
+    @Getter
+    private final List<Player> bluePlayers;
+
+    @Getter
+    private final BlockCheckerManager event;
 
     public ArenaParticipantsHolder(int arena) {
-        _arena = arena;
-        _redPlayers = new ArrayList<>(6);
-        _bluePlayers = new ArrayList<>(6);
-        _engine = new BlockCheckerManager(this, _arena);
-    }
-
-    public List<Player> getRedPlayers() {
-        return _redPlayers;
-    }
-
-    public List<Player> getBluePlayers() {
-        return _bluePlayers;
+        this.arena = arena;
+        redPlayers = new ArrayList<>(6);
+        bluePlayers = new ArrayList<>(6);
+        event = new BlockCheckerManager(this, this.arena);
     }
 
     public List<Player> getAllPlayers() {
-        final List<Player> all = new ArrayList<>(_redPlayers);
-        all.addAll(_bluePlayers);
+        final List<Player> all = new ArrayList<>(redPlayers);
+        all.addAll(bluePlayers);
         return all;
     }
 
     public void addPlayer(Player player, int team) {
         if (team == 0) {
-            _redPlayers.add(player);
+            redPlayers.add(player);
         } else {
-            _bluePlayers.add(player);
+            bluePlayers.add(player);
         }
     }
 
     public void removePlayer(Player player, int team) {
         if (team == 0) {
-            _redPlayers.remove(player);
+            redPlayers.remove(player);
         } else {
-            _bluePlayers.remove(player);
+            bluePlayers.remove(player);
         }
     }
 
     public int getPlayerTeam(Player player) {
-        if (_redPlayers.contains(player)) {
+        if (redPlayers.contains(player)) {
             return 0;
-        } else if (_bluePlayers.contains(player)) {
+        } else if (bluePlayers.contains(player)) {
             return 1;
         } else {
             return -1;
@@ -85,60 +84,56 @@ public class ArenaParticipantsHolder {
     }
 
     public int getRedTeamSize() {
-        return _redPlayers.size();
+        return redPlayers.size();
     }
 
     public int getBlueTeamSize() {
-        return _bluePlayers.size();
+        return bluePlayers.size();
     }
 
     public void broadCastPacketToTeam(ServerPacket packet) {
-        for (Player p : _redPlayers) {
+        for (Player p : redPlayers) {
             p.sendPacket(packet);
         }
 
-        for (Player p : _bluePlayers) {
+        for (Player p : bluePlayers) {
             p.sendPacket(packet);
         }
     }
 
     public void clearPlayers() {
-        _redPlayers.clear();
-        _bluePlayers.clear();
-    }
-
-    public BlockCheckerManager getEvent() {
-        return _engine;
+        redPlayers.clear();
+        bluePlayers.clear();
     }
 
     public void updateEvent() {
-        _engine.updatePlayersOnStart(this);
+        event.updatePlayersOnStart(this);
     }
 
     public void checkAndShuffle() {
-        final int redSize = _redPlayers.size();
-        final int blueSize = _bluePlayers.size();
+        final int redSize = redPlayers.size();
+        final int blueSize = bluePlayers.size();
         if (redSize > (blueSize + 1)) {
             broadCastPacketToTeam(
                     new SystemMessage(SystemMessageId.TEAM_MEMBERS_WERE_MODIFIED_BECAUSE_THE_TEAMS_WERE_UNBALANCED));
             for (int i = 0; i < ((redSize - (blueSize + 1)) + 1); i++) {
-                final Player plr = _redPlayers.get(i);
+                final Player plr = redPlayers.get(i);
                 if (plr == null) {
                     continue;
                 }
 
-                HandysBlockCheckerManager.getInstance().changePlayerToTeam(plr, _arena);
+                HandysBlockCheckerManager.getInstance().changePlayerToTeam(plr, arena);
             }
         } else if (blueSize > (redSize + 1)) {
             broadCastPacketToTeam(
                     new SystemMessage(SystemMessageId.TEAM_MEMBERS_WERE_MODIFIED_BECAUSE_THE_TEAMS_WERE_UNBALANCED));
             for (int i = 0; i < ((blueSize - (redSize + 1)) + 1); i++) {
-                final Player plr = _bluePlayers.get(i);
+                final Player plr = bluePlayers.get(i);
                 if (plr == null) {
                     continue;
                 }
 
-                HandysBlockCheckerManager.getInstance().changePlayerToTeam(plr, _arena);
+                HandysBlockCheckerManager.getInstance().changePlayerToTeam(plr, arena);
             }
         }
     }

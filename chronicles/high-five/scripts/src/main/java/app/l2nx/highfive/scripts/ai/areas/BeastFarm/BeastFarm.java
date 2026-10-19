@@ -37,6 +37,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import lombok.Getter;
 
 /**
  * Growth-capable mobs: Polymorphing upon successful feeding.<br>
@@ -371,27 +372,26 @@ public class BeastFarm extends Script {
 
     // all mobs that grow by eating
     private static class GrowthCapableMob {
-        private final int _chance;
-        private final int _growthLevel;
-        private final int _tameNpcId;
-        private final Map<Integer, Integer> _skillSuccessNpcIdList = new HashMap<>();
+        private final int chance;
+
+        @Getter
+        private final int growthLevel;
+
+        private final int tameNpcId;
+        private final Map<Integer, Integer> skillSuccessNpcIdList = new HashMap<>();
 
         public GrowthCapableMob(int chance, int growthLevel, int tameNpcId) {
-            _chance = chance;
-            _growthLevel = growthLevel;
-            _tameNpcId = tameNpcId;
+            this.chance = chance;
+            this.growthLevel = growthLevel;
+            this.tameNpcId = tameNpcId;
         }
 
         public void addNpcIdForSkillId(int skillId, int npcId) {
-            _skillSuccessNpcIdList.put(skillId, npcId);
-        }
-
-        public int getGrowthLevel() {
-            return _growthLevel;
+            skillSuccessNpcIdList.put(skillId, npcId);
         }
 
         public int getLeveledNpcId(int skillId) {
-            if (!_skillSuccessNpcIdList.containsKey(skillId)) {
+            if (!skillSuccessNpcIdList.containsKey(skillId)) {
                 return -1;
             } else if ((skillId == SKILL_BLESSED_GOLDEN_SPICE)
                     || (skillId == SKILL_BLESSED_CRYSTAL_SPICE)
@@ -399,19 +399,19 @@ public class BeastFarm extends Script {
                     || (skillId == SKILL_SGRADE_CRYSTAL_SPICE)) {
                 if (getRandom(100) < SPECIAL_SPICE_CHANCES[0]) {
                     if (getRandom(100) < SPECIAL_SPICE_CHANCES[1]) {
-                        return _skillSuccessNpcIdList.get(skillId);
+                        return skillSuccessNpcIdList.get(skillId);
                     } else if ((skillId == SKILL_BLESSED_GOLDEN_SPICE) || (skillId == SKILL_SGRADE_GOLDEN_SPICE)) {
-                        return _skillSuccessNpcIdList.get(SKILL_GOLDEN_SPICE);
+                        return skillSuccessNpcIdList.get(SKILL_GOLDEN_SPICE);
                     } else {
-                        return _skillSuccessNpcIdList.get(SKILL_CRYSTAL_SPICE);
+                        return skillSuccessNpcIdList.get(SKILL_CRYSTAL_SPICE);
                     }
                 }
 
                 return -1;
-            } else if ((_growthLevel == 2) && (getRandom(100) < TAME_CHANCE)) {
-                return _tameNpcId;
-            } else if (getRandom(100) < _chance) {
-                return _skillSuccessNpcIdList.get(skillId);
+            } else if ((growthLevel == 2) && (getRandom(100) < TAME_CHANCE)) {
+                return tameNpcId;
+            } else if (getRandom(100) < chance) {
+                return skillSuccessNpcIdList.get(skillId);
             } else {
                 return -1;
             }
@@ -419,16 +419,14 @@ public class BeastFarm extends Script {
     }
 
     private static class TamedBeastSkillHolder {
+        @Getter
         private final String name;
+
         private final SkillHolder[] sh;
 
         public TamedBeastSkillHolder(String beastName, SkillHolder... holders) {
             name = beastName;
             sh = holders;
-        }
-
-        public String getName() {
-            return name;
         }
 
         public SkillHolder[] getSkills() {

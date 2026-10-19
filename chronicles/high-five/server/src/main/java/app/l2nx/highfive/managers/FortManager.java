@@ -31,13 +31,12 @@ import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class FortManager {
-    protected static final Logger LOGGER = Logger.getLogger(FortManager.class.getName());
 
-    private static final List<Fort> _forts = new CopyOnWriteArrayList<>();
+    private static final List<Fort> forts = new CopyOnWriteArrayList<>();
 
     public int findNearestFortIndex(WorldObject obj) {
         return findNearestFortIndex(obj, Long.MAX_VALUE);
@@ -49,8 +48,8 @@ public class FortManager {
             Fort fort;
             double distance;
             long maxDistance = maxDistanceValue;
-            for (int i = 0; i < _forts.size(); i++) {
-                fort = _forts.get(i);
+            for (int i = 0; i < forts.size(); i++) {
+                fort = forts.get(i);
                 if (fort == null) {
                     continue;
                 }
@@ -67,7 +66,7 @@ public class FortManager {
     }
 
     public Fort getFortById(int fortId) {
-        for (Fort fort : _forts) {
+        for (Fort fort : forts) {
             if (fort.getResidenceId() == fortId) {
                 return fort;
             }
@@ -81,7 +80,7 @@ public class FortManager {
             return null;
         }
 
-        for (Fort fort : _forts) {
+        for (Fort fort : forts) {
             if (fort.getOwnerClan() == clan) {
                 return fort;
             }
@@ -91,7 +90,7 @@ public class FortManager {
     }
 
     public Fort getFort(String name) {
-        for (Fort fort : _forts) {
+        for (Fort fort : forts) {
             if (fort.getName().equalsIgnoreCase(name.trim())) {
                 return fort;
             }
@@ -101,7 +100,7 @@ public class FortManager {
     }
 
     public Fort getFort(int x, int y, int z) {
-        for (Fort fort : _forts) {
+        for (Fort fort : forts) {
             if (fort.checkIfInZone(x, y, z)) {
                 return fort;
             }
@@ -116,8 +115,8 @@ public class FortManager {
 
     public int getFortIndex(int fortId) {
         Fort fort;
-        for (int i = 0; i < _forts.size(); i++) {
-            fort = _forts.get(i);
+        for (int i = 0; i < forts.size(); i++) {
+            fort = forts.get(i);
             if ((fort != null) && (fort.getResidenceId() == fortId)) {
                 return i;
             }
@@ -132,8 +131,8 @@ public class FortManager {
 
     public int getFortIndex(int x, int y, int z) {
         Fort fort;
-        for (int i = 0; i < _forts.size(); i++) {
-            fort = _forts.get(i);
+        for (int i = 0; i < forts.size(); i++) {
+            fort = forts.get(i);
             if ((fort != null) && fort.checkIfInZone(x, y, z)) {
                 return i;
             }
@@ -143,7 +142,7 @@ public class FortManager {
     }
 
     public List<Fort> getForts() {
-        return _forts;
+        return forts;
     }
 
     public void loadInstances() {
@@ -151,20 +150,20 @@ public class FortManager {
                 Statement s = con.createStatement();
                 ResultSet rs = s.executeQuery("SELECT id FROM fort ORDER BY id")) {
             while (rs.next()) {
-                _forts.add(new Fort(rs.getInt("id")));
+                forts.add(new Fort(rs.getInt("id")));
             }
 
-            LOGGER.info(getClass().getSimpleName() + ": Loaded " + _forts.size() + " fortress");
-            for (Fort fort : _forts) {
+            log.info("Loaded {} fortress", forts.size());
+            for (Fort fort : forts) {
                 fort.getSiege().getSiegeGuardManager().loadSiegeGuard();
             }
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, "Exception: loadFortData(): " + e.getMessage(), e);
+            log.warn("Exception: loadFortData(): {}", e.getMessage(), e);
         }
     }
 
     public void activateInstances() {
-        for (Fort fort : _forts) {
+        for (Fort fort : forts) {
             fort.activateInstance();
         }
     }

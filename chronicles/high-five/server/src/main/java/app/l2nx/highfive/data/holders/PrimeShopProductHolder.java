@@ -24,62 +24,47 @@ package app.l2nx.highfive.data.holders;
 
 import app.l2nx.highfive.data.xml.ItemData;
 import app.l2nx.highfive.entity.item.ItemTemplate;
+import lombok.Getter;
 
 /**
  * @author Mobius
  */
 public class PrimeShopProductHolder {
-    private final int _productId;
-    private final int _category;
-    private final int _points;
-    private final int _item;
-    private final int _count;
+    @Getter
+    private final int productId;
 
-    private final int _weight;
-    private final boolean _tradable;
+    @Getter
+    private final int category;
+
+    @Getter
+    private final int price;
+
+    @Getter
+    private final int itemId;
+
+    @Getter
+    private final int itemCount;
+
+    @Getter
+    private final int itemWeight;
+
+    @Getter
+    private final boolean tradable;
 
     public PrimeShopProductHolder(int productId, int category, int points, int item, int count) {
-        _productId = productId;
-        _category = category;
-        _points = points;
-        _item = item;
-        _count = count;
+        this.productId = productId;
+        this.category = category;
+        price = points;
+        itemId = item;
+        itemCount = count;
 
         final ItemTemplate itemTemplate = ItemData.getInstance().getTemplate(item);
         if (itemTemplate != null) {
-            _weight = itemTemplate.getWeight();
-            _tradable = itemTemplate.isTradeable();
+            itemWeight = itemTemplate.getWeight();
+            tradable = itemTemplate.isTradeable();
         } else {
-            _weight = 0;
-            _tradable = true;
+            itemWeight = 0;
+            tradable = true;
         }
-    }
-
-    public int getProductId() {
-        return _productId;
-    }
-
-    public int getCategory() {
-        return _category;
-    }
-
-    public int getPrice() {
-        return _points;
-    }
-
-    public int getItemId() {
-        return _item;
-    }
-
-    public int getItemCount() {
-        return _count;
-    }
-
-    public int getItemWeight() {
-        return _weight;
-    }
-
-    public boolean isTradable() {
-        return _tradable;
     }
 }

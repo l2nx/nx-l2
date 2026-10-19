@@ -37,11 +37,11 @@ import app.l2nx.highfive.network.serverpackets.SystemMessage;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class RequestExEnchantItemAttribute extends ClientPacket {
-    private int _objectId;
+    private int objectId;
 
     @Override
     protected void readImpl() {
-        _objectId = readInt();
+        objectId = readInt();
     }
 
     @Override
@@ -51,7 +51,7 @@ public class RequestExEnchantItemAttribute extends ClientPacket {
             return;
         }
 
-        if (_objectId == 0xFFFFFFFF) {
+        if (objectId == 0xFFFFFFFF) {
             // Player canceled enchant
             player.setActiveEnchantAttrItemId(Player.ID_NONE);
             player.sendPacket(SystemMessageId.ATTRIBUTE_ITEM_USAGE_HAS_BEEN_CANCELLED);
@@ -79,7 +79,7 @@ public class RequestExEnchantItemAttribute extends ClientPacket {
             return;
         }
 
-        final Item item = player.getInventory().getItemByObjectId(_objectId);
+        final Item item = player.getInventory().getItemByObjectId(objectId);
         final Item stone = player.getInventory().getItemByObjectId(player.getActiveEnchantAttrItemId());
         if ((item == null) || (stone == null)) {
             player.setActiveEnchantAttrItemId(Player.ID_NONE);

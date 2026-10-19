@@ -27,7 +27,6 @@ import app.l2nx.network.packet.WritablePacket;
  * @author KenM
  */
 public abstract class LoginServerPacket extends WritablePacket<LoginClient> {
-    // public static final Logger LOGGER = Logger.getLogger(LoginServerPacket.class.getName());
 
     @Override
     protected boolean write(LoginClient client, WriteBuffer buffer) {

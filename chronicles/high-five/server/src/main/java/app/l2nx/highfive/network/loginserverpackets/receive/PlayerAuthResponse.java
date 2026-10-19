@@ -20,27 +20,23 @@
 package app.l2nx.highfive.network.loginserverpackets.receive;
 
 import app.l2nx.network.packet.SimpleReadablePacket;
+import lombok.Getter;
 
 /**
  * @author -Wooden-
  */
 public class PlayerAuthResponse extends SimpleReadablePacket {
-    private final String _account;
-    private final boolean _authed;
+    @Getter
+    private final String account;
+
+    @Getter
+    private final boolean authed;
 
     public PlayerAuthResponse(byte[] decrypt) {
         super(decrypt);
         readByte(); // Packet id, it is already processed.
 
-        _account = readString();
-        _authed = readByte() != 0;
-    }
-
-    public String getAccount() {
-        return _account;
-    }
-
-    public boolean isAuthed() {
-        return _authed;
+        account = readString();
+        authed = readByte() != 0;
     }
 }

@@ -29,11 +29,11 @@ import app.l2nx.highfive.network.serverpackets.ExBrProductInfo;
  * @author Mobius
  */
 public class RequestBrProductInfo extends ClientPacket {
-    private int _productId;
+    private int productId;
 
     @Override
     protected void readImpl() {
-        _productId = readInt();
+        productId = readInt();
     }
 
     @Override
@@ -43,6 +43,6 @@ public class RequestBrProductInfo extends ClientPacket {
             return;
         }
 
-        player.sendPacket(new ExBrProductInfo(_productId));
+        player.sendPacket(new ExBrProductInfo(productId));
     }
 }

@@ -33,16 +33,16 @@ public class ButtonsStyle implements IHtmlStyle {
     public static final ButtonsStyle INSTANCE =
             new ButtonsStyle(40, 15, "L2UI_CT1.Button_DF_Down", "L2UI_CT1.Button_DF");
 
-    private final int _width;
-    private final int _height;
-    private final String _back;
-    private final String _fore;
+    private final int width;
+    private final int height;
+    private final String back;
+    private final String fore;
 
     public ButtonsStyle(int width, int height, String back, String fore) {
-        _width = width;
-        _height = height;
-        _back = back;
-        _fore = fore;
+        this.width = width;
+        this.height = height;
+        this.back = back;
+        this.fore = fore;
     }
 
     @Override
@@ -51,7 +51,7 @@ public class ButtonsStyle implements IHtmlStyle {
             return String.format(DEFAULT_PAGE_TEXT_FORMAT, name);
         }
 
-        return String.format(DEFAULT_PAGE_LINK_FORMAT, bypass, name, _width, _height, _back, _fore);
+        return String.format(DEFAULT_PAGE_LINK_FORMAT, bypass, name, width, height, back, fore);
     }
 
     @Override

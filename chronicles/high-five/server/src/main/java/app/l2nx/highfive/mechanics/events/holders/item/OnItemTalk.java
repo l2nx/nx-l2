@@ -23,27 +23,13 @@ import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.item.instance.Item;
 import app.l2nx.highfive.mechanics.events.EventType;
 import app.l2nx.highfive.mechanics.events.holders.IBaseEvent;
+import lombok.Builder;
 
 /**
  * @author UnAfraid
  */
-public class OnItemTalk implements IBaseEvent {
-    private final Item _item;
-    private final Player _player;
-
-    public OnItemTalk(Item item, Player player) {
-        _item = item;
-        _player = player;
-    }
-
-    public Item getItem() {
-        return _item;
-    }
-
-    public Player getPlayer() {
-        return _player;
-    }
-
+@Builder(toBuilder = true)
+public record OnItemTalk(Item item, Player player) implements IBaseEvent {
     @Override
     public EventType getType() {
         return EventType.ON_ITEM_TALK;

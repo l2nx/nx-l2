@@ -27,22 +27,22 @@ import app.l2nx.highfive.mechanics.script.Quest;
  * @author xban1x
  */
 public class OnKillNotifyTask implements Runnable {
-    private final Attackable _attackable;
-    private final Quest _quest;
-    private final Player _killer;
-    private final boolean _isSummon;
+    private final Attackable attackable;
+    private final Quest quest;
+    private final Player killer;
+    private final boolean summon;
 
     public OnKillNotifyTask(Attackable attackable, Quest quest, Player killer, boolean isSummon) {
-        _attackable = attackable;
-        _quest = quest;
-        _killer = killer;
-        _isSummon = isSummon;
+        this.attackable = attackable;
+        this.quest = quest;
+        this.killer = killer;
+        summon = isSummon;
     }
 
     @Override
     public void run() {
-        if ((_quest != null) && (_attackable != null) && (_killer != null)) {
-            _quest.onKill(_attackable, _killer, _isSummon);
+        if ((quest != null) && (attackable != null) && (killer != null)) {
+            quest.onKill(attackable, killer, summon);
         }
     }
 }

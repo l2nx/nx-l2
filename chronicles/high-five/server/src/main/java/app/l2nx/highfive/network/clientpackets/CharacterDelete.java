@@ -27,22 +27,23 @@ import app.l2nx.highfive.mechanics.events.EventDispatcher;
 import app.l2nx.highfive.mechanics.events.EventType;
 import app.l2nx.highfive.mechanics.events.holders.actor.player.OnPlayerDelete;
 import app.l2nx.highfive.network.GameClient;
-import app.l2nx.highfive.network.PacketLogger;
 import app.l2nx.highfive.network.holders.CharacterInfoHolder;
 import app.l2nx.highfive.network.serverpackets.CharDeleteFail;
 import app.l2nx.highfive.network.serverpackets.CharDeleteSuccess;
 import app.l2nx.highfive.network.serverpackets.CharSelectionInfo;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @version $Revision: 1.8.2.1.2.3 $ $Date: 2005/03/27 15:29:30 $
  */
+@Slf4j
 public class CharacterDelete extends ClientPacket {
     // cd
-    private int _charSlot;
+    private int charSlot;
 
     @Override
     protected void readImpl() {
-        _charSlot = readInt();
+        charSlot = readInt();
     }
 
     @Override
@@ -56,7 +57,7 @@ public class CharacterDelete extends ClientPacket {
         // }
 
         try {
-            switch (client.markToDeleteChar(_charSlot)) {
+            switch (client.markToDeleteChar(charSlot)) {
                 default:
                 case -1: // Error
                 {
@@ -66,10 +67,14 @@ public class CharacterDelete extends ClientPacket {
                 {
                     client.sendPacket(new CharDeleteSuccess());
                     if (EventDispatcher.getInstance().hasListener(EventType.ON_PLAYER_DELETE, Containers.Players())) {
-                        final CharacterInfoHolder charInfo = client.getCharSelection(_charSlot);
+                        final CharacterInfoHolder charInfo = client.getCharSelection(charSlot);
                         EventDispatcher.getInstance()
                                 .notifyEvent(
-                                        new OnPlayerDelete(charInfo.getObjectId(), charInfo.getName(), client),
+                                        OnPlayerDelete.builder()
+                                                .objectId(charInfo.getObjectId())
+                                                .name(charInfo.getName())
+                                                .client(client)
+                                                .build(),
                                         Containers.Players());
                     }
                     break;
@@ -84,7 +89,7 @@ public class CharacterDelete extends ClientPacket {
                 }
             }
         } catch (Exception e) {
-            PacketLogger.warning(getClass().getSimpleName() + ": " + e.getMessage());
+            log.warn("{}: {}", getClass().getSimpleName(), e.getMessage());
         }
 
         final CharSelectionInfo cl = new CharSelectionInfo(client.getAccountName(), client.getSessionId().playOkID1, 0);

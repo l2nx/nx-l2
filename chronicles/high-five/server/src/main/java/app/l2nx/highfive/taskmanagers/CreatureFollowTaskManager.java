@@ -38,8 +38,8 @@ import java.util.concurrent.ThreadLocalRandom;
 public class CreatureFollowTaskManager {
     protected static final Map<Creature, Integer> NORMAL_FOLLOW_CREATURES = new ConcurrentHashMap<>();
     protected static final Map<Creature, Integer> ATTACK_FOLLOW_CREATURES = new ConcurrentHashMap<>();
-    protected static boolean _workingNormal = false;
-    protected static boolean _workingAttack = false;
+    protected static boolean workingNormal = false;
+    protected static boolean workingAttack = false;
 
     protected CreatureFollowTaskManager() {
         ThreadPool.schedulePriorityTaskAtFixedRate(new CreatureFollowNormalTask(), 1000, 1000);
@@ -49,11 +49,11 @@ public class CreatureFollowTaskManager {
     protected class CreatureFollowNormalTask implements Runnable {
         @Override
         public void run() {
-            if (_workingNormal) {
+            if (workingNormal) {
                 return;
             }
 
-            _workingNormal = true;
+            workingNormal = true;
 
             if (!NORMAL_FOLLOW_CREATURES.isEmpty()) {
                 for (Entry<Creature, Integer> entry : NORMAL_FOLLOW_CREATURES.entrySet()) {
@@ -61,18 +61,18 @@ public class CreatureFollowTaskManager {
                 }
             }
 
-            _workingNormal = false;
+            workingNormal = false;
         }
     }
 
     protected class CreatureFollowAttackTask implements Runnable {
         @Override
         public void run() {
-            if (_workingAttack) {
+            if (workingAttack) {
                 return;
             }
 
-            _workingAttack = true;
+            workingAttack = true;
 
             if (!ATTACK_FOLLOW_CREATURES.isEmpty()) {
                 for (Entry<Creature, Integer> entry : ATTACK_FOLLOW_CREATURES.entrySet()) {
@@ -80,7 +80,7 @@ public class CreatureFollowTaskManager {
                 }
             }
 
-            _workingAttack = false;
+            workingAttack = false;
         }
     }
 

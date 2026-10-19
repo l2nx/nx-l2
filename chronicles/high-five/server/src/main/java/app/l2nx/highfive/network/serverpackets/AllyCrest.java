@@ -29,27 +29,27 @@ import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.network.buffer.WriteBuffer;
 
 public class AllyCrest extends ServerPacket {
-    private final int _crestId;
-    private final byte[] _data;
+    private final int crestId;
+    private final byte[] data;
 
     public AllyCrest(int crestId) {
-        _crestId = crestId;
+        this.crestId = crestId;
         final Crest crest = CrestTable.getInstance().getCrest(crestId);
-        _data = crest != null ? crest.getData() : null;
+        data = crest != null ? crest.getData() : null;
     }
 
     public AllyCrest(int crestId, byte[] data) {
-        _crestId = crestId;
-        _data = data;
+        this.crestId = crestId;
+        this.data = data;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.ALLIANCE_CREST.writeId(this, buffer);
-        buffer.writeInt(_crestId);
-        if (_data != null) {
-            buffer.writeInt(_data.length);
-            buffer.writeBytes(_data);
+        buffer.writeInt(crestId);
+        if (data != null) {
+            buffer.writeInt(data.length);
+            buffer.writeBytes(data);
         } else {
             buffer.writeInt(0);
         }

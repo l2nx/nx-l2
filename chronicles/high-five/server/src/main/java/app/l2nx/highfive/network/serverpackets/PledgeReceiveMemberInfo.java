@@ -28,27 +28,27 @@ import app.l2nx.network.buffer.WriteBuffer;
  * @author -Wooden-
  */
 public class PledgeReceiveMemberInfo extends ServerPacket {
-    private final ClanMember _member;
+    private final ClanMember member;
 
     public PledgeReceiveMemberInfo(ClanMember member) {
-        _member = member;
+        this.member = member;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.PLEDGE_RECEIVE_MEMBER_INFO.writeId(this, buffer);
-        buffer.writeInt(_member.getPledgeType());
-        buffer.writeString(_member.getName());
-        buffer.writeString(_member.getTitle()); // title
-        buffer.writeInt(_member.getPowerGrade()); // power
+        buffer.writeInt(member.getPledgeType());
+        buffer.writeString(member.getName());
+        buffer.writeString(member.getTitle()); // title
+        buffer.writeInt(member.getPowerGrade()); // power
 
         // clan or subpledge name
-        if (_member.getPledgeType() != 0) {
-            buffer.writeString((_member.getClan().getSubPledge(_member.getPledgeType())).getName());
+        if (member.getPledgeType() != 0) {
+            buffer.writeString((member.getClan().getSubPledge(member.getPledgeType())).getName());
         } else {
-            buffer.writeString(_member.getClan().getName());
+            buffer.writeString(member.getClan().getName());
         }
 
-        buffer.writeString(_member.getApprenticeOrSponsorName()); // name of this member's apprentice/sponsor
+        buffer.writeString(member.getApprenticeOrSponsorName()); // name of this member's apprentice/sponsor
     }
 }

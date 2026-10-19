@@ -31,14 +31,14 @@ import app.l2nx.highfive.mechanics.skill.Skill;
  * The Class ConditionPlayerSubclass.
  */
 public class ConditionPlayerSubclass extends Condition {
-    private final boolean _value;
+    private final boolean value;
 
     /**
      * Instantiates a new condition player subclass.
      * @param value the value
      */
     public ConditionPlayerSubclass(boolean value) {
-        _value = value;
+        this.value = value;
     }
 
     @Override
@@ -48,6 +48,6 @@ public class ConditionPlayerSubclass extends Condition {
             return true;
         }
 
-        return player.isSubClassActive() == _value;
+        return player.isSubClassActive() == value;
     }
 }

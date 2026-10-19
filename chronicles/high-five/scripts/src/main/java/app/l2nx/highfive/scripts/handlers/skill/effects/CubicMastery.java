@@ -30,12 +30,12 @@ import app.l2nx.highfive.util.StatSet;
  * @author Zoey76
  */
 public class CubicMastery extends AbstractEffect {
-    private final int _cubicCount;
+    private final int cubicCount;
 
     public CubicMastery(Condition attachCond, Condition applyCond, StatSet set, StatSet params) {
         super(attachCond, applyCond, set, params);
 
-        _cubicCount = params.getInt("cubicCount", 1);
+        cubicCount = params.getInt("cubicCount", 1);
     }
 
     @Override
@@ -45,7 +45,7 @@ public class CubicMastery extends AbstractEffect {
 
     @Override
     public void onStart(Creature effector, Creature effected, Skill skill) {
-        effected.asPlayer().getStat().setMaxCubicCount(_cubicCount);
+        effected.asPlayer().getStat().setMaxCubicCount(cubicCount);
     }
 
     @Override

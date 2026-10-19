@@ -35,17 +35,17 @@ import app.l2nx.login.network.serverpackets.ServerList;
  * </pre>
  */
 public class RequestServerList extends LoginClientPacket {
-    private int _skey1;
-    private int _skey2;
+    private int skey1;
+    private int skey2;
 
     @SuppressWarnings("unused")
-    private int _data3;
+    private int data3;
 
     @Override
     protected boolean readImpl() {
         if (remaining() >= 8) {
-            _skey1 = readInt(); // loginOk 1
-            _skey2 = readInt(); // loginOk 2
+            skey1 = readInt(); // loginOk 1
+            skey2 = readInt(); // loginOk 2
             return true;
         }
 
@@ -55,7 +55,7 @@ public class RequestServerList extends LoginClientPacket {
     @Override
     public void run() {
         final LoginClient client = getClient();
-        if (client.getSessionKey().checkLoginPair(_skey1, _skey2)) {
+        if (client.getSessionKey().checkLoginPair(skey1, skey2)) {
             client.sendPacket(new ServerList(client));
         } else {
             client.close(LoginFailReason.REASON_ACCESS_FAILED);

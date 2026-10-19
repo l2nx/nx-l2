@@ -28,20 +28,20 @@ import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.network.buffer.WriteBuffer;
 
 public class PledgeStatusChanged extends ServerPacket {
-    private final Clan _clan;
+    private final Clan clan;
 
     public PledgeStatusChanged(Clan clan) {
-        _clan = clan;
+        this.clan = clan;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.PLEDGE_STATUS_CHANGED.writeId(this, buffer);
-        buffer.writeInt(_clan.getLeaderId());
-        buffer.writeInt(_clan.getId());
-        buffer.writeInt(_clan.getCrestId());
-        buffer.writeInt(_clan.getAllyId());
-        buffer.writeInt(_clan.getAllyCrestId());
+        buffer.writeInt(clan.getLeaderId());
+        buffer.writeInt(clan.getId());
+        buffer.writeInt(clan.getCrestId());
+        buffer.writeInt(clan.getAllyId());
+        buffer.writeInt(clan.getAllyCrestId());
         buffer.writeInt(0);
         buffer.writeInt(0);
     }

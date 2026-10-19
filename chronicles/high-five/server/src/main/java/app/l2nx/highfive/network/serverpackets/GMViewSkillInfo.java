@@ -31,22 +31,22 @@ import app.l2nx.network.buffer.WriteBuffer;
 import java.util.Collection;
 
 public class GMViewSkillInfo extends ServerPacket {
-    private final Player _player;
-    private final Collection<Skill> _skills;
+    private final Player player;
+    private final Collection<Skill> skills;
 
     public GMViewSkillInfo(Player player) {
-        _player = player;
-        _skills = _player.getAllSkills();
+        this.player = player;
+        skills = this.player.getAllSkills();
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.GM_VIEW_SKILL_INFO.writeId(this, buffer);
-        buffer.writeString(_player.getName());
-        buffer.writeInt(_skills.size());
+        buffer.writeString(player.getName());
+        buffer.writeInt(skills.size());
         final boolean isDisabled =
-                (_player.getClan() != null) ? (_player.getClan().getReputationScore() < 0) : false;
-        for (Skill skill : _skills) {
+                (player.getClan() != null) ? (player.getClan().getReputationScore() < 0) : false;
+        for (Skill skill : skills) {
             buffer.writeInt(skill.isPassive());
             buffer.writeInt(skill.getDisplayLevel());
             buffer.writeInt(skill.getDisplayId());

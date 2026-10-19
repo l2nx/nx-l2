@@ -23,13 +23,15 @@ import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.zone.ZoneId;
 import app.l2nx.highfive.entity.zone.ZoneRespawn;
+import lombok.Getter;
 
 /**
  * based on Kerberos work for custom CastleTeleportZone
  * @author Nyaran
  */
 public class ResidenceTeleportZone extends ZoneRespawn {
-    private int _residenceId;
+    @Getter
+    private int residenceId;
 
     public ResidenceTeleportZone(int id) {
         super(id);
@@ -38,7 +40,7 @@ public class ResidenceTeleportZone extends ZoneRespawn {
     @Override
     public void setParameter(String name, String value) {
         if (name.equals("residenceId")) {
-            _residenceId = Integer.parseInt(value);
+            residenceId = Integer.parseInt(value);
         } else {
             super.setParameter(name, value);
         }
@@ -61,9 +63,5 @@ public class ResidenceTeleportZone extends ZoneRespawn {
                 player.teleToLocation(getSpawnLoc(), 200);
             }
         }
-    }
-
-    public int getResidenceId() {
-        return _residenceId;
     }
 }

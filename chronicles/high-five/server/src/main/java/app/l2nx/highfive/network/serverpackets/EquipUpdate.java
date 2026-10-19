@@ -29,21 +29,21 @@ import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.network.buffer.WriteBuffer;
 
 public class EquipUpdate extends ServerPacket {
-    private final Item _item;
-    private final int _change;
+    private final Item item;
+    private final int change;
 
     public EquipUpdate(Item item, int change) {
-        _item = item;
-        _change = change;
+        this.item = item;
+        this.change = change;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EQUIP_UPDATE.writeId(this, buffer);
-        buffer.writeInt(_change);
-        buffer.writeInt(_item.getObjectId());
+        buffer.writeInt(change);
+        buffer.writeInt(item.getObjectId());
 
-        switch (_item.getTemplate().getBodyPart()) {
+        switch (item.getTemplate().getBodyPart()) {
             case BodyPart.L_EAR: {
                 buffer.writeInt(0x01);
                 break;

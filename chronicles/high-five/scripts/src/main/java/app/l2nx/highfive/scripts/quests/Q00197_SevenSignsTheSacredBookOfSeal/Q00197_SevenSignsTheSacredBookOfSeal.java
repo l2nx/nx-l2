@@ -51,7 +51,7 @@ public class Q00197_SevenSignsTheSacredBookOfSeal extends Quest {
 
     // Misc
     private static final int MIN_LEVEL = 79;
-    private boolean isBusy = false;
+    private boolean busy = false;
 
     public Q00197_SevenSignsTheSacredBookOfSeal() {
         super(197);
@@ -65,7 +65,7 @@ public class Q00197_SevenSignsTheSacredBookOfSeal extends Quest {
     public String onEvent(String event, Npc npc, Player player) {
         if ((npc.getId() == SHILENS_EVIL_THOUGHTS) && "despawn".equals(event)) {
             if (!npc.isDead()) {
-                isBusy = false;
+                busy = false;
                 npc.broadcastPacket(new NpcSay(
                         npc.getObjectId(),
                         ChatType.NPC_GENERAL,
@@ -148,7 +148,7 @@ public class Q00197_SevenSignsTheSacredBookOfSeal extends Quest {
             }
             case "32595-04.html": {
                 if (qs.isCond(3)) {
-                    isBusy = true;
+                    busy = true;
                     npc.broadcastPacket(new NpcSay(
                                     npc.getObjectId(),
                                     ChatType.NPC_GENERAL,
@@ -218,7 +218,7 @@ public class Q00197_SevenSignsTheSacredBookOfSeal extends Quest {
             qs.setCond(4);
         }
 
-        isBusy = false;
+        busy = false;
         cancelQuestTimers("despawn");
         npc.broadcastPacket(new NpcSay(
                         npc.getObjectId(),
@@ -275,7 +275,7 @@ public class Q00197_SevenSignsTheSacredBookOfSeal extends Quest {
                     }
                     case LAWRENCE: {
                         if (qs.isCond(3)) {
-                            htmltext = isBusy ? "32595-05.html" : "32595-01.html";
+                            htmltext = busy ? "32595-05.html" : "32595-01.html";
                         } else if (qs.isCond(4)) {
                             if (hasQuestItems(player, SCULPTURE_OF_DOUBT)) {
                                 htmltext = "32595-06.html";

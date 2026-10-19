@@ -32,8 +32,9 @@ import app.l2nx.highfive.handler.IBypassHandler;
 import app.l2nx.highfive.managers.SiegeManager;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.serverpackets.ActionFailed;
-import java.util.logging.Level;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class Observation implements IBypassHandler {
     private static final String[] COMMANDS = {"observesiege", "observeoracle", "observe"};
 
@@ -106,7 +107,7 @@ public class Observation implements IBypassHandler {
         try {
             param = Integer.parseInt(command.split(" ")[1]);
         } catch (NumberFormatException nfe) {
-            LOGGER.log(Level.WARNING, "Exception in " + getClass().getSimpleName(), nfe);
+            log.warn("Bypass failed", nfe);
             return false;
         }
 

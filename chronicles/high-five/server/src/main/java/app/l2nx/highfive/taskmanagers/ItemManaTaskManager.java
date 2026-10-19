@@ -36,7 +36,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class ItemManaTaskManager implements Runnable {
     private static final Map<Item, Long> ITEMS = new ConcurrentHashMap<>();
     private static final int MANA_CONSUMPTION_RATE = 60000;
-    private static boolean _working = false;
+    private static boolean working = false;
 
     protected ItemManaTaskManager() {
         ThreadPool.scheduleAtFixedRate(this, 1000, 1000);
@@ -44,11 +44,11 @@ public class ItemManaTaskManager implements Runnable {
 
     @Override
     public void run() {
-        if (_working) {
+        if (working) {
             return;
         }
 
-        _working = true;
+        working = true;
 
         if (!ITEMS.isEmpty()) {
             final long currentTime = System.currentTimeMillis();
@@ -71,7 +71,7 @@ public class ItemManaTaskManager implements Runnable {
             }
         }
 
-        _working = false;
+        working = false;
     }
 
     public void add(Item item) {

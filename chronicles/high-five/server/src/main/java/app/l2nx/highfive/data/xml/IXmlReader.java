@@ -34,10 +34,9 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
+import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
@@ -49,7 +48,6 @@ import org.xml.sax.SAXParseException;
  * @author Zoey76, Mobius
  */
 public interface IXmlReader {
-    static final Logger LOGGER = Logger.getLogger(IXmlReader.class.getName());
 
     static final String JAXP_SCHEMA_LANGUAGE = "http://java.sun.com/xml/jaxp/properties/schemaLanguage";
     static final String W3C_XML_SCHEMA = "http://www.w3.org/2001/XMLSchema";
@@ -73,7 +71,8 @@ public interface IXmlReader {
      */
     default void parseFile(File file) {
         if (!isValidXmlFile(file)) {
-            LOGGER.warning("Cannot parse " + file.getName() + ": file does not exist or is not valid.");
+            LoggerFactory.getLogger(getClass())
+                    .warn("Cannot parse {}: file does not exist or is not valid.", file.getName());
             return;
         }
 
@@ -86,13 +85,15 @@ public interface IXmlReader {
             final DocumentBuilder builder = factory.newDocumentBuilder();
             parseDocument(builder.parse(file), file);
         } catch (SAXParseException e) {
-            LOGGER.log(
-                    Level.WARNING,
-                    "Error parsing " + file.getName() + " at line " + e.getLineNumber() + ", column "
-                            + e.getColumnNumber() + ".",
-                    e);
+            LoggerFactory.getLogger(getClass())
+                    .warn(
+                            "Error parsing {} at line {}, column {}.",
+                            file.getName(),
+                            e.getLineNumber(),
+                            e.getColumnNumber(),
+                            e);
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, "Error parsing " + file.getName(), e);
+            LoggerFactory.getLogger(getClass()).warn("Error parsing {}", file.getName(), e);
         }
     }
 
@@ -123,7 +124,7 @@ public interface IXmlReader {
      */
     default boolean parseDirectory(File directory, boolean recursive) {
         if (!directory.exists()) {
-            LOGGER.warning("Directory not found: " + directory.getAbsolutePath());
+            LoggerFactory.getLogger(getClass()).warn("Directory not found: {}", directory.getAbsolutePath());
             return false;
         }
 
@@ -148,7 +149,7 @@ public interface IXmlReader {
                 try {
                     task.get();
                 } catch (Exception e) {
-                    LOGGER.warning("Failed to parse file: " + e.getMessage());
+                    LoggerFactory.getLogger(getClass()).warn("Failed to parse file: {}", e.getMessage());
                 }
             }
 
@@ -157,7 +158,7 @@ public interface IXmlReader {
                 executorService.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
-                LOGGER.warning("Parsing process was interrupted: " + e.getMessage());
+                LoggerFactory.getLogger(getClass()).warn("Parsing process was interrupted: {}", e.getMessage());
             }
         } else // Parse files sequentially if multithreading is not enabled.
         {
@@ -538,9 +539,13 @@ public interface IXmlReader {
         try {
             return Enum.valueOf(enumClass, node.getNodeValue());
         } catch (IllegalArgumentException e) {
-            LOGGER.warning("Invalid value for node: " + node.getNodeName() + ", specified value: " + node.getNodeValue()
-                    + " should be an enum of type \"" + enumClass.getSimpleName() + "\". Using default value: "
-                    + defaultValue);
+            LoggerFactory.getLogger(getClass())
+                    .warn(
+                            "Invalid value for node: {}, specified value: {} should be an enum of type \"{}\". Using default value: {}",
+                            node.getNodeName(),
+                            node.getNodeValue(),
+                            enumClass.getSimpleName(),
+                            defaultValue);
             return defaultValue;
         }
     }

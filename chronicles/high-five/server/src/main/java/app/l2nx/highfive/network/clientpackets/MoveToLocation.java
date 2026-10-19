@@ -36,23 +36,23 @@ import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.serverpackets.ActionFailed;
 
 public class MoveToLocation extends ClientPacket {
-    private int _targetX;
-    private int _targetY;
-    private int _targetZ;
-    private int _originX;
-    private int _originY;
-    private int _originZ;
-    private int _movementMode;
+    private int targetX;
+    private int targetY;
+    private int targetZ;
+    private int originX;
+    private int originY;
+    private int originZ;
+    private int movementMode;
 
     @Override
     protected void readImpl() {
-        _targetX = readInt();
-        _targetY = readInt();
-        _targetZ = readInt();
-        _originX = readInt();
-        _originY = readInt();
-        _originZ = readInt();
-        _movementMode = readInt(); // is 0 if cursor keys are used 1 if mouse is used
+        targetX = readInt();
+        targetY = readInt();
+        targetZ = readInt();
+        originX = readInt();
+        originY = readInt();
+        originZ = readInt();
+        movementMode = readInt(); // is 0 if cursor keys are used 1 if mouse is used
     }
 
     @Override
@@ -76,7 +76,7 @@ public class MoveToLocation extends ClientPacket {
             return;
         }
 
-        if ((_targetX == _originX) && (_targetY == _originY) && (_targetZ == _originZ)) {
+        if ((targetX == originX) && (targetY == originY) && (targetZ == originZ)) {
             player.stopMove(player.getLocation());
             player.sendPacket(ActionFailed.STATIC_PACKET);
             return;
@@ -84,7 +84,7 @@ public class MoveToLocation extends ClientPacket {
 
         // Check if target location is obstructed.
         if (GeoEngine.getInstance()
-                .isCompletelyBlocked(GeoEngine.getGeoX(_targetX), GeoEngine.getGeoY(_targetY), _targetZ)) {
+                .isCompletelyBlocked(GeoEngine.getGeoX(targetX), GeoEngine.getGeoY(targetY), targetZ)) {
             player.sendPacket(ActionFailed.STATIC_PACKET);
             return;
         }
@@ -97,13 +97,13 @@ public class MoveToLocation extends ClientPacket {
             return;
         }
 
-        if (_movementMode == 1) {
+        if (movementMode == 1) {
             player.setCursorKeyMovement(false);
 
             if (EventDispatcher.getInstance().hasListener(EventType.ON_PLAYER_MOVE_REQUEST, player)) {
                 final TerminateReturn terminate = EventDispatcher.getInstance()
                         .notifyEvent(
-                                new OnPlayerMoveRequest(player, new Location(_targetX, _targetY, _targetZ)),
+                                new OnPlayerMoveRequest(player, new Location(targetX, targetY, targetZ)),
                                 player,
                                 TerminateReturn.class);
                 if ((terminate != null) && terminate.terminate()) {
@@ -117,11 +117,11 @@ public class MoveToLocation extends ClientPacket {
                 return;
             }
 
-            final int dx = _originX - player.getX();
-            final int dy = _originY - player.getY();
+            final int dx = originX - player.getX();
+            final int dy = originY - player.getY();
             if (((dx * dx) + (dy * dy)) < 1000000) // 1000 distance ^2
             {
-                player.setSyncedXYZ(_originX, _originY, _originZ);
+                player.setSyncedXYZ(originX, originY, originZ);
             }
 
             player.setCursorKeyMovement(true);
@@ -132,7 +132,7 @@ public class MoveToLocation extends ClientPacket {
         if (teleMode > 0) {
             if (teleMode == 3) // Admin zone build.
             {
-                ZoneBuildManager.getInstance().addPoint(player, new Location(_targetX, _targetY, _targetZ));
+                ZoneBuildManager.getInstance().addPoint(player, new Location(targetX, targetY, targetZ));
                 player.sendPacket(ActionFailed.STATIC_PACKET);
                 return;
             }
@@ -142,7 +142,7 @@ public class MoveToLocation extends ClientPacket {
             }
 
             player.sendPacket(ActionFailed.STATIC_PACKET);
-            player.teleToLocation(new Location(_targetX, _targetY, _targetZ));
+            player.teleToLocation(new Location(targetX, targetY, targetZ));
             return;
         }
 
@@ -153,8 +153,8 @@ public class MoveToLocation extends ClientPacket {
         }
 
         // Can't move if character is trying to move a huge distance.
-        final double dx = _targetX - player.getX();
-        final double dy = _targetY - player.getY();
+        final double dx = targetX - player.getX();
+        final double dy = targetY - player.getY();
         if (((dx * dx) + (dy * dy)) > 98010000) // 9900 distance ^2
         {
             player.sendPacket(ActionFailed.STATIC_PACKET);
@@ -162,7 +162,7 @@ public class MoveToLocation extends ClientPacket {
         }
 
         // Finally move to the target location.
-        player.getAI().setIntentionMoveTo(new Location(_targetX, _targetY, _targetZ));
+        player.getAI().setIntentionMoveTo(new Location(targetX, targetY, targetZ));
 
         // Mobius: Check spawn protections.
         player.onActionRequest();

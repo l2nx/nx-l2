@@ -20,14 +20,18 @@
 package app.l2nx.highfive.mechanics.effects;
 
 import app.l2nx.highfive.mechanics.skill.BuffInfo;
+import lombok.Getter;
 
 /**
  * Effect tick task.
  * @author Zoey76
  */
 public class EffectTickTask implements Runnable {
-    private final BuffInfo _info;
-    private final AbstractEffect _effect;
+    @Getter
+    private final BuffInfo buffInfo;
+
+    @Getter
+    private final AbstractEffect effect;
 
     /**
      * EffectTickTask constructor.
@@ -35,28 +39,12 @@ public class EffectTickTask implements Runnable {
      * @param effect the effect
      */
     public EffectTickTask(BuffInfo info, AbstractEffect effect) {
-        _info = info;
-        _effect = effect;
-    }
-
-    /**
-     * Gets the buff info.
-     * @return the buff info
-     */
-    public BuffInfo getBuffInfo() {
-        return _info;
-    }
-
-    /**
-     * Gets the effect.
-     * @return the effect
-     */
-    public AbstractEffect getEffect() {
-        return _effect;
+        buffInfo = info;
+        this.effect = effect;
     }
 
     @Override
     public void run() {
-        _info.onTick(_effect);
+        buffInfo.onTick(effect);
     }
 }

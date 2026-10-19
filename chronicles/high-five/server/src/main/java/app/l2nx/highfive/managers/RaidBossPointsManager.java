@@ -40,17 +40,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author Kerberos, JIV
  * @version 8/24/10
  */
+@Slf4j
 public class RaidBossPointsManager {
-    private static final Logger LOGGER = Logger.getLogger(RaidBossPointsManager.class.getName());
 
-    private final Map<Integer, Map<Integer, Integer>> _list = new ConcurrentHashMap<>();
+    private final Map<Integer, Map<Integer, Integer>> list = new ConcurrentHashMap<>();
 
     public RaidBossPointsManager() {
         init();
@@ -71,18 +70,18 @@ public class RaidBossPointsManager {
                 final int charId = rs.getInt("charId");
                 final int bossId = rs.getInt("boss_id");
                 final int points = rs.getInt("points");
-                Map<Integer, Integer> values = _list.get(charId);
+                Map<Integer, Integer> values = list.get(charId);
                 if (values == null) {
                     values = new HashMap<>();
                 }
 
                 values.put(bossId, points);
-                _list.put(charId, values);
+                list.put(charId, values);
             }
 
-            LOGGER.info(getClass().getSimpleName() + ": Loaded " + _list.size() + " Characters Raid Points.");
+            log.info("Loaded {} Characters Raid Points.", list.size());
         } catch (SQLException e) {
-            LOGGER.log(Level.WARNING, getClass().getSimpleName() + ": Could not load raid points ", e);
+            log.warn("Could not load raid points ", e);
         }
     }
 
@@ -156,7 +155,7 @@ public class RaidBossPointsManager {
         }
 
         cleanUp();
-        LOGGER.info(getClass().getSimpleName() + ": Reset task launched.");
+        log.info("Reset task launched.");
     }
 
     public void updatePointsInDB(Player player, int raidId, int points) {
@@ -168,20 +167,17 @@ public class RaidBossPointsManager {
             ps.setInt(3, points);
             ps.executeUpdate();
         } catch (Exception e) {
-            LOGGER.log(
-                    Level.WARNING,
-                    getClass().getSimpleName() + ": Couldn't update char raid points for player: " + player,
-                    e);
+            log.warn("Couldn't update char raid points for player: {}", player, e);
         }
     }
 
     public void addPoints(Player player, int bossId, int points) {
-        final Map<Integer, Integer> tmpPoint = _list.computeIfAbsent(player.getObjectId(), _ -> new HashMap<>());
+        final Map<Integer, Integer> tmpPoint = list.computeIfAbsent(player.getObjectId(), _ -> new HashMap<>());
         updatePointsInDB(player, bossId, tmpPoint.merge(bossId, points, Integer::sum));
     }
 
     public int getPointsByOwnerId(int ownerId) {
-        final Map<Integer, Integer> tmpPoint = _list.get(ownerId);
+        final Map<Integer, Integer> tmpPoint = list.get(ownerId);
         int totalPoints = 0;
         if ((tmpPoint == null) || tmpPoint.isEmpty()) {
             return 0;
@@ -195,7 +191,7 @@ public class RaidBossPointsManager {
     }
 
     public Map<Integer, Integer> getList(Player player) {
-        return _list.get(player.getObjectId());
+        return list.get(player.getObjectId());
     }
 
     public void cleanUp() {
@@ -203,9 +199,9 @@ public class RaidBossPointsManager {
                 PreparedStatement statement =
                         con.prepareStatement("DELETE from character_raid_points WHERE charId > 0")) {
             statement.executeUpdate();
-            _list.clear();
+            list.clear();
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, getClass().getSimpleName() + ": Couldn't clean raid points", e);
+            log.warn("Couldn't clean raid points", e);
         }
     }
 
@@ -215,7 +211,7 @@ public class RaidBossPointsManager {
 
     public Map<Integer, Integer> getRankList() {
         final Map<Integer, Integer> tmpPoints = new HashMap<>();
-        for (int ownerId : _list.keySet()) {
+        for (int ownerId : this.list.keySet()) {
             final int totalPoints = getPointsByOwnerId(ownerId);
             if (totalPoints != 0) {
                 tmpPoints.put(ownerId, totalPoints);

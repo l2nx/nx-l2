@@ -32,14 +32,14 @@ import app.l2nx.highfive.util.StatSet;
  * @author Zoey76
  */
 public class SetSkill extends AbstractEffect {
-    private final int _skillId;
-    private final int _skillLevel;
+    private final int skillId;
+    private final int skillLevel;
 
     public SetSkill(Condition attachCond, Condition applyCond, StatSet set, StatSet params) {
         super(attachCond, applyCond, set, params);
 
-        _skillId = params.getInt("skillId", 0);
-        _skillLevel = params.getInt("skillLevel", 1);
+        skillId = params.getInt("skillId", 0);
+        skillLevel = params.getInt("skillLevel", 1);
     }
 
     @Override
@@ -53,7 +53,7 @@ public class SetSkill extends AbstractEffect {
             return;
         }
 
-        final Skill addedSkill = SkillData.getInstance().getSkill(_skillId, _skillLevel);
+        final Skill addedSkill = SkillData.getInstance().getSkill(skillId, skillLevel);
         if (addedSkill == null) {
             return;
         }

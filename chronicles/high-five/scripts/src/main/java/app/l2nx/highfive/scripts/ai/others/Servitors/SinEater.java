@@ -82,7 +82,7 @@ public class SinEater extends Script {
     @Id(SIN_EATER)
     public void onCreatureKill(OnCreatureDeath event) {
         final int random = getRandom(100);
-        final Summon summon = event.getTarget().asSummon();
+        final Summon summon = event.target().asSummon();
         if (random < 30) {
             broadcastSummonSay(summon, NpcStringId.OH_THIS_IS_JUST_GREAT_WHAT_ARE_YOU_GOING_TO_DO_NOW);
         } else if (random < 70) {
@@ -99,7 +99,7 @@ public class SinEater extends Script {
     public void onCreatureAttacked(OnCreatureAttacked event) {
         if (getRandom(100) < 30) {
             final int random = getRandom(100);
-            final Summon summon = event.getTarget().asSummon();
+            final Summon summon = event.target().asSummon();
             if (random < 35) {
                 broadcastSummonSay(summon, NpcStringId.OH_THAT_SMARTS);
             } else if (random < 70) {

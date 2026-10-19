@@ -25,21 +25,25 @@ public class NetworkConfig {
         for (String property : config.getStringPropertyNames()) {
             final Matcher matcher = BUFFER_POOL_PROPERTY.matcher(property);
             if (matcher.matches()) {
-                bufferPools.add(new NetworkSettings.BufferPool(
-                        config.getInt(property, 10), config.getInt(matcher.group(1) + "BufferSize", 1024)));
+                bufferPools.add(NetworkSettings.BufferPool.builder()
+                        .size(config.getInt(property, 10))
+                        .bufferSize(config.getInt(matcher.group(1) + "BufferSize", 1024))
+                        .build());
             }
         }
 
-        SETTINGS = new NetworkSettings(
-                Duration.ofSeconds(config.getInt(
-                        "ShutdownWaitTime", (int) defaults.shutdownWaitTime().toSeconds())),
-                config.getInt("ThreadPoolSize", defaults.threadPoolSize()),
-                config.getInt("ThreadPriority", defaults.threadPriority()),
-                config.getBoolean("DropPackets", defaults.dropPackets()),
-                config.getInt("DropPacketThreshold", defaults.dropPacketThreshold()),
-                config.getInt("BufferSegmentSize", defaults.bufferSegmentSize()),
-                config.getBoolean("BufferPool.AutoExpandCapacity", defaults.autoExpandPoolCapacity()),
-                config.getFloat("BufferPool.InitFactor", defaults.initBufferPoolFactor()),
-                bufferPools);
+        SETTINGS = NetworkSettings.builder()
+                .shutdownWaitTime(Duration.ofSeconds(config.getInt(
+                        "ShutdownWaitTime", (int) defaults.shutdownWaitTime().toSeconds())))
+                .threadPoolSize(config.getInt("ThreadPoolSize", defaults.threadPoolSize()))
+                .threadPriority(config.getInt("ThreadPriority", defaults.threadPriority()))
+                .dropPackets(config.getBoolean("DropPackets", defaults.dropPackets()))
+                .dropPacketThreshold(config.getInt("DropPacketThreshold", defaults.dropPacketThreshold()))
+                .bufferSegmentSize(config.getInt("BufferSegmentSize", defaults.bufferSegmentSize()))
+                .autoExpandPoolCapacity(
+                        config.getBoolean("BufferPool.AutoExpandCapacity", defaults.autoExpandPoolCapacity()))
+                .initBufferPoolFactor(config.getFloat("BufferPool.InitFactor", defaults.initBufferPoolFactor()))
+                .bufferPools(bufferPools)
+                .build();
     }
 }

@@ -20,53 +20,48 @@
 package app.l2nx.highfive.mechanics.siege.manor;
 
 import java.util.concurrent.atomic.AtomicLong;
+import lombok.Getter;
 
 /**
  * @author xban1x
  */
 public class SeedProduction {
-    private final int _seedId;
-    private final long _price;
-    private final long _startAmount;
-    private final AtomicLong _amount;
+    @Getter
+    private final int id;
+
+    @Getter
+    private final long price;
+
+    @Getter
+    private final long startAmount;
+
+    private final AtomicLong amount;
 
     public SeedProduction(int id, long amount, long price, long startAmount) {
-        _seedId = id;
-        _amount = new AtomicLong(amount);
-        _price = price;
-        _startAmount = startAmount;
-    }
-
-    public int getId() {
-        return _seedId;
+        this.id = id;
+        this.amount = new AtomicLong(amount);
+        this.price = price;
+        this.startAmount = startAmount;
     }
 
     public long getAmount() {
-        return _amount.get();
-    }
-
-    public long getPrice() {
-        return _price;
-    }
-
-    public long getStartAmount() {
-        return _startAmount;
+        return amount.get();
     }
 
     public void setAmount(long amount) {
-        _amount.set(amount);
+        this.amount.set(amount);
     }
 
     public boolean decreaseAmount(long value) {
         long current;
         long next;
         do {
-            current = _amount.get();
+            current = amount.get();
             next = current - value;
             if (next < 0) {
                 return false;
             }
-        } while (!_amount.compareAndSet(current, next));
+        } while (!amount.compareAndSet(current, next));
         return true;
     }
 }

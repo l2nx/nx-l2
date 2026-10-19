@@ -28,18 +28,18 @@ import app.l2nx.highfive.mechanics.skill.Skill;
  * @author janiii
  */
 public class ConditionTargetAbnormal extends Condition {
-    private final int _abnormalId;
+    private final int abnormalId;
 
     /**
      * Instantiates a new condition target abnormal.
      * @param abnormalId the abnormal id
      */
     public ConditionTargetAbnormal(int abnormalId) {
-        _abnormalId = abnormalId;
+        this.abnormalId = abnormalId;
     }
 
     @Override
     public boolean testImpl(Creature effector, Creature effected, Skill skill, ItemTemplate item) {
-        return (effected.getAbnormalVisualEffects() & _abnormalId) != 0;
+        return (effected.getAbnormalVisualEffects() & abnormalId) != 0;
     }
 }

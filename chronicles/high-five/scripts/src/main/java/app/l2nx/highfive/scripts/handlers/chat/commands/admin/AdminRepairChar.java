@@ -28,15 +28,14 @@ import app.l2nx.highfive.handler.IAdminCommandHandler;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * This class handles following admin commands: - delete = deletes target
  * @version $Revision: 1.1.2.6.2.3 $ $Date: 2005/04/11 10:05:59 $
  */
+@Slf4j
 public class AdminRepairChar implements IAdminCommandHandler {
-    private static final Logger LOGGER = Logger.getLogger(AdminRepairChar.class.getName());
 
     private static final String[] ADMIN_COMMANDS = {"admin_restore", "admin_repair"};
 
@@ -92,7 +91,7 @@ public class AdminRepairChar implements IAdminCommandHandler {
             statement.execute();
             statement.close();
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, "could not repair char:", e);
+            log.warn("could not repair char:", e);
         }
     }
 }

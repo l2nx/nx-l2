@@ -28,71 +28,70 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
+import lombok.Getter;
 
 /**
  * @author mkizub, Zoey76
  */
 public class PlayerTemplate extends CreatureTemplate {
-    private final PlayerClass _playerClass;
+    @Getter
+    private final PlayerClass playerClass;
 
-    private final float[] _baseHp;
-    private final float[] _baseMp;
-    private final float[] _baseCp;
+    private final float[] baseHp;
+    private final float[] baseMp;
+    private final float[] baseCp;
 
-    private final double[] _baseHpReg;
-    private final double[] _baseMpReg;
-    private final double[] _baseCpReg;
+    private final double[] baseHpReg;
+    private final double[] baseMpReg;
+    private final double[] baseCpReg;
 
-    private final float _fCollisionHeightFemale;
-    private final float _fCollisionRadiusFemale;
+    @Getter
+    private final float fCollisionHeightFemale;
 
-    private final int _baseSafeFallHeight;
+    @Getter
+    private final float fCollisionRadiusFemale;
 
-    private final List<Location> _creationPoints;
-    private final Map<Integer, Integer> _baseSlotDef;
+    @Getter
+    private final int safeFallHeight;
+
+    private final List<Location> creationPoints;
+    private final Map<Integer, Integer> baseSlotDef;
 
     public PlayerTemplate(StatSet set, List<Location> creationPoints) {
         super(set);
-        _playerClass = PlayerClass.getPlayerClass(set.getInt("classId"));
-        setRace(_playerClass.getRace());
-        _baseHp = new float[ExperienceData.getInstance().getMaxLevel()];
-        _baseMp = new float[ExperienceData.getInstance().getMaxLevel()];
-        _baseCp = new float[ExperienceData.getInstance().getMaxLevel()];
-        _baseHpReg = new double[ExperienceData.getInstance().getMaxLevel()];
-        _baseMpReg = new double[ExperienceData.getInstance().getMaxLevel()];
-        _baseCpReg = new double[ExperienceData.getInstance().getMaxLevel()];
-        _baseSlotDef = new HashMap<>(12);
-        _baseSlotDef.put(Inventory.PAPERDOLL_CHEST, set.getInt("basePDefchest", 0));
-        _baseSlotDef.put(Inventory.PAPERDOLL_LEGS, set.getInt("basePDeflegs", 0));
-        _baseSlotDef.put(Inventory.PAPERDOLL_HEAD, set.getInt("basePDefhead", 0));
-        _baseSlotDef.put(Inventory.PAPERDOLL_FEET, set.getInt("basePDeffeet", 0));
-        _baseSlotDef.put(Inventory.PAPERDOLL_GLOVES, set.getInt("basePDefgloves", 0));
-        _baseSlotDef.put(Inventory.PAPERDOLL_UNDER, set.getInt("basePDefunderwear", 0));
-        _baseSlotDef.put(Inventory.PAPERDOLL_CLOAK, set.getInt("basePDefcloak", 0));
-        _baseSlotDef.put(Inventory.PAPERDOLL_REAR, set.getInt("baseMDefrear", 0));
-        _baseSlotDef.put(Inventory.PAPERDOLL_LEAR, set.getInt("baseMDeflear", 0));
-        _baseSlotDef.put(Inventory.PAPERDOLL_RFINGER, set.getInt("baseMDefrfinger", 0));
-        _baseSlotDef.put(Inventory.PAPERDOLL_LFINGER, set.getInt("baseMDefrfinger", 0));
-        _baseSlotDef.put(Inventory.PAPERDOLL_NECK, set.getInt("baseMDefneck", 0));
+        playerClass = PlayerClass.getPlayerClass(set.getInt("classId"));
+        setRace(playerClass.getRace());
+        baseHp = new float[ExperienceData.getInstance().getMaxLevel()];
+        baseMp = new float[ExperienceData.getInstance().getMaxLevel()];
+        baseCp = new float[ExperienceData.getInstance().getMaxLevel()];
+        baseHpReg = new double[ExperienceData.getInstance().getMaxLevel()];
+        baseMpReg = new double[ExperienceData.getInstance().getMaxLevel()];
+        baseCpReg = new double[ExperienceData.getInstance().getMaxLevel()];
+        baseSlotDef = new HashMap<>(12);
+        baseSlotDef.put(Inventory.PAPERDOLL_CHEST, set.getInt("basePDefchest", 0));
+        baseSlotDef.put(Inventory.PAPERDOLL_LEGS, set.getInt("basePDeflegs", 0));
+        baseSlotDef.put(Inventory.PAPERDOLL_HEAD, set.getInt("basePDefhead", 0));
+        baseSlotDef.put(Inventory.PAPERDOLL_FEET, set.getInt("basePDeffeet", 0));
+        baseSlotDef.put(Inventory.PAPERDOLL_GLOVES, set.getInt("basePDefgloves", 0));
+        baseSlotDef.put(Inventory.PAPERDOLL_UNDER, set.getInt("basePDefunderwear", 0));
+        baseSlotDef.put(Inventory.PAPERDOLL_CLOAK, set.getInt("basePDefcloak", 0));
+        baseSlotDef.put(Inventory.PAPERDOLL_REAR, set.getInt("baseMDefrear", 0));
+        baseSlotDef.put(Inventory.PAPERDOLL_LEAR, set.getInt("baseMDeflear", 0));
+        baseSlotDef.put(Inventory.PAPERDOLL_RFINGER, set.getInt("baseMDefrfinger", 0));
+        baseSlotDef.put(Inventory.PAPERDOLL_LFINGER, set.getInt("baseMDefrfinger", 0));
+        baseSlotDef.put(Inventory.PAPERDOLL_NECK, set.getInt("baseMDefneck", 0));
 
-        _fCollisionRadiusFemale = set.getFloat("collisionFemaleradius");
-        _fCollisionHeightFemale = set.getFloat("collisionFemaleheight");
-        _baseSafeFallHeight = set.getInt("baseSafeFall", 333);
-        _creationPoints = creationPoints;
-    }
-
-    /**
-     * @return the template PlayerClass.
-     */
-    public PlayerClass getPlayerClass() {
-        return _playerClass;
+        fCollisionRadiusFemale = set.getFloat("collisionFemaleradius");
+        fCollisionHeightFemale = set.getFloat("collisionFemaleheight");
+        safeFallHeight = set.getInt("baseSafeFall", 333);
+        this.creationPoints = creationPoints;
     }
 
     /**
      * @return random Location of created character spawn.
      */
     public Location getCreationPoint() {
-        return _creationPoints.get(ThreadLocalRandom.current().nextInt(_creationPoints.size()));
+        return creationPoints.get(ThreadLocalRandom.current().nextInt(creationPoints.size()));
     }
 
     /**
@@ -104,27 +103,27 @@ public class PlayerTemplate extends CreatureTemplate {
     public void setUpgainValue(String paramName, int level, double value) {
         switch (paramName) {
             case "hp": {
-                _baseHp[level] = (float) value;
+                baseHp[level] = (float) value;
                 break;
             }
             case "mp": {
-                _baseMp[level] = (float) value;
+                baseMp[level] = (float) value;
                 break;
             }
             case "cp": {
-                _baseCp[level] = (float) value;
+                baseCp[level] = (float) value;
                 break;
             }
             case "hpRegen": {
-                _baseHpReg[level] = value;
+                baseHpReg[level] = value;
                 break;
             }
             case "mpRegen": {
-                _baseMpReg[level] = value;
+                baseMpReg[level] = value;
                 break;
             }
             case "cpRegen": {
-                _baseCpReg[level] = value;
+                baseCpReg[level] = value;
                 break;
             }
         }
@@ -135,7 +134,7 @@ public class PlayerTemplate extends CreatureTemplate {
      * @return the baseHpMax for given character level
      */
     public float getBaseHpMax(int level) {
-        return _baseHp[level];
+        return baseHp[level];
     }
 
     /**
@@ -143,7 +142,7 @@ public class PlayerTemplate extends CreatureTemplate {
      * @return the baseMpMax for given character level
      */
     public float getBaseMpMax(int level) {
-        return _baseMp[level];
+        return baseMp[level];
     }
 
     /**
@@ -151,7 +150,7 @@ public class PlayerTemplate extends CreatureTemplate {
      * @return the baseCpMax for given character level
      */
     public float getBaseCpMax(int level) {
-        return _baseCp[level];
+        return baseCp[level];
     }
 
     /**
@@ -159,7 +158,7 @@ public class PlayerTemplate extends CreatureTemplate {
      * @return the base HP Regeneration for given character level
      */
     public double getBaseHpRegen(int level) {
-        return _baseHpReg[level];
+        return baseHpReg[level];
     }
 
     /**
@@ -167,7 +166,7 @@ public class PlayerTemplate extends CreatureTemplate {
      * @return the base MP Regeneration for given character level
      */
     public double getBaseMpRegen(int level) {
-        return _baseMpReg[level];
+        return baseMpReg[level];
     }
 
     /**
@@ -175,7 +174,7 @@ public class PlayerTemplate extends CreatureTemplate {
      * @return the base HP Regeneration for given character level
      */
     public double getBaseCpRegen(int level) {
-        return _baseCpReg[level];
+        return baseCpReg[level];
     }
 
     /**
@@ -183,27 +182,6 @@ public class PlayerTemplate extends CreatureTemplate {
      * @return defense value of character for EMPTY given slot
      */
     public int getBaseDefBySlot(int slotId) {
-        return _baseSlotDef.getOrDefault(slotId, 0);
-    }
-
-    /**
-     * @return the template collision height for female characters.
-     */
-    public float getFCollisionHeightFemale() {
-        return _fCollisionHeightFemale;
-    }
-
-    /**
-     * @return the template collision radius for female characters.
-     */
-    public float getFCollisionRadiusFemale() {
-        return _fCollisionRadiusFemale;
-    }
-
-    /**
-     * @return the safe fall height.
-     */
-    public int getSafeFallHeight() {
-        return _baseSafeFallHeight;
+        return baseSlotDef.getOrDefault(slotId, 0);
     }
 }

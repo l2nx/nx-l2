@@ -29,26 +29,26 @@ import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.network.buffer.WriteBuffer;
 
 public class ExMoveToLocationInAirShip extends ServerPacket {
-    private final int _objectId;
-    private final int _airShipId;
-    private final Location _destination;
-    private final int _heading;
+    private final int objectId;
+    private final int airShipId;
+    private final Location destination;
+    private final int heading;
 
     public ExMoveToLocationInAirShip(Player player) {
-        _objectId = player.getObjectId();
-        _airShipId = player.getAirShip().getObjectId();
-        _destination = player.getInVehiclePosition();
-        _heading = player.getHeading();
+        objectId = player.getObjectId();
+        airShipId = player.getAirShip().getObjectId();
+        destination = player.getInVehiclePosition();
+        heading = player.getHeading();
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_MOVE_TO_LOCATION_IN_AIRSHIP.writeId(this, buffer);
-        buffer.writeInt(_objectId);
-        buffer.writeInt(_airShipId);
-        buffer.writeInt(_destination.getX());
-        buffer.writeInt(_destination.getY());
-        buffer.writeInt(_destination.getZ());
-        buffer.writeInt(_heading);
+        buffer.writeInt(objectId);
+        buffer.writeInt(airShipId);
+        buffer.writeInt(destination.getX());
+        buffer.writeInt(destination.getY());
+        buffer.writeInt(destination.getZ());
+        buffer.writeInt(heading);
     }
 }

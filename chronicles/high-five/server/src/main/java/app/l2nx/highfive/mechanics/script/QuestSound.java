@@ -22,6 +22,7 @@ package app.l2nx.highfive.mechanics.script;
 import app.l2nx.highfive.network.serverpackets.PlaySound;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import lombok.Getter;
 
 /**
  * This enum contains known sound effects used by quests.<br>
@@ -131,12 +132,13 @@ public enum QuestSound {
     BS05_D(new PlaySound("BS05_D")),
     BS07_D(new PlaySound("BS07_D"));
 
-    private final PlaySound _playSound;
+    @Getter
+    private final PlaySound packet;
 
     private static final Map<String, PlaySound> SOUND_PACKETS = new ConcurrentHashMap<>();
 
     private QuestSound(PlaySound playSound) {
-        _playSound = playSound;
+        packet = playSound;
     }
 
     /**
@@ -151,9 +153,9 @@ public enum QuestSound {
         }
 
         for (QuestSound qs : QuestSound.values()) {
-            if (qs._playSound.getSoundName().equals(soundName)) {
-                SOUND_PACKETS.put(soundName, qs._playSound); // Cache in map to avoid looping repeatedly.
-                return qs._playSound;
+            if (qs.packet.getSoundName().equals(soundName)) {
+                SOUND_PACKETS.put(soundName, qs.packet); // Cache in map to avoid looping repeatedly.
+                return qs.packet;
             }
         }
 
@@ -165,13 +167,6 @@ public enum QuestSound {
      * @return the name of the sound of this QuestSound object
      */
     public String getSoundName() {
-        return _playSound.getSoundName();
-    }
-
-    /**
-     * @return the {@link PlaySound} packet of this QuestSound object
-     */
-    public PlaySound getPacket() {
-        return _playSound;
+        return packet.getSoundName();
     }
 }

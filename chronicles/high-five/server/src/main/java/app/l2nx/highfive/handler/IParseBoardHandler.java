@@ -20,14 +20,12 @@
 package app.l2nx.highfive.handler;
 
 import app.l2nx.highfive.entity.actor.Player;
-import java.util.logging.Logger;
 
 /**
  * Community Board interface.
  * @author Zoey76
  */
 public interface IParseBoardHandler {
-    Logger LOG = Logger.getLogger(IParseBoardHandler.class.getName());
 
     /**
      * Parses a community board command.

@@ -23,27 +23,13 @@ import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.item.Henna;
 import app.l2nx.highfive.mechanics.events.EventType;
 import app.l2nx.highfive.mechanics.events.holders.IBaseEvent;
+import lombok.Builder;
 
 /**
  * @author UnAfraid
  */
-public class OnPlayerHennaAdd implements IBaseEvent {
-    private final Player _player;
-    private final Henna _henna;
-
-    public OnPlayerHennaAdd(Player player, Henna henna) {
-        _player = player;
-        _henna = henna;
-    }
-
-    public Player getPlayer() {
-        return _player;
-    }
-
-    public Henna getHenna() {
-        return _henna;
-    }
-
+@Builder(toBuilder = true)
+public record OnPlayerHennaAdd(Player player, Henna henna) implements IBaseEvent {
     @Override
     public EventType getType() {
         return EventType.ON_PLAYER_HENNA_ADD;

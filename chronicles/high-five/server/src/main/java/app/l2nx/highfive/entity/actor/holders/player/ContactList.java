@@ -29,8 +29,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * TODO: System messages:<br>
@@ -39,27 +39,29 @@ import java.util.logging.Logger;
  * DEL 3217: The name is not currently registered.
  * @author UnAfraid, mrTJO
  */
+@Slf4j
 public class ContactList {
-    private static final Logger LOGGER = Logger.getLogger(ContactList.class.getName());
 
-    private final Player _player;
-    private final Set<String> _contacts = ConcurrentHashMap.newKeySet();
+    private final Player player;
+
+    @Getter
+    private final Set<String> allContacts = ConcurrentHashMap.newKeySet();
 
     private static final String QUERY_ADD = "REPLACE INTO character_contacts (charId, contactId) VALUES (?, ?)";
     private static final String QUERY_REMOVE = "DELETE FROM character_contacts WHERE charId = ? and contactId = ?";
     private static final String QUERY_LOAD = "SELECT contactId FROM character_contacts WHERE charId = ?";
 
     public ContactList(Player player) {
-        _player = player;
+        this.player = player;
         restore();
     }
 
     public void restore() {
-        _contacts.clear();
+        allContacts.clear();
 
         try (Connection con = DatabaseFactory.getConnection();
                 PreparedStatement statement = con.prepareStatement(QUERY_LOAD)) {
-            statement.setInt(1, _player.getObjectId());
+            statement.setInt(1, player.getObjectId());
             try (ResultSet rset = statement.executeQuery()) {
                 int contactId;
                 String contactName;
@@ -67,32 +69,32 @@ public class ContactList {
                     contactId = rset.getInt(1);
                     contactName = CharInfoTable.getInstance().getNameById(contactId);
                     if ((contactName == null)
-                            || contactName.equals(_player.getName())
-                            || (contactId == _player.getObjectId())) {
+                            || contactName.equals(player.getName())
+                            || (contactId == player.getObjectId())) {
                         continue;
                     }
 
-                    _contacts.add(contactName);
+                    allContacts.add(contactName);
                 }
             }
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, "Error found in " + _player.getName() + "'s ContactsList: " + e.getMessage(), e);
+            log.warn("Error found in {}'s ContactsList: {}", player.getName(), e.getMessage(), e);
         }
     }
 
     public boolean add(String name) {
-        if (_contacts.contains(name)) {
-            _player.sendPacket(SystemMessageId.THE_NAME_ALREADY_EXISTS_ON_THE_ADDED_LIST);
+        if (allContacts.contains(name)) {
+            player.sendPacket(SystemMessageId.THE_NAME_ALREADY_EXISTS_ON_THE_ADDED_LIST);
             return false;
         }
 
-        if (_player.getName().equals(name)) {
-            _player.sendPacket(SystemMessageId.YOU_CANNOT_ADD_YOUR_OWN_NAME);
+        if (player.getName().equals(name)) {
+            player.sendPacket(SystemMessageId.YOU_CANNOT_ADD_YOUR_OWN_NAME);
             return false;
         }
 
-        if (_contacts.size() >= 100) {
-            _player.sendPacket(
+        if (allContacts.size() >= 100) {
+            player.sendPacket(
                     SystemMessageId.THE_MAXIMUM_NUMBER_OF_NAMES_100_HAS_BEEN_REACHED_YOU_CANNOT_REGISTER_ANY_MORE);
             return false;
         }
@@ -102,38 +104,38 @@ public class ContactList {
         if (contactId < 1) {
             sm = new SystemMessage(SystemMessageId.THE_NAME_S1_DOESN_T_EXIST_PLEASE_TRY_ANOTHER_NAME);
             sm.addString(name);
-            _player.sendPacket(sm);
+            player.sendPacket(sm);
             return false;
         }
 
-        for (String contactName : _contacts) {
+        for (String contactName : allContacts) {
             if (contactName.equalsIgnoreCase(name)) {
-                _player.sendPacket(SystemMessageId.THE_NAME_ALREADY_EXISTS_ON_THE_ADDED_LIST);
+                player.sendPacket(SystemMessageId.THE_NAME_ALREADY_EXISTS_ON_THE_ADDED_LIST);
                 return false;
             }
         }
 
         try (Connection con = DatabaseFactory.getConnection();
                 PreparedStatement statement = con.prepareStatement(QUERY_ADD)) {
-            statement.setInt(1, _player.getObjectId());
+            statement.setInt(1, player.getObjectId());
             statement.setInt(2, contactId);
             statement.execute();
 
-            _contacts.add(name);
+            allContacts.add(name);
 
             sm = new SystemMessage(SystemMessageId.S1_WAS_SUCCESSFULLY_ADDED_TO_YOUR_CONTACT_LIST);
             sm.addString(name);
-            _player.sendPacket(sm);
+            player.sendPacket(sm);
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, "Error found in " + _player.getName() + "'s ContactsList: " + e.getMessage(), e);
+            log.warn("Error found in {}'s ContactsList: {}", player.getName(), e.getMessage(), e);
         }
 
         return true;
     }
 
     public void remove(String name) {
-        if (!_contacts.contains(name)) {
-            _player.sendPacket(SystemMessageId.THE_NAME_IS_NOT_CURRENTLY_REGISTERED);
+        if (!allContacts.contains(name)) {
+            player.sendPacket(SystemMessageId.THE_NAME_IS_NOT_CURRENTLY_REGISTERED);
             return;
         }
 
@@ -143,24 +145,20 @@ public class ContactList {
             return;
         }
 
-        _contacts.remove(name);
+        allContacts.remove(name);
 
         try (Connection con = DatabaseFactory.getConnection();
                 PreparedStatement statement = con.prepareStatement(QUERY_REMOVE)) {
-            statement.setInt(1, _player.getObjectId());
+            statement.setInt(1, player.getObjectId());
             statement.setInt(2, contactId);
             statement.execute();
 
             final SystemMessage sm =
                     new SystemMessage(SystemMessageId.S1_WAS_SUCCESSFULLY_DELETED_FROM_YOUR_CONTACT_LIST);
             sm.addString(name);
-            _player.sendPacket(sm);
+            player.sendPacket(sm);
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, "Error found in " + _player.getName() + "'s ContactsList: " + e.getMessage(), e);
+            log.warn("Error found in {}'s ContactsList: {}", player.getName(), e.getMessage(), e);
         }
-    }
-
-    public Set<String> getAllContacts() {
-        return _contacts;
     }
 }

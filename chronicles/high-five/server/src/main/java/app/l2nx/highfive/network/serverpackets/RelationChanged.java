@@ -49,27 +49,27 @@ public class RelationChanged extends ServerPacket {
     public static final int RELATION_TERRITORY_WAR = 0x80000; // show Territory War icon
 
     protected static class Relation {
-        int _objId;
-        int _relation;
-        boolean _autoAttackable;
-        int _karma;
-        int _pvpFlag;
+        int objId;
+        int relation;
+        boolean autoAttackable;
+        int karma;
+        int pvpFlag;
     }
 
-    private Relation _singled;
-    private List<Relation> _multi;
+    private Relation singled;
+    private List<Relation> multi;
 
     public RelationChanged(Playable activeChar, int relation, boolean autoattackable) {
-        _singled = new Relation();
-        _singled._objId = activeChar.getObjectId();
-        _singled._relation = relation;
-        _singled._autoAttackable = autoattackable;
-        _singled._karma = activeChar.getKarma();
-        _singled._pvpFlag = activeChar.getPvpFlag();
+        singled = new Relation();
+        singled.objId = activeChar.getObjectId();
+        singled.relation = relation;
+        singled.autoAttackable = autoattackable;
+        singled.karma = activeChar.getKarma();
+        singled.pvpFlag = activeChar.getPvpFlag();
     }
 
     public RelationChanged() {
-        _multi = new ArrayList<>();
+        multi = new ArrayList<>();
     }
 
     public void addRelation(Playable activeChar, int relation, boolean autoattackable) {
@@ -78,33 +78,33 @@ public class RelationChanged extends ServerPacket {
         }
 
         final Relation r = new Relation();
-        r._objId = activeChar.getObjectId();
-        r._relation = relation;
-        r._autoAttackable = autoattackable;
-        r._karma = activeChar.getKarma();
-        r._pvpFlag = activeChar.getPvpFlag();
-        _multi.add(r);
+        r.objId = activeChar.getObjectId();
+        r.relation = relation;
+        r.autoAttackable = autoattackable;
+        r.karma = activeChar.getKarma();
+        r.pvpFlag = activeChar.getPvpFlag();
+        multi.add(r);
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.RELATION_CHANGED.writeId(this, buffer);
-        if (_multi == null) {
+        if (multi == null) {
             buffer.writeInt(1);
-            writeRelation(_singled, buffer);
+            writeRelation(singled, buffer);
         } else {
-            buffer.writeInt(_multi.size());
-            for (Relation relation : _multi) {
+            buffer.writeInt(multi.size());
+            for (Relation relation : multi) {
                 writeRelation(relation, buffer);
             }
         }
     }
 
     private void writeRelation(Relation relation, WriteBuffer buffer) {
-        buffer.writeInt(relation._objId);
-        buffer.writeInt(relation._relation);
-        buffer.writeInt(relation._autoAttackable);
-        buffer.writeInt(relation._karma);
-        buffer.writeInt(relation._pvpFlag);
+        buffer.writeInt(relation.objId);
+        buffer.writeInt(relation.relation);
+        buffer.writeInt(relation.autoAttackable);
+        buffer.writeInt(relation.karma);
+        buffer.writeInt(relation.pvpFlag);
     }
 }

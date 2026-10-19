@@ -35,10 +35,10 @@ import app.l2nx.highfive.mechanics.events.holders.actor.player.clanwh.OnPlayerCl
 import app.l2nx.highfive.mechanics.events.holders.actor.player.clanwh.OnPlayerClanWHItemTransfer;
 
 public class ClanWarehouse extends Warehouse {
-    private final Clan _clan;
+    private final Clan clan;
 
     public ClanWarehouse(Clan clan) {
-        _clan = clan;
+        this.clan = clan;
     }
 
     @Override
@@ -48,12 +48,12 @@ public class ClanWarehouse extends Warehouse {
 
     @Override
     public int getOwnerId() {
-        return _clan.getId();
+        return clan.getId();
     }
 
     @Override
     public Player getOwner() {
-        return _clan.getLeader().getPlayer();
+        return clan.getLeader().getPlayer();
     }
 
     @Override
@@ -73,7 +73,7 @@ public class ClanWarehouse extends Warehouse {
 
     @Override
     public boolean validateCapacity(long slots) {
-        return (_items.size() + slots) <= PlayerConfig.WAREHOUSE_SLOTS_CLAN;
+        return (items.size() + slots) <= PlayerConfig.WAREHOUSE_SLOTS_CLAN;
     }
 
     @Override
@@ -83,7 +83,13 @@ public class ClanWarehouse extends Warehouse {
         // Notify to scripts
         if (EventDispatcher.getInstance().hasListener(EventType.ON_PLAYER_CLAN_WH_ITEM_ADD, item.getTemplate())) {
             EventDispatcher.getInstance()
-                    .notifyEventAsync(new OnPlayerClanWHItemAdd(actor, item, this), item.getTemplate());
+                    .notifyEventAsync(
+                            OnPlayerClanWHItemAdd.builder()
+                                    .player(actor)
+                                    .item(item)
+                                    .container(this)
+                                    .build(),
+                            item.getTemplate());
         }
 
         return item;
@@ -94,7 +100,13 @@ public class ClanWarehouse extends Warehouse {
         // Notify to scripts
         if (EventDispatcher.getInstance().hasListener(EventType.ON_PLAYER_CLAN_WH_ITEM_ADD, item.getTemplate())) {
             EventDispatcher.getInstance()
-                    .notifyEventAsync(new OnPlayerClanWHItemAdd(actor, item, this), item.getTemplate());
+                    .notifyEventAsync(
+                            OnPlayerClanWHItemAdd.builder()
+                                    .player(actor)
+                                    .item(item)
+                                    .container(this)
+                                    .build(),
+                            item.getTemplate());
         }
 
         return super.addItem(process, item, actor, reference);
@@ -105,7 +117,14 @@ public class ClanWarehouse extends Warehouse {
         // Notify to scripts
         if (EventDispatcher.getInstance().hasListener(EventType.ON_PLAYER_CLAN_WH_ITEM_DESTROY, item.getTemplate())) {
             EventDispatcher.getInstance()
-                    .notifyEventAsync(new OnPlayerClanWHItemDestroy(actor, item, count, this), item.getTemplate());
+                    .notifyEventAsync(
+                            OnPlayerClanWHItemDestroy.builder()
+                                    .player(actor)
+                                    .item(item)
+                                    .count(count)
+                                    .container(this)
+                                    .build(),
+                            item.getTemplate());
         }
 
         return super.destroyItem(process, item, count, actor, reference);
@@ -119,7 +138,14 @@ public class ClanWarehouse extends Warehouse {
         // Notify to scripts
         if (EventDispatcher.getInstance().hasListener(EventType.ON_PLAYER_CLAN_WH_ITEM_TRANSFER, item.getTemplate())) {
             EventDispatcher.getInstance()
-                    .notifyEventAsync(new OnPlayerClanWHItemTransfer(actor, item, count, target), item.getTemplate());
+                    .notifyEventAsync(
+                            OnPlayerClanWHItemTransfer.builder()
+                                    .player(actor)
+                                    .item(item)
+                                    .count(count)
+                                    .container(target)
+                                    .build(),
+                            item.getTemplate());
         }
 
         return super.transferItem(process, objectId, count, target, actor, reference);

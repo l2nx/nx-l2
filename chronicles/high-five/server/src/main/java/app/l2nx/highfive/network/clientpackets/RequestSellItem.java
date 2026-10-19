@@ -52,28 +52,28 @@ public class RequestSellItem extends ClientPacket {
     private static final int BATCH_LENGTH = 16;
     private static final int CUSTOM_CB_SELL_LIST = 423;
 
-    private int _listId;
-    private List<UniqueItemHolder> _items = null;
+    private int listId;
+    private List<UniqueItemHolder> items = null;
 
     @Override
     protected void readImpl() {
-        _listId = readInt();
+        listId = readInt();
         final int size = readInt();
         if ((size <= 0) || (size > PlayerConfig.MAX_ITEM_IN_PACKET) || ((size * BATCH_LENGTH) != remaining())) {
             return;
         }
 
-        _items = new ArrayList<>(size);
+        items = new ArrayList<>(size);
         for (int i = 0; i < size; i++) {
             final int objectId = readInt();
             final int itemId = readInt();
             final long count = readLong();
             if ((objectId < 1) || (itemId < 1) || (count < 1)) {
-                _items = null;
+                items = null;
                 return;
             }
 
-            _items.add(new UniqueItemHolder(itemId, objectId, count));
+            items.add(new UniqueItemHolder(itemId, objectId, count));
         }
     }
 
@@ -89,7 +89,7 @@ public class RequestSellItem extends ClientPacket {
             return;
         }
 
-        if (_items == null) {
+        if (items == null) {
             player.sendPacket(ActionFailed.STATIC_PACKET);
             return;
         }
@@ -102,7 +102,7 @@ public class RequestSellItem extends ClientPacket {
 
         final WorldObject target = player.getTarget();
         Creature merchant = null;
-        if (!player.isGM() && (_listId != CUSTOM_CB_SELL_LIST)) {
+        if (!player.isGM() && (listId != CUSTOM_CB_SELL_LIST)) {
             if ((target == null)
                     || (!player.isInsideRadius3D(target, INTERACTION_DISTANCE))
                     || (player.getInstanceId() != target.getInstanceId())) {
@@ -118,17 +118,17 @@ public class RequestSellItem extends ClientPacket {
             }
         }
 
-        if ((merchant == null) && !player.isGM() && (_listId != CUSTOM_CB_SELL_LIST)) {
+        if ((merchant == null) && !player.isGM() && (listId != CUSTOM_CB_SELL_LIST)) {
             player.sendPacket(ActionFailed.STATIC_PACKET);
             return;
         }
 
-        final BuyListHolder buyList = BuyListData.getInstance().getBuyList(_listId);
+        final BuyListHolder buyList = BuyListData.getInstance().getBuyList(listId);
         if (buyList == null) {
             PunishmentManager.handleIllegalPlayerAction(
                     player,
                     "Warning!! Character " + player.getName() + " of account " + player.getAccountName()
-                            + " sent a false BuyList list_id " + _listId,
+                            + " sent a false BuyList list_id " + listId,
                     GeneralConfig.DEFAULT_PUNISH);
             return;
         }
@@ -141,7 +141,7 @@ public class RequestSellItem extends ClientPacket {
         long totalPrice = 0;
 
         // Proceed the sell
-        for (UniqueItemHolder i : _items) {
+        for (UniqueItemHolder i : items) {
             final Item item = player.checkItemManipulation(i.getObjectId(), i.getCount(), "sell");
             if ((item == null) || (!item.isSellable())) {
                 continue;

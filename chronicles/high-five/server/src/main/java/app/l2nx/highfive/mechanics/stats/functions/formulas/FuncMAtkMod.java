@@ -29,10 +29,10 @@ import app.l2nx.highfive.mechanics.stats.functions.AbstractFunction;
  * @author UnAfraid
  */
 public class FuncMAtkMod extends AbstractFunction {
-    private static final FuncMAtkMod _fma_instance = new FuncMAtkMod();
+    private static final FuncMAtkMod instance = new FuncMAtkMod();
 
     public static AbstractFunction getInstance() {
-        return _fma_instance;
+        return instance;
     }
 
     private FuncMAtkMod() {

@@ -16,8 +16,6 @@ lists what is open.
 - [#10](https://github.com/l2nx/nx-l2/issues/10) Mirror the repository outside GitHub
 - [#11](https://github.com/l2nx/nx-l2/issues/11) Release the High Five scripts as their own artifact
 - [#13](https://github.com/l2nx/nx-l2/issues/13) PostgreSQL support in the adapter CDC engine
-- [#14](https://github.com/l2nx/nx-l2/issues/14) Migrate logging to the SLF4J API
-- [#15](https://github.com/l2nx/nx-l2/issues/15) Adopt Lombok for boilerplate
 - [#16](https://github.com/l2nx/nx-l2/issues/16) Finalize the JDK: distribution, version and flags
 - [#17](https://github.com/l2nx/nx-l2/issues/17) Move game and login settings to Spring Boot configuration
 - [#19](https://github.com/l2nx/nx-l2/issues/19) Run both servers in Compose with an end-to-end login test
@@ -28,6 +26,7 @@ lists what is open.
 - [#24](https://github.com/l2nx/nx-l2/issues/24) Login fails with NPE on an accounts_ipauth row without a type
 - [#25](https://github.com/l2nx/nx-l2/issues/25) Weapon damage_range with 2 or 3 parts breaks item loading
 - [#26](https://github.com/l2nx/nx-l2/issues/26) Seed of Infinity logs the open duration as the close date
+- [#29](https://github.com/l2nx/nx-l2/issues/29) WorldObject overrides equals without hashCode
 
 ## Done
 
@@ -37,3 +36,5 @@ lists what is open.
   `docs/public/{en,ru}/` (spec 001 §1).
 - Ownership of the reference L2NX host layer: not ours; the adapter host is written from scratch against the
   `nx-gs-adapter` API (spec 001 §2, stage 5).
+- [#14](https://github.com/l2nx/nx-l2/issues/14) Migrate logging to the SLF4J API ([spec 007](specs/007-java-conventions.md)).
+- [#15](https://github.com/l2nx/nx-l2/issues/15) Adopt Lombok for boilerplate ([spec 007](specs/007-java-conventions.md)).

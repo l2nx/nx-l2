@@ -31,11 +31,11 @@ import app.l2nx.highfive.network.holders.TradeList;
  * This packet manages the trade response.
  */
 public class TradeDone extends ClientPacket {
-    private int _response;
+    private int response;
 
     @Override
     protected void readImpl() {
-        _response = readInt();
+        response = readInt();
     }
 
     @Override
@@ -59,7 +59,7 @@ public class TradeDone extends ClientPacket {
             return;
         }
 
-        if (_response == 1) {
+        if (response == 1) {
             if ((trade.getPartner() == null)
                     || (World.getPlayer(trade.getPartner().getObjectId()) == null)) {
                 // Trade partner not found, cancel trade.

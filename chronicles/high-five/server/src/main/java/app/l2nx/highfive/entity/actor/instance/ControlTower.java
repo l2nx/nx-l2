@@ -29,13 +29,14 @@ import app.l2nx.highfive.entity.actor.templates.NpcTemplate;
 import app.l2nx.highfive.entity.spawns.Spawn;
 import java.util.Collection;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.logging.Level;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Class for Control Tower instance.
  */
+@Slf4j
 public class ControlTower extends Tower {
-    private Collection<Spawn> _guards;
+    private Collection<Spawn> guards;
 
     /**
      * Creates a control tower.
@@ -51,17 +52,17 @@ public class ControlTower extends Tower {
         if (getCastle().getSiege().isInProgress()) {
             getCastle().getSiege().killedCT();
 
-            if ((_guards != null) && !_guards.isEmpty()) {
-                for (Spawn spawn : _guards) {
+            if ((guards != null) && !guards.isEmpty()) {
+                for (Spawn spawn : guards) {
                     try {
                         spawn.stopRespawn();
                         // spawn.getLastSpawn().doDie(spawn.getLastSpawn());
                     } catch (Exception e) {
-                        LOGGER.log(Level.WARNING, "Error at ControlTower", e);
+                        log.warn("Error at ControlTower", e);
                     }
                 }
 
-                _guards.clear();
+                guards.clear();
             }
         }
 
@@ -73,14 +74,14 @@ public class ControlTower extends Tower {
     }
 
     private Collection<Spawn> getGuards() {
-        if (_guards == null) {
+        if (guards == null) {
             synchronized (this) {
-                if (_guards == null) {
-                    _guards = ConcurrentHashMap.newKeySet();
+                if (guards == null) {
+                    guards = ConcurrentHashMap.newKeySet();
                 }
             }
         }
 
-        return _guards;
+        return guards;
     }
 }

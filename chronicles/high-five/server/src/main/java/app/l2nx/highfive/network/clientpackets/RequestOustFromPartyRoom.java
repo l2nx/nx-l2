@@ -33,11 +33,11 @@ import app.l2nx.highfive.network.serverpackets.ListPartyWating;
  * @author -Wooden-
  */
 public class RequestOustFromPartyRoom extends ClientPacket {
-    private int _charid;
+    private int charid;
 
     @Override
     protected void readImpl() {
-        _charid = readInt();
+        charid = readInt();
     }
 
     @Override
@@ -47,7 +47,7 @@ public class RequestOustFromPartyRoom extends ClientPacket {
             return;
         }
 
-        final Player member = World.getPlayer(_charid);
+        final Player member = World.getPlayer(charid);
         if (member == null) {
             return;
         }

@@ -20,17 +20,24 @@
 package app.l2nx.highfive.entity.actor.holders.npc;
 
 import java.util.concurrent.ThreadLocalRandom;
+import lombok.Getter;
 
 /**
  * This class hold info needed for minions spawns<br>
  * @author Zealar
  */
 public class MinionHolder {
-    private final int _id;
-    private final int _count;
-    private final int _max;
-    private final long _respawnTime;
-    private final int _weightPoint;
+    @Getter
+    private final int id;
+
+    private final int count;
+    private final int max;
+
+    @Getter
+    private final long respawnTime;
+
+    @Getter
+    private final int weightPoint;
 
     /**
      * Constructs a minion holder.
@@ -41,42 +48,21 @@ public class MinionHolder {
      * @param weightPoint the weight point
      */
     public MinionHolder(int id, int count, int max, long respawnTime, int weightPoint) {
-        _id = id;
-        _count = count;
-        _max = max;
-        _respawnTime = respawnTime;
-        _weightPoint = weightPoint;
-    }
-
-    /**
-     * @return the Identifier of the Minion to spawn.
-     */
-    public int getId() {
-        return _id;
+        this.id = id;
+        this.count = count;
+        this.max = max;
+        this.respawnTime = respawnTime;
+        this.weightPoint = weightPoint;
     }
 
     /**
      * @return the count of the Minions to spawn.
      */
     public int getCount() {
-        if (_max > _count) {
-            return ThreadLocalRandom.current().nextInt(_count, _max + 1);
+        if (max > count) {
+            return ThreadLocalRandom.current().nextInt(count, max + 1);
         }
 
-        return _count;
-    }
-
-    /**
-     * @return the respawn time of the Minions.
-     */
-    public long getRespawnTime() {
-        return _respawnTime;
-    }
-
-    /**
-     * @return the weight point of the Minion.
-     */
-    public int getWeightPoint() {
-        return _weightPoint;
+        return count;
     }
 }

@@ -28,10 +28,10 @@ import app.l2nx.highfive.mechanics.skill.Skill;
  * @author NosBit
  */
 public class ConditionUsingSlotType extends Condition {
-    private final int _mask;
+    private final int mask;
 
     public ConditionUsingSlotType(int mask) {
-        _mask = mask;
+        this.mask = mask;
     }
 
     @Override
@@ -45,6 +45,6 @@ public class ConditionUsingSlotType extends Condition {
             return false;
         }
 
-        return (activeWeapon.getBodyPart().getMask() & _mask) != 0;
+        return (activeWeapon.getBodyPart().getMask() & mask) != 0;
     }
 }

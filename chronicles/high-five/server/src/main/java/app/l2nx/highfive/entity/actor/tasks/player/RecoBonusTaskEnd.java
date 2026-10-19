@@ -27,16 +27,16 @@ import app.l2nx.highfive.network.serverpackets.ExVoteSystemInfo;
  * @author UnAfraid
  */
 public class RecoBonusTaskEnd implements Runnable {
-    private final Player _player;
+    private final Player player;
 
     public RecoBonusTaskEnd(Player player) {
-        _player = player;
+        this.player = player;
     }
 
     @Override
     public void run() {
-        if (_player != null) {
-            _player.sendPacket(new ExVoteSystemInfo(_player));
+        if (player != null) {
+            player.sendPacket(new ExVoteSystemInfo(player));
         }
     }
 }

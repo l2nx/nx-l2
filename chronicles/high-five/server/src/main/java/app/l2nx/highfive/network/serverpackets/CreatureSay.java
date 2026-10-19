@@ -34,35 +34,35 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class CreatureSay extends ServerPacket {
-    private final Creature _sender;
-    private final ChatType _chatType;
-    private String _senderName = null;
-    private String _text = null;
-    private int _charId = 0;
-    private int _messageId = -1;
-    private List<String> _parameters;
+    private final Creature sender;
+    private final ChatType chatType;
+    private String senderName = null;
+    private String text = null;
+    private int charId = 0;
+    private int messageId = -1;
+    private List<String> parameters;
 
     public CreatureSay(Creature sender, ChatType chatType, String senderName, String text) {
-        _sender = sender;
-        _chatType = chatType;
-        _senderName = senderName;
-        _text = text;
+        this.sender = sender;
+        this.chatType = chatType;
+        this.senderName = senderName;
+        this.text = text;
     }
 
     public CreatureSay(Creature sender, ChatType chatType, NpcStringId npcStringId) {
-        _sender = sender;
-        _chatType = chatType;
-        _messageId = npcStringId.getId();
+        this.sender = sender;
+        this.chatType = chatType;
+        messageId = npcStringId.getId();
         if (sender != null) {
-            _senderName = sender.getName();
+            senderName = sender.getName();
         }
     }
 
     public CreatureSay(ChatType chatType, int charId, SystemMessageId systemMessageId) {
-        _sender = null;
-        _chatType = chatType;
-        _charId = charId;
-        _messageId = systemMessageId.getId();
+        sender = null;
+        this.chatType = chatType;
+        this.charId = charId;
+        messageId = systemMessageId.getId();
     }
 
     /**
@@ -70,29 +70,29 @@ public class CreatureSay extends ServerPacket {
      * @param text
      */
     public void addStringParameter(String text) {
-        if (_parameters == null) {
-            _parameters = new ArrayList<>();
+        if (parameters == null) {
+            parameters = new ArrayList<>();
         }
 
-        _parameters.add(text);
+        parameters.add(text);
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.SAY2.writeId(this, buffer);
-        buffer.writeInt(_sender == null ? 0 : _sender.getObjectId());
-        buffer.writeInt(_chatType.getClientId());
-        if (_senderName != null) {
-            buffer.writeString(_senderName);
+        buffer.writeInt(sender == null ? 0 : sender.getObjectId());
+        buffer.writeInt(chatType.getClientId());
+        if (senderName != null) {
+            buffer.writeString(senderName);
         } else {
-            buffer.writeInt(_charId);
+            buffer.writeInt(charId);
         }
 
-        buffer.writeInt(_messageId); // High Five NPCString ID
-        if (_text != null) {
-            buffer.writeString(_text);
-        } else if (_parameters != null) {
-            for (String s : _parameters) {
+        buffer.writeInt(messageId); // High Five NPCString ID
+        if (text != null) {
+            buffer.writeString(text);
+        } else if (parameters != null) {
+            for (String s : parameters) {
                 buffer.writeString(s);
             }
         }
@@ -101,7 +101,7 @@ public class CreatureSay extends ServerPacket {
     @Override
     public void runImpl(Player player) {
         if (player != null) {
-            player.broadcastSnoop(_chatType, _senderName, _text, this);
+            player.broadcastSnoop(chatType, senderName, text, this);
         }
     }
 }

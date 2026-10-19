@@ -69,14 +69,14 @@ public class SeerUgoros extends Script {
     private static final byte DEAD = 2;
 
     // Misc
-    protected static byte _state = DEAD;
-    protected static boolean _weedAttack = false;
-    private static boolean _weedKilledByPlayer = false;
-    private static boolean _killedOneWeed = false;
-    protected static Attackable _weed = null;
-    protected static Attackable _ugoros = null;
-    protected static Player _attacker = null;
-    protected static ScheduledFuture<?> _thinkTask = null;
+    protected static byte state = DEAD;
+    protected static boolean weedAttack = false;
+    private static boolean weedKilledByPlayer = false;
+    private static boolean killedOneWeed = false;
+    protected static Attackable weed = null;
+    protected static Attackable ugoros = null;
+    protected static Player attacker = null;
+    protected static ScheduledFuture<?> thinkTask = null;
 
     private SeerUgoros() {
         addStartNpc(BATRACOS);
@@ -91,12 +91,12 @@ public class SeerUgoros extends Script {
     public String onEvent(String event, Npc npc, Player player) {
         switch (event) {
             case "ugoros_respawn": {
-                if (_ugoros == null) {
-                    _ugoros = addSpawn(SEER_UGOROS, UGOROS_SPAWN_LOCATION, false, 0)
+                if (ugoros == null) {
+                    ugoros = addSpawn(SEER_UGOROS, UGOROS_SPAWN_LOCATION, false, 0)
                             .asAttackable();
-                    _state = ALIVE;
+                    state = ALIVE;
                     broadcastInRegion(
-                            _ugoros,
+                            ugoros,
                             NpcStringId
                                     .LISTEN_OH_TANTAS_I_HAVE_RETURNED_THE_PROPHET_YUGOROS_OF_THE_BLACK_ABYSS_IS_WITH_ME_SO_DO_NOT_BE_AFRAID);
                     startQuestTimer("ugoros_shout", 120000, null, null);
@@ -104,78 +104,76 @@ public class SeerUgoros extends Script {
                 break;
             }
             case "ugoros_shout": {
-                if (_state == FIGHTING) {
-                    if (_attacker == null) {
-                        _state = ALIVE;
-                    } else if ((_ugoros == null) || (_attacker.calculateDistance2D(_ugoros) > 2000)) {
-                        _state = ALIVE;
-                        _attacker = null;
+                if (state == FIGHTING) {
+                    if (attacker == null) {
+                        state = ALIVE;
+                    } else if ((ugoros == null) || (attacker.calculateDistance2D(ugoros) > 2000)) {
+                        state = ALIVE;
+                        attacker = null;
                     }
-                } else if (_state == ALIVE) {
+                } else if (state == ALIVE) {
                     broadcastInRegion(
-                            _ugoros,
-                            NpcStringId.LISTEN_OH_TANTAS_THE_BLACK_ABYSS_IS_FAMISHED_FIND_SOME_FRESH_OFFERINGS);
+                            ugoros, NpcStringId.LISTEN_OH_TANTAS_THE_BLACK_ABYSS_IS_FAMISHED_FIND_SOME_FRESH_OFFERINGS);
                 }
 
                 startQuestTimer("ugoros_shout", 120000, null, null);
                 break;
             }
             case "ugoros_attack": {
-                if (_attacker != null) {
-                    changeAttackTarget(_attacker);
+                if (attacker != null) {
+                    changeAttackTarget(attacker);
                     final NpcSay packet = new NpcSay(
-                            _ugoros.getObjectId(),
+                            ugoros.getObjectId(),
                             ChatType.NPC_GENERAL,
-                            _ugoros.getId(),
+                            ugoros.getId(),
                             NpcStringId
                                     .WELCOME_S1_LET_US_SEE_IF_YOU_HAVE_BROUGHT_A_WORTHY_OFFERING_FOR_THE_BLACK_ABYSS);
-                    packet.addStringParameter(_attacker.getName());
-                    _ugoros.broadcastPacket(packet);
-                    if (_thinkTask != null) {
-                        _thinkTask.cancel(true);
+                    packet.addStringParameter(attacker.getName());
+                    ugoros.broadcastPacket(packet);
+                    if (thinkTask != null) {
+                        thinkTask.cancel(true);
                     }
 
-                    _thinkTask = ThreadPool.scheduleAtFixedRate(new ThinkTask(), 1000, 3000);
+                    thinkTask = ThreadPool.scheduleAtFixedRate(new ThinkTask(), 1000, 3000);
                 }
                 break;
             }
             case "weed_check": {
-                if (_weedAttack && (_ugoros != null) && (_weed != null)) {
-                    if (_weed.isDead() && !_weedKilledByPlayer) {
-                        _killedOneWeed = true;
-                        _weed = null;
-                        _weedAttack = false;
-                        _ugoros.getStatus()
-                                .setCurrentHp(_ugoros.getStatus().getCurrentHp() + (_ugoros.getMaxHp() * 0.2));
-                        _ugoros.broadcastPacket(
+                if (weedAttack && (ugoros != null) && (weed != null)) {
+                    if (weed.isDead() && !weedKilledByPlayer) {
+                        killedOneWeed = true;
+                        weed = null;
+                        weedAttack = false;
+                        ugoros.getStatus().setCurrentHp(ugoros.getStatus().getCurrentHp() + (ugoros.getMaxHp() * 0.2));
+                        ugoros.broadcastPacket(
                                 new NpcSay(
-                                        _ugoros.getObjectId(),
+                                        ugoros.getObjectId(),
                                         ChatType.NPC_GENERAL,
-                                        _ugoros.getId(),
+                                        ugoros.getId(),
                                         NpcStringId
                                                 .WHAT_A_FORMIDABLE_FOE_BUT_I_HAVE_THE_ABYSS_WEED_GIVEN_TO_ME_BY_THE_BLACK_ABYSS_LET_ME_SEE));
                     } else {
                         startQuestTimer("weed_check", 2000, null, null);
                     }
                 } else {
-                    _weed = null;
-                    _weedAttack = false;
+                    weed = null;
+                    weedAttack = false;
                 }
                 break;
             }
             case "ugoros_expel": {
-                if (_attacker != null) {
-                    _attacker.teleToLocation(EXIT_LOCATION);
-                    _attacker = null;
+                if (attacker != null) {
+                    attacker.teleToLocation(EXIT_LOCATION);
+                    attacker = null;
                 }
                 break;
             }
             case "teleportInside": {
-                if ((player != null) && (_state == ALIVE)) {
+                if ((player != null) && (state == ALIVE)) {
                     if (hasAtLeastOneQuestItem(player, SEER_UGOROS_PASS)) {
-                        _state = FIGHTING;
-                        _attacker = player;
-                        _killedOneWeed = false;
+                        state = FIGHTING;
+                        attacker = player;
+                        killedOneWeed = false;
                         takeItems(player, SEER_UGOROS_PASS, 1);
                         player.teleToLocation(ENTER_LOCATION);
                         startQuestTimer("ugoros_attack", 2000, null, null);
@@ -200,7 +198,7 @@ public class SeerUgoros extends Script {
             case "teleport_back": {
                 if (player != null) {
                     player.teleToLocation(EXIT_LOCATION);
-                    _attacker = null;
+                    attacker = null;
                 }
                 break;
             }
@@ -215,30 +213,30 @@ public class SeerUgoros extends Script {
             return;
         }
 
-        if ((_ugoros != null) && (_weed != null) && npc.equals(_weed)) {
+        if ((ugoros != null) && (weed != null) && npc.equals(weed)) {
             // Reset weed
-            _weed = null;
+            weed = null;
 
             // Reset attack state
-            _weedAttack = false;
+            weedAttack = false;
 
             // Set it
-            _weedKilledByPlayer = true;
+            weedKilledByPlayer = true;
 
             // Complain
-            _ugoros.broadcastPacket(new NpcSay(
-                    _ugoros.getObjectId(),
+            ugoros.broadcastPacket(new NpcSay(
+                    ugoros.getObjectId(),
                     ChatType.NPC_GENERAL,
-                    _ugoros.getId(),
+                    ugoros.getId(),
                     NpcStringId.NO_HOW_DARE_YOU_STOP_ME_FROM_USING_THE_ABYSS_WEED_DO_YOU_KNOW_WHAT_YOU_HAVE_DONE));
 
             // Cancel current think-task
-            if (_thinkTask != null) {
-                _thinkTask.cancel(true);
+            if (thinkTask != null) {
+                thinkTask.cancel(true);
             }
 
             // Re-setup task to re-think attack again
-            _thinkTask = ThreadPool.scheduleAtFixedRate(new ThinkTask(), 500, 3000);
+            thinkTask = ThreadPool.scheduleAtFixedRate(new ThinkTask(), 500, 3000);
         }
 
         npc.doDie(attacker);
@@ -246,14 +244,14 @@ public class SeerUgoros extends Script {
 
     @Override
     public void onKill(Npc npc, Player killer, boolean isSummon) {
-        if (_thinkTask != null) {
-            _thinkTask.cancel(true);
-            _thinkTask = null;
+        if (thinkTask != null) {
+            thinkTask.cancel(true);
+            thinkTask = null;
         }
 
-        _state = DEAD;
-        broadcastInRegion(_ugoros, NpcStringId.AH_HOW_COULD_I_LOSE_OH_BLACK_ABYSS_RECEIVE_ME);
-        _ugoros = null;
+        state = DEAD;
+        broadcastInRegion(ugoros, NpcStringId.AH_HOW_COULD_I_LOSE_OH_BLACK_ABYSS_RECEIVE_ME);
+        ugoros = null;
 
         addSpawn(BATRACOS, BATRACOS_SPAWN_LOCATION, false, 60000);
 
@@ -262,7 +260,7 @@ public class SeerUgoros extends Script {
 
         final QuestState qs = killer.getQuestState(Q00288_HandleWithCare.class.getSimpleName());
         if ((qs != null) && qs.isCond(1) && (qs.getInt("drop") == 1)) {
-            if (_killedOneWeed) {
+            if (killedOneWeed) {
                 giveItems(killer, MIDDLE_GRADE_LIZARD_SCALE, 1);
                 qs.setCond(2, true);
             } else {
@@ -290,57 +288,57 @@ public class SeerUgoros extends Script {
 
         @Override
         public void run() {
-            if ((_state == FIGHTING) && (_attacker != null) && !_attacker.isDead()) {
-                if (_weedAttack && (_weed != null)) {
+            if ((state == FIGHTING) && (attacker != null) && !attacker.isDead()) {
+                if (weedAttack && (weed != null)) {
                     // Dummy, just wait.
                 } else if (getRandom(10) < 6) {
-                    _weed = null;
+                    weed = null;
                     World.forFirstVisibleObjectInRange(
-                            _ugoros,
+                            ugoros,
                             Attackable.class,
                             2000,
                             attackable -> !attackable.isDead() && (attackable.getId() == WEED_ID),
                             attackable -> {
-                                _weedAttack = true;
-                                _weed = attackable;
-                                changeAttackTarget(_weed);
+                                weedAttack = true;
+                                weed = attackable;
+                                changeAttackTarget(weed);
                                 startQuestTimer("weed_check", 1000, null, null);
                             });
 
-                    if (_weed == null) {
-                        changeAttackTarget(_attacker);
+                    if (weed == null) {
+                        changeAttackTarget(attacker);
                     }
                 } else {
-                    changeAttackTarget(_attacker);
+                    changeAttackTarget(attacker);
                 }
             } else {
-                _state = ALIVE;
-                _attacker = null;
-                if (_thinkTask != null) {
-                    _thinkTask.cancel(true);
-                    _thinkTask = null;
+                state = ALIVE;
+                attacker = null;
+                if (thinkTask != null) {
+                    thinkTask.cancel(true);
+                    thinkTask = null;
                 }
             }
         }
     }
 
     protected void changeAttackTarget(Creature attacker) {
-        _ugoros.getAI().setIntentionIdle();
-        _ugoros.clearAggroList();
-        _ugoros.setTarget(attacker);
+        ugoros.getAI().setIntentionIdle();
+        ugoros.clearAggroList();
+        ugoros.setTarget(attacker);
 
         if (attacker instanceof Attackable) {
-            _weedKilledByPlayer = false;
-            _ugoros.disableSkill(UGOROS_SKILL, 100000);
-            _ugoros.setRunning();
-            _ugoros.addDamageHate(attacker, 0, Integer.MAX_VALUE);
+            weedKilledByPlayer = false;
+            ugoros.disableSkill(UGOROS_SKILL, 100000);
+            ugoros.setRunning();
+            ugoros.addDamageHate(attacker, 0, Integer.MAX_VALUE);
         } else {
-            _ugoros.enableSkill(UGOROS_SKILL);
-            _ugoros.addDamageHate(attacker, 0, 99);
-            _ugoros.setWalking();
+            ugoros.enableSkill(UGOROS_SKILL);
+            ugoros.addDamageHate(attacker, 0, 99);
+            ugoros.setWalking();
         }
 
-        _ugoros.getAI().setIntentionAttack(attacker);
+        ugoros.getAI().setIntentionAttack(attacker);
     }
 
     public static void main(String[] args) {

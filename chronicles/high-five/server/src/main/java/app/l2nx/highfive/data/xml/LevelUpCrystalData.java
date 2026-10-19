@@ -33,8 +33,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.StringTokenizer;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
@@ -43,12 +42,12 @@ import org.w3c.dom.Node;
  * Loads item enchant data.
  * @author UnAfraid
  */
+@Slf4j
 public class LevelUpCrystalData implements IXmlReader {
-    private static final Logger LOGGER = Logger.getLogger(LevelUpCrystalData.class.getName());
 
-    private static final Map<Integer, SoulCrystal> _soulCrystalsData = new HashMap<>();
-    private static final Map<Integer, Map<Integer, LevelingSoulCrystalInfo>> _npcLevelingInfo = new HashMap<>();
-    private static List<SoulCrystalDisplay> _crystalDisplayInfo = new ArrayList<>();
+    private static final Map<Integer, SoulCrystal> soulCrystals = new HashMap<>();
+    private static final Map<Integer, Map<Integer, LevelingSoulCrystalInfo>> npcsSoulInfo = new HashMap<>();
+    private static List<SoulCrystalDisplay> soulCrystalInfo = new ArrayList<>();
 
     protected LevelUpCrystalData() {
         load();
@@ -56,11 +55,11 @@ public class LevelUpCrystalData implements IXmlReader {
 
     @Override
     public synchronized void load() {
-        _soulCrystalsData.clear();
-        _npcLevelingInfo.clear();
+        soulCrystals.clear();
+        npcsSoulInfo.clear();
         parseDatapackFile("data/LevelUpCrystalData.xml");
-        LOGGER.info("Soul crystal data : Loaded " + _soulCrystalsData.size());
-        LOGGER.info("Npc leveling crystal data : Loaded " + _npcLevelingInfo.size());
+        log.info("Soul crystal data : Loaded {}", soulCrystals.size());
+        log.info("Npc leveling crystal data : Loaded {}", npcsSoulInfo.size());
     }
 
     /**
@@ -68,7 +67,7 @@ public class LevelUpCrystalData implements IXmlReader {
      * @return Leveling SoulCrystal Information Map based NPC
      */
     public Map<Integer, Map<Integer, LevelingSoulCrystalInfo>> getNpcsSoulInfo() {
-        return _npcLevelingInfo;
+        return npcsSoulInfo;
     }
 
     /**
@@ -77,7 +76,7 @@ public class LevelUpCrystalData implements IXmlReader {
      * @return Leveling SoulCrystal Information map by items
      */
     public Map<Integer, LevelingSoulCrystalInfo> getNpcSoulInfo(int npcid) {
-        return _npcLevelingInfo.get(npcid);
+        return npcsSoulInfo.get(npcid);
     }
 
     /**
@@ -85,7 +84,7 @@ public class LevelUpCrystalData implements IXmlReader {
      * @return Map soul cristal based key itemid
      */
     public Map<Integer, SoulCrystal> getSoulCrystals() {
-        return _soulCrystalsData;
+        return soulCrystals;
     }
 
     /**
@@ -94,7 +93,7 @@ public class LevelUpCrystalData implements IXmlReader {
      * @return Leveling SoulCrystal Information map by items
      */
     public SoulCrystal getSoulCrystal(int itemid) {
-        return _soulCrystalsData.get(itemid);
+        return soulCrystals.get(itemid);
     }
 
     /**
@@ -102,13 +101,13 @@ public class LevelUpCrystalData implements IXmlReader {
      * @return SoulCrystalDisplay list
      */
     public List<SoulCrystalDisplay> getSoulCrystalInfo() {
-        return _crystalDisplayInfo;
+        return soulCrystalInfo;
     }
 
     @Override
     public void parseDocument(Document document, File file) {
         if (!file.exists()) {
-            LOGGER.log(Level.WARNING, "Missing LevelUpCrystalData.xml. The quest wont work without it!");
+            log.warn("Missing LevelUpCrystalData.xml. The quest wont work without it!");
             return;
         }
 
@@ -121,7 +120,7 @@ public class LevelUpCrystalData implements IXmlReader {
                             NamedNodeMap attrs = d.getAttributes();
                             Node att = attrs.getNamedItem("itemId");
                             if (att == null) {
-                                LOGGER.info("Missing itemId in Crystal List, skipping!");
+                                log.info("Missing itemId in Crystal List, skipping!");
                                 continue;
                             }
 
@@ -130,13 +129,13 @@ public class LevelUpCrystalData implements IXmlReader {
 
                             att = attrs.getNamedItem("level");
                             if (att == null) {
-                                LOGGER.info("Missing level in Crystal List item Id " + itemId + " skipping!");
+                                log.info("Missing level in Crystal List item Id {} skipping!", itemId);
                                 continue;
                             }
 
                             att = attrs.getNamedItem("leveledItemId");
                             if (att == null) {
-                                LOGGER.info("Missing leveledItemId in Crystal List item Id " + itemId + " skipping!");
+                                log.info("Missing leveledItemId in Crystal List item Id {} skipping!", itemId);
                                 continue;
                             }
 
@@ -144,7 +143,13 @@ public class LevelUpCrystalData implements IXmlReader {
                                     Integer.parseInt(attrs.getNamedItem("level").getNodeValue());
                             int leveledItemId = Integer.parseInt(
                                     attrs.getNamedItem("leveledItemId").getNodeValue());
-                            _soulCrystalsData.put(itemId, new SoulCrystal(level, itemId, leveledItemId));
+                            soulCrystals.put(
+                                    itemId,
+                                    SoulCrystal.builder()
+                                            .level(level)
+                                            .itemId(itemId)
+                                            .leveledItemId(leveledItemId)
+                                            .build());
                         }
                     }
                 } else if ("npc".equalsIgnoreCase(n.getNodeName())) {
@@ -153,7 +158,7 @@ public class LevelUpCrystalData implements IXmlReader {
                             NamedNodeMap attrs = d.getAttributes();
                             Node att = attrs.getNamedItem("npcId");
                             if (att == null) {
-                                LOGGER.info("Missing npc Id in NPC List, skipping!");
+                                log.info("Missing npc Id in NPC List, skipping!");
                                 continue;
                             }
 
@@ -185,15 +190,17 @@ public class LevelUpCrystalData implements IXmlReader {
                                     Node att1 = attrs.getNamedItem("maxLevel");
                                     Node att2 = attrs.getNamedItem("levelList");
                                     if ((att1 == null) && (att2 == null)) {
-                                        LOGGER.info("Missing maxlevel/levelList in NPC List npc Id " + npcId
-                                                + " skipping!");
+                                        log.info("Missing maxlevel/levelList in NPC List npc Id {} skipping!", npcId);
                                         continue;
                                     }
 
                                     chance = (int) (chance * PlayerConfig.SOUL_CRYSTAL_CHANCE_MULTIPLIER);
                                     chance = (chance > 100) ? 100 : chance;
-                                    LevelingSoulCrystalInfo info =
-                                            new LevelingSoulCrystalInfo(absorbType, isSkillNeeded, chance);
+                                    LevelingSoulCrystalInfo info = LevelingSoulCrystalInfo.builder()
+                                            .absorbCrystalType(absorbType)
+                                            .skillNeeded(isSkillNeeded)
+                                            .chance(chance)
+                                            .build();
                                     if (att1 != null) {
                                         int maxLevel = Integer.parseInt(att1.getNodeValue());
                                         for (int i = 0; i <= maxLevel; i++) {
@@ -206,7 +213,7 @@ public class LevelUpCrystalData implements IXmlReader {
                                             Integer value = Integer.decode(
                                                     st.nextToken().trim());
                                             if (value == null) {
-                                                LOGGER.info("Bad Level value!! npc Id " + npcId + ", token " + i + "!");
+                                                log.info("Bad Level value!! npc Id {}, token {}!", npcId, i);
                                                 value = 0;
                                             }
 
@@ -217,40 +224,40 @@ public class LevelUpCrystalData implements IXmlReader {
                             }
 
                             if (temp.isEmpty()) {
-                                LOGGER.info("No leveling info for npc Id " + npcId + " skipping!");
+                                log.info("No leveling info for npc Id {} skipping!", npcId);
                                 continue;
                             }
 
-                            _npcLevelingInfo.put(npcId, temp);
+                            npcsSoulInfo.put(npcId, temp);
                         }
                     }
                 }
             }
         }
 
-        final List<SoulCrystalDisplay> _crystalDisplayAux = new ArrayList<>();
-        for (Entry<Integer, Map<Integer, LevelingSoulCrystalInfo>> entry : _npcLevelingInfo.entrySet()) {
+        final List<SoulCrystalDisplay> crystalDisplayAux = new ArrayList<>();
+        for (Entry<Integer, Map<Integer, LevelingSoulCrystalInfo>> entry : npcsSoulInfo.entrySet()) {
             NpcTemplate npc = NpcData.getInstance().getTemplate(entry.getKey());
             int npcLvl = npc.getLevel();
             String name = npc.getName();
             for (Entry<Integer, LevelingSoulCrystalInfo> entry1 :
                     entry.getValue().entrySet()) {
                 int fromLevel = entry1.getKey();
-                int chance = entry1.getValue().getChance();
-                AbsorbCrystalType absorb = entry1.getValue().getAbsorbCrystalType();
-                _crystalDisplayAux.add(new SoulCrystalDisplay(fromLevel, chance, absorb, npcLvl, name));
+                int chance = entry1.getValue().chance();
+                AbsorbCrystalType absorb = entry1.getValue().absorbCrystalType();
+                crystalDisplayAux.add(new SoulCrystalDisplay(fromLevel, chance, absorb, npcLvl, name));
             }
         }
 
-        _crystalDisplayInfo = _crystalDisplayAux.stream()
+        soulCrystalInfo = crystalDisplayAux.stream()
                 .sorted(Comparator.comparingInt(SoulCrystalDisplay::getFromLevel)
                         .reversed()
                         .thenComparing(Comparator.comparingInt(SoulCrystalDisplay::getChance))
                         .reversed())
                 .toList();
 
-        for (Entry<Integer, SoulCrystal> entry : _soulCrystalsData.entrySet()) {
-            entry.getValue().getLeveledItemId();
+        for (Entry<Integer, SoulCrystal> entry : soulCrystals.entrySet()) {
+            entry.getValue().leveledItemId();
         }
     }
 

@@ -29,15 +29,15 @@ import app.l2nx.highfive.scripts.quests.AbstractSagaQuest;
 public class Q00070_SagaOfThePhoenixKnight extends AbstractSagaQuest {
     public Q00070_SagaOfThePhoenixKnight() {
         super(70);
-        _npc = new int[] {30849, 31624, 31277, 30849, 31631, 31646, 31647, 31650, 31654, 31655, 31657, 31277};
-        _items = new int[] {7080, 7534, 7081, 7485, 7268, 7299, 7330, 7361, 7392, 7423, 7093, 6482};
-        _mob = new int[] {27286, 27219, 27278};
-        _classId = new int[] {90};
-        _prevClass = new int[] {0x05};
-        _npcSpawnLocations = new Location[] {
+        npc = new int[] {30849, 31624, 31277, 30849, 31631, 31646, 31647, 31650, 31654, 31655, 31657, 31277};
+        items = new int[] {7080, 7534, 7081, 7485, 7268, 7299, 7330, 7361, 7392, 7423, 7093, 6482};
+        mob = new int[] {27286, 27219, 27278};
+        classId = new int[] {90};
+        prevClass = new int[] {0x05};
+        npcSpawnLocations = new Location[] {
             new Location(191046, -40640, -3042), new Location(46087, -36372, -1685), new Location(46066, -36396, -1685)
         };
-        _text = new String[] {
+        text = new String[] {
             "PLAYERNAME! Pursued to here! However, I jumped out of the Banshouren boundaries! You look at the giant as the sign of power!",
             "... Oh ... good! So it was ... let's begin!",
             "I do not have the patience ..! I have been a giant force ...! Cough chatter ah ah ah!",

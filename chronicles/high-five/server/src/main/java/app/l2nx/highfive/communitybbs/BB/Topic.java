@@ -27,23 +27,32 @@ import app.l2nx.highfive.communitybbs.TopicConstructorType;
 import app.l2nx.highfive.data.sql.DatabaseFactory;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class Topic {
-    private static final Logger LOGGER = Logger.getLogger(Topic.class.getName());
 
     public static final int NORMAL = 0;
     public static final int MEMO = 1;
 
-    private final int _id;
-    private final int _forumId;
-    private final String _topicName;
-    private final long _date;
-    private final String _ownerName;
-    private final int _ownerId;
-    private final int _type;
-    private final int _cReply;
+    private final int id;
+
+    @Getter
+    private final int forumID;
+
+    @Getter
+    private final String name;
+
+    @Getter
+    private final long date;
+
+    @Getter
+    private final String ownerName;
+
+    private final int ownerId;
+    private final int type;
+    private final int cReply;
 
     /**
      * @param ct
@@ -66,14 +75,14 @@ public class Topic {
             int oid,
             int type,
             int cReply) {
-        _id = id;
-        _forumId = fid;
-        _topicName = name;
-        _date = date;
-        _ownerName = oname;
-        _ownerId = oid;
-        _type = type;
-        _cReply = cReply;
+        this.id = id;
+        forumID = fid;
+        this.name = name;
+        this.date = date;
+        ownerName = oname;
+        ownerId = oid;
+        this.type = type;
+        this.cReply = cReply;
         TopicBBSManager.getInstance().addTopic(this);
 
         if (ct == TopicConstructorType.CREATE) {
@@ -85,17 +94,17 @@ public class Topic {
         try (Connection con = DatabaseFactory.getConnection();
                 PreparedStatement ps = con.prepareStatement(
                         "INSERT INTO topic (topic_id,topic_forum_id,topic_name,topic_date,topic_ownername,topic_ownerid,topic_type,topic_reply) values (?,?,?,?,?,?,?,?)")) {
-            ps.setInt(1, _id);
-            ps.setInt(2, _forumId);
-            ps.setString(3, _topicName);
-            ps.setLong(4, _date);
-            ps.setString(5, _ownerName);
-            ps.setInt(6, _ownerId);
-            ps.setInt(7, _type);
-            ps.setInt(8, _cReply);
+            ps.setInt(1, id);
+            ps.setInt(2, forumID);
+            ps.setString(3, name);
+            ps.setLong(4, date);
+            ps.setString(5, ownerName);
+            ps.setInt(6, ownerId);
+            ps.setInt(7, type);
+            ps.setInt(8, cReply);
             ps.execute();
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, "Error while saving new Topic to db " + e.getMessage(), e);
+            log.warn("Error while saving new Topic to db {}", e.getMessage(), e);
         }
     }
 
@@ -103,22 +112,7 @@ public class Topic {
      * @return the topic Id
      */
     public int getID() {
-        return _id;
-    }
-
-    public int getForumID() {
-        return _forumId;
-    }
-
-    /**
-     * @return the topic name
-     */
-    public String getName() {
-        return _topicName;
-    }
-
-    public String getOwnerName() {
-        return _ownerName;
+        return id;
     }
 
     /**
@@ -126,22 +120,15 @@ public class Topic {
      */
     public void deleteme(Forum f) {
         TopicBBSManager.getInstance().delTopic(this);
-        f.rmTopicByID(_id);
+        f.rmTopicByID(id);
         try (Connection con = DatabaseFactory.getConnection();
                 PreparedStatement ps =
                         con.prepareStatement("DELETE FROM topic WHERE topic_id=? AND topic_forum_id=?")) {
-            ps.setInt(1, _id);
+            ps.setInt(1, id);
             ps.setInt(2, f.getID());
             ps.execute();
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, "Error while deleting topic: " + e.getMessage(), e);
+            log.warn("Error while deleting topic: {}", e.getMessage(), e);
         }
-    }
-
-    /**
-     * @return the topic date
-     */
-    public long getDate() {
-        return _date;
     }
 }

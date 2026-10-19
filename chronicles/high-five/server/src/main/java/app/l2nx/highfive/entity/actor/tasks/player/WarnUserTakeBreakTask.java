@@ -27,21 +27,21 @@ import app.l2nx.highfive.network.SystemMessageId;
  * @author UnAfraid
  */
 public class WarnUserTakeBreakTask implements Runnable {
-    private final Player _player;
+    private final Player player;
 
     public WarnUserTakeBreakTask(Player player) {
-        _player = player;
+        this.player = player;
     }
 
     @Override
     public void run() {
-        if (_player != null) {
-            if (_player.isOnline()) {
-                _player.sendPacket(
+        if (player != null) {
+            if (player.isOnline()) {
+                player.sendPacket(
                         SystemMessageId
                                 .YOU_HAVE_BEEN_PLAYING_FOR_AN_EXTENDED_PERIOD_OF_TIME_PLEASE_CONSIDER_TAKING_A_BREAK);
             } else {
-                _player.stopWarnUserTakeBreak();
+                player.stopWarnUserTakeBreak();
             }
         }
     }

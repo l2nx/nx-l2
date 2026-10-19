@@ -26,6 +26,7 @@ import app.l2nx.highfive.mechanics.script.QuestState;
 import app.l2nx.highfive.util.ArrayUtil;
 import java.util.HashMap;
 import java.util.Map;
+import lombok.Getter;
 
 /**
  * Relics of the Old Empire (619)
@@ -33,26 +34,22 @@ import java.util.Map;
  */
 public class Q00619_RelicsOfTheOldEmpire extends Quest {
     private static class DropInfo {
-        public double _dropChance;
-        public int _doubleItemChance;
-        public boolean _dropEntrancePass;
+        @Getter
+        public double dropChance;
+
+        @Getter
+        public int doubleItemChance;
+
+        public boolean dropEntrancePass;
 
         public DropInfo(double dropChance, int doubleItemChance, boolean dropEntrancePass) {
-            _dropChance = dropChance;
-            _doubleItemChance = doubleItemChance;
-            _dropEntrancePass = dropEntrancePass;
-        }
-
-        public double getDropChance() {
-            return _dropChance;
-        }
-
-        public int getDoubleItemChance() {
-            return _doubleItemChance;
+            this.dropChance = dropChance;
+            this.doubleItemChance = doubleItemChance;
+            this.dropEntrancePass = dropEntrancePass;
         }
 
         public boolean getDropEntrancePass() {
-            return _dropEntrancePass;
+            return dropEntrancePass;
         }
     }
 

@@ -30,15 +30,15 @@ import java.util.Set;
  * @author Adry_85
  */
 public class ConditionCategoryType extends Condition {
-    private final Set<CategoryType> _categoryTypes;
+    private final Set<CategoryType> categoryTypes;
 
     public ConditionCategoryType(Set<CategoryType> categoryTypes) {
-        _categoryTypes = categoryTypes;
+        this.categoryTypes = categoryTypes;
     }
 
     @Override
     public boolean testImpl(Creature effector, Creature effected, Skill skill, ItemTemplate item) {
-        for (CategoryType type : _categoryTypes) {
+        for (CategoryType type : categoryTypes) {
             if (effector.isInCategory(type)) {
                 return true;
             }

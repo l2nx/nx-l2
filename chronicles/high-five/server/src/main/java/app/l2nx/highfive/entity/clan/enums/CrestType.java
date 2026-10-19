@@ -22,19 +22,18 @@
  */
 package app.l2nx.highfive.entity.clan.enums;
 
+import lombok.Getter;
+
 public enum CrestType {
     PLEDGE(1),
     PLEDGE_LARGE(2),
     ALLY(3);
 
-    private final int _id;
+    @Getter
+    private final int id;
 
     CrestType(int id) {
-        _id = id;
-    }
-
-    public int getId() {
-        return _id;
+        this.id = id;
     }
 
     public static CrestType getById(int id) {

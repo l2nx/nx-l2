@@ -27,11 +27,11 @@ import app.l2nx.highfive.entity.actor.Player;
  * @author UnAfraid, mrTJO
  */
 public class RequestExDeleteContactFromContactList extends ClientPacket {
-    private String _name;
+    private String name;
 
     @Override
     protected void readImpl() {
-        _name = readString();
+        name = readString();
     }
 
     @Override
@@ -40,7 +40,7 @@ public class RequestExDeleteContactFromContactList extends ClientPacket {
             return;
         }
 
-        if (_name == null) {
+        if (name == null) {
             return;
         }
 
@@ -49,6 +49,6 @@ public class RequestExDeleteContactFromContactList extends ClientPacket {
             return;
         }
 
-        player.getContactList().remove(_name);
+        player.getContactList().remove(name);
     }
 }

@@ -30,11 +30,11 @@ import app.l2nx.highfive.network.serverpackets.TargetUnselected;
  * @version $Revision: 1.3.4.2 $ $Date: 2005/03/27 15:29:30 $
  */
 public class RequestTargetCanceld extends ClientPacket {
-    private int _unselect;
+    private int unselect;
 
     @Override
     protected void readImpl() {
-        _unselect = readShort();
+        unselect = readShort();
     }
 
     @Override
@@ -49,7 +49,7 @@ public class RequestTargetCanceld extends ClientPacket {
             return;
         }
 
-        if (_unselect == 0) {
+        if (unselect == 0) {
             if (player.isCastingNow() && player.canAbortCast()) {
                 player.abortCast();
             } else if (player.getTarget() != null) {

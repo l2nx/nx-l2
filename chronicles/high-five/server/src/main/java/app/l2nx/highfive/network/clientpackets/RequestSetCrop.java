@@ -35,37 +35,37 @@ import java.util.List;
 public class RequestSetCrop extends ClientPacket {
     private static final int BATCH_LENGTH = 21; // length of the one item
 
-    private int _manorId;
-    private List<CropProcure> _items;
+    private int manorId;
+    private List<CropProcure> items;
 
     @Override
     protected void readImpl() {
-        _manorId = readInt();
+        manorId = readInt();
         final int count = readInt();
         if ((count <= 0) || (count > PlayerConfig.MAX_ITEM_IN_PACKET) || ((count * BATCH_LENGTH) != remaining())) {
             return;
         }
 
-        _items = new ArrayList<>(count);
+        items = new ArrayList<>(count);
         for (int i = 0; i < count; i++) {
             final int itemId = readInt();
             final long sales = readLong();
             final long price = readLong();
             final int type = readByte();
             if ((itemId < 1) || (sales < 0) || (price < 0)) {
-                _items.clear();
+                items.clear();
                 return;
             }
 
             if (sales > 0) {
-                _items.add(new CropProcure(itemId, sales, type, sales, price));
+                items.add(new CropProcure(itemId, sales, type, sales, price));
             }
         }
     }
 
     @Override
     protected void runImpl() {
-        if (_items.isEmpty()) {
+        if (items.isEmpty()) {
             return;
         }
 
@@ -82,7 +82,7 @@ public class RequestSetCrop extends ClientPacket {
 
         // Check player privileges
         if ((player.getClan() == null)
-                || (player.getClan().getCastleId() != _manorId)
+                || (player.getClan().getCastleId() != manorId)
                 || !player.hasAccess(ClanAccess.CASTLE_MANOR)
                 || !player.getLastFolkNPC().canInteract(player)) {
             player.sendPacket(ActionFailed.STATIC_PACKET);
@@ -90,9 +90,9 @@ public class RequestSetCrop extends ClientPacket {
         }
 
         // Filter crops with start amount lower than 0 and incorrect price.
-        final List<CropProcure> list = new ArrayList<>(_items.size());
-        for (CropProcure cp : _items) {
-            final Seed s = manor.getSeedByCrop(cp.getId(), _manorId);
+        final List<CropProcure> list = new ArrayList<>(items.size());
+        for (CropProcure cp : items) {
+            final Seed s = manor.getSeedByCrop(cp.getId(), manorId);
             if ((s != null)
                     && (cp.getStartAmount() <= s.getCropLimit())
                     && (cp.getPrice() >= s.getCropMinPrice())
@@ -102,6 +102,6 @@ public class RequestSetCrop extends ClientPacket {
         }
 
         // Save crop list
-        manor.setNextCropProcure(list, _manorId);
+        manor.setNextCropProcure(list, manorId);
     }
 }

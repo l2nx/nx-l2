@@ -35,7 +35,7 @@ import java.util.List;
  * @author mrTJO
  */
 public class ExOlympiadMatchList extends ServerPacket {
-    private final List<OlympiadGameTask> _games = new ArrayList<>();
+    private final List<OlympiadGameTask> games = new ArrayList<>();
 
     public ExOlympiadMatchList() {
         OlympiadGameTask task;
@@ -46,7 +46,7 @@ public class ExOlympiadMatchList extends ServerPacket {
                     continue; // initial or finished state not shown
                 }
 
-                _games.add(task);
+                games.add(task);
             }
         }
     }
@@ -55,9 +55,9 @@ public class ExOlympiadMatchList extends ServerPacket {
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_RECEIVE_OLYMPIAD.writeId(this, buffer);
         buffer.writeInt(0); // Type 0 = Match List, 1 = Match Result
-        buffer.writeInt(_games.size());
+        buffer.writeInt(games.size());
         buffer.writeInt(0);
-        for (OlympiadGameTask curGame : _games) {
+        for (OlympiadGameTask curGame : games) {
             final AbstractOlympiadGame game = curGame.getGame();
             if (game != null) {
                 buffer.writeInt(game.getStadiumId()); // Stadium Id (Arena 1 = 0)

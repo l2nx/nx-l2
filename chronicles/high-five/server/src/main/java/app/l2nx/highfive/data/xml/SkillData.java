@@ -36,25 +36,25 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 
 /**
  * The {@code SkillData} class is responsible for parsing, loading, and managing skill data within the game server.
  */
+@Slf4j
 public class SkillData {
-    private static final Logger LOGGER = Logger.getLogger(SkillData.class.getName());
 
-    private final Map<Integer, Skill> _skillsByHash = new ConcurrentHashMap<>();
-    private final Map<Integer, Integer> _maxSkillLevels = new ConcurrentHashMap<>();
-    private final Set<Integer> _enchantable = ConcurrentHashMap.newKeySet();
-    private final List<File> _skillFiles = new ArrayList<>();
+    private final Map<Integer, Skill> skillsByHash = new ConcurrentHashMap<>();
+    private final Map<Integer, Integer> maxSkillLevels = new ConcurrentHashMap<>();
+    private final Set<Integer> enchantable = ConcurrentHashMap.newKeySet();
+    private final List<File> skillFiles = new ArrayList<>();
     private static int count = 0;
 
     protected SkillData() {
-        processDirectory("data/stats/skills", _skillFiles);
+        processDirectory("data/stats/skills", skillFiles);
         if (GeneralConfig.CUSTOM_SKILLS_LOAD) {
-            processDirectory("data/stats/skills/custom", _skillFiles);
+            processDirectory("data/stats/skills/custom", skillFiles);
         }
 
         load();
@@ -63,7 +63,7 @@ public class SkillData {
     private void processDirectory(String dirName, List<File> list) {
         final File dir = new File(ServerConfig.DATAPACK_ROOT, dirName);
         if (!dir.exists()) {
-            LOGGER.warning("Directory " + dir.getAbsolutePath() + " does not exist.");
+            log.warn("Directory {} does not exist.", dir.getAbsolutePath());
             return;
         }
 
@@ -81,17 +81,17 @@ public class SkillData {
         final Map<Integer, Skill> temp = new ConcurrentHashMap<>();
         loadAllSkills(temp);
 
-        _skillsByHash.clear();
-        _skillsByHash.putAll(temp);
+        skillsByHash.clear();
+        skillsByHash.putAll(temp);
 
-        _maxSkillLevels.clear();
-        _enchantable.clear();
-        for (Skill skill : _skillsByHash.values()) {
+        maxSkillLevels.clear();
+        enchantable.clear();
+        for (Skill skill : skillsByHash.values()) {
             final int skillId = skill.getId();
             final int skillLevel = skill.getLevel();
             if (skillLevel > 99) {
-                if (!_enchantable.contains(skillId)) {
-                    _enchantable.add(skillId);
+                if (!enchantable.contains(skillId)) {
+                    enchantable.add(skillId);
                 }
                 continue;
             }
@@ -99,14 +99,14 @@ public class SkillData {
             // Only non-enchanted skills.
             final int maxLevel = getMaxLevel(skillId);
             if (skillLevel > maxLevel) {
-                _maxSkillLevels.put(skillId, skillLevel);
+                maxSkillLevels.put(skillId, skillLevel);
             }
         }
     }
 
     public List<Skill> loadSkills(File file) {
         if (file == null) {
-            LOGGER.warning("Skill file not found.");
+            log.warn("Skill file not found.");
             return null;
         }
 
@@ -118,7 +118,7 @@ public class SkillData {
     public void loadAllSkills(Map<Integer, Skill> allSkills) {
         if (ThreadConfig.THREADS_FOR_LOADING) {
             final Collection<ScheduledFuture<?>> jobs = ConcurrentHashMap.newKeySet();
-            for (File file : _skillFiles) {
+            for (File file : skillFiles) {
                 jobs.add(ThreadPool.schedule(
                         () -> {
                             final List<Skill> skills = loadSkills(file);
@@ -142,7 +142,7 @@ public class SkillData {
                 }
             }
         } else {
-            for (File file : _skillFiles) {
+            for (File file : skillFiles) {
                 final List<Skill> skills = loadSkills(file);
                 if (skills == null) {
                     return;
@@ -155,7 +155,7 @@ public class SkillData {
             }
         }
 
-        LOGGER.info(getClass().getSimpleName() + ": Loaded " + count + " Skill templates from XML files.");
+        log.info("Loaded {} Skill templates from XML files.", count);
     }
 
     public void reload() {
@@ -191,7 +191,7 @@ public class SkillData {
      * @return The {@link Skill} object if found, or null if not found.
      */
     public Skill getSkill(int skillId, int level) {
-        final Skill result = _skillsByHash.get(getSkillHashCode(skillId, level));
+        final Skill result = skillsByHash.get(getSkillHashCode(skillId, level));
         if (result != null) {
             return result;
         }
@@ -201,15 +201,22 @@ public class SkillData {
 
         // Requested level too high.
         if ((maxLevel > 0) && (level > maxLevel)) {
-            LOGGER.warning(getClass().getSimpleName() + ": Call to unexisting skill level id: " + skillId
-                    + " requested level: " + level + " max level: " + maxLevel + "." + System.lineSeparator()
-                    + ExceptionUtils.getStackTrace(new Exception()));
-            return _skillsByHash.get(getSkillHashCode(skillId, maxLevel));
+            log.warn(
+                    "Call to unexisting skill level id: {} requested level: {} max level: {}.{}{}",
+                    skillId,
+                    level,
+                    maxLevel,
+                    System.lineSeparator(),
+                    ExceptionUtils.getStackTrace(new Exception()));
+            return skillsByHash.get(getSkillHashCode(skillId, maxLevel));
         }
 
-        LOGGER.warning(
-                getClass().getSimpleName() + ": No skill info found for skill id " + skillId + " and skill level "
-                        + level + "." + System.lineSeparator() + ExceptionUtils.getStackTrace(new Exception()));
+        log.warn(
+                "No skill info found for skill id {} and skill level {}.{}{}",
+                skillId,
+                level,
+                System.lineSeparator(),
+                ExceptionUtils.getStackTrace(new Exception()));
         return null;
     }
 
@@ -219,7 +226,7 @@ public class SkillData {
      * @return The maximum level for the specified skill ID, or 0 if the skill ID is not found.
      */
     public int getMaxLevel(int skillId) {
-        final Integer maxLevel = _maxSkillLevels.get(skillId);
+        final Integer maxLevel = maxSkillLevels.get(skillId);
         return maxLevel != null ? maxLevel : 0;
     }
 
@@ -229,7 +236,7 @@ public class SkillData {
      * @return {@code true} if the skill is enchantable, {@code false} otherwise
      */
     public boolean isEnchantable(int skillId) {
-        return _enchantable.contains(skillId);
+        return enchantable.contains(skillId);
     }
 
     /**
@@ -244,15 +251,15 @@ public class SkillData {
     public Skill[] getSiegeSkills(boolean addNoble, boolean hasCastle) {
         final Skill[] result = new Skill[2 + (addNoble ? 1 : 0) + (hasCastle ? 2 : 0)];
         int i = 0;
-        result[i++] = _skillsByHash.get(getSkillHashCode(246, 1));
-        result[i++] = _skillsByHash.get(getSkillHashCode(247, 1));
+        result[i++] = skillsByHash.get(getSkillHashCode(246, 1));
+        result[i++] = skillsByHash.get(getSkillHashCode(247, 1));
         if (addNoble) {
-            result[i++] = _skillsByHash.get(getSkillHashCode(326, 1));
+            result[i++] = skillsByHash.get(getSkillHashCode(326, 1));
         }
 
         if (hasCastle) {
-            result[i++] = _skillsByHash.get(getSkillHashCode(844, 1));
-            result[i++] = _skillsByHash.get(getSkillHashCode(845, 1));
+            result[i++] = skillsByHash.get(getSkillHashCode(844, 1));
+            result[i++] = skillsByHash.get(getSkillHashCode(845, 1));
         }
 
         return result;

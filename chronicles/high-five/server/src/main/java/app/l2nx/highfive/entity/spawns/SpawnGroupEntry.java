@@ -24,49 +24,37 @@ package app.l2nx.highfive.entity.spawns;
 
 import java.util.ArrayList;
 import java.util.List;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * A single NPC entry of a spawn group, holding its quota and one spawn slot per territory.
  * @author Altur
  */
 public class SpawnGroupEntry {
-    private final int _total;
-    private final int _respawnDelay;
-    private final int _respawnRandom;
-    private final List<Spawn> _slots = new ArrayList<>();
-    private int _aliveOrReserved = 0;
+    @Getter
+    private final int total;
+
+    @Getter
+    private final int respawnDelay;
+
+    @Getter
+    private final int respawnRandom;
+
+    @Getter
+    private final List<Spawn> slots = new ArrayList<>();
+
+    @Getter
+    @Setter
+    private int aliveOrReserved = 0;
 
     public SpawnGroupEntry(int total, int respawnDelay, int respawnRandom) {
-        _total = total;
-        _respawnDelay = respawnDelay;
-        _respawnRandom = respawnRandom;
-    }
-
-    public int getTotal() {
-        return _total;
-    }
-
-    public int getRespawnDelay() {
-        return _respawnDelay;
-    }
-
-    public int getRespawnRandom() {
-        return _respawnRandom;
-    }
-
-    public List<Spawn> getSlots() {
-        return _slots;
+        this.total = total;
+        this.respawnDelay = respawnDelay;
+        this.respawnRandom = respawnRandom;
     }
 
     public void addSlot(Spawn spawn) {
-        _slots.add(spawn);
-    }
-
-    public int getAliveOrReserved() {
-        return _aliveOrReserved;
-    }
-
-    public void setAliveOrReserved(int count) {
-        _aliveOrReserved = count;
+        slots.add(spawn);
     }
 }

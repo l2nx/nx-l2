@@ -29,16 +29,16 @@ import app.l2nx.highfive.mechanics.events.returns.AbstractEventReturn;
  * @author UnAfraid
  */
 public class RunnableEventListener extends AbstractEventListener {
-    private final Runnable _callback;
+    private final Runnable callback;
 
     public RunnableEventListener(ListenersContainer container, EventType type, Runnable callback, Object owner) {
         super(container, type, owner);
-        _callback = callback;
+        this.callback = callback;
     }
 
     @Override
     public <R extends AbstractEventReturn> R executeEvent(IBaseEvent event, Class<R> returnBackClass) {
-        _callback.run();
+        callback.run();
         return null;
     }
 }

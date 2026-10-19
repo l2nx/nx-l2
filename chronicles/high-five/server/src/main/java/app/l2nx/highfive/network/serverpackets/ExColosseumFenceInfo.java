@@ -29,13 +29,13 @@ import app.l2nx.network.buffer.WriteBuffer;
  * @author HorridoJoho
  */
 public class ExColosseumFenceInfo extends ServerPacket {
-    private final int _objId;
-    private final int _x;
-    private final int _y;
-    private final int _z;
-    private final int _width;
-    private final int _length;
-    private final int _clientState;
+    private final int objId;
+    private final int x;
+    private final int y;
+    private final int z;
+    private final int width;
+    private final int length;
+    private final int clientState;
 
     public ExColosseumFenceInfo(Fence fence) {
         this(
@@ -49,24 +49,24 @@ public class ExColosseumFenceInfo extends ServerPacket {
     }
 
     public ExColosseumFenceInfo(int objId, double x, double y, double z, int width, int length, FenceState state) {
-        _objId = objId;
-        _x = (int) x;
-        _y = (int) y;
-        _z = (int) z;
-        _width = width;
-        _length = length;
-        _clientState = state.getClientId();
+        this.objId = objId;
+        this.x = (int) x;
+        this.y = (int) y;
+        this.z = (int) z;
+        this.width = width;
+        this.length = length;
+        clientState = state.getClientId();
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_COLOSSEUM_FENCE_INFO.writeId(this, buffer);
-        buffer.writeInt(_objId);
-        buffer.writeInt(_clientState);
-        buffer.writeInt(_x);
-        buffer.writeInt(_y);
-        buffer.writeInt(_z);
-        buffer.writeInt(_width);
-        buffer.writeInt(_length);
+        buffer.writeInt(objId);
+        buffer.writeInt(clientState);
+        buffer.writeInt(x);
+        buffer.writeInt(y);
+        buffer.writeInt(z);
+        buffer.writeInt(width);
+        buffer.writeInt(length);
     }
 }

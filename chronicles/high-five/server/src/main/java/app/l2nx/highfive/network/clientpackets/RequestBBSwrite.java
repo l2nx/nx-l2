@@ -27,21 +27,21 @@ import app.l2nx.highfive.handler.CommunityBoardHandler;
  * @author -Wooden-
  */
 public class RequestBBSwrite extends ClientPacket {
-    private String _url;
-    private String _arg1;
-    private String _arg2;
-    private String _arg3;
-    private String _arg4;
-    private String _arg5;
+    private String url;
+    private String arg1;
+    private String arg2;
+    private String arg3;
+    private String arg4;
+    private String arg5;
 
     @Override
     protected void readImpl() {
-        _url = readString();
-        _arg1 = readString();
-        _arg2 = readString();
-        _arg3 = readString();
-        _arg4 = readString();
-        _arg5 = readString();
+        url = readString();
+        arg1 = readString();
+        arg2 = readString();
+        arg3 = readString();
+        arg4 = readString();
+        arg5 = readString();
     }
 
     @Override
@@ -51,6 +51,6 @@ public class RequestBBSwrite extends ClientPacket {
             return;
         }
 
-        CommunityBoardHandler.getInstance().handleWriteCommand(player, _url, _arg1, _arg2, _arg3, _arg4, _arg5);
+        CommunityBoardHandler.getInstance().handleWriteCommand(player, url, arg1, arg2, arg3, arg4, arg5);
     }
 }

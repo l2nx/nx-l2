@@ -27,43 +27,42 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author godson
  */
+@Slf4j
 public class DayNightSpawnManager {
-    private static final Logger LOGGER = Logger.getLogger(DayNightSpawnManager.class.getName());
 
-    private final List<Spawn> _dayCreatures = new ArrayList<>();
-    private final List<Spawn> _nightCreatures = new ArrayList<>();
-    private final Map<Spawn, RaidBoss> _bosses = new ConcurrentHashMap<>();
+    private final List<Spawn> dayCreatures = new ArrayList<>();
+    private final List<Spawn> nightCreatures = new ArrayList<>();
+    private final Map<Spawn, RaidBoss> bosses = new ConcurrentHashMap<>();
 
     protected DayNightSpawnManager() {
         // Prevent external initialization.
     }
 
     public void addDayCreature(Spawn spawnDat) {
-        _dayCreatures.add(spawnDat);
+        dayCreatures.add(spawnDat);
     }
 
     public void addNightCreature(Spawn spawnDat) {
-        _nightCreatures.add(spawnDat);
+        nightCreatures.add(spawnDat);
     }
 
     /**
      * Spawn Day Creatures, and Unspawn Night Creatures
      */
     public void spawnDayCreatures() {
-        spawnCreatures(_nightCreatures, _dayCreatures, "night", "day");
+        spawnCreatures(nightCreatures, dayCreatures, "night", "day");
     }
 
     /**
      * Spawn Night Creatures, and Unspawn Day Creatures
      */
     public void spawnNightCreatures() {
-        spawnCreatures(_dayCreatures, _nightCreatures, "day", "night");
+        spawnCreatures(dayCreatures, nightCreatures, "day", "night");
     }
 
     /**
@@ -91,7 +90,7 @@ public class DayNightSpawnManager {
                     }
                 }
 
-                LOGGER.info("DayNightSpawnManager: Removed " + i + " " + unspawnLogInfo + " creatures");
+                log.info("Removed {} {} creatures", i, unspawnLogInfo);
             }
 
             int i = 0;
@@ -105,14 +104,14 @@ public class DayNightSpawnManager {
                 i++;
             }
 
-            LOGGER.info("DayNightSpawnManager: Spawned " + i + " " + spawnLogInfo + " creatures");
+            log.info("Spawned {} {} creatures", i, spawnLogInfo);
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, "Error while spawning creatures: " + e.getMessage(), e);
+            log.warn("Error while spawning creatures: {}", e.getMessage(), e);
         }
     }
 
     private void changeMode(int mode) {
-        if (_nightCreatures.isEmpty() && _dayCreatures.isEmpty() && _bosses.isEmpty()) {
+        if (nightCreatures.isEmpty() && dayCreatures.isEmpty() && bosses.isEmpty()) {
             return;
         }
 
@@ -126,15 +125,15 @@ public class DayNightSpawnManager {
                 break;
             }
             default: {
-                LOGGER.warning("DayNightSpawnManager: Wrong mode sent");
+                log.warn("Wrong mode sent");
                 break;
             }
         }
     }
 
     public DayNightSpawnManager trim() {
-        ((ArrayList<?>) _nightCreatures).trimToSize();
-        ((ArrayList<?>) _dayCreatures).trimToSize();
+        ((ArrayList<?>) nightCreatures).trimToSize();
+        ((ArrayList<?>) dayCreatures).trimToSize();
         return this;
     }
 
@@ -142,14 +141,14 @@ public class DayNightSpawnManager {
         try {
             changeMode(GameTimeTaskManager.getInstance().isNight() ? 1 : 0);
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, "Error while notifyChangeMode(): " + e.getMessage(), e);
+            log.warn("Error while notifyChangeMode(): {}", e.getMessage(), e);
         }
     }
 
     public void cleanUp() {
-        _nightCreatures.clear();
-        _dayCreatures.clear();
-        _bosses.clear();
+        nightCreatures.clear();
+        dayCreatures.clear();
+        bosses.clear();
     }
 
     public static DayNightSpawnManager getInstance() {

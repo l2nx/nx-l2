@@ -23,10 +23,8 @@
 package app.l2nx.highfive.handler;
 
 import app.l2nx.highfive.entity.actor.Player;
-import java.util.logging.Logger;
 
 public interface IUserCommandHandler {
-    Logger LOGGER = Logger.getLogger(IUserCommandHandler.class.getName());
 
     /**
      * This is the worker method that is called when someone uses a command.

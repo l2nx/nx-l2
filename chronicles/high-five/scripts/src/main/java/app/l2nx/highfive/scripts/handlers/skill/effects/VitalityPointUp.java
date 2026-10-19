@@ -31,12 +31,12 @@ import app.l2nx.highfive.util.StatSet;
  * @author Adry_85
  */
 public class VitalityPointUp extends AbstractEffect {
-    private final float _value;
+    private final float value;
 
     public VitalityPointUp(Condition attachCond, Condition applyCond, StatSet set, StatSet params) {
         super(attachCond, applyCond, set, params);
 
-        _value = params.getFloat("value", 0);
+        value = params.getFloat("value", 0);
     }
 
     @Override
@@ -48,7 +48,7 @@ public class VitalityPointUp extends AbstractEffect {
     public void onStart(Creature effector, Creature effected, Skill skill) {
         if ((effected != null) && effected.isPlayer()) {
             final Player player = effected.asPlayer();
-            player.updateVitalityPoints(_value, false, false);
+            player.updateVitalityPoints(value, false, false);
             player.updateUserInfo();
         }
     }

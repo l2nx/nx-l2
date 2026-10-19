@@ -28,6 +28,7 @@ import app.l2nx.highfive.schedule.RecurrenceSchedule;
 import app.l2nx.highfive.util.StatSet;
 import java.io.File;
 import java.util.concurrent.atomic.AtomicInteger;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.DateFormatUtils;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
@@ -36,6 +37,7 @@ import org.w3c.dom.Node;
  * Abstract event class.
  * @author JIV, Mobius
  */
+@Slf4j
 public abstract class Event extends Script {
     /** Prefix the script's timer handler matches to start the event and reschedule via {@link #scheduleStart}. */
     protected static final String SCHEDULE_TIMER = "Schedule";
@@ -90,10 +92,11 @@ public abstract class Event extends Script {
                                             (start.toEpochMilli() - System.currentTimeMillis()) + 5000,
                                             null,
                                             null); // Added 5 seconds to prevent overlapping.
-                            LOGGER.info("Event " + params.getString("Name") + " scheduled at "
-                                    + DateFormatUtils.format(start.toEpochMilli(), "dd/MM/yyyy HH:mm:ss"));
+                            log.info(
+                                    "Event {} scheduled at {}",
+                                    params.getString("Name"),
+                                    DateFormatUtils.format(start.toEpochMilli(), "dd/MM/yyyy HH:mm:ss"));
                         },
-                        () -> LOGGER.warning(
-                                "Event " + params.getString("Name") + " has no further start in its schedule."));
+                        () -> log.warn("Event {} has no further start in its schedule.", params.getString("Name")));
     }
 }

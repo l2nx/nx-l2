@@ -35,28 +35,29 @@ import app.l2nx.highfive.entity.zone.ZoneId;
 import app.l2nx.highfive.managers.PunishmentManager;
 import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.mechanics.skill.holders.SkillUseHolder;
-import app.l2nx.highfive.network.PacketLogger;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.serverpackets.InventoryUpdate;
 import app.l2nx.highfive.util.GMAudit;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @version $Revision: 1.11.2.1.2.7 $ $Date: 2005/04/02 21:25:21 $
  */
+@Slf4j
 public class RequestDropItem extends ClientPacket {
-    private int _objectId;
-    private long _count;
-    private int _x;
-    private int _y;
-    private int _z;
+    private int objectId;
+    private long count;
+    private int x;
+    private int y;
+    private int z;
 
     @Override
     protected void readImpl() {
-        _objectId = readInt();
-        _count = readLong();
-        _x = readInt();
-        _y = readInt();
-        _z = readInt();
+        objectId = readInt();
+        count = readLong();
+        x = readInt();
+        y = readInt();
+        z = readInt();
     }
 
     @Override
@@ -71,10 +72,10 @@ public class RequestDropItem extends ClientPacket {
             return;
         }
 
-        final Item item = player.getInventory().getItemByObjectId(_objectId);
+        final Item item = player.getInventory().getItemByObjectId(objectId);
         if ((item == null)
-                || (_count == 0)
-                || !player.validateItemManipulation(_objectId, ItemProcessType.DROP)
+                || (count == 0)
+                || !player.validateItemManipulation(objectId, ItemProcessType.DROP)
                 || (!GeneralConfig.ALLOW_DISCARDITEM && !player.isGM())
                 || (!item.isDropable() && !(player.isGM() && GeneralConfig.GM_TRADE_RESTRICTED_ITEMS))
                 || ((item.getItemType() == EtcItemType.PET_COLLAR) && player.havePetInvItems())
@@ -91,7 +92,7 @@ public class RequestDropItem extends ClientPacket {
             return;
         }
 
-        if (_count > item.getCount()) {
+        if (count > item.getCount()) {
             player.sendPacket(SystemMessageId.THIS_ITEM_CANNOT_BE_DISCARDED);
             return;
         }
@@ -101,20 +102,20 @@ public class RequestDropItem extends ClientPacket {
             return;
         }
 
-        if (_count < 0) {
+        if (count < 0) {
             PunishmentManager.handleIllegalPlayerAction(
                     player,
                     "[RequestDropItem] Character " + player.getName() + " of account " + player.getAccountName()
-                            + " tried to drop item with oid " + _objectId + " but has count < 0!",
+                            + " tried to drop item with oid " + objectId + " but has count < 0!",
                     GeneralConfig.DEFAULT_PUNISH);
             return;
         }
 
-        if (!item.isStackable() && (_count > 1)) {
+        if (!item.isStackable() && (count > 1)) {
             PunishmentManager.handleIllegalPlayerAction(
                     player,
                     "[RequestDropItem] Character " + player.getName() + " of account " + player.getAccountName()
-                            + " tried to drop non-stackable item with oid " + _objectId + " but has count > 1!",
+                            + " tried to drop non-stackable item with oid " + objectId + " but has count > 1!",
                     GeneralConfig.DEFAULT_PUNISH);
             return;
         }
@@ -154,7 +155,7 @@ public class RequestDropItem extends ClientPacket {
                 if ((skill.getSkill().getItemConsumeId() == item.getId())
                         && ((player.getInventory().getInventoryItemCount(item.getId(), -1)
                                         - skill.getSkill().getItemConsumeCount())
-                                < _count)) {
+                                < count)) {
                     player.sendPacket(SystemMessageId.THIS_ITEM_CANNOT_BE_DISCARDED);
                     return;
                 }
@@ -175,7 +176,7 @@ public class RequestDropItem extends ClientPacket {
                 if ((skill.getItemConsumeId() == item.getId())
                         && ((player.getInventory().getInventoryItemCount(item.getId(), -1)
                                         - skill.getItemConsumeCount())
-                                < _count)) {
+                                < count)) {
                     player.sendPacket(SystemMessageId.THIS_ITEM_CANNOT_BE_DISCARDED);
                     return;
                 }
@@ -193,7 +194,7 @@ public class RequestDropItem extends ClientPacket {
             return;
         }
 
-        if (!player.isInsideRadius2D(_x, _y, 0, 150) || (Math.abs(_z - player.getZ()) > 50)) {
+        if (!player.isInsideRadius2D(x, y, 0, 150) || (Math.abs(z - player.getZ()) > 50)) {
             player.sendPacket(SystemMessageId.YOU_CANNOT_DISCARD_SOMETHING_THAT_FAR_AWAY_FROM_YOU);
             return;
         }
@@ -215,8 +216,7 @@ public class RequestDropItem extends ClientPacket {
             player.sendItemList(true);
         }
 
-        final Item dropedItem =
-                player.dropItem(ItemProcessType.DROP, _objectId, _count, _x, _y, _z, null, false, false);
+        final Item dropedItem = player.dropItem(ItemProcessType.DROP, objectId, count, x, y, z, null, false, false);
 
         // player.broadcastUserInfo();
         if (player.isGM()) {
@@ -233,8 +233,8 @@ public class RequestDropItem extends ClientPacket {
 
         if ((dropedItem != null) && (dropedItem.getId() == Inventory.ADENA_ID) && (dropedItem.getCount() >= 1000000)) {
             final String msg = "Character (" + player.getName() + ") has dropped (" + dropedItem.getCount()
-                    + ")adena at (" + _x + "," + _y + "," + _z + ")";
-            PacketLogger.warning(msg);
+                    + ")adena at (" + x + "," + y + "," + z + ")";
+            log.warn(msg);
             AdminData.getInstance().broadcastMessageToGMs(msg);
         }
     }

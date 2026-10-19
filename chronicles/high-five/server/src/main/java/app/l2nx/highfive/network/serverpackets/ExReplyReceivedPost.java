@@ -22,27 +22,28 @@ package app.l2nx.highfive.network.serverpackets;
 import app.l2nx.highfive.entity.item.instance.Item;
 import app.l2nx.highfive.entity.itemcontainer.ItemContainer;
 import app.l2nx.highfive.network.GameClient;
-import app.l2nx.highfive.network.PacketLogger;
 import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.highfive.network.holders.MailMessage;
 import app.l2nx.network.buffer.WriteBuffer;
 import java.util.Collection;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author Migi, DS
  */
+@Slf4j
 public class ExReplyReceivedPost extends AbstractItemPacket {
-    private final MailMessage _msg;
-    private Collection<Item> _items = null;
+    private final MailMessage msg;
+    private Collection<Item> items = null;
 
     public ExReplyReceivedPost(MailMessage msg) {
-        _msg = msg;
+        this.msg = msg;
         if (msg.hasAttachments()) {
             final ItemContainer attachments = msg.getAttachments();
             if ((attachments != null) && (attachments.getSize() > 0)) {
-                _items = attachments.getItems();
+                items = attachments.getItems();
             } else {
-                PacketLogger.warning("Message " + msg.getId() + " has attachments but itemcontainer is empty.");
+                log.warn("Message {} has attachments but itemcontainer is empty.", msg.getId());
             }
         }
     }
@@ -50,15 +51,15 @@ public class ExReplyReceivedPost extends AbstractItemPacket {
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_REPLY_RECEIVED_POST.writeId(this, buffer);
-        buffer.writeInt(_msg.getId());
-        buffer.writeInt(_msg.isLocked());
+        buffer.writeInt(msg.getId());
+        buffer.writeInt(msg.isLocked());
         buffer.writeInt(0); // Unknown
-        buffer.writeString(_msg.getSenderName());
-        buffer.writeString(_msg.getSubject());
-        buffer.writeString(_msg.getContent());
-        if ((_items != null) && !_items.isEmpty()) {
-            buffer.writeInt(_items.size());
-            for (Item item : _items) {
+        buffer.writeString(msg.getSenderName());
+        buffer.writeString(msg.getSubject());
+        buffer.writeString(msg.getContent());
+        if ((items != null) && !items.isEmpty()) {
+            buffer.writeInt(items.size());
+            for (Item item : items) {
                 writeItem(item, buffer);
                 buffer.writeInt(item.getObjectId());
             }
@@ -66,8 +67,8 @@ public class ExReplyReceivedPost extends AbstractItemPacket {
             buffer.writeInt(0);
         }
 
-        buffer.writeLong(_msg.getReqAdena());
-        buffer.writeInt(_msg.hasAttachments());
-        buffer.writeInt(_msg.getSendBySystem());
+        buffer.writeLong(msg.getReqAdena());
+        buffer.writeInt(msg.hasAttachments());
+        buffer.writeInt(msg.getSendBySystem());
     }
 }

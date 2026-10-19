@@ -35,36 +35,36 @@ import java.util.List;
 public class RequestSetSeed extends ClientPacket {
     private static final int BATCH_LENGTH = 20; // length of the one item
 
-    private int _manorId;
-    private List<SeedProduction> _items;
+    private int manorId;
+    private List<SeedProduction> items;
 
     @Override
     protected void readImpl() {
-        _manorId = readInt();
+        manorId = readInt();
         final int count = readInt();
         if ((count <= 0) || (count > PlayerConfig.MAX_ITEM_IN_PACKET) || ((count * BATCH_LENGTH) != remaining())) {
             return;
         }
 
-        _items = new ArrayList<>(count);
+        items = new ArrayList<>(count);
         for (int i = 0; i < count; i++) {
             final int itemId = readInt();
             final long sales = readLong();
             final long price = readLong();
             if ((itemId < 1) || (sales < 0) || (price < 0)) {
-                _items.clear();
+                items.clear();
                 return;
             }
 
             if (sales > 0) {
-                _items.add(new SeedProduction(itemId, sales, price, sales));
+                items.add(new SeedProduction(itemId, sales, price, sales));
             }
         }
     }
 
     @Override
     protected void runImpl() {
-        if (_items.isEmpty()) {
+        if (items.isEmpty()) {
             return;
         }
 
@@ -81,7 +81,7 @@ public class RequestSetSeed extends ClientPacket {
 
         // Check player privileges
         if ((player.getClan() == null)
-                || (player.getClan().getCastleId() != _manorId)
+                || (player.getClan().getCastleId() != manorId)
                 || !player.hasAccess(ClanAccess.CASTLE_MANOR)
                 || !player.getLastFolkNPC().canInteract(player)) {
             player.sendPacket(ActionFailed.STATIC_PACKET);
@@ -89,8 +89,8 @@ public class RequestSetSeed extends ClientPacket {
         }
 
         // Filter seeds with start amount lower than 0 and incorrect price.
-        final List<SeedProduction> list = new ArrayList<>(_items.size());
-        for (SeedProduction sp : _items) {
+        final List<SeedProduction> list = new ArrayList<>(items.size());
+        for (SeedProduction sp : items) {
             final Seed s = manor.getSeed(sp.getId());
             if ((s != null)
                     && (sp.getStartAmount() <= s.getSeedLimit())
@@ -101,6 +101,6 @@ public class RequestSetSeed extends ClientPacket {
         }
 
         // Save new list
-        manor.setNextSeedProduction(list, _manorId);
+        manor.setNextSeedProduction(list, manorId);
     }
 }

@@ -27,11 +27,11 @@ import app.l2nx.highfive.managers.RecipeManager;
 import app.l2nx.highfive.network.SystemMessageId;
 
 public class RequestRecipeBookOpen extends ClientPacket {
-    private boolean _isDwarvenCraft;
+    private boolean dwarvenCraft;
 
     @Override
     protected void readImpl() {
-        _isDwarvenCraft = readInt() == 0;
+        dwarvenCraft = readInt() == 0;
     }
 
     @Override
@@ -51,6 +51,6 @@ public class RequestRecipeBookOpen extends ClientPacket {
             return;
         }
 
-        RecipeManager.getInstance().requestBookOpen(player, _isDwarvenCraft);
+        RecipeManager.getInstance().requestBookOpen(player, dwarvenCraft);
     }
 }

@@ -33,52 +33,45 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import lombok.Getter;
 
 /**
  * @author DaRkRaGe
  */
 public class BossZone extends ZoneType {
-    private int _timeInvade;
+    @Getter
+    private int timeInvade;
 
-    private int[] _oustLoc = {0, 0, 0};
+    private int[] oustLoc = {0, 0, 0};
 
     public class Settings extends AbstractZoneSettings {
         // track the times that players got disconnected. Players are allowed
-        // to log back into the zone as long as their log-out was within _timeInvade time...
+        // to log back into the zone as long as their log-out was within timeInvade time...
         // <player objectId, expiration time in milliseconds>
-        private final Map<Integer, Long> _playerAllowedReEntryTimes = new ConcurrentHashMap<>();
+        @Getter
+        private final Map<Integer, Long> playerAllowedReEntryTimes = new ConcurrentHashMap<>();
 
         // track the players admitted to the zone who should be allowed back in
         // after reboot/server downtime (outside of their control), within 30 of server restart
-        private final List<Integer> _playersAllowed = new CopyOnWriteArrayList<>();
+        @Getter
+        private final List<Integer> playersAllowed = new CopyOnWriteArrayList<>();
 
-        private final List<Creature> _raidList = new CopyOnWriteArrayList<>();
+        @Getter
+        private final List<Creature> raidList = new CopyOnWriteArrayList<>();
 
         protected Settings() {}
 
-        public Map<Integer, Long> getPlayerAllowedReEntryTimes() {
-            return _playerAllowedReEntryTimes;
-        }
-
-        public List<Integer> getPlayersAllowed() {
-            return _playersAllowed;
-        }
-
-        public List<Creature> getRaidList() {
-            return _raidList;
-        }
-
         @Override
         public void clear() {
-            _playerAllowedReEntryTimes.clear();
-            _playersAllowed.clear();
-            _raidList.clear();
+            playerAllowedReEntryTimes.clear();
+            playersAllowed.clear();
+            raidList.clear();
         }
     }
 
     public BossZone(int id) {
         super(id);
-        _oustLoc = new int[3];
+        oustLoc = new int[3];
         AbstractZoneSettings settings = ZoneManager.getSettings(getName());
         if (settings == null) {
             settings = new Settings();
@@ -96,13 +89,13 @@ public class BossZone extends ZoneType {
     @Override
     public void setParameter(String name, String value) {
         if (name.equals("InvadeTime")) {
-            _timeInvade = Integer.parseInt(value);
+            timeInvade = Integer.parseInt(value);
         } else if (name.equals("oustX")) {
-            _oustLoc[0] = Integer.parseInt(value);
+            oustLoc[0] = Integer.parseInt(value);
         } else if (name.equals("oustY")) {
-            _oustLoc[1] = Integer.parseInt(value);
+            oustLoc[1] = Integer.parseInt(value);
         } else if (name.equals("oustZ")) {
-            _oustLoc[2] = Integer.parseInt(value);
+            oustLoc[2] = Integer.parseInt(value);
         } else {
             super.setParameter(name, value);
         }
@@ -112,10 +105,10 @@ public class BossZone extends ZoneType {
      * Boss zones have special behaviors for player characters.<br>
      * Players are automatically teleported out when the attempt to enter these zones, except if the time at which they enter the zone is prior to the entry expiration time set for that player.<br>
      * Entry expiration times are set by any one of the following:<br>
-     * 1) A player logs out while in a zone (Expiration gets set to logoutTime + _timeInvade)<br>
+     * 1) A player logs out while in a zone (Expiration gets set to logoutTime + timeInvade)<br>
      * 2) An external source (such as a quest or AI of NPC) set up the player for entry.<br>
      * There exists one more case in which the player will be allowed to enter.<br>
-     * That is if the server recently rebooted (boot-up time more recent than currentTime - _timeInvade) AND the player was in the zone prior to reboot.
+     * That is if the server recently rebooted (boot-up time more recent than currentTime - timeInvade) AND the player was in the zone prior to reboot.
      */
     @Override
     protected void onEnter(Creature creature) {
@@ -136,7 +129,7 @@ public class BossZone extends ZoneType {
                 // with legal entries, do nothing.
                 if (expirationTime == null) // legal null expirationTime entries
                 {
-                    if (GameServer.getStartTime() > (System.currentTimeMillis() - _timeInvade)) {
+                    if (GameServer.getStartTime() > (System.currentTimeMillis() - timeInvade)) {
                         return;
                     }
                 } else {
@@ -153,8 +146,8 @@ public class BossZone extends ZoneType {
             }
 
             // teleport out all players who attempt "illegal" (re-)entry
-            if ((_oustLoc[0] != 0) && (_oustLoc[1] != 0) && (_oustLoc[2] != 0)) {
-                player.teleToLocation(_oustLoc[0], _oustLoc[1], _oustLoc[2]);
+            if ((oustLoc[0] != 0) && (oustLoc[1] != 0) && (oustLoc[2] != 0)) {
+                player.teleToLocation(oustLoc[0], oustLoc[1], oustLoc[2]);
             } else {
                 player.teleToLocation(TeleportWhereType.TOWN);
             }
@@ -167,8 +160,8 @@ public class BossZone extends ZoneType {
 
                 // remove summon and teleport out owner
                 // who attempt "illegal" (re-)entry
-                if ((_oustLoc[0] != 0) && (_oustLoc[1] != 0) && (_oustLoc[2] != 0)) {
-                    player.teleToLocation(_oustLoc[0], _oustLoc[1], _oustLoc[2]);
+                if ((oustLoc[0] != 0) && (oustLoc[1] != 0) && (oustLoc[2] != 0)) {
+                    player.teleToLocation(oustLoc[0], oustLoc[1], oustLoc[2]);
                 } else {
                     player.teleToLocation(TeleportWhereType.TOWN);
                 }
@@ -192,7 +185,7 @@ public class BossZone extends ZoneType {
                 // mark the time that the player left the zone
                 getSettings()
                         .getPlayerAllowedReEntryTimes()
-                        .put(player.getObjectId(), System.currentTimeMillis() + _timeInvade);
+                        .put(player.getObjectId(), System.currentTimeMillis() + timeInvade);
             } else {
                 if (getSettings().getPlayersAllowed().contains(player.getObjectId())) {
                     getSettings()
@@ -250,10 +243,6 @@ public class BossZone extends ZoneType {
         super.setEnabled(flag);
     }
 
-    public int getTimeInvade() {
-        return _timeInvade;
-    }
-
     public void setAllowedPlayers(List<Integer> players) {
         if (players != null) {
             getSettings().getPlayersAllowed().clear();
@@ -270,8 +259,8 @@ public class BossZone extends ZoneType {
             return true;
         }
 
-        if ((_oustLoc[0] != 0) && (_oustLoc[1] != 0) && (_oustLoc[2] != 0)) {
-            player.teleToLocation(_oustLoc[0], _oustLoc[1], _oustLoc[2]);
+        if ((oustLoc[0] != 0) && (oustLoc[1] != 0) && (oustLoc[2] != 0)) {
+            player.teleToLocation(oustLoc[0], oustLoc[1], oustLoc[2]);
         } else {
             player.teleToLocation(TeleportWhereType.TOWN);
         }
@@ -308,8 +297,8 @@ public class BossZone extends ZoneType {
             if ((creature != null) && creature.isPlayer()) {
                 final Player player = creature.asPlayer();
                 if (player.isOnline()) {
-                    if ((_oustLoc[0] != 0) && (_oustLoc[1] != 0) && (_oustLoc[2] != 0)) {
-                        player.teleToLocation(_oustLoc[0], _oustLoc[1], _oustLoc[2]);
+                    if ((oustLoc[0] != 0) && (oustLoc[1] != 0) && (oustLoc[2] != 0)) {
+                        player.teleToLocation(oustLoc[0], oustLoc[1], oustLoc[2]);
                     } else {
                         player.teleToLocation(TeleportWhereType.TOWN);
                     }

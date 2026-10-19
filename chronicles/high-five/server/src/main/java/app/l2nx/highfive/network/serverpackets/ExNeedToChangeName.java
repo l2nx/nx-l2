@@ -30,21 +30,21 @@ import app.l2nx.network.buffer.WriteBuffer;
  * @author JIV
  */
 public class ExNeedToChangeName extends ServerPacket {
-    private final int _type;
-    private final int _subType;
-    private final String _name;
+    private final int type;
+    private final int subType;
+    private final String name;
 
     public ExNeedToChangeName(int type, int subType, String name) {
-        _type = type;
-        _subType = subType;
-        _name = name;
+        this.type = type;
+        this.subType = subType;
+        this.name = name;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_NEED_TO_CHANGE_NAME.writeId(this, buffer);
-        buffer.writeInt(_type);
-        buffer.writeInt(_subType);
-        buffer.writeString(_name);
+        buffer.writeInt(type);
+        buffer.writeInt(subType);
+        buffer.writeString(name);
     }
 }

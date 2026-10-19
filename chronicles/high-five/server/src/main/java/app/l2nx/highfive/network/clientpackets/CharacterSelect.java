@@ -51,36 +51,38 @@ import app.l2nx.highfive.network.serverpackets.LeaveWorld;
 import app.l2nx.highfive.network.serverpackets.NpcHtmlMessage;
 import app.l2nx.highfive.network.serverpackets.SSQInfo;
 import app.l2nx.highfive.network.serverpackets.ServerClose;
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @version $Revision: 1.5.2.1.2.5 $ $Date: 2005/03/27 15:29:30 $
  */
 public class CharacterSelect extends ClientPacket {
-    protected static final Logger LOGGER_ACCOUNTING = Logger.getLogger("accounting");
+
+    private static final Logger ACCOUNTING_LOG = LoggerFactory.getLogger("accounting");
 
     // cd
-    private int _charSlot;
+    private int charSlot;
 
     @SuppressWarnings("unused")
-    private int _unk1; // new in C4
+    private int unk1; // new in C4
 
     @SuppressWarnings("unused")
-    private int _unk2; // new in C4
+    private int unk2; // new in C4
 
     @SuppressWarnings("unused")
-    private int _unk3; // new in C4
+    private int unk3; // new in C4
 
     @SuppressWarnings("unused")
-    private int _unk4; // new in C4
+    private int unk4; // new in C4
 
     @Override
     protected void readImpl() {
-        _charSlot = readInt();
-        _unk1 = readShort();
-        _unk2 = readInt();
-        _unk3 = readInt();
-        _unk4 = readInt();
+        charSlot = readInt();
+        unk1 = readShort();
+        unk2 = readInt();
+        unk3 = readInt();
+        unk4 = readInt();
     }
 
     @Override
@@ -103,7 +105,7 @@ public class CharacterSelect extends ClientPacket {
                 // Should always be null.
                 // But if not then this is repeated packet and nothing should be done here.
                 if (client.getPlayer() == null) {
-                    final CharacterInfoHolder info = client.getCharSelection(_charSlot);
+                    final CharacterInfoHolder info = client.getCharSelection(charSlot);
                     if (info == null) {
                         return;
                     }
@@ -137,7 +139,7 @@ public class CharacterSelect extends ClientPacket {
                         return;
                     }
 
-                    if (client.getCharSelection(_charSlot).getAccessLevel() < 100) {
+                    if (client.getCharSelection(charSlot).getAccessLevel() < 100) {
                         if ((player != null)
                                 && player.hasPremiumStatus()
                                 && (DualboxCheckConfig.DUALBOX_CHECK_MAX_OFFLINEPLAY_PREMIUM_PER_IP > 0)
@@ -201,7 +203,7 @@ public class CharacterSelect extends ClientPacket {
                     }
 
                     // Load up character from disk.
-                    final Player cha = client.load(_charSlot);
+                    final Player cha = client.load(charSlot);
                     if (cha == null) {
                         return; // handled in GameClient
                     }
@@ -231,7 +233,12 @@ public class CharacterSelect extends ClientPacket {
                     if (EventDispatcher.getInstance().hasListener(EventType.ON_PLAYER_SELECT, Containers.Players())) {
                         final TerminateReturn terminate = EventDispatcher.getInstance()
                                 .notifyEvent(
-                                        new OnPlayerSelect(cha, cha.getObjectId(), cha.getName(), client),
+                                        OnPlayerSelect.builder()
+                                                .player(cha)
+                                                .objectId(cha.getObjectId())
+                                                .name(cha.getName())
+                                                .client(client)
+                                                .build(),
                                         Containers.Players(),
                                         TerminateReturn.class);
                         if ((terminate != null) && terminate.terminate()) {
@@ -248,7 +255,7 @@ public class CharacterSelect extends ClientPacket {
                 client.getPlayerLock().unlock();
             }
 
-            LOGGER_ACCOUNTING.info("Logged in, " + client);
+            ACCOUNTING_LOG.info("Logged in, {}", client);
         }
     }
 }

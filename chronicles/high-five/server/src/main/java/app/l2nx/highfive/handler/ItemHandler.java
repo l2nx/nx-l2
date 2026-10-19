@@ -28,13 +28,13 @@ import java.util.Map;
  * @author UnAfraid
  */
 public class ItemHandler implements IHandler<IItemHandler, EtcItem> {
-    private final Map<String, IItemHandler> _datatable;
+    private final Map<String, IItemHandler> datatable;
 
     /**
      * Constructor of ItemHandler
      */
     protected ItemHandler() {
-        _datatable = new HashMap<>();
+        datatable = new HashMap<>();
     }
 
     /**
@@ -45,12 +45,12 @@ public class ItemHandler implements IHandler<IItemHandler, EtcItem> {
      */
     @Override
     public void registerHandler(IItemHandler handler) {
-        _datatable.put(handler.getClass().getSimpleName(), handler);
+        datatable.put(handler.getClass().getSimpleName(), handler);
     }
 
     @Override
     public synchronized void removeHandler(IItemHandler handler) {
-        _datatable.remove(handler.getClass().getSimpleName());
+        datatable.remove(handler.getClass().getSimpleName());
     }
 
     /**
@@ -64,7 +64,7 @@ public class ItemHandler implements IHandler<IItemHandler, EtcItem> {
             return null;
         }
 
-        return _datatable.get(item.getHandlerName());
+        return datatable.get(item.getHandlerName());
     }
 
     /**
@@ -73,7 +73,7 @@ public class ItemHandler implements IHandler<IItemHandler, EtcItem> {
      */
     @Override
     public int size() {
-        return _datatable.size();
+        return datatable.size();
     }
 
     /**

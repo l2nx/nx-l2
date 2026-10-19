@@ -48,7 +48,7 @@ import app.l2nx.highfive.util.LocationUtil;
 import app.l2nx.highfive.util.StatSet;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.DateFormatUtils;
 
 /**
@@ -61,9 +61,8 @@ import org.apache.commons.lang3.time.DateFormatUtils;
  * </ul>
  * @author BazookaRpm
  */
+@Slf4j
 public class Valakas extends Script {
-    // Logger.
-    private static final Logger LOGGER = Logger.getLogger(Valakas.class.getName());
 
     // NPCs.
     private static final int VALAKAS = 29028;
@@ -189,9 +188,9 @@ public class Valakas extends Script {
     private static final long DIE_STEP_8_DELAY = 16500L;
 
     // Runtime state.
-    private GrandBoss _valakas;
-    private Playable _currentTarget;
-    private long _lastAttackTime;
+    private GrandBoss valakas;
+    private Playable currentTarget;
+    private long lastAttackTime;
 
     private Valakas() {
         addAttackId(VALAKAS);
@@ -219,23 +218,23 @@ public class Valakas extends Script {
             final double currentHp = info.getDouble("currentHP");
             final double currentMp = info.getDouble("currentMP");
 
-            _valakas = (GrandBoss) addSpawn(VALAKAS, locX, locY, locZ, heading, false, 0);
-            bossManager.addBoss(_valakas);
-            _valakas.setCurrentHpMp(currentHp, currentMp);
-            _valakas.setRunning();
+            valakas = (GrandBoss) addSpawn(VALAKAS, locX, locY, locZ, heading, false, 0);
+            bossManager.addBoss(valakas);
+            valakas.setCurrentHpMp(currentHp, currentMp);
+            valakas.setRunning();
 
             if (status == STATUS_FIGHTING) {
-                _lastAttackTime = System.currentTimeMillis();
-                startQuestTimer(EVT_REGEN_TICK, REGEN_TICK_DELAY, _valakas, null, true);
-                startQuestTimer(EVT_SKILL_TICK, SKILL_TICK_DELAY, _valakas, null, true);
+                lastAttackTime = System.currentTimeMillis();
+                startQuestTimer(EVT_REGEN_TICK, REGEN_TICK_DELAY, valakas, null, true);
+                startQuestTimer(EVT_SKILL_TICK, SKILL_TICK_DELAY, valakas, null, true);
             } else {
-                _valakas.teleToLocation(LOC_VALAKAS_HIDE);
-                _valakas.setInvul(true);
-                _valakas.getAI().setIntentionIdle();
+                valakas.teleToLocation(LOC_VALAKAS_HIDE);
+                valakas.setInvul(true);
+                valakas.getAI().setIntentionIdle();
 
                 if (status == STATUS_WAITING) {
                     final long waitMillis = GrandBossConfig.VALAKAS_WAIT_TIME * 60000L;
-                    startQuestTimer(EVT_START, waitMillis, _valakas, null);
+                    startQuestTimer(EVT_START, waitMillis, valakas, null);
                 }
             }
         }
@@ -396,7 +395,7 @@ public class Valakas extends Script {
             npc.doCast(SKILL_ANTI_STRIDER.getSkill());
         }
 
-        _lastAttackTime = System.currentTimeMillis();
+        lastAttackTime = System.currentTimeMillis();
     }
 
     @Override
@@ -429,7 +428,7 @@ public class Valakas extends Script {
         final long respawnDelay = baseIntervalMillis + getRandom(-randomRangeMillis, randomRangeMillis);
         final long nextRespawnTime = System.currentTimeMillis() + respawnDelay;
 
-        LOGGER.info("Valakas will respawn at: " + DateFormatUtils.format(nextRespawnTime, "dd/MM/yyyy HH:mm:ss"));
+        log.info("Valakas will respawn at: {}", DateFormatUtils.format(nextRespawnTime, "dd/MM/yyyy HH:mm:ss"));
 
         startQuestTimer(EVT_UNLOCK, respawnDelay, null, null);
 
@@ -446,8 +445,8 @@ public class Valakas extends Script {
 
         startQuestTimer(EVT_SKILL_TICK, 1000L, npc, null);
 
-        if ((ZONE_GROUND != null) && !ZONE_GROUND.isCharacterInZone(npc) && (_valakas != null)) {
-            _valakas.teleToLocation(LOC_VALAKAS_LAIR);
+        if ((ZONE_GROUND != null) && !ZONE_GROUND.isCharacterInZone(npc) && (valakas != null)) {
+            valakas.teleToLocation(LOC_VALAKAS_LAIR);
         }
     }
 
@@ -455,14 +454,14 @@ public class Valakas extends Script {
      * Spawns dormant Valakas and initializes boss status to DORMANT.
      */
     private void spawnDormantValakas() {
-        _valakas = (GrandBoss) addSpawn(VALAKAS, LOC_VALAKAS_REGEN, false, 0);
-        _valakas.teleToLocation(LOC_VALAKAS_HIDE);
-        _valakas.setInvul(true);
-        _valakas.setRunning();
-        _valakas.getAI().setIntentionIdle();
+        valakas = (GrandBoss) addSpawn(VALAKAS, LOC_VALAKAS_REGEN, false, 0);
+        valakas.teleToLocation(LOC_VALAKAS_HIDE);
+        valakas.setInvul(true);
+        valakas.setRunning();
+        valakas.getAI().setIntentionIdle();
 
         final GrandBossManager bossManager = GrandBossManager.getInstance();
-        bossManager.addBoss(_valakas);
+        bossManager.addBoss(valakas);
         bossManager.setStatus(VALAKAS, STATUS_DORMANT);
     }
 
@@ -471,7 +470,7 @@ public class Valakas extends Script {
      * @param npc Valakas instance.
      */
     private void handleEncounterStart(Npc npc) {
-        _lastAttackTime = System.currentTimeMillis();
+        lastAttackTime = System.currentTimeMillis();
         npc.teleToLocation(LOC_VALAKAS_LAIR);
 
         startQuestTimer(EVT_BROADCAST_SPAWN, BROADCAST_SPAWN_DELAY, npc, null);
@@ -494,7 +493,7 @@ public class Valakas extends Script {
     private void handleRegenTick(Npc npc) {
         final GrandBossManager bossManager = GrandBossManager.getInstance();
         if ((bossManager.getStatus(VALAKAS) == STATUS_FIGHTING)
-                && ((_lastAttackTime + INACTIVITY_TIMEOUT) < System.currentTimeMillis())) {
+                && ((lastAttackTime + INACTIVITY_TIMEOUT) < System.currentTimeMillis())) {
             npc.getAI().setIntentionIdle();
             npc.teleToLocation(LOC_VALAKAS_REGEN);
             bossManager.setStatus(VALAKAS, STATUS_DORMANT);
@@ -687,14 +686,14 @@ public class Valakas extends Script {
             return;
         }
 
-        if ((_currentTarget == null)
-                || _currentTarget.isDead()
-                || !npc.isInSurroundingRegion(_currentTarget)
+        if ((currentTarget == null)
+                || currentTarget.isDead()
+                || !npc.isInSurroundingRegion(currentTarget)
                 || (getRandom(10) == 0)) {
-            _currentTarget = getRandomTarget(npc);
+            currentTarget = getRandomTarget(npc);
         }
 
-        if (_currentTarget == null) {
+        if (currentTarget == null) {
             if (getRandom(10) == 0) {
                 final int currentX = npc.getX();
                 final int currentY = npc.getY();
@@ -718,13 +717,13 @@ public class Valakas extends Script {
 
         final int baseRange = chosenSkill.getCastRange();
         final int effectiveRange = (baseRange < 600) ? 600 : baseRange;
-        if (LocationUtil.checkIfInRange(effectiveRange, npc, _currentTarget, true)) {
+        if (LocationUtil.checkIfInRange(effectiveRange, npc, currentTarget, true)) {
             npc.getAI().setIntentionIdle();
             npc.setCastingNow(true);
-            npc.setTarget(_currentTarget);
+            npc.setTarget(currentTarget);
             npc.doCast(chosenSkill);
         } else {
-            npc.getAI().setIntentionFollow(_currentTarget);
+            npc.getAI().setIntentionFollow(currentTarget);
             npc.setCastingNow(false);
         }
     }
@@ -785,9 +784,9 @@ public class Valakas extends Script {
 
     @Override
     public void unload(boolean removeFromList) {
-        if (_valakas != null) {
-            _valakas.deleteMe();
-            _valakas = null;
+        if (valakas != null) {
+            valakas.deleteMe();
+            valakas = null;
         }
 
         super.unload(removeFromList);

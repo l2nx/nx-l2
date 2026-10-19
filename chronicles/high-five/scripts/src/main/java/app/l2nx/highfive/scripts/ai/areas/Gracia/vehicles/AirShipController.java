@@ -44,15 +44,15 @@ import app.l2nx.highfive.network.serverpackets.NpcSay;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
 import app.l2nx.highfive.threads.ThreadPool;
 import java.util.concurrent.Future;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public abstract class AirShipController extends Script {
     protected class DecayTask implements Runnable {
         @Override
         public void run() {
-            if (_dockedShip != null) {
-                _dockedShip.deleteMe();
+            if (dockedShip != null) {
+                dockedShip.deleteMe();
             }
         }
     }
@@ -60,45 +60,44 @@ public abstract class AirShipController extends Script {
     protected class DepartTask implements Runnable {
         @Override
         public void run() {
-            if ((_dockedShip != null) && _dockedShip.isInDock() && !_dockedShip.isMoving()) {
-                if (_departPath != null) {
-                    _dockedShip.executePath(_departPath);
+            if ((dockedShip != null) && dockedShip.isInDock() && !dockedShip.isMoving()) {
+                if (departPath != null) {
+                    dockedShip.executePath(departPath);
                 } else {
-                    _dockedShip.deleteMe();
+                    dockedShip.deleteMe();
                 }
             }
         }
     }
 
-    public static final Logger LOGGER = Logger.getLogger(AirShipController.class.getName());
-    protected int _dockZone = 0;
-    protected int _shipSpawnX = 0;
-    protected int _shipSpawnY = 0;
+    protected int dockZone = 0;
+    protected int shipSpawnX = 0;
+    protected int shipSpawnY = 0;
 
-    protected int _shipSpawnZ = 0;
+    protected int shipSpawnZ = 0;
 
-    protected int _shipHeading = 0;
-    protected Location _oustLoc = null;
-    protected int _locationId = 0;
+    protected int shipHeading = 0;
+    protected Location oustLoc = null;
+    protected int locationId = 0;
 
-    protected VehiclePathPoint[] _arrivalPath = null;
-    protected VehiclePathPoint[] _departPath = null;
+    protected VehiclePathPoint[] arrivalPath = null;
+    protected VehiclePathPoint[] departPath = null;
 
-    protected VehiclePathPoint[][] _teleportsTable = null;
+    protected VehiclePathPoint[][] teleportsTable = null;
 
-    protected int[] _fuelTable = null;
+    protected int[] fuelTable = null;
 
-    protected Movie _movie = null;
+    protected Movie movie = null;
 
-    protected boolean _isBusy = false;
-    protected ControllableAirShip _dockedShip = null;
-    private final Runnable _decayTask = new DecayTask();
+    protected boolean busy = false;
+    protected ControllableAirShip dockedShip = null;
+    private final Runnable decayTask = new DecayTask();
 
-    private final Runnable _departTask = new DepartTask();
+    private final Runnable departTask = new DepartTask();
 
-    private Future<?> _departSchedule = null;
+    private Future<?> departSchedule = null;
 
-    private NpcSay _arrivalMessage = null;
+    private NpcSay arrivalMessage = null;
     private static final int DEPART_INTERVAL = 300000; // 5 min
     private static final int LICENSE = 13559;
 
@@ -114,15 +113,15 @@ public abstract class AirShipController extends Script {
     @Override
     public String onEvent(String event, Npc npc, Player player) {
         if ("summon".equalsIgnoreCase(event)) {
-            if (_dockedShip != null) {
-                if (_dockedShip.isOwner(player)) {
+            if (dockedShip != null) {
+                if (dockedShip.isOwner(player)) {
                     player.sendPacket(SystemMessageId.THE_CLAN_OWNED_AIRSHIP_ALREADY_EXISTS);
                 }
 
                 return null;
             }
 
-            if (_isBusy) {
+            if (busy) {
                 player.sendPacket(SystemMessageId.ANOTHER_AIRSHIP_HAS_ALREADY_BEEN_SUMMONED_PLEASE_TRY_AGAIN_LATER);
                 return null;
             }
@@ -151,25 +150,25 @@ public abstract class AirShipController extends Script {
                 return null;
             }
 
-            _isBusy = true;
+            busy = true;
             final AirShip ship = AirShipManager.getInstance()
-                    .getNewAirShip(_shipSpawnX, _shipSpawnY, _shipSpawnZ, _shipHeading, ownerId);
+                    .getNewAirShip(shipSpawnX, shipSpawnY, shipSpawnZ, shipHeading, ownerId);
             if (ship != null) {
-                if (_arrivalPath != null) {
-                    ship.executePath(_arrivalPath);
+                if (arrivalPath != null) {
+                    ship.executePath(arrivalPath);
                 }
 
-                if (_arrivalMessage == null) {
-                    _arrivalMessage = new NpcSay(
+                if (arrivalMessage == null) {
+                    arrivalMessage = new NpcSay(
                             npc.getObjectId(),
                             ChatType.NPC_SHOUT,
                             npc.getId(),
                             NpcStringId.THE_AIRSHIP_HAS_BEEN_SUMMONED_IT_WILL_AUTOMATICALLY_DEPART_IN_5_MINUTES);
                 }
 
-                npc.broadcastPacket(_arrivalMessage);
+                npc.broadcastPacket(arrivalMessage);
             } else {
-                _isBusy = false;
+                busy = false;
             }
 
             return null;
@@ -212,8 +211,8 @@ public abstract class AirShipController extends Script {
                 return null;
             }
 
-            if (_dockedShip != null) {
-                _dockedShip.addPassenger(player);
+            if (dockedShip != null) {
+                dockedShip.addPassenger(player);
             }
 
             return null;
@@ -252,35 +251,35 @@ public abstract class AirShipController extends Script {
 
     @Override
     public void onEnterZone(Creature creature, ZoneType zone) {
-        if ((creature instanceof ControllableAirShip) && (_dockedShip == null)) {
-            _dockedShip = (ControllableAirShip) creature;
-            _dockedShip.setInDock(_dockZone);
-            _dockedShip.setOustLoc(_oustLoc);
+        if ((creature instanceof ControllableAirShip) && (dockedShip == null)) {
+            dockedShip = (ControllableAirShip) creature;
+            dockedShip.setInDock(dockZone);
+            dockedShip.setOustLoc(oustLoc);
 
             // Ship is not empty - display movie to passengers and dock
-            if (!_dockedShip.isEmpty()) {
-                if (_movie != null) {
-                    playMovie(_dockedShip.getPassengers(), _movie);
+            if (!dockedShip.isEmpty()) {
+                if (movie != null) {
+                    playMovie(dockedShip.getPassengers(), movie);
                 }
 
-                ThreadPool.schedule(_decayTask, 1000);
+                ThreadPool.schedule(decayTask, 1000);
             } else {
-                _departSchedule = ThreadPool.schedule(_departTask, DEPART_INTERVAL);
+                departSchedule = ThreadPool.schedule(departTask, DEPART_INTERVAL);
             }
         }
     }
 
     @Override
     public void onExitZone(Creature creature, ZoneType zone) {
-        if ((creature instanceof ControllableAirShip) && creature.equals(_dockedShip)) {
-            if (_departSchedule != null) {
-                _departSchedule.cancel(false);
-                _departSchedule = null;
+        if ((creature instanceof ControllableAirShip) && creature.equals(dockedShip)) {
+            if (departSchedule != null) {
+                departSchedule.cancel(false);
+                departSchedule = null;
             }
 
-            _dockedShip.setInDock(0);
-            _dockedShip = null;
-            _isBusy = false;
+            dockedShip.setInDock(0);
+            dockedShip = null;
+            busy = false;
         }
     }
 
@@ -290,67 +289,73 @@ public abstract class AirShipController extends Script {
     }
 
     protected void validityCheck() {
-        final ScriptZone zone = ZoneManager.getInstance().getZoneById(_dockZone, ScriptZone.class);
+        final ScriptZone zone = ZoneManager.getInstance().getZoneById(dockZone, ScriptZone.class);
         if (zone == null) {
-            LOGGER.log(Level.WARNING, getName() + ": Invalid zone " + _dockZone + ", controller disabled");
-            _isBusy = true;
+            log.warn("{}: Invalid zone {}, controller disabled", getName(), dockZone);
+            busy = true;
             return;
         }
 
         VehiclePathPoint p;
-        if (_arrivalPath != null) {
-            if (_arrivalPath.length == 0) {
-                LOGGER.log(Level.WARNING, getName() + ": Zero arrival path length.");
-                _arrivalPath = null;
+        if (arrivalPath != null) {
+            if (arrivalPath.length == 0) {
+                log.warn("{}: Zero arrival path length.", getName());
+                arrivalPath = null;
             } else {
-                p = _arrivalPath[_arrivalPath.length - 1];
+                p = arrivalPath[arrivalPath.length - 1];
                 if (!zone.isInsideZone(p.getLocation())) {
-                    LOGGER.log(
-                            Level.WARNING,
-                            getName() + ": Arrival path finish point (" + p.getX() + "," + p.getY() + "," + p.getZ()
-                                    + ") not in zone " + _dockZone);
-                    _arrivalPath = null;
+                    log.warn(
+                            "{}: Arrival path finish point ({},{},{}) not in zone {}",
+                            getName(),
+                            p.getX(),
+                            p.getY(),
+                            p.getZ(),
+                            dockZone);
+                    arrivalPath = null;
                 }
             }
         }
 
-        if ((_arrivalPath == null)
+        if ((arrivalPath == null)
                 && !ZoneManager.getInstance()
-                        .getZoneById(_dockZone, ScriptZone.class)
-                        .isInsideZone(_shipSpawnX, _shipSpawnY, _shipSpawnZ)) {
-            LOGGER.log(
-                    Level.WARNING,
-                    getName() + ": Arrival path is null and spawn point not in zone " + _dockZone
-                            + ", controller disabled");
-            _isBusy = true;
+                        .getZoneById(dockZone, ScriptZone.class)
+                        .isInsideZone(shipSpawnX, shipSpawnY, shipSpawnZ)) {
+            log.warn(
+                    "{}: Arrival path is null and spawn point not in zone {}, controller disabled",
+                    getName(),
+                    dockZone);
+            busy = true;
             return;
         }
 
-        if (_departPath != null) {
-            if (_departPath.length == 0) {
-                LOGGER.log(Level.WARNING, getName() + ": Zero depart path length.");
-                _departPath = null;
+        if (departPath != null) {
+            if (departPath.length == 0) {
+                log.warn("{}: Zero depart path length.", getName());
+                departPath = null;
             } else {
-                p = _departPath[_departPath.length - 1];
+                p = departPath[departPath.length - 1];
                 if (zone.isInsideZone(p.getLocation())) {
-                    LOGGER.log(
-                            Level.WARNING,
-                            getName() + ": Departure path finish point (" + p.getX() + "," + p.getY() + "," + p.getZ()
-                                    + ") in zone " + _dockZone);
-                    _departPath = null;
+                    log.warn(
+                            "{}: Departure path finish point ({},{},{}) in zone {}",
+                            getName(),
+                            p.getX(),
+                            p.getY(),
+                            p.getZ(),
+                            dockZone);
+                    departPath = null;
                 }
             }
         }
 
-        if (_teleportsTable != null) {
-            if (_fuelTable == null) {
-                LOGGER.log(Level.WARNING, getName() + ": Fuel consumption not defined.");
+        if (teleportsTable != null) {
+            if (fuelTable == null) {
+                log.warn("{}: Fuel consumption not defined.", getName());
             } else {
-                if (_teleportsTable.length != _fuelTable.length) {
-                    LOGGER.log(Level.WARNING, getName() + ": Fuel consumption not match teleport list.");
+                if (teleportsTable.length != fuelTable.length) {
+                    log.warn("{}: Fuel consumption not match teleport list.", getName());
                 } else {
                     AirShipManager.getInstance()
-                            .registerAirShipTeleportList(_dockZone, _locationId, _teleportsTable, _fuelTable);
+                            .registerAirShipTeleportList(dockZone, locationId, teleportsTable, fuelTable);
                 }
             }
         }

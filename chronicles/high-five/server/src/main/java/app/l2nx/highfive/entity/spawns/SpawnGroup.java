@@ -26,51 +26,48 @@ import app.l2nx.highfive.taskmanagers.SpawnGroupTaskManager;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.logging.Logger;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * A group of NPC spawn entries sharing an entry selection policy, the runtime equivalent of a retail npcmaker.<br>
  * Reservations are made under the group monitor and the actual spawning happens outside of it.
  * @author Altur
  */
+@Slf4j
 public class SpawnGroup {
-    private static final Logger LOGGER = Logger.getLogger(SpawnGroup.class.getName());
 
-    private final String _name;
-    private final SpawnSelection _selection;
-    private final int _maximumNpc;
-    private final List<SpawnGroupEntry> _entries = new ArrayList<>();
-    private int _aliveOrReserved = 0;
-    private boolean _active = true;
+    @Getter
+    private final String name;
+
+    @Getter
+    private final SpawnSelection selection;
+
+    @Getter
+    private final int maximumNpc;
+
+    @Getter
+    private final List<SpawnGroupEntry> entries = new ArrayList<>();
+
+    private int aliveOrReserved = 0;
+
+    @Getter
+    @Setter
+    private boolean active = true;
 
     public SpawnGroup(String name, SpawnSelection selection, int maximumNpc) {
-        _name = name;
-        _selection = selection;
-        _maximumNpc = maximumNpc;
-    }
-
-    public String getName() {
-        return _name;
-    }
-
-    public SpawnSelection getSelection() {
-        return _selection;
-    }
-
-    public int getMaximumNpc() {
-        return _maximumNpc;
-    }
-
-    public List<SpawnGroupEntry> getEntries() {
-        return _entries;
+        this.name = name;
+        this.selection = selection;
+        this.maximumNpc = maximumNpc;
     }
 
     public void addEntry(SpawnGroupEntry entry) {
-        _entries.add(entry);
+        entries.add(entry);
     }
 
     public synchronized int getAliveOrReserved() {
-        return _aliveOrReserved;
+        return aliveOrReserved;
     }
 
     /**
@@ -81,7 +78,7 @@ public class SpawnGroup {
      * @return {@code true} when the reservation was made, {@code false} when quota or cap would be exceeded
      */
     public synchronized boolean tryReserve(SpawnGroupEntry entry, int count) {
-        if ((_selection != SpawnSelection.RANDOM) && (_maximumNpc > 0) && ((_aliveOrReserved + count) > _maximumNpc)) {
+        if ((selection != SpawnSelection.RANDOM) && (maximumNpc > 0) && ((aliveOrReserved + count) > maximumNpc)) {
             return false;
         }
 
@@ -90,7 +87,7 @@ public class SpawnGroup {
         }
 
         entry.setAliveOrReserved(entry.getAliveOrReserved() + count);
-        _aliveOrReserved += count;
+        aliveOrReserved += count;
         return true;
     }
 
@@ -101,7 +98,7 @@ public class SpawnGroup {
      */
     public synchronized void release(SpawnGroupEntry entry, int count) {
         entry.setAliveOrReserved(entry.getAliveOrReserved() - count);
-        _aliveOrReserved -= count;
+        aliveOrReserved -= count;
     }
 
     /**
@@ -109,15 +106,15 @@ public class SpawnGroup {
      * @return the number of NPC units spawned
      */
     public int initialSpawn() {
-        if (_entries.isEmpty()) {
-            LOGGER.warning(getClass().getSimpleName() + ": " + _name + " has no valid entries to spawn.");
+        if (entries.isEmpty()) {
+            log.warn("{} has no valid entries to spawn.", name);
             return 0;
         }
 
         int spawned = 0;
-        switch (_selection) {
+        switch (selection) {
             case ALL: {
-                for (SpawnGroupEntry entry : _entries) {
+                for (SpawnGroupEntry entry : entries) {
                     if (tryReserve(entry, entry.getTotal())) {
                         spawned += spawnUnits(entry, entry.getTotal());
                     }
@@ -128,7 +125,7 @@ public class SpawnGroup {
                 // A single roll over the entry index, the whole quota of the rolled entry spawns. Nothing is filled up
                 // and the cap is not read.
                 final SpawnGroupEntry entry =
-                        _entries.get(ThreadLocalRandom.current().nextInt(_entries.size()));
+                        entries.get(ThreadLocalRandom.current().nextInt(entries.size()));
                 if (tryReserve(entry, entry.getTotal())) {
                     spawned += spawnUnits(entry, entry.getTotal());
                 }
@@ -137,9 +134,9 @@ public class SpawnGroup {
             case RANDOM_FILL: {
                 // The cap is the roll counter. Rolls use replacement and no retry, a roll into a full entry is simply
                 // lost.
-                for (int i = 0; i < _maximumNpc; i++) {
+                for (int i = 0; i < maximumNpc; i++) {
                     final SpawnGroupEntry entry =
-                            _entries.get(ThreadLocalRandom.current().nextInt(_entries.size()));
+                            entries.get(ThreadLocalRandom.current().nextInt(entries.size()));
                     if (tryReserve(entry, 1)) {
                         spawned += spawnUnits(entry, 1);
                     }
@@ -157,7 +154,7 @@ public class SpawnGroup {
      * @param spawn the spawn slot the dead unit belonged to
      */
     public void onUnitDeath(Spawn spawn) {
-        if (_selection == SpawnSelection.ALL) {
+        if (selection == SpawnSelection.ALL) {
             // ALL slots respawn themselves with their fixed species, the unit stays reserved.
             return;
         }
@@ -169,15 +166,15 @@ public class SpawnGroup {
 
         synchronized (this) {
             deadEntry.setAliveOrReserved(deadEntry.getAliveOrReserved() - 1);
-            _aliveOrReserved--;
+            aliveOrReserved--;
         }
 
-        if (!_active) {
+        if (!active) {
             // Deactivated groups keep their census truthful but stop replacing dead units.
             return;
         }
 
-        final SpawnGroupEntry rolled = _entries.get(ThreadLocalRandom.current().nextInt(_entries.size()));
+        final SpawnGroupEntry rolled = entries.get(ThreadLocalRandom.current().nextInt(entries.size()));
         if (tryReserve(rolled, 1)) {
             // Reserve now, materialize later. The delay comes from the rolled entry, not from the dead one.
             final int respawnDelay = rolled.getRespawnDelay();
@@ -195,24 +192,12 @@ public class SpawnGroup {
         }
     }
 
-    public boolean isActive() {
-        return _active;
-    }
-
-    /**
-     * Enables or disables the replacement of dead units, used by the unspawn admin commands.
-     * @param active {@code false} to stop replacing dead units
-     */
-    public void setActive(boolean active) {
-        _active = active;
-    }
-
     /**
      * @param spawn the spawn slot to look up
      * @return the entry owning the given slot, or {@code null} when it belongs to another group
      */
     public SpawnGroupEntry getEntryBySlot(Spawn spawn) {
-        for (SpawnGroupEntry entry : _entries) {
+        for (SpawnGroupEntry entry : entries) {
             for (Spawn slot : entry.getSlots()) {
                 // Identity, not Location equality: slot coordinates mutate and can coincide.
                 if (slot == spawn) {
@@ -231,7 +216,7 @@ public class SpawnGroup {
      * @return the number of NPC units spawned
      */
     public int spawnUnits(SpawnGroupEntry entry, int count) {
-        if (!_active) {
+        if (!active) {
             // A pending replacement dequeued while the group was being stopped must not materialize.
             release(entry, count);
             return 0;

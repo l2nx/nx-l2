@@ -30,21 +30,21 @@ import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.network.buffer.WriteBuffer;
 
 public class MyTargetSelected extends ServerPacket {
-    private final int _objectId;
-    private final int _color;
+    private final int objectId;
+    private final int color;
 
     public MyTargetSelected(Player player, Creature target) {
-        _objectId = (target instanceof ControllableAirShip)
+        objectId = (target instanceof ControllableAirShip)
                 ? ((ControllableAirShip) target).getHelmObjectId()
                 : target.getObjectId();
-        _color = target.isAutoAttackable(player) ? (player.getLevel() - target.getLevel()) : 0;
+        color = target.isAutoAttackable(player) ? (player.getLevel() - target.getLevel()) : 0;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.MY_TARGET_SELECTED.writeId(this, buffer);
-        buffer.writeInt(_objectId);
-        buffer.writeShort(_color);
+        buffer.writeInt(objectId);
+        buffer.writeShort(color);
         buffer.writeInt(0);
     }
 }

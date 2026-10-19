@@ -42,42 +42,42 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author Mobius
  */
+@Slf4j
 public class PremiumManager {
-    private static final Logger LOGGER = Logger.getLogger(PremiumManager.class.getName());
 
     private static final String LOAD_SQL = "SELECT account_name,enddate FROM account_premium WHERE account_name = ?";
     private static final String UPDATE_SQL = "REPLACE INTO account_premium (account_name,enddate) VALUE (?,?)";
     private static final String DELETE_SQL = "DELETE FROM account_premium WHERE account_name = ?";
 
     class PremiumExpireTask implements Runnable {
-        final Player _player;
+        final Player player;
 
         PremiumExpireTask(Player player) {
-            _player = player;
+            this.player = player;
         }
 
         @Override
         public void run() {
-            _player.setPremiumStatus(false);
+            player.setPremiumStatus(false);
         }
     }
 
     // Data Cache
-    private final Map<String, Long> _premiumData = new ConcurrentHashMap<>();
+    private final Map<String, Long> premiumData = new ConcurrentHashMap<>();
 
     // expireTasks
-    private final Map<String, ScheduledFuture<?>> _expiretasks = new ConcurrentHashMap<>();
+    private final Map<String, ScheduledFuture<?>> expiretasks = new ConcurrentHashMap<>();
 
     // Listeners
-    private final ListenersContainer _listenerContainer = Containers.Players();
+    private final ListenersContainer listenerContainer = Containers.Players();
 
-    private final Consumer<OnPlayerLogin> _playerLoginEvent = event -> {
-        final Player player = event.getPlayer();
+    private final Consumer<OnPlayerLogin> playerLoginEvent = event -> {
+        final Player player = event.player();
         final String accountName =
                 PremiumSystemConfig.ACCOUNT_WIDE_PREMIUM ? player.getAccountName() : player.getName();
         loadPremiumData(accountName);
@@ -91,15 +91,15 @@ public class PremiumManager {
         }
     };
 
-    private final Consumer<OnPlayerLogout> _playerLogoutEvent = event -> {
-        stopExpireTask(event.getPlayer());
+    private final Consumer<OnPlayerLogout> playerLogoutEvent = event -> {
+        stopExpireTask(event.player());
     };
 
     protected PremiumManager() {
-        _listenerContainer.addListener(
-                new ConsumerEventListener(_listenerContainer, EventType.ON_PLAYER_LOGIN, _playerLoginEvent, this));
-        _listenerContainer.addListener(
-                new ConsumerEventListener(_listenerContainer, EventType.ON_PLAYER_LOGOUT, _playerLogoutEvent, this));
+        listenerContainer.addListener(
+                new ConsumerEventListener(listenerContainer, EventType.ON_PLAYER_LOGIN, playerLoginEvent, this));
+        listenerContainer.addListener(
+                new ConsumerEventListener(listenerContainer, EventType.ON_PLAYER_LOGOUT, playerLogoutEvent, this));
     }
 
     /**
@@ -107,7 +107,7 @@ public class PremiumManager {
      * @param delay
      */
     private void startExpireTask(Player player, long delay) {
-        _expiretasks.put(
+        expiretasks.put(
                 PremiumSystemConfig.ACCOUNT_WIDE_PREMIUM
                         ? player.getAccountName().toLowerCase()
                         : player.getName().toLowerCase(),
@@ -118,7 +118,7 @@ public class PremiumManager {
      * @param player
      */
     private void stopExpireTask(Player player) {
-        final ScheduledFuture<?> task = _expiretasks.remove(
+        final ScheduledFuture<?> task = expiretasks.remove(
                 PremiumSystemConfig.ACCOUNT_WIDE_PREMIUM
                         ? player.getAccountName().toLowerCase()
                         : player.getName().toLowerCase());
@@ -133,16 +133,16 @@ public class PremiumManager {
             stmt.setString(1, accountName.toLowerCase());
             try (ResultSet rset = stmt.executeQuery()) {
                 while (rset.next()) {
-                    _premiumData.put(rset.getString(1).toLowerCase(), rset.getLong(2));
+                    premiumData.put(rset.getString(1).toLowerCase(), rset.getLong(2));
                 }
             }
         } catch (SQLException e) {
-            LOGGER.warning("Problem with PremiumManager: " + e.getMessage());
+            log.warn("Problem with PremiumManager: {}", e.getMessage());
         }
     }
 
     public long getPremiumExpiration(String accountName) {
-        return _premiumData.getOrDefault(accountName.toLowerCase(), 0L);
+        return premiumData.getOrDefault(accountName.toLowerCase(), 0L);
     }
 
     public void addPremiumTime(String accountName, int timeValue, TimeUnit timeUnit) {
@@ -160,11 +160,11 @@ public class PremiumManager {
             stmt.setLong(2, newPremiumExpiration);
             stmt.execute();
         } catch (SQLException e) {
-            LOGGER.warning("Problem with PremiumManager: " + e.getMessage());
+            log.warn("Problem with PremiumManager: {}", e.getMessage());
         }
 
         // UPDATE CACHE
-        _premiumData.put(accountName.toLowerCase(), newPremiumExpiration);
+        premiumData.put(accountName.toLowerCase(), newPremiumExpiration);
 
         // UPDATE PlAYER PREMIUMSTATUS
         for (Player player : World.getPlayers()) {
@@ -191,7 +191,7 @@ public class PremiumManager {
         }
 
         // UPDATE CACHE
-        _premiumData.remove(accountName.toLowerCase());
+        premiumData.remove(accountName.toLowerCase());
 
         // UPDATE DATABASE
         try (Connection con = DatabaseFactory.getConnection();
@@ -199,7 +199,7 @@ public class PremiumManager {
             stmt.setString(1, accountName.toLowerCase());
             stmt.execute();
         } catch (SQLException e) {
-            LOGGER.warning("Problem with PremiumManager: " + e.getMessage());
+            log.warn("Problem with PremiumManager: {}", e.getMessage());
         }
     }
 

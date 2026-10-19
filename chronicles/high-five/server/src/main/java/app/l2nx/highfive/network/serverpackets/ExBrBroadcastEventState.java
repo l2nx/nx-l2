@@ -34,19 +34,19 @@ public class ExBrBroadcastEventState extends ServerPacket {
     public static final int RAISING_RUDOLPH = 20091225; // event state (0 - hide, 1 - show)
     public static final int LOVERS_JUBILEE = 20100214; // event state (0 - hide, 1 - show)
 
-    private final int _eventId;
-    private final int _eventState;
-    private int _param0;
-    private int _param1;
-    private int _param2;
-    private int _param3;
-    private int _param4;
-    private String _param5;
-    private String _param6;
+    private final int eventId;
+    private final int eventState;
+    private int param0;
+    private int param1;
+    private int param2;
+    private int param3;
+    private int param4;
+    private String param5;
+    private String param6;
 
     public ExBrBroadcastEventState(int eventId, int eventState) {
-        _eventId = eventId;
-        _eventState = eventState;
+        this.eventId = eventId;
+        this.eventState = eventState;
     }
 
     public ExBrBroadcastEventState(
@@ -59,28 +59,28 @@ public class ExBrBroadcastEventState extends ServerPacket {
             int param4,
             String param5,
             String param6) {
-        _eventId = eventId;
-        _eventState = eventState;
-        _param0 = param0;
-        _param1 = param1;
-        _param2 = param2;
-        _param3 = param3;
-        _param4 = param4;
-        _param5 = param5;
-        _param6 = param6;
+        this.eventId = eventId;
+        this.eventState = eventState;
+        this.param0 = param0;
+        this.param1 = param1;
+        this.param2 = param2;
+        this.param3 = param3;
+        this.param4 = param4;
+        this.param5 = param5;
+        this.param6 = param6;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_BR_BROADCAST_EVENT_STATE.writeId(this, buffer);
-        buffer.writeInt(_eventId);
-        buffer.writeInt(_eventState);
-        buffer.writeInt(_param0);
-        buffer.writeInt(_param1);
-        buffer.writeInt(_param2);
-        buffer.writeInt(_param3);
-        buffer.writeInt(_param4);
-        buffer.writeString(_param5);
-        buffer.writeString(_param6);
+        buffer.writeInt(eventId);
+        buffer.writeInt(eventState);
+        buffer.writeInt(param0);
+        buffer.writeInt(param1);
+        buffer.writeInt(param2);
+        buffer.writeInt(param3);
+        buffer.writeInt(param4);
+        buffer.writeString(param5);
+        buffer.writeString(param6);
     }
 }

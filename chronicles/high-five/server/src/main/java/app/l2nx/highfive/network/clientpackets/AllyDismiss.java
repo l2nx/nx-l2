@@ -29,16 +29,16 @@ import app.l2nx.highfive.entity.clan.Clan;
 import app.l2nx.highfive.network.SystemMessageId;
 
 public class AllyDismiss extends ClientPacket {
-    private String _clanName;
+    private String clanName;
 
     @Override
     protected void readImpl() {
-        _clanName = readString();
+        clanName = readString();
     }
 
     @Override
     protected void runImpl() {
-        if (_clanName == null) {
+        if (clanName == null) {
             return;
         }
 
@@ -63,7 +63,7 @@ public class AllyDismiss extends ClientPacket {
             return;
         }
 
-        final Clan clan = ClanTable.getInstance().getClanByName(_clanName);
+        final Clan clan = ClanTable.getInstance().getClanByName(clanName);
         if (clan == null) {
             player.sendPacket(SystemMessageId.THAT_CLAN_DOES_NOT_EXIST);
             return;

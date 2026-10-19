@@ -28,37 +28,37 @@ import app.l2nx.network.buffer.WriteBuffer;
  * @author -Wooden-
  */
 public class ExFishingHpRegen extends ServerPacket {
-    private final Creature _creature;
-    private final int _time;
-    private final int _fishHP;
-    private final int _hpMode;
-    private final int _anim;
-    private final int _goodUse;
-    private final int _penalty;
-    private final int _hpBarColor;
+    private final Creature creature;
+    private final int time;
+    private final int fishHP;
+    private final int hpMode;
+    private final int anim;
+    private final int goodUse;
+    private final int penalty;
+    private final int hpBarColor;
 
     public ExFishingHpRegen(
             Creature creature, int time, int fishHP, int hpMode, int goodUse, int anim, int penalty, int hpBarColor) {
-        _creature = creature;
-        _time = time;
-        _fishHP = fishHP;
-        _hpMode = hpMode;
-        _goodUse = goodUse;
-        _anim = anim;
-        _penalty = penalty;
-        _hpBarColor = hpBarColor;
+        this.creature = creature;
+        this.time = time;
+        this.fishHP = fishHP;
+        this.hpMode = hpMode;
+        this.goodUse = goodUse;
+        this.anim = anim;
+        this.penalty = penalty;
+        this.hpBarColor = hpBarColor;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_FISHING_HP_REGEN.writeId(this, buffer);
-        buffer.writeInt(_creature.getObjectId());
-        buffer.writeInt(_time);
-        buffer.writeInt(_fishHP);
-        buffer.writeByte(_hpMode); // 0 = HP stop, 1 = HP raise
-        buffer.writeByte(_goodUse); // 0 = none, 1 = success, 2 = failed
-        buffer.writeByte(_anim); // Anim: 0 = none, 1 = reeling, 2 = pumping
-        buffer.writeInt(_penalty); // Penalty
-        buffer.writeByte(_hpBarColor); // 0 = normal hp bar, 1 = purple hp bar
+        buffer.writeInt(creature.getObjectId());
+        buffer.writeInt(time);
+        buffer.writeInt(fishHP);
+        buffer.writeByte(hpMode); // 0 = HP stop, 1 = HP raise
+        buffer.writeByte(goodUse); // 0 = none, 1 = success, 2 = failed
+        buffer.writeByte(anim); // Anim: 0 = none, 1 = reeling, 2 = pumping
+        buffer.writeInt(penalty); // Penalty
+        buffer.writeByte(hpBarColor); // 0 = normal hp bar, 1 = purple hp bar
     }
 }

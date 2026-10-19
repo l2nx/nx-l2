@@ -99,8 +99,8 @@ public class Keltas extends Script {
     };
 
     // Misc
-    private Monster _spawnedKeltas = null;
-    private final Set<Spawn> _spawnedMonsters = Collections.newSetFromMap(new ConcurrentHashMap<>());
+    private Monster spawnedKeltas = null;
+    private final Set<Spawn> spawnedMonsters = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
     public Keltas() {
         addKillId(KELTAS);
@@ -114,7 +114,7 @@ public class Keltas extends Script {
             spawn.setRespawnDelay(60);
             spawn.setAmount(1);
             spawn.startRespawn();
-            _spawnedMonsters.add(spawn);
+            spawnedMonsters.add(spawn);
         }
 
         for (Location loc : EXECUTIONER_SPAWN_POINTS) {
@@ -123,16 +123,16 @@ public class Keltas extends Script {
             spawn.setRespawnDelay(80);
             spawn.setAmount(1);
             spawn.startRespawn();
-            _spawnedMonsters.add(spawn);
+            spawnedMonsters.add(spawn);
         }
     }
 
     private void despawnMinions() {
-        if (_spawnedMonsters.isEmpty()) {
+        if (spawnedMonsters.isEmpty()) {
             return;
         }
 
-        for (Spawn spawn : _spawnedMonsters) {
+        for (Spawn spawn : spawnedMonsters) {
             spawn.stopRespawn();
             final Npc minion = spawn.getLastSpawn();
             if ((minion != null) && !minion.isDead()) {
@@ -140,13 +140,13 @@ public class Keltas extends Script {
             }
         }
 
-        _spawnedMonsters.clear();
+        spawnedMonsters.clear();
     }
 
     @Override
     public String onEvent(String event, Npc npc, Player player) {
         if (event.equalsIgnoreCase("despawn")) {
-            final Npc keltas = _spawnedKeltas;
+            final Npc keltas = spawnedKeltas;
             if ((keltas != null) && !keltas.isDead()) {
                 keltas.broadcastSay(
                         ChatType.NPC_SHOUT, NpcStringId.THAT_IS_IT_FOR_TODAY_LET_S_RETREAT_EVERYONE_PULL_BACK);
@@ -167,8 +167,8 @@ public class Keltas extends Script {
 
     @Override
     public void onSpawn(Npc npc) {
-        _spawnedKeltas = npc.asMonster();
-        _spawnedKeltas.broadcastSay(ChatType.NPC_SHOUT, NpcStringId.GUYS_SHOW_THEM_OUR_POWER);
+        spawnedKeltas = npc.asMonster();
+        spawnedKeltas.broadcastSay(ChatType.NPC_SHOUT, NpcStringId.GUYS_SHOW_THEM_OUR_POWER);
         spawnMinions();
         startQuestTimer("despawn", 1800000, null, null);
     }

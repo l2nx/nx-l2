@@ -30,25 +30,25 @@ import app.l2nx.highfive.network.holders.TradeItem;
 import app.l2nx.network.buffer.WriteBuffer;
 
 public class PrivateStoreListSell extends AbstractItemPacket {
-    private final Player _player;
-    private final Player _seller;
+    private final Player player;
+    private final Player seller;
 
     public PrivateStoreListSell(Player player, Player seller) {
-        _player = player;
-        _seller = seller;
+        this.player = player;
+        this.seller = seller;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
-        if (_seller.isSellingBuffs()) {
-            SellBuffsManager.getInstance().sendBuffMenu(_player, _seller, 0);
+        if (seller.isSellingBuffs()) {
+            SellBuffsManager.getInstance().sendBuffMenu(player, seller, 0);
         } else {
             ServerPackets.PRIVATE_STORE_SELL_LIST.writeId(this, buffer);
-            buffer.writeInt(_seller.getObjectId());
-            buffer.writeInt(_seller.getSellList().isPackaged());
-            buffer.writeLong(_player.getAdena());
-            buffer.writeInt(_seller.getSellList().getItems().size());
-            for (TradeItem item : _seller.getSellList().getItems()) {
+            buffer.writeInt(seller.getObjectId());
+            buffer.writeInt(seller.getSellList().isPackaged());
+            buffer.writeLong(player.getAdena());
+            buffer.writeInt(seller.getSellList().getItems().size());
+            for (TradeItem item : seller.getSellList().getItems()) {
                 writeItem(item, buffer);
                 buffer.writeLong(item.getPrice());
                 buffer.writeLong(item.getItem().getReferencePrice() * 2);

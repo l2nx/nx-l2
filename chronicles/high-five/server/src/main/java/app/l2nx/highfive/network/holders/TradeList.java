@@ -40,68 +40,48 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.logging.Logger;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author Advi
  */
+@Slf4j
 public class TradeList {
-    private static final Logger LOGGER = Logger.getLogger(TradeList.class.getName());
 
-    private final Player _owner;
-    private Player _partner;
-    private final Set<TradeItem> _items = ConcurrentHashMap.newKeySet();
-    private String _title;
-    private boolean _packaged;
+    @Getter
+    private final Player owner;
 
-    private boolean _confirmed = false;
-    private boolean _locked = false;
+    @Getter
+    @Setter
+    private Player partner;
+
+    private final Set<TradeItem> items = ConcurrentHashMap.newKeySet();
+
+    @Getter
+    @Setter
+    private String title;
+
+    @Getter
+    @Setter
+    private boolean packaged;
+
+    @Getter
+    private boolean confirmed = false;
+
+    @Getter
+    private boolean locked = false;
 
     public TradeList(Player owner) {
-        _owner = owner;
-    }
-
-    public Player getOwner() {
-        return _owner;
-    }
-
-    public void setPartner(Player partner) {
-        _partner = partner;
-    }
-
-    public Player getPartner() {
-        return _partner;
-    }
-
-    public void setTitle(String title) {
-        _title = title;
-    }
-
-    public String getTitle() {
-        return _title;
-    }
-
-    public boolean isLocked() {
-        return _locked;
-    }
-
-    public boolean isConfirmed() {
-        return _confirmed;
-    }
-
-    public boolean isPackaged() {
-        return _packaged;
-    }
-
-    public void setPackaged(boolean value) {
-        _packaged = value;
+        this.owner = owner;
     }
 
     /**
      * @return all items from TradeList
      */
     public Collection<TradeItem> getItems() {
-        return _items;
+        return items;
     }
 
     /**
@@ -111,7 +91,7 @@ public class TradeList {
      */
     public Collection<TradeItem> getAvailableItems(PlayerInventory inventory) {
         final List<TradeItem> list = new ArrayList<>();
-        for (TradeItem item : _items) {
+        for (TradeItem item : items) {
             item = new TradeItem(item, item.getCount(), item.getPrice());
             inventory.adjustAvailableItem(item);
             list.add(item);
@@ -124,7 +104,7 @@ public class TradeList {
      * @return Item List size
      */
     public int getItemCount() {
-        return _items.size();
+        return items.size();
     }
 
     /**
@@ -134,7 +114,7 @@ public class TradeList {
      */
     public TradeItem adjustAvailableItem(Item item) {
         if (item.isStackable()) {
-            for (TradeItem exclItem : _items) {
+            for (TradeItem exclItem : items) {
                 if (exclItem.getItem().getId() == item.getId()) {
                     return item.getCount() <= exclItem.getCount()
                             ? null
@@ -164,7 +144,7 @@ public class TradeList {
      * @return
      */
     public synchronized TradeItem addItem(int objectId, long count, long price) {
-        if (_locked) {
+        if (locked) {
             return null;
         }
 
@@ -174,11 +154,11 @@ public class TradeList {
         }
 
         final Item item = (Item) o;
-        if (!(item.isTradeable() || (_owner.isGM() && GeneralConfig.GM_TRADE_RESTRICTED_ITEMS)) || item.isQuestItem()) {
+        if (!(item.isTradeable() || (owner.isGM() && GeneralConfig.GM_TRADE_RESTRICTED_ITEMS)) || item.isQuestItem()) {
             return null;
         }
 
-        if (!_owner.getInventory().canManipulateWithItemId(item.getId())) {
+        if (!owner.getInventory().canManipulateWithItemId(item.getId())) {
             return null;
         }
 
@@ -194,14 +174,14 @@ public class TradeList {
             return null;
         }
 
-        for (TradeItem checkitem : _items) {
+        for (TradeItem checkitem : items) {
             if (checkitem.getObjectId() == objectId) {
                 return null;
             }
         }
 
         final TradeItem titem = new TradeItem(item, count, price);
-        _items.add(titem);
+        items.add(titem);
 
         // If Player has already confirmed this trade, invalidate the confirmation.
         invalidateConfirmation();
@@ -216,14 +196,14 @@ public class TradeList {
      * @return
      */
     public synchronized TradeItem addItemByItemId(int itemId, long count, long price) {
-        if (_locked) {
-            LOGGER.warning(_owner.getName() + ": Attempt to modify locked TradeList!");
+        if (locked) {
+            log.warn("{}: Attempt to modify locked TradeList!", owner.getName());
             return null;
         }
 
         final ItemTemplate item = ItemData.getInstance().getTemplate(itemId);
         if (item == null) {
-            LOGGER.warning(_owner.getName() + ": Attempt to add invalid item to TradeList!");
+            log.warn("{}: Attempt to add invalid item to TradeList!", owner.getName());
             return null;
         }
 
@@ -232,17 +212,17 @@ public class TradeList {
         }
 
         if (!item.isStackable() && (count > 1)) {
-            LOGGER.warning(_owner.getName() + ": Attempt to add non-stackable item to TradeList with count > 1!");
+            log.warn("{}: Attempt to add non-stackable item to TradeList with count > 1!", owner.getName());
             return null;
         }
 
         if ((MAX_ADENA / count) < price) {
-            LOGGER.warning(_owner.getName() + ": Attempt to overflow adena !");
+            log.warn("{}: Attempt to overflow adena !", owner.getName());
             return null;
         }
 
         final TradeItem titem = new TradeItem(item, count, price);
-        _items.add(titem);
+        items.add(titem);
 
         // If Player has already confirmed this trade, invalidate the confirmation.
         invalidateConfirmation();
@@ -257,19 +237,21 @@ public class TradeList {
      * @return
      */
     private synchronized TradeItem removeItem(int objectId, int itemId, long count) {
-        if (_locked) {
-            LOGGER.warning(_owner.getName() + ": Attempt to modify locked TradeList!");
+        if (locked) {
+            log.warn("{}: Attempt to modify locked TradeList!", owner.getName());
             return null;
         }
 
-        for (TradeItem titem : _items) {
+        for (TradeItem titem : items) {
             if ((titem.getObjectId() == objectId) || (titem.getItem().getId() == itemId)) {
                 // If Partner has already confirmed this trade, invalidate the confirmation.
-                if (_partner != null) {
-                    final TradeList partnerList = _partner.getActiveTradeList();
+                if (partner != null) {
+                    final TradeList partnerList = partner.getActiveTradeList();
                     if (partnerList == null) {
-                        LOGGER.warning(_partner.getName() + ": Trading partner (" + _partner.getName()
-                                + ") is invalid in this trade!");
+                        log.warn(
+                                "{}: Trading partner ({}) is invalid in this trade!",
+                                partner.getName(),
+                                partner.getName());
                         return null;
                     }
 
@@ -280,7 +262,7 @@ public class TradeList {
                 if ((count != -1) && (titem.getCount() > count)) {
                     titem.setCount(titem.getCount() - count);
                 } else {
-                    _items.remove(titem);
+                    items.remove(titem);
                 }
 
                 return titem;
@@ -294,8 +276,8 @@ public class TradeList {
      * Update items in TradeList according their quantity in owner inventory
      */
     public synchronized void updateItems() {
-        for (TradeItem titem : _items) {
-            final Item item = _owner.getInventory().getItemByObjectId(titem.getObjectId());
+        for (TradeItem titem : items) {
+            final Item item = owner.getInventory().getItemByObjectId(titem.getObjectId());
             if ((item == null) || (titem.getCount() < 1)) {
                 removeItem(titem.getObjectId(), -1, -1);
             } else if (item.getCount() < titem.getCount()) {
@@ -308,15 +290,15 @@ public class TradeList {
      * Lockes TradeList, no further changes are allowed
      */
     public void lock() {
-        _locked = true;
+        locked = true;
     }
 
     /**
      * Clears item list
      */
     public synchronized void clear() {
-        _items.clear();
-        _locked = false;
+        items.clear();
+        locked = false;
     }
 
     /**
@@ -324,16 +306,15 @@ public class TradeList {
      * @return : boolean
      */
     public boolean confirm() {
-        if (_confirmed) {
+        if (confirmed) {
             return true; // Already confirmed
         }
 
         // If Partner has already confirmed this trade, proceed exchange.
-        if (_partner != null) {
-            final TradeList partnerList = _partner.getActiveTradeList();
+        if (partner != null) {
+            final TradeList partnerList = partner.getActiveTradeList();
             if (partnerList == null) {
-                LOGGER.warning(_partner.getName() + ": Trading partner (" + _partner.getName()
-                        + ") is invalid in this trade!");
+                log.warn("{}: Trading partner ({}) is invalid in this trade!", partner.getName(), partner.getName());
                 return false;
             }
 
@@ -350,7 +331,7 @@ public class TradeList {
 
             synchronized (sync1) {
                 synchronized (sync2) {
-                    _confirmed = true;
+                    confirmed = true;
                     if (partnerList.isConfirmed()) {
                         partnerList.lock();
                         lock();
@@ -360,22 +341,22 @@ public class TradeList {
 
                         doExchange(partnerList);
                     } else {
-                        _partner.onTradeConfirm(_owner);
+                        partner.onTradeConfirm(owner);
                     }
                 }
             }
         } else {
-            _confirmed = true;
+            confirmed = true;
         }
 
-        return _confirmed;
+        return confirmed;
     }
 
     /**
      * Cancels TradeList confirmation
      */
     private void invalidateConfirmation() {
-        _confirmed = false;
+        confirmed = false;
     }
 
     /**
@@ -384,16 +365,16 @@ public class TradeList {
      */
     private boolean validate() {
         // Check for Owner validity.
-        if ((_owner == null) || (World.getPlayer(_owner.getObjectId()) == null)) {
-            LOGGER.warning("Invalid owner of TradeList");
+        if ((owner == null) || (World.getPlayer(owner.getObjectId()) == null)) {
+            log.warn("Invalid owner of TradeList");
             return false;
         }
 
         // Check for Item validity.
-        for (TradeItem titem : _items) {
-            final Item item = _owner.checkItemManipulation(titem.getObjectId(), titem.getCount(), "transfer");
+        for (TradeItem titem : items) {
+            final Item item = owner.checkItemManipulation(titem.getObjectId(), titem.getCount(), "transfer");
             if ((item == null) || (item.getCount() < 1)) {
-                LOGGER.warning(_owner.getName() + ": Invalid Item in TradeList");
+                log.warn("{}: Invalid Item in TradeList", owner.getName());
                 return false;
             }
         }
@@ -409,20 +390,20 @@ public class TradeList {
      * @return
      */
     private boolean TransferItems(Player partner, InventoryUpdate ownerIU, InventoryUpdate partnerIU) {
-        for (TradeItem titem : _items) {
-            final Item oldItem = _owner.getInventory().getItemByObjectId(titem.getObjectId());
+        for (TradeItem titem : items) {
+            final Item oldItem = owner.getInventory().getItemByObjectId(titem.getObjectId());
             if (oldItem == null) {
                 return false;
             }
 
-            final Item newItem = _owner.getInventory()
+            final Item newItem = owner.getInventory()
                     .transferItem(
                             ItemProcessType.TRANSFER,
                             titem.getObjectId(),
                             titem.getCount(),
                             partner.getInventory(),
-                            _owner,
-                            _partner);
+                            owner,
+                            this.partner);
             if (newItem == null) {
                 return false;
             }
@@ -454,7 +435,7 @@ public class TradeList {
      */
     private int countItemsSlots(Player partner) {
         int slots = 0;
-        for (TradeItem item : _items) {
+        for (TradeItem item : items) {
             if (item == null) {
                 continue;
             }
@@ -480,7 +461,7 @@ public class TradeList {
      */
     private int calcItemsWeight() {
         long weight = 0;
-        for (TradeItem item : _items) {
+        for (TradeItem item : items) {
             if (item == null) {
                 continue;
             }
@@ -508,40 +489,40 @@ public class TradeList {
         if (!getOwner().getInventory().validateWeight(partnerList.calcItemsWeight())
                 || !partnerList.getOwner().getInventory().validateWeight(calcItemsWeight())) {
             partnerList.getOwner().sendPacket(SystemMessageId.YOU_HAVE_EXCEEDED_THE_WEIGHT_LIMIT);
-            _owner.sendPacket(SystemMessageId.YOU_HAVE_EXCEEDED_THE_WEIGHT_LIMIT);
+            owner.sendPacket(SystemMessageId.YOU_HAVE_EXCEEDED_THE_WEIGHT_LIMIT);
         } else if (!getOwner().getInventory().validateCapacity(partnerList.countItemsSlots(getOwner()))
                 || !partnerList.getOwner().getInventory().validateCapacity(countItemsSlots(partnerList.getOwner()))) {
             partnerList.getOwner().sendPacket(SystemMessageId.YOUR_INVENTORY_IS_FULL);
-            _owner.sendPacket(SystemMessageId.YOUR_INVENTORY_IS_FULL);
+            owner.sendPacket(SystemMessageId.YOUR_INVENTORY_IS_FULL);
         } else {
             // Prepare inventory update packet.
             final InventoryUpdate ownerIU = new InventoryUpdate();
             final InventoryUpdate partnerIU = new InventoryUpdate();
 
             // Transfer items
-            partnerList.TransferItems(_owner, partnerIU, ownerIU);
+            partnerList.TransferItems(owner, partnerIU, ownerIU);
             TransferItems(partnerList.getOwner(), ownerIU, partnerIU);
-            _owner.sendInventoryUpdate(ownerIU);
-            _partner.sendInventoryUpdate(partnerIU);
+            owner.sendInventoryUpdate(ownerIU);
+            partner.sendInventoryUpdate(partnerIU);
 
             // The client drops part of the update when the trade window closes, so the full list is sent as well.
-            _owner.sendItemList(false);
-            _partner.sendItemList(false);
+            owner.sendItemList(false);
+            partner.sendItemList(false);
 
             // Update current load as well.
-            StatusUpdate playerSU = new StatusUpdate(_owner);
-            playerSU.addAttribute(StatusUpdate.CUR_LOAD, _owner.getCurrentLoad());
-            _owner.sendPacket(playerSU);
-            playerSU = new StatusUpdate(_partner);
-            playerSU.addAttribute(StatusUpdate.CUR_LOAD, _partner.getCurrentLoad());
-            _partner.sendPacket(playerSU);
+            StatusUpdate playerSU = new StatusUpdate(owner);
+            playerSU.addAttribute(StatusUpdate.CUR_LOAD, owner.getCurrentLoad());
+            owner.sendPacket(playerSU);
+            playerSU = new StatusUpdate(partner);
+            playerSU.addAttribute(StatusUpdate.CUR_LOAD, partner.getCurrentLoad());
+            partner.sendPacket(playerSU);
 
             success = true;
         }
 
         // Finish the trade
         partnerList.getOwner().onTradeFinish(success);
-        _owner.onTradeFinish(success);
+        owner.onTradeFinish(success);
     }
 
     /**
@@ -551,7 +532,7 @@ public class TradeList {
      * @return int: result of trading. 0 - ok, 1 - canceled (no adena), 2 - failed (item error)
      */
     public synchronized int privateStoreBuy(Player player, Set<RequestTrade> items) {
-        if (_locked) {
+        if (locked) {
             return 1;
         }
 
@@ -560,7 +541,7 @@ public class TradeList {
             return 1;
         }
 
-        if (!_owner.isOnline() || !player.isOnline()) {
+        if (!owner.isOnline() || !player.isOnline()) {
             return 1;
         }
 
@@ -568,11 +549,11 @@ public class TradeList {
         int weight = 0;
         long totalPrice = 0;
 
-        final PlayerInventory ownerInventory = _owner.getInventory();
+        final PlayerInventory ownerInventory = owner.getInventory();
         final PlayerInventory playerInventory = player.getInventory();
         for (RequestTrade item : items) {
             boolean found = false;
-            for (TradeItem ti : _items) {
+            for (TradeItem ti : this.items) {
                 if (ti.getObjectId() == item.getObjectId()) {
                     if (ti.getPrice() == item.getPrice()) {
                         if (ti.getCount() < item.getCount()) {
@@ -587,7 +568,7 @@ public class TradeList {
 
             // item with this objectId and price not found in tradelist
             if (!found) {
-                if (_packaged) {
+                if (packaged) {
                     PunishmentManager.handleIllegalPlayerAction(
                             player,
                             "[TradeList.privateStoreBuy()] " + player
@@ -617,7 +598,7 @@ public class TradeList {
             }
 
             // Check if requested item is available for manipulation.
-            final Item oldItem = _owner.checkItemManipulation(item.getObjectId(), item.getCount(), "sell");
+            final Item oldItem = owner.checkItemManipulation(item.getObjectId(), item.getCount(), "sell");
             if ((oldItem == null) || !oldItem.isTradeable()) {
                 // private store sell invalid item - disable it
                 lock();
@@ -652,7 +633,7 @@ public class TradeList {
             return 1;
         }
 
-        if (!playerInventory.reduceAdena(ItemProcessType.BUY, totalPrice, player, _owner)) {
+        if (!playerInventory.reduceAdena(ItemProcessType.BUY, totalPrice, player, owner)) {
             player.sendPacket(SystemMessageId.YOU_DO_NOT_HAVE_ENOUGH_ADENA);
             return 1;
         }
@@ -662,7 +643,7 @@ public class TradeList {
         final InventoryUpdate playerIU = new InventoryUpdate();
         final Item adenaItem = playerInventory.getAdenaInstance();
         playerIU.addItem(adenaItem);
-        ownerInventory.addAdena(ItemProcessType.SELL, totalPrice, _owner, player);
+        ownerInventory.addAdena(ItemProcessType.SELL, totalPrice, owner, player);
 
         // ownerIU.addItem(ownerInventory.getAdenaInstance());
         boolean ok = true;
@@ -674,7 +655,7 @@ public class TradeList {
             }
 
             // Check if requested item is available for manipulation.
-            final Item oldItem = _owner.checkItemManipulation(item.getObjectId(), item.getCount(), "sell");
+            final Item oldItem = owner.checkItemManipulation(item.getObjectId(), item.getCount(), "sell");
             if (oldItem == null) {
                 // Should not happens - validation already done.
                 lock();
@@ -684,7 +665,7 @@ public class TradeList {
 
             // Proceed with item transfer.
             final Item newItem = ownerInventory.transferItem(
-                    ItemProcessType.TRANSFER, item.getObjectId(), item.getCount(), playerInventory, _owner, player);
+                    ItemProcessType.TRANSFER, item.getObjectId(), item.getCount(), playerInventory, owner, player);
             if (newItem == null) {
                 ok = false;
                 break;
@@ -712,18 +693,18 @@ public class TradeList {
                 msg.addString(player.getName());
                 msg.addItemName(newItem);
                 msg.addLong(item.getCount());
-                _owner.sendPacket(msg);
+                owner.sendPacket(msg);
                 msg = new SystemMessage(SystemMessageId.YOU_HAVE_PURCHASED_S3_S2_S_FROM_C1);
-                msg.addString(_owner.getName());
+                msg.addString(owner.getName());
                 msg.addItemName(newItem);
                 msg.addLong(item.getCount());
             } else {
                 msg = new SystemMessage(SystemMessageId.C1_PURCHASED_S2);
                 msg.addString(player.getName());
                 msg.addItemName(newItem);
-                _owner.sendPacket(msg);
+                owner.sendPacket(msg);
                 msg = new SystemMessage(SystemMessageId.YOU_HAVE_PURCHASED_S2_FROM_C1);
-                msg.addString(_owner.getName());
+                msg.addString(owner.getName());
                 msg.addItemName(newItem);
             }
 
@@ -731,7 +712,7 @@ public class TradeList {
         }
 
         // Send inventory update packet.
-        _owner.sendInventoryUpdate(ownerIU);
+        owner.sendInventoryUpdate(ownerIU);
         player.sendInventoryUpdate(playerIU);
         return ok ? 0 : 2;
     }
@@ -743,13 +724,13 @@ public class TradeList {
      * @return : boolean true if success
      */
     public synchronized boolean privateStoreSell(Player player, RequestTrade[] items) {
-        if (_locked || !_owner.isOnline() || !player.isOnline()) {
+        if (locked || !owner.isOnline() || !player.isOnline()) {
             return false;
         }
 
         boolean ok = false;
 
-        final PlayerInventory ownerInventory = _owner.getInventory();
+        final PlayerInventory ownerInventory = owner.getInventory();
         final PlayerInventory playerInventory = player.getInventory();
 
         // Prepare inventory update packet.
@@ -759,7 +740,7 @@ public class TradeList {
         for (RequestTrade item : items) {
             // Searching item in tradelist using itemId.
             boolean found = false;
-            for (TradeItem ti : _items) {
+            for (TradeItem ti : this.items) {
                 if (ti.getItem().getId() == item.getItemId()) {
                     // Price should be the same.
                     if (ti.getPrice() == item.getPrice()) {
@@ -786,15 +767,15 @@ public class TradeList {
                 break;
             }
 
-            final long _totalPrice = totalPrice + (item.getCount() * item.getPrice());
+            final long newTotalPrice = totalPrice + (item.getCount() * item.getPrice());
 
             // Check for overflow of the total price.
-            if ((MAX_ADENA < _totalPrice) || (_totalPrice < 0)) {
+            if ((MAX_ADENA < newTotalPrice) || (newTotalPrice < 0)) {
                 lock();
                 break;
             }
 
-            if (ownerInventory.getAdena() < _totalPrice) {
+            if (ownerInventory.getAdena() < newTotalPrice) {
                 continue;
             }
 
@@ -828,7 +809,7 @@ public class TradeList {
 
             // Proceed with item transfer.
             final Item newItem = playerInventory.transferItem(
-                    ItemProcessType.TRANSFER, objectId, item.getCount(), ownerInventory, player, _owner);
+                    ItemProcessType.TRANSFER, objectId, item.getCount(), ownerInventory, player, owner);
             if (newItem == null) {
                 continue;
             }
@@ -837,7 +818,7 @@ public class TradeList {
             ok = true;
 
             // Increase total price only after successful transaction.
-            totalPrice = _totalPrice;
+            totalPrice = newTotalPrice;
 
             // Add changes to inventory update packets.
             if ((oldItem.getCount() > 0) && (oldItem != newItem)) {
@@ -859,18 +840,18 @@ public class TradeList {
                 msg.addString(player.getName());
                 msg.addItemName(newItem);
                 msg.addLong(item.getCount());
-                _owner.sendPacket(msg);
+                owner.sendPacket(msg);
                 msg = new SystemMessage(SystemMessageId.C1_PURCHASED_S3_S2_S);
-                msg.addString(_owner.getName());
+                msg.addString(owner.getName());
                 msg.addItemName(newItem);
                 msg.addLong(item.getCount());
             } else {
                 msg = new SystemMessage(SystemMessageId.YOU_HAVE_PURCHASED_S2_FROM_C1);
                 msg.addString(player.getName());
                 msg.addItemName(newItem);
-                _owner.sendPacket(msg);
+                owner.sendPacket(msg);
                 msg = new SystemMessage(SystemMessageId.C1_PURCHASED_S2);
-                msg.addString(_owner.getName());
+                msg.addString(owner.getName());
                 msg.addItemName(newItem);
             }
 
@@ -885,15 +866,15 @@ public class TradeList {
             }
 
             final Item adenaItem = ownerInventory.getAdenaInstance();
-            ownerInventory.reduceAdena(ItemProcessType.BUY, totalPrice, _owner, player);
+            ownerInventory.reduceAdena(ItemProcessType.BUY, totalPrice, owner, player);
             ownerIU.addItem(adenaItem);
-            playerInventory.addAdena(ItemProcessType.SELL, totalPrice, player, _owner);
+            playerInventory.addAdena(ItemProcessType.SELL, totalPrice, player, owner);
             playerIU.addItem(playerInventory.getAdenaInstance());
         }
 
         if (ok) {
             // Send inventory update packet.
-            _owner.sendInventoryUpdate(ownerIU);
+            owner.sendInventoryUpdate(ownerIU);
             player.sendInventoryUpdate(playerIU);
         }
 

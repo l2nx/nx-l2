@@ -32,7 +32,7 @@ import java.util.concurrent.ThreadLocalRandom;
  * @author GKR
  */
 public class NpcPersonalAIData {
-    private final Map<String, Map<String, Integer>> _AIData = new HashMap<>();
+    private final Map<String, Map<String, Integer>> aiData = new HashMap<>();
 
     /**
      * Instantiates a new table.
@@ -52,7 +52,7 @@ public class NpcPersonalAIData {
                 spawnDat.setName(Long.toString(ThreadLocalRandom.current().nextLong()));
             }
 
-            _AIData.put(spawnDat.getName(), data);
+            aiData.put(spawnDat.getName(), data);
         }
     }
 
@@ -63,7 +63,7 @@ public class NpcPersonalAIData {
      * @return value of given parameter for given spawn name
      */
     public int getAIValue(String spawnName, String paramName) {
-        return hasAIValue(spawnName, paramName) ? _AIData.get(spawnName).get(paramName) : -1;
+        return hasAIValue(spawnName, paramName) ? aiData.get(spawnName).get(paramName) : -1;
     }
 
     /**
@@ -77,7 +77,7 @@ public class NpcPersonalAIData {
             return false;
         }
 
-        final Map<String, Integer> params = _AIData.get(spawnName);
+        final Map<String, Integer> params = aiData.get(spawnName);
         return (params != null) && params.containsKey(paramName);
     }
 
@@ -88,7 +88,7 @@ public class NpcPersonalAIData {
      * @param spawnName name of spawn
      */
     public void initializeNpcParameters(Npc npc, Spawn spawn, String spawnName) {
-        final Map<String, Integer> map = _AIData.get(spawnName);
+        final Map<String, Integer> map = aiData.get(spawnName);
         if (map != null) {
 
             try {

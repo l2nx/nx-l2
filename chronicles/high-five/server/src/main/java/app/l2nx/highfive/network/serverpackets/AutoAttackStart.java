@@ -27,16 +27,16 @@ import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.network.buffer.WriteBuffer;
 
 public class AutoAttackStart extends ServerPacket {
-    private final int _targetObjId;
+    private final int targetObjId;
 
     public AutoAttackStart(int targetId) {
-        _targetObjId = targetId;
+        targetObjId = targetId;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.AUTO_ATTACK_START.writeId(this, buffer);
-        buffer.writeInt(_targetObjId);
+        buffer.writeInt(targetObjId);
     }
 
     @Override

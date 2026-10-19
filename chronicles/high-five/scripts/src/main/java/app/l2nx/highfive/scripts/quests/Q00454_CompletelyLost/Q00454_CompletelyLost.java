@@ -368,10 +368,10 @@ public class Q00454_CompletelyLost extends Quest {
             }
             case State.CREATED: {
                 if (player.getLevel() >= MIN_LEVEL) {
-                    final int quest_escort = npc.getVariables().getInt("quest_escort", 0);
-                    if (quest_escort == 0) {
+                    final int questEscort = npc.getVariables().getInt("quest_escort", 0);
+                    if (questEscort == 0) {
                         htmltext = "32738-01.htm";
-                    } else if (quest_escort == 99) {
+                    } else if (questEscort == 99) {
                         htmltext = "32738-01c.htm";
                     } else {
                         final Player leader = npc.getVariables().getObject("leader", Player.class);
@@ -559,7 +559,7 @@ public class Q00454_CompletelyLost extends Quest {
     @RegisterType(ListenerRegisterType.NPC)
     @Id(INJURED_SOLDIER)
     public TerminateReturn onAttacked(OnCreatureAttacked event) {
-        final Npc npc = event.getTarget().asNpc();
+        final Npc npc = event.target().asNpc();
         npc.setScriptValue(1);
         npc.getAI().setIntentionIdle();
         npc.getAI().setIntentionActive();

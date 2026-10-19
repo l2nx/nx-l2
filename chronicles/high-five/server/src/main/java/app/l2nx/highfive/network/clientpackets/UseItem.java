@@ -49,7 +49,6 @@ import app.l2nx.highfive.managers.PunishmentManager;
 import app.l2nx.highfive.mechanics.effects.EffectType;
 import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.mechanics.skill.holders.SkillHolder;
-import app.l2nx.highfive.network.PacketLogger;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.serverpackets.ActionFailed;
 import app.l2nx.highfive.network.serverpackets.ExShowScreenMessage;
@@ -57,16 +56,18 @@ import app.l2nx.highfive.network.serverpackets.ExUseSharedGroupItem;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
 import app.l2nx.highfive.threads.ThreadPool;
 import java.util.concurrent.TimeUnit;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class UseItem extends ClientPacket {
-    private int _objectId;
-    private boolean _ctrlPressed;
-    private int _itemId;
+    private int objectId;
+    private boolean ctrlPressed;
+    private int itemId;
 
     @Override
     protected void readImpl() {
-        _objectId = readInt();
-        _ctrlPressed = readInt() != 0;
+        objectId = readInt();
+        ctrlPressed = readInt() != 0;
     }
 
     @Override
@@ -87,7 +88,7 @@ public class UseItem extends ClientPacket {
             return;
         }
 
-        final Item item = player.getInventory().getItemByObjectId(_objectId);
+        final Item item = player.getInventory().getItemByObjectId(objectId);
         if (item == null) {
             return;
         }
@@ -120,10 +121,10 @@ public class UseItem extends ClientPacket {
             return;
         }
 
-        _itemId = item.getId();
+        itemId = item.getId();
 
         // Char cannot use item when dead.
-        if (player.isDead() || !player.getInventory().canManipulateWithItemId(_itemId)) {
+        if (player.isDead() || !player.getInventory().canManipulateWithItemId(itemId)) {
             final SystemMessage sm = new SystemMessage(SystemMessageId.S1_CANNOT_BE_USED_DUE_TO_UNSUITABLE_TERMS);
             sm.addItemName(item);
             player.sendPacket(sm);
@@ -134,7 +135,7 @@ public class UseItem extends ClientPacket {
             return;
         }
 
-        if (player.isFishing() && ((_itemId < 6535) || (_itemId > 6540))) {
+        if (player.isFishing() && ((itemId < 6535) || (itemId > 6540))) {
             // You cannot do anything else while fishing.
             player.sendPacket(SystemMessageId.YOU_CANNOT_DO_THAT_WHILE_FISHING_3);
             return;
@@ -183,12 +184,12 @@ public class UseItem extends ClientPacket {
             }
 
             // Don't allow to put formal wear while a cursed weapon is equipped.
-            if (player.isCursedWeaponEquipped() && (_itemId == 6408)) {
+            if (player.isCursedWeaponEquipped() && (itemId == 6408)) {
                 return;
             }
 
             // Equip or unEquip.
-            if (FortSiegeManager.getInstance().isCombat(_itemId)) {
+            if (FortSiegeManager.getInstance().isCombat(itemId)) {
                 return; // No message.
             }
 
@@ -298,8 +299,7 @@ public class UseItem extends ClientPacket {
                                     && (item.getEnchantLevel()
                                             > EnchantItemGroupsData.getInstance()
                                                     .getMaxArmorEnchant())))) {
-                PacketLogger.info("Over-enchanted (+" + item.getEnchantLevel() + ") " + item + " has been removed from "
-                        + player);
+                log.info("Over-enchanted (+{}) {} has been removed from {}", item.getEnchantLevel(), item, player);
                 player.getInventory().destroyItem(ItemProcessType.DESTROY, item, player, null);
                 if (PlayerConfig.OVER_ENCHANT_PUNISHMENT != IllegalActionPunishmentType.NONE) {
                     player.sendMessage("[Server]: You have over-enchanted items!");
@@ -335,11 +335,11 @@ public class UseItem extends ClientPacket {
         } else {
             final Weapon weaponItem = player.getActiveWeaponItem();
             if (((weaponItem != null) && (weaponItem.getItemType() == WeaponType.FISHINGROD))
-                    && (((_itemId >= 6519) && (_itemId <= 6527))
-                            || ((_itemId >= 7610) && (_itemId <= 7613))
-                            || ((_itemId >= 7807) && (_itemId <= 7809))
-                            || ((_itemId >= 8484) && (_itemId <= 8486))
-                            || ((_itemId >= 8505) && (_itemId <= 8513)))) {
+                    && (((itemId >= 6519) && (itemId <= 6527))
+                            || ((itemId >= 7610) && (itemId <= 7613))
+                            || ((itemId >= 7807) && (itemId <= 7809))
+                            || ((itemId >= 8484) && (itemId <= 8486))
+                            || ((itemId >= 8505) && (itemId <= 8513)))) {
                 player.getInventory().setPaperdollItem(Inventory.PAPERDOLL_LHAND, item);
                 player.broadcastUserInfo();
 
@@ -352,15 +352,14 @@ public class UseItem extends ClientPacket {
             final IItemHandler handler = ItemHandler.getInstance().getHandler(etcItem);
             if (handler == null) {
                 if ((etcItem != null) && (etcItem.getHandlerName() != null)) {
-                    PacketLogger.warning(
-                            "Unmanaged Item handler: " + etcItem.getHandlerName() + " for Item Id: " + _itemId + "!");
+                    log.warn("Unmanaged Item handler: {} for Item Id: {}!", etcItem.getHandlerName(), itemId);
                 }
                 return;
             }
 
             // Item reuse time should be added if the item is successfully used.
             // Skill reuse delay is added by Creature.beginCast when the cast actually starts.
-            if (handler.onItemUse(player, item, _ctrlPressed) && (reuseDelay > 0)) {
+            if (handler.onItemUse(player, item, ctrlPressed) && (reuseDelay > 0)) {
                 player.addTimeStampItem(item, reuseDelay);
                 sendSharedGroupUpdate(player, sharedReuseGroup, reuseDelay, reuseDelay);
             }
@@ -393,7 +392,7 @@ public class UseItem extends ClientPacket {
 
     private void sendSharedGroupUpdate(Player player, int group, long remaining, int reuse) {
         if (group > 0) {
-            player.sendPacket(new ExUseSharedGroupItem(_itemId, group, remaining, reuse));
+            player.sendPacket(new ExUseSharedGroupItem(itemId, group, remaining, reuse));
         }
     }
 }

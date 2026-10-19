@@ -30,25 +30,26 @@ import app.l2nx.highfive.entity.item.enums.ItemProcessType;
 import app.l2nx.highfive.entity.item.instance.Item;
 import app.l2nx.highfive.managers.CursedWeaponsManager;
 import app.l2nx.highfive.managers.PunishmentManager;
-import app.l2nx.highfive.network.PacketLogger;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.serverpackets.InventoryUpdate;
 import app.l2nx.highfive.network.serverpackets.StatusUpdate;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @version $Revision: 1.7.2.4.2.6 $ $Date: 2005/03/27 15:29:30 $
  */
+@Slf4j
 public class RequestDestroyItem extends ClientPacket {
-    private int _objectId;
-    private long _count;
+    private int objectId;
+    private long count;
 
     @Override
     protected void readImpl() {
-        _objectId = readInt();
-        _count = readLong();
+        objectId = readInt();
+        count = readLong();
     }
 
     @Override
@@ -58,13 +59,13 @@ public class RequestDestroyItem extends ClientPacket {
             return;
         }
 
-        if (_count < 1) {
+        if (this.count < 1) {
             player.sendPacket(SystemMessageId.YOU_CANNOT_DESTROY_IT_BECAUSE_THE_NUMBER_IS_INCORRECT);
-            if (_count < 0) {
+            if (this.count < 0) {
                 PunishmentManager.handleIllegalPlayerAction(
                         player,
                         "[RequestDestroyItem] Character " + player.getName() + " of account " + player.getAccountName()
-                                + " tried to destroy item with oid " + _objectId + " but has count < 0!",
+                                + " tried to destroy item with oid " + objectId + " but has count < 0!",
                         GeneralConfig.DEFAULT_PUNISH);
             }
             return;
@@ -75,7 +76,7 @@ public class RequestDestroyItem extends ClientPacket {
             return;
         }
 
-        long count = _count;
+        long count = this.count;
         if (player.isProcessingTransaction() || player.isInStoreMode()) {
             player.sendPacket(
                     SystemMessageId
@@ -83,7 +84,7 @@ public class RequestDestroyItem extends ClientPacket {
             return;
         }
 
-        final Item itemToRemove = player.getInventory().getItemByObjectId(_objectId);
+        final Item itemToRemove = player.getInventory().getItemByObjectId(objectId);
 
         // If we can't find the requested item, it is actually a cheat.
         if (itemToRemove == null) {
@@ -123,7 +124,7 @@ public class RequestDestroyItem extends ClientPacket {
             PunishmentManager.handleIllegalPlayerAction(
                     player,
                     "[RequestDestroyItem] Character " + player.getName() + " of account " + player.getAccountName()
-                            + " tried to destroy a non-stackable item with oid " + _objectId + " but has count > 1!",
+                            + " tried to destroy a non-stackable item with oid " + objectId + " but has count > 1!",
                     GeneralConfig.DEFAULT_PUNISH);
             return;
         }
@@ -133,25 +134,25 @@ public class RequestDestroyItem extends ClientPacket {
             return;
         }
 
-        if (_count > itemToRemove.getCount()) {
+        if (this.count > itemToRemove.getCount()) {
             count = itemToRemove.getCount();
         }
 
         if (itemToRemove.getTemplate().isPetItem()) {
             // Check if the player has a summoned pet or mount active with the same object ID.
             final Summon summon = player.getSummon();
-            if (((summon != null) && (summon.getControlObjectId() == _objectId))
-                    || (player.isMounted() && (player.getMountObjectID() == _objectId))) {
+            if (((summon != null) && (summon.getControlObjectId() == objectId))
+                    || (player.isMounted() && (player.getMountObjectID() == objectId))) {
                 player.sendPacket(SystemMessageId.AS_YOUR_PET_IS_CURRENTLY_OUT_ITS_SUMMONING_ITEM_CANNOT_BE_DESTROYED);
                 return;
             }
 
             try (Connection con = DatabaseFactory.getConnection();
                     PreparedStatement statement = con.prepareStatement("DELETE FROM pets WHERE item_obj_id=?")) {
-                statement.setInt(1, _objectId);
+                statement.setInt(1, objectId);
                 statement.execute();
             } catch (Exception e) {
-                PacketLogger.warning("Could not delete pet objectid: " + e.getMessage());
+                log.warn("Could not delete pet objectid: {}", e.getMessage());
             }
         }
 

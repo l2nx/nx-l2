@@ -29,22 +29,22 @@ import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.network.buffer.WriteBuffer;
 
 public class PartySmallWindowAll extends ServerPacket {
-    private final Party _party;
-    private final Player _exclude;
+    private final Party party;
+    private final Player exclude;
 
     public PartySmallWindowAll(Player exclude, Party party) {
-        _exclude = exclude;
-        _party = party;
+        this.exclude = exclude;
+        this.party = party;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.PARTY_SMALL_WINDOW_ALL.writeId(this, buffer);
-        buffer.writeInt(_party.getLeaderObjectId());
-        buffer.writeInt(_party.getDistributionType().getId());
-        buffer.writeInt(_party.getMemberCount() - 1);
-        for (Player member : _party.getMembers()) {
-            if ((member != null) && (member != _exclude)) {
+        buffer.writeInt(party.getLeaderObjectId());
+        buffer.writeInt(party.getDistributionType().getId());
+        buffer.writeInt(party.getMemberCount() - 1);
+        for (Player member : party.getMembers()) {
+            if ((member != null) && (member != exclude)) {
                 buffer.writeInt(member.getObjectId());
                 buffer.writeString(member.getName());
                 buffer.writeInt((int) member.getCurrentCp()); // c4

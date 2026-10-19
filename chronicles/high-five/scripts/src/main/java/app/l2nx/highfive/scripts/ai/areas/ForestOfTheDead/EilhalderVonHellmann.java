@@ -38,7 +38,7 @@ import app.l2nx.highfive.mechanics.script.Script;
 public class EilhalderVonHellmann extends Script {
     private static final int EILHALDER_VON_HELLMANN = 25328;
     private static final Location SPAWN_LOCATION = new Location(59090, -42188, -3003);
-    private static Npc _npcInstance;
+    private static Npc npcInstance;
 
     private EilhalderVonHellmann() {}
 
@@ -46,10 +46,10 @@ public class EilhalderVonHellmann extends Script {
     public String onEvent(String event, Npc npc, Player player) {
         if (npc != null) {
             if (npc.isInCombat()) {
-                startQuestTimer("despawn", 30000, _npcInstance, null);
+                startQuestTimer("despawn", 30000, npcInstance, null);
             } else {
                 npc.deleteMe();
-                _npcInstance = null;
+                npcInstance = null;
             }
         }
 
@@ -59,17 +59,17 @@ public class EilhalderVonHellmann extends Script {
     @RegisterEvent(EventType.ON_DAY_NIGHT_CHANGE)
     @RegisterType(ListenerRegisterType.GLOBAL)
     public void onDayNightChange(OnDayNightChange event) {
-        if (!event.isNight()) {
-            if (_npcInstance != null) {
-                if (!_npcInstance.isInCombat()) {
-                    _npcInstance.deleteMe();
-                    _npcInstance = null;
+        if (!event.night()) {
+            if (npcInstance != null) {
+                if (!npcInstance.isInCombat()) {
+                    npcInstance.deleteMe();
+                    npcInstance = null;
                 } else {
-                    startQuestTimer("despawn", 30000, _npcInstance, null);
+                    startQuestTimer("despawn", 30000, npcInstance, null);
                 }
             }
-        } else if (_npcInstance == null) {
-            _npcInstance = addSpawn(EILHALDER_VON_HELLMANN, SPAWN_LOCATION);
+        } else if (npcInstance == null) {
+            npcInstance = addSpawn(EILHALDER_VON_HELLMANN, SPAWN_LOCATION);
         }
     }
 

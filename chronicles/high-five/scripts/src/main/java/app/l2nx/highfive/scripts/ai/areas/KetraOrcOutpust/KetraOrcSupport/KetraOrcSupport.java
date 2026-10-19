@@ -28,6 +28,7 @@ import app.l2nx.highfive.mechanics.script.Script;
 import app.l2nx.highfive.mechanics.skill.Skill;
 import java.util.HashMap;
 import java.util.Map;
+import lombok.Getter;
 import org.apache.commons.lang3.StringUtils;
 
 /**
@@ -37,20 +38,18 @@ import org.apache.commons.lang3.StringUtils;
  */
 public class KetraOrcSupport extends Script {
     private static class BuffsData {
-        private final int _skill;
-        private final int _cost;
+        private final int skill;
+
+        @Getter
+        private final int cost;
 
         public BuffsData(int skill, int cost) {
-            _skill = skill;
-            _cost = cost;
+            this.skill = skill;
+            this.cost = cost;
         }
 
         public Skill getSkill() {
-            return SkillData.getInstance().getSkill(_skill, 1);
-        }
-
-        public int getCost() {
-            return _cost;
+            return SkillData.getInstance().getSkill(skill, 1);
         }
     }
 
@@ -130,33 +129,33 @@ public class KetraOrcSupport extends Script {
     @Override
     public String onFirstTalk(Npc npc, Player player) {
         String htmltext = getNoQuestMsg(player);
-        final int AllianceLevel = getAllianceLevel(player);
+        final int allianceLevel = getAllianceLevel(player);
         switch (npc.getId()) {
             case KADUN: {
-                htmltext = (AllianceLevel > 0) ? "31370-friend.html" : "31370-no.html";
+                htmltext = (allianceLevel > 0) ? "31370-friend.html" : "31370-no.html";
                 break;
             }
             case WAHKAN: {
-                htmltext = (AllianceLevel > 0) ? "31371-friend.html" : "31371-no.html";
+                htmltext = (allianceLevel > 0) ? "31371-friend.html" : "31371-no.html";
                 break;
             }
             case ASEFA: {
                 htmltext =
-                        (AllianceLevel > 0) ? (AllianceLevel < 3) ? "31372-01.html" : "31372-04.html" : "31372-03.html";
+                        (allianceLevel > 0) ? (allianceLevel < 3) ? "31372-01.html" : "31372-04.html" : "31372-03.html";
                 break;
             }
             case ATAN: {
-                htmltext = (AllianceLevel > 0) ? "31373-friend.html" : "31373-no.html";
+                htmltext = (allianceLevel > 0) ? "31373-friend.html" : "31373-no.html";
                 break;
             }
             case JAFF: {
-                htmltext = (AllianceLevel > 0)
-                        ? (AllianceLevel == 1) ? "31374-01.html" : "31374-02.html"
+                htmltext = (allianceLevel > 0)
+                        ? (allianceLevel == 1) ? "31374-01.html" : "31374-02.html"
                         : "31374-no.html";
                 break;
             }
             case JUMARA: {
-                switch (AllianceLevel) {
+                switch (allianceLevel) {
                     case 1:
                     case 2: {
                         htmltext = "31375-01.html";
@@ -179,7 +178,7 @@ public class KetraOrcSupport extends Script {
                 break;
             }
             case KURFA: {
-                switch (AllianceLevel) {
+                switch (allianceLevel) {
                     case 1:
                     case 2:
                     case 3: {

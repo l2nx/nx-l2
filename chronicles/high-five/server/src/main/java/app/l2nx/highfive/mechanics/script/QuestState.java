@@ -31,15 +31,15 @@ import app.l2nx.highfive.network.serverpackets.TutorialShowQuestionMark;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Quest state class.
  * @author Luis Arias, Mobius
  */
+@Slf4j
 public class QuestState {
-    protected static final Logger LOGGER = Logger.getLogger(QuestState.class.getName());
 
     // Constants
     private static final String COND_VAR = "cond";
@@ -50,24 +50,28 @@ public class QuestState {
     private static final int RESET_MINUTES = 30;
 
     /** The name of the quest of this QuestState */
-    private final String _questName;
+    @Getter
+    private final String questName;
 
     /** The "owner" of this QuestState object */
-    private final Player _player;
+    @Getter
+    private final Player player;
 
     /** The current state of the quest */
-    private byte _state;
+    @Getter
+    private byte state;
 
     /** The current condition of the quest */
-    private int _cond = 0;
+    private int cond = 0;
 
     /** A map of key->value pairs containing the quest state variables and their values */
-    private Map<String, String> _vars;
+    private Map<String, String> vars;
 
     /**
      * boolean flag letting QuestStateManager know to exit quest when cleaning up
      */
-    private boolean _isExitQuestOnCleanUp = false;
+    @Getter
+    private boolean exitQuestOnCleanUp = false;
 
     /**
      * Constructor of the QuestState. Creates the QuestState object and sets the player's progress of the quest to this QuestState.
@@ -76,39 +80,17 @@ public class QuestState {
      * @param state the initial state of the quest
      */
     public QuestState(Quest quest, Player player, byte state) {
-        _questName = quest.getName();
-        _player = player;
-        _state = state;
+        questName = quest.getName();
+        this.player = player;
+        this.state = state;
         player.setQuestState(this);
-    }
-
-    /**
-     * @return the name of the quest of this QuestState
-     */
-    public String getQuestName() {
-        return _questName;
     }
 
     /**
      * @return the {@link Quest} object of this QuestState
      */
     public Quest getQuest() {
-        return ScriptManager.getInstance().getScript(_questName);
-    }
-
-    /**
-     * @return the {@link Player} object of the owner of this QuestState
-     */
-    public Player getPlayer() {
-        return _player;
-    }
-
-    /**
-     * @return the current State of this QuestState
-     * @see app.l2nx.highfive.mechanics.script.State
-     */
-    public byte getState() {
-        return _state;
+        return ScriptManager.getInstance().getScript(questName);
     }
 
     /**
@@ -116,7 +98,7 @@ public class QuestState {
      * @see app.l2nx.highfive.mechanics.script.State
      */
     public boolean isCreated() {
-        return _state == State.CREATED;
+        return state == State.CREATED;
     }
 
     /**
@@ -124,7 +106,7 @@ public class QuestState {
      * @see app.l2nx.highfive.mechanics.script.State
      */
     public boolean isStarted() {
-        return _state == State.STARTED;
+        return state == State.STARTED;
     }
 
     /**
@@ -132,7 +114,7 @@ public class QuestState {
      * @see app.l2nx.highfive.mechanics.script.State
      */
     public boolean isCompleted() {
-        return _state == State.COMPLETED;
+        return state == State.COMPLETED;
     }
 
     /**
@@ -151,12 +133,12 @@ public class QuestState {
      * @see app.l2nx.highfive.mechanics.script.State
      */
     public void setState(byte state, boolean saveInDb) {
-        if (_state == state) {
+        if (this.state == state) {
             return;
         }
 
         final boolean newQuest = isCreated();
-        _state = state;
+        this.state = state;
         if (saveInDb) {
             if (newQuest) {
                 Quest.createQuestInDb(this);
@@ -165,7 +147,7 @@ public class QuestState {
             }
         }
 
-        _player.sendPacket(new QuestList(_player));
+        player.sendPacket(new QuestList(player));
     }
 
     /**
@@ -174,23 +156,23 @@ public class QuestState {
      * @param value String pointing out the value of the variable for quest
      */
     public void setInternal(String variable, String value) {
-        if (_vars == null) {
-            _vars = new HashMap<>();
+        if (vars == null) {
+            vars = new HashMap<>();
         }
 
         if (value == null) {
-            _vars.put(variable, "");
+            vars.put(variable, "");
             return;
         }
 
         if (COND_VAR.equals(variable)) {
             try {
-                _cond = Integer.parseInt(value);
+                cond = Integer.parseInt(value);
             } catch (Exception ignored) {
             }
         }
 
-        _vars.put(variable, value);
+        vars.put(variable, value);
     }
 
     public void set(String variable, int value) {
@@ -212,8 +194,8 @@ public class QuestState {
      * @param value String indicating the value of the variable for quest
      */
     public void set(String variable, String value) {
-        if (_vars == null) {
-            _vars = new HashMap<>();
+        if (vars == null) {
+            vars = new HashMap<>();
         }
 
         String newValue = value;
@@ -221,7 +203,7 @@ public class QuestState {
             newValue = "";
         }
 
-        final String old = _vars.put(variable, newValue);
+        final String old = vars.put(variable, newValue);
         if (old != null) {
             Quest.updateQuestVarInDb(this, variable, newValue);
         } else {
@@ -242,13 +224,15 @@ public class QuestState {
                 } catch (Exception ignored) {
                 }
 
-                _cond = newCond;
+                cond = newCond;
                 setCond(newCond, previousVal);
             } catch (Exception e) {
-                LOGGER.log(
-                        Level.WARNING,
-                        _player.getName() + ", " + _questName + " cond [" + newValue
-                                + "] is not an integer.  Value stored, but no packet was sent: " + e.getMessage(),
+                log.warn(
+                        "{}, {} cond [{}] is not an integer.  Value stored, but no packet was sent: {}",
+                        player.getName(),
+                        questName,
+                        newValue,
+                        e.getMessage(),
                         e);
             }
         }
@@ -330,11 +314,11 @@ public class QuestState {
         }
 
         // Send a packet to the client to inform it of the quest progress (step change).
-        _player.sendPacket(new QuestList(_player));
+        player.sendPacket(new QuestList(player));
 
         final Quest q = getQuest();
         if (!q.isCustomQuest() && (cond > 0)) {
-            _player.sendPacket(new ExShowQuestMark(q.getId()));
+            player.sendPacket(new ExShowQuestMark(q.getId()));
         }
     }
 
@@ -343,14 +327,14 @@ public class QuestState {
      * @param variable the name of the variable to remove
      */
     public void unset(String variable) {
-        if (_vars == null) {
+        if (vars == null) {
             return;
         }
 
-        final String old = _vars.remove(variable);
+        final String old = vars.remove(variable);
         if (old != null) {
             if (COND_VAR.equals(variable)) {
-                _cond = 0;
+                cond = 0;
             }
 
             Quest.deleteQuestVarInDb(this, variable);
@@ -362,11 +346,11 @@ public class QuestState {
      * @return the value of the variable from the list of quest variables
      */
     public String get(String variable) {
-        if (_vars == null) {
+        if (vars == null) {
             return null;
         }
 
-        return _vars.get(variable);
+        return vars.get(variable);
     }
 
     /**
@@ -374,11 +358,11 @@ public class QuestState {
      * @return the integer value of the variable or 0 if the variable does not exist or its value is not an integer
      */
     public int getInt(String variable) {
-        if (_vars == null) {
+        if (vars == null) {
             return 0;
         }
 
-        final String varStr = _vars.get(variable);
+        final String varStr = vars.get(variable);
         if ((varStr == null) || varStr.isEmpty()) {
             return 0;
         }
@@ -387,10 +371,12 @@ public class QuestState {
         try {
             varInt = Integer.parseInt(varStr);
         } catch (NumberFormatException nfe) {
-            LOGGER.log(
-                    Level.INFO,
-                    "Quest " + _questName + ", method getInt(" + variable + "), tried to parse a non-integer value ("
-                            + varStr + "). Char Id: " + _player.getObjectId(),
+            log.info(
+                    "Quest {}, method getInt({}), tried to parse a non-integer value ({}). Char Id: {}",
+                    questName,
+                    variable,
+                    varStr,
+                    player.getObjectId(),
                     nfe);
         }
 
@@ -404,7 +390,7 @@ public class QuestState {
      * @see #getInt(String var)
      */
     public boolean isCond(int condition) {
-        return _cond == condition;
+        return cond == condition;
     }
 
     /**
@@ -424,7 +410,7 @@ public class QuestState {
      */
     public int getCond() {
         if (isStarted()) {
-            return _cond;
+            return cond;
         }
 
         return 0;
@@ -456,7 +442,7 @@ public class QuestState {
 
         set(COND_VAR, String.valueOf(value));
         if (playQuestMiddle) {
-            _player.sendPacket(QuestSound.ITEMSOUND_QUEST_MIDDLE.getPacket());
+            player.sendPacket(QuestSound.ITEMSOUND_QUEST_MIDDLE.getPacket());
         }
     }
 
@@ -524,17 +510,10 @@ public class QuestState {
     }
 
     /**
-     * @return {@code true} if quest is to be exited on clean up by QuestStateManager, {@code false} otherwise
-     */
-    public boolean isExitQuestOnCleanUp() {
-        return _isExitQuestOnCleanUp;
-    }
-
-    /**
      * @param isExitQuestOnCleanUp {@code true} if quest is to be exited on clean up by QuestStateManager, {@code false} otherwise
      */
     public void setIsExitQuestOnCleanUp(boolean isExitQuestOnCleanUp) {
-        _isExitQuestOnCleanUp = isExitQuestOnCleanUp;
+        exitQuestOnCleanUp = isExitQuestOnCleanUp;
     }
 
     /**
@@ -545,7 +524,7 @@ public class QuestState {
         if (isCreated() && !getQuest().isCustomQuest()) {
             set(COND_VAR, "1");
             setState(State.STARTED);
-            _player.sendPacket(QuestSound.ITEMSOUND_QUEST_ACCEPT.getPacket());
+            player.sendPacket(QuestSound.ITEMSOUND_QUEST_ACCEPT.getPacket());
         }
     }
 
@@ -586,7 +565,7 @@ public class QuestState {
     public void exitQuest(QuestType type, boolean playExitQuest) {
         exitQuest(type);
         if (playExitQuest) {
-            _player.sendPacket(QuestSound.ITEMSOUND_QUEST_FINISH.getPacket());
+            player.sendPacket(QuestSound.ITEMSOUND_QUEST_FINISH.getPacket());
         }
     }
 
@@ -599,24 +578,24 @@ public class QuestState {
      * @see #exitQuest(boolean repeatable, boolean playExitQuest)
      */
     public void exitQuest(boolean repeatable) {
-        _player.removeNotifyQuestOfDeath(this);
+        player.removeNotifyQuestOfDeath(this);
 
         if (!isStarted()) {
             return;
         }
 
         // Clean registered quest items.
-        getQuest().removeRegisteredQuestItems(_player);
+        getQuest().removeRegisteredQuestItems(player);
 
         Quest.deleteQuestInDb(this, repeatable);
         if (repeatable) {
-            _player.delQuestState(_questName);
-            _player.sendPacket(new QuestList(_player));
+            player.delQuestState(questName);
+            player.sendPacket(new QuestList(player));
         } else {
             setState(State.COMPLETED);
         }
 
-        _vars = null;
+        vars = null;
     }
 
     /**
@@ -631,12 +610,12 @@ public class QuestState {
     public void exitQuest(boolean repeatable, boolean playExitQuest) {
         exitQuest(repeatable);
         if (playExitQuest) {
-            _player.sendPacket(QuestSound.ITEMSOUND_QUEST_FINISH.getPacket());
+            player.sendPacket(QuestSound.ITEMSOUND_QUEST_FINISH.getPacket());
         }
     }
 
     public void showQuestionMark(int number) {
-        _player.sendPacket(new TutorialShowQuestionMark(number));
+        player.sendPacket(new TutorialShowQuestionMark(number));
     }
 
     /**

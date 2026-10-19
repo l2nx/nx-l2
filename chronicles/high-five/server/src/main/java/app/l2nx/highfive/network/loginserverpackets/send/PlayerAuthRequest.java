@@ -39,16 +39,16 @@ public class PlayerAuthRequest extends SimpleWritablePacket {
     private static final int OPCODE = 0x05;
 
     // Data.
-    private final String _account;
-    private final SessionKey _key;
+    private final String account;
+    private final SessionKey key;
 
     /**
      * @param account account name
      * @param key session key (LoginServerThread.SessionKey)
      */
     public PlayerAuthRequest(String account, SessionKey key) {
-        _account = (account != null) ? account : "";
-        _key = key;
+        this.account = (account != null) ? account : "";
+        this.key = key;
     }
 
     /**
@@ -57,10 +57,10 @@ public class PlayerAuthRequest extends SimpleWritablePacket {
     @Override
     public void write() {
         writeByte(OPCODE);
-        writeString(_account);
-        writeInt((_key != null) ? _key.playOkID1 : 0);
-        writeInt((_key != null) ? _key.playOkID2 : 0);
-        writeInt((_key != null) ? _key.loginOkID1 : 0);
-        writeInt((_key != null) ? _key.loginOkID2 : 0);
+        writeString(account);
+        writeInt((key != null) ? key.playOkID1 : 0);
+        writeInt((key != null) ? key.playOkID2 : 0);
+        writeInt((key != null) ? key.loginOkID1 : 0);
+        writeInt((key != null) ? key.loginOkID2 : 0);
     }
 }

@@ -20,19 +20,17 @@
 package app.l2nx.highfive.entity.actor.transform;
 
 import app.l2nx.highfive.entity.item.holders.ItemHolder;
+import lombok.Getter;
 
 /**
  * @author UnAfraid
  */
 public class AdditionalItemHolder extends ItemHolder {
-    private final boolean _allowed;
+    @Getter
+    private final boolean allowedToUse;
 
     public AdditionalItemHolder(int id, boolean allowed) {
         super(id, 0);
-        _allowed = allowed;
-    }
-
-    public boolean isAllowedToUse() {
-        return _allowed;
+        allowedToUse = allowed;
     }
 }

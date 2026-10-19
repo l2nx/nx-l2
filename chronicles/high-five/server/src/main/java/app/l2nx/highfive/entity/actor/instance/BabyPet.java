@@ -43,19 +43,21 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
+import lombok.Getter;
 
 public class BabyPet extends Pet {
     private static final int BUFF_CONTROL = 5771;
     private static final int AWAKENING = 5753;
 
-    protected List<SkillHolder> _buffs = null;
-    protected SkillHolder _majorHeal = null;
-    protected SkillHolder _minorHeal = null;
-    protected SkillHolder _recharge = null;
+    protected List<SkillHolder> buffs = null;
+    protected SkillHolder majorHeal = null;
+    protected SkillHolder minorHeal = null;
+    protected SkillHolder recharge = null;
 
-    private Future<?> _castTask;
+    private Future<?> castTask;
 
-    protected boolean _bufferMode = true;
+    @Getter
+    protected boolean inSupportMode = true;
 
     /**
      * Creates a baby pet.
@@ -102,33 +104,33 @@ public class BabyPet extends Pet {
             }
 
             if (skill.hasEffectType(EffectType.MANAHEAL_BY_LEVEL)) {
-                _recharge = new SkillHolder(skill);
+                recharge = new SkillHolder(skill);
                 continue;
             }
 
             if (skill.hasEffectType(EffectType.HEAL)) {
                 if (healPower == 0) {
                     // Set both heal types to the same skill.
-                    _majorHeal = new SkillHolder(skill);
-                    _minorHeal = _majorHeal;
+                    majorHeal = new SkillHolder(skill);
+                    minorHeal = majorHeal;
                     healPower = skill.getPower();
                 } else {
                     // another heal skill found - search for most powerful
                     if (skill.getPower() > healPower) {
-                        _majorHeal = new SkillHolder(skill);
+                        majorHeal = new SkillHolder(skill);
                     } else {
-                        _minorHeal = new SkillHolder(skill);
+                        minorHeal = new SkillHolder(skill);
                     }
                 }
                 continue;
             }
 
             if (skill.isContinuous() && !skill.isDebuff()) {
-                if (_buffs == null) {
-                    _buffs = new ArrayList<>();
+                if (buffs == null) {
+                    buffs = new ArrayList<>();
                 }
 
-                _buffs.add(new SkillHolder(skill));
+                buffs.add(new SkillHolder(skill));
             }
         }
 
@@ -163,34 +165,26 @@ public class BabyPet extends Pet {
     public void onDecay() {
         super.onDecay();
 
-        if (_buffs != null) {
-            _buffs.clear();
+        if (buffs != null) {
+            buffs.clear();
         }
     }
 
     private void startCastTask() {
-        if ((_majorHeal != null) || (_buffs != null) || ((_recharge != null) && (_castTask == null) && !isDead())) {
-            _castTask = ThreadPool.scheduleAtFixedRate(new CastTask(this), 3000, 2000);
+        if ((majorHeal != null) || (buffs != null) || ((recharge != null) && (castTask == null) && !isDead())) {
+            castTask = ThreadPool.scheduleAtFixedRate(new CastTask(this), 3000, 2000);
         }
     }
 
     @Override
     public void switchMode() {
-        _bufferMode = !_bufferMode;
-    }
-
-    /**
-     * Verify if this pet is in support mode.
-     * @return {@code true} if this baby pet is in support mode, {@code false} otherwise
-     */
-    public boolean isInSupportMode() {
-        return _bufferMode;
+        inSupportMode = !inSupportMode;
     }
 
     private void stopCastTask() {
-        if (_castTask != null) {
-            _castTask.cancel(false);
-            _castTask = null;
+        if (castTask != null) {
+            castTask.cancel(false);
+            castTask = null;
         }
     }
 
@@ -225,16 +219,16 @@ public class BabyPet extends Pet {
     }
 
     private class CastTask implements Runnable {
-        private final BabyPet _baby;
-        private final List<Skill> _currentBuffs = new ArrayList<>();
+        private final BabyPet baby;
+        private final List<Skill> currentBuffs = new ArrayList<>();
 
         public CastTask(BabyPet baby) {
-            _baby = baby;
+            this.baby = baby;
         }
 
         @Override
         public void run() {
-            final Player owner = _baby.getOwner();
+            final Player owner = baby.getOwner();
 
             // If the owner doesn't meet the conditions avoid casting.
             if ((owner == null) || owner.isDead() || owner.isInvul()) {
@@ -242,18 +236,18 @@ public class BabyPet extends Pet {
             }
 
             // If the pet doesn't meet the conditions avoid casting.
-            if (_baby.isDead()
-                    || _baby.isCastingNow()
-                    || _baby.isBetrayed()
-                    || _baby.isMuted()
-                    || _baby.isOutOfControl()
-                    || !_bufferMode
-                    || (_baby.getAI().getIntention() == Intention.CAST)) {
+            if (baby.isDead()
+                    || baby.isCastingNow()
+                    || baby.isBetrayed()
+                    || baby.isMuted()
+                    || baby.isOutOfControl()
+                    || !inSupportMode
+                    || (baby.getAI().getIntention() == Intention.CAST)) {
                 return;
             }
 
             Skill skill = null;
-            if (_majorHeal != null) {
+            if (majorHeal != null) {
                 // If the owner's HP is more than 80% for Baby Pets and 70% for Improved Baby pets, do nothing.
                 // If the owner's HP is very low, under 15% for Baby pets and under 30% for Improved Baby Pets, have 75%
                 // chances of using a strong heal.
@@ -261,20 +255,20 @@ public class BabyPet extends Pet {
                 final double hpPercent = owner.getCurrentHp() / owner.getMaxHp();
                 final boolean isImprovedBaby = isInCategory(CategoryType.BABY_PET_GROUP);
                 if ((isImprovedBaby && (hpPercent < 0.3)) || (!isImprovedBaby && (hpPercent < 0.15))) {
-                    skill = _majorHeal.getSkill();
-                    if (!_baby.isSkillDisabled(skill)
+                    skill = majorHeal.getSkill();
+                    if (!baby.isSkillDisabled(skill)
                             && (ThreadLocalRandom.current().nextInt(100) <= 75)
-                            && (_baby.getCurrentMp() >= skill.getMpConsume())) {
+                            && (baby.getCurrentMp() >= skill.getMpConsume())) {
                         castSkill(skill);
                         return;
                     }
-                } else if ((_majorHeal.getSkill() != _minorHeal.getSkill())
+                } else if ((majorHeal.getSkill() != minorHeal.getSkill())
                         && ((isImprovedBaby && (hpPercent < 0.7)) || (!isImprovedBaby && (hpPercent < 0.8)))) {
-                    // Cast _minorHeal only if it's different than _majorHeal, then pet has two heals available.
-                    skill = _minorHeal.getSkill();
-                    if (!_baby.isSkillDisabled(skill)
+                    // Cast minorHeal only if it's different than majorHeal, then pet has two heals available.
+                    skill = minorHeal.getSkill();
+                    if (!baby.isSkillDisabled(skill)
                             && (ThreadLocalRandom.current().nextInt(100) <= 25)
-                            && (_baby.getCurrentMp() >= skill.getMpConsume())) {
+                            && (baby.getCurrentMp() >= skill.getMpConsume())) {
                         castSkill(skill);
                         return;
                     }
@@ -282,16 +276,16 @@ public class BabyPet extends Pet {
             }
 
             // Buff Control is not active.
-            if (!_baby.isAffectedBySkill(BUFF_CONTROL)) {
+            if (!baby.isAffectedBySkill(BUFF_CONTROL)) {
                 // searching for usable buffs
-                if ((_buffs != null) && !_buffs.isEmpty()) {
-                    for (SkillHolder buff : _buffs) {
+                if ((buffs != null) && !buffs.isEmpty()) {
+                    for (SkillHolder buff : buffs) {
                         skill = buff.getSkill();
-                        if (_baby.isSkillDisabled(skill)) {
+                        if (baby.isSkillDisabled(skill)) {
                             continue;
                         }
 
-                        if (_baby.getCurrentMp() < skill.getMpConsume()) {
+                        if (baby.getCurrentMp() < skill.getMpConsume()) {
                             continue;
                         }
 
@@ -312,25 +306,25 @@ public class BabyPet extends Pet {
                             continue;
                         }
 
-                        _currentBuffs.add(skill);
+                        currentBuffs.add(skill);
                     }
                 }
 
-                if (!_currentBuffs.isEmpty()) {
-                    skill = _currentBuffs.get(ThreadLocalRandom.current().nextInt(_currentBuffs.size()));
+                if (!currentBuffs.isEmpty()) {
+                    skill = currentBuffs.get(ThreadLocalRandom.current().nextInt(currentBuffs.size()));
                     castSkill(skill);
-                    _currentBuffs.clear();
+                    currentBuffs.clear();
                     return;
                 }
             }
 
             // buffs/heal not casted, trying recharge, if exist recharge casted only if owner in combat stance.
-            if ((_recharge != null)
+            if ((recharge != null)
                     && owner.isInCombat()
                     && ((owner.getCurrentMp() / owner.getMaxMp()) < 0.6)
                     && (ThreadLocalRandom.current().nextInt(100) <= 60)) {
-                skill = _recharge.getSkill();
-                if (!_baby.isSkillDisabled(skill) && (_baby.getCurrentMp() >= skill.getMpConsume())) {
+                skill = recharge.getSkill();
+                if (!baby.isSkillDisabled(skill) && (baby.getCurrentMp() >= skill.getMpConsume())) {
                     castSkill(skill);
                 }
             }

@@ -28,12 +28,12 @@ import app.l2nx.highfive.entity.actor.instance.Cubic;
  * @author UnAfraid
  */
 public class HealthCondition implements ICubicCondition {
-    private final int _min;
-    private final int _max;
+    private final int min;
+    private final int max;
 
     public HealthCondition(int min, int max) {
-        _min = min;
-        _max = max;
+        this.min = min;
+        this.max = max;
     }
 
     @Override
@@ -43,6 +43,6 @@ public class HealthCondition implements ICubicCondition {
         }
 
         final double hpPercent = (target.isDoor() ? target.asDoor() : target.asCreature()).getCurrentHpPercent();
-        return (hpPercent > _min) && (hpPercent < _max);
+        return (hpPercent > min) && (hpPercent < max);
     }
 }

@@ -28,14 +28,14 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * This class loads all the rates related configurations.
  * @author Mobius
  */
+@Slf4j
 public class RatesConfig {
-    private static final Logger LOGGER = Logger.getLogger(RatesConfig.class.getName());
 
     // File
     private static final String RATES_CONFIG_FILE = "./config/Rates.ini";
@@ -171,15 +171,15 @@ public class RatesConfig {
             for (String item : dropAmountMultiplier) {
                 final String[] itemSplit = item.split(",");
                 if (itemSplit.length != 2) {
-                    LOGGER.warning(
-                            "Config.load(): invalid config property -> DropAmountMultiplierByItemId \"" + item + "\"");
+                    log.warn("Config.load(): invalid config property -> DropAmountMultiplierByItemId \"{}\"", item);
                 } else {
                     try {
                         RATE_DROP_AMOUNT_BY_ID.put(Integer.parseInt(itemSplit[0]), Float.parseFloat(itemSplit[1]));
                     } catch (NumberFormatException nfe) {
                         if (!item.isEmpty()) {
-                            LOGGER.warning("Config.load(): invalid config property -> DropAmountMultiplierByItemId \""
-                                    + item + "\"");
+                            log.warn(
+                                    "Config.load(): invalid config property -> DropAmountMultiplierByItemId \"{}\"",
+                                    item);
                         }
                     }
                 }
@@ -192,15 +192,15 @@ public class RatesConfig {
             for (String item : dropChanceMultiplier) {
                 final String[] itemSplit = item.split(",");
                 if (itemSplit.length != 2) {
-                    LOGGER.warning(
-                            "Config.load(): invalid config property -> DropChanceMultiplierByItemId \"" + item + "\"");
+                    log.warn("Config.load(): invalid config property -> DropChanceMultiplierByItemId \"{}\"", item);
                 } else {
                     try {
                         RATE_DROP_CHANCE_BY_ID.put(Integer.parseInt(itemSplit[0]), Float.parseFloat(itemSplit[1]));
                     } catch (NumberFormatException nfe) {
                         if (!item.isEmpty()) {
-                            LOGGER.warning("Config.load(): invalid config property -> DropChanceMultiplierByItemId \""
-                                    + item + "\"");
+                            log.warn(
+                                    "Config.load(): invalid config property -> DropChanceMultiplierByItemId \"{}\"",
+                                    item);
                         }
                     }
                 }

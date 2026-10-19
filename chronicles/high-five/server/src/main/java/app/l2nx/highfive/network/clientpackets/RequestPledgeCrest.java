@@ -29,11 +29,11 @@ import app.l2nx.highfive.network.serverpackets.PledgeCrest;
  * @version $Revision: 1.4.4.4 $ $Date: 2005/03/27 15:29:30 $
  */
 public class RequestPledgeCrest extends ClientPacket {
-    private int _crestId;
+    private int crestId;
 
     @Override
     protected void readImpl() {
-        _crestId = readInt();
+        crestId = readInt();
     }
 
     @Override
@@ -43,6 +43,6 @@ public class RequestPledgeCrest extends ClientPacket {
             return;
         }
 
-        player.sendPacket(new PledgeCrest(_crestId));
+        player.sendPacket(new PledgeCrest(crestId));
     }
 }

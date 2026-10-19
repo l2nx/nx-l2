@@ -34,12 +34,12 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author UnAfraid, Mobius
  */
 public abstract class AbstractVariables extends StatSet {
-    private final AtomicBoolean _hasChanges = new AtomicBoolean(false);
+    private final AtomicBoolean hasChanges = new AtomicBoolean(false);
 
-    protected final Set<String> _added = new HashSet<>(4);
-    protected final Set<String> _modified = new HashSet<>(4);
-    protected final Set<String> _deleted = new HashSet<>(4);
-    protected final Lock _saveLock = new ReentrantLock();
+    protected final Set<String> added = new HashSet<>(4);
+    protected final Set<String> modified = new HashSet<>(4);
+    protected final Set<String> deleted = new HashSet<>(4);
+    protected final Lock saveLock = new ReentrantLock();
 
     protected AbstractVariables() {
         super(ConcurrentHashMap::new);
@@ -113,19 +113,19 @@ public abstract class AbstractVariables extends StatSet {
      * @param name the name of the variable
      */
     protected void trackChange(String name) {
-        _saveLock.lock();
+        saveLock.lock();
 
         try {
-            _hasChanges.compareAndSet(false, true);
+            hasChanges.compareAndSet(false, true);
 
             if (hasVariable(name)) {
-                _modified.add(name);
-                _deleted.remove(name);
+                modified.add(name);
+                deleted.remove(name);
             } else {
-                _added.add(name);
+                added.add(name);
             }
         } finally {
-            _saveLock.unlock();
+            saveLock.unlock();
         }
     }
 
@@ -156,7 +156,7 @@ public abstract class AbstractVariables extends StatSet {
      * @return {@code true} if changes are made since last load/save.
      */
     public boolean hasChanges() {
-        return _hasChanges.get();
+        return hasChanges.get();
     }
 
     /**
@@ -166,7 +166,7 @@ public abstract class AbstractVariables extends StatSet {
      * @return {@code true} if successful. {@code false} return indicates that the actual value was not equal to the expected value.
      */
     public boolean compareAndSetChanges(boolean expect, boolean update) {
-        return _hasChanges.compareAndSet(expect, update);
+        return hasChanges.compareAndSet(expect, update);
     }
 
     /**
@@ -175,10 +175,10 @@ public abstract class AbstractVariables extends StatSet {
      */
     @Override
     public void remove(String name) {
-        _saveLock.lock();
+        saveLock.lock();
 
         try {
-            _hasChanges.compareAndSet(false, true);
+            hasChanges.compareAndSet(false, true);
 
             // First remove from map.
             final Object removed = getSet().remove(name);
@@ -187,16 +187,16 @@ public abstract class AbstractVariables extends StatSet {
             if (removed != null) {
                 // If the variable was newly added during this session and never persisted, removing it should simply
                 // drop it from the added set without scheduling a DB DELETE (there's nothing to delete).
-                if (_added.remove(name)) {
+                if (added.remove(name)) {
                     // It was new and never persisted -> nothing more to do.
                     return;
                 }
 
-                _modified.remove(name);
-                _deleted.add(name);
+                modified.remove(name);
+                deleted.add(name);
             }
         } finally {
-            _saveLock.unlock();
+            saveLock.unlock();
         }
     }
 
@@ -204,8 +204,8 @@ public abstract class AbstractVariables extends StatSet {
      * Clears change tracking sets.
      */
     protected void clearChangeTracking() {
-        _added.clear();
-        _modified.clear();
-        _deleted.clear();
+        added.clear();
+        modified.clear();
+        deleted.clear();
     }
 }

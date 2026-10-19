@@ -32,19 +32,19 @@ import java.util.Set;
  * The Class ConditionTargetNpcId.
  */
 public class ConditionTargetNpcId extends Condition {
-    private final Set<Integer> _npcIds;
+    private final Set<Integer> npcIds;
 
     /**
      * Instantiates a new condition target npc id.
      * @param npcIds the npc ids
      */
     public ConditionTargetNpcId(Set<Integer> npcIds) {
-        _npcIds = npcIds;
+        this.npcIds = npcIds;
     }
 
     @Override
     public boolean testImpl(Creature effector, Creature effected, Skill skill, ItemTemplate item) {
         final WorldObject target = (effector == null) || !effector.isPlayer() ? effected : effector.getTarget();
-        return (target != null) && (target.isNpc() || target.isDoor()) && _npcIds.contains(target.getId());
+        return (target != null) && (target.isNpc() || target.isDoor()) && npcIds.contains(target.getId());
     }
 }

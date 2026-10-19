@@ -28,14 +28,14 @@ import app.l2nx.highfive.entity.actor.instance.Cubic;
  * @author Sdw
  */
 public class RangeCondition implements ICubicCondition {
-    private final int _range;
+    private final int range;
 
     public RangeCondition(int range) {
-        _range = range;
+        this.range = range;
     }
 
     @Override
     public boolean test(Cubic cubic, Creature owner, WorldObject target) {
-        return (owner != null) && (target != null) && (owner.calculateDistance2D(target) <= _range);
+        return (owner != null) && (target != null) && (owner.calculateDistance2D(target) <= range);
     }
 }

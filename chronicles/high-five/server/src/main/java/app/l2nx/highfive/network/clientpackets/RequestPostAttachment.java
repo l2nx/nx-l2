@@ -44,11 +44,11 @@ import app.l2nx.highfive.network.serverpackets.SystemMessage;
  * @author Migi, DS
  */
 public class RequestPostAttachment extends ClientPacket {
-    private int _msgId;
+    private int msgId;
 
     @Override
     protected void readImpl() {
-        _msgId = readInt();
+        msgId = readInt();
     }
 
     @Override
@@ -91,7 +91,7 @@ public class RequestPostAttachment extends ClientPacket {
             return;
         }
 
-        final MailMessage msg = MailManager.getInstance().getMessage(_msgId);
+        final MailMessage msg = MailManager.getInstance().getMessage(msgId);
         if (msg == null) {
             return;
         }
@@ -236,7 +236,7 @@ public class RequestPostAttachment extends ClientPacket {
             sender.sendPacket(sm);
         }
 
-        player.sendPacket(new ExChangePostState(true, _msgId, MailMessage.READED));
+        player.sendPacket(new ExChangePostState(true, msgId, MailMessage.READED));
         player.sendPacket(SystemMessageId.MAIL_SUCCESSFULLY_RECEIVED);
         player.sendPacket(new ExShowReceivedPostList(player.getObjectId()));
     }

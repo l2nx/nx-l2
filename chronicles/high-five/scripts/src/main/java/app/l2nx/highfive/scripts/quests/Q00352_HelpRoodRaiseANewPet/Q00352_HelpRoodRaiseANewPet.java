@@ -27,6 +27,7 @@ import app.l2nx.highfive.mechanics.script.QuestState;
 import app.l2nx.highfive.util.LocationUtil;
 import java.util.HashMap;
 import java.util.Map;
+import lombok.Getter;
 
 /**
  * Help Rood Raise A New Pet! (352)
@@ -34,20 +35,15 @@ import java.util.Map;
  */
 public class Q00352_HelpRoodRaiseANewPet extends Quest {
     private static class DropInfo {
-        public int _firstChance;
-        public int _secondChance;
+        @Getter
+        public int firstChance;
+
+        @Getter
+        public int secondChance;
 
         public DropInfo(int firstChance, int secondChance) {
-            _firstChance = firstChance;
-            _secondChance = secondChance;
-        }
-
-        public int getFirstChance() {
-            return _firstChance;
-        }
-
-        public int getSecondChance() {
-            return _secondChance;
+            this.firstChance = firstChance;
+            this.secondChance = secondChance;
         }
     }
 
@@ -132,21 +128,21 @@ public class Q00352_HelpRoodRaiseANewPet extends Quest {
         if (qs.isCreated()) {
             htmltext = (player.getLevel() >= MIN_LEVEL) ? "31067-01.htm" : "31067-05.html";
         } else if (qs.isStarted()) {
-            final long LienrikEgg1Count = getQuestItemsCount(player, LIENRIK_EGG1);
-            final long LienrikEgg2Count = getQuestItemsCount(player, LIENRIK_EGG2);
-            if ((LienrikEgg1Count == 0) && (LienrikEgg2Count == 0)) {
+            final long lienrikEgg1Count = getQuestItemsCount(player, LIENRIK_EGG1);
+            final long lienrikEgg2Count = getQuestItemsCount(player, LIENRIK_EGG2);
+            if ((lienrikEgg1Count == 0) && (lienrikEgg2Count == 0)) {
                 htmltext = "31067-06.html";
-            } else if ((LienrikEgg1Count >= 1) && (LienrikEgg2Count == 0)) {
-                if (LienrikEgg1Count >= 10) {
-                    giveAdena(player, (LienrikEgg1Count * 34) + 4000, true);
+            } else if ((lienrikEgg1Count >= 1) && (lienrikEgg2Count == 0)) {
+                if (lienrikEgg1Count >= 10) {
+                    giveAdena(player, (lienrikEgg1Count * 34) + 4000, true);
                 } else {
-                    giveAdena(player, (LienrikEgg1Count * 34) + 2000, true);
+                    giveAdena(player, (lienrikEgg1Count * 34) + 2000, true);
                 }
 
                 takeItems(player, LIENRIK_EGG1, -1);
                 htmltext = "31067-10.html";
-            } else if (LienrikEgg1Count >= 1) {
-                giveAdena(player, 4000 + ((LienrikEgg1Count * 34) + (LienrikEgg2Count * 1025)), true);
+            } else if (lienrikEgg1Count >= 1) {
+                giveAdena(player, 4000 + ((lienrikEgg1Count * 34) + (lienrikEgg2Count * 1025)), true);
                 takeItems(player, LIENRIK_EGG1, -1);
                 takeItems(player, LIENRIK_EGG2, -1);
                 htmltext = "31067-11.html";

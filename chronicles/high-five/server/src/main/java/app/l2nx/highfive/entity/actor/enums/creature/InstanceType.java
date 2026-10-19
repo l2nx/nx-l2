@@ -22,6 +22,8 @@
  */
 package app.l2nx.highfive.entity.actor.enums.creature;
 
+import lombok.Getter;
+
 public enum InstanceType {
     WorldObject(null),
     Item(WorldObject),
@@ -119,43 +121,41 @@ public enum InstanceType {
     EventMob(Npc),
     UCManagerInstance(Folk);
 
-    private final InstanceType _parent;
-    private final long _typeL;
-    private final long _typeH;
-    private final long _maskL;
-    private final long _maskH;
+    @Getter
+    private final InstanceType parent;
+
+    private final long typeL;
+    private final long typeH;
+    private final long maskL;
+    private final long maskH;
 
     private InstanceType(InstanceType parent) {
-        _parent = parent;
+        this.parent = parent;
 
         final int high = ordinal() - (Long.SIZE - 1);
         if (high < 0) {
-            _typeL = 1L << ordinal();
-            _typeH = 0;
+            typeL = 1L << ordinal();
+            typeH = 0;
         } else {
-            _typeL = 0;
-            _typeH = 1L << high;
+            typeL = 0;
+            typeH = 1L << high;
         }
 
-        if ((_typeL < 0) || (_typeH < 0)) {
+        if ((typeL < 0) || (typeH < 0)) {
             throw new Error("Too many instance types, failed to load " + name());
         }
 
         if (parent != null) {
-            _maskL = _typeL | parent._maskL;
-            _maskH = _typeH | parent._maskH;
+            maskL = typeL | parent.maskL;
+            maskH = typeH | parent.maskH;
         } else {
-            _maskL = _typeL;
-            _maskH = _typeH;
+            maskL = typeL;
+            maskH = typeH;
         }
     }
 
-    public InstanceType getParent() {
-        return _parent;
-    }
-
     public boolean isType(InstanceType it) {
-        return ((_maskL & it._typeL) > 0) || ((_maskH & it._typeH) > 0);
+        return ((maskL & it.typeL) > 0) || ((maskH & it.typeH) > 0);
     }
 
     public boolean isTypes(InstanceType... it) {

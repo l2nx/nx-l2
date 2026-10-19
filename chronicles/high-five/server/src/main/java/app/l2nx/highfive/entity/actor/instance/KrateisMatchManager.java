@@ -30,12 +30,16 @@ import app.l2nx.highfive.mechanics.krateisCube.KrateiArena;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.serverpackets.ExPVPMatchCCRetire;
 import java.util.concurrent.ThreadLocalRandom;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * @author LordWinter
  */
 public class KrateisMatchManager extends Folk {
-    private int _arenaId = 0;
+    @Getter
+    @Setter
+    private int arenaId = 0;
 
     public KrateisMatchManager(NpcTemplate template) {
         super(template);
@@ -90,13 +94,5 @@ public class KrateisMatchManager extends Folk {
         }
 
         return "data/html/krateisCube/" + pom + ".htm";
-    }
-
-    public void setArenaId(int id) {
-        _arenaId = id;
-    }
-
-    public int getArenaId() {
-        return _arenaId;
     }
 }

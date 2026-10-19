@@ -24,16 +24,17 @@ package app.l2nx.highfive.network.clientpackets;
 
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.item.Henna;
-import app.l2nx.highfive.network.PacketLogger;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.serverpackets.ActionFailed;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class RequestHennaRemove extends ClientPacket {
-    private int _symbolId;
+    private int symbolId;
 
     @Override
     protected void readImpl() {
-        _symbolId = readInt();
+        symbolId = readInt();
     }
 
     @Override
@@ -52,7 +53,7 @@ public class RequestHennaRemove extends ClientPacket {
         boolean found = false;
         for (int i = 1; i <= 3; i++) {
             henna = player.getHenna(i);
-            if ((henna != null) && (henna.getDyeId() == _symbolId)) {
+            if ((henna != null) && (henna.getDyeId() == symbolId)) {
                 if (player.getAdena() >= henna.getCancelFee()) {
                     player.removeHenna(i);
                 } else {
@@ -66,8 +67,10 @@ public class RequestHennaRemove extends ClientPacket {
         }
 
         if (!found) {
-            PacketLogger.warning(
-                    getClass().getSimpleName() + ": " + player + " requested Henna Draw remove without any henna.");
+            log.warn(
+                    "{}: {} requested Henna Draw remove without any henna.",
+                    getClass().getSimpleName(),
+                    player);
             player.sendPacket(ActionFailed.STATIC_PACKET);
         }
     }

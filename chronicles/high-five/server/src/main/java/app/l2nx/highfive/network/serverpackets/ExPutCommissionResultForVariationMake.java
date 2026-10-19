@@ -27,30 +27,30 @@ import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.network.buffer.WriteBuffer;
 
 public class ExPutCommissionResultForVariationMake extends ServerPacket {
-    private final int _gemstoneObjId;
-    private final int _itemId;
-    private final long _gemstoneCount;
-    private final int _unk1;
-    private final int _unk2;
-    private final int _unk3;
+    private final int gemstoneObjId;
+    private final int itemId;
+    private final long gemstoneCount;
+    private final int unk1;
+    private final int unk2;
+    private final int unk3;
 
     public ExPutCommissionResultForVariationMake(int gemstoneObjId, long count, int itemId) {
-        _gemstoneObjId = gemstoneObjId;
-        _itemId = itemId;
-        _gemstoneCount = count;
-        _unk1 = 0;
-        _unk2 = 0;
-        _unk3 = 1;
+        this.gemstoneObjId = gemstoneObjId;
+        this.itemId = itemId;
+        gemstoneCount = count;
+        unk1 = 0;
+        unk2 = 0;
+        unk3 = 1;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_PUT_COMMISSION_RESULT_FOR_VARIATION_MAKE.writeId(this, buffer);
-        buffer.writeInt(_gemstoneObjId);
-        buffer.writeInt(_itemId);
-        buffer.writeLong(_gemstoneCount);
-        buffer.writeInt(_unk1);
-        buffer.writeInt(_unk2);
-        buffer.writeInt(_unk3);
+        buffer.writeInt(gemstoneObjId);
+        buffer.writeInt(itemId);
+        buffer.writeLong(gemstoneCount);
+        buffer.writeInt(unk1);
+        buffer.writeInt(unk2);
+        buffer.writeInt(unk3);
     }
 }

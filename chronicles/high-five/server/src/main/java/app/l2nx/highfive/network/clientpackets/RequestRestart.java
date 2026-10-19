@@ -37,19 +37,22 @@ import app.l2nx.highfive.mechanics.variables.PlayerVariables;
 import app.l2nx.highfive.network.ConnectionState;
 import app.l2nx.highfive.network.Disconnection;
 import app.l2nx.highfive.network.GameClient;
-import app.l2nx.highfive.network.PacketLogger;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.serverpackets.ActionFailed;
 import app.l2nx.highfive.network.serverpackets.CharSelectionInfo;
 import app.l2nx.highfive.network.serverpackets.RestartResponse;
 import app.l2nx.highfive.taskmanagers.AttackStanceTaskManager;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @version $Revision: 1.11.2.1.2.4 $ $Date: 2005/03/27 15:29:30 $
  */
+@Slf4j
 public class RequestRestart extends ClientPacket {
-    protected static final Logger LOGGER_ACCOUNTING = Logger.getLogger("accounting");
+
+    private static final Logger ACCOUNTING_LOG = LoggerFactory.getLogger("accounting");
 
     @Override
     protected void readImpl() {}
@@ -69,7 +72,7 @@ public class RequestRestart extends ClientPacket {
         }
 
         if (player.isChangingClass()) {
-            PacketLogger.warning(player + " tried to restart during class change.");
+            log.warn("{} tried to restart during class change.", player);
             player.sendPacket(RestartResponse.valueOf(false));
             player.sendPacket(ActionFailed.STATIC_PACKET);
             return;
@@ -141,7 +144,7 @@ public class RequestRestart extends ClientPacket {
 
         final GameClient client = getClient();
         if (OfflineTraderTable.getInstance().enteredOfflineMode(player)) {
-            LOGGER_ACCOUNTING.info("Entered offline mode, " + client);
+            ACCOUNTING_LOG.info("Entered offline mode, {}", client);
         } else {
             Disconnection.of(client, player).storeAndDelete();
         }

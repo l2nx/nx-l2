@@ -28,8 +28,8 @@ import app.l2nx.network.buffer.WriteBuffer;
  * @author mrTJO
  */
 public class ExCubeGameChangeTeam extends ServerPacket {
-    private final Player _player;
-    private final boolean _fromRedTeam;
+    private final Player player;
+    private final boolean fromRedTeam;
 
     /**
      * Move Player from Team x to Team y
@@ -37,16 +37,16 @@ public class ExCubeGameChangeTeam extends ServerPacket {
      * @param fromRedTeam Is Player from Red Team?
      */
     public ExCubeGameChangeTeam(Player player, boolean fromRedTeam) {
-        _player = player;
-        _fromRedTeam = fromRedTeam;
+        this.player = player;
+        this.fromRedTeam = fromRedTeam;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_BLOCK_UP_SET_LIST.writeId(this, buffer);
         buffer.writeInt(5);
-        buffer.writeInt(_player.getObjectId());
-        buffer.writeInt(_fromRedTeam);
-        buffer.writeInt(!_fromRedTeam);
+        buffer.writeInt(player.getObjectId());
+        buffer.writeInt(fromRedTeam);
+        buffer.writeInt(!fromRedTeam);
     }
 }

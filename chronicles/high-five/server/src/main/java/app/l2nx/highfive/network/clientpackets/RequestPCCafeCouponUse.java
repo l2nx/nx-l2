@@ -19,22 +19,23 @@
  */
 package app.l2nx.highfive.network.clientpackets;
 
-import app.l2nx.highfive.network.PacketLogger;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Format: (ch) S
  * @author -Wooden-
  */
+@Slf4j
 public class RequestPCCafeCouponUse extends ClientPacket {
-    private String _str;
+    private String str;
 
     @Override
     protected void readImpl() {
-        _str = readString();
+        str = readString();
     }
 
     @Override
     protected void runImpl() {
-        PacketLogger.info("C5: RequestPCCafeCouponUse: S: " + _str);
+        log.info("C5: RequestPCCafeCouponUse: S: {}", str);
     }
 }

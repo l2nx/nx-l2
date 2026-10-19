@@ -28,17 +28,17 @@ import app.l2nx.network.buffer.WriteBuffer;
  * @author KenM
  */
 public class ExPartyPetWindowDelete extends ServerPacket {
-    private final Summon _summon;
+    private final Summon summon;
 
     public ExPartyPetWindowDelete(Summon summon) {
-        _summon = summon;
+        this.summon = summon;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_PARTY_PET_WINDOW_DELETE.writeId(this, buffer);
-        buffer.writeInt(_summon.getObjectId());
-        buffer.writeInt(_summon.getOwner().getObjectId());
-        buffer.writeString(_summon.getName());
+        buffer.writeInt(summon.getObjectId());
+        buffer.writeInt(summon.getOwner().getObjectId());
+        buffer.writeString(summon.getName());
     }
 }

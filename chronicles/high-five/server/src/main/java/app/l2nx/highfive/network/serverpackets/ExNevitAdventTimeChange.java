@@ -27,12 +27,12 @@ import app.l2nx.network.buffer.WriteBuffer;
  * @author mochitto
  */
 public class ExNevitAdventTimeChange extends ServerPacket {
-    private final boolean _paused;
-    private final int _time;
+    private final boolean paused;
+    private final int time;
 
     public ExNevitAdventTimeChange(int time, boolean paused) {
-        _time = (time > 14400) ? 14400 : time;
-        _paused = paused;
+        this.time = (time > 14400) ? 14400 : time;
+        this.paused = paused;
     }
 
     @Override
@@ -40,9 +40,9 @@ public class ExNevitAdventTimeChange extends ServerPacket {
         ServerPackets.EX_NAVIT_ADVENT_TIME_CHANGE.writeId(this, buffer);
 
         // state 0 - pause 1 - started
-        buffer.writeByte(!_paused);
+        buffer.writeByte(!paused);
 
         // left time in ms max is 16000 its 4m and state is automatically changed to quit
-        buffer.writeInt(_time);
+        buffer.writeInt(time);
     }
 }

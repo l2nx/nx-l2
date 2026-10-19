@@ -23,10 +23,10 @@ package app.l2nx.highfive.mechanics.clientstrings;
  * @author Forsaiken
  */
 public class BuilderContainer extends Builder {
-    private final Builder[] _builders;
+    private final Builder[] builders;
 
     BuilderContainer(Builder[] builders) {
-        _builders = builders;
+        this.builders = builders;
     }
 
     @Override
@@ -36,7 +36,7 @@ public class BuilderContainer extends Builder {
 
     @Override
     public String toString(Object... params) {
-        final int buildersLength = _builders.length;
+        final int buildersLength = builders.length;
         final int paramsLength = params.length;
         final String[] builds = new String[buildersLength];
         Builder builder;
@@ -46,7 +46,7 @@ public class BuilderContainer extends Builder {
         int buildTextLen = 0;
         if (paramsLength != 0) {
             for (i = buildersLength; i-- > 0; ) {
-                builder = _builders[i];
+                builder = builders[i];
                 paramIndex = builder.getIndex();
                 build = (paramIndex != -1) && (paramIndex < paramsLength)
                         ? builder.toString(params[paramIndex])
@@ -56,7 +56,7 @@ public class BuilderContainer extends Builder {
             }
         } else {
             for (i = buildersLength; i-- > 0; ) {
-                build = _builders[i].toString();
+                build = builders[i].toString();
                 buildTextLen += build.length();
                 builds[i] = build;
             }

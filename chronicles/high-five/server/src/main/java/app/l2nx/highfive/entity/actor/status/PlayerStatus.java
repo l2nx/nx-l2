@@ -42,9 +42,11 @@ import app.l2nx.highfive.network.serverpackets.ActionFailed;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
 import app.l2nx.highfive.util.LocationUtil;
 import java.util.concurrent.ThreadLocalRandom;
+import lombok.Getter;
 
 public class PlayerStatus extends PlayableStatus {
-    private double _currentCp = 0; // Current CP of the Player
+    @Getter
+    private double currentCp = 0; // Current CP of the Player
 
     public PlayerStatus(Player player) {
         super(player);
@@ -52,7 +54,7 @@ public class PlayerStatus extends PlayableStatus {
 
     @Override
     public void reduceCp(int value) {
-        setCurrentCp(_currentCp > value ? _currentCp - value : 0);
+        setCurrentCp(currentCp > value ? currentCp - value : 0);
     }
 
     @Override
@@ -201,11 +203,11 @@ public class PlayerStatus extends PlayableStatus {
             }
 
             if (!ignoreCP && (attacker.isPlayable() || attacker.isFakePlayer())) {
-                if (_currentCp >= amount) {
-                    setCurrentCp(_currentCp - amount); // Set Cp to diff of Cp vs value.
+                if (currentCp >= amount) {
+                    setCurrentCp(currentCp - amount); // Set Cp to diff of Cp vs value.
                     amount = 0; // No need to subtract anything from Hp.
                 } else {
-                    amount -= _currentCp; // Get diff from value vs Cp; will apply diff to Hp.
+                    amount -= currentCp; // Get diff from value vs Cp; will apply diff to Hp.
                     setCurrentCp(0, false); // Set Cp to 0
                 }
             }
@@ -303,18 +305,13 @@ public class PlayerStatus extends PlayableStatus {
     }
 
     @Override
-    public double getCurrentCp() {
-        return _currentCp;
-    }
-
-    @Override
     public void setCurrentCp(double newCp) {
         setCurrentCp(newCp, true);
     }
 
     public void setCurrentCp(double value, boolean broadcastPacket) {
         // Get the Max CP of the Creature.
-        final int currentCp = (int) _currentCp;
+        final int currentCp = (int) this.currentCp;
         final Player player = getActiveChar();
         final int maxCp = player.getStat().getMaxCp();
 
@@ -326,17 +323,17 @@ public class PlayerStatus extends PlayableStatus {
             final double newCp = Math.max(0, value);
             if (newCp >= maxCp) {
                 // Set the RegenActive flag to false.
-                _currentCp = maxCp;
-                _flagsRegenActive &= ~REGEN_FLAG_CP;
+                this.currentCp = maxCp;
+                flagsRegenActive &= ~REGEN_FLAG_CP;
 
                 // Stop the HP/MP/CP Regeneration task.
-                if (_flagsRegenActive == 0) {
+                if (flagsRegenActive == 0) {
                     stopHpMpRegeneration();
                 }
             } else {
                 // Set the RegenActive flag to true.
-                _currentCp = newCp;
-                _flagsRegenActive |= REGEN_FLAG_CP;
+                this.currentCp = newCp;
+                flagsRegenActive |= REGEN_FLAG_CP;
 
                 // Start the HP/MP/CP Regeneration task with Medium priority.
                 startHpMpRegeneration();
@@ -344,7 +341,7 @@ public class PlayerStatus extends PlayableStatus {
         }
 
         // Send the Server->Client packet StatusUpdate with current HP and MP to all other Player to inform.
-        if ((currentCp != _currentCp) && broadcastPacket) {
+        if ((currentCp != this.currentCp) && broadcastPacket) {
             player.broadcastStatusUpdate();
         }
     }
@@ -355,8 +352,8 @@ public class PlayerStatus extends PlayableStatus {
         final PlayerStat stat = player.getStat();
 
         // Modify the current CP of the Creature and broadcast Server->Client packet StatusUpdate.
-        if (_currentCp < stat.getMaxRecoverableCp()) {
-            setCurrentCp(_currentCp + Formulas.calcCpRegen(player), false);
+        if (currentCp < stat.getMaxRecoverableCp()) {
+            setCurrentCp(currentCp + Formulas.calcCpRegen(player), false);
         }
 
         // Modify the current HP of the Creature and broadcast Server->Client packet StatusUpdate.

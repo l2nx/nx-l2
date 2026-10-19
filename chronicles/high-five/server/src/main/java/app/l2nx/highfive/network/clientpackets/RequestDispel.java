@@ -30,20 +30,20 @@ import app.l2nx.highfive.mechanics.skill.enums.SkillFinishType;
  * @author KenM
  */
 public class RequestDispel extends ClientPacket {
-    private int _objectId;
-    private int _skillId;
-    private int _skillLevel;
+    private int objectId;
+    private int skillId;
+    private int skillLevel;
 
     @Override
     protected void readImpl() {
-        _objectId = readInt();
-        _skillId = readInt();
-        _skillLevel = readInt();
+        objectId = readInt();
+        skillId = readInt();
+        skillLevel = readInt();
     }
 
     @Override
     protected void runImpl() {
-        if ((_skillId <= 0) || (_skillLevel <= 0)) {
+        if ((skillId <= 0) || (skillLevel <= 0)) {
             return;
         }
 
@@ -52,7 +52,7 @@ public class RequestDispel extends ClientPacket {
             return;
         }
 
-        final Skill skill = SkillData.getInstance().getSkill(_skillId, _skillLevel);
+        final Skill skill = SkillData.getInstance().getSkill(skillId, skillLevel);
         if (skill == null) {
             return;
         }
@@ -69,11 +69,11 @@ public class RequestDispel extends ClientPacket {
             return;
         }
 
-        if (player.getObjectId() == _objectId) {
-            player.stopSkillEffects(SkillFinishType.REMOVED, _skillId);
+        if (player.getObjectId() == objectId) {
+            player.stopSkillEffects(SkillFinishType.REMOVED, skillId);
         } else {
-            if (player.hasSummon() && (player.getSummon().getObjectId() == _objectId)) {
-                player.getSummon().stopSkillEffects(SkillFinishType.REMOVED, _skillId);
+            if (player.hasSummon() && (player.getSummon().getObjectId() == objectId)) {
+                player.getSummon().stopSkillEffects(SkillFinishType.REMOVED, skillId);
             }
         }
     }

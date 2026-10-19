@@ -29,100 +29,89 @@ import app.l2nx.highfive.network.serverpackets.ServerPacket;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
 import java.util.Collection;
 import java.util.concurrent.ConcurrentHashMap;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * Petition
  * @author xban1x
  */
 public class Petition {
-    private final long _submitTime = System.currentTimeMillis();
-    private final int _id;
-    private final PetitionType _type;
-    private PetitionState _state = PetitionState.PENDING;
-    private final String _content;
-    private final Collection<CreatureSay> _messageLog = ConcurrentHashMap.newKeySet();
-    private final Player _petitioner;
-    private Player _responder;
+    @Getter
+    private final long submitTime = System.currentTimeMillis();
+
+    @Getter
+    private final int id;
+
+    private final PetitionType type;
+
+    @Getter
+    @Setter
+    private PetitionState state = PetitionState.PENDING;
+
+    @Getter
+    private final String content;
+
+    @Getter
+    private final Collection<CreatureSay> logMessages = ConcurrentHashMap.newKeySet();
+
+    @Getter
+    private final Player petitioner;
+
+    @Getter
+    private Player responder;
 
     public Petition(Player petitioner, String petitionText, int petitionType) {
-        _id = IdManager.getInstance().getNextId();
-        _type = PetitionType.values()[petitionType - 1];
-        _content = petitionText;
-        _petitioner = petitioner;
+        id = IdManager.getInstance().getNextId();
+        type = PetitionType.values()[petitionType - 1];
+        content = petitionText;
+        this.petitioner = petitioner;
     }
 
     public boolean addLogMessage(CreatureSay cs) {
-        return _messageLog.add(cs);
-    }
-
-    public Collection<CreatureSay> getLogMessages() {
-        return _messageLog;
+        return logMessages.add(cs);
     }
 
     public boolean endPetitionConsultation(PetitionState endState) {
         setState(endState);
 
-        if ((_responder != null) && _responder.isOnline()) {
+        if ((responder != null) && responder.isOnline()) {
             if (endState == PetitionState.RESPONDER_REJECT) {
-                _petitioner.sendMessage("Your petition was rejected. Please try again later.");
+                petitioner.sendMessage("Your petition was rejected. Please try again later.");
             } else {
                 // Ending petition consultation with <Player>.
                 SystemMessage sm = new SystemMessage(SystemMessageId.ENDING_PETITION_CONSULTATION_WITH_C1);
-                sm.addString(_petitioner.getName());
-                _responder.sendPacket(sm);
+                sm.addString(petitioner.getName());
+                responder.sendPacket(sm);
 
                 if (endState == PetitionState.PETITIONER_CANCEL) {
                     // Receipt No. <ID> petition cancelled.
                     sm = new SystemMessage(SystemMessageId.RECEIPT_NO_S1_PETITION_CANCELLED);
-                    sm.addInt(_id);
-                    _responder.sendPacket(sm);
+                    sm.addInt(id);
+                    responder.sendPacket(sm);
                 }
             }
         }
 
         // End petition consultation and inform them, if they are still online. And if petitioner is online, enable
         // Evaluation button.
-        if ((_petitioner != null) && _petitioner.isOnline()) {
-            _petitioner.sendPacket(
+        if ((petitioner != null) && petitioner.isOnline()) {
+            petitioner.sendPacket(
                     SystemMessageId
                             .THIS_ENDS_THE_GM_PETITION_CONSULTATION_NPLEASE_GIVE_US_FEEDBACK_ON_THE_PETITION_SERVICE);
-            _petitioner.sendPacket(PetitionVotePacket.STATIC_PACKET);
+            petitioner.sendPacket(PetitionVotePacket.STATIC_PACKET);
         }
 
         PetitionManager.getInstance().getCompletedPetitions().put(getId(), this);
         return PetitionManager.getInstance().getPendingPetitions().remove(getId()) != null;
     }
 
-    public String getContent() {
-        return _content;
-    }
-
-    public int getId() {
-        return _id;
-    }
-
-    public Player getPetitioner() {
-        return _petitioner;
-    }
-
-    public Player getResponder() {
-        return _responder;
-    }
-
-    public long getSubmitTime() {
-        return _submitTime;
-    }
-
-    public PetitionState getState() {
-        return _state;
-    }
-
     public String getTypeAsString() {
-        return _type.toString().replace('_', ' ');
+        return type.toString().replace('_', ' ');
     }
 
     public void sendPetitionerPacket(ServerPacket responsePacket) {
-        if ((_petitioner == null) || !_petitioner.isOnline()) {
+        if ((petitioner == null) || !petitioner.isOnline()) {
             // Allows petitioners to see the results of their petition when
             // they log back into the game.
 
@@ -130,27 +119,23 @@ public class Petition {
             return;
         }
 
-        _petitioner.sendPacket(responsePacket);
+        petitioner.sendPacket(responsePacket);
     }
 
     public void sendResponderPacket(ServerPacket responsePacket) {
-        if ((_responder == null) || !_responder.isOnline()) {
+        if ((responder == null) || !responder.isOnline()) {
             endPetitionConsultation(PetitionState.RESPONDER_MISSING);
             return;
         }
 
-        _responder.sendPacket(responsePacket);
-    }
-
-    public void setState(PetitionState state) {
-        _state = state;
+        responder.sendPacket(responsePacket);
     }
 
     public void setResponder(Player respondingAdmin) {
-        if (_responder != null) {
+        if (responder != null) {
             return;
         }
 
-        _responder = respondingAdmin;
+        responder = respondingAdmin;
     }
 }

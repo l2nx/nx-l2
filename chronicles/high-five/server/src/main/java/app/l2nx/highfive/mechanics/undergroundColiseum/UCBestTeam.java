@@ -22,34 +22,27 @@
  */
 package app.l2nx.highfive.mechanics.undergroundColiseum;
 
+import lombok.Getter;
+import lombok.Setter;
+
 public class UCBestTeam {
-    private final int _arenaId;
-    private String _leaderName;
-    private int _wins;
+    @Getter
+    private final int arenaId;
+
+    @Getter
+    private String leaderName;
+
+    @Getter
+    @Setter
+    private int wins;
 
     public UCBestTeam(int arenaId, String leaderName, int wins) {
-        _arenaId = arenaId;
-        _leaderName = leaderName;
-        _wins = wins;
-    }
-
-    public int getArenaId() {
-        return _arenaId;
-    }
-
-    public String getLeaderName() {
-        return _leaderName;
+        this.arenaId = arenaId;
+        this.leaderName = leaderName;
+        this.wins = wins;
     }
 
     public void setLeader(String leader) {
-        _leaderName = leader;
-    }
-
-    public int getWins() {
-        return _wins;
-    }
-
-    public void setWins(int wins) {
-        _wins = wins;
+        leaderName = leader;
     }
 }

@@ -7,6 +7,7 @@ package app.l2nx.login.repository;
 import app.l2nx.login.controller.AccountInfo;
 import java.util.List;
 import java.util.Optional;
+import lombok.Builder;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
@@ -110,9 +111,13 @@ public class AccountRepository {
         return jdbcClient
                 .sql(SELECT_IP_AUTH)
                 .param(login)
-                .query((rs, rowNum) -> new IpAuth(rs.getString("ip"), rs.getString("type")))
+                .query((rs, rowNum) -> IpAuth.builder()
+                        .ip(rs.getString("ip"))
+                        .type(rs.getString("type"))
+                        .build())
                 .list();
     }
 
+    @Builder(toBuilder = true)
     public record IpAuth(String ip, String type) {}
 }

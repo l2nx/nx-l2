@@ -28,51 +28,58 @@ import app.l2nx.highfive.entity.zone.ZoneForm;
 import app.l2nx.highfive.geoengine.GeoEngine;
 import java.awt.Rectangle;
 import java.util.concurrent.ThreadLocalRandom;
+import lombok.Getter;
 
 /**
  * A primitive rectangular zone
  * @author durgus, Mobius
  */
 public class ZoneCuboid extends ZoneForm {
-    private final int _z1;
-    private final int _z2;
-    private final Rectangle _r;
-    private final Location _centerPoint;
+    @Getter
+    private final int lowZ;
+
+    @Getter
+    private final int highZ;
+
+    private final Rectangle r;
+
+    @Getter
+    private final Location centerPoint;
 
     public ZoneCuboid(int x1, int x2, int y1, int y2, int z1, int z2) {
-        final int _x1 = Math.min(x1, x2);
-        final int _x2 = Math.max(x1, x2);
-        final int _y1 = Math.min(y1, y2);
-        final int _y2 = Math.max(y1, y2);
+        final int minX = Math.min(x1, x2);
+        final int maxX = Math.max(x1, x2);
+        final int minY = Math.min(y1, y2);
+        final int maxY = Math.max(y1, y2);
 
-        _r = new Rectangle(_x1, _y1, _x2 - _x1, _y2 - _y1);
+        r = new Rectangle(minX, minY, maxX - minX, maxY - minY);
 
-        _z1 = Math.min(z1, z2);
-        _z2 = Math.max(z1, z2);
+        lowZ = Math.min(z1, z2);
+        highZ = Math.max(z1, z2);
 
-        _centerPoint = new Location((_x1 + _x2) / 2, (_y1 + _y2) / 2, (_z1 + _z2) / 2);
+        centerPoint = new Location((minX + maxX) / 2, (minY + maxY) / 2, (lowZ + highZ) / 2);
     }
 
     @Override
     public boolean isInsideZone(int x, int y, int z) {
-        return _r.contains(x, y) && (z >= _z1) && (z <= _z2);
+        return r.contains(x, y) && (z >= lowZ) && (z <= highZ);
     }
 
     @Override
     public boolean intersectsRectangle(int ax1, int ax2, int ay1, int ay2) {
-        return _r.intersects(Math.min(ax1, ax2), Math.min(ay1, ay2), Math.abs(ax2 - ax1), Math.abs(ay2 - ay1));
+        return r.intersects(Math.min(ax1, ax2), Math.min(ay1, ay2), Math.abs(ax2 - ax1), Math.abs(ay2 - ay1));
     }
 
     @Override
     public double getDistanceToZone(int x, int y) {
-        final int _x1 = _r.x;
-        final int _x2 = _r.x + _r.width;
-        final int _y1 = _r.y;
-        final int _y2 = _r.y + _r.height;
-        final double dx1 = _x1 - x;
-        final double dx2 = _x2 - x;
-        final double dy1 = _y1 - y;
-        final double dy2 = _y2 - y;
+        final int x1 = r.x;
+        final int x2 = r.x + r.width;
+        final int y1 = r.y;
+        final int y2 = r.y + r.height;
+        final double dx1 = x1 - x;
+        final double dx2 = x2 - x;
+        final double dy1 = y1 - y;
+        final double dy2 = y2 - y;
         final double dx1Sq = dx1 * dx1;
         final double dx2Sq = dx2 * dx2;
         final double dy1Sq = dy1 * dy1;
@@ -97,50 +104,32 @@ public class ZoneCuboid extends ZoneForm {
         return Math.sqrt(shortestDist);
     }
 
-    /*
-     * getLowZ() / getHighZ() - These two functions were added to cope with the demand of the new fishing algorithms, which are now able to correctly place the hook in the water, thanks to getHighZ(). getLowZ() was added, considering potential future modifications.
-     */
-    @Override
-    public int getLowZ() {
-        return _z1;
-    }
-
-    @Override
-    public int getHighZ() {
-        return _z2;
-    }
-
     @Override
     public void visualizeZone(int z) {
-        final int _x1 = _r.x;
-        final int _x2 = _r.x + _r.width;
-        final int _y1 = _r.y;
-        final int _y2 = _r.y + _r.height;
+        final int x1 = r.x;
+        final int x2 = r.x + r.width;
+        final int y1 = r.y;
+        final int y2 = r.y + r.height;
 
         // x1->x2
-        for (int x = _x1; x < _x2; x += STEP) {
-            dropDebugItem(Inventory.ADENA_ID, 1, x, _y1, z);
-            dropDebugItem(Inventory.ADENA_ID, 1, x, _y2, z);
+        for (int x = x1; x < x2; x += STEP) {
+            dropDebugItem(Inventory.ADENA_ID, 1, x, y1, z);
+            dropDebugItem(Inventory.ADENA_ID, 1, x, y2, z);
         }
 
         // y1->y2
-        for (int y = _y1; y < _y2; y += STEP) {
-            dropDebugItem(Inventory.ADENA_ID, 1, _x1, y, z);
-            dropDebugItem(Inventory.ADENA_ID, 1, _x2, y, z);
+        for (int y = y1; y < y2; y += STEP) {
+            dropDebugItem(Inventory.ADENA_ID, 1, x1, y, z);
+            dropDebugItem(Inventory.ADENA_ID, 1, x2, y, z);
         }
     }
 
     @Override
     public Location getRandomPoint() {
         final ThreadLocalRandom random = ThreadLocalRandom.current();
-        final int x = random.nextInt(_r.x, _r.x + _r.width + 1);
-        final int y = random.nextInt(_r.y, _r.y + _r.height + 1);
+        final int x = random.nextInt(r.x, r.x + r.width + 1);
+        final int y = random.nextInt(r.y, r.y + r.height + 1);
 
-        return new Location(x, y, GeoEngine.getInstance().getHeight(x, y, (_z1 + _z2) / 2));
-    }
-
-    @Override
-    public Location getCenterPoint() {
-        return _centerPoint;
+        return new Location(x, y, GeoEngine.getInstance().getHeight(x, y, (lowZ + highZ) / 2));
     }
 }

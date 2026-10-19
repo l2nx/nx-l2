@@ -29,26 +29,26 @@ import app.l2nx.network.buffer.WriteBuffer;
  * @author Maktakien
  */
 public class StopMoveInVehicle extends ServerPacket {
-    private final int _objectId;
-    private final int _boatId;
-    private final Location _pos;
-    private final int _heading;
+    private final int objectId;
+    private final int boatId;
+    private final Location pos;
+    private final int heading;
 
     public StopMoveInVehicle(Player player, int boatId) {
-        _objectId = player.getObjectId();
-        _boatId = boatId;
-        _pos = player.getInVehiclePosition();
-        _heading = player.getHeading();
+        objectId = player.getObjectId();
+        this.boatId = boatId;
+        pos = player.getInVehiclePosition();
+        heading = player.getHeading();
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.STOP_MOVE_IN_VEHICLE.writeId(this, buffer);
-        buffer.writeInt(_objectId);
-        buffer.writeInt(_boatId);
-        buffer.writeInt(_pos.getX());
-        buffer.writeInt(_pos.getY());
-        buffer.writeInt(_pos.getZ());
-        buffer.writeInt(_heading);
+        buffer.writeInt(objectId);
+        buffer.writeInt(boatId);
+        buffer.writeInt(pos.getX());
+        buffer.writeInt(pos.getY());
+        buffer.writeInt(pos.getZ());
+        buffer.writeInt(heading);
     }
 }

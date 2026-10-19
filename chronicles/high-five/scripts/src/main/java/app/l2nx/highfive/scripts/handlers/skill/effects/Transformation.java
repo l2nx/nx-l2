@@ -31,12 +31,12 @@ import app.l2nx.highfive.util.StatSet;
  * @author nBd
  */
 public class Transformation extends AbstractEffect {
-    private final int _id;
+    private final int id;
 
     public Transformation(Condition attachCond, Condition applyCond, StatSet set, StatSet params) {
         super(attachCond, applyCond, set, params);
 
-        _id = params.getInt("id", 0);
+        id = params.getInt("id", 0);
     }
 
     @Override
@@ -51,6 +51,6 @@ public class Transformation extends AbstractEffect {
 
     @Override
     public void onStart(Creature effector, Creature effected, Skill skill) {
-        TransformData.getInstance().transformPlayer(_id, effected.asPlayer());
+        TransformData.getInstance().transformPlayer(id, effected.asPlayer());
     }
 }

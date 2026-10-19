@@ -164,9 +164,9 @@ public class Q00227_TestOfTheReformer extends Quest {
     @Override
     public String onEvent(String event, Npc npc, Player player) {
         if ("DESPAWN".equals(event)) {
-            final int SPAWNED = npc.getVariables().getInt("SPAWNED", 0);
-            if (SPAWNED < 60) {
-                npc.getVariables().set("SPAWNED", SPAWNED + 1);
+            final int spawned = npc.getVariables().getInt("SPAWNED", 0);
+            if (spawned < 60) {
+                npc.getVariables().set("SPAWNED", spawned + 1);
             } else {
                 npc.deleteMe();
             }

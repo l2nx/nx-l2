@@ -65,18 +65,18 @@ public class DropSearchBoard implements IParseBoardHandler {
         final long min;
         final long max;
         final double chance;
-        final boolean isSpoil;
-        final boolean isRaid;
+        final boolean spoil;
+        final boolean raid;
 
         public CBDropHolder(NpcTemplate npcTemplate, DropHolder dropHolder) {
-            isSpoil = dropHolder.getDropType() == DropType.SPOIL;
+            spoil = dropHolder.getDropType() == DropType.SPOIL;
             itemId = dropHolder.getItemId();
             npcId = npcTemplate.getId();
             npcLevel = npcTemplate.getLevel();
             min = dropHolder.getMin();
             max = dropHolder.getMax();
             chance = dropHolder.getChance();
-            isRaid = npcTemplate.getType().equals("RaidBoss")
+            raid = npcTemplate.getType().equals("RaidBoss")
                     || npcTemplate.getType().equals("GrandBoss");
         }
 
@@ -86,7 +86,7 @@ public class DropSearchBoard implements IParseBoardHandler {
         @Override
         public String toString() {
             return "DropHolder [itemId=" + itemId + ", npcId=" + npcId + ", npcLevel=" + npcLevel + ", min=" + min
-                    + ", max=" + max + ", chance=" + chance + ", isSpoil=" + isSpoil + "]";
+                    + ", max=" + max + ", chance=" + chance + ", isSpoil=" + spoil + "]";
         }
     }
 
@@ -183,7 +183,7 @@ public class DropSearchBoard implements IParseBoardHandler {
                     // real time server rate calculations
                     double rateChance = 1;
                     double rateAmount = 1;
-                    if (cbDropHolder.isSpoil) {
+                    if (cbDropHolder.spoil) {
                         rateChance = RatesConfig.RATE_SPOIL_DROP_CHANCE_MULTIPLIER;
                         rateAmount = RatesConfig.RATE_SPOIL_DROP_AMOUNT_MULTIPLIER;
 
@@ -204,7 +204,7 @@ public class DropSearchBoard implements IParseBoardHandler {
                             }
                         } else if (item.hasExImmediateEffect()) {
                             rateChance *= RatesConfig.RATE_HERB_DROP_CHANCE_MULTIPLIER;
-                        } else if (cbDropHolder.isRaid) {
+                        } else if (cbDropHolder.raid) {
                             rateChance *= RatesConfig.RATE_RAID_DROP_CHANCE_MULTIPLIER;
                         } else {
                             rateChance *= RatesConfig.RATE_DEATH_DROP_CHANCE_MULTIPLIER;
@@ -214,7 +214,7 @@ public class DropSearchBoard implements IParseBoardHandler {
                             rateAmount *= RatesConfig.RATE_DROP_AMOUNT_BY_ID.get(cbDropHolder.itemId);
                         } else if (item.hasExImmediateEffect()) {
                             rateAmount *= RatesConfig.RATE_HERB_DROP_AMOUNT_MULTIPLIER;
-                        } else if (cbDropHolder.isRaid) {
+                        } else if (cbDropHolder.raid) {
                             rateAmount *= RatesConfig.RATE_RAID_DROP_AMOUNT_MULTIPLIER;
                         } else {
                             rateAmount *= RatesConfig.RATE_DEATH_DROP_AMOUNT_MULTIPLIER;
@@ -227,7 +227,7 @@ public class DropSearchBoard implements IParseBoardHandler {
                                         PremiumSystemConfig.PREMIUM_RATE_DROP_CHANCE_BY_ID.get(cbDropHolder.itemId);
                             } else if (item.hasExImmediateEffect()) {
                                 // TODO: Premium herb chance? :)
-                            } else if (cbDropHolder.isRaid) {
+                            } else if (cbDropHolder.raid) {
                                 // TODO: Premium raid chance? :)
                             } else {
                                 rateChance *= PremiumSystemConfig.PREMIUM_RATE_DROP_CHANCE;
@@ -238,7 +238,7 @@ public class DropSearchBoard implements IParseBoardHandler {
                                         PremiumSystemConfig.PREMIUM_RATE_DROP_AMOUNT_BY_ID.get(cbDropHolder.itemId);
                             } else if (item.hasExImmediateEffect()) {
                                 // TODO: Premium herb amount? :)
-                            } else if (cbDropHolder.isRaid) {
+                            } else if (cbDropHolder.raid) {
                                 // TODO: Premium raid amount? :)
                             } else {
                                 rateAmount *= PremiumSystemConfig.PREMIUM_RATE_DROP_AMOUNT;
@@ -276,7 +276,7 @@ public class DropSearchBoard implements IParseBoardHandler {
                             .append('%')
                             .append("</td>");
                     builder.append("<td width=50 align=CENTER>")
-                            .append(cbDropHolder.isSpoil ? "Spoil" : "Drop")
+                            .append(cbDropHolder.spoil ? "Spoil" : "Drop")
                             .append("</td>");
                     builder.append("</tr>");
                 }

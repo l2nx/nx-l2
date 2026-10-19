@@ -31,13 +31,13 @@ import app.l2nx.highfive.network.serverpackets.SystemMessage;
  * @author -Wooden-
  */
 public class RequestDuelStart extends ClientPacket {
-    private String _player;
-    private int _partyDuel;
+    private String player;
+    private int partyDuel;
 
     @Override
     protected void readImpl() {
-        _player = readString();
-        _partyDuel = readInt();
+        player = readString();
+        partyDuel = readInt();
     }
 
     @Override
@@ -47,7 +47,7 @@ public class RequestDuelStart extends ClientPacket {
             return;
         }
 
-        final Player targetChar = World.getPlayer(_player);
+        final Player targetChar = World.getPlayer(this.player);
         if (targetChar == null) {
             player.sendPacket(SystemMessageId.THERE_IS_NO_OPPONENT_TO_RECEIVE_YOUR_CHALLENGE_FOR_A_DUEL);
             return;
@@ -76,7 +76,7 @@ public class RequestDuelStart extends ClientPacket {
         }
 
         // Duel is a party duel.
-        if (_partyDuel == 1) {
+        if (partyDuel == 1) {
             // Player must be in a party & the party leader.
             final Party party = player.getParty();
             if (!player.isInParty() || !party.isLeader(player)) {
@@ -121,7 +121,7 @@ public class RequestDuelStart extends ClientPacket {
             if (partyLeader != null) {
                 if (!partyLeader.isProcessingRequest()) {
                     player.onTransactionRequest(partyLeader);
-                    partyLeader.sendPacket(new ExDuelAskStart(player.getName(), _partyDuel));
+                    partyLeader.sendPacket(new ExDuelAskStart(player.getName(), partyDuel));
                     SystemMessage msg = new SystemMessage(SystemMessageId.C1_S_PARTY_HAS_BEEN_CHALLENGED_TO_A_DUEL);
                     msg.addString(partyLeader.getName());
                     player.sendPacket(msg);
@@ -141,7 +141,7 @@ public class RequestDuelStart extends ClientPacket {
         {
             if (!targetChar.isProcessingRequest()) {
                 player.onTransactionRequest(targetChar);
-                targetChar.sendPacket(new ExDuelAskStart(player.getName(), _partyDuel));
+                targetChar.sendPacket(new ExDuelAskStart(player.getName(), partyDuel));
                 SystemMessage msg = new SystemMessage(SystemMessageId.C1_HAS_BEEN_CHALLENGED_TO_A_DUEL);
                 msg.addString(targetChar.getName());
                 player.sendPacket(msg);

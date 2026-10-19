@@ -35,26 +35,28 @@ import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.mechanics.skill.targets.TargetType;
 import app.l2nx.highfive.util.StatSet;
 import java.util.concurrent.ThreadLocalRandom;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Summon Npc effect implementation.
  * @author Zoey76
  */
+@Slf4j
 public class SummonNpc extends AbstractEffect {
-    private int _despawnDelay;
-    private final int _npcId;
-    private final int _npcCount;
-    private final boolean _randomOffset;
-    private final boolean _isSummonSpawn;
+    private int despawnDelay;
+    private final int npcId;
+    private final int npcCount;
+    private final boolean randomOffset;
+    private final boolean summonSpawn;
 
     public SummonNpc(Condition attachCond, Condition applyCond, StatSet set, StatSet params) {
         super(attachCond, applyCond, set, params);
 
-        _despawnDelay = params.getInt("despawnDelay", 20000);
-        _npcId = params.getInt("npcId", 0);
-        _npcCount = params.getInt("npcCount", 1);
-        _randomOffset = params.getBoolean("randomOffset", false);
-        _isSummonSpawn = params.getBoolean("isSummonSpawn", false);
+        despawnDelay = params.getInt("despawnDelay", 20000);
+        npcId = params.getInt("npcId", 0);
+        npcCount = params.getInt("npcCount", 1);
+        randomOffset = params.getBoolean("randomOffset", false);
+        summonSpawn = params.getBoolean("isSummonSpawn", false);
     }
 
     @Override
@@ -73,8 +75,8 @@ public class SummonNpc extends AbstractEffect {
             return;
         }
 
-        if ((_npcId <= 0) || (_npcCount <= 0)) {
-            LOGGER.warning(SummonNpc.class.getSimpleName() + ": Invalid NPC ID or count skill ID: " + skill.getId());
+        if ((npcId <= 0) || (npcCount <= 0)) {
+            log.warn("Invalid NPC ID or count skill ID: {}", skill.getId());
             return;
         }
 
@@ -83,16 +85,15 @@ public class SummonNpc extends AbstractEffect {
             return;
         }
 
-        final NpcTemplate npcTemplate = NpcData.getInstance().getTemplate(_npcId);
+        final NpcTemplate npcTemplate = NpcData.getInstance().getTemplate(npcId);
         if (npcTemplate == null) {
-            LOGGER.warning(SummonNpc.class.getSimpleName() + ": Spawn of the nonexisting NPC ID: " + _npcId
-                    + ", skill ID:" + skill.getId());
+            log.warn("Spawn of the nonexisting NPC ID: {}, skill ID:{}", npcId, skill.getId());
             return;
         }
 
         switch (npcTemplate.getType()) {
             case "Decoy": {
-                final Decoy decoy = new Decoy(npcTemplate, player, _despawnDelay);
+                final Decoy decoy = new Decoy(npcTemplate, player, despawnDelay);
                 decoy.fullRestore();
                 decoy.setHeading(player.getHeading());
                 decoy.setInstanceId(player.getInstanceId());
@@ -120,28 +121,25 @@ public class SummonNpc extends AbstractEffect {
                 effectPoint.setInvul(true);
                 effectPoint.setSummoner(player);
                 effectPoint.spawnMe(x, y, z);
-                _despawnDelay = NpcData.getInstance()
-                                .getTemplate(_npcId)
-                                .getParameters()
-                                .getInt("despawn_time", 20)
-                        * 1000;
-                if (_despawnDelay > 0) {
-                    effectPoint.scheduleDespawn(_despawnDelay);
+                despawnDelay =
+                        NpcData.getInstance().getTemplate(npcId).getParameters().getInt("despawn_time", 20) * 1000;
+                if (despawnDelay > 0) {
+                    effectPoint.scheduleDespawn(despawnDelay);
                 }
                 break;
             }
             default: {
                 Spawn spawn;
                 try {
-                    spawn = new Spawn(_npcId);
+                    spawn = new Spawn(npcId);
                 } catch (Exception e) {
-                    LOGGER.warning(SummonNpc.class.getSimpleName() + ": " + e.getMessage());
+                    log.warn("{}", e.getMessage());
                     return;
                 }
 
                 int x = player.getX();
                 int y = player.getY();
-                if (_randomOffset) {
+                if (randomOffset) {
                     final ThreadLocalRandom random = ThreadLocalRandom.current();
                     x += (random.nextBoolean() ? random.nextInt(20, 51) : random.nextInt(-50, -19));
                     y += (random.nextBoolean() ? random.nextInt(20, 51) : random.nextInt(-50, -19));
@@ -151,12 +149,12 @@ public class SummonNpc extends AbstractEffect {
                 spawn.setHeading(player.getHeading());
                 spawn.stopRespawn();
 
-                final Npc npc = spawn.doSpawn(_isSummonSpawn);
+                final Npc npc = spawn.doSpawn(summonSpawn);
                 npc.setSummoner(player);
                 npc.setName(npcTemplate.getName());
                 npc.setTitle(npcTemplate.getName());
-                if (_despawnDelay > 0) {
-                    npc.scheduleDespawn(_despawnDelay);
+                if (despawnDelay > 0) {
+                    npc.scheduleDespawn(despawnDelay);
                 }
 
                 npc.broadcastInfo();

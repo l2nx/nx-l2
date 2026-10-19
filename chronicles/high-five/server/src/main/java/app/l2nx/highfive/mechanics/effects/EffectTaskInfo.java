@@ -20,25 +20,21 @@
 package app.l2nx.highfive.mechanics.effects;
 
 import java.util.concurrent.ScheduledFuture;
+import lombok.Getter;
 
 /**
  * Effect Task Info DTO.
  * @author Zoey76
  */
 public class EffectTaskInfo {
-    private final EffectTickTask _effectTask;
-    private final ScheduledFuture<?> _scheduledFuture;
+    @Getter
+    private final EffectTickTask effectTask;
+
+    @Getter
+    private final ScheduledFuture<?> scheduledFuture;
 
     public EffectTaskInfo(EffectTickTask effectTask, ScheduledFuture<?> scheduledFuture) {
-        _effectTask = effectTask;
-        _scheduledFuture = scheduledFuture;
-    }
-
-    public EffectTickTask getEffectTask() {
-        return _effectTask;
-    }
-
-    public ScheduledFuture<?> getScheduledFuture() {
-        return _scheduledFuture;
+        this.effectTask = effectTask;
+        this.scheduledFuture = scheduledFuture;
     }
 }

@@ -34,17 +34,17 @@ import app.l2nx.highfive.network.serverpackets.StatusUpdate;
  * @author -Wooden-
  */
 public class RequestRefine extends AbstractRefinePacket {
-    private int _targetItemObjId;
-    private int _refinerItemObjId;
-    private int _gemStoneItemObjId;
-    private long _gemStoneCount;
+    private int targetItemObjId;
+    private int refinerItemObjId;
+    private int gemStoneItemObjId;
+    private long gemStoneCount;
 
     @Override
     protected void readImpl() {
-        _targetItemObjId = readInt();
-        _refinerItemObjId = readInt();
-        _gemStoneItemObjId = readInt();
-        _gemStoneCount = readLong();
+        targetItemObjId = readInt();
+        refinerItemObjId = readInt();
+        gemStoneItemObjId = readInt();
+        gemStoneCount = readLong();
     }
 
     @Override
@@ -54,17 +54,17 @@ public class RequestRefine extends AbstractRefinePacket {
             return;
         }
 
-        final Item targetItem = player.getInventory().getItemByObjectId(_targetItemObjId);
+        final Item targetItem = player.getInventory().getItemByObjectId(targetItemObjId);
         if (targetItem == null) {
             return;
         }
 
-        final Item refinerItem = player.getInventory().getItemByObjectId(_refinerItemObjId);
+        final Item refinerItem = player.getInventory().getItemByObjectId(refinerItemObjId);
         if (refinerItem == null) {
             return;
         }
 
-        final Item gemStoneItem = player.getInventory().getItemByObjectId(_gemStoneItemObjId);
+        final Item gemStoneItem = player.getInventory().getItemByObjectId(gemStoneItemObjId);
         if (gemStoneItem == null) {
             return;
         }
@@ -81,7 +81,7 @@ public class RequestRefine extends AbstractRefinePacket {
         }
 
         final int lifeStoneGrade = ls.getGrade();
-        if (_gemStoneCount != getGemStoneCount(targetItem.getTemplate().getCrystalType(), lifeStoneGrade)) {
+        if (gemStoneCount != getGemStoneCount(targetItem.getTemplate().getCrystalType(), lifeStoneGrade)) {
             player.sendPacket(new ExVariationResult(0, 0, 0));
             player.sendPacket(SystemMessageId.AUGMENTATION_FAILED_DUE_TO_INAPPROPRIATE_CONDITIONS);
             return;
@@ -106,7 +106,7 @@ public class RequestRefine extends AbstractRefinePacket {
         }
 
         // consume the gemstones
-        if (!player.destroyItem(ItemProcessType.FEE, gemStoneItem, _gemStoneCount, null, false)) {
+        if (!player.destroyItem(ItemProcessType.FEE, gemStoneItem, gemStoneCount, null, false)) {
             return;
         }
 

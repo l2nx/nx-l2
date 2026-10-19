@@ -27,18 +27,18 @@ import app.l2nx.network.buffer.WriteBuffer;
  * @author godson
  */
 public class ExOlympiadMode extends ServerPacket {
-    private final int _mode;
+    private final int mode;
 
     /**
      * @param mode (0 = return, 3 = spectate)
      */
     public ExOlympiadMode(int mode) {
-        _mode = mode;
+        this.mode = mode;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_OLYMPIAD_MODE.writeId(this, buffer);
-        buffer.writeByte(_mode);
+        buffer.writeByte(mode);
     }
 }

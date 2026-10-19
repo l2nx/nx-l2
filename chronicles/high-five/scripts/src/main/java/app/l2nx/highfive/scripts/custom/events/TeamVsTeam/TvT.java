@@ -110,7 +110,7 @@ public class TvT extends Event {
     };
 
     /** The state of the Ctf. */
-    private static EventState _state = EventState.INACTIVE;
+    private static EventState state = EventState.INACTIVE;
 
     // Others
     private static final int INSTANCE_ID = 3049;
@@ -455,12 +455,12 @@ public class TvT extends Event {
 
                 // Team wins by Forfeit.
                 if (TEAM_FORFEIT) {
-                    Set<Player> TeamWinner = (BLUE_TEAM.isEmpty() && !RED_TEAM.isEmpty() ? RED_TEAM : BLUE_TEAM);
+                    Set<Player> teamWinner = (BLUE_TEAM.isEmpty() && !RED_TEAM.isEmpty() ? RED_TEAM : BLUE_TEAM);
 
                     final Skill skill = CommonSkill.FIREWORK.getSkill();
                     broadcastScreenMessageWithEffect(
-                            "Team " + (TeamWinner == BLUE_TEAM ? "Blue" : "Red") + " won the event by forfeit!", 7);
-                    for (Player participant : TeamWinner) {
+                            "Team " + (teamWinner == BLUE_TEAM ? "Blue" : "Red") + " won the event by forfeit!", 7);
+                    for (Player participant : teamWinner) {
                         if ((participant != null) && (participant.getInstanceId() == PVP_WORLD.getInstanceId())) {
                             participant.broadcastPacket(new MagicSkillUse(
                                     participant,
@@ -893,7 +893,7 @@ public class TvT extends Event {
 
     @RegisterEvent(EventType.ON_PLAYER_LOGOUT)
     private void onPlayerLogout(OnPlayerLogout event) {
-        final Player player = event.getPlayer();
+        final Player player = event.player();
 
         // Remove player from lists.
         PLAYER_LIST.remove(player);
@@ -915,9 +915,9 @@ public class TvT extends Event {
 
     @RegisterEvent(EventType.ON_CREATURE_DEATH)
     public void onPlayerDeath(OnCreatureDeath event) {
-        if (event.getTarget().isPlayer()) {
-            final Player killedPlayer = event.getTarget().asPlayer();
-            final Player killer = event.getAttacker().asPlayer();
+        if (event.target().isPlayer()) {
+            final Player killedPlayer = event.target().asPlayer();
+            final Player killer = event.attacker().asPlayer();
 
             // Confirm Blue team kill.
             if ((killer.getTeam() == Team.BLUE) && (killedPlayer.getTeam() == Team.RED)) {
@@ -1043,8 +1043,8 @@ public class TvT extends Event {
      * @param state as EventState
      */
     public static void setState(EventState state) {
-        synchronized (_state) {
-            _state = state;
+        synchronized (TvT.state) {
+            TvT.state = state;
         }
     }
 
@@ -1054,8 +1054,8 @@ public class TvT extends Event {
      */
     public static boolean IS_INACTIVE() {
         boolean isInactive;
-        synchronized (_state) {
-            isInactive = _state == EventState.INACTIVE;
+        synchronized (state) {
+            isInactive = state == EventState.INACTIVE;
         }
 
         return isInactive;
@@ -1067,8 +1067,8 @@ public class TvT extends Event {
      */
     public static boolean IS_PARTICIPATING() {
         boolean isParticipating;
-        synchronized (_state) {
-            isParticipating = _state == EventState.PARTICIPATING;
+        synchronized (state) {
+            isParticipating = state == EventState.PARTICIPATING;
         }
 
         return isParticipating;
@@ -1080,8 +1080,8 @@ public class TvT extends Event {
      */
     public static boolean IS_STARTING() {
         boolean isStarting;
-        synchronized (_state) {
-            isStarting = _state == EventState.STARTING;
+        synchronized (state) {
+            isStarting = state == EventState.STARTING;
         }
 
         return isStarting;
@@ -1093,8 +1093,8 @@ public class TvT extends Event {
      */
     public static boolean IS_STARTED() {
         boolean isStarted;
-        synchronized (_state) {
-            isStarted = _state == EventState.STARTED;
+        synchronized (state) {
+            isStarted = state == EventState.STARTED;
         }
 
         return isStarted;

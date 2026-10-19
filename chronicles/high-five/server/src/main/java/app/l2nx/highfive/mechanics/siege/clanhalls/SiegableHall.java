@@ -33,49 +33,61 @@ import app.l2nx.highfive.util.StatSet;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.util.Calendar;
-import java.util.logging.Level;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author BiggBoss
  */
+@Slf4j
 public class SiegableHall extends ClanHall {
     private static final String SQL_SAVE = "UPDATE siegable_clanhall SET ownerId=?, nextSiege=? WHERE clanHallId=?";
 
-    private Calendar _nextSiege;
-    private final long _siegeLength;
-    private final int[] _scheduleConfig = {7, 0, 0, 12, 0};
+    @Getter
+    private Calendar siegeDate;
 
-    private SiegeStatus _status = SiegeStatus.REGISTERING;
-    private SiegeZone _siegeZone;
+    @Getter
+    private final long siegeLength;
 
-    private ClanHallSiegeEngine _siege;
+    private final int[] scheduleConfig = {7, 0, 0, 12, 0};
+
+    @Getter
+    private SiegeStatus siegeStatus = SiegeStatus.REGISTERING;
+
+    @Getter
+    @Setter
+    private SiegeZone siegeZone;
+
+    @Getter
+    private ClanHallSiegeEngine siege;
 
     public SiegableHall(StatSet set) {
         super(set);
-        _siegeLength = set.getLong("siegeLength");
+        siegeLength = set.getLong("siegeLength");
         final String[] rawSchConfig = set.getString("scheduleConfig").split(";");
         if (rawSchConfig.length == 5) {
             for (int i = 0; i < 5; i++) {
                 try {
-                    _scheduleConfig[i] = Integer.parseInt(rawSchConfig[i]);
+                    scheduleConfig[i] = Integer.parseInt(rawSchConfig[i]);
                 } catch (Exception e) {
-                    LOGGER.warning("SiegableHall - " + getName() + ": Wrong schedule_config parameters!");
+                    log.warn("{}: Wrong schedule_config parameters!", getName());
                 }
             }
         } else {
-            LOGGER.warning(getName() + ": Wrong schedule_config value in siegable_halls table, using default (7 days)");
+            log.warn("{}: Wrong schedule_config value in siegable_halls table, using default (7 days)", getName());
         }
 
-        _nextSiege = Calendar.getInstance();
+        siegeDate = Calendar.getInstance();
         final long nextSiege = set.getLong("nextSiege");
         if ((nextSiege - System.currentTimeMillis() - 3600000) < 0) {
             updateNextSiege();
         } else {
-            _nextSiege.setTimeInMillis(nextSiege);
+            siegeDate.setTimeInMillis(nextSiege);
         }
 
         if (getOwnerId() != 0) {
-            _isFree = false;
+            free = false;
             loadFunctions();
         }
     }
@@ -110,97 +122,73 @@ public class SiegableHall extends ClanHall {
             ps.setInt(3, getId());
             ps.execute();
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, "Exception: SiegableHall.updateDb(): " + e.getMessage(), e);
+            log.warn("Exception: SiegableHall.updateDb(): {}", e.getMessage(), e);
         }
     }
 
     public void setSiege(ClanHallSiegeEngine siegable) {
-        _siege = siegable;
-        _siegeZone.setSiegeInstance(siegable);
-    }
-
-    public ClanHallSiegeEngine getSiege() {
-        return _siege;
-    }
-
-    public Calendar getSiegeDate() {
-        return _nextSiege;
+        siege = siegable;
+        siegeZone.setSiegeInstance(siegable);
     }
 
     public long getNextSiegeTime() {
-        return _nextSiege.getTimeInMillis();
-    }
-
-    public long getSiegeLength() {
-        return _siegeLength;
+        return siegeDate.getTimeInMillis();
     }
 
     public void setNextSiegeDate(long date) {
-        _nextSiege.setTimeInMillis(date);
+        siegeDate.setTimeInMillis(date);
     }
 
     public void setNextSiegeDate(Calendar c) {
-        _nextSiege = c;
+        siegeDate = c;
     }
 
     public void updateNextSiege() {
         final Calendar callendar = Calendar.getInstance();
-        callendar.add(Calendar.DAY_OF_YEAR, _scheduleConfig[0]);
-        callendar.add(Calendar.MONTH, _scheduleConfig[1]);
-        callendar.add(Calendar.YEAR, _scheduleConfig[2]);
-        callendar.set(Calendar.HOUR_OF_DAY, _scheduleConfig[3]);
-        callendar.set(Calendar.MINUTE, _scheduleConfig[4]);
+        callendar.add(Calendar.DAY_OF_YEAR, scheduleConfig[0]);
+        callendar.add(Calendar.MONTH, scheduleConfig[1]);
+        callendar.add(Calendar.YEAR, scheduleConfig[2]);
+        callendar.set(Calendar.HOUR_OF_DAY, scheduleConfig[3]);
+        callendar.set(Calendar.MINUTE, scheduleConfig[4]);
         callendar.set(Calendar.SECOND, 0);
         setNextSiegeDate(callendar);
         updateDb();
     }
 
     public void addAttacker(Clan clan) {
-        if (_siege != null) {
-            _siege.getAttackers().put(clan.getId(), new SiegeClan(clan.getId(), SiegeClanType.ATTACKER));
+        if (siege != null) {
+            siege.getAttackers().put(clan.getId(), new SiegeClan(clan.getId(), SiegeClanType.ATTACKER));
         }
     }
 
     public void removeAttacker(Clan clan) {
-        if (_siege != null) {
-            _siege.getAttackers().remove(clan.getId());
+        if (siege != null) {
+            siege.getAttackers().remove(clan.getId());
         }
     }
 
     public boolean isRegistered(Clan clan) {
-        return (_siege != null) && _siege.checkIsAttacker(clan);
-    }
-
-    public SiegeStatus getSiegeStatus() {
-        return _status;
+        return (siege != null) && siege.checkIsAttacker(clan);
     }
 
     public boolean isRegistering() {
-        return _status == SiegeStatus.REGISTERING;
+        return siegeStatus == SiegeStatus.REGISTERING;
     }
 
     public boolean isInSiege() {
-        return _status == SiegeStatus.RUNNING;
+        return siegeStatus == SiegeStatus.RUNNING;
     }
 
     public boolean isWaitingBattle() {
-        return _status == SiegeStatus.WAITING_BATTLE;
+        return siegeStatus == SiegeStatus.WAITING_BATTLE;
     }
 
     public void updateSiegeStatus(SiegeStatus status) {
-        _status = status;
-    }
-
-    public SiegeZone getSiegeZone() {
-        return _siegeZone;
-    }
-
-    public void setSiegeZone(SiegeZone zone) {
-        _siegeZone = zone;
+        siegeStatus = status;
     }
 
     public void updateSiegeZone(boolean active) {
-        _siegeZone.setActive(active);
+        siegeZone.setActive(active);
     }
 
     public void showSiegeInfo(Player player) {

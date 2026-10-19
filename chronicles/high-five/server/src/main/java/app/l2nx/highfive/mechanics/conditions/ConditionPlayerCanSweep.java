@@ -42,10 +42,10 @@ import java.util.List;
  * @author Zoey76
  */
 public class ConditionPlayerCanSweep extends Condition {
-    private final boolean _value;
+    private final boolean value;
 
     public ConditionPlayerCanSweep(boolean value) {
-        _value = value;
+        this.value = value;
     }
 
     @Override
@@ -75,6 +75,6 @@ public class ConditionPlayerCanSweep extends Condition {
             }
         }
 
-        return _value == canSweep;
+        return value == canSweep;
     }
 }

@@ -35,13 +35,13 @@ public enum ArmorType implements ItemType {
     // L2J CUSTOM
     SHIELD;
 
-    final int _mask;
+    final int mask;
 
     /**
      * Constructor of the ArmorType.
      */
     ArmorType() {
-        _mask = 1 << (ordinal() + WeaponType.values().length);
+        mask = 1 << (ordinal() + WeaponType.values().length);
     }
 
     /**
@@ -49,6 +49,6 @@ public enum ArmorType implements ItemType {
      */
     @Override
     public int mask() {
-        return _mask;
+        return mask;
     }
 }

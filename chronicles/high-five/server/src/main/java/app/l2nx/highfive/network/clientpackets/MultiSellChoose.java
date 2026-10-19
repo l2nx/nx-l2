@@ -35,7 +35,6 @@ import app.l2nx.highfive.mechanics.multisell.Entry;
 import app.l2nx.highfive.mechanics.multisell.Ingredient;
 import app.l2nx.highfive.mechanics.multisell.PreparedListContainer;
 import app.l2nx.highfive.mechanics.options.Augmentation;
-import app.l2nx.highfive.network.PacketLogger;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.serverpackets.StatusUpdate;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
@@ -43,64 +42,66 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * The Class MultiSellChoose.
  */
+@Slf4j
 public class MultiSellChoose extends ClientPacket {
-    private int _listId;
-    private int _entryId;
-    private long _amount;
+    private int listId;
+    private int entryId;
+    private long amount;
 
     @SuppressWarnings("unused")
-    private int _unk1;
+    private int unk1;
 
     @SuppressWarnings("unused")
-    private int _unk2;
+    private int unk2;
 
     @SuppressWarnings("unused")
-    private int _unk3;
+    private int unk3;
 
     @SuppressWarnings("unused")
-    private int _unk4;
+    private int unk4;
 
     @SuppressWarnings("unused")
-    private int _unk5;
+    private int unk5;
 
     @SuppressWarnings("unused")
-    private int _unk6;
+    private int unk6;
 
     @SuppressWarnings("unused")
-    private int _unk7;
+    private int unk7;
 
     @SuppressWarnings("unused")
-    private int _unk8;
+    private int unk8;
 
     @SuppressWarnings("unused")
-    private int _unk9;
+    private int unk9;
 
     @SuppressWarnings("unused")
-    private int _unk10;
+    private int unk10;
 
     @SuppressWarnings("unused")
-    private int _unk11;
+    private int unk11;
 
     @Override
     protected void readImpl() {
-        _listId = readInt();
-        _entryId = readInt();
-        _amount = readLong();
-        _unk1 = readShort();
-        _unk2 = readInt();
-        _unk3 = readInt();
-        _unk4 = readShort(); // elemental attributes
-        _unk5 = readShort(); // elemental attributes
-        _unk6 = readShort(); // elemental attributes
-        _unk7 = readShort(); // elemental attributes
-        _unk8 = readShort(); // elemental attributes
-        _unk9 = readShort(); // elemental attributes
-        _unk10 = readShort(); // elemental attributes
-        _unk11 = readShort(); // elemental attributes
+        listId = readInt();
+        entryId = readInt();
+        amount = readLong();
+        unk1 = readShort();
+        unk2 = readInt();
+        unk3 = readInt();
+        unk4 = readShort(); // elemental attributes
+        unk5 = readShort(); // elemental attributes
+        unk6 = readShort(); // elemental attributes
+        unk7 = readShort(); // elemental attributes
+        unk8 = readShort(); // elemental attributes
+        unk9 = readShort(); // elemental attributes
+        unk10 = readShort(); // elemental attributes
+        unk11 = readShort(); // elemental attributes
     }
 
     @Override
@@ -115,13 +116,13 @@ public class MultiSellChoose extends ClientPacket {
             return;
         }
 
-        if ((_amount < 1) || (_amount > GeneralConfig.MULTISELL_AMOUNT_LIMIT)) {
+        if ((amount < 1) || (amount > GeneralConfig.MULTISELL_AMOUNT_LIMIT)) {
             player.setMultiSell(null);
             return;
         }
 
         final PreparedListContainer list = player.getMultiSell();
-        if ((list == null) || (list.getListId() != _listId)) {
+        if ((list == null) || (list.getListId() != listId)) {
             player.setMultiSell(null);
             return;
         }
@@ -135,7 +136,7 @@ public class MultiSellChoose extends ClientPacket {
                     || !player.isInsideRadius3D(npc, Npc.INTERACTION_DISTANCE)) {
                 if (player.isGM()) {
                     player.sendMessage(
-                            "Multisell " + _listId
+                            "Multisell " + listId
                                     + " is restricted. Under current conditions cannot be used. Only GMs are allowed to use it.");
                 } else {
                     player.setMultiSell(null);
@@ -145,11 +146,13 @@ public class MultiSellChoose extends ClientPacket {
         }
 
         for (Entry entry : list.getEntries()) {
-            if (entry.getEntryId() == _entryId) {
-                if (!entry.isStackable() && (_amount > 1)) {
-                    PacketLogger.warning("Character: " + player.getName()
-                            + " is trying to set amount > 1 on non-stackable multisell, id:" + _listId + ":"
-                            + _entryId);
+            if (entry.getEntryId() == entryId) {
+                if (!entry.isStackable() && (amount > 1)) {
+                    log.warn(
+                            "Character: {} is trying to set amount > 1 on non-stackable multisell, id:{}:{}",
+                            player.getName(),
+                            listId,
+                            entryId);
                     player.setMultiSell(null);
                     return;
                 }
@@ -163,12 +166,12 @@ public class MultiSellChoose extends ClientPacket {
                     }
 
                     if (!e.isStackable()) {
-                        slots += e.getItemCount() * _amount;
+                        slots += e.getItemCount() * amount;
                     } else if (player.getInventory().getItemByItemId(e.getItemId()) == null) {
                         slots++;
                     }
 
-                    weight += e.getItemCount() * _amount * e.getWeight();
+                    weight += e.getItemCount() * amount * e.getWeight();
                 }
 
                 if (!inv.validateWeight(weight)) {
@@ -221,13 +224,13 @@ public class MultiSellChoose extends ClientPacket {
 
                 // now check if the player has sufficient items in the inventory to cover the ingredients' expences
                 for (Ingredient e : ingredientsList) {
-                    if ((e.getItemCount() * _amount) > Integer.MAX_VALUE) {
+                    if ((e.getItemCount() * amount) > Integer.MAX_VALUE) {
                         player.sendPacket(SystemMessageId.YOU_HAVE_EXCEEDED_THE_QUANTITY_THAT_CAN_BE_INPUTTED);
                         return;
                     }
 
                     if (e.getItemId() < 0) {
-                        if (!MultisellData.hasSpecialIngredient(e.getItemId(), e.getItemCount() * _amount, player)) {
+                        if (!MultisellData.hasSpecialIngredient(e.getItemId(), e.getItemCount() * amount, player)) {
                             return;
                         }
                     } else {
@@ -235,7 +238,7 @@ public class MultiSellChoose extends ClientPacket {
                         // given id.
                         // otherwise, check only the count of items with exactly the needed enchantment level
                         final long required = ((PlayerConfig.ALT_BLACKSMITH_USE_RECIPES || !e.getMaintainIngredient())
-                                ? (e.getItemCount() * _amount)
+                                ? (e.getItemCount() * amount)
                                 : e.getItemCount());
                         if (inv.getInventoryItemCount(
                                         e.getItemId(),
@@ -259,7 +262,7 @@ public class MultiSellChoose extends ClientPacket {
                 /** All ok, remove items and add final product */
                 for (Ingredient e : entry.getIngredients()) {
                     if (e.getItemId() < 0) {
-                        if (!MultisellData.takeSpecialIngredient(e.getItemId(), e.getItemCount() * _amount, player)) {
+                        if (!MultisellData.takeSpecialIngredient(e.getItemId(), e.getItemCount() * amount, player)) {
                             return;
                         }
                     } else {
@@ -268,8 +271,11 @@ public class MultiSellChoose extends ClientPacket {
                         if (itemToTake
                                 == null) { // this is a cheat, transaction will be aborted and if any items already
                             // taken will not be returned back to inventory!
-                            PacketLogger.warning("Character: " + player.getName()
-                                    + " is trying to cheat in multisell, id:" + _listId + ":" + _entryId);
+                            log.warn(
+                                    "Character: {} is trying to cheat in multisell, id:{}:{}",
+                                    player.getName(),
+                                    listId,
+                                    entryId);
                             player.setMultiSell(null);
                             return;
                         }
@@ -291,7 +297,7 @@ public class MultiSellChoose extends ClientPacket {
                                 if (!player.destroyItem(
                                         ItemProcessType.FEE,
                                         itemToTake.getObjectId(),
-                                        (e.getItemCount() * _amount),
+                                        (e.getItemCount() * amount),
                                         player.getTarget(),
                                         true)) {
                                     player.setMultiSell(null);
@@ -312,7 +318,7 @@ public class MultiSellChoose extends ClientPacket {
                                     final Collection<Item> inventoryContents =
                                             inv.getAllItemsByItemId(e.getItemId(), e.getEnchantLevel(), false);
                                     final Iterator<Item> it = inventoryContents.iterator();
-                                    for (int i = 0; (i < (e.getItemCount() * _amount)) && it.hasNext(); i++) {
+                                    for (int i = 0; (i < (e.getItemCount() * amount)) && it.hasNext(); i++) {
                                         final Item current = it.next();
                                         if (current.isAugmented()) {
                                             augmentation.add(current.getAugmentation());
@@ -380,7 +386,7 @@ public class MultiSellChoose extends ClientPacket {
                                     //
 
                                     // choice 1. Small number of items exchanged. No sorting.
-                                    for (int i = 1; i <= (e.getItemCount() * _amount); i++) {
+                                    for (int i = 1; i <= (e.getItemCount() * amount); i++) {
                                         final Collection<Item> inventoryContents =
                                                 inv.getAllItemsByItemId(e.getItemId(), false);
                                         itemToTake =
@@ -421,18 +427,18 @@ public class MultiSellChoose extends ClientPacket {
                 // Generate the appropriate items.
                 for (Ingredient e : entry.getProducts()) {
                     if (e.getItemId() < 0) {
-                        MultisellData.giveSpecialProduct(e.getItemId(), e.getItemCount() * _amount, player);
+                        MultisellData.giveSpecialProduct(e.getItemId(), e.getItemCount() * amount, player);
                     } else {
                         if (e.isStackable()) {
                             inv.addItem(
                                     ItemProcessType.BUY,
                                     e.getItemId(),
-                                    e.getItemCount() * _amount,
+                                    e.getItemCount() * amount,
                                     player,
                                     player.getTarget());
                         } else {
                             Item product = null;
-                            for (int i = 0; i < (e.getItemCount() * _amount); i++) {
+                            for (int i = 0; i < (e.getItemCount() * amount); i++) {
                                 product =
                                         inv.addItem(ItemProcessType.BUY, e.getItemId(), 1, player, player.getTarget());
                                 if ((product != null) && (list.getMaintainEnchantment() || (e.getEnchantLevel() > 0))) {
@@ -455,10 +461,10 @@ public class MultiSellChoose extends ClientPacket {
 
                         // msg part
                         SystemMessage sm;
-                        if ((e.getItemCount() * _amount) > 1) {
+                        if ((e.getItemCount() * amount) > 1) {
                             sm = new SystemMessage(SystemMessageId.YOU_HAVE_EARNED_S2_S1_S);
                             sm.addItemName(e.getItemId());
-                            sm.addLong(e.getItemCount() * _amount);
+                            sm.addLong(e.getItemCount() * amount);
                             player.sendPacket(sm);
                         } else {
                             if (list.getMaintainEnchantment() && (e.getEnchantLevel() > 0)) {
@@ -483,7 +489,7 @@ public class MultiSellChoose extends ClientPacket {
 
                 // finally, give the tax to the castle...
                 if ((npc != null) && (entry.getTaxAmount() > 0)) {
-                    npc.getCastle().addToTreasury(entry.getTaxAmount() * _amount);
+                    npc.getCastle().addToTreasury(entry.getTaxAmount() * amount);
                 }
                 break;
             }

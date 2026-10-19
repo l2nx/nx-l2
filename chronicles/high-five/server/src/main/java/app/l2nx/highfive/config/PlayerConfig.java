@@ -29,14 +29,14 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * This class loads all the player related configurations.
  * @author Mobius
  */
+@Slf4j
 public class PlayerConfig {
-    private static final Logger LOGGER = Logger.getLogger(PlayerConfig.class.getName());
 
     // File
     private static final String PLAYER_CONFIG_FILE = "./config/Player.ini";
@@ -266,14 +266,16 @@ public class PlayerConfig {
             for (String skill : propertySplit) {
                 final String[] skillSplit = skill.split(",");
                 if (skillSplit.length != 2) {
-                    LOGGER.warning("[SkillDurationList]: invalid config property -> SkillDurationList " + skill);
+                    log.warn("[SkillDurationList]: invalid config property -> SkillDurationList {}", skill);
                 } else {
                     try {
                         SKILL_DURATION_LIST.put(Integer.parseInt(skillSplit[0]), Integer.parseInt(skillSplit[1]));
                     } catch (NumberFormatException nfe) {
                         if (!skill.isEmpty()) {
-                            LOGGER.warning("[SkillDurationList]: invalid config property -> SkillList \""
-                                    + skillSplit[0] + "\"" + skillSplit[1]);
+                            log.warn(
+                                    "[SkillDurationList]: invalid config property -> SkillList \"{}\"{}",
+                                    skillSplit[0],
+                                    skillSplit[1]);
                         }
                     }
                 }
@@ -287,14 +289,16 @@ public class PlayerConfig {
             for (String skill : propertySplit) {
                 final String[] skillSplit = skill.split(",");
                 if (skillSplit.length != 2) {
-                    LOGGER.warning("[SkillReuseList]: invalid config property -> SkillReuseList \"" + skill + "\"");
+                    log.warn("[SkillReuseList]: invalid config property -> SkillReuseList \"{}\"", skill);
                 } else {
                     try {
                         SKILL_REUSE_LIST.put(Integer.parseInt(skillSplit[0]), Integer.parseInt(skillSplit[1]));
                     } catch (NumberFormatException nfe) {
                         if (!skill.isEmpty()) {
-                            LOGGER.warning("[SkillReuseList]: invalid config property -> SkillList \"" + skillSplit[0]
-                                    + "\"" + skillSplit[1]);
+                            log.warn(
+                                    "[SkillReuseList]: invalid config property -> SkillList \"{}\"{}",
+                                    skillSplit[0],
+                                    skillSplit[1]);
                         }
                     }
                 }
@@ -504,8 +508,8 @@ public class PlayerConfig {
             try {
                 itm = Integer.parseInt(item);
             } catch (NumberFormatException nfe) {
-                LOGGER.warning("Auto loot item ids: Wrong ItemId passed: " + item);
-                LOGGER.warning(nfe.getMessage());
+                log.warn("Auto loot item ids: Wrong ItemId passed: {}", item);
+                log.warn(nfe.getMessage());
             }
             if (itm != 0) {
                 AUTO_LOOT_ITEM_IDS.add(itm);

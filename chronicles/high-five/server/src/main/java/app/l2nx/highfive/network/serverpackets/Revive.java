@@ -28,15 +28,15 @@ import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.network.buffer.WriteBuffer;
 
 public class Revive extends ServerPacket {
-    private final int _objectId;
+    private final int objectId;
 
     public Revive(WorldObject obj) {
-        _objectId = obj.getObjectId();
+        objectId = obj.getObjectId();
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.REVIVE.writeId(this, buffer);
-        buffer.writeInt(_objectId);
+        buffer.writeInt(objectId);
     }
 }

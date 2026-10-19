@@ -56,7 +56,7 @@ public class ClanHallManager extends Merchant {
     protected static final int COND_BUSY_BECAUSE_OF_SIEGE = 2;
     protected static final int COND_OWNER = 3;
 
-    private int _clanHallId = -1;
+    private int clanHallId = -1;
 
     /**
      * Creates clan hall manager.
@@ -663,29 +663,29 @@ public class ClanHallManager extends Merchant {
 
                         final NpcHtmlMessage html = new NpcHtmlMessage(getObjectId());
                         html.setFile(player, "data/html/clanHallManager/edit_recovery.htm");
-                        final String hp_grade0 =
+                        final String hpGrade0 =
                                 "[<a action=\"bypass -h npc_%objectId%_manage recovery edit_hp 20\">20%</a>][<a action=\"bypass -h npc_%objectId%_manage recovery edit_hp 40\">40%</a>][<a action=\"bypass -h npc_%objectId%_manage recovery edit_hp 220\">220%</a>]";
-                        final String hp_grade1 =
+                        final String hpGrade1 =
                                 "[<a action=\"bypass -h npc_%objectId%_manage recovery edit_hp 40\">40%</a>][<a action=\"bypass -h npc_%objectId%_manage recovery edit_hp 100\">100%</a>][<a action=\"bypass -h npc_%objectId%_manage recovery edit_hp 160\">160%</a>]";
-                        final String hp_grade2 =
+                        final String hpGrade2 =
                                 "[<a action=\"bypass -h npc_%objectId%_manage recovery edit_hp 80\">80%</a>][<a action=\"bypass -h npc_%objectId%_manage recovery edit_hp 140\">140%</a>][<a action=\"bypass -h npc_%objectId%_manage recovery edit_hp 200\">200%</a>][<a action=\"bypass -h npc_%objectId%_manage recovery edit_hp 260\">260%</a>]";
-                        final String hp_grade3 =
+                        final String hpGrade3 =
                                 "[<a action=\"bypass -h npc_%objectId%_manage recovery edit_hp 80\">80%</a>][<a action=\"bypass -h npc_%objectId%_manage recovery edit_hp 120\">120%</a>][<a action=\"bypass -h npc_%objectId%_manage recovery edit_hp 180\">180%</a>][<a action=\"bypass -h npc_%objectId%_manage recovery edit_hp 240\">240%</a>][<a action=\"bypass -h npc_%objectId%_manage recovery edit_hp 300\">300%</a>]";
-                        final String exp_grade0 =
+                        final String expGrade0 =
                                 "[<a action=\"bypass -h npc_%objectId%_manage recovery edit_exp 5\">5%</a>][<a action=\"bypass -h npc_%objectId%_manage recovery edit_exp 10\">10%</a>][<a action=\"bypass -h npc_%objectId%_manage recovery edit_exp 25\">25%</a>]";
-                        final String exp_grade1 =
+                        final String expGrade1 =
                                 "[<a action=\"bypass -h npc_%objectId%_manage recovery edit_exp 5\">5%</a>][<a action=\"bypass -h npc_%objectId%_manage recovery edit_exp 15\">15%</a>][<a action=\"bypass -h npc_%objectId%_manage recovery edit_exp 30\">30%</a>]";
-                        final String exp_grade2 =
+                        final String expGrade2 =
                                 "[<a action=\"bypass -h npc_%objectId%_manage recovery edit_exp 5\">5%</a>][<a action=\"bypass -h npc_%objectId%_manage recovery edit_exp 15\">15%</a>][<a action=\"bypass -h npc_%objectId%_manage recovery edit_exp 25\">25%</a>][<a action=\"bypass -h npc_%objectId%_manage recovery edit_exp 40\">40%</a>]";
-                        final String exp_grade3 =
+                        final String expGrade3 =
                                 "[<a action=\"bypass -h npc_%objectId%_manage recovery edit_exp 15\">15%</a>][<a action=\"bypass -h npc_%objectId%_manage recovery edit_exp 25\">25%</a>][<a action=\"bypass -h npc_%objectId%_manage recovery edit_exp 35\">35%</a>][<a action=\"bypass -h npc_%objectId%_manage recovery edit_exp 50\">50%</a>]";
-                        final String mp_grade0 =
+                        final String mpGrade0 =
                                 "[<a action=\"bypass -h npc_%objectId%_manage recovery edit_mp 5\">5%</a>][<a action=\"bypass -h npc_%objectId%_manage recovery edit_mp 10\">10%</a>][<a action=\"bypass -h npc_%objectId%_manage recovery edit_mp 25\">25%</a>]";
-                        final String mp_grade1 =
+                        final String mpGrade1 =
                                 "[<a action=\"bypass -h npc_%objectId%_manage recovery edit_mp 5\">5%</a>][<a action=\"bypass -h npc_%objectId%_manage recovery edit_mp 15\">15%</a>][<a action=\"bypass -h npc_%objectId%_manage recovery edit_mp 25\">25%</a>]";
-                        final String mp_grade2 =
+                        final String mpGrade2 =
                                 "[<a action=\"bypass -h npc_%objectId%_manage recovery edit_mp 5\">5%</a>][<a action=\"bypass -h npc_%objectId%_manage recovery edit_mp 15\">15%</a>][<a action=\"bypass -h npc_%objectId%_manage recovery edit_mp 30\">30%</a>]";
-                        final String mp_grade3 =
+                        final String mpGrade3 =
                                 "[<a action=\"bypass -h npc_%objectId%_manage recovery edit_mp 5\">5%</a>][<a action=\"bypass -h npc_%objectId%_manage recovery edit_mp 15\">15%</a>][<a action=\"bypass -h npc_%objectId%_manage recovery edit_mp 30\">30%</a>][<a action=\"bypass -h npc_%objectId%_manage recovery edit_mp 40\">40%</a>]";
                         if (getClanHall().getFunction(ClanHall.FUNC_RESTORE_HP) != null) {
                             html.replace(
@@ -711,28 +711,28 @@ public class ClanHallManager extends Merchant {
                                     html.replace(
                                             "%change_hp%",
                                             "[<a action=\"bypass -h npc_%objectId%_manage recovery hp_cancel\">Deactivate</a>]"
-                                                    + hp_grade0);
+                                                    + hpGrade0);
                                     break;
                                 }
                                 case 1: {
                                     html.replace(
                                             "%change_hp%",
                                             "[<a action=\"bypass -h npc_%objectId%_manage recovery hp_cancel\">Deactivate</a>]"
-                                                    + hp_grade1);
+                                                    + hpGrade1);
                                     break;
                                 }
                                 case 2: {
                                     html.replace(
                                             "%change_hp%",
                                             "[<a action=\"bypass -h npc_%objectId%_manage recovery hp_cancel\">Deactivate</a>]"
-                                                    + hp_grade2);
+                                                    + hpGrade2);
                                     break;
                                 }
                                 case 3: {
                                     html.replace(
                                             "%change_hp%",
                                             "[<a action=\"bypass -h npc_%objectId%_manage recovery hp_cancel\">Deactivate</a>]"
-                                                    + hp_grade3);
+                                                    + hpGrade3);
                                     break;
                                 }
                             }
@@ -742,19 +742,19 @@ public class ClanHallManager extends Merchant {
                             final int grade = getClanHall().getGrade();
                             switch (grade) {
                                 case 0: {
-                                    html.replace("%change_hp%", hp_grade0);
+                                    html.replace("%change_hp%", hpGrade0);
                                     break;
                                 }
                                 case 1: {
-                                    html.replace("%change_hp%", hp_grade1);
+                                    html.replace("%change_hp%", hpGrade1);
                                     break;
                                 }
                                 case 2: {
-                                    html.replace("%change_hp%", hp_grade2);
+                                    html.replace("%change_hp%", hpGrade2);
                                     break;
                                 }
                                 case 3: {
-                                    html.replace("%change_hp%", hp_grade3);
+                                    html.replace("%change_hp%", hpGrade3);
                                     break;
                                 }
                             }
@@ -784,28 +784,28 @@ public class ClanHallManager extends Merchant {
                                     html.replace(
                                             "%change_exp%",
                                             "[<a action=\"bypass -h npc_%objectId%_manage recovery exp_cancel\">Deactivate</a>]"
-                                                    + exp_grade0);
+                                                    + expGrade0);
                                     break;
                                 }
                                 case 1: {
                                     html.replace(
                                             "%change_exp%",
                                             "[<a action=\"bypass -h npc_%objectId%_manage recovery exp_cancel\">Deactivate</a>]"
-                                                    + exp_grade1);
+                                                    + expGrade1);
                                     break;
                                 }
                                 case 2: {
                                     html.replace(
                                             "%change_exp%",
                                             "[<a action=\"bypass -h npc_%objectId%_manage recovery exp_cancel\">Deactivate</a>]"
-                                                    + exp_grade2);
+                                                    + expGrade2);
                                     break;
                                 }
                                 case 3: {
                                     html.replace(
                                             "%change_exp%",
                                             "[<a action=\"bypass -h npc_%objectId%_manage recovery exp_cancel\">Deactivate</a>]"
-                                                    + exp_grade3);
+                                                    + expGrade3);
                                     break;
                                 }
                             }
@@ -815,19 +815,19 @@ public class ClanHallManager extends Merchant {
                             final int grade = getClanHall().getGrade();
                             switch (grade) {
                                 case 0: {
-                                    html.replace("%change_exp%", exp_grade0);
+                                    html.replace("%change_exp%", expGrade0);
                                     break;
                                 }
                                 case 1: {
-                                    html.replace("%change_exp%", exp_grade1);
+                                    html.replace("%change_exp%", expGrade1);
                                     break;
                                 }
                                 case 2: {
-                                    html.replace("%change_exp%", exp_grade2);
+                                    html.replace("%change_exp%", expGrade2);
                                     break;
                                 }
                                 case 3: {
-                                    html.replace("%change_exp%", exp_grade3);
+                                    html.replace("%change_exp%", expGrade3);
                                     break;
                                 }
                             }
@@ -857,28 +857,28 @@ public class ClanHallManager extends Merchant {
                                     html.replace(
                                             "%change_mp%",
                                             "[<a action=\"bypass -h npc_%objectId%_manage recovery mp_cancel\">Deactivate</a>]"
-                                                    + mp_grade0);
+                                                    + mpGrade0);
                                     break;
                                 }
                                 case 1: {
                                     html.replace(
                                             "%change_mp%",
                                             "[<a action=\"bypass -h npc_%objectId%_manage recovery mp_cancel\">Deactivate</a>]"
-                                                    + mp_grade1);
+                                                    + mpGrade1);
                                     break;
                                 }
                                 case 2: {
                                     html.replace(
                                             "%change_mp%",
                                             "[<a action=\"bypass -h npc_%objectId%_manage recovery mp_cancel\">Deactivate</a>]"
-                                                    + mp_grade2);
+                                                    + mpGrade2);
                                     break;
                                 }
                                 case 3: {
                                     html.replace(
                                             "%change_mp%",
                                             "[<a action=\"bypass -h npc_%objectId%_manage recovery mp_cancel\">Deactivate</a>]"
-                                                    + mp_grade3);
+                                                    + mpGrade3);
                                     break;
                                 }
                             }
@@ -888,19 +888,19 @@ public class ClanHallManager extends Merchant {
                             final int grade = getClanHall().getGrade();
                             switch (grade) {
                                 case 0: {
-                                    html.replace("%change_mp%", mp_grade0);
+                                    html.replace("%change_mp%", mpGrade0);
                                     break;
                                 }
                                 case 1: {
-                                    html.replace("%change_mp%", mp_grade1);
+                                    html.replace("%change_mp%", mpGrade1);
                                     break;
                                 }
                                 case 2: {
-                                    html.replace("%change_mp%", mp_grade2);
+                                    html.replace("%change_mp%", mpGrade2);
                                     break;
                                 }
                                 case 3: {
-                                    html.replace("%change_mp%", mp_grade3);
+                                    html.replace("%change_mp%", mpGrade3);
                                     break;
                                 }
                             }
@@ -1242,13 +1242,13 @@ public class ClanHallManager extends Merchant {
                         html.setFile(player, "data/html/clanHallManager/edit_other.htm");
                         final String tele =
                                 "[<a action=\"bypass -h npc_%objectId%_manage other edit_tele 1\">Level 1</a>][<a action=\"bypass -h npc_%objectId%_manage other edit_tele 2\">Level 2</a>]";
-                        final String support_grade0 =
+                        final String supportGrade0 =
                                 "[<a action=\"bypass -h npc_%objectId%_manage other edit_support 1\">Level 1</a>][<a action=\"bypass -h npc_%objectId%_manage other edit_support 2\">Level 2</a>]";
-                        final String support_grade1 =
+                        final String supportGrade1 =
                                 "[<a action=\"bypass -h npc_%objectId%_manage other edit_support 1\">Level 1</a>][<a action=\"bypass -h npc_%objectId%_manage other edit_support 2\">Level 2</a>][<a action=\"bypass -h npc_%objectId%_manage other edit_support 4\">Level 4</a>]";
-                        final String support_grade2 =
+                        final String supportGrade2 =
                                 "[<a action=\"bypass -h npc_%objectId%_manage other edit_support 3\">Level 3</a>][<a action=\"bypass -h npc_%objectId%_manage other edit_support 4\">Level 4</a>][<a action=\"bypass -h npc_%objectId%_manage other edit_support 5\">Level 5</a>]";
-                        final String support_grade3 =
+                        final String supportGrade3 =
                                 "[<a action=\"bypass -h npc_%objectId%_manage other edit_support 3\">Level 3</a>][<a action=\"bypass -h npc_%objectId%_manage other edit_support 5\">Level 5</a>][<a action=\"bypass -h npc_%objectId%_manage other edit_support 7\">Level 7</a>][<a action=\"bypass -h npc_%objectId%_manage other edit_support 8\">Level 8</a>]";
                         final String item =
                                 "[<a action=\"bypass -h npc_%objectId%_manage other edit_item 1\">Level 1</a>][<a action=\"bypass -h npc_%objectId%_manage other edit_item 2\">Level 2</a>][<a action=\"bypass -h npc_%objectId%_manage other edit_item 3\">Level 3</a>]";
@@ -1306,28 +1306,28 @@ public class ClanHallManager extends Merchant {
                                     html.replace(
                                             "%change_support%",
                                             "[<a action=\"bypass -h npc_%objectId%_manage other support_cancel\">Deactivate</a>]"
-                                                    + support_grade0);
+                                                    + supportGrade0);
                                     break;
                                 }
                                 case 1: {
                                     html.replace(
                                             "%change_support%",
                                             "[<a action=\"bypass -h npc_%objectId%_manage other support_cancel\">Deactivate</a>]"
-                                                    + support_grade1);
+                                                    + supportGrade1);
                                     break;
                                 }
                                 case 2: {
                                     html.replace(
                                             "%change_support%",
                                             "[<a action=\"bypass -h npc_%objectId%_manage other support_cancel\">Deactivate</a>]"
-                                                    + support_grade2);
+                                                    + supportGrade2);
                                     break;
                                 }
                                 case 3: {
                                     html.replace(
                                             "%change_support%",
                                             "[<a action=\"bypass -h npc_%objectId%_manage other support_cancel\">Deactivate</a>]"
-                                                    + support_grade3);
+                                                    + supportGrade3);
                                     break;
                                 }
                             }
@@ -1337,19 +1337,19 @@ public class ClanHallManager extends Merchant {
                             final int grade = getClanHall().getGrade();
                             switch (grade) {
                                 case 0: {
-                                    html.replace("%change_support%", support_grade0);
+                                    html.replace("%change_support%", supportGrade0);
                                     break;
                                 }
                                 case 1: {
-                                    html.replace("%change_support%", support_grade1);
+                                    html.replace("%change_support%", supportGrade1);
                                     break;
                                 }
                                 case 2: {
-                                    html.replace("%change_support%", support_grade2);
+                                    html.replace("%change_support%", supportGrade2);
                                     break;
                                 }
                                 case 3: {
-                                    html.replace("%change_support%", support_grade3);
+                                    html.replace("%change_support%", supportGrade3);
                                     break;
                                 }
                             }
@@ -1809,22 +1809,22 @@ public class ClanHallManager extends Merchant {
      * @return the PledgeHall this Npc belongs to.
      */
     public ClanHall getClanHall() {
-        if (_clanHallId < 0) {
+        if (clanHallId < 0) {
             ClanHall temp = ClanHallTable.getInstance().getNearbyClanHall(getX(), getY(), 500);
             if (temp == null) {
                 temp = CHSiegeManager.getInstance().getNearbyClanHall(this);
             }
 
             if (temp != null) {
-                _clanHallId = temp.getId();
+                clanHallId = temp.getId();
             }
 
-            if (_clanHallId < 0) {
+            if (clanHallId < 0) {
                 return null;
             }
         }
 
-        return ClanHallTable.getInstance().getClanHallById(_clanHallId);
+        return ClanHallTable.getInstance().getClanHallById(clanHallId);
     }
 
     private void revalidateDeco(Player player) {

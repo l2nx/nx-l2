@@ -29,21 +29,22 @@ import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.serverpackets.ExVoteSystemInfo;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
 import app.l2nx.highfive.util.StatSet;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Give Recommendation effect implementation.
  * @author NosBit
  */
+@Slf4j
 public class GiveRecommendation extends AbstractEffect {
-    private final int _amount;
+    private final int amount;
 
     public GiveRecommendation(Condition attachCond, Condition applyCond, StatSet set, StatSet params) {
         super(attachCond, applyCond, set, params);
 
-        _amount = params.getInt("amount", 0);
-        if (_amount == 0) {
-            LOGGER.warning(getClass().getSimpleName() + ": amount parameter is missing or set to 0. id:"
-                    + set.getInt("id", -1));
+        amount = params.getInt("amount", 0);
+        if (amount == 0) {
+            log.warn("Amount parameter is missing or set to 0. id:{}", set.getInt("id", -1));
         }
     }
 
@@ -56,8 +57,8 @@ public class GiveRecommendation extends AbstractEffect {
     public void onStart(Creature effector, Creature effected, Skill skill) {
         final Player target = (effected != null) && effected.isPlayer() ? effected.asPlayer() : null;
         if (target != null) {
-            int recommendationsGiven = _amount;
-            if ((target.getRecomHave() + _amount) >= 255) {
+            int recommendationsGiven = amount;
+            if ((target.getRecomHave() + amount) >= 255) {
                 recommendationsGiven = 255 - target.getRecomHave();
             }
 

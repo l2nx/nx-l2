@@ -23,49 +23,11 @@
 package app.l2nx.highfive.entity.actor.holders.player;
 
 import app.l2nx.highfive.entity.actor.enums.player.PlayerClass;
+import lombok.Builder;
 
 /**
  * A holder containing information about a player class.
  * @author Mobius
  */
-public class ClassInfoHolder {
-    private final PlayerClass _playerClass;
-    private final PlayerClass _parentClass;
-    private final String _className;
-
-    /**
-     * Constructs a new ClassInfoHolder with the specified class information.
-     * @param playerClass the {@link PlayerClass} representing the player class
-     * @param parentClass the parent {@link PlayerClass} from which this class evolves, or {@code null} if this is a base class
-     * @param className the display name of the class
-     */
-    public ClassInfoHolder(PlayerClass playerClass, PlayerClass parentClass, String className) {
-        _playerClass = playerClass;
-        _parentClass = parentClass;
-        _className = className;
-    }
-
-    /**
-     * Gets the player class type.
-     * @return the {@link PlayerClass} representing the player current class
-     */
-    public PlayerClass getPlayerClass() {
-        return _playerClass;
-    }
-
-    /**
-     * Gets the parent class of this player class.
-     * @return the parent {@link PlayerClass}, or {@code null} if this is a base class
-     */
-    public PlayerClass getParentClass() {
-        return _parentClass;
-    }
-
-    /**
-     * Gets the display name of the player class.
-     * @return the class name as a String
-     */
-    public String getClassName() {
-        return _className;
-    }
-}
+@Builder(toBuilder = true)
+public record ClassInfoHolder(PlayerClass playerClass, PlayerClass parentClass, String className) {}

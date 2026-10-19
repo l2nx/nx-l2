@@ -29,7 +29,7 @@ import app.l2nx.highfive.mechanics.buylist.BuyListHolder;
 import app.l2nx.highfive.network.serverpackets.ActionFailed;
 import app.l2nx.highfive.network.serverpackets.BuyList;
 import app.l2nx.highfive.network.serverpackets.ExBuySellList;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * This class handles following admin commands:
@@ -38,8 +38,8 @@ import java.util.logging.Logger;
  * <li>buy id = shows shop with respective id</li>
  * </ul>
  */
+@Slf4j
 public class AdminShop implements IAdminCommandHandler {
-    private static final Logger LOGGER = Logger.getLogger(AdminShop.class.getName());
 
     private static final String[] ADMIN_COMMANDS = {"admin_buy", "admin_gmshop"};
 
@@ -68,7 +68,7 @@ public class AdminShop implements IAdminCommandHandler {
         try {
             val = Integer.parseInt(command);
         } catch (Exception e) {
-            LOGGER.warning("admin buylist failed:" + command);
+            log.warn("admin buylist failed:{}", command);
         }
 
         final BuyListHolder buyList = BuyListData.getInstance().getBuyList(val);
@@ -76,7 +76,7 @@ public class AdminShop implements IAdminCommandHandler {
             activeChar.sendPacket(new BuyList(buyList, activeChar.getAdena(), 0));
             activeChar.sendPacket(new ExBuySellList(activeChar, false));
         } else {
-            LOGGER.warning("no buylist with id:" + val);
+            log.warn("no buylist with id:{}", val);
         }
 
         activeChar.sendPacket(ActionFailed.STATIC_PACKET);

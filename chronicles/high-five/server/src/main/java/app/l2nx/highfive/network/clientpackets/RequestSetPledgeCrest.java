@@ -34,17 +34,17 @@ import app.l2nx.highfive.network.SystemMessageId;
  * Client packet for setting/deleting clan crest.
  */
 public class RequestSetPledgeCrest extends ClientPacket {
-    private int _length;
-    private byte[] _data = null;
+    private int length;
+    private byte[] data = null;
 
     @Override
     protected void readImpl() {
-        _length = readInt();
-        if (_length > 256) {
+        length = readInt();
+        if (length > 256) {
             return;
         }
 
-        _data = readBytes(_length);
+        data = readBytes(length);
     }
 
     @Override
@@ -54,13 +54,13 @@ public class RequestSetPledgeCrest extends ClientPacket {
             return;
         }
 
-        if (_length < 0) {
+        if (length < 0) {
             player.sendPacket(
                     SystemMessageId.THE_SIZE_OF_THE_UPLOADED_CREST_OR_INSIGNIA_DOES_NOT_MEET_THE_STANDARD_REQUIREMENTS);
             return;
         }
 
-        if (_length > 256) {
+        if (length > 256) {
             player.sendPacket(
                     SystemMessageId.THE_SIZE_OF_THE_IMAGE_FILE_IS_INAPPROPRIATE_PLEASE_ADJUST_TO_16X12_PIXELS);
             return;
@@ -83,7 +83,7 @@ public class RequestSetPledgeCrest extends ClientPacket {
             return;
         }
 
-        if (_length == 0) {
+        if (length == 0) {
             if (clan.getCrestId() != 0) {
                 clan.changeClanCrest(0);
                 player.sendPacket(SystemMessageId.THE_CLAN_S_CREST_HAS_BEEN_DELETED);
@@ -95,7 +95,7 @@ public class RequestSetPledgeCrest extends ClientPacket {
                 return;
             }
 
-            final Crest crest = CrestTable.getInstance().createCrest(_data, CrestType.PLEDGE);
+            final Crest crest = CrestTable.getInstance().createCrest(data, CrestType.PLEDGE);
             if (crest != null) {
                 clan.changeClanCrest(crest.getId());
                 player.sendPacket(SystemMessageId.THE_CREST_WAS_SUCCESSFULLY_REGISTERED);

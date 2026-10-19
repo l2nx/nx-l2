@@ -29,12 +29,12 @@ import app.l2nx.network.buffer.WriteBuffer;
  * @author KenM
  */
 public class ExSpawnEmitter extends ServerPacket {
-    private final int _playerObjectId;
-    private final int _npcObjectId;
+    private final int playerObjectId;
+    private final int npcObjectId;
 
     public ExSpawnEmitter(int playerObjectId, int npcObjectId) {
-        _playerObjectId = playerObjectId;
-        _npcObjectId = npcObjectId;
+        this.playerObjectId = playerObjectId;
+        this.npcObjectId = npcObjectId;
     }
 
     public ExSpawnEmitter(Player player, Npc npc) {
@@ -44,8 +44,8 @@ public class ExSpawnEmitter extends ServerPacket {
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_SPAWN_EMITTER.writeId(this, buffer);
-        buffer.writeInt(_npcObjectId);
-        buffer.writeInt(_playerObjectId);
+        buffer.writeInt(npcObjectId);
+        buffer.writeInt(playerObjectId);
         buffer.writeInt(0); // ?
     }
 }

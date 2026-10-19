@@ -27,15 +27,15 @@ import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.network.buffer.WriteBuffer;
 
 public class MagicSkillCanceled extends ServerPacket {
-    private final int _objectId;
+    private final int objectId;
 
     public MagicSkillCanceled(int objectId) {
-        _objectId = objectId;
+        this.objectId = objectId;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.MAGIC_SKILL_CANCELED.writeId(this, buffer);
-        buffer.writeInt(_objectId);
+        buffer.writeInt(objectId);
     }
 }

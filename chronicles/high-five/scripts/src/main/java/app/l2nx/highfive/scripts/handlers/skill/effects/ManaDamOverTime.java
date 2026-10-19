@@ -33,12 +33,12 @@ import app.l2nx.highfive.util.StatSet;
  * Mana Damage Over Time effect implementation.
  */
 public class ManaDamOverTime extends AbstractEffect {
-    private final double _power;
+    private final double power;
 
     public ManaDamOverTime(Condition attachCond, Condition applyCond, StatSet set, StatSet params) {
         super(attachCond, applyCond, set, params);
 
-        _power = params.getDouble("power", 0);
+        power = params.getDouble("power", 0);
     }
 
     @Override
@@ -47,7 +47,7 @@ public class ManaDamOverTime extends AbstractEffect {
             return false;
         }
 
-        final double manaDam = _power * getTicksMultiplier();
+        final double manaDam = power * getTicksMultiplier();
         if ((manaDam > effected.getCurrentMp()) && skill.isToggle()) {
             effected.sendPacket(SystemMessageId.YOUR_SKILL_WAS_DEACTIVATED_DUE_TO_LACK_OF_MP);
             return false;

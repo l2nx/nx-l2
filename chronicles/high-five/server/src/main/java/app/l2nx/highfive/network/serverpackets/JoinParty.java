@@ -27,15 +27,15 @@ import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.network.buffer.WriteBuffer;
 
 public class JoinParty extends ServerPacket {
-    private final int _response;
+    private final int response;
 
     public JoinParty(int response) {
-        _response = response;
+        this.response = response;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.JOIN_PARTY.writeId(this, buffer);
-        buffer.writeInt(_response);
+        buffer.writeInt(response);
     }
 }

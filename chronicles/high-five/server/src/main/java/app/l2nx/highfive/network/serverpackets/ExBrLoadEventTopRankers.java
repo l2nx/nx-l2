@@ -30,27 +30,27 @@ import app.l2nx.network.buffer.WriteBuffer;
  * Halloween rank list server packet.
  */
 public class ExBrLoadEventTopRankers extends ServerPacket {
-    private final int _eventId;
-    private final int _day;
-    private final int _count;
-    private final int _bestScore;
-    private final int _myScore;
+    private final int eventId;
+    private final int day;
+    private final int count;
+    private final int bestScore;
+    private final int myScore;
 
     public ExBrLoadEventTopRankers(int eventId, int day, int count, int bestScore, int myScore) {
-        _eventId = eventId;
-        _day = day;
-        _count = count;
-        _bestScore = bestScore;
-        _myScore = myScore;
+        this.eventId = eventId;
+        this.day = day;
+        this.count = count;
+        this.bestScore = bestScore;
+        this.myScore = myScore;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_BR_LOAD_EVENT_TOP_RANKERS.writeId(this, buffer);
-        buffer.writeInt(_eventId);
-        buffer.writeInt(_day);
-        buffer.writeInt(_count);
-        buffer.writeInt(_bestScore);
-        buffer.writeInt(_myScore);
+        buffer.writeInt(eventId);
+        buffer.writeInt(day);
+        buffer.writeInt(count);
+        buffer.writeInt(bestScore);
+        buffer.writeInt(myScore);
     }
 }

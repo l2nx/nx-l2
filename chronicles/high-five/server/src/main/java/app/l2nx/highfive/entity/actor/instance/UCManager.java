@@ -35,11 +35,10 @@ import app.l2nx.highfive.mechanics.undergroundColiseum.UCWaiting;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.serverpackets.NpcHtmlMessage;
 import java.util.StringTokenizer;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class UCManager extends Folk {
-    private static final Logger LOGGER = Logger.getLogger(UCManager.class.getName());
 
     public UCManager(NpcTemplate template) {
         super(template);
@@ -157,7 +156,7 @@ public class UCManager extends Folk {
                     arena.runTaskNow();
                 }
             } catch (Exception e) {
-                LOGGER.log(Level.WARNING, "onBypassFeedback: ", e);
+                log.warn("onBypassFeedback: ", e);
             }
         } else if (actualCommand.equalsIgnoreCase("cancel")) {
             final Party party = player.getParty();

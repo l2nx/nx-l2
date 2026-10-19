@@ -33,12 +33,12 @@ import java.util.Iterator;
 import java.util.List;
 
 public class Attack extends ServerPacket {
-    private final int _attackerObjId;
-    private final boolean _soulshot;
-    private final int _ssGrade;
-    private final Location _attackerLoc;
-    private final Location _targetLoc;
-    private final List<Hit> _hits = new ArrayList<>();
+    private final int attackerObjId;
+    private final boolean soulshot;
+    private final int ssGrade;
+    private final Location attackerLoc;
+    private final Location targetLoc;
+    private final List<Hit> hits = new ArrayList<>();
 
     /**
      * @param attacker
@@ -47,11 +47,11 @@ public class Attack extends ServerPacket {
      * @param ssGrade
      */
     public Attack(Creature attacker, Creature target, boolean useShots, int ssGrade) {
-        _attackerObjId = attacker.getObjectId();
-        _soulshot = useShots;
-        _ssGrade = ssGrade;
-        _attackerLoc = new Location(attacker);
-        _targetLoc = new Location(target);
+        attackerObjId = attacker.getObjectId();
+        soulshot = useShots;
+        this.ssGrade = ssGrade;
+        attackerLoc = new Location(attacker);
+        targetLoc = new Location(target);
     }
 
     /**
@@ -63,21 +63,21 @@ public class Attack extends ServerPacket {
      * @param shld
      */
     public void addHit(Creature target, int damage, boolean miss, boolean crit, byte shld) {
-        _hits.add(new Hit(target, damage, miss, crit, shld, _soulshot, _ssGrade));
+        hits.add(new Hit(target, damage, miss, crit, shld, soulshot, ssGrade));
     }
 
     /**
      * @return {@code true} if current attack contains at least 1 hit.
      */
     public boolean hasHits() {
-        return !_hits.isEmpty();
+        return !hits.isEmpty();
     }
 
     /**
      * @return {@code true} if attack has soul shot charged.
      */
     public boolean hasSoulshot() {
-        return _soulshot;
+        return soulshot;
     }
 
     /**
@@ -93,20 +93,20 @@ public class Attack extends ServerPacket {
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
-        final Iterator<Hit> it = _hits.iterator();
+        final Iterator<Hit> it = hits.iterator();
         ServerPackets.ATTACK.writeId(this, buffer);
-        buffer.writeInt(_attackerObjId);
+        buffer.writeInt(attackerObjId);
         writeHit(it.next(), buffer);
-        buffer.writeInt(_attackerLoc.getX());
-        buffer.writeInt(_attackerLoc.getY());
-        buffer.writeInt(_attackerLoc.getZ());
-        buffer.writeShort(_hits.size() - 1);
+        buffer.writeInt(attackerLoc.getX());
+        buffer.writeInt(attackerLoc.getY());
+        buffer.writeInt(attackerLoc.getZ());
+        buffer.writeShort(hits.size() - 1);
         while (it.hasNext()) {
             writeHit(it.next(), buffer);
         }
 
-        buffer.writeInt(_targetLoc.getX());
-        buffer.writeInt(_targetLoc.getY());
-        buffer.writeInt(_targetLoc.getZ());
+        buffer.writeInt(targetLoc.getX());
+        buffer.writeInt(targetLoc.getY());
+        buffer.writeInt(targetLoc.getZ());
     }
 }

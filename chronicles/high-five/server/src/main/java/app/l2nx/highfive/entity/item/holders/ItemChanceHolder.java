@@ -19,12 +19,15 @@
  */
 package app.l2nx.highfive.entity.item.holders;
 
+import lombok.Getter;
+
 /**
  * A DTO for items; contains item ID, count and chance.
  * @author xban1x
  */
 public class ItemChanceHolder extends ItemHolder {
-    private final double _chance;
+    @Getter
+    private final double chance;
 
     public ItemChanceHolder(int id, double chance) {
         this(id, chance, 1);
@@ -32,20 +35,11 @@ public class ItemChanceHolder extends ItemHolder {
 
     public ItemChanceHolder(int id, double chance, long count) {
         super(id, count);
-        _chance = chance;
-    }
-
-    /**
-     * Gets the chance.
-     * @return the drop chance of the item contained in this object
-     */
-    public double getChance() {
-        return _chance;
+        this.chance = chance;
     }
 
     @Override
     public String toString() {
-        return "[" + getClass().getSimpleName() + "] ID: " + getId() + ", count: " + getCount() + ", chance: "
-                + _chance;
+        return "[" + getClass().getSimpleName() + "] ID: " + getId() + ", count: " + getCount() + ", chance: " + chance;
     }
 }

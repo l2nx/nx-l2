@@ -48,7 +48,6 @@ import app.l2nx.highfive.mechanics.skill.BuffInfo;
 import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.mechanics.skill.holders.SkillHolder;
 import app.l2nx.highfive.network.NpcStringId;
-import app.l2nx.highfive.network.PacketLogger;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.enums.ChatType;
 import app.l2nx.highfive.network.serverpackets.ActionFailed;
@@ -62,10 +61,12 @@ import app.l2nx.highfive.network.serverpackets.SystemMessage;
 import app.l2nx.highfive.taskmanagers.AttackStanceTaskManager;
 import java.util.Arrays;
 import java.util.concurrent.ThreadLocalRandom;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @version $Revision: 1.11.2.7.2.9 $ $Date: 2005/04/06 16:13:48 $
  */
+@Slf4j
 public class RequestActionUse extends ClientPacket {
     private static final int SIN_EATER_ID = 12564;
     private static final int SWITCH_STANCE_ID = 6054;
@@ -76,15 +77,15 @@ public class RequestActionUse extends ClientPacket {
         NpcStringId.AH_I_MISSED_THE_MARK
     };
 
-    private int _actionId;
-    private boolean _ctrlPressed;
-    private boolean _shiftPressed;
+    private int actionId;
+    private boolean ctrlPressed;
+    private boolean shiftPressed;
 
     @Override
     protected void readImpl() {
-        _actionId = readInt();
-        _ctrlPressed = readInt() == 1;
-        _shiftPressed = readByte() == 1;
+        actionId = readInt();
+        ctrlPressed = readInt() == 1;
+        shiftPressed = readByte() == 1;
     }
 
     @Override
@@ -95,7 +96,7 @@ public class RequestActionUse extends ClientPacket {
         }
 
         // Don't do anything if player is dead or confused.
-        if ((player.isFakeDeath() && (_actionId != 0)) || player.isDead() || player.isOutOfControl()) {
+        if ((player.isFakeDeath() && (actionId != 0)) || player.isDead() || player.isOutOfControl()) {
             player.sendPacket(ActionFailed.STATIC_PACKET);
             return;
         }
@@ -103,7 +104,7 @@ public class RequestActionUse extends ClientPacket {
         final BuffInfo info = player.getEffectList().getBuffInfoByAbnormalType(AbnormalType.BOT_PENALTY);
         if (info != null) {
             for (AbstractEffect effect : info.getEffects()) {
-                if (!effect.checkCondition(_actionId)) {
+                if (!effect.checkCondition(actionId)) {
                     player.sendPacket(
                             SystemMessageId
                                     .YOU_HAVE_BEEN_REPORTED_AS_AN_ILLEGAL_PROGRAM_USER_SO_YOUR_ACTIONS_HAVE_BEEN_RESTRICTED);
@@ -118,17 +119,20 @@ public class RequestActionUse extends ClientPacket {
             final int[] allowedActions = player.isTransformed()
                     ? ExBasicActionList.ACTIONS_ON_TRANSFORM
                     : ExBasicActionList.DEFAULT_ACTION_LIST;
-            if (Arrays.binarySearch(allowedActions, _actionId) < 0) {
+            if (Arrays.binarySearch(allowedActions, actionId) < 0) {
                 player.sendPacket(ActionFailed.STATIC_PACKET);
-                PacketLogger.warning(player + " used action which he does not have! Id = " + _actionId + " transform: "
-                        + player.getTransformation().getId());
+                log.warn(
+                        "{} used action which he does not have! Id = {} transform: {}",
+                        player,
+                        actionId,
+                        player.getTransformation().getId());
                 return;
             }
         }
 
         final Summon summon = player.getSummon();
         final WorldObject target = player.getTarget();
-        switch (_actionId) {
+        switch (actionId) {
             case 0: // Sit/Stand
             {
                 if (player.isSitting() || !player.isMoving() || player.isFakeDeath()) {
@@ -167,7 +171,7 @@ public class RequestActionUse extends ClientPacket {
             }
             case 16: // Attack (Pets)
             {
-                if (validateSummon(player, summon, true) && summon.canAttack(_ctrlPressed)) {
+                if (validateSummon(player, summon, true) && summon.canAttack(ctrlPressed)) {
                     summon.doSummonAttack(target);
                 }
                 break;
@@ -227,7 +231,7 @@ public class RequestActionUse extends ClientPacket {
             }
             case 22: // Attack (Servitors)
             {
-                if (validateSummon(player, summon, false) && summon.canAttack(_ctrlPressed)) {
+                if (validateSummon(player, summon, false) && summon.canAttack(ctrlPressed)) {
                     summon.doSummonAttack(target);
                 }
                 break;
@@ -444,7 +448,7 @@ public class RequestActionUse extends ClientPacket {
             case 71:
             case 72:
             case 73: {
-                useCoupleSocial(player, _actionId - 55);
+                useCoupleSocial(player, actionId - 55);
                 break;
             }
             case 1000: // Siege Golem - Siege Hammer
@@ -1094,7 +1098,7 @@ public class RequestActionUse extends ClientPacket {
 
         if (level > 0) {
             summon.setTarget(target);
-            summon.useMagic(SkillData.getInstance().getSkill(skillId, level), _ctrlPressed, _shiftPressed);
+            summon.useMagic(SkillData.getInstance().getSkill(skillId, level), ctrlPressed, shiftPressed);
         }
 
         if (skillId == SWITCH_STANCE_ID) {
@@ -1125,7 +1129,7 @@ public class RequestActionUse extends ClientPacket {
         final Skill skill = skillHolder.getSkill();
         if (skill != null) {
             summon.setTarget(target);
-            summon.useMagic(skill, _ctrlPressed, _shiftPressed);
+            summon.useMagic(skill, ctrlPressed, shiftPressed);
             if (skill.getId() == SWITCH_STANCE_ID) {
                 summon.switchMode();
             }

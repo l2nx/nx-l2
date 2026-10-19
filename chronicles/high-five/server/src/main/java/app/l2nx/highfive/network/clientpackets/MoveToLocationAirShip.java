@@ -35,16 +35,16 @@ public class MoveToLocationAirShip extends ClientPacket {
     public static final int MAX_Z = 6105;
     public static final int STEP = 300;
 
-    private int _command;
-    private int _param1;
-    private int _param2 = 0;
+    private int command;
+    private int param1;
+    private int param2 = 0;
 
     @Override
     protected void readImpl() {
-        _command = readInt();
-        _param1 = readInt();
+        command = readInt();
+        param1 = readInt();
         if (remaining() > 0) {
-            _param2 = readInt();
+            param2 = readInt();
         }
     }
 
@@ -66,14 +66,14 @@ public class MoveToLocationAirShip extends ClientPacket {
 
         int z = ship.getZ();
 
-        switch (_command) {
+        switch (command) {
             case 0: {
                 if (!ship.canBeControlled()) {
                     return;
                 }
 
-                if (_param1 < World.GRACIA_MAX_X) {
-                    ship.getAI().setIntentionMoveTo(new Location(_param1, _param2, z));
+                if (param1 < World.GRACIA_MAX_X) {
+                    ship.getAI().setIntentionMoveTo(new Location(param1, param2, z));
                 }
                 break;
             }
@@ -113,13 +113,13 @@ public class MoveToLocationAirShip extends ClientPacket {
                 }
 
                 final VehiclePathPoint[] dst =
-                        AirShipManager.getInstance().getTeleportDestination(ship.getDockId(), _param1);
+                        AirShipManager.getInstance().getTeleportDestination(ship.getDockId(), param1);
                 if (dst == null) {
                     return;
                 }
 
                 // Consume fuel, if needed.
-                final int fuelConsumption = AirShipManager.getInstance().getFuelConsumption(ship.getDockId(), _param1);
+                final int fuelConsumption = AirShipManager.getInstance().getFuelConsumption(ship.getDockId(), param1);
                 if (fuelConsumption > 0) {
                     if (fuelConsumption > ship.getFuel()) {
                         player.sendPacket(

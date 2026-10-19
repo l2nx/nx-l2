@@ -51,21 +51,27 @@ import app.l2nx.highfive.network.serverpackets.SocialAction;
 import app.l2nx.highfive.network.serverpackets.StatusUpdate;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
 import java.util.concurrent.atomic.AtomicInteger;
+import lombok.Getter;
+import lombok.Setter;
 
 public class PlayerStat extends PlayableStat {
-    private int _oldMaxHp; // stats watch
-    private int _oldMaxMp; // stats watch
-    private int _oldMaxCp; // stats watch
-    private float _vitalityPoints = 1;
-    private byte _vitalityLevel = 0;
-    private long _startingXp;
-    /** Player's maximum cubic count. */
-    private int _maxCubicCount = 1;
-    /** Player's maximum talisman count. */
-    private final AtomicInteger _talismanSlots = new AtomicInteger();
+    private int oldMaxHp; // stats watch
+    private int oldMaxMp; // stats watch
+    private int oldMaxCp; // stats watch
+    private float vitalityPoints = 1;
+    private byte vitalityLevel = 0;
 
-    private boolean _cloakSlot = false;
-    private boolean _pausedNevitHourglass = false;
+    @Getter
+    private long startingExp;
+    /** Player's maximum cubic count. */
+    @Getter
+    @Setter
+    private int maxCubicCount = 1;
+    /** Player's maximum talisman count. */
+    private final AtomicInteger talismanSlots = new AtomicInteger();
+
+    private boolean cloakSlot = false;
+    private boolean pausedNevitHourglass = false;
 
     public static final int[] VITALITY_LEVELS = {240, 2000, 13000, 17000, 20000};
 
@@ -233,7 +239,13 @@ public class PlayerStat extends PlayableStat {
         final Player player = getActiveChar();
         if (EventDispatcher.getInstance().hasListener(EventType.ON_PLAYER_LEVEL_CHANGED, player)) {
             EventDispatcher.getInstance()
-                    .notifyEventAsync(new OnPlayerLevelChanged(player, getLevel(), getLevel() + value), player);
+                    .notifyEventAsync(
+                            OnPlayerLevelChanged.builder()
+                                    .player(player)
+                                    .oldLevel(getLevel())
+                                    .newLevel(getLevel() + value)
+                                    .build(),
+                            player);
         }
 
         final boolean levelIncreased = super.addLevel(value);
@@ -356,28 +368,8 @@ public class PlayerStat extends PlayableStat {
 
     public void setStartingExp(long value) {
         if (GeneralConfig.BOTREPORT_ENABLE) {
-            _startingXp = value;
+            startingExp = value;
         }
-    }
-
-    public long getStartingExp() {
-        return _startingXp;
-    }
-
-    /**
-     * Gets the maximum cubic count.
-     * @return the maximum cubic count
-     */
-    public int getMaxCubicCount() {
-        return _maxCubicCount;
-    }
-
-    /**
-     * Sets the maximum cubic count.
-     * @param cubicCount the maximum cubic count
-     */
-    public void setMaxCubicCount(int cubicCount) {
-        _maxCubicCount = cubicCount;
     }
 
     /**
@@ -385,11 +377,11 @@ public class PlayerStat extends PlayableStat {
      * @return the maximum talisman count
      */
     public int getTalismanSlots() {
-        return _talismanSlots.get();
+        return talismanSlots.get();
     }
 
     public void addTalismanSlots(int count) {
-        _talismanSlots.addAndGet(count);
+        talismanSlots.addAndGet(count);
     }
 
     public boolean canEquipCloak() {
@@ -397,19 +389,19 @@ public class PlayerStat extends PlayableStat {
             return true;
         }
 
-        return _cloakSlot;
+        return cloakSlot;
     }
 
     public void setCloakSlotStatus(boolean cloakSlot) {
-        _cloakSlot = cloakSlot;
+        this.cloakSlot = cloakSlot;
     }
 
     public boolean hasPausedNevitHourglass() {
-        return _pausedNevitHourglass;
+        return pausedNevitHourglass;
     }
 
     public void setPausedNevitHourglassStatus(boolean value) {
-        _pausedNevitHourglass = value;
+        pausedNevitHourglass = value;
         getActiveChar().sendPacket(new ExVoteSystemInfo(getActiveChar()));
     }
 
@@ -452,8 +444,8 @@ public class PlayerStat extends PlayableStat {
         final int val = (player == null)
                 ? 1
                 : (int) calcStat(Stat.MAX_CP, player.getTemplate().getBaseCpMax(player.getLevel()));
-        if (val != _oldMaxCp) {
-            _oldMaxCp = val;
+        if (val != oldMaxCp) {
+            oldMaxCp = val;
 
             // Launch a regen task if the new Max CP is higher than the old one.
             if (player != null) {
@@ -474,8 +466,8 @@ public class PlayerStat extends PlayableStat {
         final int val = (player == null)
                 ? 1
                 : (int) calcStat(Stat.MAX_HP, player.getTemplate().getBaseHpMax(player.getLevel()));
-        if (val != _oldMaxHp) {
-            _oldMaxHp = val;
+        if (val != oldMaxHp) {
+            oldMaxHp = val;
 
             // Launch a regen task if the new Max HP is higher than the old one.
             if (player != null) {
@@ -496,8 +488,8 @@ public class PlayerStat extends PlayableStat {
         final int val = (player == null)
                 ? 1
                 : (int) calcStat(Stat.MAX_MP, player.getTemplate().getBaseMpMax(player.getLevel()));
-        if (val != _oldMaxMp) {
-            _oldMaxMp = val;
+        if (val != oldMaxMp) {
+            oldMaxMp = val;
 
             // Launch a regen task if the new Max MP is higher than the old one.
             if (player != null) {
@@ -621,21 +613,21 @@ public class PlayerStat extends PlayableStat {
 
     private void updateVitalityLevel(boolean quiet) {
         final byte level;
-        if (_vitalityPoints <= VITALITY_LEVELS[0]) {
+        if (vitalityPoints <= VITALITY_LEVELS[0]) {
             level = 0;
-        } else if (_vitalityPoints <= VITALITY_LEVELS[1]) {
+        } else if (vitalityPoints <= VITALITY_LEVELS[1]) {
             level = 1;
-        } else if (_vitalityPoints <= VITALITY_LEVELS[2]) {
+        } else if (vitalityPoints <= VITALITY_LEVELS[2]) {
             level = 2;
-        } else if (_vitalityPoints <= VITALITY_LEVELS[3]) {
+        } else if (vitalityPoints <= VITALITY_LEVELS[3]) {
             level = 3;
         } else {
             level = 4;
         }
 
-        if (!quiet && (level != _vitalityLevel)) {
+        if (!quiet && (level != vitalityLevel)) {
             final Player player = getActiveChar();
-            if (level < _vitalityLevel) {
+            if (level < vitalityLevel) {
                 player.sendPacket(SystemMessageId.YOUR_VITALITY_HAS_DECREASED);
             } else {
                 player.sendPacket(SystemMessageId.YOUR_VITALITY_HAS_INCREASED);
@@ -648,14 +640,14 @@ public class PlayerStat extends PlayableStat {
             }
         }
 
-        _vitalityLevel = level;
+        vitalityLevel = level;
     }
 
     /*
      * Return current vitality points in integer format
      */
     public int getVitalityPoints() {
-        return (int) _vitalityPoints;
+        return (int) vitalityPoints;
     }
 
     /*
@@ -663,11 +655,11 @@ public class PlayerStat extends PlayableStat {
      */
     public void setVitalityPoints(int value, boolean quiet) {
         final int points = Math.clamp(value, MIN_VITALITY_POINTS, MAX_VITALITY_POINTS);
-        if (points == _vitalityPoints) {
+        if (points == vitalityPoints) {
             return;
         }
 
-        _vitalityPoints = points;
+        vitalityPoints = points;
         updateVitalityLevel(quiet);
         getActiveChar().sendPacket(new ExVitalityPointInfo(getVitalityPoints()));
     }
@@ -710,16 +702,16 @@ public class PlayerStat extends PlayableStat {
         }
 
         if (points > 0) {
-            points = Math.min(_vitalityPoints + points, MAX_VITALITY_POINTS);
+            points = Math.min(vitalityPoints + points, MAX_VITALITY_POINTS);
         } else {
-            points = Math.max(_vitalityPoints + points, MIN_VITALITY_POINTS);
+            points = Math.max(vitalityPoints + points, MIN_VITALITY_POINTS);
         }
 
-        if (Math.abs(points - _vitalityPoints) <= 1e-6) {
+        if (Math.abs(points - vitalityPoints) <= 1e-6) {
             return;
         }
 
-        _vitalityPoints = points;
+        vitalityPoints = points;
         updateVitalityLevel(quiet);
     }
 
@@ -750,14 +742,14 @@ public class PlayerStat extends PlayableStat {
     }
 
     /**
-     * @return the _vitalityLevel
+     * @return the vitalityLevel
      */
     public byte getVitalityLevel() {
         if (getActiveChar().getNevitSystem().isAdventBlessingActive()) {
             return 4;
         }
 
-        return _vitalityLevel;
+        return vitalityLevel;
     }
 
     public double getExpBonusMultiplier() {

@@ -27,11 +27,11 @@ import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.network.buffer.WriteBuffer;
 
 public class TargetSelected extends ServerPacket {
-    private final int _objectId;
-    private final int _targetObjId;
-    private final int _x;
-    private final int _y;
-    private final int _z;
+    private final int objectId;
+    private final int targetObjId;
+    private final int x;
+    private final int y;
+    private final int z;
 
     /**
      * @param objectId
@@ -41,21 +41,21 @@ public class TargetSelected extends ServerPacket {
      * @param z
      */
     public TargetSelected(int objectId, int targetId, int x, int y, int z) {
-        _objectId = objectId;
-        _targetObjId = targetId;
-        _x = x;
-        _y = y;
-        _z = z;
+        this.objectId = objectId;
+        targetObjId = targetId;
+        this.x = x;
+        this.y = y;
+        this.z = z;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.TARGET_SELECTED.writeId(this, buffer);
-        buffer.writeInt(_objectId);
-        buffer.writeInt(_targetObjId);
-        buffer.writeInt(_x);
-        buffer.writeInt(_y);
-        buffer.writeInt(_z);
+        buffer.writeInt(objectId);
+        buffer.writeInt(targetObjId);
+        buffer.writeInt(x);
+        buffer.writeInt(y);
+        buffer.writeInt(z);
         buffer.writeInt(0); // ?
     }
 }

@@ -27,24 +27,24 @@ import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.network.buffer.WriteBuffer;
 
 public class StartRotation extends ServerPacket {
-    private final int _objectId;
-    private final int _degree;
-    private final int _side;
-    private final int _speed;
+    private final int objectId;
+    private final int degree;
+    private final int side;
+    private final int speed;
 
     public StartRotation(int objectId, int degree, int side, int speed) {
-        _objectId = objectId;
-        _degree = degree;
-        _side = side;
-        _speed = speed;
+        this.objectId = objectId;
+        this.degree = degree;
+        this.side = side;
+        this.speed = speed;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.START_ROTATING.writeId(this, buffer);
-        buffer.writeInt(_objectId);
-        buffer.writeInt(_degree);
-        buffer.writeInt(_side);
-        buffer.writeInt(_speed);
+        buffer.writeInt(objectId);
+        buffer.writeInt(degree);
+        buffer.writeInt(side);
+        buffer.writeInt(speed);
     }
 }

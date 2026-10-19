@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ThreadLocalRandom;
+import lombok.extern.slf4j.Slf4j;
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
@@ -41,6 +42,7 @@ import org.w3c.dom.Node;
  * Tar Beetle zone spawn
  * @author malyelfik
  */
+@Slf4j
 public class TarBeetleSpawn implements IXmlReader {
     private final List<SpawnZone> zones = new ArrayList<>();
     private ScheduledFuture<?> spawnTask;
@@ -128,7 +130,7 @@ public class TarBeetleSpawn implements IXmlReader {
     }
 
     private class Zone extends PolygonTerritory {
-        private List<Zone> _bannedZones;
+        private List<Zone> bannedZones;
 
         public Zone() {
             super(1);
@@ -145,16 +147,16 @@ public class TarBeetleSpawn implements IXmlReader {
         }
 
         public void addBannedZone(Zone bZone) {
-            if (_bannedZones == null) {
-                _bannedZones = new ArrayList<>();
+            if (bannedZones == null) {
+                bannedZones = new ArrayList<>();
             }
 
-            _bannedZones.add(bZone);
+            bannedZones.add(bZone);
         }
 
         private boolean isInsideBannedZone(Location location) {
-            if (_bannedZones != null) {
-                for (Zone z : _bannedZones) {
+            if (bannedZones != null) {
+                for (Zone z : bannedZones) {
                     if (z.isInside(location.getX(), location.getY())) {
                         return true;
                     }
@@ -166,36 +168,36 @@ public class TarBeetleSpawn implements IXmlReader {
     }
 
     private class SpawnZone {
-        private final List<Zone> _zones = new ArrayList<>();
-        private final Collection<Npc> _spawn = ConcurrentHashMap.newKeySet();
-        private final int _maxNpcCount;
-        private final int _index;
+        private final List<Zone> zones = new ArrayList<>();
+        private final Collection<Npc> spawn = ConcurrentHashMap.newKeySet();
+        private final int maxNpcCount;
+        private final int index;
 
         public SpawnZone(int maxNpcCount, int index) {
-            _maxNpcCount = maxNpcCount;
-            _index = index;
+            this.maxNpcCount = maxNpcCount;
+            this.index = index;
         }
 
         public void addZone(Zone zone) {
-            _zones.add(zone);
+            zones.add(zone);
         }
 
         public void removeSpawn(Npc obj) {
-            _spawn.remove(obj);
+            spawn.remove(obj);
         }
 
         public void unload() {
-            _spawn.forEach(Npc::deleteMe);
-            _spawn.clear();
-            _zones.clear();
+            spawn.forEach(Npc::deleteMe);
+            spawn.clear();
+            zones.clear();
         }
 
         public void refreshSpawn() {
             try {
-                while (_spawn.size() < _maxNpcCount) {
+                while (this.spawn.size() < maxNpcCount) {
                     final ThreadLocalRandom random = ThreadLocalRandom.current();
                     final Location location =
-                            _zones.get(random.nextInt(_zones.size())).getRandomPoint();
+                            zones.get(random.nextInt(zones.size())).getRandomPoint();
                     if (location != null) {
                         final Spawn spawn = new Spawn(18804);
                         spawn.setHeading(random.nextInt(65535));
@@ -210,21 +212,21 @@ public class TarBeetleSpawn implements IXmlReader {
                         npc.setInvul(true);
                         npc.disableCoreAI(true);
                         npc.setScriptValue(5);
-                        npc.getVariables().set("zoneIndex", _index);
-                        _spawn.add(npc);
+                        npc.getVariables().set("zoneIndex", index);
+                        this.spawn.add(npc);
                     }
                 }
             } catch (Exception e) {
-                LOGGER.warning("Problem with TarBeetleSpawn: " + e.getMessage());
+                log.warn("Problem with TarBeetleSpawn: {}", e.getMessage());
             }
         }
 
         public void refreshShots() {
-            for (Npc npc : _spawn) {
+            for (Npc npc : spawn) {
                 final int val = npc.getScriptValue();
                 if (val == 5) {
                     npc.deleteMe();
-                    _spawn.remove(npc);
+                    spawn.remove(npc);
                 } else {
                     npc.setScriptValue(val + 1);
                 }

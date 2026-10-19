@@ -31,14 +31,14 @@ import app.l2nx.highfive.mechanics.skill.Skill;
  * The Class ConditionPlayerSiegeSide.
  */
 public class ConditionPlayerSiegeSide extends Condition {
-    private final int _siegeSide;
+    private final int siegeSide;
 
     /**
      * Instantiates a new condition player siege side.
      * @param side the side
      */
     public ConditionPlayerSiegeSide(int side) {
-        _siegeSide = side;
+        siegeSide = side;
     }
 
     @Override
@@ -48,6 +48,6 @@ public class ConditionPlayerSiegeSide extends Condition {
             return false;
         }
 
-        return player.getSiegeSide() == _siegeSide;
+        return player.getSiegeSide() == siegeSide;
     }
 }

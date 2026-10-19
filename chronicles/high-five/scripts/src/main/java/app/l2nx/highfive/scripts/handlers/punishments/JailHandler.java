@@ -60,7 +60,7 @@ public class JailHandler implements IPunishmentHandler {
     }
 
     private void onPlayerLogin(OnPlayerLogin event) {
-        final Player player = event.getPlayer();
+        final Player player = event.player();
 
         if (player.isJailed() && !player.isInsideZone(ZoneId.JAIL)) {
             applyToPlayer(null, player);

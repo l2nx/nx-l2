@@ -33,14 +33,14 @@ import app.l2nx.highfive.entity.actor.Creature;
  * @author xban1x
  */
 public class HitTask implements Runnable {
-    private final Creature _creature;
-    private final Creature _hitTarget;
-    private final int _damage;
-    private final boolean _crit;
-    private final boolean _miss;
-    private final byte _shld;
-    private final boolean _soulshot;
-    private final boolean _rechargeShots;
+    private final Creature creature;
+    private final Creature hitTarget;
+    private final int damage;
+    private final boolean crit;
+    private final boolean miss;
+    private final byte shld;
+    private final boolean soulshot;
+    private final boolean rechargeShots;
 
     public HitTask(
             Creature creature,
@@ -51,20 +51,20 @@ public class HitTask implements Runnable {
             byte shld,
             boolean soulshot,
             boolean rechargeShots) {
-        _creature = creature;
-        _hitTarget = target;
-        _damage = damage;
-        _crit = crit;
-        _shld = shld;
-        _miss = miss;
-        _soulshot = soulshot;
-        _rechargeShots = rechargeShots;
+        this.creature = creature;
+        hitTarget = target;
+        this.damage = damage;
+        this.crit = crit;
+        this.shld = shld;
+        this.miss = miss;
+        this.soulshot = soulshot;
+        this.rechargeShots = rechargeShots;
     }
 
     @Override
     public void run() {
-        if (_creature != null) {
-            _creature.onHitTimer(_hitTarget, _damage, _crit, _miss, _shld, _soulshot, _rechargeShots);
+        if (creature != null) {
+            creature.onHitTimer(hitTarget, damage, crit, miss, shld, soulshot, rechargeShots);
         }
     }
 }

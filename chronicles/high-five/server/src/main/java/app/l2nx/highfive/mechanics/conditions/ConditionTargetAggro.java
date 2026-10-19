@@ -28,21 +28,21 @@ import app.l2nx.highfive.mechanics.skill.Skill;
  * @author mkizub
  */
 public class ConditionTargetAggro extends Condition {
-    private final boolean _isAggro;
+    private final boolean aggro;
 
     /**
      * Instantiates a new condition target aggro.
      * @param isAggro the is aggro
      */
     public ConditionTargetAggro(boolean isAggro) {
-        _isAggro = isAggro;
+        aggro = isAggro;
     }
 
     @Override
     public boolean testImpl(Creature effector, Creature effected, Skill skill, ItemTemplate item) {
         if (effected != null) {
             if (effected.isMonster()) {
-                return effected.asMonster().isAggressive() == _isAggro;
+                return effected.asMonster().isAggressive() == aggro;
             }
 
             if (effected.isPlayer()) {

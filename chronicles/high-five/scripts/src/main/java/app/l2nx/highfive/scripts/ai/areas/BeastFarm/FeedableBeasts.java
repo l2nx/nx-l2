@@ -132,38 +132,38 @@ public class FeedableBeasts extends Script {
 
     // all mobs that grow by eating
     private static class GrowthCapableMob {
-        private final int _growthLevel;
-        private final int _chance;
+        private final int growthLevel;
+        private final int chance;
 
-        private final Map<Integer, int[][]> _spiceToMob = new HashMap<>();
+        private final Map<Integer, int[][]> spiceToMob = new HashMap<>();
 
         public GrowthCapableMob(int growthLevel, int chance) {
-            _growthLevel = growthLevel;
-            _chance = chance;
+            this.growthLevel = growthLevel;
+            this.chance = chance;
         }
 
         public void addMobs(int spice, int[][] mobs) {
-            _spiceToMob.put(spice, mobs);
+            spiceToMob.put(spice, mobs);
         }
 
         public Integer getMob(int spice, int mobType, int classType) {
-            final int[][] data = _spiceToMob.get(spice);
+            final int[][] data = spiceToMob.get(spice);
             return (data != null) ? data[mobType][classType] : null;
         }
 
         public Integer getRandomMob(int spice) {
             int[][] temp;
-            temp = _spiceToMob.get(spice);
+            temp = spiceToMob.get(spice);
             final int rand = getRandom(temp[0].length);
             return temp[0][rand];
         }
 
         public Integer getChance() {
-            return _chance;
+            return chance;
         }
 
         public Integer getGrowthLevel() {
-            return _growthLevel;
+            return growthLevel;
         }
     }
 
@@ -175,169 +175,169 @@ public class FeedableBeasts extends Script {
         GrowthCapableMob temp;
 
         // @formatter:off
-        final int[][] Kookabura_0_Gold = {{21452, 21453, 21454, 21455}};
-        final int[][] Kookabura_0_Crystal = {{21456, 21457, 21458, 21459}};
-        final int[][] Kookabura_1_Gold_1 = {{21460, 21462}};
-        final int[][] Kookabura_1_Gold_2 = {{21461, 21463}};
-        final int[][] Kookabura_1_Crystal_1 = {{21464, 21466}};
-        final int[][] Kookabura_1_Crystal_2 = {{21465, 21467}};
-        final int[][] Kookabura_2_1 = {{21468, 21824}, {TRAINED_KOOKABURRA1, TRAINED_KOOKABURRA2}};
-        final int[][] Kookabura_2_2 = {{21469, 21825}, {TRAINED_KOOKABURRA1, TRAINED_KOOKABURRA2}};
+        final int[][] kookabura0Gold = {{21452, 21453, 21454, 21455}};
+        final int[][] kookabura0Crystal = {{21456, 21457, 21458, 21459}};
+        final int[][] kookabura1Gold1 = {{21460, 21462}};
+        final int[][] kookabura1Gold2 = {{21461, 21463}};
+        final int[][] kookabura1Crystal1 = {{21464, 21466}};
+        final int[][] kookabura1Crystal2 = {{21465, 21467}};
+        final int[][] kookabura21 = {{21468, 21824}, {TRAINED_KOOKABURRA1, TRAINED_KOOKABURRA2}};
+        final int[][] kookabura22 = {{21469, 21825}, {TRAINED_KOOKABURRA1, TRAINED_KOOKABURRA2}};
 
-        final int[][] Buffalo_0_Gold = {{21471, 21472, 21473, 21474}};
-        final int[][] Buffalo_0_Crystal = {{21475, 21476, 21477, 21478}};
-        final int[][] Buffalo_1_Gold_1 = {{21479, 21481}};
-        final int[][] Buffalo_1_Gold_2 = {{21481, 21482}};
-        final int[][] Buffalo_1_Crystal_1 = {{21483, 21485}};
-        final int[][] Buffalo_1_Crystal_2 = {{21484, 21486}};
-        final int[][] Buffalo_2_1 = {{21487, 21826}, {TRAINED_BUFFALO1, TRAINED_BUFFALO2}};
-        final int[][] Buffalo_2_2 = {{21488, 21827}, {TRAINED_BUFFALO1, TRAINED_BUFFALO2}};
+        final int[][] buffalo0Gold = {{21471, 21472, 21473, 21474}};
+        final int[][] buffalo0Crystal = {{21475, 21476, 21477, 21478}};
+        final int[][] buffalo1Gold1 = {{21479, 21481}};
+        final int[][] buffalo1Gold2 = {{21481, 21482}};
+        final int[][] buffalo1Crystal1 = {{21483, 21485}};
+        final int[][] buffalo1Crystal2 = {{21484, 21486}};
+        final int[][] buffalo21 = {{21487, 21826}, {TRAINED_BUFFALO1, TRAINED_BUFFALO2}};
+        final int[][] buffalo22 = {{21488, 21827}, {TRAINED_BUFFALO1, TRAINED_BUFFALO2}};
 
-        final int[][] Cougar_0_Gold = {{21490, 21491, 21492, 21493}};
-        final int[][] Cougar_0_Crystal = {{21494, 21495, 21496, 21497}};
-        final int[][] Cougar_1_Gold_1 = {{21498, 21500}};
-        final int[][] Cougar_1_Gold_2 = {{21499, 21501}};
-        final int[][] Cougar_1_Crystal_1 = {{21502, 21504}};
-        final int[][] Cougar_1_Crystal_2 = {{21503, 21505}};
-        final int[][] Cougar_2_1 = {{21506, 21828}, {TRAINED_COUGAR1, TRAINED_COUGAR2}};
-        final int[][] Cougar_2_2 = {{21507, 21829}, {TRAINED_COUGAR1, TRAINED_COUGAR2}};
+        final int[][] cougar0Gold = {{21490, 21491, 21492, 21493}};
+        final int[][] cougar0Crystal = {{21494, 21495, 21496, 21497}};
+        final int[][] cougar1Gold1 = {{21498, 21500}};
+        final int[][] cougar1Gold2 = {{21499, 21501}};
+        final int[][] cougar1Crystal1 = {{21502, 21504}};
+        final int[][] cougar1Crystal2 = {{21503, 21505}};
+        final int[][] cougar21 = {{21506, 21828}, {TRAINED_COUGAR1, TRAINED_COUGAR2}};
+        final int[][] cougar22 = {{21507, 21829}, {TRAINED_COUGAR1, TRAINED_COUGAR2}};
         // @formatter:on
 
         // Alpen Kookabura
         temp = new GrowthCapableMob(0, 100);
-        temp.addMobs(GOLDEN_SPICE, Kookabura_0_Gold);
-        temp.addMobs(CRYSTAL_SPICE, Kookabura_0_Crystal);
+        temp.addMobs(GOLDEN_SPICE, kookabura0Gold);
+        temp.addMobs(CRYSTAL_SPICE, kookabura0Crystal);
         GROWTH_CAPABLE_MONSTERS.put(21451, temp);
 
         temp = new GrowthCapableMob(1, 40);
-        temp.addMobs(GOLDEN_SPICE, Kookabura_1_Gold_1);
+        temp.addMobs(GOLDEN_SPICE, kookabura1Gold1);
         GROWTH_CAPABLE_MONSTERS.put(21452, temp);
         GROWTH_CAPABLE_MONSTERS.put(21454, temp);
 
         temp = new GrowthCapableMob(1, 40);
-        temp.addMobs(GOLDEN_SPICE, Kookabura_1_Gold_2);
+        temp.addMobs(GOLDEN_SPICE, kookabura1Gold2);
         GROWTH_CAPABLE_MONSTERS.put(21453, temp);
         GROWTH_CAPABLE_MONSTERS.put(21455, temp);
 
         temp = new GrowthCapableMob(1, 40);
-        temp.addMobs(CRYSTAL_SPICE, Kookabura_1_Crystal_1);
+        temp.addMobs(CRYSTAL_SPICE, kookabura1Crystal1);
         GROWTH_CAPABLE_MONSTERS.put(21456, temp);
         GROWTH_CAPABLE_MONSTERS.put(21458, temp);
 
         temp = new GrowthCapableMob(1, 40);
-        temp.addMobs(CRYSTAL_SPICE, Kookabura_1_Crystal_2);
+        temp.addMobs(CRYSTAL_SPICE, kookabura1Crystal2);
         GROWTH_CAPABLE_MONSTERS.put(21457, temp);
         GROWTH_CAPABLE_MONSTERS.put(21459, temp);
 
         temp = new GrowthCapableMob(2, 25);
-        temp.addMobs(GOLDEN_SPICE, Kookabura_2_1);
+        temp.addMobs(GOLDEN_SPICE, kookabura21);
         GROWTH_CAPABLE_MONSTERS.put(21460, temp);
         GROWTH_CAPABLE_MONSTERS.put(21462, temp);
 
         temp = new GrowthCapableMob(2, 25);
-        temp.addMobs(GOLDEN_SPICE, Kookabura_2_2);
+        temp.addMobs(GOLDEN_SPICE, kookabura22);
         GROWTH_CAPABLE_MONSTERS.put(21461, temp);
         GROWTH_CAPABLE_MONSTERS.put(21463, temp);
 
         temp = new GrowthCapableMob(2, 25);
-        temp.addMobs(CRYSTAL_SPICE, Kookabura_2_1);
+        temp.addMobs(CRYSTAL_SPICE, kookabura21);
         GROWTH_CAPABLE_MONSTERS.put(21464, temp);
         GROWTH_CAPABLE_MONSTERS.put(21466, temp);
 
         temp = new GrowthCapableMob(2, 25);
-        temp.addMobs(CRYSTAL_SPICE, Kookabura_2_2);
+        temp.addMobs(CRYSTAL_SPICE, kookabura22);
         GROWTH_CAPABLE_MONSTERS.put(21465, temp);
         GROWTH_CAPABLE_MONSTERS.put(21467, temp);
 
         // Alpen Buffalo
         temp = new GrowthCapableMob(0, 100);
-        temp.addMobs(GOLDEN_SPICE, Buffalo_0_Gold);
-        temp.addMobs(CRYSTAL_SPICE, Buffalo_0_Crystal);
+        temp.addMobs(GOLDEN_SPICE, buffalo0Gold);
+        temp.addMobs(CRYSTAL_SPICE, buffalo0Crystal);
         GROWTH_CAPABLE_MONSTERS.put(21470, temp);
 
         temp = new GrowthCapableMob(1, 40);
-        temp.addMobs(GOLDEN_SPICE, Buffalo_1_Gold_1);
+        temp.addMobs(GOLDEN_SPICE, buffalo1Gold1);
         GROWTH_CAPABLE_MONSTERS.put(21471, temp);
         GROWTH_CAPABLE_MONSTERS.put(21473, temp);
 
         temp = new GrowthCapableMob(1, 40);
-        temp.addMobs(GOLDEN_SPICE, Buffalo_1_Gold_2);
+        temp.addMobs(GOLDEN_SPICE, buffalo1Gold2);
         GROWTH_CAPABLE_MONSTERS.put(21472, temp);
         GROWTH_CAPABLE_MONSTERS.put(21474, temp);
 
         temp = new GrowthCapableMob(1, 40);
-        temp.addMobs(CRYSTAL_SPICE, Buffalo_1_Crystal_1);
+        temp.addMobs(CRYSTAL_SPICE, buffalo1Crystal1);
         GROWTH_CAPABLE_MONSTERS.put(21475, temp);
         GROWTH_CAPABLE_MONSTERS.put(21477, temp);
 
         temp = new GrowthCapableMob(1, 40);
-        temp.addMobs(CRYSTAL_SPICE, Buffalo_1_Crystal_2);
+        temp.addMobs(CRYSTAL_SPICE, buffalo1Crystal2);
         GROWTH_CAPABLE_MONSTERS.put(21476, temp);
         GROWTH_CAPABLE_MONSTERS.put(21478, temp);
 
         temp = new GrowthCapableMob(2, 25);
-        temp.addMobs(GOLDEN_SPICE, Buffalo_2_1);
+        temp.addMobs(GOLDEN_SPICE, buffalo21);
         GROWTH_CAPABLE_MONSTERS.put(21479, temp);
         GROWTH_CAPABLE_MONSTERS.put(21481, temp);
 
         temp = new GrowthCapableMob(2, 25);
-        temp.addMobs(GOLDEN_SPICE, Buffalo_2_2);
+        temp.addMobs(GOLDEN_SPICE, buffalo22);
         GROWTH_CAPABLE_MONSTERS.put(21480, temp);
         GROWTH_CAPABLE_MONSTERS.put(21482, temp);
 
         temp = new GrowthCapableMob(2, 25);
-        temp.addMobs(CRYSTAL_SPICE, Buffalo_2_1);
+        temp.addMobs(CRYSTAL_SPICE, buffalo21);
         GROWTH_CAPABLE_MONSTERS.put(21483, temp);
         GROWTH_CAPABLE_MONSTERS.put(21485, temp);
 
         temp = new GrowthCapableMob(2, 25);
-        temp.addMobs(CRYSTAL_SPICE, Buffalo_2_2);
+        temp.addMobs(CRYSTAL_SPICE, buffalo22);
         GROWTH_CAPABLE_MONSTERS.put(21484, temp);
         GROWTH_CAPABLE_MONSTERS.put(21486, temp);
 
         // Alpen Cougar
         temp = new GrowthCapableMob(0, 100);
-        temp.addMobs(GOLDEN_SPICE, Cougar_0_Gold);
-        temp.addMobs(CRYSTAL_SPICE, Cougar_0_Crystal);
+        temp.addMobs(GOLDEN_SPICE, cougar0Gold);
+        temp.addMobs(CRYSTAL_SPICE, cougar0Crystal);
         GROWTH_CAPABLE_MONSTERS.put(21489, temp);
 
         temp = new GrowthCapableMob(1, 40);
-        temp.addMobs(GOLDEN_SPICE, Cougar_1_Gold_1);
+        temp.addMobs(GOLDEN_SPICE, cougar1Gold1);
         GROWTH_CAPABLE_MONSTERS.put(21490, temp);
         GROWTH_CAPABLE_MONSTERS.put(21492, temp);
 
         temp = new GrowthCapableMob(1, 40);
-        temp.addMobs(GOLDEN_SPICE, Cougar_1_Gold_2);
+        temp.addMobs(GOLDEN_SPICE, cougar1Gold2);
         GROWTH_CAPABLE_MONSTERS.put(21491, temp);
         GROWTH_CAPABLE_MONSTERS.put(21493, temp);
 
         temp = new GrowthCapableMob(1, 40);
-        temp.addMobs(CRYSTAL_SPICE, Cougar_1_Crystal_1);
+        temp.addMobs(CRYSTAL_SPICE, cougar1Crystal1);
         GROWTH_CAPABLE_MONSTERS.put(21494, temp);
         GROWTH_CAPABLE_MONSTERS.put(21496, temp);
 
         temp = new GrowthCapableMob(1, 40);
-        temp.addMobs(CRYSTAL_SPICE, Cougar_1_Crystal_2);
+        temp.addMobs(CRYSTAL_SPICE, cougar1Crystal2);
         GROWTH_CAPABLE_MONSTERS.put(21495, temp);
         GROWTH_CAPABLE_MONSTERS.put(21497, temp);
 
         temp = new GrowthCapableMob(2, 25);
-        temp.addMobs(GOLDEN_SPICE, Cougar_2_1);
+        temp.addMobs(GOLDEN_SPICE, cougar21);
         GROWTH_CAPABLE_MONSTERS.put(21498, temp);
         GROWTH_CAPABLE_MONSTERS.put(21500, temp);
 
         temp = new GrowthCapableMob(2, 25);
-        temp.addMobs(GOLDEN_SPICE, Cougar_2_2);
+        temp.addMobs(GOLDEN_SPICE, cougar22);
         GROWTH_CAPABLE_MONSTERS.put(21499, temp);
         GROWTH_CAPABLE_MONSTERS.put(21501, temp);
 
         temp = new GrowthCapableMob(2, 25);
-        temp.addMobs(CRYSTAL_SPICE, Cougar_2_1);
+        temp.addMobs(CRYSTAL_SPICE, cougar21);
         GROWTH_CAPABLE_MONSTERS.put(21502, temp);
         GROWTH_CAPABLE_MONSTERS.put(21504, temp);
 
         temp = new GrowthCapableMob(2, 25);
-        temp.addMobs(CRYSTAL_SPICE, Cougar_2_2);
+        temp.addMobs(CRYSTAL_SPICE, cougar22);
         GROWTH_CAPABLE_MONSTERS.put(21503, temp);
         GROWTH_CAPABLE_MONSTERS.put(21505, temp);
     }

@@ -24,32 +24,33 @@ import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.network.buffer.WriteBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import lombok.Getter;
 
 /**
  * @author UnAfraid
  */
 public class ExQuestNpcLogList extends ServerPacket {
-    private final int _questId;
-    private final List<NpcHolder> _npcs = new ArrayList<>();
+    private final int questId;
+    private final List<NpcHolder> npcs = new ArrayList<>();
 
     public ExQuestNpcLogList(int questId) {
-        _questId = questId;
+        this.questId = questId;
     }
 
     public void addNpc(int npcId, int count) {
-        _npcs.add(new NpcHolder(npcId, 0, count));
+        npcs.add(new NpcHolder(npcId, 0, count));
     }
 
     public void addNpc(int npcId, int unknown, int count) {
-        _npcs.add(new NpcHolder(npcId, unknown, count));
+        npcs.add(new NpcHolder(npcId, unknown, count));
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_QUEST_NPC_LOG_LIST.writeId(this, buffer);
-        buffer.writeInt(_questId);
-        buffer.writeByte(_npcs.size());
-        for (NpcHolder holder : _npcs) {
+        buffer.writeInt(questId);
+        buffer.writeByte(npcs.size());
+        for (NpcHolder holder : npcs) {
             buffer.writeInt((holder.getNpcId() + 1000000));
             buffer.writeByte(holder.getUnknown());
             buffer.writeInt(holder.getCount());
@@ -57,26 +58,19 @@ public class ExQuestNpcLogList extends ServerPacket {
     }
 
     private class NpcHolder {
-        private final int _npcId;
-        private final int _unknown;
-        private final int _count;
+        @Getter
+        private final int npcId;
+
+        @Getter
+        private final int unknown;
+
+        @Getter
+        private final int count;
 
         public NpcHolder(int npcId, int unknown, int count) {
-            _npcId = npcId;
-            _unknown = unknown;
-            _count = count;
-        }
-
-        public int getNpcId() {
-            return _npcId;
-        }
-
-        public int getUnknown() {
-            return _unknown;
-        }
-
-        public int getCount() {
-            return _count;
+            this.npcId = npcId;
+            this.unknown = unknown;
+            this.count = count;
         }
     }
 }

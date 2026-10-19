@@ -56,10 +56,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author LordWinter
  */
+@Slf4j
 public class WildBeastReserve extends ClanHallSiegeEngine {
     private static final String SQL_LOAD_ATTACKERS = "SELECT * FROM siegable_hall_flagwar_attackers WHERE hall_id = ?";
     private static final String SQL_SAVE_ATTACKER =
@@ -121,9 +124,12 @@ public class WildBeastReserve extends ClanHallSiegeEngine {
 
     private static final Location CENTER = new Location(57762, -92696, -1359, 0);
 
-    protected static final Map<Integer, ClanData> _data = new HashMap<>();
-    private Clan _winner;
-    private boolean _firstPhase;
+    protected static final Map<Integer, ClanData> data = new HashMap<>();
+
+    @Getter
+    private Clan winner;
+
+    private boolean firstPhase;
 
     public WildBeastReserve() {
         super(BEAST_FARM);
@@ -148,7 +154,7 @@ public class WildBeastReserve extends ClanHallSiegeEngine {
         addSpawnId(ALLY_4);
         addSpawnId(ALLY_5);
 
-        _winner = ClanTable.getInstance().getClan(_hall.getOwnerId());
+        winner = ClanTable.getInstance().getClan(hall.getOwnerId());
     }
 
     @Override
@@ -157,8 +163,8 @@ public class WildBeastReserve extends ClanHallSiegeEngine {
         final Clan clan = player.getClan();
 
         if (event.startsWith("Register")) {
-            if (!_hall.isRegistering()) {
-                if (_hall.isInSiege()) {
+            if (!hall.isRegistering()) {
+                if (hall.isInSiege()) {
                     htmltext = "35627-02.htm";
                 } else {
                     sendRegistrationPageDate(player);
@@ -170,7 +176,7 @@ public class WildBeastReserve extends ClanHallSiegeEngine {
                 htmltext = "35627-04.htm";
             } else if (checkIsAttacker(clan)) {
                 htmltext = "35627-05.htm";
-            } else if (_hall.getOwnerId() == clan.getId()) {
+            } else if (hall.getOwnerId() == clan.getId()) {
                 htmltext = "35627-06.htm";
             } else {
                 final String[] arg = event.split(" ");
@@ -178,14 +184,14 @@ public class WildBeastReserve extends ClanHallSiegeEngine {
                     if (arg[1].equals("wQuest")) {
                         if (player.destroyItemByItemId(ItemProcessType.QUEST, QUEST_REWARD, 1, player, true)) {
                             registerClan(clan);
-                            htmltext = getFlagHtml(_data.get(clan.getId()).flag);
+                            htmltext = getFlagHtml(WildBeastReserve.data.get(clan.getId()).flag);
                         } else {
                             htmltext = "35627-07.htm";
                         }
                     } else if (arg[1].equals("wFee") && canPayRegistration()) {
                         if (player.reduceAdena(ItemProcessType.FEE, 200000, player, true)) {
                             registerClan(clan);
-                            htmltext = getFlagHtml(_data.get(clan.getId()).flag);
+                            htmltext = getFlagHtml(WildBeastReserve.data.get(clan.getId()).flag);
                         } else {
                             htmltext = "35627-08.htm";
                         }
@@ -195,7 +201,7 @@ public class WildBeastReserve extends ClanHallSiegeEngine {
         } else if (event.startsWith("Select_NPC")) {
             if (!player.isClanLeader()) {
                 htmltext = "35627-09.htm";
-            } else if (!_data.containsKey(clan.getId())) {
+            } else if (!WildBeastReserve.data.containsKey(clan.getId())) {
                 htmltext = "35627-10.htm";
             } else {
                 final String[] var = event.split(" ");
@@ -204,24 +210,25 @@ public class WildBeastReserve extends ClanHallSiegeEngine {
                     try {
                         id = Integer.parseInt(var[1]);
                     } catch (Exception e) {
-                        LOGGER.warning(
-                                getClass().getSimpleName() + "->select_clan_npc->Wrong mahum warrior id: " + var[1]);
+                        log.warn(
+                                "{}->select_clan_npc->Wrong mahum warrior id: {}",
+                                getClass().getSimpleName(),
+                                var[1]);
                     }
 
                     if ((id > 0) && ((htmltext = getAllyHtml(id)) != null)) {
-                        _data.get(clan.getId()).npc = id;
+                        WildBeastReserve.data.get(clan.getId()).npc = id;
                         saveNpc(id, clan.getId());
                     }
                 } else {
-                    LOGGER.warning(getClass().getSimpleName()
-                            + " Siege: Not enough parameters to save clan npc for clan: " + clan.getName());
+                    log.warn("Siege: Not enough parameters to save clan npc for clan: {}", clan.getName());
                 }
             }
         } else if (event.startsWith("View")) {
             ClanData cd = null;
             if (clan == null) {
                 htmltext = "35627-10.htm";
-            } else if ((cd = _data.get(clan.getId())) == null) {
+            } else if ((cd = WildBeastReserve.data.get(clan.getId())) == null) {
                 htmltext = "35627-03.htm";
             } else if (cd.npc == 0) {
                 htmltext = "35627-11.htm";
@@ -231,14 +238,14 @@ public class WildBeastReserve extends ClanHallSiegeEngine {
         } else if (event.startsWith("RegisterMember")) {
             if (clan == null) {
                 htmltext = "35627-10.htm";
-            } else if (!_hall.isRegistering()) {
+            } else if (!hall.isRegistering()) {
                 htmltext = "35627-02.htm";
-            } else if (!_data.containsKey(clan.getId())) {
+            } else if (!WildBeastReserve.data.containsKey(clan.getId())) {
                 htmltext = "35627-03.htm";
-            } else if (_data.get(clan.getId()).players.size() >= 18) {
+            } else if (WildBeastReserve.data.get(clan.getId()).players.size() >= 18) {
                 htmltext = "35627-12.htm";
             } else {
-                final ClanData data = _data.get(clan.getId());
+                final ClanData data = WildBeastReserve.data.get(clan.getId());
                 data.players.add(player.getObjectId());
                 saveMember(clan.getId(), player.getObjectId());
                 if (data.npc == 0) {
@@ -248,7 +255,7 @@ public class WildBeastReserve extends ClanHallSiegeEngine {
                 }
             }
         } else if (event.startsWith("Attackers")) {
-            if (_hall.isRegistering()) {
+            if (hall.isRegistering()) {
                 sendRegistrationPageDate(player);
                 return null;
             }
@@ -256,7 +263,7 @@ public class WildBeastReserve extends ClanHallSiegeEngine {
             htmltext = HtmCache.getInstance()
                     .getHtm(player, "data/scripts/conquerablehalls/WildBeastReserve/35627-14.htm");
             int i = 1;
-            for (Entry<Integer, ClanData> clanData : _data.entrySet()) {
+            for (Entry<Integer, ClanData> clanData : WildBeastReserve.data.entrySet()) {
                 final Clan attacker = ClanTable.getInstance().getClan(clanData.getKey());
                 if (attacker == null) {
                     continue;
@@ -269,7 +276,7 @@ public class WildBeastReserve extends ClanHallSiegeEngine {
                 i++;
             }
 
-            if (_data.size() < 5) {
+            if (WildBeastReserve.data.size() < 5) {
                 for (int c = i; c <= 5; c++) {
                     htmltext = htmltext.replaceAll("%clan" + c + "%", "Empty pos. ");
                     htmltext = htmltext.replaceAll("%clanMem" + c + "%", String.valueOf(0));
@@ -282,7 +289,7 @@ public class WildBeastReserve extends ClanHallSiegeEngine {
                 htmltext = "35627-24.htm";
             } else if ((clan.getHideoutId() > 0) || (clan.getFortId() > 0) || (clan.getCastleId() > 0)) {
                 htmltext = "35627-25.htm";
-            } else if (!_hall.isWaitingBattle()) {
+            } else if (!hall.isWaitingBattle()) {
                 sendRegistrationPageDate(player);
                 return null;
             } else if (player.getInventory().getItemByItemId(QUEST_REWARD) != null) {
@@ -303,7 +310,7 @@ public class WildBeastReserve extends ClanHallSiegeEngine {
     public String onFirstTalk(Npc npc, Player player) {
         if (npc.getId() == MESSENGER) {
             if (!checkIsAttacker(player.getClan())) {
-                final Clan clan = ClanTable.getInstance().getClan(_hall.getOwnerId());
+                final Clan clan = ClanTable.getInstance().getClan(hall.getOwnerId());
                 final NpcHtmlMessage html = new NpcHtmlMessage(npc.getObjectId());
                 html.setFile(player, "data/scripts/conquerablehalls/WildBeastReserve/35627-00.htm");
                 html.replace("%clanName%", clan == null ? "no owner" : clan.getName());
@@ -313,7 +320,7 @@ public class WildBeastReserve extends ClanHallSiegeEngine {
             }
         } else {
             final int index = npc.getId() - TELEPORT_1;
-            if ((index == 0) && _firstPhase) {
+            if ((index == 0) && firstPhase) {
                 return "35612-00.htm";
             }
 
@@ -326,50 +333,51 @@ public class WildBeastReserve extends ClanHallSiegeEngine {
 
     @Override
     public void onKill(Npc npc, Player killer, boolean isSummon) {
-        if (_hall.isInSiege()) {
+        if (hall.isInSiege()) {
             final int npcId = npc.getId();
-            for (int keys : _data.keySet()) {
-                if (_data.get(keys).npc == npcId) {
+            for (int keys : WildBeastReserve.data.keySet()) {
+                if (WildBeastReserve.data.get(keys).npc == npcId) {
                     removeParticipant(keys, true);
                 }
             }
 
             synchronized (this) {
-                final List<Integer> clanIds = new ArrayList<>(_data.keySet());
-                if (_firstPhase) {
-                    if (((clanIds.size() == 1) && (_hall.getOwnerId() <= 0)) || (_data.get(clanIds.get(0)).npc == 0)) {
-                        _missionAccomplished = true;
+                final List<Integer> clanIds = new ArrayList<>(WildBeastReserve.data.keySet());
+                if (firstPhase) {
+                    if (((clanIds.size() == 1) && (hall.getOwnerId() <= 0))
+                            || (WildBeastReserve.data.get(clanIds.get(0)).npc == 0)) {
+                        missionAccomplished = true;
                         cancelSiegeTask();
                         endSiege();
-                    } else if ((_data.size() == 2) && (_hall.getOwnerId() > 0)) {
+                    } else if ((WildBeastReserve.data.size() == 2) && (hall.getOwnerId() > 0)) {
                         cancelSiegeTask();
-                        _firstPhase = false;
-                        _hall.getSiegeZone().setActive(false);
+                        firstPhase = false;
+                        hall.getSiegeZone().setActive(false);
                         for (int doorId : INNER_DOORS_TO_OPEN) {
-                            _hall.openCloseDoor(doorId, true);
+                            hall.openCloseDoor(doorId, true);
                         }
 
-                        for (ClanData data : _data.values()) {
+                        for (ClanData data : WildBeastReserve.data.values()) {
                             doUnSpawns(data);
                         }
 
                         ThreadPool.schedule(
                                 () -> {
                                     for (int doorId : INNER_DOORS_TO_OPEN) {
-                                        _hall.openCloseDoor(doorId, false);
+                                        hall.openCloseDoor(doorId, false);
                                     }
 
-                                    for (Entry<Integer, ClanData> e : _data.entrySet()) {
+                                    for (Entry<Integer, ClanData> e : WildBeastReserve.data.entrySet()) {
                                         doSpawns(e.getKey(), e.getValue());
                                     }
 
-                                    _hall.getSiegeZone().setActive(true);
+                                    hall.getSiegeZone().setActive(true);
                                 },
                                 300000);
                     }
                 } else {
-                    _missionAccomplished = true;
-                    _winner = ClanTable.getInstance().getClan(clanIds.get(0));
+                    missionAccomplished = true;
+                    winner = ClanTable.getInstance().getClan(clanIds.get(0));
                     removeParticipant(clanIds.get(0), false);
                     endSiege();
                 }
@@ -383,23 +391,18 @@ public class WildBeastReserve extends ClanHallSiegeEngine {
     }
 
     @Override
-    public Clan getWinner() {
-        return _winner;
-    }
-
-    @Override
     public void prepareOwner() {
-        if (_hall.getOwnerId() > 0) {
-            registerClan(ClanTable.getInstance().getClan(_hall.getOwnerId()));
+        if (hall.getOwnerId() > 0) {
+            registerClan(ClanTable.getInstance().getClan(hall.getOwnerId()));
         }
 
-        _hall.banishForeigners();
+        hall.banishForeigners();
         final SystemMessage msg = new SystemMessage(SystemMessageId.THE_REGISTRATION_TERM_FOR_S1_HAS_ENDED);
-        msg.addString(ClanHallTable.getInstance().getClanHallById(_hall.getId()).getName());
+        msg.addString(ClanHallTable.getInstance().getClanHallById(hall.getId()).getName());
         World.broadcastToAllOnlinePlayers(msg);
-        _hall.updateSiegeStatus(SiegeStatus.WAITING_BATTLE);
+        hall.updateSiegeStatus(SiegeStatus.WAITING_BATTLE);
 
-        _siegeTask = ThreadPool.schedule(new SiegeStarts(), 3600000);
+        siegeTask = ThreadPool.schedule(new SiegeStarts(), 3600000);
     }
 
     @Override
@@ -407,22 +410,22 @@ public class WildBeastReserve extends ClanHallSiegeEngine {
         if (getAttackers().size() < 2) {
             onSiegeEnds();
             getAttackers().clear();
-            _hall.updateNextSiege();
+            hall.updateNextSiege();
             final SystemMessage sm =
                     new SystemMessage(SystemMessageId.THE_SIEGE_OF_S1_HAS_BEEN_CANCELED_DUE_TO_LACK_OF_INTEREST);
             sm.addString(
-                    ClanHallTable.getInstance().getClanHallById(_hall.getId()).getName());
+                    ClanHallTable.getInstance().getClanHallById(hall.getId()).getName());
             World.broadcastToAllOnlinePlayers(sm);
             return;
         }
 
         for (int door : OUTTER_DOORS_TO_OPEN) {
-            _hall.openCloseDoor(door, true);
+            hall.openCloseDoor(door, true);
         }
 
-        if (_hall.getOwnerId() > 0) {
-            final Clan owner = ClanTable.getInstance().getClan(_hall.getOwnerId());
-            final Location loc = _hall.getZone().getSpawns().get(0);
+        if (hall.getOwnerId() > 0) {
+            final Clan owner = ClanTable.getInstance().getClan(hall.getOwnerId());
+            final Location loc = hall.getZone().getSpawns().get(0);
             for (ClanMember member : owner.getMembers()) {
                 if (member != null) {
                     final Player player = member.getPlayer();
@@ -436,10 +439,10 @@ public class WildBeastReserve extends ClanHallSiegeEngine {
         ThreadPool.schedule(
                 () -> {
                     for (int door : OUTTER_DOORS_TO_OPEN) {
-                        _hall.openCloseDoor(door, false);
+                        hall.openCloseDoor(door, false);
                     }
 
-                    _hall.getZone().banishNonSiegeParticipants();
+                    hall.getZone().banishNonSiegeParticipants();
 
                     startSiege();
                 },
@@ -448,24 +451,24 @@ public class WildBeastReserve extends ClanHallSiegeEngine {
 
     @Override
     public void onSiegeStarts() {
-        for (Entry<Integer, ClanData> clan : _data.entrySet()) {
+        for (Entry<Integer, ClanData> clan : WildBeastReserve.data.entrySet()) {
             try {
                 final ClanData data = clan.getValue();
                 doSpawns(clan.getKey(), data);
                 fillPlayerList(data);
             } catch (Exception e) {
                 endSiege();
-                LOGGER.warning(getClass().getSimpleName() + ": Problems in siege initialization! " + e.getMessage());
+                log.warn("Problems in siege initialization! {}", e.getMessage());
             }
         }
     }
 
     @Override
     public void endSiege() {
-        if (_hall.getOwnerId() > 0) {
-            final Clan clan = ClanTable.getInstance().getClan(_hall.getOwnerId());
+        if (hall.getOwnerId() > 0) {
+            final Clan clan = ClanTable.getInstance().getClan(hall.getOwnerId());
             clan.setHideoutId(0);
-            _hall.free();
+            hall.free();
         }
 
         super.endSiege();
@@ -473,9 +476,9 @@ public class WildBeastReserve extends ClanHallSiegeEngine {
 
     @Override
     public void onSiegeEnds() {
-        if (!_data.isEmpty()) {
-            for (int clanId : _data.keySet()) {
-                if (_hall.getOwnerId() == clanId) {
+        if (!data.isEmpty()) {
+            for (int clanId : data.keySet()) {
+                if (hall.getOwnerId() == clanId) {
                     removeParticipant(clanId, false);
                 } else {
                     removeParticipant(clanId, true);
@@ -489,14 +492,14 @@ public class WildBeastReserve extends ClanHallSiegeEngine {
     @Override
     public Location getInnerSpawnLoc(Player player) {
         Location loc = null;
-        if (player.getId() == _hall.getOwnerId()) {
-            loc = _hall.getZone().getSpawns().get(0);
+        if (player.getId() == hall.getOwnerId()) {
+            loc = hall.getZone().getSpawns().get(0);
         } else {
-            final ClanData cd = _data.get(player.getId());
+            final ClanData cd = data.get(player.getId());
             if (cd != null) {
                 final int index = cd.flag - FLAG_RED;
                 if ((index >= 0) && (index <= 4)) {
-                    loc = _hall.getZone().getChallengerSpawns().get(index);
+                    loc = hall.getZone().getChallengerSpawns().get(index);
                 } else {
                     throw new ArrayIndexOutOfBoundsException();
                 }
@@ -521,18 +524,18 @@ public class WildBeastReserve extends ClanHallSiegeEngine {
             final NpcTemplate mahumTemplate = NpcData.getInstance().getTemplate(data.npc);
             final NpcTemplate flagTemplate = NpcData.getInstance().getTemplate(data.flag);
             if (flagTemplate == null) {
-                LOGGER.warning(getClass().getSimpleName() + ": Flag NpcTemplate[" + data.flag + "] does not exist!");
+                log.warn("Flag NpcTemplate[{}] does not exist!", data.flag);
                 throw new NullPointerException();
             } else if (mahumTemplate == null) {
-                LOGGER.warning(getClass().getSimpleName() + ": Ally NpcTemplate[" + data.npc + "] does not exist!");
+                log.warn("Ally NpcTemplate[{}] does not exist!", data.npc);
                 throw new NullPointerException();
             }
 
             int index = 0;
-            if (_firstPhase) {
+            if (firstPhase) {
                 index = data.flag - FLAG_RED;
             } else {
-                index = clanId == _hall.getOwnerId() ? 5 : 6;
+                index = clanId == hall.getOwnerId() ? 5 : 6;
             }
 
             final Location loc = FLAG_COORDS[index];
@@ -549,7 +552,7 @@ public class WildBeastReserve extends ClanHallSiegeEngine {
                     .getAlly()
                     .addAll(data.players);
         } catch (Exception e) {
-            LOGGER.warning(getClass().getSimpleName() + ": Could not make clan spawns: " + e.getMessage());
+            log.warn("Could not make clan spawns: {}", e.getMessage());
         }
     }
 
@@ -568,9 +571,9 @@ public class WildBeastReserve extends ClanHallSiegeEngine {
         getAttackers().put(clanId, sc);
 
         final ClanData data = new ClanData();
-        data.flag = ROYAL_FLAG + _data.size();
+        data.flag = ROYAL_FLAG + WildBeastReserve.data.size();
         data.players.add(clan.getLeaderId());
-        _data.put(clanId, data);
+        WildBeastReserve.data.put(clanId, data);
 
         saveClan(clanId, data.flag);
         saveMember(clanId, clan.getLeaderId());
@@ -589,7 +592,7 @@ public class WildBeastReserve extends ClanHallSiegeEngine {
     }
 
     private void removeParticipant(int clanId, boolean teleport) {
-        final ClanData dat = _data.remove(clanId);
+        final ClanData dat = data.remove(clanId);
         if (dat != null) {
             if (dat.flagInstance != null) {
                 dat.flagInstance.getSpawn().stopRespawn();
@@ -626,7 +629,7 @@ public class WildBeastReserve extends ClanHallSiegeEngine {
     private void sendRegistrationPageDate(Player player) {
         final NpcHtmlMessage msg = new NpcHtmlMessage(5);
         msg.setFile(player, "data/scripts/conquerablehalls/WildBeastReserve/35627-15.htm");
-        msg.replace("%nextSiege%", _hall.getSiegeDate().getTime().toString());
+        msg.replace("%nextSiege%", hall.getSiegeDate().getTime().toString());
         player.sendPacket(msg);
     }
 
@@ -690,13 +693,12 @@ public class WildBeastReserve extends ClanHallSiegeEngine {
     public void loadAttackers() {
         try (Connection con = DatabaseFactory.getConnection()) {
             final PreparedStatement statement = con.prepareStatement(SQL_LOAD_ATTACKERS);
-            statement.setInt(1, _hall.getId());
+            statement.setInt(1, hall.getId());
             final ResultSet rset = statement.executeQuery();
             while (rset.next()) {
                 final int clanId = rset.getInt("clan_id");
                 if (ClanTable.getInstance().getClan(clanId) == null) {
-                    LOGGER.warning(
-                            getClass().getSimpleName() + ": Loaded an unexistent clan as attacker! Clan Id: " + clanId);
+                    log.warn("Loaded an unexistent clan as attacker! Clan Id: {}", clanId);
                     continue;
                 }
 
@@ -708,7 +710,7 @@ public class WildBeastReserve extends ClanHallSiegeEngine {
                 final ClanData data = new ClanData();
                 data.flag = flag;
                 data.npc = npc;
-                _data.put(clanId, data);
+                WildBeastReserve.data.put(clanId, data);
 
                 loadAttackerMembers(clanId);
             }
@@ -716,16 +718,15 @@ public class WildBeastReserve extends ClanHallSiegeEngine {
             rset.close();
             statement.close();
         } catch (Exception e) {
-            LOGGER.warning(getClass().getSimpleName() + ".loadAttackers()->" + e.getMessage());
+            log.warn("loadAttackers() failed", e);
         }
     }
 
     private void loadAttackerMembers(int clanId) {
         try (Connection con = DatabaseFactory.getConnection()) {
-            final ArrayList<Integer> listInstance = _data.get(clanId).players;
+            final ArrayList<Integer> listInstance = data.get(clanId).players;
             if (listInstance == null) {
-                LOGGER.warning(
-                        getClass().getSimpleName() + ": Tried to load unregistered clan: " + clanId + "[clan Id]");
+                log.warn("Tried to load unregistered clan: {}[clan Id]", clanId);
                 return;
             }
 
@@ -739,21 +740,21 @@ public class WildBeastReserve extends ClanHallSiegeEngine {
             rset.close();
             statement.close();
         } catch (Exception e) {
-            LOGGER.warning(getClass().getSimpleName() + ".loadAttackerMembers()->" + e.getMessage());
+            log.warn("loadAttackerMembers() failed", e);
         }
     }
 
     private void saveClan(int clanId, int flag) {
         try (Connection con = DatabaseFactory.getConnection()) {
             final PreparedStatement statement = con.prepareStatement(SQL_SAVE_CLAN);
-            statement.setInt(1, _hall.getId());
+            statement.setInt(1, hall.getId());
             statement.setInt(2, flag);
             statement.setInt(3, 0);
             statement.setInt(4, clanId);
             statement.execute();
             statement.close();
         } catch (Exception e) {
-            LOGGER.warning(getClass().getSimpleName() + ".saveClan()->" + e.getMessage());
+            log.warn("saveClan() failed", e);
         }
     }
 
@@ -765,36 +766,36 @@ public class WildBeastReserve extends ClanHallSiegeEngine {
             statement.execute();
             statement.close();
         } catch (Exception e) {
-            LOGGER.warning(getClass().getSimpleName() + ".saveNpc()->" + e.getMessage());
+            log.warn("saveNpc() failed", e);
         }
     }
 
     private void saveMember(int clanId, int objectId) {
         try (Connection con = DatabaseFactory.getConnection()) {
             final PreparedStatement statement = con.prepareStatement(SQL_SAVE_ATTACKER);
-            statement.setInt(1, _hall.getId());
+            statement.setInt(1, hall.getId());
             statement.setInt(2, clanId);
             statement.setInt(3, objectId);
             statement.execute();
             statement.close();
         } catch (Exception e) {
-            LOGGER.warning(getClass().getSimpleName() + ".saveMember()->" + e.getMessage());
+            log.warn("saveMember() failed", e);
         }
     }
 
     private void clearTables() {
         try (Connection con = DatabaseFactory.getConnection()) {
             final PreparedStatement stat1 = con.prepareStatement(SQL_CLEAR_CLAN);
-            stat1.setInt(1, _hall.getId());
+            stat1.setInt(1, hall.getId());
             stat1.execute();
             stat1.close();
 
             final PreparedStatement stat2 = con.prepareStatement(SQL_CLEAR_CLAN_ATTACKERS);
-            stat2.setInt(1, _hall.getId());
+            stat2.setInt(1, hall.getId());
             stat2.execute();
             stat2.close();
         } catch (Exception e) {
-            LOGGER.warning(getClass().getSimpleName() + ".clearTables()->" + e.getMessage());
+            log.warn("clearTables() failed", e);
         }
     }
 

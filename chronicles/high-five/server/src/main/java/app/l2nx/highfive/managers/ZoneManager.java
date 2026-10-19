@@ -79,8 +79,7 @@ import java.util.Map;
 import java.util.OptionalInt;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
@@ -89,8 +88,8 @@ import org.w3c.dom.Node;
  * This class manages the zones.
  * @author durgus, Mobius
  */
+@Slf4j
 public class ZoneManager implements IXmlReader {
-    private static final Logger LOGGER = Logger.getLogger(ZoneManager.class.getName());
 
     private static final Map<String, AbstractZoneSettings> SETTINGS = new HashMap<>();
 
@@ -98,27 +97,26 @@ public class ZoneManager implements IXmlReader {
     private static final int OFFSET_X = Math.abs(World.WORLD_X_MIN >> SHIFT_BY);
     private static final int OFFSET_Y = Math.abs(World.WORLD_Y_MIN >> SHIFT_BY);
 
-    private final Map<Class<? extends ZoneType>, ConcurrentHashMap<Integer, ? extends ZoneType>> _classZones =
+    private final Map<Class<? extends ZoneType>, ConcurrentHashMap<Integer, ? extends ZoneType>> classZones =
             new ConcurrentHashMap<>();
-    private final Map<String, NpcSpawnTerritory> _spawnTerritories = new ConcurrentHashMap<>();
-    private final AtomicInteger _lastDynamicId = new AtomicInteger(300000);
-    private List<Item> _debugItems;
+    private final Map<String, NpcSpawnTerritory> spawnTerritories = new ConcurrentHashMap<>();
+    private final AtomicInteger lastDynamicId = new AtomicInteger(300000);
+    private List<Item> debugItems;
 
-    private final ZoneRegion[][] _zoneRegions = new ZoneRegion[(World.WORLD_X_MAX >> SHIFT_BY) + OFFSET_X + 1]
+    private final ZoneRegion[][] zoneRegions = new ZoneRegion[(World.WORLD_X_MAX >> SHIFT_BY) + OFFSET_X + 1]
             [(World.WORLD_Y_MAX >> SHIFT_BY) + OFFSET_Y + 1];
 
     /**
      * Instantiates a new zone manager.
      */
     protected ZoneManager() {
-        for (int x = 0; x < _zoneRegions.length; x++) {
-            for (int y = 0; y < _zoneRegions[x].length; y++) {
-                _zoneRegions[x][y] = new ZoneRegion(x, y);
+        for (int x = 0; x < zoneRegions.length; x++) {
+            for (int y = 0; y < zoneRegions[x].length; y++) {
+                zoneRegions[x][y] = new ZoneRegion(x, y);
             }
         }
 
-        LOGGER.info(getClass().getSimpleName() + " " + _zoneRegions.length + " by " + _zoneRegions[0].length
-                + " Zone Region Grid set up.");
+        log.info("{} by {} Zone Region Grid set up.", zoneRegions.length, zoneRegions[0].length);
 
         load();
     }
@@ -131,7 +129,7 @@ public class ZoneManager implements IXmlReader {
         int count = 0;
 
         // Backup old zone settings.
-        for (Map<Integer, ? extends ZoneType> map : _classZones.values()) {
+        for (Map<Integer, ? extends ZoneType> map : classZones.values()) {
             for (ZoneType zone : map.values()) {
                 if (zone.getSettings() != null) {
                     SETTINGS.put(zone.getName(), zone.getSettings());
@@ -140,7 +138,7 @@ public class ZoneManager implements IXmlReader {
         }
 
         // Clear zones
-        for (ZoneRegion[] zoneRegions : _zoneRegions) {
+        for (ZoneRegion[] zoneRegions : this.zoneRegions) {
             for (ZoneRegion zoneRegion : zoneRegions) {
                 zoneRegion.getZones().clear();
                 count++;
@@ -148,7 +146,7 @@ public class ZoneManager implements IXmlReader {
         }
 
         GrandBossManager.getInstance().getZones().clear();
-        LOGGER.info(getClass().getSimpleName() + ": Removed zones in " + count + " regions.");
+        log.info("Removed zones in {} regions.", count);
 
         // Load the zones
         load();
@@ -190,7 +188,7 @@ public class ZoneManager implements IXmlReader {
                         if (attribute != null) {
                             zoneType = attribute.getNodeValue();
                         } else {
-                            LOGGER.warning("ZoneData: Missing type for zone in file: " + file.getName());
+                            log.warn("ZoneData: Missing type for zone in file: {}", file.getName());
                             continue;
                         }
 
@@ -200,7 +198,7 @@ public class ZoneManager implements IXmlReader {
                         } else {
                             zoneId = zoneType.equalsIgnoreCase("NpcSpawnTerritory")
                                     ? 0
-                                    : _lastDynamicId.incrementAndGet();
+                                    : lastDynamicId.incrementAndGet();
                         }
 
                         attribute = attrs.getNamedItem("name");
@@ -213,13 +211,15 @@ public class ZoneManager implements IXmlReader {
                         // Check zone name for NpcSpawnTerritory. Must exist and to be unique.
                         if (zoneType.equalsIgnoreCase("NpcSpawnTerritory")) {
                             if (zoneName == null) {
-                                LOGGER.warning("ZoneData: Missing name for NpcSpawnTerritory in file: " + file.getName()
-                                        + ", skipping zone");
+                                log.warn(
+                                        "ZoneData: Missing name for NpcSpawnTerritory in file: {}, skipping zone",
+                                        file.getName());
                                 continue;
-                            } else if (_spawnTerritories.containsKey(zoneName)) {
-                                LOGGER.warning(
-                                        "ZoneData: Name " + zoneName + " already used for another zone, check file: "
-                                                + file.getName() + ". Skipping zone");
+                            } else if (spawnTerritories.containsKey(zoneName)) {
+                                log.warn(
+                                        "ZoneData: Name {} already used for another zone, check file: {}. Skipping zone",
+                                        zoneName,
+                                        file.getName());
                                 continue;
                             }
                         }
@@ -246,8 +246,7 @@ public class ZoneManager implements IXmlReader {
                             rs.clear();
 
                             if ((coords == null) || (coords.length == 0)) {
-                                LOGGER.warning(getClass().getSimpleName() + ": ZoneData: missing data for zone: "
-                                        + zoneId + " XML file: " + file.getName());
+                                log.warn("ZoneData: missing data for zone: {} XML file: {}", zoneId, file.getName());
                                 continue;
                             }
 
@@ -259,9 +258,10 @@ public class ZoneManager implements IXmlReader {
                                     zoneForm = new ZoneCuboid(
                                             coords[0][0], coords[1][0], coords[0][1], coords[1][1], minZ, maxZ);
                                 } else {
-                                    LOGGER.warning(getClass().getSimpleName()
-                                            + ": ZoneData: Missing cuboid vertex data for zone: " + zoneId
-                                            + " in file: " + file.getName());
+                                    log.warn(
+                                            "ZoneData: Missing cuboid vertex data for zone: {} in file: {}",
+                                            zoneId,
+                                            file.getName());
                                     continue;
                                 }
                             } else if (zoneShape.equalsIgnoreCase("NPoly")) {
@@ -276,8 +276,7 @@ public class ZoneManager implements IXmlReader {
 
                                     zoneForm = new ZoneNPoly(aX, aY, minZ, maxZ);
                                 } else {
-                                    LOGGER.warning(getClass().getSimpleName() + ": ZoneData: Bad data for zone: "
-                                            + zoneId + " in file: " + file.getName());
+                                    log.warn("ZoneData: Bad data for zone: {} in file: {}", zoneId, file.getName());
                                     continue;
                                 }
                             } else if (zoneShape.equalsIgnoreCase("Cylinder")) {
@@ -289,26 +288,24 @@ public class ZoneManager implements IXmlReader {
                                 if ((coords.length == 1) && (zoneRad > 0)) {
                                     zoneForm = new ZoneCylinder(coords[0][0], coords[0][1], minZ, maxZ, zoneRad);
                                 } else {
-                                    LOGGER.warning(getClass().getSimpleName() + ": ZoneData: Bad data for zone: "
-                                            + zoneId + " in file: " + file.getName());
+                                    log.warn("ZoneData: Bad data for zone: {} in file: {}", zoneId, file.getName());
                                     continue;
                                 }
                             } else {
-                                LOGGER.warning(getClass().getSimpleName() + ": ZoneData: Unknown shape: \"" + zoneShape
-                                        + "\"  for zone: " + zoneId + " in file: " + file.getName());
+                                log.warn(
+                                        "ZoneData: Unknown shape: \"{}\"  for zone: {} in file: {}",
+                                        zoneShape,
+                                        zoneId,
+                                        file.getName());
                                 continue;
                             }
                         } catch (Exception e) {
-                            LOGGER.log(
-                                    Level.WARNING,
-                                    getClass().getSimpleName() + ": ZoneData: Failed to load zone " + zoneId
-                                            + " coordinates: " + e.getMessage(),
-                                    e);
+                            log.warn("ZoneData: Failed to load zone {} coordinates: {}", zoneId, e.getMessage(), e);
                         }
 
                         // No further parameters needed, if NpcSpawnTerritory is loading.
                         if (zoneType.equalsIgnoreCase("NpcSpawnTerritory")) {
-                            _spawnTerritories.put(zoneName, new NpcSpawnTerritory(zoneName, zoneForm));
+                            spawnTerritories.put(zoneName, new NpcSpawnTerritory(zoneName, zoneForm));
                             continue;
                         }
 
@@ -322,8 +319,7 @@ public class ZoneManager implements IXmlReader {
                             temp = (ZoneType) zoneConstructor.newInstance(zoneId);
                             temp.setZone(zoneForm);
                         } catch (Exception e) {
-                            LOGGER.warning(getClass().getSimpleName() + ": ZoneData: No such zone type: " + zoneType
-                                    + " in file: " + file.getName());
+                            log.warn("ZoneData: No such zone type: {} in file: {}", zoneType, file.getName());
                             continue;
                         }
 
@@ -354,8 +350,10 @@ public class ZoneManager implements IXmlReader {
                         }
 
                         if (checkId(zoneId)) {
-                            LOGGER.config(getClass().getSimpleName() + ": Caution: Zone (" + zoneId + ") from file: "
-                                    + file.getName() + " overrides previous definition.");
+                            log.info(
+                                    "Caution: Zone ({}) from file: {} overrides previous definition.",
+                                    zoneId,
+                                    file.getName());
                         }
 
                         if ((zoneName != null) && !zoneName.isEmpty()) {
@@ -367,14 +365,14 @@ public class ZoneManager implements IXmlReader {
                         // Register the zone into any world region it
                         // intersects with...
                         // currently 11136 test for each zone :>
-                        for (int x = 0; x < _zoneRegions.length; x++) {
-                            for (int y = 0; y < _zoneRegions[x].length; y++) {
+                        for (int x = 0; x < zoneRegions.length; x++) {
+                            for (int y = 0; y < zoneRegions[x].length; y++) {
                                 final int ax = (x - OFFSET_X) << SHIFT_BY;
                                 final int bx = ((x + 1) - OFFSET_X) << SHIFT_BY;
                                 final int ay = (y - OFFSET_Y) << SHIFT_BY;
                                 final int by = ((y + 1) - OFFSET_Y) << SHIFT_BY;
                                 if (temp.getZone().intersectsRectangle(ax, bx, ay, by)) {
-                                    _zoneRegions[x][y].getZones().put(temp.getId(), temp);
+                                    zoneRegions[x][y].getZones().put(temp.getId(), temp);
                                 }
                             }
                         }
@@ -386,48 +384,47 @@ public class ZoneManager implements IXmlReader {
 
     @Override
     public void load() {
-        _classZones.clear();
-        _classZones.put(ArenaZone.class, new ConcurrentHashMap<>());
-        _classZones.put(BossZone.class, new ConcurrentHashMap<>());
-        _classZones.put(CastleZone.class, new ConcurrentHashMap<>());
-        _classZones.put(ClanHallZone.class, new ConcurrentHashMap<>());
-        _classZones.put(ConditionZone.class, new ConcurrentHashMap<>());
-        _classZones.put(DamageZone.class, new ConcurrentHashMap<>());
-        _classZones.put(DerbyTrackZone.class, new ConcurrentHashMap<>());
-        _classZones.put(EffectZone.class, new ConcurrentHashMap<>());
-        _classZones.put(FishingZone.class, new ConcurrentHashMap<>());
-        _classZones.put(FlagPvPZone.class, new ConcurrentHashMap<>());
-        _classZones.put(FortZone.class, new ConcurrentHashMap<>());
-        _classZones.put(HqZone.class, new ConcurrentHashMap<>());
-        _classZones.put(JailZone.class, new ConcurrentHashMap<>());
-        _classZones.put(LandingZone.class, new ConcurrentHashMap<>());
-        _classZones.put(MotherTreeZone.class, new ConcurrentHashMap<>());
-        _classZones.put(NoLandingZone.class, new ConcurrentHashMap<>());
-        _classZones.put(NoRestartZone.class, new ConcurrentHashMap<>());
-        _classZones.put(NoStoreZone.class, new ConcurrentHashMap<>());
-        _classZones.put(NoSummonFriendZone.class, new ConcurrentHashMap<>());
-        _classZones.put(OlympiadStadiumZone.class, new ConcurrentHashMap<>());
-        _classZones.put(PeaceZone.class, new ConcurrentHashMap<>());
-        _classZones.put(ResidenceHallTeleportZone.class, new ConcurrentHashMap<>());
-        _classZones.put(ResidenceTeleportZone.class, new ConcurrentHashMap<>());
-        _classZones.put(ResidenceZone.class, new ConcurrentHashMap<>());
-        _classZones.put(RespawnZone.class, new ConcurrentHashMap<>());
-        _classZones.put(ScriptZone.class, new ConcurrentHashMap<>());
-        _classZones.put(SiegableHallZone.class, new ConcurrentHashMap<>());
-        _classZones.put(SiegeZone.class, new ConcurrentHashMap<>());
-        _classZones.put(SwampZone.class, new ConcurrentHashMap<>());
-        _classZones.put(TownZone.class, new ConcurrentHashMap<>());
-        _classZones.put(WaterZone.class, new ConcurrentHashMap<>());
-        _spawnTerritories.clear();
+        classZones.clear();
+        classZones.put(ArenaZone.class, new ConcurrentHashMap<>());
+        classZones.put(BossZone.class, new ConcurrentHashMap<>());
+        classZones.put(CastleZone.class, new ConcurrentHashMap<>());
+        classZones.put(ClanHallZone.class, new ConcurrentHashMap<>());
+        classZones.put(ConditionZone.class, new ConcurrentHashMap<>());
+        classZones.put(DamageZone.class, new ConcurrentHashMap<>());
+        classZones.put(DerbyTrackZone.class, new ConcurrentHashMap<>());
+        classZones.put(EffectZone.class, new ConcurrentHashMap<>());
+        classZones.put(FishingZone.class, new ConcurrentHashMap<>());
+        classZones.put(FlagPvPZone.class, new ConcurrentHashMap<>());
+        classZones.put(FortZone.class, new ConcurrentHashMap<>());
+        classZones.put(HqZone.class, new ConcurrentHashMap<>());
+        classZones.put(JailZone.class, new ConcurrentHashMap<>());
+        classZones.put(LandingZone.class, new ConcurrentHashMap<>());
+        classZones.put(MotherTreeZone.class, new ConcurrentHashMap<>());
+        classZones.put(NoLandingZone.class, new ConcurrentHashMap<>());
+        classZones.put(NoRestartZone.class, new ConcurrentHashMap<>());
+        classZones.put(NoStoreZone.class, new ConcurrentHashMap<>());
+        classZones.put(NoSummonFriendZone.class, new ConcurrentHashMap<>());
+        classZones.put(OlympiadStadiumZone.class, new ConcurrentHashMap<>());
+        classZones.put(PeaceZone.class, new ConcurrentHashMap<>());
+        classZones.put(ResidenceHallTeleportZone.class, new ConcurrentHashMap<>());
+        classZones.put(ResidenceTeleportZone.class, new ConcurrentHashMap<>());
+        classZones.put(ResidenceZone.class, new ConcurrentHashMap<>());
+        classZones.put(RespawnZone.class, new ConcurrentHashMap<>());
+        classZones.put(ScriptZone.class, new ConcurrentHashMap<>());
+        classZones.put(SiegableHallZone.class, new ConcurrentHashMap<>());
+        classZones.put(SiegeZone.class, new ConcurrentHashMap<>());
+        classZones.put(SwampZone.class, new ConcurrentHashMap<>());
+        classZones.put(TownZone.class, new ConcurrentHashMap<>());
+        classZones.put(WaterZone.class, new ConcurrentHashMap<>());
+        spawnTerritories.clear();
         parseDatapackDirectory("data/zones", false);
-        LOGGER.info(getClass().getSimpleName() + ": Loaded " + _classZones.size() + " zone classes and " + getSize()
-                + " zones.");
-        final OptionalInt maxId = _classZones.values().stream()
+        log.info("Loaded {} zone classes and {} zones.", classZones.size(), getSize());
+        final OptionalInt maxId = classZones.values().stream()
                 .flatMap(map -> map.keySet().stream())
                 .mapToInt(Integer.class::cast)
                 .filter(value -> value < 300000)
                 .max();
-        LOGGER.info(getClass().getSimpleName() + ": Last static id " + maxId.getAsInt() + ".");
+        log.info("Last static id {}.", maxId.getAsInt());
     }
 
     /**
@@ -436,7 +433,7 @@ public class ZoneManager implements IXmlReader {
      */
     public int getSize() {
         int i = 0;
-        for (Map<Integer, ? extends ZoneType> map : _classZones.values()) {
+        for (Map<Integer, ? extends ZoneType> map : classZones.values()) {
             i += map.size();
         }
 
@@ -449,7 +446,7 @@ public class ZoneManager implements IXmlReader {
      * @return true, if successful
      */
     private boolean checkId(int id) {
-        for (Map<Integer, ? extends ZoneType> map : _classZones.values()) {
+        for (Map<Integer, ? extends ZoneType> map : classZones.values()) {
             if (map.containsKey(id)) {
                 return true;
             }
@@ -466,10 +463,10 @@ public class ZoneManager implements IXmlReader {
      */
     @SuppressWarnings("unchecked")
     private <T extends ZoneType> void addZone(Integer id, T zone) {
-        ConcurrentHashMap<Integer, T> map = (ConcurrentHashMap<Integer, T>) _classZones.get(zone.getClass());
+        ConcurrentHashMap<Integer, T> map = (ConcurrentHashMap<Integer, T>) classZones.get(zone.getClass());
         if (map == null) {
-            _classZones.put(zone.getClass(), new ConcurrentHashMap<>());
-            map = (ConcurrentHashMap<Integer, T>) _classZones.get(zone.getClass());
+            classZones.put(zone.getClass(), new ConcurrentHashMap<>());
+            map = (ConcurrentHashMap<Integer, T>) classZones.get(zone.getClass());
         }
 
         map.put(id, zone);
@@ -483,7 +480,7 @@ public class ZoneManager implements IXmlReader {
      */
     @SuppressWarnings("unchecked")
     public <T extends ZoneType> Collection<T> getAllZones(Class<T> zoneType) {
-        return (Collection<T>) _classZones.get(zoneType).values();
+        return (Collection<T>) classZones.get(zoneType).values();
     }
 
     /**
@@ -493,7 +490,7 @@ public class ZoneManager implements IXmlReader {
      * @see #getZoneById(int, Class)
      */
     public ZoneType getZoneById(int id) {
-        for (Map<Integer, ? extends ZoneType> map : _classZones.values()) {
+        for (Map<Integer, ? extends ZoneType> map : classZones.values()) {
             final ZoneType zone = map.get(id);
             if (zone != null) {
                 return zone;
@@ -509,7 +506,7 @@ public class ZoneManager implements IXmlReader {
      * @return the zone by name
      */
     public ZoneType getZoneByName(String name) {
-        for (Map<Integer, ? extends ZoneType> map : _classZones.values()) {
+        for (Map<Integer, ? extends ZoneType> map : classZones.values()) {
             for (ZoneType zone : map.values()) {
                 if ((zone.getName() != null) && zone.getName().equals(name)) {
                     return zone;
@@ -529,7 +526,7 @@ public class ZoneManager implements IXmlReader {
      */
     @SuppressWarnings("unchecked")
     public <T extends ZoneType> T getZoneById(int id, Class<T> zoneType) {
-        return (T) _classZones.get(zoneType).get(id);
+        return (T) classZones.get(zoneType).get(id);
     }
 
     /**
@@ -541,7 +538,7 @@ public class ZoneManager implements IXmlReader {
      */
     @SuppressWarnings("unchecked")
     public <T extends ZoneType> T getZoneByName(String name, Class<T> zoneType) {
-        final Map<Integer, ? extends ZoneType> zones = _classZones.get(zoneType);
+        final Map<Integer, ? extends ZoneType> zones = classZones.get(zoneType);
         if (zones != null) {
             for (ZoneType zone : zones.values()) {
                 if ((zone.getName() != null) && zone.getName().equals(name)) {
@@ -653,7 +650,7 @@ public class ZoneManager implements IXmlReader {
      * @param zone NpcSpawnTerritory zone of territory.
      */
     public void addSpawnTerritory(String name, NpcSpawnTerritory zone) {
-        _spawnTerritories.putIfAbsent(name, zone);
+        spawnTerritories.putIfAbsent(name, zone);
     }
 
     /**
@@ -662,7 +659,7 @@ public class ZoneManager implements IXmlReader {
      * @return true, if spawn territory exists.
      */
     public boolean spawnTerritoryExists(String name) {
-        return _spawnTerritories.containsKey(name);
+        return spawnTerritories.containsKey(name);
     }
 
     /**
@@ -671,7 +668,7 @@ public class ZoneManager implements IXmlReader {
      * @return link to zone form
      */
     public NpcSpawnTerritory getSpawnTerritory(String name) {
-        return _spawnTerritories.get(name);
+        return spawnTerritories.get(name);
     }
 
     /**
@@ -681,7 +678,7 @@ public class ZoneManager implements IXmlReader {
      */
     public List<NpcSpawnTerritory> getSpawnTerritories(WorldObject object) {
         final List<NpcSpawnTerritory> temp = new ArrayList<>();
-        for (NpcSpawnTerritory territory : _spawnTerritories.values()) {
+        for (NpcSpawnTerritory territory : spawnTerritories.values()) {
             if (territory.isInsideZone(object.getX(), object.getY(), object.getZ())) {
                 temp.add(territory);
             }
@@ -740,7 +737,7 @@ public class ZoneManager implements IXmlReader {
         T zone = getZone(obj, type);
         if (zone == null) {
             double closestdis = Double.MAX_VALUE;
-            for (T temp : (Collection<T>) _classZones.get(type).values()) {
+            for (T temp : (Collection<T>) classZones.get(type).values()) {
                 final double distance = temp.getDistanceToZone(obj);
                 if (distance < closestdis) {
                     closestdis = distance;
@@ -757,31 +754,31 @@ public class ZoneManager implements IXmlReader {
      * @return list of items
      */
     public List<Item> getDebugItems() {
-        if (_debugItems == null) {
-            _debugItems = new ArrayList<>();
+        if (debugItems == null) {
+            debugItems = new ArrayList<>();
         }
 
-        return _debugItems;
+        return debugItems;
     }
 
     /**
      * Remove all debug items from l2world.
      */
     public synchronized void clearDebugItems() {
-        if (_debugItems != null) {
-            for (Item item : _debugItems) {
+        if (debugItems != null) {
+            for (Item item : debugItems) {
                 if (item != null) {
                     item.decayMe();
                 }
             }
 
-            _debugItems.clear();
+            debugItems.clear();
         }
     }
 
     public ZoneRegion getRegion(int x, int y) {
         try {
-            return _zoneRegions[(x >> SHIFT_BY) + OFFSET_X][(y >> SHIFT_BY) + OFFSET_Y];
+            return zoneRegions[(x >> SHIFT_BY) + OFFSET_X][(y >> SHIFT_BY) + OFFSET_Y];
         } catch (ArrayIndexOutOfBoundsException e) {
             // LOGGER.warning(getClass().getSimpleName() + ": Incorrect zone region X: " + ((x >> SHIFT_BY) + OFFSET_X)
             // + " Y: " + ((y >> SHIFT_BY) + OFFSET_Y) + " for coordinates x: " + x + " y: " + y);

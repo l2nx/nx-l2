@@ -27,30 +27,30 @@ import app.l2nx.highfive.entity.clan.ClanAccess;
 import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.mechanics.skill.enums.AcquireSkillType;
 import app.l2nx.highfive.mechanics.skill.holders.SkillLearn;
-import app.l2nx.highfive.network.PacketLogger;
 import app.l2nx.highfive.network.serverpackets.AcquireSkillInfo;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Request Acquire Skill Info client packet implementation.
  * @author Zoey76
  */
+@Slf4j
 public class RequestAcquireSkillInfo extends ClientPacket {
-    private int _id;
-    private int _level;
-    private AcquireSkillType _skillType;
+    private int id;
+    private int level;
+    private AcquireSkillType skillType;
 
     @Override
     protected void readImpl() {
-        _id = readInt();
-        _level = readInt();
-        _skillType = AcquireSkillType.getAcquireSkillType(readInt());
+        id = readInt();
+        level = readInt();
+        skillType = AcquireSkillType.getAcquireSkillType(readInt());
     }
 
     @Override
     protected void runImpl() {
-        if ((_id <= 0) || (_level <= 0)) {
-            PacketLogger.warning(RequestAcquireSkillInfo.class.getSimpleName() + ": Invalid Id: " + _id + " or level: "
-                    + _level + "!");
+        if ((id <= 0) || (level <= 0)) {
+            log.warn("{}: Invalid Id: {} or level: {}!", RequestAcquireSkillInfo.class.getSimpleName(), id, level);
             return;
         }
 
@@ -64,31 +64,35 @@ public class RequestAcquireSkillInfo extends ClientPacket {
             return;
         }
 
-        final Skill skill = SkillData.getInstance().getSkill(_id, _level);
+        final Skill skill = SkillData.getInstance().getSkill(id, level);
         if (skill == null) {
-            PacketLogger.warning(RequestAcquireSkillInfo.class.getSimpleName() + ": Skill Id: " + _id + " level: "
-                    + _level + " is undefined. " + RequestAcquireSkillInfo.class.getName() + " failed.");
+            log.warn(
+                    "{}: Skill Id: {} level: {} is undefined. {} failed.",
+                    RequestAcquireSkillInfo.class.getSimpleName(),
+                    id,
+                    level,
+                    RequestAcquireSkillInfo.class.getName());
             return;
         }
 
-        final SkillLearn s = SkillTreeData.getInstance().getSkillLearn(_skillType, _id, _level, player);
+        final SkillLearn s = SkillTreeData.getInstance().getSkillLearn(skillType, id, level, player);
         if (s == null) {
             return;
         }
 
-        switch (_skillType) {
+        switch (skillType) {
             case TRANSFORM:
             case FISHING:
             case SUBCLASS:
             case COLLECT:
             case TRANSFER: {
-                player.sendPacket(new AcquireSkillInfo(_skillType, s));
+                player.sendPacket(new AcquireSkillInfo(skillType, s));
                 break;
             }
             case CLASS: {
                 if (trainer.getTemplate().canTeach(player.getLearningClass())) {
                     final int customSp = s.getCalculatedLevelUpSp(player.getPlayerClass(), player.getLearningClass());
-                    player.sendPacket(new AcquireSkillInfo(_skillType, s, customSp));
+                    player.sendPacket(new AcquireSkillInfo(skillType, s, customSp));
                 }
                 break;
             }
@@ -97,7 +101,7 @@ public class RequestAcquireSkillInfo extends ClientPacket {
                     return;
                 }
 
-                player.sendPacket(new AcquireSkillInfo(_skillType, s));
+                player.sendPacket(new AcquireSkillInfo(skillType, s));
                 break;
             }
             case SUBPLEDGE: {
@@ -105,7 +109,7 @@ public class RequestAcquireSkillInfo extends ClientPacket {
                     return;
                 }
 
-                player.sendPacket(new AcquireSkillInfo(_skillType, s));
+                player.sendPacket(new AcquireSkillInfo(skillType, s));
                 break;
             }
         }

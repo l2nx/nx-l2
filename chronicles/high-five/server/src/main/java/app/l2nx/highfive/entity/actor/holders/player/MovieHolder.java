@@ -22,25 +22,21 @@ package app.l2nx.highfive.entity.actor.holders.player;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.network.enums.Movie;
 import java.util.Collection;
+import lombok.Getter;
 
 /**
  * @author St3eT
  */
 public class MovieHolder {
-    private final Movie _movie;
-    private final Collection<Player> _players;
+    @Getter
+    private final Movie movie;
+
+    @Getter
+    private final Collection<Player> players;
 
     public MovieHolder(Collection<Player> players, Movie movie) {
-        _players = players;
-        _movie = movie;
-        _players.forEach(p -> p.playMovie(this));
-    }
-
-    public Movie getMovie() {
-        return _movie;
-    }
-
-    public Collection<Player> getPlayers() {
-        return _players;
+        this.players = players;
+        this.movie = movie;
+        this.players.forEach(p -> p.playMovie(this));
     }
 }

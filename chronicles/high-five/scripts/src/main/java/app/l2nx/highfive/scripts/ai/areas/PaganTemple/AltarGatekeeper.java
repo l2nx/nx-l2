@@ -36,7 +36,7 @@ public class AltarGatekeeper extends Script {
     private static final int ALTAR_GATEKEEPER = 32051;
     private static final long SHOUT_COOLDOWN = 30_000L;
 
-    private static volatile long _lastShoutAt;
+    private static volatile long lastShoutAt;
 
     private AltarGatekeeper() {
         addSpawnId(ALTAR_GATEKEEPER);
@@ -45,11 +45,11 @@ public class AltarGatekeeper extends Script {
     @Override
     public void onSpawn(Npc npc) {
         final long now = System.currentTimeMillis();
-        if ((now - _lastShoutAt) < SHOUT_COOLDOWN) {
+        if ((now - lastShoutAt) < SHOUT_COOLDOWN) {
             return;
         }
 
-        _lastShoutAt = now;
+        lastShoutAt = now;
         npc.broadcastSay(ChatType.NPC_GENERAL, NpcStringId.THE_DOOR_TO_THE_3RD_FLOOR_OF_THE_ALTAR_IS_NOW_OPEN);
     }
 

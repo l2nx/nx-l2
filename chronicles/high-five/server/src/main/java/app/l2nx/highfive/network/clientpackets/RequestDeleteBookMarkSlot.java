@@ -26,11 +26,11 @@ import app.l2nx.highfive.entity.actor.Player;
  * @structure: chdd
  */
 public class RequestDeleteBookMarkSlot extends ClientPacket {
-    private int _id;
+    private int id;
 
     @Override
     protected void readImpl() {
-        _id = readInt();
+        id = readInt();
     }
 
     @Override
@@ -40,6 +40,6 @@ public class RequestDeleteBookMarkSlot extends ClientPacket {
             return;
         }
 
-        player.teleportBookmarkDelete(_id);
+        player.teleportBookmarkDelete(id);
     }
 }

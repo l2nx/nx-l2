@@ -39,7 +39,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class DecayTaskManager implements Runnable {
     private static final Map<Creature, Long> DECAY_SCHEDULES = new ConcurrentHashMap<>();
-    private static boolean _working = false;
+    private static boolean working = false;
 
     protected DecayTaskManager() {
         ThreadPool.scheduleAtFixedRate(this, 0, 1000);
@@ -47,11 +47,11 @@ public class DecayTaskManager implements Runnable {
 
     @Override
     public void run() {
-        if (_working) {
+        if (working) {
             return;
         }
 
-        _working = true;
+        working = true;
 
         if (!DECAY_SCHEDULES.isEmpty()) {
             final long currentTime = System.currentTimeMillis();
@@ -68,7 +68,7 @@ public class DecayTaskManager implements Runnable {
             }
         }
 
-        _working = false;
+        working = false;
     }
 
     /**

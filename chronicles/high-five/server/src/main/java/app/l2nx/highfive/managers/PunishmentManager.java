@@ -39,15 +39,15 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author UnAfraid, Skache
  */
+@Slf4j
 public class PunishmentManager {
-    private static final Logger LOGGER = Logger.getLogger(PunishmentManager.class.getName());
 
-    private final Map<PunishmentAffect, PunishmentHolder> _tasks = new ConcurrentHashMap<>();
+    private final Map<PunishmentAffect, PunishmentHolder> tasks = new ConcurrentHashMap<>();
 
     protected PunishmentManager() {
         load();
@@ -56,7 +56,7 @@ public class PunishmentManager {
     private void load() {
         // Initiate task holders.
         for (PunishmentAffect affect : PunishmentAffect.values()) {
-            _tasks.put(affect, new PunishmentHolder());
+            tasks.put(affect, new PunishmentHolder());
         }
 
         int initiated = 0;
@@ -78,7 +78,7 @@ public class PunishmentManager {
                         expired++;
                     } else {
                         initiated++;
-                        _tasks.get(affect)
+                        tasks.get(affect)
                                 .addPunishment(new PunishmentTask(
                                         id,
                                         key,
@@ -92,11 +92,10 @@ public class PunishmentManager {
                 }
             }
         } catch (Exception e) {
-            LOGGER.warning(getClass().getSimpleName() + ": Error while loading punishments: " + e.getMessage());
+            log.warn("Error while loading punishments: {}", e.getMessage());
         }
 
-        LOGGER.info(getClass().getSimpleName() + ": Loaded " + initiated + " active and " + expired
-                + " expired punishments.");
+        log.info("Loaded {} active and {} expired punishments.", initiated, expired);
     }
 
     public void startPunishment(PunishmentTask task) {
@@ -116,7 +115,7 @@ public class PunishmentManager {
             }
         }
 
-        _tasks.get(affect).addPunishment(task);
+        tasks.get(affect).addPunishment(task);
     }
 
     public void stopPunishment(Object key, PunishmentAffect affect, PunishmentType type) {
@@ -140,7 +139,7 @@ public class PunishmentManager {
             }
         }
 
-        _tasks.get(affect).stopPunishment(task);
+        tasks.get(affect).stopPunishment(task);
     }
 
     private void changeCharAccessLevel(String charId, int lvl) {
@@ -150,13 +149,12 @@ public class PunishmentManager {
             ps.setString(2, charId);
             ps.executeUpdate();
         } catch (SQLException e) {
-            LOGGER.warning(getClass().getSimpleName() + ": Error updating access level for character: " + charId + ". "
-                    + e.getMessage());
+            log.warn("Error updating access level for character: {}. {}", charId, e.getMessage());
         }
     }
 
     public boolean hasPunishment(Object key, PunishmentAffect affect, PunishmentType type) {
-        final PunishmentHolder holder = _tasks.get(affect);
+        final PunishmentHolder holder = tasks.get(affect);
         return holder.hasPunishment(String.valueOf(key), type);
     }
 
@@ -166,7 +164,7 @@ public class PunishmentManager {
     }
 
     public PunishmentTask getPunishment(Object key, PunishmentAffect affect, PunishmentType type) {
-        return _tasks.get(affect).getPunishment(String.valueOf(key), type);
+        return tasks.get(affect).getPunishment(String.valueOf(key), type);
     }
 
     public static void handleIllegalPlayerAction(Player actor, String message, IllegalActionPunishmentType punishment) {

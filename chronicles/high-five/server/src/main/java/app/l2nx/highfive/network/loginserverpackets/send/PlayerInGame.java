@@ -42,7 +42,7 @@ public class PlayerInGame extends SimpleWritablePacket {
     private static final int OPCODE = 0x02;
 
     // Data.
-    private final List<String> _players;
+    private final List<String> players;
 
     /**
      * Single-player constructor.
@@ -57,7 +57,7 @@ public class PlayerInGame extends SimpleWritablePacket {
      * @param players list of player names
      */
     public PlayerInGame(List<String> players) {
-        _players = (players != null) ? players : Collections.emptyList();
+        this.players = (players != null) ? players : Collections.emptyList();
     }
 
     /**
@@ -66,8 +66,8 @@ public class PlayerInGame extends SimpleWritablePacket {
     @Override
     public void write() {
         writeByte(OPCODE);
-        writeShort(_players.size());
-        for (String p : _players) {
+        writeShort(players.size());
+        for (String p : players) {
             writeString((p != null) ? p : "");
         }
     }

@@ -25,17 +25,17 @@ package app.l2nx.highfive.data.xml;
 import app.l2nx.highfive.config.PlayerConfig;
 import java.io.File;
 import java.util.Arrays;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 
 /**
  * @author Mobius
  */
+@Slf4j
 public class KarmaLossData implements IXmlReader {
-    private static final Logger LOGGER = Logger.getLogger(KarmaLossData.class.getName());
 
-    private final double[] _levelModifiers = new double[PlayerConfig.PLAYER_MAXIMUM_LEVEL];
+    private final double[] levelModifiers = new double[PlayerConfig.PLAYER_MAXIMUM_LEVEL];
 
     protected KarmaLossData() {
         load();
@@ -43,9 +43,9 @@ public class KarmaLossData implements IXmlReader {
 
     @Override
     public void load() {
-        Arrays.fill(_levelModifiers, 1d);
+        Arrays.fill(levelModifiers, 1d);
         parseDatapackFile("data/stats/players/karmaLoss.xml");
-        LOGGER.info(getClass().getSimpleName() + ": Loaded " + (_levelModifiers.length - 1) + " modifiers.");
+        log.info("Loaded {} modifiers.", (levelModifiers.length - 1));
     }
 
     @Override
@@ -60,7 +60,7 @@ public class KarmaLossData implements IXmlReader {
                         return;
                     }
 
-                    _levelModifiers[level] = parseDouble(attrs, "val");
+                    levelModifiers[level] = parseDouble(attrs, "val");
                 }));
     }
 
@@ -72,11 +72,11 @@ public class KarmaLossData implements IXmlReader {
      */
     public double getModifier(int level) {
         if (level >= PlayerConfig.PLAYER_MAXIMUM_LEVEL) {
-            LOGGER.warning(getClass().getSimpleName() + ": Requested too high level (" + level + ").");
-            return _levelModifiers[_levelModifiers.length - 1];
+            log.warn("Requested too high level ({}).", level);
+            return levelModifiers[levelModifiers.length - 1];
         }
 
-        return _levelModifiers[level];
+        return levelModifiers[level];
     }
 
     public static KarmaLossData getInstance() {

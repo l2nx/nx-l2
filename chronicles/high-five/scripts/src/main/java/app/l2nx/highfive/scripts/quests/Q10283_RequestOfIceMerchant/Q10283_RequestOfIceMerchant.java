@@ -40,7 +40,7 @@ public class Q10283_RequestOfIceMerchant extends Quest {
     private static final int MIN_LEVEL = 82;
 
     // Variables
-    private boolean isBusy = false;
+    private boolean busy = false;
     private int talker = 0;
 
     public Q10283_RequestOfIceMerchant() {
@@ -52,7 +52,7 @@ public class Q10283_RequestOfIceMerchant extends Quest {
     @Override
     public String onEvent(String event, Npc npc, Player player) {
         if ((npc.getId() == JINIA) && "DESPAWN".equals(event)) {
-            isBusy = false;
+            busy = false;
             talker = 0;
             npc.deleteMe();
             return super.onEvent(event, npc, player);
@@ -92,8 +92,8 @@ public class Q10283_RequestOfIceMerchant extends Quest {
             }
             case "32022-02.html": {
                 if (qs.isMemoState(2)) {
-                    if (!isBusy) {
-                        isBusy = true;
+                    if (!busy) {
+                        busy = true;
                         talker = player.getObjectId();
                         qs.setCond(3);
                         addSpawn(JINIA, 104476, -107535, -3688, 44954, false, 0, false);

@@ -32,23 +32,23 @@ import app.l2nx.network.buffer.WriteBuffer;
  * @author Mobius
  */
 public class ExBrGamePoint extends ServerPacket {
-    private final int _playerObj;
-    private long _points;
+    private final int playerObj;
+    private long points;
 
     public ExBrGamePoint(Player player) {
-        _playerObj = player.getObjectId();
+        playerObj = player.getObjectId();
         if (GeneralConfig.PRIME_SHOP_ITEM_ID == -1) {
-            _points = player.getGamePoints();
+            points = player.getGamePoints();
         } else {
-            _points = player.getInventory().getInventoryItemCount(GeneralConfig.PRIME_SHOP_ITEM_ID, -1);
+            points = player.getInventory().getInventoryItemCount(GeneralConfig.PRIME_SHOP_ITEM_ID, -1);
         }
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_BR_GAME_POINT.writeId(this, buffer);
-        buffer.writeInt(_playerObj);
-        buffer.writeLong(_points);
+        buffer.writeInt(playerObj);
+        buffer.writeLong(points);
         buffer.writeInt(0);
     }
 }

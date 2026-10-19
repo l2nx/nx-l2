@@ -45,8 +45,7 @@ import java.nio.channels.FileChannel.MapMode;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicReferenceArray;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * The {@code GeoEngine} class is responsible for managing geospatial data used in the game.<br>
@@ -62,8 +61,8 @@ import java.util.logging.Logger;
  * </ul>
  * @author -Nemesiss-, HorridoJoho, Mobius
  */
+@Slf4j
 public class GeoEngine {
-    private static final Logger LOGGER = Logger.getLogger(GeoEngine.class.getName());
 
     // Constants.
     public static final String FILE_NAME_FORMAT = "%d_%d.l2j";
@@ -104,10 +103,7 @@ public class GeoEngine {
                             loadRegion(geoFilePath, regionX, regionY);
                             loadedRegions++;
                         } catch (Exception e) {
-                            LOGGER.log(
-                                    Level.WARNING,
-                                    getClass().getSimpleName() + ": Failed to load " + geoFilePath.getFileName() + "!",
-                                    e);
+                            log.warn("Failed to load {}!", geoFilePath.getFileName(), e);
                         }
                     }
                 }
@@ -117,12 +113,12 @@ public class GeoEngine {
                     getClass().getSimpleName() + ": Critical error during geodata initialization!", e);
         }
 
-        LOGGER.info(getClass().getSimpleName() + ": Loaded " + loadedRegions + " regions.");
+        log.info("Loaded {} regions.", loadedRegions);
 
         // Avoid wrong configuration when no files are loaded.
         if ((loadedRegions == 0) && (GeoEngineConfig.PATHFINDING > 0)) {
             GeoEngineConfig.PATHFINDING = 0;
-            LOGGER.info(getClass().getSimpleName() + ": Pathfinding is disabled.");
+            log.info("Pathfinding is disabled.");
         }
     }
 
@@ -155,8 +151,7 @@ public class GeoEngine {
         final Path geoFilePath =
                 GeoEngineConfig.GEODATA_PATH.resolve(String.format(FILE_NAME_FORMAT, regionX, regionY));
         if (!Files.exists(geoFilePath)) {
-            LOGGER.warning(getClass().getSimpleName() + ": Cannot reload, file not found for region " + regionX + "_"
-                    + regionY);
+            log.warn("Cannot reload, file not found for region {}_{}", regionX, regionY);
             return false;
         }
 
@@ -167,21 +162,16 @@ public class GeoEngine {
                 final ByteBuffer buffer =
                         ByteBuffer.wrap(Files.readAllBytes(geoFilePath)).order(ByteOrder.LITTLE_ENDIAN);
                 ((Region) region).load(buffer);
-                LOGGER.info(
-                        getClass().getSimpleName() + ": Reloaded region " + regionX + "_" + regionY + " from bytes.");
+                log.info("Reloaded region {}_{} from bytes.", regionX, regionY);
                 return true;
             }
 
             // Not a real region? fallback load.
             loadRegion(geoFilePath, regionX, regionY);
-            LOGGER.info(
-                    getClass().getSimpleName() + ": Replaced NullRegion with new region " + regionX + "_" + regionY);
+            log.info("Replaced NullRegion with new region {}_{}", regionX, regionY);
             return true;
         } catch (Exception e) {
-            LOGGER.log(
-                    Level.WARNING,
-                    getClass().getSimpleName() + ": Failed to reload region " + regionX + "_" + regionY + "!",
-                    e);
+            log.warn("Failed to reload region {}_{}!", regionX, regionY, e);
             return false;
         }
     }

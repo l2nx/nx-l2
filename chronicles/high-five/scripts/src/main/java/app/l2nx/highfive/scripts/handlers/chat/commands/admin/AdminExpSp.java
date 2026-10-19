@@ -92,7 +92,7 @@ public class AdminExpSp implements IAdminCommandHandler {
         adminReply.replace("%sp%", String.valueOf(player.getSp()));
         adminReply.replace(
                 "%class%",
-                ClassListData.getInstance().getClass(player.getPlayerClass()).getClassName());
+                ClassListData.getInstance().getClass(player.getPlayerClass()).className());
         activeChar.sendPacket(adminReply);
     }
 

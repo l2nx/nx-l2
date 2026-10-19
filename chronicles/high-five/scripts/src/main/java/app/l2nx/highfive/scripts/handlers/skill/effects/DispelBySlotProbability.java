@@ -47,25 +47,25 @@ import java.util.concurrent.ThreadLocalRandom;
  * @author Adry_85, Zoey76, Naker
  */
 public class DispelBySlotProbability extends AbstractEffect {
-    private final String _dispel;
-    private final Map<AbnormalType, Short> _dispelAbnormals;
-    private final int _rate;
+    private final String dispel;
+    private final Map<AbnormalType, Short> dispelAbnormals;
+    private final int rate;
 
     public DispelBySlotProbability(Condition attachCond, Condition applyCond, StatSet set, StatSet params) {
         super(attachCond, applyCond, set, params);
 
-        _dispel = params.getString("dispel", null);
-        _rate = params.getInt("rate", 0);
+        dispel = params.getString("dispel", null);
+        rate = params.getInt("rate", 0);
 
-        if ((_dispel != null) && !_dispel.isEmpty()) {
-            _dispelAbnormals = new EnumMap<>(AbnormalType.class);
+        if ((dispel != null) && !dispel.isEmpty()) {
+            dispelAbnormals = new EnumMap<>(AbnormalType.class);
 
-            for (String ngtStack : _dispel.split(";")) {
+            for (String ngtStack : dispel.split(";")) {
                 final String[] ngt = ngtStack.split(",");
-                _dispelAbnormals.put(AbnormalType.getAbnormalType(ngt[0]), Short.MAX_VALUE);
+                dispelAbnormals.put(AbnormalType.getAbnormalType(ngt[0]), Short.MAX_VALUE);
             }
         } else {
-            _dispelAbnormals = Collections.<AbnormalType, Short>emptyMap();
+            dispelAbnormals = Collections.<AbnormalType, Short>emptyMap();
         }
     }
 
@@ -81,7 +81,7 @@ public class DispelBySlotProbability extends AbstractEffect {
 
     @Override
     public void onStart(Creature effector, Creature effected, Skill skill) {
-        if (_dispelAbnormals.isEmpty() || (effected == null) || effected.isRaid()) {
+        if (dispelAbnormals.isEmpty() || (effected == null) || effected.isRaid()) {
             return;
         }
 
@@ -105,8 +105,8 @@ public class DispelBySlotProbability extends AbstractEffect {
 
         final EffectList effectList = effected.getEffectList();
         final List<BuffInfo> canceled = new ArrayList<>();
-        for (Entry<AbnormalType, Short> entry : _dispelAbnormals.entrySet()) {
-            if (ThreadLocalRandom.current().nextInt(100) < _rate) {
+        for (Entry<AbnormalType, Short> entry : dispelAbnormals.entrySet()) {
+            if (ThreadLocalRandom.current().nextInt(100) < rate) {
                 // Dispel transformations (buff and by GM).
                 if ((entry.getKey() == AbnormalType.TRANSFORM)
                         && (effected.isTransformed()
@@ -163,8 +163,8 @@ public class DispelBySlotProbability extends AbstractEffect {
 
     private void normalCancel(Creature effected) {
         final EffectList effectList = effected.getEffectList();
-        for (Entry<AbnormalType, Short> entry : _dispelAbnormals.entrySet()) {
-            if (ThreadLocalRandom.current().nextInt(100) < _rate) {
+        for (Entry<AbnormalType, Short> entry : dispelAbnormals.entrySet()) {
+            if (ThreadLocalRandom.current().nextInt(100) < rate) {
                 // Dispel transformations (buff and by GM).
                 if ((entry.getKey() == AbnormalType.TRANSFORM)
                         && (effected.isTransformed()

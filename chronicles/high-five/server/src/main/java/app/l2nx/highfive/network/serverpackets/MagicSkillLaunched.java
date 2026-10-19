@@ -31,21 +31,21 @@ import java.util.Collection;
 import java.util.Collections;
 
 public class MagicSkillLaunched extends ServerPacket {
-    private final int _objectId;
-    private final int _skillId;
-    private final int _skillLevel;
-    private final Collection<WorldObject> _targets;
+    private final int objectId;
+    private final int skillId;
+    private final int skillLevel;
+    private final Collection<WorldObject> targets;
 
     public MagicSkillLaunched(Creature creature, int skillId, int skillLevel, Collection<WorldObject> targets) {
-        _objectId = creature.getObjectId();
-        _skillId = skillId;
-        _skillLevel = skillLevel;
+        objectId = creature.getObjectId();
+        this.skillId = skillId;
+        this.skillLevel = skillLevel;
         if (targets == null) {
-            _targets = Collections.singletonList(creature);
+            this.targets = Collections.singletonList(creature);
             return;
         }
 
-        _targets = targets;
+        this.targets = targets;
     }
 
     public MagicSkillLaunched(Creature creature, int skillId, int skillLevel, WorldObject target) {
@@ -59,11 +59,11 @@ public class MagicSkillLaunched extends ServerPacket {
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.MAGIC_SKILL_LAUNCHED.writeId(this, buffer);
-        buffer.writeInt(_objectId);
-        buffer.writeInt(_skillId);
-        buffer.writeInt(_skillLevel);
-        buffer.writeInt(_targets.size());
-        for (WorldObject target : _targets) {
+        buffer.writeInt(objectId);
+        buffer.writeInt(skillId);
+        buffer.writeInt(skillLevel);
+        buffer.writeInt(targets.size());
+        for (WorldObject target : targets) {
             buffer.writeInt(target.getObjectId());
         }
     }

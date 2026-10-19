@@ -32,11 +32,11 @@ import app.l2nx.highfive.network.serverpackets.ActionFailed;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
 
 public class RequestStartPledgeWar extends ClientPacket {
-    private String _pledgeName;
+    private String pledgeName;
 
     @Override
     protected void readImpl() {
-        _pledgeName = readString();
+        pledgeName = readString();
     }
 
     @Override
@@ -63,7 +63,7 @@ public class RequestStartPledgeWar extends ClientPacket {
             return;
         }
 
-        final Clan clan = ClanTable.getInstance().getClanByName(_pledgeName);
+        final Clan clan = ClanTable.getInstance().getClanByName(pledgeName);
         if (clan == null) {
             player.sendPacket(SystemMessageId.A_CLAN_WAR_CANNOT_BE_DECLARED_AGAINST_A_CLAN_THAT_DOES_NOT_EXIST);
             player.sendPacket(ActionFailed.STATIC_PACKET);

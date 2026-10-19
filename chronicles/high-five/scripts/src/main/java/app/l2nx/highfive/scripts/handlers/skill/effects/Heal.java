@@ -39,12 +39,12 @@ import app.l2nx.highfive.util.StatSet;
  * @author UnAfraid
  */
 public class Heal extends AbstractEffect {
-    private final double _power;
+    private final double power;
 
     public Heal(Condition attachCond, Condition applyCond, StatSet set, StatSet params) {
         super(attachCond, applyCond, set, params);
 
-        _power = params.getDouble("power", 0);
+        power = params.getDouble("power", 0);
     }
 
     @Override
@@ -63,7 +63,7 @@ public class Heal extends AbstractEffect {
             return;
         }
 
-        double amount = _power;
+        double amount = power;
         double staticShotBonus = 0;
         int mAtkMul = 1;
         final boolean sps = skill.isMagic() && effector.isChargedShot(ShotType.SPIRITSHOTS);

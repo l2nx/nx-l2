@@ -50,7 +50,9 @@ import app.l2nx.highfive.util.LocationUtil;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class HallOfErosionAttack extends Script {
     protected class HEAWorld extends InstanceWorld {
         public List<Npc> npcList = new ArrayList<>();
@@ -58,7 +60,7 @@ public class HallOfErosionAttack extends Script {
         public int tumorCount = 0;
         public Npc cohemenes = null;
         protected Npc deadTumor;
-        public boolean isBossAttacked = false;
+        public boolean bossAttacked = false;
         public long startTime = 0;
 
         public synchronized void addTumorCount(int value) {
@@ -293,8 +295,11 @@ public class HallOfErosionAttack extends Script {
             world.setInstance(InstanceManager.getInstance().createDynamicInstance(INSTANCEID));
             ((HEAWorld) world).startTime = System.currentTimeMillis();
             InstanceManager.getInstance().addWorld(world);
-            LOGGER.info("Hall Of Erosion Attack started " + INSTANCEID + " Instance: " + world.getInstanceId()
-                    + " created by player: " + player.getName());
+            log.info(
+                    "Hall Of Erosion Attack started {} Instance: {} created by player: {}",
+                    INSTANCEID,
+                    world.getInstanceId(),
+                    player.getName());
             if (player.isInParty()) {
                 for (Player partyMember : player.getParty().isInCommandChannel()
                         ? player.getParty().getCommandChannel().getMembers()
@@ -427,8 +432,8 @@ public class HallOfErosionAttack extends Script {
         final InstanceWorld tmpworld = InstanceManager.getInstance().getWorld(npc);
         if (tmpworld instanceof HEAWorld) {
             final HEAWorld world = (HEAWorld) tmpworld;
-            if (!world.isBossAttacked) {
-                world.isBossAttacked = true;
+            if (!world.bossAttacked) {
+                world.bossAttacked = true;
                 final Calendar reenter = Calendar.getInstance();
                 reenter.add(Calendar.HOUR, INSTANCEPENALTY);
 
@@ -594,12 +599,12 @@ public class HallOfErosionAttack extends Script {
     }
 
     private class TumorRevival implements Runnable {
-        private final Npc _deadTumor;
-        private final HEAWorld _world;
+        private final Npc deadTumor;
+        private final HEAWorld world;
 
         public TumorRevival(Npc deadTumor, HEAWorld world) {
-            _deadTumor = world.deadTumor;
-            _world = world;
+            this.deadTumor = world.deadTumor;
+            this.world = world;
         }
 
         @Override
@@ -608,21 +613,21 @@ public class HallOfErosionAttack extends Script {
                 return;
             }
 
-            final Npc tumor = addSpawn(TUMOR_ALIVE, _deadTumor.getLocation(), _world.getInstanceId());
-            _world.npcList.add(tumor);
-            _deadTumor.deleteMe();
-            final int tag = _world.getParameters().getInt("tag", -1);
-            _world.setParameter("tag", tag - 1);
+            final Npc tumor = addSpawn(TUMOR_ALIVE, deadTumor.getLocation(), world.getInstanceId());
+            world.npcList.add(tumor);
+            deadTumor.deleteMe();
+            final int tag = world.getParameters().getInt("tag", -1);
+            world.setParameter("tag", tag - 1);
         }
     }
 
     private class RegenerationCoffinSpawn implements Runnable {
-        private final Npc _deadTumor;
-        private final HEAWorld _world;
+        private final Npc deadTumor;
+        private final HEAWorld world;
 
         public RegenerationCoffinSpawn(Npc deadTumor, HEAWorld world) {
-            _deadTumor = world.deadTumor;
-            _world = world;
+            this.deadTumor = world.deadTumor;
+            this.world = world;
         }
 
         @Override
@@ -632,8 +637,8 @@ public class HallOfErosionAttack extends Script {
             }
 
             for (int i = 0; i < 4; i++) {
-                final Npc worm = addSpawn(18710, _deadTumor.getLocation(), _world.getInstanceId());
-                _world.npcList.add(worm);
+                final Npc worm = addSpawn(18710, deadTumor.getLocation(), world.getInstanceId());
+                world.npcList.add(worm);
             }
         }
     }

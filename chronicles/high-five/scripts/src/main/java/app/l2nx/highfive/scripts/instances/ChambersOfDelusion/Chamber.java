@@ -41,12 +41,13 @@ import app.l2nx.highfive.threads.ThreadPool;
 import app.l2nx.highfive.util.LocationUtil;
 import java.util.Calendar;
 import java.util.concurrent.ScheduledFuture;
-import java.util.logging.Level;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Chambers of Delusion superclass.
  * @author GKR
  */
+@Slf4j
 public abstract class Chamber extends InstanceScript {
     // Items
     private static final int ENRIA = 4042;
@@ -496,18 +497,18 @@ public abstract class Chamber extends InstanceScript {
     }
 
     protected class BanishTask implements Runnable {
-        final InstanceWorld _world;
+        final InstanceWorld world;
 
         public BanishTask(InstanceWorld world) {
-            _world = world;
+            this.world = world;
         }
 
         @Override
         public void run() {
-            final Instance instance = InstanceManager.getInstance().getInstance(_world.getInstanceId());
+            final Instance instance = InstanceManager.getInstance().getInstance(world.getInstanceId());
             if ((instance == null) || ((instance.getInstanceEndTime() - System.currentTimeMillis()) < 60000)) {
                 final ScheduledFuture<?> banishTask =
-                        _world.getParameters().getObject("banishTask", ScheduledFuture.class);
+                        world.getParameters().getObject("banishTask", ScheduledFuture.class);
                 if (banishTask != null) {
                     banishTask.cancel(true);
                 }
@@ -515,7 +516,7 @@ public abstract class Chamber extends InstanceScript {
                 for (int objId : instance.getPlayers()) {
                     final Player pl = World.getPlayer(objId);
                     if ((pl != null) && pl.isOnline()) {
-                        final Party party = _world.getParameters().getObject("PartyInside", Party.class);
+                        final Party party = world.getParameters().getObject("PartyInside", Party.class);
                         if ((party == null) || !pl.isInParty() || (party != pl.getParty())) {
                             exitInstance(pl);
                         }
@@ -526,21 +527,20 @@ public abstract class Chamber extends InstanceScript {
     }
 
     protected class ChangeRoomTask implements Runnable {
-        final InstanceWorld _world;
+        final InstanceWorld world;
 
         public ChangeRoomTask(InstanceWorld world) {
-            _world = world;
+            this.world = world;
         }
 
         @Override
         public void run() {
             try {
-                earthQuake(_world);
+                earthQuake(world);
                 Thread.sleep(5000);
-                changeRoom(_world);
+                changeRoom(world);
             } catch (Exception e) {
-                LOGGER.log(
-                        Level.WARNING, getClass().getSimpleName() + " ChangeRoomTask exception : " + e.getMessage(), e);
+                log.warn("Room change failed", e);
             }
         }
     }

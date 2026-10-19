@@ -20,30 +20,24 @@
 package app.l2nx.highfive.entity.clan;
 
 import app.l2nx.highfive.entity.clan.enums.CrestType;
+import lombok.Getter;
 
 /**
  * @author NosBit
  */
 public class Crest {
-    private final int _id;
-    private final byte[] _data;
-    private final CrestType _type;
+    @Getter
+    private final int id;
+
+    @Getter
+    private final byte[] data;
+
+    @Getter
+    private final CrestType type;
 
     public Crest(int id, byte[] data, CrestType type) {
-        _id = id;
-        _data = data;
-        _type = type;
-    }
-
-    public int getId() {
-        return _id;
-    }
-
-    public byte[] getData() {
-        return _data;
-    }
-
-    public CrestType getType() {
-        return _type;
+        this.id = id;
+        this.data = data;
+        this.type = type;
     }
 }

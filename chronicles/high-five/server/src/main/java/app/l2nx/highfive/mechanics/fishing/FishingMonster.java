@@ -23,49 +23,29 @@
 package app.l2nx.highfive.mechanics.fishing;
 
 import app.l2nx.highfive.util.StatSet;
+import lombok.Getter;
 
 /**
  * Class for the Fishing Monsters object.
  * @author nonom
  */
 public class FishingMonster {
-    private final int _userMinLevel;
-    private final int _userMaxLevel;
-    private final int _fishingMonsterId;
-    private final int _probability;
+    @Getter
+    private final int userMinLevel;
+
+    @Getter
+    private final int userMaxLevel;
+
+    @Getter
+    private final int fishingMonsterId;
+
+    @Getter
+    private final int probability;
 
     public FishingMonster(StatSet set) {
-        _userMinLevel = set.getInt("userMinLevel");
-        _userMaxLevel = set.getInt("userMaxLevel");
-        _fishingMonsterId = set.getInt("fishingMonsterId");
-        _probability = set.getInt("probability");
-    }
-
-    /**
-     * @return the minimum user level.
-     */
-    public int getUserMinLevel() {
-        return _userMinLevel;
-    }
-
-    /**
-     * @return the maximum user level.
-     */
-    public int getUserMaxLevel() {
-        return _userMaxLevel;
-    }
-
-    /**
-     * @return the fishing monster Id.
-     */
-    public int getFishingMonsterId() {
-        return _fishingMonsterId;
-    }
-
-    /**
-     * @return the probability.
-     */
-    public int getProbability() {
-        return _probability;
+        userMinLevel = set.getInt("userMinLevel");
+        userMaxLevel = set.getInt("userMaxLevel");
+        fishingMonsterId = set.getInt("fishingMonsterId");
+        probability = set.getInt("probability");
     }
 }

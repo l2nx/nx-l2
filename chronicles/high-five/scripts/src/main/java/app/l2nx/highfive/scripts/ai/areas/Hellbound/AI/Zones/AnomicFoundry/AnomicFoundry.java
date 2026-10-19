@@ -45,7 +45,7 @@ public class AnomicFoundry extends Script {
     private static int GREATER_EVIL = 22399;
 
     // Misc
-    private final Map<Integer, Integer> _atkIndex = new ConcurrentHashMap<>();
+    private final Map<Integer, Integer> atkIndex = new ConcurrentHashMap<>();
 
     // npcId, x, y, z, heading, max count
     // @formatter:off
@@ -62,7 +62,7 @@ public class AnomicFoundry extends Script {
     private static final int respawnMin = 20000;
     private static final int respawnMax = 300000;
 
-    private final int[] _spawned = {0, 0, 0, 0, 0};
+    private final int[] spawned = {0, 0, 0, 0, 0};
 
     public AnomicFoundry() {
         addAggroRangeEnterId(LABORER);
@@ -78,7 +78,7 @@ public class AnomicFoundry extends Script {
         if (event.equalsIgnoreCase("make_spawn_1")) {
             if (HellboundEngine.getInstance().getLevel() >= 10) {
                 final int idx = getRandom(3);
-                if (_spawned[idx] < SPAWNS[idx][5]) {
+                if (spawned[idx] < SPAWNS[idx][5]) {
                     addSpawn(
                             SPAWNS[idx][0],
                             SPAWNS[idx][1],
@@ -94,7 +94,7 @@ public class AnomicFoundry extends Script {
                 startQuestTimer("make_spawn_1", respawnTime, null, null);
             }
         } else if (event.equalsIgnoreCase("make_spawn_2")) {
-            if (_spawned[4] < SPAWNS[4][5]) {
+            if (spawned[4] < SPAWNS[4][5]) {
                 addSpawn(SPAWNS[4][0], SPAWNS[4][1], SPAWNS[4][2], SPAWNS[4][3], SPAWNS[4][4], false, 0, false);
             }
         } else if (event.equalsIgnoreCase("return_laborer")) {
@@ -119,7 +119,7 @@ public class AnomicFoundry extends Script {
 
     @Override
     public void onAttack(Npc npc, Player attacker, int damage, boolean isSummon, Skill skill) {
-        int atkIndex = _atkIndex.containsKey(npc.getObjectId()) ? _atkIndex.get(npc.getObjectId()) : 0;
+        int atkIndex = this.atkIndex.containsKey(npc.getObjectId()) ? this.atkIndex.get(npc.getObjectId()) : 0;
         if (atkIndex == 0) {
             npc.broadcastSay(ChatType.NPC_GENERAL, NpcStringId.ENEMY_INVASION_HURRY_UP);
             cancelQuestTimer("return_laborer", npc, null);
@@ -133,7 +133,7 @@ public class AnomicFoundry extends Script {
 
         if (getRandom(10000) < 2000) {
             atkIndex++;
-            _atkIndex.put(npc.getObjectId(), atkIndex);
+            this.atkIndex.put(npc.getObjectId(), atkIndex);
             requestHelp(npc, attacker, 1000 * atkIndex, FOREMAN);
             requestHelp(npc, attacker, 1000 * atkIndex, LESSER_EVIL);
             requestHelp(npc, attacker, 1000 * atkIndex, GREATER_EVIL);
@@ -151,7 +151,7 @@ public class AnomicFoundry extends Script {
     @Override
     public void onKill(Npc npc, Player killer, boolean isSummon) {
         if (getSpawnGroup(npc) >= 0) {
-            _spawned[getSpawnGroup(npc)]--;
+            spawned[getSpawnGroup(npc)]--;
             SpawnTable.getInstance().removeSpawn(npc.getSpawn());
         } else if (npc.getId() == LABORER) {
             if (getRandom(10000) < 8000) {
@@ -163,7 +163,7 @@ public class AnomicFoundry extends Script {
                 }
             }
 
-            _atkIndex.remove(npc.getObjectId());
+            atkIndex.remove(npc.getObjectId());
         }
     }
 
@@ -171,7 +171,7 @@ public class AnomicFoundry extends Script {
     public void onSpawn(Npc npc) {
         SpawnTable.getInstance().addSpawn(npc.getSpawn());
         if (getSpawnGroup(npc) >= 0) {
-            _spawned[getSpawnGroup(npc)]++;
+            spawned[getSpawnGroup(npc)]++;
         }
 
         if (npc.getId() == LABORER) {
@@ -182,15 +182,15 @@ public class AnomicFoundry extends Script {
     @Override
     protected void onTeleport(Npc npc) {
         if ((getSpawnGroup(npc) >= 0) && (getSpawnGroup(npc) <= 2)) {
-            _spawned[getSpawnGroup(npc)]--;
+            spawned[getSpawnGroup(npc)]--;
             SpawnTable.getInstance().removeSpawn(npc.getSpawn());
             npc.scheduleDespawn(100);
-            if (_spawned[3] < SPAWNS[3][5]) {
+            if (spawned[3] < SPAWNS[3][5]) {
                 addSpawn(SPAWNS[3][0], SPAWNS[3][1], SPAWNS[3][2], SPAWNS[3][3], SPAWNS[3][4], false, 0, false);
             }
         } else if (getSpawnGroup(npc) == 3) {
             startQuestTimer("make_spawn_2", respawnTime * 2, null, null);
-            _spawned[3]--;
+            spawned[3]--;
             SpawnTable.getInstance().removeSpawn(npc.getSpawn());
             npc.scheduleDespawn(100);
         }

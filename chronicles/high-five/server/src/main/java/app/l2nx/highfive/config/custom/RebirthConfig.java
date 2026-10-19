@@ -29,8 +29,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Loads and stores rebirth system configuration values from the custom rebirth configuration file.<br>
@@ -43,9 +42,8 @@ import java.util.logging.Logger;
  * </ul>
  * @author BazookaRpm
  */
+@Slf4j
 public class RebirthConfig {
-    // Logger.
-    private static final Logger LOGGER = Logger.getLogger(RebirthConfig.class.getName());
 
     // Configuration file.
     private static final String REBIRTH_CONFIG_FILE = "config/Custom/Rebirth.ini";
@@ -171,10 +169,7 @@ public class RebirthConfig {
             try {
                 skillIds.add(Integer.valueOf(Integer.parseInt(trimmedToken)));
             } catch (NumberFormatException e) {
-                LOGGER.log(
-                        Level.WARNING,
-                        "Invalid rebirth whitelist skill id: rawValue=" + trimmedToken + " fullValue=" + value,
-                        e);
+                log.warn("Invalid rebirth whitelist skill id: rawValue={} fullValue={}", trimmedToken, value, e);
             }
         }
 
@@ -213,7 +208,7 @@ public class RebirthConfig {
                     break;
                 }
                 default: {
-                    LOGGER.warning("Ignoring invalid rebirth protected skill group: " + normalizedToken);
+                    log.warn("Ignoring invalid rebirth protected skill group: {}", normalizedToken);
                     break;
                 }
             }

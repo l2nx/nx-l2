@@ -30,18 +30,18 @@ import app.l2nx.highfive.mechanics.skill.Skill;
  * The Class ConditionPlayerCp.
  */
 public class ConditionPlayerCp extends Condition {
-    private final int _cp;
+    private final int cp;
 
     /**
      * Instantiates a new condition player cp.
      * @param cp the cp
      */
     public ConditionPlayerCp(int cp) {
-        _cp = cp;
+        this.cp = cp;
     }
 
     @Override
     public boolean testImpl(Creature effector, Creature effected, Skill skill, ItemTemplate item) {
-        return (effector != null) && (((effector.getCurrentCp() * 100) / effector.getMaxCp()) >= _cp);
+        return (effector != null) && (((effector.getCurrentCp() * 100) / effector.getMaxCp()) >= cp);
     }
 }

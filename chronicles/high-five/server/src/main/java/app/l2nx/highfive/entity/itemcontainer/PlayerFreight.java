@@ -26,30 +26,24 @@ import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.item.enums.ItemLocation;
 import app.l2nx.highfive.mechanics.stats.Stat;
+import lombok.Getter;
 
 public class PlayerFreight extends ItemContainer {
-    private final Player _owner;
-    private final int _ownerId;
+    @Getter
+    private final Player owner;
+
+    @Getter
+    private final int ownerId;
 
     public PlayerFreight(int objectId) {
-        _owner = null;
-        _ownerId = objectId;
+        owner = null;
+        ownerId = objectId;
         restore();
     }
 
     public PlayerFreight(Player owner) {
-        _owner = owner;
-        _ownerId = owner.getObjectId();
-    }
-
-    @Override
-    public int getOwnerId() {
-        return _ownerId;
-    }
-
-    @Override
-    public Player getOwner() {
-        return _owner;
+        this.owner = owner;
+        ownerId = owner.getObjectId();
     }
 
     @Override
@@ -65,10 +59,10 @@ public class PlayerFreight extends ItemContainer {
     @Override
     public boolean validateCapacity(long slots) {
         return (getSize() + slots)
-                <= (_owner == null
+                <= (owner == null
                         ? PlayerConfig.ALT_FREIGHT_SLOTS
                         : PlayerConfig.ALT_FREIGHT_SLOTS
-                                + (int) _owner.getStat().calcStat(Stat.FREIGHT_LIM, 0, null, null));
+                                + (int) owner.getStat().calcStat(Stat.FREIGHT_LIM, 0, null, null));
     }
 
     @Override

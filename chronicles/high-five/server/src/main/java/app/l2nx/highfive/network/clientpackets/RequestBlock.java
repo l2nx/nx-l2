@@ -25,9 +25,10 @@ package app.l2nx.highfive.network.clientpackets;
 import app.l2nx.highfive.data.sql.CharInfoTable;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.holders.player.BlockList;
-import app.l2nx.highfive.network.PacketLogger;
 import app.l2nx.highfive.network.SystemMessageId;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class RequestBlock extends ClientPacket {
     private static final int BLOCK = 0;
     private static final int UNBLOCK = 1;
@@ -35,14 +36,14 @@ public class RequestBlock extends ClientPacket {
     private static final int ALLBLOCK = 3;
     private static final int ALLUNBLOCK = 4;
 
-    private String _name;
-    private Integer _type;
+    private String name;
+    private Integer type;
 
     @Override
     protected void readImpl() {
-        _type = readInt(); // 0x00 - block, 0x01 - unblock, 0x03 - allblock, 0x04 - allunblock
-        if ((_type == BLOCK) || (_type == UNBLOCK)) {
-            _name = readString();
+        type = readInt(); // 0x00 - block, 0x01 - unblock, 0x03 - allblock, 0x04 - allunblock
+        if ((type == BLOCK) || (type == UNBLOCK)) {
+            name = readString();
         }
     }
 
@@ -53,10 +54,10 @@ public class RequestBlock extends ClientPacket {
             return;
         }
 
-        final int targetId = CharInfoTable.getInstance().getIdByName(_name);
+        final int targetId = CharInfoTable.getInstance().getIdByName(name);
         final int targetAL = CharInfoTable.getInstance().getAccessLevelById(targetId);
 
-        switch (_type) {
+        switch (type) {
             case BLOCK:
             case UNBLOCK: {
                 // can't use block/unblock for locating invisible characters
@@ -76,7 +77,7 @@ public class RequestBlock extends ClientPacket {
                     return;
                 }
 
-                if (_type == BLOCK) {
+                if (type == BLOCK) {
                     BlockList.addToBlockList(player, targetId);
                 } else {
                     BlockList.removeFromBlockList(player, targetId);
@@ -98,7 +99,7 @@ public class RequestBlock extends ClientPacket {
                 break;
             }
             default: {
-                PacketLogger.info("Unknown 0xA9 block type: " + _type);
+                log.info("Unknown 0xA9 block type: {}", type);
             }
         }
     }

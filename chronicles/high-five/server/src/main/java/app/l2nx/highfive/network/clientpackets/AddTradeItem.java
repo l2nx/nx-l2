@@ -25,27 +25,28 @@ package app.l2nx.highfive.network.clientpackets;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.item.enums.ItemProcessType;
-import app.l2nx.highfive.network.PacketLogger;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.holders.TradeItem;
 import app.l2nx.highfive.network.holders.TradeList;
 import app.l2nx.highfive.network.serverpackets.TradeOtherAdd;
 import app.l2nx.highfive.network.serverpackets.TradeOwnAdd;
 import app.l2nx.highfive.network.serverpackets.TradeUpdate;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @version $Revision: 1.5.2.2.2.5 $ $Date: 2005/03/27 15:29:29 $
  */
+@Slf4j
 public class AddTradeItem extends ClientPacket {
-    private int _tradeId;
-    private int _objectId;
-    private long _count;
+    private int tradeId;
+    private int objectId;
+    private long count;
 
     @Override
     protected void readImpl() {
-        _tradeId = readInt();
-        _objectId = readInt();
-        _count = readLong();
+        tradeId = readInt();
+        objectId = readInt();
+        count = readLong();
     }
 
     @Override
@@ -55,14 +56,17 @@ public class AddTradeItem extends ClientPacket {
             return;
         }
 
-        if (_count < 1) {
+        if (count < 1) {
             return;
         }
 
         final TradeList trade = player.getActiveTradeList();
         if (trade == null) {
-            PacketLogger.warning("Character: " + player.getName() + " requested item:" + _objectId
-                    + " add without active tradelist:" + _tradeId);
+            log.warn(
+                    "Character: {} requested item:{} add without active tradelist:{}",
+                    player.getName(),
+                    objectId,
+                    tradeId);
             return;
         }
 
@@ -72,7 +76,7 @@ public class AddTradeItem extends ClientPacket {
                 || (partner.getActiveTradeList() == null)) {
             // Trade partner not found, cancel trade.
             if (partner != null) {
-                PacketLogger.warning("Character:" + player.getName() + " requested invalid trade object: " + _objectId);
+                log.warn("Character:{} requested invalid trade object: {}", player.getName(), objectId);
             }
 
             player.sendPacket(SystemMessageId.THAT_PLAYER_IS_NOT_ONLINE);
@@ -92,12 +96,12 @@ public class AddTradeItem extends ClientPacket {
             return;
         }
 
-        if (!player.validateItemManipulation(_objectId, ItemProcessType.TRANSFER)) {
+        if (!player.validateItemManipulation(objectId, ItemProcessType.TRANSFER)) {
             player.sendPacket(SystemMessageId.NOTHING_HAPPENED);
             return;
         }
 
-        final TradeItem item = trade.addItem(_objectId, _count);
+        final TradeItem item = trade.addItem(objectId, count);
         if (item != null) {
             player.sendPacket(new TradeOwnAdd(item));
             player.sendPacket(new TradeUpdate(player, item));

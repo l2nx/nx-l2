@@ -36,13 +36,15 @@ import app.l2nx.highfive.network.Disconnection;
 import app.l2nx.highfive.network.GameClient;
 import app.l2nx.highfive.network.serverpackets.ActionFailed;
 import app.l2nx.highfive.network.serverpackets.LeaveWorld;
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @version $Revision: 1.9.4.3 $ $Date: 2005/03/27 15:29:30 $
  */
 public class Logout extends ClientPacket {
-    protected static final Logger LOGGER_ACCOUNTING = Logger.getLogger("accounting");
+
+    private static final Logger ACCOUNTING_LOG = LoggerFactory.getLogger("accounting");
 
     @Override
     protected void readImpl() {}
@@ -90,7 +92,7 @@ public class Logout extends ClientPacket {
         }
 
         if (OfflineTraderTable.getInstance().enteredOfflineMode(player)) {
-            LOGGER_ACCOUNTING.info("Entered offline mode, " + client);
+            ACCOUNTING_LOG.info("Entered offline mode, {}", client);
         } else {
             Disconnection.of(client, player).storeAndDeleteWith(LeaveWorld.STATIC_PACKET);
         }

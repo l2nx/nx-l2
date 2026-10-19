@@ -62,293 +62,366 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class Skill {
-    private static final Logger LOGGER = Logger.getLogger(Skill.class.getName());
 
     /** Skill ID. */
-    private final int _id;
+    @Getter
+    private final int id;
     /** Skill level. */
-    private final int _level;
+    @Getter
+    private final int level;
     /** Custom skill ID displayed by the client. */
-    private final int _displayId;
+    @Getter
+    private final int displayId;
     /** Custom skill level displayed by the client. */
-    private final int _displayLevel;
+    @Getter
+    private final int displayLevel;
     /** Skill client's name. */
-    private final String _name;
+    @Getter
+    private final String name;
     /** Operative type: passive, active, toggle. */
-    private final SkillOperateType _operateType;
+    private final SkillOperateType operateType;
 
-    private final int _magic;
-    private final TraitType _traitType;
-    private final boolean _staticReuse;
+    private final int magic;
+
+    @Getter
+    private final TraitType traitType;
+
+    @Getter
+    private final boolean staticReuse;
     /** MP consumption. */
-    private final int _mpConsume;
+    @Getter
+    private final int mpConsume;
     /** Initial MP consumption. */
-    private final int _mpInitialConsume;
+    @Getter
+    private final int mpInitialConsume;
     /** MP consumption per channeling. */
-    private final int _mpPerChanneling;
+    @Getter
+    private final int mpPerChanneling;
     /** HP consumption. */
-    private final int _hpConsume;
+    @Getter
+    private final int hpConsume;
     /** Amount of items consumed by this skill from caster. */
-    private final int _itemConsumeCount;
+    @Getter
+    private final int itemConsumeCount;
     /** Id of item consumed by this skill from caster. */
-    private final int _itemConsumeId;
+    @Getter
+    private final int itemConsumeId;
     /** Cast range: how far can be the target. */
-    private final int _castRange;
+    @Getter
+    private final int castRange;
     /** Effect range: how far the skill affect the target. */
-    private final int _effectRange;
+    @Getter
+    private final int effectRange;
     /** Abnormal instant, used for herbs mostly. */
-    private final boolean _isAbnormalInstant;
+    @Getter
+    private final boolean abnormalInstant;
     /** Abnormal level, global effect level. */
-    private final int _abnormalLevel;
+    @Getter
+    private final int abnormalLevel;
     /** Abnormal type: global effect "group". */
-    private final AbnormalType _abnormalType;
+    @Getter
+    private final AbnormalType abnormalType;
     /** Abnormal time: global effect duration time. */
-    private final int _abnormalTime;
+    @Getter
+    private final int abnormalTime;
     /** Abnormal visual effect: the visual effect displayed ingame. */
-    private AbnormalVisualEffect[] _abnormalVisualEffects = null;
+    private AbnormalVisualEffect[] abnormalVisualEffects = null;
     /** Abnormal visual effect special: the visual effect displayed ingame. */
-    private AbnormalVisualEffect[] _abnormalVisualEffectsSpecial = null;
+    private AbnormalVisualEffect[] abnormalVisualEffectsSpecial = null;
     /** Abnormal visual effect event: the visual effect displayed ingame. */
-    private AbnormalVisualEffect[] _abnormalVisualEffectsEvent = null;
+    private AbnormalVisualEffect[] abnormalVisualEffectsEvent = null;
     /** If {@code true} this skill's effect should stay after death. */
-    private final boolean _stayAfterDeath;
+    @Getter
+    private final boolean stayAfterDeath;
     /** If {@code true} this skill's effect should stay after class-subclass change. */
-    private final boolean _stayOnSubclassChange;
+    @Getter
+    private final boolean stayOnSubclassChange;
     /** If {@code true} this skill's effect recovery HP/MP or CP from herb. */
-    private final boolean _isRecoveryHerb;
+    @Getter
+    private final boolean recoveryHerb;
 
-    private int _refId;
+    @Getter
+    @Setter
+    private int referenceItemId;
 
     // All times in milliseconds.
-    private final int _hitTime;
+    @Getter
+    private final int hitTime;
     // private final int _skillInterruptTime;
-    private final int _coolTime;
-    private final int _reuseHashCode;
-    private final int _reuseDelay;
+    @Getter
+    private final int coolTime;
+
+    @Getter
+    private final int reuseHashCode;
+
+    @Getter
+    private final int reuseDelay;
 
     /** Target type of the skill : SELF, PARTY, CLAN, PET... */
-    private final TargetType _targetType;
+    @Getter
+    private final TargetType targetType;
 
-    private final int _feed;
+    @Getter
+    private final int feed;
 
     // base success chance
-    private final double _power;
-    private final double _pvpPower;
-    private final double _pvePower;
-    private final int _magicLevel;
-    private final int _lvlBonusRate;
-    private final int _activateRate;
-    private final int _minChance;
-    private final int _maxChance;
-    private final int _blowChance;
+    @Getter
+    private final double power;
+
+    private final double pvpPower;
+    private final double pvePower;
+
+    @Getter
+    private final int magicLevel;
+
+    @Getter
+    private final int lvlBonusRate;
+
+    @Getter
+    private final int activateRate;
+
+    @Getter
+    private final int minChance;
+
+    @Getter
+    private final int maxChance;
+
+    @Getter
+    private final int blowChance;
 
     // Effecting area of the skill, in radius.
-    // The radius center varies according to the _targetType:
+    // The radius center varies according to the targetType:
     // "caster" if targetType = AURA/PARTY/CLAN or "target" if targetType = AREA
-    private final int _affectRange;
-    private final int[] _affectLimit = new int[2];
+    @Getter
+    private final int affectRange;
 
-    private final boolean _nextActionIsAttack;
+    private final int[] affectLimit = new int[2];
 
-    private final boolean _removedOnAnyActionExceptMove;
-    private final boolean _removedOnDamage;
+    private final boolean nextActionIsAttack;
 
-    private final boolean _blockedInOlympiad;
+    @Getter
+    private final boolean removedOnAnyActionExceptMove;
 
-    private final byte _element;
-    private final int _elementPower;
+    @Getter
+    private final boolean removedOnDamage;
 
-    private final BaseStat _basicProperty;
+    @Getter
+    private final boolean blockedInOlympiad;
 
-    private final boolean _overhit;
+    @Getter
+    private final byte element;
 
-    private final int _minPledgeClass;
-    private final int _chargeConsume;
-    private final int _soulMaxConsume;
+    @Getter
+    private final int elementPower;
 
-    private final boolean _isHeroSkill; // If true the skill is a Hero Skill.
-    private final boolean _isGMSkill; // True if skill is GM skill.
-    private final boolean _isSevenSigns;
+    @Getter
+    private final BaseStat basicProperty;
 
+    @Getter
+    private final boolean overhit;
+
+    @Getter
+    private final int minPledgeClass;
+
+    @Getter
+    private final int chargeConsumeCount;
+
+    @Getter
+    private final int maxSoulConsumeCount;
+
+    @Getter
+    private final boolean heroSkill; // If true the skill is a Hero Skill.
+
+    private final boolean gmSkill; // True if skill is GM skill.
+    private final boolean sevenSigns;
+
+    @Getter
     private final int
-            _baseCritRate; // percent of success for skill critical hit (especially for PhysicalDamage & Blow - they're
+            baseCritRate; // percent of success for skill critical hit (especially for PhysicalDamage & Blow - they're
     // not affected by rCrit values or buffs).
-    private final boolean _directHpDmg; // If true then damage is being make directly.
+    private final boolean dmgDirectlyToHP; // If true then damage is being make directly.
+
+    @Getter
     private final boolean
-            _isTriggeredSkill; // If true the skill will take activation buff slot instead of a normal buff slot.
-    private final int _effectPoint;
+            triggeredSkill; // If true the skill will take activation buff slot instead of a normal buff slot.
+
+    @Getter
+    private final int effectPoint;
 
     // Condition lists
-    private List<Condition> _preCondition;
-    private List<Condition> _itemPreCondition;
+    private List<Condition> preCondition;
+    private List<Condition> itemPreCondition;
 
     // Function lists
-    private List<FuncTemplate> _funcTemplates;
+    private List<FuncTemplate> funcTemplates;
 
-    private final Map<EffectScope, List<AbstractEffect>> _effectLists = new EnumMap<>(EffectScope.class);
+    private final Map<EffectScope, List<AbstractEffect>> effectLists = new EnumMap<>(EffectScope.class);
 
     // Flying support
-    private final FlyType _flyType;
-    private final int _flyRadius;
-    private final float _flyCourse;
+    @Getter
+    private final FlyType flyType;
 
-    private final boolean _isDebuff;
+    @Getter
+    private final int flyRadius;
 
-    private final String _attribute;
+    @Getter
+    private final float flyCourse;
 
-    private final boolean _ignoreShield;
+    @Getter
+    private final boolean debuff;
 
-    private final boolean _isSuicideAttack;
-    private final boolean _canBeDispeled;
+    @Getter
+    private final String attributeName;
 
-    private final boolean _isClanSkill;
-    private final boolean _excludedFromCheck;
-    private final boolean _simultaneousCast;
+    private final boolean ignoreShield;
 
-    private final String _icon;
+    @Getter
+    private final boolean suicideAttack;
 
-    private volatile Byte[] _effectTypes;
+    private final boolean canBeDispeled;
+
+    @Getter
+    private final boolean clanSkill;
+
+    @Getter
+    private final boolean excludedFromCheck;
+
+    @Getter
+    private final boolean simultaneousCast;
+
+    @Getter
+    private final String icon;
+
+    private volatile Byte[] effectTypes;
 
     // Channeling data
-    private final int _channelingSkillId;
-    private final int _channelingTickInitialDelay;
-    private final int _channelingTickInterval;
+    @Getter
+    private final int channelingSkillId;
 
-    private final boolean _isPvPOnly;
+    @Getter
+    private final int channelingTickInitialDelay;
+
+    @Getter
+    private final int channelingTickInterval;
+
+    @Getter
+    private final boolean pvPOnly;
 
     public Skill(StatSet set) {
-        _id = set.getInt("skill_id");
-        _level = set.getInt("level");
-        _displayId = set.getInt("displayId", _id);
-        _displayLevel = set.getInt("displayLevel", _level);
-        _name = set.getString("name", "");
-        _operateType = set.getEnum("operateType", SkillOperateType.class);
-        _magic = set.getInt("isMagic", 0);
-        _traitType = set.getEnum("trait", TraitType.class, TraitType.NONE);
-        _staticReuse = set.getBoolean("staticReuse", false);
-        _mpConsume = set.getInt("mpConsume", 0);
-        _mpInitialConsume = set.getInt("mpInitialConsume", 0);
-        _mpPerChanneling = set.getInt("mpPerChanneling", _mpConsume);
-        _hpConsume = set.getInt("hpConsume", 0);
-        _itemConsumeCount = set.getInt("itemConsumeCount", 0);
-        _itemConsumeId = set.getInt("itemConsumeId", 0);
-        _castRange = set.getInt("castRange", -1);
-        _effectRange = set.getInt("effectRange", -1);
-        _abnormalLevel = set.getInt("abnormalLevel", 0);
-        _abnormalType = set.getEnum("abnormalType", AbnormalType.class, AbnormalType.NONE);
+        id = set.getInt("skill_id");
+        level = set.getInt("level");
+        displayId = set.getInt("displayId", id);
+        displayLevel = set.getInt("displayLevel", level);
+        name = set.getString("name", "");
+        operateType = set.getEnum("operateType", SkillOperateType.class);
+        magic = set.getInt("isMagic", 0);
+        traitType = set.getEnum("trait", TraitType.class, TraitType.NONE);
+        staticReuse = set.getBoolean("staticReuse", false);
+        mpConsume = set.getInt("mpConsume", 0);
+        mpInitialConsume = set.getInt("mpInitialConsume", 0);
+        mpPerChanneling = set.getInt("mpPerChanneling", mpConsume);
+        hpConsume = set.getInt("hpConsume", 0);
+        itemConsumeCount = set.getInt("itemConsumeCount", 0);
+        itemConsumeId = set.getInt("itemConsumeId", 0);
+        castRange = set.getInt("castRange", -1);
+        effectRange = set.getInt("effectRange", -1);
+        abnormalLevel = set.getInt("abnormalLevel", 0);
+        abnormalType = set.getEnum("abnormalType", AbnormalType.class, AbnormalType.NONE);
         int abnormalTime = set.getInt("abnormalTime", 0);
         if (PlayerConfig.ENABLE_MODIFY_SKILL_DURATION
-                && PlayerConfig.SKILL_DURATION_LIST.containsKey(_id)
-                && (_operateType != SkillOperateType.T)) {
-            if ((_level < 100) || (_level > 140)) {
-                abnormalTime = PlayerConfig.SKILL_DURATION_LIST.get(_id);
-            } else if ((_level >= 100) && (_level < 140)) {
-                abnormalTime += PlayerConfig.SKILL_DURATION_LIST.get(_id);
+                && PlayerConfig.SKILL_DURATION_LIST.containsKey(id)
+                && (operateType != SkillOperateType.T)) {
+            if ((level < 100) || (level > 140)) {
+                abnormalTime = PlayerConfig.SKILL_DURATION_LIST.get(id);
+            } else if ((level >= 100) && (level < 140)) {
+                abnormalTime += PlayerConfig.SKILL_DURATION_LIST.get(id);
             }
         }
 
-        _abnormalTime = abnormalTime;
-        _isAbnormalInstant = set.getBoolean("abnormalInstant", false);
+        this.abnormalTime = abnormalTime;
+        abnormalInstant = set.getBoolean("abnormalInstant", false);
         parseAbnormalVisualEffect(set.getString("abnormalVisualEffect", null));
-        _attribute = set.getString("attribute", "");
-        _stayAfterDeath = set.getBoolean("stayAfterDeath", false);
-        _stayOnSubclassChange = set.getBoolean("stayOnSubclassChange", true);
-        _hitTime = set.getInt("hitTime", 0);
-        _coolTime = set.getInt("coolTime", 0);
-        _isDebuff = set.getBoolean("isDebuff", false);
-        _isRecoveryHerb = set.getBoolean("isRecoveryHerb", false);
-        _feed = set.getInt("feed", 0);
-        _reuseHashCode = SkillData.getSkillHashCode(_id, _level);
-        if (PlayerConfig.ENABLE_MODIFY_SKILL_REUSE && PlayerConfig.SKILL_REUSE_LIST.containsKey(_id)) {
-            _reuseDelay = PlayerConfig.SKILL_REUSE_LIST.get(_id);
+        attributeName = set.getString("attribute", "");
+        stayAfterDeath = set.getBoolean("stayAfterDeath", false);
+        stayOnSubclassChange = set.getBoolean("stayOnSubclassChange", true);
+        hitTime = set.getInt("hitTime", 0);
+        coolTime = set.getInt("coolTime", 0);
+        debuff = set.getBoolean("isDebuff", false);
+        recoveryHerb = set.getBoolean("isRecoveryHerb", false);
+        feed = set.getInt("feed", 0);
+        reuseHashCode = SkillData.getSkillHashCode(id, level);
+        if (PlayerConfig.ENABLE_MODIFY_SKILL_REUSE && PlayerConfig.SKILL_REUSE_LIST.containsKey(id)) {
+            reuseDelay = PlayerConfig.SKILL_REUSE_LIST.get(id);
         } else {
-            _reuseDelay = set.getInt("reuseDelay", 0);
+            reuseDelay = set.getInt("reuseDelay", 0);
         }
 
-        _affectRange = set.getInt("affectRange", 0);
+        affectRange = set.getInt("affectRange", 0);
 
         final String affectLimit = set.getString("affectLimit", null);
         if (affectLimit != null) {
             try {
                 final String[] valuesSplit = affectLimit.split("-");
-                _affectLimit[0] = Integer.parseInt(valuesSplit[0]);
-                _affectLimit[1] = Integer.parseInt(valuesSplit[1]);
+                this.affectLimit[0] = Integer.parseInt(valuesSplit[0]);
+                this.affectLimit[1] = Integer.parseInt(valuesSplit[1]);
             } catch (Exception e) {
-                throw new IllegalArgumentException("SkillId: " + _id + " invalid affectLimit value: " + affectLimit
+                throw new IllegalArgumentException("SkillId: " + id + " invalid affectLimit value: " + affectLimit
                         + ", \"percent-percent\" required");
             }
         }
 
-        _targetType = set.getEnum("targetType", TargetType.class, TargetType.SELF);
-        _power = set.getFloat("power", 0.f);
-        _pvpPower = set.getFloat("pvpPower", (float) _power);
-        _pvePower = set.getFloat("pvePower", (float) _power);
-        _magicLevel = set.getInt("magicLevel", 0);
-        _lvlBonusRate = set.getInt("lvlBonusRate", 0);
-        _activateRate = set.getInt("activateRate", -1);
-        _minChance = set.getInt("minChance", PlayerConfig.MIN_ABNORMAL_STATE_SUCCESS_RATE);
-        _maxChance = set.getInt("maxChance", PlayerConfig.MAX_ABNORMAL_STATE_SUCCESS_RATE);
-        _ignoreShield = set.getBoolean("ignoreShld", false);
-        _nextActionIsAttack = set.getBoolean("nextActionAttack", false);
-        _removedOnAnyActionExceptMove = set.getBoolean("removedOnAnyActionExceptMove", false);
-        _removedOnDamage = set.getBoolean("removedOnDamage", false);
-        _blockedInOlympiad = set.getBoolean("blockedInOlympiad", false);
-        _element = set.getByte("element", (byte) -1);
-        _elementPower = set.getInt("elementPower", 0);
-        _basicProperty = set.getEnum("basicProperty", BaseStat.class, BaseStat.NONE);
-        _overhit = set.getBoolean("overHit", false);
-        _isSuicideAttack = set.getBoolean("isSuicideAttack", false);
-        _minPledgeClass = set.getInt("minPledgeClass", 0);
-        _chargeConsume = set.getInt("chargeConsume", 0);
-        _soulMaxConsume = set.getInt("soulMaxConsumeCount", 0);
-        _blowChance = set.getInt("blowChance", 0);
-        _isHeroSkill = SkillTreeData.getInstance().isHeroSkill(_id, _level);
-        _isGMSkill = SkillTreeData.getInstance().isGMSkill(_id, _level);
-        _isSevenSigns = (_id > 4360) && (_id < 4367);
-        _isClanSkill = SkillTreeData.getInstance().isClanSkill(_id, _level);
-        _baseCritRate = set.getInt("baseCritRate", 0);
-        _directHpDmg = set.getBoolean("dmgDirectlyToHp", false);
-        _isTriggeredSkill = set.getBoolean("isTriggeredSkill", false);
-        _effectPoint = set.getInt("effectPoint", 0);
-        _flyType = set.getEnum("flyType", FlyType.class, null);
-        _flyRadius = set.getInt("flyRadius", 0);
-        _flyCourse = set.getFloat("flyCourse", 0);
-        _canBeDispeled = set.getBoolean("canBeDispeled", true);
-        _excludedFromCheck = set.getBoolean("excludedFromCheck", false);
-        _simultaneousCast = set.getBoolean("simultaneousCast", false);
-        _icon = set.getString("icon", "icon.skill0000");
-        _channelingSkillId = set.getInt("channelingSkillId", 0);
-        _channelingTickInterval = set.getInt("channelingTickInterval", 2) * 1000;
-        _channelingTickInitialDelay = set.getInt("channelingTickInitialDelay", _channelingTickInterval / 1000) * 1000;
-        _isPvPOnly = set.getBoolean("isPvPOnly", false);
-    }
-
-    public TraitType getTraitType() {
-        return _traitType;
-    }
-
-    public byte getElement() {
-        return _element;
-    }
-
-    public int getElementPower() {
-        return _elementPower;
-    }
-
-    /**
-     * Return the target type of the skill : SELF, PARTY, CLAN, PET...
-     * @return
-     */
-    public TargetType getTargetType() {
-        return _targetType;
+        targetType = set.getEnum("targetType", TargetType.class, TargetType.SELF);
+        power = set.getFloat("power", 0.f);
+        pvpPower = set.getFloat("pvpPower", (float) power);
+        pvePower = set.getFloat("pvePower", (float) power);
+        magicLevel = set.getInt("magicLevel", 0);
+        lvlBonusRate = set.getInt("lvlBonusRate", 0);
+        activateRate = set.getInt("activateRate", -1);
+        minChance = set.getInt("minChance", PlayerConfig.MIN_ABNORMAL_STATE_SUCCESS_RATE);
+        maxChance = set.getInt("maxChance", PlayerConfig.MAX_ABNORMAL_STATE_SUCCESS_RATE);
+        ignoreShield = set.getBoolean("ignoreShld", false);
+        nextActionIsAttack = set.getBoolean("nextActionAttack", false);
+        removedOnAnyActionExceptMove = set.getBoolean("removedOnAnyActionExceptMove", false);
+        removedOnDamage = set.getBoolean("removedOnDamage", false);
+        blockedInOlympiad = set.getBoolean("blockedInOlympiad", false);
+        element = set.getByte("element", (byte) -1);
+        elementPower = set.getInt("elementPower", 0);
+        basicProperty = set.getEnum("basicProperty", BaseStat.class, BaseStat.NONE);
+        overhit = set.getBoolean("overHit", false);
+        suicideAttack = set.getBoolean("isSuicideAttack", false);
+        minPledgeClass = set.getInt("minPledgeClass", 0);
+        chargeConsumeCount = set.getInt("chargeConsume", 0);
+        maxSoulConsumeCount = set.getInt("soulMaxConsumeCount", 0);
+        blowChance = set.getInt("blowChance", 0);
+        heroSkill = SkillTreeData.getInstance().isHeroSkill(id, level);
+        gmSkill = SkillTreeData.getInstance().isGMSkill(id, level);
+        sevenSigns = (id > 4360) && (id < 4367);
+        clanSkill = SkillTreeData.getInstance().isClanSkill(id, level);
+        baseCritRate = set.getInt("baseCritRate", 0);
+        dmgDirectlyToHP = set.getBoolean("dmgDirectlyToHp", false);
+        triggeredSkill = set.getBoolean("isTriggeredSkill", false);
+        effectPoint = set.getInt("effectPoint", 0);
+        flyType = set.getEnum("flyType", FlyType.class, null);
+        flyRadius = set.getInt("flyRadius", 0);
+        flyCourse = set.getFloat("flyCourse", 0);
+        canBeDispeled = set.getBoolean("canBeDispeled", true);
+        excludedFromCheck = set.getBoolean("excludedFromCheck", false);
+        simultaneousCast = set.getBoolean("simultaneousCast", false);
+        icon = set.getString("icon", "icon.skill0000");
+        channelingSkillId = set.getInt("channelingSkillId", 0);
+        channelingTickInterval = set.getInt("channelingTickInterval", 2) * 1000;
+        channelingTickInitialDelay = set.getInt("channelingTickInitialDelay", channelingTickInterval / 1000) * 1000;
+        pvPOnly = set.getBoolean("isPvPOnly", false);
     }
 
     public boolean isAOE() {
-        switch (_targetType) {
+        switch (targetType) {
             case AREA:
             case AURA:
             case BEHIND_AREA:
@@ -368,14 +441,6 @@ public class Skill {
                 EffectType.HP_DRAIN,
                 EffectType.PHYSICAL_ATTACK,
                 EffectType.PHYSICAL_ATTACK_HP_LINK);
-    }
-
-    public boolean isOverhit() {
-        return _overhit;
-    }
-
-    public boolean isSuicideAttack() {
-        return _isSuicideAttack;
     }
 
     /**
@@ -402,46 +467,8 @@ public class Skill {
         return getPower(isPvP, isPvE);
     }
 
-    public double getPower() {
-        return _power;
-    }
-
     public double getPower(boolean isPvP, boolean isPvE) {
-        return isPvE ? _pvePower : isPvP ? _pvpPower : _power;
-    }
-
-    /**
-     * Verify if this skill is abnormal instant.<br>
-     * Herb buff skills yield {@code true} for this check.
-     * @return {@code true} if the skill is abnormal instant, {@code false} otherwise
-     */
-    public boolean isAbnormalInstant() {
-        return _isAbnormalInstant;
-    }
-
-    /**
-     * Gets the skill abnormal type.
-     * @return the abnormal type
-     */
-    public AbnormalType getAbnormalType() {
-        return _abnormalType;
-    }
-
-    /**
-     * Gets the skill abnormal level.
-     * @return the skill abnormal level
-     */
-    public int getAbnormalLevel() {
-        return _abnormalLevel;
-    }
-
-    /**
-     * Gets the skill abnormal time.<br>
-     * Is the base to calculate the duration of the continuous effects of this skill.
-     * @return the abnormal time
-     */
-    public int getAbnormalTime() {
-        return _abnormalTime;
+        return isPvE ? pvePower : isPvP ? pvpPower : power;
     }
 
     /**
@@ -449,7 +476,7 @@ public class Skill {
      * @return the abnormal visual effect
      */
     public AbnormalVisualEffect[] getAbnormalVisualEffects() {
-        return _abnormalVisualEffects;
+        return abnormalVisualEffects;
     }
 
     /**
@@ -457,7 +484,7 @@ public class Skill {
      * @return {@code true} if the skill has abnormal visual effects, {@code false} otherwise
      */
     public boolean hasAbnormalVisualEffects() {
-        return (_abnormalVisualEffects != null) && (_abnormalVisualEffects.length > 0);
+        return (abnormalVisualEffects != null) && (abnormalVisualEffects.length > 0);
     }
 
     /**
@@ -465,7 +492,7 @@ public class Skill {
      * @return the abnormal visual effect
      */
     public AbnormalVisualEffect[] getAbnormalVisualEffectsSpecial() {
-        return _abnormalVisualEffectsSpecial;
+        return abnormalVisualEffectsSpecial;
     }
 
     /**
@@ -473,7 +500,7 @@ public class Skill {
      * @return {@code true} if the skill has special abnormal visual effects, {@code false} otherwise
      */
     public boolean hasAbnormalVisualEffectsSpecial() {
-        return (_abnormalVisualEffectsSpecial != null) && (_abnormalVisualEffectsSpecial.length > 0);
+        return (abnormalVisualEffectsSpecial != null) && (abnormalVisualEffectsSpecial.length > 0);
     }
 
     /**
@@ -481,7 +508,7 @@ public class Skill {
      * @return the abnormal visual effect
      */
     public AbnormalVisualEffect[] getAbnormalVisualEffectsEvent() {
-        return _abnormalVisualEffectsEvent;
+        return abnormalVisualEffectsEvent;
     }
 
     /**
@@ -489,69 +516,7 @@ public class Skill {
      * @return {@code true} if the skill has event abnormal visual effects, {@code false} otherwise
      */
     public boolean hasAbnormalVisualEffectsEvent() {
-        return (_abnormalVisualEffectsEvent != null) && (_abnormalVisualEffectsEvent.length > 0);
-    }
-
-    /**
-     * Gets the skill magic level.
-     * @return the skill magic level
-     */
-    public int getMagicLevel() {
-        return _magicLevel;
-    }
-
-    public int getLvlBonusRate() {
-        return _lvlBonusRate;
-    }
-
-    public int getActivateRate() {
-        return _activateRate;
-    }
-
-    /**
-     * Return custom minimum skill/effect chance.
-     * @return
-     */
-    public int getMinChance() {
-        return _minChance;
-    }
-
-    /**
-     * Return custom maximum skill/effect chance.
-     * @return
-     */
-    public int getMaxChance() {
-        return _maxChance;
-    }
-
-    /**
-     * Return true if skill effects should be removed on any action except movement
-     * @return
-     */
-    public boolean isRemovedOnAnyActionExceptMove() {
-        return _removedOnAnyActionExceptMove;
-    }
-
-    /**
-     * @return {@code true} if skill effects should be removed on damage
-     */
-    public boolean isRemovedOnDamage() {
-        return _removedOnDamage;
-    }
-
-    /**
-     * @return {@code true} if skill can not be used in olympiad.
-     */
-    public boolean isBlockedInOlympiad() {
-        return _blockedInOlympiad;
-    }
-
-    /**
-     * Return the additional effect Id.
-     * @return
-     */
-    public int getChannelingSkillId() {
-        return _channelingSkillId;
+        return (abnormalVisualEffectsEvent != null) && (abnormalVisualEffectsEvent.length > 0);
     }
 
     /**
@@ -559,211 +524,64 @@ public class Skill {
      * @return
      */
     public boolean nextActionIsAttack() {
-        return _nextActionIsAttack;
-    }
-
-    /**
-     * @return Returns the castRange.
-     */
-    public int getCastRange() {
-        return _castRange;
-    }
-
-    /**
-     * @return Returns the effectRange.
-     */
-    public int getEffectRange() {
-        return _effectRange;
-    }
-
-    /**
-     * @return Returns the hpConsume.
-     */
-    public int getHpConsume() {
-        return _hpConsume;
-    }
-
-    /**
-     * Gets the skill ID.
-     * @return the skill ID
-     */
-    public int getId() {
-        return _id;
-    }
-
-    /**
-     * Verify if this skill is a debuff.
-     * @return {@code true} if this skill is a debuff, {@code false} otherwise
-     */
-    public boolean isDebuff() {
-        return _isDebuff;
-    }
-
-    /**
-     * Verify if this skill is coming from Recovery Herb.
-     * @return {@code true} if this skill is a recover herb, {@code false} otherwise
-     */
-    public boolean isRecoveryHerb() {
-        return _isRecoveryHerb;
-    }
-
-    public int getDisplayId() {
-        return _displayId;
-    }
-
-    public int getDisplayLevel() {
-        return _displayLevel;
-    }
-
-    /**
-     * Return skill basicProperty base stat (STR, INT ...).
-     * @return
-     */
-    public BaseStat getBasicProperty() {
-        return _basicProperty;
-    }
-
-    /**
-     * @return Returns the how much items will be consumed.
-     */
-    public int getItemConsumeCount() {
-        return _itemConsumeCount;
-    }
-
-    /**
-     * @return Returns the ID of item for consume.
-     */
-    public int getItemConsumeId() {
-        return _itemConsumeId;
-    }
-
-    /**
-     * @return Returns the level.
-     */
-    public int getLevel() {
-        return _level;
+        return nextActionIsAttack;
     }
 
     /**
      * @return Returns true to set physical skills.
      */
     public boolean isPhysical() {
-        return _magic == 0;
+        return magic == 0;
     }
 
     /**
      * @return Returns true to set magic skills.
      */
     public boolean isMagic() {
-        return _magic == 1;
+        return magic == 1;
     }
 
     /**
      * @return Returns true to set static skills.
      */
     public boolean isStatic() {
-        return _magic == 2;
+        return magic == 2;
     }
 
     /**
      * @return Returns true to set dance skills.
      */
     public boolean isDance() {
-        return _magic == 3;
-    }
-
-    /**
-     * @return Returns true to set static reuse.
-     */
-    public boolean isStaticReuse() {
-        return _staticReuse;
-    }
-
-    /**
-     * @return Returns the mpConsume.
-     */
-    public int getMpConsume() {
-        return _mpConsume;
-    }
-
-    /**
-     * @return Returns the mpInitialConsume.
-     */
-    public int getMpInitialConsume() {
-        return _mpInitialConsume;
-    }
-
-    /**
-     * @return Mana consumption per channeling tick.
-     */
-    public int getMpPerChanneling() {
-        return _mpPerChanneling;
-    }
-
-    /**
-     * @return the skill name
-     */
-    public String getName() {
-        return _name;
-    }
-
-    /**
-     * @return the reuse delay
-     */
-    public int getReuseDelay() {
-        return _reuseDelay;
-    }
-
-    public int getReuseHashCode() {
-        return _reuseHashCode;
-    }
-
-    public int getHitTime() {
-        return _hitTime;
-    }
-
-    /**
-     * @return the cool time
-     */
-    public int getCoolTime() {
-        return _coolTime;
-    }
-
-    public int getAffectRange() {
-        return _affectRange;
+        return magic == 3;
     }
 
     public int getAffectLimit() {
-        return _affectLimit[0]
-                + (_affectLimit[1] > 0 ? ThreadLocalRandom.current().nextInt(_affectLimit[1]) : 0);
+        return affectLimit[0]
+                + (affectLimit[1] > 0 ? ThreadLocalRandom.current().nextInt(affectLimit[1]) : 0);
     }
 
     public boolean isActive() {
-        return (_operateType != null) && _operateType.isActive();
+        return (operateType != null) && operateType.isActive();
     }
 
     public boolean isPassive() {
-        return (_operateType != null) && _operateType.isPassive();
+        return (operateType != null) && operateType.isPassive();
     }
 
     public boolean isToggle() {
-        return (_operateType != null) && _operateType.isToggle();
+        return (operateType != null) && operateType.isToggle();
     }
 
     public boolean isContinuous() {
-        return ((_operateType != null) && _operateType.isContinuous()) || isSelfContinuous();
+        return ((operateType != null) && operateType.isContinuous()) || isSelfContinuous();
     }
 
     public boolean isSelfContinuous() {
-        return (_operateType != null) && _operateType.isSelfContinuous();
+        return (operateType != null) && operateType.isSelfContinuous();
     }
 
     public boolean isChanneling() {
-        return (_operateType != null) && _operateType.isChanneling();
-    }
-
-    public boolean isTriggeredSkill() {
-        return _isTriggeredSkill;
+        return (operateType != null) && operateType.isChanneling();
     }
 
     /**
@@ -771,11 +589,7 @@ public class Skill {
      * @return {@code true} if the skill is a transformation, {@code false} otherwise
      */
     public boolean isTransformation() {
-        return _abnormalType == AbnormalType.TRANSFORM;
-    }
-
-    public int getEffectPoint() {
-        return _effectPoint;
+        return abnormalType == AbnormalType.TRANSFORM;
     }
 
     public boolean useSoulShot() {
@@ -783,27 +597,19 @@ public class Skill {
     }
 
     public boolean useSpiritShot() {
-        return _magic == 1;
+        return magic == 1;
     }
 
     public boolean useFishShot() {
         return hasEffectType(EffectType.FISHING);
     }
 
-    public int getMinPledgeClass() {
-        return _minPledgeClass;
-    }
-
-    public boolean isHeroSkill() {
-        return _isHeroSkill;
-    }
-
     public boolean isGMSkill() {
-        return _isGMSkill;
+        return gmSkill;
     }
 
     public boolean is7Signs() {
-        return _isSevenSigns;
+        return sevenSigns;
     }
 
     /**
@@ -811,47 +617,15 @@ public class Skill {
      * @return {@code true} if this is a healing potion skill, {@code false} otherwise
      */
     public boolean isHealingPotionSkill() {
-        return _abnormalType == AbnormalType.HP_RECOVER;
-    }
-
-    public int getChargeConsumeCount() {
-        return _chargeConsume;
-    }
-
-    public int getMaxSoulConsumeCount() {
-        return _soulMaxConsume;
-    }
-
-    public int getBaseCritRate() {
-        return _baseCritRate;
+        return abnormalType == AbnormalType.HP_RECOVER;
     }
 
     public boolean getDmgDirectlyToHP() {
-        return _directHpDmg;
-    }
-
-    public FlyType getFlyType() {
-        return _flyType;
-    }
-
-    public int getFlyRadius() {
-        return _flyRadius;
-    }
-
-    public float getFlyCourse() {
-        return _flyCourse;
-    }
-
-    public boolean isStayAfterDeath() {
-        return _stayAfterDeath;
-    }
-
-    public boolean isStayOnSubclassChange() {
-        return _stayOnSubclassChange;
+        return dmgDirectlyToHP;
     }
 
     public boolean hasNegativeEffect() {
-        return (_effectPoint < 0) && (_targetType != TargetType.SELF);
+        return (effectPoint < 0) && (targetType != TargetType.SELF);
     }
 
     public boolean checkCondition(Creature creature, WorldObject object, boolean itemOrWeapon) {
@@ -862,14 +636,14 @@ public class Skill {
         if (creature.isPlayer()
                 && creature.asPlayer().isMounted()
                 && hasNegativeEffect()
-                && !MountEnabledSkillList.contains(_id)) {
+                && !MountEnabledSkillList.contains(id)) {
             final SystemMessage sm = new SystemMessage(SystemMessageId.S1_CANNOT_BE_USED_DUE_TO_UNSUITABLE_TERMS);
-            sm.addSkillName(_id);
+            sm.addSkillName(id);
             creature.sendPacket(sm);
             return false;
         }
 
-        final List<Condition> preCondition = itemOrWeapon ? _itemPreCondition : _preCondition;
+        final List<Condition> preCondition = itemOrWeapon ? itemPreCondition : this.preCondition;
         if ((preCondition == null) || preCondition.isEmpty()) {
             return true;
         }
@@ -882,7 +656,7 @@ public class Skill {
                 if (msgId != 0) {
                     final SystemMessage sm = new SystemMessage(msgId);
                     if (cond.isAddName()) {
-                        sm.addSkillName(_id);
+                        sm.addSkillName(id);
                     }
 
                     creature.sendPacket(sm);
@@ -950,7 +724,7 @@ public class Skill {
 
                 return result;
             } catch (Exception e) {
-                LOGGER.log(Level.WARNING, "Exception in Skill.getTargetList(): " + e.getMessage(), e);
+                log.warn("Exception in Skill.getTargetList(): {}", e.getMessage(), e);
             }
         }
 
@@ -1101,7 +875,7 @@ public class Skill {
     }
 
     public List<AbstractFunction> getStatFuncs(AbstractEffect effect, Creature creature) {
-        if ((_funcTemplates == null) || (creature == null)) {
+        if ((funcTemplates == null) || (creature == null)) {
             return Collections.<AbstractFunction>emptyList();
         }
 
@@ -1109,8 +883,8 @@ public class Skill {
             return Collections.<AbstractFunction>emptyList();
         }
 
-        final List<AbstractFunction> funcs = new ArrayList<>(_funcTemplates.size());
-        for (FuncTemplate t : _funcTemplates) {
+        final List<AbstractFunction> funcs = new ArrayList<>(funcTemplates.size());
+        for (FuncTemplate t : funcTemplates) {
             final AbstractFunction f = t.getFunc(creature, null, this, this); // skill is owner
             if (f != null) {
                 funcs.add(f);
@@ -1126,7 +900,7 @@ public class Skill {
      * @return the list of effects for the give scope
      */
     public List<AbstractEffect> getEffects(EffectScope effectScope) {
-        return _effectLists.get(effectScope);
+        return effectLists.get(effectScope);
     }
 
     /**
@@ -1135,7 +909,7 @@ public class Skill {
      * @return {@code true} if this skill has effects for the given scope, {@code false} otherwise
      */
     public boolean hasEffects(EffectScope effectScope) {
-        final List<AbstractEffect> effects = _effectLists.get(effectScope);
+        final List<AbstractEffect> effects = effectLists.get(effectScope);
         return (effects != null) && !effects.isEmpty();
     }
 
@@ -1211,13 +985,13 @@ public class Skill {
             return;
         }
 
-        if (effected.isInvulAgainst(_id, _level)) {
+        if (effected.isInvulAgainst(id, level)) {
             return;
         }
 
         boolean addContinuousEffects = !passive
-                && (_operateType.isToggle()
-                        || (_operateType.isContinuous() && Formulas.calcEffectSuccess(effector, effected, this)));
+                && (operateType.isToggle()
+                        || (operateType.isContinuous() && Formulas.calcEffectSuccess(effector, effected, this)));
         if (!self && !passive) {
             final BuffInfo info = new BuffInfo(effector, effected, this);
             if (addContinuousEffects && (abnormalTime > 0)) {
@@ -1239,7 +1013,7 @@ public class Skill {
             // if (effected.isPlayer())
             // {
             // final Player player = effected.asPlayer();
-            // if (player.hasServitor() && (_abnormalType != AbnormalType.TRANSFORM) && ((addContinuousEffects &&
+            // if (player.hasServitor() && (abnormalType != AbnormalType.TRANSFORM) && ((addContinuousEffects &&
             // isContinuous() && !_isDebuff) || _isRecoveryHerb))
             // {
             // applyEffects(effector, player.getSummon(), _isRecoveryHerb, 0);
@@ -1249,8 +1023,8 @@ public class Skill {
 
         if (self) {
             addContinuousEffects = !passive
-                    && (_operateType.isToggle()
-                            || ((_operateType.isContinuous() || _operateType.isSelfContinuous())
+                    && (operateType.isToggle()
+                            || ((operateType.isContinuous() || operateType.isSelfContinuous())
                                     && Formulas.calcEffectSuccess(effector, effector, this)));
 
             final BuffInfo info = new BuffInfo(effector, effector, this);
@@ -1273,7 +1047,7 @@ public class Skill {
             // if (effectedCreature.isPlayer())
             // {
             // final Player player = effectedCreature.asPlayer();
-            // if (player.hasServitor() && isContinuous() && !_isDebuff && (getId() !=
+            // if (player.hasServitor() && isContinuous() && !isDebuff && (getId() !=
             // CommonSkill.SERVITOR_SHARE.getId()))
             // {
             // applyEffects(effector, player.getSummon(), false, 0);
@@ -1335,8 +1109,8 @@ public class Skill {
 
         // Self Effect
         if (hasEffects(EffectScope.SELF)) {
-            if (caster.isAffectedBySkill(_id)) {
-                caster.stopSkillEffects(SkillFinishType.REMOVED, _id);
+            if (caster.isAffectedBySkill(id)) {
+                caster.stopSkillEffects(SkillFinishType.REMOVED, id);
             }
 
             applyEffects(caster, caster, true, false, true, 0);
@@ -1354,17 +1128,17 @@ public class Skill {
             }
         }
 
-        if (_isSuicideAttack) {
+        if (suicideAttack) {
             caster.doDie(caster);
         }
     }
 
     public void attach(FuncTemplate f) {
-        if (_funcTemplates == null) {
-            _funcTemplates = new ArrayList<>(1);
+        if (funcTemplates == null) {
+            funcTemplates = new ArrayList<>(1);
         }
 
-        _funcTemplates.add(f);
+        funcTemplates.add(f);
     }
 
     /**
@@ -1373,10 +1147,10 @@ public class Skill {
      * @param effect the effect to add
      */
     public void addEffect(EffectScope effectScope, AbstractEffect effect) {
-        List<AbstractEffect> effects = _effectLists.get(effectScope);
+        List<AbstractEffect> effects = effectLists.get(effectScope);
         if (effects == null) {
             effects = new ArrayList<>(1);
-            _effectLists.put(effectScope, effects);
+            effectLists.put(effectScope, effects);
         }
 
         effects.add(effect);
@@ -1384,61 +1158,31 @@ public class Skill {
 
     public void attach(Condition c, boolean itemOrWeapon) {
         if (itemOrWeapon) {
-            if (_itemPreCondition == null) {
-                _itemPreCondition = new ArrayList<>();
+            if (itemPreCondition == null) {
+                itemPreCondition = new ArrayList<>();
             }
 
-            _itemPreCondition.add(c);
+            itemPreCondition.add(c);
         } else {
-            if (_preCondition == null) {
-                _preCondition = new ArrayList<>();
+            if (preCondition == null) {
+                preCondition = new ArrayList<>();
             }
 
-            _preCondition.add(c);
+            preCondition.add(c);
         }
     }
 
     @Override
     public String toString() {
-        return "Skill " + _name + "(" + _id + "," + _level + ")";
-    }
-
-    /**
-     * @return pet food
-     */
-    public int getFeed() {
-        return _feed;
-    }
-
-    /**
-     * used for tracking item id in case that item consume cannot be used
-     * @return reference item id
-     */
-    public int getReferenceItemId() {
-        return _refId;
-    }
-
-    public void setReferenceItemId(int value) {
-        _refId = value;
-    }
-
-    public String getAttributeName() {
-        return _attribute;
-    }
-
-    /**
-     * @return the _blowChance
-     */
-    public int getBlowChance() {
-        return _blowChance;
+        return "Skill " + name + "(" + id + "," + level + ")";
     }
 
     public boolean ignoreShield() {
-        return _ignoreShield;
+        return ignoreShield;
     }
 
     public boolean canBeDispeled() {
-        return _canBeDispeled;
+        return canBeDispeled;
     }
 
     /**
@@ -1448,24 +1192,12 @@ public class Skill {
     public boolean canBeStolen() {
         return !isPassive()
                 && !isToggle()
-                && !_isDebuff
-                && !_isHeroSkill
-                && !_isGMSkill
+                && !debuff
+                && !heroSkill
+                && !gmSkill
                 && !(isStatic() && (getId() != CommonSkill.CARAVANS_SECRET_MEDICINE.getId()))
-                && _canBeDispeled
+                && canBeDispeled
                 && (getId() != CommonSkill.SERVITOR_SHARE.getId());
-    }
-
-    public boolean isClanSkill() {
-        return _isClanSkill;
-    }
-
-    public boolean isExcludedFromCheck() {
-        return _excludedFromCheck;
-    }
-
-    public boolean isSimultaneousCast() {
-        return _simultaneousCast;
     }
 
     /**
@@ -1508,15 +1240,15 @@ public class Skill {
             }
 
             if (avesEvent != null) {
-                _abnormalVisualEffectsEvent = avesEvent.toArray(new AbnormalVisualEffect[0]);
+                abnormalVisualEffectsEvent = avesEvent.toArray(new AbnormalVisualEffect[0]);
             }
 
             if (avesSpecial != null) {
-                _abnormalVisualEffectsSpecial = avesSpecial.toArray(new AbnormalVisualEffect[0]);
+                abnormalVisualEffectsSpecial = avesSpecial.toArray(new AbnormalVisualEffect[0]);
             }
 
             if (aves != null) {
-                _abnormalVisualEffects = aves.toArray(new AbnormalVisualEffect[0]);
+                this.abnormalVisualEffects = aves.toArray(new AbnormalVisualEffect[0]);
             }
         }
     }
@@ -1527,11 +1259,11 @@ public class Skill {
      * @return {@code true} if at least one of specified {@link EffectType} types is present on this skill effects, {@code false} otherwise.
      */
     public boolean hasEffectType(EffectType effectType, EffectType... effectTypes) {
-        if (_effectTypes == null) {
+        if (this.effectTypes == null) {
             synchronized (this) {
-                if (_effectTypes == null) {
+                if (this.effectTypes == null) {
                     final Set<Byte> effectTypesSet = new HashSet<>();
-                    for (List<AbstractEffect> effectList : _effectLists.values()) {
+                    for (List<AbstractEffect> effectList : effectLists.values()) {
                         if (effectList != null) {
                             for (AbstractEffect effect : effectList) {
                                 if (effect == null) {
@@ -1545,40 +1277,21 @@ public class Skill {
 
                     final Byte[] effectTypesArray = effectTypesSet.toArray(new Byte[0]);
                     Arrays.sort(effectTypesArray);
-                    _effectTypes = effectTypesArray;
+                    this.effectTypes = effectTypesArray;
                 }
             }
         }
 
-        if (Arrays.binarySearch(_effectTypes, (byte) effectType.ordinal()) >= 0) {
+        if (Arrays.binarySearch(this.effectTypes, (byte) effectType.ordinal()) >= 0) {
             return true;
         }
 
         for (EffectType type : effectTypes) {
-            if (Arrays.binarySearch(_effectTypes, (byte) type.ordinal()) >= 0) {
+            if (Arrays.binarySearch(this.effectTypes, (byte) type.ordinal()) >= 0) {
                 return true;
             }
         }
 
         return false;
-    }
-
-    /**
-     * @return icon of the current skill.
-     */
-    public String getIcon() {
-        return _icon;
-    }
-
-    public int getChannelingTickInterval() {
-        return _channelingTickInterval;
-    }
-
-    public int getChannelingTickInitialDelay() {
-        return _channelingTickInitialDelay;
-    }
-
-    public boolean isPvPOnly() {
-        return _isPvPOnly;
     }
 }

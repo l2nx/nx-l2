@@ -30,13 +30,13 @@ import app.l2nx.highfive.network.serverpackets.PledgeReceivePowerInfo;
  * @author -Wooden-
  */
 public class RequestPledgeSetMemberPowerGrade extends ClientPacket {
-    private String _member;
-    private int _powerGrade;
+    private String member;
+    private int powerGrade;
 
     @Override
     protected void readImpl() {
-        _member = readString();
-        _powerGrade = readInt();
+        member = readString();
+        powerGrade = readInt();
     }
 
     @Override
@@ -55,7 +55,7 @@ public class RequestPledgeSetMemberPowerGrade extends ClientPacket {
             return;
         }
 
-        final ClanMember member = clan.getClanMember(_member);
+        final ClanMember member = clan.getClanMember(this.member);
         if (member == null) {
             return;
         }
@@ -70,12 +70,12 @@ public class RequestPledgeSetMemberPowerGrade extends ClientPacket {
             return;
         }
 
-        member.setPowerGrade(_powerGrade);
+        member.setPowerGrade(powerGrade);
 
         // An online member keeps the privileges of the old rank until refreshed.
         final Player memberPlayer = member.getPlayer();
         if (memberPlayer != null) {
-            memberPlayer.setClanPrivileges(clan.getRankPrivs(_powerGrade).clone());
+            memberPlayer.setClanPrivileges(clan.getRankPrivs(powerGrade).clone());
             memberPlayer.updateUserInfo();
         }
 

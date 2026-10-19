@@ -40,42 +40,71 @@ import app.l2nx.highfive.network.serverpackets.SystemMessage;
 import app.l2nx.highfive.util.StatSet;
 import java.util.Collections;
 import java.util.List;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 
 /**
  * This class is dedicated to the management of weapons.
  */
+@Slf4j
 public class Weapon extends ItemTemplate {
-    private WeaponType _type;
-    private boolean _isMagicWeapon;
-    private int _soulShotCount;
-    private int _spiritShotCount;
-    private int _mpConsume;
-    private int _baseAttackRange;
-    private int _baseAttackRadius;
-    private int _baseAttackAngle;
+    @Getter
+    private WeaponType itemType;
+
+    @Getter
+    private boolean magicWeapon;
+
+    @Getter
+    private int soulShotCount;
+
+    @Getter
+    private int spiritShotCount;
+
+    @Getter
+    private int mpConsume;
+
+    @Getter
+    private int baseAttackRange;
+
+    @Getter
+    private int baseAttackRadius;
+
+    @Getter
+    private int baseAttackAngle;
     /**
      * Skill that activates when item is enchanted +4 (for duals).
      */
-    private SkillHolder _enchant4Skill = null;
+    private SkillHolder enchant4Skill = null;
 
-    private int _changeWeaponId;
+    @Getter
+    private int changeWeaponId;
 
     // Attached skills for Special Abilities
-    private SkillHolder _skillsOnMagic;
-    private Condition _skillsOnMagicCondition = null;
-    private SkillHolder _skillsOnCrit;
-    private Condition _skillsOnCritCondition = null;
+    private SkillHolder skillsOnMagic;
+    private Condition skillsOnMagicCondition = null;
+    private SkillHolder skillsOnCrit;
+    private Condition skillsOnCritCondition = null;
 
-    private int _reducedSoulshot;
-    private int _reducedSoulshotChance;
+    @Getter
+    private int reducedSoulShot;
 
-    private int _reducedMpConsume;
-    private int _reducedMpConsumeChance;
+    @Getter
+    private int reducedSoulShotChance;
 
-    private boolean _isForceEquip;
-    private boolean _isAttackWeapon;
-    private boolean _useWeaponSkillsOnly;
+    @Getter
+    private int reducedMpConsume;
+
+    @Getter
+    private int reducedMpConsumeChance;
+
+    @Getter
+    private boolean forceEquip;
+
+    @Getter
+    private boolean attackWeapon;
+
+    private boolean useWeaponSkillsOnly;
 
     /**
      * Constructor for Weapon.
@@ -88,33 +117,33 @@ public class Weapon extends ItemTemplate {
     @Override
     public void set(StatSet set) {
         super.set(set);
-        _type = WeaponType.valueOf(set.getString("weapon_type", "none").toUpperCase());
-        _type1 = ItemTemplate.TYPE1_WEAPON_RING_EARRING_NECKLACE;
-        _type2 = ItemTemplate.TYPE2_WEAPON;
-        _isMagicWeapon = set.getBoolean("is_magic_weapon", false);
-        _soulShotCount = set.getInt("soulshots", 0);
-        _spiritShotCount = set.getInt("spiritshots", 0);
-        _mpConsume = set.getInt("mp_consume", 0);
-        _baseAttackRange = set.getInt("attack_range", 40);
+        itemType = WeaponType.valueOf(set.getString("weapon_type", "none").toUpperCase());
+        type1 = ItemTemplate.TYPE1_WEAPON_RING_EARRING_NECKLACE;
+        type2 = ItemTemplate.TYPE2_WEAPON;
+        magicWeapon = set.getBoolean("is_magic_weapon", false);
+        soulShotCount = set.getInt("soulshots", 0);
+        spiritShotCount = set.getInt("spiritshots", 0);
+        mpConsume = set.getInt("mp_consume", 0);
+        baseAttackRange = set.getInt("attack_range", 40);
         final String[] damageRange = set.getString("damage_range", "").split(";"); // 0?;0?;fan sector;base attack angle
         if ((damageRange.length > 1)
                 && StringUtils.isNumeric(damageRange[2])
                 && StringUtils.isNumeric(damageRange[3])) {
-            _baseAttackRadius = Integer.parseInt(damageRange[2]);
-            _baseAttackAngle = Integer.parseInt(damageRange[3]);
+            baseAttackRadius = Integer.parseInt(damageRange[2]);
+            baseAttackAngle = Integer.parseInt(damageRange[3]);
         } else {
-            _baseAttackRadius = 40;
-            _baseAttackAngle = 0;
+            baseAttackRadius = 40;
+            baseAttackAngle = 0;
         }
 
         final String[] reducedSoulshots = set.getString("reduced_soulshot", "").split(",");
-        _reducedSoulshotChance = (reducedSoulshots.length == 2) ? Integer.parseInt(reducedSoulshots[0]) : 0;
-        _reducedSoulshot = (reducedSoulshots.length == 2) ? Integer.parseInt(reducedSoulshots[1]) : 0;
+        reducedSoulShotChance = (reducedSoulshots.length == 2) ? Integer.parseInt(reducedSoulshots[0]) : 0;
+        reducedSoulShot = (reducedSoulshots.length == 2) ? Integer.parseInt(reducedSoulshots[1]) : 0;
 
         final String[] reducedMpConsume =
                 set.getString("reduced_mp_consume", "").split(",");
-        _reducedMpConsumeChance = (reducedMpConsume.length == 2) ? Integer.parseInt(reducedMpConsume[0]) : 0;
-        _reducedMpConsume = (reducedMpConsume.length == 2) ? Integer.parseInt(reducedMpConsume[1]) : 0;
+        reducedMpConsumeChance = (reducedMpConsume.length == 2) ? Integer.parseInt(reducedMpConsume[0]) : 0;
+        this.reducedMpConsume = (reducedMpConsume.length == 2) ? Integer.parseInt(reducedMpConsume[1]) : 0;
 
         String skill = set.getString("enchant4_skill", null);
         if (skill != null) {
@@ -127,11 +156,11 @@ public class Weapon extends ItemTemplate {
                     level = Integer.parseInt(info[1]);
                 } catch (Exception nfe) {
                     // Incorrect syntax, do not add new skill.
-                    LOGGER.info("> Could not parse " + skill + " in weapon enchant skills! item " + this);
+                    log.info("> Could not parse {} in weapon enchant skills! item {}", skill, this);
                 }
 
                 if ((id > 0) && (level > 0)) {
-                    _enchant4Skill = new SkillHolder(id, level);
+                    enchant4Skill = new SkillHolder(id, level);
                 }
             }
         }
@@ -148,12 +177,12 @@ public class Weapon extends ItemTemplate {
                     level = Integer.parseInt(info[1]);
                 } catch (Exception nfe) {
                     // Incorrect syntax, don't add new skill.
-                    LOGGER.info("> Could not parse " + skill + " in weapon onmagic skills! item " + this);
+                    log.info("> Could not parse {} in weapon onmagic skills! item {}", skill, this);
                 }
 
                 if ((id > 0) && (level > 0) && (chance > 0)) {
-                    _skillsOnMagic = new SkillHolder(id, level);
-                    _skillsOnMagicCondition = new ConditionGameChance(chance);
+                    skillsOnMagic = new SkillHolder(id, level);
+                    skillsOnMagicCondition = new ConditionGameChance(chance);
                 }
             }
         }
@@ -170,33 +199,25 @@ public class Weapon extends ItemTemplate {
                     level = Integer.parseInt(info[1]);
                 } catch (Exception nfe) {
                     // Incorrect syntax, don't add new skill.
-                    LOGGER.info("> Could not parse " + skill + " in weapon oncrit skills! item " + this);
+                    log.info("> Could not parse {} in weapon oncrit skills! item {}", skill, this);
                 }
 
                 if ((id > 0) && (level > 0) && (chance > 0)) {
-                    _skillsOnCrit = new SkillHolder(id, level);
-                    _skillsOnCritCondition = new ConditionGameChance(chance);
+                    skillsOnCrit = new SkillHolder(id, level);
+                    skillsOnCritCondition = new ConditionGameChance(chance);
                 }
             }
         }
 
-        _changeWeaponId = set.getInt("change_weaponId", 0);
-        _isForceEquip = set.getBoolean("isForceEquip", false);
-        _isAttackWeapon = set.getBoolean("isAttackWeapon", true);
-        _useWeaponSkillsOnly = set.getBoolean("useWeaponSkillsOnly", false);
+        changeWeaponId = set.getInt("change_weaponId", 0);
+        forceEquip = set.getBoolean("isForceEquip", false);
+        attackWeapon = set.getBoolean("isAttackWeapon", true);
+        useWeaponSkillsOnly = set.getBoolean("useWeaponSkillsOnly", false);
 
         // Check if ranged weapon reuse delay is missing.
-        if ((_reuseDelay == 0) && _type.isRanged()) {
-            _reuseDelay = 1500;
+        if ((reuseDelay == 0) && itemType.isRanged()) {
+            reuseDelay = 1500;
         }
-    }
-
-    /**
-     * @return the type of Weapon
-     */
-    @Override
-    public WeaponType getItemType() {
-        return _type;
     }
 
     /**
@@ -204,7 +225,7 @@ public class Weapon extends ItemTemplate {
      */
     @Override
     public int getItemMask() {
-        return _type.mask();
+        return itemType.mask();
     }
 
     /**
@@ -216,108 +237,18 @@ public class Weapon extends ItemTemplate {
     }
 
     /**
-     * @return {@code true} if the weapon is magic, {@code false} otherwise.
-     */
-    @Override
-    public boolean isMagicWeapon() {
-        return _isMagicWeapon;
-    }
-
-    /**
-     * @return the quantity of SoulShot used.
-     */
-    public int getSoulShotCount() {
-        return _soulShotCount;
-    }
-
-    /**
-     * @return the quantity of SpiritShot used.
-     */
-    public int getSpiritShotCount() {
-        return _spiritShotCount;
-    }
-
-    /**
-     * @return the reduced quantity of SoultShot used.
-     */
-    public int getReducedSoulShot() {
-        return _reducedSoulshot;
-    }
-
-    /**
-     * @return the chance to use Reduced SoultShot.
-     */
-    public int getReducedSoulShotChance() {
-        return _reducedSoulshotChance;
-    }
-
-    /**
-     * @return the MP consumption with the weapon.
-     */
-    public int getMpConsume() {
-        return _mpConsume;
-    }
-
-    public int getBaseAttackRange() {
-        return _baseAttackRange;
-    }
-
-    public int getBaseAttackRadius() {
-        return _baseAttackRadius;
-    }
-
-    public int getBaseAttackAngle() {
-        return _baseAttackAngle;
-    }
-
-    /**
-     * @return the reduced MP consumption with the weapon.
-     */
-    public int getReducedMpConsume() {
-        return _reducedMpConsume;
-    }
-
-    /**
-     * @return the chance to use getReducedMpConsume()
-     */
-    public int getReducedMpConsumeChance() {
-        return _reducedMpConsumeChance;
-    }
-
-    /**
      * @return the skill that player get when has equipped weapon +4 or more (for duals SA).
      */
     @Override
     public Skill getEnchant4Skill() {
-        return _enchant4Skill == null ? null : _enchant4Skill.getSkill();
-    }
-
-    /**
-     * @return the Id in which weapon this weapon can be changed.
-     */
-    public int getChangeWeaponId() {
-        return _changeWeaponId;
-    }
-
-    /**
-     * @return {@code true} if the weapon is force equip, {@code false} otherwise.
-     */
-    public boolean isForceEquip() {
-        return _isForceEquip;
-    }
-
-    /**
-     * @return {@code true} if the weapon is attack weapon, {@code false} otherwise.
-     */
-    public boolean isAttackWeapon() {
-        return _isAttackWeapon;
+        return enchant4Skill == null ? null : enchant4Skill.getSkill();
     }
 
     /**
      * @return {@code true} if the weapon is skills only, {@code false} otherwise.
      */
     public boolean useWeaponSkillsOnly() {
-        return _useWeaponSkillsOnly;
+        return useWeaponSkillsOnly;
     }
 
     /**
@@ -325,12 +256,12 @@ public class Weapon extends ItemTemplate {
      * @param target the Creature pointing out the target
      */
     public void castOnCriticalSkill(Creature caster, Creature target) {
-        if (_skillsOnCrit == null) {
+        if (skillsOnCrit == null) {
             return;
         }
 
-        final Skill onCritSkill = _skillsOnCrit.getSkill();
-        if ((_skillsOnCritCondition != null) && !_skillsOnCritCondition.test(caster, target, onCritSkill)) {
+        final Skill onCritSkill = skillsOnCrit.getSkill();
+        if ((skillsOnCritCondition != null) && !skillsOnCritCondition.test(caster, target, onCritSkill)) {
             // Chance not met
             return;
         }
@@ -349,11 +280,11 @@ public class Weapon extends ItemTemplate {
      * @param trigger the Skill pointing out the skill triggering this action
      */
     public void castOnMagicSkill(Creature caster, Creature target, Skill trigger) {
-        if (_skillsOnMagic == null) {
+        if (skillsOnMagic == null) {
             return;
         }
 
-        final Skill onMagicSkill = _skillsOnMagic.getSkill();
+        final Skill onMagicSkill = skillsOnMagic.getSkill();
 
         // Trigger only if both are good or bad magic.
         if (trigger.hasNegativeEffect() != onMagicSkill.hasNegativeEffect()) {
@@ -373,7 +304,7 @@ public class Weapon extends ItemTemplate {
             return;
         }
 
-        if ((_skillsOnMagicCondition != null) && !_skillsOnMagicCondition.test(caster, target, onMagicSkill)) {
+        if ((skillsOnMagicCondition != null) && !skillsOnMagicCondition.test(caster, target, onMagicSkill)) {
             // Chance not met
             return;
         }
@@ -416,10 +347,10 @@ public class Weapon extends ItemTemplate {
     }
 
     public boolean isBow() {
-        return _type == WeaponType.BOW;
+        return itemType == WeaponType.BOW;
     }
 
     public boolean isCrossBow() {
-        return _type == WeaponType.CROSSBOW;
+        return itemType == WeaponType.CROSSBOW;
     }
 }

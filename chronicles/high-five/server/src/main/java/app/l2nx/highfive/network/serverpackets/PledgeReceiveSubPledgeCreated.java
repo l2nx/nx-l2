@@ -22,41 +22,41 @@ package app.l2nx.highfive.network.serverpackets;
 import app.l2nx.highfive.entity.clan.Clan;
 import app.l2nx.highfive.entity.clan.Clan.SubPledge;
 import app.l2nx.highfive.network.GameClient;
-import app.l2nx.highfive.network.PacketLogger;
 import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.network.buffer.WriteBuffer;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author -Wooden-
  */
+@Slf4j
 public class PledgeReceiveSubPledgeCreated extends ServerPacket {
-    private final SubPledge _subPledge;
-    private final Clan _clan;
+    private final SubPledge subPledge;
+    private final Clan clan;
 
     public PledgeReceiveSubPledgeCreated(SubPledge subPledge, Clan clan) {
-        _subPledge = subPledge;
-        _clan = clan;
+        this.subPledge = subPledge;
+        this.clan = clan;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.PLEDGE_RECEIVE_SUB_PLEDGE_CREATED.writeId(this, buffer);
         buffer.writeInt(1);
-        buffer.writeInt(_subPledge.getId());
-        buffer.writeString(_subPledge.getName());
+        buffer.writeInt(subPledge.getId());
+        buffer.writeString(subPledge.getName());
         buffer.writeString(getLeaderName());
     }
 
     private String getLeaderName() {
-        final int LeaderId = _subPledge.getLeaderId();
-        if ((_subPledge.getId() == Clan.SUBUNIT_ACADEMY) || (LeaderId == 0)) {
+        final int leaderId = subPledge.getLeaderId();
+        if ((subPledge.getId() == Clan.SUBUNIT_ACADEMY) || (leaderId == 0)) {
             return "";
-        } else if (_clan.getClanMember(LeaderId) == null) {
-            PacketLogger.warning("SubPledgeLeader: " + LeaderId + " is missing from clan: " + _clan.getName() + "["
-                    + _clan.getId() + "]");
+        } else if (clan.getClanMember(leaderId) == null) {
+            log.warn("SubPledgeLeader: {} is missing from clan: {}[{}]", leaderId, clan.getName(), clan.getId());
             return "";
         } else {
-            return _clan.getClanMember(LeaderId).getName();
+            return clan.getClanMember(leaderId).getName();
         }
     }
 }

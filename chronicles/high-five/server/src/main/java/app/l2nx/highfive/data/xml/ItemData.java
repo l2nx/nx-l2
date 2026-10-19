@@ -40,24 +40,27 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
-import java.util.logging.Logger;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * This class serves as a container for all item templates in the game.
  */
+@Slf4j
 public class ItemData {
-    private static final Logger LOGGER = Logger.getLogger(ItemData.class.getName());
 
-    private ItemTemplate[] _allTemplates;
-    private final Map<Integer, EtcItem> _etcItems = new HashMap<>();
-    private final Map<Integer, Armor> _armors = new HashMap<>();
-    private final Map<Integer, Weapon> _weapons = new HashMap<>();
-    private final List<File> _itemFiles = new ArrayList<>();
+    @Getter
+    private ItemTemplate[] allItems;
+
+    private final Map<Integer, EtcItem> etcItems = new HashMap<>();
+    private final Map<Integer, Armor> armors = new HashMap<>();
+    private final Map<Integer, Weapon> weapons = new HashMap<>();
+    private final List<File> itemFiles = new ArrayList<>();
 
     protected ItemData() {
-        processDirectory("data/stats/items", _itemFiles);
+        processDirectory("data/stats/items", itemFiles);
         if (GeneralConfig.CUSTOM_ITEMS_LOAD) {
-            processDirectory("data/stats/items/custom", _itemFiles);
+            processDirectory("data/stats/items/custom", itemFiles);
         }
 
         load();
@@ -66,7 +69,7 @@ public class ItemData {
     private void processDirectory(String dirName, List<File> list) {
         final File dir = new File(ServerConfig.DATAPACK_ROOT, dirName);
         if (!dir.exists()) {
-            LOGGER.warning("Directory " + dir.getAbsolutePath() + " does not exist.");
+            log.warn("Directory {} does not exist.", dir.getAbsolutePath());
             return;
         }
 
@@ -83,14 +86,14 @@ public class ItemData {
     private void load() {
         final Collection<ItemTemplate> items = ConcurrentHashMap.newKeySet();
         int highestId = 0;
-        _armors.clear();
-        _etcItems.clear();
-        _weapons.clear();
+        armors.clear();
+        etcItems.clear();
+        weapons.clear();
 
         // If multithreading is enabled, use a thread pool to parse files.
         if (ThreadConfig.THREADS_FOR_LOADING) {
             final Collection<ScheduledFuture<?>> tasks = ConcurrentHashMap.newKeySet();
-            for (File file : _itemFiles) {
+            for (File file : itemFiles) {
                 tasks.add(ThreadPool.schedule(
                         () -> {
                             final DocumentItem document = new DocumentItem(file);
@@ -110,7 +113,7 @@ public class ItemData {
             }
         } else // Parse files sequentially if multithreading is not enabled.
         {
-            for (File file : _itemFiles) {
+            for (File file : itemFiles) {
                 final DocumentItem document = new DocumentItem(file);
                 document.parse();
                 items.addAll(document.getItemList());
@@ -124,36 +127,35 @@ public class ItemData {
             }
 
             if (item instanceof EtcItem) {
-                _etcItems.put(item.getId(), (EtcItem) item);
+                etcItems.put(item.getId(), (EtcItem) item);
             } else if (item instanceof Armor) {
-                _armors.put(item.getId(), (Armor) item);
+                armors.put(item.getId(), (Armor) item);
             } else {
-                _weapons.put(item.getId(), (Weapon) item);
+                weapons.put(item.getId(), (Weapon) item);
             }
         }
 
         // Log the highest item ID and create a fast lookup array based on this value.
-        LOGGER.info(getClass().getSimpleName() + ": Highest item id used: " + highestId);
-        _allTemplates = new ItemTemplate[highestId + 1];
+        log.info("Highest item id used: {}", highestId);
+        allItems = new ItemTemplate[highestId + 1];
 
         // Populate the fast lookup table with items from each category.
-        for (Armor item : _armors.values()) {
-            _allTemplates[item.getId()] = item;
+        for (Armor item : armors.values()) {
+            allItems[item.getId()] = item;
         }
 
-        for (Weapon item : _weapons.values()) {
-            _allTemplates[item.getId()] = item;
+        for (Weapon item : weapons.values()) {
+            allItems[item.getId()] = item;
         }
 
-        for (EtcItem item : _etcItems.values()) {
-            _allTemplates[item.getId()] = item;
+        for (EtcItem item : etcItems.values()) {
+            allItems[item.getId()] = item;
         }
 
-        LOGGER.info(getClass().getSimpleName() + ": Loaded " + _etcItems.size() + " etc items.");
-        LOGGER.info(getClass().getSimpleName() + ": Loaded " + _armors.size() + " armor items.");
-        LOGGER.info(getClass().getSimpleName() + ": Loaded " + _weapons.size() + " weapon items.");
-        LOGGER.info(getClass().getSimpleName() + ": Loaded " + (_etcItems.size() + _armors.size() + _weapons.size())
-                + " items in total.");
+        log.info("Loaded {} etc items.", etcItems.size());
+        log.info("Loaded {} armor items.", armors.size());
+        log.info("Loaded {} weapon items.", weapons.size());
+        log.info("Loaded {} items in total.", (etcItems.size() + armors.size() + weapons.size()));
     }
 
     public void reload() {
@@ -167,11 +169,11 @@ public class ItemData {
      * @return the {@link ItemTemplate} associated with the specified ID, or {@code null} if the ID is out of bounds
      */
     public ItemTemplate getTemplate(int id) {
-        if ((id >= _allTemplates.length) || (id < 0)) {
+        if ((id >= allItems.length) || (id < 0)) {
             return null;
         }
 
-        return _allTemplates[id];
+        return allItems[id];
     }
 
     /**
@@ -179,7 +181,7 @@ public class ItemData {
      * @return a {@link Set} of integers representing the IDs of all armors
      */
     public Set<Integer> getAllArmorsId() {
-        return _armors.keySet();
+        return armors.keySet();
     }
 
     /**
@@ -187,7 +189,7 @@ public class ItemData {
      * @return a {@link Collection} of {@link Armor} objects representing all loaded armor items
      */
     public Collection<Armor> getAllArmors() {
-        return _armors.values();
+        return armors.values();
     }
 
     /**
@@ -195,7 +197,7 @@ public class ItemData {
      * @return a {@link Set} of integers representing the IDs of all weapons
      */
     public Set<Integer> getAllWeaponsId() {
-        return _weapons.keySet();
+        return weapons.keySet();
     }
 
     /**
@@ -203,7 +205,7 @@ public class ItemData {
      * @return a {@link Collection} of {@link Weapon} objects representing all loaded weapon items
      */
     public Collection<Weapon> getAllWeapons() {
-        return _weapons.values();
+        return weapons.values();
     }
 
     /**
@@ -211,7 +213,7 @@ public class ItemData {
      * @return a {@link Set} of integers representing the IDs of all miscellaneous items
      */
     public Set<Integer> getAllEtcItemsId() {
-        return _etcItems.keySet();
+        return etcItems.keySet();
     }
 
     /**
@@ -219,15 +221,7 @@ public class ItemData {
      * @return a {@link Collection} of {@link EtcItem} objects representing all loaded miscellaneous items
      */
     public Collection<EtcItem> getAllEtcItems() {
-        return _etcItems.values();
-    }
-
-    /**
-     * Returns an array of all item templates, indexed by item ID for fast lookup.
-     * @return an array of {@link ItemTemplate} objects, where the index corresponds to the item ID
-     */
-    public ItemTemplate[] getAllItems() {
-        return _allTemplates;
+        return etcItems.values();
     }
 
     /**
@@ -235,7 +229,7 @@ public class ItemData {
      * @return the length of the {@link ItemTemplate} array, representing the maximum item ID + 1
      */
     public int getArraySize() {
-        return _allTemplates.length;
+        return allItems.length;
     }
 
     public static ItemData getInstance() {

@@ -30,19 +30,18 @@ import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.Collection;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class ForumsBBSManager extends BaseBBSManager {
-    private static final Logger LOGGER = Logger.getLogger(ForumsBBSManager.class.getName());
-    private final Collection<Forum> _table;
-    private int _lastid = 1;
+    private final Collection<Forum> table;
+    private int lastid = 1;
 
     /**
      * Instantiates a new forums bbs manager.
      */
     protected ForumsBBSManager() {
-        _table = ConcurrentHashMap.newKeySet();
+        table = ConcurrentHashMap.newKeySet();
         try (Connection con = DatabaseFactory.getConnection();
                 Statement s = con.createStatement();
                 ResultSet rs = s.executeQuery("SELECT forum_id FROM forums WHERE forum_type = 0")) {
@@ -50,8 +49,7 @@ public class ForumsBBSManager extends BaseBBSManager {
                 addForum(new Forum(rs.getInt("forum_id"), null));
             }
         } catch (Exception e) {
-            LOGGER.log(
-                    Level.WARNING, getClass().getSimpleName() + ": Data error on Forum (root): " + e.getMessage(), e);
+            log.warn("Data error on Forum (root): {}", e.getMessage(), e);
         }
     }
 
@@ -59,9 +57,8 @@ public class ForumsBBSManager extends BaseBBSManager {
      * Inits the root.
      */
     public void initRoot() {
-        _table.forEach(Forum::vload);
-        LOGGER.info(
-                getClass().getSimpleName() + ": Loaded " + _table.size() + " forums. Last forum id used: " + _lastid);
+        table.forEach(Forum::vload);
+        log.info("Loaded {} forums. Last forum id used: {}", table.size(), lastid);
     }
 
     /**
@@ -73,10 +70,10 @@ public class ForumsBBSManager extends BaseBBSManager {
             return;
         }
 
-        _table.add(ff);
+        table.add(ff);
 
-        if (ff.getID() > _lastid) {
-            _lastid = ff.getID();
+        if (ff.getID() > lastid) {
+            lastid = ff.getID();
         }
     }
 
@@ -89,7 +86,7 @@ public class ForumsBBSManager extends BaseBBSManager {
      * @return the forum by name
      */
     public Forum getForumByName(String name) {
-        for (Forum forum : _table) {
+        for (Forum forum : table) {
             if (forum.getName().equals(name)) {
                 return forum;
             }
@@ -118,7 +115,7 @@ public class ForumsBBSManager extends BaseBBSManager {
      * @return the a new Id
      */
     public int getANewID() {
-        return ++_lastid;
+        return ++lastid;
     }
 
     /**
@@ -127,7 +124,7 @@ public class ForumsBBSManager extends BaseBBSManager {
      * @return the forum by Id
      */
     public Forum getForumByID(int idf) {
-        for (Forum f : _table) {
+        for (Forum f : table) {
             if (f.getID() == idf) {
                 return f;
             }

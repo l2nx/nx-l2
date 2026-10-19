@@ -25,19 +25,19 @@ package app.l2nx.highfive.network.clientpackets;
  */
 public class MoveWithDelta extends ClientPacket {
     @SuppressWarnings("unused")
-    private int _dx;
+    private int dx;
 
     @SuppressWarnings("unused")
-    private int _dy;
+    private int dy;
 
     @SuppressWarnings("unused")
-    private int _dz;
+    private int dz;
 
     @Override
     protected void readImpl() {
-        _dx = readInt();
-        _dy = readInt();
-        _dz = readInt();
+        dx = readInt();
+        dy = readInt();
+        dz = readInt();
     }
 
     @Override

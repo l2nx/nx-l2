@@ -25,54 +25,54 @@ package app.l2nx.highfive.network.serverpackets;
 import app.l2nx.highfive.network.GameClient;
 import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.network.buffer.WriteBuffer;
+import lombok.Getter;
 
 public class PlaySound extends ServerPacket {
-    private final int _unknown1;
-    private final String _soundFile;
-    private final int _unknown3;
-    private final int _unknown4;
-    private final int _unknown5;
-    private final int _unknown6;
-    private final int _unknown7;
-    private final int _unknown8;
+    private final int unknown1;
+
+    @Getter
+    private final String soundName;
+
+    private final int unknown3;
+    private final int unknown4;
+    private final int unknown5;
+    private final int unknown6;
+    private final int unknown7;
+    private final int unknown8;
 
     public PlaySound(String soundFile) {
-        _unknown1 = 0;
-        _soundFile = soundFile;
-        _unknown3 = 0;
-        _unknown4 = 0;
-        _unknown5 = 0;
-        _unknown6 = 0;
-        _unknown7 = 0;
-        _unknown8 = 0;
+        unknown1 = 0;
+        soundName = soundFile;
+        unknown3 = 0;
+        unknown4 = 0;
+        unknown5 = 0;
+        unknown6 = 0;
+        unknown7 = 0;
+        unknown8 = 0;
     }
 
     public PlaySound(
             int unknown1, String soundFile, int unknown3, int unknown4, int unknown5, int unknown6, int unknown7) {
-        _unknown1 = unknown1;
-        _soundFile = soundFile;
-        _unknown3 = unknown3;
-        _unknown4 = unknown4;
-        _unknown5 = unknown5;
-        _unknown6 = unknown6;
-        _unknown7 = unknown7;
-        _unknown8 = 0;
-    }
-
-    public String getSoundName() {
-        return _soundFile;
+        this.unknown1 = unknown1;
+        soundName = soundFile;
+        this.unknown3 = unknown3;
+        this.unknown4 = unknown4;
+        this.unknown5 = unknown5;
+        this.unknown6 = unknown6;
+        this.unknown7 = unknown7;
+        unknown8 = 0;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.PLAY_SOUND.writeId(this, buffer);
-        buffer.writeInt(_unknown1); // unknown 0 for quest and ship;
-        buffer.writeString(_soundFile);
-        buffer.writeInt(_unknown3); // unknown 0 for quest; 1 for ship;
-        buffer.writeInt(_unknown4); // 0 for quest; objectId of ship
-        buffer.writeInt(_unknown5); // x
-        buffer.writeInt(_unknown6); // y
-        buffer.writeInt(_unknown7); // z
-        buffer.writeInt(_unknown8);
+        buffer.writeInt(unknown1); // unknown 0 for quest and ship;
+        buffer.writeString(soundName);
+        buffer.writeInt(unknown3); // unknown 0 for quest; 1 for ship;
+        buffer.writeInt(unknown4); // 0 for quest; objectId of ship
+        buffer.writeInt(unknown5); // x
+        buffer.writeInt(unknown6); // y
+        buffer.writeInt(unknown7); // z
+        buffer.writeInt(unknown8);
     }
 }

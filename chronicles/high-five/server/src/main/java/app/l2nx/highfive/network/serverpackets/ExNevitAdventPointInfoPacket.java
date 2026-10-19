@@ -27,15 +27,15 @@ import app.l2nx.network.buffer.WriteBuffer;
  * @author mochitto
  */
 public class ExNevitAdventPointInfoPacket extends ServerPacket {
-    private final int _points;
+    private final int points;
 
     public ExNevitAdventPointInfoPacket(int points) {
-        _points = points;
+        this.points = points;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_NAVIT_ADVENT_POINT_INFO.writeId(this, buffer);
-        buffer.writeInt(_points); // 72 = 1%, max 7200 = 100%
+        buffer.writeInt(points); // 72 = 1%, max 7200 = 100%
     }
 }

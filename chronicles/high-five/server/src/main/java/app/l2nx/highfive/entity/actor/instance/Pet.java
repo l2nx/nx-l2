@@ -79,11 +79,11 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class Pet extends Summon {
-    protected static final Logger LOGGER_PET = Logger.getLogger(Pet.class.getName());
 
     private static final String ADD_SKILL_SAVE =
             "INSERT INTO character_pet_skills_save (petObjItemId,skill_id,skill_level,remaining_time,buff_index) VALUES (?,?,?,?,?)";
@@ -91,19 +91,29 @@ public class Pet extends Summon {
             "SELECT petObjItemId,skill_id,skill_level,remaining_time,buff_index FROM character_pet_skills_save WHERE petObjItemId=? ORDER BY buff_index ASC";
     private static final String DELETE_SKILL_SAVE = "DELETE FROM character_pet_skills_save WHERE petObjItemId=?";
 
-    int _curFed;
-    final PetInventory _inventory;
-    private final int _controlObjectId;
-    private boolean _respawned;
-    private final boolean _mountable;
-    private Future<?> _feedTask;
-    private PetData _data;
-    private PetLevelData _leveldata;
+    @Getter
+    int currentFed;
+
+    @Getter
+    final PetInventory inventory;
+
+    @Getter
+    private final int controlObjectId;
+
+    @Getter
+    private boolean respawned;
+
+    @Getter
+    private final boolean mountable;
+
+    private Future<?> feedTask;
+    private PetData data;
+    private PetLevelData leveldata;
 
     /** The Experience before the last Death Penalty */
-    private long _expBeforeDeath = 0;
+    private long expBeforeDeath = 0;
 
-    private int _curWeightPenalty = 0;
+    private int curWeightPenalty = 0;
 
     /**
      * Creates a pet.
@@ -127,36 +137,36 @@ public class Pet extends Summon {
         super(template, owner);
         setInstanceType(InstanceType.Pet);
 
-        _controlObjectId = control.getObjectId();
+        controlObjectId = control.getObjectId();
         getStat().setLevel((byte) Math.max(level, PetDataTable.getInstance().getPetMinLevel(template.getId())));
-        _inventory = new PetInventory(this);
-        _inventory.restore();
+        inventory = new PetInventory(this);
+        inventory.restore();
 
         final int npcId = template.getId();
-        _mountable = PetDataTable.isMountable(npcId);
+        mountable = PetDataTable.isMountable(npcId);
         getPetData();
         getPetLevelData();
     }
 
     public PetLevelData getPetLevelData() {
-        if (_leveldata == null) {
-            _leveldata = PetDataTable.getInstance()
+        if (leveldata == null) {
+            leveldata = PetDataTable.getInstance()
                     .getPetLevelData(getTemplate().getId(), getStat().getLevel());
         }
 
-        return _leveldata;
+        return leveldata;
     }
 
     public PetData getPetData() {
-        if (_data == null) {
-            _data = PetDataTable.getInstance().getPetData(getTemplate().getId());
+        if (data == null) {
+            data = PetDataTable.getInstance().getPetData(getTemplate().getId());
         }
 
-        return _data;
+        return data;
     }
 
     public void setPetData(PetLevelData value) {
-        _leveldata = value;
+        leveldata = value;
     }
 
     /**
@@ -176,7 +186,7 @@ public class Pet extends Summon {
                     return;
                 }
 
-                setCurrentFed(_curFed > getFeedConsume() ? _curFed - getFeedConsume() : 0);
+                setCurrentFed(currentFed > getFeedConsume() ? currentFed - getFeedConsume() : 0);
                 broadcastStatusUpdate();
 
                 if (isUncontrollable()) {
@@ -212,7 +222,7 @@ public class Pet extends Summon {
                 // Try to find food in pet inventory.
                 Item food = null;
                 for (int id : foodIds) {
-                    food = _inventory.getItemByItemId(id);
+                    food = inventory.getItemByItemId(id);
                     if (food != null) {
                         break;
                     }
@@ -236,7 +246,7 @@ public class Pet extends Summon {
                                     .YOUR_PET_IS_STARVING_AND_WILL_NOT_OBEY_UNTIL_IT_GETS_IT_S_FOOD_FEED_YOUR_PET);
                 }
             } catch (Exception e) {
-                LOGGER_PET.log(Level.SEVERE, "Pet [ObjectId: " + getObjectId() + "] a feed task error has occurred", e);
+                log.error("Pet [ObjectId: {}] a feed task error has occurred", getObjectId(), e);
             }
         }
 
@@ -282,36 +292,23 @@ public class Pet extends Summon {
         setStat(new PetStat(this));
     }
 
-    public boolean isRespawned() {
-        return _respawned;
-    }
-
     @Override
     public int getSummonType() {
         return 2;
     }
 
-    @Override
-    public int getControlObjectId() {
-        return _controlObjectId;
-    }
-
     public Item getControlItem() {
-        return getOwner().getInventory().getItemByObjectId(_controlObjectId);
-    }
-
-    public int getCurrentFed() {
-        return _curFed;
+        return getOwner().getInventory().getItemByObjectId(controlObjectId);
     }
 
     public void setCurrentFed(int num) {
         if (num <= 0) {
             sendPacket(new ExChangeNpcState(getObjectId(), 0x64));
-        } else if ((_curFed <= 0) && (num > 0)) {
+        } else if ((currentFed <= 0) && (num > 0)) {
             sendPacket(new ExChangeNpcState(getObjectId(), 0x65));
         }
 
-        _curFed = num > getMaxFed() ? getMaxFed() : num;
+        currentFed = num > getMaxFed() ? getMaxFed() : num;
     }
 
     /**
@@ -319,7 +316,7 @@ public class Pet extends Summon {
      */
     @Override
     public Item getActiveWeaponInstance() {
-        for (Item item : _inventory.getItems()) {
+        for (Item item : inventory.getItems()) {
             if ((item.getItemLocation() == ItemLocation.PET_EQUIP)
                     && (item.getTemplate().getBodyPart() == BodyPart.R_HAND)) {
                 return item;
@@ -350,11 +347,6 @@ public class Pet extends Summon {
         return null;
     }
 
-    @Override
-    public PetInventory getInventory() {
-        return _inventory;
-    }
-
     /**
      * Destroys item from inventory and send a Server->Client InventoryUpdate packet to the Player.
      * @param process : ItemProcessType identifier of process triggering this action
@@ -367,7 +359,7 @@ public class Pet extends Summon {
     @Override
     public boolean destroyItem(
             ItemProcessType process, int objectId, long count, WorldObject reference, boolean sendMessage) {
-        final Item item = _inventory.destroyItem(process, objectId, count, getOwner(), reference);
+        final Item item = inventory.destroyItem(process, objectId, count, getOwner(), reference);
         if (item == null) {
             if (sendMessage) {
                 sendPacket(SystemMessageId.INCORRECT_ITEM_COUNT_2);
@@ -408,7 +400,7 @@ public class Pet extends Summon {
     @Override
     public boolean destroyItemByItemId(
             ItemProcessType process, int itemId, long count, WorldObject reference, boolean sendMessage) {
-        final Item item = _inventory.destroyItemByItemId(process, itemId, count, getOwner(), reference);
+        final Item item = inventory.destroyItemByItemId(process, itemId, count, getOwner(), reference);
         if (item == null) {
             if (sendMessage) {
                 sendPacket(SystemMessageId.INCORRECT_ITEM_COUNT_2);
@@ -449,7 +441,7 @@ public class Pet extends Summon {
         broadcastPacket(new StopMove(this));
         if (!object.isItem()) {
             // Do not try to pickup anything that is not an item :)
-            LOGGER_PET.warning(this + " trying to pickup wrong target." + object);
+            log.warn("{} trying to pickup wrong target.{}", this, object);
             sendPacket(ActionFailed.STATIC_PACKET);
             return;
         }
@@ -488,7 +480,7 @@ public class Pet extends Summon {
 
             if (((isInParty() && (getParty().getDistributionType() == PartyDistributionType.FINDERS_KEEPERS))
                             || !isInParty())
-                    && !_inventory.validateCapacity(target)) {
+                    && !inventory.validateCapacity(target)) {
                 sendPacket(ActionFailed.STATIC_PACKET);
                 sendPacket(SystemMessageId.YOUR_PET_CANNOT_CARRY_ANY_MORE_ITEMS);
                 return;
@@ -532,7 +524,7 @@ public class Pet extends Summon {
         if (target.getTemplate().hasExImmediateEffect()) {
             final IItemHandler handler = ItemHandler.getInstance().getHandler(target.getEtcItem());
             if (handler == null) {
-                LOGGER.warning("No item handler registered for item ID: " + target.getId() + ".");
+                log.warn("No item handler registered for item ID: {}.", target.getId());
             } else {
                 handler.onItemUse(this, target, false);
             }
@@ -565,7 +557,7 @@ public class Pet extends Summon {
                     && (getOwner().getParty().getDistributionType() != PartyDistributionType.FINDERS_KEEPERS)) {
                 getOwner().getParty().distributeItem(getOwner(), target);
             } else {
-                final Item item = _inventory.addItem(ItemProcessType.PICKUP, target, getOwner(), this);
+                final Item item = inventory.addItem(ItemProcessType.PICKUP, target, getOwner(), this);
 
                 // sendPacket(new PetItemList(_inventory.getItems()));
                 sendPacket(new PetInventoryUpdate(item));
@@ -581,7 +573,7 @@ public class Pet extends Summon {
 
     @Override
     public void deleteMe(Player owner) {
-        _inventory.transferItemsToOwner();
+        inventory.transferItemsToOwner();
         super.deleteMe(owner);
         destroyControlItem(owner, false); // this should also delete the pet from the db
         CharSummonTable.getInstance().getPets().remove(getOwner().getObjectId());
@@ -644,9 +636,9 @@ public class Pet extends Summon {
      */
     public Item transferItem(
             ItemProcessType process, int objectId, long count, Inventory target, Player actor, WorldObject reference) {
-        final Item oldItem = _inventory.getItemByObjectId(objectId);
+        final Item oldItem = inventory.getItemByObjectId(objectId);
         final Item playerOldItem = target.getItemByItemId(oldItem.getId());
-        final Item newItem = _inventory.transferItem(process, objectId, count, target, actor, reference);
+        final Item newItem = inventory.transferItem(process, objectId, count, target, actor, reference);
         if (newItem == null) {
             return null;
         }
@@ -695,10 +687,10 @@ public class Pet extends Summon {
             Item removedItem;
             if (evolve) {
                 removedItem =
-                        owner.getInventory().destroyItem(ItemProcessType.FEE, _controlObjectId, 1, getOwner(), this);
+                        owner.getInventory().destroyItem(ItemProcessType.FEE, controlObjectId, 1, getOwner(), this);
             } else {
-                removedItem = owner.getInventory()
-                        .destroyItem(ItemProcessType.DESTROY, _controlObjectId, 1, getOwner(), this);
+                removedItem =
+                        owner.getInventory().destroyItem(ItemProcessType.DESTROY, controlObjectId, 1, getOwner(), this);
                 if (removedItem != null) {
                     final SystemMessage sm = new SystemMessage(SystemMessageId.S1_HAS_DISAPPEARED);
                     sm.addItemName(removedItem);
@@ -707,8 +699,7 @@ public class Pet extends Summon {
             }
 
             if (removedItem == null) {
-                LOGGER.warning(
-                        "Couldn't destroy pet control item for " + owner + " pet: " + this + " evolve: " + evolve);
+                log.warn("Couldn't destroy pet control item for {} pet: {} evolve: {}", owner, this, evolve);
             } else {
                 final InventoryUpdate iu = new InventoryUpdate();
                 iu.addRemovedItem(removedItem);
@@ -723,52 +714,44 @@ public class Pet extends Summon {
                 World.removeObject(removedItem);
             }
         } catch (Exception e) {
-            LOGGER_PET.log(Level.WARNING, "Error while destroying control item: " + e.getMessage(), e);
+            log.warn("Error while destroying control item: {}", e.getMessage(), e);
         }
 
         // Pet control item no longer exists, delete the pet from the db.
         try (Connection con = DatabaseFactory.getConnection();
                 PreparedStatement ps = con.prepareStatement("DELETE FROM pets WHERE item_obj_id = ?")) {
-            ps.setInt(1, _controlObjectId);
+            ps.setInt(1, controlObjectId);
             ps.execute();
         } catch (Exception e) {
-            LOGGER_PET.log(Level.SEVERE, "Failed to delete Pet [ObjectId: " + getObjectId() + "]", e);
+            log.error("Failed to delete Pet [ObjectId: {}]", getObjectId(), e);
         }
     }
 
     public void dropAllItems() {
         try {
-            for (Item item : _inventory.getItems()) {
+            for (Item item : inventory.getItems()) {
                 dropItemHere(item);
             }
         } catch (Exception e) {
-            LOGGER_PET.log(Level.WARNING, "Pet Drop Error: " + e.getMessage(), e);
+            log.warn("Pet Drop Error: {}", e.getMessage(), e);
         }
     }
 
     public void dropItemHere(Item item, boolean protect) {
         final Item dropit =
-                _inventory.dropItem(ItemProcessType.DROP, item.getObjectId(), item.getCount(), getOwner(), this);
+                inventory.dropItem(ItemProcessType.DROP, item.getObjectId(), item.getCount(), getOwner(), this);
         if (dropit != null) {
             if (protect) {
                 dropit.getDropProtection().protect(getOwner());
             }
 
-            LOGGER_PET.finer("Item id to drop: " + dropit.getId() + " amount: " + dropit.getCount());
+            log.trace("Item id to drop: {} amount: {}", dropit.getId(), dropit.getCount());
             dropit.dropMe(this, getX(), getY(), getZ() + 100);
         }
     }
 
     public void dropItemHere(Item dropit) {
         dropItemHere(dropit, false);
-    }
-
-    /**
-     * @return Returns the mount able.
-     */
-    @Override
-    public boolean isMountable() {
-        return _mountable;
     }
 
     private static Pet restore(Item control, NpcTemplate template, Player owner) {
@@ -794,7 +777,7 @@ public class Pet extends Summon {
                     pet = new Pet(template, owner, control, rs.getByte("level"));
                 }
 
-                pet._respawned = true;
+                pet.respawned = true;
                 pet.setName(rs.getString("name"));
 
                 long exp = rs.getLong("exp");
@@ -822,7 +805,7 @@ public class Pet extends Summon {
 
             return pet;
         } catch (Exception e) {
-            LOGGER_PET.log(Level.WARNING, "Could not restore pet data for owner: " + owner + " - " + e.getMessage(), e);
+            log.warn("Could not restore pet data for owner: {} - {}", owner, e.getMessage(), e);
         }
 
         return null;
@@ -830,7 +813,7 @@ public class Pet extends Summon {
 
     @Override
     public void setRestoreSummon(boolean value) {
-        _restoreSummon = value;
+        restoreSummon = value;
     }
 
     @Override
@@ -841,16 +824,16 @@ public class Pet extends Summon {
 
     @Override
     public void storeMe() {
-        if (_controlObjectId == 0) {
+        if (controlObjectId == 0) {
             // This is a summon, not a pet, don't store anything.
             return;
         }
 
         if (!PlayerConfig.RESTORE_PET_ON_RECONNECT) {
-            _restoreSummon = false;
+            restoreSummon = false;
         }
 
-        final String req = !_respawned
+        final String req = !respawned
                 ? "INSERT INTO pets (name,level,curHp,curMp,exp,sp,fed,ownerId,restore,item_obj_id) VALUES (?,?,?,?,?,?,?,?,?,?)"
                 : "UPDATE pets SET name=?,level=?,curHp=?,curMp=?,exp=?,sp=?,fed=?,ownerId=?,restore=? WHERE item_obj_id = ?";
         try (Connection con = DatabaseFactory.getConnection();
@@ -861,20 +844,20 @@ public class Pet extends Summon {
             ps.setDouble(4, getStatus().getCurrentMp());
             ps.setLong(5, getStat().getExp());
             ps.setLong(6, getStat().getSp());
-            ps.setInt(7, _curFed);
+            ps.setInt(7, currentFed);
             ps.setInt(8, getOwner().getObjectId());
-            ps.setString(9, String.valueOf(_restoreSummon)); // True restores pet on login.
-            ps.setInt(10, _controlObjectId);
+            ps.setString(9, String.valueOf(restoreSummon)); // True restores pet on login.
+            ps.setInt(10, controlObjectId);
             ps.executeUpdate();
 
-            _respawned = true;
-            if (_restoreSummon) {
+            respawned = true;
+            if (restoreSummon) {
                 CharSummonTable.getInstance().getPets().put(getOwner().getObjectId(), getControlObjectId());
             } else {
                 CharSummonTable.getInstance().getPets().remove(getOwner().getObjectId());
             }
         } catch (Exception e) {
-            LOGGER_PET.log(Level.SEVERE, "Failed to store Pet [ObjectId: " + getObjectId() + "] data", e);
+            log.error("Failed to store Pet [ObjectId: {}] data", getObjectId(), e);
         }
 
         final Item itemInst = getControlItem();
@@ -897,7 +880,7 @@ public class Pet extends Summon {
                 PreparedStatement ps1 = con.prepareStatement(DELETE_SKILL_SAVE);
                 PreparedStatement ps2 = con.prepareStatement(ADD_SKILL_SAVE)) {
             // Delete all current stored effects for summon to avoid dupe.
-            ps1.setInt(1, _controlObjectId);
+            ps1.setInt(1, controlObjectId);
             ps1.execute();
 
             int buffIndex = 0;
@@ -933,7 +916,7 @@ public class Pet extends Summon {
 
                     storedSkills.add(skill.getReuseHashCode());
 
-                    ps2.setInt(1, _controlObjectId);
+                    ps2.setInt(1, controlObjectId);
                     ps2.setInt(2, skill.getId());
                     ps2.setInt(3, skill.getLevel());
                     ps2.setInt(4, info.getTime());
@@ -946,7 +929,7 @@ public class Pet extends Summon {
                 ps2.executeBatch();
             }
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, "Could not store pet effect data: ", e);
+            log.warn("Could not store pet effect data: ", e);
         }
     }
 
@@ -956,7 +939,7 @@ public class Pet extends Summon {
                 PreparedStatement ps1 = con.prepareStatement(RESTORE_SKILL_SAVE);
                 PreparedStatement ps2 = con.prepareStatement(DELETE_SKILL_SAVE)) {
             if (!SummonEffectTable.getInstance().containsPetId(getControlObjectId())) {
-                ps1.setInt(1, _controlObjectId);
+                ps1.setInt(1, controlObjectId);
                 try (ResultSet rs = ps1.executeQuery()) {
                     while (rs.next()) {
                         final Skill skill =
@@ -973,29 +956,29 @@ public class Pet extends Summon {
                 }
             }
 
-            ps2.setInt(1, _controlObjectId);
+            ps2.setInt(1, controlObjectId);
             ps2.executeUpdate();
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, "Could not restore " + this + " active effect data: " + e.getMessage(), e);
+            log.warn("Could not restore {} active effect data: {}", this, e.getMessage(), e);
         } finally {
             SummonEffectTable.getInstance().applyPetEffects(this, getControlObjectId());
         }
     }
 
     public synchronized void stopFeed() {
-        if (_feedTask == null) {
+        if (feedTask == null) {
             return;
         }
 
-        _feedTask.cancel(false);
-        _feedTask = null;
+        feedTask.cancel(false);
+        feedTask = null;
     }
 
     public synchronized void startFeed() {
         // Stop feeding task if it is active.
         stopFeed();
         if (!isDead() && (getOwner().getSummon() == this)) {
-            _feedTask = ThreadPool.scheduleAtFixedRate(new FeedTask(), 10000, 10000);
+            feedTask = ThreadPool.scheduleAtFixedRate(new FeedTask(), 10000, 10000);
         }
     }
 
@@ -1005,8 +988,8 @@ public class Pet extends Summon {
         super.unSummon(owner);
 
         if (!isDead()) {
-            if (_inventory != null) {
-                _inventory.deleteMe();
+            if (inventory != null) {
+                inventory.deleteMe();
             }
 
             World.removePet(owner.getObjectId());
@@ -1018,10 +1001,10 @@ public class Pet extends Summon {
      * @param restorePercent
      */
     public void restoreExp(double restorePercent) {
-        if (_expBeforeDeath > 0) {
+        if (expBeforeDeath > 0) {
             // Restore the specified % of lost experience.
-            getStat().addExp(Math.round(((_expBeforeDeath - getStat().getExp()) * restorePercent) / 100));
-            _expBeforeDeath = 0;
+            getStat().addExp(Math.round(((expBeforeDeath - getStat().getExp()) * restorePercent) / 100));
+            expBeforeDeath = 0;
         }
     }
 
@@ -1036,7 +1019,7 @@ public class Pet extends Summon {
                 ((getStat().getExpForLevel(level + 1) - getStat().getExpForLevel(level)) * percentLost) / 100);
 
         // Get the Experience before applying penalty.
-        _expBeforeDeath = getStat().getExp();
+        expBeforeDeath = getStat().getExp();
 
         // Set the new Experience value of the Pet.
         getStat().addExp(-lostExp);
@@ -1117,8 +1100,8 @@ public class Pet extends Summon {
                 newWeightPenalty = 4;
             }
 
-            if (_curWeightPenalty != newWeightPenalty) {
-                _curWeightPenalty = newWeightPenalty;
+            if (curWeightPenalty != newWeightPenalty) {
+                curWeightPenalty = newWeightPenalty;
                 if (newWeightPenalty > 0) {
                     addSkill(SkillData.getInstance().getSkill(4270, newWeightPenalty));
                     setOverloaded(getCurrentLoad() >= maxLoad);
@@ -1141,7 +1124,7 @@ public class Pet extends Summon {
 
     @Override
     public boolean isHungry() {
-        return _curFed
+        return currentFed
                 < ((getPetData().getHungryLimit() / 100f) * getPetLevelData().getPetMaxFeed());
     }
 
@@ -1151,23 +1134,23 @@ public class Pet extends Summon {
      * @return {@code true} if the per cannot be controlled
      */
     public boolean isUncontrollable() {
-        return _curFed <= 0;
+        return currentFed <= 0;
     }
 
     @Override
     public int getWeapon() {
-        final Item weapon = _inventory.getPaperdollItem(Inventory.PAPERDOLL_RHAND);
+        final Item weapon = inventory.getPaperdollItem(Inventory.PAPERDOLL_RHAND);
         return weapon != null ? weapon.getId() : 0;
     }
 
     @Override
     public int getArmor() {
-        final Item weapon = _inventory.getPaperdollItem(Inventory.PAPERDOLL_CHEST);
+        final Item weapon = inventory.getPaperdollItem(Inventory.PAPERDOLL_CHEST);
         return weapon != null ? weapon.getId() : 0;
     }
 
     public int getJewel() {
-        final Item weapon = _inventory.getPaperdollItem(Inventory.PAPERDOLL_NECK);
+        final Item weapon = inventory.getPaperdollItem(Inventory.PAPERDOLL_NECK);
         return weapon != null ? weapon.getId() : 0;
     }
 
@@ -1198,14 +1181,14 @@ public class Pet extends Summon {
                 }
             }
         } else {
-            LOGGER.log(Level.WARNING, "Pet control item null, for pet: " + toString());
+            log.warn("Pet control item null, for pet: {}", toString());
         }
 
         super.setName(name);
     }
 
     public boolean canEatFoodId(int itemId) {
-        return _data.getFood().contains(itemId);
+        return data.getFood().contains(itemId);
     }
 
     @Override

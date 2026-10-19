@@ -28,10 +28,10 @@ import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.network.buffer.WriteBuffer;
 
 public class PledgeShowInfoUpdate extends ServerPacket {
-    private final Clan _clan;
+    private final Clan clan;
 
     public PledgeShowInfoUpdate(Clan clan) {
-        _clan = clan;
+        this.clan = clan;
     }
 
     @Override
@@ -39,19 +39,19 @@ public class PledgeShowInfoUpdate extends ServerPacket {
         ServerPackets.PLEDGE_SHOW_INFO_UPDATE.writeId(this, buffer);
 
         // sending empty data so client will ask all the info in response ;)
-        buffer.writeInt(_clan.getId());
-        buffer.writeInt(_clan.getCrestId());
-        buffer.writeInt(_clan.getLevel()); // clan level
-        buffer.writeInt(_clan.getCastleId());
-        buffer.writeInt(_clan.getHideoutId());
-        buffer.writeInt(_clan.getFortId());
-        buffer.writeInt(_clan.getRank());
-        buffer.writeInt(_clan.getReputationScore()); // clan reputation score
+        buffer.writeInt(clan.getId());
+        buffer.writeInt(clan.getCrestId());
+        buffer.writeInt(clan.getLevel()); // clan level
+        buffer.writeInt(clan.getCastleId());
+        buffer.writeInt(clan.getHideoutId());
+        buffer.writeInt(clan.getFortId());
+        buffer.writeInt(clan.getRank());
+        buffer.writeInt(clan.getReputationScore()); // clan reputation score
         buffer.writeInt(0); // ?
         buffer.writeInt(0); // ?
-        buffer.writeInt(_clan.getAllyId());
-        buffer.writeString(_clan.getAllyName()); // c5
-        buffer.writeInt(_clan.getAllyCrestId()); // c5
-        buffer.writeInt(_clan.isAtWar()); // c5
+        buffer.writeInt(clan.getAllyId());
+        buffer.writeString(clan.getAllyName()); // c5
+        buffer.writeInt(clan.getAllyCrestId()); // c5
+        buffer.writeInt(clan.isAtWar()); // c5
     }
 }

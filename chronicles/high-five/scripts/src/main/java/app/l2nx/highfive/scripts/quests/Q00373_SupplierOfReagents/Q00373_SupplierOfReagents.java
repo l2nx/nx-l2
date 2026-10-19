@@ -27,6 +27,7 @@ import app.l2nx.highfive.mechanics.script.QuestSound;
 import app.l2nx.highfive.mechanics.script.QuestState;
 import app.l2nx.highfive.scripts.quests.Q00235_MimirsElixir.Q00235_MimirsElixir;
 import java.util.HashMap;
+import lombok.Getter;
 
 /**
  * Supplier of Reagents (373)
@@ -397,20 +398,15 @@ public class Q00373_SupplierOfReagents extends Quest {
     }
 
     private static class Entry {
+        @Getter
         private final int item;
+
+        @Getter
         private final String html;
 
         public Entry(int item, String html) {
             this.item = item;
             this.html = html;
-        }
-
-        public int getItem() {
-            return item;
-        }
-
-        public String getHtml() {
-            return html;
         }
     }
 }

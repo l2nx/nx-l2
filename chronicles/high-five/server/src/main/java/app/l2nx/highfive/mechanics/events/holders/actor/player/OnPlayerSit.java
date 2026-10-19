@@ -29,17 +29,7 @@ import app.l2nx.highfive.mechanics.events.holders.IBaseEvent;
 /**
  * @author Mobius
  */
-public class OnPlayerSit implements IBaseEvent {
-    private final Player _player;
-
-    public OnPlayerSit(Player player) {
-        _player = player;
-    }
-
-    public Player getPlayer() {
-        return _player;
-    }
-
+public record OnPlayerSit(Player player) implements IBaseEvent {
     @Override
     public EventType getType() {
         return EventType.ON_PLAYER_SIT;

@@ -23,32 +23,26 @@
 package app.l2nx.highfive.entity.actor.holders.npc;
 
 import java.util.Set;
+import lombok.Getter;
 
 /**
  * @author Mobius
  */
 public class EventDropHolder extends DropHolder {
-    private final int _minLevel;
-    private final int _maxLevel;
-    private final Set<Integer> _monsterIds;
+    @Getter
+    private final int minLevel;
+
+    @Getter
+    private final int maxLevel;
+
+    @Getter
+    private final Set<Integer> monsterIds;
 
     public EventDropHolder(
             int itemId, long min, long max, double chance, int minLevel, int maxLevel, Set<Integer> monsterIds) {
         super(null, itemId, min, max, chance);
-        _minLevel = minLevel;
-        _maxLevel = maxLevel;
-        _monsterIds = monsterIds;
-    }
-
-    public int getMinLevel() {
-        return _minLevel;
-    }
-
-    public int getMaxLevel() {
-        return _maxLevel;
-    }
-
-    public Set<Integer> getMonsterIds() {
-        return _monsterIds;
+        this.minLevel = minLevel;
+        this.maxLevel = maxLevel;
+        this.monsterIds = monsterIds;
     }
 }

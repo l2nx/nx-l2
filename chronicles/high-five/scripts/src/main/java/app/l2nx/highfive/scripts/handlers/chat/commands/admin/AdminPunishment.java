@@ -43,15 +43,15 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.StringTokenizer;
-import java.util.logging.Logger;
 import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 
 /**
  * @author UnAfraid, Skache
  */
+@Slf4j
 public class AdminPunishment implements IAdminCommandHandler {
-    private static final Logger LOGGER = Logger.getLogger(AdminPunishment.class.getName());
 
     private static final String PUNISHMENT = "data/html/admin/punishments/punishment.htm";
     private static final String PUNISHMENT_INFO = "data/html/admin/punishments/punishment-info.htm";
@@ -100,7 +100,7 @@ public class AdminPunishment implements IAdminCommandHandler {
                                         .collect(Collectors.joining(";")));
                         activeChar.sendPacket(new NpcHtmlMessage(0, 1, content));
                     } else {
-                        LOGGER.warning(getClass().getSimpleName() + ": " + PUNISHMENT + " is missing.");
+                        log.warn("{} is missing.", PUNISHMENT);
                     }
                 } else {
                     final String subcmd = st.nextToken();
@@ -161,7 +161,7 @@ public class AdminPunishment implements IAdminCommandHandler {
                                 content = content.replace("%affect_type%", affect.name());
                                 activeChar.sendPacket(new NpcHtmlMessage(0, 1, content));
                             } else {
-                                LOGGER.warning(getClass().getSimpleName() + ": " + PUNISHMENT_INFO + " is missing.");
+                                log.warn("{} is missing.", PUNISHMENT_INFO);
                             }
                             break;
                         }
@@ -210,7 +210,7 @@ public class AdminPunishment implements IAdminCommandHandler {
                                                         .getMacAddress());
                                 activeChar.sendPacket(new NpcHtmlMessage(0, 1, content));
                             } else {
-                                LOGGER.warning(getClass().getSimpleName() + ": " + PUNISHMENT_PLAYER + " is missing.");
+                                log.warn("{} is missing.", PUNISHMENT_PLAYER);
                             }
                             break;
                         }

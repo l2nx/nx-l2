@@ -35,28 +35,29 @@ import app.l2nx.highfive.network.serverpackets.ExEnchantSkillInfoDetail;
 import app.l2nx.highfive.network.serverpackets.ExEnchantSkillResult;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Format (ch) dd c: (id) 0xD0 h: (subid) 0x32 d: skill id d: skill level
  * @author -Wooden-
  */
 public class RequestExEnchantSkillSafe extends ClientPacket {
-    private static final Logger LOGGER_ENCHANT = Logger.getLogger("enchant.skills");
 
-    private int _skillId;
-    private int _skillLevel;
+    private static final Logger ENCHANT_SKILLS_LOG = LoggerFactory.getLogger("enchant.skills");
+
+    private int skillId;
+    private int skillLevel;
 
     @Override
     protected void readImpl() {
-        _skillId = readInt();
-        _skillLevel = readInt();
+        skillId = readInt();
+        skillLevel = readInt();
     }
 
     @Override
     protected void runImpl() {
-        if ((_skillId <= 0) || (_skillLevel <= 0)) {
+        if ((skillId <= 0) || (skillLevel <= 0)) {
             return;
         }
 
@@ -87,24 +88,24 @@ public class RequestExEnchantSkillSafe extends ClientPacket {
             return;
         }
 
-        final Skill skill = SkillData.getInstance().getSkill(_skillId, _skillLevel);
+        final Skill skill = SkillData.getInstance().getSkill(skillId, skillLevel);
         if (skill == null) {
             return;
         }
 
         final int costMultiplier = EnchantSkillGroupsData.SAFE_ENCHANT_COST_MULTIPLIER;
         final int reqItemId = EnchantSkillGroupsData.SAFE_ENCHANT_BOOK;
-        final EnchantSkillLearn s = EnchantSkillGroupsData.getInstance().getSkillEnchantmentBySkillId(_skillId);
+        final EnchantSkillLearn s = EnchantSkillGroupsData.getInstance().getSkillEnchantmentBySkillId(skillId);
         if (s == null) {
             return;
         }
 
-        final int beforeEnchantSkillLevel = player.getSkillLevel(_skillId);
-        if (beforeEnchantSkillLevel != s.getMinSkillLevel(_skillLevel)) {
+        final int beforeEnchantSkillLevel = player.getSkillLevel(skillId);
+        if (beforeEnchantSkillLevel != s.getMinSkillLevel(skillLevel)) {
             return;
         }
 
-        final EnchantSkillHolder esd = s.getEnchantSkillHolder(_skillLevel);
+        final EnchantSkillHolder esd = s.getEnchantSkillHolder(skillLevel);
 
         final int requiredSp = esd.getSpCost() * costMultiplier;
         final int requireditems = esd.getAdenaCost() * costMultiplier;
@@ -134,11 +135,15 @@ public class RequestExEnchantSkillSafe extends ClientPacket {
             // ok. Destroy ONE copy of the book
             if (ThreadLocalRandom.current().nextInt(100) <= rate) {
                 if (GeneralConfig.LOG_SKILL_ENCHANTS) {
-                    LOGGER_ENCHANT.log(
-                            Level.INFO,
-                            "Safe Success, Character:" + player.getName() + " [" + player.getObjectId() + "] Account:"
-                                    + player.getAccountName() + " IP:" + player.getIPAddress() + ", Skill:" + skill
-                                    + ", SPB:" + spb + ", Rate:" + rate);
+                    ENCHANT_SKILLS_LOG.info(
+                            "Safe Success, Character:{} [{}] Account:{} IP:{}, Skill:{}, SPB:{}, Rate:{}",
+                            player.getName(),
+                            player.getObjectId(),
+                            player.getAccountName(),
+                            player.getIPAddress(),
+                            skill,
+                            spb,
+                            rate);
                 }
 
                 player.addSkill(skill, true);
@@ -146,30 +151,34 @@ public class RequestExEnchantSkillSafe extends ClientPacket {
 
                 final SystemMessage sm =
                         new SystemMessage(SystemMessageId.SKILL_ENCHANT_WAS_SUCCESSFUL_S1_HAS_BEEN_ENCHANTED);
-                sm.addSkillName(_skillId);
+                sm.addSkillName(skillId);
                 player.sendPacket(sm);
             } else {
                 if (GeneralConfig.LOG_SKILL_ENCHANTS) {
-                    LOGGER_ENCHANT.log(
-                            Level.INFO,
-                            "Safe Failed, Character:" + player.getName() + " [" + player.getObjectId() + "] Account:"
-                                    + player.getAccountName() + " IP:" + player.getIPAddress() + ", Skill:" + skill
-                                    + ", SPB:" + spb + ", Rate:" + rate);
+                    ENCHANT_SKILLS_LOG.info(
+                            "Safe Failed, Character:{} [{}] Account:{} IP:{}, Skill:{}, SPB:{}, Rate:{}",
+                            player.getName(),
+                            player.getObjectId(),
+                            player.getAccountName(),
+                            player.getIPAddress(),
+                            skill,
+                            spb,
+                            rate);
                 }
 
                 final SystemMessage sm = new SystemMessage(
                         SystemMessageId.SKILL_ENCHANT_FAILED_CURRENT_LEVEL_OF_ENCHANT_SKILL_S1_WILL_REMAIN_UNCHANGED);
-                sm.addSkillName(_skillId);
+                sm.addSkillName(skillId);
                 player.sendPacket(sm);
                 player.sendPacket(ExEnchantSkillResult.valueOf(false));
             }
 
             player.updateUserInfo();
             player.sendSkillList();
-            final int afterEnchantSkillLevel = player.getSkillLevel(_skillId);
-            player.sendPacket(new ExEnchantSkillInfo(_skillId, afterEnchantSkillLevel));
-            player.sendPacket(new ExEnchantSkillInfoDetail(1, _skillId, afterEnchantSkillLevel + 1, player));
-            player.updateShortcuts(_skillId, afterEnchantSkillLevel);
+            final int afterEnchantSkillLevel = player.getSkillLevel(skillId);
+            player.sendPacket(new ExEnchantSkillInfo(skillId, afterEnchantSkillLevel));
+            player.sendPacket(new ExEnchantSkillInfoDetail(1, skillId, afterEnchantSkillLevel + 1, player));
+            player.updateShortcuts(skillId, afterEnchantSkillLevel);
         } else {
             player.sendPacket(SystemMessageId.YOU_DO_NOT_HAVE_ENOUGH_SP_TO_ENCHANT_THAT_SKILL);
         }

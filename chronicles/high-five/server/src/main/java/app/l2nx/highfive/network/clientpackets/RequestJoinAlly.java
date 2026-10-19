@@ -33,11 +33,11 @@ import app.l2nx.highfive.network.serverpackets.SystemMessage;
  * @version $Revision: 1.3.4.2 $ $Date: 2005/03/27 15:29:30 $
  */
 public class RequestJoinAlly extends ClientPacket {
-    private int _id;
+    private int id;
 
     @Override
     protected void readImpl() {
-        _id = readInt();
+        id = readInt();
     }
 
     @Override
@@ -47,7 +47,7 @@ public class RequestJoinAlly extends ClientPacket {
             return;
         }
 
-        final Player ob = World.getPlayer(_id);
+        final Player ob = World.getPlayer(id);
         if (ob == null) {
             player.sendPacket(SystemMessageId.YOU_HAVE_INVITED_THE_WRONG_TARGET);
             return;

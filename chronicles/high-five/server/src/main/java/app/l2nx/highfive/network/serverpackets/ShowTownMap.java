@@ -27,21 +27,21 @@ import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.network.buffer.WriteBuffer;
 
 public class ShowTownMap extends ServerPacket {
-    private final String _texture;
-    private final int _x;
-    private final int _y;
+    private final String texture;
+    private final int x;
+    private final int y;
 
     public ShowTownMap(String texture, int x, int y) {
-        _texture = texture;
-        _x = x;
-        _y = y;
+        this.texture = texture;
+        this.x = x;
+        this.y = y;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.SHOW_TOWN_MAP.writeId(this, buffer);
-        buffer.writeString(_texture);
-        buffer.writeInt(_x);
-        buffer.writeInt(_y);
+        buffer.writeString(texture);
+        buffer.writeInt(x);
+        buffer.writeInt(y);
     }
 }

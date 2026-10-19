@@ -31,35 +31,35 @@ import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Properties;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * ConfigReader is a utility class that reads and provides access to configuration properties from a file.
  * @author Mobius
  */
+@Slf4j
 public class ConfigReader {
-    private static final Logger LOGGER = Logger.getLogger(ConfigReader.class.getName());
 
-    private final Properties _properties = new Properties();
-    private final File _file;
+    private final Properties properties = new Properties();
+    private final File file;
 
     /**
      * Constructs a ConfigReader with the specified file path using the system's default Charset.
      * @param filePath the path to the configuration file
      */
     public ConfigReader(String filePath) {
-        _file = new File(filePath);
+        file = new File(filePath);
 
-        if (!Files.exists(_file.toPath())) {
-            LOGGER.warning("Configuration file not found: " + _file.getAbsolutePath());
+        if (!Files.exists(file.toPath())) {
+            log.warn("Configuration file not found: {}", file.getAbsolutePath());
             return;
         }
 
-        try (InputStream input = Files.newInputStream(_file.toPath());
+        try (InputStream input = Files.newInputStream(file.toPath());
                 InputStreamReader reader = new InputStreamReader(input, Charset.defaultCharset())) {
-            _properties.load(reader);
+            properties.load(reader);
         } catch (IOException e) {
-            LOGGER.warning("Failed to load configurations from " + _file.getName() + ": " + e.getMessage());
+            log.warn("Failed to load configurations from {}: {}", file.getName(), e.getMessage());
         }
     }
 
@@ -69,7 +69,7 @@ public class ConfigReader {
      * @return true if the key exists, false otherwise
      */
     public boolean containsKey(String config) {
-        return _properties.containsKey(config);
+        return properties.containsKey(config);
     }
 
     /**
@@ -78,7 +78,7 @@ public class ConfigReader {
      * @return the property value as a String, or null if the key does not exist
      */
     public String getValue(String config) {
-        return _properties.getProperty(config);
+        return properties.getProperty(config);
     }
 
     /**
@@ -86,7 +86,7 @@ public class ConfigReader {
      * @return a {@link Collection} of property names as strings.
      */
     public Collection<String> getStringPropertyNames() {
-        return _properties.stringPropertyNames();
+        return properties.stringPropertyNames();
     }
 
     /**
@@ -96,17 +96,19 @@ public class ConfigReader {
      * @return the property value as a boolean, or the default value if the key does not exist or is malformed
      */
     public boolean getBoolean(String config, boolean defaultValue) {
-        final String value = _properties.getProperty(config);
+        final String value = properties.getProperty(config);
         if (value != null) {
             try {
                 return Boolean.parseBoolean(value);
             } catch (Exception e) {
-                LOGGER.warning("Invalid boolean for config '" + config + "' in file '" + _file.getName()
-                        + "', using default: " + defaultValue + ".");
+                log.warn(
+                        "Invalid boolean for config '{}' in file '{}', using default: {}.",
+                        config,
+                        file.getName(),
+                        defaultValue);
             }
         } else {
-            LOGGER.warning("Config '" + config + "' not found in file '" + _file.getName() + "', using default: "
-                    + defaultValue + ".");
+            log.warn("Config '{}' not found in file '{}', using default: {}.", config, file.getName(), defaultValue);
         }
 
         return defaultValue;
@@ -119,17 +121,19 @@ public class ConfigReader {
      * @return the property value as a byte, or the default value if the key does not exist or is malformed
      */
     public byte getByte(String config, byte defaultValue) {
-        final String value = _properties.getProperty(config);
+        final String value = properties.getProperty(config);
         if (value != null) {
             try {
                 return Byte.parseByte(value);
             } catch (Exception e) {
-                LOGGER.warning("Invalid byte for config '" + config + "' in file '" + _file.getName()
-                        + "', using default: " + defaultValue + ".");
+                log.warn(
+                        "Invalid byte for config '{}' in file '{}', using default: {}.",
+                        config,
+                        file.getName(),
+                        defaultValue);
             }
         } else {
-            LOGGER.warning("Config '" + config + "' not found in file '" + _file.getName() + "', using default: "
-                    + defaultValue + ".");
+            log.warn("Config '{}' not found in file '{}', using default: {}.", config, file.getName(), defaultValue);
         }
 
         return defaultValue;
@@ -142,17 +146,19 @@ public class ConfigReader {
      * @return the property value as a short, or the default value if the key does not exist or is malformed
      */
     public short getShort(String config, short defaultValue) {
-        final String value = _properties.getProperty(config);
+        final String value = properties.getProperty(config);
         if (value != null) {
             try {
                 return Short.parseShort(value);
             } catch (Exception e) {
-                LOGGER.warning("Invalid short for config '" + config + "' in file '" + _file.getName()
-                        + "', using default: " + defaultValue + ".");
+                log.warn(
+                        "Invalid short for config '{}' in file '{}', using default: {}.",
+                        config,
+                        file.getName(),
+                        defaultValue);
             }
         } else {
-            LOGGER.warning("Config '" + config + "' not found in file '" + _file.getName() + "', using default: "
-                    + defaultValue + ".");
+            log.warn("Config '{}' not found in file '{}', using default: {}.", config, file.getName(), defaultValue);
         }
 
         return defaultValue;
@@ -165,17 +171,19 @@ public class ConfigReader {
      * @return the property value as an int, or the default value if the key does not exist or is malformed
      */
     public int getInt(String config, int defaultValue) {
-        final String value = _properties.getProperty(config);
+        final String value = properties.getProperty(config);
         if (value != null) {
             try {
                 return Integer.parseInt(value);
             } catch (Exception e) {
-                LOGGER.warning("Invalid int for config '" + config + "' in file '" + _file.getName()
-                        + "', using default: " + defaultValue + ".");
+                log.warn(
+                        "Invalid int for config '{}' in file '{}', using default: {}.",
+                        config,
+                        file.getName(),
+                        defaultValue);
             }
         } else {
-            LOGGER.warning("Config '" + config + "' not found in file '" + _file.getName() + "', using default: "
-                    + defaultValue + ".");
+            log.warn("Config '{}' not found in file '{}', using default: {}.", config, file.getName(), defaultValue);
         }
 
         return defaultValue;
@@ -188,17 +196,19 @@ public class ConfigReader {
      * @return the property value as a long, or the default value if the key does not exist or is malformed
      */
     public long getLong(String config, long defaultValue) {
-        final String value = _properties.getProperty(config);
+        final String value = properties.getProperty(config);
         if (value != null) {
             try {
                 return Long.parseLong(value);
             } catch (Exception e) {
-                LOGGER.warning("Invalid long for config '" + config + "' in file '" + _file.getName()
-                        + "', using default: " + defaultValue + ".");
+                log.warn(
+                        "Invalid long for config '{}' in file '{}', using default: {}.",
+                        config,
+                        file.getName(),
+                        defaultValue);
             }
         } else {
-            LOGGER.warning("Config '" + config + "' not found in file '" + _file.getName() + "', using default: "
-                    + defaultValue + ".");
+            log.warn("Config '{}' not found in file '{}', using default: {}.", config, file.getName(), defaultValue);
         }
 
         return defaultValue;
@@ -211,17 +221,19 @@ public class ConfigReader {
      * @return the property value as a float, or the default value if the key does not exist or is malformed
      */
     public float getFloat(String config, float defaultValue) {
-        final String value = _properties.getProperty(config);
+        final String value = properties.getProperty(config);
         if (value != null) {
             try {
                 return Float.parseFloat(value);
             } catch (Exception e) {
-                LOGGER.warning("Invalid float for config '" + config + "' in file '" + _file.getName()
-                        + "', using default: " + defaultValue + ".");
+                log.warn(
+                        "Invalid float for config '{}' in file '{}', using default: {}.",
+                        config,
+                        file.getName(),
+                        defaultValue);
             }
         } else {
-            LOGGER.warning("Config '" + config + "' not found in file '" + _file.getName() + "', using default: "
-                    + defaultValue + ".");
+            log.warn("Config '{}' not found in file '{}', using default: {}.", config, file.getName(), defaultValue);
         }
 
         return defaultValue;
@@ -234,17 +246,19 @@ public class ConfigReader {
      * @return the property value as a double, or the default value if the key does not exist or is malformed
      */
     public double getDouble(String config, double defaultValue) {
-        final String value = _properties.getProperty(config);
+        final String value = properties.getProperty(config);
         if (value != null) {
             try {
                 return Double.parseDouble(value);
             } catch (Exception e) {
-                LOGGER.warning("Invalid double for config '" + config + "' in file '" + _file.getName()
-                        + "', using default: " + defaultValue + ".");
+                log.warn(
+                        "Invalid double for config '{}' in file '{}', using default: {}.",
+                        config,
+                        file.getName(),
+                        defaultValue);
             }
         } else {
-            LOGGER.warning("Config '" + config + "' not found in file '" + _file.getName() + "', using default: "
-                    + defaultValue + ".");
+            log.warn("Config '{}' not found in file '{}', using default: {}.", config, file.getName(), defaultValue);
         }
 
         return defaultValue;
@@ -257,10 +271,9 @@ public class ConfigReader {
      * @return the property value as a String, or the default value if the key does not exist
      */
     public String getString(String config, String defaultValue) {
-        final String value = _properties.getProperty(config);
+        final String value = properties.getProperty(config);
         if (value == null) {
-            LOGGER.warning("Config '" + config + "' not found in file '" + _file.getName() + "', using default: "
-                    + defaultValue + ".");
+            log.warn("Config '{}' not found in file '{}', using default: {}.", config, file.getName(), defaultValue);
             return defaultValue;
         }
 
@@ -276,17 +289,19 @@ public class ConfigReader {
      * @return the property value as an enum constant, or the default value if the key does not exist or is malformed
      */
     public <T extends Enum<T>> T getEnum(String config, Class<T> clazz, T defaultValue) {
-        final String value = _properties.getProperty(config);
+        final String value = properties.getProperty(config);
         if (value != null) {
             try {
                 return Enum.valueOf(clazz, value);
             } catch (Exception e) {
-                LOGGER.warning("Invalid enum for config '" + config + "' in file '" + _file.getName()
-                        + "', using default: " + defaultValue + ".");
+                log.warn(
+                        "Invalid enum for config '{}' in file '{}', using default: {}.",
+                        config,
+                        file.getName(),
+                        defaultValue);
             }
         } else {
-            LOGGER.warning("Config '" + config + "' not found in file '" + _file.getName() + "', using default: "
-                    + defaultValue + ".");
+            log.warn("Config '{}' not found in file '{}', using default: {}.", config, file.getName(), defaultValue);
         }
 
         return defaultValue;
@@ -300,7 +315,7 @@ public class ConfigReader {
      * @return the property value, or the default value if the key does not exist or is malformed, as an int array
      */
     public int[] getIntArray(String config, String delimiter, String defaultValue) {
-        final String value = _properties.getProperty(config);
+        final String value = properties.getProperty(config);
         if (value != null) {
             try {
                 return Arrays.stream(value.split(delimiter))
@@ -308,12 +323,13 @@ public class ConfigReader {
                         .mapToInt(Integer::parseInt)
                         .toArray();
             } catch (NumberFormatException e) {
-                LOGGER.warning("Invalid int array for config '" + config + "' in file '" + _file.getName()
-                        + "', using default values.");
+                log.warn(
+                        "Invalid int array for config '{}' in file '{}', using default values.",
+                        config,
+                        file.getName());
             }
         } else {
-            LOGGER.warning(
-                    "Config '" + config + "' not found in file '" + _file.getName() + "', using default values.");
+            log.warn("Config '{}' not found in file '{}', using default values.", config, file.getName());
         }
 
         try {
@@ -322,8 +338,7 @@ public class ConfigReader {
                     .mapToInt(Integer::parseInt)
                     .toArray();
         } catch (NumberFormatException e) {
-            LOGGER.warning("Invalid default values for config '" + config + "' in file '" + _file.getName()
-                    + "', using empty array.");
+            log.warn("Invalid default values for config '{}' in file '{}', using empty array.", config, file.getName());
         }
 
         return new int[0];

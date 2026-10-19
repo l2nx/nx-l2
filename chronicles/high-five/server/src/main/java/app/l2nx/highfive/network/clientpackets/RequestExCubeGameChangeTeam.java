@@ -21,37 +21,38 @@ package app.l2nx.highfive.network.clientpackets;
 
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.managers.HandysBlockCheckerManager;
-import app.l2nx.highfive.network.PacketLogger;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Format: chdd d: Arena d: Team
  * @author mrTJO
  */
+@Slf4j
 public class RequestExCubeGameChangeTeam extends ClientPacket {
-    private int _arena;
-    private int _team;
+    private int arena;
+    private int team;
 
     @Override
     protected void readImpl() {
         // client sends -1,0,1,2 for arena parameter
-        _arena = readInt() + 1;
-        _team = readInt();
+        arena = readInt() + 1;
+        team = readInt();
     }
 
     @Override
     protected void runImpl() {
         // do not remove players after start
-        if (HandysBlockCheckerManager.getInstance().arenaIsBeingUsed(_arena)) {
+        if (HandysBlockCheckerManager.getInstance().arenaIsBeingUsed(arena)) {
             return;
         }
 
         final Player player = getPlayer();
 
-        switch (_team) {
+        switch (this.team) {
             case 0:
             case 1: {
                 // Change Player Team
-                HandysBlockCheckerManager.getInstance().changePlayerToTeam(player, _arena);
+                HandysBlockCheckerManager.getInstance().changePlayerToTeam(player, arena);
                 break;
             }
             case -1:
@@ -60,18 +61,18 @@ public class RequestExCubeGameChangeTeam extends ClientPacket {
                 }
                 {
                     final int team = HandysBlockCheckerManager.getInstance()
-                            .getHolder(_arena)
+                            .getHolder(arena)
                             .getPlayerTeam(player);
 
                     // client sends two times this packet if click on exit
                     // client did not send this packet on restart
                     if (team > -1) {
-                        HandysBlockCheckerManager.getInstance().removePlayer(player, _arena, team);
+                        HandysBlockCheckerManager.getInstance().removePlayer(player, arena, team);
                     }
                     break;
                 }
             default: {
-                PacketLogger.warning("Wrong Cube Game Team ID: " + _team);
+                log.warn("Wrong Cube Game Team ID: {}", this.team);
                 break;
             }
         }

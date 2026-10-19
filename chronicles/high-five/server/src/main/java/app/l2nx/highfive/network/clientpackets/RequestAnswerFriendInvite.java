@@ -24,19 +24,20 @@ package app.l2nx.highfive.network.clientpackets;
 
 import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.entity.actor.Player;
-import app.l2nx.highfive.network.PacketLogger;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.serverpackets.FriendPacket;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class RequestAnswerFriendInvite extends ClientPacket {
-    private int _response;
+    private int response;
 
     @Override
     protected void readImpl() {
-        _response = readInt();
+        response = readInt();
     }
 
     @Override
@@ -57,7 +58,7 @@ public class RequestAnswerFriendInvite extends ClientPacket {
             return;
         }
 
-        if (_response == 1) {
+        if (response == 1) {
             try (Connection con = DatabaseFactory.getConnection();
                     PreparedStatement statement = con.prepareStatement(
                             "INSERT INTO character_friends (charId, friendId) VALUES (?, ?), (?, ?)")) {
@@ -86,7 +87,7 @@ public class RequestAnswerFriendInvite extends ClientPacket {
                 player.sendPacket(new FriendPacket(true, requestor.getObjectId()));
                 requestor.sendPacket(new FriendPacket(true, player.getObjectId()));
             } catch (Exception e) {
-                PacketLogger.warning("Could not add friend objectid: " + e.getMessage());
+                log.warn("Could not add friend objectid: {}", e.getMessage());
             }
         } else {
             requestor.sendPacket(

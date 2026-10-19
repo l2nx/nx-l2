@@ -31,14 +31,14 @@ import app.l2nx.highfive.mechanics.skill.Skill;
  * The Class ConditionPlayerIsClanLeader.
  */
 public class ConditionPlayerIsClanLeader extends Condition {
-    private final boolean _value;
+    private final boolean value;
 
     /**
      * Instantiates a new condition player is clan leader.
      * @param value the value
      */
     public ConditionPlayerIsClanLeader(boolean value) {
-        _value = value;
+        this.value = value;
     }
 
     @Override
@@ -48,6 +48,6 @@ public class ConditionPlayerIsClanLeader extends Condition {
             return false;
         }
 
-        return player.isClanLeader() == _value;
+        return player.isClanLeader() == value;
     }
 }

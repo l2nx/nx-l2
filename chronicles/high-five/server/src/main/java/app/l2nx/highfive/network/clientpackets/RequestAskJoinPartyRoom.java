@@ -30,11 +30,11 @@ import app.l2nx.highfive.network.serverpackets.SystemMessage;
  * @author -Wooden-, Tryskell
  */
 public class RequestAskJoinPartyRoom extends ClientPacket {
-    private String _name;
+    private String name;
 
     @Override
     protected void readImpl() {
-        _name = readString();
+        name = readString();
     }
 
     @Override
@@ -45,7 +45,7 @@ public class RequestAskJoinPartyRoom extends ClientPacket {
         }
 
         // Send PartyRoom invite request (with activeChar) name to the target.
-        final Player target = World.getPlayer(_name);
+        final Player target = World.getPlayer(name);
         if (target != null) {
             if (!target.isProcessingRequest()) {
                 player.onTransactionRequest(target);

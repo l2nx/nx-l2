@@ -25,52 +25,71 @@ package app.l2nx.highfive.entity.item.holders;
 import app.l2nx.highfive.entity.item.ItemTemplate;
 import app.l2nx.highfive.entity.item.instance.Item;
 import app.l2nx.highfive.network.holders.TradeItem;
+import lombok.Getter;
 
 /**
  * Get all information from Item to generate ItemInfo.
  */
 public class ItemInfo {
     /** Identifier of the Item */
-    private int _objectId;
+    @Getter
+    private int objectId;
 
     /** The Item template of the Item */
-    private ItemTemplate _item;
+    @Getter
+    private ItemTemplate item;
 
     /** The level of enchant on the Item */
-    private int _enchant;
+    @Getter
+    private int enchant;
 
     /** The augmentation of the item */
-    private int _augmentation;
+    @Getter
+    private int augmentationBonus;
 
     /** The quantity of Item */
-    private long _count;
+    @Getter
+    private long count;
 
     /** The price of the Item */
-    private int _price;
+    @Getter
+    private int price;
 
     /** The custom Item types (used loto, race tickets) */
-    private int _type1;
+    @Getter
+    private int customType1;
 
-    private int _type2;
+    @Getter
+    private int customType2;
 
     /** If True the Item is equipped */
-    private int _equipped;
+    @Getter
+    private int equipped;
 
     /** The action to do clientside (1=ADD, 2=MODIFY, 3=REMOVE) */
-    private int _change;
+    @Getter
+    private int change;
 
     /** The mana of this item */
-    private int _mana;
+    @Getter
+    private int mana;
 
-    private int _time;
+    @Getter
+    private int time;
 
-    private int _location;
+    @Getter
+    private int location;
 
-    private int _elemAtkType = -2;
-    private int _elemAtkPower = 0;
-    private final int[] _elemDefAttr = {0, 0, 0, 0, 0, 0};
+    @Getter
+    private int attackElementType = -2;
 
-    private int[] _option;
+    @Getter
+    private int attackElementPower = 0;
+
+    private final int[] elemDefAttr = {0, 0, 0, 0, 0, 0};
+
+    @Getter
+    private int[] enchantOptions;
 
     /**
      * Get all information from Item to generate ItemInfo.
@@ -82,59 +101,59 @@ public class ItemInfo {
         }
 
         // Get the Identifier of the Item.
-        _objectId = item.getObjectId();
+        objectId = item.getObjectId();
 
         // Get the Item of the Item.
-        _item = item.getTemplate();
+        this.item = item.getTemplate();
 
         // Get the enchant level of the Item.
-        _enchant = item.getEnchantLevel();
+        enchant = item.getEnchantLevel();
 
         // Get the augmentation bonus.
-        _augmentation = item.isAugmented() ? item.getAugmentation().getAugmentationId() : 0;
+        augmentationBonus = item.isAugmented() ? item.getAugmentation().getAugmentationId() : 0;
 
         // Get the quantity of the Item.
-        _count = item.getCount();
+        count = item.getCount();
 
         // Get custom item types (used loto, race tickets).
-        _type1 = item.getCustomType1();
-        _type2 = item.getCustomType2();
+        customType1 = item.getCustomType1();
+        customType2 = item.getCustomType2();
 
         // Verify if the Item is equipped.
-        _equipped = item.isEquipped() ? 1 : 0;
+        equipped = item.isEquipped() ? 1 : 0;
 
         // Get the action to do clientside.
         switch (item.getLastChange()) {
             case Item.ADDED: {
-                _change = 1;
+                change = 1;
                 break;
             }
             case Item.MODIFIED: {
-                _change = 2;
+                change = 2;
                 break;
             }
             case Item.REMOVED: {
-                _change = 3;
+                change = 3;
                 break;
             }
         }
 
         // Get shadow item mana.
-        _mana = item.getMana();
-        _time = item.isTimeLimitedItem() ? (int) (item.getRemainingTime() / 1000) : -9999;
-        _location = item.getLocationSlot();
-        _elemAtkType = item.getAttackElementType();
-        _elemAtkPower = item.getAttackElementPower();
+        mana = item.getMana();
+        time = item.isTimeLimitedItem() ? (int) (item.getRemainingTime() / 1000) : -9999;
+        location = item.getLocationSlot();
+        attackElementType = item.getAttackElementType();
+        attackElementPower = item.getAttackElementPower();
         for (byte i = 0; i < 6; i++) {
-            _elemDefAttr[i] = item.getElementDefAttr(i);
+            elemDefAttr[i] = item.getElementDefAttr(i);
         }
 
-        _option = item.getEnchantOptions();
+        enchantOptions = item.getEnchantOptions();
     }
 
     public ItemInfo(Item item, int change) {
         this(item);
-        _change = change;
+        this.change = change;
     }
 
     public ItemInfo(TradeItem item) {
@@ -143,108 +162,44 @@ public class ItemInfo {
         }
 
         // Get the Identifier of the Item.
-        _objectId = item.getObjectId();
+        objectId = item.getObjectId();
 
         // Get the Item of the Item.
-        _item = item.getItem();
+        this.item = item.getItem();
 
         // Get the enchant level of the Item.
-        _enchant = item.getEnchant();
+        enchant = item.getEnchant();
 
         // Get the augmentation bonus.
-        _augmentation = 0;
+        augmentationBonus = 0;
 
         // Get the quantity of the Item.
-        _count = item.getCount();
+        count = item.getCount();
 
         // Get custom item types (used loto, race tickets).
-        _type1 = item.getCustomType1();
-        _type2 = item.getCustomType2();
+        customType1 = item.getCustomType1();
+        customType2 = item.getCustomType2();
 
         // Verify if the Item is equipped.
-        _equipped = 0;
+        equipped = 0;
 
         // Get the action to do clientside.
-        _change = 0;
+        change = 0;
 
         // Get shadow item mana.
-        _mana = -1;
-        _time = -9999;
-        _location = item.getLocationSlot();
-        _elemAtkType = item.getAttackElementType();
-        _elemAtkPower = item.getAttackElementPower();
+        mana = -1;
+        time = -9999;
+        location = item.getLocationSlot();
+        attackElementType = item.getAttackElementType();
+        attackElementPower = item.getAttackElementPower();
         for (byte i = 0; i < 6; i++) {
-            _elemDefAttr[i] = item.getElementDefAttr(i);
+            elemDefAttr[i] = item.getElementDefAttr(i);
         }
 
-        _option = item.getEnchantOptions();
-    }
-
-    public int getObjectId() {
-        return _objectId;
-    }
-
-    public ItemTemplate getItem() {
-        return _item;
-    }
-
-    public int getEnchant() {
-        return _enchant;
-    }
-
-    public int getAugmentationBonus() {
-        return _augmentation;
-    }
-
-    public long getCount() {
-        return _count;
-    }
-
-    public int getPrice() {
-        return _price;
-    }
-
-    public int getCustomType1() {
-        return _type1;
-    }
-
-    public int getCustomType2() {
-        return _type2;
-    }
-
-    public int getEquipped() {
-        return _equipped;
-    }
-
-    public int getChange() {
-        return _change;
-    }
-
-    public int getMana() {
-        return _mana;
-    }
-
-    public int getTime() {
-        return _time;
-    }
-
-    public int getLocation() {
-        return _location;
-    }
-
-    public int getAttackElementType() {
-        return _elemAtkType;
-    }
-
-    public int getAttackElementPower() {
-        return _elemAtkPower;
+        enchantOptions = item.getEnchantOptions();
     }
 
     public int getElementDefAttr(byte i) {
-        return _elemDefAttr[i];
-    }
-
-    public int[] getEnchantOptions() {
-        return _option;
+        return elemDefAttr[i];
     }
 }

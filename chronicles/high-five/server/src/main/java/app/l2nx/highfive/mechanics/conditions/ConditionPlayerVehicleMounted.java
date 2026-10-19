@@ -28,13 +28,13 @@ import app.l2nx.highfive.mechanics.skill.Skill;
  * @author Nyaran
  */
 public class ConditionPlayerVehicleMounted extends Condition {
-    private final boolean _value;
+    private final boolean value;
 
     /**
      * @param value the value
      */
     public ConditionPlayerVehicleMounted(boolean value) {
-        _value = value;
+        this.value = value;
     }
 
     @Override
@@ -44,6 +44,6 @@ public class ConditionPlayerVehicleMounted extends Condition {
             return true;
         }
 
-        return player.isInVehicle() == _value;
+        return player.isInVehicle() == value;
     }
 }

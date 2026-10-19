@@ -29,15 +29,15 @@ import app.l2nx.highfive.scripts.quests.AbstractSagaQuest;
 public class Q00089_SagaOfTheMysticMuse extends AbstractSagaQuest {
     public Q00089_SagaOfTheMysticMuse() {
         super(89);
-        _npc = new int[] {30174, 31627, 31283, 31283, 31643, 31646, 31648, 31651, 31654, 31655, 31658, 31283};
-        _items = new int[] {7080, 7530, 7081, 7504, 7287, 7318, 7349, 7380, 7411, 7442, 7083, 0};
-        _mob = new int[] {27251, 27238, 27255};
-        _classId = new int[] {103};
-        _prevClass = new int[] {0x1b};
-        _npcSpawnLocations = new Location[] {
+        npc = new int[] {30174, 31627, 31283, 31283, 31643, 31646, 31648, 31651, 31654, 31655, 31658, 31283};
+        items = new int[] {7080, 7530, 7081, 7504, 7287, 7318, 7349, 7380, 7411, 7442, 7083, 0};
+        mob = new int[] {27251, 27238, 27255};
+        classId = new int[] {103};
+        prevClass = new int[] {0x1b};
+        npcSpawnLocations = new Location[] {
             new Location(119518, -28658, -3811), new Location(181227, 36703, -4816), new Location(181215, 36676, -4812)
         };
-        _text = new String[] {
+        text = new String[] {
             "PLAYERNAME! Pursued to here! However, I jumped out of the Banshouren boundaries! You look at the giant as the sign of power!",
             "... Oh ... good! So it was ... let's begin!",
             "I do not have the patience ..! I have been a giant force ...! Cough chatter ah ah ah!",

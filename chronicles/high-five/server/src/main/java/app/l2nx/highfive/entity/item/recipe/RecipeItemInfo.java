@@ -23,6 +23,8 @@
 package app.l2nx.highfive.entity.item.recipe;
 
 import app.l2nx.highfive.entity.item.instance.Item;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * Class explanation:<br>
@@ -31,10 +33,18 @@ import app.l2nx.highfive.entity.item.instance.Item;
  * is stored, this will be only "list" of items with it's owner
  */
 public class RecipeItemInfo {
-    private final int _itemId;
-    private int _quantity;
-    private final int _referencePrice;
-    private final String _itemName;
+    @Getter
+    private final int itemId;
+
+    @Getter
+    @Setter
+    private int quantity;
+
+    @Getter
+    private final int referencePrice;
+
+    @Getter
+    private final String itemName;
 
     /**
      * @param item
@@ -42,41 +52,9 @@ public class RecipeItemInfo {
      */
     public RecipeItemInfo(Item item, int quantity) {
         super();
-        _itemId = item.getId();
-        _quantity = quantity;
-        _itemName = item.getTemplate().getName();
-        _referencePrice = item.getReferencePrice();
-    }
-
-    /**
-     * @return the quantity.
-     */
-    public int getQuantity() {
-        return _quantity;
-    }
-
-    /**
-     * @param quantity The quantity to set.
-     */
-    public void setQuantity(int quantity) {
-        _quantity = quantity;
-    }
-
-    public int getReferencePrice() {
-        return _referencePrice;
-    }
-
-    /**
-     * @return the itemId.
-     */
-    public int getItemId() {
-        return _itemId;
-    }
-
-    /**
-     * @return the itemName.
-     */
-    public String getItemName() {
-        return _itemName;
+        itemId = item.getId();
+        this.quantity = quantity;
+        itemName = item.getTemplate().getName();
+        referencePrice = item.getReferencePrice();
     }
 }

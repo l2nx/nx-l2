@@ -26,9 +26,13 @@ import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.instance.Pet;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
+import lombok.Getter;
+import lombok.Setter;
 
 public class PetStatus extends SummonStatus {
-    private int _currentFed = 0; // Current Fed of the Pet
+    @Getter
+    @Setter
+    private int currentFed = 0; // Current Fed of the Pet
 
     public PetStatus(Pet activeChar) {
         super(activeChar);
@@ -60,14 +64,6 @@ public class PetStatus extends SummonStatus {
         }
 
         pet.getAI().notifyActionAttacked(attacker);
-    }
-
-    public int getCurrentFed() {
-        return _currentFed;
-    }
-
-    public void setCurrentFed(int value) {
-        _currentFed = value;
     }
 
     @Override

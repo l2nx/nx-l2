@@ -23,30 +23,20 @@
 package app.l2nx.highfive.entity.item.holders;
 
 import java.util.List;
+import lombok.Getter;
 
 /**
  * @author -Nemesiss-, Mobius
  */
 public class ExtractableProductItem {
-    private final List<RestorationItemHolder> _items;
-    private final double _chance;
+    @Getter
+    private final List<RestorationItemHolder> items;
+
+    @Getter
+    private final double chance;
 
     public ExtractableProductItem(List<RestorationItemHolder> items, double chance) {
-        _items = items;
-        _chance = chance;
-    }
-
-    /**
-     * @return the the production list.
-     */
-    public List<RestorationItemHolder> getItems() {
-        return _items;
-    }
-
-    /**
-     * @return the chance of the production list.
-     */
-    public double getChance() {
-        return _chance;
+        this.items = items;
+        this.chance = chance;
     }
 }

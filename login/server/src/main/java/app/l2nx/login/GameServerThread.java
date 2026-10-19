@@ -47,8 +47,9 @@ import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.logging.Logger;
-import org.apache.commons.lang3.exception.ExceptionUtils;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Handles connection and communication between login server and game server.<br>
@@ -62,8 +63,8 @@ import org.apache.commons.lang3.exception.ExceptionUtils;
  * </ul>
  * @author -Wooden-, KenM, Mobius
  */
+@Slf4j
 public class GameServerThread extends Thread {
-    protected static final Logger LOGGER = Logger.getLogger(GameServerThread.class.getName());
 
     // Constants.
     private static final int PACKET_HEADER_SIZE = 2;
@@ -72,23 +73,34 @@ public class GameServerThread extends Thread {
     private static final String DEFAULT_BLOWFISH_KEY = "_;v.]05-31!|+-%xT!^[$\00";
 
     // Player Account Management.
-    private final Set<String> _accountsOnGameServer = ConcurrentHashMap.newKeySet();
+    private final Set<String> accountsOnGameServer = ConcurrentHashMap.newKeySet();
 
     // Network Communication.
-    private final Socket _socket;
-    private InputStream _inputStream;
-    private OutputStream _outputStream;
+    private final Socket socket;
+    private InputStream inputStream;
+    private OutputStream outputStream;
 
     // Cryptography.
-    private final RSAPublicKey _publicKey;
-    private final RSAPrivateKey _privateKey;
-    private PacketCipher _blowfishCipher;
+    private final RSAPublicKey publicKey;
+
+    @Getter
+    private final RSAPrivateKey privateKey;
+
+    private PacketCipher blowfishCipher;
 
     // Connection State Management.
-    private final String _connectionIp;
-    private String _connectionIpAddress;
-    private GameServerInfo _gameServerInfo;
-    private GameServerState _loginConnectionState = GameServerState.CONNECTED;
+    private final String connectionIp;
+
+    @Getter
+    private String connectionIpAddress;
+
+    @Getter
+    @Setter
+    private GameServerInfo gameServerInfo;
+
+    @Getter
+    @Setter
+    private GameServerState loginConnectionState = GameServerState.CONNECTED;
 
     /**
      * Constructs a new GameServerThread for handling communication with a game server.<br>
@@ -96,29 +108,29 @@ public class GameServerThread extends Thread {
      * @param socket the TCP socket connection to the game server
      */
     public GameServerThread(Socket socket) {
-        _socket = socket;
-        _connectionIp = socket.getInetAddress().getHostAddress();
+        this.socket = socket;
+        connectionIp = socket.getInetAddress().getHostAddress();
 
         try {
             // Initialize network streams for communication.
-            _inputStream = _socket.getInputStream();
-            _outputStream = new BufferedOutputStream(_socket.getOutputStream());
+            inputStream = this.socket.getInputStream();
+            outputStream = new BufferedOutputStream(this.socket.getOutputStream());
         } catch (IOException e) {
-            LOGGER.warning(getClass().getSimpleName() + ": Failed to initialize network streams - " + e.getMessage());
+            log.warn("Failed to initialize network streams - {}", e.getMessage());
         }
 
         // Retrieve RSA key pair for secure initial communication.
         final ScrambledKeyPair keyPair = LoginController.getInstance().getScrambledRSAKeyPair();
-        _privateKey = (RSAPrivateKey) keyPair.getPrivateKey();
-        _publicKey = (RSAPublicKey) keyPair.getPublicKey();
+        privateKey = (RSAPrivateKey) keyPair.getPrivateKey();
+        publicKey = (RSAPublicKey) keyPair.getPublicKey();
 
         // Initialize Blowfish cipher with default key for packet encryption.
-        _blowfishCipher = new LittleEndianBlowfishCipher(DEFAULT_BLOWFISH_KEY.getBytes(StandardCharsets.UTF_8));
+        blowfishCipher = new LittleEndianBlowfishCipher(DEFAULT_BLOWFISH_KEY.getBytes(StandardCharsets.UTF_8));
 
         // Set thread name for easier debugging and monitoring.
         // Java 18: setName(getClass().getSimpleName() + "-" + getId() + "@" + _connectionIp);
         // Java 19+: Using threadId() method.
-        setName(getClass().getSimpleName() + "-" + threadId() + "@" + _connectionIp);
+        setName(getClass().getSimpleName() + "-" + threadId() + "@" + connectionIp);
 
         // Start the thread to begin processing.
         start();
@@ -131,18 +143,19 @@ public class GameServerThread extends Thread {
     @Override
     public void run() {
         // Resolve and store the connection IP address.
-        _connectionIpAddress = _socket.getInetAddress().getHostAddress();
+        connectionIpAddress = socket.getInetAddress().getHostAddress();
 
         // Check if the connecting IP is banned.
-        if (isBannedGameserverIP(_connectionIpAddress)) {
-            LOGGER.info("GameServerRegistration: IP Address " + _connectionIpAddress
-                    + " is on the banned IP list. Connection rejected.");
+        if (isBannedGameserverIP(connectionIpAddress)) {
+            log.info(
+                    "GameServerRegistration: IP Address {} is on the banned IP list. Connection rejected.",
+                    connectionIpAddress);
             forceClose(LoginServerFail.REASON_IP_BANNED);
             return; // Terminate processing for banned IP.
         }
 
         // Send initial packet with RSA public key for secure key exchange.
-        final InitLS initializationPacket = new InitLS(_publicKey.getModulus().toByteArray());
+        final InitLS initializationPacket = new InitLS(publicKey.getModulus().toByteArray());
         try {
             sendPacket(initializationPacket);
 
@@ -154,13 +167,13 @@ public class GameServerThread extends Thread {
 
             while (true) {
                 // Read packet length header (2 bytes: low byte, high byte).
-                lengthLowByte = _inputStream.read();
-                lengthHighByte = _inputStream.read();
+                lengthLowByte = inputStream.read();
+                lengthHighByte = inputStream.read();
                 packetLength = (lengthHighByte * HIGH_BYTE_MULTIPLIER) + lengthLowByte;
 
                 // Check for connection termination.
-                if ((lengthHighByte < 0) || _socket.isClosed()) {
-                    LOGGER.finer("GameServerThread: Game server terminated the connection gracefully.");
+                if ((lengthHighByte < 0) || socket.isClosed()) {
+                    log.trace("Game server terminated the connection gracefully.");
                     break;
                 }
 
@@ -172,32 +185,34 @@ public class GameServerThread extends Thread {
 
                 // Read the complete packet data.
                 while ((bytesRead != -1) && (totalBytesReceived < (packetLength - PACKET_HEADER_SIZE))) {
-                    bytesRead = _inputStream.read(packetData, totalBytesReceived, remainingBytes);
+                    bytesRead = inputStream.read(packetData, totalBytesReceived, remainingBytes);
                     totalBytesReceived += bytesRead;
                     remainingBytes -= bytesRead;
                 }
 
                 // Validate that we received the complete packet.
                 if (totalBytesReceived != (packetLength - PACKET_HEADER_SIZE)) {
-                    LOGGER.warning("Incomplete packet received from game server. Expected "
-                            + (packetLength - PACKET_HEADER_SIZE) + " bytes, got " + totalBytesReceived
-                            + ". Closing connection.");
+                    log.warn(
+                            "Incomplete packet received from game server. Expected {} bytes, got {}. Closing connection.",
+                            (packetLength - PACKET_HEADER_SIZE),
+                            totalBytesReceived);
                     break;
                 }
 
                 if ((packetData.length % 8) != 0) {
-                    LOGGER.warning("Packet length " + packetData.length
-                            + " from game server is not a multiple of the cipher block. Closing connection.");
+                    log.warn(
+                            "Packet length {} from game server is not a multiple of the cipher block. Closing connection.",
+                            packetData.length);
                     break;
                 }
 
                 // Decrypt the packet data using Blowfish cipher.
-                _blowfishCipher.decrypt(packetData, 0, packetData.length);
+                blowfishCipher.decrypt(packetData, 0, packetData.length);
 
                 // Verify packet integrity using checksum.
                 checksumValid = XorChecksum.verify(packetData, 0, packetData.length);
                 if (!checksumValid) {
-                    LOGGER.warning(
+                    log.warn(
                             "Packet checksum verification failed. Possible data corruption or tampering detected. Closing connection.");
                     return;
                 }
@@ -209,26 +224,27 @@ public class GameServerThread extends Thread {
             // Log connection loss with server identification.
             final String serverIdentification = getServerId() != -1
                     ? "[" + getServerId() + "] " + GameServerTable.getInstance().getServerNameById(getServerId())
-                    : "(" + _connectionIpAddress + ")";
+                    : "(" + connectionIpAddress + ")";
             final String connectionLostMessage =
                     "GameServer " + serverIdentification + ": Connection lost - " + e.getMessage();
-            LOGGER.info(connectionLostMessage);
+            log.info(connectionLostMessage);
         } finally {
             // Cleanup operations when thread terminates.
             if (isAuthed()) {
                 // Mark the game server as offline.
-                if (_gameServerInfo != null) {
-                    _gameServerInfo.setDown();
+                if (gameServerInfo != null) {
+                    gameServerInfo.setDown();
                 }
 
-                LOGGER.info("Server [" + getServerId() + "] "
-                        + GameServerTable.getInstance().getServerNameById(getServerId())
-                        + " is now marked as disconnected.");
+                log.info(
+                        "Server [{}] {} is now marked as disconnected.",
+                        getServerId(),
+                        GameServerTable.getInstance().getServerNameById(getServerId()));
             }
 
             // Remove this game server from active connections and cleanup flood protection.
             LoginServer.getInstance().getGameServerListener().removeGameServer(this);
-            LoginServer.getInstance().getGameServerListener().removeFloodProtection(_connectionIp);
+            LoginServer.getInstance().getGameServerListener().removeFloodProtection(connectionIp);
         }
     }
 
@@ -238,7 +254,7 @@ public class GameServerThread extends Thread {
      * @return true if the account is logged into this game server, false otherwise
      */
     public boolean hasAccountOnGameServer(String accountName) {
-        return _accountsOnGameServer.contains(accountName);
+        return accountsOnGameServer.contains(accountName);
     }
 
     /**
@@ -246,7 +262,7 @@ public class GameServerThread extends Thread {
      * @return the count of active player accounts on this game server
      */
     public int getPlayerCount() {
-        return _accountsOnGameServer.size();
+        return accountsOnGameServer.size();
     }
 
     /**
@@ -288,10 +304,9 @@ public class GameServerThread extends Thread {
 
         try {
             // Close the socket connection immediately.
-            _socket.close();
+            socket.close();
         } catch (IOException e) {
-            LOGGER.finer("GameServerThread: Failed to close socket for banned server. Socket may already be closed - "
-                    + e.getMessage());
+            log.trace("Failed to close socket for banned server. Socket may already be closed - {}", e.getMessage());
         }
     }
 
@@ -314,7 +329,7 @@ public class GameServerThread extends Thread {
      */
     public void sendPacket(SimpleWritablePacket packet) {
         // Verify connection is still valid.
-        if ((_blowfishCipher == null) || (_socket == null) || _socket.isClosed()) {
+        if ((blowfishCipher == null) || (socket == null) || socket.isClosed()) {
             return;
         }
 
@@ -338,27 +353,27 @@ public class GameServerThread extends Thread {
             dataSize = packetData.length - PACKET_HEADER_SIZE; // Recalculate size after padding.
 
             // Thread-safe packet transmission.
-            synchronized (_outputStream) {
+            synchronized (outputStream) {
                 // Append checksum for integrity verification.
                 XorChecksum.append(packetData, PACKET_HEADER_SIZE, dataSize);
 
                 // Encrypt the data portion (excluding header).
-                _blowfishCipher.encrypt(packetData, PACKET_HEADER_SIZE, dataSize);
+                blowfishCipher.encrypt(packetData, PACKET_HEADER_SIZE, dataSize);
 
                 // Send the complete packet.
-                _outputStream.write(packetData);
+                outputStream.write(packetData);
                 try {
-                    _outputStream.flush();
+                    outputStream.flush();
                 } catch (IOException e) {
                     // Game server might have terminated connection during flush.
-                    LOGGER.finer("GameServerThread: Failed to flush output stream. Game server may have disconnected - "
-                            + e.getMessage());
+                    log.trace("Failed to flush output stream. Game server may have disconnected - {}", e.getMessage());
                 }
             }
         } catch (IOException e) {
-            LOGGER.severe("GameServerThread: IOException occurred while sending packet "
-                    + packet.getClass().getSimpleName() + " - " + e.getMessage());
-            LOGGER.severe(ExceptionUtils.getStackTrace(e));
+            log.error(
+                    "IOException occurred while sending packet {}",
+                    packet.getClass().getSimpleName(),
+                    e);
         }
     }
 
@@ -396,24 +411,26 @@ public class GameServerThread extends Thread {
      * @param hosts array of host addresses in pairs (host1, subnet1, host2, subnet2, ...)
      */
     public void setGameHosts(String[] hosts) {
-        LOGGER.info("Updated Gameserver [" + getServerId() + "] "
-                + GameServerTable.getInstance().getServerNameById(getServerId()) + " IP's:");
+        log.info(
+                "Updated Gameserver [{}] {} IP's:",
+                getServerId(),
+                GameServerTable.getInstance().getServerNameById(getServerId()));
 
         // Clear existing server addresses.
-        _gameServerInfo.clearServerAddresses();
+        gameServerInfo.clearServerAddresses();
 
         // Process host pairs (host, subnet).
         for (int i = 0; i < hosts.length; i += 2) {
             try {
-                _gameServerInfo.addServerAddress(hosts[i], hosts[i + 1]);
+                gameServerInfo.addServerAddress(hosts[i], hosts[i + 1]);
             } catch (Exception e) {
-                LOGGER.warning("Failed to resolve hostname \"" + hosts[i] + "\" - " + e.getMessage());
+                log.warn("Failed to resolve hostname \"{}\" - {}", hosts[i], e.getMessage());
             }
         }
 
         // Log all configured server addresses.
-        for (String serverAddress : _gameServerInfo.getServerAddresses()) {
-            LOGGER.info(serverAddress);
+        for (String serverAddress : gameServerInfo.getServerAddresses()) {
+            log.info(serverAddress);
         }
     }
 
@@ -422,36 +439,11 @@ public class GameServerThread extends Thread {
      * @return true if the game server is authenticated, false otherwise
      */
     public boolean isAuthed() {
-        if (_gameServerInfo == null) {
+        if (gameServerInfo == null) {
             return false;
         }
 
-        return _gameServerInfo.isAuthed();
-    }
-
-    /**
-     * Sets the GameServerInfo object for this thread.<br>
-     * This establishes the link between the thread and server configuration.
-     * @param gameServerInfo the GameServerInfo object to associate with this thread
-     */
-    public void setGameServerInfo(GameServerInfo gameServerInfo) {
-        _gameServerInfo = gameServerInfo;
-    }
-
-    /**
-     * Returns the GameServerInfo object associated with this thread.
-     * @return the GameServerInfo object, or null if not set
-     */
-    public GameServerInfo getGameServerInfo() {
-        return _gameServerInfo;
-    }
-
-    /**
-     * Returns the IP address of the connected game server.
-     * @return the connection IP address as a string
-     */
-    public String getConnectionIpAddress() {
-        return _connectionIpAddress;
+        return gameServerInfo.isAuthed();
     }
 
     /**
@@ -459,19 +451,11 @@ public class GameServerThread extends Thread {
      * @return the server ID, or -1 if not assigned
      */
     public int getServerId() {
-        if (_gameServerInfo != null) {
-            return _gameServerInfo.getId();
+        if (gameServerInfo != null) {
+            return gameServerInfo.getId();
         }
 
         return -1;
-    }
-
-    /**
-     * Returns the RSA private key used for decrypting session keys from the game server.
-     * @return the RSA private key
-     */
-    public RSAPrivateKey getPrivateKey() {
-        return _privateKey;
     }
 
     /**
@@ -480,7 +464,7 @@ public class GameServerThread extends Thread {
      * @param blowfishCipher the new Blowfish cipher to use
      */
     public void setBlowFish(PacketCipher blowfishCipher) {
-        _blowfishCipher = blowfishCipher;
+        this.blowfishCipher = blowfishCipher;
     }
 
     /**
@@ -489,7 +473,7 @@ public class GameServerThread extends Thread {
      * @param accountName the account name to add
      */
     public void addAccountOnGameServer(String accountName) {
-        _accountsOnGameServer.add(accountName);
+        accountsOnGameServer.add(accountName);
         LoginController.getInstance().removeAuthedLoginClient(accountName);
     }
 
@@ -499,24 +483,7 @@ public class GameServerThread extends Thread {
      * @param accountName the account name to remove
      */
     public void removeAccountOnGameServer(String accountName) {
-        _accountsOnGameServer.remove(accountName);
+        accountsOnGameServer.remove(accountName);
         LoginController.getInstance().removeAuthedLoginClient(accountName);
-    }
-
-    /**
-     * Returns the current connection state of this game server.
-     * @return the current GameServerState
-     */
-    public GameServerState getLoginConnectionState() {
-        return _loginConnectionState;
-    }
-
-    /**
-     * Sets the connection state of this game server.<br>
-     * This is used to track the authentication and registration progress.
-     * @param state the new connection state
-     */
-    public void setLoginConnectionState(GameServerState state) {
-        _loginConnectionState = state;
     }
 }

@@ -29,18 +29,18 @@ import app.l2nx.network.buffer.WriteBuffer;
  * @author -Wooden-
  */
 public class ExFishingEnd extends ServerPacket {
-    private final boolean _win;
-    private final Creature _creature;
+    private final boolean win;
+    private final Creature creature;
 
     public ExFishingEnd(boolean win, Player character) {
-        _win = win;
-        _creature = character;
+        this.win = win;
+        creature = character;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_FISHING_END.writeId(this, buffer);
-        buffer.writeInt(_creature.getObjectId());
-        buffer.writeByte(_win);
+        buffer.writeInt(creature.getObjectId());
+        buffer.writeByte(win);
     }
 }

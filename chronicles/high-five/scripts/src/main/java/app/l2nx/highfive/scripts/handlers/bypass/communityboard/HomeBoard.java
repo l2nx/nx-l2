@@ -58,11 +58,13 @@ import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiPredicate;
 import java.util.function.Predicate;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Home board.
  * @author Zoey76, Mobius
  */
+@Slf4j
 public class HomeBoard implements IParseBoardHandler {
     private static final DateTimeFormatter PREMIUM_FORMAT = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm");
 
@@ -367,7 +369,7 @@ public class HomeBoard implements IParseBoardHandler {
                 }
             }
         } catch (Exception e) {
-            LOG.warning(FavoriteBoard.class.getSimpleName() + ": Coudn't load favorites count for " + player);
+            log.warn("Coudn't load favorites count for {}", player);
         }
 
         return count;

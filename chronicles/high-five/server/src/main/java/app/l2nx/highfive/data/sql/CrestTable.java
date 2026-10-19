@@ -31,25 +31,24 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Loads and saves crests from database.
  * @author NosBit
  */
+@Slf4j
 public class CrestTable {
-    private static final Logger LOGGER = Logger.getLogger(CrestTable.class.getName());
 
-    private final Map<Integer, Crest> _crests = new ConcurrentHashMap<>();
-    private final AtomicInteger _nextId = new AtomicInteger(1);
+    private final Map<Integer, Crest> crests = new ConcurrentHashMap<>();
+    private final AtomicInteger nextId = new AtomicInteger(1);
 
     protected CrestTable() {
         load();
     }
 
     public synchronized void load() {
-        _crests.clear();
+        crests.clear();
         final Set<Integer> crestsInUse = new HashSet<>();
         for (Clan clan : ClanTable.getInstance().getClans()) {
             if (clan.getCrestId() != 0) {
@@ -71,13 +70,13 @@ public class CrestTable {
                 ResultSet rs = statement.executeQuery()) {
             while (rs.next()) {
                 final int id = rs.getInt("crest_id");
-                if (_nextId.get() <= id) {
-                    _nextId.set(id + 1);
+                if (nextId.get() <= id) {
+                    nextId.set(id + 1);
                 }
 
                 // Delete all unused crests except the last one we do not want to reuse.
                 // a crest id because client will display wrong crest if it is reused
-                if (!crestsInUse.contains(id) && (id != (_nextId.get() - 1))) {
+                if (!crestsInUse.contains(id) && (id != (nextId.get() - 1))) {
                     removeCrest(id);
                     continue;
                 }
@@ -85,35 +84,44 @@ public class CrestTable {
                 final byte[] data = rs.getBytes("data");
                 final CrestType crestType = CrestType.getById(rs.getInt("type"));
                 if (crestType != null) {
-                    _crests.put(id, new Crest(id, data, crestType));
+                    crests.put(id, new Crest(id, data, crestType));
                 } else {
-                    LOGGER.warning("Unknown crest type found in database. Type:" + rs.getInt("type"));
+                    log.warn("Unknown crest type found in database. Type:{}", rs.getInt("type"));
                 }
             }
         } catch (SQLException e) {
-            LOGGER.log(Level.WARNING, "There was an error while loading crests from database:", e);
+            log.warn("There was an error while loading crests from database:", e);
         }
 
-        LOGGER.info(getClass().getSimpleName() + ": Loaded " + _crests.size() + " Crests.");
+        log.info("Loaded {} Crests.", crests.size());
 
         for (Clan clan : ClanTable.getInstance().getClans()) {
             if ((clan.getCrestId() != 0) && (getCrest(clan.getCrestId()) == null)) {
-                LOGGER.info("Removing non-existent crest for clan " + clan.getName() + " [" + clan.getId()
-                        + "], crestId:" + clan.getCrestId());
+                log.info(
+                        "Removing non-existent crest for clan {} [{}], crestId:{}",
+                        clan.getName(),
+                        clan.getId(),
+                        clan.getCrestId());
                 clan.setCrestId(0);
                 clan.changeClanCrest(0);
             }
 
             if ((clan.getCrestLargeId() != 0) && (getCrest(clan.getCrestLargeId()) == null)) {
-                LOGGER.info("Removing non-existent large crest for clan " + clan.getName() + " [" + clan.getId()
-                        + "], crestLargeId:" + clan.getCrestLargeId());
+                log.info(
+                        "Removing non-existent large crest for clan {} [{}], crestLargeId:{}",
+                        clan.getName(),
+                        clan.getId(),
+                        clan.getCrestLargeId());
                 clan.setCrestLargeId(0);
                 clan.changeLargeCrest(0);
             }
 
             if ((clan.getAllyCrestId() != 0) && (getCrest(clan.getAllyCrestId()) == null)) {
-                LOGGER.info("Removing non-existent ally crest for clan " + clan.getName() + " [" + clan.getId()
-                        + "], allyCrestId:" + clan.getAllyCrestId());
+                log.info(
+                        "Removing non-existent ally crest for clan {} [{}], allyCrestId:{}",
+                        clan.getName(),
+                        clan.getId(),
+                        clan.getAllyCrestId());
                 clan.setAllyCrestId(0);
                 clan.changeAllyCrest(0, true);
             }
@@ -125,7 +133,7 @@ public class CrestTable {
      * @return {@code Crest} if crest is found, {@code null} if crest was not found.
      */
     public Crest getCrest(int crestId) {
-        return _crests.get(crestId);
+        return crests.get(crestId);
     }
 
     /**
@@ -138,15 +146,15 @@ public class CrestTable {
         try (Connection con = DatabaseFactory.getConnection();
                 PreparedStatement statement =
                         con.prepareStatement("INSERT INTO `crests`(`crest_id`, `data`, `type`) VALUES(?, ?, ?)")) {
-            final Crest crest = new Crest(_nextId.getAndIncrement(), data, crestType);
+            final Crest crest = new Crest(nextId.getAndIncrement(), data, crestType);
             statement.setInt(1, crest.getId());
             statement.setBytes(2, crest.getData());
             statement.setInt(3, crest.getType().getId());
             statement.executeUpdate();
-            _crests.put(crest.getId(), crest);
+            crests.put(crest.getId(), crest);
             return crest;
         } catch (SQLException e) {
-            LOGGER.log(Level.WARNING, "There was an error while saving crest in database:", e);
+            log.warn("There was an error while saving crest in database:", e);
         }
 
         return null;
@@ -157,11 +165,11 @@ public class CrestTable {
      * @param crestId the id of crest to be removed.
      */
     public void removeCrest(int crestId) {
-        _crests.remove(crestId);
+        crests.remove(crestId);
 
         // avoid removing last crest id we do not want to lose index...
         // Because client will display wrong crest if it is reused.
-        if (crestId == (_nextId.get() - 1)) {
+        if (crestId == (nextId.get() - 1)) {
             return;
         }
 
@@ -170,7 +178,7 @@ public class CrestTable {
             statement.setInt(1, crestId);
             statement.executeUpdate();
         } catch (SQLException e) {
-            LOGGER.log(Level.WARNING, "There was an error while deleting crest from database:", e);
+            log.warn("There was an error while deleting crest from database:", e);
         }
     }
 
@@ -178,7 +186,7 @@ public class CrestTable {
      * @return The next crest id.
      */
     public int getNextId() {
-        return _nextId.getAndIncrement();
+        return nextId.getAndIncrement();
     }
 
     public static CrestTable getInstance() {

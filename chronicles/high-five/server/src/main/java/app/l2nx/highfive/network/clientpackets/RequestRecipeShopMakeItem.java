@@ -29,17 +29,17 @@ import app.l2nx.highfive.managers.RecipeManager;
 import app.l2nx.highfive.util.LocationUtil;
 
 public class RequestRecipeShopMakeItem extends ClientPacket {
-    private int _id;
-    private int _recipeId;
+    private int id;
+    private int recipeId;
 
     @SuppressWarnings("unused")
-    private long _unknown;
+    private long unknown;
 
     @Override
     protected void readImpl() {
-        _id = readInt();
-        _recipeId = readInt();
-        _unknown = readLong();
+        id = readInt();
+        recipeId = readInt();
+        unknown = readLong();
     }
 
     @Override
@@ -53,7 +53,7 @@ public class RequestRecipeShopMakeItem extends ClientPacket {
             return;
         }
 
-        final Player manufacturer = World.getPlayer(_id);
+        final Player manufacturer = World.getPlayer(id);
         if (manufacturer == null) {
             return;
         }
@@ -78,7 +78,7 @@ public class RequestRecipeShopMakeItem extends ClientPacket {
         }
 
         if (LocationUtil.checkIfInRange(150, player, manufacturer, true)) {
-            RecipeManager.getInstance().requestManufactureItem(manufacturer, _recipeId, player);
+            RecipeManager.getInstance().requestManufactureItem(manufacturer, recipeId, player);
         }
     }
 }

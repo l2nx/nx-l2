@@ -31,12 +31,14 @@ import app.l2nx.highfive.network.serverpackets.NpcHtmlMessage;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.DateFormatUtils;
 
 /**
  * Fortress of Resistance clan hall siege Script.
  * @author BiggBoss
  */
+@Slf4j
 public class FortressOfResistance extends ClanHallSiegeEngine {
     private static final int MESSENGER = 35382;
     private static final int BLOODY_LORD_NURKA = 35375;
@@ -47,9 +49,9 @@ public class FortressOfResistance extends ClanHallSiegeEngine {
         new Location(47247, 109396, -2000), // 30%
     };
 
-    private Spawn _nurka;
-    private final Map<Integer, Long> _damageToNurka = new HashMap<>();
-    private NpcHtmlMessage _messengerMsg;
+    private Spawn nurka;
+    private final Map<Integer, Long> damageToNurka = new HashMap<>();
+    private NpcHtmlMessage messengerMsg;
 
     private FortressOfResistance() {
         super(FORTRESS_RESSISTANCE);
@@ -59,9 +61,9 @@ public class FortressOfResistance extends ClanHallSiegeEngine {
         buildMessengerMessage();
 
         try {
-            _nurka = new Spawn(BLOODY_LORD_NURKA);
-            _nurka.setAmount(1);
-            _nurka.setRespawnDelay(10800);
+            nurka = new Spawn(BLOODY_LORD_NURKA);
+            nurka.setAmount(1);
+            nurka.setRespawnDelay(10800);
             // 			@formatter:off
             // 			int chance = getRandom(100) + 1;
             // 			if (chance <= 30)
@@ -77,9 +79,9 @@ public class FortressOfResistance extends ClanHallSiegeEngine {
             // 				coords = NURKA_COORDS[2];
             // 			}
             // 			@formatter:on
-            _nurka.setLocation(NURKA_COORDS[0]);
+            nurka.setLocation(NURKA_COORDS[0]);
         } catch (Exception e) {
-            LOGGER.warning(getName() + ": Could not set the Bloody Lord Nurka spawn " + e);
+            log.warn("{}: Could not set the Bloody Lord Nurka spawn", getName(), e);
         }
     }
 
@@ -88,39 +90,39 @@ public class FortressOfResistance extends ClanHallSiegeEngine {
                 .getHtm(null, "data/scripts/conquerablehalls/FortressOfResistance/partisan_ordery_brakel001.htm");
         if (html != null) {
             // FIXME: We don't have an object id to put in here :(
-            _messengerMsg = new NpcHtmlMessage();
-            _messengerMsg.setHtml(html);
-            _messengerMsg.replace(
-                    "%nextSiege%", DateFormatUtils.format(_hall.getSiegeDate().getTime(), "yyyy-MM-dd HH:mm:ss"));
+            messengerMsg = new NpcHtmlMessage();
+            messengerMsg.setHtml(html);
+            messengerMsg.replace(
+                    "%nextSiege%", DateFormatUtils.format(hall.getSiegeDate().getTime(), "yyyy-MM-dd HH:mm:ss"));
         }
     }
 
     @Override
     public String onFirstTalk(Npc npc, Player player) {
-        player.sendPacket(_messengerMsg);
+        player.sendPacket(messengerMsg);
         return null;
     }
 
     @Override
     public void onAttack(Npc npc, Player player, int damage, boolean isSummon) {
-        if (!_hall.isInSiege()) {
+        if (!hall.isInSiege()) {
             return;
         }
 
         final int clanId = player.getClanId();
         if (clanId > 0) {
-            final long clanDmg = (_damageToNurka.containsKey(clanId)) ? _damageToNurka.get(clanId) + damage : damage;
-            _damageToNurka.put(clanId, clanDmg);
+            final long clanDmg = (damageToNurka.containsKey(clanId)) ? damageToNurka.get(clanId) + damage : damage;
+            damageToNurka.put(clanId, clanDmg);
         }
     }
 
     @Override
     public void onKill(Npc npc, Player killer, boolean isSummon) {
-        if (!_hall.isInSiege()) {
+        if (!hall.isInSiege()) {
             return;
         }
 
-        _missionAccomplished = true;
+        missionAccomplished = true;
 
         synchronized (this) {
             npc.getSpawn().stopRespawn();
@@ -134,7 +136,7 @@ public class FortressOfResistance extends ClanHallSiegeEngine {
     public Clan getWinner() {
         int winnerId = 0;
         long counter = 0;
-        for (Entry<Integer, Long> e : _damageToNurka.entrySet()) {
+        for (Entry<Integer, Long> e : damageToNurka.entrySet()) {
             final long dam = e.getValue();
             if (dam > counter) {
                 winnerId = e.getKey();
@@ -147,7 +149,7 @@ public class FortressOfResistance extends ClanHallSiegeEngine {
 
     @Override
     public void onSiegeStarts() {
-        _nurka.init();
+        nurka.init();
     }
 
     @Override

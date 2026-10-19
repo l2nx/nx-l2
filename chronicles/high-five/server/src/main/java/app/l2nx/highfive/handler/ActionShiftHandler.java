@@ -27,27 +27,27 @@ import java.util.Map;
  * @author UnAfraid
  */
 public class ActionShiftHandler implements IHandler<IActionShiftHandler, InstanceType> {
-    private final Map<InstanceType, IActionShiftHandler> _actionsShift;
+    private final Map<InstanceType, IActionShiftHandler> actionsShift;
 
     protected ActionShiftHandler() {
-        _actionsShift = new EnumMap<>(InstanceType.class);
+        actionsShift = new EnumMap<>(InstanceType.class);
     }
 
     @Override
     public void registerHandler(IActionShiftHandler handler) {
-        _actionsShift.put(handler.getInstanceType(), handler);
+        actionsShift.put(handler.getInstanceType(), handler);
     }
 
     @Override
     public synchronized void removeHandler(IActionShiftHandler handler) {
-        _actionsShift.remove(handler.getInstanceType());
+        actionsShift.remove(handler.getInstanceType());
     }
 
     @Override
     public IActionShiftHandler getHandler(InstanceType iType) {
         IActionShiftHandler result = null;
         for (InstanceType t = iType; t != null; t = t.getParent()) {
-            result = _actionsShift.get(t);
+            result = actionsShift.get(t);
             if (result != null) {
                 break;
             }
@@ -58,7 +58,7 @@ public class ActionShiftHandler implements IHandler<IActionShiftHandler, Instanc
 
     @Override
     public int size() {
-        return _actionsShift.size();
+        return actionsShift.size();
     }
 
     public static ActionShiftHandler getInstance() {

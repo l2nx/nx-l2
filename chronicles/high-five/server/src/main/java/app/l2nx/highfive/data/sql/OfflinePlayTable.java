@@ -41,14 +41,13 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author Mobius
  */
+@Slf4j
 public class OfflinePlayTable {
-    private static final Logger LOGGER = Logger.getLogger(OfflinePlayTable.class.getName());
 
     private static final String LOAD_PLAYER_IDS = "SELECT DISTINCT charId FROM character_offline_play";
     private static final String LOAD_PLAYER = "SELECT * FROM character_offline_play WHERE charId=?";
@@ -75,7 +74,7 @@ public class OfflinePlayTable {
      * Restores all offline play players on server start.
      */
     public void restoreOfflinePlayers() {
-        LOGGER.info(getClass().getSimpleName() + ": Loading offline auto players...");
+        log.info("Loading offline auto players...");
 
         try (Connection con = DatabaseFactory.getConnection();
                 Statement statement = con.createStatement();
@@ -160,19 +159,16 @@ public class OfflinePlayTable {
 
                     nPlayers++;
                 } catch (Exception e) {
-                    LOGGER.log(Level.WARNING, getClass().getSimpleName() + ": Error loading auto player " + player, e);
+                    log.warn("Error loading auto player {}", player, e);
                     if (player != null) {
                         Disconnection.of(player).storeAndDeleteWith(LeaveWorld.STATIC_PACKET);
                     }
                 }
             }
 
-            LOGGER.info(getClass().getSimpleName() + ": Loaded " + nPlayers + " offline auto players.");
+            log.info("Loaded {} offline auto players.", nPlayers);
         } catch (Exception e) {
-            LOGGER.log(
-                    Level.WARNING,
-                    getClass().getSimpleName() + ": Error while loading offline auto players. " + e.getMessage(),
-                    e);
+            log.warn("Error while loading offline auto players. {}", e.getMessage(), e);
         }
 
         // Restore parties.
@@ -211,12 +207,9 @@ public class OfflinePlayTable {
                     }
                 }
 
-                LOGGER.info(getClass().getSimpleName() + ": Loaded " + nParties + " offline groups.");
+                log.info("Loaded {} offline groups.", nParties);
             } catch (Exception e) {
-                LOGGER.log(
-                        Level.WARNING,
-                        getClass().getSimpleName() + ": Error while restoring offline groups. " + e.getMessage(),
-                        e);
+                log.warn("Error while restoring offline groups. {}", e.getMessage(), e);
             }
         }
 
@@ -225,10 +218,7 @@ public class OfflinePlayTable {
                 Statement statement = con.createStatement()) {
             statement.executeUpdate(REMOVE_GROUP_MEMBERS);
         } catch (Exception e) {
-            LOGGER.log(
-                    Level.WARNING,
-                    getClass().getSimpleName() + ": Error clearing offline group data. " + e.getMessage(),
-                    e);
+            log.warn("Error clearing offline group data. {}", e.getMessage(), e);
         }
     }
 
@@ -308,16 +298,10 @@ public class OfflinePlayTable {
                 statement2.executeBatch();
                 // No need to call con.commit() as HikariCP autocommit is true.
             } catch (Exception e) {
-                LOGGER.log(
-                        Level.WARNING,
-                        getClass().getSimpleName() + ": Error while saving offline auto player " + player,
-                        e);
+                log.warn("Error while saving offline auto player {}", player, e);
             }
         } catch (Exception e) {
-            LOGGER.log(
-                    Level.WARNING,
-                    getClass().getSimpleName() + ": Error while saving offline auto players. " + e.getMessage(),
-                    e);
+            log.warn("Error while saving offline auto players. {}", e.getMessage(), e);
         }
     }
 
@@ -343,10 +327,7 @@ public class OfflinePlayTable {
             statement.executeBatch();
             // No need to call con.commit() as HikariCP autocommit is true.
         } catch (Exception e) {
-            LOGGER.log(
-                    Level.WARNING,
-                    getClass().getSimpleName() + ": Error while storing offline parties. " + e.getMessage(),
-                    e);
+            log.warn("Error while storing offline parties. {}", e.getMessage(), e);
         }
     }
 
@@ -360,10 +341,7 @@ public class OfflinePlayTable {
             statement.setInt(1, player.getObjectId());
             statement.execute();
         } catch (Exception e) {
-            LOGGER.log(
-                    Level.WARNING,
-                    getClass().getSimpleName() + ": Error while removing offline auto players. " + e.getMessage(),
-                    e);
+            log.warn("Error while removing offline auto players. {}", e.getMessage(), e);
         }
     }
 

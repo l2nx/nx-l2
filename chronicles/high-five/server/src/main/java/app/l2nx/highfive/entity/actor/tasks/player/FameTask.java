@@ -30,28 +30,28 @@ import app.l2nx.highfive.network.serverpackets.SystemMessage;
  * @author UnAfraid
  */
 public class FameTask implements Runnable {
-    private final Player _player;
-    private final int _value;
+    private final Player player;
+    private final int value;
 
     public FameTask(Player player, int value) {
-        _player = player;
-        _value = value;
+        this.player = player;
+        this.value = value;
     }
 
     @Override
     public void run() {
-        if ((_player == null) || (_player.isDead() && !PlayerConfig.FAME_FOR_DEAD_PLAYERS)) {
+        if ((player == null) || (player.isDead() && !PlayerConfig.FAME_FOR_DEAD_PLAYERS)) {
             return;
         }
 
-        if (((_player.getClient() == null) || _player.getClient().isDetached()) && !OfflineTradeConfig.OFFLINE_FAME) {
+        if (((player.getClient() == null) || player.getClient().isDetached()) && !OfflineTradeConfig.OFFLINE_FAME) {
             return;
         }
 
-        _player.setFame(_player.getFame() + _value);
+        player.setFame(player.getFame() + value);
         final SystemMessage sm = new SystemMessage(SystemMessageId.YOU_HAVE_ACQUIRED_S1_REPUTATION);
-        sm.addInt(_value);
-        _player.sendPacket(sm);
-        _player.updateUserInfo();
+        sm.addInt(value);
+        player.sendPacket(sm);
+        player.updateUserInfo();
     }
 }

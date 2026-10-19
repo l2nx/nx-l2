@@ -39,8 +39,9 @@ import app.l2nx.highfive.network.serverpackets.SystemMessage;
 import app.l2nx.highfive.util.StatSet;
 import java.util.Calendar;
 import java.util.List;
-import java.util.logging.Level;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class Festival implements IBypassHandler {
     private static final String[] COMMANDS = {"festival", "festivaldesc"};
 
@@ -314,7 +315,7 @@ public class Festival implements IBypassHandler {
 
             return true;
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, "Exception in " + getClass().getSimpleName(), e);
+            log.warn("Bypass failed", e);
         }
 
         return false;

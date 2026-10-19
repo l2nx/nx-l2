@@ -43,21 +43,30 @@ import app.l2nx.highfive.util.LocationUtil;
 import java.util.Collection;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
-import java.util.logging.Level;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author DS
  */
+@Slf4j
 public abstract class Vehicle extends Creature {
-    protected int _dockId = 0;
-    protected final Collection<Player> _passengers = ConcurrentHashMap.newKeySet();
-    protected Location _oustLoc = null;
-    private Runnable _engine = null;
+    @Getter
+    protected int dockId = 0;
 
-    protected VehiclePathPoint[] _currentPath = null;
-    protected int _runState = 0;
-    private ScheduledFuture<?> _monitorTask = null;
-    private final Location _monitorLocation = new Location(this);
+    @Getter
+    protected final Collection<Player> passengers = ConcurrentHashMap.newKeySet();
+
+    @Setter
+    protected Location oustLoc = null;
+
+    private Runnable engine = null;
+
+    protected VehiclePathPoint[] currentPath = null;
+    protected int runState = 0;
+    private ScheduledFuture<?> monitorTask = null;
+    private final Location monitorLocation = new Location(this);
 
     /**
      * Creates an abstract vehicle.
@@ -78,24 +87,24 @@ public abstract class Vehicle extends Creature {
     }
 
     public boolean canBeControlled() {
-        return _engine == null;
+        return engine == null;
     }
 
     public void registerEngine(Runnable r) {
-        _engine = r;
+        engine = r;
     }
 
     public void runEngine(int delay) {
-        if (_engine != null) {
-            ThreadPool.schedule(_engine, delay);
+        if (engine != null) {
+            ThreadPool.schedule(engine, delay);
         }
     }
 
     public void executePath(VehiclePathPoint[] path) {
-        _runState = 0;
-        _currentPath = path;
-        if ((_currentPath != null) && (_currentPath.length > 0)) {
-            final VehiclePathPoint point = _currentPath[0];
+        runState = 0;
+        currentPath = path;
+        if ((currentPath != null) && (currentPath.length > 0)) {
+            final VehiclePathPoint point = currentPath[0];
             if (point.getMoveSpeed() > 0) {
                 getStat().setMoveSpeed(point.getMoveSpeed());
             }
@@ -113,21 +122,21 @@ public abstract class Vehicle extends Creature {
 
     @Override
     public boolean moveToNextRoutePoint() {
-        _move = null;
-        if (_currentPath != null) {
-            _runState++;
-            if (_runState < _currentPath.length) {
-                final VehiclePathPoint point = _currentPath[_runState];
+        move = null;
+        if (currentPath != null) {
+            runState++;
+            if (runState < currentPath.length) {
+                final VehiclePathPoint point = currentPath[runState];
                 if (!isMovementDisabled()) {
                     if (point.getMoveSpeed() == 0) {
                         point.setHeading(point.getRotationSpeed());
                         teleToLocation(point, false);
-                        if (_monitorTask != null) {
-                            _monitorTask.cancel(true);
-                            _monitorTask = null;
+                        if (monitorTask != null) {
+                            monitorTask.cancel(true);
+                            monitorTask = null;
                         }
 
-                        _currentPath = null;
+                        currentPath = null;
                     } else {
                         if (point.getMoveSpeed() > 0) {
                             getStat().setMoveSpeed(point.getMoveSpeed());
@@ -153,24 +162,24 @@ public abstract class Vehicle extends Creature {
                         }
 
                         m.moveStartTime = GameTimeTaskManager.getInstance().getGameTicks();
-                        _move = m;
+                        move = m;
                         MovementTaskManager.getInstance().registerMovingObject(this);
 
                         // Make sure vehicle is not stuck.
-                        if (_monitorTask == null) {
-                            _monitorTask = ThreadPool.scheduleAtFixedRate(
+                        if (monitorTask == null) {
+                            monitorTask = ThreadPool.scheduleAtFixedRate(
                                     () -> {
-                                        if (!isInDock() && (calculateDistance3D(_monitorLocation) == 0)) {
-                                            if (_currentPath != null) {
-                                                if (_runState < _currentPath.length) {
-                                                    _runState = Math.max(0, _runState - 1);
+                                        if (!isInDock() && (calculateDistance3D(monitorLocation) == 0)) {
+                                            if (currentPath != null) {
+                                                if (runState < currentPath.length) {
+                                                    runState = Math.max(0, runState - 1);
                                                     moveToNextRoutePoint();
                                                 } else {
                                                     broadcastInfo();
                                                 }
                                             }
                                         } else {
-                                            _monitorLocation.setXYZ(this);
+                                            monitorLocation.setXYZ(this);
                                         }
                                     },
                                     1000,
@@ -181,12 +190,12 @@ public abstract class Vehicle extends Creature {
                     }
                 }
             } else {
-                if (_monitorTask != null) {
-                    _monitorTask.cancel(true);
-                    _monitorTask = null;
+                if (monitorTask != null) {
+                    monitorTask.cancel(true);
+                    monitorTask = null;
                 }
 
-                _currentPath = null;
+                currentPath = null;
             }
         }
 
@@ -205,30 +214,20 @@ public abstract class Vehicle extends Creature {
     }
 
     public boolean isInDock() {
-        return _dockId > 0;
-    }
-
-    public int getDockId() {
-        return _dockId;
+        return dockId > 0;
     }
 
     public void setInDock(int d) {
-        _dockId = d;
-    }
-
-    public void setOustLoc(Location loc) {
-        _oustLoc = loc;
+        dockId = d;
     }
 
     public Location getOustLoc() {
-        return _oustLoc != null
-                ? _oustLoc
-                : MapRegionData.getInstance().getTeleToLocation(this, TeleportWhereType.TOWN);
+        return oustLoc != null ? oustLoc : MapRegionData.getInstance().getTeleToLocation(this, TeleportWhereType.TOWN);
     }
 
     public void oustPlayers() {
-        _passengers.forEach(this::oustPlayer);
-        _passengers.clear();
+        passengers.forEach(this::oustPlayer);
+        passengers.clear();
     }
 
     public void oustPlayer(Player player) {
@@ -239,33 +238,29 @@ public abstract class Vehicle extends Creature {
 
     public boolean addPassenger(Player player) {
         if ((player == null)
-                || _passengers.contains(player)
+                || passengers.contains(player)
                 || ((player.getVehicle() != null) && (player.getVehicle() != this))) {
             return false;
         }
 
-        _passengers.add(player);
+        passengers.add(player);
         return true;
     }
 
     public void removePassenger(Player player) {
         try {
-            _passengers.remove(player);
+            passengers.remove(player);
         } catch (Exception e) {
             // Ignore.
         }
     }
 
     public boolean isEmpty() {
-        return _passengers.isEmpty();
-    }
-
-    public Collection<Player> getPassengers() {
-        return _passengers;
+        return passengers.isEmpty();
     }
 
     public void broadcastToPassengers(ServerPacket packet) {
-        for (Player player : _passengers) {
+        for (Player player : passengers) {
             if (player != null) {
                 player.sendPacket(packet);
             }
@@ -306,7 +301,7 @@ public abstract class Vehicle extends Creature {
     @Override
     public boolean updatePosition() {
         final boolean result = super.updatePosition();
-        for (Player player : _passengers) {
+        for (Player player : passengers) {
             if ((player != null) && (player.getVehicle() == this)) {
                 player.setXYZ(getX(), getY(), getZ());
                 player.revalidateZone(false);
@@ -326,7 +321,7 @@ public abstract class Vehicle extends Creature {
 
         getAI().setIntentionActive();
 
-        for (Player player : _passengers) {
+        for (Player player : passengers) {
             if (player != null) {
                 player.teleToLocation(loc, false);
             }
@@ -346,7 +341,7 @@ public abstract class Vehicle extends Creature {
 
     @Override
     public void stopMove(Location loc) {
-        _move = null;
+        move = null;
         if (loc != null) {
             setXYZ(loc);
             setHeading(loc.getHeading());
@@ -356,20 +351,20 @@ public abstract class Vehicle extends Creature {
 
     @Override
     public boolean deleteMe() {
-        _engine = null;
+        engine = null;
 
         try {
             if (isMoving()) {
                 stopMove(null);
             }
         } catch (Exception e) {
-            LOGGER.log(Level.SEVERE, "Failed stopMove().", e);
+            log.error("Failed stopMove().", e);
         }
 
         try {
             oustPlayers();
         } catch (Exception e) {
-            LOGGER.log(Level.SEVERE, "Failed oustPlayers().", e);
+            log.error("Failed oustPlayers().", e);
         }
 
         final ZoneRegion oldZoneRegion = ZoneManager.getInstance().getRegion(this);
@@ -377,7 +372,7 @@ public abstract class Vehicle extends Creature {
         try {
             decayMe();
         } catch (Exception e) {
-            LOGGER.log(Level.SEVERE, "Failed decayMe().", e);
+            log.error("Failed decayMe().", e);
         }
 
         oldZoneRegion.removeFromZones(this);

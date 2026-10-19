@@ -80,10 +80,10 @@ public class Q00311_ExpulsionOfEvilSpirits extends Quest {
     private static final int RAGNA_ORCS_KILLS_COUNT = 100;
     private static final int RAGNA_ORCS_AMULET_COUNT = 10;
     protected static final ZoneType ALTARZONE = ZoneManager.getInstance().getZoneById(20201);
-    protected static Npc _altar;
-    private static Npc _varangka;
-    private static Npc _varangkaMinion1;
-    private static Npc _varangkaMinion2;
+    protected static Npc altar;
+    private static Npc varangka;
+    private static Npc varangkaMinion1;
+    private static Npc varangkaMinion2;
     private static long respawnTime = 0;
 
     public Q00311_ExpulsionOfEvilSpirits() {
@@ -113,8 +113,8 @@ public class Q00311_ExpulsionOfEvilSpirits extends Quest {
     public String onEvent(String event, Npc npc, Player player) {
         if (event.equalsIgnoreCase("altarSpawn")) {
             if (!checkIfSpawned(ALTAR)) {
-                _altar = addSpawn(ALTAR, 74120, -101920, -960, 32760, false, 0);
-                _altar.setInvul(true);
+                altar = addSpawn(ALTAR, 74120, -101920, -960, 32760, false, 0);
+                altar.setInvul(true);
                 GlobalVariablesManager.getInstance().set("VarangkaRespawn", 0);
                 if (LocationUtil.checkIfInRange(1200, npc, player, true)) {
                     ThreadPool.schedule(new zoneCheck(player), 1000);
@@ -125,7 +125,7 @@ public class Q00311_ExpulsionOfEvilSpirits extends Quest {
         } else if (event.equalsIgnoreCase("minion1") && checkIfSpawned(VARANGKA)) {
             if (!checkIfSpawned(VARANGKA + 1) && checkIfSpawned(VARANGKA)) {
                 final ThreadLocalRandom random = ThreadLocalRandom.current();
-                _varangkaMinion1 = addSpawn(
+                varangkaMinion1 = addSpawn(
                         VARANGKA + 1,
                         player.getX() + random.nextInt(10, 51),
                         player.getY() + random.nextInt(10, 51),
@@ -133,18 +133,18 @@ public class Q00311_ExpulsionOfEvilSpirits extends Quest {
                         0,
                         false,
                         0);
-                _varangkaMinion1.setRunning();
+                varangkaMinion1.setRunning();
 
-                final Player targetPlayer = _varangka.getTarget().asPlayer();
-                _varangkaMinion1.asAttackable().addDamageHate(targetPlayer, 1, 99999);
-                _varangkaMinion1.getAI().setIntentionAttack(targetPlayer);
+                final Player targetPlayer = varangka.getTarget().asPlayer();
+                varangkaMinion1.asAttackable().addDamageHate(targetPlayer, 1, 99999);
+                varangkaMinion1.getAI().setIntentionAttack(targetPlayer);
             }
 
             return null;
         } else if (event.equalsIgnoreCase("minion2")) {
             if (!checkIfSpawned(VARANGKA + 2) && checkIfSpawned(VARANGKA)) {
                 final ThreadLocalRandom random = ThreadLocalRandom.current();
-                _varangkaMinion2 = addSpawn(
+                varangkaMinion2 = addSpawn(
                         VARANGKA + 2,
                         player.getX() + random.nextInt(10, 51),
                         player.getY() + random.nextInt(10, 51),
@@ -152,11 +152,11 @@ public class Q00311_ExpulsionOfEvilSpirits extends Quest {
                         0,
                         false,
                         0);
-                _varangkaMinion2.setRunning();
+                varangkaMinion2.setRunning();
 
-                final Player targetPlayer = _varangka.getTarget().asPlayer();
-                _varangkaMinion2.asAttackable().addDamageHate(targetPlayer, 1, 99999);
-                _varangkaMinion2.getAI().setIntentionAttack(targetPlayer);
+                final Player targetPlayer = varangka.getTarget().asPlayer();
+                varangkaMinion2.asAttackable().addDamageHate(targetPlayer, 1, 99999);
+                varangkaMinion2.getAI().setIntentionAttack(targetPlayer);
             }
 
             return null;
@@ -218,32 +218,32 @@ public class Q00311_ExpulsionOfEvilSpirits extends Quest {
                     return;
                 }
 
-                _altar.doDie(killer);
-                _altar = null;
-                _varangka = null;
+                altar.doDie(killer);
+                altar = null;
+                varangka = null;
                 if (checkIfSpawned(VARANGKA + 1)) {
-                    _varangkaMinion1.doDie(killer);
+                    varangkaMinion1.doDie(killer);
                 }
 
                 if (checkIfSpawned(VARANGKA + 2)) {
-                    _varangkaMinion2.doDie(killer);
+                    varangkaMinion2.doDie(killer);
                 }
 
                 cancelQuestTimers("minion1");
                 cancelQuestTimers("minion2");
-                _varangkaMinion1 = null;
-                _varangkaMinion2 = null;
+                varangkaMinion1 = null;
+                varangkaMinion2 = null;
                 final long respawn = ThreadLocalRandom.current().nextInt(14400000, 28800001);
                 GlobalVariablesManager.getInstance().set("VarangkaRespawn", System.currentTimeMillis() + respawn);
                 startQuestTimer("altarSpawn", respawn, null, null);
                 takeItems(member, PROTECTION_SOULS_PENDANT, 1);
                 return;
             } else if (npc.getId() == (VARANGKA + 1)) {
-                _varangkaMinion1 = null;
+                varangkaMinion1 = null;
                 startQuestTimer("minion1", ThreadLocalRandom.current().nextInt(60000, 120001), npc, killer);
                 return;
             } else if (npc.getId() == (VARANGKA + 2)) {
-                _varangkaMinion2 = null;
+                varangkaMinion2 = null;
                 startQuestTimer("minion2", ThreadLocalRandom.current().nextInt(60000, 120001), npc, killer);
                 return;
             }
@@ -287,10 +287,10 @@ public class Q00311_ExpulsionOfEvilSpirits extends Quest {
 
         final ThreadLocalRandom random = ThreadLocalRandom.current();
         if (hasQuestItems(player, PROTECTION_SOULS_PENDANT) && (random.nextInt(100) < 20)) {
-            if ((_varangka == null) && !checkIfSpawned(VARANGKA)) {
-                _varangka = addSpawn(VARANGKA, 74914, -101922, -967, 0, false, 0);
-                if ((_varangkaMinion1 == null) && !checkIfSpawned(VARANGKA + 1)) {
-                    _varangkaMinion1 = addSpawn(
+            if ((varangka == null) && !checkIfSpawned(VARANGKA)) {
+                varangka = addSpawn(VARANGKA, 74914, -101922, -967, 0, false, 0);
+                if ((varangkaMinion1 == null) && !checkIfSpawned(VARANGKA + 1)) {
+                    varangkaMinion1 = addSpawn(
                             VARANGKA + 1,
                             74914 + random.nextInt(10, 51),
                             -101922 + random.nextInt(10, 51),
@@ -300,8 +300,8 @@ public class Q00311_ExpulsionOfEvilSpirits extends Quest {
                             0);
                 }
 
-                if ((_varangkaMinion2 == null) && !checkIfSpawned(VARANGKA + 2)) {
-                    _varangkaMinion2 = addSpawn(
+                if ((varangkaMinion2 == null) && !checkIfSpawned(VARANGKA + 2)) {
+                    varangkaMinion2 = addSpawn(
                             VARANGKA + 2,
                             74914 + random.nextInt(10, 51),
                             -101922 + random.nextInt(10, 51),
@@ -337,22 +337,22 @@ public class Q00311_ExpulsionOfEvilSpirits extends Quest {
         private static final int DEBUFF_SKILL_ID = 6148;
         private static final int DEBUFF_SKILL_LEVEL = 1;
 
-        private final Player _player;
+        private final Player player;
 
         protected zoneCheck(Player player) {
-            _player = player;
+            this.player = player;
         }
 
         @Override
         public void run() {
-            if ((_altar != null) && ALTARZONE.isCharacterInZone(_player)) {
-                final QuestState qs = _player.getQuestState(Q00311_ExpulsionOfEvilSpirits.class.getSimpleName());
+            if ((altar != null) && ALTARZONE.isCharacterInZone(player)) {
+                final QuestState qs = player.getQuestState(Q00311_ExpulsionOfEvilSpirits.class.getSimpleName());
                 if (qs == null) {
-                    castDebuff(_player);
-                    ThreadPool.schedule(new zoneCheck(_player), 3000);
-                } else if (!hasQuestItems(_player, PROTECTION_SOULS_PENDANT)) {
-                    castDebuff(_player);
-                    ThreadPool.schedule(new zoneCheck(_player), 3000);
+                    castDebuff(player);
+                    ThreadPool.schedule(new zoneCheck(player), 3000);
+                } else if (!hasQuestItems(player, PROTECTION_SOULS_PENDANT)) {
+                    castDebuff(player);
+                    ThreadPool.schedule(new zoneCheck(player), 3000);
                 }
             }
         }
@@ -364,8 +364,8 @@ public class Q00311_ExpulsionOfEvilSpirits extends Quest {
                 }
             }
 
-            _altar.broadcastPacket(new MagicSkillUse(_altar, player, DEBUFF_SKILL_ID, DEBUFF_SKILL_LEVEL, 1000, 0));
-            SkillData.getInstance().getSkill(DEBUFF_SKILL_ID, 1).applyEffects(_altar, player);
+            altar.broadcastPacket(new MagicSkillUse(altar, player, DEBUFF_SKILL_ID, DEBUFF_SKILL_LEVEL, 1000, 0));
+            SkillData.getInstance().getSkill(DEBUFF_SKILL_ID, 1).applyEffects(altar, player);
         }
     }
 

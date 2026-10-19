@@ -35,15 +35,15 @@ public class ExSetCompassZoneCode extends ServerPacket {
     public static final int PVPZONE = 0x0E;
     public static final int GENERALZONE = 0x0F;
 
-    private final int _zoneType;
+    private final int zoneType;
 
     public ExSetCompassZoneCode(int value) {
-        _zoneType = value;
+        zoneType = value;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_SET_COMPASS_ZONE_CODE.writeId(this, buffer);
-        buffer.writeInt(_zoneType);
+        buffer.writeInt(zoneType);
     }
 }

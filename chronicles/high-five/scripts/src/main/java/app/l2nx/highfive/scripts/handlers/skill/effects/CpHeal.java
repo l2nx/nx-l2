@@ -33,12 +33,12 @@ import app.l2nx.highfive.util.StatSet;
  * @author UnAfraid
  */
 public class CpHeal extends AbstractEffect {
-    private final double _power;
+    private final double power;
 
     public CpHeal(Condition attachCond, Condition applyCond, StatSet set, StatSet params) {
         super(attachCond, applyCond, set, params);
 
-        _power = params.getDouble("power", 0);
+        power = params.getDouble("power", 0);
     }
 
     @Override
@@ -57,7 +57,7 @@ public class CpHeal extends AbstractEffect {
             return;
         }
 
-        double amount = _power;
+        double amount = power;
 
         // Prevents overheal and negative amount.
         amount = Math.max(Math.min(amount, effected.getMaxRecoverableCp() - effected.getCurrentCp()), 0);

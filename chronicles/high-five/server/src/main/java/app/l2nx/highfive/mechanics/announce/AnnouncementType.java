@@ -19,20 +19,18 @@
  */
 package app.l2nx.highfive.mechanics.announce;
 
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author UnAfraid
  */
+@Slf4j
 public enum AnnouncementType {
     NORMAL,
     CRITICAL,
     EVENT,
     AUTO_NORMAL,
     AUTO_CRITICAL;
-
-    private static final Logger LOGGER = Logger.getLogger(AnnouncementType.class.getName());
 
     public static AnnouncementType findById(int id) {
         for (AnnouncementType type : values()) {
@@ -41,10 +39,7 @@ public enum AnnouncementType {
             }
         }
 
-        LOGGER.log(
-                Level.WARNING,
-                AnnouncementType.class.getSimpleName() + ": Unexistent id specified: " + id + "!",
-                new IllegalStateException());
+        log.warn("Unexistent id specified: {}!", id, new IllegalStateException());
         return NORMAL;
     }
 
@@ -55,10 +50,7 @@ public enum AnnouncementType {
             }
         }
 
-        LOGGER.log(
-                Level.WARNING,
-                AnnouncementType.class.getSimpleName() + ": Unexistent name specified: " + name + "!",
-                new IllegalStateException());
+        log.warn("Unexistent name specified: {}!", name, new IllegalStateException());
         return NORMAL;
     }
 }

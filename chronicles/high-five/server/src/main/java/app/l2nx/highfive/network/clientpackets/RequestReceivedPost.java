@@ -33,11 +33,11 @@ import app.l2nx.highfive.network.serverpackets.ExReplyReceivedPost;
  * @author Migi, DS
  */
 public class RequestReceivedPost extends ClientPacket {
-    private int _msgId;
+    private int msgId;
 
     @Override
     protected void readImpl() {
-        _msgId = readInt();
+        msgId = readInt();
     }
 
     @Override
@@ -47,7 +47,7 @@ public class RequestReceivedPost extends ClientPacket {
             return;
         }
 
-        final MailMessage msg = MailManager.getInstance().getMessage(_msgId);
+        final MailMessage msg = MailManager.getInstance().getMessage(msgId);
         if (msg == null) {
             return;
         }
@@ -69,7 +69,7 @@ public class RequestReceivedPost extends ClientPacket {
         }
 
         player.sendPacket(new ExReplyReceivedPost(msg));
-        player.sendPacket(new ExChangePostState(true, _msgId, MailMessage.READED));
+        player.sendPacket(new ExChangePostState(true, msgId, MailMessage.READED));
         msg.markAsRead();
     }
 }

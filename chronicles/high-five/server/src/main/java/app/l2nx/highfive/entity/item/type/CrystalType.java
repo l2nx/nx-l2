@@ -19,6 +19,8 @@
  */
 package app.l2nx.highfive.entity.item.type;
 
+import lombok.Getter;
+
 /**
  * Crystal Type enumerated.
  * @author Adry_85
@@ -33,40 +35,23 @@ public enum CrystalType {
     S80(6, 1462, 25, 250),
     S84(7, 1462, 25, 250);
 
-    private final int _level;
-    private final int _crystalId;
-    private final int _crystalEnchantBonusArmor;
-    private final int _crystalEnchantBonusWeapon;
+    @Getter
+    private final int level;
+
+    @Getter
+    private final int crystalId;
+
+    @Getter
+    private final int crystalEnchantBonusArmor;
+
+    @Getter
+    private final int crystalEnchantBonusWeapon;
 
     CrystalType(int level, int crystalId, int crystalEnchantBonusArmor, int crystalEnchantBonusWeapon) {
-        _level = level;
-        _crystalId = crystalId;
-        _crystalEnchantBonusArmor = crystalEnchantBonusArmor;
-        _crystalEnchantBonusWeapon = crystalEnchantBonusWeapon;
-    }
-
-    /**
-     * Gets the crystal type ID.
-     * @return the crystal type ID
-     */
-    public int getLevel() {
-        return _level;
-    }
-
-    /**
-     * Gets the item ID of the crystal.
-     * @return the item ID of the crystal
-     */
-    public int getCrystalId() {
-        return _crystalId;
-    }
-
-    public int getCrystalEnchantBonusArmor() {
-        return _crystalEnchantBonusArmor;
-    }
-
-    public int getCrystalEnchantBonusWeapon() {
-        return _crystalEnchantBonusWeapon;
+        this.level = level;
+        this.crystalId = crystalId;
+        this.crystalEnchantBonusArmor = crystalEnchantBonusArmor;
+        this.crystalEnchantBonusWeapon = crystalEnchantBonusWeapon;
     }
 
     public boolean isGreater(CrystalType crystalType) {

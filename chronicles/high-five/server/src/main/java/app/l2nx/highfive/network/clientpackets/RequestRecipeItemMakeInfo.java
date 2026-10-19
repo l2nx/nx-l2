@@ -26,11 +26,11 @@ import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.network.serverpackets.RecipeItemMakeInfo;
 
 public class RequestRecipeItemMakeInfo extends ClientPacket {
-    private int _id;
+    private int id;
 
     @Override
     protected void readImpl() {
-        _id = readInt();
+        id = readInt();
     }
 
     @Override
@@ -40,6 +40,6 @@ public class RequestRecipeItemMakeInfo extends ClientPacket {
             return;
         }
 
-        player.sendPacket(new RecipeItemMakeInfo(_id, player));
+        player.sendPacket(new RecipeItemMakeInfo(id, player));
     }
 }

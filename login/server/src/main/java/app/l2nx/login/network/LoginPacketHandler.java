@@ -26,14 +26,13 @@ import app.l2nx.login.enums.LoginFailReason;
 import app.l2nx.network.buffer.ReadBuffer;
 import app.l2nx.network.packet.PacketHandler;
 import app.l2nx.network.packet.ReadablePacket;
-import java.util.logging.Logger;
-import org.apache.commons.lang3.exception.ExceptionUtils;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author Mobius
  */
+@Slf4j
 public class LoginPacketHandler implements PacketHandler<LoginClient> {
-    private static final Logger LOGGER = Logger.getLogger(LoginPacketHandler.class.getName());
 
     @Override
     public ReadablePacket<LoginClient> handle(ReadBuffer buffer, LoginClient client) {
@@ -42,8 +41,7 @@ public class LoginPacketHandler implements PacketHandler<LoginClient> {
         try {
             packetId = Byte.toUnsignedInt(buffer.readByte());
         } catch (Exception e) {
-            LOGGER.warning("LoginPacketHandler: Problem receiving packet id from " + client);
-            LOGGER.warning(ExceptionUtils.getStackTrace(e));
+            log.warn("Problem receiving packet id from {}", client, e);
             client.close(LoginFailReason.REASON_ACCESS_FAILED);
             return null;
         }

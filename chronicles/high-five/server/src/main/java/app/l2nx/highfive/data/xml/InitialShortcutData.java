@@ -37,7 +37,7 @@ import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
@@ -53,15 +53,15 @@ import org.w3c.dom.Node;
  * </ul>
  * @author Zoey76, Mobius
  */
+@Slf4j
 public class InitialShortcutData implements IXmlReader {
-    private static final Logger LOGGER = Logger.getLogger(InitialShortcutData.class.getName());
 
     // Shortcut Data Storage.
-    private final Map<PlayerClass, List<Shortcut>> _initialShortcutData = new EnumMap<>(PlayerClass.class);
-    private final List<Shortcut> _initialGlobalShortcutList = new ArrayList<>();
+    private final Map<PlayerClass, List<Shortcut>> initialShortcutData = new EnumMap<>(PlayerClass.class);
+    private final List<Shortcut> initialGlobalShortcutList = new ArrayList<>();
 
     // Macro Configuration.
-    private final Map<Integer, Macro> _macroPresets = new HashMap<>();
+    private final Map<Integer, Macro> macroPresets = new HashMap<>();
 
     protected InitialShortcutData() {
         load();
@@ -69,15 +69,14 @@ public class InitialShortcutData implements IXmlReader {
 
     @Override
     public void load() {
-        _initialShortcutData.clear();
-        _initialGlobalShortcutList.clear();
+        initialShortcutData.clear();
+        initialGlobalShortcutList.clear();
 
         parseDatapackFile("data/stats/players/initialShortcuts.xml");
 
-        LOGGER.info(getClass().getSimpleName() + ": Loaded " + _initialGlobalShortcutList.size()
-                + " initial global shortcut data.");
-        LOGGER.info(getClass().getSimpleName() + ": Loaded " + _initialShortcutData.size() + " initial shortcut data.");
-        LOGGER.info(getClass().getSimpleName() + ": Loaded " + _macroPresets.size() + " macro presets.");
+        log.info("Loaded {} initial global shortcut data.", initialGlobalShortcutList.size());
+        log.info("Loaded {} initial shortcut data.", initialShortcutData.size());
+        log.info("Loaded {} macro presets.", macroPresets.size());
     }
 
     @Override
@@ -115,11 +114,11 @@ public class InitialShortcutData implements IXmlReader {
                             }
 
                             if (classIdNode != null) {
-                                _initialShortcutData.put(
+                                initialShortcutData.put(
                                         PlayerClass.getPlayerClass(Integer.parseInt(classIdNode.getNodeValue())),
                                         shortcutList);
                             } else {
-                                _initialGlobalShortcutList.addAll(shortcutList);
+                                initialGlobalShortcutList.addAll(shortcutList);
                             }
                             break;
                         }
@@ -189,7 +188,7 @@ public class InitialShortcutData implements IXmlReader {
                                         }
                                     }
 
-                                    _macroPresets.put(
+                                    macroPresets.put(
                                             macroId, new Macro(macroId, icon, name, description, acronym, commands));
                                 }
                             }
@@ -212,7 +211,7 @@ public class InitialShortcutData implements IXmlReader {
         }
 
         // Register global shortcuts.
-        for (Shortcut shortcut : _initialGlobalShortcutList) {
+        for (Shortcut shortcut : initialGlobalShortcutList) {
             int shortcutId = shortcut.getId();
             switch (shortcut.getType()) {
                 case ITEM: {
@@ -231,7 +230,7 @@ public class InitialShortcutData implements IXmlReader {
                     break;
                 }
                 case MACRO: {
-                    final Macro macro = _macroPresets.get(shortcutId);
+                    final Macro macro = macroPresets.get(shortcutId);
                     if (macro == null) {
                         continue;
                     }
@@ -254,8 +253,8 @@ public class InitialShortcutData implements IXmlReader {
         }
 
         // Register class specific shortcuts.
-        if (_initialShortcutData.containsKey(player.getPlayerClass())) {
-            for (Shortcut shortcut : _initialShortcutData.get(player.getPlayerClass())) {
+        if (initialShortcutData.containsKey(player.getPlayerClass())) {
+            for (Shortcut shortcut : initialShortcutData.get(player.getPlayerClass())) {
                 int shortcutId = shortcut.getId();
                 switch (shortcut.getType()) {
                     case ITEM: {
@@ -274,7 +273,7 @@ public class InitialShortcutData implements IXmlReader {
                         break;
                     }
                     case MACRO: {
-                        final Macro macro = _macroPresets.get(shortcutId);
+                        final Macro macro = macroPresets.get(shortcutId);
                         if (macro == null) {
                             continue;
                         }

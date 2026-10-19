@@ -44,8 +44,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.DateFormatUtils;
 
 /**
@@ -58,9 +57,8 @@ import org.apache.commons.lang3.time.DateFormatUtils;
  * </ul>
  * @author BazookaRpm
  */
+@Slf4j
 public class Core extends Script {
-    // Logging.
-    private static final Logger LOGGER = Logger.getLogger(Core.class.getName());
 
     // NPC identifiers.
     private static final int CORE_NPC_ID = 29006;
@@ -122,23 +120,23 @@ public class Core extends Script {
     }
 
     // Runtime minion tracking.
-    private static final Collection<Attackable> _minions = ConcurrentHashMap.newKeySet();
-    private static final Map<Integer, MinionRespawnData> _pendingRespawns = new ConcurrentHashMap<>();
-    private static final AtomicInteger _respawnIdGenerator = new AtomicInteger(0);
+    private static final Collection<Attackable> minions = ConcurrentHashMap.newKeySet();
+    private static final Map<Integer, MinionRespawnData> pendingRespawns = new ConcurrentHashMap<>();
+    private static final AtomicInteger respawnIdGenerator = new AtomicInteger(0);
 
     // Attack state.
-    private static boolean _firstAttacked;
+    private static boolean firstAttacked;
 
     /**
      * Holds respawn data for a minion instance.
      */
     private static final class MinionRespawnData {
-        final int _npcId;
-        final Location _location;
+        final int npcId;
+        final Location location;
 
         MinionRespawnData(int npcId, Location location) {
-            _npcId = npcId;
-            _location = location;
+            this.npcId = npcId;
+            this.location = location;
         }
     }
 
@@ -162,7 +160,7 @@ public class Core extends Script {
         addFirstTalkId(TELEPORT_CUBE_NPC_ID);
         addTalkId(TELEPORT_CUBE_NPC_ID);
 
-        _firstAttacked = false;
+        firstAttacked = false;
 
         final GrandBossManager bossManager = GrandBossManager.getInstance();
         final StatSet info = bossManager.getStatSet(CORE_NPC_ID);
@@ -179,7 +177,7 @@ public class Core extends Script {
         } else {
             final boolean attacked = GlobalVariablesManager.getInstance().getBoolean("Core_Attacked", false);
             if (attacked) {
-                _firstAttacked = true;
+                firstAttacked = true;
             }
 
             final int locX = info.getInt("loc_x");
@@ -200,7 +198,7 @@ public class Core extends Script {
      */
     @Override
     public void onSave() {
-        GlobalVariablesManager.getInstance().set("Core_Attacked", _firstAttacked);
+        GlobalVariablesManager.getInstance().set("Core_Attacked", firstAttacked);
     }
 
     /**
@@ -220,12 +218,12 @@ public class Core extends Script {
             for (Location location : spawnEntry.getValue()) {
                 final Attackable minion = addSpawn(minionId, location, false, 0).asAttackable();
                 minion.setIsRaidMinion(true);
-                _minions.add(minion);
+                minions.add(minion);
             }
         }
 
-        _pendingRespawns.clear();
-        _respawnIdGenerator.set(0);
+        pendingRespawns.clear();
+        respawnIdGenerator.set(0);
     }
 
     /**
@@ -242,19 +240,16 @@ public class Core extends Script {
             final String idToken = event.substring(EVENT_SPAWN_MINION_PREFIX.length());
             try {
                 final int respawnId = Integer.parseInt(idToken);
-                final MinionRespawnData data = _pendingRespawns.remove(respawnId);
+                final MinionRespawnData data = pendingRespawns.remove(respawnId);
                 if ((data != null) && (GrandBossManager.getInstance().getStatus(CORE_NPC_ID) == STATUS_ALIVE)) {
-                    final Location location = data._location;
+                    final Location location = data.location;
                     final Attackable minion =
-                            addSpawn(data._npcId, location, false, 0).asAttackable();
+                            addSpawn(data.npcId, location, false, 0).asAttackable();
                     minion.setIsRaidMinion(true);
-                    _minions.add(minion);
+                    minions.add(minion);
                 }
             } catch (NumberFormatException e) {
-                LOGGER.log(
-                        Level.WARNING,
-                        Core.class.getSimpleName() + ": Failed to parse minion respawn id from event '" + event + "'.",
-                        e);
+                log.warn("Failed to parse minion respawn id from event '{}'.", event, e);
             }
         } else if (EVENT_CORE_UNLOCK.equals(event)) {
             final GrandBoss core = (GrandBoss) addSpawn(CORE_NPC_ID, CORE_DEFAULT_SPAWN, false, 0);
@@ -267,18 +262,18 @@ public class Core extends Script {
                                 npc.getId(), npc.getX(), npc.getY(), npc.getZ(), npc.getHeading(), false, 0)
                         .asAttackable();
                 minion.setIsRaidMinion(true);
-                _minions.add(minion);
+                minions.add(minion);
             }
         } else if (EVENT_DESPAWN_MINIONS.equals(event)) {
-            for (Attackable minion : _minions) {
+            for (Attackable minion : minions) {
                 if (minion != null) {
                     minion.decayMe();
                 }
             }
 
-            _minions.clear();
-            _pendingRespawns.clear();
-            _respawnIdGenerator.set(0);
+            minions.clear();
+            pendingRespawns.clear();
+            respawnIdGenerator.set(0);
         } else if (event.startsWith(EVENT_TELEPORT_PREFIX)) {
             if (player != null) {
                 final String[] split = event.split(" ");
@@ -294,14 +289,12 @@ public class Core extends Script {
                             break;
                         }
                         default: {
-                            LOGGER.warning(Core.class.getSimpleName() + ": Unknown teleport destination '" + destination
-                                    + "' in event '" + event + "'.");
+                            log.warn("Unknown teleport destination '{}' in event '{}'.", destination, event);
                             break;
                         }
                     }
                 } else {
-                    LOGGER.warning(Core.class.getSimpleName() + ": TELEPORT event missing destination token: '" + event
-                            + "'.");
+                    log.warn("TELEPORT event missing destination token: '{}'.", event);
                 }
             }
         }
@@ -318,13 +311,13 @@ public class Core extends Script {
             return;
         }
 
-        if (_firstAttacked) {
+        if (firstAttacked) {
             if (getRandom(100) == 0) {
                 npc.broadcastPacket(new NpcSay(
                         npc.getObjectId(), ChatType.NPC_GENERAL, npc.getId(), NpcStringId.REMOVING_INTRUDERS));
             }
         } else {
-            _firstAttacked = true;
+            firstAttacked = true;
             npc.broadcastPacket(new NpcSay(
                     npc.getObjectId(),
                     ChatType.NPC_GENERAL,
@@ -357,7 +350,7 @@ public class Core extends Script {
                     new NpcSay(objectId, ChatType.NPC_GENERAL, npcId, NpcStringId.SYSTEM_IS_BEING_SHUT_DOWN));
             npc.broadcastPacket(new NpcSay(objectId, ChatType.NPC_GENERAL, npcId, NpcStringId.EMPTY));
 
-            _firstAttacked = false;
+            firstAttacked = false;
 
             addSpawn(TELEPORT_CUBE_NPC_ID, 16502, 110165, -6394, 0, false, TELEPORT_CUBE_DESPAWN_MS);
             addSpawn(TELEPORT_CUBE_NPC_ID, 18948, 110166, -6397, 0, false, TELEPORT_CUBE_DESPAWN_MS);
@@ -370,7 +363,7 @@ public class Core extends Script {
             final long respawnTime = baseIntervalMillis + getRandom(-randomRangeMillis, randomRangeMillis);
 
             final long nextRespawnTime = System.currentTimeMillis() + respawnTime;
-            LOGGER.info("Core will respawn at: " + DateFormatUtils.format(nextRespawnTime, "dd/MM/yyyy HH:mm:ss"));
+            log.info("Core will respawn at: {}", DateFormatUtils.format(nextRespawnTime, "dd/MM/yyyy HH:mm:ss"));
 
             startQuestTimer(EVENT_CORE_UNLOCK, respawnTime, null, null);
 
@@ -380,20 +373,20 @@ public class Core extends Script {
 
             startQuestTimer(EVENT_DESPAWN_MINIONS, MINION_DESPAWN_DELAY_MS, null, null);
 
-            for (int i = 0; i < _respawnIdGenerator.get(); i++) {
+            for (int i = 0; i < respawnIdGenerator.get(); i++) {
                 cancelQuestTimer(EVENT_SPAWN_MINION_PREFIX + i, null, null);
             }
 
-            _pendingRespawns.clear();
-            _respawnIdGenerator.set(0);
+            pendingRespawns.clear();
+            respawnIdGenerator.set(0);
 
             // Cancel legacy spawn_minion timers as well.
             cancelQuestTimers(EVENT_SPAWN_MINION_LEGACY);
-        } else if ((GrandBossManager.getInstance().getStatus(CORE_NPC_ID) == STATUS_ALIVE) && _minions.remove(npc)) {
-            final int respawnId = _respawnIdGenerator.getAndIncrement();
+        } else if ((GrandBossManager.getInstance().getStatus(CORE_NPC_ID) == STATUS_ALIVE) && minions.remove(npc)) {
+            final int respawnId = respawnIdGenerator.getAndIncrement();
             final Location respawnLocation = new Location(npc.getX(), npc.getY(), npc.getZ());
 
-            _pendingRespawns.put(respawnId, new MinionRespawnData(npcId, respawnLocation));
+            pendingRespawns.put(respawnId, new MinionRespawnData(npcId, respawnLocation));
             startQuestTimer(EVENT_SPAWN_MINION_PREFIX + respawnId, MINION_RESPAWN_DELAY_MS, null, null);
         }
     }

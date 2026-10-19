@@ -27,19 +27,19 @@ import app.l2nx.network.buffer.WriteBuffer;
  * @author JIV
  */
 public class ExBaseAttributeCancelResult extends ServerPacket {
-    private final int _objId;
-    private final byte _attribute;
+    private final int objId;
+    private final byte attribute;
 
     public ExBaseAttributeCancelResult(int objId, byte attribute) {
-        _objId = objId;
-        _attribute = attribute;
+        this.objId = objId;
+        this.attribute = attribute;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_BASE_ATTRIBUTE_CANCEL_RESULT.writeId(this, buffer);
         buffer.writeInt(1); // result
-        buffer.writeInt(_objId);
-        buffer.writeInt(_attribute);
+        buffer.writeInt(objId);
+        buffer.writeInt(attribute);
     }
 }

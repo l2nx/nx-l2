@@ -28,7 +28,7 @@ import app.l2nx.highfive.mechanics.options.EnchantOptions;
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.logging.Level;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
@@ -36,8 +36,9 @@ import org.w3c.dom.Node;
 /**
  * @author UnAfraid, Mobius
  */
+@Slf4j
 public class EnchantItemOptionsData implements IXmlReader {
-    private final Map<Integer, Map<Integer, EnchantOptions>> _data = new HashMap<>();
+    private final Map<Integer, Map<Integer, EnchantOptions>> data = new HashMap<>();
 
     protected EnchantItemOptionsData() {
         load();
@@ -45,7 +46,7 @@ public class EnchantItemOptionsData implements IXmlReader {
 
     @Override
     public synchronized void load() {
-        _data.clear();
+        data.clear();
         parseDatapackFile("data/EnchantItemOptions.xml");
     }
 
@@ -60,8 +61,7 @@ public class EnchantItemOptionsData implements IXmlReader {
                         final int itemId = parseInteger(d.getAttributes(), "id");
                         final ItemTemplate template = ItemData.getInstance().getTemplate(itemId);
                         if (template == null) {
-                            LOGGER.warning(
-                                    getClass().getSimpleName() + ": Could not find item template for id " + itemId);
+                            log.warn("Could not find item template for id {}", itemId);
                             continue ITEM;
                         }
 
@@ -73,15 +73,14 @@ public class EnchantItemOptionsData implements IXmlReader {
                                     if ((att != null) && StringUtils.isNumeric(att.getNodeValue())) {
                                         final int id = parseInteger(att);
                                         if (OptionData.getInstance().getOptions(id) == null) {
-                                            LOGGER.warning(getClass().getSimpleName() + ": Could not find option " + id
-                                                    + " for item " + template);
+                                            log.warn("Could not find option {} for item {}", id, template);
                                             continue ITEM;
                                         }
 
-                                        Map<Integer, EnchantOptions> data = _data.get(itemId);
+                                        Map<Integer, EnchantOptions> data = this.data.get(itemId);
                                         if (data == null) {
                                             data = new HashMap<>();
-                                            _data.put(itemId, data);
+                                            this.data.put(itemId, data);
                                         }
 
                                         data.putIfAbsent(op.getLevel(), op);
@@ -98,9 +97,7 @@ public class EnchantItemOptionsData implements IXmlReader {
             }
         }
 
-        LOGGER.log(
-                Level.INFO,
-                getClass().getSimpleName() + ": Loaded " + _data.size() + " items and " + counter + " options.");
+        log.info("Loaded {} items and {} options.", this.data.size(), counter);
     }
 
     /**
@@ -109,7 +106,7 @@ public class EnchantItemOptionsData implements IXmlReader {
      * @return enchant effects information.
      */
     public EnchantOptions getOptions(int itemId, int enchantLevel) {
-        final Map<Integer, EnchantOptions> levelMap = _data.get(itemId);
+        final Map<Integer, EnchantOptions> levelMap = data.get(itemId);
         return (levelMap != null) ? levelMap.get(enchantLevel) : null;
     }
 

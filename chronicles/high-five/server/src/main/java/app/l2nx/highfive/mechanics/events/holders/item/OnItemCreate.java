@@ -23,33 +23,13 @@ import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.item.instance.Item;
 import app.l2nx.highfive.mechanics.events.EventType;
 import app.l2nx.highfive.mechanics.events.holders.IBaseEvent;
+import lombok.Builder;
 
 /**
  * @author UnAfraid
  */
-public class OnItemCreate implements IBaseEvent {
-    private final Item _item;
-    private final Creature _creature;
-    private final Object _reference;
-
-    public OnItemCreate(Item item, Creature actor, Object reference) {
-        _item = item;
-        _creature = actor;
-        _reference = reference;
-    }
-
-    public Item getItem() {
-        return _item;
-    }
-
-    public Creature getActiveChar() {
-        return _creature;
-    }
-
-    public Object getReference() {
-        return _reference;
-    }
-
+@Builder(toBuilder = true)
+public record OnItemCreate(Item item, Creature activeChar, Object reference) implements IBaseEvent {
     @Override
     public EventType getType() {
         return EventType.ON_ITEM_CREATE;

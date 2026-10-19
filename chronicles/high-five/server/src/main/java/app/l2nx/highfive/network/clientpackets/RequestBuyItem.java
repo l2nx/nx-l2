@@ -38,39 +38,40 @@ import app.l2nx.highfive.entity.item.holders.ItemHolder;
 import app.l2nx.highfive.managers.PunishmentManager;
 import app.l2nx.highfive.mechanics.buylist.BuyListHolder;
 import app.l2nx.highfive.mechanics.buylist.Product;
-import app.l2nx.highfive.network.PacketLogger;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.serverpackets.ActionFailed;
 import app.l2nx.highfive.network.serverpackets.ExBuySellList;
 import app.l2nx.highfive.network.serverpackets.StatusUpdate;
 import java.util.ArrayList;
 import java.util.List;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class RequestBuyItem extends ClientPacket {
     private static final int BATCH_LENGTH = 12;
     private static final int CUSTOM_CB_SELL_LIST = 423;
 
-    private int _listId;
-    private List<ItemHolder> _items = null;
+    private int listId;
+    private List<ItemHolder> items = null;
 
     @Override
     protected void readImpl() {
-        _listId = readInt();
+        listId = readInt();
         final int size = readInt();
         if ((size <= 0) || (size > PlayerConfig.MAX_ITEM_IN_PACKET) || ((size * BATCH_LENGTH) != remaining())) {
             return;
         }
 
-        _items = new ArrayList<>(size);
+        items = new ArrayList<>(size);
         for (int i = 0; i < size; i++) {
             final int itemId = readInt();
             final long count = readLong();
             if ((itemId < 1) || (count < 1)) {
-                _items = null;
+                items = null;
                 return;
             }
 
-            _items.add(new ItemHolder(itemId, count));
+            items.add(new ItemHolder(itemId, count));
         }
     }
 
@@ -86,7 +87,7 @@ public class RequestBuyItem extends ClientPacket {
             return;
         }
 
-        if (_items == null) {
+        if (items == null) {
             player.sendPacket(ActionFailed.STATIC_PACKET);
             return;
         }
@@ -99,7 +100,7 @@ public class RequestBuyItem extends ClientPacket {
 
         final WorldObject target = player.getTarget();
         Creature merchant = null;
-        if (!player.isGM() && (_listId != CUSTOM_CB_SELL_LIST)) {
+        if (!player.isGM() && (listId != CUSTOM_CB_SELL_LIST)) {
             if (!(target instanceof Merchant)
                     || (!player.isInsideRadius3D(target, INTERACTION_DISTANCE))
                     || (player.getInstanceId() != target.getInstanceId())) {
@@ -112,17 +113,17 @@ public class RequestBuyItem extends ClientPacket {
 
         double castleTaxRate = 0;
         double baseTaxRate = 0;
-        if ((merchant == null) && !player.isGM() && (_listId != CUSTOM_CB_SELL_LIST)) {
+        if ((merchant == null) && !player.isGM() && (listId != CUSTOM_CB_SELL_LIST)) {
             player.sendPacket(ActionFailed.STATIC_PACKET);
             return;
         }
 
-        final BuyListHolder buyList = BuyListData.getInstance().getBuyList(_listId);
+        final BuyListHolder buyList = BuyListData.getInstance().getBuyList(listId);
         if (buyList == null) {
             PunishmentManager.handleIllegalPlayerAction(
                     player,
                     "Warning!! Character " + player.getName() + " of account " + player.getAccountName()
-                            + " sent a false BuyList list_id " + _listId,
+                            + " sent a false BuyList list_id " + listId,
                     GeneralConfig.DEFAULT_PUNISH);
             return;
         }
@@ -146,7 +147,7 @@ public class RequestBuyItem extends ClientPacket {
         // Check for buylist validity and calculates summary values.
         long slots = 0;
         long weight = 0;
-        for (ItemHolder i : _items) {
+        for (ItemHolder i : items) {
             long price = -1;
 
             final Product product = buyList.getProductByItemId(i.getId());
@@ -154,7 +155,7 @@ public class RequestBuyItem extends ClientPacket {
                 PunishmentManager.handleIllegalPlayerAction(
                         player,
                         "Warning!! Character " + player.getName() + " of account " + player.getAccountName()
-                                + " sent a false BuyList list_id " + _listId + " and item_id " + i.getId(),
+                                + " sent a false BuyList list_id " + listId + " and item_id " + i.getId(),
                         GeneralConfig.DEFAULT_PUNISH);
                 return;
             }
@@ -175,7 +176,7 @@ public class RequestBuyItem extends ClientPacket {
             }
 
             if (price < 0) {
-                PacketLogger.warning("ERROR, no price found .. wrong buylist ??");
+                log.warn("ERROR, no price found .. wrong buylist ??");
                 player.sendPacket(ActionFailed.STATIC_PACKET);
                 return;
             }
@@ -249,13 +250,13 @@ public class RequestBuyItem extends ClientPacket {
         }
 
         // Proceed the purchase
-        for (ItemHolder i : _items) {
+        for (ItemHolder i : items) {
             final Product product = buyList.getProductByItemId(i.getId());
             if (product == null) {
                 PunishmentManager.handleIllegalPlayerAction(
                         player,
                         "Warning!! Character " + player.getName() + " of account " + player.getAccountName()
-                                + " sent a false BuyList list_id " + _listId + " and item_id " + i.getId(),
+                                + " sent a false BuyList list_id " + listId + " and item_id " + i.getId(),
                         GeneralConfig.DEFAULT_PUNISH);
                 continue;
             }

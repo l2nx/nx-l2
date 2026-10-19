@@ -29,7 +29,7 @@ import app.l2nx.highfive.mechanics.skill.Skill;
  * @author mkizub
  */
 public class ConditionSlotItemType extends ConditionInventory {
-    private final int _mask;
+    private final int mask;
 
     /**
      * Instantiates a new condition slot item type.
@@ -38,7 +38,7 @@ public class ConditionSlotItemType extends ConditionInventory {
      */
     public ConditionSlotItemType(int slot, int mask) {
         super(slot);
-        _mask = mask;
+        this.mask = mask;
     }
 
     @Override
@@ -47,11 +47,11 @@ public class ConditionSlotItemType extends ConditionInventory {
             return false;
         }
 
-        final Item itemSlot = effector.getInventory().getPaperdollItem(_slot);
+        final Item itemSlot = effector.getInventory().getPaperdollItem(slot);
         if (itemSlot == null) {
             return false;
         }
 
-        return (itemSlot.getTemplate().getItemMask() & _mask) != 0;
+        return (itemSlot.getTemplate().getItemMask() & mask) != 0;
     }
 }

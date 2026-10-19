@@ -31,13 +31,13 @@ import app.l2nx.highfive.network.serverpackets.ExPutEnchantSupportItemResult;
  * @author KenM
  */
 public class RequestExTryToPutEnchantSupportItem extends ClientPacket {
-    private int _supportObjectId;
-    private int _enchantObjectId;
+    private int supportObjectId;
+    private int enchantObjectId;
 
     @Override
     protected void readImpl() {
-        _supportObjectId = readInt();
-        _enchantObjectId = readInt();
+        supportObjectId = readInt();
+        enchantObjectId = readInt();
     }
 
     @Override
@@ -48,9 +48,9 @@ public class RequestExTryToPutEnchantSupportItem extends ClientPacket {
         }
 
         if (player.isEnchanting()) {
-            final Item item = player.getInventory().getItemByObjectId(_enchantObjectId);
+            final Item item = player.getInventory().getItemByObjectId(enchantObjectId);
             final Item scroll = player.getInventory().getItemByObjectId(player.getActiveEnchantItemId());
-            final Item support = player.getInventory().getItemByObjectId(_supportObjectId);
+            final Item support = player.getInventory().getItemByObjectId(supportObjectId);
             if ((item == null) || (scroll == null) || (support == null)) {
                 // message may be custom
                 player.sendPacket(SystemMessageId.INAPPROPRIATE_ENCHANT_CONDITIONS);
@@ -72,7 +72,7 @@ public class RequestExTryToPutEnchantSupportItem extends ClientPacket {
             }
 
             player.setActiveEnchantSupportItemId(support.getObjectId());
-            player.sendPacket(new ExPutEnchantSupportItemResult(_supportObjectId));
+            player.sendPacket(new ExPutEnchantSupportItemResult(supportObjectId));
         }
     }
 }

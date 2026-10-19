@@ -22,6 +22,8 @@ package app.l2nx.highfive.entity.actor.holders.player;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.data.xml.ExperienceData;
 import app.l2nx.highfive.entity.actor.enums.player.PlayerClass;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * Character Sub-Class Definition<br>
@@ -34,24 +36,35 @@ public class SubClassHolder {
                     ? PlayerConfig.MAX_SUBCLASS_LEVEL
                     : (byte) (ExperienceData.getInstance().getMaxLevel() - 1);
 
-    private PlayerClass _playerClass;
-    private long _exp = ExperienceData.getInstance().getExpForLevel(PlayerConfig.BASE_SUBCLASS_LEVEL);
-    private long _sp = 0;
-    private byte _level = PlayerConfig.BASE_SUBCLASS_LEVEL;
-    private int _classIndex = 1;
+    @Getter
+    private PlayerClass playerClass;
+
+    @Getter
+    private long exp = ExperienceData.getInstance().getExpForLevel(PlayerConfig.BASE_SUBCLASS_LEVEL);
+
+    @Getter
+    @Setter
+    private long sp = 0;
+
+    @Getter
+    private byte level = PlayerConfig.BASE_SUBCLASS_LEVEL;
+
+    @Getter
+    @Setter
+    private int classIndex = 1;
 
     public SubClassHolder(int classId, long exp, int sp, byte level, int classIndex) {
-        _playerClass = PlayerClass.getPlayerClass(classId);
-        _exp = exp;
-        _sp = sp;
-        _level = level;
-        _classIndex = classIndex;
+        playerClass = PlayerClass.getPlayerClass(classId);
+        this.exp = exp;
+        this.sp = sp;
+        this.level = level;
+        this.classIndex = classIndex;
     }
 
     public SubClassHolder(int classId, int classIndex) {
         // Used for defining a sub class using default values for XP, SP and player level.
-        _playerClass = PlayerClass.getPlayerClass(classId);
-        _classIndex = classIndex;
+        playerClass = PlayerClass.getPlayerClass(classId);
+        this.classIndex = classIndex;
     }
 
     public SubClassHolder() {
@@ -59,82 +72,50 @@ public class SubClassHolder {
         // using the preset default values.
     }
 
-    public PlayerClass getPlayerClass() {
-        return _playerClass;
-    }
-
     public int getId() {
-        return _playerClass.getId();
-    }
-
-    public long getExp() {
-        return _exp;
-    }
-
-    public long getSp() {
-        return _sp;
-    }
-
-    public byte getLevel() {
-        return _level;
-    }
-
-    /**
-     * First Sub-Class is index 1.
-     * @return int _classIndex
-     */
-    public int getClassIndex() {
-        return _classIndex;
+        return playerClass.getId();
     }
 
     public void setPlayerClass(int id) {
-        _playerClass = PlayerClass.getPlayerClass(id);
+        playerClass = PlayerClass.getPlayerClass(id);
     }
 
     public void setExp(long expValue) {
         if (expValue > (ExperienceData.getInstance().getExpForLevel(MAX_LEVEL + 1) - 1)) {
-            _exp = ExperienceData.getInstance().getExpForLevel(MAX_LEVEL + 1) - 1;
+            exp = ExperienceData.getInstance().getExpForLevel(MAX_LEVEL + 1) - 1;
             return;
         }
 
-        _exp = expValue;
-    }
-
-    public void setSp(long spValue) {
-        _sp = spValue;
-    }
-
-    public void setClassIndex(int classIndex) {
-        _classIndex = classIndex;
+        exp = expValue;
     }
 
     public void setLevel(byte levelValue) {
         if (levelValue > MAX_LEVEL) {
-            _level = MAX_LEVEL;
+            level = MAX_LEVEL;
             return;
         } else if (levelValue < PlayerConfig.BASE_SUBCLASS_LEVEL) {
-            _level = PlayerConfig.BASE_SUBCLASS_LEVEL;
+            level = PlayerConfig.BASE_SUBCLASS_LEVEL;
             return;
         }
 
-        _level = levelValue;
+        level = levelValue;
     }
 
     public void incLevel() {
-        if (_level == MAX_LEVEL) {
+        if (level == MAX_LEVEL) {
             return;
         }
 
-        _level++;
+        level++;
         setExp(ExperienceData.getInstance().getExpForLevel(getLevel()));
     }
 
     public void decLevel() {
-        if (_level == PlayerConfig.BASE_SUBCLASS_LEVEL) {
+        if (level == PlayerConfig.BASE_SUBCLASS_LEVEL) {
             return;
         }
 
-        _level--;
+        level--;
         setExp(ExperienceData.getInstance().getExpForLevel(getLevel()));
     }
 }

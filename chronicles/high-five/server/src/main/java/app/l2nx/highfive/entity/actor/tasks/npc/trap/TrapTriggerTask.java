@@ -27,19 +27,19 @@ import app.l2nx.highfive.threads.ThreadPool;
  * @author Zoey76
  */
 public class TrapTriggerTask implements Runnable {
-    private final Trap _trap;
+    private final Trap trap;
 
     public TrapTriggerTask(Trap trap) {
-        _trap = trap;
+        this.trap = trap;
     }
 
     @Override
     public void run() {
         try {
-            _trap.doCast(_trap.getSkill());
-            ThreadPool.schedule(new TrapUnsummonTask(_trap), _trap.getSkill().getHitTime() + 300);
+            trap.doCast(trap.getSkill());
+            ThreadPool.schedule(new TrapUnsummonTask(trap), trap.getSkill().getHitTime() + 300);
         } catch (Exception e) {
-            _trap.unSummon();
+            trap.unSummon();
         }
     }
 }

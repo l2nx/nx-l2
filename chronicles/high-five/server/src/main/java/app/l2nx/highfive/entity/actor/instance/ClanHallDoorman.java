@@ -35,9 +35,9 @@ import java.util.Arrays;
 import java.util.StringTokenizer;
 
 public class ClanHallDoorman extends Doorman {
-    private volatile boolean _init = false;
-    private ClanHall _clanHall = null;
-    private boolean _hasEvolve = false;
+    private volatile boolean init = false;
+    private ClanHall clanHall = null;
+    private boolean hasEvolve = false;
 
     // List of clan halls with evolve function, should be sorted.
     private static final int[] CH_WITH_EVOLVE = {36, 37, 38, 39, 40, 41, 51, 52, 53, 54, 55, 56, 57};
@@ -53,7 +53,7 @@ public class ClanHallDoorman extends Doorman {
 
     @Override
     public void onBypassFeedback(Player player, String command) {
-        if (_hasEvolve && command.startsWith("evolve") && isOwnerClan(player)) {
+        if (hasEvolve && command.startsWith("evolve") && isOwnerClan(player)) {
             final StringTokenizer st = new StringTokenizer(command, " ");
             if (st.countTokens() < 2) {
                 return;
@@ -106,7 +106,7 @@ public class ClanHallDoorman extends Doorman {
         if (getClanHall() != null) {
             final Clan owner = ClanTable.getInstance().getClan(getClanHall().getOwnerId());
             if (isOwnerClan(player)) {
-                if (_hasEvolve) {
+                if (hasEvolve) {
                     html.setFile(player, "data/html/clanHallDoorman/doorman2.htm");
                     html.replace("%clanname%", owner.getName());
                 } else {
@@ -150,20 +150,20 @@ public class ClanHallDoorman extends Doorman {
     }
 
     private ClanHall getClanHall() {
-        if (!_init) {
+        if (!init) {
             synchronized (this) {
-                if (!_init) {
-                    _clanHall = ClanHallTable.getInstance().getNearbyClanHall(getX(), getY(), 500);
-                    if (_clanHall != null) {
-                        _hasEvolve = Arrays.binarySearch(CH_WITH_EVOLVE, _clanHall.getId()) >= 0;
+                if (!init) {
+                    clanHall = ClanHallTable.getInstance().getNearbyClanHall(getX(), getY(), 500);
+                    if (clanHall != null) {
+                        hasEvolve = Arrays.binarySearch(CH_WITH_EVOLVE, clanHall.getId()) >= 0;
                     }
 
-                    _init = true;
+                    init = true;
                 }
             }
         }
 
-        return _clanHall;
+        return clanHall;
     }
 
     @Override

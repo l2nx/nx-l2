@@ -75,8 +75,8 @@ public class ServerStatus extends SimpleWritablePacket {
 
     // Packed storage: [id0,val0,id1,val1,...].
     private static final int INITIAL_PAIRS = 16;
-    private int[] _packedPairs = new int[INITIAL_PAIRS * 2];
-    private int _pairCount = 0;
+    private int[] packedPairs = new int[INITIAL_PAIRS * 2];
+    private int pairCount = 0;
 
     /**
      * Creates an empty status packet with preallocated capacity.
@@ -91,32 +91,32 @@ public class ServerStatus extends SimpleWritablePacket {
      * @param value attribute value
      */
     public void addAttribute(int id, int value) {
-        int nextSize = (_pairCount + 1) * 2;
-        if (nextSize > _packedPairs.length) {
-            int newLen = _packedPairs.length << 1;
+        int nextSize = (pairCount + 1) * 2;
+        if (nextSize > packedPairs.length) {
+            int newLen = packedPairs.length << 1;
             while (newLen < nextSize) {
                 newLen <<= 1;
             }
 
             int[] grown = new int[newLen];
-            System.arraycopy(_packedPairs, 0, grown, 0, _packedPairs.length);
-            _packedPairs = grown;
+            System.arraycopy(packedPairs, 0, grown, 0, packedPairs.length);
+            packedPairs = grown;
         }
 
-        int base = _pairCount * 2;
-        _packedPairs[base] = id;
-        _packedPairs[base + 1] = value;
-        _pairCount++;
+        int base = pairCount * 2;
+        packedPairs[base] = id;
+        packedPairs[base + 1] = value;
+        pairCount++;
     }
 
     @Override
     public void write() {
         writeByte(PACKET_ID);
-        writeInt(_pairCount);
-        for (int i = 0; i < _pairCount; i++) {
+        writeInt(pairCount);
+        for (int i = 0; i < pairCount; i++) {
             final int base = i * 2;
-            writeInt(_packedPairs[base]); // Attribute id.
-            writeInt(_packedPairs[base + 1]); // Attribute value.
+            writeInt(packedPairs[base]); // Attribute id.
+            writeInt(packedPairs[base + 1]); // Attribute value.
         }
     }
 }

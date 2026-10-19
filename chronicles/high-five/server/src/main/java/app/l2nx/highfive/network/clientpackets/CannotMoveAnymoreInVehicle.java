@@ -27,19 +27,19 @@ import app.l2nx.highfive.network.serverpackets.StopMoveInVehicle;
  * @author Maktakien
  */
 public class CannotMoveAnymoreInVehicle extends ClientPacket {
-    private int _x;
-    private int _y;
-    private int _z;
-    private int _heading;
-    private int _boatId;
+    private int x;
+    private int y;
+    private int z;
+    private int heading;
+    private int boatId;
 
     @Override
     protected void readImpl() {
-        _boatId = readInt();
-        _x = readInt();
-        _y = readInt();
-        _z = readInt();
-        _heading = readInt();
+        boatId = readInt();
+        x = readInt();
+        y = readInt();
+        z = readInt();
+        heading = readInt();
     }
 
     @Override
@@ -49,10 +49,10 @@ public class CannotMoveAnymoreInVehicle extends ClientPacket {
             return;
         }
 
-        if (player.isInBoat() && (player.getBoat().getObjectId() == _boatId)) {
-            player.setInVehiclePosition(new Location(_x, _y, _z));
-            player.setHeading(_heading);
-            player.broadcastPacket(new StopMoveInVehicle(player, _boatId));
+        if (player.isInBoat() && (player.getBoat().getObjectId() == boatId)) {
+            player.setInVehiclePosition(new Location(x, y, z));
+            player.setHeading(heading);
+            player.broadcastPacket(new StopMoveInVehicle(player, boatId));
         }
     }
 }

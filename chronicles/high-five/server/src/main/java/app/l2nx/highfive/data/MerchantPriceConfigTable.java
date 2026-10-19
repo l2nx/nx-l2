@@ -28,10 +28,10 @@ import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.xml.sax.SAXException;
@@ -39,9 +39,8 @@ import org.xml.sax.SAXException;
 /**
  * @author KenM
  */
+@Slf4j
 public class MerchantPriceConfigTable {
-    // Zoey76: TODO: Implement using IXmlReader.
-    private static final Logger LOGGER = Logger.getLogger(MerchantPriceConfigTable.class.getName());
 
     public static MerchantPriceConfigTable getInstance() {
         return SingletonHolder.INSTANCE;
@@ -49,21 +48,21 @@ public class MerchantPriceConfigTable {
 
     private static final String MPCS_FILE = "MerchantPriceConfig.xml";
 
-    private final Map<Integer, MerchantPriceConfig> _mpcs = new HashMap<>();
-    private MerchantPriceConfig _defaultMpc;
+    private final Map<Integer, MerchantPriceConfig> mpcs = new HashMap<>();
+    private MerchantPriceConfig defaultMpc;
 
     public MerchantPriceConfig getMerchantPriceConfig(Merchant npc) {
-        for (MerchantPriceConfig mpc : _mpcs.values()) {
+        for (MerchantPriceConfig mpc : mpcs.values()) {
             if (ZoneManager.getInstance().getRegion(npc).getZones().containsKey(mpc.getZoneId())) {
                 return mpc;
             }
         }
 
-        return _defaultMpc;
+        return defaultMpc;
     }
 
     public MerchantPriceConfig getMerchantPriceConfig(int id) {
-        return _mpcs.get(id);
+        return mpcs.get(id);
     }
 
     public void loadXML() throws SAXException, IOException, ParserConfigurationException {
@@ -87,7 +86,7 @@ public class MerchantPriceConfigTable {
             for (n = n.getFirstChild(); n != null; n = n.getNextSibling()) {
                 mpc = parseMerchantPriceConfig(n);
                 if (mpc != null) {
-                    _mpcs.put(mpc.getId(), mpc);
+                    mpcs.put(mpc.getId(), mpc);
                 }
             }
 
@@ -96,7 +95,7 @@ public class MerchantPriceConfigTable {
                 throw new IllegalStateException("'defaultPriceConfig' points to an non-loaded priceConfig");
             }
 
-            _defaultMpc = defaultMpc;
+            this.defaultMpc = defaultMpc;
         }
     }
 
@@ -148,89 +147,66 @@ public class MerchantPriceConfigTable {
     public void loadInstances() {
         try {
             loadXML();
-            LOGGER.info(getClass().getSimpleName() + ": Loaded " + _mpcs.size() + " merchant price configs.");
+            log.info("Loaded {} merchant price configs.", mpcs.size());
         } catch (Exception e) {
-            LOGGER.log(
-                    Level.SEVERE,
-                    getClass().getSimpleName() + ": Failed loading MerchantPriceConfigTable. Reason: " + e.getMessage(),
-                    e);
+            log.error("Failed loading MerchantPriceConfigTable. Reason: {}", e.getMessage(), e);
         }
     }
 
     public void updateReferences() {
-        for (MerchantPriceConfig mpc : _mpcs.values()) {
+        for (MerchantPriceConfig mpc : mpcs.values()) {
             mpc.updateReferences();
         }
     }
 
     public static class MerchantPriceConfig {
-        private final int _id;
-        private final String _name;
-        private final int _baseTax;
-        private final int _castleId;
-        private Castle _castle;
-        private final int _zoneId;
+        @Getter
+        private final int id;
+
+        @Getter
+        private final String name;
+
+        @Getter
+        private final int baseTax;
+
+        private final int castleId;
+        private Castle castle;
+
+        @Getter
+        private final int zoneId;
 
         public MerchantPriceConfig(int id, String name, int baseTax, int castleId, int zoneId) {
-            _id = id;
-            _name = name;
-            _baseTax = baseTax;
-            _castleId = castleId;
-            _zoneId = zoneId;
-        }
-
-        /**
-         * @return Returns the id.
-         */
-        public int getId() {
-            return _id;
-        }
-
-        /**
-         * @return Returns the name.
-         */
-        public String getName() {
-            return _name;
-        }
-
-        /**
-         * @return Returns the baseTax.
-         */
-        public int getBaseTax() {
-            return _baseTax;
+            this.id = id;
+            this.name = name;
+            this.baseTax = baseTax;
+            this.castleId = castleId;
+            this.zoneId = zoneId;
         }
 
         /**
          * @return Returns the baseTax / 100.0.
          */
         public double getBaseTaxRate() {
-            return _baseTax / 100.0;
+            return baseTax / 100.0;
         }
 
         /**
          * @return Returns the castle.
          */
         public Castle getCastle() {
-            return _castle;
-        }
-
-        /**
-         * @return Returns the zoneId.
-         */
-        public int getZoneId() {
-            return _zoneId;
+            return castle;
         }
 
         public boolean hasCastle() {
-            return _castle != null;
+            return castle != null;
         }
 
         public double getCastleTaxRate() {
-            return hasCastle() ? _castle.getTaxRate() : 0.0;
+            return hasCastle() ? castle.getTaxRate() : 0.0;
         }
 
         public int getTotalTax() {
-            return hasCastle() ? (_castle.getTaxPercent() + _baseTax) : _baseTax;
+            return hasCastle() ? (castle.getTaxPercent() + baseTax) : baseTax;
         }
 
         public double getTotalTaxRate() {
@@ -238,8 +214,8 @@ public class MerchantPriceConfigTable {
         }
 
         public void updateReferences() {
-            if (_castleId > 0) {
-                _castle = CastleManager.getInstance().getCastleById(_castleId);
+            if (castleId > 0) {
+                castle = CastleManager.getInstance().getCastleById(castleId);
             }
         }
     }

@@ -28,17 +28,14 @@ import app.l2nx.highfive.entity.item.ItemTemplate;
 import app.l2nx.highfive.entity.item.enums.ItemLocation;
 import app.l2nx.highfive.entity.item.enums.ItemProcessType;
 import app.l2nx.highfive.entity.item.instance.Item;
+import lombok.Getter;
 
 public class PetInventory extends Inventory {
-    private final Pet _owner;
+    @Getter
+    private final Pet owner;
 
     public PetInventory(Pet owner) {
-        _owner = owner;
-    }
-
-    @Override
-    public Pet getOwner() {
-        return _owner;
+        this.owner = owner;
     }
 
     @Override
@@ -46,7 +43,7 @@ public class PetInventory extends Inventory {
         // gets the Player-owner's ID
         int id;
         try {
-            id = _owner.getOwner().getObjectId();
+            id = owner.getOwner().getObjectId();
         } catch (NullPointerException e) {
             return 0;
         }
@@ -60,7 +57,7 @@ public class PetInventory extends Inventory {
     @Override
     protected void refreshWeight() {
         super.refreshWeight();
-        _owner.updateAndBroadcastStatus(1);
+        owner.updateAndBroadcastStatus(1);
     }
 
     public boolean validateCapacity(Item item) {
@@ -75,7 +72,7 @@ public class PetInventory extends Inventory {
 
     @Override
     public boolean validateCapacity(long slots) {
-        return (_items.size() + slots) <= _owner.getInventoryLimit();
+        return (items.size() + slots) <= owner.getInventoryLimit();
     }
 
     public boolean validateWeight(Item item, long count) {
@@ -91,7 +88,7 @@ public class PetInventory extends Inventory {
 
     @Override
     public boolean validateWeight(long weight) {
-        return (_totalWeight + weight) <= _owner.getMaxLoad();
+        return (totalWeight + weight) <= owner.getMaxLoad();
     }
 
     @Override
@@ -109,15 +106,15 @@ public class PetInventory extends Inventory {
         super.restore();
 
         // check for equipped items from other pets
-        for (Item item : _items) {
-            if (item.isEquipped() && !item.getTemplate().checkCondition(_owner, _owner, false)) {
+        for (Item item : items) {
+            if (item.isEquipped() && !item.getTemplate().checkCondition(owner, owner, false)) {
                 unEquipItemInSlot(item.getLocationSlot());
             }
         }
     }
 
     public void transferItemsToOwner() {
-        for (Item item : _items) {
+        for (Item item : items) {
             getOwner()
                     .transferItem(
                             ItemProcessType.TRANSFER,

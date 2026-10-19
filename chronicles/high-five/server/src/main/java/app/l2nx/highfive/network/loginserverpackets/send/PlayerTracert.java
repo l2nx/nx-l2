@@ -38,12 +38,12 @@ public class PlayerTracert extends SimpleWritablePacket {
     private static final int OPCODE = 0x07;
 
     // Data.
-    private final String _account;
-    private final String _pcIp;
-    private final String _hop1;
-    private final String _hop2;
-    private final String _hop3;
-    private final String _hop4;
+    private final String account;
+    private final String pcIp;
+    private final String hop1;
+    private final String hop2;
+    private final String hop3;
+    private final String hop4;
 
     /**
      * @param account account name
@@ -54,12 +54,12 @@ public class PlayerTracert extends SimpleWritablePacket {
      * @param hop4 fourth hop
      */
     public PlayerTracert(String account, String pcIp, String hop1, String hop2, String hop3, String hop4) {
-        _account = (account != null) ? account : "";
-        _pcIp = (pcIp != null) ? pcIp : "";
-        _hop1 = (hop1 != null) ? hop1 : "";
-        _hop2 = (hop2 != null) ? hop2 : "";
-        _hop3 = (hop3 != null) ? hop3 : "";
-        _hop4 = (hop4 != null) ? hop4 : "";
+        this.account = (account != null) ? account : "";
+        this.pcIp = (pcIp != null) ? pcIp : "";
+        this.hop1 = (hop1 != null) ? hop1 : "";
+        this.hop2 = (hop2 != null) ? hop2 : "";
+        this.hop3 = (hop3 != null) ? hop3 : "";
+        this.hop4 = (hop4 != null) ? hop4 : "";
     }
 
     /**
@@ -68,11 +68,11 @@ public class PlayerTracert extends SimpleWritablePacket {
     @Override
     public void write() {
         writeByte(OPCODE);
-        writeString(_account);
-        writeString(_pcIp);
-        writeString(_hop1);
-        writeString(_hop2);
-        writeString(_hop3);
-        writeString(_hop4);
+        writeString(account);
+        writeString(pcIp);
+        writeString(hop1);
+        writeString(hop2);
+        writeString(hop3);
+        writeString(hop4);
     }
 }

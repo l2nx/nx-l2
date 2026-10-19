@@ -33,7 +33,9 @@ import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.serverpackets.SocialAction;
 import app.l2nx.highfive.network.serverpackets.StatusUpdate;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class PetStat extends SummonStat {
     public PetStat(Pet activeChar) {
         super(activeChar);
@@ -108,8 +110,11 @@ public class PetStat extends SummonStat {
                     .getPetMaxExp();
         } catch (NullPointerException e) {
             if (pet != null) {
-                LOGGER.warning("Pet objectId:" + pet.getObjectId() + ", NpcId:" + pet.getId() + ", level:" + level
-                        + " is missing data from pets_stats table!");
+                log.warn(
+                        "Pet objectId:{}, NpcId:{}, level:{} is missing data from pets_stats table!",
+                        pet.getObjectId(),
+                        pet.getId(),
+                        level);
             }
 
             throw e;

@@ -23,23 +23,19 @@ import app.l2nx.highfive.entity.item.ItemTemplate;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import lombok.Getter;
 
 /**
  * @author UnAfraid
  */
 public class EnchantScrollGroup {
-    private final int _id;
-    private List<EnchantRateItem> _rateGroups;
+    @Getter
+    private final int id;
+
+    private List<EnchantRateItem> rateGroups;
 
     public EnchantScrollGroup(int id) {
-        _id = id;
-    }
-
-    /**
-     * @return id of current enchant scroll group.
-     */
-    public int getId() {
-        return _id;
+        this.id = id;
     }
 
     /**
@@ -47,18 +43,18 @@ public class EnchantScrollGroup {
      * @param group
      */
     public void addRateGroup(EnchantRateItem group) {
-        if (_rateGroups == null) {
-            _rateGroups = new ArrayList<>();
+        if (rateGroups == null) {
+            rateGroups = new ArrayList<>();
         }
 
-        _rateGroups.add(group);
+        rateGroups.add(group);
     }
 
     /**
      * @return {@code List} of all enchant rate items, Empty list if none.
      */
     public List<EnchantRateItem> getRateGroups() {
-        return _rateGroups != null ? _rateGroups : Collections.<EnchantRateItem>emptyList();
+        return rateGroups != null ? rateGroups : Collections.<EnchantRateItem>emptyList();
     }
 
     /**

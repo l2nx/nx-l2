@@ -43,17 +43,16 @@ import app.l2nx.highfive.threads.ThreadPool;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.DurationFormatUtils;
 
 /**
  * Wedding voiced commands handler.
  * @author evill33t
  */
+@Slf4j
 public class Wedding implements IVoicedCommandHandler {
-    static final Logger LOGGER = Logger.getLogger(Wedding.class.getName());
-    private static final String[] _voicedCommands = {"divorce", "engage", "gotolove"};
+    private static final String[] commandList = {"divorce", "engage", "gotolove"};
 
     @Override
     public boolean onCommand(String command, Player activeChar, String params) {
@@ -187,7 +186,7 @@ public class Wedding implements IVoicedCommandHandler {
 
             statement.close();
         } catch (Exception e) {
-            LOGGER.warning("could not read friend data:" + e);
+            log.warn("could not read friend data", e);
         }
 
         if (!foundOnFriendList) {
@@ -221,7 +220,7 @@ public class Wedding implements IVoicedCommandHandler {
 
         if (activeChar.getPartnerId() == 0) {
             activeChar.sendMessage("Couldn't find your fiance in the Database - Inform a Gamemaster.");
-            LOGGER.severe("Married but couldn't find parter for " + activeChar.getName());
+            log.error("Married but couldn't find parter for {}", activeChar.getName());
             return false;
         }
 
@@ -405,43 +404,44 @@ public class Wedding implements IVoicedCommandHandler {
         return true;
     }
 
+    @Slf4j
     private static class EscapeFinalizer implements Runnable {
-        private final Player _player;
-        private final Location _partnerLoc;
-        private final boolean _to7sDungeon;
+        private final Player player;
+        private final Location partnerLoc;
+        private final boolean to7sDungeon;
 
         EscapeFinalizer(Player activeChar, Location loc, boolean to7sDungeon) {
-            _player = activeChar;
-            _partnerLoc = loc;
-            _to7sDungeon = to7sDungeon;
+            player = activeChar;
+            partnerLoc = loc;
+            this.to7sDungeon = to7sDungeon;
         }
 
         @Override
         public void run() {
-            if (_player.isDead()) {
+            if (player.isDead()) {
                 return;
             }
 
-            if ((SiegeManager.getInstance().getSiege(_partnerLoc) != null)
-                    && SiegeManager.getInstance().getSiege(_partnerLoc).isInProgress()) {
-                _player.sendMessage("Your partner is in siege, you can't go to your partner.");
+            if ((SiegeManager.getInstance().getSiege(partnerLoc) != null)
+                    && SiegeManager.getInstance().getSiege(partnerLoc).isInProgress()) {
+                player.sendMessage("Your partner is in siege, you can't go to your partner.");
                 return;
             }
 
-            _player.setIn7sDungeon(_to7sDungeon);
-            _player.enableAllSkills();
-            _player.setCastingNow(false);
+            player.setIn7sDungeon(to7sDungeon);
+            player.enableAllSkills();
+            player.setCastingNow(false);
 
             try {
-                _player.teleToLocation(_partnerLoc);
+                player.teleToLocation(partnerLoc);
             } catch (Exception e) {
-                LOGGER.log(Level.SEVERE, "", e);
+                log.error("", e);
             }
         }
     }
 
     @Override
     public String[] getCommandList() {
-        return _voicedCommands;
+        return commandList;
     }
 }

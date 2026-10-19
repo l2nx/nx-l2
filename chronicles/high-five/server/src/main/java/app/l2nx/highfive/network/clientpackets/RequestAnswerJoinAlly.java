@@ -27,11 +27,11 @@ import app.l2nx.highfive.entity.clan.Clan;
 import app.l2nx.highfive.network.SystemMessageId;
 
 public class RequestAnswerJoinAlly extends ClientPacket {
-    private int _response;
+    private int response;
 
     @Override
     protected void readImpl() {
-        _response = readInt();
+        response = readInt();
     }
 
     @Override
@@ -46,7 +46,7 @@ public class RequestAnswerJoinAlly extends ClientPacket {
             return;
         }
 
-        if (_response == 0) {
+        if (response == 0) {
             player.sendPacket(SystemMessageId.NO_RESPONSE_YOUR_ENTRANCE_TO_THE_ALLIANCE_HAS_BEEN_CANCELLED);
             requestor.sendPacket(SystemMessageId.NO_RESPONSE_INVITATION_TO_JOIN_AN_ALLIANCE_HAS_BEEN_CANCELLED);
         } else {

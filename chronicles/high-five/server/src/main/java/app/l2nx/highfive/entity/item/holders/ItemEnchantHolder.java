@@ -22,27 +22,23 @@
  */
 package app.l2nx.highfive.entity.item.holders;
 
+import lombok.Getter;
+
 /**
  * @author Index, Mobius
  */
 public class ItemEnchantHolder extends ItemHolder {
-    private final int _enchantLevel;
+    @Getter
+    private final int enchantLevel;
 
     public ItemEnchantHolder(int id, long count) {
         super(id, count);
-        _enchantLevel = 0;
+        enchantLevel = 0;
     }
 
     public ItemEnchantHolder(int id, long count, int enchantLevel) {
         super(id, count);
-        _enchantLevel = enchantLevel;
-    }
-
-    /**
-     * @return enchant level of items contained in this object
-     */
-    public int getEnchantLevel() {
-        return _enchantLevel;
+        this.enchantLevel = enchantLevel;
     }
 
     @Override
@@ -54,12 +50,12 @@ public class ItemEnchantHolder extends ItemHolder {
         }
 
         return (getId() == objInstance.getId())
-                && ((getCount() == objInstance.getCount()) && (_enchantLevel == objInstance.getEnchantLevel()));
+                && ((getCount() == objInstance.getCount()) && (enchantLevel == objInstance.getEnchantLevel()));
     }
 
     @Override
     public String toString() {
         return "[" + getClass().getSimpleName() + "] ID: " + getId() + ", count: " + getCount() + ", enchant level: "
-                + _enchantLevel;
+                + enchantLevel;
     }
 }

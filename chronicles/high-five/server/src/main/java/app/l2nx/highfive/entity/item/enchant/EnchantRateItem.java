@@ -25,25 +25,21 @@ package app.l2nx.highfive.entity.item.enchant;
 import app.l2nx.highfive.entity.item.ItemTemplate;
 import java.util.HashSet;
 import java.util.Set;
+import lombok.Getter;
 
 /**
  * @author UnAfraid, Mobius
  */
 public class EnchantRateItem {
-    private final String _name;
-    private final Set<Integer> _items = new HashSet<>();
-    private int _slot;
-    private Boolean _isMagicWeapon = null;
+    @Getter
+    private final String name;
+
+    private final Set<Integer> items = new HashSet<>();
+    private int slot;
+    private Boolean magicWeapon = null;
 
     public EnchantRateItem(String name) {
-        _name = name;
-    }
-
-    /**
-     * @return name of enchant group.
-     */
-    public String getName() {
-        return _name;
+        this.name = name;
     }
 
     /**
@@ -51,7 +47,7 @@ public class EnchantRateItem {
      * @param id
      */
     public void addItemId(int id) {
-        _items.add(id);
+        items.add(id);
     }
 
     /**
@@ -59,7 +55,7 @@ public class EnchantRateItem {
      * @param slot
      */
     public void addSlot(int slot) {
-        _slot |= slot;
+        this.slot |= slot;
     }
 
     /**
@@ -67,7 +63,7 @@ public class EnchantRateItem {
      * @param magicWeapon
      */
     public void setMagicWeapon(boolean magicWeapon) {
-        _isMagicWeapon = Boolean.valueOf(magicWeapon);
+        this.magicWeapon = Boolean.valueOf(magicWeapon);
     }
 
     /**
@@ -75,11 +71,11 @@ public class EnchantRateItem {
      * @return {@code true} if item can be used with this rate group, {@code false} otherwise.
      */
     public boolean validate(ItemTemplate item) {
-        if (!_items.isEmpty() && !_items.contains(item.getId())) {
+        if (!items.isEmpty() && !items.contains(item.getId())) {
             return false;
-        } else if ((_slot != 0) && ((item.getBodyPart().getMask() & _slot) == 0)) {
+        } else if ((slot != 0) && ((item.getBodyPart().getMask() & slot) == 0)) {
             return false;
-        } else if ((_isMagicWeapon != null) && (item.isMagicWeapon() != _isMagicWeapon.booleanValue())) {
+        } else if ((magicWeapon != null) && (item.isMagicWeapon() != magicWeapon.booleanValue())) {
             return false;
         }
 

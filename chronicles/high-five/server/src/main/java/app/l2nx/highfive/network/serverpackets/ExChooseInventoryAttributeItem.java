@@ -29,33 +29,33 @@ import app.l2nx.network.buffer.WriteBuffer;
  * @author Kerberos
  */
 public class ExChooseInventoryAttributeItem extends ServerPacket {
-    private final int _itemId;
-    private final byte _atribute;
-    private final int _level;
+    private final int itemId;
+    private final byte atribute;
+    private final int level;
 
     public ExChooseInventoryAttributeItem(Item item) {
-        _itemId = item.getDisplayId();
-        _atribute = Elementals.getItemElement(_itemId);
-        if (_atribute == Elementals.NONE) {
+        itemId = item.getDisplayId();
+        atribute = Elementals.getItemElement(itemId);
+        if (atribute == Elementals.NONE) {
             throw new IllegalArgumentException("Undefined Atribute item: " + item);
         }
 
-        _level = Elementals.getMaxElementLevel(_itemId);
+        level = Elementals.getMaxElementLevel(itemId);
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_CHOOSE_INVENTORY_ATTRIBUTE_ITEM.writeId(this, buffer);
-        buffer.writeInt(_itemId);
+        buffer.writeInt(itemId);
 
         // Structure for now
         // Must be 0x01 for stone/crystal attribute type
-        buffer.writeInt(_atribute == Elementals.FIRE); // Fire
-        buffer.writeInt(_atribute == Elementals.WATER); // Water
-        buffer.writeInt(_atribute == Elementals.WIND); // Wind
-        buffer.writeInt(_atribute == Elementals.EARTH); // Earth
-        buffer.writeInt(_atribute == Elementals.HOLY); // Holy
-        buffer.writeInt(_atribute == Elementals.DARK); // Unholy
-        buffer.writeInt(_level); // Item max attribute level
+        buffer.writeInt(atribute == Elementals.FIRE); // Fire
+        buffer.writeInt(atribute == Elementals.WATER); // Water
+        buffer.writeInt(atribute == Elementals.WIND); // Wind
+        buffer.writeInt(atribute == Elementals.EARTH); // Earth
+        buffer.writeInt(atribute == Elementals.HOLY); // Holy
+        buffer.writeInt(atribute == Elementals.DARK); // Unholy
+        buffer.writeInt(level); // Item max attribute level
     }
 }

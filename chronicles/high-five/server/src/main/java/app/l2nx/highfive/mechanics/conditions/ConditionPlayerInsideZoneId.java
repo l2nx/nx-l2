@@ -30,10 +30,10 @@ import java.util.Set;
  * @author UnAfraid
  */
 public class ConditionPlayerInsideZoneId extends Condition {
-    private final Set<Integer> _zones;
+    private final Set<Integer> zones;
 
     public ConditionPlayerInsideZoneId(Set<Integer> zones) {
-        _zones = zones;
+        this.zones = zones;
     }
 
     @Override
@@ -43,7 +43,7 @@ public class ConditionPlayerInsideZoneId extends Condition {
         }
 
         for (ZoneType zone : ZoneManager.getInstance().getZones(effector)) {
-            if (_zones.contains(zone.getId())) {
+            if (zones.contains(zone.getId())) {
                 return true;
             }
         }

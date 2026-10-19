@@ -26,23 +26,23 @@ import java.util.Map;
  * @author nBd
  */
 public class BypassHandler implements IHandler<IBypassHandler, String> {
-    private final Map<String, IBypassHandler> _datatable;
+    private final Map<String, IBypassHandler> datatable;
 
     protected BypassHandler() {
-        _datatable = new HashMap<>();
+        datatable = new HashMap<>();
     }
 
     @Override
     public void registerHandler(IBypassHandler handler) {
         for (String element : handler.getCommandList()) {
-            _datatable.put(element.toLowerCase(), handler);
+            datatable.put(element.toLowerCase(), handler);
         }
     }
 
     @Override
     public synchronized void removeHandler(IBypassHandler handler) {
         for (String element : handler.getCommandList()) {
-            _datatable.remove(element.toLowerCase());
+            datatable.remove(element.toLowerCase());
         }
     }
 
@@ -53,12 +53,12 @@ public class BypassHandler implements IHandler<IBypassHandler, String> {
             command = command.substring(0, command.indexOf(' '));
         }
 
-        return _datatable.get(command.toLowerCase());
+        return datatable.get(command.toLowerCase());
     }
 
     @Override
     public int size() {
-        return _datatable.size();
+        return datatable.size();
     }
 
     public static BypassHandler getInstance() {

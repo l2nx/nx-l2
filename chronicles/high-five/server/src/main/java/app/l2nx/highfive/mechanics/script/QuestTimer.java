@@ -26,26 +26,36 @@ import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.threads.ThreadPool;
 import java.util.concurrent.ScheduledFuture;
+import lombok.Getter;
 
 public class QuestTimer {
-    protected final String _name;
-    protected final Quest _quest;
-    protected final Npc _npc;
-    protected final Player _player;
-    protected final boolean _isRepeating;
-    protected ScheduledFuture<?> _scheduler;
+    protected final String name;
+
+    @Getter
+    protected final Quest quest;
+
+    @Getter
+    protected final Npc npc;
+
+    @Getter
+    protected final Player player;
+
+    @Getter
+    protected final boolean repeating;
+
+    protected ScheduledFuture<?> scheduler;
 
     public QuestTimer(Quest quest, String name, long time, Npc npc, Player player, boolean repeating) {
-        _quest = quest;
-        _name = name;
-        _npc = npc;
-        _player = player;
-        _isRepeating = repeating;
+        this.quest = quest;
+        this.name = name;
+        this.npc = npc;
+        this.player = player;
+        this.repeating = repeating;
 
         if (repeating) {
-            _scheduler = ThreadPool.scheduleAtFixedRate(new ScheduleTimerTask(), time, time); // Prepare auto end task.
+            scheduler = ThreadPool.scheduleAtFixedRate(new ScheduleTimerTask(), time, time); // Prepare auto end task.
         } else {
-            _scheduler = ThreadPool.schedule(new ScheduleTimerTask(), time); // Prepare auto end task.
+            scheduler = ThreadPool.schedule(new ScheduleTimerTask(), time); // Prepare auto end task.
         }
 
         if (npc != null) {
@@ -60,22 +70,22 @@ public class QuestTimer {
     public void cancel() {
         cancelTask();
 
-        if (_npc != null) {
-            _npc.removeQuestTimer(this);
+        if (npc != null) {
+            npc.removeQuestTimer(this);
         }
 
-        if (_player != null) {
-            _player.removeQuestTimer(this);
+        if (player != null) {
+            player.removeQuestTimer(this);
         }
     }
 
     public void cancelTask() {
-        if ((_scheduler != null) && !_scheduler.isDone() && !_scheduler.isCancelled()) {
-            _scheduler.cancel(false);
-            _scheduler = null;
+        if ((scheduler != null) && !scheduler.isDone() && !scheduler.isCancelled()) {
+            scheduler.cancel(false);
+            scheduler = null;
         }
 
-        _quest.removeQuestTimer(this);
+        quest.removeQuestTimer(this);
     }
 
     /**
@@ -87,54 +97,38 @@ public class QuestTimer {
      * @return boolean
      */
     public boolean equals(Quest quest, String name, Npc npc, Player player) {
-        if ((quest == null) || (quest != _quest)) {
+        if ((quest == null) || (quest != this.quest)) {
             return false;
         }
 
-        if ((name == null) || !name.equals(_name)) {
+        if ((name == null) || !name.equals(this.name)) {
             return false;
         }
 
-        return (npc == _npc) && (player == _player);
+        return (npc == this.npc) && (player == this.player);
     }
 
     public boolean isActive() {
-        return (_scheduler != null) && !_scheduler.isCancelled() && !_scheduler.isDone();
-    }
-
-    public boolean isRepeating() {
-        return _isRepeating;
-    }
-
-    public Quest getQuest() {
-        return _quest;
-    }
-
-    public Npc getNpc() {
-        return _npc;
-    }
-
-    public Player getPlayer() {
-        return _player;
+        return (scheduler != null) && !scheduler.isCancelled() && !scheduler.isDone();
     }
 
     @Override
     public String toString() {
-        return _name;
+        return name;
     }
 
     public class ScheduleTimerTask implements Runnable {
         @Override
         public void run() {
-            if (_scheduler == null) {
+            if (scheduler == null) {
                 return;
             }
 
-            if (!_isRepeating) {
+            if (!repeating) {
                 cancel();
             }
 
-            _quest.notifyEvent(_name, _npc, _player);
+            quest.notifyEvent(name, npc, player);
         }
     }
 }

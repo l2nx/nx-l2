@@ -37,17 +37,17 @@ import java.util.concurrent.ThreadLocalRandom;
  * Randomize Hate effect implementation.
  */
 public class RandomizeHate extends AbstractEffect {
-    private final int _chance;
+    private final int chance;
 
     public RandomizeHate(Condition attachCond, Condition applyCond, StatSet set, StatSet params) {
         super(attachCond, applyCond, set, params);
 
-        _chance = params.getInt("chance", 100);
+        chance = params.getInt("chance", 100);
     }
 
     @Override
     public boolean calcSuccess(Creature effector, Creature effected, Skill skill) {
-        return Formulas.calcProbability(_chance, effector, effected, skill);
+        return Formulas.calcProbability(chance, effector, effected, skill);
     }
 
     @Override

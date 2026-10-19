@@ -38,13 +38,13 @@ import app.l2nx.highfive.network.serverpackets.SystemMessage;
  * @version $Revision: 1.7.4.4 $ $Date: 2005/03/27 15:29:30 $
  */
 public class RequestJoinParty extends ClientPacket {
-    private String _name;
-    private int _partyDistributionTypeId;
+    private String name;
+    private int partyDistributionTypeId;
 
     @Override
     protected void readImpl() {
-        _name = readString();
-        _partyDistributionTypeId = readInt();
+        name = readString();
+        partyDistributionTypeId = readInt();
     }
 
     @Override
@@ -54,7 +54,7 @@ public class RequestJoinParty extends ClientPacket {
             return;
         }
 
-        final Player target = World.getPlayer(_name);
+        final Player target = World.getPlayer(name);
         if (target == null) {
             requestor.sendPacket(SystemMessageId.YOU_MUST_FIRST_SELECT_A_USER_TO_INVITE_TO_YOUR_PARTY);
             return;
@@ -220,7 +220,7 @@ public class RequestJoinParty extends ClientPacket {
      * @param requestor
      */
     private void createNewParty(Player target, Player requestor) {
-        final PartyDistributionType partyDistributionType = PartyDistributionType.findById(_partyDistributionTypeId);
+        final PartyDistributionType partyDistributionType = PartyDistributionType.findById(partyDistributionTypeId);
         if (partyDistributionType == null) {
             return;
         }

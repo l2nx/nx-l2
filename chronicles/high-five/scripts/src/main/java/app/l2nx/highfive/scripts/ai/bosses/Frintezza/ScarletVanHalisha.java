@@ -51,9 +51,9 @@ public class ScarletVanHalisha extends Script {
 
     // Misc
     private static final int RANGED_SKILL_MIN_COOLTIME = 60000; // 1 minute
-    private Creature _target;
-    private Skill _skill;
-    private long _lastRangedSkillTime;
+    private Creature target;
+    private Skill skill;
+    private long lastRangedSkillTime;
 
     public ScarletVanHalisha() {
         addAttackId(HALISHA2, HALISHA3);
@@ -74,7 +74,7 @@ public class ScarletVanHalisha extends Script {
                 break;
             }
             case "RANDOM_TARGET": {
-                _target = getRandomTarget(npc, null);
+                target = getRandomTarget(npc, null);
                 break;
             }
         }
@@ -119,10 +119,10 @@ public class ScarletVanHalisha extends Script {
                     return SkillData.getInstance().getSkill(FRINTEZZA_DAEMON_CHARGE, 6);
                 } else if (getRandom(100) < 10) {
                     return SkillData.getInstance().getSkill(FRINTEZZA_DAEMON_CHARGE, 2);
-                } else if (((_lastRangedSkillTime + RANGED_SKILL_MIN_COOLTIME) < System.currentTimeMillis())
+                } else if (((lastRangedSkillTime + RANGED_SKILL_MIN_COOLTIME) < System.currentTimeMillis())
                         && (getRandom(100) < 10)) {
                     return SkillData.getInstance().getSkill(FRINTEZZA_DAEMON_FIELD, 1);
-                } else if (((_lastRangedSkillTime + RANGED_SKILL_MIN_COOLTIME) < System.currentTimeMillis())
+                } else if (((lastRangedSkillTime + RANGED_SKILL_MIN_COOLTIME) < System.currentTimeMillis())
                         && (getRandom(100) < 10)) {
                     return SkillData.getInstance().getSkill(FRINTEZZA_DAEMON_MORPH, 1);
                 } else if (getRandom(100) < 2) {
@@ -141,12 +141,12 @@ public class ScarletVanHalisha extends Script {
             return;
         }
 
-        if ((getRandom(100) < 30) || (_target == null) || _target.isDead()) {
-            _skill = getRndSkills(npc);
-            _target = getRandomTarget(npc, _skill);
+        if ((getRandom(100) < 30) || (this.target == null) || this.target.isDead()) {
+            this.skill = getRndSkills(npc);
+            this.target = getRandomTarget(npc, this.skill);
         }
 
-        Skill skill = _skill;
+        Skill skill = this.skill;
         if (skill == null) {
             skill = getRndSkills(npc);
         }
@@ -155,7 +155,7 @@ public class ScarletVanHalisha extends Script {
             return;
         }
 
-        final Creature target = _target;
+        final Creature target = this.target;
         if ((target == null) || target.isDead()) {
             // npc.setCastingNow(false);
             return;
@@ -165,7 +165,7 @@ public class ScarletVanHalisha extends Script {
             npc.getAI().setIntentionIdle();
             npc.setTarget(target);
             // npc.setCastingNow(true);
-            _target = null;
+            this.target = null;
             npc.doCast(skill);
         } else {
             npc.getAI().setIntentionFollow(target);
@@ -203,7 +203,7 @@ public class ScarletVanHalisha extends Script {
                     }
                     case FRINTEZZA_DAEMON_MORPH:
                     case FRINTEZZA_DAEMON_FIELD: {
-                        _lastRangedSkillTime = System.currentTimeMillis();
+                        lastRangedSkillTime = System.currentTimeMillis();
                         skillRange = 550;
                         break;
                     }

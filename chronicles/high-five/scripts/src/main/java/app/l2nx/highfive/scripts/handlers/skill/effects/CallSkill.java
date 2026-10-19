@@ -31,12 +31,12 @@ import app.l2nx.highfive.util.StatSet;
  * @author NosBit
  */
 public class CallSkill extends AbstractEffect {
-    private final SkillHolder _skill;
+    private final SkillHolder skill;
 
     public CallSkill(Condition attachCond, Condition applyCond, StatSet set, StatSet params) {
         super(attachCond, applyCond, set, params);
 
-        _skill = new SkillHolder(params.getInt("skillId"), params.getInt("skillLevel", 1));
+        skill = new SkillHolder(params.getInt("skillId"), params.getInt("skillLevel", 1));
     }
 
     @Override
@@ -47,10 +47,12 @@ public class CallSkill extends AbstractEffect {
     @Override
     public void onStart(Creature effector, Creature effected, Skill skill) {
         // Prevent infinite loop.
-        if ((skill != null) && (skill.getId() == _skill.getSkillId()) && (skill.getLevel() == _skill.getSkillLevel())) {
+        if ((skill != null)
+                && (skill.getId() == this.skill.getSkillId())
+                && (skill.getLevel() == this.skill.getSkillLevel())) {
             return;
         }
 
-        effector.makeTriggerCast(_skill.getSkill(), effected, true);
+        effector.makeTriggerCast(this.skill.getSkill(), effected, true);
     }
 }

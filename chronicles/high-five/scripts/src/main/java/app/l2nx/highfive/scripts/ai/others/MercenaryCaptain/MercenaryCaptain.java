@@ -33,11 +33,13 @@ import app.l2nx.highfive.network.serverpackets.NpcHtmlMessage;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.StringTokenizer;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Mercenary Captain AI.
  * @author malyelfik
  */
+@Slf4j
 public class MercenaryCaptain extends Script {
     // NPCs
     private static final Map<Integer, Integer> NPCS = new HashMap<>();
@@ -134,7 +136,7 @@ public class MercenaryCaptain extends Script {
                             break;
                         }
                         default: {
-                            LOGGER.warning(MercenaryCaptain.class.getSimpleName() + ": Unknown strider type: " + type);
+                            log.warn("Unknown strider type: {}", type);
                             return null;
                         }
                     }

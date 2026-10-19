@@ -28,22 +28,22 @@ import app.l2nx.network.buffer.WriteBuffer;
  * @author Tempy
  */
 public class L2FriendSay extends ServerPacket {
-    private final String _sender;
-    private final String _receiver;
-    private final String _message;
+    private final String sender;
+    private final String receiver;
+    private final String message;
 
     public L2FriendSay(String sender, String receiver, String message) {
-        _sender = sender;
-        _receiver = receiver;
-        _message = message;
+        this.sender = sender;
+        this.receiver = receiver;
+        this.message = message;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.L2_FRIEND_SAY.writeId(this, buffer);
         buffer.writeInt(0); // ??
-        buffer.writeString(_receiver);
-        buffer.writeString(_sender);
-        buffer.writeString(_message);
+        buffer.writeString(receiver);
+        buffer.writeString(sender);
+        buffer.writeString(message);
     }
 }

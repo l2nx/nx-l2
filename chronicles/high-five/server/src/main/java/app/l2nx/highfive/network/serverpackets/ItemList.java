@@ -31,16 +31,16 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ItemList extends AbstractItemPacket {
-    private final Player _player;
-    private final boolean _showWindow;
-    private final List<Item> _items = new ArrayList<>();
+    private final Player player;
+    private final boolean showWindow;
+    private final List<Item> items = new ArrayList<>();
 
     public ItemList(Player player, boolean showWindow) {
-        _player = player;
-        _showWindow = showWindow;
+        this.player = player;
+        this.showWindow = showWindow;
         for (Item item : player.getInventory().getItems()) {
             if (!item.isQuestItem()) {
-                _items.add(item);
+                items.add(item);
             }
         }
     }
@@ -48,19 +48,19 @@ public class ItemList extends AbstractItemPacket {
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.ITEM_LIST.writeId(this, buffer);
-        buffer.writeShort(_showWindow);
-        buffer.writeShort(_items.size());
-        for (Item item : _items) {
+        buffer.writeShort(showWindow);
+        buffer.writeShort(items.size());
+        for (Item item : items) {
             writeItem(item, buffer);
         }
 
-        writeInventoryBlock(_player.getInventory(), buffer);
+        writeInventoryBlock(player.getInventory(), buffer);
     }
 
     @Override
     public void runImpl(Player player) {
         if (player != null) {
-            player.sendPacket(new ExQuestItemList(_player));
+            player.sendPacket(new ExQuestItemList(this.player));
         }
     }
 }

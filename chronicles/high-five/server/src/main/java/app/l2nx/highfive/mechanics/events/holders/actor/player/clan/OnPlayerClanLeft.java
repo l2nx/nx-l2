@@ -23,27 +23,13 @@ import app.l2nx.highfive.entity.clan.Clan;
 import app.l2nx.highfive.entity.clan.ClanMember;
 import app.l2nx.highfive.mechanics.events.EventType;
 import app.l2nx.highfive.mechanics.events.holders.IBaseEvent;
+import lombok.Builder;
 
 /**
  * @author UnAfraid
  */
-public class OnPlayerClanLeft implements IBaseEvent {
-    private final ClanMember _clanMember;
-    private final Clan _clan;
-
-    public OnPlayerClanLeft(ClanMember clanMember, Clan clan) {
-        _clanMember = clanMember;
-        _clan = clan;
-    }
-
-    public ClanMember getClanMember() {
-        return _clanMember;
-    }
-
-    public Clan getClan() {
-        return _clan;
-    }
-
+@Builder(toBuilder = true)
+public record OnPlayerClanLeft(ClanMember clanMember, Clan clan) implements IBaseEvent {
     @Override
     public EventType getType() {
         return EventType.ON_PLAYER_CLAN_LEFT;

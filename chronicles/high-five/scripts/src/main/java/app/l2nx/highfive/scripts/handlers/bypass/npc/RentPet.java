@@ -32,7 +32,9 @@ import app.l2nx.highfive.handler.IBypassHandler;
 import app.l2nx.highfive.network.serverpackets.NpcHtmlMessage;
 import app.l2nx.highfive.network.serverpackets.SetupGauge;
 import java.util.StringTokenizer;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class RentPet implements IBypassHandler {
     private static final String[] COMMANDS = {"RentPet"};
 
@@ -66,7 +68,7 @@ public class RentPet implements IBypassHandler {
 
             return true;
         } catch (Exception e) {
-            LOGGER.info("Exception in " + getClass().getSimpleName());
+            log.info("Bypass failed");
         }
 
         return false;

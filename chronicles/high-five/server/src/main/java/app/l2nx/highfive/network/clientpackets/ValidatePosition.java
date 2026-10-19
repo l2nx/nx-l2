@@ -32,17 +32,17 @@ import app.l2nx.highfive.network.serverpackets.ValidateLocation;
 import app.l2nx.highfive.threads.ThreadPool;
 
 public class ValidatePosition extends ClientPacket {
-    private int _x;
-    private int _y;
-    private int _z;
-    private int _heading;
+    private int x;
+    private int y;
+    private int z;
+    private int heading;
 
     @Override
     protected void readImpl() {
-        _x = readInt();
-        _y = readInt();
-        _z = readInt();
-        _heading = readInt();
+        x = readInt();
+        y = readInt();
+        z = readInt();
+        heading = readInt();
         readInt(); // vehicle id
     }
 
@@ -54,7 +54,7 @@ public class ValidatePosition extends ClientPacket {
         }
 
         final int realX = player.getX();
-        if ((_x == 0) && (_y == 0) && (realX != 0)) {
+        if ((x == 0) && (y == 0) && (realX != 0)) {
             return;
         }
 
@@ -62,12 +62,12 @@ public class ValidatePosition extends ClientPacket {
             return;
         }
 
-        if (player.isFalling(_z)) {
+        if (player.isFalling(z)) {
             return; // Disable validations during fall to avoid "jumping".
         }
 
         // Abnormal z read from client.
-        if ((_z < -20000) || (_z > 20000)) {
+        if ((z < -20000) || (z > 20000)) {
             final Location lastServerPosition = player.getLastServerPosition();
             if (lastServerPosition != null) {
                 player.teleToLocation(lastServerPosition);
@@ -76,27 +76,27 @@ public class ValidatePosition extends ClientPacket {
         }
 
         // Don't allow flying transformations outside gracia area!
-        if (player.isFlyingMounted() && (_x > World.GRACIA_MAX_X)) {
+        if (player.isFlyingMounted() && (x > World.GRACIA_MAX_X)) {
             player.untransform();
         }
 
         final int realY = player.getY();
         int realZ = player.getZ();
-        final int dx = _x - realX;
-        final int dy = _y - realY;
-        final int dz = _z - realZ;
+        final int dx = x - realX;
+        final int dy = y - realY;
+        final int dz = z - realZ;
         final double diffSq = ((dx * dx) + (dy * dy));
         if (player.isFlying() || player.isInsideZone(ZoneId.WATER)) {
-            player.setXYZ(realX, realY, _z);
+            player.setXYZ(realX, realY, z);
             if (diffSq > 90000) {
                 player.sendPacket(new ValidateLocation(player));
             }
         } else if (diffSq < 360000) // If too large, messes observation.
         {
             if ((diffSq > 250000) || (Math.abs(dz) > 200)) {
-                if ((Math.abs(dz) > 200) && (Math.abs(dz) < 1500) && (Math.abs(_z - player.getClientZ()) < 800)) {
-                    player.setXYZ(realX, realY, _z);
-                    realZ = _z;
+                if ((Math.abs(dz) > 200) && (Math.abs(dz) < 1500) && (Math.abs(z - player.getClientZ()) < 800)) {
+                    player.setXYZ(realX, realY, z);
+                    realZ = z;
                 } else {
                     player.sendPacket(new ValidateLocation(player));
                 }
@@ -104,22 +104,21 @@ public class ValidatePosition extends ClientPacket {
         }
 
         // Check out of sync.
-        if (player.calculateDistance3D(_x, _y, _z) > player.getStat().getMoveSpeed()) {
+        if (player.calculateDistance3D(x, y, z) > player.getStat().getMoveSpeed()) {
             if (player.isBlinkActive()) {
                 ThreadPool.schedule(() -> player.setBlinkActive(false), 100);
             } else {
-                player.setXYZ(_x, _y, realZ > _z ? GeoEngine.getInstance().getHeight(_x, _y, realZ) : _z);
+                player.setXYZ(x, y, realZ > z ? GeoEngine.getInstance().getHeight(x, y, realZ) : z);
             }
         }
 
-        player.setClientX(_x);
-        player.setClientY(_y);
-        player.setClientZ(_z);
-        player.setClientHeading(_heading); // No real need to validate heading.
+        player.setClientX(x);
+        player.setClientY(y);
+        player.setClientZ(z);
+        player.setClientHeading(heading); // No real need to validate heading.
 
         // Mobius: Check for possible door logout and move over exploit. Also checked at MoveToLocation.
-        if (!DoorData.getInstance()
-                .checkIfDoorsBetween(realX, realY, realZ, _x, _y, _z, player.getInstanceId(), false)) {
+        if (!DoorData.getInstance().checkIfDoorsBetween(realX, realY, realZ, x, y, z, player.getInstanceId(), false)) {
             player.setLastServerPosition(realX, realY, realZ);
         }
 
@@ -127,7 +126,7 @@ public class ValidatePosition extends ClientPacket {
             // Use setSyncedXYZ so the active MoveData's xAccurate/yAccurate are updated alongside _location.
             // Plain setXYZ would let the next MovementTaskManager tick snap the player back to the stale xAccurate /
             // yAccurate that MovementTaskManager tracks independently of getX() / getY().
-            player.setSyncedXYZ(_x, _y, _z);
+            player.setSyncedXYZ(x, y, z);
             player.broadcastPacket(new ValidateLocation(player));
         }
     }

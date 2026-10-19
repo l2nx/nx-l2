@@ -26,14 +26,14 @@ import app.l2nx.highfive.config.ConfigReader;
 import app.l2nx.highfive.config.GeneralConfig;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * This class loads all the custom multilingual support related configurations.
  * @author Mobius
  */
+@Slf4j
 public class MultilingualSupportConfig {
-    private static final Logger LOGGER = Logger.getLogger(MultilingualSupportConfig.class.getName());
 
     // File
     private static final String MULTILANGUAL_SUPPORT_CONFIG_FILE = "./config/Custom/MultilingualSupport.ini";
@@ -61,8 +61,9 @@ public class MultilingualSupportConfig {
         }
 
         if (!MULTILANG_ALLOWED.contains(MULTILANG_DEFAULT)) {
-            LOGGER.warning("MultiLang[MultilingualSupportConfig.load()]: default language: " + MULTILANG_DEFAULT
-                    + " is not in allowed list!");
+            log.warn(
+                    "MultiLang[MultilingualSupportConfig.load()]: default language: {} is not in allowed list!",
+                    MULTILANG_DEFAULT);
         }
 
         MULTILANG_VOICED_ALLOW = config.getBoolean("MultiLangVoiceCommand", true);

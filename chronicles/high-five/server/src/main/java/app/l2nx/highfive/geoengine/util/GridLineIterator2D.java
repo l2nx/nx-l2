@@ -31,29 +31,29 @@ package app.l2nx.highfive.geoengine.util;
  */
 public class GridLineIterator2D {
     // Current position of the iterator.
-    private int _currentX; // Current X position of the iterator.
-    private int _currentY; // Current Y position of the iterator.
+    private int currentX; // Current X position of the iterator.
+    private int currentY; // Current Y position of the iterator.
 
     // Target endpoint of the line.
-    private final int _targetX; // Target X endpoint of the line.
-    private final int _targetY; // Target Y endpoint of the line.
+    private final int targetX; // Target X endpoint of the line.
+    private final int targetY; // Target Y endpoint of the line.
 
     // Step directions for movement along the X and Y axes.
-    private final int _stepX; // Step direction for X (-1, 0 or 1).
-    private final int _stepY; // Step direction for Y (-1, 0 or 1).
+    private final int stepX; // Step direction for X (-1, 0 or 1).
+    private final int stepY; // Step direction for Y (-1, 0 or 1).
 
     // Absolute distances along X and Y axes.
-    private final int _deltaX; // Absolute difference in X coordinates.
-    private final int _deltaY; // Absolute difference in Y coordinates.
+    private final int deltaX; // Absolute difference in X coordinates.
+    private final int deltaY; // Absolute difference in Y coordinates.
 
     // Indicates whether the line is steep (Y changes faster than X).
-    private final boolean _isSteep;
+    private final boolean steep;
 
     // Tracks the accumulated error term for adjusting the minor axis.
-    private int _accumulatedError;
+    private int accumulatedError;
 
     // Indicates whether the iteration has started.
-    private boolean _hasStarted;
+    private boolean hasStarted;
 
     /**
      * Initializes the iterator to step through points along a line from (startX, startY) to (endX, endY).
@@ -64,30 +64,30 @@ public class GridLineIterator2D {
      */
     public GridLineIterator2D(int startX, int startY, int endX, int endY) {
         // Initialize current position.
-        _currentX = startX;
-        _currentY = startY;
+        currentX = startX;
+        currentY = startY;
 
         // Initialize target position.
-        _targetX = endX;
-        _targetY = endY;
+        targetX = endX;
+        targetY = endY;
 
         // Calculate absolute differences in X and Y coordinates.
-        _deltaX = Math.abs(endX - startX);
-        _deltaY = Math.abs(endY - startY);
+        deltaX = Math.abs(endX - startX);
+        deltaY = Math.abs(endY - startY);
 
         // Determine step directions for X and Y.
-        _stepX = Integer.compare(endX, startX); // -1, 0 or 1.
-        _stepY = Integer.compare(endY, startY); // -1, 0 or 1.
+        stepX = Integer.compare(endX, startX); // -1, 0 or 1.
+        stepY = Integer.compare(endY, startY); // -1, 0 or 1.
 
         // Determine if the line is steep (Y changes more than X).
-        _isSteep = _deltaY > _deltaX;
+        steep = deltaY > deltaX;
 
         // Initialize the accumulated error term.
         // Start with half the dominant axis to balance initial adjustment.
-        _accumulatedError = (_isSteep ? _deltaY : _deltaX) / 2;
+        accumulatedError = (steep ? deltaY : deltaX) / 2;
 
         // Set the initial iteration state.
-        _hasStarted = false;
+        hasStarted = false;
     }
 
     /**
@@ -100,34 +100,34 @@ public class GridLineIterator2D {
      *         {@code false} if the end of the line has been reached.
      */
     public boolean next() {
-        if (!_hasStarted) {
-            _hasStarted = true; // Start the iteration on the first call.
+        if (!hasStarted) {
+            hasStarted = true; // Start the iteration on the first call.
             return true;
         }
 
         // If the current position equals the target, stop iteration.
-        if ((_currentX == _targetX) && (_currentY == _targetY)) {
+        if ((currentX == targetX) && (currentY == targetY)) {
             return false;
         }
 
         // Move along the line.
-        if (_isSteep) {
+        if (steep) {
             // For steep lines, Y is the dominant axis.
-            _currentY += _stepY;
-            _accumulatedError -= _deltaX;
-            if (_accumulatedError < 0) {
+            currentY += stepY;
+            accumulatedError -= deltaX;
+            if (accumulatedError < 0) {
                 // Step along X when the accumulated error exceeds the threshold.
-                _currentX += _stepX;
-                _accumulatedError += _deltaY;
+                currentX += stepX;
+                accumulatedError += deltaY;
             }
         } else {
             // For shallow lines, X is the dominant axis.
-            _currentX += _stepX;
-            _accumulatedError -= _deltaY;
-            if (_accumulatedError < 0) {
+            currentX += stepX;
+            accumulatedError -= deltaY;
+            if (accumulatedError < 0) {
                 // Step along Y when the accumulated error exceeds the threshold.
-                _currentY += _stepY;
-                _accumulatedError += _deltaX;
+                currentY += stepY;
+                accumulatedError += deltaX;
             }
         }
 
@@ -139,7 +139,7 @@ public class GridLineIterator2D {
      * @return the current X-coordinate
      */
     public int x() {
-        return _currentX;
+        return currentX;
     }
 
     /**
@@ -147,11 +147,11 @@ public class GridLineIterator2D {
      * @return the current Y-coordinate
      */
     public int y() {
-        return _currentY;
+        return currentY;
     }
 
     @Override
     public String toString() {
-        return "[" + _currentX + ", " + _currentY + "]";
+        return "[" + currentX + ", " + currentY + "]";
     }
 }

@@ -41,15 +41,15 @@ public class CharCreateFail extends ServerPacket {
     // restriction is in place which restricts users from creating characters on different servers where
     // no previous character exists. Please
     // choose another server."
-    private final int _error;
+    private final int error;
 
     public CharCreateFail(int errorCode) {
-        _error = errorCode;
+        error = errorCode;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.CHARACTER_CREATE_FAIL.writeId(this, buffer);
-        buffer.writeInt(_error);
+        buffer.writeInt(error);
     }
 }

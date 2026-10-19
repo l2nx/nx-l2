@@ -27,17 +27,17 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 
 /**
  * @author UnAfraid
  */
+@Slf4j
 public class TeleporterData implements IXmlReader {
-    private static final Logger LOGGER = Logger.getLogger(TeleporterData.class.getName());
 
-    private final Map<Integer, Map<String, TeleportHolder>> _teleporters = new ConcurrentHashMap<>();
+    private final Map<Integer, Map<String, TeleportHolder>> teleporters = new ConcurrentHashMap<>();
 
     protected TeleporterData() {
         load();
@@ -45,9 +45,9 @@ public class TeleporterData implements IXmlReader {
 
     @Override
     public void load() {
-        _teleporters.clear();
+        teleporters.clear();
         parseDatapackDirectory("data/teleporters", true);
-        LOGGER.info(getClass().getSimpleName() + ": Loaded " + _teleporters.size() + " npc teleporters.");
+        log.info("Loaded {} npc teleporters.", teleporters.size());
     }
 
     @Override
@@ -78,8 +78,7 @@ public class TeleporterData implements IXmlReader {
 
                                 // Register holder
                                 if (teleList.putIfAbsent(name, holder) != null) {
-                                    LOGGER.warning(
-                                            "Duplicate teleport list (" + name + ") has been found for NPC: " + npcId);
+                                    log.warn("Duplicate teleport list ({}) has been found for NPC: {}", name, npcId);
                                 }
                                 break;
                             }
@@ -101,7 +100,7 @@ public class TeleporterData implements IXmlReader {
      * @return the number of teleporters available
      */
     public int getTeleporterCount() {
-        return _teleporters.size();
+        return teleporters.size();
     }
 
     /**
@@ -113,7 +112,7 @@ public class TeleporterData implements IXmlReader {
      * @param teleList a map of teleport data associated with the NPC
      */
     private void registerTeleportList(int npcId, Map<String, TeleportHolder> teleList) {
-        _teleporters.computeIfAbsent(npcId, k -> new ConcurrentHashMap<>()).putAll(teleList);
+        teleporters.computeIfAbsent(npcId, k -> new ConcurrentHashMap<>()).putAll(teleList);
     }
 
     /**
@@ -126,7 +125,7 @@ public class TeleporterData implements IXmlReader {
      * @return the {@link TeleportHolder} for the specified NPC and list name, or {@code null} if not found
      */
     public TeleportHolder getHolder(int npcId, String listName) {
-        return _teleporters.getOrDefault(npcId, Collections.emptyMap()).get(listName);
+        return teleporters.getOrDefault(npcId, Collections.emptyMap()).get(listName);
     }
 
     public static TeleporterData getInstance() {

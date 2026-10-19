@@ -26,6 +26,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import lombok.Getter;
 
 /**
  * Abstract class for writable packets backed by a byte array, with a maximum raw data size of 65533 bytes.<br>
@@ -36,26 +37,28 @@ import java.util.concurrent.ConcurrentHashMap;
 public abstract class SimpleWritablePacket {
     private static final Map<Class<?>, Integer> MAXIMUM_PACKET_SIZE = new ConcurrentHashMap<>();
 
-    private final int _initialSize = MAXIMUM_PACKET_SIZE.getOrDefault(getClass(), 8);
+    private final int initialSize = MAXIMUM_PACKET_SIZE.getOrDefault(getClass(), 8);
 
-    private byte[] _data;
-    private byte[] _sendableBytes;
-    private int _position = 2; // Allocate space for size (max length 65535 - size header).
+    private byte[] data;
+    private byte[] sendableBytes;
+
+    @Getter
+    private int length = 2; // Allocate space for size (max length 65535 - size header).
 
     protected SimpleWritablePacket() {
-        _data = new byte[_initialSize];
+        data = new byte[initialSize];
     }
 
     public void write(byte value) {
         // Check current size.
-        if (_position < 65535) {
+        if (length < 65535) {
             // Check capacity.
-            if (_position == _data.length) {
-                _data = Arrays.copyOf(_data, _data.length * 2); // Double the capacity.
+            if (length == data.length) {
+                data = Arrays.copyOf(data, data.length * 2); // Double the capacity.
             }
 
             // Set value.
-            _data[_position++] = value;
+            data[length++] = value;
             return;
         }
 
@@ -223,38 +226,29 @@ public abstract class SimpleWritablePacket {
      */
     public synchronized byte[] getSendableBytes() {
         // Generate sendable byte array.
-        if (_sendableBytes == null /* Not processed */) {
+        if (sendableBytes == null /* Not processed */) {
             // Write packet implementation (only once).
-            if (_position == 2) {
+            if (length == 2) {
                 write();
 
                 // Update maximum packet size if needed.
-                if (_position > _initialSize) {
-                    MAXIMUM_PACKET_SIZE.put(getClass(), Math.min(_position, 65535));
+                if (length > initialSize) {
+                    MAXIMUM_PACKET_SIZE.put(getClass(), Math.min(length, 65535));
                 }
             }
 
             // Check if data was written.
-            if (_position > 2) {
+            if (length > 2) {
                 // Trim array of data.
-                _sendableBytes = Arrays.copyOf(_data, _position);
+                sendableBytes = Arrays.copyOf(data, length);
 
                 // Add size info at start (unsigned short - max size 65535).
-                _sendableBytes[0] = (byte) (_position & 0xff);
-                _sendableBytes[1] = (byte) ((_position >> 8) & 0xffff);
+                sendableBytes[0] = (byte) (length & 0xff);
+                sendableBytes[1] = (byte) ((length >> 8) & 0xffff);
             }
         }
 
         // Return the data.
-        return _sendableBytes;
-    }
-
-    /**
-     * Gets the length of the data written to the packet, including the size header.<br>
-     * Note that the data must be written first before calling this method.
-     * @return The length of the data.
-     */
-    public int getLength() {
-        return _position;
+        return sendableBytes;
     }
 }

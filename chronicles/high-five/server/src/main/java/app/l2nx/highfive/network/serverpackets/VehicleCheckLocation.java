@@ -28,19 +28,19 @@ import app.l2nx.network.buffer.WriteBuffer;
  * @author Maktakien
  */
 public class VehicleCheckLocation extends ServerPacket {
-    private final Creature _boat;
+    private final Creature boat;
 
     public VehicleCheckLocation(Creature boat) {
-        _boat = boat;
+        this.boat = boat;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.VEHICLE_CHECK_LOCATION.writeId(this, buffer);
-        buffer.writeInt(_boat.getObjectId());
-        buffer.writeInt(_boat.getX());
-        buffer.writeInt(_boat.getY());
-        buffer.writeInt(_boat.getZ());
-        buffer.writeInt(_boat.getHeading());
+        buffer.writeInt(boat.getObjectId());
+        buffer.writeInt(boat.getX());
+        buffer.writeInt(boat.getY());
+        buffer.writeInt(boat.getZ());
+        buffer.writeInt(boat.getHeading());
     }
 }

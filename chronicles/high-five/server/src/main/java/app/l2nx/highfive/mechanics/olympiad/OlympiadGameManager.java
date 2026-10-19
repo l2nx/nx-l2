@@ -25,17 +25,20 @@ import app.l2nx.highfive.managers.InstanceManager;
 import app.l2nx.highfive.managers.ZoneManager;
 import java.util.Collection;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author GodKratos, DS
  */
+@Slf4j
 public class OlympiadGameManager implements Runnable {
-    private static final Logger LOGGER = Logger.getLogger(OlympiadGameManager.class.getName());
 
-    private volatile boolean _battleStarted = false;
-    private final OlympiadGameTask[] _tasks;
+    @Getter(AccessLevel.PROTECTED)
+    private volatile boolean battleStarted = false;
+
+    private final OlympiadGameTask[] tasks;
 
     protected OlympiadGameManager() {
         final Collection<OlympiadStadiumZone> zones = ZoneManager.getInstance().getAllZones(OlympiadStadiumZone.class);
@@ -43,7 +46,7 @@ public class OlympiadGameManager implements Runnable {
             throw new Error("No olympiad stadium zones defined !");
         }
 
-        _tasks = new OlympiadGameTask[zones.size()];
+        tasks = new OlympiadGameTask[zones.size()];
         int i = 0;
         int instanceId = 0;
         for (OlympiadStadiumZone zone : zones) {
@@ -74,18 +77,14 @@ public class OlympiadGameManager implements Runnable {
                 }
             }
 
-            _tasks[i++] = new OlympiadGameTask(zone, instanceId);
+            tasks[i++] = new OlympiadGameTask(zone, instanceId);
         }
 
-        LOGGER.log(Level.INFO, "Olympiad System: Loaded " + _tasks.length + " stadiums.");
-    }
-
-    protected boolean isBattleStarted() {
-        return _battleStarted;
+        log.info("Olympiad System: Loaded {} stadiums.", tasks.length);
     }
 
     protected void startBattle() {
-        _battleStarted = true;
+        battleStarted = true;
     }
 
     @Override
@@ -102,8 +101,8 @@ public class OlympiadGameManager implements Runnable {
             boolean readyTeams = OlympiadManager.getInstance().hasEnoughRegisteredTeams();
             if ((readyClassed != null) || readyNonClassed || readyTeams) {
                 // set up the games queue
-                for (int i = 0; i < _tasks.length; i++) {
-                    task = _tasks[i];
+                for (int i = 0; i < tasks.length; i++) {
+                    task = tasks[i];
                     synchronized (task) {
                         if (!task.isRunning()) {
                             // Fair arena distribution
@@ -158,13 +157,13 @@ public class OlympiadGameManager implements Runnable {
         // not in competition period
         else if (isAllTasksFinished()) {
             OlympiadManager.getInstance().clearRegistered();
-            _battleStarted = false;
+            battleStarted = false;
             // LOGGER.log(Level.INFO, "Olympiad System: All current games finished.");
         }
     }
 
     public boolean isAllTasksFinished() {
-        for (OlympiadGameTask task : _tasks) {
+        for (OlympiadGameTask task : tasks) {
             if (task.isRunning()) {
                 return false;
             }
@@ -174,11 +173,11 @@ public class OlympiadGameManager implements Runnable {
     }
 
     public OlympiadGameTask getOlympiadTask(int id) {
-        return (id < 0) || (id >= _tasks.length) ? null : _tasks[id];
+        return (id < 0) || (id >= tasks.length) ? null : tasks[id];
     }
 
     public int getNumberOfStadiums() {
-        return _tasks.length;
+        return tasks.length;
     }
 
     public void notifyCompetitorDamage(Player player, int damage) {
@@ -187,11 +186,11 @@ public class OlympiadGameManager implements Runnable {
         }
 
         final int id = player.getOlympiadGameId();
-        if ((id < 0) || (id >= _tasks.length)) {
+        if ((id < 0) || (id >= tasks.length)) {
             return;
         }
 
-        final AbstractOlympiadGame game = _tasks[id].getGame();
+        final AbstractOlympiadGame game = tasks[id].getGame();
         if (game != null) {
             game.addDamage(player, damage);
         }

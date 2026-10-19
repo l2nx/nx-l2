@@ -27,14 +27,14 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * This class loads all the custom dualbox check related configurations.
  * @author Mobius
  */
+@Slf4j
 public class DualboxCheckConfig {
-    private static final Logger LOGGER = Logger.getLogger(DualboxCheckConfig.class.getName());
 
     // File
     private static final String DUALBOX_CHECK_CONFIG_FILE = "./config/Custom/DualboxCheck.ini";
@@ -63,9 +63,9 @@ public class DualboxCheckConfig {
         for (String entry : dualboxCheckWhiteList) {
             final String[] entrySplit = entry.split(",");
             if (entrySplit.length != 2) {
-                LOGGER.warning(
-                        "DualboxCheck[DualboxCheckConfig.load()]: invalid config property -> DualboxCheckWhitelist \""
-                                + entry + "\"");
+                log.warn(
+                        "DualboxCheck[DualboxCheckConfig.load()]: invalid config property -> DualboxCheckWhitelist \"{}\"",
+                        entry);
             } else {
                 try {
                     int num = Integer.parseInt(entrySplit[1]);
@@ -73,12 +73,13 @@ public class DualboxCheckConfig {
                     DUALBOX_CHECK_WHITELIST.put(
                             InetAddress.getByName(entrySplit[0]).hashCode(), num);
                 } catch (UnknownHostException e) {
-                    LOGGER.warning(
-                            "DualboxCheck[DualboxCheckConfig.load()]: invalid address -> DualboxCheckWhitelist \""
-                                    + entrySplit[0] + "\"");
+                    log.warn(
+                            "DualboxCheck[DualboxCheckConfig.load()]: invalid address -> DualboxCheckWhitelist \"{}\"",
+                            entrySplit[0]);
                 } catch (NumberFormatException e) {
-                    LOGGER.warning("DualboxCheck[DualboxCheckConfig.load()]: invalid number -> DualboxCheckWhitelist \""
-                            + entrySplit[1] + "\"");
+                    log.warn(
+                            "DualboxCheck[DualboxCheckConfig.load()]: invalid number -> DualboxCheckWhitelist \"{}\"",
+                            entrySplit[1]);
                 }
             }
         }

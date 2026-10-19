@@ -25,14 +25,14 @@ package app.l2nx.highfive.scripts.handlers;
 import app.l2nx.highfive.handler.EffectHandler;
 import app.l2nx.highfive.mechanics.effects.AbstractEffect;
 import app.l2nx.highfive.scripts.handlers.skill.effects.*;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Effect Master handler.
  * @author BiggBoss, Mobius
  */
+@Slf4j
 public class EffectMasterHandler {
-    private static final Logger LOGGER = Logger.getLogger(EffectMasterHandler.class.getName());
 
     private static final Class<?>[] EFFECTS = {
         AddHate.class,
@@ -214,11 +214,12 @@ public class EffectMasterHandler {
 
         // And lets try get size.
         try {
-            LOGGER.info(EffectMasterHandler.class.getSimpleName() + ": Loaded "
-                    + EffectHandler.getInstance().size() + " effect handlers.");
+            log.info("Loaded {} effect handlers.", EffectHandler.getInstance().size());
         } catch (Exception e) {
-            LOGGER.warning("Failed invoking size method for handler: " + EffectMasterHandler.class.getSimpleName() + " "
-                    + e.getMessage());
+            log.warn(
+                    "Failed invoking size method for handler: {} {}",
+                    EffectMasterHandler.class.getSimpleName(),
+                    e.getMessage());
         }
     }
 }

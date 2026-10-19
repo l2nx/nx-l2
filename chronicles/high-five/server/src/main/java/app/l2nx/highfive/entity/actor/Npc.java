@@ -123,13 +123,17 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.logging.Level;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
+import org.slf4j.LoggerFactory;
 
 /**
  * This class represents a Non-Player-Creature in the world.<br>
  * It can be a monster or a friendly creature.<br>
  * It uses a template to fetch some static values.
  */
+@Slf4j
 public class Npc extends Creature {
     /** The interaction distance of the Npc(is used as offset in MovetoLocation method) */
     public static final int INTERACTION_DISTANCE = 250;
@@ -138,76 +142,114 @@ public class Npc extends Creature {
     /** Ids of NPCs that see creatures through the OnCreatureSee event. */
     private static final Set<Integer> CREATURE_SEE_IDS = ConcurrentHashMap.newKeySet();
     /** The Spawn object that manage this Npc */
-    private Spawn _spawn;
+    @Getter
+    @Setter
+    private Spawn spawn;
     /** The flag to specify if this Npc is busy */
-    private boolean _isBusy = false;
+    @Getter
+    @Setter
+    private boolean busy = false;
     /** The busy message for this Npc */
-    private String _busyMessage = "";
+    @Getter
+    @Setter
+    private String busyMessage = "";
     /** True if endDecayTask has already been called */
-    private volatile boolean _isDecayed = false;
+    @Getter
+    @Setter
+    private volatile boolean decayed = false;
     /** The castle index in the array of Castle this Npc belongs to */
-    private int _castleIndex = -2;
+    private int castleIndex = -2;
     /** The fortress index in the array of Fort this Npc belongs to */
-    private int _fortIndex = -2;
+    private int fortIndex = -2;
 
-    private boolean _isInTown = false;
+    private boolean inTown = false;
     /** True if this Npc is autoattackable **/
-    private boolean _isAutoAttackable = false;
+    @Setter
+    private boolean autoAttackable = false;
     /** Time of last social packet broadcast */
-    private long _lastSocialBroadcast = 0;
+    private long lastSocialBroadcast = 0;
     /** Minimum interval between social packets */
     private static final int MINIMUM_SOCIAL_INTERVAL = 6000;
     /** Support for random animation switching */
-    private boolean _isRandomAnimationEnabled = true;
+    @Setter
+    private boolean randomAnimationEnabled = true;
 
-    private boolean _isRandomWalkingEnabled = true;
-    private boolean _isWalker = false;
-    private boolean _isTalkable = getTemplate().isTalkable();
-    private final boolean _isQuestMonster = getTemplate().isQuestMonster();
-    private final boolean _isFakePlayer = getTemplate().isFakePlayer();
+    @Getter
+    private boolean randomWalkingEnabled = true;
 
-    private int _currentLHandId; // Normally this shouldn't change from the template, but there exist exceptions.
-    private int _currentRHandId; // Normally this shouldn't change from the template, but there exist exceptions.
-    private int _currentEnchant; // Normally this shouldn't change from the template, but there exist exceptions.
-    private double _currentCollisionHeight; // Used for npc grow effect skills.
-    private double _currentCollisionRadius; // Used for npc grow effect skills.
+    @Getter
+    private boolean walker = false;
 
-    private int _soulshotamount = 0;
-    private int _spiritshotamount = 0;
-    private int _displayEffect = 0;
+    @Getter
+    @Setter
+    private boolean talkable = getTemplate().isTalkable();
 
-    private int _shotsMask = 0;
-    private int _killingBlowWeaponId;
+    @Getter
+    private final boolean questMonster = getTemplate().isQuestMonster();
 
-    private volatile int _scriptValue = 0;
+    @Getter
+    private final boolean fakePlayer = getTemplate().isFakePlayer();
+
+    @Getter
+    private int leftHandItem; // Normally this shouldn't change from the template, but there exist exceptions.
+
+    @Getter
+    private int rightHandItem; // Normally this shouldn't change from the template, but there exist exceptions.
+
+    @Getter
+    private int enchantEffect; // Normally this shouldn't change from the template, but there exist exceptions.
+
+    @Getter
+    @Setter
+    private double collisionHeight; // Used for npc grow effect skills.
+
+    @Getter
+    @Setter
+    private double collisionRadius; // Used for npc grow effect skills.
+
+    private int soulshotamount = 0;
+    private int spiritshotamount = 0;
+
+    @Getter
+    private int displayEffect = 0;
+
+    private int shotsMask = 0;
+
+    @Getter
+    @Setter
+    private int killingBlowWeapon;
+
+    @Getter
+    @Setter
+    private volatile int scriptValue = 0;
 
     /** Map of summoned NPCs by this NPC. */
-    private Map<Integer, Npc> _summonedNpcs = null;
+    private Map<Integer, Npc> summonedNpcs = null;
 
-    private final List<QuestTimer> _questTimers = new ArrayList<>();
-    private final List<TimerHolder<?>> _timerHolders = new ArrayList<>();
+    private final List<QuestTimer> questTimers = new ArrayList<>();
+    private final List<TimerHolder<?>> timerHolders = new ArrayList<>();
 
     /**
      * Creates a NPC.
      * @param template the NPC template
      */
     public Npc(NpcTemplate template) {
-        // Call the Creature constructor to set the _template of the Creature, copy skills from template to object.
+        // Call the Creature constructor to set the template of the Creature, copy skills from template to object.
         // and link _calculators to NPC_STD_CALCULATOR.
         super(template);
         setInstanceType(InstanceType.Npc);
         initCharStatusUpdateValues();
 
         // Initialize the "current" equipment.
-        _currentLHandId = getTemplate().getLHandId();
-        _currentRHandId = getTemplate().getRHandId();
-        _currentEnchant = NpcConfig.ENABLE_RANDOM_ENCHANT_EFFECT
+        leftHandItem = getTemplate().getLHandId();
+        rightHandItem = getTemplate().getRHandId();
+        enchantEffect = NpcConfig.ENABLE_RANDOM_ENCHANT_EFFECT
                 ? ThreadLocalRandom.current().nextInt(4, 22)
                 : getTemplate().getWeaponEnchant();
 
         // Initialize the "current" collisions.
-        _currentCollisionHeight = getTemplate().getFCollisionHeight();
-        _currentCollisionRadius = getTemplate().getFCollisionRadius();
+        collisionHeight = getTemplate().getFCollisionHeight();
+        collisionRadius = getTemplate().getFCollisionRadius();
         setFlying(template.isFlying());
     }
 
@@ -269,8 +311,8 @@ public class Npc extends Creature {
     public void onRandomAnimation(int animationId) {
         // Send a packet SocialAction to all Player in the _KnownPlayers of the Npc.
         final long now = System.currentTimeMillis();
-        if ((now - _lastSocialBroadcast) > MINIMUM_SOCIAL_INTERVAL) {
-            _lastSocialBroadcast = now;
+        if ((now - lastSocialBroadcast) > MINIMUM_SOCIAL_INTERVAL) {
+            lastSocialBroadcast = now;
             broadcastSocialAction(animationId);
         }
     }
@@ -283,26 +325,14 @@ public class Npc extends Creature {
     }
 
     /**
-     * Switches random Animation state into val.
-     * @param value needed state of random animation
-     */
-    public void setRandomAnimationEnabled(boolean value) {
-        _isRandomAnimationEnabled = value;
-    }
-
-    /**
      * @return {@code true}, if random animation is enabled, {@code false} otherwise.
      */
     public boolean isRandomAnimationEnabled() {
-        return !_isFakePlayer && _isRandomAnimationEnabled;
+        return !fakePlayer && randomAnimationEnabled;
     }
 
     public void setRandomWalking(boolean enabled) {
-        _isRandomWalkingEnabled = enabled;
-    }
-
-    public boolean isRandomWalkingEnabled() {
-        return _isRandomWalkingEnabled;
+        randomWalkingEnabled = enabled;
     }
 
     @Override
@@ -391,7 +421,7 @@ public class Npc extends Creature {
                 return;
             }
 
-            if (_isFakePlayer) {
+            if (fakePlayer) {
                 player.sendPacket(new FakePlayerInfo(this));
             } else if (getRunSpeed() == 0) {
                 player.sendPacket(new ServerObjectInfo(this, player));
@@ -403,57 +433,7 @@ public class Npc extends Creature {
 
     @Override
     public boolean isAutoAttackable(Creature attacker) {
-        return _isAutoAttackable;
-    }
-
-    public void setAutoAttackable(boolean flag) {
-        _isAutoAttackable = flag;
-    }
-
-    /**
-     * @return the Identifier of the item in the left hand of this Npc contained in the NpcTemplate.
-     */
-    public int getLeftHandItem() {
-        return _currentLHandId;
-    }
-
-    /**
-     * @return the Identifier of the item in the right hand of this Npc contained in the NpcTemplate.
-     */
-    public int getRightHandItem() {
-        return _currentRHandId;
-    }
-
-    public int getEnchantEffect() {
-        return _currentEnchant;
-    }
-
-    /**
-     * @return the busy status of this Npc.
-     */
-    public boolean isBusy() {
-        return _isBusy;
-    }
-
-    /**
-     * @param isBusy the busy status of this Npc
-     */
-    public void setBusy(boolean isBusy) {
-        _isBusy = isBusy;
-    }
-
-    /**
-     * @return the busy message of this Npc.
-     */
-    public String getBusyMessage() {
-        return _busyMessage;
-    }
-
-    /**
-     * @param message the busy message of this Npc.
-     */
-    public void setBusyMessage(String message) {
-        _busyMessage = message;
+        return autoAttackable;
     }
 
     /**
@@ -501,24 +481,24 @@ public class Npc extends Creature {
      */
     public Castle getCastle() {
         // Get castle this NPC belongs to (excluding Attackable).
-        if (_castleIndex < 0) {
+        if (castleIndex < 0) {
             final TownZone town = TownManager.getTown(getX(), getY(), getZ());
             if (town != null) {
-                _castleIndex = CastleManager.getInstance().getCastleIndex(town.getTaxById());
+                castleIndex = CastleManager.getInstance().getCastleIndex(town.getTaxById());
             }
 
-            if (_castleIndex < 0) {
-                _castleIndex = CastleManager.getInstance().findNearestCastleIndex(this);
+            if (castleIndex < 0) {
+                castleIndex = CastleManager.getInstance().findNearestCastleIndex(this);
             } else {
-                _isInTown = true; // Npc was spawned in town.
+                inTown = true; // Npc was spawned in town.
             }
         }
 
-        if (_castleIndex < 0) {
+        if (castleIndex < 0) {
             return null;
         }
 
-        return CastleManager.getInstance().getCastles().get(_castleIndex);
+        return CastleManager.getInstance().getCastles().get(castleIndex);
     }
 
     /**
@@ -560,22 +540,22 @@ public class Npc extends Creature {
      */
     public Fort getFort() {
         // Get Fort this NPC belongs to (excluding Attackable)
-        if (_fortIndex < 0) {
+        if (fortIndex < 0) {
             final Fort fort = FortManager.getInstance().getFort(getX(), getY(), getZ());
             if (fort != null) {
-                _fortIndex = FortManager.getInstance().getFortIndex(fort.getResidenceId());
+                fortIndex = FortManager.getInstance().getFortIndex(fort.getResidenceId());
             }
 
-            if (_fortIndex < 0) {
-                _fortIndex = FortManager.getInstance().findNearestFortIndex(this);
+            if (fortIndex < 0) {
+                fortIndex = FortManager.getInstance().findNearestFortIndex(this);
             }
         }
 
-        if (_fortIndex < 0) {
+        if (fortIndex < 0) {
             return null;
         }
 
-        return FortManager.getInstance().getForts().get(_fortIndex);
+        return FortManager.getInstance().getForts().get(fortIndex);
     }
 
     /**
@@ -593,11 +573,11 @@ public class Npc extends Creature {
     }
 
     public boolean isInTown() {
-        if (_castleIndex < 0) {
+        if (castleIndex < 0) {
             getCastle();
         }
 
-        return _isInTown;
+        return inTown;
     }
 
     /**
@@ -612,12 +592,12 @@ public class Npc extends Creature {
      */
     public void onBypassFeedback(Player player, String command) {
         if (canInteract(player)) {
-            if (_isBusy && (!_busyMessage.isEmpty())) {
+            if (busy && (!busyMessage.isEmpty())) {
                 player.sendPacket(ActionFailed.STATIC_PACKET);
 
                 final NpcHtmlMessage html = new NpcHtmlMessage(getObjectId());
                 html.setFile(player, "data/html/npcbusy.htm");
-                html.replace("%busymessage%", _busyMessage);
+                html.replace("%busymessage%", busyMessage);
                 html.replace("%npcname%", getName());
                 html.replace("%playername%", player.getName());
                 player.sendPacket(html);
@@ -626,8 +606,7 @@ public class Npc extends Creature {
                 if (handler != null) {
                     handler.onCommand(command, player, this);
                 } else {
-                    LOGGER.info(
-                            getClass().getSimpleName() + ": Unknown NPC bypass: \"" + command + "\" NpcId: " + getId());
+                    LoggerFactory.getLogger(getClass()).info("Unknown NPC bypass: \"{}\" NpcId: {}", command, getId());
                 }
             }
         }
@@ -775,7 +754,7 @@ public class Npc extends Creature {
      * @param value The number of the page of the Npc to display
      */
     public void showChatWindow(Player player, int value) {
-        if (!_isTalkable) {
+        if (!talkable) {
             player.sendPacket(ActionFailed.STATIC_PACKET);
             return;
         }
@@ -1060,14 +1039,14 @@ public class Npc extends Creature {
 
         // Normally this wouldn't really be needed, but for those few exceptions,
         // we do need to reset the weapons back to the initial template weapon.
-        _currentLHandId = getTemplate().getLHandId();
-        _currentRHandId = getTemplate().getRHandId();
-        _currentCollisionHeight = getTemplate().getFCollisionHeight();
-        _currentCollisionRadius = getTemplate().getFCollisionRadius();
+        leftHandItem = getTemplate().getLHandId();
+        rightHandItem = getTemplate().getRHandId();
+        collisionHeight = getTemplate().getFCollisionHeight();
+        collisionRadius = getTemplate().getFCollisionRadius();
 
         final Weapon weapon = (killer != null) ? killer.getActiveWeaponItem() : null;
-        _killingBlowWeaponId = (weapon != null) ? weapon.getId() : 0;
-        if (_isFakePlayer && (killer != null) && killer.isPlayable()) {
+        killingBlowWeapon = (weapon != null) ? weapon.getId() : 0;
+        if (fakePlayer && (killer != null) && killer.isPlayable()) {
             final Player player = killer.asPlayer();
             if (isScriptValue(0) && (getKarma() < 0)) {
                 if (FakePlayersConfig.FAKE_PLAYER_KILL_KARMA) {
@@ -1143,24 +1122,16 @@ public class Npc extends Creature {
         return true;
     }
 
-    /**
-     * Set the spawn of the Npc.
-     * @param spawn The Spawn that manage the Npc
-     */
-    public void setSpawn(Spawn spawn) {
-        _spawn = spawn;
-    }
-
     @Override
     public void onSpawn() {
         super.onSpawn();
 
         // Recharge shots
-        _soulshotamount = getTemplate().getSoulShot();
-        _spiritshotamount = getTemplate().getSpiritShot();
-        _killingBlowWeaponId = 0;
-        _isRandomAnimationEnabled = getTemplate().isRandomAnimationEnabled();
-        _isRandomWalkingEnabled =
+        soulshotamount = getTemplate().getSoulShot();
+        spiritshotamount = getTemplate().getSpiritShot();
+        killingBlowWeapon = 0;
+        randomAnimationEnabled = getTemplate().isRandomAnimationEnabled();
+        randomWalkingEnabled =
                 !WalkingManager.getInstance().isTargeted(this) && getTemplate().isRandomWalkEnabled();
 
         if (isTeleporting()) {
@@ -1198,7 +1169,7 @@ public class Npc extends Creature {
      */
     @Override
     public void onDecay() {
-        if (_isDecayed) {
+        if (decayed) {
             return;
         }
 
@@ -1208,8 +1179,8 @@ public class Npc extends Creature {
         super.onDecay();
 
         // Decrease its spawn counter.
-        if ((_spawn != null) && !RaidBossSpawnManager.getInstance().isDefined(getId())) {
-            _spawn.decreaseCount(this);
+        if ((spawn != null) && !RaidBossSpawnManager.getInstance().isDefined(getId())) {
+            spawn.decreaseCount(this);
         }
 
         // Notify Walking Manager.
@@ -1226,7 +1197,7 @@ public class Npc extends Creature {
         stopTimerHolders();
 
         // Clear script value.
-        _scriptValue = 0;
+        scriptValue = 0;
     }
 
     /**
@@ -1246,7 +1217,7 @@ public class Npc extends Creature {
         try {
             onDecay();
         } catch (Exception e) {
-            LOGGER.log(Level.SEVERE, "Failed decayMe().", e);
+            log.error("Failed decayMe().", e);
         }
 
         if (isChannelized()) {
@@ -1258,23 +1229,8 @@ public class Npc extends Creature {
         return super.deleteMe();
     }
 
-    /**
-     * @return the Spawn object that manage this Npc.
-     */
-    public Spawn getSpawn() {
-        return _spawn;
-    }
-
-    public boolean isDecayed() {
-        return _isDecayed;
-    }
-
-    public void setDecayed(boolean decayed) {
-        _isDecayed = decayed;
-    }
-
     public void endDecayTask() {
-        if (!_isDecayed) {
+        if (!decayed) {
             DecayTaskManager.getInstance().cancel(this);
             onDecay();
         }
@@ -1283,23 +1239,23 @@ public class Npc extends Creature {
     // Two functions to change the appearance of the equipped weapons on the NPC.
     // This is only useful for a few NPCs and is most likely going to be called from AI.
     public void setLHandId(int newWeaponId) {
-        _currentLHandId = newWeaponId;
+        leftHandItem = newWeaponId;
         updateAbnormalEffect();
     }
 
     public void setRHandId(int newWeaponId) {
-        _currentRHandId = newWeaponId;
+        rightHandItem = newWeaponId;
         updateAbnormalEffect();
     }
 
     public void setLRHandId(int newLWeaponId, int newRWeaponId) {
-        _currentRHandId = newRWeaponId;
-        _currentLHandId = newLWeaponId;
+        rightHandItem = newRWeaponId;
+        leftHandItem = newLWeaponId;
         updateAbnormalEffect();
     }
 
     public void setEnchant(int newEnchantValue) {
-        _currentEnchant = newEnchantValue;
+        enchantEffect = newEnchantValue;
         updateAbnormalEffect();
     }
 
@@ -1312,26 +1268,10 @@ public class Npc extends Creature {
         return getTemplate().isTargetable();
     }
 
-    public void setCollisionHeight(double height) {
-        _currentCollisionHeight = height;
-    }
-
-    public void setCollisionRadius(double radius) {
-        _currentCollisionRadius = radius;
-    }
-
-    public double getCollisionHeight() {
-        return _currentCollisionHeight;
-    }
-
-    public double getCollisionRadius() {
-        return _currentCollisionRadius;
-    }
-
     @Override
     public void sendInfo(Player player) {
         if (isVisibleFor(player)) {
-            if (_isFakePlayer) {
+            if (fakePlayer) {
                 player.sendPacket(new FakePlayerInfo(this));
 
                 // Private store message support.
@@ -1389,7 +1329,7 @@ public class Npc extends Creature {
 
         final NpcHtmlMessage noTeachMsg = new NpcHtmlMessage(getObjectId());
         if (html == null) {
-            LOGGER.warning("Npc " + npcId + " missing noTeach html!");
+            log.warn("Npc {} missing noTeach html!", npcId);
             noTeachMsg.setHtml(
                     "<html><body>I cannot teach you any skills.<br>You must find your current class teachers.</body></html>");
         } else {
@@ -1403,7 +1343,7 @@ public class Npc extends Creature {
     public Npc scheduleDespawn(long delay) {
         ThreadPool.schedule(
                 () -> {
-                    if (!_isDecayed) {
+                    if (!decayed) {
                         deleteMe();
                     }
                 },
@@ -1417,7 +1357,13 @@ public class Npc extends Creature {
                 && target.isPlayable()
                 && EventDispatcher.getInstance().hasListener(EventType.ON_NPC_SKILL_FINISHED, this)) {
             EventDispatcher.getInstance()
-                    .notifyEventAsync(new OnNpcSkillFinished(this, target.asPlayer(), skill), this);
+                    .notifyEventAsync(
+                            OnNpcSkillFinished.builder()
+                                    .caster(this)
+                                    .target(target.asPlayer())
+                                    .skill(skill)
+                                    .build(),
+                            this);
         }
     }
 
@@ -1431,14 +1377,10 @@ public class Npc extends Creature {
     }
 
     public void setDisplayEffect(int value) {
-        if (value != _displayEffect) {
-            _displayEffect = value;
+        if (value != displayEffect) {
+            displayEffect = value;
             broadcastPacket(new ExChangeNpcState(getObjectId(), value));
         }
-    }
-
-    public int getDisplayEffect() {
-        return _displayEffect;
     }
 
     public int getColorEffect() {
@@ -1468,32 +1410,27 @@ public class Npc extends Creature {
         broadcastInfo();
     }
 
-    @Override
-    public boolean isWalker() {
-        return _isWalker;
-    }
-
     public void setWalker() {
-        _isWalker = true;
+        walker = true;
     }
 
     @Override
     public boolean isChargedShot(ShotType type) {
-        return (_shotsMask & type.getMask()) == type.getMask();
+        return (shotsMask & type.getMask()) == type.getMask();
     }
 
     @Override
     public void setChargedShot(ShotType type, boolean charged) {
         if (charged) {
-            _shotsMask |= type.getMask();
+            shotsMask |= type.getMask();
         } else {
-            _shotsMask &= ~type.getMask();
+            shotsMask &= ~type.getMask();
         }
     }
 
     @Override
     public void rechargeShots(boolean physical, boolean magic) {
-        if (_isFakePlayer && FakePlayersConfig.FAKE_PLAYER_USE_SHOTS) {
+        if (fakePlayer && FakePlayersConfig.FAKE_PLAYER_USE_SHOTS) {
             if (physical) {
                 broadcastPacket(new MagicSkillUse(this, this, 2154, 1, 0, 0));
                 setChargedShot(ShotType.SOULSHOTS, true);
@@ -1503,43 +1440,27 @@ public class Npc extends Creature {
                 broadcastPacket(new MagicSkillUse(this, this, 2159, 1, 0, 0));
                 setChargedShot(ShotType.SPIRITSHOTS, true);
             }
-        } else if ((_soulshotamount > 0) || (_spiritshotamount > 0)) {
+        } else if ((soulshotamount > 0) || (spiritshotamount > 0)) {
             if (physical) {
-                if ((_soulshotamount == 0) || (ThreadLocalRandom.current().nextInt(100) > getSoulShotChance())) {
+                if ((soulshotamount == 0) || (ThreadLocalRandom.current().nextInt(100) > getSoulShotChance())) {
                     return;
                 }
 
-                _soulshotamount--;
+                soulshotamount--;
                 broadcastPacket(new MagicSkillUse(this, this, 2154, 1, 0, 0));
                 setChargedShot(ShotType.SOULSHOTS, true);
             }
 
             if (magic) {
-                if ((_spiritshotamount == 0) || (ThreadLocalRandom.current().nextInt(100) > getSpiritShotChance())) {
+                if ((spiritshotamount == 0) || (ThreadLocalRandom.current().nextInt(100) > getSpiritShotChance())) {
                     return;
                 }
 
-                _spiritshotamount--;
+                spiritshotamount--;
                 broadcastPacket(new MagicSkillUse(this, this, 2159, 1, 0, 0));
                 setChargedShot(ShotType.SPIRITSHOTS, true);
             }
         }
-    }
-
-    /**
-     * Receive the stored int value for this {@link Npc} instance.
-     * @return stored script value
-     */
-    public int getScriptValue() {
-        return _scriptValue;
-    }
-
-    /**
-     * Sets the script value related with this {@link Npc} instance.
-     * @param value value to store
-     */
-    public void setScriptValue(int value) {
-        _scriptValue = value;
     }
 
     /**
@@ -1547,7 +1468,7 @@ public class Npc extends Creature {
      * @return {@code true} if stored script value equals given value, {@code false} otherwise
      */
     public boolean isScriptValue(int value) {
-        return _scriptValue == value;
+        return scriptValue == value;
     }
 
     /**
@@ -1585,7 +1506,7 @@ public class Npc extends Creature {
      * @return {@code true} if NPC currently located in own spawn point, {@code false} otherwise
      */
     public boolean staysInSpawnLoc() {
-        return ((_spawn != null) && (_spawn.getX() == getX()) && (_spawn.getY() == getY()));
+        return ((spawn != null) && (spawn.getX() == getX()) && (spawn.getY() == getY()));
     }
 
     /**
@@ -1613,7 +1534,14 @@ public class Npc extends Creature {
         World.forEachVisibleObjectInRange(this, Npc.class, radius, obj -> {
             if (obj.hasListener(EventType.ON_NPC_EVENT_RECEIVED)) {
                 EventDispatcher.getInstance()
-                        .notifyEventAsync(new OnNpcEventReceived(eventName, this, obj, reference), obj);
+                        .notifyEventAsync(
+                                OnNpcEventReceived.builder()
+                                        .eventName(eventName)
+                                        .sender(this)
+                                        .receiver(obj)
+                                        .reference(reference)
+                                        .build(),
+                                obj);
             }
         });
     }
@@ -1627,7 +1555,14 @@ public class Npc extends Creature {
     public void sendScriptEvent(String eventName, WorldObject receiver, WorldObject reference) {
         if (EventDispatcher.getInstance().hasListener(EventType.ON_NPC_EVENT_RECEIVED, receiver)) {
             EventDispatcher.getInstance()
-                    .notifyEventAsync(new OnNpcEventReceived(eventName, this, receiver.asNpc(), reference), receiver);
+                    .notifyEventAsync(
+                            OnNpcEventReceived.builder()
+                                    .eventName(eventName)
+                                    .sender(this)
+                                    .receiver(receiver.asNpc())
+                                    .reference(reference)
+                                    .build(),
+                            receiver);
         }
     }
 
@@ -1660,9 +1595,7 @@ public class Npc extends Creature {
         Item item = null;
         for (int i = 0; i < itemCount; i++) {
             if (ItemData.getInstance().getTemplate(itemId) == null) {
-                LOGGER.log(
-                        Level.SEVERE,
-                        "Item doesn't exist so cannot be dropped. Item ID: " + itemId + " Quest: " + getName());
+                log.error("Item doesn't exist so cannot be dropped. Item ID: {} Quest: {}", itemId, getName());
                 return null;
             }
 
@@ -1733,63 +1666,19 @@ public class Npc extends Creature {
     }
 
     /**
-     * Sets if the players can talk with this npc or not
-     * @param value {@code true} if the players can talk, {@code false} otherwise
-     */
-    public void setTalkable(boolean value) {
-        _isTalkable = value;
-    }
-
-    /**
-     * Checks if the players can talk to this npc.
-     * @return {@code true} if the players can talk, {@code false} otherwise.
-     */
-    public boolean isTalkable() {
-        return _isTalkable;
-    }
-
-    /**
-     * Checks if the NPC is a Quest Monster.
-     * @return {@code true} if the NPC is a Quest Monster, {@code false} otherwise.
-     */
-    public boolean isQuestMonster() {
-        return _isQuestMonster;
-    }
-
-    /**
-     * Sets the weapon id with which this npc was killed.
-     * @param weaponId
-     */
-    public void setKillingBlowWeapon(int weaponId) {
-        _killingBlowWeaponId = weaponId;
-    }
-
-    /**
-     * @return the id of the weapon with which player killed this npc.
-     */
-    public int getKillingBlowWeapon() {
-        return _killingBlowWeaponId;
-    }
-
-    @Override
-    public boolean isFakePlayer() {
-        return _isFakePlayer;
-    }
-
-    /**
      * Adds a summoned NPC.
      * @param npc the summoned NPC
      */
     public void addSummonedNpc(Npc npc) {
-        if (_summonedNpcs == null) {
+        if (summonedNpcs == null) {
             synchronized (this) {
-                if (_summonedNpcs == null) {
-                    _summonedNpcs = new ConcurrentHashMap<>();
+                if (summonedNpcs == null) {
+                    summonedNpcs = new ConcurrentHashMap<>();
                 }
             }
         }
 
-        _summonedNpcs.put(npc.getObjectId(), npc);
+        summonedNpcs.put(npc.getObjectId(), npc);
 
         npc.setSummoner(this);
     }
@@ -1799,8 +1688,8 @@ public class Npc extends Creature {
      * @param objectId the summoned NPC object ID
      */
     public void removeSummonedNpc(int objectId) {
-        if (_summonedNpcs != null) {
-            _summonedNpcs.remove(objectId);
+        if (summonedNpcs != null) {
+            summonedNpcs.remove(objectId);
         }
     }
 
@@ -1809,7 +1698,7 @@ public class Npc extends Creature {
      * @return the summoned NPCs
      */
     public Collection<Npc> getSummonedNpcs() {
-        return _summonedNpcs != null ? _summonedNpcs.values() : Collections.<Npc>emptyList();
+        return summonedNpcs != null ? summonedNpcs.values() : Collections.<Npc>emptyList();
     }
 
     /**
@@ -1818,8 +1707,8 @@ public class Npc extends Creature {
      * @return the summoned NPC
      */
     public Npc getSummonedNpc(int objectId) {
-        if (_summonedNpcs != null) {
-            return _summonedNpcs.get(objectId);
+        if (summonedNpcs != null) {
+            return summonedNpcs.get(objectId);
         }
 
         return null;
@@ -1830,15 +1719,15 @@ public class Npc extends Creature {
      * @return the summoned NPC count
      */
     public int getSummonedNpcCount() {
-        return _summonedNpcs != null ? _summonedNpcs.size() : 0;
+        return summonedNpcs != null ? summonedNpcs.size() : 0;
     }
 
     /**
      * Resets the summoned NPCs list.
      */
     public void resetSummonedNpcs() {
-        if (_summonedNpcs != null) {
-            _summonedNpcs.clear();
+        if (summonedNpcs != null) {
+            summonedNpcs.clear();
         }
     }
 
@@ -1896,46 +1785,46 @@ public class Npc extends Creature {
     }
 
     public void addQuestTimer(QuestTimer questTimer) {
-        synchronized (_questTimers) {
-            _questTimers.add(questTimer);
+        synchronized (questTimers) {
+            questTimers.add(questTimer);
         }
     }
 
     public void removeQuestTimer(QuestTimer questTimer) {
-        synchronized (_questTimers) {
-            _questTimers.remove(questTimer);
+        synchronized (questTimers) {
+            questTimers.remove(questTimer);
         }
     }
 
     public void stopQuestTimers() {
-        synchronized (_questTimers) {
-            for (QuestTimer timer : _questTimers) {
+        synchronized (questTimers) {
+            for (QuestTimer timer : questTimers) {
                 timer.cancelTask();
             }
 
-            _questTimers.clear();
+            questTimers.clear();
         }
     }
 
     public void addTimerHolder(TimerHolder<?> timer) {
-        synchronized (_timerHolders) {
-            _timerHolders.add(timer);
+        synchronized (timerHolders) {
+            timerHolders.add(timer);
         }
     }
 
     public void removeTimerHolder(TimerHolder<?> timer) {
-        synchronized (_timerHolders) {
-            _timerHolders.remove(timer);
+        synchronized (timerHolders) {
+            timerHolders.remove(timer);
         }
     }
 
     public void stopTimerHolders() {
-        synchronized (_timerHolders) {
-            for (TimerHolder<?> timer : _timerHolders) {
+        synchronized (timerHolders) {
+            for (TimerHolder<?> timer : timerHolders) {
                 timer.cancelTask();
             }
 
-            _timerHolders.clear();
+            timerHolders.clear();
         }
     }
 

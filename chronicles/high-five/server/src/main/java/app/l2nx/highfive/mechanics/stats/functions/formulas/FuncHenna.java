@@ -31,12 +31,12 @@ import java.util.Map;
  * @author UnAfraid
  */
 public class FuncHenna extends AbstractFunction {
-    private static final Map<Stat, FuncHenna> _fh_instance = new EnumMap<>(Stat.class);
+    private static final Map<Stat, FuncHenna> fh_instance = new EnumMap<>(Stat.class);
 
     public static AbstractFunction getInstance(Stat st) {
-        _fh_instance.computeIfAbsent(st, k -> new FuncHenna(st));
+        fh_instance.computeIfAbsent(st, k -> new FuncHenna(st));
 
-        return _fh_instance.get(st);
+        return fh_instance.get(st);
     }
 
     private FuncHenna(Stat stat) {

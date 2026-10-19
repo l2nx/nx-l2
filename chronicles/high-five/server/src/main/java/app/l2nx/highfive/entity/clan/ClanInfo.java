@@ -19,29 +19,24 @@
  */
 package app.l2nx.highfive.entity.clan;
 
+import lombok.Getter;
+
 /**
  * @author UnAfraid
  */
 public class ClanInfo {
-    private final Clan _clan;
-    private final int _total;
-    private final int _online;
+    @Getter
+    private final Clan clan;
+
+    @Getter
+    private final int total;
+
+    @Getter
+    private final int online;
 
     public ClanInfo(Clan clan) {
-        _clan = clan;
-        _total = clan.getMembersCount();
-        _online = clan.getOnlineMembersCount();
-    }
-
-    public Clan getClan() {
-        return _clan;
-    }
-
-    public int getTotal() {
-        return _total;
-    }
-
-    public int getOnline() {
-        return _online;
+        this.clan = clan;
+        total = clan.getMembersCount();
+        online = clan.getOnlineMembersCount();
     }
 }

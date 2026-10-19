@@ -23,14 +23,28 @@
 package app.l2nx.highfive.entity.actor.holders.player;
 
 import java.util.List;
+import lombok.Getter;
+import lombok.Setter;
 
 public class Macro {
-    private int _id;
-    private final int _icon;
-    private final String _name;
-    private final String _descr;
-    private final String _acronym;
-    private final List<MacroCmd> _commands;
+    @Getter
+    @Setter
+    private int id;
+
+    @Getter
+    private final int icon;
+
+    @Getter
+    private final String name;
+
+    @Getter
+    private final String descr;
+
+    @Getter
+    private final String acronym;
+
+    @Getter
+    private final List<MacroCmd> commands;
 
     /**
      * Constructor for macros.
@@ -42,67 +56,11 @@ public class Macro {
      * @param list the macro command list
      */
     public Macro(int id, int icon, String name, String descr, String acronym, List<MacroCmd> list) {
-        _id = id;
-        _icon = icon;
-        _name = name;
-        _descr = descr;
-        _acronym = acronym;
-        _commands = list;
-    }
-
-    /**
-     * Gets the macro ID.
-     * @return the macro ID
-     */
-    public int getId() {
-        return _id;
-    }
-
-    /**
-     * Sets the macro ID.
-     * @param id the macro ID
-     */
-    public void setId(int id) {
-        _id = id;
-    }
-
-    /**
-     * Gets the macro icon ID.
-     * @return the icon
-     */
-    public int getIcon() {
-        return _icon;
-    }
-
-    /**
-     * Gets the macro name.
-     * @return the name
-     */
-    public String getName() {
-        return _name;
-    }
-
-    /**
-     * Gets the macro description.
-     * @return the description
-     */
-    public String getDescr() {
-        return _descr;
-    }
-
-    /**
-     * Gets the macro acronym.
-     * @return the acronym
-     */
-    public String getAcronym() {
-        return _acronym;
-    }
-
-    /**
-     * Gets the macro command list.
-     * @return the macro command list
-     */
-    public List<MacroCmd> getCommands() {
-        return _commands;
+        this.id = id;
+        this.icon = icon;
+        this.name = name;
+        this.descr = descr;
+        this.acronym = acronym;
+        commands = list;
     }
 }

@@ -25,11 +25,11 @@ package app.l2nx.highfive.network.clientpackets;
 import app.l2nx.highfive.entity.actor.Player;
 
 public class RequestDeleteMacro extends ClientPacket {
-    private int _id;
+    private int id;
 
     @Override
     protected void readImpl() {
-        _id = readInt();
+        id = readInt();
     }
 
     @Override
@@ -39,6 +39,6 @@ public class RequestDeleteMacro extends ClientPacket {
             return;
         }
 
-        player.deleteMacro(_id);
+        player.deleteMacro(id);
     }
 }

@@ -28,14 +28,14 @@ import app.l2nx.highfive.mechanics.skill.Skill;
  * @author mkizub
  */
 public abstract class ConditionInventory extends Condition {
-    protected final int _slot;
+    protected final int slot;
 
     /**
      * Instantiates a new condition inventory.
      * @param slot the slot
      */
     public ConditionInventory(int slot) {
-        _slot = slot;
+        this.slot = slot;
     }
 
     /**

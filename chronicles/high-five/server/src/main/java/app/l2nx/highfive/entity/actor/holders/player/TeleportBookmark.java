@@ -20,49 +20,33 @@
 package app.l2nx.highfive.entity.actor.holders.player;
 
 import app.l2nx.highfive.entity.Location;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * @author UnAfraid
  */
 public class TeleportBookmark extends Location {
-    private final int _id;
-    private int _icon;
-    private String _name;
-    private String _tag;
+    @Getter
+    private final int id;
+
+    @Getter
+    @Setter
+    private int icon;
+
+    @Getter
+    @Setter
+    private String name;
+
+    @Getter
+    @Setter
+    private String tag;
 
     public TeleportBookmark(int id, int x, int y, int z, int icon, String tag, String name) {
         super(x, y, z);
-        _id = id;
-        _icon = icon;
-        _name = name;
-        _tag = tag;
-    }
-
-    public String getName() {
-        return _name;
-    }
-
-    public void setName(String name) {
-        _name = name;
-    }
-
-    public int getId() {
-        return _id;
-    }
-
-    public int getIcon() {
-        return _icon;
-    }
-
-    public void setIcon(int icon) {
-        _icon = icon;
-    }
-
-    public String getTag() {
-        return _tag;
-    }
-
-    public void setTag(String tag) {
-        _tag = tag;
+        this.id = id;
+        this.icon = icon;
+        this.name = name;
+        this.tag = tag;
     }
 }

@@ -25,19 +25,20 @@ package app.l2nx.highfive.network.serverpackets;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.item.instance.Item;
 import app.l2nx.highfive.network.GameClient;
-import app.l2nx.highfive.network.PacketLogger;
 import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.network.buffer.WriteBuffer;
 import java.util.Collection;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class WareHouseWithdrawalList extends AbstractItemPacket {
     public static final int PRIVATE = 1;
     public static final int CLAN = 4;
     public static final int CASTLE = 3; // not sure
     public static final int FREIGHT = 1;
 
-    private long _playerAdena;
-    private Collection<Item> _items;
+    private long playerAdena;
+    private Collection<Item> items;
     /**
      * <ul>
      * <li>0x01-Private Warehouse</li>
@@ -46,26 +47,26 @@ public class WareHouseWithdrawalList extends AbstractItemPacket {
      * <li>0x04-Warehouse</li>
      * </ul>
      */
-    private int _whType;
+    private int whType;
 
     public WareHouseWithdrawalList(Player player, int type) {
         if (player.getActiveWarehouse() == null) {
-            PacketLogger.warning("Error while sending withdraw request to: " + player.getName());
+            log.warn("Error while sending withdraw request to: {}", player.getName());
             return;
         }
 
-        _playerAdena = player.getAdena();
-        _items = player.getActiveWarehouse().getItems();
-        _whType = type;
+        playerAdena = player.getAdena();
+        items = player.getActiveWarehouse().getItems();
+        whType = type;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.WAREHOUSE_WITHDRAW_LIST.writeId(this, buffer);
-        buffer.writeShort(_whType);
-        buffer.writeLong(_playerAdena);
-        buffer.writeShort(_items.size());
-        for (Item item : _items) {
+        buffer.writeShort(whType);
+        buffer.writeLong(playerAdena);
+        buffer.writeShort(items.size());
+        for (Item item : items) {
             writeItem(item, buffer);
             buffer.writeInt(item.getObjectId());
         }

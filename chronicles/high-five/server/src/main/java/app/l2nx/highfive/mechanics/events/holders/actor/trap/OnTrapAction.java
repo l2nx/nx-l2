@@ -24,33 +24,13 @@ import app.l2nx.highfive.entity.actor.enums.creature.TrapAction;
 import app.l2nx.highfive.entity.actor.instance.Trap;
 import app.l2nx.highfive.mechanics.events.EventType;
 import app.l2nx.highfive.mechanics.events.holders.IBaseEvent;
+import lombok.Builder;
 
 /**
  * @author UnAfraid
  */
-public class OnTrapAction implements IBaseEvent {
-    private final Trap _trap;
-    private final Creature _trigger;
-    private final TrapAction _action;
-
-    public OnTrapAction(Trap trap, Creature trigger, TrapAction action) {
-        _trap = trap;
-        _trigger = trigger;
-        _action = action;
-    }
-
-    public Trap getTrap() {
-        return _trap;
-    }
-
-    public Creature getTrigger() {
-        return _trigger;
-    }
-
-    public TrapAction getAction() {
-        return _action;
-    }
-
+@Builder(toBuilder = true)
+public record OnTrapAction(Trap trap, Creature trigger, TrapAction action) implements IBaseEvent {
     @Override
     public EventType getType() {
         return EventType.ON_TRAP_ACTION;

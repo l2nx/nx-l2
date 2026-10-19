@@ -50,7 +50,9 @@ import app.l2nx.highfive.util.LocationUtil;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ScheduledFuture;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class HallOfErosionDefence extends Script {
     protected class HEDWorld extends InstanceWorld {
         public List<Attackable> npcList = new ArrayList<>();
@@ -291,8 +293,11 @@ public class HallOfErosionDefence extends Script {
             world.setInstance(InstanceManager.getInstance().createDynamicInstance(INSTANCEID));
             ((HEDWorld) world).startTime = System.currentTimeMillis();
             InstanceManager.getInstance().addWorld(world);
-            LOGGER.info("Hall Of Erosion Defence started " + INSTANCEID + " Instance: " + world.getInstanceId()
-                    + " created by player: " + player.getName());
+            log.info(
+                    "Hall Of Erosion Defence started {} Instance: {} created by player: {}",
+                    INSTANCEID,
+                    world.getInstanceId(),
+                    player.getName());
             if (player.isInParty()) {
                 for (Player partyMember : player.getParty().isInCommandChannel()
                         ? player.getParty().getCommandChannel().getMembers()
@@ -545,12 +550,12 @@ public class HallOfErosionDefence extends Script {
     }
 
     private class RegenerationCoffinSpawn implements Runnable {
-        private final Npc _npc;
-        private final HEDWorld _world;
+        private final Npc npc;
+        private final HEDWorld world;
 
         public RegenerationCoffinSpawn(Npc npc, HEDWorld world) {
-            _npc = npc;
-            _world = world;
+            this.npc = npc;
+            this.world = world;
         }
 
         @Override
@@ -560,26 +565,26 @@ public class HallOfErosionDefence extends Script {
             }
 
             for (int i = 0; i < 4; i++) {
-                final Npc worm = addSpawn(18709, _npc.getLocation(), _world.getInstanceId());
-                _world.deadTumors.add(worm);
+                final Npc worm = addSpawn(18709, npc.getLocation(), world.getInstanceId());
+                world.deadTumors.add(worm);
             }
         }
     }
 
     class FinishTask implements Runnable {
-        private final HEDWorld _world;
+        private final HEDWorld world;
 
         FinishTask(HEDWorld world) {
-            _world = world;
+            this.world = world;
         }
 
         @Override
         public void run() {
-            if (_world != null) {
+            if (world != null) {
                 conquestEnded = true;
-                final Instance inst = InstanceManager.getInstance().getInstance(_world.getInstanceId());
+                final Instance inst = InstanceManager.getInstance().getInstance(world.getInstanceId());
                 if (inst != null) {
-                    for (Player player : _world.getAllowed()) {
+                    for (Player player : world.getAllowed()) {
                         if (player != null) {
                             final QuestState qs =
                                     player.getQuestState(Q00697_DefendTheHallOfErosion.class.getSimpleName());
@@ -590,7 +595,7 @@ public class HallOfErosionDefence extends Script {
                     }
 
                     broadCastPacket(
-                            _world,
+                            world,
                             new ExShowScreenMessage(
                                     NpcStringId
                                             .CONGRATULATIONS_YOU_HAVE_SUCCEEDED_AT_S1_S2_THE_INSTANCE_WILL_SHORTLY_EXPIRE,

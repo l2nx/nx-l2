@@ -29,37 +29,37 @@ import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.network.buffer.WriteBuffer;
 
 public class PledgeShowMemberListAdd extends ServerPacket {
-    private final String _name;
-    private final int _level;
-    private final int _classId;
-    private final int _isOnline;
-    private final int _pledgeType;
+    private final String name;
+    private final int level;
+    private final int classId;
+    private final int isOnline;
+    private final int pledgeType;
 
     public PledgeShowMemberListAdd(Player player) {
-        _name = player.getName();
-        _level = player.getLevel();
-        _classId = player.getPlayerClass().getId();
-        _isOnline = (player.isOnline() ? player.getObjectId() : 0);
-        _pledgeType = player.getPledgeType();
+        name = player.getName();
+        level = player.getLevel();
+        classId = player.getPlayerClass().getId();
+        isOnline = (player.isOnline() ? player.getObjectId() : 0);
+        pledgeType = player.getPledgeType();
     }
 
     public PledgeShowMemberListAdd(ClanMember cm) {
-        _name = cm.getName();
-        _level = cm.getLevel();
-        _classId = cm.getClassId();
-        _isOnline = (cm.isOnline() ? cm.getObjectId() : 0);
-        _pledgeType = cm.getPledgeType();
+        name = cm.getName();
+        level = cm.getLevel();
+        classId = cm.getClassId();
+        isOnline = (cm.isOnline() ? cm.getObjectId() : 0);
+        pledgeType = cm.getPledgeType();
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.PLEDGE_SHOW_MEMBER_LIST_ADD.writeId(this, buffer);
-        buffer.writeString(_name);
-        buffer.writeInt(_level);
-        buffer.writeInt(_classId);
+        buffer.writeString(name);
+        buffer.writeInt(level);
+        buffer.writeInt(classId);
         buffer.writeInt(0);
         buffer.writeInt(1);
-        buffer.writeInt(_isOnline); // 1 = online 0 = offline
-        buffer.writeInt(_pledgeType);
+        buffer.writeInt(isOnline); // 1 = online 0 = offline
+        buffer.writeInt(pledgeType);
     }
 }

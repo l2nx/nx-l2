@@ -33,27 +33,27 @@ public class ChangeWaitType extends ServerPacket {
     public static final int WT_START_FAKEDEATH = 2;
     public static final int WT_STOP_FAKEDEATH = 3;
 
-    private final int _objectId;
-    private final int _moveType;
-    private final int _x;
-    private final int _y;
-    private final int _z;
+    private final int objectId;
+    private final int moveType;
+    private final int x;
+    private final int y;
+    private final int z;
 
     public ChangeWaitType(Creature creature, int newMoveType) {
-        _objectId = creature.getObjectId();
-        _moveType = newMoveType;
-        _x = creature.getX();
-        _y = creature.getY();
-        _z = creature.getZ();
+        objectId = creature.getObjectId();
+        moveType = newMoveType;
+        x = creature.getX();
+        y = creature.getY();
+        z = creature.getZ();
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.CHANGE_WAIT_TYPE.writeId(this, buffer);
-        buffer.writeInt(_objectId);
-        buffer.writeInt(_moveType);
-        buffer.writeInt(_x);
-        buffer.writeInt(_y);
-        buffer.writeInt(_z);
+        buffer.writeInt(objectId);
+        buffer.writeInt(moveType);
+        buffer.writeInt(x);
+        buffer.writeInt(y);
+        buffer.writeInt(z);
     }
 }

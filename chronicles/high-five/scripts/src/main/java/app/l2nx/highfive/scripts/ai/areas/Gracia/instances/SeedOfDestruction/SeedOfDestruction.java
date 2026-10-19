@@ -53,19 +53,21 @@ import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class SeedOfDestruction extends Script {
     private class SODWorld extends InstanceWorld {
         public Map<Npc, Boolean> npcList = new HashMap<>();
         public int killedDevice = 0;
         public int deviceSpawnedMobCount = 0;
         public boolean ZoneWaitForTP = true;
-        public List<Npc> _mags = new ArrayList<>();
-        Npc _tiat;
-        Npc _naezdTR1;
-        Npc _naezdTR2;
-        Npc _naezdTL1;
-        Npc _naezdTL2;
+        public List<Npc> mags = new ArrayList<>();
+        Npc tiat;
+        Npc naezdTR1;
+        Npc naezdTR2;
+        Npc naezdTL1;
+        Npc naezdTL2;
 
         public SODWorld(Long time) {
             InstanceManager.getInstance();
@@ -79,7 +81,7 @@ public class SeedOfDestruction extends Script {
     private static final int MAX_PLAYERS = GraciaSeedsConfig.MAX_TIAT_PLAYERS;
     private static final int MAX_DEVICE_SPAWNED_MOB_COUNT = 100;
     private static final int EXIT_TIME = 5; // exit time
-    private int _numAtk = 0;
+    private int numAtk = 0;
 
     // NPCs
     private static final int ALENOS = 32526;
@@ -794,7 +796,7 @@ public class SeedOfDestruction extends Script {
 
     private boolean checkConditions(Player player) {
         if (DEBUG || player.isGM()) {
-            LOGGER.info("SoD is now in test mode - DEBUG OR GM PLAYER");
+            log.info("SoD is now in test mode - DEBUG OR GM PLAYER");
             return true;
         }
 
@@ -892,8 +894,11 @@ public class SeedOfDestruction extends Script {
             }
         }
 
-        LOGGER.info("Seed of Destruction started " + INSTANCE_ID + " Instance: " + instanceId + " created by player: "
-                + player.getName());
+        log.info(
+                "Seed of Destruction started {} Instance: {} created by player: {}",
+                INSTANCE_ID,
+                instanceId,
+                player.getName());
 
         ((SODWorld) world).ZoneWaitForTP = true;
         teleto.instanceId = instanceId;
@@ -1138,16 +1143,16 @@ public class SeedOfDestruction extends Script {
                 world.setStatus(4);
                 spawn(world, SQUARE_SPAWNS_HALF, false, false);
             } else if ((world.getStatus() <= 8) && (npc.getId() == TIAT)) {
-                if ((npc.getCurrentHp() < (npc.getMaxHp() / 2)) && (_numAtk < 1)) {
+                if ((npc.getCurrentHp() < (npc.getMaxHp() / 2)) && (numAtk < 1)) {
                     sendScreenMessage(
                             world,
                             new ExShowScreenMessage(
                                     NpcStringId.COME_OUT_WARRIORS_PROTECT_SEED_OF_DESTRUCTION, 5, 5000));
-                    world._tiat.doCast(SkillData.getInstance().getSkill(5818, 1));
-                    world._tiat.doCast(SkillData.getInstance().getSkill(181, 1));
+                    world.tiat.doCast(SkillData.getInstance().getSkill(5818, 1));
+                    world.tiat.doCast(SkillData.getInstance().getSkill(181, 1));
                     world.deviceSpawnedMobCount = 0;
                     spawn(world, THRONE_PORTALS, false, true);
-                    _numAtk++;
+                    numAtk++;
                 }
             }
         }
@@ -1160,21 +1165,20 @@ public class SeedOfDestruction extends Script {
             final SODWorld world = (SODWorld) tmpworld;
             switch (event) {
                 case "ThroneSpawn": {
-                    world._tiat =
-                            addSpawn(TIAT, -250400, 207271, -11961, 16285, false, 0, false, world.getInstanceId());
-                    world._tiat.setRandomWalking(false);
-                    world._naezdTR1 =
+                    world.tiat = addSpawn(TIAT, -250400, 207271, -11961, 16285, false, 0, false, world.getInstanceId());
+                    world.tiat.setRandomWalking(false);
+                    world.naezdTR1 =
                             addSpawn(NAEZD, -250154, 207203, -11970, 33818, false, 0, false, world.getInstanceId());
-                    world._naezdTR1.setRandomWalking(false);
-                    world._naezdTR2 =
+                    world.naezdTR1.setRandomWalking(false);
+                    world.naezdTR2 =
                             addSpawn(NAEZD, -250209, 206941, -11966, 27379, false, 0, false, world.getInstanceId());
-                    world._naezdTR2.setRandomWalking(false);
-                    world._naezdTL1 =
+                    world.naezdTR2.setRandomWalking(false);
+                    world.naezdTL1 =
                             addSpawn(NAEZD, -250652, 207203, -11970, 0, false, 0, false, world.getInstanceId());
-                    world._naezdTL1.setRandomWalking(false);
-                    world._naezdTL2 =
+                    world.naezdTL1.setRandomWalking(false);
+                    world.naezdTL2 =
                             addSpawn(NAEZD, -250597, 206941, -11966, 6867, false, 0, false, world.getInstanceId());
-                    world._naezdTL2.setRandomWalking(false);
+                    world.naezdTL2.setRandomWalking(false);
                     for (int i = 0; i < 12; i++) {
                         final Npc npc1 = addSpawn(
                                 22543,
@@ -1187,7 +1191,7 @@ public class SeedOfDestruction extends Script {
                                 false,
                                 world.getInstanceId());
                         npc1.setRandomWalking(false);
-                        world._mags.add(npc1);
+                        world.mags.add(npc1);
 
                         final Npc npc2 = addSpawn(
                                 22541,
@@ -1327,8 +1331,8 @@ public class SeedOfDestruction extends Script {
                     final Instance inst = InstanceManager.getInstance().getInstance(world.getInstanceId());
                     inst.setDuration(EXIT_TIME * 60000);
                     inst.setEmptyDestroyTime(0);
-                    startQuestTimer("KillTiatPart1", 250, world._tiat, null);
-                    _numAtk = 0;
+                    startQuestTimer("KillTiatPart1", 250, world.tiat, null);
+                    numAtk = 0;
                     cancelQuestTimer("Spawn", npc, null);
                 } else if (npc.getId() == NAEZD) {
                     final Attackable mob = addSpawn(
@@ -1346,11 +1350,11 @@ public class SeedOfDestruction extends Script {
                     mob.setSeeThroughSilentMove(true);
                     mob.setIsRaidMinion(true);
                 } else if (npc.getId() == SPAWN_DEVICE) {
-                    LOGGER.info("portal kill");
+                    log.info("portal kill");
                     final Skill skilla = SkillData.getInstance().getSkill(5699, 7);
-                    skilla.applyEffects(world._tiat, world._tiat);
+                    skilla.applyEffects(world.tiat, world.tiat);
                     final Skill skillb = SkillData.getInstance().getSkill(5700, 7);
-                    skillb.applyEffects(world._tiat, world._tiat);
+                    skillb.applyEffects(world.tiat, world.tiat);
                     cancelQuestTimer("Spawn", npc, null);
                 }
             }
@@ -1399,7 +1403,7 @@ public class SeedOfDestruction extends Script {
     @Override
     public String onFirstTalk(Npc npc, Player player) {
         if (DEBUG) {
-            LOGGER.info("FirstTalkEvent: NPC " + npc.getId() + ".");
+            log.info("FirstTalkEvent: NPC {}.", npc.getId());
         }
 
         if (npc.getId() == TELEPORT) {

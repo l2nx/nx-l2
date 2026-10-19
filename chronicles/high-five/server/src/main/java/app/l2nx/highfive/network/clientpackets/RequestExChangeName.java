@@ -19,28 +19,28 @@
  */
 package app.l2nx.highfive.network.clientpackets;
 
-import app.l2nx.highfive.network.PacketLogger;
 import app.l2nx.highfive.network.serverpackets.ExNeedToChangeName;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Reply for {@link ExNeedToChangeName}
  * @author JIV
  */
+@Slf4j
 public class RequestExChangeName extends ClientPacket {
-    private String _newName;
-    private int _type;
-    private int _charSlot;
+    private String newName;
+    private int type;
+    private int charSlot;
 
     @Override
     protected void readImpl() {
-        _type = readInt();
-        _newName = readString();
-        _charSlot = readInt();
+        type = readInt();
+        newName = readString();
+        charSlot = readInt();
     }
 
     @Override
     protected void runImpl() {
-        PacketLogger.info("Received " + getClass().getSimpleName() + " name: " + _newName + " type: " + _type
-                + " CharSlot: " + _charSlot);
+        log.info("Received {} name: {} type: {} CharSlot: {}", getClass().getSimpleName(), newName, type, charSlot);
     }
 }

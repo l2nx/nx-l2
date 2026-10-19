@@ -37,12 +37,11 @@ import java.util.List;
 import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.TreeSet;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 
+@Slf4j
 public class AdminQuest implements IAdminCommandHandler {
-    private static final Logger LOGGER = Logger.getLogger(AdminQuest.class.getName());
 
     private static final String[] ADMIN_COMMANDS = {
         "admin_quest_reload", "admin_script_load", "admin_script_unload", "admin_show_quests", "admin_quest_info"
@@ -93,7 +92,7 @@ public class AdminQuest implements IAdminCommandHandler {
                 activeChar.sendSysMessage("Script loaded successfully!");
             } catch (Exception e) {
                 activeChar.sendSysMessage("Failed to load script!");
-                LOGGER.log(Level.WARNING, "Failed to load script " + script + "!", e);
+                log.warn("Failed to load script {}!", script, e);
             }
         } else if (command.startsWith("admin_script_unload")) {
             final StringTokenizer st = new StringTokenizer(command);

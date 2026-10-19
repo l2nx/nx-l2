@@ -33,11 +33,11 @@ import app.l2nx.highfive.network.serverpackets.InventoryUpdate;
  * @author -Wooden-
  */
 public class RequestRefineCancel extends ClientPacket {
-    private int _targetItemObjId;
+    private int targetItemObjId;
 
     @Override
     protected void readImpl() {
-        _targetItemObjId = readInt();
+        targetItemObjId = readInt();
     }
 
     @Override
@@ -47,7 +47,7 @@ public class RequestRefineCancel extends ClientPacket {
             return;
         }
 
-        final Item targetItem = player.getInventory().getItemByObjectId(_targetItemObjId);
+        final Item targetItem = player.getInventory().getItemByObjectId(targetItemObjId);
         if (targetItem == null) {
             player.sendPacket(new ExVariationCancelResult(0));
             return;

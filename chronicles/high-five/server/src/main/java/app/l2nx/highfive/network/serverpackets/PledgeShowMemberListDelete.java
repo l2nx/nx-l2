@@ -27,15 +27,15 @@ import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.network.buffer.WriteBuffer;
 
 public class PledgeShowMemberListDelete extends ServerPacket {
-    private final String _player;
+    private final String player;
 
     public PledgeShowMemberListDelete(String playerName) {
-        _player = playerName;
+        player = playerName;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.PLEDGE_SHOW_MEMBER_LIST_DELETE.writeId(this, buffer);
-        buffer.writeString(_player);
+        buffer.writeString(player);
     }
 }

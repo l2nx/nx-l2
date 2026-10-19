@@ -34,15 +34,15 @@ public class RestartResponse extends ServerPacket {
         return result ? STATIC_PACKET_TRUE : STATIC_PACKET_FALSE;
     }
 
-    private final boolean _result;
+    private final boolean result;
 
     public RestartResponse(boolean result) {
-        _result = result;
+        this.result = result;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.RESTART_RESPONSE.writeId(this, buffer);
-        buffer.writeInt(_result);
+        buffer.writeInt(result);
     }
 }

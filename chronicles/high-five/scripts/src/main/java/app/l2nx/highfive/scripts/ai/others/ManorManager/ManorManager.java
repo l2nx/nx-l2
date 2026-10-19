@@ -39,11 +39,13 @@ import app.l2nx.highfive.network.serverpackets.ExShowProcureCropDetail;
 import app.l2nx.highfive.network.serverpackets.ExShowSeedInfo;
 import app.l2nx.highfive.network.serverpackets.ExShowSellCropList;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Manor manager AI.
  * @author malyelfik
  */
+@Slf4j
 public class ManorManager extends Script {
     private static final int[] NPC = {
         35644, 35645, 35319, 35366, 36456, 35512, 35558, 35229, 35230, 35231, 35277, 35103, 35145, 35187
@@ -92,16 +94,16 @@ public class ManorManager extends Script {
     @Id({35644, 35645, 35319, 35366, 36456, 35512, 35558, 35229, 35230, 35231, 35277, 35103, 35145, 35187})
     // @formatter:on
     public void onNpcManorBypass(OnNpcManorBypass event) {
-        final Player player = event.getPlayer();
+        final Player player = event.player();
         if (CastleManorManager.getInstance().isUnderMaintenance()) {
             player.sendPacket(SystemMessageId.THE_MANOR_SYSTEM_IS_CURRENTLY_UNDER_MAINTENANCE);
             return;
         }
 
-        final Npc npc = event.getTarget();
+        final Npc npc = event.target();
         final int templateId = npc.getTemplate().getParameters().getInt("manor_id", -1);
-        final int castleId = (event.getManorId() == -1) ? templateId : event.getManorId();
-        switch (event.getRequest()) {
+        final int castleId = (event.manorId() == -1) ? templateId : event.manorId();
+        switch (event.request()) {
             case 1: // Seed purchase
             {
                 if (templateId != castleId) {
@@ -120,12 +122,12 @@ public class ManorManager extends Script {
             }
             case 3: // Seed info
             {
-                player.sendPacket(new ExShowSeedInfo(castleId, event.isNextPeriod(), false));
+                player.sendPacket(new ExShowSeedInfo(castleId, event.nextPeriod(), false));
                 break;
             }
             case 4: // Crop info
             {
-                player.sendPacket(new ExShowCropInfo(castleId, event.isNextPeriod(), false));
+                player.sendPacket(new ExShowCropInfo(castleId, event.nextPeriod(), false));
                 break;
             }
             case 5: // Basic info
@@ -140,12 +142,11 @@ public class ManorManager extends Script {
             }
             case 9: // Edit sales (Crop sales)
             {
-                player.sendPacket(new ExShowProcureCropDetail(event.getManorId()));
+                player.sendPacket(new ExShowProcureCropDetail(event.manorId()));
                 break;
             }
             default: {
-                LOGGER.warning(getClass().getSimpleName() + ": " + player + " send unknown request id "
-                        + event.getRequest() + "!");
+                log.warn("{} send unknown request id {}!", player, event.request());
             }
         }
     }

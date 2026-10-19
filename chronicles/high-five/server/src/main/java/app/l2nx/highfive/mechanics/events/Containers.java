@@ -23,10 +23,10 @@ package app.l2nx.highfive.mechanics.events;
  * @author UnAfraid
  */
 public class Containers {
-    private static final ListenersContainer _globalContainer = new ListenersContainer();
-    private static final ListenersContainer _globalNpcsContainer = new ListenersContainer();
-    private static final ListenersContainer _globalMonstersContainer = new ListenersContainer();
-    private static final ListenersContainer _globalPlayersContainer = new ListenersContainer();
+    private static final ListenersContainer globalContainer = new ListenersContainer();
+    private static final ListenersContainer globalNpcsContainer = new ListenersContainer();
+    private static final ListenersContainer globalMonstersContainer = new ListenersContainer();
+    private static final ListenersContainer globalPlayersContainer = new ListenersContainer();
 
     protected Containers() {}
 
@@ -34,27 +34,27 @@ public class Containers {
      * @return global listeners container
      */
     public static ListenersContainer Global() {
-        return _globalContainer;
+        return globalContainer;
     }
 
     /**
      * @return global npc listeners container
      */
     public static ListenersContainer Npcs() {
-        return _globalNpcsContainer;
+        return globalNpcsContainer;
     }
 
     /**
      * @return global monster listeners container
      */
     public static ListenersContainer Monsters() {
-        return _globalMonstersContainer;
+        return globalMonstersContainer;
     }
 
     /**
      * @return global player listeners container
      */
     public static ListenersContainer Players() {
-        return _globalPlayersContainer;
+        return globalPlayersContainer;
     }
 }

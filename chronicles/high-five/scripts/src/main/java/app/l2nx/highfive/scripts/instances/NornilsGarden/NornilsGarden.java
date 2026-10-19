@@ -38,6 +38,7 @@ import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
 import app.l2nx.highfive.scripts.quests.Q00179_IntoTheLargeCavern.Q00179_IntoTheLargeCavern;
 import app.l2nx.highfive.util.ArrayUtil;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 
 /**
@@ -45,6 +46,7 @@ import org.apache.commons.lang3.StringUtils;
  * @author Gnacik
  * @version 2010-10-15 Based on official server Naia
  */
+@Slf4j
 public class NornilsGarden extends InstanceScript {
     protected class NornilsWorld extends InstanceWorld {
         protected Npc first_npc = null;
@@ -244,7 +246,7 @@ public class NornilsGarden extends InstanceScript {
         instance.setDuration(DURATION_TIME * 60000);
         instance.setEmptyDestroyTime(EMPTY_DESTROY_TIME * 60000);
         final int instanceId = newWorld.getInstanceId();
-        LOGGER.info("Nornils Garden: started, Instance: " + instanceId + " created by player: " + player.getName());
+        log.info("Nornils Garden: started, Instance: {} created by player: {}", instanceId, player.getName());
         newWorld.first_npc = addSpawn(18362, -109702, 74696, -12528, 49568, false, 0, false, newWorld.getInstanceId());
         final Door door = instance.getDoor(16200010);
         if (door != null) {

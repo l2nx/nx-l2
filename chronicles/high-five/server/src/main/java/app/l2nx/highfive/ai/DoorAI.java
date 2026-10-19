@@ -81,8 +81,8 @@ public class DoorAI extends CreatureAI {
             return;
         }
 
-        ThreadPool.execute(() -> World.forEachVisibleObject(_actor.asDoor(), Defender.class, guard -> {
-            if (_actor.isInsideRadius3D(guard, guard.getTemplate().getClanHelpRange())) {
+        ThreadPool.execute(() -> World.forEachVisibleObject(actor.asDoor(), Defender.class, guard -> {
+            if (actor.isInsideRadius3D(guard, guard.getTemplate().getClanHelpRange())) {
                 guard.getAI().notifyActionAggression(attackerCreature, 15);
             }
         }));

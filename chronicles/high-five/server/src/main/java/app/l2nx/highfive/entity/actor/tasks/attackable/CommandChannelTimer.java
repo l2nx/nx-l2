@@ -27,23 +27,23 @@ import app.l2nx.highfive.threads.ThreadPool;
  * @author xban1x
  */
 public class CommandChannelTimer implements Runnable {
-    private final Attackable _attackable;
+    private final Attackable attackable;
 
     public CommandChannelTimer(Attackable attackable) {
-        _attackable = attackable;
+        this.attackable = attackable;
     }
 
     @Override
     public void run() {
-        if (_attackable == null) {
+        if (attackable == null) {
             return;
         }
 
-        if ((System.currentTimeMillis() - _attackable.getCommandChannelLastAttack())
+        if ((System.currentTimeMillis() - attackable.getCommandChannelLastAttack())
                 > PlayerConfig.LOOT_RAIDS_PRIVILEGE_INTERVAL) {
-            _attackable.setCommandChannelTimer(null);
-            _attackable.setFirstCommandChannelAttacked(null);
-            _attackable.setCommandChannelLastAttack(0);
+            attackable.setCommandChannelTimer(null);
+            attackable.setFirstCommandChannelAttacked(null);
+            attackable.setCommandChannelLastAttack(0);
         } else {
             ThreadPool.schedule(this, 10000); // 10sec
         }

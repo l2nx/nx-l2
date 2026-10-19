@@ -26,7 +26,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-import java.util.logging.Level;
+import lombok.extern.slf4j.Slf4j;
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
@@ -34,8 +34,9 @@ import org.w3c.dom.Node;
 /**
  * @author UnAfraid
  */
+@Slf4j
 public class NpcBuffersData implements IXmlReader {
-    private final Map<Integer, NpcBufferData> _npcBuffers = new HashMap<>();
+    private final Map<Integer, NpcBufferData> npcBuffers = new HashMap<>();
 
     protected NpcBuffersData() {
         load();
@@ -44,7 +45,7 @@ public class NpcBuffersData implements IXmlReader {
     @Override
     public void load() {
         parseDatapackFile("data/scripts/ai/others/NpcBuffers/NpcBuffersData.xml");
-        LOGGER.log(Level.INFO, getClass().getSimpleName() + ": Loaded " + _npcBuffers.size() + " buffers data.");
+        log.info("Loaded {} buffers data.", npcBuffers.size());
     }
 
     @Override
@@ -75,7 +76,7 @@ public class NpcBuffersData implements IXmlReader {
                             }
                         }
 
-                        _npcBuffers.put(npcId, npc);
+                        npcBuffers.put(npcId, npc);
                     }
                 }
             }
@@ -83,14 +84,14 @@ public class NpcBuffersData implements IXmlReader {
     }
 
     public NpcBufferData getNpcBuffer(int npcId) {
-        return _npcBuffers.get(npcId);
+        return npcBuffers.get(npcId);
     }
 
     public Collection<NpcBufferData> getNpcBuffers() {
-        return _npcBuffers.values();
+        return npcBuffers.values();
     }
 
     public Set<Integer> getNpcBufferIds() {
-        return _npcBuffers.keySet();
+        return npcBuffers.keySet();
     }
 }

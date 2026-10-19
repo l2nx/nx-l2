@@ -48,10 +48,12 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ThreadLocalRandom;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author Mobius
  */
+@Slf4j
 public class RimKamaloka extends Script {
     // NPCs.
     private static final int START_NPC = 32484;
@@ -290,6 +292,7 @@ public class RimKamaloka extends Script {
             {13002, 17, 10864, 1}
         }
     };
+
     // @formatter:on
 
     private class RimKamaWorld extends InstanceWorld {
@@ -302,8 +305,8 @@ public class RimKamaloka extends Script {
         public int dopplersCount = 0;
         public int voidersCount = 0;
         public int grade = 0;
-        public boolean isFinished = false;
-        public boolean isRewarded = false;
+        public boolean finished = false;
+        public boolean rewarded = false;
 
         public ScheduledFuture<?> finishTask = null;
         public Set<Monster> spawnedMobs = ConcurrentHashMap.newKeySet();
@@ -350,7 +353,7 @@ public class RimKamaloka extends Script {
                         teleportPlayer(player, inst.getExitLoc(), 0);
                     }
                 } catch (Exception e) {
-                    LOGGER.warning("RimKamaloka: problem with exit: " + e.getMessage());
+                    log.warn("problem with exit: {}", e.getMessage());
                 }
                 break;
             }
@@ -361,7 +364,7 @@ public class RimKamaloka extends Script {
                         rewardPlayer((RimKamaWorld) world, npc);
                     }
                 } catch (Exception e) {
-                    LOGGER.warning("RimKamaloka: problem with reward: " + e.getMessage());
+                    log.warn("problem with reward: {}", e.getMessage());
                 }
 
                 return "npc_rim_gift_giver003.htm";
@@ -425,7 +428,7 @@ public class RimKamaloka extends Script {
             final InstanceWorld tmpWorld = InstanceManager.getInstance().getWorld(npc.getInstanceId());
             if (tmpWorld instanceof RimKamaWorld) {
                 final RimKamaWorld world = (RimKamaWorld) tmpWorld;
-                if (!world.isFinished) {
+                if (!world.finished) {
                     return "";
                 }
 
@@ -746,7 +749,7 @@ public class RimKamaloka extends Script {
     }
 
     private static void spawnNextMob(RimKamaWorld world, Npc oldNpc, int npcId, Player player) {
-        if (world.isFinished) {
+        if (world.finished) {
             return;
         }
 
@@ -786,11 +789,11 @@ public class RimKamaloka extends Script {
     }
 
     private synchronized void rewardPlayer(RimKamaWorld world, Npc npc) {
-        if (!world.isFinished || world.isRewarded) {
+        if (!world.finished || world.rewarded) {
             return;
         }
 
-        world.isRewarded = true;
+        world.rewarded = true;
 
         final int[][] allRewards = REWARDS[world.index];
         world.grade = Math.min(world.grade, allRewards.length);
@@ -810,15 +813,15 @@ public class RimKamaloka extends Script {
     }
 
     private class LockTask implements Runnable {
-        private final RimKamaWorld _world;
+        private final RimKamaWorld world;
 
         LockTask(RimKamaWorld world) {
-            _world = world;
+            this.world = world;
         }
 
         @Override
         public void run() {
-            if (_world != null) {
+            if (world != null) {
                 final Calendar reenter = Calendar.getInstance();
                 reenter.set(Calendar.MINUTE, RESET_MIN);
 
@@ -832,61 +835,61 @@ public class RimKamaloka extends Script {
                 final SystemMessage sm = new SystemMessage(
                         SystemMessageId
                                 .INSTANT_ZONE_S1_S_ENTRY_HAS_BEEN_RESTRICTED_YOU_CAN_CHECK_THE_NEXT_POSSIBLE_ENTRY_TIME_BY_USING_THE_COMMAND_INSTANCEZONE);
-                sm.addString(InstanceManager.getInstance().getInstanceIdName(_world.getTemplateId()));
+                sm.addString(InstanceManager.getInstance().getInstanceIdName(world.getTemplateId()));
 
                 // Set instance reenter time for all allowed players.
                 boolean found = false;
-                for (Player player : _world.getAllowed()) {
+                for (Player player : world.getAllowed()) {
                     if ((player != null) && player.isOnline()) {
                         found = true;
                         InstanceManager.getInstance()
                                 .setInstanceTime(
-                                        player.getObjectId(), _world.getTemplateId(), reenter.getTimeInMillis());
+                                        player.getObjectId(), world.getTemplateId(), reenter.getTimeInMillis());
                         player.sendPacket(sm);
                     }
                 }
 
                 if (!found) {
-                    _world.isFinished = true;
-                    _world.spawnedMobs.clear();
-                    _world.lastAttack.clear();
-                    if (_world.finishTask != null) {
-                        _world.finishTask.cancel(false);
-                        _world.finishTask = null;
+                    world.finished = true;
+                    world.spawnedMobs.clear();
+                    world.lastAttack.clear();
+                    if (world.finishTask != null) {
+                        world.finishTask.cancel(false);
+                        world.finishTask = null;
                     }
 
-                    if (_world.despawnTask != null) {
-                        _world.despawnTask.cancel(false);
-                        _world.despawnTask = null;
+                    if (world.despawnTask != null) {
+                        world.despawnTask.cancel(false);
+                        world.despawnTask = null;
                     }
 
-                    InstanceManager.getInstance().destroyInstance(_world.getInstanceId());
+                    InstanceManager.getInstance().destroyInstance(world.getInstanceId());
                 }
             }
         }
     }
 
     private class FinishTask implements Runnable {
-        private final RimKamaWorld _world;
+        private final RimKamaWorld world;
 
         FinishTask(RimKamaWorld world) {
-            _world = world;
+            this.world = world;
         }
 
         @Override
         public void run() {
-            if (_world != null) {
-                _world.isFinished = true;
-                if (_world.despawnTask != null) {
-                    _world.despawnTask.cancel(false);
-                    _world.despawnTask = null;
+            if (world != null) {
+                world.finished = true;
+                if (world.despawnTask != null) {
+                    world.despawnTask.cancel(false);
+                    world.despawnTask = null;
                 }
 
-                _world.spawnedMobs.clear();
-                _world.lastAttack.clear();
+                world.spawnedMobs.clear();
+                world.lastAttack.clear();
 
                 // Destroy instance after EXIT_TIME.
-                final Instance inst = InstanceManager.getInstance().getInstance(_world.getInstanceId());
+                final Instance inst = InstanceManager.getInstance().getInstance(world.getInstanceId());
                 if (inst != null) {
                     inst.removeNpcs();
                     inst.setDuration(EXIT_TIME * 60000);
@@ -899,14 +902,14 @@ public class RimKamaloka extends Script {
                 }
 
                 // Calculate reward.
-                if (_world.kanabionsCount < 10) {
-                    _world.grade = 0;
+                if (world.kanabionsCount < 10) {
+                    world.grade = 0;
                 } else {
-                    _world.grade = Math.min(
-                            ((_world.dopplersCount + (2 * _world.voidersCount)) / _world.kanabionsCount) + 1, 5);
+                    world.grade =
+                            Math.min(((world.dopplersCount + (2 * world.voidersCount)) / world.kanabionsCount) + 1, 5);
                 }
 
-                final int index = _world.index;
+                final int index = world.index;
 
                 // Spawn rewarder NPC.
                 addSpawn(
@@ -918,35 +921,32 @@ public class RimKamaloka extends Script {
                         false,
                         0,
                         false,
-                        _world.getInstanceId());
+                        world.getInstanceId());
             }
         }
     }
 
     private class DespawnTask implements Runnable {
-        private final RimKamaWorld _world;
+        private final RimKamaWorld world;
 
         DespawnTask(RimKamaWorld world) {
-            _world = world;
+            this.world = world;
         }
 
         @Override
         public void run() {
-            if ((_world != null)
-                    && !_world.isFinished
-                    && !_world.lastAttack.isEmpty()
-                    && !_world.spawnedMobs.isEmpty()) {
+            if ((world != null) && !world.finished && !world.lastAttack.isEmpty() && !world.spawnedMobs.isEmpty()) {
                 final long time = System.currentTimeMillis();
-                for (Monster mob : _world.spawnedMobs) {
+                for (Monster mob : world.spawnedMobs) {
                     if ((mob == null) || mob.isDead() || mob.isInvisible()) {
                         continue;
                     }
 
-                    if (_world.lastAttack.containsKey(mob.getObjectId())
-                            && ((time - _world.lastAttack.get(mob.getObjectId())) > DESPAWN_DELAY)) {
+                    if (world.lastAttack.containsKey(mob.getObjectId())
+                            && ((time - world.lastAttack.get(mob.getObjectId())) > DESPAWN_DELAY)) {
                         mob.deleteMe();
-                        synchronized (_world.lastAttack) {
-                            _world.lastAttack.remove(mob.getObjectId());
+                        synchronized (world.lastAttack) {
+                            world.lastAttack.remove(mob.getObjectId());
                         }
                     }
                 }

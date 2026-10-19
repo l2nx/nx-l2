@@ -48,73 +48,113 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class CursedWeapon {
-    private static final Logger LOGGER = Logger.getLogger(CursedWeapon.class.getName());
 
-    // _name is the name of the cursed weapon associated with its ID.
-    private final String _name;
-    // _itemId is the Item ID of the cursed weapon.
-    private final int _itemId;
-    // _skillId is the skills ID.
-    private final int _skillId;
-    private final int _skillMaxLevel;
-    private int _dropRate;
-    private int _duration;
-    private int _durationLost;
-    private int _disapearChance;
-    private int _stageKills;
+    // name is the name of the cursed weapon associated with its ID.
+    @Getter
+    private final String name;
+    // itemId is the Item ID of the cursed weapon.
+    @Getter
+    private final int itemId;
+    // skillId is the skills ID.
+    @Getter
+    private final int skillId;
+
+    private final int skillMaxLevel;
+
+    @Setter
+    private int dropRate;
+
+    @Setter
+    private int duration;
+
+    @Setter
+    private int durationLost;
+
+    @Setter
+    private int disapearChance;
+
+    @Getter
+    @Setter
+    private int stageKills;
 
     // This should be false unless if the cursed weapon is dropped, in that case it would be true.
-    private boolean _isDropped = false;
+    @Getter
+    @Setter
+    private boolean dropped = false;
 
     // This sets the cursed weapon status to true only if a player has the cursed weapon, otherwise this should be
     // false.
-    private boolean _isActivated = false;
-    private ScheduledFuture<?> _removeTask;
+    @Getter
+    @Setter
+    private boolean activated = false;
 
-    private int _nbKills = 0;
-    long _endTime = 0;
+    private ScheduledFuture<?> removeTask;
 
-    private int _playerId = 0;
-    protected Player _player = null;
-    private Item _item = null;
-    private int _playerKarma = 0;
-    private int _playerPkKills = 0;
+    @Getter
+    @Setter
+    private int nbKills = 0;
+
+    @Getter
+    @Setter
+    long endTime = 0;
+
+    @Getter
+    @Setter
+    private int playerId = 0;
+
+    @Getter
+    @Setter
+    protected Player player = null;
+
+    @Setter
+    private Item item = null;
+
+    @Getter
+    @Setter
+    private int playerKarma = 0;
+
+    @Getter
+    @Setter
+    private int playerPkKills = 0;
+
     protected int transformationId = 0;
 
     public CursedWeapon(int itemId, int skillId, String name) {
-        _name = name;
-        _itemId = itemId;
-        _skillId = skillId;
-        _skillMaxLevel = SkillData.getInstance().getMaxLevel(_skillId);
+        this.name = name;
+        this.itemId = itemId;
+        this.skillId = skillId;
+        skillMaxLevel = SkillData.getInstance().getMaxLevel(this.skillId);
     }
 
     public void endOfLife() {
-        if (_isActivated) {
-            if ((_player != null) && _player.isOnline()) {
+        if (activated) {
+            if ((player != null) && player.isOnline()) {
                 // Remove from player
-                LOGGER.info(_name + " being removed online.");
-                _player.abortAttack();
+                log.info("{} being removed online.", name);
+                player.abortAttack();
 
-                _player.setKarma(_playerKarma);
-                _player.setPkKills(_playerPkKills);
-                _player.setCursedWeaponEquippedId(0);
+                player.setKarma(playerKarma);
+                player.setPkKills(playerPkKills);
+                player.setCursedWeaponEquippedId(0);
                 removeSkill();
 
                 // Remove
-                _player.getInventory().unEquipItemInBodySlot(BodyPart.LR_HAND);
-                _player.storeMe();
+                player.getInventory().unEquipItemInBodySlot(BodyPart.LR_HAND);
+                player.storeMe();
 
                 // Destroy
-                _player.getInventory().destroyItemByItemId(ItemProcessType.NONE, _itemId, 1, _player, null);
-                _player.sendItemList(true);
-                _player.broadcastUserInfo();
+                player.getInventory().destroyItemByItemId(ItemProcessType.NONE, itemId, 1, player, null);
+                player.sendItemList(true);
+                player.broadcastUserInfo();
             } else {
                 // Remove from Db
-                LOGGER.info(_name + " being removed offline.");
+                log.info("{} being removed offline.", name);
 
                 try (Connection con = DatabaseFactory.getConnection();
                         PreparedStatement del =
@@ -122,64 +162,64 @@ public class CursedWeapon {
                         PreparedStatement ps =
                                 con.prepareStatement("UPDATE characters SET karma=?, pkkills=? WHERE charId=?")) {
                     // Delete the item
-                    del.setInt(1, _playerId);
-                    del.setInt(2, _itemId);
+                    del.setInt(1, playerId);
+                    del.setInt(2, itemId);
                     if (del.executeUpdate() != 1) {
-                        LOGGER.warning("Error while deleting itemId " + _itemId + " from userId " + _playerId);
+                        log.warn("Error while deleting itemId {} from userId {}", itemId, playerId);
                     }
 
                     // Restore the karma
-                    ps.setInt(1, _playerKarma);
-                    ps.setInt(2, _playerPkKills);
-                    ps.setInt(3, _playerId);
+                    ps.setInt(1, playerKarma);
+                    ps.setInt(2, playerPkKills);
+                    ps.setInt(3, playerId);
                     if (ps.executeUpdate() != 1) {
-                        LOGGER.warning("Error while updating karma & pkkills for userId " + _playerId);
+                        log.warn("Error while updating karma & pkkills for userId {}", playerId);
                     }
                 } catch (Exception e) {
-                    LOGGER.log(Level.WARNING, "Could not delete : " + e.getMessage(), e);
+                    log.warn("Could not delete : {}", e.getMessage(), e);
                 }
             }
         }
 
         // either this cursed weapon is in the inventory of someone who has another cursed weapon equipped,
         // OR this cursed weapon is on the ground.
-        else if ((_player != null) && (_player.getInventory().getItemByItemId(_itemId) != null)) {
+        else if ((player != null) && (player.getInventory().getItemByItemId(itemId) != null)) {
             // Destroy
-            _player.getInventory().destroyItemByItemId(ItemProcessType.NONE, _itemId, 1, _player, null);
-            _player.sendItemList(true);
-            _player.broadcastUserInfo();
+            player.getInventory().destroyItemByItemId(ItemProcessType.NONE, itemId, 1, player, null);
+            player.sendItemList(true);
+            player.broadcastUserInfo();
         }
         // is dropped on the ground
-        else if (_item != null) {
-            _item.decayMe();
-            // World.removeObject(_item); // redundant - decayMe() already calls World.removeObject
-            LOGGER.info(_name + " item has been removed from World.");
+        else if (item != null) {
+            item.decayMe();
+            // World.removeObject(item); // redundant - decayMe() already calls World.removeObject
+            log.info("{} item has been removed from World.", name);
         }
 
         // Delete infos from table if any.
-        CursedWeaponsManager.removeFromDb(_itemId);
+        CursedWeaponsManager.removeFromDb(itemId);
 
         final SystemMessage sm = new SystemMessage(SystemMessageId.S1_HAS_DISAPPEARED);
-        sm.addItemName(_itemId);
+        sm.addItemName(itemId);
         CursedWeaponsManager.announce(sm);
 
         // Reset state
         cancelTask();
-        _isActivated = false;
-        _isDropped = false;
-        _endTime = 0;
-        _player = null;
-        _playerId = 0;
-        _playerKarma = 0;
-        _playerPkKills = 0;
-        _item = null;
-        _nbKills = 0;
+        activated = false;
+        dropped = false;
+        endTime = 0;
+        player = null;
+        playerId = 0;
+        playerKarma = 0;
+        playerPkKills = 0;
+        item = null;
+        nbKills = 0;
     }
 
     private void cancelTask() {
-        if (_removeTask != null) {
-            _removeTask.cancel(true);
-            _removeTask = null;
+        if (removeTask != null) {
+            removeTask.cancel(true);
+            removeTask = null;
         }
     }
 
@@ -188,7 +228,7 @@ public class CursedWeapon {
 
         @Override
         public void run() {
-            if (System.currentTimeMillis() >= _endTime) {
+            if (System.currentTimeMillis() >= endTime) {
                 endOfLife();
             }
         }
@@ -199,10 +239,10 @@ public class CursedWeapon {
     }
 
     private void dropIt(Attackable attackable, Player player, Creature killer, boolean fromMonster) {
-        _isActivated = false;
+        activated = false;
         if (fromMonster) {
-            _item = attackable.dropItem(player, _itemId, 1);
-            _item.setDropTime(0); // Prevent item from being removed by ItemsAutoDestroy.
+            item = attackable.dropItem(player, itemId, 1);
+            item.setDropTime(0); // Prevent item from being removed by ItemsAutoDestroy.
 
             // RedSky and Earthquake
             final ExRedSky rs = new ExRedSky(10);
@@ -210,31 +250,31 @@ public class CursedWeapon {
             World.broadcastToAllOnlinePlayers(rs);
             World.broadcastToAllOnlinePlayers(eq);
         } else {
-            _item = _player.getInventory().getItemByItemId(_itemId);
-            _player.dropItem(ItemProcessType.DEATH, _item, killer, true);
-            _player.setKarma(_playerKarma);
-            _player.setPkKills(_playerPkKills);
-            _player.setCursedWeaponEquippedId(0);
+            item = this.player.getInventory().getItemByItemId(itemId);
+            this.player.dropItem(ItemProcessType.DEATH, item, killer, true);
+            this.player.setKarma(playerKarma);
+            this.player.setPkKills(playerPkKills);
+            this.player.setCursedWeaponEquippedId(0);
             removeSkill();
-            _player.abortAttack();
+            this.player.abortAttack();
 
             // Item item = _player.getInventory().getItemByItemId(_itemId);
             // _player.getInventory().dropItem("DieDrop", item, _player, null);
-            // _player.getInventory().getItemByItemId(_itemId).dropMe(_player, _player.getX(), _player.getY(),
+            // player.getInventory().getItemByItemId(itemId).dropMe(player, player.getX(), player.getY(),
             // _player.getZ());
         }
 
-        _isDropped = true;
+        dropped = true;
         final SystemMessage sm = new SystemMessage(SystemMessageId.S2_WAS_DROPPED_IN_THE_S1_REGION);
         if (player != null) {
             sm.addZoneName(player.getX(), player.getY(), player.getZ()); // Region Name
-        } else if (_player != null) {
-            sm.addZoneName(_player.getX(), _player.getY(), _player.getZ()); // Region Name
+        } else if (this.player != null) {
+            sm.addZoneName(this.player.getX(), this.player.getY(), this.player.getZ()); // Region Name
         } else {
             sm.addZoneName(killer.getX(), killer.getY(), killer.getZ()); // Region Name
         }
 
-        sm.addItemName(_itemId);
+        sm.addItemName(itemId);
         CursedWeaponsManager.announce(sm); // in the Hot Spring region
     }
 
@@ -243,16 +283,16 @@ public class CursedWeapon {
         giveSkill();
 
         final SystemMessage msg = new SystemMessage(SystemMessageId.S2_S_OWNER_HAS_LOGGED_INTO_THE_S1_REGION);
-        msg.addZoneName(_player.getX(), _player.getY(), _player.getZ());
-        msg.addItemName(_player.getCursedWeaponEquippedId());
+        msg.addZoneName(player.getX(), player.getY(), player.getZ());
+        msg.addItemName(player.getCursedWeaponEquippedId());
         CursedWeaponsManager.announce(msg);
 
-        final CursedWeapon cw = CursedWeaponsManager.getInstance().getCursedWeapon(_player.getCursedWeaponEquippedId());
+        final CursedWeapon cw = CursedWeaponsManager.getInstance().getCursedWeapon(player.getCursedWeaponEquippedId());
         final SystemMessage msg2 = new SystemMessage(SystemMessageId.S1_HAS_S2_MINUTE_S_OF_USAGE_TIME_REMAINING);
         final int timeLeft = (int) (cw.getTimeLeft() / 60000);
-        msg2.addItemName(_player.getCursedWeaponEquippedId());
+        msg2.addItemName(player.getCursedWeaponEquippedId());
         msg2.addInt(timeLeft);
-        _player.sendPacket(msg2);
+        player.sendPacket(msg2);
     }
 
     /**
@@ -260,65 +300,63 @@ public class CursedWeapon {
      * Rebind the passive skill belonging to the CursedWeapon. Invoke this method if the weapon owner switches to a subclass.
      */
     public void giveSkill() {
-        int level = 1 + (_nbKills / _stageKills);
-        if (level > _skillMaxLevel) {
-            level = _skillMaxLevel;
+        int level = 1 + (nbKills / stageKills);
+        if (level > skillMaxLevel) {
+            level = skillMaxLevel;
         }
 
-        final Skill skill = SkillData.getInstance().getSkill(_skillId, level);
-        _player.addSkill(skill, false);
+        final Skill skill = SkillData.getInstance().getSkill(skillId, level);
+        player.addSkill(skill, false);
 
         // Void Burst, Void Flow.
-        _player.addSkill(CommonSkill.VOID_BURST.getSkill(), false);
-        _player.addTransformSkill(CommonSkill.VOID_BURST.getSkill());
-        _player.addSkill(CommonSkill.VOID_FLOW.getSkill(), false);
-        _player.addTransformSkill(CommonSkill.VOID_FLOW.getSkill());
-        _player.sendSkillList();
+        player.addSkill(CommonSkill.VOID_BURST.getSkill(), false);
+        player.addTransformSkill(CommonSkill.VOID_BURST.getSkill());
+        player.addSkill(CommonSkill.VOID_FLOW.getSkill(), false);
+        player.addTransformSkill(CommonSkill.VOID_FLOW.getSkill());
+        player.sendSkillList();
     }
 
     public void doTransform() {
-        if (_itemId == 8689) {
+        if (itemId == 8689) {
             transformationId = 302;
-        } else if (_itemId == 8190) {
+        } else if (itemId == 8190) {
             transformationId = 301;
         }
 
-        if (_player.isTransformed() || _player.isInStance()) {
-            _player.stopTransformation(true);
+        if (player.isTransformed() || player.isInStance()) {
+            player.stopTransformation(true);
 
-            ThreadPool.schedule(() -> TransformData.getInstance().transformPlayer(transformationId, _player), 500);
+            ThreadPool.schedule(() -> TransformData.getInstance().transformPlayer(transformationId, player), 500);
         } else {
-            TransformData.getInstance().transformPlayer(transformationId, _player);
+            TransformData.getInstance().transformPlayer(transformationId, player);
         }
     }
 
     public void removeSkill() {
-        _player.removeSkill(_skillId);
-        _player.removeSkill(CommonSkill.VOID_BURST.getSkill().getId());
-        _player.removeSkill(CommonSkill.VOID_FLOW.getSkill().getId());
-        _player.untransform();
-        _player.sendSkillList();
+        player.removeSkill(skillId);
+        player.removeSkill(CommonSkill.VOID_BURST.getSkill().getId());
+        player.removeSkill(CommonSkill.VOID_FLOW.getSkill().getId());
+        player.untransform();
+        player.sendSkillList();
     }
 
     public void reActivate() {
-        _isActivated = true;
-        if ((_endTime - System.currentTimeMillis()) <= 0) {
+        activated = true;
+        if ((endTime - System.currentTimeMillis()) <= 0) {
             endOfLife();
         } else {
-            _removeTask =
-                    ThreadPool.scheduleAtFixedRate(new RemoveTask(), _durationLost * 12000, _durationLost * 12000);
+            removeTask = ThreadPool.scheduleAtFixedRate(new RemoveTask(), durationLost * 12000, durationLost * 12000);
         }
     }
 
     public boolean checkDrop(Attackable attackable, Player player) {
-        if (ThreadLocalRandom.current().nextInt(100000) < _dropRate) {
+        if (ThreadLocalRandom.current().nextInt(100000) < dropRate) {
             // Drop the item
             dropIt(attackable, player);
 
             // Start the Life Task.
-            _endTime = System.currentTimeMillis() + (_duration * 60000);
-            _removeTask =
-                    ThreadPool.scheduleAtFixedRate(new RemoveTask(), _durationLost * 12000, _durationLost * 12000);
+            endTime = System.currentTimeMillis() + (duration * 60000);
+            removeTask = ThreadPool.scheduleAtFixedRate(new RemoveTask(), durationLost * 12000, durationLost * 12000);
             return true;
         }
 
@@ -335,21 +373,21 @@ public class CursedWeapon {
             return;
         }
 
-        _isActivated = true;
+        activated = true;
 
         // Player holding it data.
-        _player = player;
-        _playerId = _player.getObjectId();
-        _playerKarma = _player.getKarma();
-        _playerPkKills = _player.getPkKills();
+        this.player = player;
+        playerId = this.player.getObjectId();
+        playerKarma = this.player.getKarma();
+        playerPkKills = this.player.getPkKills();
         saveData();
 
         // Change player stats
-        _player.setCursedWeaponEquippedId(_itemId);
-        _player.setKarma(9999999);
-        _player.setPkKills(0);
-        if (_player.isInParty()) {
-            _player.getParty().removePartyMember(_player, PartyMessageType.EXPELLED);
+        this.player.setCursedWeaponEquippedId(itemId);
+        this.player.setKarma(9999999);
+        this.player.setPkKills(0);
+        if (this.player.isInParty()) {
+            this.player.getParty().removePartyMember(this.player, PartyMessageType.EXPELLED);
         }
 
         // Disable All Skills
@@ -360,27 +398,27 @@ public class CursedWeapon {
         giveSkill();
 
         // Equip with the weapon.
-        _item = item;
-        _player.getInventory().equipItem(_item);
+        this.item = item;
+        this.player.getInventory().equipItem(this.item);
         SystemMessage sm = new SystemMessage(SystemMessageId.YOU_HAVE_EQUIPPED_YOUR_S1);
-        sm.addItemName(_item);
-        _player.sendPacket(sm);
+        sm.addItemName(this.item);
+        this.player.sendPacket(sm);
 
         // Fully heal player
-        _player.setCurrentHpMp(_player.getMaxHp(), _player.getMaxMp());
-        _player.setCurrentCp(_player.getMaxCp());
+        this.player.setCurrentHpMp(this.player.getMaxHp(), this.player.getMaxMp());
+        this.player.setCurrentCp(this.player.getMaxCp());
 
         // Refresh inventory
-        _player.sendItemList(false);
+        this.player.sendItemList(false);
 
         // Refresh player stats
-        _player.broadcastUserInfo();
+        this.player.broadcastUserInfo();
 
-        ThreadPool.schedule(() -> _player.broadcastPacket(new SocialAction(_player.getObjectId(), 17)), 300);
+        ThreadPool.schedule(() -> this.player.broadcastPacket(new SocialAction(this.player.getObjectId(), 17)), 300);
 
         sm = new SystemMessage(SystemMessageId.THE_OWNER_OF_S2_HAS_APPEARED_IN_THE_S1_REGION);
-        sm.addZoneName(_player.getX(), _player.getY(), _player.getZ()); // Region Name
-        sm.addItemName(_item);
+        sm.addZoneName(this.player.getX(), this.player.getY(), this.player.getZ()); // Region Name
+        sm.addItemName(this.item);
         CursedWeaponsManager.announce(sm);
     }
 
@@ -390,25 +428,25 @@ public class CursedWeapon {
                 PreparedStatement ps = con.prepareStatement(
                         "INSERT INTO cursed_weapons (itemId, charId, playerKarma, playerPkKills, nbKills, endTime) VALUES (?, ?, ?, ?, ?, ?)")) {
             // Delete previous datas
-            del.setInt(1, _itemId);
+            del.setInt(1, itemId);
             del.executeUpdate();
 
-            if (_isActivated) {
-                ps.setInt(1, _itemId);
-                ps.setInt(2, _playerId);
-                ps.setInt(3, _playerKarma);
-                ps.setInt(4, _playerPkKills);
-                ps.setInt(5, _nbKills);
-                ps.setLong(6, _endTime);
+            if (activated) {
+                ps.setInt(1, itemId);
+                ps.setInt(2, playerId);
+                ps.setInt(3, playerKarma);
+                ps.setInt(4, playerPkKills);
+                ps.setInt(5, nbKills);
+                ps.setLong(6, endTime);
                 ps.executeUpdate();
             }
         } catch (SQLException e) {
-            LOGGER.log(Level.SEVERE, "CursedWeapon: Failed to save data.", e);
+            log.error("Failed to save data.", e);
         }
     }
 
     public void dropIt(Creature killer) {
-        if (ThreadLocalRandom.current().nextInt(100) <= _disapearChance) {
+        if (ThreadLocalRandom.current().nextInt(100) <= disapearChance) {
             // Remove it
             endOfLife();
         } else {
@@ -416,151 +454,47 @@ public class CursedWeapon {
             dropIt(null, null, killer, false);
 
             // Reset player stats
-            _player.setKarma(_playerKarma);
-            _player.setPkKills(_playerPkKills);
-            _player.setCursedWeaponEquippedId(0);
+            player.setKarma(playerKarma);
+            player.setPkKills(playerPkKills);
+            player.setCursedWeaponEquippedId(0);
             removeSkill();
 
-            _player.abortAttack();
+            player.abortAttack();
 
-            _player.broadcastUserInfo();
+            player.broadcastUserInfo();
         }
     }
 
     public void increaseKills() {
-        _nbKills++;
+        nbKills++;
 
-        if ((_player != null) && _player.isOnline()) {
-            _player.setPkKills(_nbKills);
-            _player.updateUserInfo();
-            if (((_nbKills % _stageKills) == 0) && (_nbKills <= (_stageKills * (_skillMaxLevel - 1)))) {
+        if ((player != null) && player.isOnline()) {
+            player.setPkKills(nbKills);
+            player.updateUserInfo();
+            if (((nbKills % stageKills) == 0) && (nbKills <= (stageKills * (skillMaxLevel - 1)))) {
                 giveSkill();
             }
         }
 
         // Reduce time-to-live
-        _endTime -= _durationLost * 60000;
+        endTime -= durationLost * 60000;
         saveData();
     }
 
-    public void setDisapearChance(int disapearChance) {
-        _disapearChance = disapearChance;
-    }
-
-    public void setDropRate(int dropRate) {
-        _dropRate = dropRate;
-    }
-
-    public void setDuration(int duration) {
-        _duration = duration;
-    }
-
-    public void setDurationLost(int durationLost) {
-        _durationLost = durationLost;
-    }
-
-    public void setStageKills(int stageKills) {
-        _stageKills = stageKills;
-    }
-
-    public void setNbKills(int nbKills) {
-        _nbKills = nbKills;
-    }
-
-    public void setPlayerId(int playerId) {
-        _playerId = playerId;
-    }
-
-    public void setPlayerKarma(int playerKarma) {
-        _playerKarma = playerKarma;
-    }
-
-    public void setPlayerPkKills(int playerPkKills) {
-        _playerPkKills = playerPkKills;
-    }
-
-    public void setActivated(boolean isActivated) {
-        _isActivated = isActivated;
-    }
-
-    public void setDropped(boolean isDropped) {
-        _isDropped = isDropped;
-    }
-
-    public void setEndTime(long endTime) {
-        _endTime = endTime;
-    }
-
-    public void setPlayer(Player player) {
-        _player = player;
-    }
-
-    public void setItem(Item item) {
-        _item = item;
-    }
-
-    public boolean isActivated() {
-        return _isActivated;
-    }
-
-    public boolean isDropped() {
-        return _isDropped;
-    }
-
-    public long getEndTime() {
-        return _endTime;
-    }
-
-    public String getName() {
-        return _name;
-    }
-
-    public int getItemId() {
-        return _itemId;
-    }
-
-    public int getSkillId() {
-        return _skillId;
-    }
-
-    public int getPlayerId() {
-        return _playerId;
-    }
-
-    public Player getPlayer() {
-        return _player;
-    }
-
-    public int getPlayerKarma() {
-        return _playerKarma;
-    }
-
-    public int getPlayerPkKills() {
-        return _playerPkKills;
-    }
-
-    public int getNbKills() {
-        return _nbKills;
-    }
-
-    public int getStageKills() {
-        return _stageKills;
-    }
-
     public boolean isActive() {
-        return _isActivated || _isDropped;
+        return activated || dropped;
     }
 
     public int getLevel() {
-        if (_nbKills > (_stageKills * _skillMaxLevel)) {
-            return _skillMaxLevel;
+        if (nbKills > (stageKills * skillMaxLevel)) {
+            return skillMaxLevel;
         }
 
-        return (_nbKills / _stageKills);
+        return (nbKills / stageKills);
     }
 
     public long getTimeLeft() {
-        return _endTime - System.currentTimeMillis();
+        return endTime - System.currentTimeMillis();
     }
 
     public void goTo(Player player) {
@@ -568,30 +502,30 @@ public class CursedWeapon {
             return;
         }
 
-        if (_isActivated && (_player != null)) {
+        if (activated && (this.player != null)) {
             // Go to player holding the weapon.
-            player.teleToLocation(_player.getLocation(), true);
-        } else if (_isDropped && (_item != null)) {
+            player.teleToLocation(this.player.getLocation(), true);
+        } else if (dropped && (item != null)) {
             // Go to item on the ground.
-            player.teleToLocation(_item.getLocation(), true);
+            player.teleToLocation(item.getLocation(), true);
         } else {
-            player.sendMessage(_name + " isn't in the World.");
+            player.sendMessage(name + " isn't in the World.");
         }
     }
 
     public Location getWorldPosition() {
-        if (_isActivated && (_player != null)) {
-            return _player.getLocation();
+        if (activated && (player != null)) {
+            return player.getLocation();
         }
 
-        if (_isDropped && (_item != null)) {
-            return _item.getLocation();
+        if (dropped && (item != null)) {
+            return item.getLocation();
         }
 
         return null;
     }
 
     public long getDuration() {
-        return _duration;
+        return duration;
     }
 }

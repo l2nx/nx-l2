@@ -23,25 +23,24 @@
 package app.l2nx.highfive.network.loginserverpackets.receive;
 
 import app.l2nx.network.packet.SimpleReadablePacket;
+import lombok.Getter;
 
 public class InitLS extends SimpleReadablePacket {
-    private final int _rev;
-    private final byte[] _key;
+    @Getter
+    private final int revision;
 
-    public int getRevision() {
-        return _rev;
-    }
+    private final byte[] rsaKey;
 
     public byte[] getRSAKey() {
-        return _key;
+        return rsaKey;
     }
 
     public InitLS(byte[] decrypt) {
         super(decrypt);
         readByte(); // Packet id, it is already processed.
 
-        _rev = readInt();
+        revision = readInt();
         final int size = readInt();
-        _key = readBytes(size);
+        rsaKey = readBytes(size);
     }
 }

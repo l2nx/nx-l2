@@ -30,13 +30,13 @@ import app.l2nx.highfive.network.serverpackets.StartRotation;
  * @version $Revision: 1.1.4.3 $ $Date: 2005/03/27 15:29:30 $
  */
 public class StartRotating extends ClientPacket {
-    private int _degree;
-    private int _side;
+    private int degree;
+    private int side;
 
     @Override
     protected void readImpl() {
-        _degree = readInt();
-        _side = readInt();
+        degree = readInt();
+        side = readInt();
     }
 
     @Override
@@ -52,10 +52,10 @@ public class StartRotating extends ClientPacket {
 
         final StartRotation br;
         if (player.isInAirShip() && player.getAirShip().isCaptain(player)) {
-            br = new StartRotation(player.getAirShip().getObjectId(), _degree, _side, 0);
+            br = new StartRotation(player.getAirShip().getObjectId(), degree, side, 0);
             player.getAirShip().broadcastPacket(br);
         } else {
-            br = new StartRotation(player.getObjectId(), _degree, _side, 0);
+            br = new StartRotation(player.getObjectId(), degree, side, 0);
             player.broadcastPacket(br);
         }
     }

@@ -32,25 +32,31 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
+import lombok.Getter;
 
 /**
  * This class serves as a container for command channels.
  * @author chris_00
  */
 public class CommandChannel extends AbstractPlayerGroup {
-    private final Collection<Party> _parties = ConcurrentHashMap.newKeySet();
-    private Player _commandLeader;
-    private int _channelLvl;
+    @Getter
+    private final Collection<Party> parties = ConcurrentHashMap.newKeySet();
+
+    @Getter
+    private Player leader;
+
+    @Getter
+    private int level;
 
     /**
      * Create a new command channel and add the leader's party to it.
      * @param leader the leader of this command channel
      */
     public CommandChannel(Player leader) {
-        _commandLeader = leader;
+        this.leader = leader;
         final Party party = leader.getParty();
-        _parties.add(party);
-        _channelLvl = party.getLevel();
+        parties.add(party);
+        level = party.getLevel();
         party.setCommandChannel(this);
         party.broadcastMessage(SystemMessageId.THE_COMMAND_CHANNEL_HAS_BEEN_FORMED);
         party.broadcastPacket(ExOpenMPCC.STATIC_PACKET);
@@ -67,9 +73,9 @@ public class CommandChannel extends AbstractPlayerGroup {
 
         // Update the CCinfo for existing players.
         broadcastPacket(new ExMPCCPartyInfoUpdate(party, 1));
-        _parties.add(party);
-        if (party.getLevel() > _channelLvl) {
-            _channelLvl = party.getLevel();
+        parties.add(party);
+        if (party.getLevel() > level) {
+            level = party.getLevel();
         }
 
         party.setCommandChannel(this);
@@ -86,17 +92,17 @@ public class CommandChannel extends AbstractPlayerGroup {
             return;
         }
 
-        _parties.remove(party);
-        _channelLvl = 0;
-        for (Party pty : _parties) {
-            if (pty.getLevel() > _channelLvl) {
-                _channelLvl = pty.getLevel();
+        parties.remove(party);
+        level = 0;
+        for (Party pty : parties) {
+            if (pty.getLevel() > level) {
+                level = pty.getLevel();
             }
         }
 
         party.setCommandChannel(null);
         party.broadcastPacket(new ExCloseMPCC());
-        if (_parties.size() < 2) {
+        if (parties.size() < 2) {
             broadcastPacket(new SystemMessage(SystemMessageId.THE_COMMAND_CHANNEL_HAS_BEEN_DISBANDED));
             disbandChannel();
         } else {
@@ -109,14 +115,14 @@ public class CommandChannel extends AbstractPlayerGroup {
      * Disband this command channel.
      */
     public void disbandChannel() {
-        if (_parties != null) {
-            for (Party party : _parties) {
+        if (parties != null) {
+            for (Party party : parties) {
                 if (party != null) {
                     removeParty(party);
                 }
             }
 
-            _parties.clear();
+            parties.clear();
         }
     }
 
@@ -126,7 +132,7 @@ public class CommandChannel extends AbstractPlayerGroup {
     @Override
     public int getMemberCount() {
         int count = 0;
-        for (Party party : _parties) {
+        for (Party party : parties) {
             if (party != null) {
                 count += party.getMemberCount();
             }
@@ -136,38 +142,23 @@ public class CommandChannel extends AbstractPlayerGroup {
     }
 
     /**
-     * @return a list of all parties in this command channel
-     */
-    public Collection<Party> getParties() {
-        return _parties;
-    }
-
-    /**
      * @return a list of all members in this command channel
      */
     @Override
     public List<Player> getMembers() {
         final List<Player> members = new ArrayList<>();
-        for (Party party : _parties) {
+        for (Party party : parties) {
             members.addAll(party.getMembers());
         }
 
         return members;
     }
 
-    /**
-     * @return the level of this command channel (equals the level of the highest-leveled character in this command channel)
-     */
-    @Override
-    public int getLevel() {
-        return _channelLvl;
-    }
-
     @Override
     public void setLeader(Player leader) {
-        _commandLeader = leader;
-        if (leader.getLevel() > _channelLvl) {
-            _channelLvl = leader.getLevel();
+        this.leader = leader;
+        if (leader.getLevel() > level) {
+            level = leader.getLevel();
         }
     }
 
@@ -184,22 +175,14 @@ public class CommandChannel extends AbstractPlayerGroup {
     }
 
     /**
-     * @return the leader of this command channel
-     */
-    @Override
-    public Player getLeader() {
-        return _commandLeader;
-    }
-
-    /**
      * Check if a given player is in this command channel.
      * @param player the player to check
      * @return {@code true} if he does, {@code false} otherwise
      */
     @Override
     public boolean containsPlayer(Player player) {
-        if ((_parties != null) && !_parties.isEmpty()) {
-            for (Party party : _parties) {
+        if ((parties != null) && !parties.isEmpty()) {
+            for (Party party : parties) {
                 if (party.containsPlayer(player)) {
                     return true;
                 }
@@ -215,8 +198,8 @@ public class CommandChannel extends AbstractPlayerGroup {
      */
     @Override
     public boolean forEachMember(Function<Player, Boolean> function) {
-        if ((_parties != null) && !_parties.isEmpty()) {
-            for (Party party : _parties) {
+        if ((parties != null) && !parties.isEmpty()) {
+            for (Party party : parties) {
                 if (!party.forEachMember(function)) {
                     return false;
                 }

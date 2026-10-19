@@ -31,26 +31,26 @@ import java.util.List;
  * @author UnAfraid
  */
 public class ExShowTerritory extends ServerPacket {
-    private final int _minZ;
-    private final int _maxZ;
-    private final List<ILocational> _vertices = new ArrayList<>();
+    private final int minZ;
+    private final int maxZ;
+    private final List<ILocational> vertices = new ArrayList<>();
 
     public ExShowTerritory(int minZ, int maxZ) {
-        _minZ = minZ;
-        _maxZ = maxZ;
+        this.minZ = minZ;
+        this.maxZ = maxZ;
     }
 
     public void addVertice(ILocational loc) {
-        _vertices.add(loc);
+        vertices.add(loc);
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_SHOW_TERRITORY.writeId(this, buffer);
-        buffer.writeInt(_vertices.size());
-        buffer.writeInt(_minZ);
-        buffer.writeInt(_maxZ);
-        for (ILocational loc : _vertices) {
+        buffer.writeInt(vertices.size());
+        buffer.writeInt(minZ);
+        buffer.writeInt(maxZ);
+        for (ILocational loc : vertices) {
             buffer.writeInt(loc.getX());
             buffer.writeInt(loc.getY());
         }

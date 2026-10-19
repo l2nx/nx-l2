@@ -31,10 +31,10 @@ import app.l2nx.highfive.network.SystemMessageId;
  * @author Adry_85
  */
 public class ConditionPlayerCanUntransform extends Condition {
-    private final boolean _value;
+    private final boolean value;
 
     public ConditionPlayerCanUntransform(boolean value) {
-        _value = value;
+        this.value = value;
     }
 
     @Override
@@ -57,6 +57,6 @@ public class ConditionPlayerCanUntransform extends Condition {
             canUntransform = false;
         }
 
-        return _value == canUntransform;
+        return value == canUntransform;
     }
 }

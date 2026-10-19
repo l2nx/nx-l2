@@ -30,16 +30,16 @@ import app.l2nx.highfive.mechanics.skill.Skill;
  * @author Zoey76
  */
 public class ConditionPlayerCheckAbnormal extends Condition {
-    private final AbnormalType _type;
-    private final int _level;
+    private final AbnormalType type;
+    private final int level;
 
     /**
      * Instantiates a new condition player check abnormal.
      * @param type the abnormal type
      */
     public ConditionPlayerCheckAbnormal(AbnormalType type) {
-        _type = type;
-        _level = -1;
+        this.type = type;
+        level = -1;
     }
 
     /**
@@ -48,13 +48,13 @@ public class ConditionPlayerCheckAbnormal extends Condition {
      * @param level the abnormal level
      */
     public ConditionPlayerCheckAbnormal(AbnormalType type, int level) {
-        _type = type;
-        _level = level;
+        this.type = type;
+        this.level = level;
     }
 
     @Override
     public boolean testImpl(Creature effector, Creature effected, Skill skill, ItemTemplate item) {
-        final BuffInfo info = effector.getEffectList().getBuffInfoByAbnormalType(_type);
-        return (info != null) && ((_level == -1) || (_level >= info.getSkill().getAbnormalLevel()));
+        final BuffInfo info = effector.getEffectList().getBuffInfoByAbnormalType(type);
+        return (info != null) && ((level == -1) || (level >= info.getSkill().getAbnormalLevel()));
     }
 }

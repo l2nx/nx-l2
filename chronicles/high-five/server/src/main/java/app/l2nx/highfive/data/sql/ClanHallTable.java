@@ -35,23 +35,31 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author Steuf
  */
+@Slf4j
 public class ClanHallTable {
-    protected static final Logger LOGGER = Logger.getLogger(ClanHallTable.class.getName());
 
-    private final Map<Integer, AuctionableHall> _clanHall = new ConcurrentHashMap<>();
-    private final Map<Integer, AuctionableHall> _freeClanHall = new ConcurrentHashMap<>();
-    private final Map<Integer, AuctionableHall> _allAuctionableClanHalls = new HashMap<>();
-    private static Map<Integer, ClanHall> _allClanHalls = new HashMap<>();
-    private boolean _loaded = false;
+    @Getter
+    private final Map<Integer, AuctionableHall> clanHalls = new ConcurrentHashMap<>();
+
+    @Getter
+    private final Map<Integer, AuctionableHall> freeClanHalls = new ConcurrentHashMap<>();
+
+    @Getter
+    private final Map<Integer, AuctionableHall> allAuctionableClanHalls = new HashMap<>();
+
+    @Getter
+    private static Map<Integer, ClanHall> allClanHalls = new HashMap<>();
+
+    private boolean loaded = false;
 
     public boolean loaded() {
-        return _loaded;
+        return loaded;
     }
 
     protected ClanHallTable() {
@@ -81,56 +89,31 @@ public class ClanHallTable {
                 set.set("grade", rs.getInt("Grade"));
                 set.set("paid", rs.getBoolean("paid"));
                 final AuctionableHall ch = new AuctionableHall(set);
-                _allAuctionableClanHalls.put(id, ch);
+                allAuctionableClanHalls.put(id, ch);
                 addClanHall(ch);
 
                 if (ch.getOwnerId() > 0) {
-                    _clanHall.put(id, ch);
+                    clanHalls.put(id, ch);
                     continue;
                 }
 
-                _freeClanHall.put(id, ch);
+                freeClanHalls.put(id, ch);
 
                 if ((ClanHallAuctionManager.getInstance().getAuction(id) == null) && (lease > 0)) {
                     ClanHallAuctionManager.getInstance().initNPC(id);
                 }
             }
 
-            LOGGER.info(getClass().getSimpleName() + ": Loaded " + _clanHall.size() + " clan halls");
-            LOGGER.info(getClass().getSimpleName() + ": Loaded " + _freeClanHall.size() + " free clan halls");
-            _loaded = true;
+            log.info("Loaded {} clan halls", clanHalls.size());
+            log.info("Loaded {} free clan halls", freeClanHalls.size());
+            loaded = true;
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, "Exception: ClanHallManager.load(): " + e.getMessage(), e);
+            log.warn("Exception: ClanHallManager.load(): {}", e.getMessage(), e);
         }
     }
 
-    public static Map<Integer, ClanHall> getAllClanHalls() {
-        return _allClanHalls;
-    }
-
-    /**
-     * @return all FreeClanHalls
-     */
-    public Map<Integer, AuctionableHall> getFreeClanHalls() {
-        return _freeClanHall;
-    }
-
-    /**
-     * @return all ClanHalls that have owner
-     */
-    public Map<Integer, AuctionableHall> getClanHalls() {
-        return _clanHall;
-    }
-
-    /**
-     * @return all ClanHalls
-     */
-    public Map<Integer, AuctionableHall> getAllAuctionableClanHalls() {
-        return _allAuctionableClanHalls;
-    }
-
     public static void addClanHall(ClanHall hall) {
-        _allClanHalls.put(hall.getId(), hall);
+        allClanHalls.put(hall.getId(), hall);
     }
 
     /**
@@ -138,7 +121,7 @@ public class ClanHallTable {
      * @return true is free ClanHall
      */
     public boolean isFree(int chId) {
-        return _freeClanHall.containsKey(chId);
+        return freeClanHalls.containsKey(chId);
     }
 
     /**
@@ -146,10 +129,10 @@ public class ClanHallTable {
      * @param chId
      */
     public synchronized void setFree(int chId) {
-        _freeClanHall.put(chId, _clanHall.get(chId));
-        ClanTable.getInstance().getClan(_freeClanHall.get(chId).getOwnerId()).setHideoutId(0);
-        _freeClanHall.get(chId).free();
-        _clanHall.remove(chId);
+        freeClanHalls.put(chId, clanHalls.get(chId));
+        ClanTable.getInstance().getClan(freeClanHalls.get(chId).getOwnerId()).setHideoutId(0);
+        freeClanHalls.get(chId).free();
+        clanHalls.remove(chId);
     }
 
     /**
@@ -158,15 +141,15 @@ public class ClanHallTable {
      * @param clan
      */
     public synchronized void setOwner(int chId, Clan clan) {
-        if (!_clanHall.containsKey(chId)) {
-            _clanHall.put(chId, _freeClanHall.get(chId));
-            _freeClanHall.remove(chId);
+        if (!clanHalls.containsKey(chId)) {
+            clanHalls.put(chId, freeClanHalls.get(chId));
+            freeClanHalls.remove(chId);
         } else {
-            _clanHall.get(chId).free();
+            clanHalls.get(chId).free();
         }
 
         ClanTable.getInstance().getClan(clan.getId()).setHideoutId(chId);
-        _clanHall.get(chId).setOwner(clan);
+        clanHalls.get(chId).setOwner(clan);
     }
 
     /**
@@ -174,11 +157,11 @@ public class ClanHallTable {
      * @return Clan Hall by Id
      */
     public ClanHall getClanHallById(int clanHallId) {
-        return _allClanHalls.get(clanHallId);
+        return allClanHalls.get(clanHallId);
     }
 
     public AuctionableHall getAuctionableHallById(int clanHallId) {
-        return _allAuctionableClanHalls.get(clanHallId);
+        return allAuctionableClanHalls.get(clanHallId);
     }
 
     /**
@@ -188,7 +171,7 @@ public class ClanHallTable {
      * @return Clan Hall by x,y,z
      */
     public ClanHall getClanHall(int x, int y, int z) {
-        for (ClanHall temp : _allClanHalls.values()) {
+        for (ClanHall temp : allClanHalls.values()) {
             if (temp.checkIfInZone(x, y, z)) {
                 return temp;
             }
@@ -203,14 +186,14 @@ public class ClanHallTable {
 
     public AuctionableHall getNearbyClanHall(int x, int y, int maxDist) {
         ClanHallZone zone = null;
-        for (Entry<Integer, AuctionableHall> ch : _clanHall.entrySet()) {
+        for (Entry<Integer, AuctionableHall> ch : clanHalls.entrySet()) {
             zone = ch.getValue().getZone();
             if ((zone != null) && (zone.getDistanceToZone(x, y) < maxDist)) {
                 return ch.getValue();
             }
         }
 
-        for (Entry<Integer, AuctionableHall> ch : _freeClanHall.entrySet()) {
+        for (Entry<Integer, AuctionableHall> ch : freeClanHalls.entrySet()) {
             zone = ch.getValue().getZone();
             if ((zone != null) && (zone.getDistanceToZone(x, y) < maxDist)) {
                 return ch.getValue();
@@ -222,7 +205,7 @@ public class ClanHallTable {
 
     public ClanHall getNearbyAbstractHall(int x, int y, int maxDist) {
         ClanHallZone zone = null;
-        for (Entry<Integer, ClanHall> ch : _allClanHalls.entrySet()) {
+        for (Entry<Integer, ClanHall> ch : allClanHalls.entrySet()) {
             zone = ch.getValue().getZone();
             if ((zone != null) && (zone.getDistanceToZone(x, y) < maxDist)) {
                 return ch.getValue();
@@ -237,7 +220,7 @@ public class ClanHallTable {
      * @return Clan Hall by Owner
      */
     public AuctionableHall getClanHallByOwner(Clan clan) {
-        for (Entry<Integer, AuctionableHall> ch : _clanHall.entrySet()) {
+        for (Entry<Integer, AuctionableHall> ch : clanHalls.entrySet()) {
             if (clan.getId() == ch.getValue().getOwnerId()) {
                 return ch.getValue();
             }
@@ -248,7 +231,7 @@ public class ClanHallTable {
 
     public ClanHall getAbstractHallByOwner(Clan clan) {
         // Separate loops to avoid iterating over free clan halls.
-        for (Entry<Integer, AuctionableHall> ch : _clanHall.entrySet()) {
+        for (Entry<Integer, AuctionableHall> ch : clanHalls.entrySet()) {
             if (clan.getId() == ch.getValue().getOwnerId()) {
                 return ch.getValue();
             }

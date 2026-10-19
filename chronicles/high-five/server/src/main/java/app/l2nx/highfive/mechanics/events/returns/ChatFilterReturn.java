@@ -19,18 +19,17 @@
  */
 package app.l2nx.highfive.mechanics.events.returns;
 
+import lombok.Getter;
+
 /**
  * @author UnAfraid
  */
 public class ChatFilterReturn extends AbstractEventReturn {
-    private final String _filteredText;
+    @Getter
+    private final String filteredText;
 
     public ChatFilterReturn(String filteredText, boolean override, boolean abort) {
         super(override, abort);
-        _filteredText = filteredText;
-    }
-
-    public String getFilteredText() {
-        return _filteredText;
+        this.filteredText = filteredText;
     }
 }

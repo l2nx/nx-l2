@@ -27,20 +27,20 @@ import app.l2nx.network.buffer.WriteBuffer;
  * @author mrTJO
  */
 public class ExCubeGameEnd extends ServerPacket {
-    private final boolean _isRedTeamWin;
+    private final boolean redTeamWin;
 
     /**
      * Show Minigame Results
      * @param isRedTeamWin Is Red Team Winner?
      */
     public ExCubeGameEnd(boolean isRedTeamWin) {
-        _isRedTeamWin = isRedTeamWin;
+        redTeamWin = isRedTeamWin;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_BLOCK_UP_SET_STATE.writeId(this, buffer);
         buffer.writeInt(1);
-        buffer.writeInt(_isRedTeamWin);
+        buffer.writeInt(redTeamWin);
     }
 }

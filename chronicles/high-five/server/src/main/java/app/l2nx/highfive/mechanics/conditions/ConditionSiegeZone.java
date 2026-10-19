@@ -45,8 +45,8 @@ public class ConditionSiegeZone extends Condition {
     public static final int COND_TW_CHANNEL = 0x0080;
     public static final int COND_TW_PROGRESS = 0x0100;
 
-    private final int _value;
-    private final boolean _self;
+    private final int value;
+    private final boolean self;
 
     /**
      * Instantiates a new condition siege zone.
@@ -54,34 +54,34 @@ public class ConditionSiegeZone extends Condition {
      * @param self the self
      */
     public ConditionSiegeZone(int value, boolean self) {
-        _value = value;
-        _self = self;
+        this.value = value;
+        this.self = self;
     }
 
     @Override
     public boolean testImpl(Creature effector, Creature effected, Skill skill, ItemTemplate item) {
-        if (((_value & COND_TW_PROGRESS) != 0)
+        if (((value & COND_TW_PROGRESS) != 0)
                 && !TerritoryWarManager.getInstance().isTWInProgress()) {
             return false;
         }
 
-        if (((_value & COND_TW_CHANNEL) != 0)
+        if (((value & COND_TW_CHANNEL) != 0)
                 && !TerritoryWarManager.getInstance().isTWChannelOpen()) {
             return false;
         }
 
-        final Creature target = _self ? effector : effected;
+        final Creature target = self ? effector : effected;
         final Castle castle = CastleManager.getInstance().getCastle(target);
         final Fort fort = FortManager.getInstance().getFort(target);
         if ((castle == null) && (fort == null)) {
-            return (_value & COND_NOT_ZONE) != 0;
+            return (value & COND_NOT_ZONE) != 0;
         }
 
         if (castle != null) {
-            return checkIfOk(target, castle, _value);
+            return checkIfOk(target, castle, value);
         }
 
-        return checkIfOk(target, fort, _value);
+        return checkIfOk(target, fort, value);
     }
 
     /**

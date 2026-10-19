@@ -36,16 +36,16 @@ import java.util.List;
  * @author Adry_85, Zoey76
  */
 public class StealAbnormal extends AbstractEffect {
-    private final String _slot;
-    private final int _rate;
-    private final int _max;
+    private final String slot;
+    private final int rate;
+    private final int max;
 
     public StealAbnormal(Condition attachCond, Condition applyCond, StatSet set, StatSet params) {
         super(attachCond, applyCond, set, params);
 
-        _slot = params.getString("slot", null);
-        _rate = params.getInt("rate", 0);
-        _max = params.getInt("max", 0);
+        slot = params.getString("slot", null);
+        rate = params.getInt("rate", 0);
+        max = params.getInt("max", 0);
     }
 
     @Override
@@ -61,8 +61,7 @@ public class StealAbnormal extends AbstractEffect {
     @Override
     public void onStart(Creature effector, Creature effected, Skill skill) {
         if ((effected != null) && effected.isPlayer() && (effector != effected)) {
-            final List<BuffInfo> toSteal =
-                    Formulas.calcCancelStealEffects(effector, effected, skill, _slot, _rate, _max);
+            final List<BuffInfo> toSteal = Formulas.calcCancelStealEffects(effector, effected, skill, slot, rate, max);
             if (toSteal.isEmpty()) {
                 return;
             }

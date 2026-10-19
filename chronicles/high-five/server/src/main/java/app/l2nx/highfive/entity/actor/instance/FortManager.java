@@ -46,11 +46,13 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.StringTokenizer;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.math.NumberUtils;
 
 /**
  * Fortress Foreman implementation used for: Area Teleports, Support Magic, Clan Warehouse, Exp Loss Reduction
  */
+@Slf4j
 public class FortManager extends Merchant {
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
@@ -220,7 +222,7 @@ public class FortManager extends Merchant {
                                 npcHtmlMessage.replace("%objectId%", String.valueOf(getObjectId()));
                                 player.sendPacket(npcHtmlMessage);
                             } else {
-                                LOGGER.warning("Missing htm: " + htmFile + " !");
+                                log.warn("Missing htm: {} !", htmFile);
                             }
                         } else {
                             showVaultWindowWithdraw(player, null, (byte) 0);
@@ -1009,8 +1011,7 @@ public class FortManager extends Merchant {
                 final String listName = command.split(" ")[1];
                 final TeleportHolder holder = TeleporterData.getInstance().getHolder(getId(), listName);
                 if (holder == null) {
-                    LOGGER.warning(
-                            player + " requested unknown teleport list: " + listName + " for npc: " + getId() + "!");
+                    log.warn("{} requested unknown teleport list: {} for npc: {}!", player, listName, getId());
                     return;
                 }
 

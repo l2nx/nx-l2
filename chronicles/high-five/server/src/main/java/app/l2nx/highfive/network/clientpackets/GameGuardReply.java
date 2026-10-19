@@ -19,15 +19,16 @@
  */
 package app.l2nx.highfive.network.clientpackets;
 
-import app.l2nx.highfive.network.PacketLogger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Format: c dddd
  * @author KenM
  */
+@Slf4j
 public class GameGuardReply extends ClientPacket {
     private static final byte[] VALID = {
         (byte) 0x88,
@@ -52,31 +53,31 @@ public class GameGuardReply extends ClientPacket {
         (byte) 0xc5,
     };
 
-    private final byte[] _reply = new byte[8];
+    private final byte[] reply = new byte[8];
 
     @Override
     protected void readImpl() {
-        _reply[0] = readByte();
-        _reply[1] = readByte();
-        _reply[2] = readByte();
-        _reply[3] = readByte();
+        reply[0] = readByte();
+        reply[1] = readByte();
+        reply[2] = readByte();
+        reply[3] = readByte();
         readInt();
-        _reply[4] = readByte();
-        _reply[5] = readByte();
-        _reply[6] = readByte();
-        _reply[7] = readByte();
+        reply[4] = readByte();
+        reply[5] = readByte();
+        reply[6] = readByte();
+        reply[7] = readByte();
     }
 
     @Override
     protected void runImpl() {
         try {
             final MessageDigest md = MessageDigest.getInstance("SHA");
-            final byte[] result = md.digest(_reply);
+            final byte[] result = md.digest(reply);
             if (Arrays.equals(result, VALID)) {
                 getClient().setGameGuardOk(true);
             }
         } catch (NoSuchAlgorithmException e) {
-            PacketLogger.warning(getClass().getSimpleName() + ": " + e.getMessage());
+            log.warn("{}: {}", getClass().getSimpleName(), e.getMessage());
         }
     }
 }

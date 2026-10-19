@@ -26,6 +26,7 @@ import java.io.File;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
@@ -33,8 +34,9 @@ import org.w3c.dom.Node;
 /**
  * @author UnAfraid
  */
+@Slf4j
 public class StaticObjectData implements IXmlReader {
-    private final Map<Integer, StaticObject> _staticObjects = new HashMap<>();
+    private final Map<Integer, StaticObject> staticObjects = new HashMap<>();
 
     protected StaticObjectData() {
         load();
@@ -42,9 +44,9 @@ public class StaticObjectData implements IXmlReader {
 
     @Override
     public void load() {
-        _staticObjects.clear();
+        staticObjects.clear();
         parseDatapackFile("data/StaticObjects.xml");
-        LOGGER.info(getClass().getSimpleName() + ": Loaded " + _staticObjects.size() + " static object templates.");
+        log.info("Loaded {} static object templates.", staticObjects.size());
     }
 
     @Override
@@ -77,7 +79,7 @@ public class StaticObjectData implements IXmlReader {
         obj.setName(set.getString("name"));
         obj.setMap(set.getString("texture", "none"), set.getInt("map_x", 0), set.getInt("map_y", 0));
         obj.spawnMe(set.getInt("x"), set.getInt("y"), set.getInt("z"));
-        _staticObjects.put(obj.getObjectId(), obj);
+        staticObjects.put(obj.getObjectId(), obj);
     }
 
     /**
@@ -85,7 +87,7 @@ public class StaticObjectData implements IXmlReader {
      * @return a {@link Collection} of {@link StaticObject} instances representing the current static objects in the map.
      */
     public Collection<StaticObject> getStaticObjects() {
-        return _staticObjects.values();
+        return staticObjects.values();
     }
 
     public static StaticObjectData getInstance() {

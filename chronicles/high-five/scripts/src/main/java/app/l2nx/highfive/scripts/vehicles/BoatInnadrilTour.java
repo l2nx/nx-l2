@@ -27,14 +27,13 @@ import app.l2nx.highfive.network.enums.ChatType;
 import app.l2nx.highfive.network.serverpackets.CreatureSay;
 import app.l2nx.highfive.network.serverpackets.PlaySound;
 import app.l2nx.highfive.threads.ThreadPool;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author DS
  */
+@Slf4j
 public class BoatInnadrilTour implements Runnable {
-    private static final Logger LOGGER = Logger.getLogger(BoatInnadrilTour.class.getName());
 
     // Time: 1867s
     private static final VehiclePathPoint[] TOUR = {
@@ -74,8 +73,8 @@ public class BoatInnadrilTour implements Runnable {
 
     private static final VehiclePathPoint DOCK = TOUR[TOUR.length - 1];
 
-    private final Boat _boat;
-    private int _cycle = 0;
+    private final Boat boat;
+    private int cycle = 0;
 
     private final CreatureSay ARRIVED_AT_INNADRIL;
     private final CreatureSay LEAVE_INNADRIL5;
@@ -92,7 +91,7 @@ public class BoatInnadrilTour implements Runnable {
     private final PlaySound INNADRIL_SOUND;
 
     public BoatInnadrilTour(Boat boat) {
-        _boat = boat;
+        this.boat = boat;
 
         ARRIVED_AT_INNADRIL = new CreatureSay(
                 ChatType.BOAT,
@@ -118,13 +117,19 @@ public class BoatInnadrilTour implements Runnable {
                 ChatType.BOAT, 801, SystemMessageId.THE_INNADRIL_PLEASURE_BOAT_WILL_ARRIVE_IN_APPROXIMATELY_1_MINUTE);
 
         INNADRIL_SOUND = new PlaySound(
-                0, "itemsound.ship_arrival_departure", 1, _boat.getObjectId(), DOCK.getX(), DOCK.getY(), DOCK.getZ());
+                0,
+                "itemsound.ship_arrival_departure",
+                1,
+                this.boat.getObjectId(),
+                DOCK.getX(),
+                DOCK.getY(),
+                DOCK.getZ());
     }
 
     @Override
     public void run() {
         try {
-            switch (_cycle) {
+            switch (cycle) {
                 case 0: {
                     BoatManager.getInstance().broadcastPacket(DOCK, DOCK, LEAVE_INNADRIL5);
                     ThreadPool.schedule(this, 240000);
@@ -142,8 +147,8 @@ public class BoatInnadrilTour implements Runnable {
                 }
                 case 3: {
                     BoatManager.getInstance().broadcastPackets(DOCK, DOCK, LEAVING_INNADRIL, INNADRIL_SOUND);
-                    _boat.payForRide(0, 1, 107092, 219098, -3952);
-                    _boat.executePath(TOUR);
+                    boat.payForRide(0, 1, 107092, 219098, -3952);
+                    boat.executePath(TOUR);
                     ThreadPool.schedule(this, 650000);
                     break;
                 }
@@ -178,12 +183,12 @@ public class BoatInnadrilTour implements Runnable {
                 }
             }
 
-            _cycle++;
-            if (_cycle > 9) {
-                _cycle = 0;
+            cycle++;
+            if (cycle > 9) {
+                cycle = 0;
             }
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, e.getMessage());
+            log.warn(e.getMessage());
         }
     }
 

@@ -38,18 +38,21 @@ import app.l2nx.highfive.mechanics.events.EventType;
 import app.l2nx.highfive.mechanics.events.holders.actor.player.OnPlayerChat;
 import app.l2nx.highfive.mechanics.events.returns.ChatFilterReturn;
 import app.l2nx.highfive.network.Disconnection;
-import app.l2nx.highfive.network.PacketLogger;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.enums.ChatType;
 import app.l2nx.highfive.network.serverpackets.ActionFailed;
 import app.l2nx.highfive.network.serverpackets.LeaveWorld;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @version $Revision: 1.16.2.12.2.7 $ $Date: 2005/04/11 10:06:11 $
  */
+@Slf4j
 public class Say2 extends ClientPacket {
-    private static Logger LOGGER_CHAT = Logger.getLogger("chat");
+
+    private static final Logger CHAT_LOG = LoggerFactory.getLogger("chat");
 
     private static final String[] WALKER_COMMAND_LIST = {
         "USESKILL",
@@ -89,15 +92,15 @@ public class Say2 extends ClientPacket {
         "FOLLOWTELEPORT"
     };
 
-    private String _text;
-    private int _type;
-    private String _target;
+    private String text;
+    private int type;
+    private String target;
 
     @Override
     protected void readImpl() {
-        _text = readString();
-        _type = readInt();
-        _target = (_type == ChatType.WHISPER.getClientId()) ? readString() : null;
+        text = readString();
+        type = readInt();
+        target = (type == ChatType.WHISPER.getClientId()) ? readString() : null;
     }
 
     @Override
@@ -107,16 +110,16 @@ public class Say2 extends ClientPacket {
             return;
         }
 
-        ChatType chatType = ChatType.findByClientId(_type);
+        ChatType chatType = ChatType.findByClientId(type);
         if (chatType == null) {
-            PacketLogger.warning("Say2: Invalid type: " + _type + " Player : " + player.getName() + " text: " + _text);
+            log.warn("Say2: Invalid type: {} Player : {} text: {}", type, player.getName(), text);
             player.sendPacket(ActionFailed.STATIC_PACKET);
             Disconnection.of(player).storeAndDeleteWith(LeaveWorld.STATIC_PACKET);
             return;
         }
 
-        if (_text.isEmpty()) {
-            PacketLogger.warning(player.getName() + ": sending empty text. Possible packet hack!");
+        if (text.isEmpty()) {
+            log.warn("{}: sending empty text. Possible packet hack!", player.getName());
             player.sendPacket(ActionFailed.STATIC_PACKET);
             Disconnection.of(player).storeAndDeleteWith(LeaveWorld.STATIC_PACKET);
             return;
@@ -127,15 +130,15 @@ public class Say2 extends ClientPacket {
         // July 11, 2011 - Verified on High Five 4 official client as 105.
         // Allow higher limit if player shift some item (text is longer then).
         if (!player.isGM()
-                && (((_text.indexOf(8) >= 0) && (_text.length() > 500))
-                        || ((_text.indexOf(8) < 0) && (_text.length() > 105)))) {
+                && (((text.indexOf(8) >= 0) && (text.length() > 500))
+                        || ((text.indexOf(8) < 0) && (text.length() > 105)))) {
             player.sendPacket(
                     SystemMessageId
                             .WHEN_A_USER_S_KEYBOARD_INPUT_EXCEEDS_A_CERTAIN_CUMULATIVE_SCORE_A_CHAT_BAN_WILL_BE_APPLIED_THIS_IS_DONE_TO_DISCOURAGE_SPAMMING_PLEASE_AVOID_POSTING_THE_SAME_MESSAGE_MULTIPLE_TIMES_DURING_A_SHORT_PERIOD);
             return;
         }
 
-        if (WalkerBotProtectionConfig.L2WALKER_PROTECTION && (chatType == ChatType.WHISPER) && checkBot(_text)) {
+        if (WalkerBotProtectionConfig.L2WALKER_PROTECTION && (chatType == ChatType.WHISPER) && checkBot(text)) {
             PunishmentManager.handleIllegalPlayerAction(
                     player, "Client Emulator Detect: " + player + " using L2Walker.", GeneralConfig.DEFAULT_PUNISH);
             return;
@@ -146,7 +149,7 @@ public class Say2 extends ClientPacket {
             return;
         }
 
-        if (player.isChatBanned() && (_text.charAt(0) != '.')) {
+        if (player.isChatBanned() && (text.charAt(0) != '.')) {
             if (player.getEffectList().getFirstEffect(EffectType.CHAT_BLOCK) != null) {
                 player.sendPacket(
                         SystemMessageId.YOU_HAVE_BEEN_REPORTED_AS_AN_ILLEGAL_PROGRAM_USER_SO_CHATTING_IS_NOT_ALLOWED);
@@ -177,28 +180,33 @@ public class Say2 extends ClientPacket {
             sb.append(player);
             if (chatType == ChatType.WHISPER) {
                 sb.append(" to ");
-                sb.append(_target);
+                sb.append(target);
                 sb.append("] ");
-                sb.append(_text);
-                LOGGER_CHAT.info(sb.toString());
+                sb.append(text);
+                CHAT_LOG.info(sb.toString());
             } else {
                 sb.append("] ");
-                sb.append(_text);
-                LOGGER_CHAT.info(sb.toString());
+                sb.append(text);
+                CHAT_LOG.info(sb.toString());
             }
         }
 
-        if ((_text.indexOf(8) >= 0) && !parseAndPublishItem(player)) {
+        if ((text.indexOf(8) >= 0) && !parseAndPublishItem(player)) {
             return;
         }
 
         if (EventDispatcher.getInstance().hasListener(EventType.ON_PLAYER_CHAT)) {
             final ChatFilterReturn filter = EventDispatcher.getInstance()
                     .notifyEvent(
-                            new OnPlayerChat(player, World.getPlayer(_target), _text, chatType),
+                            OnPlayerChat.builder()
+                                    .player(player)
+                                    .target(World.getPlayer(target))
+                                    .text(text)
+                                    .chatType(chatType)
+                                    .build(),
                             ChatFilterReturn.class);
             if (filter != null) {
-                _text = filter.getFilteredText();
+                text = filter.getFilteredText();
             }
         }
 
@@ -209,9 +217,9 @@ public class Say2 extends ClientPacket {
 
         final IChatHandler handler = ChatHandler.getInstance().getHandler(chatType);
         if (handler != null) {
-            handler.onChat(chatType, player, _target, _text);
+            handler.onChat(chatType, player, target, text);
         } else {
-            PacketLogger.info("No handler registered for ChatType: " + _type + " Player: " + player);
+            log.info("No handler registered for ChatType: {} Player: {}", type, player);
         }
     }
 
@@ -226,33 +234,33 @@ public class Say2 extends ClientPacket {
     }
 
     private void checkText() {
-        String filteredText = _text;
+        String filteredText = text;
         for (String pattern : ServerConfig.FILTER_LIST) {
             filteredText = filteredText.replaceAll("(?i)" + pattern, GeneralConfig.CHAT_FILTER_CHARS);
         }
 
-        _text = filteredText;
+        text = filteredText;
     }
 
     private boolean parseAndPublishItem(Player owner) {
         int pos1 = -1;
-        while ((pos1 = _text.indexOf(8, pos1)) > -1) {
-            int pos = _text.indexOf("ID=", pos1);
+        while ((pos1 = text.indexOf(8, pos1)) > -1) {
+            int pos = text.indexOf("ID=", pos1);
             if (pos == -1) {
                 return false;
             }
 
             final StringBuilder result = new StringBuilder(9);
             pos += 3;
-            while (Character.isDigit(_text.charAt(pos))) {
-                result.append(_text.charAt(pos++));
+            while (Character.isDigit(text.charAt(pos))) {
+                result.append(text.charAt(pos++));
             }
 
             final int id = Integer.parseInt(result.toString());
             final WorldObject item = World.findObject(id);
             if (item instanceof Item) {
                 if (owner.getInventory().getItemByObjectId(id) == null) {
-                    PacketLogger.info(owner.getClient() + " trying publish item which does not own! ID:" + id);
+                    log.info("{} trying publish item which does not own! ID:{}", owner.getClient(), id);
                     return false;
                 }
 
@@ -261,10 +269,10 @@ public class Say2 extends ClientPacket {
                 return false;
             }
 
-            pos1 = _text.indexOf(8, pos) + 1;
+            pos1 = text.indexOf(8, pos) + 1;
             if (pos1 == 0) // Missing ending tag.
             {
-                PacketLogger.info(owner.getClient() + " sent invalid publish item msg! ID:" + id);
+                log.info("{} sent invalid publish item msg! ID:{}", owner.getClient(), id);
                 return false;
             }
         }

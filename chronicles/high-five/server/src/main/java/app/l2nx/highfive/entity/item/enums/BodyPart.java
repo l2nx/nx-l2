@@ -26,6 +26,7 @@ import app.l2nx.highfive.entity.item.instance.Item;
 import app.l2nx.highfive.entity.itemcontainer.Inventory;
 import java.util.HashMap;
 import java.util.Map;
+import lombok.Getter;
 
 /**
  * @author Mobius
@@ -71,9 +72,13 @@ public enum BodyPart {
     BABYPET(-103, -1, "babypet"),
     GREATWOLF(-104, -1, "greatwolf");
 
-    private final int _mask;
-    private final int _paperdollSlot;
-    private final String[] _names;
+    @Getter
+    private final int mask;
+
+    @Getter
+    private final int paperdollSlot;
+
+    private final String[] names;
 
     private static final Map<Integer, BodyPart> BODY_PARTS_BY_PAPERDOLL_SLOT = new HashMap<>();
     private static final Map<String, BodyPart> BODY_PARTS_BY_NAME = new HashMap<>();
@@ -89,12 +94,12 @@ public enum BodyPart {
 
         for (BodyPart bodyPart : values()) {
             // Only map paperdoll slots that are valid.
-            if ((bodyPart._paperdollSlot >= 0) && (bodyPart._paperdollSlot < Inventory.PAPERDOLL_TOTALSLOTS)) {
-                BODY_PARTS_BY_PAPERDOLL_SLOT.put(bodyPart._paperdollSlot, bodyPart);
+            if ((bodyPart.paperdollSlot >= 0) && (bodyPart.paperdollSlot < Inventory.PAPERDOLL_TOTALSLOTS)) {
+                BODY_PARTS_BY_PAPERDOLL_SLOT.put(bodyPart.paperdollSlot, bodyPart);
             }
 
             // Map all bodypart names.
-            for (String name : bodyPart._names) {
+            for (String name : bodyPart.names) {
                 BODY_PARTS_BY_NAME.put(name, bodyPart);
             }
         }
@@ -107,25 +112,9 @@ public enum BodyPart {
      * @param names the body part names
      */
     private BodyPart(int mask, int paperdollSlot, String... names) {
-        _mask = mask;
-        _paperdollSlot = paperdollSlot;
-        _names = names;
-    }
-
-    /**
-     * Gets the body part's bit flag value.
-     * @return the body part mask
-     */
-    public int getMask() {
-        return _mask;
-    }
-
-    /**
-     * Gets the paperdoll slot index for this body part.
-     * @return the paperdoll slot index, or -1 if this body part doesn't map directly to a slot
-     */
-    public int getPaperdollSlot() {
-        return _paperdollSlot;
+        this.mask = mask;
+        this.paperdollSlot = paperdollSlot;
+        this.names = names;
     }
 
     /**

@@ -53,7 +53,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
@@ -69,8 +69,8 @@ import org.w3c.dom.Node;
  * </ul>
  * @author Mobius
  */
+@Slf4j
 public class MapRegionData implements IXmlReader {
-    private static final Logger LOGGER = Logger.getLogger(MapRegionData.class.getName());
 
     // Constants.
     private static final String DEFAULT_RESPAWN = "talking_island_town";
@@ -107,14 +107,14 @@ public class MapRegionData implements IXmlReader {
     }
 
     // Primary region storage - single HashMap for all regions.
-    private final Map<String, RegionData> _regions = new HashMap<>();
+    private final Map<String, RegionData> regions = new HashMap<>();
 
     // Spatial index for O(1) coordinate-to-region lookups.
-    private final RegionData[][] _spatialGrid = new RegionData[GRID_SIZE][GRID_SIZE];
+    private final RegionData[][] spatialGrid = new RegionData[GRID_SIZE][GRID_SIZE];
 
     // Cached frequently accessed regions to avoid HashMap lookups.
-    private RegionData _defaultRespawnRegion;
-    private RegionData _fallbackFlyingRegion;
+    private RegionData defaultRespawnRegion;
+    private RegionData fallbackFlyingRegion;
 
     protected MapRegionData() {
         load();
@@ -122,12 +122,12 @@ public class MapRegionData implements IXmlReader {
 
     @Override
     public void load() {
-        _regions.clear();
+        regions.clear();
 
         // Clear spatial grid.
         for (int i = 0; i < GRID_SIZE; i++) {
             for (int j = 0; j < GRID_SIZE; j++) {
-                _spatialGrid[i][j] = null;
+                spatialGrid[i][j] = null;
             }
         }
 
@@ -137,10 +137,10 @@ public class MapRegionData implements IXmlReader {
         buildSpatialIndex();
 
         // Cache frequently accessed regions.
-        _defaultRespawnRegion = _regions.get(DEFAULT_RESPAWN);
-        _fallbackFlyingRegion = _regions.get(FALLBACK_FLYING_RESPAWN);
+        defaultRespawnRegion = regions.get(DEFAULT_RESPAWN);
+        fallbackFlyingRegion = regions.get(FALLBACK_FLYING_RESPAWN);
 
-        LOGGER.info(getClass().getSimpleName() + ": Loaded " + _regions.size() + " map regions.");
+        log.info("Loaded {} map regions.", regions.size());
     }
 
     /**
@@ -148,13 +148,13 @@ public class MapRegionData implements IXmlReader {
      * Maps region coordinates directly to grid cells for instant access.
      */
     private void buildSpatialIndex() {
-        for (RegionData region : _regions.values()) {
+        for (RegionData region : regions.values()) {
             if (region.maps != null) {
                 for (int[] map : region.maps) {
                     final int x = map[0];
                     final int y = map[1];
                     if ((x >= 0) && (x < GRID_SIZE) && (y >= 0) && (y < GRID_SIZE)) {
-                        _spatialGrid[x][y] = region;
+                        spatialGrid[x][y] = region;
                     }
                 }
             }
@@ -233,7 +233,7 @@ public class MapRegionData implements IXmlReader {
                             }
                         }
 
-                        _regions.put(name, region);
+                        regions.put(name, region);
                     }
                 }
             }
@@ -288,7 +288,7 @@ public class MapRegionData implements IXmlReader {
 
         // O(1) lookup via spatial grid.
         if ((regionX >= 0) && (regionX < GRID_SIZE) && (regionY >= 0) && (regionY < GRID_SIZE)) {
-            return _spatialGrid[regionX][regionY];
+            return spatialGrid[regionX][regionY];
         }
 
         return null;
@@ -520,7 +520,7 @@ public class MapRegionData implements IXmlReader {
                 // Check for banned races and redirect to alternate region.
                 if ((region.bannedRaces != null) && region.bannedRaces.containsKey(player.getRace())) {
                     final String alternateRegionName = region.bannedRaces.get(player.getRace());
-                    final RegionData alternateRegion = _regions.get(alternateRegionName);
+                    final RegionData alternateRegion = regions.get(alternateRegionName);
                     if (alternateRegion != null) {
                         return getChaoticSpawnLoc(alternateRegion);
                     }
@@ -533,13 +533,13 @@ public class MapRegionData implements IXmlReader {
         }
 
         // Use cached region to avoid HashMap lookup.
-        if (player.isFlyingMounted() && (_fallbackFlyingRegion != null)) {
-            return getChaoticSpawnLoc(_fallbackFlyingRegion);
+        if (player.isFlyingMounted() && (fallbackFlyingRegion != null)) {
+            return getChaoticSpawnLoc(fallbackFlyingRegion);
         }
 
         // Use cached default region.
-        if (_defaultRespawnRegion != null) {
-            return getChaoticSpawnLoc(_defaultRespawnRegion);
+        if (defaultRespawnRegion != null) {
+            return getChaoticSpawnLoc(defaultRespawnRegion);
         }
 
         return null;
@@ -565,7 +565,7 @@ public class MapRegionData implements IXmlReader {
                     final Player player = creature.asPlayer();
                     if ((region.bannedRaces != null) && region.bannedRaces.containsKey(player.getRace())) {
                         final String alternateRegionName = region.bannedRaces.get(player.getRace());
-                        final RegionData alternateRegion = _regions.get(alternateRegionName);
+                        final RegionData alternateRegion = regions.get(alternateRegionName);
                         if (alternateRegion != null) {
                             return getSpawnLoc(alternateRegion);
                         }
@@ -579,8 +579,8 @@ public class MapRegionData implements IXmlReader {
         }
 
         // Use cached default region.
-        if (_defaultRespawnRegion != null) {
-            return getSpawnLoc(_defaultRespawnRegion);
+        if (defaultRespawnRegion != null) {
+            return getSpawnLoc(defaultRespawnRegion);
         }
 
         return null;
@@ -596,9 +596,9 @@ public class MapRegionData implements IXmlReader {
     public Location getRestartRegionSpawnLoc(Creature creature, String point) {
         try {
             final Player player = creature.asPlayer();
-            RegionData region = _regions.get(point);
+            RegionData region = regions.get(point);
             if (region == null) {
-                region = _defaultRespawnRegion;
+                region = defaultRespawnRegion;
             }
 
             if ((region.bannedRaces != null) && region.bannedRaces.containsKey(player.getRace())) {
@@ -607,8 +607,8 @@ public class MapRegionData implements IXmlReader {
 
             return getSpawnLoc(region);
         } catch (Exception e) {
-            if (_defaultRespawnRegion != null) {
-                return getSpawnLoc(_defaultRespawnRegion);
+            if (defaultRespawnRegion != null) {
+                return getSpawnLoc(defaultRespawnRegion);
             }
 
             return null;
@@ -624,9 +624,9 @@ public class MapRegionData implements IXmlReader {
      */
     public Location getRestartRegionChaoticSpawnLoc(Creature creature, String point) {
         try {
-            RegionData region = _regions.get(point);
+            RegionData region = regions.get(point);
             if (region == null) {
-                region = _defaultRespawnRegion;
+                region = defaultRespawnRegion;
             }
 
             final Player player = creature.asPlayer();
@@ -636,8 +636,8 @@ public class MapRegionData implements IXmlReader {
 
             return getChaoticSpawnLoc(region);
         } catch (Exception e) {
-            if (_defaultRespawnRegion != null) {
-                return getChaoticSpawnLoc(_defaultRespawnRegion);
+            if (defaultRespawnRegion != null) {
+                return getChaoticSpawnLoc(defaultRespawnRegion);
             }
 
             return null;
@@ -653,9 +653,9 @@ public class MapRegionData implements IXmlReader {
      */
     public int getRestartRegionLocId(Creature creature, String point) {
         try {
-            RegionData region = _regions.get(point);
+            RegionData region = regions.get(point);
             if (region == null) {
-                return _defaultRespawnRegion != null ? _defaultRespawnRegion.locId : 0;
+                return defaultRespawnRegion != null ? defaultRespawnRegion.locId : 0;
             }
 
             final Player player = creature.asPlayer();
@@ -665,7 +665,7 @@ public class MapRegionData implements IXmlReader {
 
             return region.locId;
         } catch (Exception e) {
-            return _defaultRespawnRegion != null ? _defaultRespawnRegion.locId : 0;
+            return defaultRespawnRegion != null ? defaultRespawnRegion.locId : 0;
         }
     }
 
@@ -687,7 +687,7 @@ public class MapRegionData implements IXmlReader {
      * @return the spawn location or {@code null} if region not found or has no spawns.
      */
     public Location getSpawnLocByRegionName(String regionName) {
-        final RegionData region = _regions.get(regionName);
+        final RegionData region = regions.get(regionName);
         if (region == null) {
             return null;
         }
@@ -709,7 +709,7 @@ public class MapRegionData implements IXmlReader {
      * @return the town name or {@code null} if region not found.
      */
     public String getMapRegionTown(String regionName) {
-        final RegionData region = _regions.get(regionName);
+        final RegionData region = regions.get(regionName);
         return region != null ? region.town : null;
     }
 
@@ -726,7 +726,7 @@ public class MapRegionData implements IXmlReader {
         }
 
         // Use cached default region.
-        return _defaultRespawnRegion != null ? _defaultRespawnRegion.bbs : 0;
+        return defaultRespawnRegion != null ? defaultRespawnRegion.bbs : 0;
     }
 
     public static MapRegionData getInstance() {

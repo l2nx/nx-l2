@@ -19,33 +19,28 @@
  */
 package app.l2nx.highfive.entity.item.holders;
 
+import lombok.Getter;
+
 /**
  ** @author Gnacik
  */
 public class PremiumItem {
-    private final int _itemId;
-    private long _count;
-    private final String _sender;
+    @Getter
+    private final int itemId;
+
+    @Getter
+    private long count;
+
+    @Getter
+    private final String sender;
 
     public PremiumItem(int itemid, long count, String sender) {
-        _itemId = itemid;
-        _count = count;
-        _sender = sender;
+        itemId = itemid;
+        this.count = count;
+        this.sender = sender;
     }
 
     public void updateCount(long newcount) {
-        _count = newcount;
-    }
-
-    public int getItemId() {
-        return _itemId;
-    }
-
-    public long getCount() {
-        return _count;
-    }
-
-    public String getSender() {
-        return _sender;
+        count = newcount;
     }
 }

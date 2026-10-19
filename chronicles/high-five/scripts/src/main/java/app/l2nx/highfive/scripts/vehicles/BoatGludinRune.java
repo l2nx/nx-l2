@@ -27,14 +27,13 @@ import app.l2nx.highfive.network.enums.ChatType;
 import app.l2nx.highfive.network.serverpackets.CreatureSay;
 import app.l2nx.highfive.network.serverpackets.PlaySound;
 import app.l2nx.highfive.threads.ThreadPool;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author DS
  */
+@Slf4j
 public class BoatGludinRune implements Runnable {
-    private static final Logger LOGGER = Logger.getLogger(BoatGludinRune.class.getName());
 
     // Time: 1151s
     private static final VehiclePathPoint[] GLUDIN_TO_RUNE = {
@@ -97,9 +96,9 @@ public class BoatGludinRune implements Runnable {
 
     private static final VehiclePathPoint[] GLUDIN_DOCK = {new VehiclePathPoint(-95686, 150514, -3610, 150, 800)};
 
-    private final Boat _boat;
-    private int _cycle = 0;
-    private int _shoutCount = 0;
+    private final Boat boat;
+    private int cycle = 0;
+    private int shoutCount = 0;
 
     private final CreatureSay ARRIVED_AT_GLUDIN;
     private final CreatureSay ARRIVED_AT_GLUDIN_2;
@@ -129,7 +128,7 @@ public class BoatGludinRune implements Runnable {
     private final PlaySound RUNE_SOUND;
 
     public BoatGludinRune(Boat boat) {
-        _boat = boat;
+        this.boat = boat;
 
         ARRIVED_AT_GLUDIN = new CreatureSay(ChatType.BOAT, 801, SystemMessageId.THE_FERRY_HAS_ARRIVED_AT_GLUDIN_HARBOR);
         ARRIVED_AT_GLUDIN_2 = new CreatureSay(
@@ -205,7 +204,7 @@ public class BoatGludinRune implements Runnable {
                 0,
                 "itemsound.ship_arrival_departure",
                 1,
-                _boat.getObjectId(),
+                this.boat.getObjectId(),
                 GLUDIN_DOCK[0].getX(),
                 GLUDIN_DOCK[0].getY(),
                 GLUDIN_DOCK[0].getZ());
@@ -213,7 +212,7 @@ public class BoatGludinRune implements Runnable {
                 0,
                 "itemsound.ship_arrival_departure",
                 1,
-                _boat.getObjectId(),
+                this.boat.getObjectId(),
                 RUNE_DOCK[0].getX(),
                 RUNE_DOCK[0].getY(),
                 RUNE_DOCK[0].getZ());
@@ -222,7 +221,7 @@ public class BoatGludinRune implements Runnable {
     @Override
     public void run() {
         try {
-            switch (_cycle) {
+            switch (cycle) {
                 case 0: {
                     BoatManager.getInstance().broadcastPacket(GLUDIN_DOCK[0], RUNE_DOCK[0], LEAVE_GLUDIN5);
                     ThreadPool.schedule(this, 240000);
@@ -241,9 +240,9 @@ public class BoatGludinRune implements Runnable {
                 case 3: {
                     BoatManager.getInstance().dockShip(BoatManager.GLUDIN_HARBOR, false);
                     BoatManager.getInstance().broadcastPackets(GLUDIN_DOCK[0], RUNE_DOCK[0], LEAVING_GLUDIN);
-                    _boat.broadcastPacket(GLUDIN_SOUND);
-                    _boat.payForRide(7905, 1, -90015, 150422, -3610);
-                    _boat.executePath(GLUDIN_TO_RUNE);
+                    boat.broadcastPacket(GLUDIN_SOUND);
+                    boat.payForRide(7905, 1, -90015, 150422, -3610);
+                    boat.executePath(GLUDIN_TO_RUNE);
                     ThreadPool.schedule(this, 250000);
                     break;
                 }
@@ -268,27 +267,27 @@ public class BoatGludinRune implements Runnable {
                 }
                 case 8: {
                     if (BoatManager.getInstance().dockBusy(BoatManager.RUNE_HARBOR)) {
-                        if (_shoutCount == 0) {
+                        if (shoutCount == 0) {
                             BoatManager.getInstance().broadcastPacket(RUNE_DOCK[0], GLUDIN_DOCK[0], BUSY_RUNE);
                         }
 
-                        _shoutCount++;
-                        if (_shoutCount > 35) {
-                            _shoutCount = 0;
+                        shoutCount++;
+                        if (shoutCount > 35) {
+                            shoutCount = 0;
                         }
 
                         ThreadPool.schedule(this, 5000);
                         return;
                     }
 
-                    _boat.executePath(RUNE_DOCK);
+                    boat.executePath(RUNE_DOCK);
                     break;
                 }
                 case 9: {
                     BoatManager.getInstance().dockShip(BoatManager.RUNE_HARBOR, true);
                     BoatManager.getInstance()
                             .broadcastPackets(RUNE_DOCK[0], GLUDIN_DOCK[0], ARRIVED_AT_RUNE, ARRIVED_AT_RUNE_2);
-                    _boat.broadcastPacket(RUNE_SOUND);
+                    boat.broadcastPacket(RUNE_SOUND);
                     ThreadPool.schedule(this, 300000);
                     break;
                 }
@@ -310,9 +309,9 @@ public class BoatGludinRune implements Runnable {
                 case 13: {
                     BoatManager.getInstance().dockShip(BoatManager.RUNE_HARBOR, false);
                     BoatManager.getInstance().broadcastPackets(RUNE_DOCK[0], GLUDIN_DOCK[0], LEAVING_RUNE);
-                    _boat.broadcastPacket(RUNE_SOUND);
-                    _boat.payForRide(7904, 1, 34513, -38009, -3640);
-                    _boat.executePath(RUNE_TO_GLUDIN);
+                    boat.broadcastPacket(RUNE_SOUND);
+                    boat.payForRide(7904, 1, 34513, -38009, -3640);
+                    boat.executePath(RUNE_TO_GLUDIN);
                     ThreadPool.schedule(this, 60000);
                     break;
                 }
@@ -337,39 +336,39 @@ public class BoatGludinRune implements Runnable {
                 }
                 case 18: {
                     if (BoatManager.getInstance().dockBusy(BoatManager.GLUDIN_HARBOR)) {
-                        if (_shoutCount == 0) {
+                        if (shoutCount == 0) {
                             BoatManager.getInstance().broadcastPacket(GLUDIN_DOCK[0], RUNE_DOCK[0], BUSY_GLUDIN);
                         }
 
-                        _shoutCount++;
-                        if (_shoutCount > 35) {
-                            _shoutCount = 0;
+                        shoutCount++;
+                        if (shoutCount > 35) {
+                            shoutCount = 0;
                         }
 
                         ThreadPool.schedule(this, 5000);
                         return;
                     }
 
-                    _boat.executePath(GLUDIN_DOCK);
+                    boat.executePath(GLUDIN_DOCK);
                     break;
                 }
                 case 19: {
                     BoatManager.getInstance().dockShip(BoatManager.GLUDIN_HARBOR, true);
                     BoatManager.getInstance()
                             .broadcastPackets(GLUDIN_DOCK[0], RUNE_DOCK[0], ARRIVED_AT_GLUDIN, ARRIVED_AT_GLUDIN_2);
-                    _boat.broadcastPacket(GLUDIN_SOUND);
+                    boat.broadcastPacket(GLUDIN_SOUND);
                     ThreadPool.schedule(this, 300000);
                     break;
                 }
             }
 
-            _shoutCount = 0;
-            _cycle++;
-            if (_cycle > 19) {
-                _cycle = 0;
+            shoutCount = 0;
+            cycle++;
+            if (cycle > 19) {
+                cycle = 0;
             }
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, e.getMessage());
+            log.warn(e.getMessage());
         }
     }
 

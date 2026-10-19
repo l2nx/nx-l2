@@ -29,17 +29,17 @@ import app.l2nx.highfive.network.serverpackets.ExPutCommissionResultForVariation
  * @author -Wooden-
  */
 public class RequestConfirmGemStone extends AbstractRefinePacket {
-    private int _targetItemObjId;
-    private int _refinerItemObjId;
-    private int _gemstoneItemObjId;
-    private long _gemStoneCount;
+    private int targetItemObjId;
+    private int refinerItemObjId;
+    private int gemstoneItemObjId;
+    private long gemStoneCount;
 
     @Override
     protected void readImpl() {
-        _targetItemObjId = readInt();
-        _refinerItemObjId = readInt();
-        _gemstoneItemObjId = readInt();
-        _gemStoneCount = readLong();
+        targetItemObjId = readInt();
+        refinerItemObjId = readInt();
+        gemstoneItemObjId = readInt();
+        gemStoneCount = readLong();
     }
 
     @Override
@@ -49,17 +49,17 @@ public class RequestConfirmGemStone extends AbstractRefinePacket {
             return;
         }
 
-        final Item targetItem = player.getInventory().getItemByObjectId(_targetItemObjId);
+        final Item targetItem = player.getInventory().getItemByObjectId(targetItemObjId);
         if (targetItem == null) {
             return;
         }
 
-        final Item refinerItem = player.getInventory().getItemByObjectId(_refinerItemObjId);
+        final Item refinerItem = player.getInventory().getItemByObjectId(refinerItemObjId);
         if (refinerItem == null) {
             return;
         }
 
-        final Item gemStoneItem = player.getInventory().getItemByObjectId(_gemstoneItemObjId);
+        final Item gemStoneItem = player.getInventory().getItemByObjectId(gemstoneItemObjId);
         if (gemStoneItem == null) {
             return;
         }
@@ -76,12 +76,12 @@ public class RequestConfirmGemStone extends AbstractRefinePacket {
             return;
         }
 
-        if (_gemStoneCount != getGemStoneCount(targetItem.getTemplate().getCrystalType(), ls.getGrade())) {
+        if (gemStoneCount != getGemStoneCount(targetItem.getTemplate().getCrystalType(), ls.getGrade())) {
             player.sendPacket(SystemMessageId.GEMSTONE_QUANTITY_IS_INCORRECT);
             return;
         }
 
         player.sendPacket(
-                new ExPutCommissionResultForVariationMake(_gemstoneItemObjId, _gemStoneCount, gemStoneItem.getId()));
+                new ExPutCommissionResultForVariationMake(gemstoneItemObjId, gemStoneCount, gemStoneItem.getId()));
     }
 }

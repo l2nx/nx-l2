@@ -38,13 +38,13 @@ import java.util.function.Predicate;
  * @param <T>
  */
 public class TimerExecutor<T> {
-    private final Map<T, Set<TimerHolder<T>>> _timers = new ConcurrentHashMap<>();
-    private final IEventTimerEvent<T> _eventListener;
-    private final IEventTimerCancel<T> _cancelListener;
+    private final Map<T, Set<TimerHolder<T>>> timers = new ConcurrentHashMap<>();
+    private final IEventTimerEvent<T> eventListener;
+    private final IEventTimerCancel<T> cancelListener;
 
     public TimerExecutor(IEventTimerEvent<T> eventListener, IEventTimerCancel<T> cancelListener) {
-        _eventListener = eventListener;
-        _cancelListener = cancelListener;
+        this.eventListener = eventListener;
+        this.cancelListener = cancelListener;
     }
 
     /**
@@ -54,7 +54,7 @@ public class TimerExecutor<T> {
      */
     private boolean addTimer(TimerHolder<T> holder) {
         final Set<TimerHolder<T>> timers =
-                _timers.computeIfAbsent(holder.getEvent(), _ -> ConcurrentHashMap.newKeySet());
+                this.timers.computeIfAbsent(holder.getEvent(), _ -> ConcurrentHashMap.newKeySet());
         removeAndCancelTimers(timers, holder::isEqual);
         return timers.add(holder);
     }
@@ -71,7 +71,7 @@ public class TimerExecutor<T> {
      */
     public boolean addTimer(
             T event, StatSet params, long time, Npc npc, Player player, IEventTimerEvent<T> eventTimer) {
-        return addTimer(new TimerHolder<>(event, params, time, npc, player, false, eventTimer, _cancelListener, this));
+        return addTimer(new TimerHolder<>(event, params, time, npc, player, false, eventTimer, cancelListener, this));
     }
 
     /**
@@ -82,7 +82,7 @@ public class TimerExecutor<T> {
      * @return {@code true} if timer were successfully added, {@code false} in case it exists already
      */
     public boolean addTimer(T event, long time, IEventTimerEvent<T> eventTimer) {
-        return addTimer(new TimerHolder<>(event, null, time, null, null, false, eventTimer, _cancelListener, this));
+        return addTimer(new TimerHolder<>(event, null, time, null, null, false, eventTimer, cancelListener, this));
     }
 
     /**
@@ -95,7 +95,7 @@ public class TimerExecutor<T> {
      * @return {@code true} if timer were successfully added, {@code false} in case it exists already
      */
     public boolean addTimer(T event, StatSet params, long time, Npc npc, Player player) {
-        return addTimer(event, params, time, npc, player, _eventListener);
+        return addTimer(event, params, time, npc, player, eventListener);
     }
 
     /**
@@ -107,7 +107,7 @@ public class TimerExecutor<T> {
      * @return {@code true} if timer were successfully added, {@code false} in case it exists already
      */
     public boolean addTimer(T event, long time, Npc npc, Player player) {
-        return addTimer(event, null, time, npc, player, _eventListener);
+        return addTimer(event, null, time, npc, player, eventListener);
     }
 
     /**
@@ -122,7 +122,7 @@ public class TimerExecutor<T> {
      */
     private boolean addRepeatingTimer(
             T event, StatSet params, long time, Npc npc, Player player, IEventTimerEvent<T> eventTimer) {
-        return addTimer(new TimerHolder<>(event, params, time, npc, player, true, eventTimer, _cancelListener, this));
+        return addTimer(new TimerHolder<>(event, params, time, npc, player, true, eventTimer, cancelListener, this));
     }
 
     /**
@@ -134,17 +134,17 @@ public class TimerExecutor<T> {
      * @return {@code true} if timer were successfully added, {@code false} in case it exists already
      */
     public boolean addRepeatingTimer(T event, long time, Npc npc, Player player) {
-        return addRepeatingTimer(event, null, time, npc, player, _eventListener);
+        return addRepeatingTimer(event, null, time, npc, player, eventListener);
     }
 
     /**
-     * That method is executed right after notification to {@link IEventTimerEvent#onTimerEvent(TimerHolder)} in order to remove the holder from the _timers map
+     * That method is executed right after notification to {@link IEventTimerEvent#onTimerEvent(TimerHolder)} in order to remove the holder from the timers map
      * @param holder
      */
     public void onTimerPostExecute(TimerHolder<T> holder) {
         // Remove non repeating timer upon execute.
         if (!holder.isRepeating()) {
-            final Set<TimerHolder<T>> timers = _timers.get(holder.getEvent());
+            final Set<TimerHolder<T>> timers = this.timers.get(holder.getEvent());
             if ((timers == null) || timers.isEmpty()) {
                 return;
             }
@@ -154,22 +154,22 @@ public class TimerExecutor<T> {
 
             // If there's no events inside that set remove it.
             if (timers.isEmpty()) {
-                _timers.remove(holder.getEvent());
+                this.timers.remove(holder.getEvent());
             }
         }
     }
 
     /**
-     * Cancels and removes all timers from the _timers map
+     * Cancels and removes all timers from the timers map
      */
     public void cancelAllTimers() {
-        for (Set<TimerHolder<T>> set : _timers.values()) {
+        for (Set<TimerHolder<T>> set : timers.values()) {
             for (TimerHolder<T> timer : set) {
                 timer.cancelTimer();
             }
         }
 
-        _timers.clear();
+        timers.clear();
     }
 
     /**
@@ -179,7 +179,7 @@ public class TimerExecutor<T> {
      * @return {@code true} if there is a timer with the given event npc and player parameters, {@code false} otherwise
      */
     public boolean hasTimer(T event, Npc npc, Player player) {
-        final Set<TimerHolder<T>> timers = _timers.get(event);
+        final Set<TimerHolder<T>> timers = this.timers.get(event);
         if ((timers == null) || timers.isEmpty()) {
             return false;
         }
@@ -198,7 +198,7 @@ public class TimerExecutor<T> {
      * @return {@code true} if at least one timer for the given event were stopped, {@code false} otherwise
      */
     public boolean cancelTimers(T event) {
-        final Set<TimerHolder<T>> timers = _timers.remove(event);
+        final Set<TimerHolder<T>> timers = this.timers.remove(event);
         if ((timers == null) || timers.isEmpty()) {
             return false;
         }
@@ -214,7 +214,7 @@ public class TimerExecutor<T> {
      * @return {@code true} if timer for the given event, npc, player were stopped, {@code false} otheriwse
      */
     public boolean cancelTimer(T event, Npc npc, Player player) {
-        final Set<TimerHolder<T>> timers = _timers.get(event);
+        final Set<TimerHolder<T>> timers = this.timers.get(event);
         if ((timers == null) || timers.isEmpty()) {
             return false;
         }
@@ -238,7 +238,7 @@ public class TimerExecutor<T> {
     private void removeAndCancelTimers(Predicate<TimerHolder<T>> condition) {
         Objects.requireNonNull(condition);
 
-        final Collection<Set<TimerHolder<T>>> allTimers = _timers.values();
+        final Collection<Set<TimerHolder<T>>> allTimers = this.timers.values();
         for (Set<TimerHolder<T>> timers : allTimers) {
             removeAndCancelTimers(timers, condition);
         }

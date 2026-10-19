@@ -30,24 +30,25 @@ import app.l2nx.highfive.data.xml.PrimeShopData;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.item.ItemTemplate;
 import app.l2nx.highfive.entity.item.enums.ItemProcessType;
-import app.l2nx.highfive.network.PacketLogger;
 import app.l2nx.highfive.network.serverpackets.ExBrBuyProduct;
 import app.l2nx.highfive.network.serverpackets.ExBrGamePoint;
 import app.l2nx.highfive.network.serverpackets.StatusUpdate;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author Mobius
  */
+@Slf4j
 public class RequestBrBuyProduct extends ClientPacket {
-    private int _productId;
-    private int _count;
+    private int productId;
+    private int count;
 
     @Override
     protected void readImpl() {
-        _productId = readInt();
-        _count = readInt();
+        productId = readInt();
+        count = readInt();
     }
 
     @Override
@@ -57,17 +58,17 @@ public class RequestBrBuyProduct extends ClientPacket {
             return;
         }
 
-        if ((_count > 99) || (_count < 0)) {
+        if ((count > 99) || (count < 0)) {
             return;
         }
 
-        final PrimeShopProductHolder product = PrimeShopData.getInstance().getProduct(_productId);
+        final PrimeShopProductHolder product = PrimeShopData.getInstance().getProduct(productId);
         if (product == null) {
             player.sendPacket(new ExBrBuyProduct(ExBrBuyProduct.RESULT_WRONG_PRODUCT));
             return;
         }
 
-        final long totalPoints = product.getPrice() * _count;
+        final long totalPoints = product.getPrice() * count;
         if (totalPoints < 0) {
             player.sendPacket(new ExBrBuyProduct(ExBrBuyProduct.RESULT_WRONG_PRODUCT));
             return;
@@ -87,9 +88,9 @@ public class RequestBrBuyProduct extends ClientPacket {
             return;
         }
 
-        final int totalWeight = product.getItemWeight() * product.getItemCount() * _count;
+        final int totalWeight = product.getItemWeight() * product.getItemCount() * count;
         int totalCount = 0;
-        totalCount += item.isStackable() ? 1 : product.getItemCount() * _count;
+        totalCount += item.isStackable() ? 1 : product.getItemCount() * count;
         if (!player.getInventory().validateCapacity(totalCount)
                 || !player.getInventory().validateWeight(totalWeight)) {
             player.sendPacket(new ExBrBuyProduct(ExBrBuyProduct.RESULT_INVENTORY_FULL));
@@ -106,7 +107,7 @@ public class RequestBrBuyProduct extends ClientPacket {
         }
 
         // Buy Item
-        player.addItem(ItemProcessType.BUY, product.getItemId(), product.getItemCount() * _count, player, true);
+        player.addItem(ItemProcessType.BUY, product.getItemId(), product.getItemCount() * count, player, true);
 
         final StatusUpdate su = new StatusUpdate(player.getObjectId());
         su.addAttribute(StatusUpdate.CUR_LOAD, player.getCurrentLoad());
@@ -122,10 +123,10 @@ public class RequestBrBuyProduct extends ClientPacket {
                         "INSERT INTO prime_shop_transactions (charId, productId, quantity) values (?,?,?)")) {
             statement.setLong(1, player.getObjectId());
             statement.setInt(2, product.getProductId());
-            statement.setLong(3, _count);
+            statement.setLong(3, count);
             statement.executeUpdate();
         } catch (Exception e) {
-            PacketLogger.warning("Could not save Item Mall transaction: " + e.getMessage());
+            log.warn("Could not save Item Mall transaction: {}", e.getMessage());
         }
     }
 }

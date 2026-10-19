@@ -32,9 +32,8 @@ import java.sql.Statement;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.xml.parsers.DocumentBuilderFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
@@ -42,17 +41,17 @@ import org.w3c.dom.Node;
 /**
  * @author Forsaiken
  */
+@Slf4j
 public class ItemAuctionManager {
-    private static final Logger LOGGER = Logger.getLogger(ItemAuctionManager.class.getName());
 
-    private final Map<Integer, ItemAuctionInstance> _managerInstances = new HashMap<>();
-    private final AtomicInteger _auctionIds;
+    private final Map<Integer, ItemAuctionInstance> managerInstances = new HashMap<>();
+    private final AtomicInteger auctionIds;
 
     protected ItemAuctionManager() {
-        _auctionIds = new AtomicInteger(1);
+        auctionIds = new AtomicInteger(1);
 
         if (!GeneralConfig.ALT_ITEM_AUCTION_ENABLED) {
-            LOGGER.info(getClass().getSimpleName() + ": Disabled.");
+            log.info("Disabled.");
             return;
         }
 
@@ -61,15 +60,15 @@ public class ItemAuctionManager {
                 ResultSet rs =
                         s.executeQuery("SELECT auctionId FROM item_auction ORDER BY auctionId DESC LIMIT 0, 1")) {
             if (rs.next()) {
-                _auctionIds.set(rs.getInt(1) + 1);
+                auctionIds.set(rs.getInt(1) + 1);
             }
         } catch (SQLException e) {
-            LOGGER.log(Level.SEVERE, getClass().getSimpleName() + ": Failed loading auctions.", e);
+            log.error("Failed loading auctions.", e);
         }
 
         final File file = new File(ServerConfig.DATAPACK_ROOT, "data/ItemAuctions.xml");
         if (!file.exists()) {
-            LOGGER.log(Level.WARNING, getClass().getSimpleName() + ": Missing ItemAuctions.xml!");
+            log.warn("Missing ItemAuctions.xml!");
             return;
         }
 
@@ -87,35 +86,34 @@ public class ItemAuctionManager {
                             final int instanceId =
                                     Integer.parseInt(nab.getNamedItem("id").getNodeValue());
 
-                            if (_managerInstances.containsKey(instanceId)) {
+                            if (managerInstances.containsKey(instanceId)) {
                                 throw new Exception("Dublicated instanceId " + instanceId);
                             }
 
-                            _managerInstances.put(instanceId, new ItemAuctionInstance(instanceId, _auctionIds, nb));
+                            managerInstances.put(instanceId, new ItemAuctionInstance(instanceId, auctionIds, nb));
                         }
                     }
                 }
             }
 
-            LOGGER.log(
-                    Level.INFO, getClass().getSimpleName() + ": Loaded " + _managerInstances.size() + " instance(s).");
+            log.info("Loaded {} instance(s).", managerInstances.size());
         } catch (Exception e) {
-            LOGGER.log(Level.SEVERE, getClass().getSimpleName() + ": Failed loading auctions from xml.", e);
+            log.error("Failed loading auctions from xml.", e);
         }
     }
 
     public void shutdown() {
-        for (ItemAuctionInstance instance : _managerInstances.values()) {
+        for (ItemAuctionInstance instance : managerInstances.values()) {
             instance.shutdown();
         }
     }
 
     public ItemAuctionInstance getManagerInstance(int instanceId) {
-        return _managerInstances.get(instanceId);
+        return managerInstances.get(instanceId);
     }
 
     public int getNextAuctionId() {
-        return _auctionIds.getAndIncrement();
+        return auctionIds.getAndIncrement();
     }
 
     public static void deleteAuction(int auctionId) {
@@ -130,7 +128,7 @@ public class ItemAuctionManager {
                 ps.execute();
             }
         } catch (SQLException e) {
-            LOGGER.log(Level.SEVERE, "ItemAuctionManagerInstance: Failed deleting auction: " + auctionId, e);
+            log.error("ItemAuctionManagerInstance: Failed deleting auction: {}", auctionId, e);
         }
     }
 

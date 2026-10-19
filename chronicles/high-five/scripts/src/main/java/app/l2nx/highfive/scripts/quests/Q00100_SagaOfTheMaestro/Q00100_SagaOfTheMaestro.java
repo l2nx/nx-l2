@@ -29,15 +29,15 @@ import app.l2nx.highfive.scripts.quests.AbstractSagaQuest;
 public class Q00100_SagaOfTheMaestro extends AbstractSagaQuest {
     public Q00100_SagaOfTheMaestro() {
         super(100);
-        _npc = new int[] {31592, 31273, 31597, 31597, 31596, 31646, 31648, 31653, 31654, 31655, 31656, 31597};
-        _items = new int[] {7080, 7607, 7081, 7515, 7298, 7329, 7360, 7391, 7422, 7453, 7108, 0};
-        _mob = new int[] {27260, 27249, 27308};
-        _classId = new int[] {118};
-        _prevClass = new int[] {0x39};
-        _npcSpawnLocations = new Location[] {
+        npc = new int[] {31592, 31273, 31597, 31597, 31596, 31646, 31648, 31653, 31654, 31655, 31656, 31597};
+        items = new int[] {7080, 7607, 7081, 7515, 7298, 7329, 7360, 7391, 7422, 7453, 7108, 0};
+        mob = new int[] {27260, 27249, 27308};
+        classId = new int[] {118};
+        prevClass = new int[] {0x39};
+        npcSpawnLocations = new Location[] {
             new Location(164650, -74121, -2871), new Location(47429, -56923, -2383), new Location(47391, -56929, -2370)
         };
-        _text = new String[] {
+        text = new String[] {
             "PLAYERNAME! Pursued to here! However, I jumped out of the Banshouren boundaries! You look at the giant as the sign of power!",
             "... Oh ... good! So it was ... let's begin!",
             "I do not have the patience ..! I have been a giant force ...! Cough chatter ah ah ah!",

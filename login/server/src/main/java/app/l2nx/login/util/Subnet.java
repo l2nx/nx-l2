@@ -30,46 +30,46 @@ import java.util.Arrays;
  * @author Mobius
  */
 public class Subnet {
-    private final byte[] _address;
-    private final byte[] _subnetMask;
-    private final boolean _v4;
+    private final byte[] address;
+    private final byte[] subnetMask;
+    private final boolean v4;
 
     public Subnet(String input) throws UnknownHostException {
         final String[] parts = input.split("/");
         final InetAddress inetAddress = InetAddress.getByName(parts[0]);
-        _address = inetAddress.getAddress();
-        _v4 = _address.length == 4;
+        address = inetAddress.getAddress();
+        v4 = address.length == 4;
 
         // Determine prefix length, with defaults for IPv4 (32) and IPv6 (128).
-        int prefixLength = _v4 ? 32 : 128;
+        int prefixLength = v4 ? 32 : 128;
         if (parts.length > 1) {
             prefixLength = Integer.parseInt(parts[1]);
         }
 
         // Validate prefix length.
-        if ((prefixLength < 0) || (prefixLength > (_address.length * 8))) {
+        if ((prefixLength < 0) || (prefixLength > (address.length * 8))) {
             throw new IllegalArgumentException("Invalid prefix length: " + prefixLength);
         }
 
         // Create mask based on prefix length.
         final int fullBytes = prefixLength / 8;
         final int remainingBits = prefixLength % 8;
-        _subnetMask = new byte[_address.length];
-        Arrays.fill(_subnetMask, 0, fullBytes, (byte) 0xFF);
+        subnetMask = new byte[address.length];
+        Arrays.fill(subnetMask, 0, fullBytes, (byte) 0xFF);
         if (remainingBits > 0) {
-            _subnetMask[fullBytes] = (byte) (0xFF << (8 - remainingBits));
+            subnetMask[fullBytes] = (byte) (0xFF << (8 - remainingBits));
         }
 
         // Apply mask to address.
-        for (int i = 0; i < _address.length; i++) {
-            _address[i] &= _subnetMask[i];
+        for (int i = 0; i < address.length; i++) {
+            address[i] &= subnetMask[i];
         }
     }
 
     public boolean isInSubnet(byte[] address) {
         // IPv4 and IPv6 address length mismatch.
-        if (address.length != _address.length) {
-            if (!_v4 || (address.length != 16)) {
+        if (address.length != this.address.length) {
+            if (!v4 || (address.length != 16)) {
                 return false;
             }
 
@@ -89,7 +89,7 @@ public class Subnet {
 
         // Apply mask to check subnet match.
         for (int i = 0; i < address.length; i++) {
-            if ((address[i] & _subnetMask[i]) != _address[i]) {
+            if ((address[i] & subnetMask[i]) != this.address[i]) {
                 return false;
             }
         }
@@ -98,7 +98,7 @@ public class Subnet {
     }
 
     public byte[] getAddress() {
-        return _address.clone();
+        return address.clone();
     }
 
     @Override
@@ -108,7 +108,7 @@ public class Subnet {
         }
 
         if (obj instanceof Subnet) {
-            return isInSubnet(((Subnet) obj)._address);
+            return isInSubnet(((Subnet) obj).address);
         }
 
         if (obj instanceof InetAddress) {
@@ -121,12 +121,12 @@ public class Subnet {
     @Override
     public String toString() {
         int prefixLength = 0;
-        for (byte b : _subnetMask) {
+        for (byte b : subnetMask) {
             prefixLength += Integer.bitCount(b & 0xFF);
         }
 
         try {
-            return InetAddress.getByAddress(_address).getHostAddress() + "/" + prefixLength;
+            return InetAddress.getByAddress(address).getHostAddress() + "/" + prefixLength;
         } catch (UnknownHostException e) {
             return "Invalid address";
         }

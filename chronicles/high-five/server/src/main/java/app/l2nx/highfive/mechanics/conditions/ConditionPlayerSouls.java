@@ -30,18 +30,18 @@ import app.l2nx.highfive.mechanics.skill.Skill;
  * The Class ConditionPlayerSouls.
  */
 public class ConditionPlayerSouls extends Condition {
-    private final int _souls;
+    private final int souls;
 
     /**
      * Instantiates a new condition player souls.
      * @param souls the souls
      */
     public ConditionPlayerSouls(int souls) {
-        _souls = souls;
+        this.souls = souls;
     }
 
     @Override
     public boolean testImpl(Creature effector, Creature effected, Skill skill, ItemTemplate item) {
-        return effector.isPlayer() && (effector.asPlayer().getChargedSouls() >= _souls);
+        return effector.isPlayer() && (effector.asPlayer().getChargedSouls() >= souls);
     }
 }

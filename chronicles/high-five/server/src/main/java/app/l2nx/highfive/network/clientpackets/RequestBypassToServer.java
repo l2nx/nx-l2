@@ -39,20 +39,21 @@ import app.l2nx.highfive.mechanics.events.holders.actor.npc.OnNpcManorBypass;
 import app.l2nx.highfive.mechanics.events.holders.actor.player.OnPlayerBypass;
 import app.l2nx.highfive.mechanics.olympiad.Hero;
 import app.l2nx.highfive.network.Disconnection;
-import app.l2nx.highfive.network.PacketLogger;
 import app.l2nx.highfive.network.serverpackets.ActionFailed;
 import app.l2nx.highfive.network.serverpackets.LeaveWorld;
 import app.l2nx.highfive.network.serverpackets.NpcHtmlMessage;
 import app.l2nx.highfive.util.LocationUtil;
 import java.util.StringTokenizer;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 
 /**
  * @version $Revision: 1.12.4.5 $ $Date: 2005/04/11 10:06:11 $
  */
+@Slf4j
 public class RequestBypassToServer extends ClientPacket {
-    private static final String[] _possibleNonHtmlCommands = {
+    private static final String[] possibleNonHtmlCommands = {
         "item_",
         "_bbs",
         "bbs",
@@ -66,11 +67,11 @@ public class RequestBypassToServer extends ClientPacket {
     };
 
     // S
-    private String _command;
+    private String command;
 
     @Override
     protected void readImpl() {
-        _command = readString();
+        command = readString();
     }
 
     @Override
@@ -80,15 +81,15 @@ public class RequestBypassToServer extends ClientPacket {
             return;
         }
 
-        if (_command.isEmpty()) {
-            PacketLogger.warning(player + " sent empty bypass!");
+        if (command.isEmpty()) {
+            log.warn("{} sent empty bypass!", player);
             Disconnection.of(getClient(), player).storeAndDeleteWith(LeaveWorld.STATIC_PACKET);
             return;
         }
 
         boolean requiresBypassValidation = true;
-        for (String possibleNonHtmlCommand : _possibleNonHtmlCommands) {
-            if (_command.startsWith(possibleNonHtmlCommand)) {
+        for (String possibleNonHtmlCommand : possibleNonHtmlCommands) {
+            if (command.startsWith(possibleNonHtmlCommand)) {
                 requiresBypassValidation = false;
                 break;
             }
@@ -96,7 +97,7 @@ public class RequestBypassToServer extends ClientPacket {
 
         int bypassOriginId = 0;
         if (requiresBypassValidation) {
-            bypassOriginId = player.validateHtmlAction(_command);
+            bypassOriginId = player.validateHtmlAction(command);
             if (bypassOriginId == -1) {
                 return;
             }
@@ -114,19 +115,19 @@ public class RequestBypassToServer extends ClientPacket {
         }
 
         try {
-            if (_command.startsWith("admin_")) {
-                AdminCommandHandler.getInstance().onCommand(player, _command, true);
-            } else if (CommunityBoardHandler.getInstance().isCommunityBoardCommand(_command)) {
-                CommunityBoardHandler.getInstance().handleParseCommand(_command, player);
-            } else if (_command.equals("come_here") && player.isGM()) {
+            if (command.startsWith("admin_")) {
+                AdminCommandHandler.getInstance().onCommand(player, command, true);
+            } else if (CommunityBoardHandler.getInstance().isCommunityBoardCommand(command)) {
+                CommunityBoardHandler.getInstance().handleParseCommand(command, player);
+            } else if (command.equals("come_here") && player.isGM()) {
                 comeHere(player);
-            } else if (_command.startsWith("npc_")) {
-                final int endOfId = _command.indexOf('_', 5);
+            } else if (command.startsWith("npc_")) {
+                final int endOfId = command.indexOf('_', 5);
                 String id;
                 if (endOfId > 0) {
-                    id = _command.substring(4, endOfId);
+                    id = command.substring(4, endOfId);
                 } else {
-                    id = _command.substring(4);
+                    id = command.substring(4);
                 }
 
                 if (StringUtils.isNumeric(id)) {
@@ -135,32 +136,32 @@ public class RequestBypassToServer extends ClientPacket {
                             && object.isNpc()
                             && (endOfId > 0)
                             && player.isInsideRadius2D(object, Npc.INTERACTION_DISTANCE)) {
-                        object.asNpc().onBypassFeedback(player, _command.substring(endOfId + 1));
+                        object.asNpc().onBypassFeedback(player, command.substring(endOfId + 1));
                     }
                 }
 
                 player.sendPacket(ActionFailed.STATIC_PACKET);
-            } else if (_command.startsWith("item_")) {
-                final int endOfId = _command.indexOf('_', 5);
+            } else if (command.startsWith("item_")) {
+                final int endOfId = command.indexOf('_', 5);
                 String id;
                 if (endOfId > 0) {
-                    id = _command.substring(5, endOfId);
+                    id = command.substring(5, endOfId);
                 } else {
-                    id = _command.substring(5);
+                    id = command.substring(5);
                 }
 
                 try {
                     final Item item = player.getInventory().getItemByObjectId(Integer.parseInt(id));
                     if ((item != null) && (endOfId > 0)) {
-                        item.onBypassFeedback(player, _command.substring(endOfId + 1));
+                        item.onBypassFeedback(player, command.substring(endOfId + 1));
                     }
 
                     player.sendPacket(ActionFailed.STATIC_PACKET);
                 } catch (NumberFormatException nfe) {
-                    PacketLogger.warning("NFE for command [" + _command + "] " + nfe.getMessage());
+                    log.warn("NFE for command [{}] {}", command, nfe.getMessage());
                 }
-            } else if (_command.startsWith("_match")) {
-                final String params = _command.substring(_command.indexOf('?') + 1);
+            } else if (command.startsWith("_match")) {
+                final String params = command.substring(command.indexOf('?') + 1);
                 final StringTokenizer st = new StringTokenizer(params, "&");
                 final int heroclass = Integer.parseInt(st.nextToken().split("=")[1]);
                 final int heropage = Integer.parseInt(st.nextToken().split("=")[1]);
@@ -168,8 +169,8 @@ public class RequestBypassToServer extends ClientPacket {
                 if (heroid > 0) {
                     Hero.getInstance().showHeroFights(player, heroclass, heroid, heropage);
                 }
-            } else if (_command.startsWith("_diary")) {
-                final String params = _command.substring(_command.indexOf('?') + 1);
+            } else if (command.startsWith("_diary")) {
+                final String params = command.substring(command.indexOf('?') + 1);
                 final StringTokenizer st = new StringTokenizer(params, "&");
                 final int heroclass = Integer.parseInt(st.nextToken().split("=")[1]);
                 final int heropage = Integer.parseInt(st.nextToken().split("=")[1]);
@@ -177,53 +178,61 @@ public class RequestBypassToServer extends ClientPacket {
                 if (heroid > 0) {
                     Hero.getInstance().showHeroDiary(player, heroclass, heroid, heropage);
                 }
-            } else if (_command.startsWith("_olympiad?command")) {
-                final int arenaId = Integer.parseInt(_command.split("=")[2]);
+            } else if (command.startsWith("_olympiad?command")) {
+                final int arenaId = Integer.parseInt(command.split("=")[2]);
                 final IBypassHandler handler = BypassHandler.getInstance().getHandler("arenachange");
                 if (handler != null) {
                     handler.onCommand("arenachange " + (arenaId - 1), player, null);
                 }
-            } else if (_command.startsWith("manor_menu_select")) {
+            } else if (command.startsWith("manor_menu_select")) {
                 final Npc lastNpc = player.getLastFolkNPC();
                 if (GeneralConfig.ALLOW_MANOR
                         && (lastNpc != null)
                         && lastNpc.canInteract(player)
                         && EventDispatcher.getInstance().hasListener(EventType.ON_NPC_MANOR_BYPASS, lastNpc)) {
                     final String[] split =
-                            _command.substring(_command.indexOf('?') + 1).split("&");
+                            command.substring(command.indexOf('?') + 1).split("&");
                     final int ask = Integer.parseInt(split[0].split("=")[1]);
                     final int state = Integer.parseInt(split[1].split("=")[1]);
                     final boolean time = split[2].split("=")[1].equals("1");
                     EventDispatcher.getInstance()
-                            .notifyEventAsync(new OnNpcManorBypass(player, lastNpc, ask, state, time), lastNpc);
+                            .notifyEventAsync(
+                                    OnNpcManorBypass.builder()
+                                            .player(player)
+                                            .target(lastNpc)
+                                            .request(ask)
+                                            .manorId(state)
+                                            .nextPeriod(time)
+                                            .build(),
+                                    lastNpc);
                 }
-            } else if (_command.startsWith("report")) {
-                CaptchaManager.getInstance().analyseBypass(_command, player);
+            } else if (command.startsWith("report")) {
+                CaptchaManager.getInstance().analyseBypass(command, player);
             } else {
-                final IBypassHandler handler = BypassHandler.getInstance().getHandler(_command);
+                final IBypassHandler handler = BypassHandler.getInstance().getHandler(command);
                 if (handler != null) {
                     if (bypassOriginId > 0) {
                         final WorldObject bypassOrigin = World.findObject(bypassOriginId);
                         if ((bypassOrigin != null) && bypassOrigin.isCreature()) {
-                            handler.onCommand(_command, player, bypassOrigin.asCreature());
+                            handler.onCommand(command, player, bypassOrigin.asCreature());
                         } else {
-                            handler.onCommand(_command, player, null);
+                            handler.onCommand(command, player, null);
                         }
                     } else {
-                        handler.onCommand(_command, player, null);
+                        handler.onCommand(command, player, null);
                     }
                 } else {
-                    PacketLogger.warning(getClient() + " sent not handled RequestBypassToServer: [" + _command + "]");
+                    log.warn("{} sent not handled RequestBypassToServer: [{}]", getClient(), command);
                 }
             }
         } catch (Exception e) {
-            PacketLogger.warning("Exception processing bypass from " + player + ": " + _command + " " + e.getMessage());
-            PacketLogger.warning(ExceptionUtils.getStackTrace(e));
+            log.warn("Exception processing bypass from {}: {} {}", player, command, e.getMessage());
+            log.warn(ExceptionUtils.getStackTrace(e));
             if (player.isGM()) {
                 final StringBuilder sb = new StringBuilder(200);
                 sb.append("<html><body>");
                 sb.append("Bypass error: " + e + "<br1>");
-                sb.append("Bypass command: " + _command + "<br1>");
+                sb.append("Bypass command: " + command + "<br1>");
                 sb.append("StackTrace:<br1>");
                 for (StackTraceElement ste : e.getStackTrace()) {
                     sb.append(ste + "<br1>");
@@ -238,7 +247,7 @@ public class RequestBypassToServer extends ClientPacket {
         }
 
         if (EventDispatcher.getInstance().hasListener(EventType.ON_PLAYER_BYPASS, player)) {
-            EventDispatcher.getInstance().notifyEventAsync(new OnPlayerBypass(player, _command), player);
+            EventDispatcher.getInstance().notifyEventAsync(new OnPlayerBypass(player, command), player);
         }
     }
 

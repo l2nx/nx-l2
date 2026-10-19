@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 
@@ -32,8 +33,9 @@ import org.w3c.dom.Node;
  * Holds all skill learn data for all NPCs.
  * @author xban1x
  */
+@Slf4j
 public class SkillLearnData implements IXmlReader {
-    private final Map<Integer, List<PlayerClass>> _skillLearn = new HashMap<>();
+    private final Map<Integer, List<PlayerClass>> skillLearn = new HashMap<>();
 
     protected SkillLearnData() {
         load();
@@ -41,9 +43,9 @@ public class SkillLearnData implements IXmlReader {
 
     @Override
     public synchronized void load() {
-        _skillLearn.clear();
+        skillLearn.clear();
         parseDatapackFile("data/SkillLearn.xml");
-        LOGGER.info(getClass().getSimpleName() + ": Loaded " + _skillLearn.size() + " skill learn data.");
+        log.info("Loaded {} skill learn data.", skillLearn.size());
     }
 
     @Override
@@ -59,7 +61,7 @@ public class SkillLearnData implements IXmlReader {
                             }
                         }
 
-                        _skillLearn.put(parseInteger(list_node.getAttributes(), "id"), classIds);
+                        skillLearn.put(parseInteger(list_node.getAttributes(), "id"), classIds);
                     }
                 }
             }
@@ -71,7 +73,7 @@ public class SkillLearnData implements IXmlReader {
      * @return {@link List} of {@link PlayerClass}'s that this npcId can teach.
      */
     public List<PlayerClass> getSkillLearnData(int npcId) {
-        return _skillLearn.get(npcId);
+        return skillLearn.get(npcId);
     }
 
     /**

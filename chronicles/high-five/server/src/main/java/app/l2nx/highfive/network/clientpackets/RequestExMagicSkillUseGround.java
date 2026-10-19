@@ -24,31 +24,32 @@ import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.mechanics.skill.Skill;
-import app.l2nx.highfive.network.PacketLogger;
 import app.l2nx.highfive.network.serverpackets.ActionFailed;
 import app.l2nx.highfive.network.serverpackets.ValidateLocation;
 import app.l2nx.highfive.util.LocationUtil;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Format:(ch) dddddc
  * @author -Wooden-
  */
+@Slf4j
 public class RequestExMagicSkillUseGround extends ClientPacket {
-    private int _x;
-    private int _y;
-    private int _z;
-    private int _skillId;
-    private boolean _ctrlPressed;
-    private boolean _shiftPressed;
+    private int x;
+    private int y;
+    private int z;
+    private int skillId;
+    private boolean ctrlPressed;
+    private boolean shiftPressed;
 
     @Override
     protected void readImpl() {
-        _x = readInt();
-        _y = readInt();
-        _z = readInt();
-        _skillId = readInt();
-        _ctrlPressed = readInt() != 0;
-        _shiftPressed = readByte() != 0;
+        x = readInt();
+        y = readInt();
+        z = readInt();
+        skillId = readInt();
+        ctrlPressed = readInt() != 0;
+        shiftPressed = readByte() != 0;
     }
 
     @Override
@@ -60,27 +61,27 @@ public class RequestExMagicSkillUseGround extends ClientPacket {
         }
 
         // Get the level of the used skill.
-        final int level = player.getSkillLevel(_skillId);
+        final int level = player.getSkillLevel(skillId);
         if (level <= 0) {
             player.sendPacket(ActionFailed.STATIC_PACKET);
             return;
         }
 
         // Get the Skill template corresponding to the skillID received from the client.
-        final Skill skill = SkillData.getInstance().getSkill(_skillId, level);
+        final Skill skill = SkillData.getInstance().getSkill(skillId, level);
 
         // Check the validity of the skill.
         if (skill != null) {
-            player.setCurrentSkillWorldPosition(new Location(_x, _y, _z));
+            player.setCurrentSkillWorldPosition(new Location(x, y, z));
 
             // Normally magicskilluse packet turns char client side but for these skills, it doesn't (even with correct
             // target).
-            player.setHeading(LocationUtil.calculateHeadingFrom(player.getX(), player.getY(), _x, _y));
+            player.setHeading(LocationUtil.calculateHeadingFrom(player.getX(), player.getY(), x, y));
             World.broadcastToVisiblePlayers(player, new ValidateLocation(player));
-            player.useMagic(skill, _ctrlPressed, _shiftPressed);
+            player.useMagic(skill, ctrlPressed, shiftPressed);
         } else {
             player.sendPacket(ActionFailed.STATIC_PACKET);
-            PacketLogger.warning("No skill found with id " + _skillId + " and level " + level + " !!");
+            log.warn("No skill found with id {} and level {} !!", skillId, level);
         }
     }
 }

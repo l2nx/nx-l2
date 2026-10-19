@@ -33,12 +33,12 @@ import app.l2nx.network.buffer.WriteBuffer;
  * @editor shansoft
  */
 public class SSQStatus extends ServerPacket {
-    private final int _objectId;
-    private final int _page;
+    private final int objectId;
+    private final int page;
 
     public SSQStatus(int objectId, int recordPage) {
-        _objectId = objectId;
-        _page = recordPage;
+        this.objectId = objectId;
+        page = recordPage;
     }
 
     @Override
@@ -47,11 +47,11 @@ public class SSQStatus extends ServerPacket {
         final int totalDawnMembers = SevenSigns.getInstance().getTotalMembers(SevenSigns.CABAL_DAWN);
         final int totalDuskMembers = SevenSigns.getInstance().getTotalMembers(SevenSigns.CABAL_DUSK);
         ServerPackets.SSQ_STATUS.writeId(this, buffer);
-        buffer.writeByte(_page);
+        buffer.writeByte(page);
         buffer.writeByte(SevenSigns.getInstance().getCurrentPeriod()); // current period?
         int dawnPercent = 0;
         int duskPercent = 0;
-        switch (_page) {
+        switch (page) {
             case 1: {
                 // [ddd cc dd ddd c ddd c]
                 buffer.writeInt(SevenSigns.getInstance().getCurrentCycle());
@@ -88,10 +88,10 @@ public class SSQStatus extends ServerPacket {
                     }
                 }
 
-                buffer.writeByte(SevenSigns.getInstance().getPlayerCabal(_objectId));
-                buffer.writeByte(SevenSigns.getInstance().getPlayerSeal(_objectId));
-                buffer.writeLong(SevenSigns.getInstance().getPlayerStoneContrib(_objectId)); // Seal Stones Turned-In
-                buffer.writeLong(SevenSigns.getInstance().getPlayerAdenaCollect(_objectId)); // Ancient Adena to Collect
+                buffer.writeByte(SevenSigns.getInstance().getPlayerCabal(objectId));
+                buffer.writeByte(SevenSigns.getInstance().getPlayerSeal(objectId));
+                buffer.writeLong(SevenSigns.getInstance().getPlayerStoneContrib(objectId)); // Seal Stones Turned-In
+                buffer.writeLong(SevenSigns.getInstance().getPlayerAdenaCollect(objectId)); // Ancient Adena to Collect
                 final double dawnStoneScore = SevenSigns.getInstance().getCurrentStoneScore(SevenSigns.CABAL_DAWN);
                 final int dawnFestivalScore = SevenSigns.getInstance().getCurrentFestivalScore(SevenSigns.CABAL_DAWN);
                 final double duskStoneScore = SevenSigns.getInstance().getCurrentStoneScore(SevenSigns.CABAL_DUSK);

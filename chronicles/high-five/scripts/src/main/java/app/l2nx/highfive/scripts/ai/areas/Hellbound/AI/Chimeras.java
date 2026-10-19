@@ -108,17 +108,17 @@ public class Chimeras extends Script {
     }
 
     private static class Teleport implements Runnable {
-        private final Npc _npc;
-        private final Location _loc;
+        private final Npc npc;
+        private final Location loc;
 
         public Teleport(Npc npc, Location loc) {
-            _npc = npc;
-            _loc = loc;
+            this.npc = npc;
+            this.loc = loc;
         }
 
         @Override
         public void run() {
-            _npc.teleToLocation(_loc, false);
+            npc.teleToLocation(loc, false);
         }
     }
 }

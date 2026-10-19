@@ -26,6 +26,7 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
+import lombok.extern.slf4j.Slf4j;
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
@@ -34,9 +35,10 @@ import org.w3c.dom.Node;
  * Loads armor set bonuses.
  * @author godson, Luno, UnAfraid
  */
+@Slf4j
 public class ArmorSetData implements IXmlReader {
-    private ArmorSet[] _armorSets;
-    private final Map<Integer, ArmorSet> _armorSetMap = new ConcurrentHashMap<>();
+    private ArmorSet[] armorSets;
+    private final Map<Integer, ArmorSet> armorSetMap = new ConcurrentHashMap<>();
 
     /**
      * Instantiates a new armor sets data.
@@ -49,13 +51,13 @@ public class ArmorSetData implements IXmlReader {
     public void load() {
         parseDatapackDirectory("data/stats/armorsets", false);
 
-        _armorSets = new ArmorSet[Collections.max(_armorSetMap.keySet()) + 1];
-        for (Entry<Integer, ArmorSet> armorSet : _armorSetMap.entrySet()) {
-            _armorSets[armorSet.getKey()] = armorSet.getValue();
+        armorSets = new ArmorSet[Collections.max(armorSetMap.keySet()) + 1];
+        for (Entry<Integer, ArmorSet> armorSet : armorSetMap.entrySet()) {
+            armorSets[armorSet.getKey()] = armorSet.getValue();
         }
 
-        LOGGER.info(getClass().getSimpleName() + ": Loaded " + _armorSetMap.size() + " armor sets.");
-        _armorSetMap.clear();
+        log.info("Loaded {} armor sets.", armorSetMap.size());
+        armorSetMap.clear();
     }
 
     @Override
@@ -137,7 +139,7 @@ public class ArmorSetData implements IXmlReader {
                             }
                         }
 
-                        _armorSetMap.put(set.getChestId(), set);
+                        armorSetMap.put(set.getChestId(), set);
                     }
                 }
             }
@@ -150,7 +152,7 @@ public class ArmorSetData implements IXmlReader {
      * @return {@code true} if the chest Id belongs to a registered armor set, {@code false} otherwise.
      */
     public boolean isArmorSet(int chestId) {
-        return (_armorSets.length > chestId) && (_armorSets[chestId] != null);
+        return (armorSets.length > chestId) && (armorSets[chestId] != null);
     }
 
     /**
@@ -159,8 +161,8 @@ public class ArmorSetData implements IXmlReader {
      * @return the armor set associated to the give chest Id.
      */
     public ArmorSet getSet(int chestId) {
-        if (_armorSets.length > chestId) {
-            return _armorSets[chestId];
+        if (armorSets.length > chestId) {
+            return armorSets[chestId];
         }
 
         return null;

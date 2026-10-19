@@ -28,22 +28,22 @@ import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.network.buffer.WriteBuffer;
 
 public class ChairSit extends ServerPacket {
-    private final Player _player;
-    private final int _staticObjectId;
+    private final Player player;
+    private final int staticObjectId;
 
     /**
      * @param player
      * @param staticObjectId
      */
     public ChairSit(Player player, int staticObjectId) {
-        _player = player;
-        _staticObjectId = staticObjectId;
+        this.player = player;
+        this.staticObjectId = staticObjectId;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.CHAIR_SIT.writeId(this, buffer);
-        buffer.writeInt(_player.getObjectId());
-        buffer.writeInt(_staticObjectId);
+        buffer.writeInt(player.getObjectId());
+        buffer.writeInt(staticObjectId);
     }
 }

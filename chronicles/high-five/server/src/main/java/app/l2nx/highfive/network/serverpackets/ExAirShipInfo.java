@@ -29,41 +29,41 @@ import app.l2nx.network.buffer.WriteBuffer;
 
 public class ExAirShipInfo extends ServerPacket {
     // Store some parameters, because they can be changed during broadcast.
-    private final AirShip _ship;
-    private final int _x;
-    private final int _y;
-    private final int _z;
-    private final int _heading;
-    private final int _moveSpeed;
-    private final int _rotationSpeed;
-    private final int _captain;
-    private final int _helm;
+    private final AirShip ship;
+    private final int x;
+    private final int y;
+    private final int z;
+    private final int heading;
+    private final int moveSpeed;
+    private final int rotationSpeed;
+    private final int captain;
+    private final int helm;
 
     public ExAirShipInfo(AirShip ship) {
-        _ship = ship;
-        _x = ship.getX();
-        _y = ship.getY();
-        _z = ship.getZ();
-        _heading = ship.getHeading();
-        _moveSpeed = (int) ship.getStat().getMoveSpeed();
-        _rotationSpeed = (int) ship.getStat().getRotationSpeed();
-        _captain = ship.getCaptainId();
-        _helm = ship.getHelmObjectId();
+        this.ship = ship;
+        x = ship.getX();
+        y = ship.getY();
+        z = ship.getZ();
+        heading = ship.getHeading();
+        moveSpeed = (int) ship.getStat().getMoveSpeed();
+        rotationSpeed = (int) ship.getStat().getRotationSpeed();
+        captain = ship.getCaptainId();
+        helm = ship.getHelmObjectId();
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_AIRSHIP_INFO.writeId(this, buffer);
-        buffer.writeInt(_ship.getObjectId());
-        buffer.writeInt(_x);
-        buffer.writeInt(_y);
-        buffer.writeInt(_z);
-        buffer.writeInt(_heading);
-        buffer.writeInt(_captain);
-        buffer.writeInt(_moveSpeed);
-        buffer.writeInt(_rotationSpeed);
-        buffer.writeInt(_helm);
-        if (_helm != 0) {
+        buffer.writeInt(ship.getObjectId());
+        buffer.writeInt(x);
+        buffer.writeInt(y);
+        buffer.writeInt(z);
+        buffer.writeInt(heading);
+        buffer.writeInt(captain);
+        buffer.writeInt(moveSpeed);
+        buffer.writeInt(rotationSpeed);
+        buffer.writeInt(helm);
+        if (helm != 0) {
             // TODO: unhardcode these!
             buffer.writeInt(0x16e); // Controller X
             buffer.writeInt(0x00); // Controller Y
@@ -80,7 +80,7 @@ public class ExAirShipInfo extends ServerPacket {
             buffer.writeInt(0);
         }
 
-        buffer.writeInt(_ship.getFuel());
-        buffer.writeInt(_ship.getMaxFuel());
+        buffer.writeInt(ship.getFuel());
+        buffer.writeInt(ship.getMaxFuel());
     }
 }

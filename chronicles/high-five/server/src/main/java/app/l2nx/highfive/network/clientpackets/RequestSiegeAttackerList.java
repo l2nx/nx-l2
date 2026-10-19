@@ -33,11 +33,11 @@ import app.l2nx.highfive.network.serverpackets.SiegeAttackerList;
  * @version $Revision: 1.3.4.2 $ $Date: 2005/03/27 15:29:30 $
  */
 public class RequestSiegeAttackerList extends ClientPacket {
-    private int _castleId;
+    private int castleId;
 
     @Override
     protected void readImpl() {
-        _castleId = readInt();
+        castleId = readInt();
     }
 
     @Override
@@ -47,11 +47,11 @@ public class RequestSiegeAttackerList extends ClientPacket {
             return;
         }
 
-        final Castle castle = CastleManager.getInstance().getCastleById(_castleId);
+        final Castle castle = CastleManager.getInstance().getCastleById(castleId);
         if (castle != null) {
             player.sendPacket(new SiegeAttackerList(castle));
         } else {
-            final SiegableHall hall = CHSiegeManager.getInstance().getSiegableHall(_castleId);
+            final SiegableHall hall = CHSiegeManager.getInstance().getSiegableHall(castleId);
             if (hall != null) {
                 player.sendPacket(new SiegeAttackerList(hall));
             }

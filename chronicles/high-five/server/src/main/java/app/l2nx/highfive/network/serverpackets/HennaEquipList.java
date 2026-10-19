@@ -31,34 +31,34 @@ import app.l2nx.network.buffer.WriteBuffer;
 import java.util.List;
 
 public class HennaEquipList extends ServerPacket {
-    private final Player _player;
-    private final List<Henna> _hennaEquipList;
+    private final Player player;
+    private final List<Henna> hennaEquipList;
 
     public HennaEquipList(Player player) {
-        _player = player;
-        _hennaEquipList = HennaData.getInstance().getHennaList(player.getPlayerClass());
+        this.player = player;
+        hennaEquipList = HennaData.getInstance().getHennaList(player.getPlayerClass());
     }
 
     public HennaEquipList(Player player, List<Henna> list) {
-        _player = player;
-        _hennaEquipList = list;
+        this.player = player;
+        hennaEquipList = list;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.HENNA_EQUIP_LIST.writeId(this, buffer);
-        buffer.writeLong(_player.getAdena()); // activeChar current amount of Adena
+        buffer.writeLong(player.getAdena()); // activeChar current amount of Adena
         buffer.writeInt(3); // available equip slot
-        buffer.writeInt(_hennaEquipList.size());
-        for (Henna henna : _hennaEquipList) {
+        buffer.writeInt(hennaEquipList.size());
+        for (Henna henna : hennaEquipList) {
             // Player must have at least one dye in inventory.
             // to be able to see the Henna that can be applied with it.
-            if ((_player.getInventory().getItemByItemId(henna.getDyeItemId())) != null) {
+            if ((player.getInventory().getItemByItemId(henna.getDyeItemId())) != null) {
                 buffer.writeInt(henna.getDyeId()); // dye Id
                 buffer.writeInt(henna.getDyeItemId()); // item Id of the dye
                 buffer.writeLong(henna.getWearCount()); // amount of dyes required
                 buffer.writeLong(henna.getWearFee()); // amount of Adena required
-                buffer.writeInt(henna.isAllowedClass(_player.getPlayerClass())); // meet the requirement or not
+                buffer.writeInt(henna.isAllowedClass(player.getPlayerClass())); // meet the requirement or not
             }
         }
     }

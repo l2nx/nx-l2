@@ -32,19 +32,19 @@ import app.l2nx.highfive.mechanics.skill.Skill;
  * @author Mobius
  */
 public class ConditionPlayerIsPvpFlagged extends Condition {
-    private final boolean _value;
+    private final boolean value;
 
     /**
      * Instantiates a new condition player is PvP flagged.
      * @param value the value
      */
     public ConditionPlayerIsPvpFlagged(boolean value) {
-        _value = value;
+        this.value = value;
     }
 
     @Override
     public boolean testImpl(Creature effector, Creature effected, Skill skill, ItemTemplate item) {
         final Player player = effector.asPlayer();
-        return (player != null) && ((player.getPvpFlag() > 0) == _value);
+        return (player != null) && ((player.getPvpFlag() > 0) == value);
     }
 }

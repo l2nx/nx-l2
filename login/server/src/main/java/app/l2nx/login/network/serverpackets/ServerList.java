@@ -33,7 +33,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * ServerList
@@ -63,61 +63,61 @@ import java.util.logging.Logger;
  * is less than half the maximum. as Normal between half and 4/5<br>
  * and Full when there's more than 4/5 of the maximum number of players.
  */
+@Slf4j
 public class ServerList extends LoginServerPacket {
-    protected static final Logger LOGGER = Logger.getLogger(ServerList.class.getName());
 
-    private final List<ServerData> _servers;
-    private final int _lastServer;
-    private Map<Integer, Integer> _charsOnServers;
-    private Map<Integer, long[]> _charsToDelete;
+    private final List<ServerData> servers;
+    private final int lastServer;
+    private Map<Integer, Integer> charsOnServers;
+    private Map<Integer, long[]> charsToDelete;
 
     class ServerData {
-        protected byte[] _ip;
-        protected int _port;
-        protected int _ageLimit;
-        protected boolean _pvp;
-        protected int _currentPlayers;
-        protected int _maxPlayers;
-        protected boolean _brackets;
-        protected boolean _clock;
-        protected int _status;
-        protected int _serverId;
-        protected int _serverType;
+        protected byte[] ip;
+        protected int port;
+        protected int ageLimit;
+        protected boolean pvp;
+        protected int currentPlayers;
+        protected int maxPlayers;
+        protected boolean brackets;
+        protected boolean clock;
+        protected int status;
+        protected int serverId;
+        protected int serverType;
 
         ServerData(LoginClient client, GameServerInfo gsi) {
             try {
-                _ip = InetAddress.getByName(gsi.getServerAddress(InetAddress.getByName(client.getIp())))
+                ip = InetAddress.getByName(gsi.getServerAddress(InetAddress.getByName(client.getIp())))
                         .getAddress();
             } catch (UnknownHostException e) {
-                LOGGER.warning(getClass().getSimpleName() + ": " + e.getMessage());
-                _ip = new byte[4];
-                _ip[0] = 127;
-                _ip[1] = 0;
-                _ip[2] = 0;
-                _ip[3] = 1;
+                log.warn("{}", e.getMessage());
+                ip = new byte[4];
+                ip[0] = 127;
+                ip[1] = 0;
+                ip[2] = 0;
+                ip[3] = 1;
             }
 
-            _port = gsi.getPort();
-            _pvp = gsi.isPvp();
-            _serverType = gsi.getServerType();
-            _currentPlayers = gsi.getCurrentPlayerCount();
-            _maxPlayers = gsi.getMaxPlayers();
-            _ageLimit = 0;
-            _brackets = gsi.isShowingBrackets();
+            port = gsi.getPort();
+            pvp = gsi.isPvp();
+            serverType = gsi.getServerType();
+            currentPlayers = gsi.getCurrentPlayerCount();
+            maxPlayers = gsi.getMaxPlayers();
+            ageLimit = 0;
+            brackets = gsi.isShowingBrackets();
 
             // If server GM-only - show status only to GMs.
-            _status = (client.getAccessLevel() < 0)
+            status = (client.getAccessLevel() < 0)
                             || ((gsi.getStatus() == ServerStatus.STATUS_GM_ONLY) && (client.getAccessLevel() <= 0))
                     ? ServerStatus.STATUS_DOWN
                     : gsi.getStatus();
-            _serverId = gsi.getId();
+            serverId = gsi.getId();
         }
     }
 
     public ServerList(LoginClient client) {
-        _servers = new ArrayList<>(
+        servers = new ArrayList<>(
                 GameServerTable.getInstance().getRegisteredGameServers().size());
-        _lastServer = client.getLastServer();
+        lastServer = client.getLastServer();
         for (GameServerInfo gsi :
                 GameServerTable.getInstance().getRegisteredGameServers().values()) {
             // Hide GM-only servers from non-GM accounts.
@@ -125,59 +125,59 @@ public class ServerList extends LoginServerPacket {
                 continue;
             }
 
-            _servers.add(new ServerData(client, gsi));
+            servers.add(new ServerData(client, gsi));
         }
 
         // Wait 500ms to reply with character list.
         int i = 0;
-        while (((_charsOnServers == null) || (_charsToDelete == null)) && (i++ < 10)) {
+        while (((charsOnServers == null) || (charsToDelete == null)) && (i++ < 10)) {
             try {
                 Thread.sleep(50);
             } catch (InterruptedException ignored) {
             }
 
-            _charsOnServers = client.getCharsOnServ();
-            _charsToDelete = client.getCharsWaitingDelOnServ();
+            charsOnServers = client.getCharsOnServ();
+            charsToDelete = client.getCharsWaitingDelOnServ();
         }
     }
 
     @Override
     protected void writeImpl(LoginClient client, WriteBuffer buffer) {
         buffer.writeByte(0x04);
-        buffer.writeByte(_servers.size());
-        buffer.writeByte(_lastServer);
-        for (ServerData server : _servers) {
-            buffer.writeByte(server._serverId); // Server id.
+        buffer.writeByte(servers.size());
+        buffer.writeByte(lastServer);
+        for (ServerData server : servers) {
+            buffer.writeByte(server.serverId); // Server id.
 
-            buffer.writeByte(server._ip[0] & 0xff);
-            buffer.writeByte(server._ip[1] & 0xff);
-            buffer.writeByte(server._ip[2] & 0xff);
-            buffer.writeByte(server._ip[3] & 0xff);
+            buffer.writeByte(server.ip[0] & 0xff);
+            buffer.writeByte(server.ip[1] & 0xff);
+            buffer.writeByte(server.ip[2] & 0xff);
+            buffer.writeByte(server.ip[3] & 0xff);
 
-            buffer.writeInt(server._port);
-            buffer.writeByte(server._ageLimit); // Age Limit 0, 15, 18.
-            buffer.writeByte(server._pvp ? 1 : 0);
-            buffer.writeShort(server._currentPlayers);
-            buffer.writeShort(server._maxPlayers);
-            buffer.writeByte(server._status == ServerStatus.STATUS_DOWN ? 0 : 1);
+            buffer.writeInt(server.port);
+            buffer.writeByte(server.ageLimit); // Age Limit 0, 15, 18.
+            buffer.writeByte(server.pvp ? 1 : 0);
+            buffer.writeShort(server.currentPlayers);
+            buffer.writeShort(server.maxPlayers);
+            buffer.writeByte(server.status == ServerStatus.STATUS_DOWN ? 0 : 1);
             buffer.writeInt(
-                    server._serverType); // 1: Normal, 2: Relax, 4: Public Test, 8: No Label, 16: Character Creation
+                    server.serverType); // 1: Normal, 2: Relax, 4: Public Test, 8: No Label, 16: Character Creation
             // Restricted, 32: Event, 64: Free.
-            buffer.writeByte(server._brackets ? 1 : 0);
+            buffer.writeByte(server.brackets ? 1 : 0);
         }
 
         buffer.writeShort(0x00); // Unknown.
-        if (_charsOnServers != null) {
-            buffer.writeByte(_charsOnServers.size());
-            for (Entry<Integer, Integer> entry : _charsOnServers.entrySet()) {
+        if (charsOnServers != null) {
+            buffer.writeByte(charsOnServers.size());
+            for (Entry<Integer, Integer> entry : charsOnServers.entrySet()) {
                 final int servId = entry.getKey();
                 buffer.writeByte(servId);
                 buffer.writeByte(entry.getValue());
-                if ((_charsToDelete == null) || !_charsToDelete.containsKey(servId)) {
+                if ((charsToDelete == null) || !charsToDelete.containsKey(servId)) {
                     buffer.writeByte(0);
                 } else {
-                    buffer.writeByte(_charsToDelete.get(servId).length);
-                    for (long deleteTime : _charsToDelete.get(servId)) {
+                    buffer.writeByte(charsToDelete.get(servId).length);
+                    for (long deleteTime : charsToDelete.get(servId)) {
                         buffer.writeInt((int) ((deleteTime - System.currentTimeMillis()) / 1000));
                     }
                 }

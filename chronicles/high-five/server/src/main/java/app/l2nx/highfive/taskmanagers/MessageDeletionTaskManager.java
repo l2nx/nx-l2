@@ -39,7 +39,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class MessageDeletionTaskManager implements Runnable {
     private static final Map<Integer, Long> PENDING_MESSAGES = new ConcurrentHashMap<>();
-    private static boolean _working = false;
+    private static boolean working = false;
 
     protected MessageDeletionTaskManager() {
         ThreadPool.scheduleAtFixedRate(this, 10000, 10000);
@@ -47,11 +47,11 @@ public class MessageDeletionTaskManager implements Runnable {
 
     @Override
     public void run() {
-        if (_working) {
+        if (working) {
             return;
         }
 
-        _working = true;
+        working = true;
 
         if (!PENDING_MESSAGES.isEmpty()) {
             final long currentTime = System.currentTimeMillis();
@@ -101,7 +101,7 @@ public class MessageDeletionTaskManager implements Runnable {
             }
         }
 
-        _working = false;
+        working = false;
     }
 
     public void add(int msgId, long deletionTime) {

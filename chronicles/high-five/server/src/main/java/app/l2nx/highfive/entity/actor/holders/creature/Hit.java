@@ -20,6 +20,7 @@
 package app.l2nx.highfive.entity.actor.holders.creature;
 
 import app.l2nx.highfive.entity.WorldObject;
+import lombok.Getter;
 
 /**
  * @author UnAfraid
@@ -30,40 +31,33 @@ public class Hit {
     private static final int HITFLAG_SHLD = 0x40;
     private static final int HITFLAG_MISS = 0x80;
 
-    private final int _targetId;
-    private final int _damage;
-    private int _flags = 0;
+    @Getter
+    private final int targetId;
+
+    @Getter
+    private final int damage;
+
+    @Getter
+    private int flags = 0;
 
     public Hit(WorldObject target, int damage, boolean miss, boolean crit, byte shld, boolean soulshot, int ssGrade) {
-        _targetId = target.getObjectId();
-        _damage = damage;
+        targetId = target.getObjectId();
+        this.damage = damage;
 
         if (soulshot) {
-            _flags |= HITFLAG_USESS | ssGrade;
+            flags |= HITFLAG_USESS | ssGrade;
         }
 
         if (crit) {
-            _flags |= HITFLAG_CRIT;
+            flags |= HITFLAG_CRIT;
         }
 
         if (shld > 0) {
-            _flags |= HITFLAG_SHLD;
+            flags |= HITFLAG_SHLD;
         }
 
         if (miss) {
-            _flags |= HITFLAG_MISS;
+            flags |= HITFLAG_MISS;
         }
-    }
-
-    public int getTargetId() {
-        return _targetId;
-    }
-
-    public int getDamage() {
-        return _damage;
-    }
-
-    public int getFlags() {
-        return _flags;
     }
 }

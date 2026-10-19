@@ -31,19 +31,19 @@ public class ChangeMoveType extends ServerPacket {
     public static final int WALK = 0;
     public static final int RUN = 1;
 
-    private final int _objectId;
-    private final boolean _running;
+    private final int objectId;
+    private final boolean running;
 
     public ChangeMoveType(Creature creature) {
-        _objectId = creature.getObjectId();
-        _running = creature.isRunning();
+        objectId = creature.getObjectId();
+        running = creature.isRunning();
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.CHANGE_MOVE_TYPE.writeId(this, buffer);
-        buffer.writeInt(_objectId);
-        buffer.writeInt(_running ? RUN : WALK);
+        buffer.writeInt(objectId);
+        buffer.writeInt(running ? RUN : WALK);
         buffer.writeInt(0); // c2
     }
 }

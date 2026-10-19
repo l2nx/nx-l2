@@ -19,29 +19,26 @@
  */
 package app.l2nx.highfive.mechanics.options;
 
+import lombok.Getter;
+
 /**
  * @author UnAfraid
  */
 public class EnchantOptions {
-    private final int _level;
-    private final int[] _options;
+    @Getter
+    private final int level;
+
+    @Getter
+    private final int[] options;
 
     public EnchantOptions(int level) {
-        _level = level;
-        _options = new int[3];
-    }
-
-    public int getLevel() {
-        return _level;
-    }
-
-    public int[] getOptions() {
-        return _options;
+        this.level = level;
+        options = new int[3];
     }
 
     public void setOption(byte index, int option) {
-        if (_options.length > index) {
-            _options[index] = option;
+        if (options.length > index) {
+            options[index] = option;
         }
     }
 }

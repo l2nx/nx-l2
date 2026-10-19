@@ -33,11 +33,11 @@ import app.l2nx.highfive.network.serverpackets.TradeDone;
  * @version $Revision: 1.5.4.2 $ $Date: 2005/03/27 15:29:30 $
  */
 public class AnswerTradeRequest extends ClientPacket {
-    private int _response;
+    private int response;
 
     @Override
     protected void readImpl() {
-        _response = readInt();
+        response = readInt();
     }
 
     @Override
@@ -68,7 +68,7 @@ public class AnswerTradeRequest extends ClientPacket {
             return;
         }
 
-        if ((_response == 1) && !partner.isRequestExpired()) {
+        if ((response == 1) && !partner.isRequestExpired()) {
             player.startTrade(partner);
         } else {
             final SystemMessage msg = new SystemMessage(SystemMessageId.C1_HAS_DENIED_YOUR_REQUEST_TO_TRADE);

@@ -33,12 +33,12 @@ import app.l2nx.highfive.util.StatSet;
  * @author nBd, Adry_85
  */
 public class FocusSouls extends AbstractEffect {
-    private final int _charge;
+    private final int charge;
 
     public FocusSouls(Condition attachCond, Condition applyCond, StatSet set, StatSet params) {
         super(attachCond, applyCond, set, params);
 
-        _charge = params.getInt("charge", 0);
+        charge = params.getInt("charge", 0);
     }
 
     @Override
@@ -55,7 +55,7 @@ public class FocusSouls extends AbstractEffect {
         final Player target = effected.asPlayer();
         final int maxSouls = (int) target.calcStat(Stat.MAX_SOULS, 0, null, null);
         if (maxSouls > 0) {
-            final int amount = _charge;
+            final int amount = charge;
             if ((target.getChargedSouls() < maxSouls)) {
                 final int count = ((target.getChargedSouls() + amount) <= maxSouls)
                         ? amount

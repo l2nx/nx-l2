@@ -21,13 +21,11 @@ package app.l2nx.highfive.handler;
 
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Player;
-import java.util.logging.Logger;
 
 /**
  * @author nBd
  */
 public interface IBypassHandler {
-    Logger LOGGER = Logger.getLogger(IBypassHandler.class.getName());
 
     /**
      * This is the worker method that is called when someone uses a command.

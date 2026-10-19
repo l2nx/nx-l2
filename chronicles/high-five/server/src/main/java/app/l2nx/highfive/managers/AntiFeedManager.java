@@ -32,10 +32,12 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class AntiFeedManager {
-    protected static final Logger LOGGER_ACCOUNTING = Logger.getLogger("accounting");
+
+    private static final Logger ACCOUNTING_LOG = LoggerFactory.getLogger("accounting");
 
     public static final int GAME_ID = 0;
     public static final int OLYMPIAD_ID = 1;
@@ -43,8 +45,8 @@ public class AntiFeedManager {
     public static final int L2EVENT_ID = 3;
     public static final int OFFLINE_PLAY = 4;
 
-    private final Map<Integer, Long> _lastDeathTimes = new ConcurrentHashMap<>();
-    private final Map<Integer, Map<Integer, AtomicInteger>> _eventIPs = new ConcurrentHashMap<>();
+    private final Map<Integer, Long> lastDeathTimes = new ConcurrentHashMap<>();
+    private final Map<Integer, Map<Integer, AtomicInteger>> eventIPs = new ConcurrentHashMap<>();
 
     protected AntiFeedManager() {}
 
@@ -53,7 +55,7 @@ public class AntiFeedManager {
      * @param objectId Player's objectId
      */
     public void setLastDeathTime(int objectId) {
-        _lastDeathTimes.put(objectId, System.currentTimeMillis());
+        lastDeathTimes.put(objectId, System.currentTimeMillis());
     }
 
     /**
@@ -82,8 +84,8 @@ public class AntiFeedManager {
         }
 
         if ((PvpConfig.ANTIFEED_INTERVAL > 0)
-                && _lastDeathTimes.containsKey(targetPlayer.getObjectId())
-                && ((System.currentTimeMillis() - _lastDeathTimes.get(targetPlayer.getObjectId()))
+                && lastDeathTimes.containsKey(targetPlayer.getObjectId())
+                && ((System.currentTimeMillis() - lastDeathTimes.get(targetPlayer.getObjectId()))
                         < PvpConfig.ANTIFEED_INTERVAL)) {
             return false;
         }
@@ -114,7 +116,7 @@ public class AntiFeedManager {
      * Clears all timestamps
      */
     public void clear() {
-        _lastDeathTimes.clear();
+        lastDeathTimes.clear();
     }
 
     /**
@@ -122,7 +124,7 @@ public class AntiFeedManager {
      * @param eventId
      */
     public void registerEvent(int eventId) {
-        _eventIPs.putIfAbsent(eventId, new ConcurrentHashMap<>());
+        eventIPs.putIfAbsent(eventId, new ConcurrentHashMap<>());
     }
 
     /**
@@ -148,7 +150,7 @@ public class AntiFeedManager {
             return false; // Unable to determine IP address.
         }
 
-        final Map<Integer, AtomicInteger> event = _eventIPs.get(eventId);
+        final Map<Integer, AtomicInteger> event = eventIPs.get(eventId);
         if (event == null) {
             return false; // no such event registered
         }
@@ -185,7 +187,7 @@ public class AntiFeedManager {
             return false; // Unable to determine IP address.
         }
 
-        final Map<Integer, AtomicInteger> event = _eventIPs.get(eventId);
+        final Map<Integer, AtomicInteger> event = eventIPs.get(eventId);
         if (event == null) {
             return false; // no such event registered
         }
@@ -224,7 +226,7 @@ public class AntiFeedManager {
             return;
         }
 
-        for (Entry<Integer, Map<Integer, AtomicInteger>> entry : _eventIPs.entrySet()) {
+        for (Entry<Integer, Map<Integer, AtomicInteger>> entry : eventIPs.entrySet()) {
             final int eventId = entry.getKey();
             if (eventId == OLYMPIAD_ID) {
                 final AtomicInteger count = entry.getValue().get(clientIp.hashCode());
@@ -243,7 +245,7 @@ public class AntiFeedManager {
      * @param eventId
      */
     public void clear(int eventId) {
-        final Map<Integer, AtomicInteger> event = _eventIPs.get(eventId);
+        final Map<Integer, AtomicInteger> event = eventIPs.get(eventId);
         if (event != null) {
             event.clear();
         }

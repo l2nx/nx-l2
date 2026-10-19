@@ -30,11 +30,11 @@ import java.util.List;
  */
 public class ExCubeGameTeamList extends ServerPacket {
     // Players Lists
-    private final List<Player> _bluePlayers;
-    private final List<Player> _redPlayers;
+    private final List<Player> bluePlayers;
+    private final List<Player> redPlayers;
 
     // Common Values
-    private final int _roomNumber;
+    private final int roomNumber;
 
     /**
      * Show Minigame Waiting List to Player
@@ -43,25 +43,25 @@ public class ExCubeGameTeamList extends ServerPacket {
      * @param roomNumber Arena/Room ID
      */
     public ExCubeGameTeamList(List<Player> redPlayers, List<Player> bluePlayers, int roomNumber) {
-        _redPlayers = redPlayers;
-        _bluePlayers = bluePlayers;
-        _roomNumber = roomNumber - 1;
+        this.redPlayers = redPlayers;
+        this.bluePlayers = bluePlayers;
+        this.roomNumber = roomNumber - 1;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_BLOCK_UP_SET_LIST.writeId(this, buffer);
         buffer.writeInt(0);
-        buffer.writeInt(_roomNumber);
+        buffer.writeInt(roomNumber);
         buffer.writeInt(0xffffffff);
-        buffer.writeInt(_bluePlayers.size());
-        for (Player player : _bluePlayers) {
+        buffer.writeInt(bluePlayers.size());
+        for (Player player : bluePlayers) {
             buffer.writeInt(player.getObjectId());
             buffer.writeString(player.getName());
         }
 
-        buffer.writeInt(_redPlayers.size());
-        for (Player player : _redPlayers) {
+        buffer.writeInt(redPlayers.size());
+        for (Player player : redPlayers) {
             buffer.writeInt(player.getObjectId());
             buffer.writeString(player.getName());
         }

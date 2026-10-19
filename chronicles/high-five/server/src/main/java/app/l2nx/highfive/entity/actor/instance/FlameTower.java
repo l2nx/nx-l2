@@ -26,14 +26,17 @@ import app.l2nx.highfive.entity.actor.templates.NpcTemplate;
 import app.l2nx.highfive.entity.zone.ZoneType;
 import app.l2nx.highfive.managers.ZoneManager;
 import java.util.List;
+import lombok.Setter;
 
 /**
  * Class for Flame Control Tower instance.
  * @author JIV
  */
 public class FlameTower extends Tower {
-    private int _upgradeLevel = 0;
-    private List<Integer> _zoneList;
+    @Setter
+    private int upgradeLevel = 0;
+
+    private List<Integer> zoneList;
 
     /**
      * Creates a flame tower.
@@ -57,10 +60,10 @@ public class FlameTower extends Tower {
     }
 
     public void enableZones(boolean value) {
-        if ((_zoneList != null) && (_upgradeLevel != 0)) {
-            final int maxIndex = _upgradeLevel * 2;
+        if ((zoneList != null) && (upgradeLevel != 0)) {
+            final int maxIndex = upgradeLevel * 2;
             for (int i = 0; i < maxIndex; i++) {
-                final ZoneType zone = ZoneManager.getInstance().getZoneById(_zoneList.get(i));
+                final ZoneType zone = ZoneManager.getInstance().getZoneById(zoneList.get(i));
                 if (zone != null) {
                     zone.setEnabled(value);
                 }
@@ -68,12 +71,8 @@ public class FlameTower extends Tower {
         }
     }
 
-    public void setUpgradeLevel(int level) {
-        _upgradeLevel = level;
-    }
-
     public void setZoneList(List<Integer> list) {
-        _zoneList = list;
+        zoneList = list;
         enableZones(true);
     }
 }

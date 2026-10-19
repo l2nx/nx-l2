@@ -33,8 +33,9 @@ import app.l2nx.highfive.network.serverpackets.NpcHtmlMessage;
 import app.l2nx.highfive.network.serverpackets.SortedWareHouseWithdrawalList;
 import app.l2nx.highfive.network.serverpackets.WareHouseDepositList;
 import app.l2nx.highfive.network.serverpackets.WareHouseWithdrawalList;
-import java.util.logging.Level;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class PrivateWarehouse implements IBypassHandler {
     private static final String[] COMMANDS = {"withdrawp", "withdrawsortedp", "depositp"};
 
@@ -87,7 +88,7 @@ public class PrivateWarehouse implements IBypassHandler {
 
             return false;
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, "Exception in " + getClass().getSimpleName(), e);
+            log.warn("Bypass failed", e);
         }
 
         return false;

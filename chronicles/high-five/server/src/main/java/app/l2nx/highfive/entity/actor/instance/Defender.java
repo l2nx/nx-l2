@@ -38,11 +38,13 @@ import app.l2nx.highfive.mechanics.siege.Castle;
 import app.l2nx.highfive.mechanics.siege.Fort;
 import app.l2nx.highfive.mechanics.siege.clanhalls.SiegableHall;
 import app.l2nx.highfive.network.serverpackets.ActionFailed;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class Defender extends Attackable {
-    private Castle _castle = null; // the castle which the instance should defend
-    private Fort _fort = null; // the fortress which the instance should defend
-    private SiegableHall _hall = null; // the siegable hall which the instance should defend
+    private Castle castle = null; // the castle which the instance should defend
+    private Fort fort = null; // the fortress which the instance should defend
+    private SiegableHall hall = null; // the siegable hall which the instance should defend
 
     /**
      * Creates a defender.
@@ -78,12 +80,12 @@ public class Defender extends Attackable {
         final Player player = attacker.asPlayer();
 
         // Check if siege is in progress.
-        if (((_fort != null) && _fort.getZone().isActive())
-                || ((_castle != null) && _castle.getZone().isActive())
-                || ((_hall != null) && _hall.getSiegeZone().isActive())) {
-            final int activeSiegeId = (_fort != null
-                    ? _fort.getResidenceId()
-                    : (_castle != null ? _castle.getResidenceId() : (_hall != null ? _hall.getId() : 0)));
+        if (((fort != null) && fort.getZone().isActive())
+                || ((castle != null) && castle.getZone().isActive())
+                || ((hall != null) && hall.getSiegeZone().isActive())) {
+            final int activeSiegeId = (fort != null
+                    ? fort.getResidenceId()
+                    : (castle != null ? castle.getResidenceId() : (hall != null ? hall.getId() : 0)));
 
             // Check if player is an enemy of this defender npc.
             if ((player != null)
@@ -129,12 +131,16 @@ public class Defender extends Attackable {
     public void onSpawn() {
         super.onSpawn();
 
-        _fort = FortManager.getInstance().getFort(getX(), getY(), getZ());
-        _castle = CastleManager.getInstance().getCastle(getX(), getY(), getZ());
-        _hall = getConquerableHall();
-        if ((_fort == null) && (_castle == null) && (_hall == null)) {
-            LOGGER.warning("Defender spawned outside of Fortress, Castle or Siegable hall Zone! NpcId: " + getId()
-                    + " x=" + getX() + " y=" + getY() + " z=" + getZ());
+        fort = FortManager.getInstance().getFort(getX(), getY(), getZ());
+        castle = CastleManager.getInstance().getCastle(getX(), getY(), getZ());
+        hall = getConquerableHall();
+        if ((fort == null) && (castle == null) && (hall == null)) {
+            log.warn(
+                    "Defender spawned outside of Fortress, Castle or Siegable hall Zone! NpcId: {} x={} y={} z={}",
+                    getId(),
+                    getX(),
+                    getY(),
+                    getZ());
         }
     }
 
@@ -179,12 +185,12 @@ public class Defender extends Attackable {
                 final Player player = attacker.asPlayer();
 
                 // Check if siege is in progress.
-                if (((_fort != null) && _fort.getZone().isActive())
-                        || ((_castle != null) && _castle.getZone().isActive())
-                        || ((_hall != null) && _hall.getSiegeZone().isActive())) {
-                    final int activeSiegeId = (_fort != null
-                            ? _fort.getResidenceId()
-                            : (_castle != null ? _castle.getResidenceId() : (_hall != null ? _hall.getId() : 0)));
+                if (((fort != null) && fort.getZone().isActive())
+                        || ((castle != null) && castle.getZone().isActive())
+                        || ((hall != null) && hall.getSiegeZone().isActive())) {
+                    final int activeSiegeId = (fort != null
+                            ? fort.getResidenceId()
+                            : (castle != null ? castle.getResidenceId() : (hall != null ? hall.getId() : 0)));
 
                     // Do not add hate on defenders.
                     if ((player.getSiegeState() == 2) && player.isRegisteredOnThisSiegeField(activeSiegeId)) {

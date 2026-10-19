@@ -41,7 +41,7 @@ import java.nio.file.Path;
  * @author HorridoJoho, Mobius
  */
 public class Region implements IRegion {
-    private final IBlock[] _blocks = new IBlock[IRegion.REGION_BLOCKS];
+    private final IBlock[] blocks = new IBlock[IRegion.REGION_BLOCKS];
 
     public Region(ByteBuffer bb) {
         load(bb);
@@ -52,15 +52,15 @@ public class Region implements IRegion {
             final int blockType = bb.get();
             switch (blockType) {
                 case IBlock.TYPE_FLAT: {
-                    _blocks[blockOffset] = new FlatBlock(bb);
+                    blocks[blockOffset] = new FlatBlock(bb);
                     break;
                 }
                 case IBlock.TYPE_COMPLEX: {
-                    _blocks[blockOffset] = new ComplexBlock(bb);
+                    blocks[blockOffset] = new ComplexBlock(bb);
                     break;
                 }
                 case IBlock.TYPE_MULTILAYER: {
-                    _blocks[blockOffset] = new MultilayerBlock(bb);
+                    blocks[blockOffset] = new MultilayerBlock(bb);
                     break;
                 }
                 default: {
@@ -71,7 +71,7 @@ public class Region implements IRegion {
     }
 
     private IBlock getBlock(int geoX, int geoY) {
-        return _blocks[
+        return blocks[
                 (((geoX / IBlock.BLOCK_CELLS_X) % IRegion.REGION_BLOCKS_X) * IRegion.REGION_BLOCKS_Y)
                         + ((geoY / IBlock.BLOCK_CELLS_Y) % IRegion.REGION_BLOCKS_Y)];
     }
@@ -116,7 +116,7 @@ public class Region implements IRegion {
         }
 
         buffer.rewind();
-        _blocks[
+        blocks[
                         (((geoX / IBlock.BLOCK_CELLS_X) % IRegion.REGION_BLOCKS_X) * IRegion.REGION_BLOCKS_Y)
                                 + ((geoY / IBlock.BLOCK_CELLS_Y) % IRegion.REGION_BLOCKS_Y)] =
                 new ComplexBlock(buffer);
@@ -159,7 +159,7 @@ public class Region implements IRegion {
         }
 
         try (BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(filePath.toFile()))) {
-            for (IBlock block : _blocks) {
+            for (IBlock block : blocks) {
                 if (block instanceof FlatBlock) {
                     final ByteBuffer buffer = ByteBuffer.allocate(3);
                     buffer.put((byte) IBlock.TYPE_FLAT);

@@ -47,7 +47,7 @@ public class OfflinePlay implements IVoicedCommandHandler {
 
     private static final Consumer<OnPlayerLogin> ON_PLAYER_LOGIN = event -> {
         if (OfflinePlayConfig.ENABLE_OFFLINE_PLAY_COMMAND && !OfflinePlayConfig.OFFLINE_PLAY_LOGIN_MESSAGE.isEmpty()) {
-            event.getPlayer()
+            event.player()
                     .sendPacket(new CreatureSay(
                             null, ChatType.ANNOUNCEMENT, "OfflinePlay", OfflinePlayConfig.OFFLINE_PLAY_LOGIN_MESSAGE));
         }

@@ -31,7 +31,7 @@ import java.io.File;
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 
@@ -45,11 +45,11 @@ import org.w3c.dom.Node;
  * </ul>
  * @author UnAfraid
  */
+@Slf4j
 public class CubicData implements IXmlReader {
-    private static final Logger LOGGER = Logger.getLogger(CubicData.class.getName());
 
-    private volatile Map<Integer, Map<Integer, CubicTemplate>> _cubics = Collections.emptyMap();
-    private volatile Map<Integer, Map<Integer, CubicTemplate>> _loadingCubics;
+    private volatile Map<Integer, Map<Integer, CubicTemplate>> cubics = Collections.emptyMap();
+    private volatile Map<Integer, Map<Integer, CubicTemplate>> loadingCubics;
 
     protected CubicData() {
         load();
@@ -58,7 +58,7 @@ public class CubicData implements IXmlReader {
     @Override
     public synchronized void load() {
         final Map<Integer, Map<Integer, CubicTemplate>> loadedCubics = new ConcurrentHashMap<>();
-        _loadingCubics = loadedCubics;
+        loadingCubics = loadedCubics;
         try {
             parseDatapackDirectory("data/stats/cubics", true);
             int count = 0;
@@ -67,14 +67,14 @@ public class CubicData implements IXmlReader {
             }
 
             if (count == 0) {
-                LOGGER.warning(getClass().getSimpleName() + ": No cubic templates loaded. Keeping previous data.");
+                log.warn("No cubic templates loaded. Keeping previous data.");
                 return;
             }
 
-            _cubics = loadedCubics;
-            LOGGER.info(getClass().getSimpleName() + ": Loaded " + count + " cubic templates.");
+            cubics = loadedCubics;
+            log.info("Loaded {} cubic templates.", count);
         } finally {
-            _loadingCubics = null;
+            loadingCubics = null;
         }
     }
 
@@ -104,10 +104,12 @@ public class CubicData implements IXmlReader {
             }
         });
 
-        final Map<Integer, Map<Integer, CubicTemplate>> loadingCubics = _loadingCubics;
+        final Map<Integer, Map<Integer, CubicTemplate>> loadingCubics = this.loadingCubics;
         if (loadingCubics == null) {
-            LOGGER.warning("Skipping cubic template outside loading context. cubicId: " + template.getId() + " level: "
-                    + template.getLevel());
+            log.warn(
+                    "Skipping cubic template outside loading context. cubicId: {} level: {}",
+                    template.getId(),
+                    template.getLevel());
             return;
         }
 
@@ -136,8 +138,11 @@ public class CubicData implements IXmlReader {
                     break;
                 }
                 default: {
-                    LOGGER.warning("Unsupported cubic condition: " + conditionNode.getNodeName() + " cubicId: "
-                            + template.getId() + " level: " + template.getLevel());
+                    log.warn(
+                            "Unsupported cubic condition: {} cubicId: {} level: {}",
+                            conditionNode.getNodeName(),
+                            template.getId(),
+                            template.getLevel());
                     break;
                 }
             }
@@ -159,7 +164,7 @@ public class CubicData implements IXmlReader {
      * @return The cubic template or {@code null}.
      */
     public CubicTemplate getCubicTemplate(int id, int level) {
-        return _cubics.getOrDefault(id, Collections.emptyMap()).get(level);
+        return cubics.getOrDefault(id, Collections.emptyMap()).get(level);
     }
 
     public static CubicData getInstance() {

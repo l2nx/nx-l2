@@ -27,18 +27,18 @@ import app.l2nx.network.buffer.WriteBuffer;
  * @author JIV
  */
 public class ExRotation extends ServerPacket {
-    private final int _charId;
-    private final int _heading;
+    private final int charId;
+    private final int heading;
 
     public ExRotation(int charId, int heading) {
-        _charId = charId;
-        _heading = heading;
+        this.charId = charId;
+        this.heading = heading;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_ROTATION.writeId(this, buffer);
-        buffer.writeInt(_charId);
-        buffer.writeInt(_heading);
+        buffer.writeInt(charId);
+        buffer.writeInt(heading);
     }
 }

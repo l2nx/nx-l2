@@ -29,11 +29,11 @@ import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.mechanics.undergroundColiseum.UCTeam;
 
 public class UCTower extends Folk {
-    private UCTeam _team;
+    private UCTeam team;
 
     public UCTower(UCTeam team, NpcTemplate template) {
         super(template);
-        _team = team;
+        this.team = team;
     }
 
     @Override
@@ -65,9 +65,9 @@ public class UCTower extends Folk {
             return false;
         }
 
-        if (_team != null) {
-            _team.deleteTower();
-            _team = null;
+        if (team != null) {
+            team.deleteTower();
+            team = null;
         }
 
         return true;
@@ -75,6 +75,6 @@ public class UCTower extends Folk {
 
     @Override
     public Team getTeam() {
-        return _team.getIndex() == 1 ? Team.BLUE : Team.RED;
+        return team.getIndex() == 1 ? Team.BLUE : Team.RED;
     }
 }

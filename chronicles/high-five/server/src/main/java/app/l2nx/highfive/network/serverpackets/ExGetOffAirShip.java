@@ -28,27 +28,27 @@ import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.network.buffer.WriteBuffer;
 
 public class ExGetOffAirShip extends ServerPacket {
-    private final int _playerId;
-    private final int _airShipId;
-    private final int _x;
-    private final int _y;
-    private final int _z;
+    private final int playerId;
+    private final int airShipId;
+    private final int x;
+    private final int y;
+    private final int z;
 
     public ExGetOffAirShip(Creature creature, Creature ship, int x, int y, int z) {
-        _playerId = creature.getObjectId();
-        _airShipId = ship.getObjectId();
-        _x = x;
-        _y = y;
-        _z = z;
+        playerId = creature.getObjectId();
+        airShipId = ship.getObjectId();
+        this.x = x;
+        this.y = y;
+        this.z = z;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_GET_OFF_AIRSHIP.writeId(this, buffer);
-        buffer.writeInt(_playerId);
-        buffer.writeInt(_airShipId);
-        buffer.writeInt(_x);
-        buffer.writeInt(_y);
-        buffer.writeInt(_z);
+        buffer.writeInt(playerId);
+        buffer.writeInt(airShipId);
+        buffer.writeInt(x);
+        buffer.writeInt(y);
+        buffer.writeInt(z);
     }
 }

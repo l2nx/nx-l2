@@ -25,11 +25,12 @@ import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.handler.IVoicedCommandHandler;
 import app.l2nx.highfive.network.serverpackets.NpcHtmlMessage;
 import java.util.StringTokenizer;
-import java.util.logging.Level;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author Nik
  */
+@Slf4j
 public class ChangePassword implements IVoicedCommandHandler {
     private static final String[] VOICED_COMMANDS = {"changepassword"};
 
@@ -79,7 +80,7 @@ public class ChangePassword implements IVoicedCommandHandler {
                 }
             } catch (Exception e) {
                 activeChar.sendMessage("A problem occurred while changing password!");
-                LOGGER.log(Level.WARNING, "", e);
+                log.warn("", e);
             }
         } else {
             // showHTML(activeChar);

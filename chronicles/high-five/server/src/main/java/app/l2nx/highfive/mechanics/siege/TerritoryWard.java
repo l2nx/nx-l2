@@ -33,79 +33,66 @@ import app.l2nx.highfive.managers.TerritoryWarManager;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.serverpackets.InventoryUpdate;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
+import lombok.Getter;
+import lombok.Setter;
 
 public class TerritoryWard {
-    protected Player _player = null;
+    @Getter
+    protected Player player = null;
+
     public int playerId = 0;
-    private Item _item = null;
-    private Npc _npc = null;
+    private Item item = null;
 
-    private Location _location;
-    private Location _oldLocation;
+    @Getter
+    @Setter
+    private Npc npc = null;
 
-    private final int _itemId;
-    private int _ownerCastleId;
+    private Location location;
+    private Location oldLocation;
 
-    private final int _territoryId;
+    private final int itemId;
+
+    @Getter
+    @Setter
+    private int ownerCastleId;
+
+    @Getter
+    private final int territoryId;
 
     public TerritoryWard(int territoryId, int x, int y, int z, int heading, int itemId, int castleId, Npc npc) {
-        _territoryId = territoryId;
-        _location = new Location(x, y, z, heading);
-        _itemId = itemId;
-        _ownerCastleId = castleId;
-        _npc = npc;
-    }
-
-    public int getTerritoryId() {
-        return _territoryId;
-    }
-
-    public int getOwnerCastleId() {
-        return _ownerCastleId;
-    }
-
-    public void setOwnerCastleId(int newOwner) {
-        _ownerCastleId = newOwner;
-    }
-
-    public Npc getNpc() {
-        return _npc;
-    }
-
-    public void setNpc(Npc npc) {
-        _npc = npc;
-    }
-
-    public Player getPlayer() {
-        return _player;
+        this.territoryId = territoryId;
+        location = new Location(x, y, z, heading);
+        this.itemId = itemId;
+        ownerCastleId = castleId;
+        this.npc = npc;
     }
 
     public synchronized void spawnBack() {
-        if (_player != null) {
+        if (player != null) {
             dropIt();
         }
 
         // Init the dropped WardInstance and add it in the world as a visible object at the position where last Pc got
         // it.
-        _npc = TerritoryWarManager.getInstance().spawnNPC(36491 + _territoryId, _oldLocation);
+        npc = TerritoryWarManager.getInstance().spawnNPC(36491 + territoryId, oldLocation);
     }
 
     public synchronized void spawnMe() {
-        if (_player != null) {
+        if (player != null) {
             dropIt();
         }
 
         // Init the dropped WardInstance and add it in the world as a visible object at the position where Pc was last.
-        _npc = TerritoryWarManager.getInstance().spawnNPC(36491 + _territoryId, _location);
+        npc = TerritoryWarManager.getInstance().spawnNPC(36491 + territoryId, location);
     }
 
     public synchronized void unSpawnMe() {
-        if (_player != null) {
+        if (player != null) {
             dropIt();
         }
 
-        if ((_npc != null) && !_npc.isDecayed()) {
-            _npc.deleteMe();
+        if ((npc != null) && !npc.isDecayed()) {
+            npc.deleteMe();
         }
     }
 
@@ -123,46 +110,46 @@ public class TerritoryWard {
         }
 
         // Player holding it data.
-        _player = player;
-        playerId = _player.getObjectId();
-        _oldLocation = new Location(_npc.getX(), _npc.getY(), _npc.getZ(), _npc.getHeading());
-        _npc = null;
+        this.player = player;
+        playerId = this.player.getObjectId();
+        oldLocation = new Location(npc.getX(), npc.getY(), npc.getZ(), npc.getHeading());
+        npc = null;
 
         // Equip with the weapon.
         if (item == null) {
-            _item = ItemManager.createItem(ItemProcessType.PICKUP, _itemId, 1, null, null);
+            this.item = ItemManager.createItem(ItemProcessType.PICKUP, itemId, 1, null, null);
         } else {
-            _item = item;
+            this.item = item;
         }
 
-        _player.getInventory().equipItem(_item);
+        this.player.getInventory().equipItem(this.item);
         final SystemMessage sm = new SystemMessage(SystemMessageId.YOU_HAVE_EQUIPPED_YOUR_S1);
-        sm.addItemName(_item);
-        _player.sendPacket(sm);
+        sm.addItemName(this.item);
+        this.player.sendPacket(sm);
 
         // Refresh inventory
         final InventoryUpdate iu = new InventoryUpdate();
-        iu.addItem(_item);
-        _player.sendInventoryUpdate(iu);
+        iu.addItem(this.item);
+        this.player.sendInventoryUpdate(iu);
 
         // Refresh player stats
-        _player.broadcastUserInfo();
-        _player.setCombatFlagEquipped(true);
-        _player.sendPacket(SystemMessageId.YOU_VE_ACQUIRED_THE_WARD_MOVE_QUICKLY_TO_YOUR_FORCES_OUTPOST);
-        TerritoryWarManager.getInstance().giveTWPoint(player, _territoryId, 5);
+        this.player.broadcastUserInfo();
+        this.player.setCombatFlagEquipped(true);
+        this.player.sendPacket(SystemMessageId.YOU_VE_ACQUIRED_THE_WARD_MOVE_QUICKLY_TO_YOUR_FORCES_OUTPOST);
+        TerritoryWarManager.getInstance().giveTWPoint(player, territoryId, 5);
         return true;
     }
 
     public void dropIt() {
         // Reset player stats
-        _player.setCombatFlagEquipped(false);
-        final BodyPart bodyPart = BodyPart.fromItem(_item);
-        _player.getInventory().unEquipItemInBodySlot(bodyPart);
-        _player.destroyItem(ItemProcessType.DESTROY, _item, null, true);
-        _item = null;
-        _player.broadcastUserInfo();
-        _location = new Location(_player.getX(), _player.getY(), _player.getZ(), _player.getHeading());
-        _player = null;
+        player.setCombatFlagEquipped(false);
+        final BodyPart bodyPart = BodyPart.fromItem(item);
+        player.getInventory().unEquipItemInBodySlot(bodyPart);
+        player.destroyItem(ItemProcessType.DESTROY, item, null, true);
+        item = null;
+        player.broadcastUserInfo();
+        location = new Location(player.getX(), player.getY(), player.getZ(), player.getHeading());
+        player = null;
         playerId = 0;
     }
 }

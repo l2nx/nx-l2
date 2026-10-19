@@ -31,10 +31,10 @@ import app.l2nx.highfive.network.serverpackets.SystemMessage;
  * @author Adry_85
  */
 public class ConditionTargetMyPartyExceptMe extends Condition {
-    private final boolean _value;
+    private final boolean value;
 
     public ConditionTargetMyPartyExceptMe(boolean value) {
-        _value = value;
+        this.value = value;
     }
 
     @Override
@@ -53,6 +53,6 @@ public class ConditionTargetMyPartyExceptMe extends Condition {
             isPartyMember = false;
         }
 
-        return _value == isPartyMember;
+        return value == isPartyMember;
     }
 }

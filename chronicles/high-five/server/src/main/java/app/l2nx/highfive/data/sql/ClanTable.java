@@ -61,16 +61,15 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 
 /**
  * This class loads the clan related data.
  */
+@Slf4j
 public class ClanTable {
-    private static final Logger LOGGER = Logger.getLogger(ClanTable.class.getName());
-    private final Map<Integer, Clan> _clans = new ConcurrentHashMap<>();
+    private final Map<Integer, Clan> clans = new ConcurrentHashMap<>();
 
     protected ClanTable() {
         // Forums has to be loaded before clan data, because of last forum id used should have also memo included.
@@ -87,19 +86,19 @@ public class ClanTable {
                 cids.add(rs.getInt("clan_id"));
             }
         } catch (Exception e) {
-            LOGGER.log(Level.SEVERE, "Error restoring ClanTable.", e);
+            log.error("Error restoring ClanTable.", e);
         }
 
         // Create clans.
         for (int cid : cids) {
             final Clan clan = new Clan(cid);
-            _clans.put(cid, clan);
+            clans.put(cid, clan);
             if (clan.getDissolvingExpiryTime() != 0) {
                 scheduleRemoveClan(clan.getId());
             }
         }
 
-        LOGGER.info(getClass().getSimpleName() + ": Restored " + cids.size() + " clans from the database.");
+        log.info("Restored {} clans from the database.", cids.size());
         allianceCheck();
         restoreClanWars();
 
@@ -111,7 +110,7 @@ public class ClanTable {
      * @return the clans
      */
     public Collection<Clan> getClans() {
-        return _clans.values();
+        return clans.values();
     }
 
     /**
@@ -119,7 +118,7 @@ public class ClanTable {
      * @return the clan count
      */
     public int getClanCount() {
-        return _clans.size();
+        return clans.size();
     }
 
     /**
@@ -127,11 +126,11 @@ public class ClanTable {
      * @return
      */
     public Clan getClan(int clanId) {
-        return _clans.get(clanId);
+        return clans.get(clanId);
     }
 
     public Clan getClanByName(String clanName) {
-        for (Clan clan : _clans.values()) {
+        for (Clan clan : clans.values()) {
             if (clan.getName().equalsIgnoreCase(clanName)) {
                 return clan;
             }
@@ -196,7 +195,7 @@ public class ClanTable {
         privileges.enableAll();
         player.setClanPrivileges(privileges);
 
-        _clans.put(clan.getId(), clan);
+        clans.put(clan.getId(), clan);
 
         // should be update packet only
         player.sendPacket(new PledgeShowInfoUpdate(clan));
@@ -258,7 +257,7 @@ public class ClanTable {
             clan.removeClanMember(member.getObjectId(), 0);
         }
 
-        _clans.remove(clanId);
+        clans.remove(clanId);
         IdManager.getInstance().releaseId(clanId);
 
         try (Connection con = DatabaseFactory.getConnection()) {
@@ -314,7 +313,7 @@ public class ClanTable {
                 }
             }
         } catch (Exception e) {
-            LOGGER.log(Level.SEVERE, getClass().getSimpleName() + ": Error removing clan from DB.", e);
+            log.error("Error removing clan from DB.", e);
         }
 
         // Notify to scripts
@@ -338,7 +337,7 @@ public class ClanTable {
     }
 
     public boolean isAllyExists(String allyName) {
-        for (Clan clan : _clans.values()) {
+        for (Clan clan : clans.values()) {
             if ((clan.getAllyName() != null) && clan.getAllyName().equalsIgnoreCase(allyName)) {
                 return true;
             }
@@ -352,7 +351,9 @@ public class ClanTable {
         final Clan clan2 = getClan(clanId2);
 
         if (EventDispatcher.getInstance().hasListener(EventType.ON_CLAN_WAR_START)) {
-            EventDispatcher.getInstance().notifyEventAsync(new OnClanWarStart(clan1, clan2));
+            EventDispatcher.getInstance()
+                    .notifyEventAsync(
+                            OnClanWarStart.builder().clan1(clan1).clan2(clan2).build());
         }
 
         clan1.setEnemyClan(clan2);
@@ -368,7 +369,7 @@ public class ClanTable {
             ps.setInt(4, 0);
             ps.execute();
         } catch (Exception e) {
-            LOGGER.log(Level.SEVERE, getClass().getSimpleName() + ": Error storing clan wars data.", e);
+            log.error("Error storing clan wars data.", e);
         }
 
         // SystemMessage msg = new SystemMessage(SystemMessageId.WAR_WITH_THE_S1_CLAN_HAS_BEGUN);
@@ -393,7 +394,9 @@ public class ClanTable {
         final Clan clan2 = getClan(clanId2);
 
         if (EventDispatcher.getInstance().hasListener(EventType.ON_CLAN_WAR_FINISH)) {
-            EventDispatcher.getInstance().notifyEventAsync(new OnClanWarFinish(clan1, clan2));
+            EventDispatcher.getInstance()
+                    .notifyEventAsync(
+                            OnClanWarFinish.builder().clan1(clan1).clan2(clan2).build());
         }
 
         clan1.deleteEnemyClan(clan2);
@@ -410,7 +413,7 @@ public class ClanTable {
             ps.setInt(4, clanId2);
             ps.execute();
         } catch (Exception e) {
-            LOGGER.log(Level.SEVERE, getClass().getSimpleName() + ": Error removing clan wars data.", e);
+            log.error("Error removing clan wars data.", e);
         }
 
         // SystemMessage msg = new SystemMessage(SystemMessageId.WAR_WITH_THE_S1_CLAN_HAS_ENDED);
@@ -450,14 +453,11 @@ public class ClanTable {
                     clan1.setEnemyClan(rset.getInt("clan2"));
                     clan2.setAttackerClan(rset.getInt("clan1"));
                 } else {
-                    LOGGER.log(
-                            Level.WARNING,
-                            getClass().getSimpleName() + ": restorewars one of clans is null clan1:" + clan1 + " clan2:"
-                                    + clan2);
+                    log.warn("Restorewars one of clans is null clan1:{} clan2:{}", clan1, clan2);
                 }
             }
         } catch (Exception e) {
-            LOGGER.log(Level.SEVERE, getClass().getSimpleName() + ": Error restoring clan wars data.", e);
+            log.error("Error restoring clan wars data.", e);
         }
     }
 
@@ -465,14 +465,14 @@ public class ClanTable {
      * Check for nonexistent alliances
      */
     private void allianceCheck() {
-        for (Clan clan : _clans.values()) {
+        for (Clan clan : clans.values()) {
             final int allyId = clan.getAllyId();
-            if ((allyId != 0) && (clan.getId() != allyId) && !_clans.containsKey(allyId)) {
+            if ((allyId != 0) && (clan.getId() != allyId) && !clans.containsKey(allyId)) {
                 clan.setAllyId(0);
                 clan.setAllyName(null);
                 clan.changeAllyCrest(0, true);
                 clan.updateClanInDB();
-                LOGGER.info(getClass().getSimpleName() + ": Removed alliance from clan: " + clan);
+                log.info("Removed alliance from clan: {}", clan);
             }
         }
     }
@@ -480,7 +480,7 @@ public class ClanTable {
     public List<Clan> getClanAllies(int allianceId) {
         final List<Clan> clanAllies = new ArrayList<>();
         if (allianceId != 0) {
-            for (Clan clan : _clans.values()) {
+            for (Clan clan : clans.values()) {
                 if ((clan != null) && (clan.getAllyId() == allianceId)) {
                     clanAllies.add(clan);
                 }
@@ -491,13 +491,13 @@ public class ClanTable {
     }
 
     public void shutdown() {
-        for (Clan clan : _clans.values()) {
+        for (Clan clan : clans.values()) {
             clan.updateClanInDB();
         }
     }
 
     private void updateClanRanks() {
-        for (Clan clan : _clans.values()) {
+        for (Clan clan : clans.values()) {
             clan.setRank(getClanRank(clan));
         }
     }
@@ -508,7 +508,7 @@ public class ClanTable {
         }
 
         int rank = 1;
-        for (Clan c : _clans.values()) {
+        for (Clan c : clans.values()) {
             if ((clan != c)
                     && ((clan.getLevel() < c.getLevel())
                             || ((clan.getLevel() == c.getLevel())

@@ -34,9 +34,12 @@ import app.l2nx.highfive.network.enums.ChatType;
 import app.l2nx.highfive.network.serverpackets.NpcSay;
 import app.l2nx.highfive.threads.ThreadPool;
 import java.util.List;
+import lombok.AccessLevel;
+import lombok.Setter;
 
 public class FortCommander extends Defender {
-    private boolean _canTalk;
+    @Setter(AccessLevel.PACKAGE)
+    private boolean canTalk;
 
     /**
      * Creates a fort commander.
@@ -45,7 +48,7 @@ public class FortCommander extends Defender {
     public FortCommander(NpcTemplate template) {
         super(template);
         setInstanceType(InstanceType.FortCommander);
-        _canTalk = true;
+        canTalk = true;
     }
 
     /**
@@ -160,12 +163,8 @@ public class FortCommander extends Defender {
         }
     }
 
-    void setCanTalk(boolean value) {
-        _canTalk = value;
-    }
-
     private boolean canTalk() {
-        return _canTalk;
+        return canTalk;
     }
 
     @Override

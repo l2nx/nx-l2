@@ -32,34 +32,34 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class GMViewItemList extends AbstractItemPacket {
-    private final List<Item> _items = new ArrayList<>();
-    private final int _limit;
-    private final String _playerName;
+    private final List<Item> items = new ArrayList<>();
+    private final int limit;
+    private final String playerName;
 
     public GMViewItemList(Player player) {
-        _playerName = player.getName();
-        _limit = player.getInventoryLimit();
+        playerName = player.getName();
+        limit = player.getInventoryLimit();
         for (Item item : player.getInventory().getItems()) {
-            _items.add(item);
+            items.add(item);
         }
     }
 
     public GMViewItemList(Pet cha) {
-        _playerName = cha.getName();
-        _limit = cha.getInventoryLimit();
+        playerName = cha.getName();
+        limit = cha.getInventoryLimit();
         for (Item item : cha.getInventory().getItems()) {
-            _items.add(item);
+            items.add(item);
         }
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.GM_VIEW_ITEM_LIST.writeId(this, buffer);
-        buffer.writeString(_playerName);
-        buffer.writeInt(_limit); // inventory limit
+        buffer.writeString(playerName);
+        buffer.writeInt(limit); // inventory limit
         buffer.writeShort(1); // show window ??
-        buffer.writeShort(_items.size());
-        for (Item item : _items) {
+        buffer.writeShort(items.size());
+        for (Item item : items) {
             writeItem(item, buffer);
         }
     }

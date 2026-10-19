@@ -23,69 +23,52 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * @author DS
  */
 public class ListContainer {
-    private final int _listId;
-    private boolean _applyTaxes = false;
-    private boolean _maintainEnchantment = false;
-    private double _useRate = 1.0;
+    @Getter
+    private final int listId;
 
-    protected List<Entry> _entries = new ArrayList<>();
-    protected Set<Integer> _npcsAllowed = null;
+    @Setter
+    private boolean applyTaxes = false;
+
+    @Setter
+    private boolean maintainEnchantment = false;
+
+    @Getter
+    @Setter
+    private double useRate = 1.0;
+
+    @Getter
+    protected List<Entry> entries = new ArrayList<>();
+
+    protected Set<Integer> npcsAllowed = null;
 
     public ListContainer(int listId) {
-        _listId = listId;
-    }
-
-    public List<Entry> getEntries() {
-        return _entries;
-    }
-
-    public int getListId() {
-        return _listId;
-    }
-
-    public void setApplyTaxes(boolean applyTaxes) {
-        _applyTaxes = applyTaxes;
+        this.listId = listId;
     }
 
     public boolean getApplyTaxes() {
-        return _applyTaxes;
-    }
-
-    public void setMaintainEnchantment(boolean maintainEnchantment) {
-        _maintainEnchantment = maintainEnchantment;
-    }
-
-    public double getUseRate() {
-        return _useRate;
-    }
-
-    /**
-     * Set this to create multisell with increased products, all product counts will be multiplied by the rate specified.<br>
-     * <b>NOTE:</b> It affects only parser, it won't change values of already parsed multisell since MultiSells' parseEntry method handles this feature.
-     * @param rate
-     */
-    public void setUseRate(double rate) {
-        _useRate = rate;
+        return applyTaxes;
     }
 
     public boolean getMaintainEnchantment() {
-        return _maintainEnchantment;
+        return maintainEnchantment;
     }
 
     public void allowNpc(int npcId) {
-        if (_npcsAllowed == null) {
-            _npcsAllowed = new HashSet<>();
+        if (npcsAllowed == null) {
+            npcsAllowed = new HashSet<>();
         }
 
-        _npcsAllowed.add(npcId);
+        npcsAllowed.add(npcId);
     }
 
     public boolean isNpcAllowed(int npcId) {
-        return (_npcsAllowed != null) && _npcsAllowed.contains(npcId);
+        return (npcsAllowed != null) && npcsAllowed.contains(npcId);
     }
 }

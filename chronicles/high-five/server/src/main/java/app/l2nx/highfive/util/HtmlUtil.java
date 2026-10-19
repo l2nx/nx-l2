@@ -30,14 +30,14 @@ import app.l2nx.highfive.network.serverpackets.NpcHtmlMessage;
 import app.l2nx.highfive.network.serverpackets.ShowBoard;
 import java.util.Arrays;
 import java.util.Locale;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * A class containing useful methods for constructing HTML
  * @author NosBit, Mobius
  */
+@Slf4j
 public class HtmlUtil {
-    private static final Logger LOGGER = Logger.getLogger(HtmlUtil.class.getName());
 
     /**
      * Generates an HTML representation of the CP (Combat Points) gauge. The gauge visually represents the current CP value relative to its maximum, displayed as either a percentage or a fraction.
@@ -324,7 +324,7 @@ public class HtmlUtil {
             }
 
             if (DevelopmentConfig.HTML_ACTION_CACHE_DEBUG) {
-                LOGGER.info("Cached html bypass(" + scope + "): '" + bypass + "'");
+                log.info("Cached html bypass({}): '{}'", scope, bypass);
             }
 
             player.addHtmlAction(scope, bypass);
@@ -352,17 +352,17 @@ public class HtmlUtil {
 
             final String htmlLink = html.substring(linkStartEnd, linkEnd).trim();
             if (htmlLink.isEmpty()) {
-                LOGGER.warning("Html link path is empty!");
+                log.warn("Html link path is empty!");
                 continue;
             }
 
             if (htmlLink.contains("..")) {
-                LOGGER.warning("Html link path is invalid: " + htmlLink);
+                log.warn("Html link path is invalid: {}", htmlLink);
                 continue;
             }
 
             if (DevelopmentConfig.HTML_ACTION_CACHE_DEBUG) {
-                LOGGER.info("Cached html link(" + scope + "): '" + htmlLink + "'");
+                log.info("Cached html link({}): '{}'", scope, htmlLink);
             }
 
             // Let's keep an action cache with "link " lowercase literal kept.
@@ -384,7 +384,7 @@ public class HtmlUtil {
         }
 
         if (DevelopmentConfig.HTML_ACTION_CACHE_DEBUG) {
-            LOGGER.info("Set html action npc(" + scope + "): " + npcObjId);
+            log.info("Set html action npc({}): {}", scope, npcObjId);
         }
 
         player.setHtmlActionOriginObjectId(scope, npcObjId);

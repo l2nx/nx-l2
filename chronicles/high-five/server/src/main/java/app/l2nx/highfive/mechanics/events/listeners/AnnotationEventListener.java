@@ -24,36 +24,32 @@ import app.l2nx.highfive.mechanics.events.ListenersContainer;
 import app.l2nx.highfive.mechanics.events.holders.IBaseEvent;
 import app.l2nx.highfive.mechanics.events.returns.AbstractEventReturn;
 import java.lang.reflect.Method;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Annotation event listener provides dynamically attached callback to any method operation with or without any return object.
  * @author UnAfraid
  */
+@Slf4j
 public class AnnotationEventListener extends AbstractEventListener {
-    private static final Logger LOGGER = Logger.getLogger(AnnotationEventListener.class.getName());
-    private final Method _callback;
+    private final Method callback;
 
     public AnnotationEventListener(
             ListenersContainer container, EventType type, Method callback, Object owner, int priority) {
         super(container, type, owner);
-        _callback = callback;
+        this.callback = callback;
         setPriority(priority);
     }
 
     @Override
     public <R extends AbstractEventReturn> R executeEvent(IBaseEvent event, Class<R> returnBackClass) {
         try {
-            final Object result = _callback.invoke(getOwner(), event);
-            if (_callback.getReturnType() == returnBackClass) {
+            final Object result = callback.invoke(getOwner(), event);
+            if (callback.getReturnType() == returnBackClass) {
                 return returnBackClass.cast(result);
             }
         } catch (Exception e) {
-            LOGGER.log(
-                    Level.WARNING,
-                    getClass().getSimpleName() + ": Error while invoking " + _callback.getName() + " on " + getOwner(),
-                    e);
+            log.warn("Error while invoking {} on {}", callback.getName(), getOwner(), e);
         }
 
         return null;

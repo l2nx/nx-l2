@@ -27,30 +27,30 @@ import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.network.buffer.WriteBuffer;
 
 public class AskJoinPledge extends ServerPacket {
-    private final int _requestorObjId;
-    private final String _subPledgeName;
-    private final int _pledgeType;
-    private final String _pledgeName;
+    private final int requestorObjId;
+    private final String subPledgeName;
+    private final int pledgeType;
+    private final String pledgeName;
 
     public AskJoinPledge(int requestorObjId, String subPledgeName, int pledgeType, String pledgeName) {
-        _requestorObjId = requestorObjId;
-        _subPledgeName = subPledgeName;
-        _pledgeType = pledgeType;
-        _pledgeName = pledgeName;
+        this.requestorObjId = requestorObjId;
+        this.subPledgeName = subPledgeName;
+        this.pledgeType = pledgeType;
+        this.pledgeName = pledgeName;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.ASK_JOIN_PLEDGE.writeId(this, buffer);
-        buffer.writeInt(_requestorObjId);
-        if (_subPledgeName != null) {
-            buffer.writeString(_pledgeType > 0 ? _subPledgeName : _pledgeName);
+        buffer.writeInt(requestorObjId);
+        if (subPledgeName != null) {
+            buffer.writeString(pledgeType > 0 ? subPledgeName : pledgeName);
         }
 
-        if (_pledgeType != 0) {
-            buffer.writeInt(_pledgeType);
+        if (pledgeType != 0) {
+            buffer.writeInt(pledgeType);
         }
 
-        buffer.writeString(_pledgeName);
+        buffer.writeString(pledgeName);
     }
 }

@@ -34,7 +34,7 @@ import java.util.StringTokenizer;
  * @author Gigiikun
  */
 public class AdminTerritoryWar implements IAdminCommandHandler {
-    private static final String[] _adminCommands = {
+    private static final String[] commandList = {
         "admin_territory_war",
         "admin_territory_war_time",
         "admin_territory_war_start",
@@ -174,7 +174,7 @@ public class AdminTerritoryWar implements IAdminCommandHandler {
 
     @Override
     public String[] getCommandList() {
-        return _adminCommands;
+        return commandList;
     }
 
     private void showSiegeTimePage(Player activeChar) {

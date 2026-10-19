@@ -35,25 +35,32 @@ import app.l2nx.highfive.threads.ThreadPool;
 import app.l2nx.highfive.util.StatSet;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class AuctionableHall extends ClanHall {
     private static final int CH_RATE = 604800000;
 
-    protected long _paidUntil;
-    private final int _grade;
-    protected boolean _paid;
-    final int _lease;
+    @Getter
+    protected long paidUntil;
+
+    @Getter
+    private final int grade;
+
+    protected boolean paid;
+
+    @Getter
+    final int lease;
 
     public AuctionableHall(StatSet set) {
         super(set);
-        _paidUntil = set.getLong("paidUntil");
-        _grade = set.getInt("grade");
-        _paid = set.getBoolean("paid");
-        _lease = set.getInt("lease");
+        paidUntil = set.getLong("paidUntil");
+        grade = set.getInt("grade");
+        paid = set.getBoolean("paid");
+        lease = set.getInt("lease");
         if (getOwnerId() != 0) {
-            _isFree = false;
+            free = false;
             initialyzeTask(false);
             loadFunctions();
         }
@@ -63,38 +70,20 @@ public class AuctionableHall extends ClanHall {
      * @return if clanHall is paid or not
      */
     public boolean getPaid() {
-        return _paid;
-    }
-
-    /** Return lease */
-    @Override
-    public int getLease() {
-        return _lease;
-    }
-
-    /** Return PaidUntil */
-    @Override
-    public long getPaidUntil() {
-        return _paidUntil;
-    }
-
-    /** Return Grade */
-    @Override
-    public int getGrade() {
-        return _grade;
+        return paid;
     }
 
     @Override
     public void free() {
         super.free();
-        _paidUntil = 0;
-        _paid = false;
+        paidUntil = 0;
+        paid = false;
     }
 
     @Override
     public void setOwner(Clan clan) {
         super.setOwner(clan);
-        _paidUntil = System.currentTimeMillis();
+        paidUntil = System.currentTimeMillis();
         initialyzeTask(true);
     }
 
@@ -104,13 +93,13 @@ public class AuctionableHall extends ClanHall {
      */
     private void initialyzeTask(boolean forced) {
         final long currentTime = System.currentTimeMillis();
-        if (_paidUntil > currentTime) {
-            ThreadPool.schedule(new FeeTask(), _paidUntil - currentTime);
-        } else if (!_paid && !forced) {
-            if ((System.currentTimeMillis() + (3600000 * 24)) <= (_paidUntil + CH_RATE)) {
+        if (paidUntil > currentTime) {
+            ThreadPool.schedule(new FeeTask(), paidUntil - currentTime);
+        } else if (!paid && !forced) {
+            if ((System.currentTimeMillis() + (3600000 * 24)) <= (paidUntil + CH_RATE)) {
                 ThreadPool.schedule(new FeeTask(), System.currentTimeMillis() + (3600000 * 24));
             } else {
-                ThreadPool.schedule(new FeeTask(), (_paidUntil + CH_RATE) - System.currentTimeMillis());
+                ThreadPool.schedule(new FeeTask(), (paidUntil + CH_RATE) - System.currentTimeMillis());
             }
         } else {
             ThreadPool.schedule(new FeeTask(), 0);
@@ -119,7 +108,6 @@ public class AuctionableHall extends ClanHall {
 
     /** Fee Task */
     protected class FeeTask implements Runnable {
-        private final Logger LOGGER = Logger.getLogger(FeeTask.class.getName());
 
         @Override
         public void run() {
@@ -128,32 +116,32 @@ public class AuctionableHall extends ClanHall {
                     return;
                 }
 
-                final long _time = System.currentTimeMillis();
-                if (_paidUntil > _time) {
-                    ThreadPool.schedule(new FeeTask(), _paidUntil - _time);
+                final long time = System.currentTimeMillis();
+                if (paidUntil > time) {
+                    ThreadPool.schedule(new FeeTask(), paidUntil - time);
                     return;
                 }
 
                 final Clan clan = ClanTable.getInstance().getClan(getOwnerId());
                 if (ClanTable.getInstance().getClan(getOwnerId()).getWarehouse().getAdena() >= getLease()) {
-                    if (_paidUntil != 0) {
-                        while (_paidUntil <= _time) {
-                            _paidUntil += CH_RATE;
+                    if (paidUntil != 0) {
+                        while (paidUntil <= time) {
+                            paidUntil += CH_RATE;
                         }
                     } else {
-                        _paidUntil = _time + CH_RATE;
+                        paidUntil = time + CH_RATE;
                     }
 
                     ClanTable.getInstance()
                             .getClan(getOwnerId())
                             .getWarehouse()
                             .destroyItemByItemId(ItemProcessType.FEE, Inventory.ADENA_ID, getLease(), null, null);
-                    ThreadPool.schedule(new FeeTask(), _paidUntil - _time);
-                    _paid = true;
+                    ThreadPool.schedule(new FeeTask(), paidUntil - time);
+                    paid = true;
                     updateDb();
                 } else {
-                    _paid = false;
-                    if (_time > (_paidUntil + CH_RATE)) {
+                    paid = false;
+                    if (time > (paidUntil + CH_RATE)) {
                         if (ClanHallTable.getInstance().loaded()) {
                             ClanHallAuctionManager.getInstance().initNPC(getId());
                             ClanHallTable.getInstance().setFree(getId());
@@ -169,17 +157,17 @@ public class AuctionableHall extends ClanHall {
                         final SystemMessage sm = new SystemMessage(
                                 SystemMessageId
                                         .PAYMENT_FOR_YOUR_CLAN_HALL_HAS_NOT_BEEN_MADE_PLEASE_MAKE_PAYMENT_TO_YOUR_CLAN_WAREHOUSE_BY_S1_TOMORROW);
-                        sm.addInt(_lease);
+                        sm.addInt(lease);
                         clan.broadcastToOnlineMembers(sm);
-                        if ((_time + (3600000 * 24)) <= (_paidUntil + CH_RATE)) {
-                            ThreadPool.schedule(new FeeTask(), _time + (3600000 * 24));
+                        if ((time + (3600000 * 24)) <= (paidUntil + CH_RATE)) {
+                            ThreadPool.schedule(new FeeTask(), time + (3600000 * 24));
                         } else {
-                            ThreadPool.schedule(new FeeTask(), (_paidUntil + CH_RATE) - _time);
+                            ThreadPool.schedule(new FeeTask(), (paidUntil + CH_RATE) - time);
                         }
                     }
                 }
             } catch (Exception e) {
-                LOGGER.log(Level.SEVERE, "", e);
+                log.error("", e);
             }
         }
     }
@@ -190,12 +178,12 @@ public class AuctionableHall extends ClanHall {
                 PreparedStatement ps =
                         con.prepareStatement("UPDATE clanhall SET ownerId=?, paidUntil=?, paid=? WHERE id=?")) {
             ps.setInt(1, getOwnerId());
-            ps.setLong(2, _paidUntil);
-            ps.setInt(3, _paid ? 1 : 0);
+            ps.setLong(2, paidUntil);
+            ps.setInt(3, paid ? 1 : 0);
             ps.setInt(4, getId());
             ps.execute();
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, "Exception: updateOwnerInDB(Pledge clan): " + e.getMessage(), e);
+            log.warn("Exception: updateOwnerInDB(Pledge clan): {}", e.getMessage(), e);
         }
     }
 }

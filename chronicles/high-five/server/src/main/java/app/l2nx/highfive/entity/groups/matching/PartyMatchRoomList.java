@@ -25,61 +25,60 @@ import app.l2nx.highfive.network.serverpackets.ExClosePartyRoom;
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import lombok.Getter;
 
 /**
  * @author Gnacik
  */
 public class PartyMatchRoomList {
-    private int _maxid = 1;
-    private final Map<Integer, PartyMatchRoom> _rooms;
+    @Getter
+    private int maxId = 1;
+
+    private final Map<Integer, PartyMatchRoom> rooms;
 
     protected PartyMatchRoomList() {
-        _rooms = new ConcurrentHashMap<>();
+        rooms = new ConcurrentHashMap<>();
     }
 
     public synchronized void addPartyMatchRoom(int id, PartyMatchRoom room) {
-        _rooms.put(id, room);
-        _maxid++;
+        rooms.put(id, room);
+        maxId++;
     }
 
     public void deleteRoom(int id) {
-        for (Player _member : getRoom(id).getPartyMembers()) {
-            if (_member == null) {
+        for (Player member : getRoom(id).getPartyMembers()) {
+            if (member == null) {
                 continue;
             }
 
-            _member.sendPacket(new ExClosePartyRoom());
-            _member.sendPacket(SystemMessageId.THE_PARTY_ROOM_HAS_BEEN_DISBANDED);
+            member.sendPacket(new ExClosePartyRoom());
+            member.sendPacket(SystemMessageId.THE_PARTY_ROOM_HAS_BEEN_DISBANDED);
 
-            _member.setPartyRoom(0);
+            member.setPartyRoom(0);
             // _member.setPartyMatching(0);
-            _member.broadcastUserInfo();
+            member.broadcastUserInfo();
         }
 
-        _rooms.remove(id);
+        rooms.remove(id);
     }
 
     public PartyMatchRoom getRoom(int id) {
-        return _rooms.get(id);
+        return rooms.get(id);
     }
 
     public Collection<PartyMatchRoom> getRooms() {
-        return _rooms.values();
+        return rooms.values();
     }
 
     public int getPartyMatchRoomCount() {
-        return _rooms.size();
-    }
-
-    public int getMaxId() {
-        return _maxid;
+        return rooms.size();
     }
 
     public PartyMatchRoom getPlayerRoom(Player player) {
-        for (PartyMatchRoom _room : _rooms.values()) {
-            for (Player member : _room.getPartyMembers()) {
+        for (PartyMatchRoom room : rooms.values()) {
+            for (Player member : room.getPartyMembers()) {
                 if (member.equals(player)) {
-                    return _room;
+                    return room;
                 }
             }
         }
@@ -88,10 +87,10 @@ public class PartyMatchRoomList {
     }
 
     public int getPlayerRoomId(Player player) {
-        for (PartyMatchRoom _room : _rooms.values()) {
-            for (Player member : _room.getPartyMembers()) {
+        for (PartyMatchRoom room : rooms.values()) {
+            for (Player member : room.getPartyMembers()) {
                 if (member.equals(player)) {
-                    return _room.getId();
+                    return room.getId();
                 }
             }
         }

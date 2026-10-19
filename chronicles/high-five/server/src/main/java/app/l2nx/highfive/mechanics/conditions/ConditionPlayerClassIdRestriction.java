@@ -31,19 +31,19 @@ import java.util.Set;
  * The Class ConditionPlayerClassIdRestriction.
  */
 public class ConditionPlayerClassIdRestriction extends Condition {
-    private final Set<Integer> _classIds;
+    private final Set<Integer> classIds;
 
     /**
      * Instantiates a new condition player class id restriction.
      * @param classId the class id
      */
     public ConditionPlayerClassIdRestriction(Set<Integer> classId) {
-        _classIds = classId;
+        classIds = classId;
     }
 
     @Override
     public boolean testImpl(Creature effector, Creature effected, Skill skill, ItemTemplate item) {
         return effector.isPlayer()
-                && _classIds.contains(effector.asPlayer().getPlayerClass().getId());
+                && classIds.contains(effector.asPlayer().getPlayerClass().getId());
     }
 }

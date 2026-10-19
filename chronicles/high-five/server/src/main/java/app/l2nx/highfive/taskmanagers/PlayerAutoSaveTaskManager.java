@@ -35,7 +35,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class PlayerAutoSaveTaskManager implements Runnable {
     private static final Map<Player, Long> PLAYER_TIMES = new ConcurrentHashMap<>();
-    private static boolean _working = false;
+    private static boolean working = false;
 
     protected PlayerAutoSaveTaskManager() {
         ThreadPool.scheduleAtFixedRate(this, 1000, 1000);
@@ -43,11 +43,11 @@ public class PlayerAutoSaveTaskManager implements Runnable {
 
     @Override
     public void run() {
-        if (_working) {
+        if (working) {
             return;
         }
 
-        _working = true;
+        working = true;
 
         if (!PLAYER_TIMES.isEmpty()) {
             final long currentTime = System.currentTimeMillis();
@@ -74,7 +74,7 @@ public class PlayerAutoSaveTaskManager implements Runnable {
             }
         }
 
-        _working = false;
+        working = false;
     }
 
     public void add(Player player) {

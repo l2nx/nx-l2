@@ -19,6 +19,8 @@
  */
 package app.l2nx.highfive.entity.actor.enums.creature;
 
+import lombok.Getter;
+
 /**
  * @author Nik64
  */
@@ -28,14 +30,11 @@ public enum FenceState {
     CLOSED(2),
     CLOSED_HIDDEN(0);
 
-    private final int _clientId;
+    @Getter
+    private final int clientId;
 
     private FenceState(int clientId) {
-        _clientId = clientId;
-    }
-
-    public int getClientId() {
-        return _clientId;
+        this.clientId = clientId;
     }
 
     public boolean isGeodataEnabled() {

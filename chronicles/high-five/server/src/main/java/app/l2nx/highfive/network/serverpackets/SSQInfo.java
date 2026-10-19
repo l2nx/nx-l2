@@ -29,26 +29,26 @@ import app.l2nx.network.buffer.WriteBuffer;
  * @author Tempy
  */
 public class SSQInfo extends ServerPacket {
-    private int _state = 0;
+    private int state = 0;
 
     public SSQInfo() {
         final int compWinner = SevenSigns.getInstance().getCabalHighestScore();
         if (SevenSigns.getInstance().isSealValidationPeriod()) {
             if (compWinner == SevenSigns.CABAL_DAWN) {
-                _state = 2;
+                state = 2;
             } else if (compWinner == SevenSigns.CABAL_DUSK) {
-                _state = 1;
+                state = 1;
             }
         }
     }
 
     public SSQInfo(int state) {
-        _state = state;
+        this.state = state;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.SSQ_INFO.writeId(this, buffer);
-        buffer.writeShort(256 + _state);
+        buffer.writeShort(256 + state);
     }
 }

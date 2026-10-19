@@ -49,7 +49,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ScheduledFuture;
-import java.util.logging.Logger;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
@@ -57,19 +58,26 @@ import org.w3c.dom.Node;
 /**
  * @author LordWinter
  */
+@Slf4j
 public class KrateisCubeManager implements IXmlReader {
-    private static final Logger LOGGER = Logger.getLogger(KrateisCubeManager.class.getName());
 
-    private final Map<Integer, KrateiArena> _arenas = new HashMap<>(3);
-    private Npc _manager = null;
-    private long _nextMatchTime;
-    private boolean _registerActive = false;
-    private boolean _isHalfAnHour = false;
-    private EventState _state = EventState.REGISTRATION;
+    @Getter
+    private final Map<Integer, KrateiArena> arenas = new HashMap<>(3);
 
-    private ScheduledFuture<?> _periodTask = null;
-    private ScheduledFuture<?> _eventTask = null;
-    private ScheduledFuture<?> _msgTask = null;
+    private Npc manager = null;
+
+    @Getter
+    private long nextMatchTime;
+
+    @Getter
+    private boolean registerTime = false;
+
+    private boolean halfAnHour = false;
+    private EventState state = EventState.REGISTRATION;
+
+    private ScheduledFuture<?> periodTask = null;
+    private ScheduledFuture<?> eventTask = null;
+    private ScheduledFuture<?> msgTask = null;
 
     private enum EventState {
         REGISTRATION,
@@ -85,14 +93,14 @@ public class KrateisCubeManager implements IXmlReader {
     public void load() {
         parseDatapackFile("data/KrateisCube.xml");
 
-        LOGGER.info(getClass().getSimpleName() + ": Loaded " + _arenas.size() + " arena templates.");
+        log.info("Loaded {} arena templates.", arenas.size());
 
         final Spawn spawn = SpawnTable.getInstance().getAnySpawn(32503);
         if (spawn != null) {
-            _manager = spawn.getLastSpawn();
+            manager = spawn.getLastSpawn();
             recalcEventTime();
         } else {
-            LOGGER.info(getClass().getSimpleName() + ": Event can't be started because npc not found!");
+            log.info("Event can't be started because npc not found!");
         }
     }
 
@@ -219,7 +227,11 @@ public class KrateisCubeManager implements IXmlReader {
                                                                 .getNamedItem("useModifers")
                                                                 .getNodeValue())
                                                         : false;
-                                        arena.setReward(new KrateisReward(itemId, amount, useModifier));
+                                        arena.setReward(KrateisReward.builder()
+                                                .id(itemId)
+                                                .amount(amount)
+                                                .allowMidifier(useModifier)
+                                                .build());
                                     }
                                 }
                             } else if ("add_parameters".equalsIgnoreCase(kc.getNodeName())) {
@@ -239,7 +251,7 @@ public class KrateisCubeManager implements IXmlReader {
                             }
                         }
 
-                        _arenas.put(arena.getId(), arena);
+                        arenas.put(arena.getId(), arena);
                     }
                 }
             }
@@ -247,30 +259,30 @@ public class KrateisCubeManager implements IXmlReader {
     }
 
     public void prepareEvent() {
-        if (_registerActive) {
-            _registerActive = false;
+        if (registerTime) {
+            registerTime = false;
         }
 
-        if (_periodTask != null) {
-            _periodTask.cancel(false);
+        if (periodTask != null) {
+            periodTask.cancel(false);
         }
 
-        if (_eventTask != null) {
-            _eventTask.cancel(false);
+        if (eventTask != null) {
+            eventTask.cancel(false);
         }
 
-        if (_msgTask != null) {
-            _msgTask.cancel(false);
+        if (msgTask != null) {
+            msgTask.cancel(false);
         }
 
         boolean isActive = false;
-        for (KrateiArena arena : _arenas.values()) {
+        for (KrateiArena arena : arenas.values()) {
             if ((arena != null) && (arena.getPlayers().size() >= arena.getMinPlayers())) {
                 int count = 0;
                 final List<Player> invalidPlayers = new ArrayList<>();
                 for (KrateiCubePlayer pl : arena.getPlayers().values()) {
                     if ((pl != null) && pl.isRegister()) {
-                        if (pl.getPlayer().isInsideRadius3D(_manager, PlayerConfig.ALT_PARTY_RANGE)) {
+                        if (pl.getPlayer().isInsideRadius3D(manager, PlayerConfig.ALT_PARTY_RANGE)) {
                             pl.setIsInside(true);
                             pl.setIsRegister(false);
                             count++;
@@ -306,7 +318,7 @@ public class KrateisCubeManager implements IXmlReader {
         }
 
         if (isActive) {
-            _eventTask = ThreadPool.schedule(this::startEvent, 11000);
+            eventTask = ThreadPool.schedule(this::startEvent, 11000);
             getManagerMessage(KrateiMsgType.STARTED);
         } else {
             recalcEventTime();
@@ -314,61 +326,57 @@ public class KrateisCubeManager implements IXmlReader {
     }
 
     public void startEvent() {
-        if (_eventTask != null) {
-            _eventTask.cancel(false);
+        if (eventTask != null) {
+            eventTask.cancel(false);
         }
 
-        for (KrateiArena arena : _arenas.values()) {
+        for (KrateiArena arena : arenas.values()) {
             if ((arena != null) && arena.isBattleNow()) {
                 arena.startEvent();
-                _state = EventState.STARTED;
+                state = EventState.STARTED;
             }
         }
 
-        _periodTask = ThreadPool.schedule(this::recalcEventTime, 180000);
+        periodTask = ThreadPool.schedule(this::recalcEventTime, 180000);
     }
 
     public void abortEvent() {
-        for (KrateiArena arena : _arenas.values()) {
+        for (KrateiArena arena : arenas.values()) {
             if ((arena != null) && arena.isBattleNow()) {
                 arena.endEvent();
             }
         }
 
-        if (!_registerActive) {
+        if (!registerTime) {
             recalcEventTime();
         }
     }
 
-    public boolean isRegisterTime() {
-        return _registerActive;
-    }
-
     public boolean isActive() {
-        return _state == EventState.STARTED;
+        return state == EventState.STARTED;
     }
 
     public boolean isPreparing() {
-        return _state == EventState.PREPARING;
+        return state == EventState.PREPARING;
     }
 
     public void setIsActivate(boolean val) {
         if (!val) {
-            _state = EventState.REGISTRATION;
+            state = EventState.REGISTRATION;
         }
     }
 
     public void recalcEventTime() {
-        if (!_registerActive) {
-            _registerActive = true;
+        if (!registerTime) {
+            registerTime = true;
         }
 
-        if (_periodTask != null) {
-            _periodTask.cancel(false);
+        if (periodTask != null) {
+            periodTask.cancel(false);
         }
 
-        if (_eventTask != null) {
-            _eventTask.cancel(false);
+        if (eventTask != null) {
+            eventTask.cancel(false);
         }
 
         final Calendar calendar = Calendar.getInstance();
@@ -378,11 +386,11 @@ public class KrateisCubeManager implements IXmlReader {
         } else if ((calendar.get(Calendar.MINUTE) >= 0) && (calendar.get(Calendar.MINUTE) <= 26)) {
             calendar.set(Calendar.MINUTE, 27);
             calendar.set(Calendar.SECOND, 0);
-            _isHalfAnHour = true;
+            halfAnHour = true;
         } else {
             calendar.set(Calendar.MINUTE, 57);
             calendar.set(Calendar.SECOND, 0);
-            _isHalfAnHour = false;
+            halfAnHour = false;
         }
 
         final long currentTime = System.currentTimeMillis();
@@ -390,22 +398,22 @@ public class KrateisCubeManager implements IXmlReader {
             calendar.add(Calendar.DAY_OF_YEAR, 1);
         }
 
-        _nextMatchTime = calendar.getTimeInMillis();
-        final long lastTime = _nextMatchTime - currentTime;
-        _eventTask = ThreadPool.schedule(this::closeRegistration, lastTime);
+        nextMatchTime = calendar.getTimeInMillis();
+        final long lastTime = nextMatchTime - currentTime;
+        eventTask = ThreadPool.schedule(this::closeRegistration, lastTime);
         getManagerMessage(KrateiMsgType.INITIALIZED);
 
         final int time = (int) ((lastTime / 1000) / 60);
         if (time >= 5) {
-            _msgTask = ThreadPool.schedule(() -> getManagerMessage(KrateiMsgType.REGISTRATION_5), lastTime - 300000);
+            msgTask = ThreadPool.schedule(() -> getManagerMessage(KrateiMsgType.REGISTRATION_5), lastTime - 300000);
         } else if ((time >= 3) && (time < 5)) {
-            _msgTask = ThreadPool.schedule(() -> getManagerMessage(KrateiMsgType.REGISTRATION_3), lastTime - 180000);
+            msgTask = ThreadPool.schedule(() -> getManagerMessage(KrateiMsgType.REGISTRATION_3), lastTime - 180000);
         } else if ((time >= 1) && (time < 3)) {
-            _msgTask = ThreadPool.schedule(() -> getManagerMessage(KrateiMsgType.REGISTRATION_1), lastTime - 60000);
+            msgTask = ThreadPool.schedule(() -> getManagerMessage(KrateiMsgType.REGISTRATION_1), lastTime - 60000);
         }
 
-        if (_state != EventState.STARTED) {
-            _state = EventState.REGISTRATION;
+        if (state != EventState.STARTED) {
+            state = EventState.REGISTRATION;
         }
 
         // LOGGER.info(getClass().getSimpleName() + ": Next match " +
@@ -413,75 +421,66 @@ public class KrateisCubeManager implements IXmlReader {
     }
 
     public void closeRegistration() {
-        if (_periodTask != null) {
-            _periodTask.cancel(false);
+        if (periodTask != null) {
+            periodTask.cancel(false);
         }
 
-        _registerActive = false;
+        registerTime = false;
         getManagerMessage(KrateiMsgType.PREPATING);
-        _state = EventState.PREPARING;
-        _periodTask = ThreadPool.schedule(this::prepareEvent, 180000);
+        state = EventState.PREPARING;
+        periodTask = ThreadPool.schedule(this::prepareEvent, 180000);
     }
 
     private void getManagerMessage(KrateiMsgType state) {
-        final long lastTime = _nextMatchTime - System.currentTimeMillis();
+        final long lastTime = nextMatchTime - System.currentTimeMillis();
         switch (state) {
             case INITIALIZED: {
                 final CreatureSay msg = new CreatureSay(
-                        _manager, ChatType.NPC_SHOUT, NpcStringId.YOU_HAVE_S1_MINUTE_S_TO_REGISTER_FOR_THE_MATCH);
-                msg.addStringParameter(String.valueOf(!_isHalfAnHour ? 57 : 27));
-                _manager.broadcastPacket(msg);
+                        manager, ChatType.NPC_SHOUT, NpcStringId.YOU_HAVE_S1_MINUTE_S_TO_REGISTER_FOR_THE_MATCH);
+                msg.addStringParameter(String.valueOf(!halfAnHour ? 57 : 27));
+                manager.broadcastPacket(msg);
                 break;
             }
             case REGISTRATION_5: {
-                _manager.broadcastPacket(new CreatureSay(
-                        _manager,
+                manager.broadcastPacket(new CreatureSay(
+                        manager,
                         ChatType.NPC_SHOUT,
                         NpcStringId.THERE_ARE_5_MINUTES_REMAINING_TO_REGISTER_FOR_KRATEI_S_CUBE_MATCH));
-                _msgTask =
-                        ThreadPool.schedule(() -> getManagerMessage(KrateiMsgType.REGISTRATION_3), lastTime - 180000);
+                msgTask = ThreadPool.schedule(() -> getManagerMessage(KrateiMsgType.REGISTRATION_3), lastTime - 180000);
                 break;
             }
             case REGISTRATION_3: {
-                _manager.broadcastPacket(new CreatureSay(
-                        _manager,
+                manager.broadcastPacket(new CreatureSay(
+                        manager,
                         ChatType.NPC_SHOUT,
                         NpcStringId.THERE_ARE_3_MINUTES_REMAINING_TO_REGISTER_FOR_KRATEI_S_CUBE_MATCH));
-                _msgTask = ThreadPool.schedule(() -> getManagerMessage(KrateiMsgType.REGISTRATION_1), lastTime - 60000);
+                msgTask = ThreadPool.schedule(() -> getManagerMessage(KrateiMsgType.REGISTRATION_1), lastTime - 60000);
                 break;
             }
             case REGISTRATION_1: {
-                _manager.broadcastPacket(new CreatureSay(
-                        _manager,
+                manager.broadcastPacket(new CreatureSay(
+                        manager,
                         ChatType.NPC_SHOUT,
                         NpcStringId.THERE_ARE_1_MINUTES_REMAINING_TO_REGISTER_FOR_KRATEI_S_CUBE_MATCH));
                 break;
             }
             case PREPATING: {
                 final CreatureSay msg3 =
-                        new CreatureSay(_manager, ChatType.NPC_SHOUT, NpcStringId.THE_MATCH_WILL_BEGIN_IN_S1_MINUTE_S);
+                        new CreatureSay(manager, ChatType.NPC_SHOUT, NpcStringId.THE_MATCH_WILL_BEGIN_IN_S1_MINUTE_S);
                 msg3.addStringParameter(String.valueOf(3));
-                _manager.broadcastPacket(msg3);
+                manager.broadcastPacket(msg3);
                 break;
             }
             case STARTED: {
-                _manager.broadcastPacket(
-                        new CreatureSay(_manager, ChatType.NPC_SHOUT, NpcStringId.THE_MATCH_WILL_BEGIN_SHORTLY));
+                manager.broadcastPacket(
+                        new CreatureSay(manager, ChatType.NPC_SHOUT, NpcStringId.THE_MATCH_WILL_BEGIN_SHORTLY));
                 break;
             }
         }
     }
 
-    public long getNextMatchTime() {
-        return _nextMatchTime;
-    }
-
     public KrateiArena getArenaId(int id) {
-        return _arenas.get(id);
-    }
-
-    public Map<Integer, KrateiArena> getArenas() {
-        return _arenas;
+        return arenas.get(id);
     }
 
     public static KrateisCubeManager getInstance() {

@@ -194,7 +194,7 @@ public class Q00255_Tutorial extends Quest {
                 player,
                 EventType.ON_PLAYER_LEVEL_CHANGED,
                 (OnPlayerLevelChanged event) -> {
-                    levelUp(event.getPlayer(), event.getNewLevel());
+                    levelUp(event.player(), event.newLevel());
                 },
                 player));
     }
@@ -207,10 +207,10 @@ public class Q00255_Tutorial extends Quest {
                         player,
                         EventType.ON_PLAYER_ITEM_PICKUP,
                         (OnPlayerItemPickup event) -> {
-                            if ((event.getItem().getId() == BLUE_GEMSTONE) && ((qs.getMemoState() & 1048576) != 0)) {
-                                tutorialEvent(event.getPlayer(), 1048576);
-                            } else if ((event.getItem().getId() == 57) && ((qs.getMemoState() & 2097152) != 0)) {
-                                tutorialEvent(event.getPlayer(), 2097152);
+                            if ((event.item().getId() == BLUE_GEMSTONE) && ((qs.getMemoState() & 1048576) != 0)) {
+                                tutorialEvent(event.player(), 1048576);
+                            } else if ((event.item().getId() == 57) && ((qs.getMemoState() & 2097152) != 0)) {
+                                tutorialEvent(event.player(), 2097152);
                             }
                         },
                         player));
@@ -239,7 +239,7 @@ public class Q00255_Tutorial extends Quest {
                         player,
                         EventType.ON_CREATURE_ATTACKED,
                         (OnCreatureAttacked event) -> {
-                            final Player pp = event.getTarget().asPlayer();
+                            final Player pp = event.target().asPlayer();
                             if ((pp != null)
                                     && (pp.getCurrentHp() <= (pp.getStat().getMaxHp() * 0.3))) {
                                 tutorialEvent(pp, 256);

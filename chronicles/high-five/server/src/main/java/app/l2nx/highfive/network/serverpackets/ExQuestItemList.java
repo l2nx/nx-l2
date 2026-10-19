@@ -31,14 +31,14 @@ import java.util.List;
  * @author JIV
  */
 public class ExQuestItemList extends AbstractItemPacket {
-    private final Player _player;
-    private final List<Item> _items = new ArrayList<>();
+    private final Player player;
+    private final List<Item> items = new ArrayList<>();
 
     public ExQuestItemList(Player player) {
-        _player = player;
+        this.player = player;
         for (Item item : player.getInventory().getItems()) {
             if (item.isQuestItem()) {
-                _items.add(item);
+                items.add(item);
             }
         }
     }
@@ -46,11 +46,11 @@ public class ExQuestItemList extends AbstractItemPacket {
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_QUEST_ITEM_LIST.writeId(this, buffer);
-        buffer.writeShort(_items.size());
-        for (Item item : _items) {
+        buffer.writeShort(items.size());
+        for (Item item : items) {
             writeItem(item, buffer);
         }
 
-        writeInventoryBlock(_player.getInventory(), buffer);
+        writeInventoryBlock(player.getInventory(), buffer);
     }
 }

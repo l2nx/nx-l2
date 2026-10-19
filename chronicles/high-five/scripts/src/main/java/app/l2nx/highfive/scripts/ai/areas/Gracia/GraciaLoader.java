@@ -55,15 +55,14 @@ import app.l2nx.highfive.scripts.ai.areas.Gracia.vehicles.KeucereusNorthControll
 import app.l2nx.highfive.scripts.ai.areas.Gracia.vehicles.KeucereusSouthController.KeucereusSouthController;
 import app.l2nx.highfive.scripts.ai.areas.Gracia.vehicles.SoDController.SoDController;
 import app.l2nx.highfive.scripts.ai.areas.Gracia.vehicles.SoIController.SoIController;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Gracia class-loader.
  * @author Mobius
  */
+@Slf4j
 public class GraciaLoader {
-    private static final Logger LOGGER = Logger.getLogger(GraciaLoader.class.getName());
 
     private static final Class<?>[] SCRIPTS = {
         // AIs
@@ -111,15 +110,12 @@ public class GraciaLoader {
     };
 
     public static void main(String[] args) {
-        LOGGER.info(GraciaLoader.class.getSimpleName() + ": Loading Gracia related scripts.");
+        log.info("Loading Gracia related scripts.");
         for (Class<?> script : SCRIPTS) {
             try {
                 script.getDeclaredConstructor().newInstance();
             } catch (Exception e) {
-                LOGGER.log(
-                        Level.SEVERE,
-                        GraciaLoader.class.getSimpleName() + ": Failed loading " + script.getSimpleName() + ":",
-                        e);
+                log.error("Failed loading {}:", script.getSimpleName(), e);
             }
         }
     }

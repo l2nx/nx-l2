@@ -295,8 +295,8 @@ public class PailakaDevilsLegacy extends InstanceScript {
     public void onKill(Npc npc, Player player, boolean isSummon) {
         final InstanceWorld world = InstanceManager.getInstance().getWorld(npc);
         if (world != null) {
-            for (Npc _follower : world.getParameters().getList("followerslist", Npc.class, new ArrayList<>())) {
-                _follower.deleteMe();
+            for (Npc follower : world.getParameters().getList("followerslist", Npc.class, new ArrayList<>())) {
+                follower.deleteMe();
             }
 
             world.getParameters().remove("followerslist");

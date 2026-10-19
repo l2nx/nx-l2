@@ -45,7 +45,7 @@ import app.l2nx.highfive.taskmanagers.AttackStanceTaskManager;
 public class RequestRecipeShopListSet extends ClientPacket {
     private static final int BATCH_LENGTH = 12;
 
-    private ManufactureItem[] _items = null;
+    private ManufactureItem[] items = null;
 
     @Override
     protected void readImpl() {
@@ -54,16 +54,16 @@ public class RequestRecipeShopListSet extends ClientPacket {
             return;
         }
 
-        _items = new ManufactureItem[count];
+        items = new ManufactureItem[count];
         for (int i = 0; i < count; i++) {
             final int id = readInt();
             final long cost = readLong();
             if (cost < 0) {
-                _items = null;
+                items = null;
                 return;
             }
 
-            _items[i] = new ManufactureItem(id, cost);
+            items[i] = new ManufactureItem(id, cost);
         }
     }
 
@@ -74,7 +74,7 @@ public class RequestRecipeShopListSet extends ClientPacket {
             return;
         }
 
-        if (_items == null) {
+        if (items == null) {
             player.setPrivateStoreType(PrivateStoreType.NONE);
             player.broadcastUserInfo();
             return;
@@ -100,7 +100,7 @@ public class RequestRecipeShopListSet extends ClientPacket {
         }
 
         player.getManufactureItems().clear();
-        for (ManufactureItem i : _items) {
+        for (ManufactureItem i : items) {
             final RecipeList list = RecipeData.getInstance().getRecipeList(i.getRecipeId());
             if (!player.getDwarvenRecipeBook().contains(list)
                     && !player.getCommonRecipeBook().contains(list)) {

@@ -33,12 +33,12 @@ import app.l2nx.highfive.util.StatSet;
  * @author Zoey76
  */
 public class HpByLevel extends AbstractEffect {
-    private final double _power;
+    private final double power;
 
     public HpByLevel(Condition attachCond, Condition applyCond, StatSet set, StatSet params) {
         super(attachCond, applyCond, set, params);
 
-        _power = params.getDouble("power", 0);
+        power = params.getDouble("power", 0);
     }
 
     @Override
@@ -58,7 +58,7 @@ public class HpByLevel extends AbstractEffect {
         }
 
         // Calculation
-        final double abs = _power;
+        final double abs = power;
         final double absorb = ((effector.getCurrentHp() + abs) > effector.getMaxHp()
                 ? effector.getMaxHp()
                 : (effector.getCurrentHp() + abs));

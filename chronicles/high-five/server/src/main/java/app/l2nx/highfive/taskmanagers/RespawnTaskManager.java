@@ -35,7 +35,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class RespawnTaskManager implements Runnable {
     private static final Map<Npc, Long> PENDING_RESPAWNS = new ConcurrentHashMap<>();
-    private static boolean _working = false;
+    private static boolean working = false;
 
     protected RespawnTaskManager() {
         ThreadPool.scheduleAtFixedRate(this, 0, 1000);
@@ -43,11 +43,11 @@ public class RespawnTaskManager implements Runnable {
 
     @Override
     public void run() {
-        if (_working) {
+        if (working) {
             return;
         }
 
-        _working = true;
+        working = true;
 
         if (!PENDING_RESPAWNS.isEmpty()) {
             final long currentTime = System.currentTimeMillis();
@@ -64,13 +64,13 @@ public class RespawnTaskManager implements Runnable {
                     final Spawn spawn = npc.getSpawn();
                     if (spawn != null) {
                         spawn.respawnNpc(npc);
-                        spawn._scheduledCount--;
+                        spawn.scheduledCount--;
                     }
                 }
             }
         }
 
-        _working = false;
+        working = false;
     }
 
     public void add(Npc npc, long time) {

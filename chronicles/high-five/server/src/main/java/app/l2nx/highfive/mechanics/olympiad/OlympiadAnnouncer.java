@@ -31,17 +31,17 @@ import app.l2nx.highfive.network.enums.ChatType;
 public class OlympiadAnnouncer implements Runnable {
     private static final int OLY_MANAGER = 31688;
 
-    private int _currentStadium = 0;
+    private int currentStadium = 0;
 
     @Override
     public void run() {
         OlympiadGameTask task;
-        for (int i = OlympiadGameManager.getInstance().getNumberOfStadiums(); --i >= 0; _currentStadium++) {
-            if (_currentStadium >= OlympiadGameManager.getInstance().getNumberOfStadiums()) {
-                _currentStadium = 0;
+        for (int i = OlympiadGameManager.getInstance().getNumberOfStadiums(); --i >= 0; currentStadium++) {
+            if (currentStadium >= OlympiadGameManager.getInstance().getNumberOfStadiums()) {
+                currentStadium = 0;
             }
 
-            task = OlympiadGameManager.getInstance().getOlympiadTask(_currentStadium);
+            task = OlympiadGameManager.getInstance().getOlympiadTask(currentStadium);
             if ((task != null) && (task.getGame() != null) && task.needAnnounce()) {
                 NpcStringId npcString;
                 final String arenaId = String.valueOf(task.getGame().getStadiumId() + 1);

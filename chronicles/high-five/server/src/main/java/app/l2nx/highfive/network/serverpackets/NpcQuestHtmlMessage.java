@@ -29,11 +29,11 @@ import app.l2nx.network.buffer.WriteBuffer;
  * @author HorridoJoho
  */
 public class NpcQuestHtmlMessage extends AbstractHtmlPacket {
-    private final int _questId;
+    private final int questId;
 
     public NpcQuestHtmlMessage(int npcObjId, int questId) {
         super(npcObjId);
-        _questId = questId;
+        this.questId = questId;
     }
 
     @Override
@@ -41,7 +41,7 @@ public class NpcQuestHtmlMessage extends AbstractHtmlPacket {
         ServerPackets.EX_NPC_QUEST_HTML_MESSAGE.writeId(this, buffer);
         buffer.writeInt(getNpcObjId());
         buffer.writeString(getHtml());
-        buffer.writeInt(_questId);
+        buffer.writeInt(questId);
     }
 
     @Override

@@ -22,19 +22,20 @@ package app.l2nx.highfive.network.clientpackets;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.managers.FortManager;
 import app.l2nx.highfive.mechanics.siege.Fort;
-import app.l2nx.highfive.network.PacketLogger;
 import app.l2nx.highfive.network.serverpackets.ActionFailed;
 import app.l2nx.highfive.network.serverpackets.ExShowFortressMapInfo;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author KenM
  */
+@Slf4j
 public class RequestFortressMapInfo extends ClientPacket {
-    private int _fortressId;
+    private int fortressId;
 
     @Override
     protected void readImpl() {
-        _fortressId = readInt();
+        fortressId = readInt();
     }
 
     @Override
@@ -44,10 +45,13 @@ public class RequestFortressMapInfo extends ClientPacket {
             return;
         }
 
-        final Fort fort = FortManager.getInstance().getFortById(_fortressId);
+        final Fort fort = FortManager.getInstance().getFortById(fortressId);
         if (fort == null) {
-            PacketLogger.warning("Fort is not found with id (" + _fortressId + ") in all forts with size of ("
-                    + FortManager.getInstance().getForts().size() + ") called by player (" + player + ")");
+            log.warn(
+                    "Fort is not found with id ({}) in all forts with size of ({}) called by player ({})",
+                    fortressId,
+                    FortManager.getInstance().getForts().size(),
+                    player);
             player.sendPacket(ActionFailed.STATIC_PACKET);
             return;
         }

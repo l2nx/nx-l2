@@ -27,27 +27,27 @@ import java.util.EnumMap;
 import java.util.Map;
 
 public class ActionClickHandler implements IHandler<IActionClickHandler, InstanceType> {
-    private final Map<InstanceType, IActionClickHandler> _actions;
+    private final Map<InstanceType, IActionClickHandler> actions;
 
     protected ActionClickHandler() {
-        _actions = new EnumMap<>(InstanceType.class);
+        actions = new EnumMap<>(InstanceType.class);
     }
 
     @Override
     public void registerHandler(IActionClickHandler handler) {
-        _actions.put(handler.getInstanceType(), handler);
+        actions.put(handler.getInstanceType(), handler);
     }
 
     @Override
     public synchronized void removeHandler(IActionClickHandler handler) {
-        _actions.remove(handler.getInstanceType());
+        actions.remove(handler.getInstanceType());
     }
 
     @Override
     public IActionClickHandler getHandler(InstanceType iType) {
         IActionClickHandler result = null;
         for (InstanceType t = iType; t != null; t = t.getParent()) {
-            result = _actions.get(t);
+            result = actions.get(t);
             if (result != null) {
                 break;
             }
@@ -58,7 +58,7 @@ public class ActionClickHandler implements IHandler<IActionClickHandler, Instanc
 
     @Override
     public int size() {
-        return _actions.size();
+        return actions.size();
     }
 
     public static ActionClickHandler getInstance() {

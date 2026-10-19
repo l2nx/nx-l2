@@ -28,18 +28,18 @@ import app.l2nx.network.buffer.WriteBuffer;
  * @author devScarlet
  */
 public class NicknameChanged extends ServerPacket {
-    private final String _title;
-    private final int _objectId;
+    private final String title;
+    private final int objectId;
 
     public NicknameChanged(Creature creature) {
-        _objectId = creature.getObjectId();
-        _title = creature.getTitle();
+        objectId = creature.getObjectId();
+        title = creature.getTitle();
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.NICK_NAME_CHANGED.writeId(this, buffer);
-        buffer.writeInt(_objectId);
-        buffer.writeString(_title);
+        buffer.writeInt(objectId);
+        buffer.writeString(title);
     }
 }

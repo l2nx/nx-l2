@@ -22,27 +22,13 @@ package app.l2nx.highfive.mechanics.events.holders.actor.player;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.mechanics.events.EventType;
 import app.l2nx.highfive.mechanics.events.holders.IBaseEvent;
+import lombok.Builder;
 
 /**
  * @author UnAfraid
  */
-public class OnPlayerBypass implements IBaseEvent {
-    private final Player _player;
-    private final String _command;
-
-    public OnPlayerBypass(Player player, String command) {
-        _player = player;
-        _command = command;
-    }
-
-    public Player getPlayer() {
-        return _player;
-    }
-
-    public String getCommand() {
-        return _command;
-    }
-
+@Builder(toBuilder = true)
+public record OnPlayerBypass(Player player, String command) implements IBaseEvent {
     @Override
     public EventType getType() {
         return EventType.ON_PLAYER_BYPASS;

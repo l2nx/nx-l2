@@ -53,7 +53,7 @@ public class Q00193_SevenSignsDyingMessage extends Quest {
 
     // Misc
     private static final int MIN_LEVEL = 79;
-    private boolean isBusy = false;
+    private boolean busy = false;
 
     // Skill
     private static final SkillHolder NPC_HEAL = new SkillHolder(4065, 8);
@@ -70,7 +70,7 @@ public class Q00193_SevenSignsDyingMessage extends Quest {
     public String onEvent(String event, Npc npc, Player player) {
         if ((npc.getId() == SHILENS_EVIL_THOUGHTS) && "despawn".equals(event)) {
             if (!npc.isDead()) {
-                isBusy = false;
+                busy = false;
                 npc.broadcastPacket(new NpcSay(
                         npc.getObjectId(),
                         ChatType.NPC_GENERAL,
@@ -146,7 +146,7 @@ public class Q00193_SevenSignsDyingMessage extends Quest {
             case "fight": {
                 htmltext = "32569-14.html";
                 if (qs.isCond(4)) {
-                    isBusy = true;
+                    busy = true;
                     final NpcSay ns = new NpcSay(
                             npc.getObjectId(),
                             ChatType.NPC_GENERAL,
@@ -217,7 +217,7 @@ public class Q00193_SevenSignsDyingMessage extends Quest {
             qs.setCond(5);
         }
 
-        isBusy = false;
+        busy = false;
         cancelQuestTimers("despawn");
         cancelQuestTimers("heal");
         npc.broadcastPacket(new NpcSay(
@@ -273,7 +273,7 @@ public class Q00193_SevenSignsDyingMessage extends Quest {
                                 break;
                             }
                             case 4: {
-                                htmltext = isBusy ? "32569-13.html" : "32569-08.html";
+                                htmltext = busy ? "32569-13.html" : "32569-08.html";
                                 break;
                             }
                             case 5: {

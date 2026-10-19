@@ -6,11 +6,13 @@ package app.l2nx.network.config;
 
 import java.time.Duration;
 import java.util.List;
+import lombok.Builder;
 
 /**
  * @param threadPoolSize below 1 means four threads per processor
  * @param bufferPools pools added on top of the header, segment and minimum pools
  */
+@Builder(toBuilder = true)
 public record NetworkSettings(
         Duration shutdownWaitTime,
         int threadPoolSize,
@@ -21,6 +23,7 @@ public record NetworkSettings(
         boolean autoExpandPoolCapacity,
         float initBufferPoolFactor,
         List<BufferPool> bufferPools) {
+    @Builder(toBuilder = true)
     public record BufferPool(int size, int bufferSize) {
         public BufferPool {
             require(size > 0, "buffer pool size must be positive: " + size);
@@ -28,9 +31,6 @@ public record NetworkSettings(
         }
     }
 
-    /**
-     * @throws IllegalArgumentException on a value the transport cannot run with, so a misconfiguration fails at startup
-     */
     public NetworkSettings {
         require(
                 (shutdownWaitTime != null) && !shutdownWaitTime.isNegative(),
@@ -46,7 +46,17 @@ public record NetworkSettings(
     }
 
     public static NetworkSettings defaults() {
-        return new NetworkSettings(Duration.ofSeconds(5), 2, Thread.NORM_PRIORITY, false, 250, 64, true, 0, List.of());
+        return NetworkSettings.builder()
+                .shutdownWaitTime(Duration.ofSeconds(5))
+                .threadPoolSize(2)
+                .threadPriority(Thread.NORM_PRIORITY)
+                .dropPackets(false)
+                .dropPacketThreshold(250)
+                .bufferSegmentSize(64)
+                .autoExpandPoolCapacity(true)
+                .initBufferPoolFactor(0)
+                .bufferPools(List.of())
+                .build();
     }
 
     private static void require(boolean condition, String message) {

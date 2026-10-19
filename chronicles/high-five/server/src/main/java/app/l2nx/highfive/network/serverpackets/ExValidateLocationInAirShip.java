@@ -29,7 +29,7 @@ import app.l2nx.network.buffer.WriteBuffer;
  * @author Kerberos, JIV
  */
 public class ExValidateLocationInAirShip extends ServerPacket {
-    private final Player _player;
+    private final Player player;
     private final int shipId;
     private final int x;
     private final int y;
@@ -37,8 +37,8 @@ public class ExValidateLocationInAirShip extends ServerPacket {
     private final int h;
 
     public ExValidateLocationInAirShip(Player player) {
-        _player = player;
-        shipId = _player.getAirShip().getObjectId();
+        this.player = player;
+        shipId = this.player.getAirShip().getObjectId();
         x = player.getInVehiclePosition().getX();
         y = player.getInVehiclePosition().getY();
         z = player.getInVehiclePosition().getZ();
@@ -48,7 +48,7 @@ public class ExValidateLocationInAirShip extends ServerPacket {
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_VALIDATE_LOCATION_IN_AIRSHIP.writeId(this, buffer);
-        buffer.writeInt(_player.getObjectId());
+        buffer.writeInt(player.getObjectId());
         buffer.writeInt(shipId);
         buffer.writeInt(x);
         buffer.writeInt(y);

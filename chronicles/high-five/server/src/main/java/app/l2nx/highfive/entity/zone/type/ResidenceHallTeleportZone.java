@@ -24,14 +24,17 @@ import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.threads.ThreadPool;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ThreadLocalRandom;
+import lombok.Getter;
 
 /**
  * Teleport residence zone for clan hall sieges
  * @author BiggBoss
  */
 public class ResidenceHallTeleportZone extends ResidenceTeleportZone {
-    private int _id;
-    private ScheduledFuture<?> _teleTask;
+    @Getter
+    private int residenceZoneId;
+
+    private ScheduledFuture<?> teleTask;
 
     /**
      * @param id
@@ -43,19 +46,15 @@ public class ResidenceHallTeleportZone extends ResidenceTeleportZone {
     @Override
     public void setParameter(String name, String value) {
         if (name.equals("residenceZoneId")) {
-            _id = Integer.parseInt(value);
+            residenceZoneId = Integer.parseInt(value);
         } else {
             super.setParameter(name, value);
         }
     }
 
-    public int getResidenceZoneId() {
-        return _id;
-    }
-
     public synchronized void checkTeleportTask() {
-        if ((_teleTask == null) || _teleTask.isDone()) {
-            _teleTask = ThreadPool.schedule(new TeleportTask(), 30000);
+        if ((teleTask == null) || teleTask.isDone()) {
+            teleTask = ThreadPool.schedule(new TeleportTask(), 30000);
         }
     }
 

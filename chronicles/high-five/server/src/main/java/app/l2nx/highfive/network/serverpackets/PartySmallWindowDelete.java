@@ -28,16 +28,16 @@ import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.network.buffer.WriteBuffer;
 
 public class PartySmallWindowDelete extends ServerPacket {
-    private final Player _member;
+    private final Player member;
 
     public PartySmallWindowDelete(Player member) {
-        _member = member;
+        this.member = member;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.PARTY_SMALL_WINDOW_DELETE.writeId(this, buffer);
-        buffer.writeInt(_member.getObjectId());
-        buffer.writeString(_member.getName());
+        buffer.writeInt(member.getObjectId());
+        buffer.writeString(member.getName());
     }
 }

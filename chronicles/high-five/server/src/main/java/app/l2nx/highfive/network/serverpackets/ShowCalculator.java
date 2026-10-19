@@ -27,15 +27,15 @@ import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.network.buffer.WriteBuffer;
 
 public class ShowCalculator extends ServerPacket {
-    private final int _calculatorId;
+    private final int calculatorId;
 
     public ShowCalculator(int calculatorId) {
-        _calculatorId = calculatorId;
+        this.calculatorId = calculatorId;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.SHOW_CALC.writeId(this, buffer);
-        buffer.writeInt(_calculatorId);
+        buffer.writeInt(calculatorId);
     }
 }

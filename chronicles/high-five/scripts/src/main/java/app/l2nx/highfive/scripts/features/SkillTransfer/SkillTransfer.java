@@ -58,7 +58,7 @@ public class SkillTransfer extends Script {
     }
 
     public void onProfessionChange(OnPlayerProfessionChange event) {
-        final Player player = event.getPlayer();
+        final Player player = event.player();
         final int index = getTransferClassIndex(player);
         if (index < 0) {
             return;
@@ -72,7 +72,7 @@ public class SkillTransfer extends Script {
     }
 
     public void onProfessionCancel(OnPlayerProfessionCancel event) {
-        final PlayerClass playerClass = PlayerClass.getPlayerClass(event.getClassId());
+        final PlayerClass playerClass = PlayerClass.getPlayerClass(event.classId());
         final int index = getTransferClassIndex(playerClass);
 
         // is a transfer class
@@ -83,14 +83,14 @@ public class SkillTransfer extends Script {
         final int pomanderId = PORMANDERS[index].getId();
 
         // remove unsused HolyPomander
-        final Player player = event.getPlayer();
+        final Player player = event.player();
         final PlayerInventory inv = player.getInventory();
         for (Item itemI : inv.getAllItemsByItemId(pomanderId)) {
             inv.destroyItem(ItemProcessType.DESTROY, itemI, player, null);
         }
 
         // remove holy pomander variable
-        final String name = HOLY_POMANDER + event.getClassId();
+        final String name = HOLY_POMANDER + event.classId();
         player.getVariables().remove(name);
     }
 
@@ -118,7 +118,7 @@ public class SkillTransfer extends Script {
                         if (count < 0) {
                             final String className = ClassListData.getInstance()
                                     .getClass(player.getPlayerClass())
-                                    .getClassName();
+                                    .className();
                             PunishmentManager.handleIllegalPlayerAction(
                                     player,
                                     player + " has too many transfered skills or items, skill:" + s.getName() + " ("

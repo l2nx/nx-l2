@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import lombok.Getter;
 
 /**
  * <p>
@@ -159,29 +160,35 @@ public enum PlayerClass {
     JUDICATOR(136, false, Race.KAMAEL, INSPECTOR);
 
     /** The Identifier of the Class */
-    private final int _id;
+    @Getter
+    private final int id;
 
     /** True if the class is a mage class */
-    private final boolean _isMage;
+    @Getter
+    private final boolean mage;
 
     /** True if the class is a summoner class */
-    private final boolean _isSummoner;
+    @Getter
+    private final boolean summoner;
 
     /** The Race object of the class */
-    private final Race _race;
+    @Getter
+    private final Race race;
 
     /** The parent PlayerClass or null if this class is a root */
-    private final PlayerClass _parentClass;
+    @Getter
+    private final PlayerClass parent;
 
     /** List of available Class for next transfer **/
-    private final Set<PlayerClass> _nextClasses = new HashSet<>(1);
+    @Getter
+    private final Set<PlayerClass> nextClasses = new HashSet<>(1);
 
     /** Map to store all PlayerClass instances by their ID */
-    private static Map<Integer, PlayerClass> _classMap = new HashMap<>(PlayerClass.values().length);
+    private static Map<Integer, PlayerClass> classMap = new HashMap<>(PlayerClass.values().length);
 
     static {
         for (PlayerClass playerClass : PlayerClass.values()) {
-            _classMap.put(playerClass.getId(), playerClass);
+            classMap.put(playerClass.getId(), playerClass);
         }
     }
 
@@ -193,14 +200,14 @@ public enum PlayerClass {
      * @param parent the parent PlayerClass, or {@code null} if this is a root class.
      */
     private PlayerClass(int id, boolean isMage, Race race, PlayerClass parent) {
-        _id = id;
-        _isMage = isMage;
-        _isSummoner = false;
-        _race = race;
-        _parentClass = parent;
+        this.id = id;
+        mage = isMage;
+        summoner = false;
+        this.race = race;
+        this.parent = parent;
 
-        if (_parentClass != null) {
-            _parentClass.addNextClass(this);
+        if (this.parent != null) {
+            this.parent.addNextClass(this);
         }
     }
 
@@ -213,14 +220,14 @@ public enum PlayerClass {
      * @param parent the parent PlayerClass, or {@code null} if this is a root class.
      */
     private PlayerClass(int id, boolean isMage, boolean isSummoner, Race race, PlayerClass parent) {
-        _id = id;
-        _isMage = isMage;
-        _isSummoner = isSummoner;
-        _race = race;
-        _parentClass = parent;
+        this.id = id;
+        mage = isMage;
+        summoner = isSummoner;
+        this.race = race;
+        this.parent = parent;
 
-        if (_parentClass != null) {
-            _parentClass.addNextClass(this);
+        if (this.parent != null) {
+            this.parent.addNextClass(this);
         }
     }
 
@@ -230,39 +237,7 @@ public enum PlayerClass {
      * @return the PlayerClass instance corresponding to the given ID, or {@code null} if not found.
      */
     public static PlayerClass getPlayerClass(int id) {
-        return _classMap.get(id);
-    }
-
-    /**
-     * Gets the ID of the class.
-     * @return the ID of the class.
-     */
-    public int getId() {
-        return _id;
-    }
-
-    /**
-     * Checks if the class is a mage class.
-     * @return {@code true} if the class is a mage class.
-     */
-    public boolean isMage() {
-        return _isMage;
-    }
-
-    /**
-     * Checks if the class is a summoner class.
-     * @return {@code true} if the class is a summoner class.
-     */
-    public boolean isSummoner() {
-        return _isSummoner;
-    }
-
-    /**
-     * Gets the race associated with the class.
-     * @return the Race object of the class.
-     */
-    public Race getRace() {
-        return _race;
+        return classMap.get(id);
     }
 
     /**
@@ -271,15 +246,15 @@ public enum PlayerClass {
      * @return {@code true} if this class is a child of the specified class.
      */
     public boolean childOf(PlayerClass id) {
-        if (_parentClass == null) {
+        if (parent == null) {
             return false;
         }
 
-        if (_parentClass == id) {
+        if (parent == id) {
             return true;
         }
 
-        return _parentClass.childOf(id);
+        return parent.childOf(id);
     }
 
     /**
@@ -296,19 +271,11 @@ public enum PlayerClass {
      * @return the child level of this PlayerClass (0=root, 1=first class, etc.).
      */
     public int level() {
-        if (_parentClass == null) {
+        if (parent == null) {
             return 0;
         }
 
-        return 1 + _parentClass.level();
-    }
-
-    /**
-     * Gets the parent class of this class.
-     * @return the parent PlayerClass, or {@code null} if this is a root class.
-     */
-    public PlayerClass getParent() {
-        return _parentClass;
+        return 1 + parent.level();
     }
 
     /**
@@ -316,19 +283,11 @@ public enum PlayerClass {
      * @return the root PlayerClass of this class.
      */
     public PlayerClass getRootClass() {
-        if (_parentClass != null) {
-            return _parentClass.getRootClass();
+        if (parent != null) {
+            return parent.getRootClass();
         }
 
         return this;
-    }
-
-    /**
-     * Gets the set of possible class transfers for this class.
-     * @return a set of PlayerClass instances representing possible class transfers.
-     */
-    public Set<PlayerClass> getNextClasses() {
-        return _nextClasses;
     }
 
     /**
@@ -336,6 +295,6 @@ public enum PlayerClass {
      * @param playerClass the PlayerClass to add.
      */
     private void addNextClass(PlayerClass playerClass) {
-        _nextClasses.add(playerClass);
+        nextClasses.add(playerClass);
     }
 }

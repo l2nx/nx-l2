@@ -32,14 +32,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author UnAfraid, Mobius
  */
+@Slf4j
 public class AccountVariables extends AbstractVariables {
-    private static final Logger LOGGER = Logger.getLogger(AccountVariables.class.getName());
 
     // SQL Queries.
     private static final String SELECT_QUERY = "SELECT * FROM account_gsdata WHERE account_name = ?";
@@ -58,11 +57,11 @@ public class AccountVariables extends AbstractVariables {
     public static final String HWIDSLIT_VAR = "	";
 
     // Private variables.
-    private final AtomicBoolean _scheduledSave = new AtomicBoolean(false);
-    private final String _accountName;
+    private final AtomicBoolean scheduledSave = new AtomicBoolean(false);
+    private final String accountName;
 
     public AccountVariables(String accountName) {
-        _accountName = accountName;
+        this.accountName = accountName;
         restoreMe();
     }
 
@@ -72,17 +71,14 @@ public class AccountVariables extends AbstractVariables {
         // Restore previous variables.
         try (Connection con = DatabaseFactory.getConnection();
                 PreparedStatement st = con.prepareStatement(SELECT_QUERY)) {
-            st.setString(1, _accountName);
+            st.setString(1, accountName);
             try (ResultSet rset = st.executeQuery()) {
                 while (rset.next()) {
                     set(rset.getString("var"), rset.getString("value"), false);
                 }
             }
         } catch (SQLException e) {
-            LOGGER.log(
-                    Level.WARNING,
-                    getClass().getSimpleName() + ": Could not restore variables for: " + _accountName,
-                    e);
+            log.warn("Could not restore variables for: {}", accountName, e);
             return false;
         } finally {
             compareAndSetChanges(true, false);
@@ -98,12 +94,12 @@ public class AccountVariables extends AbstractVariables {
         }
 
         // If async saving is enabled and not already scheduled, schedule a save.
-        if (ASYNC_SAVE_ENABLED && !_scheduledSave.get()) {
-            _scheduledSave.set(true);
+        if (ASYNC_SAVE_ENABLED && !scheduledSave.get()) {
+            scheduledSave.set(true);
 
             ThreadPool.schedule(
                     () -> {
-                        _scheduledSave.set(false);
+                        scheduledSave.set(false);
                         saveNow();
                     },
                     SAVE_INTERVAL);
@@ -138,16 +134,16 @@ public class AccountVariables extends AbstractVariables {
      * @return true if successful, false otherwise.
      */
     private boolean saveNowSync() {
-        _saveLock.lock();
+        saveLock.lock();
 
         try {
             try (Connection con = DatabaseFactory.getConnection()) {
-                if (!_deleted.isEmpty()) {
+                if (!deleted.isEmpty()) {
                     try (PreparedStatement st = con.prepareStatement(DELETE_QUERY)) {
-                        final List<String> sortedDeleted = new ArrayList<>(_deleted);
+                        final List<String> sortedDeleted = new ArrayList<>(deleted);
                         sortedDeleted.sort(null);
                         for (String name : sortedDeleted) {
-                            st.setString(1, _accountName);
+                            st.setString(1, accountName);
                             st.setString(2, name);
                             st.addBatch();
                         }
@@ -156,15 +152,15 @@ public class AccountVariables extends AbstractVariables {
                     }
                 }
 
-                if (!_added.isEmpty() || !_modified.isEmpty()) {
+                if (!added.isEmpty() || !modified.isEmpty()) {
                     final TreeSet<String> allChanges = new TreeSet<>();
-                    allChanges.addAll(_added);
-                    allChanges.addAll(_modified);
+                    allChanges.addAll(added);
+                    allChanges.addAll(modified);
                     try (PreparedStatement st = con.prepareStatement(UPSERT_QUERY)) {
                         for (String name : allChanges) {
                             final Object value = getSet().get(name);
                             if (value != null) {
-                                st.setString(1, _accountName);
+                                st.setString(1, accountName);
                                 st.setString(2, name);
                                 st.setString(3, String.valueOf(value));
                                 st.addBatch();
@@ -180,28 +176,24 @@ public class AccountVariables extends AbstractVariables {
                 compareAndSetChanges(true, false);
                 return true;
             } catch (SQLException e) {
-                LOGGER.log(
-                        Level.WARNING,
-                        getClass().getSimpleName() + ": Could not update variables for: " + _accountName,
-                        e);
+                log.warn("Could not update variables for: {}", accountName, e);
                 return false;
             }
         } finally {
-            _saveLock.unlock();
+            saveLock.unlock();
         }
     }
 
     public boolean deleteMe() {
-        _saveLock.lock();
+        saveLock.lock();
 
         try (Connection con = DatabaseFactory.getConnection();
                 PreparedStatement st = con.prepareStatement(DELETE_ALL_QUERY)) {
-            st.setString(1, _accountName);
+            st.setString(1, accountName);
             st.execute();
         } catch (Exception e) {
-            LOGGER.log(
-                    Level.WARNING, getClass().getSimpleName() + ": Could not delete variables for: " + _accountName, e);
-            _saveLock.unlock();
+            log.warn("Could not delete variables for: {}", accountName, e);
+            saveLock.unlock();
             return false;
         }
 
@@ -209,7 +201,7 @@ public class AccountVariables extends AbstractVariables {
         getSet().clear();
         clearChangeTracking();
 
-        _saveLock.unlock();
+        saveLock.unlock();
         return true;
     }
 
@@ -224,7 +216,7 @@ public class AccountVariables extends AbstractVariables {
             st.setString(1, var);
             st.execute();
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, "AccountVariables: Could not delete vip variables!", e);
+            log.warn("Could not delete vip variables!", e);
             return false;
         }
 

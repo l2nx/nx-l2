@@ -29,15 +29,15 @@ import app.l2nx.highfive.scripts.quests.AbstractSagaQuest;
 public class Q00094_SagaOfTheSoultaker extends AbstractSagaQuest {
     public Q00094_SagaOfTheSoultaker() {
         super(94);
-        _npc = new int[] {30832, 31623, 31279, 31279, 31645, 31646, 31648, 31650, 31654, 31655, 31657, 31279};
-        _items = new int[] {7080, 7533, 7081, 7509, 7292, 7323, 7354, 7385, 7416, 7447, 7085, 0};
-        _mob = new int[] {27257, 27243, 27265};
-        _classId = new int[] {95};
-        _prevClass = new int[] {0x0d};
-        _npcSpawnLocations = new Location[] {
+        npc = new int[] {30832, 31623, 31279, 31279, 31645, 31646, 31648, 31650, 31654, 31655, 31657, 31279};
+        items = new int[] {7080, 7533, 7081, 7509, 7292, 7323, 7354, 7385, 7416, 7447, 7085, 0};
+        mob = new int[] {27257, 27243, 27265};
+        classId = new int[] {95};
+        prevClass = new int[] {0x0d};
+        npcSpawnLocations = new Location[] {
             new Location(191046, -40640, -3042), new Location(46066, -36396, -1685), new Location(46087, -36372, -1685)
         };
-        _text = new String[] {
+        text = new String[] {
             "PLAYERNAME! Pursued to here! However, I jumped out of the Banshouren boundaries! You look at the giant as the sign of power!",
             "... Oh ... good! So it was ... let's begin!",
             "I do not have the patience ..! I have been a giant force ...! Cough chatter ah ah ah!",

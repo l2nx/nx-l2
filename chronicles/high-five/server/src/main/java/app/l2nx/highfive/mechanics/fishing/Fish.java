@@ -23,48 +23,84 @@
 package app.l2nx.highfive.mechanics.fishing;
 
 import app.l2nx.highfive.util.StatSet;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * Class for the Fish object.
  * @author nonom
  */
 public class Fish implements Cloneable {
-    private final int _fishId;
-    private final int _itemId;
-    private final String _itemName;
-    private int _fishGroup;
-    private final int _fishLevel;
-    private final double _fishBiteRate;
-    private final double _fishGuts;
-    private final int _fishHp;
-    private final int _fishMaxLength;
-    private final double _fishLengthRate;
-    private final double _hpRegen;
-    private final int _startCombatTime;
-    private final int _combatDuration;
-    private final int _gutsCheckTime;
-    private final double _gutsCheckProbability;
-    private final double _cheatingProb;
-    private final int _fishGrade;
+    @Getter
+    private final int fishId;
+
+    @Getter
+    private final int itemId;
+
+    @Getter
+    private final String itemName;
+
+    @Getter
+    @Setter
+    private int fishGroup;
+
+    @Getter
+    private final int fishLevel;
+
+    @Getter
+    private final double fishBiteRate;
+
+    @Getter
+    private final double fishGuts;
+
+    @Getter
+    private final int fishHp;
+
+    @Getter
+    private final int fishMaxLength;
+
+    @Getter
+    private final double fishLengthRate;
+
+    @Getter
+    private final double hpRegen;
+
+    @Getter
+    private final int startCombatTime;
+
+    @Getter
+    private final int combatDuration;
+
+    @Getter
+    private final int gutsCheckTime;
+
+    @Getter
+    private final double gutsCheckProbability;
+
+    @Getter
+    private final double cheatingProb;
+
+    @Getter
+    private final int fishGrade;
 
     public Fish(StatSet set) {
-        _fishId = set.getInt("fishId");
-        _itemId = set.getInt("itemId");
-        _itemName = set.getString("itemName");
-        _fishGroup = getGroupId(set.getString("fishGroup"));
-        _fishLevel = set.getInt("fishLevel");
-        _fishBiteRate = set.getDouble("fishBiteRate"); // TODO: Support needed.
-        _fishGuts = set.getDouble("fishGuts");
-        _fishHp = set.getInt("fishHp");
-        _fishMaxLength = set.getInt("fishMaxLength"); // TODO: Support needed.
-        _fishLengthRate = set.getDouble("fishLengthRate"); // TODO: Support needed.
-        _hpRegen = set.getDouble("hpRegen");
-        _startCombatTime = set.getInt("startCombatTime");
-        _combatDuration = set.getInt("combatDuration");
-        _gutsCheckTime = set.getInt("gutsCheckTime");
-        _gutsCheckProbability = set.getDouble("gutsCheckProbability"); // TODO: Support needed.
-        _cheatingProb = set.getDouble("cheatingProb"); // TODO: Support needed.
-        _fishGrade = getGradeId(set.getString("fishGrade"));
+        fishId = set.getInt("fishId");
+        itemId = set.getInt("itemId");
+        itemName = set.getString("itemName");
+        fishGroup = getGroupId(set.getString("fishGroup"));
+        fishLevel = set.getInt("fishLevel");
+        fishBiteRate = set.getDouble("fishBiteRate"); // TODO: Support needed.
+        fishGuts = set.getDouble("fishGuts");
+        fishHp = set.getInt("fishHp");
+        fishMaxLength = set.getInt("fishMaxLength"); // TODO: Support needed.
+        fishLengthRate = set.getDouble("fishLengthRate"); // TODO: Support needed.
+        hpRegen = set.getDouble("hpRegen");
+        startCombatTime = set.getInt("startCombatTime");
+        combatDuration = set.getInt("combatDuration");
+        gutsCheckTime = set.getInt("gutsCheckTime");
+        gutsCheckProbability = set.getDouble("gutsCheckProbability"); // TODO: Support needed.
+        cheatingProb = set.getDouble("cheatingProb"); // TODO: Support needed.
+        fishGrade = getGradeId(set.getString("fishGrade"));
     }
 
     @Override
@@ -74,132 +110,6 @@ public class Fish implements Cloneable {
         } catch (CloneNotSupportedException e) {
             return null;
         }
-    }
-
-    /**
-     * @return the fish Id.
-     */
-    public int getFishId() {
-        return _fishId;
-    }
-
-    /**
-     * @return the fish Item Id.
-     */
-    public int getItemId() {
-        return _itemId;
-    }
-
-    /**
-     * @return the fish Item name Id.
-     */
-    public String getItemName() {
-        return _itemName;
-    }
-
-    /**
-     * @return the fish Group.
-     */
-    public int getFishGroup() {
-        return _fishGroup;
-    }
-
-    /**
-     * @return the fish Level.
-     */
-    public int getFishLevel() {
-        return _fishLevel;
-    }
-
-    /**
-     * @return the fish Bite Rate.
-     */
-    public double getFishBiteRate() {
-        return _fishBiteRate;
-    }
-
-    /**
-     * @return the fish Guts.
-     */
-    public double getFishGuts() {
-        return _fishGuts;
-    }
-
-    /**
-     * @return the fish Hp.
-     */
-    public int getFishHp() {
-        return _fishHp;
-    }
-
-    /**
-     * @return the fish Max length.
-     */
-    public int getFishMaxLength() {
-        return _fishMaxLength;
-    }
-
-    /**
-     * @return the fish Length rate.
-     */
-    public double getFishLengthRate() {
-        return _fishLengthRate;
-    }
-
-    /**
-     * @return the fish Hp regen.
-     */
-    public double getHpRegen() {
-        return _hpRegen;
-    }
-
-    /**
-     * @return the fish start Combat time.
-     */
-    public int getStartCombatTime() {
-        return _startCombatTime;
-    }
-
-    /**
-     * @return the fish Combat duration.
-     */
-    public int getCombatDuration() {
-        return _combatDuration;
-    }
-
-    /**
-     * @return the fish Guts check time.
-     */
-    public int getGutsCheckTime() {
-        return _gutsCheckTime;
-    }
-
-    /**
-     * @return the fish Guts Check probability.
-     */
-    public double getGutsCheckProbability() {
-        return _gutsCheckProbability;
-    }
-
-    /**
-     * @return the fish Cheating prob.
-     */
-    public double getCheatingProb() {
-        return _cheatingProb;
-    }
-
-    /**
-     * @return the fish Grade.
-     */
-    public int getFishGrade() {
-        return _fishGrade;
-    }
-
-    /**
-     * @param fg the fish Group.
-     */
-    public void setFishGroup(int fg) {
-        _fishGroup = fg;
     }
 
     /**

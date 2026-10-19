@@ -23,53 +23,16 @@ import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.mechanics.events.EventType;
 import app.l2nx.highfive.mechanics.events.holders.IBaseEvent;
 import app.l2nx.highfive.mechanics.skill.Skill;
+import lombok.Builder;
 
 /**
  * An instantly executed event when Creature is attacked by Creature.
  * @author UnAfraid
  */
-public class OnCreatureDamageDealt implements IBaseEvent {
-    private final Creature _attacker;
-    private final Creature _target;
-    private final double _damage;
-    private final Skill _skill;
-    private final boolean _crit;
-    private final boolean _damageOverTime;
-
-    public OnCreatureDamageDealt(
-            Creature attacker, Creature target, double damage, Skill skill, boolean crit, boolean damageOverTime) {
-        _attacker = attacker;
-        _target = target;
-        _damage = damage;
-        _skill = skill;
-        _crit = crit;
-        _damageOverTime = damageOverTime;
-    }
-
-    public Creature getAttacker() {
-        return _attacker;
-    }
-
-    public Creature getTarget() {
-        return _target;
-    }
-
-    public double getDamage() {
-        return _damage;
-    }
-
-    public Skill getSkill() {
-        return _skill;
-    }
-
-    public boolean isCritical() {
-        return _crit;
-    }
-
-    public boolean isDamageOverTime() {
-        return _damageOverTime;
-    }
-
+@Builder(toBuilder = true)
+public record OnCreatureDamageDealt(
+        Creature attacker, Creature target, double damage, Skill skill, boolean critical, boolean damageOverTime)
+        implements IBaseEvent {
     @Override
     public EventType getType() {
         return EventType.ON_CREATURE_DAMAGE_DEALT;

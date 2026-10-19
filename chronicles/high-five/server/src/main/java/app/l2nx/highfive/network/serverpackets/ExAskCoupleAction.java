@@ -27,18 +27,18 @@ import app.l2nx.network.buffer.WriteBuffer;
  * @author JIV
  */
 public class ExAskCoupleAction extends ServerPacket {
-    private final int _objectId;
-    private final int _actionId;
+    private final int objectId;
+    private final int actionId;
 
     public ExAskCoupleAction(int charObjId, int social) {
-        _objectId = charObjId;
-        _actionId = social;
+        objectId = charObjId;
+        actionId = social;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_ASK_COUPLE_ACTION.writeId(this, buffer);
-        buffer.writeInt(_actionId);
-        buffer.writeInt(_objectId);
+        buffer.writeInt(actionId);
+        buffer.writeInt(objectId);
     }
 }

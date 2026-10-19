@@ -19,41 +19,33 @@
  */
 package app.l2nx.highfive.entity.actor.holders.npc;
 
+import lombok.Getter;
+import lombok.Setter;
+
 /**
  * @author xban1x
  */
 public class AbsorberInfo {
-    private int _objectId;
-    private double _absorbedHp;
+    @Getter
+    @Setter
+    private int objectId;
+
+    @Getter
+    @Setter
+    private double absorbedHp;
 
     public AbsorberInfo(int objectId, double pAbsorbedHp) {
-        _objectId = objectId;
-        _absorbedHp = pAbsorbedHp;
-    }
-
-    public double getAbsorbedHp() {
-        return _absorbedHp;
-    }
-
-    public void setAbsorbedHp(double absorbedHp) {
-        _absorbedHp = absorbedHp;
-    }
-
-    public int getObjectId() {
-        return _objectId;
-    }
-
-    public void setObjectId(int objectId) {
-        _objectId = objectId;
+        this.objectId = objectId;
+        absorbedHp = pAbsorbedHp;
     }
 
     @Override
     public boolean equals(Object obj) {
-        return (this == obj) || ((obj instanceof AbsorberInfo) && (((AbsorberInfo) obj).getObjectId() == _objectId));
+        return (this == obj) || ((obj instanceof AbsorberInfo) && (((AbsorberInfo) obj).getObjectId() == objectId));
     }
 
     @Override
     public int hashCode() {
-        return _objectId;
+        return objectId;
     }
 }

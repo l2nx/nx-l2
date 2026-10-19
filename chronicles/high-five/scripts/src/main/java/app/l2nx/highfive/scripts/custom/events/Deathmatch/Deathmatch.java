@@ -671,7 +671,7 @@ public class Deathmatch extends Event {
 
     @RegisterEvent(EventType.ON_PLAYER_LOGOUT)
     private void onPlayerLogout(OnPlayerLogout event) {
-        final Player player = event.getPlayer();
+        final Player player = event.player();
 
         // Remove player from lists.
         PLAYER_LIST.remove(player);
@@ -680,9 +680,9 @@ public class Deathmatch extends Event {
 
     @RegisterEvent(EventType.ON_CREATURE_DEATH)
     public void onPlayerDeath(OnCreatureDeath event) {
-        if (event.getTarget().isPlayer()) {
-            final Player killedPlayer = event.getTarget().asPlayer();
-            final Player killer = event.getAttacker().asPlayer();
+        if (event.target().isPlayer()) {
+            final Player killedPlayer = event.target().asPlayer();
+            final Player killer = event.attacker().asPlayer();
 
             // Confirm player kill.
             PLAYER_SCORES.put(killer, PLAYER_SCORES.get(killer) + 1);

@@ -35,18 +35,18 @@ import app.l2nx.highfive.network.serverpackets.QuestList;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * TODO: Rework and cleanup.
  * @author Korvin, Zoey76
  */
+@Slf4j
 public class AdminShowQuests implements IAdminCommandHandler {
-    private static final Logger LOGGER = Logger.getLogger(AdminShowQuests.class.getName());
 
     private static final String[] ADMIN_COMMANDS = {"admin_charquestmenu", "admin_setcharquest"};
 
-    private static final String[] _states = {"CREATED", "STARTED", "COMPLETED"};
+    private static final String[] states = {"CREATED", "STARTED", "COMPLETED"};
 
     @Override
     public boolean onCommand(String command, Player activeChar) {
@@ -129,9 +129,9 @@ public class AdminShowQuests implements IAdminCommandHandler {
                         + target.getName()
                         + "</center></td><td width=45><button value=\"Back\" action=\"bypass admin_admin6\" width=45 height=21 back=\"L2UI_ct1.button_df\" fore=\"L2UI_ct1.button_df\"></td></tr></table>");
         final NpcHtmlMessage adminReply = new NpcHtmlMessage();
-        final int ID = target.getObjectId();
+        final int id = target.getObjectId();
         replyMSG.append(
-                "Quest Menu for <font color=\"LEVEL\">" + target.getName() + "</font> (ID:" + ID + ")<br><center>");
+                "Quest Menu for <font color=\"LEVEL\">" + target.getName() + "</font> (ID:" + id + ")<br><center>");
         replyMSG.append("<table width=250><tr><td><button value=\"CREATED\" action=\"bypass -h admin_charquestmenu "
                 + target.getName()
                 + " 0\" width=85 height=21 back=\"L2UI_ct1.button_df\" fore=\"L2UI_ct1.button_df\"></td></tr>");
@@ -155,17 +155,17 @@ public class AdminShowQuests implements IAdminCommandHandler {
         try (Connection con = DatabaseFactory.getConnection()) {
             ResultSet rs;
             PreparedStatement req;
-            final int ID = target.getObjectId();
+            final int id = target.getObjectId();
             final StringBuilder replyMSG = new StringBuilder("<html><body>");
             final NpcHtmlMessage adminReply = new NpcHtmlMessage();
 
             switch (val[0]) {
                 case "full": {
                     replyMSG.append("<table width=250><tr><td>Full Quest List for <font color=\"LEVEL\">"
-                            + target.getName() + "</font> (ID:" + ID + ")</td></tr>");
+                            + target.getName() + "</font> (ID:" + id + ")</td></tr>");
                     req = con.prepareStatement(
                             "SELECT DISTINCT name FROM character_quests WHERE charId=? AND var='<state>' ORDER by name");
-                    req.setInt(1, ID);
+                    req.setInt(1, id);
                     req.execute();
                     rs = req.getResultSet();
                     while (rs.next()) {
@@ -179,30 +179,30 @@ public class AdminShowQuests implements IAdminCommandHandler {
                 }
                 case "name": {
                     final QuestState qs = target.getQuestState(val[1]);
-                    final String state = (qs != null) ? _states[qs.getState()] : "CREATED";
+                    final String state = (qs != null) ? states[qs.getState()] : "CREATED";
                     replyMSG.append("Character: <font color=\"LEVEL\">" + target.getName()
                             + "</font><br>Quest: <font color=\"LEVEL\">" + val[1]
                             + "</font><br>State: <font color=\"LEVEL\">" + state + "</font><br><br>");
                     replyMSG.append(
                             "<center><table width=250><tr><td>Var</td><td>Value</td><td>New Value</td><td>&nbsp;</td></tr>");
                     req = con.prepareStatement("SELECT var,value FROM character_quests WHERE charId=? and name=?");
-                    req.setInt(1, ID);
+                    req.setInt(1, id);
                     req.setString(2, val[1]);
                     req.execute();
                     rs = req.getResultSet();
                     while (rs.next()) {
-                        final String var_name = rs.getString(1);
-                        if (var_name.equals("<state>")) {
+                        final String varName = rs.getString(1);
+                        if (varName.equals("<state>")) {
                             continue;
                         }
 
                         replyMSG.append(
-                                "<tr><td>" + var_name + "</td><td>" + rs.getString(2) + "</td><td><edit var=\"var"
-                                        + var_name
+                                "<tr><td>" + varName + "</td><td>" + rs.getString(2) + "</td><td><edit var=\"var"
+                                        + varName
                                         + "\" width=80 height=15></td><td><button value=\"Set\" action=\"bypass -h admin_setcharquest "
-                                        + target.getName() + " " + val[1] + " " + var_name + " $var" + var_name
+                                        + target.getName() + " " + val[1] + " " + varName + " $var" + varName
                                         + "\" width=30 height=15 back=\"L2UI_ct1.button_df\" fore=\"L2UI_ct1.button_df\"></td><td><button value=\"Del\" action=\"bypass -h admin_setcharquest "
-                                        + target.getName() + " " + val[1] + " " + var_name
+                                        + target.getName() + " " + val[1] + " " + varName
                                         + " delete\" width=30 height=15 back=\"L2UI_ct1.button_df\" fore=\"L2UI_ct1.button_df\"></td></tr>");
                     }
 
@@ -231,7 +231,7 @@ public class AdminShowQuests implements IAdminCommandHandler {
                     replyMSG.append("<table width=250>");
                     req = con.prepareStatement(
                             "SELECT DISTINCT name FROM character_quests WHERE charId=? and var='<state>' and value=?");
-                    req.setInt(1, ID);
+                    req.setInt(1, id);
                     req.setString(2, val[1]);
                     req.execute();
                     rs = req.getResultSet();
@@ -262,7 +262,7 @@ public class AdminShowQuests implements IAdminCommandHandler {
                     }
 
                     if (qs != null) {
-                        state = _states[qs.getState()];
+                        state = states[qs.getState()];
                     } else {
                         exqch = false;
                         state = "N/A";
@@ -277,7 +277,7 @@ public class AdminShowQuests implements IAdminCommandHandler {
                                     "<center><table width=250><tr><td>Var</td><td>Value</td><td>New Value</td><td>&nbsp;</td></tr>");
                             req = con.prepareStatement(
                                     "SELECT var,value FROM character_quests WHERE charId=? and name=?");
-                            req.setInt(1, ID);
+                            req.setInt(1, id);
                             req.setString(2, qname);
                             req.execute();
                             rs = req.getResultSet();
@@ -340,7 +340,7 @@ public class AdminShowQuests implements IAdminCommandHandler {
             actor.sendPacket(adminReply);
         } catch (Exception e) {
             actor.sendMessage("There was an error.");
-            LOGGER.warning(AdminShowQuests.class.getSimpleName() + ": " + e.getMessage());
+            log.warn("{}", e.getMessage());
         }
     }
 

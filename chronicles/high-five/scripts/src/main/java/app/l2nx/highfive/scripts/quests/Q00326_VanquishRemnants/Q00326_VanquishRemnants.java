@@ -114,10 +114,10 @@ public class Q00326_VanquishRemnants extends Quest {
                 break;
             }
             case State.STARTED: {
-                final long red_badges = getQuestItemsCount(player, RED_CROSS_BADGE);
-                final long blue_badges = getQuestItemsCount(player, BLUE_CROSS_BADGE);
-                final long black_badges = getQuestItemsCount(player, BLACK_CROSS_BADGE);
-                final long sum = red_badges + blue_badges + black_badges;
+                final long redBadges = getQuestItemsCount(player, RED_CROSS_BADGE);
+                final long blueBadges = getQuestItemsCount(player, BLUE_CROSS_BADGE);
+                final long blackBadges = getQuestItemsCount(player, BLACK_CROSS_BADGE);
+                final long sum = redBadges + blueBadges + blackBadges;
                 if (sum > 0) {
                     if ((sum >= 100) && !hasQuestItems(player, BLACK_LION_MARK)) {
                         giveItems(player, BLACK_LION_MARK, 1);
@@ -125,7 +125,7 @@ public class Q00326_VanquishRemnants extends Quest {
 
                     giveAdena(
                             player,
-                            ((red_badges * 46) + (blue_badges * 52) + (black_badges * 58) + ((sum >= 10) ? 4320 : 0)),
+                            ((redBadges * 46) + (blueBadges * 52) + (blackBadges * 58) + ((sum >= 10) ? 4320 : 0)),
                             true);
                     takeItems(player, -1, RED_CROSS_BADGE, BLUE_CROSS_BADGE, BLACK_CROSS_BADGE);
                     htmltext = (sum >= 100)

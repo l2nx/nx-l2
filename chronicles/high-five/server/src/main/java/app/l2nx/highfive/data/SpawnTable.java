@@ -27,22 +27,16 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import lombok.Getter;
 
 /**
  * @author Mobius
  */
 public class SpawnTable {
-    private final Map<Integer, Set<Spawn>> _npcSpawns = new ConcurrentHashMap<>();
+    @Getter
+    private final Map<Integer, Set<Spawn>> spawnTable = new ConcurrentHashMap<>();
 
     protected SpawnTable() {}
-
-    /**
-     * Retrieves the complete spawn table containing all NPC spawns.
-     * @return a map where keys are NPC IDs and values are sets of spawns for those NPCs.
-     */
-    public Map<Integer, Set<Spawn>> getSpawnTable() {
-        return _npcSpawns;
-    }
 
     /**
      * Retrieves the set of spawns for the specified NPC ID.
@@ -50,7 +44,7 @@ public class SpawnTable {
      * @return a set of spawns for the given NPC ID, or an empty set if no spawns are present.
      */
     public Set<Spawn> getSpawns(int npcId) {
-        return _npcSpawns.getOrDefault(npcId, Collections.emptySet());
+        return spawnTable.getOrDefault(npcId, Collections.emptySet());
     }
 
     /**
@@ -77,7 +71,7 @@ public class SpawnTable {
      * @param spawn the NPC spawn to add.
      */
     public void addSpawn(Spawn spawn) {
-        _npcSpawns
+        spawnTable
                 .computeIfAbsent(spawn.getId(), _ -> ConcurrentHashMap.newKeySet(1))
                 .add(spawn);
     }
@@ -88,11 +82,11 @@ public class SpawnTable {
      * @param spawn the NPC spawn to remove.
      */
     public void removeSpawn(Spawn spawn) {
-        final Set<Spawn> set = _npcSpawns.get(spawn.getId());
+        final Set<Spawn> set = spawnTable.get(spawn.getId());
         if (set != null) {
             set.remove(spawn);
             if (set.isEmpty()) {
-                _npcSpawns.remove(spawn.getId());
+                spawnTable.remove(spawn.getId());
             }
         }
     }

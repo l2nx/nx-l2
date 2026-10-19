@@ -27,18 +27,18 @@ import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.network.buffer.WriteBuffer;
 
 public class StartPledgeWar extends ServerPacket {
-    private final String _pledgeName;
-    private final String _playerName;
+    private final String pledgeName;
+    private final String playerName;
 
     public StartPledgeWar(String pledge, String charName) {
-        _pledgeName = pledge;
-        _playerName = charName;
+        pledgeName = pledge;
+        playerName = charName;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.START_PLEDGE_WAR.writeId(this, buffer);
-        buffer.writeString(_playerName);
-        buffer.writeString(_pledgeName);
+        buffer.writeString(playerName);
+        buffer.writeString(pledgeName);
     }
 }

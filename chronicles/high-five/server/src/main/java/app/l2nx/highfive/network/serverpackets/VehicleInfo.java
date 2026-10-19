@@ -28,27 +28,27 @@ import app.l2nx.network.buffer.WriteBuffer;
  * @author Maktakien
  */
 public class VehicleInfo extends ServerPacket {
-    private final int _objId;
-    private final int _x;
-    private final int _y;
-    private final int _z;
-    private final int _heading;
+    private final int objId;
+    private final int x;
+    private final int y;
+    private final int z;
+    private final int heading;
 
     public VehicleInfo(Boat boat) {
-        _objId = boat.getObjectId();
-        _x = boat.getX();
-        _y = boat.getY();
-        _z = boat.getZ();
-        _heading = boat.getHeading();
+        objId = boat.getObjectId();
+        x = boat.getX();
+        y = boat.getY();
+        z = boat.getZ();
+        heading = boat.getHeading();
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.VEHICLE_INFO.writeId(this, buffer);
-        buffer.writeInt(_objId);
-        buffer.writeInt(_x);
-        buffer.writeInt(_y);
-        buffer.writeInt(_z);
-        buffer.writeInt(_heading);
+        buffer.writeInt(objId);
+        buffer.writeInt(x);
+        buffer.writeInt(y);
+        buffer.writeInt(z);
+        buffer.writeInt(heading);
     }
 }

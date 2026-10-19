@@ -29,18 +29,18 @@ import app.l2nx.highfive.mechanics.skill.Skill;
  * @author mkizub
  */
 public class ConditionTargetRace extends Condition {
-    private final Race _race;
+    private final Race race;
 
     /**
      * Instantiates a new condition target race.
      * @param race containing the allowed race.
      */
     public ConditionTargetRace(Race race) {
-        _race = race;
+        this.race = race;
     }
 
     @Override
     public boolean testImpl(Creature effector, Creature effected, Skill skill, ItemTemplate item) {
-        return _race == effected.getRace();
+        return race == effected.getRace();
     }
 }

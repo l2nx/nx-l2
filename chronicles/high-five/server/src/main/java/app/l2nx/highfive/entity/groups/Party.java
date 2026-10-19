@@ -66,15 +66,16 @@ import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * This class serves as a container for player parties.
  * @author nuocnam
  */
+@Slf4j
 public class Party extends AbstractPlayerGroup {
-    private static final Logger LOGGER = Logger.getLogger(Party.class.getName());
 
     // @formatter:off
     private static final double[] BONUS_EXP_SP = {1.0, 1.10, 1.20, 1.30, 1.40, 1.50, 2.0, 2.10, 2.20};
@@ -83,21 +84,35 @@ public class Party extends AbstractPlayerGroup {
     private static final Duration PARTY_POSITION_BROADCAST_INTERVAL = Duration.ofSeconds(12);
     private static final Duration PARTY_DISTRIBUTION_TYPE_REQUEST_TIMEOUT = Duration.ofSeconds(15);
 
-    private final List<Player> _members = new CopyOnWriteArrayList<>();
-    private boolean _pendingInvitation = false;
-    private long _pendingInviteTimeout;
-    private int _partyLvl = 0;
-    private PartyDistributionType _distributionType = PartyDistributionType.FINDERS_KEEPERS;
-    private PartyDistributionType _changeRequestDistributionType;
-    private Future<?> _changeDistributionTypeRequestTask = null;
-    private Set<Integer> _changeDistributionTypeAnswers = null;
-    private int _itemLastLoot = 0;
-    private CommandChannel _commandChannel = null;
-    private DimensionalRift _dr;
-    private Future<?> _positionBroadcastTask = null;
-    protected PartyMemberPosition _positionPacket;
-    private boolean _disbanding = false;
-    private Object _ucState = null;
+    @Getter
+    private final List<Player> members = new CopyOnWriteArrayList<>();
+
+    private boolean pendingInvitation = false;
+    private long pendingInviteTimeout;
+
+    @Getter
+    private int level = 0;
+
+    @Getter
+    private PartyDistributionType distributionType = PartyDistributionType.FINDERS_KEEPERS;
+
+    private PartyDistributionType changeRequestDistributionType;
+    private Future<?> changeDistributionTypeRequestTask = null;
+    private Set<Integer> changeDistributionTypeAnswers = null;
+    private int itemLastLoot = 0;
+
+    @Getter
+    @Setter
+    private CommandChannel commandChannel = null;
+
+    @Getter
+    @Setter
+    private DimensionalRift dimensionalRift;
+
+    private Future<?> positionBroadcastTask = null;
+    protected PartyMemberPosition positionPacket;
+    private boolean disbanding = false;
+    private Object ucState = null;
 
     /**
      * Construct a new Party object with a single member - the leader.
@@ -105,9 +120,9 @@ public class Party extends AbstractPlayerGroup {
      * @param partyDistributionType the item distribution rule of this party
      */
     public Party(Player leader, PartyDistributionType partyDistributionType) {
-        _members.add(leader);
-        _partyLvl = leader.getLevel();
-        _distributionType = partyDistributionType;
+        members.add(leader);
+        level = leader.getLevel();
+        distributionType = partyDistributionType;
     }
 
     /**
@@ -115,7 +130,7 @@ public class Party extends AbstractPlayerGroup {
      * @return {@code true} if this party waits for a response on an invitation, {@code false} otherwise
      */
     public boolean getPendingInvitation() {
-        return _pendingInvitation;
+        return pendingInvitation;
     }
 
     /**
@@ -124,8 +139,8 @@ public class Party extends AbstractPlayerGroup {
      * @param value the pending invitation state to set
      */
     public void setPendingInvitation(boolean value) {
-        _pendingInvitation = value;
-        _pendingInviteTimeout = GameTimeTaskManager.getInstance().getGameTicks()
+        pendingInvitation = value;
+        pendingInviteTimeout = GameTimeTaskManager.getInstance().getGameTicks()
                 + (Player.REQUEST_TIMEOUT * GameTimeTaskManager.TICKS_PER_SECOND);
     }
 
@@ -135,7 +150,7 @@ public class Party extends AbstractPlayerGroup {
      * @see app.l2nx.highfive.entity.actor.Player#isRequestExpired()
      */
     public boolean isInvitationRequestExpired() {
-        return _pendingInviteTimeout <= GameTimeTaskManager.getInstance().getGameTicks();
+        return pendingInviteTimeout <= GameTimeTaskManager.getInstance().getGameTicks();
     }
 
     /**
@@ -146,7 +161,7 @@ public class Party extends AbstractPlayerGroup {
      */
     private Player getCheckedRandomMember(int itemId, Creature target) {
         final List<Player> availableMembers = new ArrayList<>();
-        for (Player member : _members) {
+        for (Player member : members) {
             if (member.getInventory().validateCapacityByItemId(itemId)
                     && LocationUtil.checkIfInRange(PlayerConfig.ALT_PARTY_RANGE, target, member, true)) {
                 availableMembers.add(member);
@@ -166,13 +181,13 @@ public class Party extends AbstractPlayerGroup {
      */
     private Player getCheckedNextLooter(int itemId, Creature target) {
         for (int i = 0; i < getMemberCount(); i++) {
-            if (++_itemLastLoot >= getMemberCount()) {
-                _itemLastLoot = 0;
+            if (++itemLastLoot >= getMemberCount()) {
+                itemLastLoot = 0;
             }
 
             Player member;
             try {
-                member = _members.get(_itemLastLoot);
+                member = members.get(itemLastLoot);
                 if (member.getInventory().validateCapacityByItemId(itemId)
                         && LocationUtil.checkIfInRange(PlayerConfig.ALT_PARTY_RANGE, target, member, true)) {
                     return member;
@@ -196,7 +211,7 @@ public class Party extends AbstractPlayerGroup {
     private Player getActualLooter(Player player, int itemId, boolean spoil, Creature target) {
         Player looter = null;
 
-        switch (_distributionType) {
+        switch (distributionType) {
             case RANDOM: {
                 if (!spoil) {
                     looter = getCheckedRandomMember(itemId, target);
@@ -226,7 +241,7 @@ public class Party extends AbstractPlayerGroup {
      * Broadcasts UI update and User Info for new party leader.
      */
     public void broadcastToPartyMembersNewLeader() {
-        for (Player member : _members) {
+        for (Player member : members) {
             if (member != null) {
                 member.sendPacket(PartySmallWindowDeleteAll.STATIC_PACKET);
                 member.sendPacket(new PartySmallWindowAll(member, this));
@@ -241,7 +256,7 @@ public class Party extends AbstractPlayerGroup {
      * @param packet
      */
     public void broadcastToPartyMembers(Player player, ServerPacket packet) {
-        for (Player member : _members) {
+        for (Player member : members) {
             if ((member != null) && (member.getObjectId() != player.getObjectId())) {
                 member.sendPacket(packet);
             }
@@ -253,23 +268,23 @@ public class Party extends AbstractPlayerGroup {
      * @param player
      */
     public void addPartyMember(Player player) {
-        if (_members.contains(player)) {
+        if (members.contains(player)) {
             return;
         }
 
-        if (_changeRequestDistributionType != null) {
+        if (changeRequestDistributionType != null) {
             finishLootRequest(false); // cancel on invite
         }
 
         // add player to party
-        _members.add(player);
+        members.add(player);
 
         // sends new member party window for all members
         // we do all actions before adding member to a list, this speeds things up a little
         player.sendPacket(new PartySmallWindowAll(player, this));
 
         // sends pets/summons of party members
-        for (Player pMember : _members) {
+        for (Player pMember : members) {
             if ((pMember != null) && pMember.hasSummon()) {
                 player.sendPacket(new ExPartyPetWindowAdd(pMember.getSummon()));
             }
@@ -283,7 +298,7 @@ public class Party extends AbstractPlayerGroup {
         msg.addString(player.getName());
         broadcastToPartyMembers(player, msg);
 
-        for (Player member : _members) {
+        for (Player member : members) {
             if (member != player) {
                 member.sendPacket(new PartySmallWindowAdd(player, this));
             }
@@ -301,13 +316,13 @@ public class Party extends AbstractPlayerGroup {
         }
 
         // adjust party level
-        if (player.getLevel() > _partyLvl) {
-            _partyLvl = player.getLevel();
+        if (player.getLevel() > level) {
+            level = player.getLevel();
         }
 
         // update partySpelled
         Summon summon;
-        for (Player member : _members) {
+        for (Player member : members) {
             if (member != null) {
                 member.updateEffectIcons(true); // update party icons only
                 summon = member.getSummon();
@@ -319,7 +334,7 @@ public class Party extends AbstractPlayerGroup {
         }
 
         if (isInDimensionalRift()) {
-            _dr.partyMemberInvited();
+            dimensionalRift.partyMemberInvited();
         }
 
         // open the CCInformationwindow
@@ -327,16 +342,16 @@ public class Party extends AbstractPlayerGroup {
             player.sendPacket(ExOpenMPCC.STATIC_PACKET);
         }
 
-        if (_positionBroadcastTask == null) {
-            _positionBroadcastTask = ThreadPool.scheduleAtFixedRate(
+        if (positionBroadcastTask == null) {
+            positionBroadcastTask = ThreadPool.scheduleAtFixedRate(
                     () -> {
-                        if (_positionPacket == null) {
-                            _positionPacket = new PartyMemberPosition(this);
+                        if (positionPacket == null) {
+                            positionPacket = new PartyMemberPosition(this);
                         } else {
-                            _positionPacket.reuse(this);
+                            positionPacket.reuse(this);
                         }
 
-                        broadcastPacket(_positionPacket);
+                        broadcastPacket(positionPacket);
                     },
                     PARTY_POSITION_BROADCAST_INTERVAL.toMillis() / 2,
                     PARTY_POSITION_BROADCAST_INTERVAL.toMillis());
@@ -358,10 +373,10 @@ public class Party extends AbstractPlayerGroup {
      * @param type the message type {@link PartyMessageType}.
      */
     public void removePartyMember(Player player, PartyMessageType type) {
-        if (_members.contains(player)) {
+        if (members.contains(player)) {
             final boolean isLeader = isLeader(player);
-            if (!_disbanding
-                    && ((_members.size() == 2)
+            if (!disbanding
+                    && ((members.size() == 2)
                             || (isLeader
                                     && !PlayerConfig.ALT_LEAVE_PARTY_LEADER
                                     && (type != PartyMessageType.DISCONNECTED)))) {
@@ -369,7 +384,7 @@ public class Party extends AbstractPlayerGroup {
                 return;
             }
 
-            _members.remove(player);
+            members.remove(player);
             recalculatePartyLevel();
 
             if (player.isFestivalParticipant()) {
@@ -388,7 +403,7 @@ public class Party extends AbstractPlayerGroup {
                     player.getSkillChannelized().abortChannelization();
                 }
             } catch (Exception e) {
-                LOGGER.log(Level.WARNING, "removePartyMember: ", e);
+                log.warn("removePartyMember: ", e);
             }
 
             SystemMessage msg;
@@ -413,7 +428,7 @@ public class Party extends AbstractPlayerGroup {
             }
 
             if (isInDimensionalRift()) {
-                _dr.partyMemberExited(player);
+                dimensionalRift.partyMemberExited(player);
             }
 
             // Close the CCInfoWindow
@@ -422,19 +437,19 @@ public class Party extends AbstractPlayerGroup {
             }
 
             if (isLeader
-                    && (_members.size() > 1)
+                    && (members.size() > 1)
                     && (PlayerConfig.ALT_LEAVE_PARTY_LEADER || (type == PartyMessageType.DISCONNECTED))) {
                 msg = new SystemMessage(SystemMessageId.C1_HAS_BECOME_THE_PARTY_LEADER);
                 msg.addString(getLeader().getName());
                 broadcastPacket(msg);
                 broadcastToPartyMembersNewLeader();
-            } else if (_members.size() == 1) {
+            } else if (members.size() == 1) {
                 if (isInCommandChannel()) {
                     // delete the whole command channel when the party who opened the channel is disbanded
-                    if (_commandChannel.getLeader().getObjectId() == getLeader().getObjectId()) {
-                        _commandChannel.disbandChannel();
+                    if (commandChannel.getLeader().getObjectId() == getLeader().getObjectId()) {
+                        commandChannel.disbandChannel();
                     } else {
-                        _commandChannel.removeParty(this);
+                        commandChannel.removeParty(this);
                     }
                 }
 
@@ -446,17 +461,17 @@ public class Party extends AbstractPlayerGroup {
                     }
                 }
 
-                if (_changeDistributionTypeRequestTask != null) {
-                    _changeDistributionTypeRequestTask.cancel(true);
-                    _changeDistributionTypeRequestTask = null;
+                if (changeDistributionTypeRequestTask != null) {
+                    changeDistributionTypeRequestTask.cancel(true);
+                    changeDistributionTypeRequestTask = null;
                 }
 
-                if (_positionBroadcastTask != null) {
-                    _positionBroadcastTask.cancel(false);
-                    _positionBroadcastTask = null;
+                if (positionBroadcastTask != null) {
+                    positionBroadcastTask.cancel(false);
+                    positionBroadcastTask = null;
                 }
 
-                _members.clear();
+                members.clear();
             }
         }
     }
@@ -465,9 +480,9 @@ public class Party extends AbstractPlayerGroup {
      * Disperse a party and send a message to all its members.
      */
     public void disbandParty() {
-        _disbanding = true;
+        disbanding = true;
         broadcastPacket(new SystemMessage(SystemMessageId.THE_PARTY_HAS_DISPERSED));
-        for (Player member : _members) {
+        for (Player member : members) {
             if (member != null) {
                 removePartyMember(member, PartyMessageType.NONE);
             }
@@ -485,24 +500,24 @@ public class Party extends AbstractPlayerGroup {
     @Override
     public void setLeader(Player player) {
         if ((player != null) && !player.isInDuel()) {
-            if (_members.contains(player)) {
+            if (members.contains(player)) {
                 if (isLeader(player)) {
                     player.sendPacket(SystemMessageId.SLOW_DOWN_YOU_ARE_ALREADY_THE_PARTY_LEADER);
                 } else {
                     // Swap party members
                     final Player temp = getLeader();
-                    final int p1 = _members.indexOf(player);
-                    _members.set(0, player);
-                    _members.set(p1, temp);
+                    final int p1 = members.indexOf(player);
+                    members.set(0, player);
+                    members.set(p1, temp);
                     SystemMessage msg = new SystemMessage(SystemMessageId.C1_HAS_BECOME_THE_PARTY_LEADER);
                     msg.addString(getLeader().getName());
                     broadcastPacket(msg);
                     broadcastToPartyMembersNewLeader();
-                    if (isInCommandChannel() && _commandChannel.isLeader(temp)) {
-                        _commandChannel.setLeader(getLeader());
+                    if (isInCommandChannel() && commandChannel.isLeader(temp)) {
+                        commandChannel.setLeader(getLeader());
                         msg = new SystemMessage(SystemMessageId.COMMAND_CHANNEL_AUTHORITY_HAS_BEEN_TRANSFERRED_TO_C1);
-                        msg.addString(_commandChannel.getLeader().getName());
-                        _commandChannel.broadcastPacket(msg);
+                        msg.addString(commandChannel.getLeader().getName());
+                        commandChannel.broadcastPacket(msg);
                     }
 
                     if (player.isInPartyMatchRoom()) {
@@ -522,7 +537,7 @@ public class Party extends AbstractPlayerGroup {
      * @return The player with the matching name, or {@code null} if no player with that name is in the party.
      */
     public Player getPlayerByName(String name) {
-        for (Player member : _members) {
+        for (Player member : members) {
             if (member.getName().equalsIgnoreCase(name)) {
                 return member;
             }
@@ -619,7 +634,7 @@ public class Party extends AbstractPlayerGroup {
         final List<Player> toReward = new ArrayList<>();
 
         // Iterate over all party members to find those within the allowed party range of the target.
-        for (Player member : _members) {
+        for (Player member : members) {
             if (LocationUtil.checkIfInRange(PlayerConfig.ALT_PARTY_RANGE, target, member, true)) {
                 toReward.add(member); // Add eligible member to the reward list.
             }
@@ -769,9 +784,9 @@ public class Party extends AbstractPlayerGroup {
      */
     public void recalculatePartyLevel() {
         int newLevel = 0;
-        for (Player member : _members) {
+        for (Player member : members) {
             if (member == null) {
-                _members.remove(member);
+                members.remove(member);
                 continue;
             }
 
@@ -780,7 +795,7 @@ public class Party extends AbstractPlayerGroup {
             }
         }
 
-        _partyLvl = newLevel;
+        level = newLevel;
     }
 
     private List<Player> getValidMembers(List<Player> members, int topLvl, Attackable target) {
@@ -882,37 +897,12 @@ public class Party extends AbstractPlayerGroup {
                 : (getBaseExpSpBonus(membersCount) * RatesConfig.RATE_PARTY_SP);
     }
 
-    @Override
-    public int getLevel() {
-        return _partyLvl;
-    }
-
-    public PartyDistributionType getDistributionType() {
-        return _distributionType;
-    }
-
     public boolean isInCommandChannel() {
-        return _commandChannel != null;
-    }
-
-    public CommandChannel getCommandChannel() {
-        return _commandChannel;
-    }
-
-    public void setCommandChannel(CommandChannel channel) {
-        _commandChannel = channel;
+        return commandChannel != null;
     }
 
     public boolean isInDimensionalRift() {
-        return _dr != null;
-    }
-
-    public void setDimensionalRift(DimensionalRift dr) {
-        _dr = dr;
-    }
-
-    public DimensionalRift getDimensionalRift() {
-        return _dr;
+        return dimensionalRift != null;
     }
 
     /**
@@ -920,13 +910,13 @@ public class Party extends AbstractPlayerGroup {
      */
     @Override
     public Player getLeader() {
-        if (_members.isEmpty()) {
+        if (members.isEmpty()) {
             return null;
         }
 
         final Player leader;
         try {
-            leader = _members.get(0);
+            leader = members.get(0);
         } catch (Exception e) {
             return null;
         }
@@ -935,13 +925,13 @@ public class Party extends AbstractPlayerGroup {
     }
 
     public synchronized void requestLootChange(PartyDistributionType partyDistributionType) {
-        if (_changeRequestDistributionType != null) {
+        if (changeRequestDistributionType != null) {
             return;
         }
 
-        _changeRequestDistributionType = partyDistributionType;
-        _changeDistributionTypeAnswers = new HashSet<>();
-        _changeDistributionTypeRequestTask =
+        changeRequestDistributionType = partyDistributionType;
+        changeDistributionTypeAnswers = new HashSet<>();
+        changeDistributionTypeRequestTask =
                 ThreadPool.schedule(() -> finishLootRequest(false), PARTY_DISTRIBUTION_TYPE_REQUEST_TIMEOUT.toMillis());
         broadcastToPartyMembers(
                 getLeader(), new ExAskModifyPartyLooting(getLeader().getName(), partyDistributionType));
@@ -952,7 +942,7 @@ public class Party extends AbstractPlayerGroup {
     }
 
     public synchronized void answerLootChangeRequest(Player member, boolean answer) {
-        if ((_changeRequestDistributionType == null) || _changeDistributionTypeAnswers.contains(member.getObjectId())) {
+        if ((changeRequestDistributionType == null) || changeDistributionTypeAnswers.contains(member.getObjectId())) {
             return;
         }
 
@@ -961,51 +951,43 @@ public class Party extends AbstractPlayerGroup {
             return;
         }
 
-        _changeDistributionTypeAnswers.add(member.getObjectId());
-        if (_changeDistributionTypeAnswers.size() >= (getMemberCount() - 1)) {
+        changeDistributionTypeAnswers.add(member.getObjectId());
+        if (changeDistributionTypeAnswers.size() >= (getMemberCount() - 1)) {
             finishLootRequest(true);
         }
     }
 
     protected synchronized void finishLootRequest(boolean success) {
-        if (_changeRequestDistributionType == null) {
+        if (changeRequestDistributionType == null) {
             return;
         }
 
-        if (_changeDistributionTypeRequestTask != null) {
-            _changeDistributionTypeRequestTask.cancel(false);
-            _changeDistributionTypeRequestTask = null;
+        if (changeDistributionTypeRequestTask != null) {
+            changeDistributionTypeRequestTask.cancel(false);
+            changeDistributionTypeRequestTask = null;
         }
 
         if (success) {
-            broadcastPacket(new ExSetPartyLooting(1, _changeRequestDistributionType));
-            _distributionType = _changeRequestDistributionType;
+            broadcastPacket(new ExSetPartyLooting(1, changeRequestDistributionType));
+            distributionType = changeRequestDistributionType;
             final SystemMessage sm = new SystemMessage(SystemMessageId.PARTY_LOOT_WAS_CHANGED_TO_S1);
-            sm.addSystemString(_changeRequestDistributionType.getSysStringId());
+            sm.addSystemString(changeRequestDistributionType.getSysStringId());
             broadcastPacket(sm);
         } else {
-            broadcastPacket(new ExSetPartyLooting(0, _distributionType));
+            broadcastPacket(new ExSetPartyLooting(0, distributionType));
             broadcastPacket(new SystemMessage(SystemMessageId.PARTY_LOOT_CHANGE_WAS_CANCELLED));
         }
 
-        _changeRequestDistributionType = null;
-        _changeDistributionTypeAnswers = null;
-    }
-
-    /**
-     * @return a list of all members of this party
-     */
-    @Override
-    public List<Player> getMembers() {
-        return _members;
+        changeRequestDistributionType = null;
+        changeDistributionTypeAnswers = null;
     }
 
     public Object getUCState() {
-        return _ucState;
+        return ucState;
     }
 
     public void setUCState(Object uc) {
-        _ucState = uc;
+        ucState = uc;
     }
 
     /**

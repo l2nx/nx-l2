@@ -24,6 +24,7 @@ package app.l2nx.highfive.entity.actor.holders.npc;
 
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.network.NpcStringId;
+import lombok.Getter;
 
 /**
  * Defines a single walking node for NPC routes.<br>
@@ -45,11 +46,14 @@ public class WalkNode extends Location {
     private static final String EMPTY_TEXT = "";
 
     // Node Data.
-    private final int _delayMs;
-    private final byte _moveMode;
-    private final byte _chatState;
-    private final NpcStringId _npcString;
-    private final String _chatText;
+    private final int delayMs;
+    private final byte moveMode;
+    private final byte chatState;
+
+    @Getter
+    private final NpcStringId npcString;
+
+    private final String chatText;
 
     /**
      * Creates a new walking node.<br>
@@ -66,7 +70,7 @@ public class WalkNode extends Location {
             int moveX, int moveY, int moveZ, int delay, boolean runToLocation, NpcStringId npcString, String chatText) {
         super(moveX, moveY, moveZ);
 
-        _delayMs = delay;
+        delayMs = delay;
 
         byte mode;
         if (runToLocation) {
@@ -74,7 +78,7 @@ public class WalkNode extends Location {
         } else {
             mode = MOVE_WALK;
         }
-        _moveMode = mode;
+        moveMode = mode;
 
         String text = chatText;
         if (text == null) {
@@ -87,10 +91,10 @@ public class WalkNode extends Location {
         } else {
             state = CHAT_PRESENT;
         }
-        _chatState = state;
+        chatState = state;
 
-        _npcString = npcString;
-        _chatText = text;
+        this.npcString = npcString;
+        this.chatText = text;
     }
 
     /**
@@ -98,7 +102,7 @@ public class WalkNode extends Location {
      * @return The delay
      */
     public int getDelay() {
-        final int value = _delayMs;
+        final int value = delayMs;
         if (value == NO_DELAY) {
             return NO_DELAY;
         }
@@ -111,15 +115,7 @@ public class WalkNode extends Location {
      * @return {@code true} if running
      */
     public boolean runToLocation() {
-        return _moveMode == MOVE_RUN;
-    }
-
-    /**
-     * Gets the NpcStringId for this node.
-     * @return The NpcStringId
-     */
-    public NpcStringId getNpcString() {
-        return _npcString;
+        return moveMode == MOVE_RUN;
     }
 
     /**
@@ -127,12 +123,12 @@ public class WalkNode extends Location {
      * @return The chat text
      */
     public String getChatText() {
-        if (_npcString != null) {
+        if (npcString != null) {
             throw new IllegalStateException("NpcStringId is defined for this walker node!");
         }
 
-        if (_chatState == CHAT_PRESENT) {
-            return _chatText;
+        if (chatState == CHAT_PRESENT) {
+            return chatText;
         }
 
         return EMPTY_TEXT;

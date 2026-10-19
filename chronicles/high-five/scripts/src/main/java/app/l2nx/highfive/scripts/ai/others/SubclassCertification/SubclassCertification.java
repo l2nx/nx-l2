@@ -177,7 +177,7 @@ public class SubclassCertification extends Script {
                     "%class%",
                     ClassListData.getInstance()
                             .getClass(player.getActiveClass())
-                            .getClassName());
+                            .className());
         }
 
         if (levelToReplace != null) {

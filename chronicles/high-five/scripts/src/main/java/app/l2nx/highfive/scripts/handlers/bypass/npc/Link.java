@@ -30,7 +30,9 @@ import app.l2nx.highfive.handler.IBypassHandler;
 import app.l2nx.highfive.network.serverpackets.NpcHtmlMessage;
 import java.util.HashSet;
 import java.util.Set;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class Link implements IBypassHandler {
     private static final String[] COMMANDS = {"Link"};
 
@@ -84,12 +86,12 @@ public class Link implements IBypassHandler {
     public boolean onCommand(String command, Player player, Creature target) {
         final String htmlPath = command.substring(4).trim();
         if (htmlPath.isEmpty()) {
-            LOGGER.warning(player + " sent empty link html!");
+            log.warn("{} sent empty link html!", player);
             return false;
         }
 
         if (htmlPath.contains("..")) {
-            LOGGER.warning(player + " sent invalid link html: " + htmlPath);
+            log.warn("{} sent invalid link html: {}", player, htmlPath);
             return false;
         }
 

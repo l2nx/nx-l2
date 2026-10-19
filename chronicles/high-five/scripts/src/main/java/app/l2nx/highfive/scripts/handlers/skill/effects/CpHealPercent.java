@@ -32,12 +32,12 @@ import app.l2nx.highfive.util.StatSet;
  * @author UnAfraid
  */
 public class CpHealPercent extends AbstractEffect {
-    private final double _power;
+    private final double power;
 
     public CpHealPercent(Condition attachCond, Condition applyCond, StatSet set, StatSet params) {
         super(attachCond, applyCond, set, params);
 
-        _power = params.getDouble("power", 0);
+        power = params.getDouble("power", 0);
     }
 
     @Override
@@ -52,7 +52,7 @@ public class CpHealPercent extends AbstractEffect {
         }
 
         double amount = 0;
-        final double power = _power;
+        final double power = this.power;
         final boolean full = (power == 100.0);
         amount = full ? effected.getMaxCp() : (effected.getMaxCp() * power) / 100.0;
 

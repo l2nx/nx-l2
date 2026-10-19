@@ -31,7 +31,7 @@ import app.l2nx.highfive.util.StatSet;
 import java.io.File;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.logging.Level;
+import lombok.extern.slf4j.Slf4j;
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
@@ -39,8 +39,9 @@ import org.w3c.dom.Node;
 /**
  * @author UnAfraid
  */
+@Slf4j
 public class TransformData implements IXmlReader {
-    private final Map<Integer, Transform> _transformData = new ConcurrentHashMap<>();
+    private final Map<Integer, Transform> transformData = new ConcurrentHashMap<>();
 
     protected TransformData() {
         load();
@@ -48,10 +49,9 @@ public class TransformData implements IXmlReader {
 
     @Override
     public synchronized void load() {
-        _transformData.clear();
+        transformData.clear();
         parseDatapackDirectory("data/stats/transformations", false);
-        LOGGER.log(
-                Level.INFO, getClass().getSimpleName() + ": Loaded " + _transformData.size() + " transform templates.");
+        log.info("Loaded {} transform templates.", transformData.size());
     }
 
     @Override
@@ -185,7 +185,7 @@ public class TransformData implements IXmlReader {
                             }
                         }
 
-                        _transformData.put(transform.getId(), transform);
+                        transformData.put(transform.getId(), transform);
                     }
                 }
             }
@@ -193,7 +193,7 @@ public class TransformData implements IXmlReader {
     }
 
     public Transform getTransform(int id) {
-        return _transformData.get(id);
+        return transformData.get(id);
     }
 
     public boolean transformPlayer(int id, Player player) {

@@ -31,14 +31,13 @@ import java.sql.Statement;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class CharInfoTable {
-    private static final Logger LOGGER = Logger.getLogger(CharInfoTable.class.getName());
 
-    private final Map<Integer, String> _names = new ConcurrentHashMap<>();
-    private final Map<Integer, Integer> _accessLevels = new ConcurrentHashMap<>();
+    private final Map<Integer, String> names = new ConcurrentHashMap<>();
+    private final Map<Integer, Integer> accessLevels = new ConcurrentHashMap<>();
 
     protected CharInfoTable() {
         try (Connection con = DatabaseFactory.getConnection();
@@ -46,35 +45,32 @@ public class CharInfoTable {
                 ResultSet rs = s.executeQuery("SELECT charId, char_name, accesslevel FROM characters")) {
             while (rs.next()) {
                 final int id = rs.getInt("charId");
-                _names.put(id, rs.getString("char_name"));
-                _accessLevels.put(id, rs.getInt("accesslevel"));
+                names.put(id, rs.getString("char_name"));
+                accessLevels.put(id, rs.getInt("accesslevel"));
             }
         } catch (SQLException e) {
-            LOGGER.log(
-                    Level.WARNING,
-                    getClass().getSimpleName() + ": Couldn't retrieve all char id/name/access: " + e.getMessage(),
-                    e);
+            log.warn("Couldn't retrieve all char id/name/access: {}", e.getMessage(), e);
         }
 
-        LOGGER.info(getClass().getSimpleName() + ": Loaded " + _names.size() + " char names.");
+        log.info("Loaded {} char names.", names.size());
     }
 
     public void addName(Player player) {
         if (player != null) {
             addName(player.getObjectId(), player.getName());
-            _accessLevels.put(player.getObjectId(), player.getAccessLevel().getLevel());
+            accessLevels.put(player.getObjectId(), player.getAccessLevel().getLevel());
         }
     }
 
     private void addName(int objectId, String name) {
-        if ((name != null) && !name.equals(_names.get(objectId))) {
-            _names.put(objectId, name);
+        if ((name != null) && !name.equals(names.get(objectId))) {
+            names.put(objectId, name);
         }
     }
 
     public void removeName(int objId) {
-        _names.remove(objId);
-        _accessLevels.remove(objId);
+        names.remove(objId);
+        accessLevels.remove(objId);
     }
 
     public int getIdByName(String name) {
@@ -82,7 +78,7 @@ public class CharInfoTable {
             return -1;
         }
 
-        for (Entry<Integer, String> entry : _names.entrySet()) {
+        for (Entry<Integer, String> entry : names.entrySet()) {
             if (entry.getValue().equalsIgnoreCase(name)) {
                 return entry.getKey();
             }
@@ -104,15 +100,12 @@ public class CharInfoTable {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.log(
-                    Level.WARNING,
-                    getClass().getSimpleName() + ": Could not check existing char name: " + e.getMessage(),
-                    e);
+            log.warn("Could not check existing char name: {}", e.getMessage(), e);
         }
 
         if (id > 0) {
-            _names.put(id, name);
-            _accessLevels.put(id, accessLevel);
+            names.put(id, name);
+            accessLevels.put(id, accessLevel);
             return id;
         }
 
@@ -124,7 +117,7 @@ public class CharInfoTable {
             return null;
         }
 
-        String name = _names.get(id);
+        String name = names.get(id);
         if (name != null) {
             return name;
         }
@@ -136,23 +129,20 @@ public class CharInfoTable {
             try (ResultSet rset = ps.executeQuery()) {
                 if (rset.next()) {
                     name = rset.getString("char_name");
-                    _names.put(id, name);
-                    _accessLevels.put(id, rset.getInt("accesslevel"));
+                    names.put(id, name);
+                    accessLevels.put(id, rset.getInt("accesslevel"));
                     return name;
                 }
             }
         } catch (SQLException e) {
-            LOGGER.log(
-                    Level.WARNING,
-                    getClass().getSimpleName() + ": Could not check existing char id: " + e.getMessage(),
-                    e);
+            log.warn("Could not check existing char id: {}", e.getMessage(), e);
         }
 
         return null; // not found
     }
 
     public int getAccessLevelById(int objectId) {
-        return getNameById(objectId) != null ? _accessLevels.get(objectId) : 0;
+        return getNameById(objectId) != null ? accessLevels.get(objectId) : 0;
     }
 
     public synchronized boolean doesCharNameExist(String name) {
@@ -167,10 +157,7 @@ public class CharInfoTable {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.log(
-                    Level.WARNING,
-                    getClass().getSimpleName() + ": Could not check existing charname: " + e.getMessage(),
-                    e);
+            log.warn("Could not check existing charname: {}", e.getMessage(), e);
         }
 
         return result;
@@ -187,7 +174,7 @@ public class CharInfoTable {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.log(Level.WARNING, "Couldn't retrieve account for id: " + e.getMessage(), e);
+            log.warn("Couldn't retrieve account for id: {}", e.getMessage(), e);
         }
 
         return 0;

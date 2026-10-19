@@ -425,23 +425,23 @@ public class SiegeGuards extends Script {
     }
 
     private class AggroCheckTask implements Runnable {
-        private final int _residenceId;
+        private final int residenceId;
 
         public AggroCheckTask(int residenceId) {
-            _residenceId = residenceId;
+            this.residenceId = residenceId;
         }
 
         @Override
         public void run() {
             synchronized (RESIDENCE_WORKING) {
-                if (RESIDENCE_WORKING[_residenceId]) {
+                if (RESIDENCE_WORKING[residenceId]) {
                     return;
                 }
 
-                RESIDENCE_WORKING[_residenceId] = true;
+                RESIDENCE_WORKING[residenceId] = true;
             }
 
-            final List<Npc> guards = RESIDENCE_GUARD_MAP[_residenceId];
+            final List<Npc> guards = RESIDENCE_GUARD_MAP[residenceId];
             for (Npc guard : guards) {
                 // Should never happen.
                 if ((guard == null) || !guard.isAttackable()) {
@@ -489,7 +489,7 @@ public class SiegeGuards extends Script {
             }
 
             synchronized (RESIDENCE_WORKING) {
-                RESIDENCE_WORKING[_residenceId] = false;
+                RESIDENCE_WORKING[residenceId] = false;
             }
         }
     }
@@ -536,7 +536,7 @@ public class SiegeGuards extends Script {
     @RegisterEvent(EventType.ON_CASTLE_SIEGE_FINISH)
     @RegisterType(ListenerRegisterType.GLOBAL)
     public void onCastleSiegeFinish(OnCastleSiegeFinish event) {
-        final Castle castle = event.getSiege().getCastle();
+        final Castle castle = event.siege().getCastle();
         final int residenceId = castle != null ? castle.getResidenceId() : 0;
         final List<Npc> guardList = RESIDENCE_GUARD_MAP[residenceId];
         if (guardList == null) {
@@ -560,7 +560,7 @@ public class SiegeGuards extends Script {
     @RegisterEvent(EventType.ON_FORT_SIEGE_FINISH)
     @RegisterType(ListenerRegisterType.GLOBAL)
     public void onFortSiegeFinish(OnFortSiegeFinish event) {
-        final Fort fort = event.getSiege().getFort();
+        final Fort fort = event.siege().getFort();
         final int residenceId = fort != null ? fort.getResidenceId() : 0;
         final List<Npc> guardList = RESIDENCE_GUARD_MAP[residenceId];
         if (guardList == null) {

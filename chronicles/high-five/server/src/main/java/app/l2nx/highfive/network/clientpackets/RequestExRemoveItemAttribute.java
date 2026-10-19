@@ -33,14 +33,14 @@ import app.l2nx.highfive.network.serverpackets.InventoryUpdate;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
 
 public class RequestExRemoveItemAttribute extends ClientPacket {
-    private int _objectId;
-    private long _price;
-    private byte _element;
+    private int objectId;
+    private long price;
+    private byte element;
 
     @Override
     protected void readImpl() {
-        _objectId = readInt();
-        _element = (byte) readInt();
+        objectId = readInt();
+        element = (byte) readInt();
     }
 
     @Override
@@ -50,28 +50,28 @@ public class RequestExRemoveItemAttribute extends ClientPacket {
             return;
         }
 
-        final Item targetItem = player.getInventory().getItemByObjectId(_objectId);
+        final Item targetItem = player.getInventory().getItemByObjectId(objectId);
         if (targetItem == null) {
             return;
         }
 
-        if ((targetItem.getElementals() == null) || (targetItem.getElemental(_element) == null)) {
+        if ((targetItem.getElementals() == null) || (targetItem.getElemental(element) == null)) {
             return;
         }
 
         if (player.reduceAdena(ItemProcessType.FEE, getPrice(targetItem), player, true)) {
             if (targetItem.isEquipped()) {
-                targetItem.getElemental(_element).removeBonus(player);
+                targetItem.getElemental(element).removeBonus(player);
             }
 
-            targetItem.clearElementAttr(_element);
+            targetItem.clearElementAttr(element);
             player.updateUserInfo();
 
             final InventoryUpdate iu = new InventoryUpdate();
             iu.addModifiedItem(targetItem);
             player.sendInventoryUpdate(iu);
             SystemMessage sm;
-            final byte realElement = targetItem.isArmor() ? Elementals.getOppositeElement(_element) : _element;
+            final byte realElement = targetItem.isArmor() ? Elementals.getOppositeElement(element) : element;
             if (targetItem.isEnchanted()) {
                 if (targetItem.isArmor()) {
                     sm = new SystemMessage(
@@ -102,7 +102,7 @@ public class RequestExRemoveItemAttribute extends ClientPacket {
             }
 
             player.sendPacket(sm);
-            player.sendPacket(new ExBaseAttributeCancelResult(targetItem.getObjectId(), _element));
+            player.sendPacket(new ExBaseAttributeCancelResult(targetItem.getObjectId(), element));
         } else {
             player.sendPacket(SystemMessageId.YOU_DO_NOT_HAVE_ENOUGH_FUNDS_TO_CANCEL_THIS_ATTRIBUTE);
         }
@@ -112,30 +112,30 @@ public class RequestExRemoveItemAttribute extends ClientPacket {
         switch (item.getTemplate().getCrystalType()) {
             case S: {
                 if (item.getTemplate() instanceof Weapon) {
-                    _price = 50000;
+                    price = 50000;
                 } else {
-                    _price = 40000;
+                    price = 40000;
                 }
                 break;
             }
             case S80: {
                 if (item.getTemplate() instanceof Weapon) {
-                    _price = 100000;
+                    price = 100000;
                 } else {
-                    _price = 80000;
+                    price = 80000;
                 }
                 break;
             }
             case S84: {
                 if (item.getTemplate() instanceof Weapon) {
-                    _price = 200000;
+                    price = 200000;
                 } else {
-                    _price = 160000;
+                    price = 160000;
                 }
                 break;
             }
         }
 
-        return _price;
+        return price;
     }
 }

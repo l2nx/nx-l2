@@ -23,46 +23,43 @@
 package app.l2nx.highfive.mechanics.undergroundColiseum;
 
 import app.l2nx.highfive.entity.groups.Party;
+import lombok.Getter;
 
 public class UCWaiting {
-    private final Party _party;
-    private long _registerMillis;
-    private final UCArena _baseArena;
+    private final Party party;
+
+    @Getter
+    private long registerMillis;
+
+    @Getter
+    private final UCArena baseArena;
 
     public UCWaiting(Party party, UCArena baseArena) {
-        _party = party;
-        _baseArena = baseArena;
+        this.party = party;
+        this.baseArena = baseArena;
     }
 
     public void clean() {
-        _registerMillis = 0L;
-    }
-
-    public UCArena getBaseArena() {
-        return _baseArena;
+        registerMillis = 0L;
     }
 
     public Party getParty() {
-        if ((_party != null) && (_party.getLeader() == null)) {
+        if ((party != null) && (party.getLeader() == null)) {
             setParty(false);
         }
 
-        return _party;
+        return party;
     }
 
     public void setParty(boolean isActive) {
         if (isActive) {
-            _party.setUCState(this);
+            party.setUCState(this);
         } else {
-            _party.setUCState(null);
+            party.setUCState(null);
         }
     }
 
     public void hasRegisterdNow() {
-        _registerMillis = System.currentTimeMillis();
-    }
-
-    public long getRegisterMillis() {
-        return _registerMillis;
+        registerMillis = System.currentTimeMillis();
     }
 }

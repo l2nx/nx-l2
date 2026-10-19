@@ -27,21 +27,22 @@ import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.clan.Clan;
 import app.l2nx.highfive.entity.clan.ClanAccess;
 import app.l2nx.highfive.entity.clan.ClanMember;
-import app.l2nx.highfive.network.PacketLogger;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.serverpackets.PledgeShowMemberListDelete;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
 import java.util.concurrent.TimeUnit;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @version $Revision: 1.3.2.1.2.3 $ $Date: 2005/03/27 15:29:30 $
  */
+@Slf4j
 public class RequestOustPledgeMember extends ClientPacket {
-    private String _target;
+    private String target;
 
     @Override
     protected void readImpl() {
-        _target = readString();
+        target = readString();
     }
 
     @Override
@@ -61,15 +62,15 @@ public class RequestOustPledgeMember extends ClientPacket {
             return;
         }
 
-        if (player.getName().equalsIgnoreCase(_target)) {
+        if (player.getName().equalsIgnoreCase(this.target)) {
             player.sendPacket(SystemMessageId.YOU_CANNOT_DISMISS_YOURSELF);
             return;
         }
 
         final Clan clan = player.getClan();
-        final ClanMember member = clan.getClanMember(_target);
+        final ClanMember member = clan.getClanMember(this.target);
         if (member == null) {
-            PacketLogger.warning("Target (" + _target + ") is not member of the clan");
+            log.warn("Target ({}) is not member of the clan", this.target);
             return;
         }
 
@@ -95,7 +96,7 @@ public class RequestOustPledgeMember extends ClientPacket {
                         .AFTER_A_CLAN_MEMBER_IS_DISMISSED_FROM_A_CLAN_THE_CLAN_MUST_WAIT_AT_LEAST_A_DAY_BEFORE_ACCEPTING_A_NEW_MEMBER);
 
         // Remove the Player From the Member list.
-        clan.broadcastToOnlineMembers(new PledgeShowMemberListDelete(_target));
+        clan.broadcastToOnlineMembers(new PledgeShowMemberListDelete(this.target));
         if (member.isOnline()) {
             final Player target = member.getPlayer();
             target.sendPacket(

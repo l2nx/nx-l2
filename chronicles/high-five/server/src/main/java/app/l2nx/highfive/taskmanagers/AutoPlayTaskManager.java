@@ -57,20 +57,20 @@ public class AutoPlayTaskManager {
     protected AutoPlayTaskManager() {}
 
     private class AutoPlay implements Runnable {
-        private final Set<Player> _players;
+        private final Set<Player> players;
 
         public AutoPlay(Set<Player> players) {
-            _players = players;
+            this.players = players;
         }
 
         @Override
         public void run() {
-            if (_players.isEmpty()) {
+            if (players.isEmpty()) {
                 return;
             }
 
             PLAY:
-            for (Player player : _players) {
+            for (Player player : players) {
                 if (!player.isOnline()
                         || (player.isInOfflineMode() && !player.isOfflinePlay())
                         || !AutoPlayConfig.ENABLE_AUTO_PLAY) {

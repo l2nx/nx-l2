@@ -26,6 +26,7 @@ import app.l2nx.highfive.util.StatSet;
 import java.io.File;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import lombok.extern.slf4j.Slf4j;
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
@@ -33,8 +34,9 @@ import org.w3c.dom.Node;
 /**
  * @author Zoey76
  */
+@Slf4j
 public class PetDataTable implements IXmlReader {
-    private final Map<Integer, PetData> _pets = new ConcurrentHashMap<>();
+    private final Map<Integer, PetData> pets = new ConcurrentHashMap<>();
 
     protected PetDataTable() {
         load();
@@ -42,9 +44,9 @@ public class PetDataTable implements IXmlReader {
 
     @Override
     public void load() {
-        _pets.clear();
+        pets.clear();
         parseDatapackDirectory("data/stats/pets", false);
-        LOGGER.info(getClass().getSimpleName() + ": Loaded " + _pets.size() + " pets.");
+        log.info("Loaded {} pets.", pets.size());
     }
 
     @Override
@@ -138,7 +140,7 @@ public class PetDataTable implements IXmlReader {
                     }
                 }
 
-                _pets.put(npcId, data);
+                pets.put(npcId, data);
             }
         }
     }
@@ -149,7 +151,7 @@ public class PetDataTable implements IXmlReader {
      * @return the {@link PetData} associated with the given item ID, or {@code null} if no matching data is found.
      */
     public PetData getPetDataByItemId(int itemId) {
-        for (PetData data : _pets.values()) {
+        for (PetData data : pets.values()) {
             if (data.getItemId() == itemId) {
                 return data;
             }
@@ -183,11 +185,11 @@ public class PetDataTable implements IXmlReader {
      * @return the {@link PetData} associated with the given ID, or {@code null} if no data is available.
      */
     public PetData getPetData(int petId) {
-        if (!_pets.containsKey(petId)) {
-            LOGGER.info(getClass().getSimpleName() + ": Missing pet data for npcid: " + petId);
+        if (!pets.containsKey(petId)) {
+            log.info("Missing pet data for npcid: {}", petId);
         }
 
-        return _pets.get(petId);
+        return pets.get(petId);
     }
 
     /**
@@ -196,7 +198,7 @@ public class PetDataTable implements IXmlReader {
      * @return the minimum level of the pet with the given ID.
      */
     public int getPetMinLevel(int petId) {
-        return _pets.get(petId).getMinLevel();
+        return pets.get(petId).getMinLevel();
     }
 
     /**
@@ -205,7 +207,7 @@ public class PetDataTable implements IXmlReader {
      * @return the item ID used to summon the pet associated with the given NPC ID.
      */
     public int getPetItemsByNpc(int npcId) {
-        return _pets.get(npcId).getItemId();
+        return pets.get(npcId).getItemId();
     }
 
     /**

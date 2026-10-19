@@ -28,23 +28,23 @@ import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.network.buffer.WriteBuffer;
 
 public class RecipeShopMsg extends ServerPacket {
-    private final int _objectId;
-    private final String _message;
+    private final int objectId;
+    private final String message;
 
     public RecipeShopMsg(Player player) {
-        _objectId = player.getObjectId();
-        _message = player.getStoreName();
+        objectId = player.getObjectId();
+        message = player.getStoreName();
     }
 
     public RecipeShopMsg(int objectId, String message) {
-        _objectId = objectId;
-        _message = message;
+        this.objectId = objectId;
+        this.message = message;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.RECIPE_SHOP_MSG.writeId(this, buffer);
-        buffer.writeInt(_objectId);
-        buffer.writeString(_message);
+        buffer.writeInt(objectId);
+        buffer.writeString(message);
     }
 }

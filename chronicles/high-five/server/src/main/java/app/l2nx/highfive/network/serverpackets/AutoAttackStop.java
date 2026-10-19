@@ -27,19 +27,19 @@ import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.network.buffer.WriteBuffer;
 
 public class AutoAttackStop extends ServerPacket {
-    private final int _targetObjId;
+    private final int targetObjId;
 
     /**
      * @param targetObjId
      */
     public AutoAttackStop(int targetObjId) {
-        _targetObjId = targetObjId;
+        this.targetObjId = targetObjId;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.AUTO_ATTACK_STOP.writeId(this, buffer);
-        buffer.writeInt(_targetObjId);
+        buffer.writeInt(targetObjId);
     }
 
     @Override

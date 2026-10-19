@@ -35,14 +35,14 @@ import java.util.concurrent.ThreadLocalRandom;
  * @author Adry_85
  */
 public class OpenDoor extends AbstractEffect {
-    private final int _chance;
-    private final boolean _isItem;
+    private final int chance;
+    private final boolean item;
 
     public OpenDoor(Condition attachCond, Condition applyCond, StatSet set, StatSet params) {
         super(attachCond, applyCond, set, params);
 
-        _chance = params.getInt("chance", 0);
-        _isItem = params.getBoolean("isItem", false);
+        chance = params.getInt("chance", 0);
+        item = params.getBoolean("isItem", false);
     }
 
     @Override
@@ -79,12 +79,12 @@ public class OpenDoor extends AbstractEffect {
             }
         }
 
-        if ((!door.isOpenableBySkill() && !_isItem) || (door.getFort() != null)) {
+        if ((!door.isOpenableBySkill() && !item) || (door.getFort() != null)) {
             effector.sendPacket(SystemMessageId.THIS_DOOR_CANNOT_BE_UNLOCKED);
             return;
         }
 
-        if ((ThreadLocalRandom.current().nextInt(100) < _chance) && !door.isOpen()) {
+        if ((ThreadLocalRandom.current().nextInt(100) < chance) && !door.isOpen()) {
             door.openMe();
         } else {
             effector.sendPacket(SystemMessageId.YOU_HAVE_FAILED_TO_UNLOCK_THE_DOOR);

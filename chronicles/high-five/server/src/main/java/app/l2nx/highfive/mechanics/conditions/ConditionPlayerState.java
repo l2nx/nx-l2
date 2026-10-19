@@ -30,8 +30,8 @@ import app.l2nx.highfive.mechanics.skill.Skill;
  * @author mkizub
  */
 public class ConditionPlayerState extends Condition {
-    private final PlayerState _check;
-    private final boolean _required;
+    private final PlayerState check;
+    private final boolean required;
 
     /**
      * Instantiates a new condition player state.
@@ -39,59 +39,59 @@ public class ConditionPlayerState extends Condition {
      * @param required the required value.
      */
     public ConditionPlayerState(PlayerState check, boolean required) {
-        _check = check;
-        _required = required;
+        this.check = check;
+        this.required = required;
     }
 
     @Override
     public boolean testImpl(Creature effector, Creature effected, Skill skill, ItemTemplate item) {
         final Player player = effector.asPlayer();
-        switch (_check) {
+        switch (check) {
             case RESTING: {
                 if (player != null) {
-                    return (player.isSitting() == _required);
+                    return (player.isSitting() == required);
                 }
 
-                return !_required;
+                return !required;
             }
             case MOVING: {
-                return effector.isMoving() == _required;
+                return effector.isMoving() == required;
             }
             case RUNNING: {
-                return (effector.isMoving() == _required) && (effector.isRunning() == _required);
+                return (effector.isMoving() == required) && (effector.isRunning() == required);
             }
             case STANDING: {
                 if (player != null) {
-                    return (_required != (player.isSitting() || player.isMoving()));
+                    return (required != (player.isSitting() || player.isMoving()));
                 }
 
-                return (_required != effector.isMoving());
+                return (required != effector.isMoving());
             }
             case FLYING: {
-                return (effector.isFlying() == _required);
+                return (effector.isFlying() == required);
             }
             case BEHIND: {
-                return (effector.isBehind(effected) == _required);
+                return (effector.isBehind(effected) == required);
             }
             case FRONT: {
-                return (effector.isInFrontOf(effected) == _required);
+                return (effector.isInFrontOf(effected) == required);
             }
             case CHAOTIC: {
                 if (player != null) {
-                    return ((player.getKarma() > 0) == _required);
+                    return ((player.getKarma() > 0) == required);
                 }
 
-                return !_required;
+                return !required;
             }
             case OLYMPIAD: {
                 if (player != null) {
-                    return (player.isInOlympiadMode() == _required);
+                    return (player.isInOlympiadMode() == required);
                 }
 
-                return !_required;
+                return !required;
             }
         }
 
-        return !_required;
+        return !required;
     }
 }

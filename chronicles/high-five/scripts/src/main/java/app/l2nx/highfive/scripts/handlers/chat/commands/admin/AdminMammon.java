@@ -36,7 +36,7 @@ public class AdminMammon implements IAdminCommandHandler {
         "admin_mammon_find", "admin_mammon_respawn",
     };
 
-    private final boolean _isSealValidation = SevenSigns.getInstance().isSealValidationPeriod();
+    private final boolean sealValidation = SevenSigns.getInstance().isSealValidationPeriod();
 
     @Override
     public boolean onCommand(String command, Player activeChar) {
@@ -55,7 +55,7 @@ public class AdminMammon implements IAdminCommandHandler {
                 return false;
             }
 
-            if (!_isSealValidation) {
+            if (!sealValidation) {
                 activeChar.sendPacket(SystemMessageId.THE_SSQ_COMPETITION_PERIOD_IS_UNDERWAY);
                 return false;
             }
@@ -86,7 +86,7 @@ public class AdminMammon implements IAdminCommandHandler {
                 activeChar.sendSysMessage("Merchant of Mammon isn't registered for spawn.");
             }
         } else if (command.startsWith("admin_mammon_respawn")) {
-            if (!_isSealValidation) {
+            if (!sealValidation) {
                 activeChar.sendPacket(SystemMessageId.THE_SSQ_COMPETITION_PERIOD_IS_UNDERWAY);
                 return true;
             }

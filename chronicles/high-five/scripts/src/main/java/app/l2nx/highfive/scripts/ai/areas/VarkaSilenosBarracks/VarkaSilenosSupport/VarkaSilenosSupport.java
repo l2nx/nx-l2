@@ -28,6 +28,7 @@ import app.l2nx.highfive.mechanics.script.Script;
 import app.l2nx.highfive.mechanics.skill.Skill;
 import java.util.HashMap;
 import java.util.Map;
+import lombok.Getter;
 import org.apache.commons.lang3.StringUtils;
 
 /**
@@ -37,20 +38,18 @@ import org.apache.commons.lang3.StringUtils;
  */
 public class VarkaSilenosSupport extends Script {
     private static class BuffsData {
-        private final int _skill;
-        private final int _cost;
+        private final int skill;
+
+        @Getter
+        private final int cost;
 
         public BuffsData(int skill, int cost) {
-            _skill = skill;
-            _cost = cost;
+            this.skill = skill;
+            this.cost = cost;
         }
 
         public Skill getSkill() {
-            return SkillData.getInstance().getSkill(_skill, 1);
-        }
-
-        public int getCost() {
-            return _cost;
+            return SkillData.getInstance().getSkill(skill, 1);
         }
     }
 
@@ -130,34 +129,34 @@ public class VarkaSilenosSupport extends Script {
     @Override
     public String onFirstTalk(Npc npc, Player player) {
         String htmltext = getNoQuestMsg(player);
-        final int AllianceLevel = getAllianceLevel(player);
+        final int allianceLevel = getAllianceLevel(player);
         switch (npc.getId()) {
             case ASHAS: {
-                htmltext = (AllianceLevel < 0) ? "31377-friend.html" : "31377-no.html";
+                htmltext = (allianceLevel < 0) ? "31377-friend.html" : "31377-no.html";
                 break;
             }
             case NARAN: {
-                htmltext = (AllianceLevel < 0) ? "31378-friend.html" : "31378-no.html";
+                htmltext = (allianceLevel < 0) ? "31378-friend.html" : "31378-no.html";
                 break;
             }
             case UDAN: {
-                htmltext = (AllianceLevel < 0)
-                        ? (AllianceLevel > -3) ? "31379-01.html" : "31379-04.html"
+                htmltext = (allianceLevel < 0)
+                        ? (allianceLevel > -3) ? "31379-01.html" : "31379-04.html"
                         : "31379-03.html";
                 break;
             }
             case DIYABU: {
-                htmltext = (AllianceLevel < 0) ? "31380-friend.html" : "31380-no.html";
+                htmltext = (allianceLevel < 0) ? "31380-friend.html" : "31380-no.html";
                 break;
             }
             case HAGOS: {
-                htmltext = (AllianceLevel < 0)
-                        ? (AllianceLevel == -1) ? "31381-01.html" : "31381-02.html"
+                htmltext = (allianceLevel < 0)
+                        ? (allianceLevel == -1) ? "31381-01.html" : "31381-02.html"
                         : "31381-no.html";
                 break;
             }
             case SHIKON: {
-                switch (AllianceLevel) {
+                switch (allianceLevel) {
                     case -1:
                     case -2: {
                         htmltext = "31382-01.html";
@@ -180,7 +179,7 @@ public class VarkaSilenosSupport extends Script {
                 break;
             }
             case TERANU: {
-                switch (AllianceLevel) {
+                switch (allianceLevel) {
                     case -1:
                     case -2:
                     case -3: {

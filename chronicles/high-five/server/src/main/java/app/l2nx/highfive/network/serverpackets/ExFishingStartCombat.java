@@ -28,30 +28,30 @@ import app.l2nx.network.buffer.WriteBuffer;
  * @author -Wooden-
  */
 public class ExFishingStartCombat extends ServerPacket {
-    private final Creature _creature;
-    private final int _time;
-    private final int _hp;
-    private final int _lureType;
-    private final int _deceptiveMode;
-    private final int _mode;
+    private final Creature creature;
+    private final int time;
+    private final int hp;
+    private final int lureType;
+    private final int deceptiveMode;
+    private final int mode;
 
     public ExFishingStartCombat(Creature creature, int time, int hp, int mode, int lureType, int deceptiveMode) {
-        _creature = creature;
-        _time = time;
-        _hp = hp;
-        _mode = mode;
-        _lureType = lureType;
-        _deceptiveMode = deceptiveMode;
+        this.creature = creature;
+        this.time = time;
+        this.hp = hp;
+        this.mode = mode;
+        this.lureType = lureType;
+        this.deceptiveMode = deceptiveMode;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_FISHING_START_COMBAT.writeId(this, buffer);
-        buffer.writeInt(_creature.getObjectId());
-        buffer.writeInt(_time);
-        buffer.writeInt(_hp);
-        buffer.writeByte(_mode); // mode: 0 = resting, 1 = fighting
-        buffer.writeByte(_lureType); // 0 = newbie lure, 1 = normal lure, 2 = night lure
-        buffer.writeByte(_deceptiveMode); // Fish Deceptive Mode: 0 = no, 1 = yes
+        buffer.writeInt(creature.getObjectId());
+        buffer.writeInt(time);
+        buffer.writeInt(hp);
+        buffer.writeByte(mode); // mode: 0 = resting, 1 = fighting
+        buffer.writeByte(lureType); // 0 = newbie lure, 1 = normal lure, 2 = night lure
+        buffer.writeByte(deceptiveMode); // Fish Deceptive Mode: 0 = no, 1 = yes
     }
 }

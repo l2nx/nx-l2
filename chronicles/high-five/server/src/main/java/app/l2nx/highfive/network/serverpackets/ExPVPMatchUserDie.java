@@ -28,18 +28,18 @@ import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.network.buffer.WriteBuffer;
 
 public class ExPVPMatchUserDie extends ServerPacket {
-    private final int _blueKills;
-    private final int _redKills;
+    private final int blueKills;
+    private final int redKills;
 
     public ExPVPMatchUserDie(UCArena arena) {
-        _redKills = arena.getTeams()[0].getKillCount();
-        _blueKills = arena.getTeams()[1].getKillCount();
+        redKills = arena.getTeams()[0].getKillCount();
+        blueKills = arena.getTeams()[1].getKillCount();
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_PVP_MATCH_USER_DIE.writeId(this, buffer);
-        buffer.writeInt(_redKills);
-        buffer.writeInt(_blueKills);
+        buffer.writeInt(redKills);
+        buffer.writeInt(blueKills);
     }
 }

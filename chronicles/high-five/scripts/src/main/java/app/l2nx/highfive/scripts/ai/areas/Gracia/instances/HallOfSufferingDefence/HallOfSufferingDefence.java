@@ -44,7 +44,9 @@ import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class HallOfSufferingDefence extends Script {
     private class HSDWorld extends InstanceWorld {
         public HSDWorld() {}
@@ -52,7 +54,7 @@ public class HallOfSufferingDefence extends Script {
         public Map<Npc, Boolean> npcList = new HashMap<>();
         public Npc klodekus = null;
         public Npc klanikus = null;
-        public boolean isBossesAttacked = false;
+        public boolean bossesAttacked = false;
         public long[] storeTime = {0, 0}; // 0: instance start, 1: finish time
     }
 
@@ -218,8 +220,11 @@ public class HallOfSufferingDefence extends Script {
             world.setInstance(InstanceManager.getInstance().createDynamicInstance(INSTANCEID));
             ((HSDWorld) world).storeTime[0] = System.currentTimeMillis();
             InstanceManager.getInstance().addWorld(world);
-            LOGGER.info("Hall Of Suffering Defence started " + INSTANCEID + " Instance: " + world.getInstanceId()
-                    + " created by player: " + player.getName());
+            log.info(
+                    "Hall Of Suffering Defence started {} Instance: {} created by player: {}",
+                    INSTANCEID,
+                    world.getInstanceId(),
+                    player.getName());
             runTumors((HSDWorld) world);
 
             final Party party = player.getParty();
@@ -374,7 +379,7 @@ public class HallOfSufferingDefence extends Script {
             final HSDWorld world = (HSDWorld) tmpworld;
             if (event.equalsIgnoreCase("spawnBossGuards")) {
                 if (!world.klanikus.isInCombat() && !world.klodekus.isInCombat()) {
-                    world.isBossesAttacked = false;
+                    world.bossesAttacked = false;
                     return "";
                 }
 
@@ -442,8 +447,8 @@ public class HallOfSufferingDefence extends Script {
         final InstanceWorld tmpworld = InstanceManager.getInstance().getWorld(npc);
         if (tmpworld instanceof HSDWorld) {
             final HSDWorld world = (HSDWorld) tmpworld;
-            if (!world.isBossesAttacked) {
-                world.isBossesAttacked = true;
+            if (!world.bossesAttacked) {
+                world.bossesAttacked = true;
                 final Calendar reenter = Calendar.getInstance();
                 reenter.add(Calendar.HOUR, INSTANCEPENALTY);
 

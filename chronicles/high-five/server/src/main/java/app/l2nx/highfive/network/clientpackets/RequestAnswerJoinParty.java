@@ -32,11 +32,11 @@ import app.l2nx.highfive.network.serverpackets.JoinParty;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
 
 public class RequestAnswerJoinParty extends ClientPacket {
-    private int _response;
+    private int response;
 
     @Override
     protected void readImpl() {
-        _response = readInt();
+        response = readInt();
     }
 
     @Override
@@ -51,9 +51,9 @@ public class RequestAnswerJoinParty extends ClientPacket {
             return;
         }
 
-        requestor.sendPacket(new JoinParty(_response));
+        requestor.sendPacket(new JoinParty(response));
 
-        switch (_response) {
+        switch (response) {
             case -1: // Party disable by player client config
             {
                 final SystemMessage sm = new SystemMessage(

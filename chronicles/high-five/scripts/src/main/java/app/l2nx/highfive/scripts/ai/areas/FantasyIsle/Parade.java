@@ -33,11 +33,13 @@ import java.time.format.DateTimeFormatter;
 import java.util.Collection;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Fantasy Isle Parade
  * @author JOJO, Mobius
  */
+@Slf4j
 public class Parade extends Script {
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm");
 
@@ -161,10 +163,11 @@ public class Parade extends Script {
         // final long diff = timeLeftMilli(8, 0, 0), cycle = 600000;
         // ThreadPoolManager.scheduleAtFixedRate(new Start(), 180000, cycle);
 
-        LOGGER.info("Fantasy Isle: Parade starting at "
-                + DATE_FORMAT.format(
-                        Instant.ofEpochMilli(System.currentTimeMillis() + diff).atZone(ZoneId.systemDefault()))
-                + " and is scheduled each next " + (cycle / 3600000) + " hours.");
+        log.info(
+                "Fantasy Isle: Parade starting at {} and is scheduled each next {} hours.",
+                DATE_FORMAT.format(
+                        Instant.ofEpochMilli(System.currentTimeMillis() + diff).atZone(ZoneId.systemDefault())),
+                (cycle / 3600000));
     }
 
     void load() {

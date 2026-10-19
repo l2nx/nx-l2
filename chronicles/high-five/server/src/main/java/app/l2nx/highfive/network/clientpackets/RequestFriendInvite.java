@@ -30,11 +30,11 @@ import app.l2nx.highfive.network.serverpackets.FriendAddRequest;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
 
 public class RequestFriendInvite extends ClientPacket {
-    private String _name;
+    private String name;
 
     @Override
     protected void readImpl() {
-        _name = readString();
+        name = readString();
     }
 
     @Override
@@ -44,7 +44,7 @@ public class RequestFriendInvite extends ClientPacket {
             return;
         }
 
-        final Player friend = World.getPlayer(_name);
+        final Player friend = World.getPlayer(name);
 
         // Target is not found in the game.
         if ((friend == null) || !friend.isOnline() || friend.isInvisible()) {
@@ -91,7 +91,7 @@ public class RequestFriendInvite extends ClientPacket {
         // Target is busy.
         if (friend.isProcessingRequest()) {
             sm = new SystemMessage(SystemMessageId.C1_IS_ON_ANOTHER_TASK_PLEASE_TRY_AGAIN_LATER);
-            sm.addString(_name);
+            sm.addString(name);
             player.sendPacket(sm);
             return;
         }
@@ -100,7 +100,7 @@ public class RequestFriendInvite extends ClientPacket {
         player.onTransactionRequest(friend);
         friend.sendPacket(new FriendAddRequest(player.getName()));
         sm = new SystemMessage(SystemMessageId.YOU_VE_REQUESTED_C1_TO_BE_ON_YOUR_FRIENDS_LIST);
-        sm.addString(_name);
+        sm.addString(name);
         player.sendPacket(sm);
     }
 }

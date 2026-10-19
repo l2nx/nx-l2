@@ -40,15 +40,14 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 
 /**
  * @author Mobius
  */
+@Slf4j
 public class CustomMailManager {
-    private static final Logger LOGGER = Logger.getLogger(CustomMailManager.class.getName());
 
     // SQL Statements
     private static final String READ_SQL = "SELECT * FROM custom_mail";
@@ -110,25 +109,22 @@ public class CustomMailManager {
                                     stmt.setInt(2, playerId);
                                     stmt.execute();
                                 } catch (SQLException e) {
-                                    LOGGER.log(
-                                            Level.WARNING,
-                                            getClass().getSimpleName() + ": Error deleting entry from database: ",
-                                            e);
+                                    log.warn("Error deleting entry from database: ", e);
                                 }
 
                                 // Send message.
                                 MailManager.getInstance().sendMessage(msg);
-                                LOGGER.info(getClass().getSimpleName() + ": Message sent to " + player.getName() + ".");
+                                log.info("Message sent to {}.", player.getName());
                             }
                         }
                     } catch (SQLException e) {
-                        LOGGER.log(Level.WARNING, getClass().getSimpleName() + ": Error reading from database: ", e);
+                        log.warn("Error reading from database: ", e);
                     }
                 },
                 CustomMailManagerConfig.CUSTOM_MAIL_MANAGER_DELAY,
                 CustomMailManagerConfig.CUSTOM_MAIL_MANAGER_DELAY);
 
-        LOGGER.info(getClass().getSimpleName() + ": Enabled.");
+        log.info("Enabled.");
     }
 
     public static CustomMailManager getInstance() {

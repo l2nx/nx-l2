@@ -30,10 +30,10 @@ import app.l2nx.highfive.network.SystemMessageId;
  * @author Adry_85
  */
 public class ConditionPlayerCanTransform extends Condition {
-    private final boolean _value;
+    private final boolean value;
 
     public ConditionPlayerCanTransform(boolean value) {
-        _value = value;
+        this.value = value;
     }
 
     @Override
@@ -59,6 +59,6 @@ public class ConditionPlayerCanTransform extends Condition {
             canTransform = false;
         }
 
-        return _value == canTransform;
+        return value == canTransform;
     }
 }

@@ -32,14 +32,14 @@ import java.util.concurrent.ThreadLocalRandom;
  * @author Zoey76
  */
 public class RunAway extends AbstractEffect {
-    private final int _power;
-    private final int _time;
+    private final int power;
+    private final int time;
 
     public RunAway(Condition attachCond, Condition applyCond, StatSet set, StatSet params) {
         super(attachCond, applyCond, set, params);
 
-        _power = params.getInt("power", 0);
-        _time = params.getInt("time", 0);
+        power = params.getInt("power", 0);
+        time = params.getInt("time", 0);
     }
 
     @Override
@@ -53,7 +53,7 @@ public class RunAway extends AbstractEffect {
             return;
         }
 
-        if (ThreadLocalRandom.current().nextInt(100) > _power) {
+        if (ThreadLocalRandom.current().nextInt(100) > power) {
             return;
         }
 
@@ -61,7 +61,7 @@ public class RunAway extends AbstractEffect {
             effected.abortCast();
         }
 
-        ((AttackableAI) effected.getAI()).setFearTime(_time);
+        ((AttackableAI) effected.getAI()).setFearTime(time);
         effected.getAI().notifyActionAfraid(effector, true);
     }
 }

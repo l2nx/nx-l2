@@ -49,9 +49,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.xml.parsers.DocumentBuilderFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
@@ -66,9 +65,8 @@ import org.w3c.dom.NodeList;
  * </ul>
  * @author BazookaRpm
  */
+@Slf4j
 public final class RebirthManager {
-    // Logger.
-    private static final Logger LOGGER = Logger.getLogger(RebirthManager.class.getName());
 
     // Constants.
     private static final int SKILLS_PER_ROW = 3;
@@ -341,18 +339,24 @@ public final class RebirthManager {
         for (int skillId : selectedSkills) {
             final String definition = getSkillDefinition(skillDefinitionMap, skillId);
             if (definition == null) {
-                LOGGER.warning(
-                        "Selected rebirth skill definition was not found while building acquired skills HTML: playerId="
-                                + player.getObjectId() + " playerName=" + player.getName() + " skillId=" + skillId);
+                log.warn(
+                        "Selected rebirth skill definition was not found while building acquired skills HTML: playerId={} playerName={} skillId={}",
+                        player.getObjectId(),
+                        player.getName(),
+                        skillId);
                 continue;
             }
 
             final int skillLevel = getSkillLevel(definition);
             final Skill skill = SkillData.getInstance().getSkill(skillId, skillLevel);
             if (skill == null) {
-                LOGGER.warning("Selected rebirth skill was not found while building acquired skills HTML: playerId="
-                        + player.getObjectId() + " playerName=" + player.getName() + " skillId=" + skillId
-                        + " skillLevel=" + skillLevel + " definition=" + definition);
+                log.warn(
+                        "Selected rebirth skill was not found while building acquired skills HTML: playerId={} playerName={} skillId={} skillLevel={} definition={}",
+                        player.getObjectId(),
+                        player.getName(),
+                        skillId,
+                        skillLevel,
+                        definition);
                 continue;
             }
 
@@ -413,16 +417,23 @@ public final class RebirthManager {
         for (String definition : skillDefinitions) {
             final int skillId = getSkillId(definition);
             if (skillId <= 0) {
-                LOGGER.warning("Skipping invalid rebirth skill definition while building index: playerId="
-                        + player.getObjectId() + " playerName=" + player.getName() + " definition=" + definition);
+                log.warn(
+                        "Skipping invalid rebirth skill definition while building index: playerId={} playerName={} definition={}",
+                        player.getObjectId(),
+                        player.getName(),
+                        definition);
                 continue;
             }
 
             final String previous = skillDefinitionMap.put(Integer.valueOf(skillId), definition);
             if (previous != null) {
-                LOGGER.warning("Duplicate rebirth skill definition detected while building index: playerId="
-                        + player.getObjectId() + " playerName=" + player.getName() + " skillId=" + skillId
-                        + " previousDefinition=" + previous + " newDefinition=" + definition);
+                log.warn(
+                        "Duplicate rebirth skill definition detected while building index: playerId={} playerName={} skillId={} previousDefinition={} newDefinition={}",
+                        player.getObjectId(),
+                        player.getName(),
+                        skillId,
+                        previous,
+                        definition);
             }
         }
         return skillDefinitionMap;
@@ -457,8 +468,11 @@ public final class RebirthManager {
                 validSkills.add(Integer.valueOf(skillId));
             } else {
                 changed = true;
-                LOGGER.warning("Removing stale rebirth skill from persisted selection: playerId=" + playerId
-                        + " playerName=" + player.getName() + " skillId=" + skillId);
+                log.warn(
+                        "Removing stale rebirth skill from persisted selection: playerId={} playerName={} skillId={}",
+                        playerId,
+                        player.getName(),
+                        skillId);
             }
         }
 
@@ -492,7 +506,7 @@ public final class RebirthManager {
         try {
             return Integer.parseInt(parts[0].trim());
         } catch (NumberFormatException e) {
-            LOGGER.log(Level.WARNING, "Failed to parse rebirth skill id from definition: definition=" + definition, e);
+            log.warn("Failed to parse rebirth skill id from definition: definition={}", definition, e);
             return 0;
         }
     }
@@ -511,8 +525,7 @@ public final class RebirthManager {
         try {
             return Integer.parseInt(parts[1].trim());
         } catch (NumberFormatException e) {
-            LOGGER.log(
-                    Level.WARNING, "Failed to parse rebirth skill level from definition: definition=" + definition, e);
+            log.warn("Failed to parse rebirth skill level from definition: definition={}", definition, e);
             return 1;
         }
     }
@@ -531,8 +544,7 @@ public final class RebirthManager {
         try {
             return Math.max(1, Integer.parseInt(parts[2].trim()));
         } catch (NumberFormatException e) {
-            LOGGER.log(
-                    Level.WARNING, "Failed to parse rebirth skill cost from definition: definition=" + definition, e);
+            log.warn("Failed to parse rebirth skill cost from definition: definition={}", definition, e);
             return 1;
         }
     }
@@ -606,17 +618,24 @@ public final class RebirthManager {
             final String definition = entry.getValue();
             final int skillLevel = getSkillLevel(definition);
             if (skillLevel <= 0) {
-                LOGGER.warning("Skipping invalid rebirth skill definition in selection window: playerId="
-                        + player.getObjectId() + " playerName=" + player.getName() + " definition=" + definition);
+                log.warn(
+                        "Skipping invalid rebirth skill definition in selection window: playerId={} playerName={} definition={}",
+                        player.getObjectId(),
+                        player.getName(),
+                        definition);
                 continue;
             }
 
             final int skillId = entry.getKey().intValue();
             final Skill skill = SkillData.getInstance().getSkill(skillId, skillLevel);
             if (skill == null) {
-                LOGGER.warning("Configured rebirth skill was not found in selection window: playerId="
-                        + player.getObjectId() + " playerName=" + player.getName() + " skillId=" + skillId
-                        + " skillLevel=" + skillLevel + " definition=" + definition);
+                log.warn(
+                        "Configured rebirth skill was not found in selection window: playerId={} playerName={} skillId={} skillLevel={} definition={}",
+                        player.getObjectId(),
+                        player.getName(),
+                        skillId,
+                        skillLevel,
+                        definition);
                 continue;
             }
 
@@ -796,9 +815,13 @@ public final class RebirthManager {
             if (skill != null) {
                 player.removeSkill(skill, true);
             } else {
-                LOGGER.warning("Configured rebirth skill could not be removed because it was not found: playerId="
-                        + playerId + " playerName=" + player.getName() + " skillId=" + skillId + " skillLevel="
-                        + skillLevel + " definition=" + definition);
+                log.warn(
+                        "Configured rebirth skill could not be removed because it was not found: playerId={} playerName={} skillId={} skillLevel={} definition={}",
+                        playerId,
+                        player.getName(),
+                        skillId,
+                        skillLevel,
+                        definition);
             }
             player.sendSkillList();
 
@@ -879,8 +902,12 @@ public final class RebirthManager {
             final boolean updated = firstBirth ? insertFirst(playerId) : updateCount(playerId, newCount);
             if (!updated) {
                 player.sendMessage("Rebirth could not be completed due to a database error.");
-                LOGGER.severe("Aborting rebirth because rebirth count persistence failed: playerId=" + playerId
-                        + " playerName=" + playerName + " newCount=" + newCount + " firstBirth=" + firstBirth);
+                log.error(
+                        "Aborting rebirth because rebirth count persistence failed: playerId={} playerName={} newCount={} firstBirth={}",
+                        playerId,
+                        playerName,
+                        newCount,
+                        firstBirth);
                 return;
             }
 
@@ -916,10 +943,12 @@ public final class RebirthManager {
             }
             player.storeMe();
         } catch (Exception e) {
-            LOGGER.log(
-                    Level.SEVERE,
-                    "Failed during critical rebirth section: playerId=" + playerId + " playerName=" + playerName
-                            + " newCount=" + newCount + " firstBirth=" + firstBirth,
+            log.error(
+                    "Failed during critical rebirth section: playerId={} playerName={} newCount={} firstBirth={}",
+                    playerId,
+                    playerName,
+                    newCount,
+                    firstBirth,
                     e);
             player.sendMessage("Rebirth could not be completed due to an internal error.");
             return;
@@ -940,10 +969,11 @@ public final class RebirthManager {
             player.sendMessage("Rebirth applied successfully. You have been reborn!");
             routePostRebirthUi(player, selectedSkills, newCount, skillDefinitionMap);
         } catch (Exception e) {
-            LOGGER.log(
-                    Level.SEVERE,
-                    "Failed during post-commit rebirth section: playerId=" + playerId + " playerName=" + playerName
-                            + " newCount=" + newCount,
+            log.error(
+                    "Failed during post-commit rebirth section: playerId={} playerName={} newCount={}",
+                    playerId,
+                    playerName,
+                    newCount,
                     e);
         }
     }
@@ -1007,7 +1037,7 @@ public final class RebirthManager {
     private void loadRootClassIds() {
         final File file = new File(CLASS_LIST_FILE);
         if (!file.exists()) {
-            LOGGER.warning("Rebirth class list file not found: " + CLASS_LIST_FILE);
+            log.warn("Rebirth class list file not found: {}", CLASS_LIST_FILE);
             return;
         }
 
@@ -1031,7 +1061,7 @@ public final class RebirthManager {
                 ROOT_CLASS_IDS.put(classId, Integer.valueOf(resolveRootClassId(classId.intValue(), parentClassIds)));
             }
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, "Failed to parse rebirth class list file: " + CLASS_LIST_FILE, e);
+            log.warn("Failed to parse rebirth class list file: {}", CLASS_LIST_FILE, e);
         }
     }
 
@@ -1072,10 +1102,10 @@ public final class RebirthManager {
             return Integer.parseInt(
                     node.getAttributes().getNamedItem(attributeName).getNodeValue());
         } catch (NumberFormatException e) {
-            LOGGER.log(
-                    Level.WARNING,
-                    "Failed to parse rebirth class attribute: attribute=" + attributeName + " value="
-                            + node.getAttributes().getNamedItem(attributeName).getNodeValue(),
+            log.warn(
+                    "Failed to parse rebirth class attribute: attribute={} value={}",
+                    attributeName,
+                    node.getAttributes().getNamedItem(attributeName).getNodeValue(),
                     e);
             return defaultValue;
         }
@@ -1183,8 +1213,13 @@ public final class RebirthManager {
      */
     private boolean consumeItem(Player player, int itemId, long amount, ItemProcessType processType, String reason) {
         if ((player == null) || (itemId <= 0) || (amount <= 0) || (amount > Integer.MAX_VALUE)) {
-            LOGGER.warning("Invalid consumeItem request: player=" + player + " itemId=" + itemId + " amount=" + amount
-                    + " processType=" + processType + " reason=" + reason);
+            log.warn(
+                    "Invalid consumeItem request: player={} itemId={} amount={} processType={} reason={}",
+                    player,
+                    itemId,
+                    amount,
+                    processType,
+                    reason);
             return false;
         }
 
@@ -1225,8 +1260,11 @@ public final class RebirthManager {
         for (int skillId : selectedSkills) {
             final String definition = getSkillDefinition(skillDefinitionMap, skillId);
             if (definition == null) {
-                LOGGER.warning("Skipping selected rebirth skill because definition was not found: playerId="
-                        + player.getObjectId() + " playerName=" + player.getName() + " skillId=" + skillId);
+                log.warn(
+                        "Skipping selected rebirth skill because definition was not found: playerId={} playerName={} skillId={}",
+                        player.getObjectId(),
+                        player.getName(),
+                        skillId);
                 continue;
             }
 
@@ -1234,9 +1272,12 @@ public final class RebirthManager {
             if (skill != null) {
                 player.addSkill(skill, true);
             } else {
-                LOGGER.warning("Skipping selected rebirth skill because skill data was not found: playerId="
-                        + player.getObjectId() + " playerName=" + player.getName() + " skillId=" + skillId
-                        + " definition=" + definition);
+                log.warn(
+                        "Skipping selected rebirth skill because skill data was not found: playerId={} playerName={} skillId={} definition={}",
+                        player.getObjectId(),
+                        player.getName(),
+                        skillId,
+                        definition);
             }
         }
         player.sendSkillList();
@@ -1267,7 +1308,7 @@ public final class RebirthManager {
                 }
             }
         } catch (Exception e) {
-            LOGGER.log(Level.SEVERE, "Failed to load rebirth count: charId=" + charId, e);
+            log.error("Failed to load rebirth count: charId={}", charId, e);
         }
         return count;
     }
@@ -1283,7 +1324,7 @@ public final class RebirthManager {
             statement.setInt(1, charId);
             return statement.executeUpdate() > 0;
         } catch (Exception e) {
-            LOGGER.log(Level.SEVERE, "Failed to insert first rebirth record: charId=" + charId, e);
+            log.error("Failed to insert first rebirth record: charId={}", charId, e);
         }
         return false;
     }
@@ -1301,7 +1342,7 @@ public final class RebirthManager {
             statement.setInt(2, charId);
             return statement.executeUpdate() > 0;
         } catch (Exception e) {
-            LOGGER.log(Level.SEVERE, "Failed to update rebirth count: charId=" + charId + " newCount=" + newCount, e);
+            log.error("Failed to update rebirth count: charId={} newCount={}", charId, newCount, e);
         }
         return false;
     }
@@ -1324,10 +1365,11 @@ public final class RebirthManager {
                             try {
                                 skills.add(Integer.valueOf(Integer.parseInt(skillValue.trim())));
                             } catch (NumberFormatException e) {
-                                LOGGER.log(
-                                        Level.WARNING,
-                                        "Failed to parse persisted rebirth skill id: charId=" + charId + " rawValue="
-                                                + skillValue + " data=" + data,
+                                log.warn(
+                                        "Failed to parse persisted rebirth skill id: charId={} rawValue={} data={}",
+                                        charId,
+                                        skillValue,
+                                        data,
                                         e);
                             }
                         }
@@ -1335,7 +1377,7 @@ public final class RebirthManager {
                 }
             }
         } catch (Exception e) {
-            LOGGER.log(Level.SEVERE, "Failed to load selected rebirth skills: charId=" + charId, e);
+            log.error("Failed to load selected rebirth skills: charId={}", charId, e);
         }
         return skills;
     }
@@ -1360,8 +1402,7 @@ public final class RebirthManager {
             statement.setInt(2, charId);
             statement.executeUpdate();
         } catch (Exception e) {
-            LOGGER.log(
-                    Level.SEVERE, "Failed to save selected rebirth skills: charId=" + charId + " skills=" + skills, e);
+            log.error("Failed to save selected rebirth skills: charId={} skills={}", charId, skills, e);
         }
     }
 
@@ -1392,9 +1433,13 @@ public final class RebirthManager {
         final int targetLevel = getSkillLevel(definition);
         final Skill skill = SkillData.getInstance().getSkill(skillId, targetLevel);
         if (skill == null) {
-            LOGGER.warning("Configured rebirth skill preview was not found: playerId=" + player.getObjectId()
-                    + " playerName=" + player.getName() + " skillId=" + skillId + " targetLevel=" + targetLevel
-                    + " definition=" + definition);
+            log.warn(
+                    "Configured rebirth skill preview was not found: playerId={} playerName={} skillId={} targetLevel={} definition={}",
+                    player.getObjectId(),
+                    player.getName(),
+                    skillId,
+                    targetLevel,
+                    definition);
             player.sendMessage("Invalid skill.");
             return;
         }

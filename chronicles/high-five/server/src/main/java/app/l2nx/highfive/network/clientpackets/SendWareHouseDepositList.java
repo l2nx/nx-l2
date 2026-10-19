@@ -32,21 +32,22 @@ import app.l2nx.highfive.entity.item.holders.ItemHolder;
 import app.l2nx.highfive.entity.item.instance.Item;
 import app.l2nx.highfive.entity.itemcontainer.ItemContainer;
 import app.l2nx.highfive.entity.itemcontainer.PlayerWarehouse;
-import app.l2nx.highfive.network.PacketLogger;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.serverpackets.EnchantResult;
 import app.l2nx.highfive.network.serverpackets.InventoryUpdate;
 import app.l2nx.highfive.network.serverpackets.StatusUpdate;
 import java.util.ArrayList;
 import java.util.List;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * SendWareHouseDepositList client packet class.
  */
+@Slf4j
 public class SendWareHouseDepositList extends ClientPacket {
     private static final int BATCH_LENGTH = 12;
 
-    private List<ItemHolder> _items = null;
+    private List<ItemHolder> items = null;
 
     @Override
     protected void readImpl() {
@@ -55,22 +56,22 @@ public class SendWareHouseDepositList extends ClientPacket {
             return;
         }
 
-        _items = new ArrayList<>(size);
+        items = new ArrayList<>(size);
         for (int i = 0; i < size; i++) {
             final int objId = readInt();
             final long count = readLong();
             if ((objId < 1) || (count < 1)) {
-                _items = null;
+                items = null;
                 return;
             }
 
-            _items.add(new ItemHolder(objId, count));
+            items.add(new ItemHolder(objId, count));
         }
     }
 
     @Override
     protected void runImpl() {
-        if (_items == null) {
+        if (items == null) {
             return;
         }
 
@@ -115,14 +116,13 @@ public class SendWareHouseDepositList extends ClientPacket {
         }
 
         // Freight price from config or normal price per item slot (30).
-        final long fee = _items.size() * 30;
+        final long fee = items.size() * 30;
         long currentAdena = player.getAdena();
         int slots = 0;
-        for (ItemHolder itemHolder : _items) {
+        for (ItemHolder itemHolder : items) {
             final Item item = player.checkItemManipulation(itemHolder.getId(), itemHolder.getCount(), "deposit");
             if (item == null) {
-                PacketLogger.warning(
-                        "Error depositing a warehouse object for char " + player.getName() + " (validity check)");
+                log.warn("Error depositing a warehouse object for char {} (validity check)", player.getName());
                 return;
             }
 
@@ -157,12 +157,11 @@ public class SendWareHouseDepositList extends ClientPacket {
 
         // Proceed to the transfer.
         final InventoryUpdate playerIU = new InventoryUpdate();
-        for (ItemHolder itemHolder : _items) {
+        for (ItemHolder itemHolder : items) {
             // Check validity of requested item.
             final Item oldItem = player.checkItemManipulation(itemHolder.getId(), itemHolder.getCount(), "deposit");
             if (oldItem == null) {
-                PacketLogger.warning(
-                        "Error depositing a warehouse object for char " + player.getName() + " (olditem == null)");
+                log.warn("Error depositing a warehouse object for char {} (olditem == null)", player.getName());
                 return;
             }
 
@@ -179,8 +178,7 @@ public class SendWareHouseDepositList extends ClientPacket {
                             player,
                             manager);
             if (newItem == null) {
-                PacketLogger.warning(
-                        "Error depositing a warehouse object for char " + player.getName() + " (newitem == null)");
+                log.warn("Error depositing a warehouse object for char {} (newitem == null)", player.getName());
                 continue;
             }
 

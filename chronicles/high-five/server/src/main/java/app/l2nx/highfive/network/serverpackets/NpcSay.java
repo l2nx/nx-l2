@@ -36,12 +36,12 @@ import java.util.List;
  * @author Kerberos
  */
 public class NpcSay extends ServerPacket {
-    private final int _objectId;
-    private final ChatType _textType;
-    private final int _npcId;
-    private String _text;
-    private final int _npcString;
-    private List<String> _parameters;
+    private final int objectId;
+    private final ChatType textType;
+    private final int npcId;
+    private String text;
+    private final int npcString;
+    private List<String> parameters;
 
     /**
      * @param objectId
@@ -50,33 +50,33 @@ public class NpcSay extends ServerPacket {
      * @param text
      */
     public NpcSay(int objectId, ChatType messageType, int npcId, String text) {
-        _objectId = objectId;
-        _textType = messageType;
-        _npcId = 1000000 + npcId;
-        _npcString = -1;
-        _text = text;
+        this.objectId = objectId;
+        textType = messageType;
+        this.npcId = 1000000 + npcId;
+        npcString = -1;
+        this.text = text;
     }
 
     public NpcSay(Npc npc, ChatType messageType, String text) {
-        _objectId = npc.getObjectId();
-        _textType = messageType;
-        _npcId = 1000000 + npc.getTemplate().getDisplayId();
-        _npcString = -1;
-        _text = text;
+        objectId = npc.getObjectId();
+        textType = messageType;
+        npcId = 1000000 + npc.getTemplate().getDisplayId();
+        npcString = -1;
+        this.text = text;
     }
 
     public NpcSay(int objectId, ChatType messageType, int npcId, NpcStringId npcString) {
-        _objectId = objectId;
-        _textType = messageType;
-        _npcId = 1000000 + npcId;
-        _npcString = npcString.getId();
+        this.objectId = objectId;
+        textType = messageType;
+        this.npcId = 1000000 + npcId;
+        this.npcString = npcString.getId();
     }
 
     public NpcSay(Npc npc, ChatType messageType, NpcStringId npcString) {
-        _objectId = npc.getObjectId();
-        _textType = messageType;
-        _npcId = 1000000 + npc.getTemplate().getDisplayId();
-        _npcString = npcString.getId();
+        objectId = npc.getObjectId();
+        textType = messageType;
+        npcId = 1000000 + npc.getTemplate().getDisplayId();
+        this.npcString = npcString.getId();
     }
 
     /**
@@ -84,11 +84,11 @@ public class NpcSay extends ServerPacket {
      * @return this NpcSay packet object
      */
     public NpcSay addStringParameter(String text) {
-        if (_parameters == null) {
-            _parameters = new ArrayList<>();
+        if (parameters == null) {
+            parameters = new ArrayList<>();
         }
 
-        _parameters.add(text);
+        parameters.add(text);
         return this;
     }
 
@@ -98,13 +98,13 @@ public class NpcSay extends ServerPacket {
      */
     public NpcSay addStringParameters(String... params) {
         if ((params != null) && (params.length > 0)) {
-            if (_parameters == null) {
-                _parameters = new ArrayList<>();
+            if (parameters == null) {
+                parameters = new ArrayList<>();
             }
 
             for (String item : params) {
                 if ((item != null) && !item.isEmpty()) {
-                    _parameters.add(item);
+                    parameters.add(item);
                 }
             }
         }
@@ -115,9 +115,9 @@ public class NpcSay extends ServerPacket {
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.NPC_SAY.writeId(this, buffer);
-        buffer.writeInt(_objectId);
-        buffer.writeInt(_textType.getClientId());
-        buffer.writeInt(_npcId);
+        buffer.writeInt(objectId);
+        buffer.writeInt(textType.getClientId());
+        buffer.writeInt(npcId);
 
         // Localisation related.
         if (MultilingualSupportConfig.MULTILANG_ENABLE) {
@@ -125,13 +125,13 @@ public class NpcSay extends ServerPacket {
             if (player != null) {
                 final String lang = player.getLang();
                 if ((lang != null) && !lang.equals("en")) {
-                    final NpcStringId ns = NpcStringId.getNpcStringId(_npcString);
+                    final NpcStringId ns = NpcStringId.getNpcStringId(npcString);
                     if (ns != null) {
                         final NSLocalisation nsl = ns.getLocalisation(lang);
                         if (nsl != null) {
                             buffer.writeInt(-1);
                             buffer.writeString(
-                                    nsl.getLocalisation(_parameters != null ? _parameters : Collections.emptyList()));
+                                    nsl.getLocalisation(parameters != null ? parameters : Collections.emptyList()));
                             return;
                         }
                     }
@@ -139,11 +139,11 @@ public class NpcSay extends ServerPacket {
             }
         }
 
-        buffer.writeInt(_npcString);
-        if (_npcString == -1) {
-            buffer.writeString(_text);
-        } else if (_parameters != null) {
-            for (String s : _parameters) {
+        buffer.writeInt(npcString);
+        if (npcString == -1) {
+            buffer.writeString(text);
+        } else if (parameters != null) {
+            for (String s : parameters) {
                 buffer.writeString(s);
             }
         }

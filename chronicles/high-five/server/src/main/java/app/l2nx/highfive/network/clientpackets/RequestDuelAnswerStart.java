@@ -29,18 +29,18 @@ import app.l2nx.highfive.network.serverpackets.SystemMessage;
  * @author -Wooden-
  */
 public class RequestDuelAnswerStart extends ClientPacket {
-    private int _partyDuel;
+    private int partyDuel;
 
     @SuppressWarnings("unused")
-    private int _unk1;
+    private int unk1;
 
-    private int _response;
+    private int response;
 
     @Override
     protected void readImpl() {
-        _partyDuel = readInt();
-        _unk1 = readInt();
-        _response = readInt();
+        partyDuel = readInt();
+        unk1 = readInt();
+        response = readInt();
     }
 
     @Override
@@ -55,7 +55,7 @@ public class RequestDuelAnswerStart extends ClientPacket {
             return;
         }
 
-        if (_response == 1) {
+        if (response == 1) {
             SystemMessage msg1 = null;
             SystemMessage msg2 = null;
             if (requestor.isInDuel()) {
@@ -68,7 +68,7 @@ public class RequestDuelAnswerStart extends ClientPacket {
                 return;
             }
 
-            if (_partyDuel == 1) {
+            if (partyDuel == 1) {
                 msg1 = new SystemMessage(
                         SystemMessageId
                                 .YOU_HAVE_ACCEPTED_C1_S_CHALLENGE_TO_A_PARTY_DUEL_THE_DUEL_WILL_BEGIN_IN_A_FEW_MOMENTS);
@@ -91,15 +91,15 @@ public class RequestDuelAnswerStart extends ClientPacket {
             player.sendPacket(msg1);
             requestor.sendPacket(msg2);
 
-            DuelManager.getInstance().addDuel(requestor, player, _partyDuel);
-        } else if (_response == -1) {
+            DuelManager.getInstance().addDuel(requestor, player, partyDuel);
+        } else if (response == -1) {
             final SystemMessage sm = new SystemMessage(
                     SystemMessageId.C1_IS_SET_TO_REFUSE_DUEL_REQUESTS_AND_CANNOT_RECEIVE_A_DUEL_REQUEST);
             sm.addPcName(player);
             requestor.sendPacket(sm);
         } else {
             SystemMessage msg = null;
-            if (_partyDuel == 1) {
+            if (partyDuel == 1) {
                 msg = new SystemMessage(SystemMessageId.THE_OPPOSING_PARTY_HAS_DECLINED_YOUR_CHALLENGE_TO_A_DUEL);
             } else {
                 msg = new SystemMessage(SystemMessageId.C1_HAS_DECLINED_YOUR_CHALLENGE_TO_A_DUEL);

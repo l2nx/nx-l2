@@ -32,17 +32,16 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Collection;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * This class manage all items on ground.
  * @author Enforcer
  */
+@Slf4j
 public class ItemsOnGroundManager implements Runnable {
-    private static final Logger LOGGER = Logger.getLogger(ItemsOnGroundManager.class.getName());
 
-    private final Collection<Item> _items = ConcurrentHashMap.newKeySet();
+    private final Collection<Item> items = ConcurrentHashMap.newKeySet();
 
     protected ItemsOnGroundManager() {
         if (GeneralConfig.SAVE_DROPPED_ITEM_INTERVAL > 0) {
@@ -81,10 +80,7 @@ public class ItemsOnGroundManager implements Runnable {
                 ps.setLong(1, System.currentTimeMillis());
                 ps.execute();
             } catch (Exception e) {
-                LOGGER.log(
-                        Level.SEVERE,
-                        getClass().getSimpleName() + ": Error while updating table ItemsOnGround " + e.getMessage(),
-                        e);
+                log.error("Error while updating table ItemsOnGround {}", e.getMessage(), e);
             }
         }
 
@@ -117,7 +113,7 @@ public class ItemsOnGroundManager implements Runnable {
                     item.setProtected(dropTime == -1);
                     item.setSpawned(true);
                     World.addVisibleObject(item, item.getWorldRegion());
-                    _items.add(item);
+                    items.add(item);
                     count++;
 
                     // Add to ItemsAutoDestroy only items not protected.
@@ -132,12 +128,9 @@ public class ItemsOnGroundManager implements Runnable {
                 }
             }
 
-            LOGGER.info(getClass().getSimpleName() + ": Loaded " + count + " items.");
+            log.info("Loaded {} items.", count);
         } catch (Exception e) {
-            LOGGER.log(
-                    Level.SEVERE,
-                    getClass().getSimpleName() + ": Error while loading ItemsOnGround " + e.getMessage(),
-                    e);
+            log.error("Error while loading ItemsOnGround {}", e.getMessage(), e);
         }
 
         if (GeneralConfig.EMPTY_DROPPED_ITEM_TABLE_AFTER_LOAD) {
@@ -150,12 +143,12 @@ public class ItemsOnGroundManager implements Runnable {
             return;
         }
 
-        _items.add(item);
+        items.add(item);
     }
 
     public void removeObject(Item item) {
         if (GeneralConfig.SAVE_DROPPED_ITEM) {
-            _items.remove(item);
+            items.remove(item);
         }
     }
 
@@ -164,7 +157,7 @@ public class ItemsOnGroundManager implements Runnable {
     }
 
     public void cleanUp() {
-        _items.clear();
+        items.clear();
     }
 
     public void emptyTable() {
@@ -172,10 +165,7 @@ public class ItemsOnGroundManager implements Runnable {
                 Statement s = con.createStatement()) {
             s.executeUpdate("DELETE FROM itemsonground");
         } catch (Exception e1) {
-            LOGGER.log(
-                    Level.SEVERE,
-                    getClass().getSimpleName() + ": Error while cleaning table ItemsOnGround " + e1.getMessage(),
-                    e1);
+            log.error("Error while cleaning table ItemsOnGround {}", e1.getMessage(), e1);
         }
     }
 
@@ -187,14 +177,14 @@ public class ItemsOnGroundManager implements Runnable {
 
         emptyTable();
 
-        if (_items.isEmpty()) {
+        if (items.isEmpty()) {
             return;
         }
 
         try (Connection con = DatabaseFactory.getConnection();
                 PreparedStatement ps = con.prepareStatement(
                         "INSERT INTO itemsonground(object_id,item_id,count,enchant_level,x,y,z,drop_time,equipable) VALUES(?,?,?,?,?,?,?,?,?)")) {
-            for (Item item : _items) {
+            for (Item item : items) {
                 if ((item == null) || CursedWeaponsManager.getInstance().isCursed(item.getId())) {
                     continue; // Cursed Items not saved to ground, prevent double save.
                 }
@@ -212,18 +202,11 @@ public class ItemsOnGroundManager implements Runnable {
                     ps.execute();
                     ps.clearParameters();
                 } catch (Exception e) {
-                    LOGGER.log(
-                            Level.SEVERE,
-                            getClass().getSimpleName() + ": Error while inserting into table ItemsOnGround: "
-                                    + e.getMessage(),
-                            e);
+                    log.error("Error while inserting into table ItemsOnGround: {}", e.getMessage(), e);
                 }
             }
         } catch (SQLException e) {
-            LOGGER.log(
-                    Level.SEVERE,
-                    getClass().getSimpleName() + ": SQL error while storing items on ground: " + e.getMessage(),
-                    e);
+            log.error("SQL error while storing items on ground: {}", e.getMessage(), e);
         }
     }
 

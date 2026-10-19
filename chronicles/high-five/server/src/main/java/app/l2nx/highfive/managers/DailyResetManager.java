@@ -45,14 +45,14 @@ import java.sql.PreparedStatement;
 import java.time.LocalTime;
 import java.time.ZonedDateTime;
 import java.util.Calendar;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.DateFormatUtils;
 
 /**
  * @author Mobius
  */
+@Slf4j
 public class DailyResetManager {
-    private static final Logger LOGGER = Logger.getLogger(DailyResetManager.class.getName());
 
     private static final int[] RESET_SKILLS = {
         2510, // Wondrous Cubic
@@ -80,10 +80,9 @@ public class DailyResetManager {
         if ((currentTime < currentResetTime)
                 || (GlobalVariablesManager.getInstance().getLong(GlobalVariablesManager.DAILY_TASK_RESET, 0)
                         > currentResetTime)) {
-            LOGGER.info(getClass().getSimpleName() + ": Next schedule at "
-                    + DateFormatUtils.format(nextResetTime, "dd/MM/yyyy HH:mm:ss") + ".");
+            log.info("Next schedule at {}.", DateFormatUtils.format(nextResetTime, "dd/MM/yyyy HH:mm:ss"));
         } else {
-            LOGGER.info(getClass().getSimpleName() + ": Daily task will run now.");
+            log.info("Daily task will run now.");
             onReset();
         }
 
@@ -96,7 +95,7 @@ public class DailyResetManager {
     }
 
     private void onReset() {
-        LOGGER.info("Starting reset of daily tasks...");
+        log.info("Starting reset of daily tasks...");
 
         // Store last reset time.
         GlobalVariablesManager.getInstance().set(GlobalVariablesManager.DAILY_TASK_RESET, System.currentTimeMillis());
@@ -123,7 +122,7 @@ public class DailyResetManager {
             player.getAccountVariables().storeMe();
         }
 
-        LOGGER.info("Daily tasks reset completed.");
+        log.info("Daily tasks reset completed.");
     }
 
     private void onSave() {
@@ -131,14 +130,14 @@ public class DailyResetManager {
 
         if (Olympiad.getInstance().inCompPeriod()) {
             Olympiad.getInstance().saveOlympiadStatus();
-            LOGGER.info("Olympiad System: Data updated.");
+            log.info("Olympiad System: Data updated.");
         }
 
         SevenSigns.getInstance().saveSevenSignsStatus();
         if (!SevenSigns.getInstance().isSealValidationPeriod()) {
             SevenSignsFestival.getInstance().saveFestivalData(false);
         }
-        LOGGER.info("SevenSigns: Data updated.");
+        log.info("SevenSigns: Data updated.");
     }
 
     private void clanLeaderApply() {
@@ -153,7 +152,7 @@ public class DailyResetManager {
             }
         }
 
-        LOGGER.info("Clan leaders have been updated.");
+        log.info("Clan leaders have been updated.");
     }
 
     private void resetDailySkills() {
@@ -166,7 +165,7 @@ public class DailyResetManager {
                 }
             }
         } catch (Exception e) {
-            LOGGER.severe(getClass().getSimpleName() + ": Could not reset daily skill reuse: " + e);
+            log.error("Could not reset daily skill reuse", e);
         }
 
         // Update data for online players.
@@ -181,7 +180,7 @@ public class DailyResetManager {
             }
         }
 
-        LOGGER.info("Daily skill reuse cleaned.");
+        log.info("Daily skill reuse cleaned.");
     }
 
     private void resetNevit() {
@@ -215,7 +214,7 @@ public class DailyResetManager {
                 ps.execute();
             }
         } catch (Exception e) {
-            LOGGER.severe(getClass().getSimpleName() + ": Could not reset Recommendations System: " + e);
+            log.error("Could not reset Recommendations System", e);
         }
 
         for (Player player : World.getPlayers()) {

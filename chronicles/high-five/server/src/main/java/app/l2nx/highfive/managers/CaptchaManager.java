@@ -37,7 +37,6 @@ import app.l2nx.highfive.mechanics.punishment.PunishmentTask;
 import app.l2nx.highfive.mechanics.punishment.PunishmentType;
 import app.l2nx.highfive.mechanics.script.QuestSound;
 import app.l2nx.highfive.network.Disconnection;
-import app.l2nx.highfive.network.PacketLogger;
 import app.l2nx.highfive.network.enums.ChatType;
 import app.l2nx.highfive.network.serverpackets.CreatureSay;
 import app.l2nx.highfive.network.serverpackets.LeaveWorld;
@@ -52,13 +51,13 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author Skache
  */
+@Slf4j
 public class CaptchaManager {
-    private static final Logger LOGGER = Logger.getLogger(CaptchaManager.class.getName());
 
     private static final Map<Integer, Integer> JAIL_COUNT = new ConcurrentHashMap<>();
     private static final Map<Integer, Integer> RETRIES = new ConcurrentHashMap<>();
@@ -87,7 +86,7 @@ public class CaptchaManager {
     protected CaptchaManager() {
         if (CaptchaConfig.ENABLE_CAPTCHA) {
             IMAGES = Captcha.getInstance().createImageList();
-            LOGGER.info(getClass().getSimpleName() + ": Enabled.");
+            log.info("Enabled.");
         }
     }
 
@@ -239,7 +238,7 @@ public class CaptchaManager {
                 AdminData.getInstance()
                         .broadcastToGMs(new CreatureSay(
                                 null, ChatType.ALLIANCE, "Punishment", player.getName() + " has been teleported."));
-                PacketLogger.warning(player + "[TELEPORT] Wrong Captcha maybe boting?");
+                log.warn("{}[TELEPORT] Wrong Captcha maybe boting?", player);
                 break;
             }
             case 1: {
@@ -248,7 +247,7 @@ public class CaptchaManager {
                     AdminData.getInstance()
                             .broadcastToGMs(new CreatureSay(
                                     null, ChatType.ALLIANCE, "Punishment", player.getName() + " has been kicked."));
-                    PacketLogger.warning(player + "[KICK] Wrong Captcha maybe boting?");
+                    log.warn("{}[KICK] Wrong Captcha maybe boting?", player);
                     return;
                 }
                 break;
@@ -260,7 +259,7 @@ public class CaptchaManager {
                 AdminData.getInstance()
                         .broadcastToGMs(new CreatureSay(
                                 null, ChatType.ALLIANCE, "Punishment", player.getName() + " has been jailed."));
-                PacketLogger.warning(player + "[JAIL] Wrong Captcha maybe boting?");
+                log.warn("{}[JAIL] Wrong Captcha maybe boting?", player);
                 break;
             }
             case 3: {
@@ -268,7 +267,7 @@ public class CaptchaManager {
                 AdminData.getInstance()
                         .broadcastToGMs(new CreatureSay(
                                 null, ChatType.ALLIANCE, "Punishment", player.getName() + " has been banned."));
-                PacketLogger.warning(player + "[BAN] Wrong Captcha maybe boting?");
+                log.warn("{}[BAN] Wrong Captcha maybe boting?", player);
                 break;
             }
         }
@@ -395,31 +394,30 @@ public class CaptchaManager {
     }
 
     protected class countdown implements Runnable {
-        private final Player _player;
-        private final int _time;
+        private final Player player;
+        private final int time;
 
         public countdown(Player player, int time) {
-            _time = time;
-            _player = player;
+            this.time = time;
+            this.player = player;
         }
 
         @Override
         public void run() {
-            if (_player.isOnline()) {
-                if (VALIDATION.containsKey(_player.getObjectId())
-                        && VALIDATION.get(_player.getObjectId()).firstWindow) {
-                    if ((_time % WINDOW_DELAY) == 0) {
-                        preValidationWindow(_player);
+            if (player.isOnline()) {
+                if (VALIDATION.containsKey(player.getObjectId()) && VALIDATION.get(player.getObjectId()).firstWindow) {
+                    if ((time % WINDOW_DELAY) == 0) {
+                        preValidationWindow(player);
                     }
                 }
 
-                switch (_time) {
+                switch (time) {
                     case 300:
                     case 240:
                     case 180:
                     case 120:
                     case 60: {
-                        _player.sendMessage((_time / 60) + " minute(s) to enter the code.");
+                        player.sendMessage((time / 60) + " minute(s) to enter the code.");
                         break;
                     }
                     case 30:
@@ -429,13 +427,13 @@ public class CaptchaManager {
                     case 3:
                     case 2:
                     case 1: {
-                        _player.sendMessage(_time + " second(s) to enter the code!");
+                        player.sendMessage(time + " second(s) to enter the code!");
                         break;
                     }
                 }
 
-                if ((_time > 1) && VALIDATION.containsKey(_player.getObjectId())) {
-                    ThreadPool.schedule(new countdown(_player, _time - 1), 1000);
+                if ((time > 1) && VALIDATION.containsKey(player.getObjectId())) {
+                    ThreadPool.schedule(new countdown(player, time - 1), 1000);
                 }
             }
         }
@@ -452,16 +450,16 @@ public class CaptchaManager {
     }
 
     private class ReportCheckTask implements Runnable {
-        private final Player _player;
+        private final Player player;
 
         public ReportCheckTask(Player player) {
-            _player = player;
+            this.player = player;
         }
 
         @Override
         public void run() {
-            if (VALIDATION.get(_player.getObjectId()) != null) {
-                banPunishment(_player);
+            if (VALIDATION.get(player.getObjectId()) != null) {
+                banPunishment(player);
             }
         }
     }

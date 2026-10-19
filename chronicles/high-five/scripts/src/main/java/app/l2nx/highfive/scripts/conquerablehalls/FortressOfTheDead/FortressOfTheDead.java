@@ -41,7 +41,7 @@ public class FortressOfTheDead extends ClanHallSiegeEngine {
     private static final int ALFRED = 35630;
     private static final int GISELLE = 35631;
 
-    private static Map<Integer, Integer> _damageToLidia = new HashMap<>();
+    private static Map<Integer, Integer> damageToLidia = new HashMap<>();
 
     public FortressOfTheDead() {
         super(FORTRESS_OF_DEAD);
@@ -78,7 +78,7 @@ public class FortressOfTheDead extends ClanHallSiegeEngine {
 
     @Override
     public void onAttack(Npc npc, Player attacker, int damage, boolean isSummon) {
-        if (!_hall.isInSiege()) {
+        if (!hall.isInSiege()) {
             return;
         }
 
@@ -86,12 +86,12 @@ public class FortressOfTheDead extends ClanHallSiegeEngine {
             final Clan clan = attacker.getClan();
             if ((clan != null) && checkIsAttacker(clan)) {
                 final int id = clan.getId();
-                if ((id > 0) && _damageToLidia.containsKey(id)) {
-                    int newDamage = _damageToLidia.get(id);
+                if ((id > 0) && damageToLidia.containsKey(id)) {
+                    int newDamage = damageToLidia.get(id);
                     newDamage += damage;
-                    _damageToLidia.put(id, newDamage);
+                    damageToLidia.put(id, newDamage);
                 } else {
-                    _damageToLidia.put(id, damage);
+                    damageToLidia.put(id, damage);
                 }
             }
         }
@@ -99,7 +99,7 @@ public class FortressOfTheDead extends ClanHallSiegeEngine {
 
     @Override
     public void onKill(Npc npc, Player killer, boolean isSummon) {
-        if (!_hall.isInSiege()) {
+        if (!hall.isInSiege()) {
             return;
         }
 
@@ -113,7 +113,7 @@ public class FortressOfTheDead extends ClanHallSiegeEngine {
                     ChatType.NPC_SHOUT,
                     NpcStringId
                             .GRARR_FOR_THE_NEXT_2_MINUTES_OR_SO_THE_GAME_ARENA_ARE_WILL_BE_CLEANED_THROW_ANY_ITEMS_YOU_DON_T_NEED_TO_THE_FLOOR_NOW);
-            _missionAccomplished = true;
+            missionAccomplished = true;
             synchronized (this) {
                 cancelSiegeTask();
                 endSiege();
@@ -125,7 +125,7 @@ public class FortressOfTheDead extends ClanHallSiegeEngine {
     public Clan getWinner() {
         int counter = 0;
         int damagest = 0;
-        for (Entry<Integer, Integer> e : _damageToLidia.entrySet()) {
+        for (Entry<Integer, Integer> e : damageToLidia.entrySet()) {
             final int damage = e.getValue();
             if (damage > counter) {
                 counter = damage;
@@ -143,7 +143,7 @@ public class FortressOfTheDead extends ClanHallSiegeEngine {
         if ((hoursLeft < 0) || (hoursLeft > 6)) {
             cancelSiegeTask();
             final long scheduleTime = (24 - hoursLeft) * 10 * 60000;
-            _siegeTask = ThreadPool.schedule(new SiegeStarts(), scheduleTime);
+            siegeTask = ThreadPool.schedule(new SiegeStarts(), scheduleTime);
         } else {
             super.startSiege();
         }

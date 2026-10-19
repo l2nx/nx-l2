@@ -41,11 +41,11 @@ import app.l2nx.highfive.network.serverpackets.SystemMessage;
  * This packet manages the trade request.
  */
 public class TradeRequest extends ClientPacket {
-    private int _objectId;
+    private int objectId;
 
     @Override
     protected void readImpl() {
-        _objectId = readInt();
+        objectId = readInt();
     }
 
     @Override
@@ -74,7 +74,7 @@ public class TradeRequest extends ClientPacket {
             }
         }
 
-        final WorldObject target = World.findObject(_objectId);
+        final WorldObject target = World.findObject(objectId);
 
         // If there is no target, target is far away or
         // they are in different instances (except multiverse)

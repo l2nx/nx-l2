@@ -23,33 +23,13 @@ import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.templates.PlayerTemplate;
 import app.l2nx.highfive.mechanics.events.EventType;
 import app.l2nx.highfive.mechanics.events.holders.IBaseEvent;
+import lombok.Builder;
 
 /**
  * @author UnAfraid
  */
-public class OnPlayerProfessionChange implements IBaseEvent {
-    private final Player _player;
-    private final PlayerTemplate _template;
-    private final boolean _isSubClass;
-
-    public OnPlayerProfessionChange(Player player, PlayerTemplate template, boolean isSubClass) {
-        _player = player;
-        _template = template;
-        _isSubClass = isSubClass;
-    }
-
-    public Player getPlayer() {
-        return _player;
-    }
-
-    public PlayerTemplate getTemplate() {
-        return _template;
-    }
-
-    public boolean isSubClass() {
-        return _isSubClass;
-    }
-
+@Builder(toBuilder = true)
+public record OnPlayerProfessionChange(Player player, PlayerTemplate template, boolean subClass) implements IBaseEvent {
     @Override
     public EventType getType() {
         return EventType.ON_PLAYER_PROFESSION_CHANGE;

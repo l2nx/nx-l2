@@ -35,7 +35,7 @@ import java.util.concurrent.ThreadLocalRandom;
  */
 public class RandomAnimationTaskManager implements Runnable {
     private static final Map<Npc, Long> PENDING_ANIMATIONS = new ConcurrentHashMap<>();
-    private static boolean _working = false;
+    private static boolean working = false;
 
     protected RandomAnimationTaskManager() {
         ThreadPool.scheduleAtFixedRate(this, 0, 1000);
@@ -43,11 +43,11 @@ public class RandomAnimationTaskManager implements Runnable {
 
     @Override
     public void run() {
-        if (_working) {
+        if (working) {
             return;
         }
 
-        _working = true;
+        working = true;
 
         final long currentTime = System.currentTimeMillis();
         for (Entry<Npc, Long> entry : PENDING_ANIMATIONS.entrySet()) {
@@ -67,7 +67,7 @@ public class RandomAnimationTaskManager implements Runnable {
             }
         }
 
-        _working = false;
+        working = false;
     }
 
     public void add(Npc npc) {

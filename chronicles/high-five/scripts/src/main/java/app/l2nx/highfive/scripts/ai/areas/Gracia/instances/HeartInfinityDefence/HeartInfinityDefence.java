@@ -50,7 +50,9 @@ import app.l2nx.highfive.util.LocationUtil;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ScheduledFuture;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class HeartInfinityDefence extends Script {
     private class HIDWorld extends InstanceWorld {
         public HIDWorld() {}
@@ -310,8 +312,11 @@ public class HeartInfinityDefence extends Script {
             world = new HIDWorld();
             world.setInstance(InstanceManager.getInstance().createDynamicInstance(INSTANCEID));
             InstanceManager.getInstance().addWorld(world);
-            LOGGER.info("Heart Infinity Defence started " + INSTANCEID + " Instance: " + world.getInstanceId()
-                    + " created by player: " + player.getName());
+            log.info(
+                    "Heart Infinity Defence started {} Instance: {} created by player: {}",
+                    INSTANCEID,
+                    world.getInstanceId(),
+                    player.getName());
 
             if (player.isGM()) {
                 teleportPlayer(player, coords, world.getInstanceId());
@@ -626,17 +631,17 @@ public class HeartInfinityDefence extends Script {
     }
 
     private class TimerTask implements Runnable {
-        private final HIDWorld _world;
+        private final HIDWorld world;
 
         TimerTask(HIDWorld world) {
-            _world = world;
+            this.world = world;
         }
 
         @Override
         public void run() {
-            final long time = ((_world.startTime + (25 * 60 * 1000)) - System.currentTimeMillis()) / 60000;
+            final long time = ((world.startTime + (25 * 60 * 1000)) - System.currentTimeMillis()) / 60000;
             if (time == 0) {
-                conquestConclusion(_world);
+                conquestConclusion(world);
             } else {
                 if (time == 15) {
                     for (int[] spawn : ROOMS_BOSSES) {
@@ -650,7 +655,7 @@ public class HeartInfinityDefence extends Script {
                                     false,
                                     0,
                                     false,
-                                    _world.getInstanceId());
+                                    world.getInstanceId());
                         }
                     }
                 }
@@ -659,19 +664,19 @@ public class HeartInfinityDefence extends Script {
     }
 
     class FinishTask implements Runnable {
-        private final HIDWorld _world;
+        private final HIDWorld world;
 
         FinishTask(HIDWorld world) {
-            _world = world;
+            this.world = world;
         }
 
         @Override
         public void run() {
-            if (_world != null) {
+            if (world != null) {
                 conquestEnded = true;
-                final Instance inst = InstanceManager.getInstance().getInstance(_world.getInstanceId());
+                final Instance inst = InstanceManager.getInstance().getInstance(world.getInstanceId());
                 if (inst != null) {
-                    for (Player player : _world.getAllowed()) {
+                    for (Player player : world.getAllowed()) {
                         final QuestState qs = player.getQuestState(Q00697_DefendTheHallOfErosion.class.getSimpleName());
                         if ((qs != null) && qs.isCond(1)) {
                             qs.set("defenceDone", 1);
@@ -679,7 +684,7 @@ public class HeartInfinityDefence extends Script {
                     }
 
                     broadCastPacket(
-                            _world,
+                            world,
                             new ExShowScreenMessage(
                                     NpcStringId
                                             .CONGRATULATIONS_YOU_HAVE_SUCCEEDED_AT_S1_S2_THE_INSTANCE_WILL_SHORTLY_EXPIRE,

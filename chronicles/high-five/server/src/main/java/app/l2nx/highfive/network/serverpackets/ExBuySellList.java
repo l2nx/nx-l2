@@ -31,26 +31,26 @@ import java.util.Collection;
  * @author ShanSoft
  */
 public class ExBuySellList extends AbstractItemPacket {
-    private final Collection<Item> _sellList;
-    private Collection<Item> _refundList = null;
-    private final boolean _done;
+    private final Collection<Item> sellList;
+    private Collection<Item> refundList = null;
+    private final boolean done;
 
     public ExBuySellList(Player player, boolean done) {
-        _sellList = player.getInventory().getAvailableItems(false, false, false);
+        sellList = player.getInventory().getAvailableItems(false, false, false);
         if (player.hasRefund()) {
-            _refundList = player.getRefund().getItems();
+            refundList = player.getRefund().getItems();
         }
 
-        _done = done;
+        this.done = done;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_BUY_SELL_LIST.writeId(this, buffer);
         buffer.writeInt(1);
-        if (_sellList != null) {
-            buffer.writeShort(_sellList.size());
-            for (Item item : _sellList) {
+        if (sellList != null) {
+            buffer.writeShort(sellList.size());
+            for (Item item : sellList) {
                 writeItem(item, buffer);
                 buffer.writeLong(
                         MerchantZeroSellPriceConfig.MERCHANT_ZERO_SELL_PRICE
@@ -61,10 +61,10 @@ public class ExBuySellList extends AbstractItemPacket {
             buffer.writeShort(0);
         }
 
-        if ((_refundList != null) && !_refundList.isEmpty()) {
-            buffer.writeShort(_refundList.size());
+        if ((refundList != null) && !refundList.isEmpty()) {
+            buffer.writeShort(refundList.size());
             int i = 0;
-            for (Item item : _refundList) {
+            for (Item item : refundList) {
                 writeItem(item, buffer);
                 buffer.writeInt(i++);
                 buffer.writeLong(
@@ -76,6 +76,6 @@ public class ExBuySellList extends AbstractItemPacket {
             buffer.writeShort(0);
         }
 
-        buffer.writeByte(_done);
+        buffer.writeByte(done);
     }
 }

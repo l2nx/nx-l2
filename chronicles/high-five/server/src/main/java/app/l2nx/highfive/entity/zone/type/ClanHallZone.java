@@ -25,11 +25,13 @@ import app.l2nx.highfive.entity.residences.AuctionableHall;
 import app.l2nx.highfive.entity.residences.ClanHall;
 import app.l2nx.highfive.entity.zone.ZoneId;
 import app.l2nx.highfive.network.serverpackets.AgitDecoInfo;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * A clan hall zone
  * @author durgus
  */
+@Slf4j
 public class ClanHallZone extends ResidenceZone {
     public ClanHallZone(int id) {
         super(id);
@@ -45,7 +47,7 @@ public class ClanHallZone extends ResidenceZone {
             if (hall != null) {
                 hall.setZone(this);
             } else {
-                LOGGER.warning("ClanHallZone: Clan hall with id " + getResidenceId() + " does not exist!");
+                log.warn("Clan hall with id {} does not exist!", getResidenceId());
             }
         } else {
             super.setParameter(name, value);

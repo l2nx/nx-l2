@@ -23,35 +23,10 @@
 package app.l2nx.highfive.mechanics.options;
 
 import app.l2nx.highfive.mechanics.skill.Skill;
+import lombok.Builder;
 
 /**
  * @author UnAfraid, Mobius
  */
-public class OptionSkillHolder {
-    private final Skill _skill;
-    private final double _chance;
-    private final OptionSkillType _type;
-
-    /**
-     * @param skill
-     * @param type
-     * @param chance
-     */
-    public OptionSkillHolder(Skill skill, double chance, OptionSkillType type) {
-        _skill = skill;
-        _chance = chance;
-        _type = type;
-    }
-
-    public Skill getSkill() {
-        return _skill;
-    }
-
-    public double getChance() {
-        return _chance;
-    }
-
-    public OptionSkillType getSkillType() {
-        return _type;
-    }
-}
+@Builder(toBuilder = true)
+public record OptionSkillHolder(Skill skill, double chance, OptionSkillType skillType) {}

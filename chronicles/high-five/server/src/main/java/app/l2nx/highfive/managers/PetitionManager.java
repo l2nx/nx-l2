@@ -34,37 +34,39 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.logging.Logger;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Petition Manager
  * @author Tempy
  */
+@Slf4j
 public class PetitionManager {
-    protected static final Logger LOGGER = Logger.getLogger(PetitionManager.class.getName());
 
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
-    private final Map<Integer, Petition> _pendingPetitions;
-    private final Map<Integer, Petition> _completedPetitions;
+    @Getter
+    private final Map<Integer, Petition> pendingPetitions;
+
+    @Getter
+    private final Map<Integer, Petition> completedPetitions;
 
     protected PetitionManager() {
-        _pendingPetitions = new HashMap<>();
-        _completedPetitions = new HashMap<>();
+        pendingPetitions = new HashMap<>();
+        completedPetitions = new HashMap<>();
     }
 
     public void clearCompletedPetitions() {
-        final int numPetitions = _pendingPetitions.size();
-        _completedPetitions.clear();
-        LOGGER.info(getClass().getSimpleName() + ": Completed petition data cleared. " + numPetitions
-                + " petitions removed.");
+        final int numPetitions = pendingPetitions.size();
+        completedPetitions.clear();
+        log.info("Completed petition data cleared. {} petitions removed.", numPetitions);
     }
 
     public void clearPendingPetitions() {
-        final int numPetitions = _pendingPetitions.size();
-        _pendingPetitions.clear();
-        LOGGER.info(getClass().getSimpleName() + ": Pending petition queue cleared. " + numPetitions
-                + " petitions removed.");
+        final int numPetitions = pendingPetitions.size();
+        pendingPetitions.clear();
+        log.info("Pending petition queue cleared. {} petitions removed.", numPetitions);
     }
 
     public boolean acceptPetition(Player respondingAdmin, int petitionId) {
@@ -72,7 +74,7 @@ public class PetitionManager {
             return false;
         }
 
-        final Petition currPetition = _pendingPetitions.get(petitionId);
+        final Petition currPetition = pendingPetitions.get(petitionId);
         if (currPetition.getResponder() != null) {
             return false;
         }
@@ -102,7 +104,7 @@ public class PetitionManager {
     }
 
     public boolean cancelActivePetition(Player player) {
-        for (Petition currPetition : _pendingPetitions.values()) {
+        for (Petition currPetition : pendingPetitions.values()) {
             if ((currPetition.getPetitioner() != null)
                     && (currPetition.getPetitioner().getObjectId() == player.getObjectId())) {
                 return (currPetition.endPetitionConsultation(PetitionState.PETITIONER_CANCEL));
@@ -119,7 +121,7 @@ public class PetitionManager {
 
     public void checkPetitionMessages(Player petitioner) {
         if (petitioner != null) {
-            for (Petition currPetition : _pendingPetitions.values()) {
+            for (Petition currPetition : pendingPetitions.values()) {
                 if (currPetition == null) {
                     continue;
                 }
@@ -141,7 +143,7 @@ public class PetitionManager {
             return false;
         }
 
-        for (Petition currPetition : _pendingPetitions.values()) {
+        for (Petition currPetition : pendingPetitions.values()) {
             if (currPetition == null) {
                 continue;
             }
@@ -155,16 +157,8 @@ public class PetitionManager {
         return false;
     }
 
-    public Map<Integer, Petition> getCompletedPetitions() {
-        return _completedPetitions;
-    }
-
-    public Map<Integer, Petition> getPendingPetitions() {
-        return _pendingPetitions;
-    }
-
     public int getPendingPetitionCount() {
-        return _pendingPetitions.size();
+        return pendingPetitions.size();
     }
 
     public int getPlayerTotalPetitionCount(Player player) {
@@ -173,7 +167,7 @@ public class PetitionManager {
         }
 
         int petitionCount = 0;
-        for (Petition currPetition : _pendingPetitions.values()) {
+        for (Petition currPetition : pendingPetitions.values()) {
             if (currPetition == null) {
                 continue;
             }
@@ -184,7 +178,7 @@ public class PetitionManager {
             }
         }
 
-        for (Petition currPetition : _completedPetitions.values()) {
+        for (Petition currPetition : completedPetitions.values()) {
             if (currPetition == null) {
                 continue;
             }
@@ -199,7 +193,7 @@ public class PetitionManager {
     }
 
     public boolean isPetitionInProcess() {
-        for (Petition currPetition : _pendingPetitions.values()) {
+        for (Petition currPetition : pendingPetitions.values()) {
             if (currPetition == null) {
                 continue;
             }
@@ -213,13 +207,12 @@ public class PetitionManager {
     }
 
     public boolean isPetitionInProcess(int petitionId) {
-        return isValidPetition(petitionId)
-                && (_pendingPetitions.get(petitionId).getState() == PetitionState.IN_PROCESS);
+        return isValidPetition(petitionId) && (pendingPetitions.get(petitionId).getState() == PetitionState.IN_PROCESS);
     }
 
     public boolean isPlayerInConsultation(Player player) {
         if (player != null) {
-            for (Petition currPetition : _pendingPetitions.values()) {
+            for (Petition currPetition : pendingPetitions.values()) {
                 if ((currPetition == null) || (currPetition.getState() != PetitionState.IN_PROCESS)) {
                     continue;
                 }
@@ -242,7 +235,7 @@ public class PetitionManager {
 
     public boolean isPlayerPetitionPending(Player petitioner) {
         if (petitioner != null) {
-            for (Petition currPetition : _pendingPetitions.values()) {
+            for (Petition currPetition : pendingPetitions.values()) {
                 if (currPetition == null) {
                     continue;
                 }
@@ -258,7 +251,7 @@ public class PetitionManager {
     }
 
     private boolean isValidPetition(int petitionId) {
-        return _pendingPetitions.containsKey(petitionId);
+        return pendingPetitions.containsKey(petitionId);
     }
 
     public boolean rejectPetition(Player respondingAdmin, int petitionId) {
@@ -266,7 +259,7 @@ public class PetitionManager {
             return false;
         }
 
-        final Petition currPetition = _pendingPetitions.get(petitionId);
+        final Petition currPetition = pendingPetitions.get(petitionId);
         if (currPetition.getResponder() != null) {
             return false;
         }
@@ -279,7 +272,7 @@ public class PetitionManager {
         // if (!isPlayerInConsultation(player))
         // return false;
         CreatureSay cs;
-        for (Petition currPetition : _pendingPetitions.values()) {
+        for (Petition currPetition : pendingPetitions.values()) {
             if (currPetition == null) {
                 continue;
             }
@@ -309,11 +302,11 @@ public class PetitionManager {
     }
 
     public void sendPendingPetitionList(Player player) {
-        final StringBuilder htmlContent = new StringBuilder(600 + (_pendingPetitions.size() * 300));
+        final StringBuilder htmlContent = new StringBuilder(600 + (pendingPetitions.size() * 300));
         htmlContent.append(
                 "<html><body><center><table width=270><tr><td width=45><button value=\"Main\" action=\"bypass admin_admin\" width=45 height=21 back=\"L2UI_ct1.button_df\" fore=\"L2UI_ct1.button_df\"></td><td width=180><center>Petition Menu</center></td><td width=45><button value=\"Back\" action=\"bypass admin_admin7\" width=45 height=21 back=\"L2UI_ct1.button_df\" fore=\"L2UI_ct1.button_df\"></td></tr></table><br><table width=\"270\"><tr><td><table width=\"270\"><tr><td><button value=\"Reset\" action=\"bypass -h admin_reset_petitions\" width=\"80\" height=\"21\" back=\"L2UI_ct1.button_df\" fore=\"L2UI_ct1.button_df\"></td><td align=right><button value=\"Refresh\" action=\"bypass -h admin_view_petitions\" width=\"80\" height=\"21\" back=\"L2UI_ct1.button_df\" fore=\"L2UI_ct1.button_df\"></td></tr></table><br></td></tr>");
 
-        if (_pendingPetitions.isEmpty()) {
+        if (pendingPetitions.isEmpty()) {
             htmlContent.append("<tr><td>There are no currently pending petitions.</td></tr>");
         } else {
             htmlContent.append("<tr><td><font color=\"LEVEL\">Current Petitions:</font><br></td></tr>");
@@ -321,7 +314,7 @@ public class PetitionManager {
 
         boolean color = true;
         int petcount = 0;
-        for (Petition currPetition : _pendingPetitions.values()) {
+        for (Petition currPetition : pendingPetitions.values()) {
             if (currPetition == null) {
                 continue;
             }
@@ -368,7 +361,7 @@ public class PetitionManager {
         // Create a new petition instance and add it to the list of pending petitions.
         final Petition newPetition = new Petition(petitioner, petitionText, petitionType);
         final int newPetitionId = newPetition.getId();
-        _pendingPetitions.put(newPetitionId, newPetition);
+        pendingPetitions.put(newPetitionId, newPetition);
 
         // Notify all GMs that a new petition has been submitted.
         final String msgContent =
@@ -383,7 +376,7 @@ public class PetitionManager {
             return;
         }
 
-        final Petition currPetition = _pendingPetitions.get(petitionId);
+        final Petition currPetition = pendingPetitions.get(petitionId);
         final NpcHtmlMessage html = new NpcHtmlMessage();
         html.setFile(player, "data/html/admin/petition.htm");
         html.replace("%petition%", String.valueOf(currPetition.getId()));

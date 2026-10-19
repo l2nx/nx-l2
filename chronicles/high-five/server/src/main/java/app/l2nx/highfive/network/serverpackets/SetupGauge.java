@@ -31,31 +31,31 @@ public class SetupGauge extends ServerPacket {
     public static final int RED = 1;
     public static final int CYAN = 2;
 
-    private final int _objectId;
-    private final int _dat1;
-    private final int _time;
-    private final int _time2;
+    private final int objectId;
+    private final int dat1;
+    private final int time;
+    private final int time2;
 
     public SetupGauge(int charObjId, int dat1, int time) {
-        _objectId = charObjId;
-        _dat1 = dat1; // color 0-blue 1-red 2-cyan 3-green
-        _time = time;
-        _time2 = time;
+        objectId = charObjId;
+        this.dat1 = dat1; // color 0-blue 1-red 2-cyan 3-green
+        this.time = time;
+        time2 = time;
     }
 
     public SetupGauge(int charObjId, int color, int currentTime, int maxTime) {
-        _objectId = charObjId;
-        _dat1 = color; // color 0-blue 1-red 2-cyan 3-green
-        _time = currentTime;
-        _time2 = maxTime;
+        objectId = charObjId;
+        dat1 = color; // color 0-blue 1-red 2-cyan 3-green
+        time = currentTime;
+        time2 = maxTime;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.SETUP_GAUGE.writeId(this, buffer);
-        buffer.writeInt(_objectId);
-        buffer.writeInt(_dat1);
-        buffer.writeInt(_time);
-        buffer.writeInt(_time2);
+        buffer.writeInt(objectId);
+        buffer.writeInt(dat1);
+        buffer.writeInt(time);
+        buffer.writeInt(time2);
     }
 }

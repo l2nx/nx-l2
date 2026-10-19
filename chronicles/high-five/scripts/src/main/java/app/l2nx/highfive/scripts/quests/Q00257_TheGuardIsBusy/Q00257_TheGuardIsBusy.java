@@ -40,17 +40,17 @@ import java.util.Map;
  */
 public class Q00257_TheGuardIsBusy extends Quest {
     public static class MobDrop extends ItemHolder {
-        private final int _chance;
-        private final int _random;
+        private final int chance;
+        private final int random;
 
         public MobDrop(int random, int chance, int id, long count) {
             super(id, count);
-            _random = random;
-            _chance = chance;
+            this.random = random;
+            this.chance = chance;
         }
 
         public boolean getDrop() {
-            return (getRandom(_random) < _chance);
+            return (getRandom(random) < chance);
         }
     }
 

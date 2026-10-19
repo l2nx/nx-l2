@@ -38,20 +38,20 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 import org.w3c.dom.Document;
 
 /**
  * Loads administrator access levels and commands.
  * @author UnAfraid, Mobius
  */
+@Slf4j
 public class AdminData implements IXmlReader {
-    private static final Logger LOGGER = Logger.getLogger(AdminData.class.getName());
 
-    private final Map<Integer, AccessLevel> _accessLevels = new HashMap<>();
-    private final Map<String, AccessRight> _adminCommandAccessRights = new LinkedHashMap<>();
-    private final Map<Player, Boolean> _gmList = new ConcurrentHashMap<>();
-    private int _highestLevel = 0;
+    private final Map<Integer, AccessLevel> accessLevels = new HashMap<>();
+    private final Map<String, AccessRight> adminCommandAccessRights = new LinkedHashMap<>();
+    private final Map<Player, Boolean> gmList = new ConcurrentHashMap<>();
+    private int highestLevel = 0;
 
     protected AdminData() {
         load();
@@ -59,14 +59,14 @@ public class AdminData implements IXmlReader {
 
     @Override
     public synchronized void load() {
-        _accessLevels.clear();
-        _adminCommandAccessRights.clear();
+        accessLevels.clear();
+        adminCommandAccessRights.clear();
 
         parseDatapackFile("config/AccessLevels.xml");
-        LOGGER.info(getClass().getSimpleName() + ": Loaded " + _accessLevels.size() + " access levels.");
+        log.info("Loaded {} access levels.", accessLevels.size());
 
         parseDatapackFile("config/AdminCommands.xml");
-        LOGGER.info(getClass().getSimpleName() + ": Loaded " + _adminCommandAccessRights.size() + " access commands.");
+        log.info("Loaded {} access commands.", adminCommandAccessRights.size());
     }
 
     @Override
@@ -78,17 +78,17 @@ public class AdminData implements IXmlReader {
                         case "access": {
                             final StatSet set = new StatSet(parseAttributes(d));
                             final AccessLevel level = new AccessLevel(set);
-                            if (level.getLevel() > _highestLevel) {
-                                _highestLevel = level.getLevel();
+                            if (level.getLevel() > highestLevel) {
+                                highestLevel = level.getLevel();
                             }
 
-                            _accessLevels.put(level.getLevel(), level);
+                            accessLevels.put(level.getLevel(), level);
                             break;
                         }
                         case "admin": {
                             final StatSet set = new StatSet(parseAttributes(d));
                             final AccessRight command = new AccessRight(set);
-                            _adminCommandAccessRights.put(command.getCommand(), command);
+                            adminCommandAccessRights.put(command.getCommand(), command);
                             break;
                         }
                     }
@@ -104,10 +104,10 @@ public class AdminData implements IXmlReader {
      */
     public AccessLevel getAccessLevel(int accessLevel) {
         if (accessLevel < 0) {
-            return _accessLevels.get(-1);
+            return accessLevels.get(-1);
         }
 
-        return _accessLevels.computeIfAbsent(accessLevel, k -> new AccessLevel());
+        return accessLevels.computeIfAbsent(accessLevel, k -> new AccessLevel());
     }
 
     /**
@@ -115,7 +115,7 @@ public class AdminData implements IXmlReader {
      * @return the {@link AccessLevel} instance representing the master access level
      */
     public AccessLevel getMasterAccessLevel() {
-        return _accessLevels.get(_highestLevel);
+        return accessLevels.get(highestLevel);
     }
 
     /**
@@ -124,7 +124,7 @@ public class AdminData implements IXmlReader {
      * @return {@code true} if the access level exists, {@code false} otherwise
      */
     public boolean hasAccessLevel(int accessLevel) {
-        return _accessLevels.containsKey(accessLevel);
+        return accessLevels.containsKey(accessLevel);
     }
 
     /**
@@ -134,17 +134,18 @@ public class AdminData implements IXmlReader {
      * @return {@code true} if the access level has access to the admin command, {@code false} otherwise
      */
     public boolean hasAccess(String adminCommand, AccessLevel accessLevel) {
-        AccessRight accessRight = _adminCommandAccessRights.get(adminCommand);
+        AccessRight accessRight = adminCommandAccessRights.get(adminCommand);
         if (accessRight == null) {
             // Trying to avoid the spam for next time when the GM would try to use the same command.
-            if ((accessLevel.getLevel() > 0) && (accessLevel.getLevel() == _highestLevel)) {
+            if ((accessLevel.getLevel() > 0) && (accessLevel.getLevel() == highestLevel)) {
                 accessRight = new AccessRight(adminCommand, "", true, accessLevel.getLevel());
-                _adminCommandAccessRights.put(accessRight.getCommand(), accessRight);
-                LOGGER.info(getClass().getSimpleName() + ": No rights defined for admin command " + adminCommand
-                        + " auto setting accesslevel: " + accessLevel.getLevel() + " !");
+                adminCommandAccessRights.put(accessRight.getCommand(), accessRight);
+                log.info(
+                        "No rights defined for admin command {} auto setting accesslevel: {} !",
+                        adminCommand,
+                        accessLevel.getLevel());
             } else {
-                LOGGER.info(
-                        getClass().getSimpleName() + ": No rights defined for admin command " + adminCommand + " !");
+                log.info("No rights defined for admin command {} !", adminCommand);
                 return false;
             }
         }
@@ -158,9 +159,9 @@ public class AdminData implements IXmlReader {
      * @return {@code true} if the command requires confirmation, {@code false} otherwise
      */
     public boolean requireConfirm(String command) {
-        final AccessRight accessRight = _adminCommandAccessRights.get(command);
+        final AccessRight accessRight = adminCommandAccessRights.get(command);
         if (accessRight == null) {
-            LOGGER.info(getClass().getSimpleName() + ": No rights defined for admin command " + command + ".");
+            log.info("No rights defined for admin command {}.", command);
             return false;
         }
 
@@ -174,7 +175,7 @@ public class AdminData implements IXmlReader {
      */
     public Collection<Player> getAllGms(boolean includeHidden) {
         final List<Player> result = new ArrayList<>();
-        for (Entry<Player, Boolean> entry : _gmList.entrySet()) {
+        for (Entry<Player, Boolean> entry : gmList.entrySet()) {
             if (includeHidden || !entry.getValue()) {
                 result.add(entry.getKey());
             }
@@ -190,7 +191,7 @@ public class AdminData implements IXmlReader {
      */
     public Collection<String> getAllGmNames(boolean includeHidden) {
         final List<String> result = new ArrayList<>();
-        for (Entry<Player, Boolean> entry : _gmList.entrySet()) {
+        for (Entry<Player, Boolean> entry : gmList.entrySet()) {
             if (!entry.getValue()) {
                 result.add(entry.getKey().getName());
             } else if (includeHidden) {
@@ -207,7 +208,7 @@ public class AdminData implements IXmlReader {
      * @param hidden {@code true} if the GM is hidden, {@code false} otherwise
      */
     public void addGm(Player player, boolean hidden) {
-        _gmList.put(player, hidden);
+        gmList.put(player, hidden);
     }
 
     /**
@@ -215,7 +216,7 @@ public class AdminData implements IXmlReader {
      * @param player the {@link Player} instance to remove
      */
     public void deleteGm(Player player) {
-        _gmList.remove(player);
+        gmList.remove(player);
     }
 
     /**
@@ -224,7 +225,7 @@ public class AdminData implements IXmlReader {
      * @return {@code true} if a GM is online, {@code false} otherwise
      */
     public boolean isGmOnline(boolean includeHidden) {
-        for (Entry<Player, Boolean> entry : _gmList.entrySet()) {
+        for (Entry<Player, Boolean> entry : gmList.entrySet()) {
             if (includeHidden || !entry.getValue()) {
                 return true;
             }
@@ -276,7 +277,7 @@ public class AdminData implements IXmlReader {
      * @return all admin access rights
      */
     public Collection<AccessRight> getAdminCommandAccessRights() {
-        return _adminCommandAccessRights.values();
+        return adminCommandAccessRights.values();
     }
 
     public static AdminData getInstance() {

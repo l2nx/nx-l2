@@ -22,27 +22,13 @@ package app.l2nx.highfive.mechanics.events.holders.clan;
 import app.l2nx.highfive.entity.clan.Clan;
 import app.l2nx.highfive.mechanics.events.EventType;
 import app.l2nx.highfive.mechanics.events.holders.IBaseEvent;
+import lombok.Builder;
 
 /**
  * @author UnAfraid
  */
-public class OnClanWarStart implements IBaseEvent {
-    private final Clan _clan1;
-    private final Clan _clan2;
-
-    public OnClanWarStart(Clan clan1, Clan clan2) {
-        _clan1 = clan1;
-        _clan2 = clan2;
-    }
-
-    public Clan getClan1() {
-        return _clan1;
-    }
-
-    public Clan getClan2() {
-        return _clan2;
-    }
-
+@Builder(toBuilder = true)
+public record OnClanWarStart(Clan clan1, Clan clan2) implements IBaseEvent {
     @Override
     public EventType getType() {
         return EventType.ON_CLAN_WAR_START;

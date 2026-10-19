@@ -28,11 +28,11 @@ import app.l2nx.highfive.network.serverpackets.SSQStatus;
  * @author Tempy
  */
 public class RequestSSQStatus extends ClientPacket {
-    private int _page;
+    private int page;
 
     @Override
     protected void readImpl() {
-        _page = readByte();
+        page = readByte();
     }
 
     @Override
@@ -44,10 +44,10 @@ public class RequestSSQStatus extends ClientPacket {
 
         if ((SevenSigns.getInstance().isSealValidationPeriod()
                         || SevenSigns.getInstance().isCompResultsPeriod())
-                && (_page == 4)) {
+                && (page == 4)) {
             return;
         }
 
-        player.sendPacket(new SSQStatus(player.getObjectId(), _page));
+        player.sendPacket(new SSQStatus(player.getObjectId(), page));
     }
 }

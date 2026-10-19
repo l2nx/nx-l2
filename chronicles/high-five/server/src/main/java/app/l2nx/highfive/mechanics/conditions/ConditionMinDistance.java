@@ -31,16 +31,16 @@ import app.l2nx.highfive.mechanics.skill.Skill;
  * @author Mobius
  */
 public class ConditionMinDistance extends Condition {
-    private final int _distance;
+    private final int distance;
 
     public ConditionMinDistance(int distance) {
-        _distance = distance;
+        this.distance = distance;
     }
 
     @Override
     public boolean testImpl(Creature effector, Creature effected, Skill skill, ItemTemplate item) {
         return (effected != null) //
-                && (effector.calculateDistance3D(effected) >= _distance) //
+                && (effector.calculateDistance3D(effected) >= distance) //
                 && GeoEngine.getInstance().canSeeTarget(effector, effected);
     }
 }

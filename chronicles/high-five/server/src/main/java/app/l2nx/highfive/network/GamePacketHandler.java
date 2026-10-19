@@ -31,14 +31,13 @@ import app.l2nx.highfive.network.clientpackets.RequestTeleportBookMark;
 import app.l2nx.network.buffer.ReadBuffer;
 import app.l2nx.network.packet.PacketHandler;
 import app.l2nx.network.packet.ReadablePacket;
-import java.util.logging.Logger;
-import org.apache.commons.lang3.exception.ExceptionUtils;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author Mobius
  */
+@Slf4j
 public class GamePacketHandler implements PacketHandler<GameClient> {
-    private static final Logger LOGGER = Logger.getLogger(GamePacketHandler.class.getName());
 
     @Override
     public ReadablePacket<GameClient> handle(ReadBuffer buffer, GameClient client) {
@@ -47,8 +46,7 @@ public class GamePacketHandler implements PacketHandler<GameClient> {
         try {
             packetId = Byte.toUnsignedInt(buffer.readByte());
         } catch (Exception e) {
-            LOGGER.warning("PacketHandler: Problem receiving packet id from " + client);
-            LOGGER.warning(ExceptionUtils.getStackTrace(e));
+            log.warn("Problem receiving packet id from {}", client, e);
             client.closeNow();
             return null;
         }

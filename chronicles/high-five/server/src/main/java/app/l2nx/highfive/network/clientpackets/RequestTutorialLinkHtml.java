@@ -29,11 +29,11 @@ import app.l2nx.highfive.mechanics.script.QuestState;
 import app.l2nx.highfive.network.serverpackets.TutorialCloseHtml;
 
 public class RequestTutorialLinkHtml extends ClientPacket {
-    private String _bypass;
+    private String bypass;
 
     @Override
     protected void readImpl() {
-        _bypass = readString();
+        bypass = readString();
     }
 
     @Override
@@ -43,17 +43,17 @@ public class RequestTutorialLinkHtml extends ClientPacket {
             return;
         }
 
-        if (_bypass.equalsIgnoreCase("close")) {
+        if (bypass.equalsIgnoreCase("close")) {
             player.sendPacket(TutorialCloseHtml.STATIC_PACKET);
         }
 
-        final IBypassHandler handler = BypassHandler.getInstance().getHandler(_bypass);
+        final IBypassHandler handler = BypassHandler.getInstance().getHandler(bypass);
         if (handler != null) {
-            handler.onCommand(_bypass, player, null);
+            handler.onCommand(bypass, player, null);
         } else {
             final QuestState qs = player.getQuestState("Q00255_Tutorial");
             if (qs != null) {
-                qs.getQuest().notifyEvent("TL:" + _bypass, null, player);
+                qs.getQuest().notifyEvent("TL:" + bypass, null, player);
             }
         }
     }

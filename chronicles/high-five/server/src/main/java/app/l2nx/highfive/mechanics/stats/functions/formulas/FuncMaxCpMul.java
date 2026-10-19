@@ -29,10 +29,10 @@ import app.l2nx.highfive.mechanics.stats.functions.AbstractFunction;
  * @author UnAfraid
  */
 public class FuncMaxCpMul extends AbstractFunction {
-    private static final FuncMaxCpMul _fmcm_instance = new FuncMaxCpMul();
+    private static final FuncMaxCpMul instance = new FuncMaxCpMul();
 
     public static AbstractFunction getInstance() {
-        return _fmcm_instance;
+        return instance;
     }
 
     private FuncMaxCpMul() {

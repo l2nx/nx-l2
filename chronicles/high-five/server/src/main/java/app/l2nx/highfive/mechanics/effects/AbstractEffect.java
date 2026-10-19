@@ -35,19 +35,26 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.logging.Logger;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Abstract effect implementation.
  * @author Zoey76, Mobius
  */
+@Slf4j
 public abstract class AbstractEffect {
-    protected static final Logger LOGGER = Logger.getLogger(AbstractEffect.class.getName());
 
-    private final Condition _attachCond;
-    private List<FuncTemplate> _funcTemplates;
-    private final String _name;
-    private final int _ticks;
+    private final Condition attachCond;
+
+    @Getter
+    private List<FuncTemplate> funcTemplates;
+
+    @Getter
+    private final String name;
+
+    @Getter
+    private final int ticks;
 
     /**
      * Abstract effect constructor.
@@ -57,9 +64,9 @@ public abstract class AbstractEffect {
      * @param params the parameters
      */
     protected AbstractEffect(Condition attachCond, Condition applyCond, StatSet set, StatSet params) {
-        _attachCond = attachCond;
-        _name = set.getString("name");
-        _ticks = set.getInt("ticks", 0);
+        this.attachCond = attachCond;
+        name = set.getString("name");
+        ticks = set.getInt("ticks", 0);
     }
 
     /**
@@ -75,7 +82,7 @@ public abstract class AbstractEffect {
         final Class<? extends AbstractEffect> handler =
                 EffectHandler.getInstance().getHandler(name);
         if (handler == null) {
-            LOGGER.warning(AbstractEffect.class.getSimpleName() + ": Requested unexistent effect handler: " + name);
+            log.warn("Requested unexistent effect handler: {}", name);
             return null;
         }
 
@@ -83,8 +90,7 @@ public abstract class AbstractEffect {
         try {
             constructor = handler.getConstructor(Condition.class, Condition.class, StatSet.class, StatSet.class);
         } catch (NoSuchMethodException | SecurityException e) {
-            LOGGER.warning(AbstractEffect.class.getSimpleName()
-                    + ": Requested unexistent constructor for effect handler: " + name + ": " + e.getMessage());
+            log.warn("Requested unexistent constructor for effect handler: {}: {}", name, e.getMessage());
             return null;
         }
 
@@ -94,8 +100,7 @@ public abstract class AbstractEffect {
                 | IllegalAccessException
                 | IllegalArgumentException
                 | InvocationTargetException e) {
-            LOGGER.warning(AbstractEffect.class.getSimpleName() + ": Unable to initialize effect handler: " + name
-                    + ": " + e.getMessage());
+            log.warn("Unable to initialize effect handler: {}: {}", name, e.getMessage());
         }
 
         return null;
@@ -109,7 +114,7 @@ public abstract class AbstractEffect {
      * @return {@code true} if there isn't a condition to test or it's passed, {@code false} otherwise
      */
     public boolean testConditions(Creature caster, Creature target, Skill skill) {
-        return (_attachCond == null) || _attachCond.test(caster, target, skill);
+        return (attachCond == null) || attachCond.test(caster, target, skill);
     }
 
     /**
@@ -117,35 +122,15 @@ public abstract class AbstractEffect {
      * @param f the function
      */
     public void attach(FuncTemplate f) {
-        if (_funcTemplates == null) {
-            _funcTemplates = new ArrayList<>(1);
+        if (funcTemplates == null) {
+            funcTemplates = new ArrayList<>(1);
         }
 
-        _funcTemplates.add(f);
-    }
-
-    /**
-     * Gets the effect name.
-     * @return the name
-     */
-    public String getName() {
-        return _name;
-    }
-
-    /**
-     * Gets the effect ticks
-     * @return the ticks
-     */
-    public int getTicks() {
-        return _ticks;
+        funcTemplates.add(f);
     }
 
     public double getTicksMultiplier() {
         return (getTicks() * PlayerConfig.EFFECT_TICK_RATIO) / 1000f;
-    }
-
-    public List<FuncTemplate> getFuncTemplates() {
-        return _funcTemplates;
     }
 
     /**
@@ -212,12 +197,12 @@ public abstract class AbstractEffect {
      * @return a list of stat functions.
      */
     public List<AbstractFunction> getStatFuncs(Creature caster, Creature target, Skill skill) {
-        if (_funcTemplates == null) {
+        if (funcTemplates == null) {
             return Collections.<AbstractFunction>emptyList();
         }
 
-        final List<AbstractFunction> functions = new ArrayList<>(_funcTemplates.size());
-        for (FuncTemplate functionTemplate : _funcTemplates) {
+        final List<AbstractFunction> functions = new ArrayList<>(funcTemplates.size());
+        for (FuncTemplate functionTemplate : funcTemplates) {
             final AbstractFunction function = functionTemplate.getFunc(caster, target, skill, this);
             if (function != null) {
                 functions.add(function);
@@ -237,7 +222,7 @@ public abstract class AbstractEffect {
 
     @Override
     public String toString() {
-        return "Effect " + _name;
+        return "Effect " + name;
     }
 
     public void decreaseForce() {}

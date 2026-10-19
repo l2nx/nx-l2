@@ -30,15 +30,15 @@ public class ExDuelStart extends ServerPacket {
     public static final ExDuelStart PLAYER_DUEL = new ExDuelStart(false);
     public static final ExDuelStart PARTY_DUEL = new ExDuelStart(true);
 
-    private final boolean _partyDuel;
+    private final boolean partyDuel;
 
     public ExDuelStart(boolean isPartyDuel) {
-        _partyDuel = isPartyDuel;
+        partyDuel = isPartyDuel;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_DUEL_START.writeId(this, buffer);
-        buffer.writeInt(_partyDuel);
+        buffer.writeInt(partyDuel);
     }
 }

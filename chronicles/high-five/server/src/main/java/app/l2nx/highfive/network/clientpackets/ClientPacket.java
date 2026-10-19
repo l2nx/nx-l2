@@ -24,13 +24,14 @@ package app.l2nx.highfive.network.clientpackets;
 
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.network.GameClient;
-import app.l2nx.highfive.network.PacketLogger;
 import app.l2nx.network.packet.ReadablePacket;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 
 /**
  * @author Mobius
  */
+@Slf4j
 public abstract class ClientPacket extends ReadablePacket<GameClient> {
     @Override
     public boolean read() {
@@ -38,9 +39,12 @@ public abstract class ClientPacket extends ReadablePacket<GameClient> {
             readImpl();
             return true;
         } catch (Exception e) {
-            PacketLogger.warning("Client: " + getClient() + " - Failed reading: "
-                    + getClass().getSimpleName() + " ; " + e.getMessage());
-            PacketLogger.warning(ExceptionUtils.getStackTrace(e));
+            log.warn(
+                    "Client: {} - Failed reading: {} ; {}",
+                    getClient(),
+                    getClass().getSimpleName(),
+                    e.getMessage());
+            log.warn(ExceptionUtils.getStackTrace(e));
         }
 
         return false;
@@ -53,9 +57,12 @@ public abstract class ClientPacket extends ReadablePacket<GameClient> {
         try {
             runImpl();
         } catch (Exception e) {
-            PacketLogger.warning("Client: " + getClient() + " - Failed running: "
-                    + getClass().getSimpleName() + " ; " + e.getMessage());
-            PacketLogger.warning(ExceptionUtils.getStackTrace(e));
+            log.warn(
+                    "Client: {} - Failed running: {} ; {}",
+                    getClient(),
+                    getClass().getSimpleName(),
+                    e.getMessage());
+            log.warn(ExceptionUtils.getStackTrace(e));
 
             // In case of EnterWorld error kick player from game.
             if (this instanceof EnterWorld) {

@@ -29,14 +29,14 @@ import app.l2nx.highfive.mechanics.skill.Skill;
  * @author MrPoke
  */
 public class ConditionPlayerHasFort extends Condition {
-    private final int _fort;
+    private final int fort;
 
     /**
      * Instantiates a new condition player has fort.
      * @param fort the fort
      */
     public ConditionPlayerHasFort(int fort) {
-        _fort = fort;
+        this.fort = fort;
     }
 
     /**
@@ -51,14 +51,14 @@ public class ConditionPlayerHasFort extends Condition {
 
         final Clan clan = effector.asPlayer().getClan();
         if (clan == null) {
-            return _fort == 0;
+            return fort == 0;
         }
 
         // Any fortress
-        if (_fort == -1) {
+        if (fort == -1) {
             return clan.getFortId() > 0;
         }
 
-        return clan.getFortId() == _fort;
+        return clan.getFortId() == fort;
     }
 }

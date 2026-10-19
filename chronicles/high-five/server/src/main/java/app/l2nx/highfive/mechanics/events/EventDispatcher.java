@@ -27,14 +27,13 @@ import app.l2nx.highfive.mechanics.events.listeners.AbstractEventListener;
 import app.l2nx.highfive.mechanics.events.returns.AbstractEventReturn;
 import app.l2nx.highfive.threads.ThreadPool;
 import java.util.Collection;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author UnAfraid, Mobius
  */
+@Slf4j
 public class EventDispatcher {
-    private static final Logger LOGGER = Logger.getLogger(EventDispatcher.class.getName());
 
     protected EventDispatcher() {}
 
@@ -115,11 +114,7 @@ public class EventDispatcher {
         try {
             return notifyEventImpl(event, container, callbackClass);
         } catch (Exception e) {
-            LOGGER.log(
-                    Level.WARNING,
-                    getClass().getSimpleName() + ": Couldn't notify event "
-                            + event.getClass().getSimpleName(),
-                    e);
+            log.warn("Couldn't notify event {}", event.getClass().getSimpleName(), e);
         }
 
         return null;
@@ -193,11 +188,7 @@ public class EventDispatcher {
 
             return callback;
         } catch (Exception e) {
-            LOGGER.log(
-                    Level.WARNING,
-                    getClass().getSimpleName() + ": Couldn't notify event "
-                            + event.getClass().getSimpleName(),
-                    e);
+            log.warn("Couldn't notify event {}", event.getClass().getSimpleName(), e);
         }
 
         return null;
@@ -236,11 +227,7 @@ public class EventDispatcher {
 
             return callback;
         } catch (Exception e) {
-            LOGGER.log(
-                    Level.WARNING,
-                    getClass().getSimpleName() + ": Couldn't notify event "
-                            + event.getClass().getSimpleName(),
-                    e);
+            log.warn("Couldn't notify event {}", event.getClass().getSimpleName(), e);
         }
 
         return null;
@@ -300,11 +287,10 @@ public class EventDispatcher {
                     break;
                 }
             } catch (Exception e) {
-                LOGGER.log(
-                        Level.WARNING,
-                        getClass().getSimpleName() + ": Exception during notification of event: "
-                                + event.getClass().getSimpleName() + " listener: "
-                                + listener.getClass().getSimpleName(),
+                log.warn(
+                        "Exception during notification of event: {} listener: {}",
+                        event.getClass().getSimpleName(),
+                        listener.getClass().getSimpleName(),
                         e);
             }
         }

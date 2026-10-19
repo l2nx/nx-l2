@@ -49,11 +49,12 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class MonsterRaceManager {
-    protected static final Logger LOGGER = Logger.getLogger(MonsterRaceManager.class.getName());
 
     public enum RaceState {
         ACCEPTING_BETS,
@@ -71,83 +72,82 @@ public class MonsterRaceManager {
         {13765, -1}
     };
 
-    protected final List<Integer> _npcTemplates =
+    protected final List<Integer> npcTemplates =
             new ArrayList<>(); // List holding npc templates, shuffled on a new race.
-    protected final List<HistoryInfo> _history = new ArrayList<>(); // List holding old race records.
-    protected final Map<Integer, Long> _betsPerLane =
+
+    @Getter
+    protected final List<HistoryInfo> history = new ArrayList<>(); // List holding old race records.
+
+    protected final Map<Integer, Long> betsPerLane =
             new ConcurrentHashMap<>(); // Map holding all bets for each lane ; values setted to 0 after every race.
-    protected final List<Double> _odds =
+
+    @Getter
+    protected final List<Double> odds =
             new ArrayList<>(); // List holding sorted odds per lane ; cleared at new odds calculation.
 
-    protected int _raceNumber = 1;
-    protected int _finalCountdown = 0;
-    protected RaceState _state = RaceState.RACE_END;
+    @Getter
+    protected int raceNumber = 1;
 
-    protected MonRaceInfo _packet;
+    protected int finalCountdown = 0;
 
-    private final Npc[] _monsters = new Npc[8];
-    private int[][] _speeds = new int[8][20];
-    private int _firstPlace; // Index going from 0-7.
-    private int _secondPlace; // Index going from 0-7.
+    @Getter
+    protected RaceState currentRaceState = RaceState.RACE_END;
+
+    @Getter
+    protected MonRaceInfo racePacket;
+
+    @Getter
+    private final Npc[] monsters = new Npc[8];
+
+    @Getter
+    private int[][] speeds = new int[8][20];
+
+    @Getter
+    private int firstPlace; // Index going from 0-7.
+
+    @Getter
+    private int secondPlace; // Index going from 0-7.
 
     protected MonsterRaceManager() {
         if (!GeneralConfig.ALLOW_RACE) {
             return;
         }
 
-        // Feed _history with previous race results.
+        // Feed history with previous race results.
         loadHistory();
 
-        // Feed _betsPerLane with stored informations on bets.
+        // Feed betsPerLane with stored informations on bets.
         loadBets();
 
-        // Feed _npcTemplates, we will only have to shuffle it when needed.
+        // Feed npcTemplates, we will only have to shuffle it when needed.
         for (int i = 31003; i < 31027; i++) {
-            _npcTemplates.add(i);
+            npcTemplates.add(i);
         }
 
         ThreadPool.scheduleAtFixedRate(new Announcement(), 0, 1000);
     }
 
     public static class HistoryInfo {
-        private final int _raceId;
-        private int _first;
-        private int _second;
-        private double _oddRate;
+        @Getter
+        private final int raceId;
+
+        @Getter
+        @Setter
+        private int first;
+
+        @Getter
+        @Setter
+        private int second;
+
+        @Getter
+        @Setter
+        private double oddRate;
 
         public HistoryInfo(int raceId, int first, int second, double oddRate) {
-            _raceId = raceId;
-            _first = first;
-            _second = second;
-            _oddRate = oddRate;
-        }
-
-        public int getRaceId() {
-            return _raceId;
-        }
-
-        public int getFirst() {
-            return _first;
-        }
-
-        public int getSecond() {
-            return _second;
-        }
-
-        public double getOddRate() {
-            return _oddRate;
-        }
-
-        public void setFirst(int first) {
-            _first = first;
-        }
-
-        public void setSecond(int second) {
-            _second = second;
-        }
-
-        public void setOddRate(double oddRate) {
-            _oddRate = oddRate;
+            this.raceId = raceId;
+            this.first = first;
+            this.second = second;
+            this.oddRate = oddRate;
         }
     }
 
@@ -156,22 +156,22 @@ public class MonsterRaceManager {
 
         @Override
         public void run() {
-            if (_finalCountdown > 1200) {
-                _finalCountdown = 0;
+            if (finalCountdown > 1200) {
+                finalCountdown = 0;
             }
 
-            switch (_finalCountdown) {
+            switch (finalCountdown) {
                 case 0: {
                     newRace();
                     newSpeeds();
 
-                    _state = RaceState.ACCEPTING_BETS;
-                    _packet = new MonRaceInfo(CODES[0][0], CODES[0][1], getMonsters(), getSpeeds());
+                    currentRaceState = RaceState.ACCEPTING_BETS;
+                    racePacket = new MonRaceInfo(CODES[0][0], CODES[0][1], getMonsters(), getSpeeds());
 
                     final SystemMessage msg =
                             new SystemMessage(SystemMessageId.TICKETS_ARE_NOW_AVAILABLE_FOR_MONSTER_RACE_S1);
-                    msg.addInt(_raceNumber);
-                    broadcastToAllPlayersInDerbyZone(_packet, msg);
+                    msg.addInt(raceNumber);
+                    broadcastToAllPlayersInDerbyZone(racePacket, msg);
                     break;
                 }
                 case 30: // 30 sec
@@ -203,7 +203,7 @@ public class MonsterRaceManager {
                 {
                     final SystemMessage msg =
                             new SystemMessage(SystemMessageId.TICKETS_ARE_NOW_AVAILABLE_FOR_MONSTER_RACE_S1);
-                    msg.addInt(_raceNumber);
+                    msg.addInt(raceNumber);
                     broadcastToAllPlayersInDerbyZone(msg);
                     break;
                 }
@@ -211,7 +211,7 @@ public class MonsterRaceManager {
                 {
                     final SystemMessage msg =
                             new SystemMessage(SystemMessageId.NOW_SELLING_TICKETS_FOR_MONSTER_RACE_S1);
-                    msg.addInt(_raceNumber);
+                    msg.addInt(raceNumber);
                     final SystemMessage msg2 = new SystemMessage(
                             SystemMessageId.TICKET_SALES_FOR_THE_MONSTER_RACE_WILL_END_IN_S1_MINUTE_S);
                     msg2.addInt(10);
@@ -222,7 +222,7 @@ public class MonsterRaceManager {
                 {
                     final SystemMessage msg =
                             new SystemMessage(SystemMessageId.NOW_SELLING_TICKETS_FOR_MONSTER_RACE_S1);
-                    msg.addInt(_raceNumber);
+                    msg.addInt(raceNumber);
                     final SystemMessage msg2 = new SystemMessage(
                             SystemMessageId.TICKET_SALES_FOR_THE_MONSTER_RACE_WILL_END_IN_S1_MINUTE_S);
                     msg2.addInt(5);
@@ -233,7 +233,7 @@ public class MonsterRaceManager {
                 {
                     final SystemMessage msg =
                             new SystemMessage(SystemMessageId.NOW_SELLING_TICKETS_FOR_MONSTER_RACE_S1);
-                    msg.addInt(_raceNumber);
+                    msg.addInt(raceNumber);
                     final SystemMessage msg2 = new SystemMessage(
                             SystemMessageId.TICKET_SALES_FOR_THE_MONSTER_RACE_WILL_END_IN_S1_MINUTE_S);
                     msg2.addInt(1);
@@ -242,27 +242,27 @@ public class MonsterRaceManager {
                 }
                 case 900: // 15 min
                 {
-                    _state = RaceState.WAITING;
+                    currentRaceState = RaceState.WAITING;
 
                     calculateOdds();
 
                     final SystemMessage msg =
                             new SystemMessage(SystemMessageId.TICKETS_ARE_NOW_AVAILABLE_FOR_MONSTER_RACE_S1);
-                    msg.addInt(_raceNumber);
+                    msg.addInt(raceNumber);
                     final SystemMessage msg2 = new SystemMessage(
                             SystemMessageId.TICKETS_SALES_ARE_CLOSED_FOR_MONSTER_RACE_S1_ODDS_ARE_POSTED);
-                    msg2.addInt(_raceNumber);
+                    msg2.addInt(raceNumber);
                     broadcastToAllPlayersInDerbyZone(msg, msg2);
                     break;
                 }
                 case 960: // 16 min
                 case 1020: // 17 min
                 {
-                    final int minutes = (_finalCountdown == 960) ? 2 : 1;
+                    final int minutes = (finalCountdown == 960) ? 2 : 1;
                     final SystemMessage msg =
                             new SystemMessage(SystemMessageId.MONSTER_RACE_S2_WILL_BEGIN_IN_S1_MINUTE_S);
                     msg.addInt(minutes);
-                    msg.addInt(_raceNumber);
+                    msg.addInt(raceNumber);
                     broadcastToAllPlayersInDerbyZone(msg);
                     break;
                 }
@@ -270,7 +270,7 @@ public class MonsterRaceManager {
                 {
                     final SystemMessage msg =
                             new SystemMessage(SystemMessageId.MONSTER_RACE_S1_WILL_BEGIN_IN_30_SECONDS);
-                    msg.addInt(_raceNumber);
+                    msg.addInt(raceNumber);
                     broadcastToAllPlayersInDerbyZone(msg);
                     break;
                 }
@@ -278,7 +278,7 @@ public class MonsterRaceManager {
                 {
                     final SystemMessage msg = new SystemMessage(
                             SystemMessageId.MONSTER_RACE_S1_IS_ABOUT_TO_BEGIN_COUNTDOWN_IN_FIVE_SECONDS);
-                    msg.addInt(_raceNumber);
+                    msg.addInt(raceNumber);
                     broadcastToAllPlayersInDerbyZone(msg);
                     break;
                 }
@@ -288,7 +288,7 @@ public class MonsterRaceManager {
                 case 1078: // 17 min 58 sec
                 case 1079: // 17 min 59 sec
                 {
-                    final int seconds = 1080 - _finalCountdown;
+                    final int seconds = 1080 - finalCountdown;
                     final SystemMessage msg = new SystemMessage(SystemMessageId.THE_RACE_WILL_BEGIN_IN_S1_SECOND_S);
                     msg.addInt(seconds);
                     broadcastToAllPlayersInDerbyZone(msg);
@@ -296,28 +296,28 @@ public class MonsterRaceManager {
                 }
                 case 1080: // 18 min
                 {
-                    _state = RaceState.STARTING_RACE;
-                    _packet = new MonRaceInfo(CODES[1][0], CODES[1][1], getMonsters(), getSpeeds());
+                    currentRaceState = RaceState.STARTING_RACE;
+                    racePacket = new MonRaceInfo(CODES[1][0], CODES[1][1], getMonsters(), getSpeeds());
                     broadcastToAllPlayersInDerbyZone(
-                            new SystemMessage(SystemMessageId.THEY_RE_OFF), SOUND_1, SOUND_2, _packet);
+                            new SystemMessage(SystemMessageId.THEY_RE_OFF), SOUND_1, SOUND_2, racePacket);
                     break;
                 }
                 case 1085: // 18 min 5 sec
                 {
-                    _packet = new MonRaceInfo(CODES[2][0], CODES[2][1], getMonsters(), getSpeeds());
+                    racePacket = new MonRaceInfo(CODES[2][0], CODES[2][1], getMonsters(), getSpeeds());
 
-                    broadcastToAllPlayersInDerbyZone(_packet);
+                    broadcastToAllPlayersInDerbyZone(racePacket);
                     break;
                 }
                 case 1115: // 18 min 35 sec
                 {
-                    _state = RaceState.RACE_END;
+                    currentRaceState = RaceState.RACE_END;
 
                     // Populate history info with data, stores it in database.
-                    final HistoryInfo info = _history.get(_history.size() - 1);
+                    final HistoryInfo info = history.get(history.size() - 1);
                     info.setFirst(getFirstPlace());
                     info.setSecond(getSecondPlace());
-                    info.setOddRate(_odds.get(getFirstPlace()));
+                    info.setOddRate(odds.get(getFirstPlace()));
 
                     saveHistory(info);
                     clearBets();
@@ -328,9 +328,9 @@ public class MonsterRaceManager {
                     msg.addInt(getFirstPlace() + 1);
                     msg.addInt(getSecondPlace() + 1);
                     final SystemMessage msg2 = new SystemMessage(SystemMessageId.MONSTER_RACE_S1_IS_FINISHED);
-                    msg2.addInt(_raceNumber);
+                    msg2.addInt(raceNumber);
                     broadcastToAllPlayersInDerbyZone(msg, msg2);
-                    _raceNumber++;
+                    raceNumber++;
                     break;
                 }
                 case 1140: // 19 min
@@ -348,32 +348,32 @@ public class MonsterRaceManager {
                 }
             }
 
-            _finalCountdown += 1;
+            finalCountdown += 1;
         }
     }
 
     public void newRace() {
-        // Edit _history.
-        _history.add(new HistoryInfo(_raceNumber, 0, 0, 0));
+        // Edit history.
+        history.add(new HistoryInfo(raceNumber, 0, 0, 0));
 
-        // Randomize _npcTemplates.
-        Collections.shuffle(_npcTemplates);
+        // Randomize npcTemplates.
+        Collections.shuffle(npcTemplates);
 
-        // Setup 8 new creatures ; pickup the first 8 from _npcTemplates.
+        // Setup 8 new creatures ; pickup the first 8 from npcTemplates.
         for (int i = 0; i < 8; i++) {
             try {
-                final NpcTemplate template = NpcData.getInstance().getTemplate(_npcTemplates.get(i));
-                _monsters[i] = (Npc) Class.forName("app.l2nx.highfive.entity.actor.instance." + template.getType())
+                final NpcTemplate template = NpcData.getInstance().getTemplate(npcTemplates.get(i));
+                monsters[i] = (Npc) Class.forName("app.l2nx.highfive.entity.actor.instance." + template.getType())
                         .getConstructors()[0]
                         .newInstance(template);
             } catch (Exception e) {
-                LOGGER.log(Level.WARNING, "newRace: ", e);
+                log.warn("newRace: ", e);
             }
         }
     }
 
     public void newSpeeds() {
-        _speeds = new int[8][20];
+        speeds = new int[8][20];
 
         int total = 0;
         int winnerDistance = 0;
@@ -387,26 +387,26 @@ public class MonsterRaceManager {
             // Test the 20 segments.
             for (int j = 0; j < 20; j++) {
                 if (j == 19) {
-                    _speeds[i][j] = 100;
+                    speeds[i][j] = 100;
                 } else {
-                    _speeds[i][j] = ThreadLocalRandom.current().nextInt(60) + 65;
+                    speeds[i][j] = ThreadLocalRandom.current().nextInt(60) + 65;
                 }
 
                 // Feed actual total to current lane total.
-                total += _speeds[i][j];
+                total += speeds[i][j];
             }
 
             // The current total for this line is superior or equals to previous winner, it means we got a new winner
             // and the old winner becomes second.
             if (total >= winnerDistance) {
                 // Old winner becomes second.
-                _secondPlace = _firstPlace;
+                secondPlace = firstPlace;
 
                 // Old winner distance is the second.
                 secondDistance = winnerDistance;
 
                 // Find the good index.
-                _firstPlace = i;
+                firstPlace = i;
 
                 // Set the new limit to bypass winner position.
                 winnerDistance = total;
@@ -414,7 +414,7 @@ public class MonsterRaceManager {
             // The total wasn't enough to.
             else if (total >= secondDistance) {
                 // Find the good index.
-                _secondPlace = i;
+                secondPlace = i;
 
                 // Set the new limit to bypass second position.
                 secondDistance = total;
@@ -423,26 +423,26 @@ public class MonsterRaceManager {
     }
 
     /**
-     * Load past races informations, feeding _history arrayList.<br>
-     * Also sets _raceNumber, based on latest HistoryInfo loaded.
+     * Load past races informations, feeding history arrayList.<br>
+     * Also sets raceNumber, based on latest HistoryInfo loaded.
      */
     protected void loadHistory() {
         try (Connection con = DatabaseFactory.getConnection();
                 PreparedStatement statement = con.prepareStatement("SELECT * FROM mdt_history");
                 ResultSet rset = statement.executeQuery()) {
             while (rset.next()) {
-                _history.add(new HistoryInfo(
+                history.add(new HistoryInfo(
                         rset.getInt("race_id"),
                         rset.getInt("first"),
                         rset.getInt("second"),
                         rset.getDouble("odd_rate")));
-                _raceNumber++;
+                raceNumber++;
             }
         } catch (SQLException e) {
-            LOGGER.log(Level.WARNING, "MonsterRace: Can't load history: " + e.getMessage(), e);
+            log.warn("MonsterRace: Can't load history: {}", e.getMessage(), e);
         }
 
-        LOGGER.info("MonsterRace: loaded " + _history.size() + " records, currently on race #" + _raceNumber);
+        log.info("MonsterRace: loaded {} records, currently on race #{}", history.size(), raceNumber);
     }
 
     /**
@@ -459,7 +459,7 @@ public class MonsterRaceManager {
             statement.setDouble(4, history.getOddRate());
             statement.execute();
         } catch (SQLException e) {
-            LOGGER.log(Level.WARNING, "MonsterRace: Can't save history: " + e.getMessage(), e);
+            log.warn("MonsterRace: Can't save history: {}", e.getMessage(), e);
         }
     }
 
@@ -474,7 +474,7 @@ public class MonsterRaceManager {
                 setBetOnLane(rset.getInt("lane_id"), rset.getLong("bet"), false);
             }
         } catch (SQLException e) {
-            LOGGER.log(Level.WARNING, "MonsterRace: Can't load bets: " + e.getMessage(), e);
+            log.warn("MonsterRace: Can't load bets: {}", e.getMessage(), e);
         }
     }
 
@@ -491,7 +491,7 @@ public class MonsterRaceManager {
             statement.setLong(2, sum);
             statement.execute();
         } catch (SQLException e) {
-            LOGGER.log(Level.WARNING, "MonsterRace: Can't save bet: " + e.getMessage(), e);
+            log.warn("MonsterRace: Can't save bet: {}", e.getMessage(), e);
         }
     }
 
@@ -499,15 +499,15 @@ public class MonsterRaceManager {
      * Clear all lanes bets, either on database or Map.
      */
     protected void clearBets() {
-        for (int key : _betsPerLane.keySet()) {
-            _betsPerLane.put(key, 0L);
+        for (int key : betsPerLane.keySet()) {
+            betsPerLane.put(key, 0L);
         }
 
         try (Connection con = DatabaseFactory.getConnection();
                 PreparedStatement statement = con.prepareStatement("UPDATE mdt_bets SET bet = 0")) {
             statement.execute();
         } catch (SQLException e) {
-            LOGGER.log(Level.WARNING, "MonsterRace: Can't clear bets: " + e.getMessage(), e);
+            log.warn("MonsterRace: Can't clear bets: {}", e.getMessage(), e);
         }
     }
 
@@ -518,9 +518,9 @@ public class MonsterRaceManager {
      * @param saveOnDb : Should it be saved on db or not.
      */
     public void setBetOnLane(int lane, long amount, boolean saveOnDb) {
-        final long sum = (_betsPerLane.containsKey(lane)) ? _betsPerLane.get(lane) + amount : amount;
+        final long sum = (betsPerLane.containsKey(lane)) ? betsPerLane.get(lane) + amount : amount;
 
-        _betsPerLane.put(lane, sum);
+        betsPerLane.put(lane, sum);
 
         if (saveOnDb) {
             saveBet(lane, sum);
@@ -532,10 +532,10 @@ public class MonsterRaceManager {
      */
     protected void calculateOdds() {
         // Clear previous List holding old odds.
-        _odds.clear();
+        odds.clear();
 
         // Sort bets lanes per lane.
-        final Map<Integer, Long> sortedLanes = new TreeMap<>(_betsPerLane);
+        final Map<Integer, Long> sortedLanes = new TreeMap<>(betsPerLane);
 
         // Pass a first loop in order to calculate total sum of all lanes.
         long sumOfAllLanes = 0;
@@ -545,7 +545,7 @@ public class MonsterRaceManager {
 
         // As we get the sum, we can now calculate the odd rate of each lane.
         for (long amount : sortedLanes.values()) {
-            _odds.add((amount == 0) ? 0D : Math.max(1.25, (sumOfAllLanes * 0.7) / amount));
+            odds.add((amount == 0) ? 0D : Math.max(1.25, (sumOfAllLanes * 0.7) / amount));
         }
     }
 
@@ -565,42 +565,6 @@ public class MonsterRaceManager {
                 }
             }
         }
-    }
-
-    public Npc[] getMonsters() {
-        return _monsters;
-    }
-
-    public int[][] getSpeeds() {
-        return _speeds;
-    }
-
-    public int getFirstPlace() {
-        return _firstPlace;
-    }
-
-    public int getSecondPlace() {
-        return _secondPlace;
-    }
-
-    public MonRaceInfo getRacePacket() {
-        return _packet;
-    }
-
-    public RaceState getCurrentRaceState() {
-        return _state;
-    }
-
-    public int getRaceNumber() {
-        return _raceNumber;
-    }
-
-    public List<HistoryInfo> getHistory() {
-        return _history;
-    }
-
-    public List<Double> getOdds() {
-        return _odds;
     }
 
     public static MonsterRaceManager getInstance() {

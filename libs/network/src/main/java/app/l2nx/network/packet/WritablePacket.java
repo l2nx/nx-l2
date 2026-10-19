@@ -37,15 +37,15 @@ import app.l2nx.network.config.ConnectionConfig;
  * @author Mobius
  */
 public abstract class WritablePacket<T extends Client<Connection<T>>> {
-    private volatile boolean _broadcast;
+    private volatile boolean broadcast;
 
     /**
      * Cached snapshot of the serialized packet bytes for broadcast reuse.<br>
-     * Populated on the first send when {@link #_broadcast} is {@code true}; every later send bulk-copies these bytes into a fresh per-client {@link WriteBuffer}. Guarded by {@code this} (synchronized on the WritablePacket instance).
+     * Populated on the first send when {@link #broadcast} is {@code true}; every later send bulk-copies these bytes into a fresh per-client {@link WriteBuffer}. Guarded by {@code this} (synchronized on the WritablePacket instance).
      */
-    private byte[] _broadcastCacheBytes;
+    private byte[] broadcastCacheBytes;
 
-    private int _broadcastCacheLength;
+    private int broadcastCacheLength;
 
     protected WritablePacket() {}
 
@@ -57,7 +57,7 @@ public abstract class WritablePacket<T extends Client<Connection<T>>> {
      * @throws Exception if the {@link #write} implementation signals a failure
      */
     public WriteBuffer writeData(T client) throws Exception {
-        if (_broadcast) {
+        if (broadcast) {
             return writeDataWithCache(client);
         }
 
@@ -71,13 +71,13 @@ public abstract class WritablePacket<T extends Client<Connection<T>>> {
      * @throws Exception if the underlying write fails on first cache population
      */
     private synchronized WriteBuffer writeDataWithCache(T client) throws Exception {
-        if (_broadcastCacheBytes != null) {
-            return new WriteBuffer(_broadcastCacheBytes, _broadcastCacheLength, client.getResourcePool(), getClass());
+        if (broadcastCacheBytes != null) {
+            return new WriteBuffer(broadcastCacheBytes, broadcastCacheLength, client.getResourcePool(), getClass());
         }
 
         final WriteBuffer buffer = writeDataToBuffer(client);
-        _broadcastCacheBytes = buffer.toByteArray();
-        _broadcastCacheLength = buffer.limit();
+        broadcastCacheBytes = buffer.toByteArray();
+        broadcastCacheLength = buffer.limit();
         return buffer;
     }
 
@@ -115,7 +115,7 @@ public abstract class WritablePacket<T extends Client<Connection<T>>> {
      * After this call, packet data is written once and the resulting bytes are cached on this instance for reuse across all recipients.
      */
     public void sendInBroadcast() {
-        _broadcast = true;
+        broadcast = true;
     }
 
     /**

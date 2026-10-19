@@ -27,27 +27,27 @@ import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.network.buffer.WriteBuffer;
 
 public class RadarControl extends ServerPacket {
-    private final int _showRadar;
-    private final int _type;
-    private final int _x;
-    private final int _y;
-    private final int _z;
+    private final int showRadar;
+    private final int type;
+    private final int x;
+    private final int y;
+    private final int z;
 
     public RadarControl(int showRadar, int type, int x, int y, int z) {
-        _showRadar = showRadar; // showRader?? 0 = showradar; 1 = delete radar;
-        _type = type; // radar type??
-        _x = x;
-        _y = y;
-        _z = z;
+        this.showRadar = showRadar; // showRader?? 0 = showradar; 1 = delete radar;
+        this.type = type; // radar type??
+        this.x = x;
+        this.y = y;
+        this.z = z;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.RADAR_CONTROL.writeId(this, buffer);
-        buffer.writeInt(_showRadar);
-        buffer.writeInt(_type); // maybe type
-        buffer.writeInt(_x);
-        buffer.writeInt(_y);
-        buffer.writeInt(_z);
+        buffer.writeInt(showRadar);
+        buffer.writeInt(type); // maybe type
+        buffer.writeInt(x);
+        buffer.writeInt(y);
+        buffer.writeInt(z);
     }
 }

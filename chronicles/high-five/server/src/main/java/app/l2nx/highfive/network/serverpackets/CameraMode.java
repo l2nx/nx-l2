@@ -27,19 +27,19 @@ import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.network.buffer.WriteBuffer;
 
 public class CameraMode extends ServerPacket {
-    private final int _mode;
+    private final int mode;
 
     /**
      * Forces client camera mode change
      * @param mode 0 - third person cam 1 - first person cam
      */
     public CameraMode(int mode) {
-        _mode = mode;
+        this.mode = mode;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.CAMERA_MODE.writeId(this, buffer);
-        buffer.writeInt(_mode);
+        buffer.writeInt(mode);
     }
 }

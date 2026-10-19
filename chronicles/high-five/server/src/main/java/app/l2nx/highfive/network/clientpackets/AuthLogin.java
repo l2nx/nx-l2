@@ -31,25 +31,25 @@ import app.l2nx.highfive.network.GameClient;
  */
 public class AuthLogin extends ClientPacket {
     // loginName + keys must match what the loginserver used.
-    private String _loginName;
-    private int _playKey1;
-    private int _playKey2;
-    private int _loginKey1;
-    private int _loginKey2;
+    private String loginName;
+    private int playKey1;
+    private int playKey2;
+    private int loginKey1;
+    private int loginKey2;
 
     @Override
     protected void readImpl() {
-        _loginName = readString().toLowerCase();
-        _playKey2 = readInt();
-        _playKey1 = readInt();
-        _loginKey1 = readInt();
-        _loginKey2 = readInt();
+        loginName = readString().toLowerCase();
+        playKey2 = readInt();
+        playKey1 = readInt();
+        loginKey1 = readInt();
+        loginKey2 = readInt();
     }
 
     @Override
     protected void runImpl() {
         final GameClient client = getClient();
-        if (_loginName.isEmpty() || !client.isProtocolOk()) {
+        if (loginName.isEmpty() || !client.isProtocolOk()) {
             client.closeNow();
             return;
         }
@@ -58,12 +58,12 @@ public class AuthLogin extends ClientPacket {
         if (client.getAccountName() == null) {
             // Preventing duplicate login in case client login server socket was disconnected or this packet was not
             // sent yet.
-            if (LoginServerThread.getInstance().addGameServerLogin(_loginName, client)) {
-                client.setAccountName(_loginName);
-                final SessionKey key = new SessionKey(_loginKey1, _loginKey2, _playKey1, _playKey2);
+            if (LoginServerThread.getInstance().addGameServerLogin(loginName, client)) {
+                client.setAccountName(loginName);
+                final SessionKey key = new SessionKey(loginKey1, loginKey2, playKey1, playKey2);
 
                 // client.setSessionId(key);
-                LoginServerThread.getInstance().addWaitingClientAndSendRequest(_loginName, client, key);
+                LoginServerThread.getInstance().addWaitingClientAndSendRequest(loginName, client, key);
             } else {
                 client.close(null);
             }

@@ -27,8 +27,9 @@ import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.groups.Party;
 import app.l2nx.highfive.handler.IBypassHandler;
 import app.l2nx.highfive.managers.DimensionalRiftManager;
-import java.util.logging.Level;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class Rift implements IBypassHandler {
     private static final String[] COMMANDS = {"enterrift", "changeriftroom", "exitrift"};
 
@@ -45,7 +46,7 @@ public class Rift implements IBypassHandler {
                 DimensionalRiftManager.getInstance().start(player, b1, target.asNpc());
                 return true;
             } catch (Exception e) {
-                LOGGER.log(Level.WARNING, "Exception in " + getClass().getSimpleName(), e);
+                log.warn("Bypass failed", e);
             }
         } else {
             final Party party = player.getParty();

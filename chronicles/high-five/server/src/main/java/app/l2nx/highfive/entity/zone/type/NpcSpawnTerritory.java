@@ -27,31 +27,30 @@ import app.l2nx.highfive.entity.zone.ZoneForm;
 import app.l2nx.highfive.geoengine.GeoEngine;
 import java.util.ArrayList;
 import java.util.List;
+import lombok.Getter;
 
 /**
  * Just dummy zone, needs only for geometry calculations
  * @author GKR, Mobius
  */
 public class NpcSpawnTerritory {
-    private final String _name;
-    private final ZoneForm _territory;
-    private List<ZoneForm> _bannedTerritories;
+    @Getter
+    private final String name;
+
+    private final ZoneForm territory;
+    private List<ZoneForm> bannedTerritories;
 
     public NpcSpawnTerritory(String name, ZoneForm territory) {
-        _name = name;
-        _territory = territory;
+        this.name = name;
+        this.territory = territory;
     }
 
     public void addBannedTerritory(ZoneForm territory) {
-        if (_bannedTerritories == null) {
-            _bannedTerritories = new ArrayList<>(1);
+        if (bannedTerritories == null) {
+            bannedTerritories = new ArrayList<>(1);
         }
 
-        _bannedTerritories.add(territory);
-    }
-
-    public String getName() {
-        return _name;
+        bannedTerritories.add(territory);
     }
 
     public Location getRandomPoint() {
@@ -61,21 +60,21 @@ public class NpcSpawnTerritory {
         int randomY;
         int randomZ;
 
-        if (_bannedTerritories != null) {
+        if (bannedTerritories != null) {
             SEARCH:
             while (count++ < 100) {
-                location = _territory.getRandomPoint();
+                location = this.territory.getRandomPoint();
                 randomX = location.getX();
                 randomY = location.getY();
                 randomZ = location.getZ();
 
-                for (ZoneForm territory : _bannedTerritories) {
+                for (ZoneForm territory : bannedTerritories) {
                     if (territory.isInsideZone(randomX, randomY, randomZ)) {
                         continue SEARCH;
                     }
                 }
 
-                if (GeoEngine.getInstance().getHeight(randomX, randomY, randomZ) > _territory.getHighZ()) {
+                if (GeoEngine.getInstance().getHeight(randomX, randomY, randomZ) > this.territory.getHighZ()) {
                     continue;
                 }
 
@@ -85,12 +84,12 @@ public class NpcSpawnTerritory {
             count = 0;
             SEARCH_NO_GEO:
             while (count++ < 100) {
-                location = _territory.getRandomPoint();
+                location = this.territory.getRandomPoint();
                 randomX = location.getX();
                 randomY = location.getY();
                 randomZ = location.getZ();
 
-                for (ZoneForm territory : _bannedTerritories) {
+                for (ZoneForm territory : bannedTerritories) {
                     if (territory.isInsideZone(randomX, randomY, randomZ)) {
                         continue SEARCH_NO_GEO;
                     }
@@ -102,23 +101,23 @@ public class NpcSpawnTerritory {
 
         count = 0;
         while (count++ < 100) {
-            location = _territory.getRandomPoint();
+            location = this.territory.getRandomPoint();
             randomX = location.getX();
             randomY = location.getY();
             randomZ = location.getZ();
 
-            if (GeoEngine.getInstance().getHeight(randomX, randomY, randomZ) > _territory.getHighZ()) {
+            if (GeoEngine.getInstance().getHeight(randomX, randomY, randomZ) > this.territory.getHighZ()) {
                 continue;
             }
 
             return location;
         }
 
-        return _territory.getRandomPoint();
+        return this.territory.getRandomPoint();
     }
 
     public boolean isInsideZone(int x, int y, int z) {
-        return _territory.isInsideZone(x, y, z);
+        return territory.isInsideZone(x, y, z);
     }
 
     /**
@@ -129,13 +128,13 @@ public class NpcSpawnTerritory {
      * @return {@code true} if the point lies inside the territory polygon
      */
     public boolean isInsideZone(int x, int y) {
-        final int z = _territory.getLowZ();
-        if (!_territory.isInsideZone(x, y, z)) {
+        final int z = this.territory.getLowZ();
+        if (!this.territory.isInsideZone(x, y, z)) {
             return false;
         }
 
-        if (_bannedTerritories != null) {
-            for (ZoneForm territory : _bannedTerritories) {
+        if (bannedTerritories != null) {
+            for (ZoneForm territory : bannedTerritories) {
                 if (territory.isInsideZone(x, y, z)) {
                     return false;
                 }
@@ -146,10 +145,10 @@ public class NpcSpawnTerritory {
     }
 
     public int getHighZ() {
-        return _territory.getHighZ();
+        return territory.getHighZ();
     }
 
     public void visualizeZone(int z) {
-        _territory.visualizeZone(z);
+        territory.visualizeZone(z);
     }
 }

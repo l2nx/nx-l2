@@ -23,58 +23,33 @@
 package app.l2nx.highfive.mechanics.fishing;
 
 import app.l2nx.highfive.util.StatSet;
+import lombok.Getter;
 
 /**
  * Class for the Fishing Rod object.
  * @author nonom
  */
 public class FishingRod {
-    private final int _fishingRodId;
-    private final int _fishingRodItemId;
-    private final int _fishingRodLevel;
-    private final String _fishingRodName;
-    private final double _fishingRodDamage;
+    @Getter
+    private final int fishingRodId;
+
+    @Getter
+    private final int fishingRodItemId;
+
+    @Getter
+    private final int fishingRodLevel;
+
+    @Getter
+    private final String fishingRodItemName;
+
+    @Getter
+    private final double fishingRodDamage;
 
     public FishingRod(StatSet set) {
-        _fishingRodId = set.getInt("fishingRodId");
-        _fishingRodItemId = set.getInt("fishingRodItemId");
-        _fishingRodLevel = set.getInt("fishingRodLevel");
-        _fishingRodName = set.getString("fishingRodName");
-        _fishingRodDamage = set.getDouble("fishingRodDamage");
-    }
-
-    /**
-     * @return the fishing rod Id.
-     */
-    public int getFishingRodId() {
-        return _fishingRodId;
-    }
-
-    /**
-     * @return the fishing rod Item Id.
-     */
-    public int getFishingRodItemId() {
-        return _fishingRodItemId;
-    }
-
-    /**
-     * @return the fishing rod Level.
-     */
-    public int getFishingRodLevel() {
-        return _fishingRodLevel;
-    }
-
-    /**
-     * @return the fishing rod Item Name.
-     */
-    public String getFishingRodItemName() {
-        return _fishingRodName;
-    }
-
-    /**
-     * @return the fishing rod Damage.
-     */
-    public double getFishingRodDamage() {
-        return _fishingRodDamage;
+        fishingRodId = set.getInt("fishingRodId");
+        fishingRodItemId = set.getInt("fishingRodItemId");
+        fishingRodLevel = set.getInt("fishingRodLevel");
+        fishingRodItemName = set.getString("fishingRodName");
+        fishingRodDamage = set.getDouble("fishingRodDamage");
     }
 }

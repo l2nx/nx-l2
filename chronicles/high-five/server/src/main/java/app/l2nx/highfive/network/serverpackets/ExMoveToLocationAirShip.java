@@ -28,33 +28,33 @@ import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.network.buffer.WriteBuffer;
 
 public class ExMoveToLocationAirShip extends ServerPacket {
-    private final int _objId;
-    private final int _tx;
-    private final int _ty;
-    private final int _tz;
-    private final int _x;
-    private final int _y;
-    private final int _z;
+    private final int objId;
+    private final int tx;
+    private final int ty;
+    private final int tz;
+    private final int x;
+    private final int y;
+    private final int z;
 
     public ExMoveToLocationAirShip(Creature creature) {
-        _objId = creature.getObjectId();
-        _tx = creature.getXdestination();
-        _ty = creature.getYdestination();
-        _tz = creature.getZdestination();
-        _x = creature.getX();
-        _y = creature.getY();
-        _z = creature.getZ();
+        objId = creature.getObjectId();
+        tx = creature.getXdestination();
+        ty = creature.getYdestination();
+        tz = creature.getZdestination();
+        x = creature.getX();
+        y = creature.getY();
+        z = creature.getZ();
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_MOVE_TO_LOCATION_AIRSHIP.writeId(this, buffer);
-        buffer.writeInt(_objId);
-        buffer.writeInt(_tx);
-        buffer.writeInt(_ty);
-        buffer.writeInt(_tz);
-        buffer.writeInt(_x);
-        buffer.writeInt(_y);
-        buffer.writeInt(_z);
+        buffer.writeInt(objId);
+        buffer.writeInt(tx);
+        buffer.writeInt(ty);
+        buffer.writeInt(tz);
+        buffer.writeInt(x);
+        buffer.writeInt(y);
+        buffer.writeInt(z);
     }
 }

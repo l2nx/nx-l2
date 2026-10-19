@@ -35,14 +35,14 @@ import java.util.Collection;
  * @version $Revision: 1.8.2.3.2.7 $ $Date: 2005/03/27 15:29:30 $
  */
 public class RequestUnEquipItem extends ClientPacket {
-    private BodyPart _slot;
+    private BodyPart slot;
 
     /**
      * Packet type id 0x16 format: cd
      */
     @Override
     protected void readImpl() {
-        _slot = BodyPart.fromPaperdollSlot(readInt());
+        slot = BodyPart.fromPaperdollSlot(readInt());
     }
 
     @Override
@@ -52,7 +52,7 @@ public class RequestUnEquipItem extends ClientPacket {
             return;
         }
 
-        final Item item = player.getInventory().getPaperdollItemByBodyPart(_slot);
+        final Item item = player.getInventory().getPaperdollItemByBodyPart(slot);
 
         // Wear-items are not to be unequipped.
         if (item == null) {
@@ -66,12 +66,12 @@ public class RequestUnEquipItem extends ClientPacket {
         }
 
         // Arrows and bolts.
-        if ((_slot == BodyPart.L_HAND) && (item.getTemplate() instanceof EtcItem)) {
+        if ((slot == BodyPart.L_HAND) && (item.getTemplate() instanceof EtcItem)) {
             return;
         }
 
         // Prevent of unequipping a cursed weapon.
-        if ((_slot == BodyPart.LR_HAND) && (player.isCursedWeaponEquipped() || player.isCombatFlagEquipped())) {
+        if ((slot == BodyPart.LR_HAND) && (player.isCursedWeaponEquipped() || player.isCombatFlagEquipped())) {
             return;
         }
 
@@ -90,7 +90,7 @@ public class RequestUnEquipItem extends ClientPacket {
             return;
         }
 
-        final Collection<Item> unequipped = player.getInventory().unEquipItemInBodySlotAndRecord(_slot);
+        final Collection<Item> unequipped = player.getInventory().unEquipItemInBodySlotAndRecord(slot);
         player.broadcastUserInfo();
 
         // This can be 0 if the user pressed the right mouse button twice very fast.

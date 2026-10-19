@@ -31,16 +31,16 @@ import app.l2nx.highfive.mechanics.skill.Skill;
  * The Class ConditionTargetActiveEffectId.
  */
 public class ConditionTargetActiveEffectId extends Condition {
-    private final int _effectId;
-    private final int _effectLvl;
+    private final int effectId;
+    private final int effectLvl;
 
     /**
      * Instantiates a new condition target active effect id.
      * @param effectId the effect id
      */
     public ConditionTargetActiveEffectId(int effectId) {
-        _effectId = effectId;
-        _effectLvl = -1;
+        this.effectId = effectId;
+        effectLvl = -1;
     }
 
     /**
@@ -49,14 +49,14 @@ public class ConditionTargetActiveEffectId extends Condition {
      * @param effectLevel the effect level
      */
     public ConditionTargetActiveEffectId(int effectId, int effectLevel) {
-        _effectId = effectId;
-        _effectLvl = effectLevel;
+        this.effectId = effectId;
+        effectLvl = effectLevel;
     }
 
     @Override
     public boolean testImpl(Creature effector, Creature effected, Skill skill, ItemTemplate item) {
-        final BuffInfo info = effected.getEffectList().getBuffInfoBySkillId(_effectId);
+        final BuffInfo info = effected.getEffectList().getBuffInfoBySkillId(effectId);
         return (info != null)
-                && ((_effectLvl == -1) || (_effectLvl <= info.getSkill().getLevel()));
+                && ((effectLvl == -1) || (effectLvl <= info.getSkill().getLevel()));
     }
 }

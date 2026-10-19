@@ -32,11 +32,11 @@ import app.l2nx.highfive.network.serverpackets.SystemMessage;
  * @author chris_00
  */
 public class RequestExAskJoinMPCC extends ClientPacket {
-    private String _name;
+    private String name;
 
     @Override
     protected void readImpl() {
-        _name = readString();
+        name = readString();
     }
 
     @Override
@@ -46,7 +46,7 @@ public class RequestExAskJoinMPCC extends ClientPacket {
             return;
         }
 
-        final Player target = World.getPlayer(_name);
+        final Player target = World.getPlayer(name);
         if (target == null) {
             return;
         }

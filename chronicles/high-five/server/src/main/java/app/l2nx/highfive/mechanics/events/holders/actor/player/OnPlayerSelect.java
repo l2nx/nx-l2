@@ -23,39 +23,13 @@ import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.mechanics.events.EventType;
 import app.l2nx.highfive.mechanics.events.holders.IBaseEvent;
 import app.l2nx.highfive.network.GameClient;
+import lombok.Builder;
 
 /**
  * @author UnAfraid
  */
-public class OnPlayerSelect implements IBaseEvent {
-    private final Player _player;
-    private final int _objectId;
-    private final String _name;
-    private final GameClient _client;
-
-    public OnPlayerSelect(Player player, int objectId, String name, GameClient client) {
-        _player = player;
-        _objectId = objectId;
-        _name = name;
-        _client = client;
-    }
-
-    public Player getPlayer() {
-        return _player;
-    }
-
-    public int getObjectId() {
-        return _objectId;
-    }
-
-    public String getName() {
-        return _name;
-    }
-
-    public GameClient getClient() {
-        return _client;
-    }
-
+@Builder(toBuilder = true)
+public record OnPlayerSelect(Player player, int objectId, String name, GameClient client) implements IBaseEvent {
     @Override
     public EventType getType() {
         return EventType.ON_PLAYER_SELECT;

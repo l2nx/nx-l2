@@ -52,31 +52,31 @@ import java.util.Collection;
  * @author KenM
  */
 public class SiegeAttackerList extends ServerPacket {
-    private Castle _castle;
-    private SiegableHall _hall;
+    private Castle castle;
+    private SiegableHall hall;
 
     public SiegeAttackerList(Castle castle) {
-        _castle = castle;
+        this.castle = castle;
     }
 
     public SiegeAttackerList(SiegableHall hall) {
-        _hall = hall;
+        this.hall = hall;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.CASTLE_SIEGE_ATTACKER_LIST.writeId(this, buffer);
-        if (_castle != null) {
-            buffer.writeInt(_castle.getResidenceId());
+        if (castle != null) {
+            buffer.writeInt(castle.getResidenceId());
             buffer.writeInt(0); // 0
             buffer.writeInt(1); // 1
             buffer.writeInt(0); // 0
-            final int size = _castle.getSiege().getAttackerClans().size();
+            final int size = castle.getSiege().getAttackerClans().size();
             if (size > 0) {
                 Clan clan;
                 buffer.writeInt(size);
                 buffer.writeInt(size);
-                for (SiegeClan siegeclan : _castle.getSiege().getAttackerClans()) {
+                for (SiegeClan siegeclan : castle.getSiege().getAttackerClans()) {
                     clan = ClanTable.getInstance().getClan(siegeclan.getClanId());
                     if (clan == null) {
                         continue;
@@ -97,11 +97,11 @@ public class SiegeAttackerList extends ServerPacket {
                 buffer.writeInt(0);
             }
         } else {
-            buffer.writeInt(_hall.getId());
+            buffer.writeInt(hall.getId());
             buffer.writeInt(0); // 0
             buffer.writeInt(1); // 1
             buffer.writeInt(0); // 0
-            final Collection<SiegeClan> attackers = _hall.getSiege().getAttackerClans();
+            final Collection<SiegeClan> attackers = hall.getSiege().getAttackerClans();
             final int size = attackers.size();
             if (size > 0) {
                 buffer.writeInt(size);

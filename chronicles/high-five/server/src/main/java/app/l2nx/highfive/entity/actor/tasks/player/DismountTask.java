@@ -26,16 +26,16 @@ import app.l2nx.highfive.entity.actor.Player;
  * @author UnAfraid
  */
 public class DismountTask implements Runnable {
-    private final Player _player;
+    private final Player player;
 
     public DismountTask(Player player) {
-        _player = player;
+        this.player = player;
     }
 
     @Override
     public void run() {
-        if (_player != null) {
-            _player.dismount();
+        if (player != null) {
+            player.dismount();
         }
     }
 }

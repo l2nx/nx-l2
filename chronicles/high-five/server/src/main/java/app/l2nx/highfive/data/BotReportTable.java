@@ -42,19 +42,19 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.xml.sax.Attributes;
 import org.xml.sax.helpers.DefaultHandler;
 
 /**
  * @author BiggBoss
  */
+@Slf4j
 public class BotReportTable {
-    // Zoey76: TODO: Split XML parsing from SQL operations, use IGameXmlReader instead of SAXParser.
-    protected static final Logger LOGGER = Logger.getLogger(BotReportTable.class.getName());
 
     private static final int COLUMN_BOT_ID = 1;
     private static final int COLUMN_REPORTER_ID = 2;
@@ -70,17 +70,17 @@ public class BotReportTable {
     private static final String SQL_INSERT_REPORTED_CHAR_DATA = "INSERT INTO bot_reported_char_data VALUES (?,?,?)";
     private static final String SQL_CLEAR_REPORTED_CHAR_DATA = "DELETE FROM bot_reported_char_data";
 
-    private Map<Integer, Long> _ipRegistry;
-    private Map<Integer, ReporterCharData> _charRegistry;
-    private Map<Integer, ReportedCharData> _reports;
-    private Map<Integer, PunishHolder> _punishments;
+    private Map<Integer, Long> ipRegistry;
+    private Map<Integer, ReporterCharData> charRegistry;
+    private Map<Integer, ReportedCharData> reports;
+    private Map<Integer, PunishHolder> punishments;
 
     protected BotReportTable() {
         if (GeneralConfig.BOTREPORT_ENABLE) {
-            _ipRegistry = new HashMap<>();
-            _charRegistry = new ConcurrentHashMap<>();
-            _reports = new ConcurrentHashMap<>();
-            _punishments = new ConcurrentHashMap<>();
+            ipRegistry = new HashMap<>();
+            charRegistry = new ConcurrentHashMap<>();
+            reports = new ConcurrentHashMap<>();
+            this.punishments = new ConcurrentHashMap<>();
 
             try {
                 final File punishments = new File("./config/BotReportPunishments.xml");
@@ -91,11 +91,7 @@ public class BotReportTable {
                 final SAXParser parser = SAXParserFactory.newInstance().newSAXParser();
                 parser.parse(punishments, new PunishmentsLoader());
             } catch (Exception e) {
-                LOGGER.log(
-                        Level.WARNING,
-                        getClass().getSimpleName()
-                                + ": Could not load punishments from /config/BotReportPunishments.xml",
-                        e);
+                log.warn("Could not load punishments from /config/BotReportPunishments.xml", e);
             }
 
             loadReportedCharData();
@@ -132,30 +128,30 @@ public class BotReportTable {
                 final int botId = rset.getInt(COLUMN_BOT_ID);
                 final int reporter = rset.getInt(COLUMN_REPORTER_ID);
                 final long date = rset.getLong(COLUMN_REPORT_TIME);
-                final ReportedCharData existing = _reports.get(botId);
+                final ReportedCharData existing = reports.get(botId);
                 if (existing != null) {
                     existing.addReporter(reporter, date);
                 } else {
                     final ReportedCharData rcd = new ReportedCharData();
                     rcd.addReporter(reporter, date);
-                    _reports.put(rset.getInt(COLUMN_BOT_ID), rcd);
+                    reports.put(rset.getInt(COLUMN_BOT_ID), rcd);
                 }
 
                 if (date > lastResetTime) {
-                    ReporterCharData rcd = _charRegistry.get(reporter);
+                    ReporterCharData rcd = charRegistry.get(reporter);
                     if (rcd != null) {
                         rcd.setPoints(rcd.getPointsLeft() - 1);
                     } else {
                         rcd = new ReporterCharData();
                         rcd.setPoints(6);
-                        _charRegistry.put(reporter, rcd);
+                        charRegistry.put(reporter, rcd);
                     }
                 }
             }
 
-            LOGGER.info(getClass().getSimpleName() + ": Loaded " + _reports.size() + " bot reports");
+            log.info("Loaded {} bot reports", reports.size());
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, getClass().getSimpleName() + ": Could not load reported char data!", e);
+            log.warn("Could not load reported char data!", e);
         }
     }
 
@@ -169,17 +165,16 @@ public class BotReportTable {
                 PreparedStatement ps = con.prepareStatement(SQL_INSERT_REPORTED_CHAR_DATA)) {
             st.execute(SQL_CLEAR_REPORTED_CHAR_DATA);
 
-            for (Entry<Integer, ReportedCharData> entrySet : _reports.entrySet()) {
-                for (int reporterId : entrySet.getValue()._reporters.keySet()) {
+            for (Entry<Integer, ReportedCharData> entrySet : reports.entrySet()) {
+                for (int reporterId : entrySet.getValue().reporters.keySet()) {
                     ps.setInt(1, entrySet.getKey());
                     ps.setInt(2, reporterId);
-                    ps.setLong(3, entrySet.getValue()._reporters.get(reporterId));
+                    ps.setLong(3, entrySet.getValue().reporters.get(reporterId));
                     ps.execute();
                 }
             }
         } catch (Exception e) {
-            LOGGER.log(
-                    Level.SEVERE, getClass().getSimpleName() + ": Could not update reported char data in database!", e);
+            log.error("Could not update reported char data in database!", e);
         }
     }
 
@@ -228,12 +223,12 @@ public class BotReportTable {
             return false;
         }
 
-        ReportedCharData rcd = _reports.get(bot.getObjectId());
-        ReporterCharData rcdRep = _charRegistry.get(reporter.getObjectId());
+        ReportedCharData rcd = reports.get(bot.getObjectId());
+        ReporterCharData rcdRep = charRegistry.get(reporter.getObjectId());
         final int reporterId = reporter.getObjectId();
 
         synchronized (this) {
-            if (_reports.containsKey(reporterId)) {
+            if (reports.containsKey(reporterId)) {
                 reporter.sendPacket(
                         SystemMessageId
                                 .YOU_HAVE_BEEN_REPORTED_AS_AN_ILLEGAL_PROGRAM_USER_AND_CANNOT_REPORT_OTHER_USERS);
@@ -241,7 +236,7 @@ public class BotReportTable {
             }
 
             final int ip = hashIp(reporter);
-            if (!timeHasPassed(_ipRegistry, ip)) {
+            if (!timeHasPassed(ipRegistry, ip)) {
                 reporter.sendPacket(
                         SystemMessageId
                                 .THIS_CHARACTER_CANNOT_MAKE_A_REPORT_THE_TARGET_HAS_ALREADY_BEEN_REPORTED_BY_EITHER_YOUR_CLAN_OR_ALLIANCE_OR_HAS_ALREADY_BEEN_REPORTED_FROM_YOUR_CURRENT_IP);
@@ -284,7 +279,7 @@ public class BotReportTable {
             final long curTime = System.currentTimeMillis();
             if (rcd == null) {
                 rcd = new ReportedCharData();
-                _reports.put(bot.getObjectId(), rcd);
+                reports.put(bot.getObjectId(), rcd);
             }
 
             rcd.addReporter(reporterId, curTime);
@@ -294,8 +289,8 @@ public class BotReportTable {
 
             rcdRep.registerReport(curTime);
 
-            _ipRegistry.put(ip, curTime);
-            _charRegistry.put(reporterId, rcdRep);
+            ipRegistry.put(ip, curTime);
+            charRegistry.put(reporterId, rcdRep);
         }
 
         SystemMessage sm = new SystemMessage(SystemMessageId.C1_WAS_REPORTED_AS_A_BOT);
@@ -322,10 +317,10 @@ public class BotReportTable {
      */
     private void handleReport(Player bot, ReportedCharData rcd) {
         // Report count punishment
-        punishBot(bot, _punishments.get(rcd.getReportCount()));
+        punishBot(bot, punishments.get(rcd.getReportCount()));
 
         // Range punishments
-        for (Entry<Integer, PunishHolder> entry : _punishments.entrySet()) {
+        for (Entry<Integer, PunishHolder> entry : punishments.entrySet()) {
             final int key = entry.getKey();
             if ((key < 0) && (Math.abs(key) <= rcd.getReportCount())) {
                 punishBot(bot, entry.getValue());
@@ -340,9 +335,9 @@ public class BotReportTable {
      */
     private void punishBot(Player bot, PunishHolder ph) {
         if (ph != null) {
-            ph._punish.applyEffects(bot, bot);
-            if (ph._systemMessageId > -1) {
-                final SystemMessageId id = SystemMessageId.getSystemMessageId(ph._systemMessageId);
+            ph.punish.applyEffects(bot, bot);
+            if (ph.systemMessageId > -1) {
+                final SystemMessageId id = SystemMessageId.getSystemMessageId(ph.systemMessageId);
                 if (id != null) {
                     bot.sendPacket(id);
                 }
@@ -360,16 +355,19 @@ public class BotReportTable {
     void addPunishment(int neededReports, int skillId, int skillLevel, int sysMsg) {
         final Skill sk = SkillData.getInstance().getSkill(skillId, skillLevel);
         if (sk != null) {
-            _punishments.put(neededReports, new PunishHolder(sk, sysMsg));
+            punishments.put(neededReports, new PunishHolder(sk, sysMsg));
         } else {
-            LOGGER.warning(getClass().getSimpleName() + ": Could not add punishment for " + neededReports
-                    + " report(s): Skill " + skillId + "-" + skillLevel + " does not exist!");
+            log.warn(
+                    "Could not add punishment for {} report(s): Skill {}-{} does not exist!",
+                    neededReports,
+                    skillId,
+                    skillLevel);
         }
     }
 
     void resetPointsAndSchedule() {
-        synchronized (_charRegistry) {
-            for (ReporterCharData rcd : _charRegistry.values()) {
+        synchronized (charRegistry) {
+            for (ReporterCharData rcd : charRegistry.values()) {
                 rcd.setPoints(7);
             }
         }
@@ -392,11 +390,7 @@ public class BotReportTable {
             ThreadPool.schedule(new ResetPointTask(), calendar.getTimeInMillis() - currentTime);
         } catch (Exception e) {
             ThreadPool.schedule(new ResetPointTask(), 24 * 3600 * 1000);
-            LOGGER.log(
-                    Level.WARNING,
-                    getClass().getSimpleName()
-                            + ": Could not properly schedule bot report points reset task. Scheduled in 24 hours.",
-                    e);
+            log.warn("Could not properly schedule bot report points reset task. Scheduled in 24 hours.", e);
         }
     }
 
@@ -436,29 +430,24 @@ public class BotReportTable {
      * Represents the info about a reporter
      */
     private class ReporterCharData {
-        private long _lastReport;
-        private byte _reportPoints;
+        @Getter(AccessLevel.PACKAGE)
+        private long lastReporTime;
+
+        @Getter(AccessLevel.PACKAGE)
+        private byte pointsLeft;
 
         ReporterCharData() {
-            _reportPoints = 7;
-            _lastReport = 0;
+            pointsLeft = 7;
+            lastReporTime = 0;
         }
 
         void registerReport(long time) {
-            _reportPoints -= 1;
-            _lastReport = time;
-        }
-
-        long getLastReporTime() {
-            return _lastReport;
-        }
-
-        byte getPointsLeft() {
-            return _reportPoints;
+            pointsLeft -= 1;
+            lastReporTime = time;
         }
 
         void setPoints(int points) {
-            _reportPoints = (byte) points;
+            pointsLeft = (byte) points;
         }
     }
 
@@ -466,22 +455,22 @@ public class BotReportTable {
      * Represents the info about a reported character
      */
     private class ReportedCharData {
-        Map<Integer, Long> _reporters;
+        Map<Integer, Long> reporters;
 
         ReportedCharData() {
-            _reporters = new HashMap<>();
+            reporters = new HashMap<>();
         }
 
         int getReportCount() {
-            return _reporters.size();
+            return reporters.size();
         }
 
         boolean alredyReportedBy(int objectId) {
-            return _reporters.containsKey(objectId);
+            return reporters.containsKey(objectId);
         }
 
         void addReporter(int objectId, long reportTime) {
-            _reporters.put(objectId, reportTime);
+            reporters.put(objectId, reportTime);
         }
 
         boolean reportedBySameClan(Clan clan) {
@@ -489,7 +478,7 @@ public class BotReportTable {
                 return false;
             }
 
-            for (int reporterId : _reporters.keySet()) {
+            for (int reporterId : reporters.keySet()) {
                 if (clan.isMember(reporterId)) {
                     return true;
                 }
@@ -525,7 +514,7 @@ public class BotReportTable {
                         sysMessage = Integer.parseInt(systemMessageId);
                     }
                 } catch (Exception e) {
-                    LOGGER.warning("Problem with BotReportTable: " + e.getMessage());
+                    log.warn("Problem with BotReportTable: {}", e.getMessage());
                 }
 
                 addPunishment(reportCount, skillId, skillLevel, sysMessage);
@@ -534,12 +523,12 @@ public class BotReportTable {
     }
 
     private class PunishHolder {
-        final Skill _punish;
-        final int _systemMessageId;
+        final Skill punish;
+        final int systemMessageId;
 
         public PunishHolder(Skill sk, int sysMsg) {
-            _punish = sk;
-            _systemMessageId = sysMsg;
+            punish = sk;
+            systemMessageId = sysMsg;
         }
     }
 

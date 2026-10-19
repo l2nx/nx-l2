@@ -29,49 +29,49 @@ import app.l2nx.network.buffer.WriteBuffer;
  * @author devScarlet, mrTJO
  */
 public class ServerObjectInfo extends ServerPacket {
-    private final Npc _activeChar;
-    private final int _x;
-    private final int _y;
-    private final int _z;
-    private final int _heading;
-    private final int _displayId;
-    private final boolean _isAttackable;
-    private final double _collisionHeight;
-    private final double _collisionRadius;
-    private final String _name;
+    private final Npc activeChar;
+    private final int x;
+    private final int y;
+    private final int z;
+    private final int heading;
+    private final int displayId;
+    private final boolean attackable;
+    private final double collisionHeight;
+    private final double collisionRadius;
+    private final String name;
 
     public ServerObjectInfo(Npc activeChar, Creature actor) {
-        _activeChar = activeChar;
-        _displayId = _activeChar.getTemplate().getDisplayId();
-        _isAttackable = _activeChar.isAutoAttackable(actor);
-        _collisionHeight = _activeChar.getCollisionHeight();
-        _collisionRadius = _activeChar.getCollisionRadius();
-        _x = _activeChar.getX();
-        _y = _activeChar.getY();
-        _z = _activeChar.getZ();
-        _heading = _activeChar.getHeading();
-        _name = _activeChar.getTemplate().isUsingServerSideName()
-                ? _activeChar.getTemplate().getName()
+        this.activeChar = activeChar;
+        displayId = this.activeChar.getTemplate().getDisplayId();
+        attackable = this.activeChar.isAutoAttackable(actor);
+        collisionHeight = this.activeChar.getCollisionHeight();
+        collisionRadius = this.activeChar.getCollisionRadius();
+        x = this.activeChar.getX();
+        y = this.activeChar.getY();
+        z = this.activeChar.getZ();
+        heading = this.activeChar.getHeading();
+        name = this.activeChar.getTemplate().isUsingServerSideName()
+                ? this.activeChar.getTemplate().getName()
                 : "";
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.SERVER_OBJECT_INFO.writeId(this, buffer);
-        buffer.writeInt(_activeChar.getObjectId());
-        buffer.writeInt(_displayId + 1000000);
-        buffer.writeString(_name); // name
-        buffer.writeInt(_isAttackable);
-        buffer.writeInt(_x);
-        buffer.writeInt(_y);
-        buffer.writeInt(_z);
-        buffer.writeInt(_heading);
+        buffer.writeInt(activeChar.getObjectId());
+        buffer.writeInt(displayId + 1000000);
+        buffer.writeString(name); // name
+        buffer.writeInt(attackable);
+        buffer.writeInt(x);
+        buffer.writeInt(y);
+        buffer.writeInt(z);
+        buffer.writeInt(heading);
         buffer.writeDouble(1.0); // movement multiplier
         buffer.writeDouble(1.0); // attack speed multiplier
-        buffer.writeDouble(_collisionRadius);
-        buffer.writeDouble(_collisionHeight);
-        buffer.writeInt((int) (_isAttackable ? _activeChar.getCurrentHp() : 0));
-        buffer.writeInt(_isAttackable ? _activeChar.getMaxHp() : 0);
+        buffer.writeDouble(collisionRadius);
+        buffer.writeDouble(collisionHeight);
+        buffer.writeInt((int) (attackable ? activeChar.getCurrentHp() : 0));
+        buffer.writeInt(attackable ? activeChar.getMaxHp() : 0);
         buffer.writeInt(1); // object type
         buffer.writeInt(0); // special effects
     }

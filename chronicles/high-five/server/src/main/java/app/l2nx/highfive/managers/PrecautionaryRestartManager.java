@@ -33,27 +33,27 @@ import app.l2nx.highfive.mechanics.siege.Castle;
 import app.l2nx.highfive.mechanics.siege.Fort;
 import app.l2nx.highfive.threads.ThreadPool;
 import java.lang.management.ManagementFactory;
-import java.util.logging.Logger;
 import javax.management.Attribute;
 import javax.management.AttributeList;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author Mobius
  */
+@Slf4j
 public class PrecautionaryRestartManager {
-    private static final Logger LOGGER = Logger.getLogger(PrecautionaryRestartManager.class.getName());
 
     private static final String SYSTEM_CPU_LOAD_VAR = "SystemCpuLoad";
     private static final String PROCESS_CPU_LOAD_VAR = "ProcessCpuLoad";
 
-    private static boolean _restarting = false;
+    private static boolean restarting = false;
 
     protected PrecautionaryRestartManager() {
         ThreadPool.scheduleAtFixedRate(
                 () -> {
-                    if (_restarting) {
+                    if (restarting) {
                         return;
                     }
 
@@ -63,10 +63,8 @@ public class PrecautionaryRestartManager {
                             return;
                         }
 
-                        LOGGER.info("PrecautionaryRestartManager: CPU usage over "
-                                + ServerConfig.PRECAUTIONARY_RESTART_PERCENTAGE + "%.");
-                        LOGGER.info("PrecautionaryRestartManager: Server is using " + getCpuLoad(PROCESS_CPU_LOAD_VAR)
-                                + "%.");
+                        log.info("CPU usage over {}%.", ServerConfig.PRECAUTIONARY_RESTART_PERCENTAGE);
+                        log.info("Server is using {}%.", getCpuLoad(PROCESS_CPU_LOAD_VAR));
                         World.broadcastToAllOnlinePlayers("Server will restart in 10 minutes.", false);
                         Shutdown.getInstance().startShutdown(null, 600, true);
                     }
@@ -77,8 +75,7 @@ public class PrecautionaryRestartManager {
                             return;
                         }
 
-                        LOGGER.info("PrecautionaryRestartManager: Memory usage over "
-                                + ServerConfig.PRECAUTIONARY_RESTART_PERCENTAGE + "%.");
+                        log.info("Memory usage over {}%.", ServerConfig.PRECAUTIONARY_RESTART_PERCENTAGE);
                         World.broadcastToAllOnlinePlayers("Server will restart in 10 minutes.", false);
                         Shutdown.getInstance().startShutdown(null, 600, true);
                     }
@@ -157,11 +154,11 @@ public class PrecautionaryRestartManager {
     }
 
     public void restartEnabled() {
-        _restarting = true;
+        restarting = true;
     }
 
     public void restartAborted() {
-        _restarting = false;
+        restarting = false;
     }
 
     public static PrecautionaryRestartManager getInstance() {

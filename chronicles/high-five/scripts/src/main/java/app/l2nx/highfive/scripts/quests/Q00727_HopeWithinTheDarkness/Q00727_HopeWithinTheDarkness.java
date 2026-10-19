@@ -52,11 +52,13 @@ import app.l2nx.highfive.util.LocationUtil;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Hope within the Darkness (727)
  * @author GKR, Mobius
  */
+@Slf4j
 public class Q00727_HopeWithinTheDarkness extends Quest {
     protected class CAUWorld extends InstanceWorld {
         public boolean underAttack = false;
@@ -65,11 +67,11 @@ public class Q00727_HopeWithinTheDarkness extends Quest {
 
     public static class CastleDungeon {
         private final int INSTANCEID;
-        private final int _wardenId;
+        private final int wardenId;
 
         public CastleDungeon(int iId, int wardenId) {
             INSTANCEID = iId;
-            _wardenId = wardenId;
+            this.wardenId = wardenId;
         }
 
         public int getInstanceId() {
@@ -78,17 +80,17 @@ public class Q00727_HopeWithinTheDarkness extends Quest {
 
         public long getReEnterTime() {
             long reEnterTime = 0;
-            if (GlobalVariablesManager.getInstance().hasVariable("CastlePailaka " + _wardenId)) {
-                reEnterTime = GlobalVariablesManager.getInstance().getLong("CastlePailaka " + _wardenId);
+            if (GlobalVariablesManager.getInstance().hasVariable("CastlePailaka " + wardenId)) {
+                reEnterTime = GlobalVariablesManager.getInstance().getLong("CastlePailaka " + wardenId);
             } else {
-                GlobalVariablesManager.getInstance().set("CastlePailaka " + _wardenId, 0);
+                GlobalVariablesManager.getInstance().set("CastlePailaka " + wardenId, 0);
             }
 
             return reEnterTime;
         }
 
         public void setReEnterTime(long time) {
-            GlobalVariablesManager.getInstance().set("CastlePailaka " + _wardenId, time);
+            GlobalVariablesManager.getInstance().set("CastlePailaka " + wardenId, time);
         }
     }
 
@@ -534,8 +536,11 @@ public class Q00727_HopeWithinTheDarkness extends Quest {
         InstanceManager.getInstance().addWorld(world);
         ThreadPool.schedule(new spawnNpcs((CAUWorld) world), INITIAL_SPAWN_DELAY);
         if (DEBUG) {
-            LOGGER.info("Castle HopeWithinTheDarkness started " + template + " Instance: " + instanceId
-                    + " created by player: " + player.getName());
+            log.info(
+                    "Castle HopeWithinTheDarkness started {} Instance: {} created by player: {}",
+                    template,
+                    instanceId,
+                    player.getName());
         }
 
         // Teleport players
@@ -559,102 +564,102 @@ public class Q00727_HopeWithinTheDarkness extends Quest {
 
     // Spawns npcs and bosses
     private class spawnNpcs implements Runnable {
-        private final CAUWorld _world;
+        private final CAUWorld world;
 
         public spawnNpcs(CAUWorld world) {
-            _world = world;
+            this.world = world;
         }
 
         @Override
         public void run() {
             try {
-                final Instance instance = InstanceManager.getInstance().getInstance(_world.getInstanceId());
-                if (_world.getStatus() == 0) {
+                final Instance instance = InstanceManager.getInstance().getInstance(world.getInstanceId());
+                if (world.getStatus() == 0) {
                     instance.spawnGroup("victims");
                     instance.spawnGroup("bosses_1");
 
-                    ThreadPool.schedule(new spawnNpcs(_world), WAVE_SPAWN_DELAY);
-                    ThreadPool.schedule(new spawnPrivates(_world), PRIVATE_SPAWN_DELAY);
-                } else if (_world.getStatus() == 1) {
+                    ThreadPool.schedule(new spawnNpcs(world), WAVE_SPAWN_DELAY);
+                    ThreadPool.schedule(new spawnPrivates(world), PRIVATE_SPAWN_DELAY);
+                } else if (world.getStatus() == 1) {
                     instance.spawnGroup("bosses_2");
 
-                    ThreadPool.schedule(new spawnNpcs(_world), WAVE_SPAWN_DELAY);
-                    ThreadPool.schedule(new spawnPrivates(_world), PRIVATE_SPAWN_DELAY);
-                } else if (_world.getStatus() == 2) {
+                    ThreadPool.schedule(new spawnNpcs(world), WAVE_SPAWN_DELAY);
+                    ThreadPool.schedule(new spawnPrivates(world), PRIVATE_SPAWN_DELAY);
+                } else if (world.getStatus() == 2) {
                     instance.spawnGroup("bosses_3");
 
-                    ThreadPool.schedule(new spawnPrivates(_world), PRIVATE_SPAWN_DELAY);
+                    ThreadPool.schedule(new spawnPrivates(world), PRIVATE_SPAWN_DELAY);
                 }
             } catch (Exception e) {
-                LOGGER.warning("Castle HopeWithinTheDarkness NPC Spawn error: " + e);
+                log.warn("Castle HopeWithinTheDarkness NPC Spawn error", e);
             }
         }
     }
 
     // Spawns monsters (minions)
     private class spawnPrivates implements Runnable {
-        private final CAUWorld _world;
+        private final CAUWorld world;
 
         public spawnPrivates(CAUWorld world) {
-            _world = world;
+            this.world = world;
         }
 
         @Override
         public void run() {
             try {
-                final Instance instance = InstanceManager.getInstance().getInstance(_world.getInstanceId());
-                if (_world.getStatus() == 0) {
+                final Instance instance = InstanceManager.getInstance().getInstance(world.getInstanceId());
+                if (world.getStatus() == 0) {
                     instance.spawnGroup("monsters_first_wave");
 
-                    _world.underAttack = true;
-                } else if (_world.getStatus() == 1) {
+                    world.underAttack = true;
+                } else if (world.getStatus() == 1) {
                     instance.spawnGroup("monsters_second_wave");
-                } else if (_world.getStatus() == 2) {
+                } else if (world.getStatus() == 2) {
                     instance.spawnGroup("monsters_third_wave");
                 }
 
-                _world.setStatus(_world.getStatus() + 1);
+                world.setStatus(world.getStatus() + 1);
             } catch (Exception e) {
-                LOGGER.warning("Castle HopeWithinTheDarkness Monster Spawn error: " + e);
+                log.warn("Castle HopeWithinTheDarkness Monster Spawn error", e);
             }
         }
     }
 
     // Manages complete dungeon event
     private class completeDungeon implements Runnable {
-        private final CAUWorld _world;
-        private final Player _player;
+        private final CAUWorld world;
+        private final Player player;
 
         public completeDungeon(CAUWorld world, Player player) {
-            _world = world;
-            _player = player;
+            this.world = world;
+            this.player = player;
         }
 
         @Override
         public void run() {
             try {
-                if (_world.getStatus() == 4) {
-                    _world.underAttack = false;
+                if (world.getStatus() == 4) {
+                    world.underAttack = false;
 
-                    final Instance inst = InstanceManager.getInstance().getInstance(_world.getInstanceId());
-                    for (Npc _npc : inst.getNpcs()) {
-                        if ((_npc != null) && ((_npc.getId() >= NPC_KNIGHT) && (_npc.getId() <= NPC_WARRIOR))) {
-                            cancelQuestTimer("check_for_foes", _npc, null);
-                            cancelQuestTimer("buff", _npc, null);
-                            if (_npc.getId() == NPC_KNIGHT) {
-                                _npc.broadcastPacket(
-                                        new NpcSay(_npc.getObjectId(), ChatType.SHOUT, _npc.getId(), STRINGID_WIN));
+                    final Instance inst = InstanceManager.getInstance().getInstance(world.getInstanceId());
+                    for (Npc npc : inst.getNpcs()) {
+                        if ((npc != null) && ((npc.getId() >= NPC_KNIGHT) && (npc.getId() <= NPC_WARRIOR))) {
+                            cancelQuestTimer("check_for_foes", npc, null);
+                            cancelQuestTimer("buff", npc, null);
+                            if (npc.getId() == NPC_KNIGHT) {
+                                npc.broadcastPacket(
+                                        new NpcSay(npc.getObjectId(), ChatType.SHOUT, npc.getId(), STRINGID_WIN));
                             }
                         }
                     }
 
-                    if (_player != null) {
-                        final Party party = _player.getParty();
+                    if (player != null) {
+                        final Party party = player.getParty();
                         if (party == null) {
-                            rewardPlayer(_player);
+                            rewardPlayer(player);
                         } else {
                             for (Player partyMember : party.getMembers()) {
-                                if ((partyMember != null) && (partyMember.getInstanceId() == _player.getInstanceId())) {
+                                if ((partyMember != null) && (partyMember.getInstanceId() == player.getInstanceId())) {
                                     rewardPlayer(partyMember);
                                 }
                             }
@@ -662,7 +667,7 @@ public class Q00727_HopeWithinTheDarkness extends Quest {
                     }
                 }
             } catch (Exception e) {
-                LOGGER.warning("Complete dungeon manage error: " + e);
+                log.warn("Complete dungeon manage error", e);
             }
         }
     }

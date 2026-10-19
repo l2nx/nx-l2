@@ -27,18 +27,18 @@ import app.l2nx.network.buffer.WriteBuffer;
  * @author mrTJO, UnAfraid
  */
 public class ExConfirmAddingContact extends ServerPacket {
-    private final String _charName;
-    private final boolean _added;
+    private final String charName;
+    private final boolean added;
 
     public ExConfirmAddingContact(String charName, boolean added) {
-        _charName = charName;
-        _added = added;
+        this.charName = charName;
+        this.added = added;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_CONFIRM_ADDING_POST_FRIEND.writeId(this, buffer);
-        buffer.writeString(_charName);
-        buffer.writeInt(_added);
+        buffer.writeString(charName);
+        buffer.writeInt(added);
     }
 }

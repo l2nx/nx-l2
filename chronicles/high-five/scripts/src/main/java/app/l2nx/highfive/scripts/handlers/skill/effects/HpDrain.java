@@ -34,12 +34,12 @@ import app.l2nx.highfive.util.StatSet;
  * @author Adry_85
  */
 public class HpDrain extends AbstractEffect {
-    private final double _power;
+    private final double power;
 
     public HpDrain(Condition attachCond, Condition applyCond, StatSet set, StatSet params) {
         super(attachCond, applyCond, set, params);
 
-        _power = params.getDouble("power", 0);
+        power = params.getDouble("power", 0);
     }
 
     @Override
@@ -76,7 +76,7 @@ public class HpDrain extends AbstractEffect {
             drain = damage;
         }
 
-        final double hpAdd = (_power * drain);
+        final double hpAdd = (power * drain);
         final double hpFinal = ((effector.getCurrentHp() + hpAdd) > effector.getMaxHp()
                 ? effector.getMaxHp()
                 : (effector.getCurrentHp() + hpAdd));

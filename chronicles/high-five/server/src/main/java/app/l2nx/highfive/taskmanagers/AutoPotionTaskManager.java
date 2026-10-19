@@ -35,7 +35,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class AutoPotionTaskManager implements Runnable {
     private static final Set<Player> PLAYERS = ConcurrentHashMap.newKeySet();
-    private static boolean _working = false;
+    private static boolean working = false;
 
     protected AutoPotionTaskManager() {
         ThreadPool.schedulePriorityTaskAtFixedRate(this, 0, 1000);
@@ -43,11 +43,11 @@ public class AutoPotionTaskManager implements Runnable {
 
     @Override
     public void run() {
-        if (_working) {
+        if (working) {
             return;
         }
 
-        _working = true;
+        working = true;
 
         if (!PLAYERS.isEmpty()) {
             PLAYER:
@@ -124,7 +124,7 @@ public class AutoPotionTaskManager implements Runnable {
             }
         }
 
-        _working = false;
+        working = false;
     }
 
     public void add(Player player) {

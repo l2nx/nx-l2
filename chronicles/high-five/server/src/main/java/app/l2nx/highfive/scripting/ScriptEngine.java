@@ -33,8 +33,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 import org.w3c.dom.Document;
 
 /**
@@ -42,8 +41,8 @@ import org.w3c.dom.Document;
  * changed script code needs a rebuild.
  * @author Mobius
  */
+@Slf4j
 public class ScriptEngine implements IXmlReader {
-    private static final Logger LOGGER = Logger.getLogger(ScriptEngine.class.getName());
 
     public static final String SCRIPTS_PACKAGE = "app.l2nx.highfive.scripts";
     public static final String MASTER_HANDLER = "handlers.MasterHandler";
@@ -62,7 +61,7 @@ public class ScriptEngine implements IXmlReader {
     public void load() {
         exclusions.clear();
         parseDatapackFile("config/Scripts.xml");
-        LOGGER.info("Loaded " + exclusions.size() + " script exclusions.");
+        log.info("Loaded {} script exclusions.", exclusions.size());
     }
 
     @Override
@@ -126,7 +125,7 @@ public class ScriptEngine implements IXmlReader {
             try {
                 executeScript(script);
             } catch (Exception e) {
-                LOGGER.log(Level.WARNING, getClass().getSimpleName() + ": " + script + " failed execution!", e);
+                log.warn("{} failed execution!", script, e);
             }
         }
     }

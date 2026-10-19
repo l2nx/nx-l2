@@ -30,18 +30,18 @@ import app.l2nx.highfive.mechanics.skill.Skill;
  * The Class ConditionPlayerAgathionId.
  */
 public class ConditionPlayerAgathionId extends Condition {
-    private final int _agathionId;
+    private final int agathionId;
 
     /**
      * Instantiates a new condition player agathion id.
      * @param agathionId the agathion id
      */
     public ConditionPlayerAgathionId(int agathionId) {
-        _agathionId = agathionId;
+        this.agathionId = agathionId;
     }
 
     @Override
     public boolean testImpl(Creature effector, Creature effected, Skill skill, ItemTemplate item) {
-        return effector.isPlayer() && (effector.asPlayer().getAgathionId() == _agathionId);
+        return effector.isPlayer() && (effector.asPlayer().getAgathionId() == agathionId);
     }
 }

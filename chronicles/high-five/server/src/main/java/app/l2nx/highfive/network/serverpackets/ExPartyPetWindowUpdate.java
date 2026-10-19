@@ -28,24 +28,24 @@ import app.l2nx.network.buffer.WriteBuffer;
  * @author KenM
  */
 public class ExPartyPetWindowUpdate extends ServerPacket {
-    private final Summon _summon;
+    private final Summon summon;
 
     public ExPartyPetWindowUpdate(Summon summon) {
-        _summon = summon;
+        this.summon = summon;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_PARTY_PET_WINDOW_UPDATE.writeId(this, buffer);
-        buffer.writeInt(_summon.getObjectId());
-        buffer.writeInt(_summon.getTemplate().getDisplayId() + 1000000);
-        buffer.writeInt(_summon.getSummonType());
-        buffer.writeInt(_summon.getOwner().getObjectId());
-        buffer.writeString(_summon.getName());
-        buffer.writeInt((int) _summon.getCurrentHp());
-        buffer.writeInt(_summon.getMaxHp());
-        buffer.writeInt((int) _summon.getCurrentMp());
-        buffer.writeInt(_summon.getMaxMp());
-        buffer.writeInt(_summon.getLevel());
+        buffer.writeInt(summon.getObjectId());
+        buffer.writeInt(summon.getTemplate().getDisplayId() + 1000000);
+        buffer.writeInt(summon.getSummonType());
+        buffer.writeInt(summon.getOwner().getObjectId());
+        buffer.writeString(summon.getName());
+        buffer.writeInt((int) summon.getCurrentHp());
+        buffer.writeInt(summon.getMaxHp());
+        buffer.writeInt((int) summon.getCurrentMp());
+        buffer.writeInt(summon.getMaxMp());
+        buffer.writeInt(summon.getLevel());
     }
 }

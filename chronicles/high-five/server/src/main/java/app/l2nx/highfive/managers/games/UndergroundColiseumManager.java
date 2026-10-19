@@ -47,21 +47,25 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ScheduledFuture;
-import java.util.logging.Logger;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.DateFormatUtils;
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 
+@Slf4j
 public class UndergroundColiseumManager implements IXmlReader {
-    private static final Logger LOGGER = Logger.getLogger(UndergroundColiseumManager.class.getName());
 
-    private final Map<Integer, UCArena> _arenas = new HashMap<>(5);
-    private boolean _isStarted = false;
-    private long _periodStartTime;
-    private long _periodEndTime;
-    private ScheduledFuture<?> _regTask = null;
-    private final Map<Integer, UCBestTeam> _bestTeams = new HashMap<>(5);
+    private final Map<Integer, UCArena> arenas = new HashMap<>(5);
+
+    @Getter
+    private boolean started = false;
+
+    private long periodStartTime;
+    private long periodEndTime;
+    private ScheduledFuture<?> regTask = null;
+    private final Map<Integer, UCBestTeam> bestTeams = new HashMap<>(5);
 
     protected UndergroundColiseumManager() {
         load();
@@ -69,25 +73,24 @@ public class UndergroundColiseumManager implements IXmlReader {
 
     @Override
     public void load() {
-        _periodStartTime = GlobalVariablesManager.getInstance().getLong("UC_START_TIME", 0);
-        _periodEndTime = GlobalVariablesManager.getInstance().getLong("UC_STOP_TIME", 0);
+        periodStartTime = GlobalVariablesManager.getInstance().getLong("UC_START_TIME", 0);
+        periodEndTime = GlobalVariablesManager.getInstance().getLong("UC_STOP_TIME", 0);
 
         final long curerntTime = System.currentTimeMillis();
-        if ((_periodStartTime < curerntTime) && (_periodEndTime < curerntTime)) {
+        if ((periodStartTime < curerntTime) && (periodEndTime < curerntTime)) {
             generateNewDate();
         }
 
         parseDatapackFile("data/UndergroundColiseum.xml");
 
-        LOGGER.info(getClass().getSimpleName() + ": Loaded " + _arenas.size() + " coliseum arenas.");
+        log.info("Loaded {} coliseum arenas.", arenas.size());
 
-        if ((_periodStartTime < curerntTime) && (_periodEndTime > curerntTime)) {
+        if ((periodStartTime < curerntTime) && (periodEndTime > curerntTime)) {
             switchStatus(true);
         } else {
-            final long nextTime = _periodStartTime - curerntTime;
-            _regTask = ThreadPool.schedule(new UCRegistrationTask(true), nextTime);
-            LOGGER.info(getClass().getSimpleName() + ": Starts at "
-                    + DateFormatUtils.format(_periodStartTime, "dd/MM/yyyy HH:mm:ss"));
+            final long nextTime = periodStartTime - curerntTime;
+            regTask = ThreadPool.schedule(new UCRegistrationTask(true), nextTime);
+            log.info("Starts at {}", DateFormatUtils.format(periodStartTime, "dd/MM/yyyy HH:mm:ss"));
         }
 
         restoreBestTeams();
@@ -102,14 +105,14 @@ public class UndergroundColiseumManager implements IXmlReader {
                     if ("arena".equalsIgnoreCase(d.getNodeName())) {
                         map = d.getAttributes();
                         final int id = Integer.parseInt(map.getNamedItem("id").getNodeValue());
-                        final int min_level =
+                        final int minLevel =
                                 Integer.parseInt(map.getNamedItem("minLvl").getNodeValue());
-                        final int max_level =
+                        final int maxLevel =
                                 Integer.parseInt(map.getNamedItem("maxLvl").getNodeValue());
                         final int curator =
                                 Integer.parseInt(map.getNamedItem("curator").getNodeValue());
 
-                        final UCArena arena = new UCArena(id, curator, min_level, max_level);
+                        final UCArena arena = new UCArena(id, curator, minLevel, maxLevel);
                         int index = 0;
                         int index2 = 0;
 
@@ -172,13 +175,17 @@ public class UndergroundColiseumManager implements IXmlReader {
                                                                 .getNamedItem("useModifers")
                                                                 .getNodeValue())
                                                         : false;
-                                        arena.setReward(new UCReward(itemId, amount, useModifier));
+                                        arena.setReward(UCReward.builder()
+                                                .id(itemId)
+                                                .amount(amount)
+                                                .allowMidifier(useModifier)
+                                                .build());
                                     }
                                 }
                             }
                         }
 
-                        _arenas.put(arena.getId(), arena);
+                        arenas.put(arena.getId(), arena);
                     }
                 }
             }
@@ -186,7 +193,7 @@ public class UndergroundColiseumManager implements IXmlReader {
     }
 
     private void restoreBestTeams() {
-        _bestTeams.clear();
+        bestTeams.clear();
         try (Connection con = DatabaseFactory.getConnection();
                 PreparedStatement statement =
                         con.prepareStatement("SELECT * FROM underground_coliseum ORDER BY arenaId");
@@ -195,13 +202,12 @@ public class UndergroundColiseumManager implements IXmlReader {
                 final int arenaId = rset.getInt("arenaId");
                 final String leader = rset.getString("leader");
                 final int wins = rset.getInt("wins");
-                _bestTeams.put(arenaId, new UCBestTeam(arenaId, leader, wins));
+                bestTeams.put(arenaId, new UCBestTeam(arenaId, leader, wins));
             }
         } catch (SQLException e) {
-            LOGGER.warning(getClass().getSimpleName() + ": Could not load underground_coliseum table");
+            log.warn("Could not load underground_coliseum table");
         } catch (Exception e) {
-            LOGGER.warning(getClass().getSimpleName() + ": Error while initializing UndergroundColiseumManager: "
-                    + e.getMessage());
+            log.warn("Error while initializing UndergroundColiseumManager: {}", e.getMessage());
         }
     }
 
@@ -215,7 +221,7 @@ public class UndergroundColiseumManager implements IXmlReader {
                 ps.setInt(3, team.getWins());
                 ps.executeUpdate();
             } catch (SQLException e) {
-                LOGGER.warning(getClass().getSimpleName() + ": Could not save underground_coliseum: " + e.getMessage());
+                log.warn("Could not save underground_coliseum: {}", e.getMessage());
             }
         } else {
             try (Connection con = DatabaseFactory.getConnection()) {
@@ -227,19 +233,18 @@ public class UndergroundColiseumManager implements IXmlReader {
                 stmt.execute();
                 stmt.close();
             } catch (Exception e) {
-                LOGGER.warning(
-                        getClass().getSimpleName() + ": could not clean status for underground_coliseum areanaId: "
-                                + team.getArenaId() + " in database!");
+                log.warn(
+                        "Could not clean status for underground_coliseum areanaId: {} in database!", team.getArenaId());
             }
         }
     }
 
     public UCBestTeam getBestTeam(int arenaId) {
-        return _bestTeams.get(arenaId);
+        return bestTeams.get(arenaId);
     }
 
     public void updateBestTeam(int arenaId, String name, int wins) {
-        if (_bestTeams.containsKey(arenaId)) {
+        if (bestTeams.containsKey(arenaId)) {
             final UCBestTeam team = getBestTeam(arenaId);
             if (team != null) {
                 team.setLeader(name);
@@ -248,34 +253,34 @@ public class UndergroundColiseumManager implements IXmlReader {
             }
         } else {
             final UCBestTeam team = new UCBestTeam(arenaId, name, wins);
-            _bestTeams.put(arenaId, team);
+            bestTeams.put(arenaId, team);
             saveBestTeam(team, true);
         }
     }
 
     private void generateNewDate() {
-        _periodStartTime = UndergroundColiseumConfig.UC_START_SCHEDULE
+        periodStartTime = UndergroundColiseumConfig.UC_START_SCHEDULE
                 .next()
                 .orElseThrow(() -> new IllegalStateException(
                         "BattleStartRrule has no further start: " + UndergroundColiseumConfig.UC_START_SCHEDULE))
                 .toEpochMilli();
-        _periodEndTime = _periodStartTime + (UndergroundColiseumConfig.UC_TIME_PERIOD * 3600000);
-        GlobalVariablesManager.getInstance().set("UC_START_TIME", _periodStartTime);
-        GlobalVariablesManager.getInstance().set("UC_STOP_TIME", _periodEndTime);
+        periodEndTime = periodStartTime + (UndergroundColiseumConfig.UC_TIME_PERIOD * 3600000);
+        GlobalVariablesManager.getInstance().set("UC_START_TIME", periodStartTime);
+        GlobalVariablesManager.getInstance().set("UC_STOP_TIME", periodEndTime);
     }
 
     public UCArena getArena(int id) {
-        return _arenas.get(id);
+        return arenas.get(id);
     }
 
     public void setStarted(boolean started) {
-        _isStarted = started;
+        this.started = started;
         for (UCArena arena : getAllArenas()) {
             arena.switchStatus(started);
         }
 
         if (UndergroundColiseumConfig.UC_ALLOW_ANNOUNCE) {
-            if (_isStarted) {
+            if (this.started) {
                 World.broadcastToAllOnlinePlayers("Underground Coliseum has started!");
             } else {
                 World.broadcastToAllOnlinePlayers("Underground Coliseum has stopped!");
@@ -283,45 +288,39 @@ public class UndergroundColiseumManager implements IXmlReader {
         }
     }
 
-    public boolean isStarted() {
-        return _isStarted;
-    }
-
     public Collection<UCArena> getAllArenas() {
-        return _arenas.values();
+        return arenas.values();
     }
 
     private void switchStatus(boolean isStart) {
-        if (_regTask != null) {
-            _regTask.cancel(false);
-            _regTask = null;
+        if (regTask != null) {
+            regTask.cancel(false);
+            regTask = null;
         }
 
         setStarted(isStart);
         if (isStart) {
-            final long nextTime = _periodEndTime - System.currentTimeMillis();
-            _regTask = ThreadPool.schedule(new UCRegistrationTask(false), nextTime);
-            LOGGER.info(getClass().getSimpleName() + ": Ends at "
-                    + DateFormatUtils.format(_periodEndTime, "dd/MM/yyyy HH:mm:ss"));
+            final long nextTime = periodEndTime - System.currentTimeMillis();
+            regTask = ThreadPool.schedule(new UCRegistrationTask(false), nextTime);
+            log.info("Ends at {}", DateFormatUtils.format(periodEndTime, "dd/MM/yyyy HH:mm:ss"));
         } else {
             generateNewDate();
-            final long nextTime = _periodStartTime - System.currentTimeMillis();
-            _regTask = ThreadPool.schedule(new UCRegistrationTask(true), nextTime);
-            LOGGER.info(getClass().getSimpleName() + ": Starts at "
-                    + DateFormatUtils.format(_periodStartTime, "dd/MM/yyyy HH:mm:ss"));
+            final long nextTime = periodStartTime - System.currentTimeMillis();
+            regTask = ThreadPool.schedule(new UCRegistrationTask(true), nextTime);
+            log.info("Starts at {}", DateFormatUtils.format(periodStartTime, "dd/MM/yyyy HH:mm:ss"));
         }
     }
 
     public class UCRegistrationTask implements Runnable {
-        private final boolean _status;
+        private final boolean status;
 
         public UCRegistrationTask(boolean status) {
-            _status = status;
+            this.status = status;
         }
 
         @Override
         public void run() {
-            switchStatus(_status);
+            switchStatus(status);
         }
     }
 

@@ -42,14 +42,14 @@ import app.l2nx.highfive.util.StatSet;
  * @author Adry_85
  */
 public class CallPc extends AbstractEffect {
-    private final int _itemId;
-    private final int _itemCount;
+    private final int itemId;
+    private final int itemCount;
 
     public CallPc(Condition attachCond, Condition applyCond, StatSet set, StatSet params) {
         super(attachCond, applyCond, set, params);
 
-        _itemId = params.getInt("itemId", 0);
-        _itemCount = params.getInt("itemCount", 0);
+        itemId = params.getInt("itemId", 0);
+        itemCount = params.getInt("itemCount", 0);
     }
 
     @Override
@@ -67,17 +67,17 @@ public class CallPc extends AbstractEffect {
         final Player player = effector.asPlayer();
         if (player != null) {
             if (checkSummonTargetStatus(target, player)) {
-                if ((_itemId != 0) && (_itemCount != 0)) {
-                    if (target.getInventory().getInventoryItemCount(_itemId, 0) < _itemCount) {
+                if ((itemId != 0) && (itemCount != 0)) {
+                    if (target.getInventory().getInventoryItemCount(itemId, 0) < itemCount) {
                         final SystemMessage sm = new SystemMessage(SystemMessageId.S1_IS_REQUIRED_FOR_SUMMONING);
-                        sm.addItemName(_itemId);
+                        sm.addItemName(itemId);
                         target.sendPacket(sm);
                         return;
                     }
 
-                    target.getInventory().destroyItemByItemId(null, _itemId, _itemCount, player, target);
+                    target.getInventory().destroyItemByItemId(null, itemId, itemCount, player, target);
                     final SystemMessage sm = new SystemMessage(SystemMessageId.S1_HAS_DISAPPEARED);
-                    sm.addItemName(_itemId);
+                    sm.addItemName(itemId);
                     target.sendPacket(sm);
                 }
 

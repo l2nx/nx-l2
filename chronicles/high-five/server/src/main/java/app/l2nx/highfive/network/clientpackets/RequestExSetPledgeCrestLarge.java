@@ -32,22 +32,22 @@ import app.l2nx.highfive.network.SystemMessageId;
  * @author -Wooden-
  */
 public class RequestExSetPledgeCrestLarge extends ClientPacket {
-    private int _length;
-    private byte[] _data = null;
+    private int length;
+    private byte[] data = null;
 
     @Override
     protected void readImpl() {
-        _length = readInt();
-        if (_length > 2176) {
+        length = readInt();
+        if (length > 2176) {
             return;
         }
 
-        _data = readBytes(_length);
+        data = readBytes(length);
     }
 
     @Override
     protected void runImpl() {
-        if (_data == null) {
+        if (data == null) {
             return;
         }
 
@@ -61,7 +61,7 @@ public class RequestExSetPledgeCrestLarge extends ClientPacket {
             return;
         }
 
-        if ((_length < 0) || (_length > 2176)) {
+        if ((length < 0) || (length > 2176)) {
             player.sendPacket(
                     SystemMessageId.THE_SIZE_OF_THE_UPLOADED_CREST_OR_INSIGNIA_DOES_NOT_MEET_THE_STANDARD_REQUIREMENTS);
             return;
@@ -79,7 +79,7 @@ public class RequestExSetPledgeCrestLarge extends ClientPacket {
             return;
         }
 
-        if (_length == 0) {
+        if (length == 0) {
             if (clan.getCrestLargeId() != 0) {
                 clan.changeLargeCrest(0);
                 player.sendPacket(SystemMessageId.THE_CLAN_S_CREST_HAS_BEEN_DELETED);
@@ -91,7 +91,7 @@ public class RequestExSetPledgeCrestLarge extends ClientPacket {
                 return;
             }
 
-            final Crest crest = CrestTable.getInstance().createCrest(_data, CrestType.PLEDGE_LARGE);
+            final Crest crest = CrestTable.getInstance().createCrest(data, CrestType.PLEDGE_LARGE);
             if (crest != null) {
                 clan.changeLargeCrest(crest.getId());
                 player.sendPacket(

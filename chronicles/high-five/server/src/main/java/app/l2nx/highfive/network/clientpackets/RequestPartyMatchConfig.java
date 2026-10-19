@@ -36,15 +36,15 @@ import app.l2nx.highfive.network.serverpackets.PartyMatchDetail;
  * @version $Revision: 1.1.4.2 $ $Date: 2005/03/27 15:29:30 $
  */
 public class RequestPartyMatchConfig extends ClientPacket {
-    private int _auto;
-    private int _loc;
-    private int _level;
+    private int auto;
+    private int loc;
+    private int level;
 
     @Override
     protected void readImpl() {
-        _auto = readInt(); //
-        _loc = readInt(); // Location
-        _level = readInt(); // my level
+        auto = readInt(); //
+        loc = readInt(); // Location
+        level = readInt(); // my level
     }
 
     @Override
@@ -85,7 +85,7 @@ public class RequestPartyMatchConfig extends ClientPacket {
             PartyMatchWaitingList.getInstance().addPlayer(player);
 
             // Send Room list
-            player.sendPacket(new ListPartyWating(player, _auto, _loc, _level));
+            player.sendPacket(new ListPartyWating(player, auto, loc, level));
         }
     }
 }

@@ -28,28 +28,28 @@ import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.network.buffer.WriteBuffer;
 
 public class ExAirShipTeleportList extends ServerPacket {
-    private final int _dockId;
-    private final VehiclePathPoint[][] _teleports;
-    private final int[] _fuelConsumption;
+    private final int dockId;
+    private final VehiclePathPoint[][] teleports;
+    private final int[] fuelConsumption;
 
     public ExAirShipTeleportList(int dockId, VehiclePathPoint[][] teleports, int[] fuelConsumption) {
-        _dockId = dockId;
-        _teleports = teleports;
-        _fuelConsumption = fuelConsumption;
+        this.dockId = dockId;
+        this.teleports = teleports;
+        this.fuelConsumption = fuelConsumption;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_AIRSHIP_TELEPORT_LIST.writeId(this, buffer);
-        buffer.writeInt(_dockId);
-        if (_teleports != null) {
-            buffer.writeInt(_teleports.length);
+        buffer.writeInt(dockId);
+        if (teleports != null) {
+            buffer.writeInt(teleports.length);
             VehiclePathPoint[] path;
             VehiclePathPoint dst;
-            for (int i = 0; i < _teleports.length; i++) {
+            for (int i = 0; i < teleports.length; i++) {
                 buffer.writeInt(i - 1);
-                buffer.writeInt(_fuelConsumption[i]);
-                path = _teleports[i];
+                buffer.writeInt(fuelConsumption[i]);
+                path = teleports[i];
                 dst = path[path.length - 1];
                 buffer.writeInt(dst.getX());
                 buffer.writeInt(dst.getY());

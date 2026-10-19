@@ -29,23 +29,23 @@ import java.util.Collection;
  * @author -Wooden-, UnAfraid, mrTJO
  */
 public class PackageSendableList extends AbstractItemPacket {
-    private final Collection<Item> _items;
-    private final int _playerObjId;
-    private final long _adena;
+    private final Collection<Item> items;
+    private final int playerObjId;
+    private final long adena;
 
     public PackageSendableList(Collection<Item> items, int playerObjId, long adena) {
-        _items = items;
-        _playerObjId = playerObjId;
-        _adena = adena;
+        this.items = items;
+        this.playerObjId = playerObjId;
+        this.adena = adena;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.PACKAGE_SENDABLE_LIST.writeId(this, buffer);
-        buffer.writeInt(_playerObjId);
-        buffer.writeLong(_adena);
-        buffer.writeInt(_items.size());
-        for (Item item : _items) {
+        buffer.writeInt(playerObjId);
+        buffer.writeLong(adena);
+        buffer.writeInt(items.size());
+        for (Item item : items) {
             writeItem(item, buffer);
             buffer.writeInt(item.getObjectId());
         }

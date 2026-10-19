@@ -27,14 +27,13 @@ import app.l2nx.highfive.network.enums.ChatType;
 import app.l2nx.highfive.network.serverpackets.CreatureSay;
 import app.l2nx.highfive.network.serverpackets.PlaySound;
 import app.l2nx.highfive.threads.ThreadPool;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author DS
  */
+@Slf4j
 public class BoatRunePrimeval implements Runnable {
-    private static final Logger LOGGER = Logger.getLogger(BoatRunePrimeval.class.getName());
 
     // Time: 239s
     private static final VehiclePathPoint[] RUNE_TO_PRIMEVAL = {
@@ -68,9 +67,9 @@ public class BoatRunePrimeval implements Runnable {
 
     private static final VehiclePathPoint PRIMEVAL_DOCK = RUNE_TO_PRIMEVAL[RUNE_TO_PRIMEVAL.length - 1];
 
-    private final Boat _boat;
-    private int _cycle = 0;
-    private int _shoutCount = 0;
+    private final Boat boat;
+    private int cycle = 0;
+    private int shoutCount = 0;
 
     private final CreatureSay ARRIVED_AT_RUNE;
     private final CreatureSay ARRIVED_AT_RUNE_2;
@@ -84,7 +83,7 @@ public class BoatRunePrimeval implements Runnable {
     private final PlaySound PRIMEVAL_SOUND;
 
     public BoatRunePrimeval(Boat boat) {
-        _boat = boat;
+        this.boat = boat;
 
         ARRIVED_AT_RUNE = new CreatureSay(ChatType.BOAT, 801, SystemMessageId.WELCOME_TO_RUNE_HARBOR);
         ARRIVED_AT_RUNE_2 = new CreatureSay(
@@ -108,7 +107,7 @@ public class BoatRunePrimeval implements Runnable {
                 0,
                 "itemsound.ship_arrival_departure",
                 1,
-                _boat.getObjectId(),
+                this.boat.getObjectId(),
                 RUNE_DOCK[0].getX(),
                 RUNE_DOCK[0].getY(),
                 RUNE_DOCK[0].getZ());
@@ -116,7 +115,7 @@ public class BoatRunePrimeval implements Runnable {
                 0,
                 "itemsound.ship_arrival_departure",
                 1,
-                _boat.getObjectId(),
+                this.boat.getObjectId(),
                 PRIMEVAL_DOCK.getX(),
                 PRIMEVAL_DOCK.getY(),
                 PRIMEVAL_DOCK.getZ());
@@ -125,12 +124,12 @@ public class BoatRunePrimeval implements Runnable {
     @Override
     public void run() {
         try {
-            switch (_cycle) {
+            switch (cycle) {
                 case 0: {
                     BoatManager.getInstance().dockShip(BoatManager.RUNE_HARBOR, false);
                     BoatManager.getInstance().broadcastPackets(RUNE_DOCK[0], PRIMEVAL_DOCK, LEAVING_RUNE, RUNE_SOUND);
-                    _boat.payForRide(8925, 1, 34513, -38009, -3640);
-                    _boat.executePath(RUNE_TO_PRIMEVAL);
+                    boat.payForRide(8925, 1, 34513, -38009, -3640);
+                    boat.executePath(RUNE_TO_PRIMEVAL);
                     break;
                 }
                 case 1: {
@@ -147,26 +146,26 @@ public class BoatRunePrimeval implements Runnable {
                 case 2: {
                     BoatManager.getInstance()
                             .broadcastPackets(PRIMEVAL_DOCK, RUNE_DOCK[0], LEAVING_PRIMEVAL, PRIMEVAL_SOUND);
-                    _boat.payForRide(8924, 1, 10447, -24982, -3664);
-                    _boat.executePath(PRIMEVAL_TO_RUNE);
+                    boat.payForRide(8924, 1, 10447, -24982, -3664);
+                    boat.executePath(PRIMEVAL_TO_RUNE);
                     break;
                 }
                 case 3: {
                     if (BoatManager.getInstance().dockBusy(BoatManager.RUNE_HARBOR)) {
-                        if (_shoutCount == 0) {
+                        if (shoutCount == 0) {
                             BoatManager.getInstance().broadcastPacket(RUNE_DOCK[0], PRIMEVAL_DOCK, BUSY_RUNE);
                         }
 
-                        _shoutCount++;
-                        if (_shoutCount > 35) {
-                            _shoutCount = 0;
+                        shoutCount++;
+                        if (shoutCount > 35) {
+                            shoutCount = 0;
                         }
 
                         ThreadPool.schedule(this, 5000);
                         return;
                     }
 
-                    _boat.executePath(RUNE_DOCK);
+                    boat.executePath(RUNE_DOCK);
                     break;
                 }
                 case 4: {
@@ -179,13 +178,13 @@ public class BoatRunePrimeval implements Runnable {
                 }
             }
 
-            _shoutCount = 0;
-            _cycle++;
-            if (_cycle > 4) {
-                _cycle = 0;
+            shoutCount = 0;
+            cycle++;
+            if (cycle > 4) {
+                cycle = 0;
             }
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, e.getMessage());
+            log.warn(e.getMessage());
         }
     }
 

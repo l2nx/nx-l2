@@ -28,28 +28,28 @@ import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.network.buffer.WriteBuffer;
 
 public class ExPutItemResultForVariationCancel extends ServerPacket {
-    private final int _itemObjId;
-    private final int _itemId;
-    private final int _itemAug1;
-    private final int _itemAug2;
-    private final int _price;
+    private final int itemObjId;
+    private final int itemId;
+    private final int itemAug1;
+    private final int itemAug2;
+    private final int price;
 
     public ExPutItemResultForVariationCancel(Item item, int price) {
-        _itemObjId = item.getObjectId();
-        _itemId = item.getDisplayId();
-        _price = price;
-        _itemAug1 = ((short) item.getAugmentation().getAugmentationId());
-        _itemAug2 = item.getAugmentation().getAugmentationId() >> 16;
+        itemObjId = item.getObjectId();
+        itemId = item.getDisplayId();
+        this.price = price;
+        itemAug1 = ((short) item.getAugmentation().getAugmentationId());
+        itemAug2 = item.getAugmentation().getAugmentationId() >> 16;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_PUT_ITEM_RESULT_FOR_VARIATION_CANCEL.writeId(this, buffer);
-        buffer.writeInt(_itemObjId);
-        buffer.writeInt(_itemId);
-        buffer.writeInt(_itemAug1);
-        buffer.writeInt(_itemAug2);
-        buffer.writeLong(_price);
+        buffer.writeInt(itemObjId);
+        buffer.writeInt(itemId);
+        buffer.writeInt(itemAug1);
+        buffer.writeInt(itemAug2);
+        buffer.writeLong(price);
         buffer.writeInt(1);
     }
 }

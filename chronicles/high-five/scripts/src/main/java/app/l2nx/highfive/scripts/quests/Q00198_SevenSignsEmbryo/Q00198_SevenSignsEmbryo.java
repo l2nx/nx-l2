@@ -50,7 +50,7 @@ public class Q00198_SevenSignsEmbryo extends Quest {
 
     // Misc
     private static final int MIN_LEVEL = 79;
-    private boolean isBusy = false;
+    private boolean busy = false;
 
     // Skill
     private static final SkillHolder NPC_HEAL = new SkillHolder(4065, 8);
@@ -67,7 +67,7 @@ public class Q00198_SevenSignsEmbryo extends Quest {
     public String onEvent(String event, Npc npc, Player player) {
         if ((npc.getId() == SHILENS_EVIL_THOUGHTS) && "despawn".equals(event)) {
             if (!npc.isDead()) {
-                isBusy = false;
+                busy = false;
                 npc.broadcastPacket(new NpcSay(
                         npc.getObjectId(),
                         ChatType.NPC_GENERAL,
@@ -102,7 +102,7 @@ public class Q00198_SevenSignsEmbryo extends Quest {
             case "fight": {
                 htmltext = "32597-05.html";
                 if (qs.isCond(1)) {
-                    isBusy = true;
+                    busy = true;
                     npc.broadcastPacket(new NpcSay(
                                     npc.getObjectId(),
                                     ChatType.NPC_GENERAL,
@@ -193,7 +193,7 @@ public class Q00198_SevenSignsEmbryo extends Quest {
             qs.setCond(2, true);
         }
 
-        isBusy = false;
+        busy = false;
         cancelQuestTimers("despawn");
         cancelQuestTimers("heal");
         npc.broadcastPacket(new NpcSay(
@@ -242,7 +242,7 @@ public class Q00198_SevenSignsEmbryo extends Quest {
                 } else if (npc.getId() == FRANZ) {
                     switch (qs.getCond()) {
                         case 1: {
-                            htmltext = isBusy ? "32597-06.html" : "32597-01.html";
+                            htmltext = busy ? "32597-06.html" : "32597-01.html";
                             break;
                         }
                         case 2: {

@@ -27,6 +27,7 @@ import app.l2nx.highfive.mechanics.script.QuestState;
 import app.l2nx.highfive.util.LocationUtil;
 import java.util.HashMap;
 import java.util.Map;
+import lombok.Getter;
 
 /**
  * Family Honor (355)
@@ -34,20 +35,15 @@ import java.util.Map;
  */
 public class Q00355_FamilyHonor extends Quest {
     private static class DropInfo {
-        public int _firstChance;
-        public int _secondChance;
+        @Getter
+        public int firstChance;
+
+        @Getter
+        public int secondChance;
 
         public DropInfo(int firstChance, int secondChance) {
-            _firstChance = firstChance;
-            _secondChance = secondChance;
-        }
-
-        public int getFirstChance() {
-            return _firstChance;
-        }
-
-        public int getSecondChance() {
-            return _secondChance;
+            this.firstChance = firstChance;
+            this.secondChance = secondChance;
         }
     }
 

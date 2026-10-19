@@ -29,7 +29,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 
 public class PreparedListContainer extends ListContainer {
-    private int _npcObjectId = 0;
+    private int npcObjectId = 0;
 
     public PreparedListContainer(ListContainer template, boolean inventoryOnly, Player player, Npc npc) {
         super(template.getListId());
@@ -37,7 +37,7 @@ public class PreparedListContainer extends ListContainer {
         setApplyTaxes(false);
         double taxRate = 0;
         if (npc != null) {
-            _npcObjectId = npc.getObjectId();
+            npcObjectId = npc.getObjectId();
             if (template.getApplyTaxes() && npc.isInTown() && (npc.getCastle().getOwnerId() > 0)) {
                 setApplyTaxes(true);
                 taxRate = npc.getCastle().getTaxRate();
@@ -56,13 +56,13 @@ public class PreparedListContainer extends ListContainer {
                 items = player.getInventory().getUniqueItems(false, false, false, true);
             }
 
-            _entries = new ArrayList<>();
+            entries = new ArrayList<>();
             for (Entry entry : template.getEntries()) {
                 if (!entry.getIngredients().isEmpty()) {
                     final int ingredientId = entry.getIngredients().get(0).getItemId();
                     for (Item item : items) {
                         if (!item.isEquipped() && (item.getId() == ingredientId)) {
-                            _entries.add(
+                            entries.add(
                                     new PreparedEntry(entry, item, getApplyTaxes(), getMaintainEnchantment(), taxRate));
                             break;
                         }
@@ -70,16 +70,16 @@ public class PreparedListContainer extends ListContainer {
                 }
             }
         } else {
-            _entries = new ArrayList<>(template.getEntries().size());
+            entries = new ArrayList<>(template.getEntries().size());
             for (Entry ent : template.getEntries()) {
-                _entries.add(new PreparedEntry(ent, null, getApplyTaxes(), false, taxRate));
+                entries.add(new PreparedEntry(ent, null, getApplyTaxes(), false, taxRate));
             }
         }
 
-        _npcsAllowed = template._npcsAllowed;
+        npcsAllowed = template.npcsAllowed;
     }
 
     public boolean checkNpcObjectId(int npcObjectId) {
-        return (_npcObjectId == 0) || (_npcObjectId == npcObjectId);
+        return (this.npcObjectId == 0) || (this.npcObjectId == npcObjectId);
     }
 }

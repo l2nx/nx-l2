@@ -23,90 +23,93 @@ import app.l2nx.highfive.entity.Location;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.logging.Logger;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @version 0.1, 2005-03-12
  * @author Balancer
  */
+@Slf4j
 public class PolygonTerritory {
-    private static final Logger LOGGER = Logger.getLogger(PolygonTerritory.class.getName());
 
     protected static class Point {
-        protected int _x;
-        protected int _y;
-        protected int _zmin;
-        protected int _zmax;
-        protected int _proc;
+        protected int x;
+        protected int y;
+        protected int zmin;
+        protected int zmax;
+        protected int proc;
 
         Point(int x, int y, int zmin, int zmax, int proc) {
-            _x = x;
-            _y = y;
-            _zmin = zmin;
-            _zmax = zmax;
-            _proc = proc;
+            this.x = x;
+            this.y = y;
+            this.zmin = zmin;
+            this.zmax = zmax;
+            this.proc = proc;
         }
     }
 
-    private final List<Point> _points = new CopyOnWriteArrayList<>();
-    private final int _terr;
-    private int _xMin;
-    private int _xMax;
-    private int _yMin;
-    private int _yMax;
-    private int _zMin;
-    private int _zMax;
-    private int _procMax;
+    private final List<Point> points = new CopyOnWriteArrayList<>();
+    private final int terr;
+    private int xMin;
+    private int xMax;
+    private int yMin;
+    private int yMax;
+    private int zMin;
+    private int zMax;
+
+    @Getter
+    private int procMax;
 
     public PolygonTerritory(int terr) {
-        _terr = terr;
-        _xMin = 999999;
-        _xMax = -999999;
-        _yMin = 999999;
-        _yMax = -999999;
-        _zMin = 999999;
-        _zMax = -999999;
-        _procMax = 0;
+        this.terr = terr;
+        xMin = 999999;
+        xMax = -999999;
+        yMin = 999999;
+        yMax = -999999;
+        zMin = 999999;
+        zMax = -999999;
+        procMax = 0;
     }
 
     public void add(int x, int y, int zmin, int zmax, int proc) {
-        _points.add(new Point(x, y, zmin, zmax, proc));
-        if (x < _xMin) {
-            _xMin = x;
+        points.add(new Point(x, y, zmin, zmax, proc));
+        if (x < xMin) {
+            xMin = x;
         }
 
-        if (y < _yMin) {
-            _yMin = y;
+        if (y < yMin) {
+            yMin = y;
         }
 
-        if (x > _xMax) {
-            _xMax = x;
+        if (x > xMax) {
+            xMax = x;
         }
 
-        if (y > _yMax) {
-            _yMax = y;
+        if (y > yMax) {
+            yMax = y;
         }
 
-        if (zmin < _zMin) {
-            _zMin = zmin;
+        if (zmin < zMin) {
+            zMin = zmin;
         }
 
-        if (zmax > _zMax) {
-            _zMax = zmax;
+        if (zmax > zMax) {
+            zMax = zmax;
         }
 
-        _procMax += proc;
+        procMax += proc;
     }
 
     public boolean isIntersect(int x, int y, Point p1, Point p2) {
-        final double dy1 = p1._y - y;
-        final double dy2 = p2._y - y;
+        final double dy1 = p1.y - y;
+        final double dy2 = p2.y - y;
         if (Math.abs(Math.signum(dy1) - Math.signum(dy2)) <= 1e-6) {
             return false;
         }
 
-        final double dx1 = p1._x - x;
-        final double dx2 = p2._x - x;
+        final double dx1 = p1.x - x;
+        final double dx2 = p2.x - x;
         if ((dx1 >= 0) && (dx2 >= 0)) {
             return true;
         }
@@ -115,15 +118,15 @@ public class PolygonTerritory {
             return false;
         }
 
-        final double dx0 = (dy1 * (p1._x - p2._x)) / (p1._y - p2._y);
+        final double dx0 = (dy1 * (p1.x - p2.x)) / (p1.y - p2.y);
         return dx0 <= dx1;
     }
 
     public boolean isInside(int x, int y) {
         int intersectCount = 0;
-        for (int i = 0; i < _points.size(); i++) {
-            final Point p1 = _points.get(i > 0 ? i - 1 : _points.size() - 1);
-            final Point p2 = _points.get(i);
+        for (int i = 0; i < points.size(); i++) {
+            final Point p1 = points.get(i > 0 ? i - 1 : points.size() - 1);
+            final Point p2 = points.get(i);
             if (isIntersect(x, y, p1, p2)) {
                 intersectCount++;
             }
@@ -134,43 +137,38 @@ public class PolygonTerritory {
 
     public Location getRandomPoint() {
         final ThreadLocalRandom random = ThreadLocalRandom.current();
-        if (_procMax > 0) {
+        if (procMax > 0) {
             int pos = 0;
-            final int rnd = random.nextInt(_procMax);
-            for (Point p1 : _points) {
-                pos += p1._proc;
+            final int rnd = random.nextInt(procMax);
+            for (Point p1 : points) {
+                pos += p1.proc;
                 if (rnd <= pos) {
-                    return new Location(
-                            p1._x, p1._y, p1._zmin < p1._zmax ? random.nextInt(p1._zmin, p1._zmax + 1) : p1._zmin);
+                    return new Location(p1.x, p1.y, p1.zmin < p1.zmax ? random.nextInt(p1.zmin, p1.zmax + 1) : p1.zmin);
                 }
             }
         }
 
         for (int i = 0; i < 100; i++) {
-            final int x = _xMin < _xMax ? random.nextInt(_xMin, _xMax + 1) : _xMin;
-            final int y = _yMin < _yMax ? random.nextInt(_yMin, _yMax + 1) : _yMin;
+            final int x = xMin < xMax ? random.nextInt(xMin, xMax + 1) : xMin;
+            final int y = yMin < yMax ? random.nextInt(yMin, yMax + 1) : yMin;
             if (isInside(x, y)) {
                 double curdistance = 0;
-                int zmin = _zMin;
-                for (Point p1 : _points) {
-                    final double dx = p1._x - x;
-                    final double dy = p1._y - y;
+                int zmin = zMin;
+                for (Point p1 : points) {
+                    final double dx = p1.x - x;
+                    final double dy = p1.y - y;
                     final double distance = Math.sqrt((dx * dx) + (dy * dy));
                     if ((curdistance == 0) || (distance < curdistance)) {
                         curdistance = distance;
-                        zmin = p1._zmin;
+                        zmin = p1.zmin;
                     }
                 }
 
-                return new Location(x, y, zmin < _zMax ? random.nextInt(zmin, _zMax + 1) : zmin);
+                return new Location(x, y, zmin < zMax ? random.nextInt(zmin, zMax + 1) : zmin);
             }
         }
 
-        LOGGER.warning("Can't make point for territory " + _terr);
+        log.warn("Can't make point for territory {}", terr);
         return null;
-    }
-
-    public int getProcMax() {
-        return _procMax;
     }
 }

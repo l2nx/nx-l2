@@ -34,10 +34,10 @@ import app.l2nx.highfive.mechanics.events.EventDispatcher;
 import app.l2nx.highfive.mechanics.events.EventType;
 import app.l2nx.highfive.mechanics.events.holders.actor.playable.OnPlayableExpChanged;
 import app.l2nx.highfive.mechanics.events.returns.TerminateReturn;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class PlayableStat extends CreatureStat {
-    protected static final Logger LOGGER = Logger.getLogger(PlayableStat.class.getName());
 
     public PlayableStat(Playable activeChar) {
         super(activeChar);
@@ -48,7 +48,11 @@ public class PlayableStat extends CreatureStat {
         if (EventDispatcher.getInstance().hasListener(EventType.ON_PLAYABLE_EXP_CHANGED, playable)) {
             final TerminateReturn term = EventDispatcher.getInstance()
                     .notifyEvent(
-                            new OnPlayableExpChanged(playable, getExp(), getExp() + amount),
+                            OnPlayableExpChanged.builder()
+                                    .activeChar(playable)
+                                    .oldExp(getExp())
+                                    .newExp(getExp() + amount)
+                                    .build(),
                             playable,
                             TerminateReturn.class);
             if ((term != null) && term.terminate()) {
@@ -172,7 +176,7 @@ public class PlayableStat extends CreatureStat {
 
     public boolean addSp(long amount) {
         if (amount < 0) {
-            LOGGER.warning("wrong usage");
+            log.warn("wrong usage");
             return false;
         }
 

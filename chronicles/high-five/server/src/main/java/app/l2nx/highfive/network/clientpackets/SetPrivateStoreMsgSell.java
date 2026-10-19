@@ -33,11 +33,11 @@ import app.l2nx.highfive.network.serverpackets.PrivateStoreMsgSell;
 public class SetPrivateStoreMsgSell extends ClientPacket {
     private static final int MAX_MSG_LENGTH = 29;
 
-    private String _storeMsg;
+    private String storeMsg;
 
     @Override
     protected void readImpl() {
-        _storeMsg = readString();
+        storeMsg = readString();
     }
 
     @Override
@@ -47,13 +47,13 @@ public class SetPrivateStoreMsgSell extends ClientPacket {
             return;
         }
 
-        if ((_storeMsg != null) && (_storeMsg.length() > MAX_MSG_LENGTH)) {
+        if ((storeMsg != null) && (storeMsg.length() > MAX_MSG_LENGTH)) {
             PunishmentManager.handleIllegalPlayerAction(
                     player, player + " tried to overflow private store sell message", GeneralConfig.DEFAULT_PUNISH);
             return;
         }
 
-        player.getSellList().setTitle(_storeMsg);
+        player.getSellList().setTitle(storeMsg);
         player.sendPacket(new PrivateStoreMsgSell(player));
     }
 }

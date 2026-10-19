@@ -29,16 +29,16 @@ import app.l2nx.network.buffer.WriteBuffer;
  * Format: d d: response
  */
 public class GGAuth extends LoginServerPacket {
-    private final int _response;
+    private final int response;
 
     public GGAuth(int response) {
-        _response = response;
+        this.response = response;
     }
 
     @Override
     protected void writeImpl(LoginClient client, WriteBuffer buffer) {
         buffer.writeByte(0x0b);
-        buffer.writeInt(_response);
+        buffer.writeInt(response);
         buffer.writeInt(0);
         buffer.writeInt(0);
         buffer.writeInt(0);

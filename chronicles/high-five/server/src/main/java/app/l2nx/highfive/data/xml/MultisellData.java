@@ -41,17 +41,18 @@ import java.io.File;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.logging.Level;
 import java.util.regex.Pattern;
+import lombok.extern.slf4j.Slf4j;
 import org.w3c.dom.DOMException;
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 
+@Slf4j
 public class MultisellData implements IXmlReader {
     private static final Pattern XML_FILE_PATTERN = Pattern.compile("\\d+\\.xml");
 
-    private final Map<Integer, ListContainer> _entries = new ConcurrentHashMap<>();
+    private final Map<Integer, ListContainer> entries = new ConcurrentHashMap<>();
 
     public static final int PAGE_SIZE = 40;
 
@@ -66,14 +67,14 @@ public class MultisellData implements IXmlReader {
 
     @Override
     public void load() {
-        _entries.clear();
+        entries.clear();
         parseDatapackDirectory("data/multisell", false);
         if (GeneralConfig.CUSTOM_MULTISELL_LOAD) {
             parseDatapackDirectory("data/multisell/custom", false);
         }
 
         verify();
-        LOGGER.log(Level.INFO, getClass().getSimpleName() + ": Loaded " + _entries.size() + " multisell lists.");
+        log.info("Loaded {} multisell lists.", entries.size());
     }
 
     @Override
@@ -100,11 +101,11 @@ public class MultisellData implements IXmlReader {
                                         .getField(att.getNodeValue())
                                         .getDouble(ConfigLoader.class));
                             } catch (Exception e1) {
-                                LOGGER.warning(e1.getMessage() + document.getLocalName());
+                                log.warn("{}{}", e1.getMessage(), document.getLocalName());
                                 list.setUseRate(1.0);
                             }
                         } catch (DOMException e) {
-                            LOGGER.warning(e.getMessage() + document.getLocalName());
+                            log.warn("{}{}", e.getMessage(), document.getLocalName());
                         }
                     }
 
@@ -125,9 +126,9 @@ public class MultisellData implements IXmlReader {
                 }
             }
 
-            _entries.put(id, list);
+            entries.put(id, list);
         } catch (Exception e) {
-            LOGGER.log(Level.SEVERE, getClass().getSimpleName() + ": Error in file " + file, e);
+            log.error("Error in file {}", file, e);
         }
     }
 
@@ -187,8 +188,12 @@ public class MultisellData implements IXmlReader {
                 final long adenaCount = ingredient.getItemCount();
                 if (totalPrice > adenaCount) {
                     ingredient.setItemCount(totalPrice);
-                    LOGGER.warning("Buy price " + adenaCount + " is less than sell price " + totalPrice + " at entry "
-                            + entryId + " of multisell " + list.getListId() + ".");
+                    log.warn(
+                            "Buy price {} is less than sell price {} at entry {} of multisell {}.",
+                            adenaCount,
+                            totalPrice,
+                            entryId,
+                            list.getListId());
                 }
             }
         }
@@ -232,10 +237,13 @@ public class MultisellData implements IXmlReader {
             boolean inventoryOnly,
             double productMultiplier,
             double ingredientMultiplier) {
-        final ListContainer template = _entries.get(listId);
+        final ListContainer template = entries.get(listId);
         if (template == null) {
-            LOGGER.warning(getClass().getSimpleName() + ": can't find list id: " + listId + " requested by player: "
-                    + player.getName() + ", npcId:" + (npc != null ? npc.getId() : 0));
+            log.warn(
+                    "Can't find list id: {} requested by player: {}, npcId:{}",
+                    listId,
+                    player.getName(),
+                    (npc != null ? npc.getId() : 0));
             return;
         }
 
@@ -246,8 +254,8 @@ public class MultisellData implements IXmlReader {
                             "Multisell " + listId
                                     + " is restricted. Under current conditions cannot be used. Only GMs are allowed to use it.");
                 } else {
-                    LOGGER.warning(getClass().getSimpleName() + ": " + player + " attempted to open multisell " + listId
-                            + " from npc " + npc + " which is not allowed!");
+                    log.warn(
+                            "{} attempted to open multisell {} from npc {} which is not allowed!", player, listId, npc);
                     return;
                 }
             }
@@ -371,21 +379,20 @@ public class MultisellData implements IXmlReader {
 
     private void verify() {
         ListContainer list;
-        final Iterator<ListContainer> iter = _entries.values().iterator();
+        final Iterator<ListContainer> iter = entries.values().iterator();
         while (iter.hasNext()) {
             list = iter.next();
             for (Entry ent : list.getEntries()) {
                 for (Ingredient ing : ent.getIngredients()) {
                     if (!verifyIngredient(ing)) {
-                        LOGGER.warning(getClass().getSimpleName() + ": can't find ingredient with itemId: "
-                                + ing.getItemId() + " in list: " + list.getListId());
+                        log.warn(
+                                "Can't find ingredient with itemId: {} in list: {}", ing.getItemId(), list.getListId());
                     }
                 }
 
                 for (Ingredient ing : ent.getProducts()) {
                     if (!verifyIngredient(ing)) {
-                        LOGGER.warning(getClass().getSimpleName() + ": can't find product with itemId: "
-                                + ing.getItemId() + " in list: " + list.getListId());
+                        log.warn("Can't find product with itemId: {} in list: {}", ing.getItemId(), list.getListId());
                     }
                 }
             }

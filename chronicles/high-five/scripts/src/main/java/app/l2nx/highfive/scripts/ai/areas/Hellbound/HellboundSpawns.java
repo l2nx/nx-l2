@@ -28,6 +28,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
@@ -36,9 +38,12 @@ import org.w3c.dom.Node;
  * Hellbound Spawns parser.
  * @author Zoey76
  */
+@Slf4j
 public class HellboundSpawns implements IXmlReader {
-    private final List<Spawn> _spawns = new ArrayList<>();
-    private final Map<Spawn, int[]> _spawnLevels = new HashMap<>();
+    @Getter
+    private final List<Spawn> spawns = new ArrayList<>();
+
+    private final Map<Spawn, int[]> spawnLevels = new HashMap<>();
 
     public HellboundSpawns() {
         load();
@@ -46,10 +51,10 @@ public class HellboundSpawns implements IXmlReader {
 
     @Override
     public void load() {
-        _spawns.clear();
-        _spawnLevels.clear();
+        spawns.clear();
+        spawnLevels.clear();
         parseDatapackFile("data/scripts/ai/areas/Hellbound/hellboundSpawns.xml");
-        LOGGER.info(getClass().getSimpleName() + ": Loaded " + _spawns.size() + " Hellbound spawns.");
+        log.info("Loaded {} Hellbound spawns.", spawns.size());
     }
 
     @Override
@@ -71,7 +76,7 @@ public class HellboundSpawns implements IXmlReader {
         if ("npc".equals(npc.getNodeName())) {
             final Node id = npc.getAttributes().getNamedItem("id");
             if (id == null) {
-                LOGGER.severe(getClass().getSimpleName() + ": Missing NPC ID, skipping record!");
+                log.error("Missing NPC ID, skipping record!");
                 return;
             }
 
@@ -117,26 +122,18 @@ public class HellboundSpawns implements IXmlReader {
                 final Spawn spawn = new Spawn(npcId);
                 spawn.setAmount(1);
                 if (loc == null) {
-                    LOGGER.warning("Hellbound spawn location is null!");
+                    log.warn("Hellbound spawn location is null!");
                 }
 
                 spawn.setLocation(loc);
                 spawn.setRespawnDelay(delay, randomInterval);
-                _spawnLevels.put(spawn, new int[] {minLevel, maxLevel});
+                spawnLevels.put(spawn, new int[] {minLevel, maxLevel});
                 SpawnTable.getInstance().addSpawn(spawn);
-                _spawns.add(spawn);
+                spawns.add(spawn);
             } catch (SecurityException | ClassNotFoundException | NoSuchMethodException e) {
-                LOGGER.warning(getClass().getSimpleName() + ": Couldn't load spawns: " + e.getMessage());
+                log.warn("Couldn't load spawns: {}", e.getMessage());
             }
         }
-    }
-
-    /**
-     * Gets all Hellbound spawns.
-     * @return the list of Hellbound spawns.
-     */
-    public List<Spawn> getSpawns() {
-        return _spawns;
     }
 
     /**
@@ -145,7 +142,7 @@ public class HellboundSpawns implements IXmlReader {
      * @return the spawn minimum level
      */
     public int getSpawnMinLevel(Spawn spawn) {
-        return _spawnLevels.containsKey(spawn) ? _spawnLevels.get(spawn)[0] : 1;
+        return spawnLevels.containsKey(spawn) ? spawnLevels.get(spawn)[0] : 1;
     }
 
     /**
@@ -154,7 +151,7 @@ public class HellboundSpawns implements IXmlReader {
      * @return the spawn maximum level
      */
     public int getSpawnMaxLevel(Spawn spawn) {
-        return _spawnLevels.containsKey(spawn) ? _spawnLevels.get(spawn)[1] : 1;
+        return spawnLevels.containsKey(spawn) ? spawnLevels.get(spawn)[1] : 1;
     }
 
     public static HellboundSpawns getInstance() {

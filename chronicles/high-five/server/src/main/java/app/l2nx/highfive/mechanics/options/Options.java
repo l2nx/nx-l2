@@ -29,39 +29,44 @@ import app.l2nx.highfive.network.serverpackets.SkillCoolTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * @author UnAfraid
  */
 public class Options {
-    private final int _id;
-    private final List<FuncTemplate> _funcs = new ArrayList<>();
-    private Skill _activeSkill = null;
-    private Skill _passiveSkill = null;
-    private final List<OptionSkillHolder> _activationSkills = new ArrayList<>();
+    @Getter
+    private final int id;
+
+    private final List<FuncTemplate> funcs = new ArrayList<>();
+
+    @Setter
+    private Skill activeSkill = null;
+
+    @Setter
+    private Skill passiveSkill = null;
+
+    private final List<OptionSkillHolder> activationSkills = new ArrayList<>();
 
     /**
      * @param id
      */
     public Options(int id) {
-        _id = id;
-    }
-
-    public int getId() {
-        return _id;
+        this.id = id;
     }
 
     public boolean hasFuncs() {
-        return !_funcs.isEmpty();
+        return !funcs.isEmpty();
     }
 
     public List<AbstractFunction> getStatFuncs(Item item, Creature creature) {
-        if (_funcs.isEmpty()) {
+        if (this.funcs.isEmpty()) {
             return Collections.<AbstractFunction>emptyList();
         }
 
-        final List<AbstractFunction> funcs = new ArrayList<>(_funcs.size());
-        for (FuncTemplate fuctionTemplate : _funcs) {
+        final List<AbstractFunction> funcs = new ArrayList<>(this.funcs.size());
+        for (FuncTemplate fuctionTemplate : this.funcs) {
             final AbstractFunction fuction = fuctionTemplate.getFunc(creature, creature, item, this);
             if (fuction != null) {
                 funcs.add(fuction);
@@ -72,40 +77,32 @@ public class Options {
     }
 
     public void addFunc(FuncTemplate template) {
-        _funcs.add(template);
+        funcs.add(template);
     }
 
     public boolean hasActiveSkill() {
-        return _activeSkill != null;
+        return activeSkill != null;
     }
 
     public Skill getActiveSkill() {
-        return _activeSkill;
-    }
-
-    public void setActiveSkill(Skill skill) {
-        _activeSkill = skill;
+        return activeSkill;
     }
 
     public boolean hasPassiveSkill() {
-        return _passiveSkill != null;
+        return passiveSkill != null;
     }
 
     public Skill getPassiveSkill() {
-        return _passiveSkill;
-    }
-
-    public void setPassiveSkill(Skill skill) {
-        _passiveSkill = skill;
+        return passiveSkill;
     }
 
     public boolean hasActivationSkills() {
-        return !_activationSkills.isEmpty();
+        return !activationSkills.isEmpty();
     }
 
     public boolean hasActivationSkills(OptionSkillType type) {
-        for (OptionSkillHolder holder : _activationSkills) {
-            if (holder.getSkillType() == type) {
+        for (OptionSkillHolder holder : activationSkills) {
+            if (holder.skillType() == type) {
                 return true;
             }
         }
@@ -114,13 +111,13 @@ public class Options {
     }
 
     public List<OptionSkillHolder> getActivationSkills() {
-        return _activationSkills;
+        return activationSkills;
     }
 
     public List<OptionSkillHolder> getActivationSkills(OptionSkillType type) {
         final List<OptionSkillHolder> temp = new ArrayList<>();
-        for (OptionSkillHolder holder : _activationSkills) {
-            if (holder.getSkillType() == type) {
+        for (OptionSkillHolder holder : activationSkills) {
+            if (holder.skillType() == type) {
                 temp.add(holder);
             }
         }
@@ -129,24 +126,24 @@ public class Options {
     }
 
     public void addActivationSkill(OptionSkillHolder holder) {
-        _activationSkills.add(holder);
+        activationSkills.add(holder);
     }
 
     public void apply(Player player) {
-        if (!_funcs.isEmpty()) {
+        if (!funcs.isEmpty()) {
             player.addStatFuncs(getStatFuncs(null, player));
         }
 
         if (hasActiveSkill()) {
-            addSkill(player, _activeSkill);
+            addSkill(player, activeSkill);
         }
 
         if (hasPassiveSkill()) {
-            addSkill(player, _passiveSkill);
+            addSkill(player, passiveSkill);
         }
 
-        if (!_activationSkills.isEmpty()) {
-            for (OptionSkillHolder holder : _activationSkills) {
+        if (!activationSkills.isEmpty()) {
+            for (OptionSkillHolder holder : activationSkills) {
                 player.addTriggerSkill(holder);
             }
         }
@@ -155,20 +152,20 @@ public class Options {
     }
 
     public void remove(Player player) {
-        if (!_funcs.isEmpty()) {
+        if (!funcs.isEmpty()) {
             player.removeStatsOwner(this);
         }
 
         if (hasActiveSkill()) {
-            player.removeSkill(_activeSkill, false, false);
+            player.removeSkill(activeSkill, false, false);
         }
 
         if (hasPassiveSkill()) {
-            player.removeSkill(_passiveSkill, false, true);
+            player.removeSkill(passiveSkill, false, true);
         }
 
-        if (!_activationSkills.isEmpty()) {
-            for (OptionSkillHolder holder : _activationSkills) {
+        if (!activationSkills.isEmpty()) {
+            for (OptionSkillHolder holder : activationSkills) {
                 player.removeTriggerSkill(holder);
             }
         }

@@ -22,29 +22,10 @@
  */
 package app.l2nx.highfive.mechanics.krateisCube;
 
+import lombok.Builder;
+
 /**
  * @author LordWinter
  */
-public class KrateisReward {
-    private final int _itemId;
-    private final long _amount;
-    private final boolean _allowMidifier;
-
-    public KrateisReward(int itemId, long amount, boolean allowMidifier) {
-        _itemId = itemId;
-        _amount = amount;
-        _allowMidifier = allowMidifier;
-    }
-
-    public int getId() {
-        return _itemId;
-    }
-
-    public long getAmount() {
-        return _amount;
-    }
-
-    public boolean isAllowMidifier() {
-        return _allowMidifier;
-    }
-}
+@Builder(toBuilder = true)
+public record KrateisReward(int id, long amount, boolean allowMidifier) {}

@@ -19,6 +19,8 @@
  */
 package app.l2nx.highfive.mechanics.stats;
 
+import lombok.Getter;
+
 /**
  * @author UnAfraid, NosBit
  */
@@ -66,13 +68,10 @@ public enum TraitType {
     MAGICAL_WEAKNESS(3),
     DUALDAGGER(1);
 
-    private final int _type; // 1 = weapon, 2 = weakness, 3 = resistance
+    @Getter
+    private final int type; // 1 = weapon, 2 = weakness, 3 = resistance
 
     TraitType(int type) {
-        _type = type;
-    }
-
-    public int getType() {
-        return _type;
+        this.type = type;
     }
 }

@@ -40,6 +40,8 @@ import app.l2nx.network.buffer.WriteBuffer;
 import java.security.interfaces.RSAPrivateKey;
 import java.util.HashMap;
 import java.util.Map;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * Represents a client connected to the LoginServer.<br>
@@ -55,49 +57,75 @@ public class LoginClient extends Client<Connection<LoginClient>> {
     private static final String DEFAULT_IP = "N/A";
     private static final int DISCONNECT_GRACE_MS = 1000;
 
-    private final LoginEncryption _encryption;
-    private final ScrambledKeyPair _scrambledPair;
-    private final byte[] _blowfishKey;
+    private final LoginEncryption encryption;
+    private final ScrambledKeyPair scrambledPair;
 
-    private String _ip = DEFAULT_IP;
-    private final int _sessionId;
-    private final long _connectionStartTime;
+    @Getter
+    private final byte[] blowfishKey;
 
-    private String _account;
-    private int _accessLevel;
-    private int _lastServer;
-    private SessionKey _sessionKey;
-    private boolean _joinedGS;
-    private ConnectionState _connectionState = ConnectionState.CONNECTED;
+    @Getter
+    private String ip = DEFAULT_IP;
 
-    private Map<Integer, Integer> _charsOnServers;
-    private Map<Integer, long[]> _charsToDelete;
+    @Getter
+    private final int sessionId;
+
+    @Getter
+    private final long connectionStartTime;
+
+    @Getter
+    @Setter
+    private String account;
+
+    @Getter
+    @Setter
+    private int accessLevel;
+
+    @Getter
+    @Setter
+    private int lastServer;
+
+    @Getter
+    @Setter
+    private SessionKey sessionKey;
+
+    @Setter
+    private boolean joinedGS;
+
+    @Getter
+    @Setter
+    private ConnectionState connectionState = ConnectionState.CONNECTED;
+
+    @Getter
+    private Map<Integer, Integer> charsOnServ;
+
+    @Getter
+    private Map<Integer, long[]> charsWaitingDelOnServ;
 
     public LoginClient(Connection<LoginClient> connection) {
         super(connection);
 
-        _scrambledPair = LoginController.getInstance().getScrambledRSAKeyPair();
-        _blowfishKey = LoginController.getInstance().getBlowfishKey();
-        _ip = connection.getRemoteAddress();
-        _sessionId = LoginController.SECURE_RANDOM.nextInt();
-        _connectionStartTime = System.currentTimeMillis();
+        scrambledPair = LoginController.getInstance().getScrambledRSAKeyPair();
+        blowfishKey = LoginController.getInstance().getBlowfishKey();
+        ip = connection.getRemoteAddress();
+        sessionId = LoginController.SECURE_RANDOM.nextInt();
+        connectionStartTime = System.currentTimeMillis();
 
-        _encryption = new LoginEncryption();
-        _encryption.setKey(_blowfishKey);
+        encryption = new LoginEncryption();
+        encryption.setKey(blowfishKey);
 
-        if (LoginController.getInstance().isBannedAddress(_ip)) {
+        if (LoginController.getInstance().isBannedAddress(ip)) {
             close(LoginFailReason.REASON_NOT_AUTHED);
         }
     }
 
     @Override
     public boolean encrypt(WriteBuffer data, int offset, int size) {
-        return _encryption.encrypt(data, offset, size);
+        return encryption.encrypt(data, offset, size);
     }
 
     @Override
     public boolean decrypt(ReadBuffer data, int offset, int size) {
-        final boolean decrypted = _encryption.decrypt(data, offset, size);
+        final boolean decrypted = encryption.decrypt(data, offset, size);
         if (!decrypted) {
             close();
         }
@@ -112,8 +140,8 @@ public class LoginClient extends Client<Connection<LoginClient>> {
 
     @Override
     public void onDisconnection() {
-        if (!_joinedGS) {
-            LoginController.getInstance().removeAuthedLoginClient(_account);
+        if (!joinedGS) {
+            LoginController.getInstance().removeAuthedLoginClient(account);
             try {
                 Thread.sleep(DISCONNECT_GRACE_MS);
             } catch (InterruptedException e) {
@@ -121,98 +149,30 @@ public class LoginClient extends Client<Connection<LoginClient>> {
         }
     }
 
-    public byte[] getBlowfishKey() {
-        return _blowfishKey;
-    }
-
     public byte[] getScrambledModulus() {
-        return _scrambledPair.getScrambledModulus();
+        return scrambledPair.getScrambledModulus();
     }
 
     public RSAPrivateKey getRSAPrivateKey() {
-        return (RSAPrivateKey) _scrambledPair.getPrivateKey();
-    }
-
-    public String getIp() {
-        return _ip;
-    }
-
-    public int getSessionId() {
-        return _sessionId;
-    }
-
-    public long getConnectionStartTime() {
-        return _connectionStartTime;
-    }
-
-    public String getAccount() {
-        return _account;
-    }
-
-    public void setAccount(String account) {
-        _account = account;
-    }
-
-    public void setAccessLevel(int accessLevel) {
-        _accessLevel = accessLevel;
-    }
-
-    public int getAccessLevel() {
-        return _accessLevel;
-    }
-
-    public void setLastServer(int lastServer) {
-        _lastServer = lastServer;
-    }
-
-    public int getLastServer() {
-        return _lastServer;
+        return (RSAPrivateKey) scrambledPair.getPrivateKey();
     }
 
     public boolean hasJoinedGS() {
-        return _joinedGS;
-    }
-
-    public void setJoinedGS(boolean value) {
-        _joinedGS = value;
-    }
-
-    public void setSessionKey(SessionKey sessionKey) {
-        _sessionKey = sessionKey;
-    }
-
-    public SessionKey getSessionKey() {
-        return _sessionKey;
+        return joinedGS;
     }
 
     public void setCharsOnServ(int servId, int chars) {
-        if (_charsOnServers == null) {
-            _charsOnServers = new HashMap<>();
+        if (charsOnServ == null) {
+            charsOnServ = new HashMap<>();
         }
-        _charsOnServers.put(servId, chars);
-    }
-
-    public Map<Integer, Integer> getCharsOnServ() {
-        return _charsOnServers;
+        charsOnServ.put(servId, chars);
     }
 
     public void serCharsWaitingDelOnServ(int servId, long[] charsToDel) {
-        if (_charsToDelete == null) {
-            _charsToDelete = new HashMap<>();
+        if (charsWaitingDelOnServ == null) {
+            charsWaitingDelOnServ = new HashMap<>();
         }
-        _charsToDelete.put(servId, charsToDel);
-    }
-
-    public Map<Integer, long[]> getCharsWaitingDelOnServ() {
-        return _charsToDelete;
-    }
-
-    public ConnectionState getConnectionState() {
-        return _connectionState;
-    }
-
-    public void setConnectionState(ConnectionState connectionState) {
-        _connectionState = connectionState;
+        charsWaitingDelOnServ.put(servId, charsToDel);
     }
 
     public void sendPacket(LoginServerPacket packet) {
@@ -237,12 +197,12 @@ public class LoginClient extends Client<Connection<LoginClient>> {
         final StringBuilder sb = new StringBuilder();
         sb.append(getClass().getSimpleName());
         sb.append(" [");
-        if (_account != null) {
+        if (account != null) {
             sb.append("Account: ");
-            sb.append(_account);
+            sb.append(account);
         }
         if (ip != null) {
-            if (_account != null) {
+            if (account != null) {
                 sb.append(" - ");
             }
             sb.append("IP: ");

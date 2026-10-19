@@ -29,60 +29,60 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @author Mobius
  */
 public class AutoPlaySettingsHolder {
-    private final AtomicInteger _options = new AtomicInteger();
-    private final AtomicBoolean _pickup = new AtomicBoolean(true);
-    private final AtomicInteger _nextTargetMode = new AtomicInteger(1);
-    private final AtomicBoolean _shortRange = new AtomicBoolean();
-    private final AtomicBoolean _respectfulHunting = new AtomicBoolean(true);
-    private final AtomicInteger _autoPotionPercent = new AtomicInteger(50);
+    private final AtomicInteger options = new AtomicInteger();
+    private final AtomicBoolean pickup = new AtomicBoolean(true);
+    private final AtomicInteger nextTargetMode = new AtomicInteger(1);
+    private final AtomicBoolean shortRange = new AtomicBoolean();
+    private final AtomicBoolean respectfulHunting = new AtomicBoolean(true);
+    private final AtomicInteger autoPotionPercent = new AtomicInteger(50);
 
     public AutoPlaySettingsHolder() {}
 
     public int getOptions() {
-        return _options.get();
+        return options.get();
     }
 
     public void setOptions(int options) {
-        _options.set(options);
+        this.options.set(options);
     }
 
     public boolean doPickup() {
-        return _pickup.get();
+        return pickup.get();
     }
 
     public void setPickup(boolean value) {
-        _pickup.set(value);
+        pickup.set(value);
     }
 
     public int getNextTargetMode() {
-        return _nextTargetMode.get();
+        return nextTargetMode.get();
     }
 
     public void setNextTargetMode(int nextTargetMode) {
-        _nextTargetMode.set(nextTargetMode);
+        this.nextTargetMode.set(nextTargetMode);
     }
 
     public boolean isShortRange() {
-        return _shortRange.get();
+        return shortRange.get();
     }
 
     public void setShortRange(boolean value) {
-        _shortRange.set(value);
+        shortRange.set(value);
     }
 
     public boolean isRespectfulHunting() {
-        return _respectfulHunting.get();
+        return respectfulHunting.get();
     }
 
     public void setRespectfulHunting(boolean value) {
-        _respectfulHunting.set(value);
+        respectfulHunting.set(value);
     }
 
     public int getAutoPotionPercent() {
-        return _autoPotionPercent.get();
+        return autoPotionPercent.get();
     }
 
     public void setAutoPotionPercent(int value) {
-        _autoPotionPercent.set(value);
+        autoPotionPercent.set(value);
     }
 }

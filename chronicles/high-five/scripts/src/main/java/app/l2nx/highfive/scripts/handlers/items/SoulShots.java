@@ -35,8 +35,9 @@ import app.l2nx.highfive.mechanics.skill.holders.SkillHolder;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.serverpackets.MagicSkillUse;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.logging.Level;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class SoulShots implements IItemHandler {
     @Override
     public boolean onItemUse(Playable playable, Item item, boolean forceUse) {
@@ -47,7 +48,7 @@ public class SoulShots implements IItemHandler {
 
         final SkillHolder[] skills = item.getTemplate().getSkills();
         if (skills == null) {
-            LOGGER.log(Level.WARNING, getClass().getSimpleName() + ": is missing skills!");
+            log.warn("Is missing skills!");
             return false;
         }
 

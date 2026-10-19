@@ -37,14 +37,13 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Calendar;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class LotteryManager {
     public static final long SECOND = 1000;
     public static final long MINUTE = 60000;
-
-    protected static final Logger LOGGER = Logger.getLogger(LotteryManager.class.getName());
 
     private static final String INSERT_LOTTERY =
             "INSERT INTO lottery(id, idnr, enddate, prize, newprize) VALUES (?, ?, ?, ?, ?)";
@@ -58,54 +57,43 @@ public class LotteryManager {
     private static final String SELECT_LOTTERY_TICKET =
             "SELECT number1, number2, prize1, prize2, prize3 FROM lottery WHERE id = 1 and idnr = ?";
 
-    protected int _number;
-    protected long _prize;
-    protected boolean _isSellingTickets;
-    protected boolean _isStarted;
-    protected long _enddate;
+    @Getter
+    protected int id;
+
+    @Getter
+    protected long prize;
+
+    @Getter
+    protected boolean sellableTickets;
+
+    @Getter
+    protected boolean started;
+
+    @Getter
+    protected long endDate;
 
     protected LotteryManager() {
-        _number = 1;
-        _prize = GeneralConfig.ALT_LOTTERY_PRIZE;
-        _isSellingTickets = false;
-        _isStarted = false;
-        _enddate = System.currentTimeMillis();
+        id = 1;
+        prize = GeneralConfig.ALT_LOTTERY_PRIZE;
+        sellableTickets = false;
+        started = false;
+        endDate = System.currentTimeMillis();
         if (GeneralConfig.ALLOW_LOTTERY) {
             (new startLottery()).run();
         }
     }
 
-    public int getId() {
-        return _number;
-    }
-
-    public long getPrize() {
-        return _prize;
-    }
-
-    public long getEndDate() {
-        return _enddate;
-    }
-
     public void increasePrize(long count) {
-        _prize += count;
+        prize += count;
         try (Connection con = DatabaseFactory.getConnection();
                 PreparedStatement ps = con.prepareStatement(UPDATE_PRICE)) {
-            ps.setLong(1, _prize);
-            ps.setLong(2, _prize);
-            ps.setInt(3, _number);
+            ps.setLong(1, prize);
+            ps.setLong(2, prize);
+            ps.setInt(3, id);
             ps.execute();
         } catch (SQLException e) {
-            LOGGER.log(Level.WARNING, "Lottery: Could not increase current lottery prize: " + e.getMessage(), e);
+            log.warn("Lottery: Could not increase current lottery prize: {}", e.getMessage(), e);
         }
-    }
-
-    public boolean isSellableTickets() {
-        return _isSellingTickets;
-    }
-
-    public boolean isStarted() {
-        return _isStarted;
     }
 
     private class startLottery implements Runnable {
@@ -119,66 +107,67 @@ public class LotteryManager {
                     Statement statement = con.createStatement();
                     ResultSet rset = statement.executeQuery(SELECT_LAST_LOTTERY)) {
                 if (rset.next()) {
-                    _number = rset.getInt("idnr");
+                    id = rset.getInt("idnr");
                     if (rset.getInt("finished") == 1) {
-                        _number++;
-                        _prize = rset.getLong("newprize");
+                        id++;
+                        prize = rset.getLong("newprize");
                     } else {
-                        _prize = rset.getLong("prize");
-                        _enddate = rset.getLong("enddate");
-                        if (_enddate <= (System.currentTimeMillis() + (2 * MINUTE))) {
+                        prize = rset.getLong("prize");
+                        LotteryManager.this.endDate = rset.getLong("enddate");
+                        if (LotteryManager.this.endDate <= (System.currentTimeMillis() + (2 * MINUTE))) {
                             (new finishLottery()).run();
                             return;
                         }
 
-                        if (_enddate > System.currentTimeMillis()) {
-                            _isStarted = true;
-                            ThreadPool.schedule(new finishLottery(), _enddate - System.currentTimeMillis());
-                            if (_enddate > (System.currentTimeMillis() + (12 * MINUTE))) {
-                                _isSellingTickets = true;
+                        if (LotteryManager.this.endDate > System.currentTimeMillis()) {
+                            started = true;
+                            ThreadPool.schedule(
+                                    new finishLottery(), LotteryManager.this.endDate - System.currentTimeMillis());
+                            if (LotteryManager.this.endDate > (System.currentTimeMillis() + (12 * MINUTE))) {
+                                sellableTickets = true;
                                 ThreadPool.schedule(
                                         new stopSellingTickets(),
-                                        _enddate - System.currentTimeMillis() - (10 * MINUTE));
+                                        LotteryManager.this.endDate - System.currentTimeMillis() - (10 * MINUTE));
                             }
                             return;
                         }
                     }
                 }
             } catch (SQLException e) {
-                LOGGER.log(Level.WARNING, "Lottery: Could not restore lottery data: " + e.getMessage(), e);
+                log.warn("Lottery: Could not restore lottery data: {}", e.getMessage(), e);
             }
 
-            _isSellingTickets = true;
-            _isStarted = true;
-            World.broadcastToAllOnlinePlayers("Lottery tickets are now available for Lucky Lottery #" + _number + ".");
+            sellableTickets = true;
+            started = true;
+            World.broadcastToAllOnlinePlayers("Lottery tickets are now available for Lucky Lottery #" + id + ".");
             final Calendar finishtime = Calendar.getInstance();
-            finishtime.setTimeInMillis(_enddate);
+            finishtime.setTimeInMillis(LotteryManager.this.endDate);
             finishtime.set(Calendar.MINUTE, 0);
             finishtime.set(Calendar.SECOND, 0);
             if (finishtime.get(Calendar.DAY_OF_WEEK) == Calendar.SUNDAY) {
                 finishtime.set(Calendar.HOUR_OF_DAY, 19);
-                _enddate = finishtime.getTimeInMillis();
-                _enddate += 604800000;
+                LotteryManager.this.endDate = finishtime.getTimeInMillis();
+                LotteryManager.this.endDate += 604800000;
             } else {
                 finishtime.set(Calendar.DAY_OF_WEEK, Calendar.SUNDAY);
                 finishtime.set(Calendar.HOUR_OF_DAY, 19);
-                _enddate = finishtime.getTimeInMillis();
+                LotteryManager.this.endDate = finishtime.getTimeInMillis();
             }
 
-            final long endDate = _enddate - System.currentTimeMillis();
+            final long endDate = LotteryManager.this.endDate - System.currentTimeMillis();
             ThreadPool.schedule(new stopSellingTickets(), Math.max(endDate - (10 * MINUTE), 0));
             ThreadPool.schedule(new finishLottery(), Math.max(endDate, 0));
 
             try (Connection con = DatabaseFactory.getConnection();
                     PreparedStatement ps = con.prepareStatement(INSERT_LOTTERY)) {
                 ps.setInt(1, 1);
-                ps.setInt(2, _number);
-                ps.setLong(3, _enddate);
-                ps.setLong(4, _prize);
-                ps.setLong(5, _prize);
+                ps.setInt(2, id);
+                ps.setLong(3, LotteryManager.this.endDate);
+                ps.setLong(4, prize);
+                ps.setLong(5, prize);
                 ps.execute();
             } catch (SQLException e) {
-                LOGGER.log(Level.WARNING, "Lottery: Could not store new lottery data: " + e.getMessage(), e);
+                log.warn("Lottery: Could not store new lottery data: {}", e.getMessage(), e);
             }
         }
     }
@@ -190,7 +179,7 @@ public class LotteryManager {
 
         @Override
         public void run() {
-            _isSellingTickets = false;
+            sellableTickets = false;
             World.broadcastToAllOnlinePlayers(
                     new SystemMessage(SystemMessageId.LOTTERY_TICKET_SALES_HAVE_BEEN_TEMPORARILY_SUSPENDED));
         }
@@ -238,7 +227,7 @@ public class LotteryManager {
 
             try (Connection con = DatabaseFactory.getConnection();
                     PreparedStatement ps = con.prepareStatement(SELECT_LOTTERY_ITEM)) {
-                ps.setInt(1, _number);
+                ps.setInt(1, id);
                 try (ResultSet rset = ps.executeQuery()) {
                     while (rset.next()) {
                         int curenchant = rset.getInt("enchant_level") & enchant;
@@ -275,7 +264,7 @@ public class LotteryManager {
                     }
                 }
             } catch (SQLException e) {
-                LOGGER.log(Level.WARNING, "Lottery: Could restore lottery data: " + e.getMessage(), e);
+                log.warn("Lottery: Could restore lottery data: {}", e.getMessage(), e);
             }
 
             final long prize4 = count4 * GeneralConfig.ALT_LOTTERY_2_AND_1_NUMBER_PRIZE;
@@ -283,57 +272,57 @@ public class LotteryManager {
             long prize2 = 0;
             long prize3 = 0;
             if (count1 > 0) {
-                prize1 = (long) (((_prize - prize4) * GeneralConfig.ALT_LOTTERY_5_NUMBER_RATE) / count1);
+                prize1 = (long) (((prize - prize4) * GeneralConfig.ALT_LOTTERY_5_NUMBER_RATE) / count1);
             }
 
             if (count2 > 0) {
-                prize2 = (long) (((_prize - prize4) * GeneralConfig.ALT_LOTTERY_4_NUMBER_RATE) / count2);
+                prize2 = (long) (((prize - prize4) * GeneralConfig.ALT_LOTTERY_4_NUMBER_RATE) / count2);
             }
 
             if (count3 > 0) {
-                prize3 = (long) (((_prize - prize4) * GeneralConfig.ALT_LOTTERY_3_NUMBER_RATE) / count3);
+                prize3 = (long) (((prize - prize4) * GeneralConfig.ALT_LOTTERY_3_NUMBER_RATE) / count3);
             }
 
-            final long newprize = _prize - (prize1 + prize2 + prize3 + prize4);
+            final long newprize = prize - (prize1 + prize2 + prize3 + prize4);
             SystemMessage sm;
             if (count1 > 0) {
                 // There are winners.
                 sm = new SystemMessage(
                         SystemMessageId
                                 .THE_PRIZE_AMOUNT_FOR_THE_WINNER_OF_LOTTERY_S1_IS_S2_ADENA_WE_HAVE_S3_FIRST_PRIZE_WINNERS);
-                sm.addInt(_number);
-                sm.addLong(_prize);
+                sm.addInt(id);
+                sm.addLong(prize);
                 sm.addLong(count1);
             } else {
                 // There are no winners.
                 sm = new SystemMessage(
                         SystemMessageId
                                 .THE_PRIZE_AMOUNT_FOR_LUCKY_LOTTERY_S1_IS_S2_ADENA_THERE_WAS_NO_FIRST_PRIZE_WINNER_IN_THIS_DRAWING_THEREFORE_THE_JACKPOT_WILL_BE_ADDED_TO_THE_NEXT_DRAWING);
-                sm.addInt(_number);
-                sm.addLong(_prize);
+                sm.addInt(id);
+                sm.addLong(prize);
             }
 
             World.broadcastToAllOnlinePlayers(sm);
 
             try (Connection con = DatabaseFactory.getConnection();
                     PreparedStatement ps = con.prepareStatement(UPDATE_LOTTERY)) {
-                ps.setLong(1, _prize);
+                ps.setLong(1, prize);
                 ps.setLong(2, newprize);
                 ps.setInt(3, enchant);
                 ps.setInt(4, type2);
                 ps.setLong(5, prize1);
                 ps.setLong(6, prize2);
                 ps.setLong(7, prize3);
-                ps.setInt(8, _number);
+                ps.setInt(8, id);
                 ps.execute();
             } catch (SQLException e) {
-                LOGGER.log(Level.WARNING, "Lottery: Could not store finished lottery data: " + e.getMessage(), e);
+                log.warn("Lottery: Could not store finished lottery data: {}", e.getMessage(), e);
             }
 
             ThreadPool.schedule(new startLottery(), MINUTE);
-            _number++;
+            id++;
 
-            _isStarted = false;
+            started = false;
         }
     }
 
@@ -431,7 +420,7 @@ public class LotteryManager {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.log(Level.WARNING, "Lottery: Could not check lottery ticket #" + id + ": " + e.getMessage(), e);
+            log.warn("Lottery: Could not check lottery ticket #{}: {}", id, e.getMessage(), e);
         }
 
         return res;

@@ -32,11 +32,11 @@ import app.l2nx.highfive.network.serverpackets.ActionFailed;
 import app.l2nx.highfive.taskmanagers.AttackStanceTaskManager;
 
 public class RequestStopPledgeWar extends ClientPacket {
-    private String _pledgeName;
+    private String pledgeName;
 
     @Override
     protected void readImpl() {
-        _pledgeName = readString();
+        pledgeName = readString();
     }
 
     @Override
@@ -51,7 +51,7 @@ public class RequestStopPledgeWar extends ClientPacket {
             return;
         }
 
-        final Clan clan = ClanTable.getInstance().getClanByName(_pledgeName);
+        final Clan clan = ClanTable.getInstance().getClanByName(pledgeName);
         if (clan == null) {
             player.sendMessage("No such clan.");
             player.sendPacket(ActionFailed.STATIC_PACKET);

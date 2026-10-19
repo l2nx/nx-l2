@@ -30,35 +30,35 @@ import app.l2nx.highfive.geoengine.GeoEngine;
  * @author Naker
  */
 public class DistrustAI extends AttackableAI {
-    private final Creature _forcedTarget;
+    private final Creature forcedTarget;
 
     public DistrustAI(Attackable actor, Creature forcedTarget) {
         super(actor);
-        _forcedTarget = forcedTarget;
+        this.forcedTarget = forcedTarget;
     }
 
     @Override
     public void thinkAttack() {
-        if ((_forcedTarget == null) || _forcedTarget.isDead()) {
-            _actor.setTarget(null);
+        if ((forcedTarget == null) || forcedTarget.isDead()) {
+            actor.setTarget(null);
             setIntentionActive();
             return;
         }
 
-        _actor.setTarget(_forcedTarget);
-        setIntentionAttack(_forcedTarget);
+        actor.setTarget(forcedTarget);
+        setIntentionAttack(forcedTarget);
 
         final int range =
-                _actor.getPhysicalAttackRange() + _forcedTarget.getTemplate().getCollisionRadius();
-        if (_actor.calculateDistance3D(_forcedTarget) > range) {
-            moveToPawn(_forcedTarget, range);
+                actor.getPhysicalAttackRange() + forcedTarget.getTemplate().getCollisionRadius();
+        if (actor.calculateDistance3D(forcedTarget) > range) {
+            moveToPawn(forcedTarget, range);
             return;
         }
 
-        if (!GeoEngine.getInstance().canSeeTarget(_actor, _forcedTarget)) {
+        if (!GeoEngine.getInstance().canSeeTarget(actor, forcedTarget)) {
             return;
         }
 
-        _actor.doAttack(_forcedTarget);
+        actor.doAttack(forcedTarget);
     }
 }

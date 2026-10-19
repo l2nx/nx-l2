@@ -27,18 +27,18 @@ import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.network.buffer.WriteBuffer;
 
 public class ExAutoSoulShot extends ServerPacket {
-    private final int _itemId;
-    private final int _type;
+    private final int itemId;
+    private final int type;
 
     public ExAutoSoulShot(int itemId, int type) {
-        _itemId = itemId;
-        _type = type;
+        this.itemId = itemId;
+        this.type = type;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_AUTO_SOULSHOT.writeId(this, buffer);
-        buffer.writeInt(_itemId);
-        buffer.writeInt(_type);
+        buffer.writeInt(itemId);
+        buffer.writeInt(type);
     }
 }

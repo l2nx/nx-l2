@@ -43,7 +43,7 @@ import app.l2nx.highfive.network.serverpackets.PlaySound;
 import app.l2nx.highfive.util.StatSet;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.DateFormatUtils;
 
 /**
@@ -51,8 +51,8 @@ import org.apache.commons.lang3.time.DateFormatUtils;
  * Controls boss lifecycle, minion healing, raid curse and nest constraints.
  * @author BazookaRpm
  */
+@Slf4j
 public class QueenAnt extends Script {
-    private static final Logger LOGGER = Logger.getLogger(QueenAnt.class.getName());
 
     // Boss and minion identifiers.
     private static final int QUEEN_ANT_ID = 29001;
@@ -116,12 +116,12 @@ public class QueenAnt extends Script {
     private static final String VAR_CURRENT_MP = "currentMP";
 
     // Boss zone.
-    private static BossZone _queenNestZone;
+    private static BossZone queenNestZone;
 
     // Runtime references.
-    private Monster _queenInstance;
-    private Monster _larvaInstance;
-    private final Set<Monster> _activeNurses = ConcurrentHashMap.newKeySet();
+    private Monster queenInstance;
+    private Monster larvaInstance;
+    private final Set<Monster> activeNurses = ConcurrentHashMap.newKeySet();
 
     /**
      * Initializes Queen Ant AI and restores boss state from the database.
@@ -132,7 +132,7 @@ public class QueenAnt extends Script {
         addAggroRangeEnterId(MONITORED_NPC_IDS);
         addFactionCallId(NURSE_ID);
 
-        _queenNestZone = ZoneManager.getInstance().getZoneById(12012, BossZone.class);
+        queenNestZone = ZoneManager.getInstance().getZoneById(12012, BossZone.class);
 
         final GrandBossManager bossManager = GrandBossManager.getInstance();
         final StatSet bossInfo = bossManager.getStatSet(QUEEN_ANT_ID);
@@ -157,7 +157,7 @@ public class QueenAnt extends Script {
             int locX = bossInfo.getInt("loc_x");
             int locY = bossInfo.getInt("loc_y");
             int locZ = bossInfo.getInt("loc_z");
-            if (!_queenNestZone.isInsideZone(locX, locY, locZ)) {
+            if (!queenNestZone.isInsideZone(locX, locY, locZ)) {
                 locX = QUEEN_NEST_X;
                 locY = QUEEN_NEST_Y;
                 locZ = QUEEN_NEST_Z;
@@ -176,14 +176,14 @@ public class QueenAnt extends Script {
     private void spawnBoss(GrandBoss boss) {
         GrandBossManager.getInstance().addBoss(boss);
 
-        if (_queenNestZone != null) {
+        if (queenNestZone != null) {
             final int initialRoll = getRandom(100);
             if (initialRoll < 33) {
-                _queenNestZone.movePlayersTo(TELEPORT_LOCATION_ONE);
+                queenNestZone.movePlayersTo(TELEPORT_LOCATION_ONE);
             } else if (getRandom(100) < 50) {
-                _queenNestZone.movePlayersTo(TELEPORT_LOCATION_TWO);
+                queenNestZone.movePlayersTo(TELEPORT_LOCATION_TWO);
             } else {
-                _queenNestZone.movePlayersTo(TELEPORT_LOCATION_THREE);
+                queenNestZone.movePlayersTo(TELEPORT_LOCATION_THREE);
             }
         }
 
@@ -195,8 +195,8 @@ public class QueenAnt extends Script {
         boss.broadcastPacket(
                 new PlaySound(1, SOUND_SPAWN, 1, boss.getObjectId(), boss.getX(), boss.getY(), boss.getZ()));
 
-        _queenInstance = boss;
-        _larvaInstance = addSpawn(LARVA_ID, LARVA_SPAWN_X, LARVA_SPAWN_Y, LARVA_SPAWN_Z, getRandom(360), false, 0)
+        queenInstance = boss;
+        larvaInstance = addSpawn(LARVA_ID, LARVA_SPAWN_X, LARVA_SPAWN_Y, LARVA_SPAWN_Z, getRandom(360), false, 0)
                 .asMonster();
     }
 
@@ -208,11 +208,11 @@ public class QueenAnt extends Script {
         switch (event) {
             case EVENT_HEAL: {
                 final boolean larvaNeedsHeal =
-                        (_larvaInstance != null) && (_larvaInstance.getCurrentHp() < _larvaInstance.getMaxHp());
+                        (larvaInstance != null) && (larvaInstance.getCurrentHp() < larvaInstance.getMaxHp());
                 final boolean queenNeedsHeal =
-                        (_queenInstance != null) && (_queenInstance.getCurrentHp() < _queenInstance.getMaxHp());
+                        (queenInstance != null) && (queenInstance.getCurrentHp() < queenInstance.getMaxHp());
 
-                for (Monster nurse : _activeNurses) {
+                for (Monster nurse : activeNurses) {
                     if ((nurse == null) || nurse.isDead() || nurse.isCastingNow()) {
                         continue;
                     }
@@ -220,8 +220,8 @@ public class QueenAnt extends Script {
                     final boolean nurseNotCasting = nurse.getAI().getIntention() != Intention.CAST;
 
                     if (larvaNeedsHeal) {
-                        if ((nurse.getTarget() != _larvaInstance) || nurseNotCasting) {
-                            nurse.setTarget(_larvaInstance);
+                        if ((nurse.getTarget() != larvaInstance) || nurseNotCasting) {
+                            nurse.setTarget(larvaInstance);
 
                             final Skill healSkill = getRandomBoolean()
                                     ? NURSE_HEAL_SKILL_ONE.getSkill()
@@ -234,12 +234,12 @@ public class QueenAnt extends Script {
                     }
 
                     if (queenNeedsHeal) {
-                        if (nurse.getLeader() == _larvaInstance) {
+                        if (nurse.getLeader() == larvaInstance) {
                             continue;
                         }
 
-                        if ((_queenInstance != null) && ((nurse.getTarget() != _queenInstance) || nurseNotCasting)) {
-                            nurse.setTarget(_queenInstance);
+                        if ((queenInstance != null) && ((nurse.getTarget() != queenInstance) || nurseNotCasting)) {
+                            nurse.setTarget(queenInstance);
 
                             final Skill healSkill = NURSE_HEAL_SKILL_ONE.getSkill();
                             if (healSkill != null) {
@@ -273,11 +273,11 @@ public class QueenAnt extends Script {
                 break;
             }
             case EVENT_DISTANCE_CHECK: {
-                if ((_queenInstance == null) || _queenInstance.isDead()) {
+                if ((queenInstance == null) || queenInstance.isDead()) {
                     cancelQuestTimers(EVENT_DISTANCE_CHECK);
-                } else if ((_queenNestZone != null) && !_queenNestZone.isInsideZone(_queenInstance)) {
-                    _queenInstance.clearAggroList();
-                    _queenInstance.getAI().setIntentionMoveTo(new Location(QUEEN_NEST_X, QUEEN_NEST_Y, QUEEN_NEST_Z));
+                } else if ((queenNestZone != null) && !queenNestZone.isInsideZone(queenInstance)) {
+                    queenInstance.clearAggroList();
+                    queenInstance.getAI().setIntentionMoveTo(new Location(QUEEN_NEST_X, QUEEN_NEST_Y, QUEEN_NEST_Z));
                 }
                 break;
             }
@@ -303,7 +303,7 @@ public class QueenAnt extends Script {
             case NURSE_ID: {
                 monster.disableCoreAI(true);
                 monster.setIsRaidMinion(true);
-                _activeNurses.add(monster);
+                activeNurses.add(monster);
                 break;
             }
             case ROYAL_ID:
@@ -406,7 +406,7 @@ public class QueenAnt extends Script {
             final long respawnDelay = baseIntervalMillis + getRandom(-randomRangeMillis, randomRangeMillis);
 
             final long nextRespawnTime = System.currentTimeMillis() + respawnDelay;
-            LOGGER.info("Queen Ant will respawn at: " + DateFormatUtils.format(nextRespawnTime, "dd/MM/yyyy HH:mm:ss"));
+            log.info("Queen Ant will respawn at: {}", DateFormatUtils.format(nextRespawnTime, "dd/MM/yyyy HH:mm:ss"));
 
             startQuestTimer(EVENT_QUEEN_UNLOCK, respawnDelay, null, null);
             cancelQuestTimer(EVENT_ACTION, npc, null);
@@ -416,17 +416,17 @@ public class QueenAnt extends Script {
             bossInfo.set(VAR_RESPAWN_TIME, nextRespawnTime);
             GrandBossManager.getInstance().setStatSet(QUEEN_ANT_ID, bossInfo);
 
-            _activeNurses.clear();
+            activeNurses.clear();
 
-            if (_larvaInstance != null) {
-                _larvaInstance.deleteMe();
+            if (larvaInstance != null) {
+                larvaInstance.deleteMe();
             }
 
-            _larvaInstance = null;
-            _queenInstance = null;
+            larvaInstance = null;
+            queenInstance = null;
 
             cancelQuestTimers(EVENT_DISTANCE_CHECK);
-        } else if ((_queenInstance != null) && !_queenInstance.isAlikeDead()) {
+        } else if ((queenInstance != null) && !queenInstance.isAlikeDead()) {
             if (npcId == ROYAL_ID) {
                 final Monster royal = npc.asMonster();
                 if (royal.getLeader() != null) {
@@ -435,7 +435,7 @@ public class QueenAnt extends Script {
                 }
             } else if (npcId == NURSE_ID) {
                 final Monster nurse = npc.asMonster();
-                _activeNurses.remove(nurse);
+                activeNurses.remove(nurse);
 
                 if (nurse.getLeader() != null) {
                     nurse.getLeader().getMinionList().onMinionDie(nurse, NURSE_RESPAWN_DELAY_MILLIS);

@@ -31,23 +31,23 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ExEnchantSkillList extends ServerPacket {
-    private final EnchantSkillType _type;
-    private final List<Skill> _skills = new ArrayList<>();
+    private final EnchantSkillType type;
+    private final List<Skill> skills = new ArrayList<>();
 
     public ExEnchantSkillList(EnchantSkillType type) {
-        _type = type;
+        this.type = type;
     }
 
     public void addSkill(Skill skill) {
-        _skills.add(skill);
+        skills.add(skill);
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_ENCHANT_SKILL_LIST.writeId(this, buffer);
-        buffer.writeInt(_type.ordinal());
-        buffer.writeInt(_skills.size());
-        for (Skill skill : _skills) {
+        buffer.writeInt(type.ordinal());
+        buffer.writeInt(skills.size());
+        for (Skill skill : skills) {
             buffer.writeInt(skill.getId());
             buffer.writeInt(skill.getLevel());
         }

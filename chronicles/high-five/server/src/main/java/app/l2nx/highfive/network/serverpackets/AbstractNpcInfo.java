@@ -43,71 +43,71 @@ import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.network.buffer.WriteBuffer;
 
 public abstract class AbstractNpcInfo extends ServerPacket {
-    protected int _x;
-    protected int _y;
-    protected int _z;
-    protected int _heading;
-    protected int _displayId;
-    protected boolean _isAttackable;
-    protected boolean _isSummoned;
-    protected int _mAtkSpd;
-    protected int _pAtkSpd;
-    protected final int _runSpd;
-    protected final int _walkSpd;
-    protected final int _swimRunSpd;
-    protected final int _swimWalkSpd;
-    protected final int _flyRunSpd;
-    protected final int _flyWalkSpd;
-    protected double _moveMultiplier;
-    protected int _rhand;
-    protected int _lhand;
-    protected int _chest;
-    protected int _enchantEffect;
-    protected float _collisionHeight;
-    protected float _collisionRadius;
-    protected String _name = "";
-    protected String _title = "";
-    protected final boolean _gmSeeInvis;
+    protected int x;
+    protected int y;
+    protected int z;
+    protected int heading;
+    protected int displayId;
+    protected boolean attackable;
+    protected boolean summoned;
+    protected int mAtkSpd;
+    protected int pAtkSpd;
+    protected final int runSpd;
+    protected final int walkSpd;
+    protected final int swimRunSpd;
+    protected final int swimWalkSpd;
+    protected final int flyRunSpd;
+    protected final int flyWalkSpd;
+    protected double moveMultiplier;
+    protected int rhand;
+    protected int lhand;
+    protected int chest;
+    protected int enchantEffect;
+    protected float collisionHeight;
+    protected float collisionRadius;
+    protected String name = "";
+    protected String title = "";
+    protected final boolean gmSeeInvis;
 
     public AbstractNpcInfo(Creature creature, boolean gmSeeInvis) {
-        _isSummoned = creature.isShowSummonAnimation();
-        _x = creature.getX();
-        _y = creature.getY();
-        _z = creature.getZ();
-        _heading = creature.getHeading();
-        _mAtkSpd = creature.getMAtkSpd();
-        _pAtkSpd = (int) creature.getPAtkSpd();
-        _moveMultiplier = creature.getMovementSpeedMultiplier();
-        _runSpd = (int) Math.round(creature.getRunSpeed() / _moveMultiplier);
-        _walkSpd = (int) Math.round(creature.getWalkSpeed() / _moveMultiplier);
-        _swimRunSpd = (int) Math.round(creature.getSwimRunSpeed() / _moveMultiplier);
-        _swimWalkSpd = (int) Math.round(creature.getSwimWalkSpeed() / _moveMultiplier);
-        _flyRunSpd = creature.isFlying() ? _runSpd : 0;
-        _flyWalkSpd = creature.isFlying() ? _walkSpd : 0;
-        _gmSeeInvis = gmSeeInvis;
+        summoned = creature.isShowSummonAnimation();
+        x = creature.getX();
+        y = creature.getY();
+        z = creature.getZ();
+        heading = creature.getHeading();
+        mAtkSpd = creature.getMAtkSpd();
+        pAtkSpd = (int) creature.getPAtkSpd();
+        moveMultiplier = creature.getMovementSpeedMultiplier();
+        runSpd = (int) Math.round(creature.getRunSpeed() / moveMultiplier);
+        walkSpd = (int) Math.round(creature.getWalkSpeed() / moveMultiplier);
+        swimRunSpd = (int) Math.round(creature.getSwimRunSpeed() / moveMultiplier);
+        swimWalkSpd = (int) Math.round(creature.getSwimWalkSpeed() / moveMultiplier);
+        flyRunSpd = creature.isFlying() ? runSpd : 0;
+        flyWalkSpd = creature.isFlying() ? walkSpd : 0;
+        this.gmSeeInvis = gmSeeInvis;
     }
 
     /**
      * Packet for Npcs
      */
     public static class NpcInfo extends AbstractNpcInfo {
-        private final Npc _npc;
-        private int _clanCrest = 0;
-        private int _allyCrest = 0;
-        private int _allyId = 0;
-        private int _clanId = 0;
-        private int _displayEffect = 0;
+        private final Npc npc;
+        private int clanCrest = 0;
+        private int allyCrest = 0;
+        private int allyId = 0;
+        private int clanId = 0;
+        private int displayEffect = 0;
 
         public NpcInfo(Npc cha, Creature attacker) {
             super(cha, attacker.isGM());
-            _npc = cha;
-            _displayId = cha.getTemplate().getDisplayId(); // On every subclass
-            _rhand = cha.getRightHandItem(); // On every subclass
-            _lhand = cha.getLeftHandItem(); // On every subclass
-            _enchantEffect = cha.getEnchantEffect();
-            _collisionHeight = cha.getTemplate().getFCollisionHeight(); // On every subclass
-            _collisionRadius = cha.getTemplate().getFCollisionRadius(); // On every subclass
-            _isAttackable = cha.isAutoAttackable(attacker);
+            npc = cha;
+            displayId = cha.getTemplate().getDisplayId(); // On every subclass
+            rhand = cha.getRightHandItem(); // On every subclass
+            lhand = cha.getLeftHandItem(); // On every subclass
+            enchantEffect = cha.getEnchantEffect();
+            collisionHeight = cha.getTemplate().getFCollisionHeight(); // On every subclass
+            collisionRadius = cha.getTemplate().getFCollisionRadius(); // On every subclass
+            attackable = cha.isAutoAttackable(attacker);
 
             // npc crest of owning clan/ally of castle
             if (cha.isNpc()
@@ -117,26 +117,26 @@ public abstract class AbstractNpcInfo extends ServerPacket {
                     && cha.isInsideZone(ZoneId.TOWN)
                     && (NpcConfig.SHOW_CREST_WITHOUT_QUEST || cha.getCastle().getShowNpcCrest())
                     && (cha.getCastle().getOwnerId() != 0)) {
-                final TownZone town = TownManager.getTown(_x, _y, _z);
+                final TownZone town = TownManager.getTown(x, y, z);
                 if (town != null) {
                     final int townId = town.getTownId();
                     if ((townId != 33) && (townId != 22)) {
                         final Clan clan =
                                 ClanTable.getInstance().getClan(cha.getCastle().getOwnerId());
-                        _clanCrest = clan.getCrestId();
-                        _clanId = clan.getId();
-                        _allyCrest = clan.getAllyCrestId();
-                        _allyId = clan.getAllyId();
+                        clanCrest = clan.getCrestId();
+                        clanId = clan.getId();
+                        allyCrest = clan.getAllyCrestId();
+                        allyId = clan.getAllyId();
                     }
                 }
             }
 
-            _displayEffect = cha.getDisplayEffect();
+            displayEffect = cha.getDisplayEffect();
         }
 
         @Override
         public void writeImpl(GameClient client, WriteBuffer buffer) {
-            if (_npc.isDecayed()) {
+            if (npc.isDecayed()) {
                 return;
             }
 
@@ -147,71 +147,71 @@ public abstract class AbstractNpcInfo extends ServerPacket {
                 if (player != null) {
                     final String lang = player.getLang();
                     if ((lang != null) && !lang.equals("en")) {
-                        localisation = NpcNameLocalisationData.getInstance().getLocalisation(lang, _npc.getId());
+                        localisation = NpcNameLocalisationData.getInstance().getLocalisation(lang, npc.getId());
                         if (localisation != null) {
-                            _name = localisation[0];
-                            _title = localisation[1];
+                            name = localisation[0];
+                            title = localisation[1];
                         }
                     }
                 }
             }
 
             ServerPackets.NPC_INFO.writeId(this, buffer);
-            buffer.writeInt(_npc.getObjectId());
-            buffer.writeInt(_displayId + 1000000); // npctype id
-            buffer.writeInt(_isAttackable);
-            buffer.writeInt(_x);
-            buffer.writeInt(_y);
-            buffer.writeInt(_z);
-            buffer.writeInt(_heading);
+            buffer.writeInt(npc.getObjectId());
+            buffer.writeInt(displayId + 1000000); // npctype id
+            buffer.writeInt(attackable);
+            buffer.writeInt(x);
+            buffer.writeInt(y);
+            buffer.writeInt(z);
+            buffer.writeInt(heading);
             buffer.writeInt(0);
-            buffer.writeInt(_mAtkSpd);
-            buffer.writeInt(_pAtkSpd);
-            buffer.writeInt(_runSpd);
-            buffer.writeInt(_walkSpd);
-            buffer.writeInt(_swimRunSpd);
-            buffer.writeInt(_swimWalkSpd);
-            buffer.writeInt(_flyRunSpd);
-            buffer.writeInt(_flyWalkSpd);
-            buffer.writeInt(_flyRunSpd);
-            buffer.writeInt(_flyWalkSpd);
-            buffer.writeDouble(_moveMultiplier);
-            buffer.writeDouble(_npc.getAttackSpeedMultiplier());
-            buffer.writeDouble(_collisionRadius);
-            buffer.writeDouble(_collisionHeight);
-            buffer.writeInt(_rhand); // right hand weapon
-            buffer.writeInt(_chest);
-            buffer.writeInt(_lhand); // left hand weapon
+            buffer.writeInt(mAtkSpd);
+            buffer.writeInt(pAtkSpd);
+            buffer.writeInt(runSpd);
+            buffer.writeInt(walkSpd);
+            buffer.writeInt(swimRunSpd);
+            buffer.writeInt(swimWalkSpd);
+            buffer.writeInt(flyRunSpd);
+            buffer.writeInt(flyWalkSpd);
+            buffer.writeInt(flyRunSpd);
+            buffer.writeInt(flyWalkSpd);
+            buffer.writeDouble(moveMultiplier);
+            buffer.writeDouble(npc.getAttackSpeedMultiplier());
+            buffer.writeDouble(collisionRadius);
+            buffer.writeDouble(collisionHeight);
+            buffer.writeInt(rhand); // right hand weapon
+            buffer.writeInt(chest);
+            buffer.writeInt(lhand); // left hand weapon
             buffer.writeByte(1); // name above char 1=true ... ??
-            buffer.writeByte(_npc.isRunning());
-            buffer.writeByte(_npc.isInCombat());
-            buffer.writeByte(_npc.isAlikeDead());
+            buffer.writeByte(npc.isRunning());
+            buffer.writeByte(npc.isInCombat());
+            buffer.writeByte(npc.isAlikeDead());
             buffer.writeByte(
-                    _isSummoned
+                    summoned
                             ? 2
                             : 0); // invisible ?? 0=false 1=true 2=summoned (only works if model has a summon animation)
             buffer.writeInt(-1); // High Five NPCString ID
-            if ((localisation == null) && _npc.getTemplate().isUsingServerSideName()) {
-                _name = _npc.getName(); // On every subclass
+            if ((localisation == null) && npc.getTemplate().isUsingServerSideName()) {
+                name = npc.getName(); // On every subclass
             }
 
-            buffer.writeString(_name);
+            buffer.writeString(name);
             buffer.writeInt(-1); // High Five NPCString ID
-            if (_npc.isInvisible()) {
-                _title = "Invisible";
+            if (npc.isInvisible()) {
+                title = "Invisible";
             } else if (localisation == null) {
-                if (_npc.getTemplate().isUsingServerSideTitle()) {
-                    _title = _npc.getTemplate().getTitle(); // On every subclass
+                if (npc.getTemplate().isUsingServerSideTitle()) {
+                    title = npc.getTemplate().getTitle(); // On every subclass
                 } else {
-                    _title = _npc.getTitle(); // On every subclass
+                    title = npc.getTitle(); // On every subclass
                 }
             }
 
             // Custom level titles
-            if (_npc.isMonster() && (NpcConfig.SHOW_NPC_LEVEL || NpcConfig.SHOW_NPC_AGGRESSION)) {
+            if (npc.isMonster() && (NpcConfig.SHOW_NPC_LEVEL || NpcConfig.SHOW_NPC_AGGRESSION)) {
                 String t1 = "";
                 if (NpcConfig.SHOW_NPC_LEVEL) {
-                    t1 += "Lv " + _npc.getLevel();
+                    t1 += "Lv " + npc.getLevel();
                 }
 
                 String t2 = "";
@@ -220,7 +220,7 @@ public abstract class AbstractNpcInfo extends ServerPacket {
                         t2 += " ";
                     }
 
-                    final Monster monster = _npc.asMonster();
+                    final Monster monster = npc.asMonster();
                     if (monster.isAggressive()) {
                         t2 += "[A]"; // Aggressive.
                     }
@@ -232,116 +232,116 @@ public abstract class AbstractNpcInfo extends ServerPacket {
                 }
 
                 t1 += t2;
-                if ((_title != null) && !_title.isEmpty()) {
-                    t1 += " " + _title;
+                if ((title != null) && !title.isEmpty()) {
+                    t1 += " " + title;
                 }
 
-                _title = _npc.isChampion() ? ChampionMonstersConfig.CHAMP_TITLE + " " + t1 : t1;
-            } else if (ChampionMonstersConfig.CHAMPION_ENABLE && _npc.isChampion()) {
-                _title = (ChampionMonstersConfig.CHAMP_TITLE); // On every subclass
+                title = npc.isChampion() ? ChampionMonstersConfig.CHAMP_TITLE + " " + t1 : t1;
+            } else if (ChampionMonstersConfig.CHAMPION_ENABLE && npc.isChampion()) {
+                title = (ChampionMonstersConfig.CHAMP_TITLE); // On every subclass
             }
 
-            buffer.writeString(_title);
+            buffer.writeString(title);
             buffer.writeInt(0); // Title color 0=client default
             buffer.writeInt(0); // pvp flag
             buffer.writeInt(0); // karma
             buffer.writeInt(
-                    _npc.isInvisible()
-                            ? _npc.getAbnormalVisualEffects() | AbnormalVisualEffect.STEALTH.getMask()
-                            : _npc.getAbnormalVisualEffects());
-            buffer.writeInt(_clanId); // clan id
-            buffer.writeInt(_clanCrest); // crest id
-            buffer.writeInt(_allyId); // ally id
-            buffer.writeInt(_allyCrest); // all crest
-            buffer.writeByte(_npc.isInsideZone(ZoneId.WATER) ? 1 : _npc.isFlying() ? 2 : 0); // C2
-            buffer.writeByte(_npc.getTeam().getId());
-            buffer.writeDouble(_collisionRadius);
-            buffer.writeDouble(_collisionHeight);
-            buffer.writeInt(_enchantEffect); // C4
-            buffer.writeInt(_npc.isFlying()); // C6
+                    npc.isInvisible()
+                            ? npc.getAbnormalVisualEffects() | AbnormalVisualEffect.STEALTH.getMask()
+                            : npc.getAbnormalVisualEffects());
+            buffer.writeInt(clanId); // clan id
+            buffer.writeInt(clanCrest); // crest id
+            buffer.writeInt(allyId); // ally id
+            buffer.writeInt(allyCrest); // all crest
+            buffer.writeByte(npc.isInsideZone(ZoneId.WATER) ? 1 : npc.isFlying() ? 2 : 0); // C2
+            buffer.writeByte(npc.getTeam().getId());
+            buffer.writeDouble(collisionRadius);
+            buffer.writeDouble(collisionHeight);
+            buffer.writeInt(enchantEffect); // C4
+            buffer.writeInt(npc.isFlying()); // C6
             buffer.writeInt(0);
-            buffer.writeInt(_npc.getColorEffect()); // CT1.5 Pet form and skills, Color effect
-            buffer.writeByte(_npc.isTargetable());
-            buffer.writeByte(_npc.isShowName());
-            buffer.writeInt(_npc.getAbnormalVisualEffectSpecial());
-            buffer.writeInt(_displayEffect);
+            buffer.writeInt(npc.getColorEffect()); // CT1.5 Pet form and skills, Color effect
+            buffer.writeByte(npc.isTargetable());
+            buffer.writeByte(npc.isShowName());
+            buffer.writeInt(npc.getAbnormalVisualEffectSpecial());
+            buffer.writeInt(displayEffect);
         }
     }
 
     public static class TrapInfo extends AbstractNpcInfo {
-        private final Trap _trap;
+        private final Trap trap;
 
         public TrapInfo(Trap cha, Creature attacker) {
             super(cha, (attacker != null) && attacker.isGM());
-            _trap = cha;
-            _displayId = cha.getTemplate().getDisplayId();
-            _isAttackable = cha.isAutoAttackable(attacker);
-            _rhand = 0;
-            _lhand = 0;
-            _collisionHeight = _trap.getTemplate().getFCollisionHeight();
-            _collisionRadius = _trap.getTemplate().getFCollisionRadius();
+            trap = cha;
+            displayId = cha.getTemplate().getDisplayId();
+            attackable = cha.isAutoAttackable(attacker);
+            rhand = 0;
+            lhand = 0;
+            collisionHeight = trap.getTemplate().getFCollisionHeight();
+            collisionRadius = trap.getTemplate().getFCollisionRadius();
             if (cha.getTemplate().isUsingServerSideName()) {
-                _name = cha.getName();
+                name = cha.getName();
             }
 
-            _title = cha.getOwner() != null ? cha.getOwner().getName() : "";
+            title = cha.getOwner() != null ? cha.getOwner().getName() : "";
         }
 
         @Override
         public void writeImpl(GameClient client, WriteBuffer buffer) {
             ServerPackets.NPC_INFO.writeId(this, buffer);
-            buffer.writeInt(_trap.getObjectId());
-            buffer.writeInt(_displayId + 1000000); // npctype id
-            buffer.writeInt(_isAttackable);
-            buffer.writeInt(_x);
-            buffer.writeInt(_y);
-            buffer.writeInt(_z);
-            buffer.writeInt(_heading);
+            buffer.writeInt(trap.getObjectId());
+            buffer.writeInt(displayId + 1000000); // npctype id
+            buffer.writeInt(attackable);
+            buffer.writeInt(x);
+            buffer.writeInt(y);
+            buffer.writeInt(z);
+            buffer.writeInt(heading);
             buffer.writeInt(0);
-            buffer.writeInt(_mAtkSpd);
-            buffer.writeInt(_pAtkSpd);
-            buffer.writeInt(_runSpd);
-            buffer.writeInt(_walkSpd);
-            buffer.writeInt(_swimRunSpd);
-            buffer.writeInt(_swimWalkSpd);
-            buffer.writeInt(_flyRunSpd);
-            buffer.writeInt(_flyWalkSpd);
-            buffer.writeInt(_flyRunSpd);
-            buffer.writeInt(_flyWalkSpd);
-            buffer.writeDouble(_moveMultiplier);
-            buffer.writeDouble(_trap.getAttackSpeedMultiplier());
-            buffer.writeDouble(_collisionRadius);
-            buffer.writeDouble(_collisionHeight);
-            buffer.writeInt(_rhand); // right hand weapon
-            buffer.writeInt(_chest);
-            buffer.writeInt(_lhand); // left hand weapon
+            buffer.writeInt(mAtkSpd);
+            buffer.writeInt(pAtkSpd);
+            buffer.writeInt(runSpd);
+            buffer.writeInt(walkSpd);
+            buffer.writeInt(swimRunSpd);
+            buffer.writeInt(swimWalkSpd);
+            buffer.writeInt(flyRunSpd);
+            buffer.writeInt(flyWalkSpd);
+            buffer.writeInt(flyRunSpd);
+            buffer.writeInt(flyWalkSpd);
+            buffer.writeDouble(moveMultiplier);
+            buffer.writeDouble(trap.getAttackSpeedMultiplier());
+            buffer.writeDouble(collisionRadius);
+            buffer.writeDouble(collisionHeight);
+            buffer.writeInt(rhand); // right hand weapon
+            buffer.writeInt(chest);
+            buffer.writeInt(lhand); // left hand weapon
             buffer.writeByte(1); // name above char 1=true ... ??
             buffer.writeByte(1);
-            buffer.writeByte(_trap.isInCombat());
-            buffer.writeByte(_trap.isAlikeDead());
+            buffer.writeByte(trap.isInCombat());
+            buffer.writeByte(trap.isAlikeDead());
             buffer.writeByte(
-                    _isSummoned
+                    summoned
                             ? 2
                             : 0); // invisible ?? 0=false 1=true 2=summoned (only works if model has a summon animation)
             buffer.writeInt(-1); // High Five NPCString ID
-            buffer.writeString(_name);
+            buffer.writeString(name);
             buffer.writeInt(-1); // High Five NPCString ID
-            buffer.writeString(_title);
+            buffer.writeString(title);
             buffer.writeInt(0); // title color 0 = client default
-            buffer.writeInt(_trap.getPvpFlag());
-            buffer.writeInt(_trap.getKarma());
+            buffer.writeInt(trap.getPvpFlag());
+            buffer.writeInt(trap.getKarma());
             buffer.writeInt(
-                    _trap.isInvisible()
-                            ? _trap.getAbnormalVisualEffects() | AbnormalVisualEffect.STEALTH.getMask()
-                            : _trap.getAbnormalVisualEffects());
+                    trap.isInvisible()
+                            ? trap.getAbnormalVisualEffects() | AbnormalVisualEffect.STEALTH.getMask()
+                            : trap.getAbnormalVisualEffects());
             buffer.writeInt(0); // clan id
             buffer.writeInt(0); // crest id
             buffer.writeInt(0); // C2
             buffer.writeInt(0); // C2
             buffer.writeByte(0); // C2
-            buffer.writeByte(_trap.getTeam().getId());
-            buffer.writeDouble(_collisionRadius);
-            buffer.writeDouble(_collisionHeight);
+            buffer.writeByte(trap.getTeam().getId());
+            buffer.writeDouble(collisionRadius);
+            buffer.writeDouble(collisionHeight);
             buffer.writeInt(0); // C4
             buffer.writeInt(0); // C6
             buffer.writeInt(0);
@@ -356,92 +356,90 @@ public abstract class AbstractNpcInfo extends ServerPacket {
      * Packet for summons.
      */
     public static class SummonInfo extends AbstractNpcInfo {
-        private final Summon _summon;
-        private final int _form;
-        private final int _value;
+        private final Summon summon;
+        private final int form;
+        private final int value;
 
         public SummonInfo(Summon cha, Creature attacker, int value) {
             super(cha, attacker.isGM());
-            _summon = cha;
-            _value = value;
-            _form = cha.getFormId();
-            _isAttackable = cha.isAutoAttackable(attacker);
-            _rhand = cha.getWeapon();
-            _lhand = 0;
-            _chest = cha.getArmor();
-            _enchantEffect = cha.getTemplate().getWeaponEnchant();
-            _name = cha.getName();
-            _title = (cha.getOwner() != null) && cha.getOwner().isOnline()
+            summon = cha;
+            this.value = value;
+            form = cha.getFormId();
+            attackable = cha.isAutoAttackable(attacker);
+            rhand = cha.getWeapon();
+            lhand = 0;
+            chest = cha.getArmor();
+            enchantEffect = cha.getTemplate().getWeaponEnchant();
+            name = cha.getName();
+            title = (cha.getOwner() != null) && cha.getOwner().isOnline()
                     ? cha.getOwner().getName()
                     : "";
-            _displayId = cha.getTemplate().getDisplayId();
-            _collisionHeight = cha.getTemplate().getFCollisionHeight();
-            _collisionRadius = cha.getTemplate().getFCollisionRadius();
+            displayId = cha.getTemplate().getDisplayId();
+            collisionHeight = cha.getTemplate().getFCollisionHeight();
+            collisionRadius = cha.getTemplate().getFCollisionRadius();
         }
 
         @Override
         public void writeImpl(GameClient client, WriteBuffer buffer) {
             ServerPackets.NPC_INFO.writeId(this, buffer);
-            buffer.writeInt(_summon.getObjectId());
-            buffer.writeInt(_displayId + 1000000); // npctype id
-            buffer.writeInt(_isAttackable);
-            buffer.writeInt(_x);
-            buffer.writeInt(_y);
-            buffer.writeInt(_z);
-            buffer.writeInt(_heading);
+            buffer.writeInt(summon.getObjectId());
+            buffer.writeInt(displayId + 1000000); // npctype id
+            buffer.writeInt(attackable);
+            buffer.writeInt(x);
+            buffer.writeInt(y);
+            buffer.writeInt(z);
+            buffer.writeInt(heading);
             buffer.writeInt(0);
-            buffer.writeInt(_mAtkSpd);
-            buffer.writeInt(_pAtkSpd);
-            buffer.writeInt(_runSpd);
-            buffer.writeInt(_walkSpd);
-            buffer.writeInt(_swimRunSpd);
-            buffer.writeInt(_swimWalkSpd);
-            buffer.writeInt(_flyRunSpd);
-            buffer.writeInt(_flyWalkSpd);
-            buffer.writeInt(_flyRunSpd);
-            buffer.writeInt(_flyWalkSpd);
-            buffer.writeDouble(_moveMultiplier);
-            buffer.writeDouble(_summon.getAttackSpeedMultiplier());
-            buffer.writeDouble(_collisionRadius);
-            buffer.writeDouble(_collisionHeight);
-            buffer.writeInt(_rhand); // right hand weapon
-            buffer.writeInt(_chest);
-            buffer.writeInt(_lhand); // left hand weapon
+            buffer.writeInt(mAtkSpd);
+            buffer.writeInt(pAtkSpd);
+            buffer.writeInt(runSpd);
+            buffer.writeInt(walkSpd);
+            buffer.writeInt(swimRunSpd);
+            buffer.writeInt(swimWalkSpd);
+            buffer.writeInt(flyRunSpd);
+            buffer.writeInt(flyWalkSpd);
+            buffer.writeInt(flyRunSpd);
+            buffer.writeInt(flyWalkSpd);
+            buffer.writeDouble(moveMultiplier);
+            buffer.writeDouble(summon.getAttackSpeedMultiplier());
+            buffer.writeDouble(collisionRadius);
+            buffer.writeDouble(collisionHeight);
+            buffer.writeInt(rhand); // right hand weapon
+            buffer.writeInt(chest);
+            buffer.writeInt(lhand); // left hand weapon
             buffer.writeByte(1); // name above char 1=true ... ??
             buffer.writeByte(1); // always running 1=running 0=walking
-            buffer.writeByte(_summon.isInCombat());
-            buffer.writeByte(_summon.isAlikeDead());
+            buffer.writeByte(summon.isInCombat());
+            buffer.writeByte(summon.isAlikeDead());
             buffer.writeByte(
-                    _isSummoned
-                            ? 2
-                            : _value); // invisible ?? 0=false 1=true 2=summoned (only works if model has a summon
+                    summoned ? 2 : value); // invisible ?? 0=false 1=true 2=summoned (only works if model has a summon
             // animation)
             buffer.writeInt(-1); // High Five NPCString ID
-            buffer.writeString(_name);
+            buffer.writeString(name);
             buffer.writeInt(-1); // High Five NPCString ID
-            buffer.writeString(_title);
+            buffer.writeString(title);
             buffer.writeInt(1); // Title color 0=client default
-            buffer.writeInt(_summon.getPvpFlag());
-            buffer.writeInt(_summon.getKarma());
+            buffer.writeInt(summon.getPvpFlag());
+            buffer.writeInt(summon.getKarma());
             buffer.writeInt(
-                    _gmSeeInvis && _summon.isInvisible()
-                            ? _summon.getAbnormalVisualEffects() | AbnormalVisualEffect.STEALTH.getMask()
-                            : _summon.getAbnormalVisualEffects());
+                    gmSeeInvis && summon.isInvisible()
+                            ? summon.getAbnormalVisualEffects() | AbnormalVisualEffect.STEALTH.getMask()
+                            : summon.getAbnormalVisualEffects());
             buffer.writeInt(0); // clan id
             buffer.writeInt(0); // crest id
             buffer.writeInt(0); // C2
             buffer.writeInt(0); // C2
-            buffer.writeByte(_summon.isInsideZone(ZoneId.WATER) ? 1 : _summon.isFlying() ? 2 : 0); // C2
-            buffer.writeByte(_summon.getTeam().getId());
-            buffer.writeDouble(_collisionRadius);
-            buffer.writeDouble(_collisionHeight);
-            buffer.writeInt(_enchantEffect); // C4
+            buffer.writeByte(summon.isInsideZone(ZoneId.WATER) ? 1 : summon.isFlying() ? 2 : 0); // C2
+            buffer.writeByte(summon.getTeam().getId());
+            buffer.writeDouble(collisionRadius);
+            buffer.writeDouble(collisionHeight);
+            buffer.writeInt(enchantEffect); // C4
             buffer.writeInt(0); // C6
             buffer.writeInt(0);
-            buffer.writeInt(_form); // CT1.5 Pet form and skills
+            buffer.writeInt(form); // CT1.5 Pet form and skills
             buffer.writeByte(1);
             buffer.writeByte(1);
-            buffer.writeInt(_summon.getAbnormalVisualEffectSpecial());
+            buffer.writeInt(summon.getAbnormalVisualEffectSpecial());
         }
     }
 }

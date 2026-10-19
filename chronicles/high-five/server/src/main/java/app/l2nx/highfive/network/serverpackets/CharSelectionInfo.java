@@ -35,7 +35,6 @@ import app.l2nx.highfive.entity.clan.Clan;
 import app.l2nx.highfive.entity.itemcontainer.Inventory;
 import app.l2nx.highfive.network.Disconnection;
 import app.l2nx.highfive.network.GameClient;
-import app.l2nx.highfive.network.PacketLogger;
 import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.highfive.network.holders.CharacterInfoHolder;
 import app.l2nx.network.buffer.WriteBuffer;
@@ -44,12 +43,17 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.List;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class CharSelectionInfo extends ServerPacket {
-    private final String _loginName;
-    private final int _sessionId;
-    private int _activeId;
-    private final List<CharacterInfoHolder> _characterPackages;
+    private final String loginName;
+    private final int sessionId;
+    private int activeId;
+
+    @Getter
+    private final List<CharacterInfoHolder> charInfo;
 
     /**
      * Constructor for CharSelectionInfo.
@@ -57,27 +61,23 @@ public class CharSelectionInfo extends ServerPacket {
      * @param sessionId
      */
     public CharSelectionInfo(String loginName, int sessionId) {
-        _sessionId = sessionId;
-        _loginName = loginName;
-        _characterPackages = loadCharacterSelectInfo(_loginName);
-        _activeId = -1;
+        this.sessionId = sessionId;
+        this.loginName = loginName;
+        charInfo = loadCharacterSelectInfo(this.loginName);
+        activeId = -1;
     }
 
     public CharSelectionInfo(String loginName, int sessionId, int activeId) {
-        _sessionId = sessionId;
-        _loginName = loginName;
-        _characterPackages = loadCharacterSelectInfo(_loginName);
-        _activeId = activeId;
-    }
-
-    public List<CharacterInfoHolder> getCharInfo() {
-        return _characterPackages;
+        this.sessionId = sessionId;
+        this.loginName = loginName;
+        charInfo = loadCharacterSelectInfo(this.loginName);
+        this.activeId = activeId;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.CHARACTER_SELECTION_INFO.writeId(this, buffer);
-        final int size = _characterPackages.size();
+        final int size = charInfo.size();
         buffer.writeInt(size); // Created character count
         buffer.writeInt(
                 ServerConfig
@@ -86,21 +86,21 @@ public class CharSelectionInfo extends ServerPacket {
         // (0x13) Response: (0x0D) ).
         buffer.writeByte(0);
         long lastAccess = 0;
-        if (_activeId == -1) {
+        if (activeId == -1) {
             for (int i = 0; i < size; i++) {
-                if (lastAccess < _characterPackages.get(i).getLastAccess()) {
-                    lastAccess = _characterPackages.get(i).getLastAccess();
-                    _activeId = i;
+                if (lastAccess < charInfo.get(i).getLastAccess()) {
+                    lastAccess = charInfo.get(i).getLastAccess();
+                    activeId = i;
                 }
             }
         }
 
         for (int i = 0; i < size; i++) {
-            final CharacterInfoHolder charInfoPackage = _characterPackages.get(i);
+            final CharacterInfoHolder charInfoPackage = charInfo.get(i);
             buffer.writeString(charInfoPackage.getName()); // Character name
             buffer.writeInt(charInfoPackage.getObjectId()); // Character ID
-            buffer.writeString(_loginName); // Account name
-            buffer.writeInt(_sessionId); // Account ID
+            buffer.writeString(loginName); // Account name
+            buffer.writeInt(sessionId); // Account ID
             buffer.writeInt(charInfoPackage.getClanId()); // Clan ID
             buffer.writeInt(0); // Builder level
             buffer.writeInt(charInfoPackage.getSex()); // Sex
@@ -155,7 +155,7 @@ public class CharSelectionInfo extends ServerPacket {
             }
 
             buffer.writeInt(charInfoPackage.getClassId());
-            buffer.writeInt(i == _activeId);
+            buffer.writeInt(i == activeId);
             buffer.writeByte(Math.min(charInfoPackage.getEnchantEffect(), 127));
             buffer.writeInt(charInfoPackage.getAugmentationId());
             // buffer.writeInt(charInfoPackage.getTransformId()); // Used to display Transformations
@@ -205,7 +205,7 @@ public class CharSelectionInfo extends ServerPacket {
                 }
             }
         } catch (Exception e) {
-            PacketLogger.warning("Could not restore char info: " + e.getMessage() + " " + e);
+            log.warn("Could not restore char info: {}", e.getMessage(), e);
         }
 
         return characterList;
@@ -226,7 +226,7 @@ public class CharSelectionInfo extends ServerPacket {
                 }
             }
         } catch (Exception e) {
-            PacketLogger.warning("Could not restore char subclass info: " + e.getMessage() + " " + e);
+            log.warn("Could not restore char subclass info: {}", e.getMessage(), e);
         }
     }
 
@@ -313,7 +313,7 @@ public class CharSelectionInfo extends ServerPacket {
                     }
                 }
             } catch (Exception e) {
-                PacketLogger.warning("Could not restore augmentation info: " + e.getMessage() + " " + e);
+                log.warn("Could not restore augmentation info: {}", e.getMessage(), e);
             }
         }
 

@@ -30,14 +30,14 @@ import java.util.Set;
  * @author mkizub
  */
 public class ConditionPlayerRace extends Condition {
-    private final Set<Race> _races;
+    private final Set<Race> races;
 
     /**
      * Instantiates a new condition player race.
      * @param races the list containing the allowed races.
      */
     public ConditionPlayerRace(Set<Race> races) {
-        _races = races;
+        this.races = races;
     }
 
     @Override
@@ -46,6 +46,6 @@ public class ConditionPlayerRace extends Condition {
             return false;
         }
 
-        return _races.contains(effector.asPlayer().getRace());
+        return races.contains(effector.asPlayer().getRace());
     }
 }

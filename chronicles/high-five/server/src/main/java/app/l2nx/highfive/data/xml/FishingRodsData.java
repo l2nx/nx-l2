@@ -27,6 +27,7 @@ import app.l2nx.highfive.util.StatSet;
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
@@ -35,8 +36,9 @@ import org.w3c.dom.Node;
  * This class holds the Fishing Rods information.
  * @author nonom
  */
+@Slf4j
 public class FishingRodsData implements IXmlReader {
-    private final Map<Integer, FishingRod> _fishingRods = new HashMap<>();
+    private final Map<Integer, FishingRod> fishingRods = new HashMap<>();
 
     /**
      * Instantiates a new fishing rods data.
@@ -47,9 +49,9 @@ public class FishingRodsData implements IXmlReader {
 
     @Override
     public void load() {
-        _fishingRods.clear();
+        fishingRods.clear();
         parseDatapackFile("data/stats/fishing/fishingRods.xml");
-        LOGGER.info(getClass().getSimpleName() + ": Loaded " + _fishingRods.size() + " fishing rods.");
+        log.info("Loaded {} fishing rods.", fishingRods.size());
     }
 
     @Override
@@ -66,7 +68,7 @@ public class FishingRodsData implements IXmlReader {
                         }
 
                         final FishingRod fishingRod = new FishingRod(set);
-                        _fishingRods.put(fishingRod.getFishingRodItemId(), fishingRod);
+                        fishingRods.put(fishingRod.getFishingRodItemId(), fishingRod);
                     }
                 }
             }
@@ -79,7 +81,7 @@ public class FishingRodsData implements IXmlReader {
      * @return A fishing Rod by Item Id
      */
     public FishingRod getFishingRod(int itemId) {
-        return _fishingRods.get(itemId);
+        return fishingRods.get(itemId);
     }
 
     /**

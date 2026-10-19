@@ -27,15 +27,15 @@ import app.l2nx.network.buffer.WriteBuffer;
  * @author KenM
  */
 public class AccountKicked extends LoginServerPacket {
-    private final AccountKickedReason _reason;
+    private final AccountKickedReason reason;
 
     public AccountKicked(AccountKickedReason reason) {
-        _reason = reason;
+        this.reason = reason;
     }
 
     @Override
     protected void writeImpl(LoginClient client, WriteBuffer buffer) {
         buffer.writeByte(0x02);
-        buffer.writeInt(_reason.getCode());
+        buffer.writeInt(reason.getCode());
     }
 }

@@ -35,14 +35,14 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @author Mobius
  */
 public class BuffFinishTask {
-    private final Map<BuffInfo, AtomicInteger> _buffInfos = new ConcurrentHashMap<>();
-    private ScheduledFuture<?> _task = null;
-    private boolean _stopped = false;
+    private final Map<BuffInfo, AtomicInteger> buffInfos = new ConcurrentHashMap<>();
+    private ScheduledFuture<?> task = null;
+    private boolean stopped = false;
 
     private class BuffFinishRunnable implements Runnable {
         @Override
         public void run() {
-            for (Entry<BuffInfo, AtomicInteger> entry : _buffInfos.entrySet()) {
+            for (Entry<BuffInfo, AtomicInteger> entry : buffInfos.entrySet()) {
                 final BuffInfo info = entry.getKey();
                 final Creature effected = info.getEffected();
                 if ((effected != null) && (entry.getValue().incrementAndGet() > info.getAbnormalTime())) {
@@ -55,35 +55,35 @@ public class BuffFinishTask {
     }
 
     public synchronized void removeBuffInfo(BuffInfo info) {
-        _buffInfos.remove(info);
+        buffInfos.remove(info);
 
-        if (_buffInfos.isEmpty() && (_task != null)) {
-            _task.cancel(true);
-            _task = null;
+        if (buffInfos.isEmpty() && (task != null)) {
+            task.cancel(true);
+            task = null;
         }
     }
 
     public synchronized void addBuffInfo(BuffInfo info) {
-        _buffInfos.put(info, new AtomicInteger());
+        buffInfos.put(info, new AtomicInteger());
 
-        if ((_task == null) && !_stopped) {
-            _task = ThreadPool.scheduleAtFixedRate(new BuffFinishRunnable(), 0, 1000);
+        if ((task == null) && !stopped) {
+            task = ThreadPool.scheduleAtFixedRate(new BuffFinishRunnable(), 0, 1000);
         }
     }
 
     public synchronized void start() {
-        _stopped = false;
+        stopped = false;
 
-        if (!_buffInfos.isEmpty() && (_task == null)) {
-            _task = ThreadPool.scheduleAtFixedRate(new BuffFinishRunnable(), 0, 1000);
+        if (!buffInfos.isEmpty() && (task == null)) {
+            task = ThreadPool.scheduleAtFixedRate(new BuffFinishRunnable(), 0, 1000);
         }
     }
 
     public synchronized void stop() {
-        _stopped = true;
+        stopped = true;
 
-        if (_task != null) {
-            _task.cancel(true);
+        if (task != null) {
+            task.cancel(true);
         }
     }
 }

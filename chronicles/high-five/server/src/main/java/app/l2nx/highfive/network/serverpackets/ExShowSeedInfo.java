@@ -31,30 +31,30 @@ import java.util.List;
  * @author l3x
  */
 public class ExShowSeedInfo extends ServerPacket {
-    private final List<SeedProduction> _seeds;
-    private final int _manorId;
-    private final boolean _hideButtons;
+    private final List<SeedProduction> seeds;
+    private final int manorId;
+    private final boolean hideButtons;
 
     public ExShowSeedInfo(int manorId, boolean nextPeriod, boolean hideButtons) {
-        _manorId = manorId;
-        _hideButtons = hideButtons;
+        this.manorId = manorId;
+        this.hideButtons = hideButtons;
         final CastleManorManager manor = CastleManorManager.getInstance();
-        _seeds = (nextPeriod && !manor.isManorApproved()) ? null : manor.getSeedProduction(manorId, nextPeriod);
+        seeds = (nextPeriod && !manor.isManorApproved()) ? null : manor.getSeedProduction(manorId, nextPeriod);
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_SHOW_SEED_INFO.writeId(this, buffer);
-        buffer.writeByte(_hideButtons); // Hide "Seed Purchase" button
-        buffer.writeInt(_manorId); // Manor ID
+        buffer.writeByte(hideButtons); // Hide "Seed Purchase" button
+        buffer.writeInt(manorId); // Manor ID
         buffer.writeInt(0); // Unknown
-        if (_seeds == null) {
+        if (seeds == null) {
             buffer.writeInt(0);
             return;
         }
 
-        buffer.writeInt(_seeds.size());
-        for (SeedProduction seed : _seeds) {
+        buffer.writeInt(seeds.size());
+        for (SeedProduction seed : seeds) {
             buffer.writeInt(seed.getId()); // Seed id
             buffer.writeLong(seed.getAmount()); // Left to buy
             buffer.writeLong(seed.getStartAmount()); // Started amount

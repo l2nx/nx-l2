@@ -29,14 +29,14 @@ import app.l2nx.highfive.mechanics.skill.Skill;
  * @author MrPoke
  */
 public class ConditionPlayerPledgeClass extends Condition {
-    private final int _pledgeClass;
+    private final int pledgeClass;
 
     /**
      * Instantiates a new condition player pledge class.
      * @param pledgeClass the pledge class
      */
     public ConditionPlayerPledgeClass(int pledgeClass) {
-        _pledgeClass = pledgeClass;
+        this.pledgeClass = pledgeClass;
     }
 
     /**
@@ -51,10 +51,10 @@ public class ConditionPlayerPledgeClass extends Condition {
         }
 
         final boolean isClanLeader = player.isClanLeader();
-        if ((_pledgeClass == -1) && !isClanLeader) {
+        if ((pledgeClass == -1) && !isClanLeader) {
             return false;
         }
 
-        return isClanLeader || (player.getPledgeClass() >= _pledgeClass);
+        return isClanLeader || (player.getPledgeClass() >= pledgeClass);
     }
 }

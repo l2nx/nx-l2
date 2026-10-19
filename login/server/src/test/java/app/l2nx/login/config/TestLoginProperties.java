@@ -15,16 +15,33 @@ public final class TestLoginProperties {
 
     public static LoginProperties create(
             int clientPort, int gameServerPort, LoginProperties.ScheduledRestart scheduledRestart, File datapackRoot) {
-        return new LoginProperties(
-                new LoginProperties.Client(LOOPBACK, clientPort),
-                new LoginProperties.GameServer(LOOPBACK, gameServerPort, true),
-                new LoginProperties.Ban(5, Duration.ofMinutes(15)),
-                new LoginProperties.FloodProtection(true, 15, Duration.ofMillis(700), Duration.ofMillis(350), 50),
-                scheduledRestart,
-                true,
-                true,
-                datapackRoot,
-                NetworkSettings.defaults());
+        return LoginProperties.builder()
+                .client(LoginProperties.Client.builder()
+                        .host(LOOPBACK)
+                        .port(clientPort)
+                        .build())
+                .gameServer(LoginProperties.GameServer.builder()
+                        .host(LOOPBACK)
+                        .port(gameServerPort)
+                        .acceptNew(true)
+                        .build())
+                .ban(LoginProperties.Ban.builder()
+                        .failedLogins(5)
+                        .duration(Duration.ofMinutes(15))
+                        .build())
+                .floodProtection(LoginProperties.FloodProtection.builder()
+                        .enabled(true)
+                        .fastConnectionLimit(15)
+                        .normalConnectionTime(Duration.ofMillis(700))
+                        .fastConnectionTime(Duration.ofMillis(350))
+                        .maxConnectionsPerIp(50)
+                        .build())
+                .scheduledRestart(scheduledRestart)
+                .showLicence(true)
+                .autoCreateAccounts(true)
+                .datapackRoot(datapackRoot)
+                .network(NetworkSettings.defaults())
+                .build();
     }
 
     public static LoginProperties create(

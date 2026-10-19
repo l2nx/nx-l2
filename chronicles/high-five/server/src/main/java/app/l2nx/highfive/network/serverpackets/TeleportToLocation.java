@@ -28,28 +28,28 @@ import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.network.buffer.WriteBuffer;
 
 public class TeleportToLocation extends ServerPacket {
-    private final int _targetObjId;
-    private final int _x;
-    private final int _y;
-    private final int _z;
-    private final int _heading;
+    private final int targetObjId;
+    private final int x;
+    private final int y;
+    private final int z;
+    private final int heading;
 
     public TeleportToLocation(WorldObject obj, int x, int y, int z, int heading) {
-        _targetObjId = obj.getObjectId();
-        _x = x;
-        _y = y;
-        _z = z;
-        _heading = heading;
+        targetObjId = obj.getObjectId();
+        this.x = x;
+        this.y = y;
+        this.z = z;
+        this.heading = heading;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.TELEPORT_TO_LOCATION.writeId(this, buffer);
-        buffer.writeInt(_targetObjId);
-        buffer.writeInt(_x);
-        buffer.writeInt(_y);
-        buffer.writeInt(_z);
+        buffer.writeInt(targetObjId);
+        buffer.writeInt(x);
+        buffer.writeInt(y);
+        buffer.writeInt(z);
         buffer.writeInt(0); // Fade 0, Instant 1.
-        buffer.writeInt(_heading);
+        buffer.writeInt(heading);
     }
 }

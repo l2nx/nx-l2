@@ -36,7 +36,6 @@ import app.l2nx.highfive.entity.item.type.EtcItemType;
 import app.l2nx.highfive.entity.item.type.MaterialType;
 import app.l2nx.highfive.mechanics.skill.holders.SkillLearn;
 import app.l2nx.highfive.network.GameClient;
-import app.l2nx.highfive.network.PacketLogger;
 import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.highfive.network.enums.WarehouseListType;
 import app.l2nx.network.buffer.WriteBuffer;
@@ -46,7 +45,9 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class SortedWareHouseWithdrawalList extends ServerPacket {
     public static final int PRIVATE = 1;
     public static final int CLAN = 2;
@@ -68,9 +69,9 @@ public class SortedWareHouseWithdrawalList extends ServerPacket {
     /** Maximum Items to put into list */
     public static final int MAX_SORT_LIST_ITEMS = 300;
 
-    private long _playerAdena;
-    private List<WarehouseItem> _objects = new ArrayList<>();
-    private int _whType;
+    private long playerAdena;
+    private List<WarehouseItem> objects = new ArrayList<>();
+    private int whType;
 
     /**
      * This will instantiate the Warehouselist the Player asked for
@@ -80,66 +81,66 @@ public class SortedWareHouseWithdrawalList extends ServerPacket {
      * @param sortorder is the integer Sortorder like 1 for A..Z (use public constant)
      */
     public SortedWareHouseWithdrawalList(Player player, int type, WarehouseListType itemtype, byte sortorder) {
-        _whType = type;
-        _playerAdena = player.getAdena();
+        whType = type;
+        playerAdena = player.getAdena();
         if (player.getActiveWarehouse() == null) {
             // Something went wrong!
-            PacketLogger.warning("Error while sending withdraw request to: " + player.getName());
+            log.warn("Error while sending withdraw request to: {}", player.getName());
             return;
         }
 
         switch (itemtype) {
             case WEAPON: {
-                _objects = createWeaponList(player.getActiveWarehouse().getItems());
+                objects = createWeaponList(player.getActiveWarehouse().getItems());
                 break;
             }
             case ARMOR: {
-                _objects = createArmorList(player.getActiveWarehouse().getItems());
+                objects = createArmorList(player.getActiveWarehouse().getItems());
                 break;
             }
             case ETCITEM: {
-                _objects = createEtcItemList(player.getActiveWarehouse().getItems());
+                objects = createEtcItemList(player.getActiveWarehouse().getItems());
                 break;
             }
             case MATERIAL: {
-                _objects = createMatList(player.getActiveWarehouse().getItems());
+                objects = createMatList(player.getActiveWarehouse().getItems());
                 break;
             }
             case RECIPE: {
-                _objects = createRecipeList(player.getActiveWarehouse().getItems());
+                objects = createRecipeList(player.getActiveWarehouse().getItems());
                 break;
             }
             case AMULETT: {
-                _objects = createAmulettList(player.getActiveWarehouse().getItems());
+                objects = createAmulettList(player.getActiveWarehouse().getItems());
                 break;
             }
             case SPELLBOOK: {
-                _objects = createSpellbookList(player.getActiveWarehouse().getItems());
+                objects = createSpellbookList(player.getActiveWarehouse().getItems());
                 break;
             }
             case CONSUMABLE: {
-                _objects = createConsumableList(player.getActiveWarehouse().getItems());
+                objects = createConsumableList(player.getActiveWarehouse().getItems());
                 break;
             }
             case SHOT: {
-                _objects = createShotList(player.getActiveWarehouse().getItems());
+                objects = createShotList(player.getActiveWarehouse().getItems());
                 break;
             }
             case SCROLL: {
-                _objects = createScrollList(player.getActiveWarehouse().getItems());
+                objects = createScrollList(player.getActiveWarehouse().getItems());
                 break;
             }
             case SEED: {
-                _objects = createSeedList(player.getActiveWarehouse().getItems());
+                objects = createSeedList(player.getActiveWarehouse().getItems());
                 break;
             }
             case OTHER: {
-                _objects = createOtherList(player.getActiveWarehouse().getItems());
+                objects = createOtherList(player.getActiveWarehouse().getItems());
                 break;
             }
             case ALL:
             default: {
-                _objects = createAllList(player.getActiveWarehouse().getItems());
+                objects = createAllList(player.getActiveWarehouse().getItems());
                 break;
             }
         }
@@ -148,34 +149,34 @@ public class SortedWareHouseWithdrawalList extends ServerPacket {
             switch (sortorder) {
                 case A2Z:
                 case Z2A: {
-                    _objects.sort(new WarehouseItemNameComparator(sortorder));
+                    objects.sort(new WarehouseItemNameComparator(sortorder));
                     break;
                 }
                 case GRADE: {
                     if ((itemtype == WarehouseListType.ARMOR) || (itemtype == WarehouseListType.WEAPON)) {
-                        _objects.sort(new WarehouseItemNameComparator(A2Z));
-                        _objects.sort(new WarehouseItemGradeComparator(A2Z));
+                        objects.sort(new WarehouseItemNameComparator(A2Z));
+                        objects.sort(new WarehouseItemGradeComparator(A2Z));
                     }
                     break;
                 }
                 case LEVEL: {
                     if (itemtype == WarehouseListType.RECIPE) {
-                        _objects.sort(new WarehouseItemNameComparator(A2Z));
-                        _objects.sort(new WarehouseItemRecipeComparator(A2Z));
+                        objects.sort(new WarehouseItemNameComparator(A2Z));
+                        objects.sort(new WarehouseItemRecipeComparator(A2Z));
                     }
                     break;
                 }
                 case TYPE: {
                     if (itemtype == WarehouseListType.MATERIAL) {
-                        _objects.sort(new WarehouseItemNameComparator(A2Z));
-                        _objects.sort(new WarehouseItemTypeComparator(A2Z));
+                        objects.sort(new WarehouseItemNameComparator(A2Z));
+                        objects.sort(new WarehouseItemTypeComparator(A2Z));
                     }
                     break;
                 }
                 case WEAR: {
                     if (itemtype == WarehouseListType.ARMOR) {
-                        _objects.sort(new WarehouseItemNameComparator(A2Z));
-                        _objects.sort(new WarehouseItemBodypartComparator(A2Z));
+                        objects.sort(new WarehouseItemNameComparator(A2Z));
+                        objects.sort(new WarehouseItemBodypartComparator(A2Z));
                     }
                     break;
                 }
@@ -653,10 +654,10 @@ public class SortedWareHouseWithdrawalList extends ServerPacket {
         /*
          * 0x01-Private Warehouse 0x02-Clan Warehouse 0x03-Castle Warehouse 0x04-Warehouse
          */
-        buffer.writeShort(_whType);
-        buffer.writeLong(_playerAdena);
-        buffer.writeShort(_objects.size());
-        for (WarehouseItem item : _objects) {
+        buffer.writeShort(whType);
+        buffer.writeLong(playerAdena);
+        buffer.writeShort(objects.size());
+        for (WarehouseItem item : objects) {
             buffer.writeInt(item.getObjectId());
             buffer.writeInt(item.getItem().getDisplayId());
             buffer.writeInt(item.getLocationSlot());

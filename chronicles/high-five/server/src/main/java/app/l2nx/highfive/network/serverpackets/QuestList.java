@@ -31,10 +31,10 @@ import app.l2nx.network.buffer.WriteBuffer;
 import java.util.List;
 
 public class QuestList extends ServerPacket {
-    final Player _player;
+    final Player player;
 
     public QuestList(Player player) {
-        _player = player;
+        this.player = player;
     }
 
     @Override
@@ -71,12 +71,12 @@ public class QuestList extends ServerPacket {
          * the 10th but the 6th and 9th are not to be shown at all (not completed, either).
          * </pre>
          */
-        final List<Quest> quests = _player.getAllActiveQuests();
+        final List<Quest> quests = player.getAllActiveQuests();
         ServerPackets.QUEST_LIST.writeId(this, buffer);
         buffer.writeShort(quests.size());
         for (Quest q : quests) {
             buffer.writeInt(q.getId());
-            final QuestState qs = _player.getQuestState(q.getName());
+            final QuestState qs = player.getQuestState(q.getName());
             if (qs == null) {
                 buffer.writeInt(0);
                 continue;

@@ -31,14 +31,14 @@ import app.l2nx.highfive.mechanics.skill.Skill;
  * The Class ConditionPlayerIsHero.
  */
 public class ConditionPlayerIsHero extends Condition {
-    private final boolean _value;
+    private final boolean value;
 
     /**
      * Instantiates a new condition player is hero.
      * @param value the value
      */
     public ConditionPlayerIsHero(boolean value) {
-        _value = value;
+        this.value = value;
     }
 
     @Override
@@ -48,6 +48,6 @@ public class ConditionPlayerIsHero extends Condition {
             return false;
         }
 
-        return player.isHero() == _value;
+        return player.isHero() == value;
     }
 }

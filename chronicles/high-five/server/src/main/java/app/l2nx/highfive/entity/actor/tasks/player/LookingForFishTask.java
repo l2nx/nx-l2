@@ -27,12 +27,12 @@ import java.util.concurrent.ThreadLocalRandom;
  * @author UnAfraid
  */
 public class LookingForFishTask implements Runnable {
-    private final Player _player;
-    private final boolean _isNoob;
-    private final boolean _isUpperGrade;
-    private final int _fishGroup;
-    private final double _fishGutsCheck;
-    private final long _endTaskTime;
+    private final Player player;
+    private final boolean noob;
+    private final boolean upperGrade;
+    private final int fishGroup;
+    private final double fishGutsCheck;
+    private final long endTaskTime;
 
     public LookingForFishTask(
             Player player,
@@ -41,30 +41,30 @@ public class LookingForFishTask implements Runnable {
             int fishGroup,
             boolean isNoob,
             boolean isUpperGrade) {
-        _player = player;
-        _fishGutsCheck = fishGutsCheck;
-        _endTaskTime = System.currentTimeMillis() + (startCombatTime * 1000) + 10000;
-        _fishGroup = fishGroup;
-        _isNoob = isNoob;
-        _isUpperGrade = isUpperGrade;
+        this.player = player;
+        this.fishGutsCheck = fishGutsCheck;
+        endTaskTime = System.currentTimeMillis() + (startCombatTime * 1000) + 10000;
+        this.fishGroup = fishGroup;
+        noob = isNoob;
+        upperGrade = isUpperGrade;
     }
 
     @Override
     public void run() {
-        if (_player != null) {
-            if (System.currentTimeMillis() >= _endTaskTime) {
-                _player.endFishing(false);
+        if (player != null) {
+            if (System.currentTimeMillis() >= endTaskTime) {
+                player.endFishing(false);
                 return;
             }
 
-            if (_fishGroup == -1) {
+            if (fishGroup == -1) {
                 return;
             }
 
             final int check = ThreadLocalRandom.current().nextInt(100);
-            if (_fishGutsCheck > check) {
-                _player.stopLookingForFishTask();
-                _player.startFishCombat(_isNoob, _isUpperGrade);
+            if (fishGutsCheck > check) {
+                player.stopLookingForFishTask();
+                player.startFishCombat(noob, upperGrade);
             }
         }
     }

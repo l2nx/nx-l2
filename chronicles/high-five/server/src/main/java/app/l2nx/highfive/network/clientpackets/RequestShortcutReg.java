@@ -28,23 +28,23 @@ import app.l2nx.highfive.entity.actor.holders.player.Shortcut;
 import app.l2nx.highfive.network.serverpackets.ShortcutRegister;
 
 public class RequestShortcutReg extends ClientPacket {
-    private ShortcutType _type;
-    private int _id;
-    private int _slot;
-    private int _page;
-    private int _level;
-    private int _characterType; // 1 - player, 2 - pet
+    private ShortcutType type;
+    private int id;
+    private int slot;
+    private int page;
+    private int level;
+    private int characterType; // 1 - player, 2 - pet
 
     @Override
     protected void readImpl() {
         final int typeId = readInt();
-        _type = ShortcutType.values()[(typeId < 1) || (typeId > 6) ? 0 : typeId];
+        type = ShortcutType.values()[(typeId < 1) || (typeId > 6) ? 0 : typeId];
         final int slot = readInt();
-        _slot = slot % 12;
-        _page = slot / 12;
-        _id = readInt();
-        _level = readInt();
-        _characterType = readInt();
+        this.slot = slot % 12;
+        page = slot / 12;
+        id = readInt();
+        level = readInt();
+        characterType = readInt();
     }
 
     @Override
@@ -54,11 +54,11 @@ public class RequestShortcutReg extends ClientPacket {
             return;
         }
 
-        if ((_page > 10) || (_page < 0)) {
+        if ((page > 10) || (page < 0)) {
             return;
         }
 
-        final Shortcut sc = new Shortcut(_slot, _page, _type, _id, _level, _characterType);
+        final Shortcut sc = new Shortcut(slot, page, type, id, level, characterType);
         player.registerShortcut(sc);
         player.sendPacket(new ShortcutRegister(sc));
     }

@@ -27,18 +27,18 @@ import app.l2nx.highfive.entity.clan.ClanAccess;
 import app.l2nx.highfive.network.serverpackets.ManagePledgePower;
 
 public class RequestPledgePower extends ClientPacket {
-    private int _rank;
-    private int _action;
-    private int _privs;
+    private int rank;
+    private int action;
+    private int privs;
 
     @Override
     protected void readImpl() {
-        _rank = readInt();
-        _action = readInt();
-        if (_action == 2) {
-            _privs = readInt();
+        rank = readInt();
+        action = readInt();
+        if (action == 2) {
+            privs = readInt();
         } else {
-            _privs = 0;
+            privs = 0;
         }
     }
 
@@ -49,9 +49,9 @@ public class RequestPledgePower extends ClientPacket {
             return;
         }
 
-        if (_action == 2) {
+        if (action == 2) {
             if (player.isClanLeader()) {
-                if (_rank == 9) {
+                if (rank == 9) {
                     // The rights below cannot be bestowed upon Academy members:
                     // Join a clan or be dismissed.
                     // Title management, crest management, master management, level management,
@@ -59,15 +59,15 @@ public class RequestPledgePower extends ClientPacket {
                     // Clan war, right to dismiss, set functions
                     // Auction, manage taxes, attack/defend registration, mercenary management
                     // => Leaves only ACCESS_WAREHOUSE, HALL_OPEN_DOOR, CASTLE_OPEN_DOOR?
-                    _privs &= ClanAccess.ACCESS_WAREHOUSE.getMask()
+                    privs &= ClanAccess.ACCESS_WAREHOUSE.getMask()
                             | ClanAccess.HALL_OPEN_DOOR.getMask()
                             | ClanAccess.CASTLE_OPEN_DOOR.getMask();
                 }
 
-                player.getClan().setRankPrivs(_rank, _privs);
+                player.getClan().setRankPrivs(rank, privs);
             }
         } else {
-            player.sendPacket(new ManagePledgePower(player.getClan(), _action, _rank));
+            player.sendPacket(new ManagePledgePower(player.getClan(), action, rank));
         }
     }
 }

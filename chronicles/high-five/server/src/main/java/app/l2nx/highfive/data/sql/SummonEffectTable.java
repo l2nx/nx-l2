@@ -28,6 +28,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import lombok.Getter;
 
 /**
  * @author Nyaran
@@ -39,12 +40,12 @@ public class SummonEffectTable {
     // -> key: charObjectId, value: classIndex Map
     // --> key: classIndex, value: servitors Map
     // ---> key: servitorSkillId, value: Effects list
-    private final Map<Integer, Map<Integer, Map<Integer, Collection<SummonEffect>>>> _servitorEffects =
+    private final Map<Integer, Map<Integer, Map<Integer, Collection<SummonEffect>>>> servitorEffects =
             new ConcurrentHashMap<>();
 
     private Map<Integer, Collection<SummonEffect>> getServitorEffects(Player owner) {
         final Map<Integer, Map<Integer, Collection<SummonEffect>>> servitorMap =
-                _servitorEffects.get(owner.getObjectId());
+                servitorEffects.get(owner.getObjectId());
         if (servitorMap == null) {
             return null;
         }
@@ -57,7 +58,7 @@ public class SummonEffectTable {
     }
 
     private boolean containsOwner(Player owner) {
-        return _servitorEffects
+        return servitorEffects
                 .getOrDefault(owner.getObjectId(), Collections.emptyMap())
                 .containsKey(owner.getClassIndex());
     }
@@ -98,8 +99,8 @@ public class SummonEffectTable {
     }
 
     public void addServitorEffect(Player owner, int referenceSkill, Skill skill, int effectCurTime) {
-        _servitorEffects.putIfAbsent(owner.getObjectId(), new ConcurrentHashMap<>());
-        _servitorEffects.get(owner.getObjectId()).putIfAbsent(owner.getClassIndex(), new ConcurrentHashMap<>());
+        servitorEffects.putIfAbsent(owner.getObjectId(), new ConcurrentHashMap<>());
+        servitorEffects.get(owner.getObjectId()).putIfAbsent(owner.getClassIndex(), new ConcurrentHashMap<>());
         getServitorEffects(owner).putIfAbsent(referenceSkill, ConcurrentHashMap.newKeySet());
         getServitorEffects(owner).get(referenceSkill).add(new SummonEffect(skill, effectCurTime));
     }
@@ -113,46 +114,41 @@ public class SummonEffectTable {
     }
 
     /** Pets **/
-    private final Map<Integer, Collection<SummonEffect>> _petEffects =
+    private final Map<Integer, Collection<SummonEffect>> petEffects =
             new ConcurrentHashMap<>(); // key: petItemObjectId, value: Effects list
 
     public void addPetEffect(int controlObjectId, Skill skill, int effectCurTime) {
-        _petEffects
+        petEffects
                 .computeIfAbsent(controlObjectId, _ -> ConcurrentHashMap.newKeySet())
                 .add(new SummonEffect(skill, effectCurTime));
     }
 
     public boolean containsPetId(int controlObjectId) {
-        return _petEffects.containsKey(controlObjectId);
+        return petEffects.containsKey(controlObjectId);
     }
 
     public void applyPetEffects(Pet pet, int controlObjectId) {
-        applyEffects(pet, _petEffects.get(controlObjectId));
+        applyEffects(pet, petEffects.get(controlObjectId));
     }
 
     public void clearPetEffects(int controlObjectId) {
-        _petEffects.getOrDefault(controlObjectId, Collections.emptyList()).clear();
+        petEffects.getOrDefault(controlObjectId, Collections.emptyList()).clear();
     }
 
     public void removePetEffects(int controlObjectId, int skillId) {
-        removeEffects(_petEffects.get(controlObjectId), skillId);
+        removeEffects(petEffects.get(controlObjectId), skillId);
     }
 
     private class SummonEffect {
-        Skill _skill;
-        int _effectCurTime;
+        @Getter
+        Skill skill;
+
+        @Getter
+        int effectCurTime;
 
         public SummonEffect(Skill skill, int effectCurTime) {
-            _skill = skill;
-            _effectCurTime = effectCurTime;
-        }
-
-        public Skill getSkill() {
-            return _skill;
-        }
-
-        public int getEffectCurTime() {
-            return _effectCurTime;
+            this.skill = skill;
+            this.effectCurTime = effectCurTime;
         }
     }
 

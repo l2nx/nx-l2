@@ -38,12 +38,15 @@ import app.l2nx.highfive.network.serverpackets.ServerPacket;
 import app.l2nx.highfive.taskmanagers.DecayTaskManager;
 import app.l2nx.highfive.threads.ThreadPool;
 import java.util.concurrent.Future;
-import java.util.logging.Level;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 
 public class Decoy extends Creature {
-    private final Player _owner;
-    private Future<?> _decoyLifeTask;
-    private Future<?> _hateSpam;
+    @Getter
+    private final Player owner;
+
+    private Future<?> decoyLifeTask;
+    private Future<?> hateSpam;
 
     public Decoy(NpcTemplate template, Player owner, int totalLifeTime) {
         this(template, owner, totalLifeTime, true);
@@ -52,16 +55,16 @@ public class Decoy extends Creature {
     public Decoy(NpcTemplate template, Player owner, int totalLifeTime, boolean aggressive) {
         super(template);
         setInstanceType(InstanceType.Decoy);
-        _owner = owner;
+        this.owner = owner;
         setXYZInvisible(owner.getX(), owner.getY(), owner.getZ());
         setInvul(false);
-        _decoyLifeTask = ThreadPool.schedule(() -> unSummon(owner), totalLifeTime);
+        decoyLifeTask = ThreadPool.schedule(() -> unSummon(owner), totalLifeTime);
         if (aggressive) {
             final int hateSpamSkillId = 5272;
             final int skilllevel = Math.min(
                     getTemplate().getDisplayId() - 13070,
                     SkillData.getInstance().getMaxLevel(hateSpamSkillId));
-            _hateSpam = ThreadPool.scheduleAtFixedRate(
+            hateSpam = ThreadPool.scheduleAtFixedRate(
                     new HateSpam(this, SkillData.getInstance().getSkill(hateSpamSkillId, skilllevel)), 2000, 5000);
         }
     }
@@ -72,40 +75,41 @@ public class Decoy extends Creature {
             return false;
         }
 
-        if (_hateSpam != null) {
-            _hateSpam.cancel(true);
-            _hateSpam = null;
+        if (hateSpam != null) {
+            hateSpam.cancel(true);
+            hateSpam = null;
         }
 
-        unSummon(_owner);
+        unSummon(owner);
         DecayTaskManager.getInstance().add(this);
         return true;
     }
 
+    @Slf4j
     private static class HateSpam implements Runnable {
-        private final Decoy _player;
-        private final Skill _skill;
+        private final Decoy player;
+        private final Skill skill;
 
         HateSpam(Decoy player, Skill hate) {
-            _player = player;
-            _skill = hate;
+            this.player = player;
+            skill = hate;
         }
 
         @Override
         public void run() {
             try {
-                _player.setTarget(_player);
-                _player.doCast(_skill);
+                player.setTarget(player);
+                player.doCast(skill);
             } catch (Throwable e) {
-                LOGGER.log(Level.SEVERE, "Decoy Error: ", e);
+                log.error("Decoy Error: ", e);
             }
         }
     }
 
     public synchronized void unSummon(Player owner) {
-        if (_hateSpam != null) {
-            _hateSpam.cancel(true);
-            _hateSpam = null;
+        if (hateSpam != null) {
+            hateSpam.cancel(true);
+            hateSpam = null;
         }
 
         if (isSpawned() && !isDead()) {
@@ -114,9 +118,9 @@ public class Decoy extends Creature {
             decayMe();
         }
 
-        if (_decoyLifeTask != null) {
-            _decoyLifeTask.cancel(false);
-            _decoyLifeTask = null;
+        if (decoyLifeTask != null) {
+            decoyLifeTask.cancel(false);
+            decoyLifeTask = null;
         }
     }
 
@@ -141,12 +145,12 @@ public class Decoy extends Creature {
 
     @Override
     public void onDecay() {
-        deleteMe(_owner);
+        deleteMe(owner);
     }
 
     @Override
     public boolean isAutoAttackable(Creature attacker) {
-        return _owner.isAutoAttackable(attacker);
+        return owner.isAutoAttackable(attacker);
     }
 
     @Override
@@ -184,13 +188,9 @@ public class Decoy extends Creature {
         owner.setDecoy(null);
     }
 
-    public Player getOwner() {
-        return _owner;
-    }
-
     @Override
     public Player asPlayer() {
-        return _owner;
+        return owner;
     }
 
     @Override
@@ -205,15 +205,15 @@ public class Decoy extends Creature {
 
     @Override
     public void sendPacket(ServerPacket packet) {
-        if (_owner != null) {
-            _owner.sendPacket(packet);
+        if (owner != null) {
+            owner.sendPacket(packet);
         }
     }
 
     @Override
     public void sendPacket(SystemMessageId id) {
-        if (_owner != null) {
-            _owner.sendPacket(id);
+        if (owner != null) {
+            owner.sendPacket(id);
         }
     }
 }

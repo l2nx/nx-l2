@@ -27,15 +27,15 @@ import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.network.buffer.WriteBuffer;
 
 public class JoinPledge extends ServerPacket {
-    private final int _pledgeId;
+    private final int pledgeId;
 
     public JoinPledge(int pledgeId) {
-        _pledgeId = pledgeId;
+        this.pledgeId = pledgeId;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.JOIN_PLEDGE.writeId(this, buffer);
-        buffer.writeInt(_pledgeId);
+        buffer.writeInt(pledgeId);
     }
 }

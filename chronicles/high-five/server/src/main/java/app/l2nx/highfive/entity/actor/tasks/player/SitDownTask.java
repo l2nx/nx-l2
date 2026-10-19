@@ -26,17 +26,17 @@ import app.l2nx.highfive.entity.actor.Player;
  * @author UnAfraid
  */
 public class SitDownTask implements Runnable {
-    private final Player _player;
+    private final Player player;
 
     public SitDownTask(Player player) {
-        _player = player;
+        this.player = player;
     }
 
     @Override
     public void run() {
-        if (_player != null) {
-            _player.setParalyzed(true);
-            _player.setSittingProgress(false);
+        if (player != null) {
+            player.setParalyzed(true);
+            player.setSittingProgress(false);
         }
     }
 }

@@ -44,7 +44,7 @@ public class Q00643_RiseAndFallOfTheElrokiTribe extends Quest {
     private static final int CHANCE_MOBS1 = 116;
     private static final int CHANCE_MOBS2 = 360;
     private static final int CHANCE_DEINO = 558;
-    private boolean isFirstTalk = true;
+    private boolean firstTalk = true;
 
     // Rewards
     private static final int[] PIECE = {
@@ -207,8 +207,8 @@ public class Q00643_RiseAndFallOfTheElrokiTribe extends Quest {
                 if (npc.getId() == SINGSING) {
                     htmltext = hasQuestItems(player, BONES_OF_A_PLAINS_DINOSAUR) ? "32106-08.html" : "32106-14.html";
                 } else if (npc.getId() == KARAKAWEI) {
-                    if (isFirstTalk) {
-                        isFirstTalk = false;
+                    if (firstTalk) {
+                        firstTalk = false;
                         htmltext = "32117-01.html";
                     } else {
                         htmltext = "32117-03.html";

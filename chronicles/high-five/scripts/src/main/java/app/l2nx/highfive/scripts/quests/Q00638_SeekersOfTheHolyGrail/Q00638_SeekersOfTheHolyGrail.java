@@ -26,6 +26,7 @@ import app.l2nx.highfive.mechanics.script.Quest;
 import app.l2nx.highfive.mechanics.script.QuestState;
 import java.util.HashMap;
 import java.util.Map;
+import lombok.Getter;
 
 /**
  * Seekers Of The Holy Grail (638)
@@ -33,9 +34,14 @@ import java.util.Map;
  */
 public class Q00638_SeekersOfTheHolyGrail extends Quest {
     private static class DropInfo extends ItemChanceHolder {
-        private final int _keyId;
-        private final int _keyChance;
-        private final int _keyCount;
+        @Getter
+        private final int keyId;
+
+        @Getter
+        private final int keyChance;
+
+        @Getter
+        private final int keyCount;
 
         public DropInfo(int itemId, double chance) {
             this(itemId, chance, 0, 0, 0);
@@ -43,21 +49,9 @@ public class Q00638_SeekersOfTheHolyGrail extends Quest {
 
         public DropInfo(int itemId, double chance, int keyId, int keyChance, int count) {
             super(itemId, chance);
-            _keyId = keyId;
-            _keyChance = keyChance;
-            _keyCount = count;
-        }
-
-        public int getKeyId() {
-            return _keyId;
-        }
-
-        public int getKeyChance() {
-            return _keyChance;
-        }
-
-        public int getKeyCount() {
-            return _keyCount;
+            this.keyId = keyId;
+            this.keyChance = keyChance;
+            keyCount = count;
         }
     }
 

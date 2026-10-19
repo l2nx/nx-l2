@@ -26,17 +26,7 @@ import app.l2nx.highfive.mechanics.events.holders.IBaseEvent;
 /**
  * @author St3eT
  */
-public class OnPlayerSummonTalk implements IBaseEvent {
-    private final Summon _summon;
-
-    public OnPlayerSummonTalk(Summon summon) {
-        _summon = summon;
-    }
-
-    public Summon getSummon() {
-        return _summon;
-    }
-
+public record OnPlayerSummonTalk(Summon summon) implements IBaseEvent {
     @Override
     public EventType getType() {
         return EventType.ON_PLAYER_SUMMON_TALK;

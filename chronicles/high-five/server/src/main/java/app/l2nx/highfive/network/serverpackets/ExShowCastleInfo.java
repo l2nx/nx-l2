@@ -23,34 +23,37 @@ import app.l2nx.highfive.data.sql.ClanTable;
 import app.l2nx.highfive.managers.CastleManager;
 import app.l2nx.highfive.mechanics.siege.Castle;
 import app.l2nx.highfive.network.GameClient;
-import app.l2nx.highfive.network.PacketLogger;
 import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.network.buffer.WriteBuffer;
 import java.util.Collection;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author KenM
  */
+@Slf4j
 public class ExShowCastleInfo extends ServerPacket {
-    private final Collection<Castle> _castles;
+    private final Collection<Castle> castles;
 
     public ExShowCastleInfo() {
-        _castles = CastleManager.getInstance().getCastles();
+        castles = CastleManager.getInstance().getCastles();
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_SHOW_CASTLE_INFO.writeId(this, buffer);
-        buffer.writeInt(_castles.size());
-        for (Castle castle : _castles) {
+        buffer.writeInt(castles.size());
+        for (Castle castle : castles) {
             buffer.writeInt(castle.getResidenceId());
             if (castle.getOwnerId() > 0) {
                 if (ClanTable.getInstance().getClan(castle.getOwnerId()) != null) {
                     buffer.writeString(
                             ClanTable.getInstance().getClan(castle.getOwnerId()).getName());
                 } else {
-                    PacketLogger.warning("Castle owner with no name! Castle: " + castle.getName() + " has an OwnerId = "
-                            + castle.getOwnerId() + " who does not have a  name!");
+                    log.warn(
+                            "Castle owner with no name! Castle: {} has an OwnerId = {} who does not have a  name!",
+                            castle.getName(),
+                            castle.getOwnerId());
                     buffer.writeString("");
                 }
             } else {

@@ -29,17 +29,31 @@ import app.l2nx.highfive.entity.itemcontainer.Inventory;
 import app.l2nx.highfive.util.StatSet;
 import java.util.ArrayList;
 import java.util.List;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * This class is dedicated to the management of EtcItem.
  */
+@Slf4j
 public class EtcItem extends ItemTemplate {
-    private String _handler;
-    private EtcItemType _type;
-    private List<ExtractableProduct> _extractableItems;
-    private int _extractableCountMin;
-    private int _extractableCountMax;
-    private boolean _isBlessed;
+    @Getter
+    private String handlerName;
+
+    @Getter
+    private EtcItemType itemType;
+
+    @Getter
+    private List<ExtractableProduct> extractableItems;
+
+    @Getter
+    private int extractableCountMin;
+
+    @Getter
+    private int extractableCountMax;
+
+    @Getter
+    private boolean blessed;
 
     /**
      * Constructor for EtcItem.
@@ -52,7 +66,7 @@ public class EtcItem extends ItemTemplate {
     @Override
     public void set(StatSet set) {
         super.set(set);
-        _type = set.getEnum("etcitem_type", EtcItemType.class, EtcItemType.NONE);
+        itemType = set.getEnum("etcitem_type", EtcItemType.class, EtcItemType.NONE);
 
         // l2j custom - EtcItemType.SHOT
         switch (getDefaultAction()) {
@@ -60,40 +74,32 @@ public class EtcItem extends ItemTemplate {
             case SUMMON_SOULSHOT:
             case SUMMON_SPIRITSHOT:
             case SPIRITSHOT: {
-                _type = EtcItemType.SHOT;
+                itemType = EtcItemType.SHOT;
                 break;
             }
         }
 
-        _type1 = ItemTemplate.TYPE1_ITEM_QUESTITEM_ADENA;
-        _type2 = ItemTemplate.TYPE2_OTHER; // default is other
+        type1 = ItemTemplate.TYPE1_ITEM_QUESTITEM_ADENA;
+        type2 = ItemTemplate.TYPE2_OTHER; // default is other
 
         if (isQuestItem()) {
-            _type2 = ItemTemplate.TYPE2_QUEST;
+            type2 = ItemTemplate.TYPE2_QUEST;
         } else if ((getId() == Inventory.ADENA_ID) || (getId() == Inventory.ANCIENT_ADENA_ID)) {
-            _type2 = ItemTemplate.TYPE2_MONEY;
+            type2 = ItemTemplate.TYPE2_MONEY;
         }
 
-        _handler = set.getString("handler", null); // ! null !
+        handlerName = set.getString("handler", null); // ! null !
 
-        _extractableCountMin = set.getInt("extractableCountMin", 0);
-        _extractableCountMax = set.getInt("extractableCountMax", 0);
-        if (_extractableCountMin > _extractableCountMax) {
-            LOGGER.warning("Item " + this + " extractableCountMin is bigger than extractableCountMax!");
+        extractableCountMin = set.getInt("extractableCountMin", 0);
+        extractableCountMax = set.getInt("extractableCountMax", 0);
+        if (extractableCountMin > extractableCountMax) {
+            log.warn("Item {} extractableCountMin is bigger than extractableCountMax!", this);
         }
 
-        _isBlessed = set.getBoolean("blessed", false)
+        blessed = set.getBoolean("blessed", false)
                 || (((getDefaultAction() == ActionType.SPIRITSHOT) || (getDefaultAction() == ActionType.SOULSHOT))
                         && (getName() != null)
                         && getName().contains("Blessed"));
-    }
-
-    /**
-     * @return the type of Etc Item.
-     */
-    @Override
-    public EtcItemType getItemType() {
-        return _type;
     }
 
     /**
@@ -101,7 +107,7 @@ public class EtcItem extends ItemTemplate {
      */
     @Override
     public int getItemMask() {
-        return _type.mask();
+        return itemType.mask();
     }
 
     /**
@@ -113,49 +119,14 @@ public class EtcItem extends ItemTemplate {
     }
 
     /**
-     * @return the handler name, null if no handler for item.
-     */
-    public String getHandlerName() {
-        return _handler;
-    }
-
-    /**
-     * @return the extractable items list.
-     */
-    public List<ExtractableProduct> getExtractableItems() {
-        return _extractableItems;
-    }
-
-    /**
-     * @return the minimum count of extractable items
-     */
-    public int getExtractableCountMin() {
-        return _extractableCountMin;
-    }
-
-    /**
-     * @return the maximum count of extractable items
-     */
-    public int getExtractableCountMax() {
-        return _extractableCountMax;
-    }
-
-    /**
      * @param extractableProduct
      */
     @Override
     public void addCapsuledItem(ExtractableProduct extractableProduct) {
-        if (_extractableItems == null) {
-            _extractableItems = new ArrayList<>();
+        if (extractableItems == null) {
+            extractableItems = new ArrayList<>();
         }
 
-        _extractableItems.add(extractableProduct);
-    }
-
-    /**
-     * @return {@code true} if the item is blessed, {@code false} otherwise.
-     */
-    public boolean isBlessed() {
-        return _isBlessed;
+        extractableItems.add(extractableProduct);
     }
 }

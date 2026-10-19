@@ -29,10 +29,13 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Set;
 import java.util.function.Supplier;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author Mobius
  */
+@Slf4j
 public enum ClientPackets {
     LOGOUT(0x00, Logout::new, ConnectionState.AUTHENTICATED, ConnectionState.IN_GAME),
     ATTACK(0x01, AttackRequest::new, ConnectionState.IN_GAME),
@@ -221,9 +224,13 @@ public enum ClientPackets {
         }
     }
 
-    private final int _packetId;
-    private final Supplier<ClientPacket> _packetSupplier;
-    private final Set<ConnectionState> _connectionStates;
+    @Getter
+    private final int packetId;
+
+    private final Supplier<ClientPacket> packetSupplier;
+
+    @Getter
+    private final Set<ConnectionState> connectionStates;
 
     ClientPackets(int packetId, Supplier<ClientPacket> packetSupplier, ConnectionState... connectionStates) {
         // Packet id is an unsigned byte.
@@ -231,35 +238,27 @@ public enum ClientPackets {
             throw new IllegalArgumentException("Packet id must not be bigger than 0xFF");
         }
 
-        _packetId = packetId;
-        _packetSupplier = packetSupplier != null ? packetSupplier : () -> null;
+        this.packetId = packetId;
+        this.packetSupplier = packetSupplier != null ? packetSupplier : () -> null;
 
         final EnumSet<ConnectionState> states = EnumSet.noneOf(ConnectionState.class);
         Collections.addAll(states, connectionStates);
-        _connectionStates = states;
-    }
-
-    public int getPacketId() {
-        return _packetId;
+        this.connectionStates = states;
     }
 
     public ClientPacket newPacket() {
-        final ClientPacket packet = _packetSupplier.get();
+        final ClientPacket packet = packetSupplier.get();
         if (DevelopmentConfig.DEBUG_CLIENT_PACKETS) {
             if (packet != null) {
                 final String name = packet.getClass().getSimpleName();
                 if (!DevelopmentConfig.EXCLUDED_DEBUG_PACKETS.contains(name)) {
-                    PacketLogger.info("[C] " + name);
+                    log.info("[C] {}", name);
                 }
             } else if (DevelopmentConfig.DEBUG_UNKNOWN_PACKETS) {
-                PacketLogger.info("[C] 0x" + Integer.toHexString(_packetId).toUpperCase());
+                log.info("[C] 0x{}", Integer.toHexString(packetId).toUpperCase());
             }
         }
 
         return packet;
-    }
-
-    public Set<ConnectionState> getConnectionStates() {
-        return _connectionStates;
     }
 }

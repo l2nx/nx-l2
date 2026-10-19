@@ -27,18 +27,18 @@ import app.l2nx.network.buffer.WriteBuffer;
  * @author KenM
  */
 public class ExDuelAskStart extends ServerPacket {
-    private final String _requestorName;
-    private final int _partyDuel;
+    private final String requestorName;
+    private final int partyDuel;
 
     public ExDuelAskStart(String requestor, int partyDuel) {
-        _requestorName = requestor;
-        _partyDuel = partyDuel;
+        requestorName = requestor;
+        this.partyDuel = partyDuel;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_DUEL_ASK_START.writeId(this, buffer);
-        buffer.writeString(_requestorName);
-        buffer.writeInt(_partyDuel);
+        buffer.writeString(requestorName);
+        buffer.writeInt(partyDuel);
     }
 }

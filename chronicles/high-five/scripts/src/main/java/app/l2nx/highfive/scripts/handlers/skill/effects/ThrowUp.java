@@ -33,10 +33,12 @@ import app.l2nx.highfive.mechanics.skill.enums.FlyType;
 import app.l2nx.highfive.network.serverpackets.FlyToLocation;
 import app.l2nx.highfive.network.serverpackets.ValidateLocation;
 import app.l2nx.highfive.util.StatSet;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Throw Up effect implementation.
  */
+@Slf4j
 public class ThrowUp extends AbstractEffect {
     public ThrowUp(Condition attachCond, Condition applyCond, StatSet set, StatSet params) {
         super(attachCond, applyCond, set, params);
@@ -64,8 +66,12 @@ public class ThrowUp extends AbstractEffect {
         final double dy = effector.getY() - curY;
         final double distance = Math.sqrt((dx * dx) + (dy * dy));
         if (distance > 2000) {
-            LOGGER.info("EffectThrow was going to use invalid coordinates for characters, getEffected: " + curX + ","
-                    + curY + " and getEffector: " + effector.getX() + "," + effector.getY());
+            log.info(
+                    "EffectThrow was going to use invalid coordinates for characters, getEffected: {},{} and getEffector: {},{}",
+                    curX,
+                    curY,
+                    effector.getX(),
+                    effector.getY());
             return;
         }
 

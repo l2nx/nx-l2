@@ -30,12 +30,12 @@ import app.l2nx.highfive.network.SystemMessageId;
  * @version $Revision: 1.4.2.1.2.3 $ $Date: 2005/03/27 15:29:30 $
  */
 public class RequestReplyStartPledgeWar extends ClientPacket {
-    private int _answer;
+    private int answer;
 
     @Override
     protected void readImpl() {
         readString(); // _reqName
-        _answer = readInt();
+        answer = readInt();
     }
 
     @Override
@@ -50,7 +50,7 @@ public class RequestReplyStartPledgeWar extends ClientPacket {
             return;
         }
 
-        if (_answer == 1) {
+        if (answer == 1) {
             ClanTable.getInstance().storeClanWars(requestor.getClanId(), player.getClanId());
         } else {
             requestor.sendPacket(SystemMessageId.THE_S1_CLAN_DID_NOT_RESPOND_WAR_PROCLAMATION_HAS_BEEN_REFUSED_2);

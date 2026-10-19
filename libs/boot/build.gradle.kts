@@ -12,6 +12,7 @@ dependencies {
     testFixturesImplementation(platform(libs.spring.boot.dependencies))
     testFixturesImplementation(libs.spring.boot.starter.test)
     testFixturesImplementation(libs.spring.boot.testcontainers)
-    testFixturesImplementation(libs.testcontainers.junit.jupiter)
+    testFixturesApi(libs.testcontainers.junit.jupiter)
+    testFixturesApi(libs.archunit.junit5)
     testFixturesImplementation(libs.testcontainers.mysql)
 }

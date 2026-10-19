@@ -26,19 +26,19 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class UCRunningTask implements Runnable {
-    private final UCArena _arena;
+    private final UCArena arena;
 
     public UCRunningTask(UCArena arena) {
-        _arena = arena;
+        this.arena = arena;
     }
 
     @Override
     public void run() {
-        _arena.generateWinner();
-        _arena.removeTeams();
+        arena.generateWinner();
+        arena.removeTeams();
 
         UCTeam winnerTeam = null;
-        for (UCTeam team : _arena.getTeams()) {
+        for (UCTeam team : arena.getTeams()) {
             if (team.getStatus() == UCTeam.WIN) {
                 winnerTeam = team;
             } else if (team.getStatus() == UCTeam.FAIL) {
@@ -46,31 +46,31 @@ public class UCRunningTask implements Runnable {
             }
         }
 
-        for (UCPoint point : _arena.getPoints()) {
+        for (UCPoint point : arena.getPoints()) {
             point.actionDoors(false);
             point.getPlayers().clear();
         }
 
         if (winnerTeam != null) {
-            if (!_arena.getWaitingList().isEmpty()) {
+            if (!arena.getWaitingList().isEmpty()) {
                 final UCTeam other = winnerTeam.getOtherTeam();
-                final UCWaiting otherWaiting = _arena.getWaitingList().get(0);
+                final UCWaiting otherWaiting = arena.getWaitingList().get(0);
                 other.setParty(otherWaiting.getParty());
                 other.setRegisterTime(otherWaiting.getRegisterMillis());
-                _arena.getWaitingList().remove(0);
-                _arena.prepareStart();
+                arena.getWaitingList().remove(0);
+                arena.prepareStart();
                 return;
             }
 
             winnerTeam.cleanUp();
         }
 
-        if (_arena.getWaitingList().size() >= 2) {
+        if (arena.getWaitingList().size() >= 2) {
             int i = 0;
             UCWaiting teamWaiting = null;
             final List<UCWaiting> removeList = new ArrayList<>();
-            for (UCTeam team : _arena.getTeams()) {
-                teamWaiting = _arena.getWaitingList().get(i);
+            for (UCTeam team : arena.getTeams()) {
+                teamWaiting = arena.getWaitingList().get(i);
                 removeList.add(teamWaiting);
                 team.setParty(teamWaiting.getParty());
                 team.setRegisterTime(teamWaiting.getRegisterMillis());
@@ -81,15 +81,15 @@ public class UCRunningTask implements Runnable {
             }
 
             for (UCWaiting tm : removeList) {
-                _arena.getWaitingList().remove(tm);
+                arena.getWaitingList().remove(tm);
             }
 
             removeList.clear();
-            _arena.prepareStart();
+            arena.prepareStart();
             return;
         }
 
-        _arena.setIsBattleNow(false);
-        _arena.runNewTask(false);
+        arena.setIsBattleNow(false);
+        arena.runNewTask(false);
     }
 }

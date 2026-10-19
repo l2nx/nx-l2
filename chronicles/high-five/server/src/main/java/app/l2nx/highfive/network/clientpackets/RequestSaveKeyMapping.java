@@ -33,13 +33,13 @@ import app.l2nx.highfive.network.ConnectionState;
 public class RequestSaveKeyMapping extends ClientPacket {
     public static final String SPLIT_VAR = "	";
 
-    private byte[] _uiKeyMapping;
+    private byte[] uiKeyMapping;
 
     @Override
     protected void readImpl() {
         final int dataSize = readInt();
         if (dataSize > 0) {
-            _uiKeyMapping = readBytes(dataSize);
+            uiKeyMapping = readBytes(dataSize);
         }
     }
 
@@ -50,14 +50,14 @@ public class RequestSaveKeyMapping extends ClientPacket {
                 || //
                 (player == null)
                 || //
-                (_uiKeyMapping == null)
+                (uiKeyMapping == null)
                 || //
                 (getClient().getConnectionState() != ConnectionState.IN_GAME)) {
             return;
         }
 
-        final StringBuilder sb = new StringBuilder(_uiKeyMapping.length * 4);
-        for (Byte b : _uiKeyMapping) {
+        final StringBuilder sb = new StringBuilder(uiKeyMapping.length * 4);
+        for (Byte b : uiKeyMapping) {
             sb.append(b).append(SPLIT_VAR);
         }
 

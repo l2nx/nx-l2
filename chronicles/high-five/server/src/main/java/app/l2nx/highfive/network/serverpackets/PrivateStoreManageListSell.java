@@ -30,37 +30,37 @@ import app.l2nx.network.buffer.WriteBuffer;
 import java.util.Collection;
 
 public class PrivateStoreManageListSell extends AbstractItemPacket {
-    private final int _objId;
-    private final long _playerAdena;
-    private final boolean _packageSale;
-    private final Collection<TradeItem> _itemList;
-    private final Collection<TradeItem> _sellList;
+    private final int objId;
+    private final long playerAdena;
+    private final boolean packageSale;
+    private final Collection<TradeItem> itemList;
+    private final Collection<TradeItem> sellList;
 
     public PrivateStoreManageListSell(Player player, boolean isPackageSale) {
-        _objId = player.getObjectId();
-        _playerAdena = player.getAdena();
+        objId = player.getObjectId();
+        playerAdena = player.getAdena();
         player.getSellList().updateItems();
-        _packageSale = isPackageSale;
-        _itemList = player.getInventory().getAvailableItems(player.getSellList());
-        _sellList = player.getSellList().getItems();
+        packageSale = isPackageSale;
+        itemList = player.getInventory().getAvailableItems(player.getSellList());
+        sellList = player.getSellList().getItems();
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.PRIVATE_STORE_SELL_MANAGE_LIST.writeId(this, buffer);
 
-        buffer.writeInt(_objId);
-        buffer.writeInt(_packageSale); // Package sell
-        buffer.writeLong(_playerAdena);
+        buffer.writeInt(objId);
+        buffer.writeInt(packageSale); // Package sell
+        buffer.writeLong(playerAdena);
 
-        buffer.writeInt(_itemList.size()); // for potential sells
-        for (TradeItem item : _itemList) {
+        buffer.writeInt(itemList.size()); // for potential sells
+        for (TradeItem item : itemList) {
             writeItem(item, buffer);
             buffer.writeLong(item.getItem().getReferencePrice() * 2);
         }
 
-        buffer.writeInt(_sellList.size()); // count for any items already added for sell
-        for (TradeItem item : _sellList) {
+        buffer.writeInt(sellList.size()); // count for any items already added for sell
+        for (TradeItem item : sellList) {
             writeItem(item, buffer);
             buffer.writeLong(item.getPrice());
             buffer.writeLong(item.getItem().getReferencePrice() * 2);

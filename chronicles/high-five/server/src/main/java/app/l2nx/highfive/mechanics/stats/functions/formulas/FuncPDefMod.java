@@ -31,10 +31,10 @@ import app.l2nx.highfive.mechanics.stats.functions.AbstractFunction;
  * @author UnAfraid
  */
 public class FuncPDefMod extends AbstractFunction {
-    private static final FuncPDefMod _fmm_instance = new FuncPDefMod();
+    private static final FuncPDefMod instance = new FuncPDefMod();
 
     public static AbstractFunction getInstance() {
-        return _fmm_instance;
+        return instance;
     }
 
     private FuncPDefMod() {

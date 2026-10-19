@@ -23,27 +23,13 @@ import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.zone.ZoneType;
 import app.l2nx.highfive.mechanics.events.EventType;
 import app.l2nx.highfive.mechanics.events.holders.IBaseEvent;
+import lombok.Builder;
 
 /**
  * @author UnAfraid
  */
-public class OnCreatureZoneEnter implements IBaseEvent {
-    private final Creature _creature;
-    private final ZoneType _zone;
-
-    public OnCreatureZoneEnter(Creature creature, ZoneType zone) {
-        _creature = creature;
-        _zone = zone;
-    }
-
-    public Creature getCreature() {
-        return _creature;
-    }
-
-    public ZoneType getZone() {
-        return _zone;
-    }
-
+@Builder(toBuilder = true)
+public record OnCreatureZoneEnter(Creature creature, ZoneType zone) implements IBaseEvent {
     @Override
     public EventType getType() {
         return EventType.ON_CREATURE_ZONE_ENTER;

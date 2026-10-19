@@ -34,17 +34,17 @@ import app.l2nx.highfive.network.SystemMessageId;
  * Client packet for setting ally crest.
  */
 public class RequestSetAllyCrest extends ClientPacket {
-    private int _length;
-    private byte[] _data = null;
+    private int length;
+    private byte[] data = null;
 
     @Override
     protected void readImpl() {
-        _length = readInt();
-        if (_length > 192) {
+        length = readInt();
+        if (length > 192) {
             return;
         }
 
-        _data = readBytes(_length);
+        data = readBytes(length);
     }
 
     @Override
@@ -54,12 +54,12 @@ public class RequestSetAllyCrest extends ClientPacket {
             return;
         }
 
-        if (_length < 0) {
+        if (length < 0) {
             player.sendMessage("File transfer error.");
             return;
         }
 
-        if (_length > 192) {
+        if (length > 192) {
             player.sendPacket(SystemMessageId.PLEASE_ADJUST_THE_IMAGE_SIZE_TO_8X12);
             return;
         }
@@ -75,12 +75,12 @@ public class RequestSetAllyCrest extends ClientPacket {
             return;
         }
 
-        if (_length == 0) {
+        if (length == 0) {
             if (leaderClan.getAllyCrestId() != 0) {
                 leaderClan.changeAllyCrest(0, false);
             }
         } else {
-            final Crest crest = CrestTable.getInstance().createCrest(_data, CrestType.ALLY);
+            final Crest crest = CrestTable.getInstance().createCrest(data, CrestType.ALLY);
             if (crest != null) {
                 leaderClan.changeAllyCrest(crest.getId(), false);
                 player.sendPacket(SystemMessageId.THE_CREST_WAS_SUCCESSFULLY_REGISTERED);

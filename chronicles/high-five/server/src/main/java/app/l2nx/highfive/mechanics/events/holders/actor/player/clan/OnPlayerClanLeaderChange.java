@@ -23,33 +23,13 @@ import app.l2nx.highfive.entity.clan.Clan;
 import app.l2nx.highfive.entity.clan.ClanMember;
 import app.l2nx.highfive.mechanics.events.EventType;
 import app.l2nx.highfive.mechanics.events.holders.IBaseEvent;
+import lombok.Builder;
 
 /**
  * @author UnAfraid
  */
-public class OnPlayerClanLeaderChange implements IBaseEvent {
-    private final ClanMember _oldLeader;
-    private final ClanMember _newLeader;
-    private final Clan _clan;
-
-    public OnPlayerClanLeaderChange(ClanMember oldLeader, ClanMember newLeader, Clan clan) {
-        _oldLeader = oldLeader;
-        _newLeader = newLeader;
-        _clan = clan;
-    }
-
-    public ClanMember getOldLeader() {
-        return _oldLeader;
-    }
-
-    public ClanMember getNewLeader() {
-        return _newLeader;
-    }
-
-    public Clan getClan() {
-        return _clan;
-    }
-
+@Builder(toBuilder = true)
+public record OnPlayerClanLeaderChange(ClanMember oldLeader, ClanMember newLeader, Clan clan) implements IBaseEvent {
     @Override
     public EventType getType() {
         return EventType.ON_PLAYER_CLAN_LEADER_CHANGE;

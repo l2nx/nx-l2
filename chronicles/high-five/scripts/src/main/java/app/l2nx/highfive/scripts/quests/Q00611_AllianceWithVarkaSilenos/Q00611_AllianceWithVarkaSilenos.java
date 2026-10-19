@@ -27,6 +27,7 @@ import app.l2nx.highfive.mechanics.script.QuestState;
 import app.l2nx.highfive.mechanics.script.State;
 import java.util.HashMap;
 import java.util.Map;
+import lombok.Getter;
 
 /**
  * Alliance with Varka Silenos (611)
@@ -34,39 +35,32 @@ import java.util.Map;
  */
 public class Q00611_AllianceWithVarkaSilenos extends Quest {
     private static class DropInfo {
-        private final int _chance;
-        private final int _minCond;
-        private final int _itemId;
+        @Getter
+        private final int chance;
+
+        @Getter
+        private final int minCond;
+
+        @Getter
+        private final int itemId;
 
         public DropInfo(int chance, int minCond) {
-            _chance = chance;
-            _minCond = minCond;
-            switch (_minCond) {
+            this.chance = chance;
+            this.minCond = minCond;
+            switch (this.minCond) {
                 case 1: {
-                    _itemId = KETRA_BADGE_SOLDIER;
+                    itemId = KETRA_BADGE_SOLDIER;
                     break;
                 }
                 case 2: {
-                    _itemId = KETRA_BADGE_OFFICER;
+                    itemId = KETRA_BADGE_OFFICER;
                     break;
                 }
                 default: {
-                    _itemId = KETRA_BADGE_CAPTAIN;
+                    itemId = KETRA_BADGE_CAPTAIN;
                     break;
                 }
             }
-        }
-
-        public int getMinCond() {
-            return _minCond;
-        }
-
-        public int getChance() {
-            return _chance;
-        }
-
-        public int getItemId() {
-            return _itemId;
         }
     }
 

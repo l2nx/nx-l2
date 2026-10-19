@@ -36,14 +36,14 @@ import app.l2nx.login.network.gameserverpackets.receive.RequestTempBan;
 import app.l2nx.login.network.gameserverpackets.receive.ServerStatus;
 import app.l2nx.login.network.gameserverpackets.send.LoginServerFail;
 import app.l2nx.network.packet.SimpleReadablePacket;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Handles routing of packets received from game server connections.
  * @author BazookaRpm
  */
+@Slf4j
 public class GameServerPacketHandler {
-    private static final Logger LOGGER = Logger.getLogger(GameServerPacketHandler.class.getName());
 
     public enum GameServerState {
         CONNECTED,
@@ -55,7 +55,7 @@ public class GameServerPacketHandler {
 
     public static SimpleReadablePacket handle(byte[] data, GameServerThread server) {
         if ((data == null) || (data.length == 0)) {
-            LOGGER.warning("Received empty packet from " + server);
+            log.warn("Received empty packet from {}", server);
             server.forceClose(LoginServerFail.NOT_AUTHED);
             return null;
         }
@@ -126,7 +126,7 @@ public class GameServerPacketHandler {
                 }
             }
             default: {
-                LOGGER.warning("Unknown state " + state + " from " + server);
+                log.warn("Unknown state {} from {}", state, server);
                 server.forceClose(LoginServerFail.NOT_AUTHED);
                 return null;
             }
@@ -134,8 +134,11 @@ public class GameServerPacketHandler {
     }
 
     private static void logInvalidOpcode(int opcode, GameServerState state, GameServerThread server) {
-        LOGGER.warning("Unknown opcode (" + Integer.toHexString(opcode).toUpperCase() + ") in state " + state + " from "
-                + server + ", closing connection.");
+        log.warn(
+                "Unknown opcode ({}) in state {} from {}, closing connection.",
+                Integer.toHexString(opcode).toUpperCase(),
+                state,
+                server);
         server.forceClose(LoginServerFail.NOT_AUTHED);
     }
 }

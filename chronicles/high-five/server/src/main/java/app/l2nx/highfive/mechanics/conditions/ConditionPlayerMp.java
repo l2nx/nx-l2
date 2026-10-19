@@ -30,18 +30,18 @@ import app.l2nx.highfive.mechanics.skill.Skill;
  * The Class ConditionPlayerMp.
  */
 public class ConditionPlayerMp extends Condition {
-    private final int _mp;
+    private final int mp;
 
     /**
      * Instantiates a new condition player mp.
      * @param mp the mp
      */
     public ConditionPlayerMp(int mp) {
-        _mp = mp;
+        this.mp = mp;
     }
 
     @Override
     public boolean testImpl(Creature effector, Creature effected, Skill skill, ItemTemplate item) {
-        return ((effector.getCurrentMp() * 100) / effector.getMaxMp()) <= _mp;
+        return ((effector.getCurrentMp() * 100) / effector.getMaxMp()) <= mp;
     }
 }

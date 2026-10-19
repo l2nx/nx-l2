@@ -29,15 +29,15 @@ import app.l2nx.highfive.scripts.quests.AbstractSagaQuest;
 public class Q00090_SagaOfTheStormScreamer extends AbstractSagaQuest {
     public Q00090_SagaOfTheStormScreamer() {
         super(90);
-        _npc = new int[] {30175, 31627, 31287, 31287, 31598, 31646, 31649, 31652, 31654, 31655, 31659, 31287};
-        _items = new int[] {7080, 7531, 7081, 7505, 7288, 7319, 7350, 7381, 7412, 7443, 7084, 0};
-        _mob = new int[] {27252, 27239, 27256};
-        _classId = new int[] {110};
-        _prevClass = new int[] {0x28};
-        _npcSpawnLocations = new Location[] {
+        npc = new int[] {30175, 31627, 31287, 31287, 31598, 31646, 31649, 31652, 31654, 31655, 31659, 31287};
+        items = new int[] {7080, 7531, 7081, 7505, 7288, 7319, 7350, 7381, 7412, 7443, 7084, 0};
+        mob = new int[] {27252, 27239, 27256};
+        classId = new int[] {110};
+        prevClass = new int[] {0x28};
+        npcSpawnLocations = new Location[] {
             new Location(161719, -92823, -1893), new Location(124376, 82127, -2796), new Location(124355, 82155, -2803)
         };
-        _text = new String[] {
+        text = new String[] {
             "PLAYERNAME! Pursued to here! However, I jumped out of the Banshouren boundaries! You look at the giant as the sign of power!",
             "... Oh ... good! So it was ... let's begin!",
             "I do not have the patience ..! I have been a giant force ...! Cough chatter ah ah ah!",

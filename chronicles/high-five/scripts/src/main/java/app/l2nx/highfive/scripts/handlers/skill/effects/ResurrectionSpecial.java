@@ -33,12 +33,12 @@ import app.l2nx.highfive.util.StatSet;
  * @author Zealar
  */
 public class ResurrectionSpecial extends AbstractEffect {
-    private final int _power;
+    private final int power;
 
     public ResurrectionSpecial(Condition attachCond, Condition applyCond, StatSet set, StatSet params) {
         super(attachCond, applyCond, set, params);
 
-        _power = params.getInt("power", 0);
+        power = params.getInt("power", 0);
     }
 
     @Override
@@ -64,11 +64,11 @@ public class ResurrectionSpecial extends AbstractEffect {
 
         final Player caster = effector.asPlayer();
         if (effected.isPlayer()) {
-            player.reviveRequest(caster, false, _power);
+            player.reviveRequest(caster, false, power);
         }
 
         if (effected.isPet()) {
-            player.reviveRequest(player, true, _power);
+            player.reviveRequest(player, true, power);
         }
     }
 }

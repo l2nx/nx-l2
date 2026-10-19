@@ -27,24 +27,24 @@ import app.l2nx.network.buffer.WriteBuffer;
  * @author KenM
  */
 public class ExUseSharedGroupItem extends ServerPacket {
-    private final int _itemId;
-    private final int _grpId;
-    private final int _remainingTime;
-    private final int _totalTime;
+    private final int itemId;
+    private final int grpId;
+    private final int remainingTime;
+    private final int totalTime;
 
     public ExUseSharedGroupItem(int itemId, int grpId, long remainingTime, int totalTime) {
-        _itemId = itemId;
-        _grpId = grpId;
-        _remainingTime = (int) (remainingTime / 1000);
-        _totalTime = totalTime / 1000;
+        this.itemId = itemId;
+        this.grpId = grpId;
+        this.remainingTime = (int) (remainingTime / 1000);
+        this.totalTime = totalTime / 1000;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_USE_SHARED_GROUP_ITEM.writeId(this, buffer);
-        buffer.writeInt(_itemId);
-        buffer.writeInt(_grpId);
-        buffer.writeInt(_remainingTime);
-        buffer.writeInt(_totalTime);
+        buffer.writeInt(itemId);
+        buffer.writeInt(grpId);
+        buffer.writeInt(remainingTime);
+        buffer.writeInt(totalTime);
     }
 }

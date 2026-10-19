@@ -88,17 +88,17 @@ public class ExBasicActionList extends ServerPacket {
 
     public static final ExBasicActionList STATIC_PACKET = new ExBasicActionList(DEFAULT_ACTION_LIST);
 
-    private final int[] _actionIds;
+    private final int[] actionIds;
 
     public ExBasicActionList(int[] actionIds) {
-        _actionIds = actionIds;
+        this.actionIds = actionIds;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_BASIC_ACTION_LIST.writeId(this, buffer);
-        buffer.writeInt(_actionIds.length);
-        for (int actionId : _actionIds) {
+        buffer.writeInt(actionIds.length);
+        for (int actionId : actionIds) {
             buffer.writeInt(actionId);
         }
     }

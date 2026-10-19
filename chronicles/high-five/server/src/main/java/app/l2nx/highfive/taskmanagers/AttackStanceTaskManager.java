@@ -28,20 +28,19 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Attack stance task manager.
  * @author Luca Baldi
  */
+@Slf4j
 public class AttackStanceTaskManager implements Runnable {
-    private static final Logger LOGGER = Logger.getLogger(AttackStanceTaskManager.class.getName());
 
     public static final long COMBAT_TIME = 15000;
 
     private static final Map<Creature, Long> CREATURE_ATTACK_STANCES = new ConcurrentHashMap<>();
-    private static boolean _working = false;
+    private static boolean working = false;
 
     protected AttackStanceTaskManager() {
         ThreadPool.schedulePriorityTaskAtFixedRate(this, 0, 1000);
@@ -49,11 +48,11 @@ public class AttackStanceTaskManager implements Runnable {
 
     @Override
     public void run() {
-        if (_working) {
+        if (working) {
             return;
         }
 
-        _working = true;
+        working = true;
 
         if (!CREATURE_ATTACK_STANCES.isEmpty()) {
             try {
@@ -85,11 +84,11 @@ public class AttackStanceTaskManager implements Runnable {
                 }
             } catch (Exception e) {
                 // Unless caught here, players remain in attack positions.
-                LOGGER.log(Level.WARNING, "Error in AttackStanceTaskManager: " + e.getMessage(), e);
+                log.warn("Error in AttackStanceTaskManager: {}", e.getMessage(), e);
             }
         }
 
-        _working = false;
+        working = false;
     }
 
     /**

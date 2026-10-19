@@ -34,22 +34,22 @@ import java.util.List;
  * @author Tempy
  */
 public class FriendList extends ServerPacket {
-    private final List<FriendInfo> _info;
+    private final List<FriendInfo> info;
 
     private static class FriendInfo {
-        int _objId;
-        String _name;
-        boolean _online;
+        int objId;
+        String name;
+        boolean online;
 
         public FriendInfo(int objId, String name, boolean online) {
-            _objId = objId;
-            _name = name;
-            _online = online;
+            this.objId = objId;
+            this.name = name;
+            this.online = online;
         }
     }
 
     public FriendList(Player player) {
-        _info = new ArrayList<>(player.getFriendList().size());
+        info = new ArrayList<>(player.getFriendList().size());
         for (int objId : player.getFriendList()) {
             final String name = CharInfoTable.getInstance().getNameById(objId);
             final Player player1 = World.getPlayer(objId);
@@ -58,19 +58,19 @@ public class FriendList extends ServerPacket {
                 online = true;
             }
 
-            _info.add(new FriendInfo(objId, name, online));
+            info.add(new FriendInfo(objId, name, online));
         }
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.L2_FRIEND_LIST.writeId(this, buffer);
-        buffer.writeInt(_info.size());
-        for (FriendInfo info : _info) {
-            buffer.writeInt(info._objId); // character id
-            buffer.writeString(info._name);
-            buffer.writeInt(info._online); // online
-            buffer.writeInt(info._online ? info._objId : 0); // object id if online
+        buffer.writeInt(this.info.size());
+        for (FriendInfo info : this.info) {
+            buffer.writeInt(info.objId); // character id
+            buffer.writeString(info.name);
+            buffer.writeInt(info.online); // online
+            buffer.writeInt(info.online ? info.objId : 0); // object id if online
         }
     }
 }

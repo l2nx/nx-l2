@@ -22,18 +22,23 @@
  */
 package app.l2nx.highfive.entity.clan;
 
+import lombok.Getter;
+import lombok.Setter;
+
 /**
  * The {@link ClanPrivileges} class manages a set of {@link ClanAccess} for clan members using a mask representation.
  * @author Mobius
  */
 public class ClanPrivileges {
-    private int _mask;
+    @Getter
+    @Setter
+    private int mask;
 
     /**
      * Initializes a new instance of ClanPrivileges with all privileges disabled.
      */
     public ClanPrivileges() {
-        _mask = 0;
+        mask = 0;
     }
 
     /**
@@ -41,37 +46,21 @@ public class ClanPrivileges {
      * @param mask The mask representing the privileges to be set.
      */
     public ClanPrivileges(int mask) {
-        _mask = mask;
-    }
-
-    /**
-     * Returns the current {@link ClanAccess} mask.
-     * @return The integer mask representing the currently enabled privileges.
-     */
-    public int getMask() {
-        return _mask;
-    }
-
-    /**
-     * Sets the {@link ClanAccess} mask to a specified value.
-     * @param mask The integer mask representing the privileges to set.
-     */
-    public void setMask(int mask) {
-        _mask = mask;
+        this.mask = mask;
     }
 
     /**
      * Disables all privileges by setting the mask to 0.
      */
     public void disableAll() {
-        _mask = 0;
+        mask = 0;
     }
 
     /**
      * Enables all possible privileges by setting the mask to the complete mask.
      */
     public void enableAll() {
-        _mask = getCompleteMask();
+        mask = getCompleteMask();
     }
 
     /**
@@ -94,7 +83,7 @@ public class ClanPrivileges {
     public void setPrivileges(ClanAccess... privileges) {
         disableAll();
         for (ClanAccess access : privileges) {
-            _mask |= 1 << access.ordinal();
+            mask |= 1 << access.ordinal();
         }
     }
 
@@ -114,9 +103,9 @@ public class ClanPrivileges {
      * @param privileges Additional {@link ClanAccess} to add.
      */
     public void addMinimumPrivileges(ClanAccess minimum, ClanAccess... privileges) {
-        _mask |= 1 << minimum.ordinal();
+        mask |= 1 << minimum.ordinal();
         for (ClanAccess access : privileges) {
-            _mask |= 1 << access.ordinal();
+            mask |= 1 << access.ordinal();
         }
     }
 
@@ -126,9 +115,9 @@ public class ClanPrivileges {
      * @param privileges Additional {@link ClanAccess} to remove.
      */
     public void removeMinimumPrivileges(ClanAccess minimum, ClanAccess... privileges) {
-        _mask &= ~(1 << minimum.ordinal());
+        mask &= ~(1 << minimum.ordinal());
         for (ClanAccess access : privileges) {
-            _mask &= ~(1 << access.ordinal());
+            mask &= ~(1 << access.ordinal());
         }
     }
 
@@ -139,12 +128,12 @@ public class ClanPrivileges {
      * @return true if all specified privileges are enabled; false otherwise.
      */
     public boolean hasMinimumPrivileges(ClanAccess minimum, ClanAccess... privileges) {
-        if ((_mask & (1 << minimum.ordinal())) == 0) {
+        if ((mask & (1 << minimum.ordinal())) == 0) {
             return false;
         }
 
         for (ClanAccess access : privileges) {
-            if ((_mask & (1 << access.ordinal())) == 0) {
+            if ((mask & (1 << access.ordinal())) == 0) {
                 return false;
             }
         }
@@ -158,6 +147,6 @@ public class ClanPrivileges {
      */
     @Override
     public ClanPrivileges clone() {
-        return new ClanPrivileges(_mask);
+        return new ClanPrivileges(mask);
     }
 }

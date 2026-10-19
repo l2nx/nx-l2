@@ -23,18 +23,16 @@
 package app.l2nx.highfive.network.loginserverpackets.receive;
 
 import app.l2nx.network.packet.SimpleReadablePacket;
+import lombok.Getter;
 
 public class KickPlayer extends SimpleReadablePacket {
-    private final String _account;
+    @Getter
+    private final String account;
 
     public KickPlayer(byte[] decrypt) {
         super(decrypt);
         readByte(); // Packet id, it is already processed.
 
-        _account = readString();
-    }
-
-    public String getAccount() {
-        return _account;
+        account = readString();
     }
 }

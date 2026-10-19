@@ -32,10 +32,10 @@ import app.l2nx.highfive.mechanics.skill.Skill;
  * @author Mobius
  */
 public class ConditionPlayerIsRidingStrider extends Condition {
-    private final boolean _value;
+    private final boolean value;
 
     public ConditionPlayerIsRidingStrider(boolean value) {
-        _value = value;
+        this.value = value;
     }
 
     @Override
@@ -45,6 +45,6 @@ public class ConditionPlayerIsRidingStrider extends Condition {
             return false;
         }
 
-        return (player.getMountType() == MountType.STRIDER) == _value;
+        return (player.getMountType() == MountType.STRIDER) == value;
     }
 }

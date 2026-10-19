@@ -29,24 +29,26 @@ import app.l2nx.highfive.util.StatSet;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.Map.Entry;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Attack Trait effect implementation.
  * @author NosBit
  */
+@Slf4j
 public class AttackTrait extends AbstractEffect {
-    private final Map<TraitType, Float> _attackTraits = new EnumMap<>(TraitType.class);
+    private final Map<TraitType, Float> attackTraits = new EnumMap<>(TraitType.class);
 
     public AttackTrait(Condition attachCond, Condition applyCond, StatSet set, StatSet params) {
         super(attachCond, applyCond, set, params);
 
         if (params.isEmpty()) {
-            LOGGER.warning(getClass().getSimpleName() + ": this effect must have parameters!");
+            log.warn("This effect must have parameters!");
             return;
         }
 
         for (Entry<String, Object> param : params.getSet().entrySet()) {
-            _attackTraits.put(
+            attackTraits.put(
                     TraitType.valueOf(param.getKey()), (Float.parseFloat((String) param.getValue()) + 100) / 100);
         }
     }
@@ -55,7 +57,7 @@ public class AttackTrait extends AbstractEffect {
     public void onExit(Creature effector, Creature effected, Skill skill) {
         final CreatureStat charStat = effected.getStat();
         synchronized (charStat.getAttackTraits()) {
-            for (Entry<TraitType, Float> trait : _attackTraits.entrySet()) {
+            for (Entry<TraitType, Float> trait : attackTraits.entrySet()) {
                 if (charStat.getAttackTraitsCount()[trait.getKey().ordinal()] == 0) {
                     continue;
                 }
@@ -70,7 +72,7 @@ public class AttackTrait extends AbstractEffect {
     public void onStart(Creature effector, Creature effected, Skill skill) {
         final CreatureStat charStat = effected.getStat();
         synchronized (charStat.getAttackTraits()) {
-            for (Entry<TraitType, Float> trait : _attackTraits.entrySet()) {
+            for (Entry<TraitType, Float> trait : attackTraits.entrySet()) {
                 charStat.getAttackTraits()[trait.getKey().ordinal()] *= trait.getValue();
                 charStat.getAttackTraitsCount()[trait.getKey().ordinal()]++;
             }

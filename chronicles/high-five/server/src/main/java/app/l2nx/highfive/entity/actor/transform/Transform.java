@@ -28,85 +28,65 @@ import app.l2nx.highfive.network.serverpackets.ExBasicActionList;
 import app.l2nx.highfive.util.StatSet;
 import java.util.ArrayList;
 import java.util.List;
+import lombok.Getter;
 
 /**
  * @author UnAfraid
  */
 public class Transform {
-    private final int _id;
-    private final int _displayId;
-    private final TransformType _type;
-    private final boolean _canSwim;
-    private final int _spawnHeight;
-    private final boolean _canAttack;
-    private final String _name;
-    private final String _title;
+    @Getter
+    private final int id;
 
-    private TransformTemplate _maleTemplate;
-    private TransformTemplate _femaleTemplate;
+    @Getter
+    private final int displayId;
+
+    @Getter
+    private final TransformType type;
+
+    private final boolean canSwim;
+
+    @Getter
+    private final int spawnHeight;
+
+    private final boolean canAttack;
+
+    @Getter
+    private final String name;
+
+    @Getter
+    private final String title;
+
+    private TransformTemplate maleTemplate;
+    private TransformTemplate femaleTemplate;
 
     public Transform(StatSet set) {
-        _id = set.getInt("id");
-        _displayId = set.getInt("displayId", _id);
-        _type = set.getEnum("type", TransformType.class, TransformType.COMBAT);
-        _canSwim = set.getInt("can_swim", 0) == 1;
-        _canAttack = set.getInt("normal_attackable", 1) == 1;
-        _spawnHeight = set.getInt("spawn_height", 0);
-        _name = set.getString("setName", null);
-        _title = set.getString("setTitle", null);
-    }
-
-    /**
-     * Gets the transformation ID.
-     * @return the transformation ID
-     */
-    public int getId() {
-        return _id;
-    }
-
-    public int getDisplayId() {
-        return _displayId;
-    }
-
-    public TransformType getType() {
-        return _type;
+        id = set.getInt("id");
+        displayId = set.getInt("displayId", id);
+        type = set.getEnum("type", TransformType.class, TransformType.COMBAT);
+        canSwim = set.getInt("can_swim", 0) == 1;
+        canAttack = set.getInt("normal_attackable", 1) == 1;
+        spawnHeight = set.getInt("spawn_height", 0);
+        name = set.getString("setName", null);
+        title = set.getString("setTitle", null);
     }
 
     public boolean canSwim() {
-        return _canSwim;
+        return canSwim;
     }
 
     public boolean canAttack() {
-        return _canAttack;
-    }
-
-    public int getSpawnHeight() {
-        return _spawnHeight;
-    }
-
-    /**
-     * @return name that's going to be set to the player while is transformed with current transformation
-     */
-    public String getName() {
-        return _name;
-    }
-
-    /**
-     * @return title that's going to be set to the player while is transformed with current transformation
-     */
-    public String getTitle() {
-        return _title;
+        return canAttack;
     }
 
     public TransformTemplate getTemplate(Player player) {
-        return player != null ? (player.getAppearance().isFemale() ? _femaleTemplate : _maleTemplate) : null;
+        return player != null ? (player.getAppearance().isFemale() ? femaleTemplate : maleTemplate) : null;
     }
 
     public void setTemplate(boolean male, TransformTemplate template) {
         if (male) {
-            _maleTemplate = template;
+            maleTemplate = template;
         } else {
-            _femaleTemplate = template;
+            femaleTemplate = template;
         }
     }
 
@@ -114,56 +94,56 @@ public class Transform {
      * @return {@code true} if transform type is mode change, {@code false} otherwise
      */
     public boolean isStance() {
-        return _type == TransformType.MODE_CHANGE;
+        return type == TransformType.MODE_CHANGE;
     }
 
     /**
      * @return {@code true} if transform type is combat, {@code false} otherwise
      */
     public boolean isCombat() {
-        return _type == TransformType.COMBAT;
+        return type == TransformType.COMBAT;
     }
 
     /**
      * @return {@code true} if transform type is non combat, {@code false} otherwise
      */
     public boolean isNonCombat() {
-        return _type == TransformType.NON_COMBAT;
+        return type == TransformType.NON_COMBAT;
     }
 
     /**
      * @return {@code true} if transform type is flying, {@code false} otherwise
      */
     public boolean isFlying() {
-        return _type == TransformType.FLYING;
+        return type == TransformType.FLYING;
     }
 
     /**
      * @return {@code true} if transform type is cursed, {@code false} otherwise
      */
     public boolean isCursed() {
-        return _type == TransformType.CURSED;
+        return type == TransformType.CURSED;
     }
 
     /**
      * @return {@code true} if transform type is raiding, {@code false} otherwise
      */
     public boolean isRiding() {
-        return _type == TransformType.RIDING_MODE;
+        return type == TransformType.RIDING_MODE;
     }
 
     /**
      * @return {@code true} if transform type is pure stat, {@code false} otherwise
      */
     public boolean isPureStats() {
-        return _type == TransformType.PURE_STAT;
+        return type == TransformType.PURE_STAT;
     }
 
     /**
      * @return {@code true} if transform uses equipped weapon stats, {@code false} otherwise
      */
     public boolean canUseWeaponStats() {
-        return (_type == TransformType.COMBAT) || (_type == TransformType.MODE_CHANGE);
+        return (type == TransformType.COMBAT) || (type == TransformType.MODE_CHANGE);
     }
 
     public float getCollisionHeight(Player player) {
@@ -194,12 +174,12 @@ public class Transform {
             player.setFlying(true);
         }
 
-        if (_name != null) {
-            player.getAppearance().setVisibleName(_name);
+        if (name != null) {
+            player.getAppearance().setVisibleName(name);
         }
 
-        if (_title != null) {
-            player.getAppearance().setVisibleTitle(_title);
+        if (title != null) {
+            player.getAppearance().setVisibleTitle(title);
         }
 
         // Set inventory blocks if needed.
@@ -250,11 +230,11 @@ public class Transform {
             player.setFlying(false);
         }
 
-        if (_name != null) {
+        if (name != null) {
             player.getAppearance().setVisibleName(null);
         }
 
-        if (_title != null) {
+        if (title != null) {
             player.getAppearance().setVisibleTitle(null);
         }
 

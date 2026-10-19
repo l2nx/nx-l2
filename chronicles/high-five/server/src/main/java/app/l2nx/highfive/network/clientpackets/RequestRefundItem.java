@@ -37,33 +37,34 @@ import app.l2nx.highfive.entity.item.enums.ItemProcessType;
 import app.l2nx.highfive.entity.item.instance.Item;
 import app.l2nx.highfive.managers.PunishmentManager;
 import app.l2nx.highfive.mechanics.buylist.BuyListHolder;
-import app.l2nx.highfive.network.PacketLogger;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.serverpackets.ActionFailed;
 import app.l2nx.highfive.network.serverpackets.ExBuySellList;
 import app.l2nx.highfive.network.serverpackets.StatusUpdate;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * RequestRefundItem client packet class.
  */
+@Slf4j
 public class RequestRefundItem extends ClientPacket {
     private static final int BATCH_LENGTH = 4; // length of the one item
     private static final int CUSTOM_CB_SELL_LIST = 423;
 
-    private int _listId;
-    private int[] _items = null;
+    private int listId;
+    private int[] items = null;
 
     @Override
     protected void readImpl() {
-        _listId = readInt();
+        listId = readInt();
         final int count = readInt();
         if ((count <= 0) || (count > PlayerConfig.MAX_ITEM_IN_PACKET) || ((count * BATCH_LENGTH) != remaining())) {
             return;
         }
 
-        _items = new int[count];
+        items = new int[count];
         for (int i = 0; i < count; i++) {
-            _items[i] = readInt();
+            items[i] = readInt();
         }
     }
 
@@ -79,14 +80,14 @@ public class RequestRefundItem extends ClientPacket {
             return;
         }
 
-        if ((_items == null) || !player.hasRefund()) {
+        if ((items == null) || !player.hasRefund()) {
             player.sendPacket(ActionFailed.STATIC_PACKET);
             return;
         }
 
         final WorldObject target = player.getTarget();
         Creature merchant = null;
-        if (!player.isGM() && (_listId != CUSTOM_CB_SELL_LIST)) {
+        if (!player.isGM() && (listId != CUSTOM_CB_SELL_LIST)) {
             if (!(target instanceof Merchant)
                     || (!player.isInsideRadius3D(target, INTERACTION_DISTANCE))
                     || (player.getInstanceId() != target.getInstanceId())) {
@@ -97,17 +98,17 @@ public class RequestRefundItem extends ClientPacket {
             merchant = target.asCreature();
         }
 
-        if ((merchant == null) && !player.isGM() && (_listId != CUSTOM_CB_SELL_LIST)) {
+        if ((merchant == null) && !player.isGM() && (listId != CUSTOM_CB_SELL_LIST)) {
             player.sendPacket(ActionFailed.STATIC_PACKET);
             return;
         }
 
-        final BuyListHolder buyList = BuyListData.getInstance().getBuyList(_listId);
+        final BuyListHolder buyList = BuyListData.getInstance().getBuyList(listId);
         if (buyList == null) {
             PunishmentManager.handleIllegalPlayerAction(
                     player,
                     "Warning!! Character " + player.getName() + " of account " + player.getAccountName()
-                            + " sent a false BuyList list_id " + _listId,
+                            + " sent a false BuyList list_id " + listId,
                     GeneralConfig.DEFAULT_PUNISH);
             return;
         }
@@ -122,9 +123,9 @@ public class RequestRefundItem extends ClientPacket {
         long slots = 0;
 
         final Item[] refund = player.getRefund().getItems().toArray(new Item[0]);
-        final int[] objectIds = new int[_items.length];
-        for (int i = 0; i < _items.length; i++) {
-            final int idx = _items[i];
+        final int[] objectIds = new int[items.length];
+        for (int i = 0; i < items.length; i++) {
+            final int idx = items[i];
             if ((idx < 0) || (idx >= refund.length)) {
                 PunishmentManager.handleIllegalPlayerAction(
                         player,
@@ -135,8 +136,8 @@ public class RequestRefundItem extends ClientPacket {
             }
 
             // check for duplicates - indexes
-            for (int j = i + 1; j < _items.length; j++) {
-                if (idx == _items[j]) {
+            for (int j = i + 1; j < items.length; j++) {
+                if (idx == items[j]) {
                     PunishmentManager.handleIllegalPlayerAction(
                             player,
                             "Warning!! Character " + player.getName() + " of account " + player.getAccountName()
@@ -193,7 +194,7 @@ public class RequestRefundItem extends ClientPacket {
             return;
         }
 
-        for (int i = 0; i < _items.length; i++) {
+        for (int i = 0; i < items.length; i++) {
             final Item item = player.getRefund()
                     .transferItem(
                             ItemProcessType.TRANSFER,
@@ -203,7 +204,7 @@ public class RequestRefundItem extends ClientPacket {
                             player,
                             player.getLastFolkNPC());
             if (item == null) {
-                PacketLogger.warning("Error refunding object for char " + player.getName() + " (newitem == null)");
+                log.warn("Error refunding object for char {} (newitem == null)", player.getName());
             }
         }
 

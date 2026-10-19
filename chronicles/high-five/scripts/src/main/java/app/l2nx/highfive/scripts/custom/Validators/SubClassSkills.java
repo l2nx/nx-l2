@@ -42,12 +42,12 @@ import java.util.List;
 public class SubClassSkills extends Script {
     // arrays must be sorted
     // @formatter:off
-    private static final int[] _allCertSkillIds = {
+    private static final int[] allCertSkillIds = {
         631, 632, 633, 634, 637, 638, 639, 640, 641, 642, 643, 644, 645, 646,
         647, 648, 650, 651, 652, 653, 654, 655, 656, 657, 658, 659, 660, 661,
         662, 799, 800, 801, 802, 803, 804, 1489, 1490, 1491
     };
-    private static final int[][] _certSkillsByLevel = {
+    private static final int[][] certSkillsByLevel = {
         {631, 632, 633, 634},
         {631, 632, 633, 634},
         {
@@ -58,10 +58,10 @@ public class SubClassSkills extends Script {
         {656, 657, 658, 659, 660, 661, 662}
     };
 
-    private static final int[] _allCertItemIds = {
+    private static final int[] allCertItemIds = {
         10280, 10281, 10282, 10283, 10284, 10285, 10286, 10287, 10288, 10289, 10290, 10291, 10292, 10293, 10294, 10612
     };
-    private static final int[][] _certItemsByLevel = {
+    private static final int[][] certItemsByLevel = {
         {10280},
         {10280},
         {10612, 10281, 10282, 10283, 10284, 10285, 10286, 10287},
@@ -96,7 +96,7 @@ public class SubClassSkills extends Script {
                                 + "), class:"
                                 + ClassListData.getInstance()
                                         .getClass(player.getPlayerClass())
-                                        .getClassName(),
+                                        .className(),
                         IllegalActionPunishmentType.NONE);
                 if (GeneralConfig.SKILL_CHECK_REMOVE) {
                     player.removeSkill(s);
@@ -155,7 +155,7 @@ public class SubClassSkills extends Script {
                             }
 
                             if (skill != null) {
-                                if (!ArrayUtil.contains(_certSkillsByLevel[i], id)) {
+                                if (!ArrayUtil.contains(certSkillsByLevel[i], id)) {
                                     // should remove this skill ?
                                     PunishmentManager.handleIllegalPlayerAction(
                                             player,
@@ -204,7 +204,7 @@ public class SubClassSkills extends Script {
                             }
 
                             if (item != null) {
-                                if (!ArrayUtil.contains(_certItemsByLevel[i], item.getId())) {
+                                if (!ArrayUtil.contains(certItemsByLevel[i], item.getId())) {
                                     PunishmentManager.handleIllegalPlayerAction(
                                             player,
                                             "Invalid cert variable:" + qName + "=" + qValue
@@ -287,7 +287,7 @@ public class SubClassSkills extends Script {
     private List<Skill> getCertSkills(Player player) {
         final List<Skill> tmp = new ArrayList<>();
         for (Skill s : player.getAllSkills()) {
-            if ((s != null) && (Arrays.binarySearch(_allCertSkillIds, s.getId()) >= 0)) {
+            if ((s != null) && (Arrays.binarySearch(allCertSkillIds, s.getId()) >= 0)) {
                 tmp.add(s);
             }
         }
@@ -298,7 +298,7 @@ public class SubClassSkills extends Script {
     private List<Item> getCertItems(Player player) {
         final List<Item> tmp = new ArrayList<>();
         for (Item i : player.getInventory().getItems()) {
-            if ((i != null) && (Arrays.binarySearch(_allCertItemIds, i.getId()) >= 0)) {
+            if ((i != null) && (Arrays.binarySearch(allCertItemIds, i.getId()) >= 0)) {
                 tmp.add(i);
             }
         }

@@ -29,11 +29,11 @@ import app.l2nx.highfive.network.serverpackets.ExItemAuctionInfoPacket;
  * @author Forsaiken
  */
 public class RequestInfoItemAuction extends ClientPacket {
-    private int _instanceId;
+    private int instanceId;
 
     @Override
     protected void readImpl() {
-        _instanceId = readInt();
+        instanceId = readInt();
     }
 
     @Override
@@ -47,7 +47,7 @@ public class RequestInfoItemAuction extends ClientPacket {
             return;
         }
 
-        final ItemAuctionInstance instance = ItemAuctionManager.getInstance().getManagerInstance(_instanceId);
+        final ItemAuctionInstance instance = ItemAuctionManager.getInstance().getManagerInstance(instanceId);
         if (instance == null) {
             return;
         }

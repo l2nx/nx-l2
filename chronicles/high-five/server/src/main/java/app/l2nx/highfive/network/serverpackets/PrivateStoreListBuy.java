@@ -30,24 +30,24 @@ import app.l2nx.network.buffer.WriteBuffer;
 import java.util.Collection;
 
 public class PrivateStoreListBuy extends AbstractItemPacket {
-    private final int _objId;
-    private final long _playerAdena;
-    private final Collection<TradeItem> _items;
+    private final int objId;
+    private final long playerAdena;
+    private final Collection<TradeItem> items;
 
     public PrivateStoreListBuy(Player player, Player storePlayer) {
-        _objId = storePlayer.getObjectId();
-        _playerAdena = player.getAdena();
+        objId = storePlayer.getObjectId();
+        playerAdena = player.getAdena();
         storePlayer.getSellList().updateItems(); // Update SellList for case inventory content has changed.
-        _items = storePlayer.getBuyList().getAvailableItems(player.getInventory());
+        items = storePlayer.getBuyList().getAvailableItems(player.getInventory());
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.PRIVATE_STORE_BUY_LIST.writeId(this, buffer);
-        buffer.writeInt(_objId);
-        buffer.writeLong(_playerAdena);
-        buffer.writeInt(_items.size());
-        for (TradeItem item : _items) {
+        buffer.writeInt(objId);
+        buffer.writeLong(playerAdena);
+        buffer.writeInt(items.size());
+        for (TradeItem item : items) {
             writeItem(item, buffer);
             buffer.writeInt(item.getObjectId());
             buffer.writeLong(item.getPrice());

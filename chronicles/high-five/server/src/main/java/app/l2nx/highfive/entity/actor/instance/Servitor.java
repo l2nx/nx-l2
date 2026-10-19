@@ -48,14 +48,15 @@ import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Future;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author UnAfraid
  */
+@Slf4j
 public class Servitor extends Summon implements Runnable {
-    protected static final Logger log = Logger.getLogger(Servitor.class.getName());
 
     private static final String ADD_SKILL_SAVE =
             "REPLACE INTO character_summon_skills_save (ownerId,ownerClassIndex,summonSkillId,skill_id,skill_level,remaining_time,buff_index) VALUES (?,?,?,?,?,?,?)";
@@ -64,15 +65,30 @@ public class Servitor extends Summon implements Runnable {
     private static final String DELETE_SKILL_SAVE =
             "DELETE FROM character_summon_skills_save WHERE ownerId=? AND ownerClassIndex=? AND summonSkillId=?";
 
-    private float _expMultiplier = 0;
-    private ItemHolder _itemConsume;
-    private int _lifeTime;
-    private int _lifeTimeRemaining;
-    private int _consumeItemInterval;
-    private int _consumeItemIntervalRemaining;
-    protected Future<?> _summonLifeTask;
+    @Getter
+    @Setter
+    private float expMultiplier = 0;
 
-    private int _referenceSkill;
+    @Getter
+    @Setter
+    private ItemHolder itemConsume;
+
+    @Getter
+    private int lifeTime;
+
+    @Getter
+    @Setter
+    private int lifeTimeRemaining;
+
+    @Getter
+    private int itemConsumeInterval;
+
+    private int consumeItemIntervalRemaining;
+    protected Future<?> summonLifeTask;
+
+    @Getter
+    @Setter
+    private int referenceSkill;
 
     public Servitor(NpcTemplate template, Player owner) {
         super(template, owner);
@@ -83,8 +99,8 @@ public class Servitor extends Summon implements Runnable {
     @Override
     public void onSpawn() {
         super.onSpawn();
-        if (_summonLifeTask == null) {
-            _summonLifeTask = ThreadPool.scheduleAtFixedRate(this, 0, 5000);
+        if (summonLifeTask == null) {
+            summonLifeTask = ThreadPool.scheduleAtFixedRate(this, 0, 5000);
         }
     }
 
@@ -98,54 +114,14 @@ public class Servitor extends Summon implements Runnable {
         return 1;
     }
 
-    public void setExpMultiplier(float expMultiplier) {
-        _expMultiplier = expMultiplier;
-    }
-
-    public float getExpMultiplier() {
-        return _expMultiplier;
-    }
-
-    public void setItemConsume(ItemHolder item) {
-        _itemConsume = item;
-    }
-
-    public ItemHolder getItemConsume() {
-        return _itemConsume;
-    }
-
     public void setItemConsumeInterval(int interval) {
-        _consumeItemInterval = interval;
-        _consumeItemIntervalRemaining = interval;
-    }
-
-    public int getItemConsumeInterval() {
-        return _consumeItemInterval;
+        itemConsumeInterval = interval;
+        consumeItemIntervalRemaining = interval;
     }
 
     public void setLifeTime(int lifeTime) {
-        _lifeTime = lifeTime;
-        _lifeTimeRemaining = lifeTime;
-    }
-
-    public int getLifeTime() {
-        return _lifeTime;
-    }
-
-    public void setLifeTimeRemaining(int time) {
-        _lifeTimeRemaining = time;
-    }
-
-    public int getLifeTimeRemaining() {
-        return _lifeTimeRemaining;
-    }
-
-    public void setReferenceSkill(int skillId) {
-        _referenceSkill = skillId;
-    }
-
-    public int getReferenceSkill() {
-        return _referenceSkill;
+        this.lifeTime = lifeTime;
+        lifeTimeRemaining = lifeTime;
     }
 
     @Override
@@ -154,8 +130,8 @@ public class Servitor extends Summon implements Runnable {
             return false;
         }
 
-        if (_summonLifeTask != null) {
-            _summonLifeTask.cancel(false);
+        if (summonLifeTask != null) {
+            summonLifeTask.cancel(false);
         }
 
         CharSummonTable.getInstance().removeServitor(getOwner());
@@ -167,7 +143,7 @@ public class Servitor extends Summon implements Runnable {
 
     @Override
     public void setRestoreSummon(boolean value) {
-        _restoreSummon = value;
+        restoreSummon = value;
     }
 
     @Override
@@ -178,7 +154,7 @@ public class Servitor extends Summon implements Runnable {
 
     @Override
     public void storeMe() {
-        if ((_referenceSkill == 0) || isDead()) {
+        if ((referenceSkill == 0) || isDead()) {
             return;
         }
 
@@ -203,7 +179,7 @@ public class Servitor extends Summon implements Runnable {
             // Delete all current stored effects for summon to avoid dupe.
             ps.setInt(1, getOwner().getObjectId());
             ps.setInt(2, getOwner().getClassIndex());
-            ps.setInt(3, _referenceSkill);
+            ps.setInt(3, referenceSkill);
             ps.execute();
 
             int buffIndex = 0;
@@ -242,7 +218,7 @@ public class Servitor extends Summon implements Runnable {
 
                         ps2.setInt(1, getOwner().getObjectId());
                         ps2.setInt(2, getOwner().getClassIndex());
-                        ps2.setInt(3, _referenceSkill);
+                        ps2.setInt(3, referenceSkill);
                         ps2.setInt(4, skill.getId());
                         ps2.setInt(5, skill.getLevel());
                         ps2.setInt(6, info.getTime());
@@ -257,7 +233,7 @@ public class Servitor extends Summon implements Runnable {
                 }
             }
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, "Could not store summon effect data: ", e);
+            log.warn("Could not store summon effect data: ", e);
         }
     }
 
@@ -272,7 +248,7 @@ public class Servitor extends Summon implements Runnable {
                 try (PreparedStatement ps = con.prepareStatement(RESTORE_SKILL_SAVE)) {
                     ps.setInt(1, getOwner().getObjectId());
                     ps.setInt(2, getOwner().getClassIndex());
-                    ps.setInt(3, _referenceSkill);
+                    ps.setInt(3, referenceSkill);
                     try (ResultSet rs = ps.executeQuery()) {
                         while (rs.next()) {
                             final Skill skill =
@@ -294,11 +270,11 @@ public class Servitor extends Summon implements Runnable {
             try (PreparedStatement statement = con.prepareStatement(DELETE_SKILL_SAVE)) {
                 statement.setInt(1, getOwner().getObjectId());
                 statement.setInt(2, getOwner().getClassIndex());
-                statement.setInt(3, _referenceSkill);
+                statement.setInt(3, referenceSkill);
                 statement.executeUpdate();
             }
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, "Could not restore " + this + " active effect data: " + e.getMessage(), e);
+            log.warn("Could not restore {} active effect data: {}", this, e.getMessage(), e);
         } finally {
             SummonEffectTable.getInstance().applyServitorEffects(this, getOwner(), getReferenceSkill());
         }
@@ -306,13 +282,13 @@ public class Servitor extends Summon implements Runnable {
 
     @Override
     public void unSummon(Player owner) {
-        if (_summonLifeTask != null) {
-            _summonLifeTask.cancel(false);
+        if (summonLifeTask != null) {
+            summonLifeTask.cancel(false);
         }
 
         super.unSummon(owner);
 
-        if (!_restoreSummon) {
+        if (!restoreSummon) {
             CharSummonTable.getInstance().removeServitor(owner);
         }
     }
@@ -361,36 +337,36 @@ public class Servitor extends Summon implements Runnable {
     @Override
     public void run() {
         final int usedtime = 5000;
-        _lifeTimeRemaining -= usedtime;
+        lifeTimeRemaining -= usedtime;
         if (isDead() || !isSpawned()) {
-            if (_summonLifeTask != null) {
-                _summonLifeTask.cancel(false);
+            if (summonLifeTask != null) {
+                summonLifeTask.cancel(false);
             }
             return;
         }
 
         // check if the summon's lifetime has ran out
-        if (_lifeTimeRemaining < 0) {
+        if (lifeTimeRemaining < 0) {
             sendPacket(SystemMessageId.YOUR_SERVITOR_PASSED_AWAY);
             unSummon(getOwner());
             return;
         }
 
-        if (_consumeItemInterval > 0) {
-            _consumeItemIntervalRemaining -= usedtime;
+        if (itemConsumeInterval > 0) {
+            consumeItemIntervalRemaining -= usedtime;
 
             // check if it is time to consume another item
-            if ((_consumeItemIntervalRemaining <= 0)
-                    && (_itemConsume.getCount() > 0)
-                    && (_itemConsume.getId() > 0)
+            if ((consumeItemIntervalRemaining <= 0)
+                    && (itemConsume.getCount() > 0)
+                    && (itemConsume.getId() > 0)
                     && !isDead()) {
-                if (destroyItemByItemId(null, _itemConsume.getId(), _itemConsume.getCount(), this, false)) {
+                if (destroyItemByItemId(null, itemConsume.getId(), itemConsume.getCount(), this, false)) {
                     final SystemMessage msg = new SystemMessage(SystemMessageId.A_SUMMONED_MONSTER_USES_S1);
-                    msg.addItemName(_itemConsume.getId());
+                    msg.addItemName(itemConsume.getId());
                     sendPacket(msg);
 
                     // Reset
-                    _consumeItemIntervalRemaining = _consumeItemInterval;
+                    consumeItemIntervalRemaining = itemConsumeInterval;
                 } else {
                     sendPacket(
                             SystemMessageId
@@ -400,7 +376,7 @@ public class Servitor extends Summon implements Runnable {
             }
         }
 
-        sendPacket(new SetSummonRemainTime(_lifeTime, _lifeTimeRemaining));
+        sendPacket(new SetSummonRemainTime(lifeTime, lifeTimeRemaining));
         updateEffectIcons();
     }
 

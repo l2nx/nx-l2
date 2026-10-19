@@ -28,23 +28,23 @@ import app.l2nx.network.buffer.WriteBuffer;
  * @author Gnacik
  */
 public class OnEventTrigger extends ServerPacket {
-    private final int _emitterId;
-    private final boolean _enabled;
+    private final int emitterId;
+    private final boolean enabled;
 
     public OnEventTrigger(Door door, boolean enabled) {
-        _emitterId = door.getEmitter();
-        _enabled = enabled;
+        emitterId = door.getEmitter();
+        this.enabled = enabled;
     }
 
     public OnEventTrigger(int id, boolean enabled) {
-        _emitterId = id;
-        _enabled = enabled;
+        emitterId = id;
+        this.enabled = enabled;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EVENT_TRIGGER.writeId(this, buffer);
-        buffer.writeInt(_emitterId);
-        buffer.writeByte(_enabled);
+        buffer.writeInt(emitterId);
+        buffer.writeByte(enabled);
     }
 }

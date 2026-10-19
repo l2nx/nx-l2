@@ -29,11 +29,11 @@ import app.l2nx.highfive.network.serverpackets.ExRpItemLink;
  * @author KenM
  */
 public class RequestExRqItemLink extends ClientPacket {
-    private int _objectId;
+    private int objectId;
 
     @Override
     protected void readImpl() {
-        _objectId = readInt();
+        objectId = readInt();
     }
 
     @Override
@@ -43,7 +43,7 @@ public class RequestExRqItemLink extends ClientPacket {
             return;
         }
 
-        final WorldObject object = World.findObject(_objectId);
+        final WorldObject object = World.findObject(objectId);
         if ((object != null) && object.isItem()) {
             final Item item = (Item) object;
             if (item.isPublished()) {

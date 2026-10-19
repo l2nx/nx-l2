@@ -31,11 +31,11 @@ import app.l2nx.highfive.mechanics.events.holders.actor.player.OnPlayerBypass;
 import app.l2nx.highfive.mechanics.script.QuestState;
 
 public class RequestTutorialPassCmdToServer extends ClientPacket {
-    private String _bypass = null;
+    private String bypass = null;
 
     @Override
     protected void readImpl() {
-        _bypass = readString();
+        bypass = readString();
     }
 
     @Override
@@ -45,19 +45,19 @@ public class RequestTutorialPassCmdToServer extends ClientPacket {
             return;
         }
 
-        final IBypassHandler handler = BypassHandler.getInstance().getHandler(_bypass);
+        final IBypassHandler handler = BypassHandler.getInstance().getHandler(bypass);
         if (handler != null) {
-            handler.onCommand(_bypass, player, null);
+            handler.onCommand(bypass, player, null);
         } else {
             final QuestState qs = player.getQuestState("Q00255_Tutorial");
             if (qs != null) {
-                qs.getQuest().notifyEvent("TC:" + _bypass, null, player);
+                qs.getQuest().notifyEvent("TC:" + bypass, null, player);
             }
         }
 
         // Notify scripts.
         if (EventDispatcher.getInstance().hasListener(EventType.ON_PLAYER_BYPASS, player)) {
-            EventDispatcher.getInstance().notifyEventAsync(new OnPlayerBypass(player, _bypass), player);
+            EventDispatcher.getInstance().notifyEventAsync(new OnPlayerBypass(player, bypass), player);
         }
     }
 }

@@ -39,12 +39,12 @@ import java.util.concurrent.ThreadLocalRandom;
  * @author Adry_85, Mobius
  */
 public class GetAgro extends AbstractEffect {
-    private final int _chance;
+    private final int chance;
 
     public GetAgro(Condition attachCond, Condition applyCond, StatSet set, StatSet params) {
         super(attachCond, applyCond, set, params);
 
-        _chance = params.getInt("chance", 100);
+        chance = params.getInt("chance", 100);
     }
 
     @Override
@@ -54,7 +54,7 @@ public class GetAgro extends AbstractEffect {
 
     @Override
     public boolean calcSuccess(Creature effector, Creature effected, Skill skill) {
-        return ThreadLocalRandom.current().nextInt(100) < _chance;
+        return ThreadLocalRandom.current().nextInt(100) < chance;
     }
 
     @Override

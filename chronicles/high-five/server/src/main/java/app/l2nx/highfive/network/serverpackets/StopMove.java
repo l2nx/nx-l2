@@ -28,11 +28,11 @@ import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.network.buffer.WriteBuffer;
 
 public class StopMove extends ServerPacket {
-    private final int _objectId;
-    private final int _x;
-    private final int _y;
-    private final int _z;
-    private final int _heading;
+    private final int objectId;
+    private final int x;
+    private final int y;
+    private final int z;
+    private final int heading;
 
     public StopMove(Creature creature) {
         this(creature.getObjectId(), creature.getX(), creature.getY(), creature.getZ(), creature.getHeading());
@@ -46,20 +46,20 @@ public class StopMove extends ServerPacket {
      * @param heading
      */
     public StopMove(int objectId, int x, int y, int z, int heading) {
-        _objectId = objectId;
-        _x = x;
-        _y = y;
-        _z = z;
-        _heading = heading;
+        this.objectId = objectId;
+        this.x = x;
+        this.y = y;
+        this.z = z;
+        this.heading = heading;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.STOP_MOVE.writeId(this, buffer);
-        buffer.writeInt(_objectId);
-        buffer.writeInt(_x);
-        buffer.writeInt(_y);
-        buffer.writeInt(_z);
-        buffer.writeInt(_heading);
+        buffer.writeInt(objectId);
+        buffer.writeInt(x);
+        buffer.writeInt(y);
+        buffer.writeInt(z);
+        buffer.writeInt(heading);
     }
 }

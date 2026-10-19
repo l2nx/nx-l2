@@ -22,33 +22,28 @@ package app.l2nx.highfive.entity.item.enchant;
 import app.l2nx.highfive.data.holders.RangeChanceHolder;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author UnAfraid
  */
+@Slf4j
 public class EnchantItemGroup {
-    private static final Logger LOGGER = Logger.getLogger(EnchantItemGroup.class.getName());
-    private final List<RangeChanceHolder> _chances = new ArrayList<>();
-    private final String _name;
+    private final List<RangeChanceHolder> chances = new ArrayList<>();
+
+    @Getter
+    private final String name;
 
     public EnchantItemGroup(String name) {
-        _name = name;
-    }
-
-    /**
-     * @return name of current enchant item group.
-     */
-    public String getName() {
-        return _name;
+        this.name = name;
     }
 
     /**
      * @param holder
      */
     public void addChance(RangeChanceHolder holder) {
-        _chances.add(holder);
+        chances.add(holder);
     }
 
     /**
@@ -56,18 +51,18 @@ public class EnchantItemGroup {
      * @return chance for success rate for current enchant item group.
      */
     public double getChance(int index) {
-        if (!_chances.isEmpty()) {
-            for (RangeChanceHolder holder : _chances) {
-                if ((holder.getMin() <= index) && (holder.getMax() >= index)) {
-                    return holder.getChance();
+        if (!chances.isEmpty()) {
+            for (RangeChanceHolder holder : chances) {
+                if ((holder.min() <= index) && (holder.max() >= index)) {
+                    return holder.chance();
                 }
             }
             // LOGGER.log(Level.WARNING, getClass().getSimpleName() + ": Couldn't match proper chance for item group: "
             // + _name);
-            return _chances.get(_chances.size() - 1).getChance();
+            return chances.get(chances.size() - 1).chance();
         }
 
-        LOGGER.log(Level.WARNING, getClass().getSimpleName() + ": item group: " + _name + " doesn't have any chances!");
+        log.warn("Item group: {} doesn't have any chances!", name);
         return -1;
     }
 }

@@ -40,7 +40,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
@@ -48,8 +48,8 @@ import org.w3c.dom.NodeList;
 /**
  * @author St3eT
  */
+@Slf4j
 public class SellBuffsManager implements IXmlReader {
-    private static final Logger LOGGER = Logger.getLogger(SellBuffsManager.class.getName());
 
     private static final Set<Integer> ALLOWED_BUFFS = new HashSet<>();
     private static final String HTML_FOLDER = "data/html/mods/SellBuffs/";
@@ -63,7 +63,7 @@ public class SellBuffsManager implements IXmlReader {
         if (SellBuffsConfig.SELLBUFF_ENABLED) {
             ALLOWED_BUFFS.clear();
             parseDatapackFile("data/SellBuffData.xml");
-            LOGGER.info(getClass().getSimpleName() + ": Loaded " + ALLOWED_BUFFS.size() + " allowed buffs.");
+            log.info("Loaded {} allowed buffs.", ALLOWED_BUFFS.size());
         }
     }
 

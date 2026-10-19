@@ -96,23 +96,23 @@ public class DarkCloudMansion extends InstanceScript {
     // private static int W6 = 24230012; // Wall 6
     // private static int W7 = 24230013; // Wall 7
     private static boolean noRndWalk = true;
-    private static NpcStringId[] _spawnChat = {
+    private static NpcStringId[] spawnChat = {
         NpcStringId.I_M_THE_REAL_ONE,
         NpcStringId.PICK_ME,
         NpcStringId.TRUST_ME,
         NpcStringId.NOT_THAT_DUDE_I_M_THE_REAL_ONE,
         NpcStringId.DON_T_BE_FOOLED_DON_T_BE_FOOLED_I_M_THE_REAL_ONE
     };
-    private static NpcStringId[] _decayChat = {
+    private static NpcStringId[] decayChat = {
         NpcStringId.I_M_THE_REAL_ONE_PHEW, NpcStringId.CAN_T_YOU_EVEN_FIND_OUT, NpcStringId.FIND_ME
     };
-    private static NpcStringId[] _successChat = {
+    private static NpcStringId[] successChat = {
         NpcStringId.HUH_HOW_DID_YOU_KNOW_IT_WAS_ME,
         NpcStringId.EXCELLENT_CHOICE_TEEHEE,
         NpcStringId.YOU_VE_DONE_WELL,
         NpcStringId.OH_VERY_SENSIBLE
     };
-    private static NpcStringId[] _faildChat = {NpcStringId.YOU_VE_BEEN_FOOLED, NpcStringId.SORRY_BUT_I_M_THE_FAKE_ONE};
+    private static NpcStringId[] faildChat = {NpcStringId.YOU_VE_BEEN_FOOLED, NpcStringId.SORRY_BUT_I_M_THE_FAKE_ONE};
     // @formatter:off
     // Second room - random monolith order
     private static int[][] MonolithOrder = new int[][] {
@@ -179,7 +179,7 @@ public class DarkCloudMansion extends InstanceScript {
 
     protected static class DMCNpc {
         public Npc npc;
-        public boolean isDead = false;
+        public boolean dead = false;
         public Npc golem = null;
         public int status = 0;
         public int order = 0;
@@ -453,7 +453,7 @@ public class DarkCloudMansion extends InstanceScript {
     protected void runThirdRoom(InstanceWorld world) {
         final DMCRoom thirdRoom = new DMCRoom();
         final DMCNpc thisNpc = new DMCNpc();
-        thisNpc.isDead = false;
+        thisNpc.dead = false;
         thisNpc.npc = addSpawn(BM[1], 148765, 180450, -6117, 0, false, 0, false, world.getInstanceId());
         if (noRndWalk) {
             thisNpc.npc.setRandomWalking(false);
@@ -499,7 +499,7 @@ public class DarkCloudMansion extends InstanceScript {
         addSpawn(SOAdventure, 148910, 178397, -6117, 16383, false, 0, false, world.getInstanceId());
         final DMCRoom thirdRoom = new DMCRoom();
         final DMCNpc thisNpc = new DMCNpc();
-        thisNpc.isDead = false;
+        thisNpc.dead = false;
         thisNpc.npc = addSpawn(BM[1], 148765, 180450, -6117, 0, false, 0, false, world.getInstanceId());
         if (noRndWalk) {
             thisNpc.npc.setRandomWalking(false);
@@ -606,10 +606,10 @@ public class DarkCloudMansion extends InstanceScript {
             fifthRoom.npcList.add(thisNpc);
             if ((temp[idx] == 1) && (getRandom(100) < 95)) {
                 thisNpc.npc.broadcastPacket(new NpcSay(
-                        thisNpc.npc.getObjectId(), ChatType.GENERAL, thisNpc.npc.getId(), getRandomEntry(_spawnChat)));
+                        thisNpc.npc.getObjectId(), ChatType.GENERAL, thisNpc.npc.getId(), getRandomEntry(spawnChat)));
             } else if ((temp[idx] != 1) && (getRandom(100) < 67)) {
                 thisNpc.npc.broadcastPacket(new NpcSay(
-                        thisNpc.npc.getObjectId(), ChatType.GENERAL, thisNpc.npc.getId(), getRandomEntry(_spawnChat)));
+                        thisNpc.npc.getObjectId(), ChatType.GENERAL, thisNpc.npc.getId(), getRandomEntry(spawnChat)));
             }
 
             idx++;
@@ -622,10 +622,10 @@ public class DarkCloudMansion extends InstanceScript {
         boolean cont = true;
         for (DMCNpc npcobj : room.npcList) {
             if (npcobj.npc == npc) {
-                npcobj.isDead = true;
+                npcobj.dead = true;
             }
 
-            if (!npcobj.isDead) {
+            if (!npcobj.dead) {
                 cont = false;
             }
         }
@@ -654,7 +654,7 @@ public class DarkCloudMansion extends InstanceScript {
             if ((order[i] == 0) && (order[i - 1] != 0) && (npcObj.order == i) && (npcObj.status == 0)) {
                 order[i] = 1;
                 npcObj.status = 1;
-                npcObj.isDead = true;
+                npcObj.dead = true;
                 npc.broadcastPacket(new MagicSkillUse(npc, npc, 5441, 1, 1, 0));
                 return;
             }
@@ -686,7 +686,7 @@ public class DarkCloudMansion extends InstanceScript {
                                 mob.npc.getObjectId(),
                                 ChatType.NPC_GENERAL,
                                 mob.npc.getId(),
-                                getRandomEntry(_successChat)));
+                                getRandomEntry(successChat)));
                         fifthRoom.founded += 1;
                         startQuestTimer("decayMe", 1500, npc, player);
                     } else {
@@ -697,7 +697,7 @@ public class DarkCloudMansion extends InstanceScript {
                                 mob.npc.getObjectId(),
                                 ChatType.NPC_GENERAL,
                                 mob.npc.getId(),
-                                getRandomEntry(_faildChat)));
+                                getRandomEntry(faildChat)));
                         startQuestTimer("decayChatBelethSamples", 4000, npc, player);
                         startQuestTimer("decayBelethSamples", 4500, npc, player);
                     }
@@ -748,7 +748,7 @@ public class DarkCloudMansion extends InstanceScript {
     protected boolean allStonesDone(InstanceWorld world) {
         final DMCRoom secondRoom = world.getParameters().getObject("SecondRoom", DMCRoom.class);
         for (DMCNpc mob : secondRoom.npcList) {
-            if (mob.isDead) {
+            if (mob.dead) {
                 continue;
             }
 
@@ -820,7 +820,7 @@ public class DarkCloudMansion extends InstanceScript {
                                 mob.npc.getObjectId(),
                                 ChatType.NPC_GENERAL,
                                 mob.npc.getId(),
-                                getRandomEntry(_decayChat)));
+                                getRandomEntry(decayChat)));
                     }
                 }
             } else if (event.equalsIgnoreCase("respawnFifth")) {

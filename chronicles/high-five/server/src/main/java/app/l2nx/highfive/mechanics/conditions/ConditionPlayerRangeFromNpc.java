@@ -32,27 +32,27 @@ import java.util.Set;
  */
 public class ConditionPlayerRangeFromNpc extends Condition {
     /** NPC Ids. */
-    private final Set<Integer> _npcIds;
+    private final Set<Integer> npcIds;
     /** Radius to check. */
-    private final int _radius;
+    private final int radius;
     /** Expected value. */
-    private final boolean _value;
+    private final boolean value;
 
     public ConditionPlayerRangeFromNpc(Set<Integer> npcIds, int radius, boolean value) {
-        _npcIds = npcIds;
-        _radius = radius;
-        _value = value;
+        this.npcIds = npcIds;
+        this.radius = radius;
+        this.value = value;
     }
 
     @Override
     public boolean testImpl(Creature effector, Creature effected, Skill skill, ItemTemplate item) {
         boolean existNpc = false;
-        if (!_npcIds.isEmpty() && (_radius > 0)) {
+        if (!npcIds.isEmpty() && (radius > 0)) {
             existNpc = World.getFirstVisibleObjectInRange(
-                            effector, Npc.class, _radius, target -> _npcIds.contains(target.getId()))
+                            effector, Npc.class, radius, target -> npcIds.contains(target.getId()))
                     != null;
         }
 
-        return existNpc == _value;
+        return existNpc == value;
     }
 }

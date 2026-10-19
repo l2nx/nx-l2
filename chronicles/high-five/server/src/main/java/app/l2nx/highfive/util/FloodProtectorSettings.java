@@ -22,63 +22,38 @@
  */
 package app.l2nx.highfive.util;
 
+import lombok.Getter;
+import lombok.Setter;
+
 /**
  * Flood protector settings
  * @author fordfrog, Mobius
  */
 public class FloodProtectorSettings {
-    private final String _floodProtectorType;
-    private int _protectionInterval;
-    private boolean _logFlooding;
-    private int _punishmentLimit;
-    private String _punishmentType;
-    private long _punishmentTime;
+    @Getter
+    private final String floodProtectorType;
+
+    @Getter
+    @Setter
+    private int protectionInterval;
+
+    @Getter
+    @Setter
+    private boolean logFlooding;
+
+    @Getter
+    @Setter
+    private int punishmentLimit;
+
+    @Getter
+    @Setter
+    private String punishmentType;
+
+    @Getter
+    @Setter
+    private long punishmentTime;
 
     public FloodProtectorSettings(String floodProtectorType) {
-        _floodProtectorType = floodProtectorType;
-    }
-
-    public String getFloodProtectorType() {
-        return _floodProtectorType;
-    }
-
-    public int getProtectionInterval() {
-        return _protectionInterval;
-    }
-
-    public void setProtectionInterval(int protectionInterval) {
-        _protectionInterval = protectionInterval;
-    }
-
-    public void setLogFlooding(boolean logFlooding) {
-        _logFlooding = logFlooding;
-    }
-
-    public boolean isLogFlooding() {
-        return _logFlooding;
-    }
-
-    public void setPunishmentLimit(int punishmentLimit) {
-        _punishmentLimit = punishmentLimit;
-    }
-
-    public int getPunishmentLimit() {
-        return _punishmentLimit;
-    }
-
-    public void setPunishmentType(String punishmentType) {
-        _punishmentType = punishmentType;
-    }
-
-    public String getPunishmentType() {
-        return _punishmentType;
-    }
-
-    public void setPunishmentTime(long punishmentTime) {
-        _punishmentTime = punishmentTime;
-    }
-
-    public long getPunishmentTime() {
-        return _punishmentTime;
+        this.floodProtectorType = floodProtectorType;
     }
 }

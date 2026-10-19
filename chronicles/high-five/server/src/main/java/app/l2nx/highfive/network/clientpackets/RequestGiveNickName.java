@@ -29,13 +29,13 @@ import app.l2nx.highfive.entity.clan.ClanMember;
 import app.l2nx.highfive.network.SystemMessageId;
 
 public class RequestGiveNickName extends ClientPacket {
-    private String _target;
-    private String _title;
+    private String target;
+    private String title;
 
     @Override
     protected void readImpl() {
-        _target = readString();
-        _title = readString();
+        target = readString();
+        title = readString();
     }
 
     @Override
@@ -46,8 +46,8 @@ public class RequestGiveNickName extends ClientPacket {
         }
 
         // Noblesse can bestow a title to themselves.
-        if (player.isNoble() && _target.equalsIgnoreCase(player.getName())) {
-            player.setTitle(_title);
+        if (player.isNoble() && target.equalsIgnoreCase(player.getName())) {
+            player.setTitle(title);
             player.sendPacket(SystemMessageId.YOUR_TITLE_HAS_BEEN_CHANGED);
             player.broadcastTitleInfo();
         } else {
@@ -63,12 +63,12 @@ public class RequestGiveNickName extends ClientPacket {
                 return;
             }
 
-            final ClanMember member1 = clan.getClanMember(_target);
+            final ClanMember member1 = clan.getClanMember(target);
             if (member1 != null) {
                 final Player member = member1.getPlayer();
                 if (member != null) {
                     // Is target from the same clan?
-                    member.setTitle(_title);
+                    member.setTitle(title);
                     member.sendPacket(SystemMessageId.YOUR_TITLE_HAS_BEEN_CHANGED);
                     member.broadcastTitleInfo();
                 } else {

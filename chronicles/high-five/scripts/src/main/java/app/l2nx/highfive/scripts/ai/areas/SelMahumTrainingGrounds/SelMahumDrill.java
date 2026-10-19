@@ -30,6 +30,8 @@ import app.l2nx.highfive.mechanics.script.Script;
 import app.l2nx.highfive.network.NpcStringId;
 import app.l2nx.highfive.network.enums.ChatType;
 import app.l2nx.highfive.util.ArrayUtil;
+import lombok.AccessLevel;
+import lombok.Getter;
 
 /**
  * Sel Mahum Training Ground AI for drill groups.
@@ -71,32 +73,23 @@ public class SelMahumDrill extends Script {
         SCE_TRAINING_ACTION_C(6, 5, 4, 1000),
         SCE_TRAINING_ACTION_D(7, -1, 2, 1000);
 
-        private final int _socialActionId;
-        private final int _altSocialActionId;
-        private final int _repeatCount;
-        private final int _repeatInterval;
+        @Getter(AccessLevel.PROTECTED)
+        private final int socialActionId;
+
+        @Getter(AccessLevel.PROTECTED)
+        private final int altSocialActionId;
+
+        @Getter(AccessLevel.PROTECTED)
+        private final int repeatCount;
+
+        @Getter(AccessLevel.PROTECTED)
+        private final int repeatInterval;
 
         private Actions(int socialActionId, int altSocialActionId, int repeatCount, int repeatInterval) {
-            _socialActionId = socialActionId;
-            _altSocialActionId = altSocialActionId;
-            _repeatCount = repeatCount;
-            _repeatInterval = repeatInterval;
-        }
-
-        protected int getSocialActionId() {
-            return _socialActionId;
-        }
-
-        protected int getAltSocialActionId() {
-            return _altSocialActionId;
-        }
-
-        protected int getRepeatCount() {
-            return _repeatCount;
-        }
-
-        protected int getRepeatInterval() {
-            return _repeatInterval;
+            this.socialActionId = socialActionId;
+            this.altSocialActionId = altSocialActionId;
+            this.repeatCount = repeatCount;
+            this.repeatInterval = repeatInterval;
         }
     }
 

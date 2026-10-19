@@ -32,7 +32,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class PvpFlagTaskManager implements Runnable {
     private static final Set<Player> PLAYERS = ConcurrentHashMap.newKeySet();
-    private static boolean _working = false;
+    private static boolean working = false;
 
     protected PvpFlagTaskManager() {
         ThreadPool.schedulePriorityTaskAtFixedRate(this, 1000, 1000);
@@ -40,11 +40,11 @@ public class PvpFlagTaskManager implements Runnable {
 
     @Override
     public void run() {
-        if (_working) {
+        if (working) {
             return;
         }
 
-        _working = true;
+        working = true;
 
         if (!PLAYERS.isEmpty()) {
             final long currentTime = System.currentTimeMillis();
@@ -59,7 +59,7 @@ public class PvpFlagTaskManager implements Runnable {
             }
         }
 
-        _working = false;
+        working = false;
     }
 
     public void add(Player player) {

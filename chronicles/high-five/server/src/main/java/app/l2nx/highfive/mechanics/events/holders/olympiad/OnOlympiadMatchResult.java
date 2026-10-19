@@ -23,33 +23,14 @@ import app.l2nx.highfive.mechanics.events.EventType;
 import app.l2nx.highfive.mechanics.events.holders.IBaseEvent;
 import app.l2nx.highfive.mechanics.olympiad.CompetitionType;
 import app.l2nx.highfive.mechanics.olympiad.Participant;
+import lombok.Builder;
 
 /**
  * @author UnAfraid
  */
-public class OnOlympiadMatchResult implements IBaseEvent {
-    private final Participant _winner;
-    private final Participant _loser;
-    private final CompetitionType _type;
-
-    public OnOlympiadMatchResult(Participant winner, Participant looser, CompetitionType type) {
-        _winner = winner;
-        _loser = looser;
-        _type = type;
-    }
-
-    public Participant getWinner() {
-        return _winner;
-    }
-
-    public Participant getLoser() {
-        return _loser;
-    }
-
-    public CompetitionType getCompetitionType() {
-        return _type;
-    }
-
+@Builder(toBuilder = true)
+public record OnOlympiadMatchResult(Participant winner, Participant loser, CompetitionType competitionType)
+        implements IBaseEvent {
     @Override
     public EventType getType() {
         return EventType.ON_OLYMPIAD_MATCH_RESULT;

@@ -30,19 +30,19 @@ import java.util.List;
  * @author Migi, DS
  */
 public class ExShowReceivedPostList extends ServerPacket {
-    private final List<MailMessage> _inbox;
+    private final List<MailMessage> inbox;
 
     public ExShowReceivedPostList(int objectId) {
-        _inbox = MailManager.getInstance().getInbox(objectId);
+        inbox = MailManager.getInstance().getInbox(objectId);
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_SHOW_RECEIVED_POST_LIST.writeId(this, buffer);
         buffer.writeInt((int) (System.currentTimeMillis() / 1000));
-        if ((_inbox != null) && !_inbox.isEmpty()) {
-            buffer.writeInt(_inbox.size());
-            for (MailMessage msg : _inbox) {
+        if ((inbox != null) && !inbox.isEmpty()) {
+            buffer.writeInt(inbox.size());
+            for (MailMessage msg : inbox) {
                 buffer.writeInt(msg.getId());
                 buffer.writeString(msg.getSubject());
                 buffer.writeString(msg.getSenderName());

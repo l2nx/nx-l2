@@ -40,9 +40,9 @@ public class ReplyCharacters extends SimpleWritablePacket {
     private static final int OPCODE = 0x08;
 
     // Data.
-    private final String _account;
-    private final int _chars;
-    private final List<Long> _timeToDelete;
+    private final String account;
+    private final int chars;
+    private final List<Long> timeToDelete;
 
     /**
      * @param account account name
@@ -50,9 +50,9 @@ public class ReplyCharacters extends SimpleWritablePacket {
      * @param timeToDel pending delete times (epoch ms)
      */
     public ReplyCharacters(String account, int chars, List<Long> timeToDel) {
-        _account = (account != null) ? account : "";
-        _chars = chars;
-        _timeToDelete = (timeToDel != null) ? timeToDel : Collections.emptyList();
+        this.account = (account != null) ? account : "";
+        this.chars = chars;
+        timeToDelete = (timeToDel != null) ? timeToDel : Collections.emptyList();
     }
 
     /**
@@ -61,10 +61,10 @@ public class ReplyCharacters extends SimpleWritablePacket {
     @Override
     public void write() {
         writeByte(OPCODE);
-        writeString(_account);
-        writeByte(_chars);
-        writeByte(_timeToDelete.size());
-        for (Long t : _timeToDelete) {
+        writeString(account);
+        writeByte(chars);
+        writeByte(timeToDelete.size());
+        for (Long t : timeToDelete) {
             writeLong((t != null) ? t.longValue() : 0L);
         }
     }

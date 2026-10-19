@@ -28,14 +28,14 @@ import app.l2nx.highfive.mechanics.skill.Skill;
  * @author mkizub
  */
 public class ConditionUsingSkill extends Condition {
-    private final int _skillId;
+    private final int skillId;
 
     /**
      * Instantiates a new condition using skill.
      * @param skillId the skill id
      */
     public ConditionUsingSkill(int skillId) {
-        _skillId = skillId;
+        this.skillId = skillId;
     }
 
     @Override
@@ -44,6 +44,6 @@ public class ConditionUsingSkill extends Condition {
             return false;
         }
 
-        return skill.getId() == _skillId;
+        return skill.getId() == skillId;
     }
 }

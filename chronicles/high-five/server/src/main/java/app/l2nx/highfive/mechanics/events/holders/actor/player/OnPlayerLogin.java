@@ -26,17 +26,7 @@ import app.l2nx.highfive.mechanics.events.holders.IBaseEvent;
 /**
  * @author UnAfraid
  */
-public class OnPlayerLogin implements IBaseEvent {
-    private final Player _player;
-
-    public OnPlayerLogin(Player player) {
-        _player = player;
-    }
-
-    public Player getPlayer() {
-        return _player;
-    }
-
+public record OnPlayerLogin(Player player) implements IBaseEvent {
     @Override
     public EventType getType() {
         return EventType.ON_PLAYER_LOGIN;

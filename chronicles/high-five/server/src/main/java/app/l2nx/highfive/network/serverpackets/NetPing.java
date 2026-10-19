@@ -30,15 +30,15 @@ import app.l2nx.network.buffer.WriteBuffer;
  * @author Mobius
  */
 public class NetPing extends ServerPacket {
-    private final int _time;
+    private final int time;
 
     public NetPing(int time) {
-        _time = time;
+        this.time = time;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.NET_PING.writeId(this, buffer);
-        buffer.writeInt(_time);
+        buffer.writeInt(time);
     }
 }

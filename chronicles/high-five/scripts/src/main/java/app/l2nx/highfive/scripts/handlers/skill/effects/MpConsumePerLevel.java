@@ -33,12 +33,12 @@ import app.l2nx.highfive.util.StatSet;
  * Mp Consume Per Level effect implementation.
  */
 public class MpConsumePerLevel extends AbstractEffect {
-    private final double _power;
+    private final double power;
 
     public MpConsumePerLevel(Condition attachCond, Condition applyCond, StatSet set, StatSet params) {
         super(attachCond, applyCond, set, params);
 
-        _power = params.getDouble("power", 0);
+        power = params.getDouble("power", 0);
     }
 
     @Override
@@ -47,7 +47,7 @@ public class MpConsumePerLevel extends AbstractEffect {
             return false;
         }
 
-        final double consume = _power * getTicksMultiplier() * ((effected.getLevel() - 1) / 7.5);
+        final double consume = power * getTicksMultiplier() * ((effected.getLevel() - 1) / 7.5);
         if (consume > effected.getCurrentMp()) {
             effected.sendPacket(SystemMessageId.YOUR_SKILL_WAS_DEACTIVATED_DUE_TO_LACK_OF_MP);
             return false;

@@ -25,22 +25,24 @@ package app.l2nx.highfive.geoengine.geodata.blocks;
 import app.l2nx.highfive.geoengine.geodata.Cell;
 import app.l2nx.highfive.geoengine.geodata.IBlock;
 import java.nio.ByteBuffer;
+import lombok.Getter;
 
 /**
  * @author HorridoJoho, Mobius
  */
 public class ComplexBlock implements IBlock {
-    private final short[] _data;
+    @Getter
+    private final short[] data;
 
     public ComplexBlock(ByteBuffer bb) {
-        _data = new short[IBlock.BLOCK_CELLS];
+        data = new short[IBlock.BLOCK_CELLS];
         for (int cellOffset = 0; cellOffset < IBlock.BLOCK_CELLS; cellOffset++) {
-            _data[cellOffset] = bb.getShort();
+            data[cellOffset] = bb.getShort();
         }
     }
 
     private short getCellData(int geoX, int geoY) {
-        return _data[((geoX % IBlock.BLOCK_CELLS_X) * IBlock.BLOCK_CELLS_Y) + (geoY % IBlock.BLOCK_CELLS_Y)];
+        return data[((geoX % IBlock.BLOCK_CELLS_X) * IBlock.BLOCK_CELLS_Y) + (geoY % IBlock.BLOCK_CELLS_Y)];
     }
 
     private byte getCellNSWE(int geoX, int geoY) {
@@ -64,7 +66,7 @@ public class ComplexBlock implements IBlock {
             final short encodedHeight = (short) (currentHeight << 1); // Shift left by 1 bit.
             final short newNswe = (short) (currentNswe | nswe); // Add NSWE.
             final short newCombinedData = (short) (encodedHeight | newNswe); // Combine height and NSWE.
-            _data[((geoX % IBlock.BLOCK_CELLS_X) * IBlock.BLOCK_CELLS_Y) + (geoY % IBlock.BLOCK_CELLS_Y)] =
+            data[((geoX % IBlock.BLOCK_CELLS_X) * IBlock.BLOCK_CELLS_Y) + (geoY % IBlock.BLOCK_CELLS_Y)] =
                     (short) (newCombinedData & 0xffff);
         }
     }
@@ -77,7 +79,7 @@ public class ComplexBlock implements IBlock {
             final short encodedHeight = (short) (currentHeight << 1); // Shift left by 1 bit.
             final short newNswe = (short) (currentNswe & ~nswe); // Subtract NSWE.
             final short newCombinedData = (short) (encodedHeight | newNswe); // Combine height and NSWE.
-            _data[((geoX % IBlock.BLOCK_CELLS_X) * IBlock.BLOCK_CELLS_Y) + (geoY % IBlock.BLOCK_CELLS_Y)] =
+            data[((geoX % IBlock.BLOCK_CELLS_X) * IBlock.BLOCK_CELLS_Y) + (geoY % IBlock.BLOCK_CELLS_Y)] =
                     (short) (newCombinedData & 0xffff);
         }
     }
@@ -119,9 +121,5 @@ public class ComplexBlock implements IBlock {
     public int getNextHigherZ(int geoX, int geoY, int worldZ) {
         final int cellHeight = getCellHeight(geoX, geoY);
         return cellHeight >= worldZ ? cellHeight : worldZ;
-    }
-
-    public short[] getData() {
-        return _data;
     }
 }

@@ -28,11 +28,11 @@ import app.l2nx.highfive.network.serverpackets.ExMPCCShowPartyMemberInfo;
  * @author chris_00
  */
 public class RequestExMPCCShowPartyMembersInfo extends ClientPacket {
-    private int _partyLeaderId;
+    private int partyLeaderId;
 
     @Override
     protected void readImpl() {
-        _partyLeaderId = readInt();
+        partyLeaderId = readInt();
     }
 
     @Override
@@ -42,7 +42,7 @@ public class RequestExMPCCShowPartyMembersInfo extends ClientPacket {
             return;
         }
 
-        final Player target = World.getPlayer(_partyLeaderId);
+        final Player target = World.getPlayer(partyLeaderId);
         if ((target != null) && (target.getParty() != null)) {
             player.sendPacket(new ExMPCCShowPartyMemberInfo(target.getParty()));
         }

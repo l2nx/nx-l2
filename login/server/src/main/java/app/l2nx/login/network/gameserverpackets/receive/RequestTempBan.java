@@ -26,17 +26,17 @@ import app.l2nx.network.packet.SimpleReadablePacket;
  * @author mrTJO
  */
 public class RequestTempBan extends SimpleReadablePacket {
-    private final String _accountName;
-    private final String _ip;
-    long _banTime;
+    private final String accountName;
+    private final String ip;
+    long banTime;
 
     public RequestTempBan(byte[] decrypt) {
         super(decrypt);
         readByte(); // Packet id, it is already processed.
 
-        _accountName = readString();
-        _ip = readString();
-        _banTime = readLong();
+        accountName = readString();
+        ip = readString();
+        banTime = readLong();
         final boolean haveReason = readByte() != 0;
         if (haveReason) {
             readString(); // _banReason
@@ -46,7 +46,7 @@ public class RequestTempBan extends SimpleReadablePacket {
     }
 
     private void banUser() {
-        LoginController.getInstance().setAccountTempBan(_accountName, _banTime);
-        LoginController.getInstance().addBanForAddress(_ip, _banTime);
+        LoginController.getInstance().setAccountTempBan(accountName, banTime);
+        LoginController.getInstance().addBanForAddress(ip, banTime);
     }
 }

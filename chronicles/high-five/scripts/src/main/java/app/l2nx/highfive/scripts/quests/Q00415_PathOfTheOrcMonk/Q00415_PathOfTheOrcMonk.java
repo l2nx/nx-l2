@@ -281,13 +281,13 @@ public class Q00415_PathOfTheOrcMonk extends Quest {
                 && qs.isStarted()
                 && npc.isScriptValue(1)
                 && LocationUtil.checkIfInRange(PlayerConfig.ALT_PARTY_RANGE, npc, killer, true)) {
-            final long ItemCount = getQuestItemsCount(
+            final long itemCount = getQuestItemsCount(
                     killer, RATMAN_FANG, LANGK_LIZARDMAN_TOOTH, FELIM_LIZARDMAN_TOOTH, VUKU_ORK_TUSK);
             switch (npc.getId()) {
                 case FELIM_LIZARDMAN_WARRIOR: {
                     if (hasQuestItems(killer, LEATHER_POUCH_4TF)
                             && (getQuestItemsCount(killer, FELIM_LIZARDMAN_TOOTH) < 3)) {
-                        if (ItemCount >= 11) {
+                        if (itemCount >= 11) {
                             takeItems(killer, LEATHER_POUCH_4TF, 1);
                             giveItems(killer, LEATHER_POUCH_4TF_FULL, 1);
                             takeItems(killer, VUKU_ORK_TUSK, -1);
@@ -304,7 +304,7 @@ public class Q00415_PathOfTheOrcMonk extends Quest {
                 }
                 case VUKU_ORC_FIGHTER: {
                     if (hasQuestItems(killer, LEATHER_POUCH_4TF) && (getQuestItemsCount(killer, VUKU_ORK_TUSK) < 3)) {
-                        if (ItemCount >= 11) {
+                        if (itemCount >= 11) {
                             takeItems(killer, LEATHER_POUCH_4TF, 1);
                             giveItems(killer, LEATHER_POUCH_4TF_FULL, 1);
                             takeItems(killer, VUKU_ORK_TUSK, -1);
@@ -322,7 +322,7 @@ public class Q00415_PathOfTheOrcMonk extends Quest {
                 case LANGK_LIZZARDMAN_WARRIOR: {
                     if (hasQuestItems(killer, LEATHER_POUCH_4TF)
                             && (getQuestItemsCount(killer, LANGK_LIZARDMAN_TOOTH) < 3)) {
-                        if (ItemCount >= 11) {
+                        if (itemCount >= 11) {
                             takeItems(killer, LEATHER_POUCH_4TF, 1);
                             giveItems(killer, LEATHER_POUCH_4TF_FULL, 1);
                             takeItems(killer, VUKU_ORK_TUSK, -1);
@@ -339,7 +339,7 @@ public class Q00415_PathOfTheOrcMonk extends Quest {
                 }
                 case RATMAN_WARRIOR: {
                     if (hasQuestItems(killer, LEATHER_POUCH_4TF) && (getQuestItemsCount(killer, RATMAN_FANG) < 3)) {
-                        if (ItemCount >= 11) {
+                        if (itemCount >= 11) {
                             takeItems(killer, LEATHER_POUCH_4TF, 1);
                             giveItems(killer, LEATHER_POUCH_4TF_FULL, 1);
                             takeItems(killer, VUKU_ORK_TUSK, -1);

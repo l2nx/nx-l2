@@ -30,12 +30,12 @@ import app.l2nx.highfive.util.StatSet;
  * @author Adry_85
  */
 public class GiveSp extends AbstractEffect {
-    private final int _sp;
+    private final int sp;
 
     public GiveSp(Condition attachCond, Condition applyCond, StatSet set, StatSet params) {
         super(attachCond, applyCond, set, params);
 
-        _sp = params.getInt("sp", 0);
+        sp = params.getInt("sp", 0);
     }
 
     @Override
@@ -53,6 +53,6 @@ public class GiveSp extends AbstractEffect {
             return;
         }
 
-        effector.asPlayer().addExpAndSp(0, _sp);
+        effector.asPlayer().addExpAndSp(0, sp);
     }
 }

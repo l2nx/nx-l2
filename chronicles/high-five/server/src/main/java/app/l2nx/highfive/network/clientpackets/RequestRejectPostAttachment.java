@@ -34,11 +34,11 @@ import app.l2nx.highfive.network.serverpackets.SystemMessage;
  * @author Migi, DS
  */
 public class RequestRejectPostAttachment extends ClientPacket {
-    private int _msgId;
+    private int msgId;
 
     @Override
     protected void readImpl() {
-        _msgId = readInt();
+        msgId = readInt();
     }
 
     @Override
@@ -62,7 +62,7 @@ public class RequestRejectPostAttachment extends ClientPacket {
             return;
         }
 
-        final MailMessage msg = MailManager.getInstance().getMessage(_msgId);
+        final MailMessage msg = MailManager.getInstance().getMessage(msgId);
         if (msg == null) {
             return;
         }
@@ -79,7 +79,7 @@ public class RequestRejectPostAttachment extends ClientPacket {
 
         MailManager.getInstance().sendMessage(new MailMessage(msg));
         player.sendPacket(SystemMessageId.MAIL_SUCCESSFULLY_RETURNED);
-        player.sendPacket(new ExChangePostState(true, _msgId, MailMessage.REJECTED));
+        player.sendPacket(new ExChangePostState(true, msgId, MailMessage.REJECTED));
 
         final Player sender = World.getPlayer(msg.getSenderId());
         if (sender != null) {

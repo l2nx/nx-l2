@@ -30,7 +30,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
@@ -38,9 +38,9 @@ import org.w3c.dom.Node;
 /**
  * @author Mobius
  */
+@Slf4j
 public class PetSkillData implements IXmlReader {
-    private static final Logger LOGGER = Logger.getLogger(PetSkillData.class.getName());
-    private final Map<Integer, Map<Long, SkillHolder>> _skillTrees = new HashMap<>();
+    private final Map<Integer, Map<Long, SkillHolder>> skillTrees = new HashMap<>();
 
     protected PetSkillData() {
         load();
@@ -48,9 +48,9 @@ public class PetSkillData implements IXmlReader {
 
     @Override
     public void load() {
-        _skillTrees.clear();
+        skillTrees.clear();
         parseDatapackFile("data/PetSkillData.xml");
-        LOGGER.info(getClass().getSimpleName() + ": Loaded " + _skillTrees.size() + " skills.");
+        log.info("Loaded {} skills.", skillTrees.size());
     }
 
     @Override
@@ -63,10 +63,10 @@ public class PetSkillData implements IXmlReader {
                         final int npcId = parseInteger(attrs, "npcId");
                         final int skillId = parseInteger(attrs, "skillId");
                         final int skillLevel = parseInteger(attrs, "skillLevel");
-                        Map<Long, SkillHolder> skillTree = _skillTrees.get(npcId);
+                        Map<Long, SkillHolder> skillTree = skillTrees.get(npcId);
                         if (skillTree == null) {
                             skillTree = new HashMap<>();
-                            _skillTrees.put(npcId, skillTree);
+                            skillTrees.put(npcId, skillTree);
                         }
 
                         if (SkillData.getInstance().getSkill(skillId, skillLevel == 0 ? 1 : skillLevel) != null) {
@@ -74,8 +74,11 @@ public class PetSkillData implements IXmlReader {
                                     (long) SkillData.getSkillHashCode(skillId, skillLevel + 1),
                                     new SkillHolder(skillId, skillLevel));
                         } else {
-                            LOGGER.info(getClass().getSimpleName() + ": Could not find skill with id " + skillId
-                                    + ", level " + skillLevel + " for NPC " + npcId + ".");
+                            log.info(
+                                    "Could not find skill with id {}, level {} for NPC {}.",
+                                    skillId,
+                                    skillLevel,
+                                    npcId);
                         }
                     }
                 }
@@ -91,13 +94,13 @@ public class PetSkillData implements IXmlReader {
      */
     public int getAvailableLevel(Summon pet, int skillId) {
         int level = 0;
-        if (!_skillTrees.containsKey(pet.getId())) {
+        if (!skillTrees.containsKey(pet.getId())) {
             // LOGGER.warning(getClass().getSimpleName() + ": Pet id " + pet.getId() + " does not have any skills
             // assigned.");
             return level;
         }
 
-        for (SkillHolder skillHolder : _skillTrees.get(pet.getId()).values()) {
+        for (SkillHolder skillHolder : skillTrees.get(pet.getId()).values()) {
             if (skillHolder.getSkillId() != skillId) {
                 continue;
             }
@@ -133,13 +136,13 @@ public class PetSkillData implements IXmlReader {
      */
     public List<Integer> getAvailableSkills(Summon pet) {
         final List<Integer> skillIds = new ArrayList<>();
-        if (!_skillTrees.containsKey(pet.getId())) {
+        if (!skillTrees.containsKey(pet.getId())) {
             // LOGGER.warning(getClass().getSimpleName() + ": Pet id " + pet.getId() + " does not have any skills
             // assigned.");
             return skillIds;
         }
 
-        for (SkillHolder skillHolder : _skillTrees.get(pet.getId()).values()) {
+        for (SkillHolder skillHolder : skillTrees.get(pet.getId()).values()) {
             if (skillIds.contains(skillHolder.getSkillId())) {
                 continue;
             }
@@ -157,11 +160,11 @@ public class PetSkillData implements IXmlReader {
      */
     public List<Skill> getKnownSkills(Summon pet) {
         final List<Skill> skills = new ArrayList<>();
-        if (!_skillTrees.containsKey(pet.getId())) {
+        if (!skillTrees.containsKey(pet.getId())) {
             return skills;
         }
 
-        for (SkillHolder skillHolder : _skillTrees.get(pet.getId()).values()) {
+        for (SkillHolder skillHolder : skillTrees.get(pet.getId()).values()) {
             final Skill skill = skillHolder.getSkill();
             if (skills.contains(skill)) {
                 continue;
@@ -180,11 +183,11 @@ public class PetSkillData implements IXmlReader {
      * @return the {@link Skill} object corresponding to the specified skill ID, or {@code null} if the skill is not known by the pet.
      */
     public Skill getKnownSkill(Summon pet, int skillId) {
-        if (!_skillTrees.containsKey(pet.getId())) {
+        if (!skillTrees.containsKey(pet.getId())) {
             return null;
         }
 
-        for (SkillHolder skillHolder : _skillTrees.get(pet.getId()).values()) {
+        for (SkillHolder skillHolder : skillTrees.get(pet.getId()).values()) {
             if (skillHolder.getSkillId() == skillId) {
                 return skillHolder.getSkill();
             }

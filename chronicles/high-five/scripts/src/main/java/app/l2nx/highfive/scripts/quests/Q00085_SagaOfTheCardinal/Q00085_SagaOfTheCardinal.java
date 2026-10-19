@@ -29,15 +29,15 @@ import app.l2nx.highfive.scripts.quests.AbstractSagaQuest;
 public class Q00085_SagaOfTheCardinal extends AbstractSagaQuest {
     public Q00085_SagaOfTheCardinal() {
         super(85);
-        _npc = new int[] {30191, 31626, 31588, 31280, 31644, 31646, 31647, 31651, 31654, 31655, 31658, 31280};
-        _items = new int[] {7080, 7522, 7081, 7500, 7283, 7314, 7345, 7376, 7407, 7438, 7087, 0};
-        _mob = new int[] {27267, 27234, 27274};
-        _classId = new int[] {97};
-        _prevClass = new int[] {0x10};
-        _npcSpawnLocations = new Location[] {
+        npc = new int[] {30191, 31626, 31588, 31280, 31644, 31646, 31647, 31651, 31654, 31655, 31658, 31280};
+        items = new int[] {7080, 7522, 7081, 7500, 7283, 7314, 7345, 7376, 7407, 7438, 7087, 0};
+        mob = new int[] {27267, 27234, 27274};
+        classId = new int[] {97};
+        prevClass = new int[] {0x10};
+        npcSpawnLocations = new Location[] {
             new Location(119518, -28658, -3811), new Location(181215, 36676, -4812), new Location(181227, 36703, -4816)
         };
-        _text = new String[] {
+        text = new String[] {
             "PLAYERNAME! Pursued to here! However, I jumped out of the Banshouren boundaries! You look at the giant as the sign of power!",
             "... Oh ... good! So it was ... let's begin!",
             "I do not have the patience ..! I have been a giant force ...! Cough chatter ah ah ah!",

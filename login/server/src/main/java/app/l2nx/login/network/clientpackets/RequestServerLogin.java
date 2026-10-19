@@ -40,16 +40,16 @@ import app.l2nx.login.network.serverpackets.PlayOk;
  * </pre>
  */
 public class RequestServerLogin extends LoginClientPacket {
-    private int _skey1;
-    private int _skey2;
-    private int _serverId;
+    private int skey1;
+    private int skey2;
+    private int serverId;
 
     @Override
     protected boolean readImpl() {
         if (remaining() >= 9) {
-            _skey1 = readInt();
-            _skey2 = readInt();
-            _serverId = readByte();
+            skey1 = readInt();
+            skey2 = readInt();
+            serverId = readByte();
             return true;
         }
 
@@ -62,12 +62,12 @@ public class RequestServerLogin extends LoginClientPacket {
         final SessionKey sk = client.getSessionKey();
 
         // If we didn't showed the license we can't check these values.
-        if (!LoginServer.getInstance().getProperties().showLicence() || sk.checkLoginPair(_skey1, _skey2)) {
+        if (!LoginServer.getInstance().getProperties().showLicence() || sk.checkLoginPair(skey1, skey2)) {
             if ((LoginServer.getInstance().getStatus() == ServerStatus.STATUS_DOWN)
                     || ((LoginServer.getInstance().getStatus() == ServerStatus.STATUS_GM_ONLY)
                             && (client.getAccessLevel() < 1))) {
                 client.close(LoginFailReason.REASON_ACCESS_FAILED);
-            } else if (LoginController.getInstance().isLoginPossible(client, _serverId)) {
+            } else if (LoginController.getInstance().isLoginPossible(client, serverId)) {
                 client.setJoinedGS(true);
                 client.sendPacket(new PlayOk(sk));
             } else {

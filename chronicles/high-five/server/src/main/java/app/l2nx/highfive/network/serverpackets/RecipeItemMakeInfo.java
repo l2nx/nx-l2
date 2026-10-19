@@ -26,40 +26,41 @@ import app.l2nx.highfive.data.xml.RecipeData;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.item.recipe.RecipeList;
 import app.l2nx.highfive.network.GameClient;
-import app.l2nx.highfive.network.PacketLogger;
 import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.network.buffer.WriteBuffer;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class RecipeItemMakeInfo extends ServerPacket {
-    private final int _id;
-    private final Player _player;
-    private final boolean _success;
+    private final int id;
+    private final Player player;
+    private final boolean success;
 
     public RecipeItemMakeInfo(int id, Player player, boolean success) {
-        _id = id;
-        _player = player;
-        _success = success;
+        this.id = id;
+        this.player = player;
+        this.success = success;
     }
 
     public RecipeItemMakeInfo(int id, Player player) {
-        _id = id;
-        _player = player;
-        _success = true;
+        this.id = id;
+        this.player = player;
+        success = true;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
-        final RecipeList recipe = RecipeData.getInstance().getRecipeList(_id);
+        final RecipeList recipe = RecipeData.getInstance().getRecipeList(id);
         if (recipe == null) {
-            PacketLogger.info("Character: " + _player + ": Requested unexisting recipe with id = " + _id);
+            log.info("Character: {}: Requested unexisting recipe with id = {}", player, id);
             return;
         }
 
         ServerPackets.RECIPE_ITEM_MAKE_INFO.writeId(this, buffer);
-        buffer.writeInt(_id);
+        buffer.writeInt(id);
         buffer.writeInt(!recipe.isDwarvenRecipe()); // 0 = Dwarven - 1 = Common
-        buffer.writeInt((int) _player.getCurrentMp());
-        buffer.writeInt(_player.getMaxMp());
-        buffer.writeInt(_success); // item creation success/failed
+        buffer.writeInt((int) player.getCurrentMp());
+        buffer.writeInt(player.getMaxMp());
+        buffer.writeInt(success); // item creation success/failed
     }
 }

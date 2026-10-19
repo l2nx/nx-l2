@@ -30,17 +30,17 @@ public class Ex2ndPasswordAck extends ServerPacket {
     public static final int SUCCESS = 0;
     public static final int WRONG_PATTERN = 1;
 
-    int _response;
+    int response;
 
     public Ex2ndPasswordAck(int response) {
-        _response = response;
+        this.response = response;
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_2ND_PASSWORD_ACK.writeId(this, buffer);
         buffer.writeByte(0);
-        buffer.writeInt(_response == WRONG_PATTERN);
+        buffer.writeInt(response == WRONG_PATTERN);
         buffer.writeInt(0);
     }
 }

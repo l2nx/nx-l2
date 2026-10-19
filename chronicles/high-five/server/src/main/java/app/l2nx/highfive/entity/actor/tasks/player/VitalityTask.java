@@ -30,23 +30,23 @@ import app.l2nx.highfive.network.serverpackets.ExVitalityPointInfo;
  * @author UnAfraid
  */
 public class VitalityTask implements Runnable {
-    private final Player _player;
+    private final Player player;
 
     public VitalityTask(Player player) {
-        _player = player;
+        this.player = player;
     }
 
     @Override
     public void run() {
-        if (!_player.isInsideZone(ZoneId.PEACE)) {
+        if (!player.isInsideZone(ZoneId.PEACE)) {
             return;
         }
 
-        if (_player.getVitalityPoints() >= PlayerStat.MAX_VITALITY_POINTS) {
+        if (player.getVitalityPoints() >= PlayerStat.MAX_VITALITY_POINTS) {
             return;
         }
 
-        _player.updateVitalityPoints(RatesConfig.RATE_RECOVERY_VITALITY_PEACE_ZONE, false, false);
-        _player.sendPacket(new ExVitalityPointInfo(_player.getVitalityPoints()));
+        player.updateVitalityPoints(RatesConfig.RATE_RECOVERY_VITALITY_PEACE_ZONE, false, false);
+        player.sendPacket(new ExVitalityPointInfo(player.getVitalityPoints()));
     }
 }

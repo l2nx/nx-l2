@@ -27,6 +27,7 @@ import app.l2nx.highfive.mechanics.script.QuestState;
 import app.l2nx.highfive.scripts.quests.Q00115_TheOtherSideOfTruth.Q00115_TheOtherSideOfTruth;
 import java.util.HashMap;
 import java.util.Map;
+import lombok.Getter;
 
 /**
  * An Ice Merchant's Dream (648)
@@ -34,20 +35,15 @@ import java.util.Map;
  */
 public class Q00648_AnIceMerchantsDream extends Quest {
     private static class DropInfo {
-        private final double _firstChance;
-        private final double _secondChance;
+        @Getter
+        private final double firstChance;
+
+        @Getter
+        private final double secondChance;
 
         public DropInfo(double firstChance, double secondChance) {
-            _firstChance = firstChance;
-            _secondChance = secondChance;
-        }
-
-        public double getFirstChance() {
-            return _firstChance;
-        }
-
-        public double getSecondChance() {
-            return _secondChance;
+            this.firstChance = firstChance;
+            this.secondChance = secondChance;
         }
     }
 

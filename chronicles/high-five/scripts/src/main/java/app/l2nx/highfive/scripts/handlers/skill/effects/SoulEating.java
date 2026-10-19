@@ -39,11 +39,11 @@ import app.l2nx.highfive.util.StatSet;
  * @author UnAfraid
  */
 public class SoulEating extends AbstractEffect {
-    private final int _expNeeded;
+    private final int expNeeded;
 
     public SoulEating(Condition attachCond, Condition applyCond, StatSet set, StatSet params) {
         super(attachCond, applyCond, set, params);
-        _expNeeded = params.getInt("expNeeded");
+        expNeeded = params.getInt("expNeeded");
     }
 
     @Override
@@ -55,7 +55,7 @@ public class SoulEating extends AbstractEffect {
 
     public void onExperienceReceived(Playable playable, long exp) {
         // TODO: Verify logic.
-        if (playable.isPlayer() && (exp >= _expNeeded)) {
+        if (playable.isPlayer() && (exp >= expNeeded)) {
             final Player player = playable.asPlayer();
             final int maxSouls = (int) player.calcStat(Stat.MAX_SOULS, 0, null, null);
             if (player.getChargedSouls() >= maxSouls) {
@@ -79,7 +79,7 @@ public class SoulEating extends AbstractEffect {
                     effected,
                     EventType.ON_PLAYABLE_EXP_CHANGED,
                     (OnPlayableExpChanged event) ->
-                            onExperienceReceived(event.getActiveChar(), (event.getNewExp() - event.getOldExp())),
+                            onExperienceReceived(event.activeChar(), (event.newExp() - event.oldExp())),
                     this));
         }
     }

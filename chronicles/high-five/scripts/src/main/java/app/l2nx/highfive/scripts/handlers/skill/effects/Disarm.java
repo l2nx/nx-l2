@@ -38,7 +38,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @author nBd
  */
 public class Disarm extends AbstractEffect {
-    private static final Map<Integer, Integer> _disarmedPlayers = new ConcurrentHashMap<>();
+    private static final Map<Integer, Integer> disarmedPlayers = new ConcurrentHashMap<>();
 
     public Disarm(Condition attachCond, Condition applyCond, StatSet set, StatSet params) {
         super(attachCond, applyCond, set, params);
@@ -74,7 +74,7 @@ public class Disarm extends AbstractEffect {
         player.sendInventoryUpdate(iu);
         player.broadcastUserInfo();
 
-        _disarmedPlayers.put(player.getObjectId(), itemToDisarm.getObjectId());
+        disarmedPlayers.put(player.getObjectId(), itemToDisarm.getObjectId());
     }
 
     @Override
@@ -84,7 +84,7 @@ public class Disarm extends AbstractEffect {
             return;
         }
 
-        final Integer itemObjectId = _disarmedPlayers.remove(player.getObjectId());
+        final Integer itemObjectId = disarmedPlayers.remove(player.getObjectId());
         if (itemObjectId == null) {
             return;
         }

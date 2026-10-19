@@ -22,33 +22,13 @@ package app.l2nx.highfive.mechanics.events.holders.actor.player;
 import app.l2nx.highfive.mechanics.events.EventType;
 import app.l2nx.highfive.mechanics.events.holders.IBaseEvent;
 import app.l2nx.highfive.network.GameClient;
+import lombok.Builder;
 
 /**
  * @author UnAfraid
  */
-public class OnPlayerRestore implements IBaseEvent {
-    private final int _objectId;
-    private final String _name;
-    private final GameClient _client;
-
-    public OnPlayerRestore(int objectId, String name, GameClient client) {
-        _objectId = objectId;
-        _name = name;
-        _client = client;
-    }
-
-    public int getObjectId() {
-        return _objectId;
-    }
-
-    public String getName() {
-        return _name;
-    }
-
-    public GameClient getClient() {
-        return _client;
-    }
-
+@Builder(toBuilder = true)
+public record OnPlayerRestore(int objectId, String name, GameClient client) implements IBaseEvent {
     @Override
     public EventType getType() {
         return EventType.ON_PLAYER_RESTORE;

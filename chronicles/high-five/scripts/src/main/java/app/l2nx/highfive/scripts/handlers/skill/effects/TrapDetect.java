@@ -31,7 +31,7 @@ import app.l2nx.highfive.util.StatSet;
  * @author UnAfraid
  */
 public class TrapDetect extends AbstractEffect {
-    private final int _power;
+    private final int power;
 
     public TrapDetect(Condition attachCond, Condition applyCond, StatSet set, StatSet params) {
         super(attachCond, applyCond, set, params);
@@ -40,7 +40,7 @@ public class TrapDetect extends AbstractEffect {
             throw new IllegalArgumentException(getClass().getSimpleName() + ": effect without power!");
         }
 
-        _power = params.getInt("power");
+        power = params.getInt("power");
     }
 
     @Override
@@ -55,7 +55,7 @@ public class TrapDetect extends AbstractEffect {
         }
 
         final Trap trap = (Trap) effected;
-        if (trap.getLevel() <= _power) {
+        if (trap.getLevel() <= power) {
             trap.setDetected(effector);
         }
     }

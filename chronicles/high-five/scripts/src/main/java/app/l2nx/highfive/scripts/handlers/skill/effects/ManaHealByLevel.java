@@ -34,12 +34,12 @@ import app.l2nx.highfive.util.StatSet;
  * @author UnAfraid
  */
 public class ManaHealByLevel extends AbstractEffect {
-    private final double _power;
+    private final double power;
 
     public ManaHealByLevel(Condition attachCond, Condition applyCond, StatSet set, StatSet params) {
         super(attachCond, applyCond, set, params);
 
-        _power = params.getDouble("power", 0);
+        power = params.getDouble("power", 0);
     }
 
     @Override
@@ -58,7 +58,7 @@ public class ManaHealByLevel extends AbstractEffect {
             return;
         }
 
-        double amount = _power;
+        double amount = power;
 
         // Recharged MP influenced by difference between target level and skill level.
         // If target is within 5 levels or lower then skill level there's no penalty.

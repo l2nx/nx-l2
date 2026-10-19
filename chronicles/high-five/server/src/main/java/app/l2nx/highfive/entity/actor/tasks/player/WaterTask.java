@@ -28,25 +28,25 @@ import app.l2nx.highfive.network.serverpackets.SystemMessage;
  * @author UnAfraid
  */
 public class WaterTask implements Runnable {
-    private final Player _player;
+    private final Player player;
 
     public WaterTask(Player player) {
-        _player = player;
+        this.player = player;
     }
 
     @Override
     public void run() {
-        if (_player == null) {
+        if (player == null) {
             return;
         }
 
-        final double reduceHp = (_player.getMaxHp() / 100.0) < 1 ? 1 : _player.getMaxHp() / 100.0;
-        _player.reduceCurrentHp(reduceHp, _player, false, false, null);
+        final double reduceHp = (player.getMaxHp() / 100.0) < 1 ? 1 : player.getMaxHp() / 100.0;
+        player.reduceCurrentHp(reduceHp, player, false, false, null);
 
         // reduced hp, becouse not rest
         final SystemMessage sm =
                 new SystemMessage(SystemMessageId.YOU_HAVE_TAKEN_S1_DAMAGE_BECAUSE_YOU_WERE_UNABLE_TO_BREATHE);
         sm.addInt((int) reduceHp);
-        _player.sendPacket(sm);
+        player.sendPacket(sm);
     }
 }

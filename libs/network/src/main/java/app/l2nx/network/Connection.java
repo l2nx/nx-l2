@@ -32,6 +32,8 @@ import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousSocketChannel;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * Manages a single network connection backed by an {@link AsynchronousSocketChannel}.<br>
@@ -39,25 +41,28 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * Owns the lifecycle of both the read buffer (single {@link ByteBuffer} obtained from the {@link ResourcePool}) and the write buffer array (supplied per-packet by the {@link Client}).<br>
  * All asynchronous I/O is dispatched from here; completion logic lives in {@link ReadHandler} and {@link WriteHandler}.<br>
  * <br>
- * Thread-safety: the {@code _client} reference is declared {@code volatile} because it is read by NIO completion-handler threads.<br>
+ * Thread-safety: the {@code client} reference is declared {@code volatile} because it is read by NIO completion-handler threads.<br>
  * An {@link AtomicBoolean} guards {@link #close()} against double-close races that can occur when a read failure and a write failure fire concurrently.
  * @param <T> the client type associated with this connection
  * @author JoeAlisson, Mobius
  */
 public class Connection<T extends Client<Connection<T>>> {
-    private final AsynchronousSocketChannel _channel;
-    private final ReadHandler<T> _readHandler;
-    private final WriteHandler<T> _writeHandler;
-    private final ConnectionConfig _config;
+    private final AsynchronousSocketChannel channel;
+    private final ReadHandler<T> readHandler;
+    private final WriteHandler<T> writeHandler;
+    private final ConnectionConfig config;
 
     /** Volatile because NIO completion-handler threads read this field. */
-    private volatile T _client;
+    @Setter
+    private volatile T client;
 
     /** Ensures {@link #close()} body executes at most once. */
-    private final AtomicBoolean _closed = new AtomicBoolean();
+    private final AtomicBoolean closed = new AtomicBoolean();
 
-    private ByteBuffer _readingBuffer;
-    private ByteBuffer[] _writingBuffers;
+    @Getter
+    private ByteBuffer readingBuffer;
+
+    private ByteBuffer[] writingBuffers;
 
     /**
      * Creates a new connection around an already-accepted channel.
@@ -71,18 +76,10 @@ public class Connection<T extends Client<Connection<T>>> {
             ReadHandler<T> readHandler,
             WriteHandler<T> writeHandler,
             ConnectionConfig config) {
-        _channel = channel;
-        _readHandler = readHandler;
-        _writeHandler = writeHandler;
-        _config = config;
-    }
-
-    /**
-     * Binds a client to this connection. Must be called exactly once, immediately after construction.
-     * @param client the owning client
-     */
-    public void setClient(T client) {
-        _client = client;
+        this.channel = channel;
+        this.readHandler = readHandler;
+        this.writeHandler = writeHandler;
+        this.config = config;
     }
 
     // ------------------------------------------------------------------
@@ -94,8 +91,8 @@ public class Connection<T extends Client<Connection<T>>> {
      * No-op if the channel has already been closed.
      */
     public void read() {
-        if (_channel.isOpen()) {
-            _channel.read(_readingBuffer, _client, _readHandler);
+        if (channel.isOpen()) {
+            channel.read(readingBuffer, client, readHandler);
         }
     }
 
@@ -103,9 +100,9 @@ public class Connection<T extends Client<Connection<T>>> {
      * Prepares for the next packet by recycling the old reading buffer, obtaining a fresh header-sized buffer from the pool and starting a read.
      */
     public void readHeader() {
-        if (_channel.isOpen()) {
+        if (channel.isOpen()) {
             recycleReadBuffer();
-            _readingBuffer = _config.resourcePool.getHeaderBuffer();
+            readingBuffer = config.resourcePool.getHeaderBuffer();
             read();
         }
     }
@@ -115,18 +112,10 @@ public class Connection<T extends Client<Connection<T>>> {
      * @param size required capacity in bytes
      */
     public void read(int size) {
-        if (_channel.isOpen()) {
-            _readingBuffer = _config.resourcePool.recycleAndGetNew(_readingBuffer, size);
+        if (channel.isOpen()) {
+            readingBuffer = config.resourcePool.recycleAndGetNew(readingBuffer, size);
             read();
         }
-    }
-
-    /**
-     * Returns the buffer that is currently receiving inbound data.
-     * @return the reading buffer, or {@code null} between packets
-     */
-    public ByteBuffer getReadingBuffer() {
-        return _readingBuffer;
     }
 
     // ------------------------------------------------------------------
@@ -139,11 +128,11 @@ public class Connection<T extends Client<Connection<T>>> {
      * @return {@code true} if the write was submitted; {@code false} if the channel is closed
      */
     public boolean write(ByteBuffer[] buffers) {
-        if (!_channel.isOpen()) {
+        if (!channel.isOpen()) {
             return false;
         }
 
-        _writingBuffers = buffers;
+        writingBuffers = buffers;
         write();
         return true;
     }
@@ -153,11 +142,10 @@ public class Connection<T extends Client<Connection<T>>> {
      * If the channel is closed or no buffers remain, signals the client via {@link Client#finishWriting()} so it can dequeue the next packet.
      */
     public void write() {
-        if (_channel.isOpen() && (_writingBuffers != null)) {
-            _channel.write(
-                    _writingBuffers, 0, _writingBuffers.length, -1, TimeUnit.MILLISECONDS, _client, _writeHandler);
-        } else if (_client != null) {
-            _client.finishWriting();
+        if (channel.isOpen() && (writingBuffers != null)) {
+            channel.write(writingBuffers, 0, writingBuffers.length, -1, TimeUnit.MILLISECONDS, client, writeHandler);
+        } else if (client != null) {
+            client.finishWriting();
         }
     }
 
@@ -166,14 +154,14 @@ public class Connection<T extends Client<Connection<T>>> {
      * @return {@code true} if at least one buffer was recycled
      */
     public boolean releaseWritingBuffer() {
-        final ByteBuffer[] buffers = _writingBuffers;
+        final ByteBuffer[] buffers = writingBuffers;
         if (buffers == null) {
             return false;
         }
 
-        _writingBuffers = null;
+        writingBuffers = null;
         for (ByteBuffer buf : buffers) {
-            _config.resourcePool.recycleBuffer(buf);
+            config.resourcePool.recycleBuffer(buf);
         }
 
         return true;
@@ -188,7 +176,7 @@ public class Connection<T extends Client<Connection<T>>> {
      * Safe to call from multiple threads - only the first invocation performs cleanup.
      */
     public void close() {
-        if (!_closed.compareAndSet(false, true)) {
+        if (!closed.compareAndSet(false, true)) {
             return;
         }
 
@@ -196,13 +184,13 @@ public class Connection<T extends Client<Connection<T>>> {
         releaseWritingBuffer();
 
         try {
-            if (_channel.isOpen()) {
-                _channel.close();
+            if (channel.isOpen()) {
+                channel.close();
             }
         } catch (IOException ignored) {
             // Channel was already broken - nothing useful to do.
         } finally {
-            _client = null;
+            client = null;
         }
     }
 
@@ -211,7 +199,7 @@ public class Connection<T extends Client<Connection<T>>> {
      * @return channel open state
      */
     public boolean isOpen() {
-        return _channel.isOpen();
+        return channel.isOpen();
     }
 
     // ------------------------------------------------------------------
@@ -224,7 +212,7 @@ public class Connection<T extends Client<Connection<T>>> {
      */
     public String getRemoteAddress() {
         try {
-            final InetSocketAddress remote = (InetSocketAddress) _channel.getRemoteAddress();
+            final InetSocketAddress remote = (InetSocketAddress) channel.getRemoteAddress();
             return remote.getAddress().getHostAddress();
         } catch (IOException e) {
             return "";
@@ -236,7 +224,7 @@ public class Connection<T extends Client<Connection<T>>> {
      * @return the resource pool
      */
     public ResourcePool getResourcePool() {
-        return _config.resourcePool;
+        return config.resourcePool;
     }
 
     /**
@@ -244,7 +232,7 @@ public class Connection<T extends Client<Connection<T>>> {
      * @return {@code true} if packet dropping is enabled
      */
     public boolean dropPackets() {
-        return _config.dropPackets;
+        return config.dropPackets;
     }
 
     /**
@@ -252,7 +240,7 @@ public class Connection<T extends Client<Connection<T>>> {
      * @return the drop threshold
      */
     public int dropPacketThreshold() {
-        return _config.dropPacketThreshold;
+        return config.dropPacketThreshold;
     }
 
     // ------------------------------------------------------------------
@@ -263,10 +251,10 @@ public class Connection<T extends Client<Connection<T>>> {
      * Returns the current reading buffer to the pool and nulls the reference.
      */
     private void recycleReadBuffer() {
-        final ByteBuffer buf = _readingBuffer;
+        final ByteBuffer buf = readingBuffer;
         if (buf != null) {
-            _readingBuffer = null;
-            _config.resourcePool.recycleBuffer(buf);
+            readingBuffer = null;
+            config.resourcePool.recycleBuffer(buf);
         }
     }
 }

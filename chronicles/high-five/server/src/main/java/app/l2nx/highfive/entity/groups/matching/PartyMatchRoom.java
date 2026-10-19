@@ -26,93 +26,93 @@ import app.l2nx.highfive.network.serverpackets.ExManagePartyRoomMember;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
 import java.util.ArrayList;
 import java.util.List;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * @author Gnacik
  */
 public class PartyMatchRoom {
-    private final int _id;
-    private String _title;
-    private int _loot;
-    private int _minLevel;
-    private int _maxLevel;
-    private int _maxmem;
-    private final List<Player> _members = new ArrayList<>();
+    @Getter
+    private final int id;
+
+    @Getter
+    @Setter
+    private String title;
+
+    @Getter
+    @Setter
+    private int lootType;
+
+    @Getter
+    @Setter
+    private int minLevel;
+
+    @Getter
+    @Setter
+    private int maxLevel;
+
+    @Getter
+    @Setter
+    private int maxMembers;
+
+    @Getter
+    private final List<Player> partyMembers = new ArrayList<>();
 
     public PartyMatchRoom(int id, String title, int loot, int minLevel, int maxLevel, int maxmem, Player owner) {
-        _id = id;
-        _title = title;
-        _loot = loot;
-        _minLevel = minLevel;
-        _maxLevel = maxLevel;
-        _maxmem = maxmem;
-        _members.add(owner);
-    }
-
-    public List<Player> getPartyMembers() {
-        return _members;
+        this.id = id;
+        this.title = title;
+        lootType = loot;
+        this.minLevel = minLevel;
+        this.maxLevel = maxLevel;
+        maxMembers = maxmem;
+        partyMembers.add(owner);
     }
 
     public void addMember(Player player) {
-        _members.add(player);
+        partyMembers.add(player);
     }
 
     public void deleteMember(Player player) {
         if (player != getOwner()) {
-            _members.remove(player);
+            partyMembers.remove(player);
             notifyMembersAboutExit(player);
-        } else if (_members.size() == 1) {
-            PartyMatchRoomList.getInstance().deleteRoom(_id);
+        } else if (partyMembers.size() == 1) {
+            PartyMatchRoomList.getInstance().deleteRoom(id);
         } else {
-            changeLeader(_members.get(1));
+            changeLeader(partyMembers.get(1));
             deleteMember(player);
         }
     }
 
     public void notifyMembersAboutExit(Player player) {
-        for (Player _member : _members) {
+        for (Player member : partyMembers) {
             final SystemMessage sm = new SystemMessage(SystemMessageId.C1_HAS_LEFT_THE_PARTY_ROOM);
             sm.addString(player.getName());
-            _member.sendPacket(sm);
-            _member.sendPacket(new ExManagePartyRoomMember(player, this, 2));
+            member.sendPacket(sm);
+            member.sendPacket(new ExManagePartyRoomMember(player, this, 2));
         }
     }
 
     public void changeLeader(Player newLeader) {
         // Get current leader
-        final Player oldLeader = _members.get(0);
+        final Player oldLeader = partyMembers.get(0);
 
         // Remove new leader
-        _members.remove(newLeader);
+        partyMembers.remove(newLeader);
 
         // Move him to first position.
-        _members.set(0, newLeader);
+        partyMembers.set(0, newLeader);
 
         // Add old leader as normal member.
-        _members.add(oldLeader);
+        partyMembers.add(oldLeader);
 
         // Broadcast change
-        for (Player member : _members) {
+        for (Player member : partyMembers) {
             member.sendPacket(new ExManagePartyRoomMember(newLeader, this, 1));
             member.sendPacket(new ExManagePartyRoomMember(oldLeader, this, 1));
             member.sendPacket(SystemMessageId.THE_LEADER_OF_THE_PARTY_ROOM_HAS_CHANGED);
         }
-    }
-
-    public int getId() {
-        return _id;
-    }
-
-    public int getLootType() {
-        return _loot;
-    }
-
-    public int getMinLevel() {
-        return _minLevel;
-    }
-
-    public int getMaxLevel() {
-        return _maxLevel;
     }
 
     /**
@@ -136,44 +136,14 @@ public class PartyMatchRoom {
      * @return the id
      */
     public int getLocation() {
-        return MapRegionData.getInstance().getBBs(_members.get(0));
+        return MapRegionData.getInstance().getBBs(partyMembers.get(0));
     }
 
     public int getMembers() {
-        return _members.size();
-    }
-
-    public int getMaxMembers() {
-        return _maxmem;
-    }
-
-    public String getTitle() {
-        return _title;
+        return partyMembers.size();
     }
 
     public Player getOwner() {
-        return _members.get(0);
-    }
-
-    /* SET */
-
-    public void setMinLevel(int minLevel) {
-        _minLevel = minLevel;
-    }
-
-    public void setMaxLevel(int maxLevel) {
-        _maxLevel = maxLevel;
-    }
-
-    public void setLootType(int loot) {
-        _loot = loot;
-    }
-
-    public void setMaxMembers(int maxmem) {
-        _maxmem = maxmem;
-    }
-
-    public void setTitle(String title) {
-        _title = title;
+        return partyMembers.get(0);
     }
 }

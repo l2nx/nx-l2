@@ -31,31 +31,31 @@ import java.util.List;
  * @author KenM
  */
 public class ExShowFortressSiegeInfo extends ServerPacket {
-    private final int _fortId;
-    private final int _size;
-    private final int _csize;
-    private final int _csize2;
+    private final int fortId;
+    private final int size;
+    private final int csize;
+    private final int csize2;
 
     /**
      * @param fort
      */
     public ExShowFortressSiegeInfo(Fort fort) {
-        _fortId = fort.getResidenceId();
-        _size = fort.getFortSize();
-        final List<FortSpawnHolder> commanders = FortSiegeManager.getInstance().getCommanderSpawnList(_fortId);
-        _csize = ((commanders == null) ? 0 : commanders.size());
-        _csize2 = fort.getSiege().getCommanders().size();
+        fortId = fort.getResidenceId();
+        size = fort.getFortSize();
+        final List<FortSpawnHolder> commanders = FortSiegeManager.getInstance().getCommanderSpawnList(fortId);
+        csize = ((commanders == null) ? 0 : commanders.size());
+        csize2 = fort.getSiege().getCommanders().size();
     }
 
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_SHOW_FORTRESS_SIEGE_INFO.writeId(this, buffer);
-        buffer.writeInt(_fortId); // Fortress Id
-        buffer.writeInt(_size); // Total Barracks Count
-        if (_csize > 0) {
-            switch (_csize) {
+        buffer.writeInt(fortId); // Fortress Id
+        buffer.writeInt(size); // Total Barracks Count
+        if (csize > 0) {
+            switch (csize) {
                 case 3: {
-                    switch (_csize2) {
+                    switch (csize2) {
                         case 0: {
                             buffer.writeInt(3);
                             break;
@@ -77,7 +77,7 @@ public class ExShowFortressSiegeInfo extends ServerPacket {
                 }
                 case 4: // TODO: change 4 to 5 once control room supported
                 {
-                    switch (_csize2) {
+                    switch (csize2) {
                         // TODO: once control room supported, update writeInt(0x0x) to support 5th room
                         case 0: {
                             buffer.writeInt(5);
@@ -104,7 +104,7 @@ public class ExShowFortressSiegeInfo extends ServerPacket {
                 }
             }
         } else {
-            for (int i = 0; i < _size; i++) {
+            for (int i = 0; i < size; i++) {
                 buffer.writeInt(0);
             }
         }

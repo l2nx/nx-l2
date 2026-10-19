@@ -62,7 +62,7 @@ public class EnergySeeds extends Script {
     private static final int RESPAWN = 480000;
     private static final int RANDOM_RESPAWN_OFFSET = 180000;
     private static final Map<Integer, ESSpawn> SPAWNS = new HashMap<>();
-    protected static final Map<Npc, Integer> _spawnedNpcs = new ConcurrentHashMap<>();
+    protected static final Map<Npc, Integer> spawnedNpcs = new ConcurrentHashMap<>();
 
     private static List<Npc> soiList = new ArrayList<>();
     private static List<Npc> soiclosemouthList = new ArrayList<>();
@@ -328,11 +328,11 @@ public class EnergySeeds extends Script {
 
         npc.deleteMe();
 
-        if (_spawnedNpcs.containsKey(npc) && SPAWNS.containsKey(_spawnedNpcs.get(npc))) {
-            final ESSpawn spawn = SPAWNS.get(_spawnedNpcs.get(npc));
+        if (spawnedNpcs.containsKey(npc) && SPAWNS.containsKey(spawnedNpcs.get(npc))) {
+            final ESSpawn spawn = SPAWNS.get(spawnedNpcs.get(npc));
             spawn.scheduleRespawn(RESPAWN + getRandom(RANDOM_RESPAWN_OFFSET));
-            _spawnedNpcs.remove(npc);
-            if (isSeedActive(spawn._seedId)) {
+            spawnedNpcs.remove(npc);
+            if (isSeedActive(spawn.seedId)) {
                 int itemId = 0;
 
                 switch (npc.getId()) {
@@ -379,7 +379,7 @@ public class EnergySeeds extends Script {
                     caster.addItem(ItemProcessType.REWARD, itemId, getRandom(1, RATE), null, true);
                 }
 
-                seedCollectEvent(caster, npc, spawn._seedId);
+                seedCollectEvent(caster, npc, spawn.seedId);
             }
         }
     }
@@ -410,16 +410,16 @@ public class EnergySeeds extends Script {
 
     @Override
     public void onKill(Npc npc, Player player, boolean isSummon) {
-        if (_spawnedNpcs.containsKey(npc) && SPAWNS.containsKey(_spawnedNpcs.get(npc))) {
-            SPAWNS.get(_spawnedNpcs.get(npc)).scheduleRespawn(RESPAWN + getRandom(RANDOM_RESPAWN_OFFSET));
-            _spawnedNpcs.remove(npc);
+        if (spawnedNpcs.containsKey(npc) && SPAWNS.containsKey(spawnedNpcs.get(npc))) {
+            SPAWNS.get(spawnedNpcs.get(npc)).scheduleRespawn(RESPAWN + getRandom(RANDOM_RESPAWN_OFFSET));
+            spawnedNpcs.remove(npc);
         }
     }
 
     public void startAI() {
         // spawn all NPCs
         for (ESSpawn spawn : SPAWNS.values()) {
-            if (isSeedActive(spawn._seedId)) {
+            if (isSeedActive(spawn.seedId)) {
                 spawn.scheduleRespawn(0);
             }
         }
@@ -428,15 +428,15 @@ public class EnergySeeds extends Script {
     public void startAI(GraciaSeeds type) {
         // spawn all NPCs
         for (ESSpawn spawn : SPAWNS.values()) {
-            if (spawn._seedId == type) {
+            if (spawn.seedId == type) {
                 spawn.scheduleRespawn(0);
             }
         }
     }
 
     public void stopAI(GraciaSeeds type) {
-        for (Entry<Npc, Integer> entry : _spawnedNpcs.entrySet()) {
-            if (type == SPAWNS.get(entry.getValue())._seedId) {
+        for (Entry<Npc, Integer> entry : spawnedNpcs.entrySet()) {
+            if (type == SPAWNS.get(entry.getValue()).seedId) {
                 entry.getKey().deleteMe();
             }
         }
@@ -1874,26 +1874,26 @@ public class EnergySeeds extends Script {
     }
 
     private class ESSpawn {
-        protected final int _spawnId;
-        protected final GraciaSeeds _seedId;
-        protected final int[] _npcIds;
-        protected final Location _loc;
+        protected final int spawnId;
+        protected final GraciaSeeds seedId;
+        protected final int[] npcIds;
+        protected final Location loc;
 
         public ESSpawn(int spawnId, GraciaSeeds seedId, Location loc, int[] npcIds) {
-            _spawnId = spawnId;
-            _seedId = seedId;
-            _loc = loc;
-            _npcIds = npcIds;
+            this.spawnId = spawnId;
+            this.seedId = seedId;
+            this.loc = loc;
+            this.npcIds = npcIds;
         }
 
         public void scheduleRespawn(long waitTime) {
             ThreadPool.schedule(
                     () -> {
                         // if the AI is inactive, do not spawn the NPC
-                        if (isSeedActive(_seedId)) {
+                        if (isSeedActive(seedId)) {
                             // get a random NPC that should spawn at this location
-                            final Integer spawnId = _spawnId; // the map uses "Integer", not "int"
-                            _spawnedNpcs.put(addSpawn(_npcIds[getRandom(_npcIds.length)], _loc, false, 0), spawnId);
+                            final Integer spawnId = this.spawnId; // the map uses "Integer", not "int"
+                            spawnedNpcs.put(addSpawn(npcIds[getRandom(npcIds.length)], loc, false, 0), spawnId);
                         }
                     },
                     waitTime);

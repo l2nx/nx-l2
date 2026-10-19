@@ -42,25 +42,40 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.StringTokenizer;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class SiegeManager {
-    private static final Logger LOGGER = Logger.getLogger(SiegeManager.class.getName());
 
     private static final String SIEGE_CONFIG_FILE = "./config/Siege.ini";
 
-    private final Map<Integer, List<TowerSpawn>> _controlTowers = new HashMap<>();
-    private final Map<Integer, List<TowerSpawn>> _flameTowers = new HashMap<>();
+    private final Map<Integer, List<TowerSpawn>> controlTowers = new HashMap<>();
+    private final Map<Integer, List<TowerSpawn>> flameTowers = new HashMap<>();
 
-    private int _siegeCycle = 2; // 2 weeks by default.
-    private int _attackerMaxClans = 500; // Max number of clans.
-    private int _attackerRespawnDelay = 0; // Time in ms. Changeable in siege.config.
-    private int _defenderMaxClans = 500; // Max number of clans.
-    private int _flagMaxCount = 1; // Changeable in siege.config.
-    private int _siegeClanMinLevel = 5; // Changeable in siege.config.
-    private int _siegeLength = 120; // Time in minute. Changeable in siege.config.
-    private int _bloodAllianceReward = 0; // Number of Blood Alliance items reward for successful castle defending.
+    @Getter
+    private int siegeCycle = 2; // 2 weeks by default.
+
+    @Getter
+    private int attackerMaxClans = 500; // Max number of clans.
+
+    @Getter
+    private int attackerRespawnDelay = 0; // Time in ms. Changeable in siege.config.
+
+    @Getter
+    private int defenderMaxClans = 500; // Max number of clans.
+
+    @Getter
+    private int flagMaxCount = 1; // Changeable in siege.config.
+
+    @Getter
+    private int siegeClanMinLevel = 5; // Changeable in siege.config.
+
+    @Getter
+    private int siegeLength = 120; // Time in minute. Changeable in siege.config.
+
+    @Getter
+    private int bloodAllianceReward = 0; // Number of Blood Alliance items reward for successful castle defending.
 
     protected SiegeManager() {
         load();
@@ -100,10 +115,7 @@ public class SiegeManager {
                 }
             }
         } catch (Exception e) {
-            LOGGER.log(
-                    Level.WARNING,
-                    getClass().getSimpleName() + ": Exception: checkIsRegistered(): " + e.getMessage(),
-                    e);
+            log.warn("Exception: checkIsRegistered(): {}", e.getMessage(), e);
         }
 
         return register;
@@ -120,14 +132,14 @@ public class SiegeManager {
         final ConfigReader siegeConfig = new ConfigReader(SIEGE_CONFIG_FILE);
 
         // Siege configurations.
-        _siegeCycle = siegeConfig.getInt("SiegeCycle", 2);
-        _attackerMaxClans = siegeConfig.getInt("AttackerMaxClans", 500);
-        _attackerRespawnDelay = siegeConfig.getInt("AttackerRespawn", 0);
-        _defenderMaxClans = siegeConfig.getInt("DefenderMaxClans", 500);
-        _flagMaxCount = siegeConfig.getInt("MaxFlags", 1);
-        _siegeClanMinLevel = siegeConfig.getInt("SiegeClanMinLevel", 5);
-        _siegeLength = siegeConfig.getInt("SiegeLength", 120);
-        _bloodAllianceReward = siegeConfig.getInt("BloodAllianceReward", 1);
+        siegeCycle = siegeConfig.getInt("SiegeCycle", 2);
+        attackerMaxClans = siegeConfig.getInt("AttackerMaxClans", 500);
+        attackerRespawnDelay = siegeConfig.getInt("AttackerRespawn", 0);
+        defenderMaxClans = siegeConfig.getInt("DefenderMaxClans", 500);
+        flagMaxCount = siegeConfig.getInt("MaxFlags", 1);
+        siegeClanMinLevel = siegeConfig.getInt("SiegeClanMinLevel", 5);
+        siegeLength = siegeConfig.getInt("SiegeLength", 120);
+        bloodAllianceReward = siegeConfig.getInt("BloodAllianceReward", 1);
 
         for (Castle castle : CastleManager.getInstance().getCastles()) {
             final List<TowerSpawn> controlTowers = new ArrayList<>();
@@ -146,8 +158,7 @@ public class SiegeManager {
 
                     controlTowers.add(new TowerSpawn(npcId, new Location(x, y, z)));
                 } catch (Exception e) {
-                    LOGGER.warning(getClass().getSimpleName() + ": Error while loading control tower(s) for "
-                            + castle.getName() + " castle.");
+                    log.warn("Error while loading control tower(s) for {} castle.", castle.getName());
                 }
             }
 
@@ -172,13 +183,12 @@ public class SiegeManager {
 
                     flameTowers.add(new TowerSpawn(npcId, new Location(x, y, z), zoneList));
                 } catch (Exception e) {
-                    LOGGER.warning(getClass().getSimpleName() + ": Error while loading flame tower(s) for "
-                            + castle.getName() + " castle.");
+                    log.warn("Error while loading flame tower(s) for {} castle.", castle.getName());
                 }
             }
 
-            _controlTowers.put(castle.getResidenceId(), controlTowers);
-            _flameTowers.put(castle.getResidenceId(), flameTowers);
+            this.controlTowers.put(castle.getResidenceId(), controlTowers);
+            this.flameTowers.put(castle.getResidenceId(), flameTowers);
             MercTicketManager.MERCS_MAX_PER_CASTLE[castle.getResidenceId() - 1] = siegeConfig.getInt(
                     castle.getName() + "MaxMercenaries",
                     MercTicketManager.MERCS_MAX_PER_CASTLE[castle.getResidenceId() - 1]);
@@ -190,31 +200,11 @@ public class SiegeManager {
     }
 
     public List<TowerSpawn> getControlTowers(int castleId) {
-        return _controlTowers.get(castleId);
+        return controlTowers.get(castleId);
     }
 
     public List<TowerSpawn> getFlameTowers(int castleId) {
-        return _flameTowers.get(castleId);
-    }
-
-    public int getSiegeCycle() {
-        return _siegeCycle;
-    }
-
-    public int getAttackerMaxClans() {
-        return _attackerMaxClans;
-    }
-
-    public int getAttackerRespawnDelay() {
-        return _attackerRespawnDelay;
-    }
-
-    public int getDefenderMaxClans() {
-        return _defenderMaxClans;
-    }
-
-    public int getFlagMaxCount() {
-        return _flagMaxCount;
+        return flameTowers.get(castleId);
     }
 
     public Siege getSiege(ILocational loc) {
@@ -235,18 +225,6 @@ public class SiegeManager {
         return null;
     }
 
-    public int getSiegeClanMinLevel() {
-        return _siegeClanMinLevel;
-    }
-
-    public int getSiegeLength() {
-        return _siegeLength;
-    }
-
-    public int getBloodAllianceReward() {
-        return _bloodAllianceReward;
-    }
-
     public List<Siege> getSieges() {
         final List<Siege> sieges = new ArrayList<>();
         for (Castle castle : CastleManager.getInstance().getCastles()) {
@@ -262,11 +240,11 @@ public class SiegeManager {
             ps.setInt(1, castleId);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
-                    _flameTowers.get(castleId).get(rs.getInt("towerIndex")).setUpgradeLevel(rs.getInt("level"));
+                    flameTowers.get(castleId).get(rs.getInt("towerIndex")).setUpgradeLevel(rs.getInt("level"));
                 }
             }
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, "Exception: loadTrapUpgrade(): " + e.getMessage(), e);
+            log.warn("Exception: loadTrapUpgrade(): {}", e.getMessage(), e);
         }
     }
 

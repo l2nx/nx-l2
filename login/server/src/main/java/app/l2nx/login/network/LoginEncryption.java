@@ -67,17 +67,17 @@ public class LoginEncryption {
     private static final int CHECKSUM_SIZE = 8;
 
     // Session-specific crypt instance, set once the client key is negotiated.
-    private PacketCipher _sessionCrypt;
+    private PacketCipher sessionCrypt;
 
     // Tracks whether the connection is still using the static key for encryption.
-    private boolean _usingStaticKey = true;
+    private boolean usingStaticKey = true;
 
     /**
      * Sets the session-specific Blowfish key used after the static phase.
      * @param key the negotiated session Blowfish key
      */
     public void setKey(byte[] key) {
-        _sessionCrypt = new LittleEndianBlowfishCipher(key);
+        sessionCrypt = new LittleEndianBlowfishCipher(key);
     }
 
     /**
@@ -95,7 +95,7 @@ public class LoginEncryption {
         }
 
         // Decrypt and verify.
-        _sessionCrypt.decrypt(raw, 0, size);
+        sessionCrypt.decrypt(raw, 0, size);
         final boolean valid = XorChecksum.verify(raw, 0, size);
 
         // Write back to buffer if valid.
@@ -114,7 +114,7 @@ public class LoginEncryption {
      * @return the encrypted packet size including headers, padding and checksum/XOR data
      */
     private int encryptedSize(int dataSize) {
-        final int headerSize = _usingStaticKey ? STATIC_HEADER_SIZE : DYNAMIC_HEADER_SIZE;
+        final int headerSize = usingStaticKey ? STATIC_HEADER_SIZE : DYNAMIC_HEADER_SIZE;
         int sizeWithHeader = dataSize + headerSize;
 
         // Align to Blowfish block size (always pad at least one block).
@@ -143,13 +143,13 @@ public class LoginEncryption {
         }
 
         // Encrypt.
-        if (_usingStaticKey) {
+        if (usingStaticKey) {
             RollingXor.encrypt(raw, 0, packetSize, LoginController.SECURE_RANDOM.nextInt());
             STATIC_CRYPT.encrypt(raw, 0, packetSize);
-            _usingStaticKey = false;
+            usingStaticKey = false;
         } else {
             XorChecksum.append(raw, 0, packetSize);
-            _sessionCrypt.encrypt(raw, 0, packetSize);
+            sessionCrypt.encrypt(raw, 0, packetSize);
         }
 
         // Write back to buffer.
