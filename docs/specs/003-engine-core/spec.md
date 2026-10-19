@@ -113,21 +113,29 @@ flowchart LR
 
 The steps form a track that runs alongside the stages of [spec 001 §11](../001-project-design.md#11-stages); the
 dependency column ties them together. Each step ships on its own, ends with a playable server and is accepted by a
-bot load test that includes a siege scenario. Scripts keep calling the same facades at every step.
+bot load test that includes a siege scenario (E0). Until E0 exists, a step is accepted by its metrics (E1) and by
+playing with a real client. Scripts keep calling the same facades at every step.
 
-| #   | Step                                                                                                                                                                      | Depends on                          |
-| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------- |
-| E1  | Metrics: pass time per partition and subsystem, queue depths ([execution.md §8](execution.md#8-budget-and-metrics))                                                       | spec 002 metrics                    |
-| E2  | Identity: UUIDv7 keys in the PostgreSQL baseline, wire-handle allocator ([persistence.md §1–2](persistence.md))                                                           | stage 3 (written into its baseline) |
-| E3  | Value transactions, ledger, `operation_id`, outbox                                                                                                                        | E2                                  |
-| E4  | Database access off game threads; write-behind with a 30 s window                                                                                                         | E2                                  |
-| E5  | `GameClock` and RNG injected instead of the system clock and `Rnd`; behaviour unchanged                                                                                   | —                                   |
-| E6  | World partition as single writer: session queues, and every `ThreadPool` task that touches the world routed into its inbox; then locks and concurrent collections removed | stage 4 (Netty), E1, E5             |
-| E7  | Subsystems moved from `ThreadPool` timers to partition deadlines one at a time: effects, combat, casting, AI, regeneration; movement together with `nx-physics`           | E6                                  |
-| E8  | Replication phase                                                                                                                                                         | E6                                  |
-| E9  | Global services; instances and olympiad matches as their own partitions                                                                                                   | E6                                  |
-| E10 | Package rework by feature slice, alongside E6–E9; moves and content changes in separate commits                                                                           | —                                   |
-| E11 | Data-oriented hot paths where the profile shows them                                                                                                                      | E7, E8                              |
+| #   | Step                                                                                                                                                                                                                                                                              | Depends on                               |
+| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
+| E0  | Bot load harness: headless clients speaking the High Five game protocol, scenarios for login, movement, PvE, PvP and a mass siege, run against the local Compose stack ([#19](https://github.com/l2nx/nx-l2/issues/19)); reports client-side latency and reads the server metrics | stage 4 (Netty client in `libs/network`) |
+| E1  | Metrics: first a baseline of the legacy execution (task and packet durations per type, pool queue depths), then pass time per partition and phase as partitions appear ([execution.md §8](execution.md#8-budget-and-metrics))                                                     | spec 002 metrics                         |
+| E2  | Identity: UUIDv7 keys in the PostgreSQL baseline, wire-handle allocator ([persistence.md §1–2](persistence.md))                                                                                                                                                                   | stage 3 (written into its baseline)      |
+| E3  | Value transactions, ledger, `operation_id`, outbox                                                                                                                                                                                                                                | E2                                       |
+| E4  | Database access off game threads; write-behind with a 30 s window                                                                                                                                                                                                                 | E2                                       |
+| E5  | `GameClock` and RNG injected instead of the system clock and `Rnd`; behaviour unchanged                                                                                                                                                                                           | —                                        |
+| E6  | World partition as single writer: session queues, and every `ThreadPool` task that touches the world routed into its inbox; then locks and concurrent collections removed                                                                                                         | stage 4 (Netty), E1, E5                  |
+| E7  | Subsystems moved from `ThreadPool` timers to partition deadlines one at a time: effects, combat, casting, AI, regeneration; movement together with `nx-physics`                                                                                                                   | E6                                       |
+| E8  | Replication phase                                                                                                                                                                                                                                                                 | E6                                       |
+| E9  | Global services; instances and olympiad matches as their own partitions                                                                                                                                                                                                           | E6                                       |
+| E10 | Package rework by feature slice, alongside E6–E9; moves and content changes in separate commits                                                                                                                                                                                   | —                                        |
+| E11 | Data-oriented hot paths where the profile shows them                                                                                                                                                                                                                              | E7, E8                                   |
+
+How E6 works without rewriting subsystems: `ThreadPool` keeps its timing, but the body of every task submitted by
+game code is handed to the world partition's inbox and runs on the partition thread; client packets go through the
+session queues ([execution.md §3](execution.md#3-inbox-and-session-queues)). Tasks that never touch game state
+(database, network, maintenance) keep running on their own threads and are marked as such. From then on the world is
+single-writer even though the code still looks like Mobius; E7 then replaces the timers themselves.
 
 E6 is the step with the main risk: legacy code running on one thread may not fit the budget. E1 measures it before
 E6 lands; an overrun is fixed by profiling, not by returning to shared-pool threading.

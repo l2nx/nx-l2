@@ -29,7 +29,8 @@ One pass runs, in this order:
 6. **Flush:** per-connection buffers handed to Netty, one flush per connection.
 
 Phases 1–4 may enqueue further work for the same pass (a triggered skill, a death caused by a damage tick); the
-loop drains it before phase 5, with a depth limit per pass so a trigger chain cannot loop forever.
+loop drains it before phase 5, with a depth limit per pass (`trigger-depth`, default 8) so a trigger chain cannot
+loop forever.
 
 ## 3. Inbox and session queues
 
@@ -40,7 +41,7 @@ loop drains it before phase 5, with a depth limit per pass so a trigger chain ca
   packets of one client could execute concurrently or reorder (trade confirm against an item move, target change
   against attack); that class of race and duplication disappears.
 - **Fairness and flood control:** the partition walks ready sessions round-robin and takes at most
-  `packets-per-pass` (configurable) from each; the rest waits for the next pass. A flooding client delays only
+  `packets-per-pass` (configurable, default 16) from each; the rest waits for the next pass. A flooding client delays only
   itself, and order is kept.
 - **Packets outside the world** (login key exchange, ping, character selection) are handled by the session state
   machine outside the partition, in order. A packet that arrives in the wrong state is dropped.
@@ -61,7 +62,7 @@ loop drains it before phase 5, with a depth limit per pass so a trigger chain ca
 - **Cancellation is lazy.** A timer entry carries the target handle and a generation; when it fires, it is ignored
   if the target is gone or its generation changed. Mass cancellation (cleanse, death, logout) costs nothing on the
   wheel.
-- **Overdue timers** (a pass that ran late) execute in deadline order in the next pass, up to a per-pass cap; the
+- **Overdue timers** (a pass that ran late) execute in deadline order in the next pass, up to a per-pass cap (`overdue-per-pass`, default 4096); the
   remainder continues in the following pass.
 - **No `ThreadPool.schedule` in game code** once a subsystem is migrated (E7). During migration the rule is: a task
   that touches world state is executed through the owning partition's inbox (E6).
@@ -78,6 +79,7 @@ Systems that do work per entity regardless of input run on their own cadence, ex
 | AI think        | per AI type     | taken from the AI's own interval                                     |
 
 Every cadence is a configuration property; the values above are starting points to be tuned with bot load tests.
+The same holds for every other default in this spec.
 No game logic counts ticks or passes.
 
 Not periodic systems: routing outgoing events and coalesced state runs in every pass (replication phase), and
@@ -115,7 +117,7 @@ assert ownership on entry to partition code.
 
 - **Micrometer meters per partition:** pass duration (timer with p95, p99), time per phase and per periodic system,
   inbox depth, session queue depth, overdue timers, packets per pass.
-- **A pass over budget** (`pass-budget`, configurable) is counted and logged with the phase breakdown.
+- **A pass over budget** (`pass-budget`, configurable, default 50 ms) is counted and logged with the phase breakdown.
 - **Bot load tests** with a siege scenario on the full local stack are the acceptance criterion for every migration
   step ([spec.md §6](spec.md#6-migration)).
 

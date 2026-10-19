@@ -42,7 +42,7 @@ Mobius has no known lists: visibility is computed per query by scanning neighbou
 
 ## 5. Priority and budgets
 
-- **Byte budget per connection per pass,** configurable. Critical packets are never cut; coalescable state of
+- **Byte budget per connection per pass,** configurable, default 32 KB. Critical packets are never cut; coalescable state of
   low-priority objects is sent less often; cosmetic packets are dropped first.
 - **Priority:** own target, own party, whoever attacks the player, then by distance. This is what keeps a siege with
   hundreds of players inside the network budget.
@@ -57,7 +57,8 @@ Mobius has no known lists: visibility is computed per query by scanning neighbou
 
 ## 7. Movement contract
 
-Taken from the measured client behaviour in `nx-physics`:
+Taken from the measured client behaviour recorded in the `nx-physics` repository (its `docs/specs`, specs 001–008:
+click and keyboard movement, follow, validation cadence, start ramp, divergence):
 
 - every accepted movement request is answered (silence lets the client simulate on its own);
 - repeated echoes are deduplicated (about 200 ms), or the client shakes;

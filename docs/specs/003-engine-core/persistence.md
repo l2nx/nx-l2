@@ -5,7 +5,8 @@ PostgreSQL. Part of [spec 003](spec.md). Database choice: [spec 001 §5.1](../00
 
 ## 1. Persistent identity
 
-- **Everything persistent is keyed by UUIDv7:** accounts' game data, characters, clans, items, mail, value
+- **Everything persistent is keyed by UUIDv7:** accounts (the login server's table gets a UUIDv7 key; game tables
+  reference it instead of `account_name`), characters, clans, items, mail, value
   operations, ledger entries, and every component table row that needs its own key.
 - **Why UUIDv7 and not a `BIGINT` sequence:**
   - generated in process, without a database round trip or block allocation, so an item can be created on the
@@ -70,6 +71,8 @@ Everything that is not a value transfer: position, experience, HP and MP, effect
   `SET LOCAL synchronous_commit = off`.
 - **Logout and shutdown save synchronously:** a character is not released until its state is written (spec 002 stop
   order: engine stop saves players).
+- **Change capture lags by the window.** The adapter's change capture reads the database, so the platform sees
+  write-behind state up to one window late; value operations reach it at commit through the outbox (§5).
 - **No JDBC on a partition thread.** A synchronous query on a loop thread is a defect and is reported by metrics and a
   warning.
 

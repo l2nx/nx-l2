@@ -37,7 +37,7 @@ then the effect ends. Across effects, `(deadline, sequence)` order applies.
 ## 5. Periodic ticks
 
 - **The next tick is `nextTickAt + period`,** so ticks do not drift with pass timing.
-- **A late pass runs the owed ticks in order,** up to a per-pass cap; the rest continues in the next pass. Damage
+- **A late pass runs the owed ticks in order,** up to 10 per effect per pass; the rest continues in the next pass. Damage
   and healing owed are applied, not lost.
 - **Toggles and dances** consume MP per tick through the same mechanism; a tick that cannot pay ends the effect.
 
@@ -53,7 +53,8 @@ then the effect ends. Across effects, `(deadline, sequence)` order applies.
 - **On-hit, on-skill, reflect, vampiric, triggered skills by chance** are called synchronously from the combat or
   casting system while it handles the hit or cast, in a fixed order. They are deterministic for a given RNG state.
 - **A skill a trigger casts** is queued as work of the same pass ([execution.md §2](execution.md#2-pass-phases)),
-  not executed recursively; a depth limit stops trigger chains.
+  not executed recursively; the `trigger-depth` limit ([execution.md §2](execution.md#2-pass-phases)) stops
+  trigger chains.
 - **Auras, cubics and channelized skills** run on the same deadlines; their targets are found through the partition
   registry and visibility at the moment of the tick.
 
