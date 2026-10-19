@@ -2,17 +2,17 @@
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -35,121 +35,106 @@ import app.l2nx.highfive.network.NpcStringId;
  * </ul>
  * @author BazookaRpm
  */
-public class WalkNode extends Location
-{
-	// Constants.
-	private static final int NO_DELAY = 0;
-	private static final byte MOVE_WALK = 0;
-	private static final byte MOVE_RUN = 1;
-	private static final byte CHAT_EMPTY = 0;
-	private static final byte CHAT_PRESENT = 1;
-	private static final String EMPTY_TEXT = "";
-	
-	// Node Data.
-	private final int _delayMs;
-	private final byte _moveMode;
-	private final byte _chatState;
-	private final NpcStringId _npcString;
-	private final String _chatText;
-	
-	/**
-	 * Creates a new walking node.<br>
-	 * Coordinates are stored in {@link Location} and metadata locally.
-	 * @param moveX X coordinate.
-	 * @param moveY Y coordinate.
-	 * @param moveZ Z coordinate.
-	 * @param delay Delay in milliseconds.
-	 * @param runToLocation {@code true} to run to the node.
-	 * @param npcString Optional NpcStringId, or {@code null}.
-	 * @param chatText Optional chat text, or {@code null}.
-	 */
-	public WalkNode(int moveX, int moveY, int moveZ, int delay, boolean runToLocation, NpcStringId npcString, String chatText)
-	{
-		super(moveX, moveY, moveZ);
-		
-		_delayMs = delay;
-		
-		byte mode;
-		if (runToLocation)
-		{
-			mode = MOVE_RUN;
-		}
-		else
-		{
-			mode = MOVE_WALK;
-		}
-		_moveMode = mode;
-		
-		String text = chatText;
-		if (text == null)
-		{
-			text = EMPTY_TEXT;
-		}
-		
-		byte state;
-		if (text.isEmpty())
-		{
-			state = CHAT_EMPTY;
-		}
-		else
-		{
-			state = CHAT_PRESENT;
-		}
-		_chatState = state;
-		
-		_npcString = npcString;
-		_chatText = text;
-	}
-	
-	/**
-	 * Gets the configured delay.
-	 * @return The delay
-	 */
-	public int getDelay()
-	{
-		final int value = _delayMs;
-		if (value == NO_DELAY)
-		{
-			return NO_DELAY;
-		}
-		
-		return value;
-	}
-	
-	/**
-	 * Checks whether the node should be reached running.
-	 * @return {@code true} if running
-	 */
-	public boolean runToLocation()
-	{
-		return _moveMode == MOVE_RUN;
-	}
-	
-	/**
-	 * Gets the NpcStringId for this node.
-	 * @return The NpcStringId
-	 */
-	public NpcStringId getNpcString()
-	{
-		return _npcString;
-	}
-	
-	/**
-	 * Gets the chat text for this node.
-	 * @return The chat text
-	 */
-	public String getChatText()
-	{
-		if (_npcString != null)
-		{
-			throw new IllegalStateException("NpcStringId is defined for this walker node!");
-		}
-		
-		if (_chatState == CHAT_PRESENT)
-		{
-			return _chatText;
-		}
-		
-		return EMPTY_TEXT;
-	}
+public class WalkNode extends Location {
+    // Constants.
+    private static final int NO_DELAY = 0;
+    private static final byte MOVE_WALK = 0;
+    private static final byte MOVE_RUN = 1;
+    private static final byte CHAT_EMPTY = 0;
+    private static final byte CHAT_PRESENT = 1;
+    private static final String EMPTY_TEXT = "";
+
+    // Node Data.
+    private final int _delayMs;
+    private final byte _moveMode;
+    private final byte _chatState;
+    private final NpcStringId _npcString;
+    private final String _chatText;
+
+    /**
+     * Creates a new walking node.<br>
+     * Coordinates are stored in {@link Location} and metadata locally.
+     * @param moveX X coordinate.
+     * @param moveY Y coordinate.
+     * @param moveZ Z coordinate.
+     * @param delay Delay in milliseconds.
+     * @param runToLocation {@code true} to run to the node.
+     * @param npcString Optional NpcStringId, or {@code null}.
+     * @param chatText Optional chat text, or {@code null}.
+     */
+    public WalkNode(
+            int moveX, int moveY, int moveZ, int delay, boolean runToLocation, NpcStringId npcString, String chatText) {
+        super(moveX, moveY, moveZ);
+
+        _delayMs = delay;
+
+        byte mode;
+        if (runToLocation) {
+            mode = MOVE_RUN;
+        } else {
+            mode = MOVE_WALK;
+        }
+        _moveMode = mode;
+
+        String text = chatText;
+        if (text == null) {
+            text = EMPTY_TEXT;
+        }
+
+        byte state;
+        if (text.isEmpty()) {
+            state = CHAT_EMPTY;
+        } else {
+            state = CHAT_PRESENT;
+        }
+        _chatState = state;
+
+        _npcString = npcString;
+        _chatText = text;
+    }
+
+    /**
+     * Gets the configured delay.
+     * @return The delay
+     */
+    public int getDelay() {
+        final int value = _delayMs;
+        if (value == NO_DELAY) {
+            return NO_DELAY;
+        }
+
+        return value;
+    }
+
+    /**
+     * Checks whether the node should be reached running.
+     * @return {@code true} if running
+     */
+    public boolean runToLocation() {
+        return _moveMode == MOVE_RUN;
+    }
+
+    /**
+     * Gets the NpcStringId for this node.
+     * @return The NpcStringId
+     */
+    public NpcStringId getNpcString() {
+        return _npcString;
+    }
+
+    /**
+     * Gets the chat text for this node.
+     * @return The chat text
+     */
+    public String getChatText() {
+        if (_npcString != null) {
+            throw new IllegalStateException("NpcStringId is defined for this walker node!");
+        }
+
+        if (_chatState == CHAT_PRESENT) {
+            return _chatText;
+        }
+
+        return EMPTY_TEXT;
+    }
 }

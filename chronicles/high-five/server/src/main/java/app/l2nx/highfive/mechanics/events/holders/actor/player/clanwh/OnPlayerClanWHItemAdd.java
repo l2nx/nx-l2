@@ -3,17 +3,17 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
  * This file is part of the L2J Mobius project.
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
@@ -28,37 +28,31 @@ import app.l2nx.highfive.mechanics.events.holders.IBaseEvent;
 /**
  * @author UnAfraid
  */
-public class OnPlayerClanWHItemAdd implements IBaseEvent
-{
-	private final Player _player;
-	private final Item _item;
-	private final ItemContainer _container;
-	
-	public OnPlayerClanWHItemAdd(Player player, Item item, ItemContainer container)
-	{
-		_player = player;
-		_item = item;
-		_container = container;
-	}
-	
-	public Player getPlayer()
-	{
-		return _player;
-	}
-	
-	public Item getItem()
-	{
-		return _item;
-	}
-	
-	public ItemContainer getContainer()
-	{
-		return _container;
-	}
-	
-	@Override
-	public EventType getType()
-	{
-		return EventType.ON_PLAYER_CLAN_WH_ITEM_ADD;
-	}
+public class OnPlayerClanWHItemAdd implements IBaseEvent {
+    private final Player _player;
+    private final Item _item;
+    private final ItemContainer _container;
+
+    public OnPlayerClanWHItemAdd(Player player, Item item, ItemContainer container) {
+        _player = player;
+        _item = item;
+        _container = container;
+    }
+
+    public Player getPlayer() {
+        return _player;
+    }
+
+    public Item getItem() {
+        return _item;
+    }
+
+    public ItemContainer getContainer() {
+        return _container;
+    }
+
+    @Override
+    public EventType getType() {
+        return EventType.ON_PLAYER_CLAN_WH_ITEM_ADD;
+    }
 }

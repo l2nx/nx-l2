@@ -3,17 +3,17 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
  * This file is part of the L2J Mobius project.
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
@@ -28,49 +28,38 @@ import app.l2nx.highfive.handler.VoicedCommandHandler;
 /**
  * @author DS
  */
-public class VoiceCommand implements IBypassHandler
-{
-	private static final String[] COMMANDS =
-	{
-		"voice"
-	};
-	
-	@Override
-	public boolean onCommand(String command, Player player, Creature target)
-	{
-		// only voice commands allowed
-		if ((command.length() > 7) && (command.charAt(6) == '.'))
-		{
-			final String vc;
-			final String vparams;
-			final int endOfCommand = command.indexOf(' ', 7);
-			if (endOfCommand > 0)
-			{
-				vc = command.substring(7, endOfCommand).trim();
-				vparams = command.substring(endOfCommand).trim();
-			}
-			else
-			{
-				vc = command.substring(7).trim();
-				vparams = null;
-			}
-			
-			if (!vc.isEmpty())
-			{
-				final IVoicedCommandHandler vch = VoicedCommandHandler.getInstance().getHandler(vc);
-				if (vch != null)
-				{
-					return vch.onCommand(vc, player, vparams);
-				}
-			}
-		}
-		
-		return false;
-	}
-	
-	@Override
-	public String[] getCommandList()
-	{
-		return COMMANDS;
-	}
+public class VoiceCommand implements IBypassHandler {
+    private static final String[] COMMANDS = {"voice"};
+
+    @Override
+    public boolean onCommand(String command, Player player, Creature target) {
+        // only voice commands allowed
+        if ((command.length() > 7) && (command.charAt(6) == '.')) {
+            final String vc;
+            final String vparams;
+            final int endOfCommand = command.indexOf(' ', 7);
+            if (endOfCommand > 0) {
+                vc = command.substring(7, endOfCommand).trim();
+                vparams = command.substring(endOfCommand).trim();
+            } else {
+                vc = command.substring(7).trim();
+                vparams = null;
+            }
+
+            if (!vc.isEmpty()) {
+                final IVoicedCommandHandler vch =
+                        VoicedCommandHandler.getInstance().getHandler(vc);
+                if (vch != null) {
+                    return vch.onCommand(vc, player, vparams);
+                }
+            }
+        }
+
+        return false;
+    }
+
+    @Override
+    public String[] getCommandList() {
+        return COMMANDS;
+    }
 }

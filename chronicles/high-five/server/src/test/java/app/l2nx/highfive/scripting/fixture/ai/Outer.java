@@ -4,16 +4,10 @@
  */
 package app.l2nx.highfive.scripting.fixture.ai;
 
-public class Outer
-{
-	public static void main(String[] args)
-	{
-	}
+public class Outer {
+    public static void main(String[] args) {}
 
-	public static class Inner
-	{
-		public static void main(String[] args)
-		{
-		}
-	}
+    public static class Inner {
+        public static void main(String[] args) {}
+    }
 }

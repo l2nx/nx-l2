@@ -3,17 +3,17 @@
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -23,6 +23,12 @@
  */
 package app.l2nx.network.packet;
 
+import app.l2nx.network.Client;
+import app.l2nx.network.Connection;
+import app.l2nx.network.config.ConnectionConfig;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Tags;
+import io.micrometer.core.instrument.binder.jvm.ExecutorServiceMetrics;
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -30,102 +36,82 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.Tags;
-import io.micrometer.core.instrument.binder.jvm.ExecutorServiceMetrics;
-
-import app.l2nx.network.Client;
-import app.l2nx.network.Connection;
-import app.l2nx.network.config.ConnectionConfig;
-
 /**
  * Thread-pool-based executor for incoming network packets.<br>
  * Received packets are submitted here after successful parsing so that their {@link ReadablePacket#run()} logic executes off the I/O thread.
  * @param <T> the client type associated with the packets being executed
  * @author Mobius
  */
-public class PacketExecutor<T extends Client<Connection<T>>>
-{
-	private static final Logger LOGGER = Logger.getLogger(PacketExecutor.class.getName());
-	
-	private final ThreadPoolExecutor _executor;
-	
-	/**
-	 * Creates an executor sized according to {@link ConnectionConfig#threadPoolSize}.
-	 * @param config the connection configuration supplying pool size and thread priority
-	 */
-	public PacketExecutor(ConnectionConfig config)
-	{
-		_executor = new ThreadPoolExecutor(config.threadPoolSize, Integer.MAX_VALUE, 1, TimeUnit.MINUTES, new LinkedBlockingQueue<>(), new PacketThreadFactory("PacketExecutor", config.threadPriority));
-	}
-	
-	public void bindMetrics(MeterRegistry registry, String name)
-	{
-		new ExecutorServiceMetrics(_executor, name, Tags.empty()).bindTo(registry);
-	}
-	
-	public void shutdown(long waitMillis)
-	{
-		_executor.shutdown();
-		try
-		{
-			if (!_executor.awaitTermination(waitMillis, TimeUnit.MILLISECONDS))
-			{
-				_executor.shutdownNow();
-			}
-		}
-		catch (InterruptedException e)
-		{
-			_executor.shutdownNow();
-			Thread.currentThread().interrupt();
-		}
-	}
-	
-	/**
-	 * Submits a packet for execution on a worker thread.
-	 * @param packet the packet to execute
-	 */
-	public void execute(ReadablePacket<T> packet)
-	{
-		try
-		{
-			_executor.execute(new PacketRunnable<>(packet));
-		}
-		catch (Exception e)
-		{
-			LOGGER.log(Level.WARNING, "Failed to submit " + packet.getClass().getSimpleName(), e);
-		}
-	}
-	
-	private static class PacketRunnable<T extends Client<Connection<T>>> implements Runnable
-	{
-		private final ReadablePacket<T> _packet;
-		
-		public PacketRunnable(ReadablePacket<T> packet)
-		{
-			_packet = packet;
-		}
-		
-		@Override
-		public void run()
-		{
-			try
-			{
-				_packet.run();
-			}
-			catch (Throwable t)
-			{
-				final Thread currentThread = Thread.currentThread();
-				final UncaughtExceptionHandler handler = currentThread.getUncaughtExceptionHandler();
-				if (handler != null)
-				{
-					handler.uncaughtException(currentThread, t);
-				}
-				else
-				{
-					LOGGER.log(Level.SEVERE, "Uncaught exception in " + _packet.getClass().getSimpleName(), t);
-				}
-			}
-		}
-	}
+public class PacketExecutor<T extends Client<Connection<T>>> {
+    private static final Logger LOGGER = Logger.getLogger(PacketExecutor.class.getName());
+
+    private final ThreadPoolExecutor _executor;
+
+    /**
+     * Creates an executor sized according to {@link ConnectionConfig#threadPoolSize}.
+     * @param config the connection configuration supplying pool size and thread priority
+     */
+    public PacketExecutor(ConnectionConfig config) {
+        _executor = new ThreadPoolExecutor(
+                config.threadPoolSize,
+                Integer.MAX_VALUE,
+                1,
+                TimeUnit.MINUTES,
+                new LinkedBlockingQueue<>(),
+                new PacketThreadFactory("PacketExecutor", config.threadPriority));
+    }
+
+    public void bindMetrics(MeterRegistry registry, String name) {
+        new ExecutorServiceMetrics(_executor, name, Tags.empty()).bindTo(registry);
+    }
+
+    public void shutdown(long waitMillis) {
+        _executor.shutdown();
+        try {
+            if (!_executor.awaitTermination(waitMillis, TimeUnit.MILLISECONDS)) {
+                _executor.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            _executor.shutdownNow();
+            Thread.currentThread().interrupt();
+        }
+    }
+
+    /**
+     * Submits a packet for execution on a worker thread.
+     * @param packet the packet to execute
+     */
+    public void execute(ReadablePacket<T> packet) {
+        try {
+            _executor.execute(new PacketRunnable<>(packet));
+        } catch (Exception e) {
+            LOGGER.log(Level.WARNING, "Failed to submit " + packet.getClass().getSimpleName(), e);
+        }
+    }
+
+    private static class PacketRunnable<T extends Client<Connection<T>>> implements Runnable {
+        private final ReadablePacket<T> _packet;
+
+        public PacketRunnable(ReadablePacket<T> packet) {
+            _packet = packet;
+        }
+
+        @Override
+        public void run() {
+            try {
+                _packet.run();
+            } catch (Throwable t) {
+                final Thread currentThread = Thread.currentThread();
+                final UncaughtExceptionHandler handler = currentThread.getUncaughtExceptionHandler();
+                if (handler != null) {
+                    handler.uncaughtException(currentThread, t);
+                } else {
+                    LOGGER.log(
+                            Level.SEVERE,
+                            "Uncaught exception in " + _packet.getClass().getSimpleName(),
+                            t);
+                }
+            }
+        }
+    }
 }

@@ -9,21 +9,18 @@ import org.springframework.boot.ExitCodeGenerator;
 /**
  * A supervisor restarts the process on any code but {@link #SHUTDOWN}.
  */
-public enum ServerExitCode implements ExitCodeGenerator
-{
-	SHUTDOWN(0),
-	RESTART(2);
+public enum ServerExitCode implements ExitCodeGenerator {
+    SHUTDOWN(0),
+    RESTART(2);
 
-	private final int code;
+    private final int code;
 
-	ServerExitCode(int code)
-	{
-		this.code = code;
-	}
+    ServerExitCode(int code) {
+        this.code = code;
+    }
 
-	@Override
-	public int getExitCode()
-	{
-		return code;
-	}
+    @Override
+    public int getExitCode() {
+        return code;
+    }
 }

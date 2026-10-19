@@ -2,17 +2,17 @@
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -27,19 +27,18 @@ import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.highfive.taskmanagers.GameTimeTaskManager;
 import app.l2nx.network.buffer.WriteBuffer;
 
-public class ClientSetTime extends ServerPacket
-{
-	public static final ClientSetTime STATIC_PACKET = new ClientSetTime();
-	
-	private ClientSetTime()
-	{
-	}
-	
-	@Override
-	public void writeImpl(GameClient client, WriteBuffer buffer)
-	{
-		ServerPackets.CLIENT_SET_TIME.writeId(this, buffer);
-		buffer.writeInt(GameTimeTaskManager.getInstance().getGameTime()); // Time in client minutes.
-		buffer.writeInt(GameTimeTaskManager.IG_DAYS_PER_DAY); // Constant to match the server time. This determines the speed of the client clock.
-	}
+public class ClientSetTime extends ServerPacket {
+    public static final ClientSetTime STATIC_PACKET = new ClientSetTime();
+
+    private ClientSetTime() {}
+
+    @Override
+    public void writeImpl(GameClient client, WriteBuffer buffer) {
+        ServerPackets.CLIENT_SET_TIME.writeId(this, buffer);
+        buffer.writeInt(GameTimeTaskManager.getInstance().getGameTime()); // Time in client minutes.
+        buffer.writeInt(
+                GameTimeTaskManager
+                        .IG_DAYS_PER_DAY); // Constant to match the server time. This determines the speed of the client
+        // clock.
+    }
 }

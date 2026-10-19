@@ -2,17 +2,17 @@
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -29,66 +29,55 @@ import app.l2nx.highfive.entity.actor.enums.player.PlayerClass;
 import app.l2nx.highfive.entity.actor.templates.NpcTemplate;
 import app.l2nx.highfive.mechanics.script.QuestState;
 
-public class VillageMasterKamael extends VillageMaster
-{
-	/**
-	 * Creates a village master.
-	 * @param template the village master NPC template
-	 */
-	public VillageMasterKamael(NpcTemplate template)
-	{
-		super(template);
-	}
-	
-	@Override
-	protected String getSubClassMenu(Race race)
-	{
-		if (PlayerConfig.ALT_GAME_SUBCLASS_EVERYWHERE || (race == Race.KAMAEL))
-		{
-			return "data/html/villagemaster/SubClass.htm";
-		}
-		
-		return "data/html/villagemaster/SubClass_NoKamael.htm";
-	}
-	
-	@Override
-	protected String getSubClassFail()
-	{
-		return "data/html/villagemaster/SubClass_Fail_Kamael.htm";
-	}
-	
-	@Override
-	protected boolean checkQuests(Player player)
-	{
-		// Noble players can add subbclasses without quests.
-		if (player.isNoble())
-		{
-			return true;
-		}
-		
-		QuestState qs = player.getQuestState("Q00234_FatesWhisper");
-		if ((qs == null) || !qs.isCompleted())
-		{
-			return false;
-		}
-		
-		qs = player.getQuestState("Q00236_SeedsOfChaos");
-		if ((qs == null) || !qs.isCompleted())
-		{
-			return false;
-		}
-		
-		return true;
-	}
-	
-	@Override
-	protected boolean checkVillageMasterRace(PlayerClass pClass)
-	{
-		if (pClass == null)
-		{
-			return false;
-		}
-		
-		return pClass.getRace() == Race.KAMAEL;
-	}
+public class VillageMasterKamael extends VillageMaster {
+    /**
+     * Creates a village master.
+     * @param template the village master NPC template
+     */
+    public VillageMasterKamael(NpcTemplate template) {
+        super(template);
+    }
+
+    @Override
+    protected String getSubClassMenu(Race race) {
+        if (PlayerConfig.ALT_GAME_SUBCLASS_EVERYWHERE || (race == Race.KAMAEL)) {
+            return "data/html/villagemaster/SubClass.htm";
+        }
+
+        return "data/html/villagemaster/SubClass_NoKamael.htm";
+    }
+
+    @Override
+    protected String getSubClassFail() {
+        return "data/html/villagemaster/SubClass_Fail_Kamael.htm";
+    }
+
+    @Override
+    protected boolean checkQuests(Player player) {
+        // Noble players can add subbclasses without quests.
+        if (player.isNoble()) {
+            return true;
+        }
+
+        QuestState qs = player.getQuestState("Q00234_FatesWhisper");
+        if ((qs == null) || !qs.isCompleted()) {
+            return false;
+        }
+
+        qs = player.getQuestState("Q00236_SeedsOfChaos");
+        if ((qs == null) || !qs.isCompleted()) {
+            return false;
+        }
+
+        return true;
+    }
+
+    @Override
+    protected boolean checkVillageMasterRace(PlayerClass pClass) {
+        if (pClass == null) {
+            return false;
+        }
+
+        return pClass.getRace() == Race.KAMAEL;
+    }
 }

@@ -2,17 +2,17 @@
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -33,74 +33,60 @@ import app.l2nx.highfive.mechanics.siege.clanhalls.SiegableHall;
 /**
  * @author LordWinter
  */
-public class Q00655_AGrandPlanForTamingWildBeasts extends Quest
-{
-	private static final int MESSENGER = 35627;
-	
-	private static final int STONE = 8084;
-	private static final int TRAINER_LICENSE = 8293;
-	
-	private static final SiegableHall BEAST_STRONGHOLD = CHSiegeManager.getInstance().getSiegableHall(63);
-	
-	public Q00655_AGrandPlanForTamingWildBeasts()
-	{
-		super(655);
-		
-		addStartNpc(MESSENGER);
-		addTalkId(MESSENGER);
-	}
-	
-	@Override
-	public String onTalk(Npc npc, Player player)
-	{
-		String htmltext = getNoQuestMsg(player);
-		final QuestState st = getQuestState(player, true);
-		if (st == null)
-		{
-			return htmltext;
-		}
-		
-		switch (st.getState())
-		{
-			case State.CREATED:
-			{
-				if (BEAST_STRONGHOLD.getSiege().getAttackers().size() >= 5)
-				{
-					htmltext = "35627-00.htm";
-				}
-				else
-				{
-					htmltext = "35627-01.htm";
-					st.startQuest();
-				}
-				break;
-			}
-			case State.STARTED:
-			{
-				if (getQuestItemsCount(player, STONE) < 10)
-				{
-					htmltext = "35627-02.htm";
-				}
-				else
-				{
-					takeItems(player, STONE, 10);
-					giveItems(player, TRAINER_LICENSE, 1);
-					st.exitQuest(true, true);
-					htmltext = "35627-03.htm";
-				}
-				break;
-			}
-		}
-		
-		return htmltext;
-	}
-	
-	public static void checkCrystalofPurity(Player player)
-	{
-		final QuestState st = player.getQuestState(Q00655_AGrandPlanForTamingWildBeasts.class.getSimpleName());
-		if ((st != null) && st.isCond(1) && (getQuestItemsCount(player, STONE) < 10))
-		{
-			giveItems(player, STONE, 1);
-		}
-	}
+public class Q00655_AGrandPlanForTamingWildBeasts extends Quest {
+    private static final int MESSENGER = 35627;
+
+    private static final int STONE = 8084;
+    private static final int TRAINER_LICENSE = 8293;
+
+    private static final SiegableHall BEAST_STRONGHOLD =
+            CHSiegeManager.getInstance().getSiegableHall(63);
+
+    public Q00655_AGrandPlanForTamingWildBeasts() {
+        super(655);
+
+        addStartNpc(MESSENGER);
+        addTalkId(MESSENGER);
+    }
+
+    @Override
+    public String onTalk(Npc npc, Player player) {
+        String htmltext = getNoQuestMsg(player);
+        final QuestState st = getQuestState(player, true);
+        if (st == null) {
+            return htmltext;
+        }
+
+        switch (st.getState()) {
+            case State.CREATED: {
+                if (BEAST_STRONGHOLD.getSiege().getAttackers().size() >= 5) {
+                    htmltext = "35627-00.htm";
+                } else {
+                    htmltext = "35627-01.htm";
+                    st.startQuest();
+                }
+                break;
+            }
+            case State.STARTED: {
+                if (getQuestItemsCount(player, STONE) < 10) {
+                    htmltext = "35627-02.htm";
+                } else {
+                    takeItems(player, STONE, 10);
+                    giveItems(player, TRAINER_LICENSE, 1);
+                    st.exitQuest(true, true);
+                    htmltext = "35627-03.htm";
+                }
+                break;
+            }
+        }
+
+        return htmltext;
+    }
+
+    public static void checkCrystalofPurity(Player player) {
+        final QuestState st = player.getQuestState(Q00655_AGrandPlanForTamingWildBeasts.class.getSimpleName());
+        if ((st != null) && st.isCond(1) && (getQuestItemsCount(player, STONE) < 10)) {
+            giveItems(player, STONE, 1);
+        }
+    }
 }

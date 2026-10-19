@@ -2,17 +2,17 @@
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -28,34 +28,26 @@ import app.l2nx.highfive.handler.IBypassHandler;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.serverpackets.ExGetPremiumItemList;
 
-public class ReceivePremium implements IBypassHandler
-{
-	private static final String[] COMMANDS =
-	{
-		"ReceivePremium"
-	};
-	
-	@Override
-	public boolean onCommand(String command, Player player, Creature target)
-	{
-		if (!target.isNpc())
-		{
-			return false;
-		}
-		
-		if (player.getPremiumItemList().isEmpty())
-		{
-			player.sendPacket(SystemMessageId.THERE_ARE_NO_MORE_DIMENSIONAL_ITEMS_TO_BE_FOUND);
-			return false;
-		}
-		
-		player.sendPacket(new ExGetPremiumItemList(player));
-		return true;
-	}
-	
-	@Override
-	public String[] getCommandList()
-	{
-		return COMMANDS;
-	}
+public class ReceivePremium implements IBypassHandler {
+    private static final String[] COMMANDS = {"ReceivePremium"};
+
+    @Override
+    public boolean onCommand(String command, Player player, Creature target) {
+        if (!target.isNpc()) {
+            return false;
+        }
+
+        if (player.getPremiumItemList().isEmpty()) {
+            player.sendPacket(SystemMessageId.THERE_ARE_NO_MORE_DIMENSIONAL_ITEMS_TO_BE_FOUND);
+            return false;
+        }
+
+        player.sendPacket(new ExGetPremiumItemList(player));
+        return true;
+    }
+
+    @Override
+    public String[] getCommandList() {
+        return COMMANDS;
+    }
 }

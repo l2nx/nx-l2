@@ -2,17 +2,17 @@
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -22,45 +22,37 @@
  */
 package app.l2nx.highfive.mechanics.conditions;
 
-import java.util.List;
-
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.item.ItemTemplate;
 import app.l2nx.highfive.mechanics.skill.Skill;
+import java.util.List;
 
 /**
  * The Class ConditionPlayerServitorNpcId.
  */
-public class ConditionPlayerServitorNpcId extends Condition
-{
-	private final List<Integer> _npcIds;
-	
-	/**
-	 * Instantiates a new condition player servitor npc id.
-	 * @param npcIds the npc ids
-	 */
-	public ConditionPlayerServitorNpcId(List<Integer> npcIds)
-	{
-		if ((npcIds.size() == 1) && (npcIds.get(0) == 0))
-		{
-			_npcIds = null;
-		}
-		else
-		{
-			_npcIds = npcIds;
-		}
-	}
-	
-	@Override
-	public boolean testImpl(Creature effector, Creature effected, Skill skill, ItemTemplate item)
-	{
-		final Player player = effector.asPlayer();
-		if ((player == null) || !player.hasSummon())
-		{
-			return false;
-		}
-		
-		return (_npcIds == null) || _npcIds.contains(player.getSummon().getId());
-	}
+public class ConditionPlayerServitorNpcId extends Condition {
+    private final List<Integer> _npcIds;
+
+    /**
+     * Instantiates a new condition player servitor npc id.
+     * @param npcIds the npc ids
+     */
+    public ConditionPlayerServitorNpcId(List<Integer> npcIds) {
+        if ((npcIds.size() == 1) && (npcIds.get(0) == 0)) {
+            _npcIds = null;
+        } else {
+            _npcIds = npcIds;
+        }
+    }
+
+    @Override
+    public boolean testImpl(Creature effector, Creature effected, Skill skill, ItemTemplate item) {
+        final Player player = effector.asPlayer();
+        if ((player == null) || !player.hasSummon()) {
+            return false;
+        }
+
+        return (_npcIds == null) || _npcIds.contains(player.getSummon().getId());
+    }
 }

@@ -10,12 +10,10 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 
 @AutoConfiguration
-public class BootAutoConfiguration
-{
-	@Bean
-	@ConditionalOnMissingBean
-	public ServerExit serverExit(ApplicationContext context)
-	{
-		return new ServerExit(context);
-	}
+public class BootAutoConfiguration {
+    @Bean
+    @ConditionalOnMissingBean
+    public ServerExit serverExit(ApplicationContext context) {
+        return new ServerExit(context);
+    }
 }

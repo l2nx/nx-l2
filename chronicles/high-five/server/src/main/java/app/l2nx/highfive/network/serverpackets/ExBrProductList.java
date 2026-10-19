@@ -2,17 +2,17 @@
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -22,65 +22,57 @@
  */
 package app.l2nx.highfive.network.serverpackets;
 
-import java.util.Collection;
-
 import app.l2nx.highfive.data.holders.PrimeShopProductHolder;
 import app.l2nx.highfive.data.xml.PrimeShopData;
 import app.l2nx.highfive.network.GameClient;
 import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.network.buffer.WriteBuffer;
+import java.util.Collection;
 
 /**
  * @author Mobius
  */
-public class ExBrProductList extends ServerPacket
-{
-	private final Collection<PrimeShopProductHolder> _itemList = PrimeShopData.getInstance().getAllItems();
-	
-	@Override
-	public void writeImpl(GameClient client, WriteBuffer buffer)
-	{
-		ServerPackets.EX_BR_PRODUCT_LIST.writeId(this, buffer);
-		buffer.writeInt(_itemList.size());
-		for (PrimeShopProductHolder product : _itemList)
-		{
-			final int category = product.getCategory();
-			buffer.writeInt(product.getProductId()); // product id
-			buffer.writeShort(category); // category id
-			buffer.writeInt(product.getPrice()); // points
-			switch (category)
-			{
-				case 6:
-				{
-					buffer.writeInt(1); // event
-					break;
-				}
-				case 7:
-				{
-					buffer.writeInt(2); // best
-					break;
-				}
-				case 8:
-				{
-					buffer.writeInt(3); // event & best
-					break;
-				}
-				default:
-				{
-					buffer.writeInt(0); // normal
-					break;
-				}
-			}
-			
-			buffer.writeInt(0); // start sale
-			buffer.writeInt(0); // end sale
-			buffer.writeByte(0); // day week
-			buffer.writeByte(0); // start hour
-			buffer.writeByte(0); // start min
-			buffer.writeByte(0); // end hour
-			buffer.writeByte(0); // end min
-			buffer.writeInt(0); // current stock
-			buffer.writeInt(0); // max stock
-		}
-	}
+public class ExBrProductList extends ServerPacket {
+    private final Collection<PrimeShopProductHolder> _itemList =
+            PrimeShopData.getInstance().getAllItems();
+
+    @Override
+    public void writeImpl(GameClient client, WriteBuffer buffer) {
+        ServerPackets.EX_BR_PRODUCT_LIST.writeId(this, buffer);
+        buffer.writeInt(_itemList.size());
+        for (PrimeShopProductHolder product : _itemList) {
+            final int category = product.getCategory();
+            buffer.writeInt(product.getProductId()); // product id
+            buffer.writeShort(category); // category id
+            buffer.writeInt(product.getPrice()); // points
+            switch (category) {
+                case 6: {
+                    buffer.writeInt(1); // event
+                    break;
+                }
+                case 7: {
+                    buffer.writeInt(2); // best
+                    break;
+                }
+                case 8: {
+                    buffer.writeInt(3); // event & best
+                    break;
+                }
+                default: {
+                    buffer.writeInt(0); // normal
+                    break;
+                }
+            }
+
+            buffer.writeInt(0); // start sale
+            buffer.writeInt(0); // end sale
+            buffer.writeByte(0); // day week
+            buffer.writeByte(0); // start hour
+            buffer.writeByte(0); // start min
+            buffer.writeByte(0); // end hour
+            buffer.writeByte(0); // end min
+            buffer.writeInt(0); // current stock
+            buffer.writeInt(0); // max stock
+        }
+    }
 }

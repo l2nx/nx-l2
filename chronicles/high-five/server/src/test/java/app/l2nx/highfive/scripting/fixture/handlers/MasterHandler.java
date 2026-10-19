@@ -4,9 +4,6 @@
  */
 package app.l2nx.highfive.scripting.fixture.handlers;
 
-public class MasterHandler
-{
-	public static void main(String[] args)
-	{
-	}
+public class MasterHandler {
+    public static void main(String[] args) {}
 }

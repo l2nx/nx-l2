@@ -3,23 +3,21 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
  * This file is part of the L2J Mobius project.
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 package app.l2nx.highfive.mechanics.conditions;
-
-import java.util.List;
 
 import app.l2nx.highfive.config.NpcConfig;
 import app.l2nx.highfive.entity.WorldObject;
@@ -29,6 +27,7 @@ import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.item.ItemTemplate;
 import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.network.SystemMessageId;
+import java.util.List;
 
 /**
  * Checks Sweeper conditions:
@@ -42,49 +41,40 @@ import app.l2nx.highfive.network.SystemMessageId;
  * If two or more conditions aren't meet at the same time, one message per condition will be shown.
  * @author Zoey76
  */
-public class ConditionPlayerCanSweep extends Condition
-{
-	private final boolean _value;
-	
-	public ConditionPlayerCanSweep(boolean value)
-	{
-		_value = value;
-	}
-	
-	@Override
-	public boolean testImpl(Creature effector, Creature effected, Skill skill, ItemTemplate item)
-	{
-		boolean canSweep = false;
-		if (effector.isPlayer() && (skill != null))
-		{
-			final Player sweeper = effector.asPlayer();
-			final List<WorldObject> targets = skill.getTargetList(sweeper);
-			if (targets != null)
-			{
-				Attackable target;
-				for (WorldObject objTarget : targets)
-				{
-					if ((objTarget != null) && objTarget.isAttackable())
-					{
-						target = objTarget.asAttackable();
-						if (target.isDead())
-						{
-							if (target.isSpoiled())
-							{
-								canSweep = target.checkSpoilOwner(sweeper, true);
-								canSweep &= !target.isOldCorpse(sweeper, NpcConfig.CORPSE_CONSUME_SKILL_ALLOWED_TIME_BEFORE_DECAY, true);
-								canSweep &= sweeper.getInventory().checkInventorySlotsAndWeight(target.getSpoilLootItems(), true, true);
-							}
-							else
-							{
-								sweeper.sendPacket(SystemMessageId.SWEEPER_FAILED_TARGET_NOT_SPOILED);
-							}
-						}
-					}
-				}
-			}
-		}
-		
-		return _value == canSweep;
-	}
+public class ConditionPlayerCanSweep extends Condition {
+    private final boolean _value;
+
+    public ConditionPlayerCanSweep(boolean value) {
+        _value = value;
+    }
+
+    @Override
+    public boolean testImpl(Creature effector, Creature effected, Skill skill, ItemTemplate item) {
+        boolean canSweep = false;
+        if (effector.isPlayer() && (skill != null)) {
+            final Player sweeper = effector.asPlayer();
+            final List<WorldObject> targets = skill.getTargetList(sweeper);
+            if (targets != null) {
+                Attackable target;
+                for (WorldObject objTarget : targets) {
+                    if ((objTarget != null) && objTarget.isAttackable()) {
+                        target = objTarget.asAttackable();
+                        if (target.isDead()) {
+                            if (target.isSpoiled()) {
+                                canSweep = target.checkSpoilOwner(sweeper, true);
+                                canSweep &= !target.isOldCorpse(
+                                        sweeper, NpcConfig.CORPSE_CONSUME_SKILL_ALLOWED_TIME_BEFORE_DECAY, true);
+                                canSweep &= sweeper.getInventory()
+                                        .checkInventorySlotsAndWeight(target.getSpoilLootItems(), true, true);
+                            } else {
+                                sweeper.sendPacket(SystemMessageId.SWEEPER_FAILED_TARGET_NOT_SPOILED);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        return _value == canSweep;
+    }
 }

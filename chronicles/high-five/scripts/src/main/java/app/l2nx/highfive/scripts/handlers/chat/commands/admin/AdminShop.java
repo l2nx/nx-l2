@@ -2,17 +2,17 @@
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -22,8 +22,6 @@
  */
 package app.l2nx.highfive.scripts.handlers.chat.commands.admin;
 
-import java.util.logging.Logger;
-
 import app.l2nx.highfive.data.xml.BuyListData;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.handler.IAdminCommandHandler;
@@ -31,6 +29,7 @@ import app.l2nx.highfive.mechanics.buylist.BuyListHolder;
 import app.l2nx.highfive.network.serverpackets.ActionFailed;
 import app.l2nx.highfive.network.serverpackets.BuyList;
 import app.l2nx.highfive.network.serverpackets.ExBuySellList;
+import java.util.logging.Logger;
 
 /**
  * This class handles following admin commands:
@@ -39,67 +38,47 @@ import app.l2nx.highfive.network.serverpackets.ExBuySellList;
  * <li>buy id = shows shop with respective id</li>
  * </ul>
  */
-public class AdminShop implements IAdminCommandHandler
-{
-	private static final Logger LOGGER = Logger.getLogger(AdminShop.class.getName());
-	
-	private static final String[] ADMIN_COMMANDS =
-	{
-		"admin_buy",
-		"admin_gmshop"
-	};
-	
-	@Override
-	public boolean onCommand(String command, Player activeChar)
-	{
-		if (command.startsWith("admin_buy"))
-		{
-			try
-			{
-				handleBuyRequest(activeChar, command.substring(10));
-			}
-			catch (IndexOutOfBoundsException e)
-			{
-				activeChar.sendSysMessage("Please specify buylist.");
-			}
-		}
-		else if (command.equals("admin_gmshop"))
-		{
-			AdminHtml.showAdminHtml(activeChar, "gmshops.htm");
-		}
-		
-		return true;
-	}
-	
-	@Override
-	public String[] getCommandList()
-	{
-		return ADMIN_COMMANDS;
-	}
-	
-	private void handleBuyRequest(Player activeChar, String command)
-	{
-		int val = -1;
-		try
-		{
-			val = Integer.parseInt(command);
-		}
-		catch (Exception e)
-		{
-			LOGGER.warning("admin buylist failed:" + command);
-		}
-		
-		final BuyListHolder buyList = BuyListData.getInstance().getBuyList(val);
-		if (buyList != null)
-		{
-			activeChar.sendPacket(new BuyList(buyList, activeChar.getAdena(), 0));
-			activeChar.sendPacket(new ExBuySellList(activeChar, false));
-		}
-		else
-		{
-			LOGGER.warning("no buylist with id:" + val);
-		}
-		
-		activeChar.sendPacket(ActionFailed.STATIC_PACKET);
-	}
+public class AdminShop implements IAdminCommandHandler {
+    private static final Logger LOGGER = Logger.getLogger(AdminShop.class.getName());
+
+    private static final String[] ADMIN_COMMANDS = {"admin_buy", "admin_gmshop"};
+
+    @Override
+    public boolean onCommand(String command, Player activeChar) {
+        if (command.startsWith("admin_buy")) {
+            try {
+                handleBuyRequest(activeChar, command.substring(10));
+            } catch (IndexOutOfBoundsException e) {
+                activeChar.sendSysMessage("Please specify buylist.");
+            }
+        } else if (command.equals("admin_gmshop")) {
+            AdminHtml.showAdminHtml(activeChar, "gmshops.htm");
+        }
+
+        return true;
+    }
+
+    @Override
+    public String[] getCommandList() {
+        return ADMIN_COMMANDS;
+    }
+
+    private void handleBuyRequest(Player activeChar, String command) {
+        int val = -1;
+        try {
+            val = Integer.parseInt(command);
+        } catch (Exception e) {
+            LOGGER.warning("admin buylist failed:" + command);
+        }
+
+        final BuyListHolder buyList = BuyListData.getInstance().getBuyList(val);
+        if (buyList != null) {
+            activeChar.sendPacket(new BuyList(buyList, activeChar.getAdena(), 0));
+            activeChar.sendPacket(new ExBuySellList(activeChar, false));
+        } else {
+            LOGGER.warning("no buylist with id:" + val);
+        }
+
+        activeChar.sendPacket(ActionFailed.STATIC_PACKET);
+    }
 }

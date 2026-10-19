@@ -2,17 +2,17 @@
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -21,8 +21,6 @@
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package app.l2nx.highfive.scripts.handlers.skill.effects;
-
-import java.util.concurrent.ThreadLocalRandom;
 
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.entity.actor.Creature;
@@ -34,74 +32,63 @@ import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.mechanics.stats.Formulas;
 import app.l2nx.highfive.mechanics.stats.Stat;
 import app.l2nx.highfive.util.StatSet;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Magical damage effect implementation.
  * @author Adry_85
  */
-public class MagicalDamage extends AbstractEffect
-{
-	public MagicalDamage(Condition attachCond, Condition applyCond, StatSet set, StatSet params)
-	{
-		super(attachCond, applyCond, set, params);
-	}
-	
-	@Override
-	public EffectType getEffectType()
-	{
-		return EffectType.MAGICAL_ATTACK;
-	}
-	
-	@Override
-	public boolean isInstant()
-	{
-		return true;
-	}
-	
-	@Override
-	public void onStart(Creature effector, Creature effected, Skill skill)
-	{
-		if (effector.isAlikeDead())
-		{
-			return;
-		}
-		
-		if (effected.isPlayer() && effected.asPlayer().isFakeDeath() && PlayerConfig.FAKE_DEATH_DAMAGE_STAND)
-		{
-			effected.stopFakeDeath(true);
-		}
-		
-		final boolean sps = skill.useSpiritShot() && effector.isChargedShot(ShotType.SPIRITSHOTS);
-		final boolean bss = skill.useSpiritShot() && effector.isChargedShot(ShotType.BLESSED_SPIRITSHOTS);
-		final boolean mcrit = Formulas.calcMCrit(effector.getMCriticalHit(effected, skill));
-		final byte shld = Formulas.calcShldUse(effector, effected, skill);
-		final int damage = (int) Formulas.calcMagicDam(effector, effected, skill, shld, sps, bss, mcrit);
-		if (damage > 0)
-		{
-			// Manage attack or cast break of the target (calculating rate, sending message...)
-			if (!effected.isRaid() && Formulas.calcAtkBreak(effected, damage))
-			{
-				effected.breakAttack();
-				effected.breakCast();
-			}
-			
-			// Shield Deflect Magic: Reflect all damage on caster.
-			if (effected.getStat().calcStat(Stat.VENGEANCE_SKILL_MAGIC_DAMAGE, 0, effected, skill) > ThreadLocalRandom.current().nextInt(100))
-			{
-				effector.reduceCurrentHp(damage, effected, skill);
-				effector.notifyDamageReceived(damage, effected, skill, mcrit, false);
-			}
-			else
-			{
-				effected.reduceCurrentHp(damage, effector, skill);
-				effected.notifyDamageReceived(damage, effector, skill, mcrit, false);
-				effector.sendDamageMessage(effected, damage, mcrit, false, false);
-			}
-		}
-		
-		if (skill.isSuicideAttack())
-		{
-			effector.doDie(effector);
-		}
-	}
+public class MagicalDamage extends AbstractEffect {
+    public MagicalDamage(Condition attachCond, Condition applyCond, StatSet set, StatSet params) {
+        super(attachCond, applyCond, set, params);
+    }
+
+    @Override
+    public EffectType getEffectType() {
+        return EffectType.MAGICAL_ATTACK;
+    }
+
+    @Override
+    public boolean isInstant() {
+        return true;
+    }
+
+    @Override
+    public void onStart(Creature effector, Creature effected, Skill skill) {
+        if (effector.isAlikeDead()) {
+            return;
+        }
+
+        if (effected.isPlayer() && effected.asPlayer().isFakeDeath() && PlayerConfig.FAKE_DEATH_DAMAGE_STAND) {
+            effected.stopFakeDeath(true);
+        }
+
+        final boolean sps = skill.useSpiritShot() && effector.isChargedShot(ShotType.SPIRITSHOTS);
+        final boolean bss = skill.useSpiritShot() && effector.isChargedShot(ShotType.BLESSED_SPIRITSHOTS);
+        final boolean mcrit = Formulas.calcMCrit(effector.getMCriticalHit(effected, skill));
+        final byte shld = Formulas.calcShldUse(effector, effected, skill);
+        final int damage = (int) Formulas.calcMagicDam(effector, effected, skill, shld, sps, bss, mcrit);
+        if (damage > 0) {
+            // Manage attack or cast break of the target (calculating rate, sending message...)
+            if (!effected.isRaid() && Formulas.calcAtkBreak(effected, damage)) {
+                effected.breakAttack();
+                effected.breakCast();
+            }
+
+            // Shield Deflect Magic: Reflect all damage on caster.
+            if (effected.getStat().calcStat(Stat.VENGEANCE_SKILL_MAGIC_DAMAGE, 0, effected, skill)
+                    > ThreadLocalRandom.current().nextInt(100)) {
+                effector.reduceCurrentHp(damage, effected, skill);
+                effector.notifyDamageReceived(damage, effected, skill, mcrit, false);
+            } else {
+                effected.reduceCurrentHp(damage, effector, skill);
+                effected.notifyDamageReceived(damage, effector, skill, mcrit, false);
+                effector.sendDamageMessage(effected, damage, mcrit, false, false);
+            }
+        }
+
+        if (skill.isSuicideAttack()) {
+            effector.doDie(effector);
+        }
+    }
 }

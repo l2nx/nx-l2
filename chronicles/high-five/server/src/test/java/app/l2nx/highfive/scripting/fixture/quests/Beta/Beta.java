@@ -4,9 +4,6 @@
  */
 package app.l2nx.highfive.scripting.fixture.quests.Beta;
 
-public class Beta
-{
-	public static void main(String[] args)
-	{
-	}
+public class Beta {
+    public static void main(String[] args) {}
 }

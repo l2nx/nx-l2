@@ -4,9 +4,6 @@
  */
 package app.l2nx.highfive.scripting.fixture.ai;
 
-public class InstanceMain
-{
-	public void main(String[] args)
-	{
-	}
+public class InstanceMain {
+    public void main(String[] args) {}
 }

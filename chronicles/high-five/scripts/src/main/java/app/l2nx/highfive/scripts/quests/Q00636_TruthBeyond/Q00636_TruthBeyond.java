@@ -3,17 +3,17 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
  * This file is part of the L2J Mobius project.
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
@@ -33,97 +33,80 @@ import app.l2nx.highfive.mechanics.script.State;
  * Original Jython script by Polo, BiTi and DrLecter.
  * @author DS
  */
-public class Q00636_TruthBeyond extends Quest
-{
-	private static final int ELIYAH = 31329;
-	private static final int FLAURON = 32010;
-	private static final int ZONE = 30100;
-	private static final int VISITOR_MARK = 8064;
-	private static final int FADED_MARK = 8065;
-	private static final int MARK = 8067;
-	
-	public Q00636_TruthBeyond()
-	{
-		super(636);
-		addStartNpc(ELIYAH);
-		addTalkId(ELIYAH, FLAURON);
-		addEnterZoneId(ZONE);
-	}
-	
-	@Override
-	public String onEvent(String event, Npc npc, Player player)
-	{
-		final QuestState qs = getQuestState(player, false);
-		if (qs == null)
-		{
-			return null;
-		}
-		
-		if ("31329-04.htm".equals(event))
-		{
-			qs.startQuest();
-		}
-		else if ("32010-02.htm".equals(event))
-		{
-			giveItems(player, VISITOR_MARK, 1);
-			qs.exitQuest(true, true);
-		}
-		
-		return event;
-	}
-	
-	@Override
-	public void onEnterZone(Creature creature, ZoneType zone)
-	{
-		// QuestState already null on enter because quest is finished.
-		if (creature.isPlayer())
-		{
-			final Player player = creature.asPlayer();
-			if (player.destroyItemByItemId(ItemProcessType.FEE, VISITOR_MARK, 1, player, false))
-			{
-				player.addItem(ItemProcessType.QUEST, FADED_MARK, 1, player, true);
-			}
-		}
-	}
-	
-	@Override
-	public String onTalk(Npc npc, Player player)
-	{
-		final QuestState qs = getQuestState(player, true);
-		if (npc.getId() == ELIYAH)
-		{
-			if (hasQuestItems(player, VISITOR_MARK) || hasQuestItems(player, FADED_MARK) || hasQuestItems(player, MARK))
-			{
-				qs.exitQuest(true);
-				return "31329-mark.htm";
-			}
-			
-			if (qs.getState() == State.CREATED)
-			{
-				if (player.getLevel() > 72)
-				{
-					return "31329-02.htm";
-				}
-				
-				qs.exitQuest(true);
-				return "31329-01.htm";
-			}
-			else if (qs.getState() == State.STARTED)
-			{
-				return "31329-05.htm";
-			}
-		}
-		else if (qs.getState() == State.STARTED) // Flauron only
-		{
-			if (qs.isCond(1))
-			{
-				return "32010-01.htm";
-			}
-			
-			qs.exitQuest(true);
-			return "32010-03.htm";
-		}
-		
-		return getNoQuestMsg(player);
-	}
+public class Q00636_TruthBeyond extends Quest {
+    private static final int ELIYAH = 31329;
+    private static final int FLAURON = 32010;
+    private static final int ZONE = 30100;
+    private static final int VISITOR_MARK = 8064;
+    private static final int FADED_MARK = 8065;
+    private static final int MARK = 8067;
+
+    public Q00636_TruthBeyond() {
+        super(636);
+        addStartNpc(ELIYAH);
+        addTalkId(ELIYAH, FLAURON);
+        addEnterZoneId(ZONE);
+    }
+
+    @Override
+    public String onEvent(String event, Npc npc, Player player) {
+        final QuestState qs = getQuestState(player, false);
+        if (qs == null) {
+            return null;
+        }
+
+        if ("31329-04.htm".equals(event)) {
+            qs.startQuest();
+        } else if ("32010-02.htm".equals(event)) {
+            giveItems(player, VISITOR_MARK, 1);
+            qs.exitQuest(true, true);
+        }
+
+        return event;
+    }
+
+    @Override
+    public void onEnterZone(Creature creature, ZoneType zone) {
+        // QuestState already null on enter because quest is finished.
+        if (creature.isPlayer()) {
+            final Player player = creature.asPlayer();
+            if (player.destroyItemByItemId(ItemProcessType.FEE, VISITOR_MARK, 1, player, false)) {
+                player.addItem(ItemProcessType.QUEST, FADED_MARK, 1, player, true);
+            }
+        }
+    }
+
+    @Override
+    public String onTalk(Npc npc, Player player) {
+        final QuestState qs = getQuestState(player, true);
+        if (npc.getId() == ELIYAH) {
+            if (hasQuestItems(player, VISITOR_MARK)
+                    || hasQuestItems(player, FADED_MARK)
+                    || hasQuestItems(player, MARK)) {
+                qs.exitQuest(true);
+                return "31329-mark.htm";
+            }
+
+            if (qs.getState() == State.CREATED) {
+                if (player.getLevel() > 72) {
+                    return "31329-02.htm";
+                }
+
+                qs.exitQuest(true);
+                return "31329-01.htm";
+            } else if (qs.getState() == State.STARTED) {
+                return "31329-05.htm";
+            }
+        } else if (qs.getState() == State.STARTED) // Flauron only
+        {
+            if (qs.isCond(1)) {
+                return "32010-01.htm";
+            }
+
+            qs.exitQuest(true);
+            return "32010-03.htm";
+        }
+
+        return getNoQuestMsg(player);
+    }
 }

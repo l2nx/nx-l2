@@ -2,17 +2,17 @@
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -36,15 +36,14 @@ import app.l2nx.network.buffer.ReadBuffer;
  * @author JoeAlisson, Mobius
  */
 @FunctionalInterface
-public interface PacketHandler<T extends Client<Connection<T>>>
-{
-	/**
-	 * Maps raw buffer data to a concrete packet instance.<br>
-	 * The buffer is positioned at the first opcode byte; the implementation should read only the bytes it needs to identify the packet and leave the rest for<br>
-	 * {@link ReadablePacket#read()}.
-	 * @param buffer the decrypted payload, positioned at the first opcode byte
-	 * @param client the client that sent this data (available for per-client branching)
-	 * @return the matching {@link ReadablePacket}, or {@code null} if the opcode is unknown
-	 */
-	ReadablePacket<T> handle(ReadBuffer buffer, T client);
+public interface PacketHandler<T extends Client<Connection<T>>> {
+    /**
+     * Maps raw buffer data to a concrete packet instance.<br>
+     * The buffer is positioned at the first opcode byte; the implementation should read only the bytes it needs to identify the packet and leave the rest for<br>
+     * {@link ReadablePacket#read()}.
+     * @param buffer the decrypted payload, positioned at the first opcode byte
+     * @param client the client that sent this data (available for per-client branching)
+     * @return the matching {@link ReadablePacket}, or {@code null} if the opcode is unknown
+     */
+    ReadablePacket<T> handle(ReadBuffer buffer, T client);
 }

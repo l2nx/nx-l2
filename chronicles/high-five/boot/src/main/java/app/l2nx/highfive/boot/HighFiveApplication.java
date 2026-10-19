@@ -8,10 +8,8 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication(scanBasePackages = "app.l2nx.highfive")
-public class HighFiveApplication
-{
-	public static void main(String[] args)
-	{
-		SpringApplication.run(HighFiveApplication.class, args);
-	}
+public class HighFiveApplication {
+    public static void main(String[] args) {
+        SpringApplication.run(HighFiveApplication.class, args);
+    }
 }

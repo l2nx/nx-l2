@@ -3,23 +3,21 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
  * This file is part of the L2J Mobius project.
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 package app.l2nx.highfive.network.serverpackets;
-
-import java.util.Calendar;
 
 import app.l2nx.highfive.config.FeatureConfig;
 import app.l2nx.highfive.data.sql.ClanTable;
@@ -32,6 +30,7 @@ import app.l2nx.highfive.network.GameClient;
 import app.l2nx.highfive.network.PacketLogger;
 import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.network.buffer.WriteBuffer;
+import java.util.Calendar;
 
 /**
  * Shows the Siege Info<br>
@@ -49,110 +48,92 @@ import app.l2nx.network.buffer.WriteBuffer;
  * d = (UNKNOW) Siege Time Select Related?
  * @author KenM
  */
-public class SiegeInfo extends ServerPacket
-{
-	private Castle _castle;
-	private ClanHall _hall;
-	private final Player _player;
-	
-	public SiegeInfo(Castle castle, Player player)
-	{
-		_castle = castle;
-		_player = player;
-	}
-	
-	public SiegeInfo(ClanHall hall, Player player)
-	{
-		_hall = hall;
-		_player = player;
-	}
-	
-	@Override
-	public void writeImpl(GameClient client, WriteBuffer buffer)
-	{
-		ServerPackets.CASTLE_SIEGE_INFO.writeId(this, buffer);
-		if (_castle != null)
-		{
-			buffer.writeInt(_castle.getResidenceId());
-			final int ownerId = _castle.getOwnerId();
-			buffer.writeInt((ownerId == _player.getClanId()) && (_player.isClanLeader()));
-			buffer.writeInt(ownerId);
-			if (ownerId > 0)
-			{
-				final Clan owner = ClanTable.getInstance().getClan(ownerId);
-				if (owner != null)
-				{
-					buffer.writeString(owner.getName()); // Clan Name
-					buffer.writeString(owner.getLeaderName()); // Clan Leader Name
-					buffer.writeInt(owner.getAllyId()); // Ally ID
-					buffer.writeString(owner.getAllyName()); // Ally Name
-				}
-				else
-				{
-					PacketLogger.warning("Null owner for castle: " + _castle.getName());
-				}
-			}
-			else
-			{
-				buffer.writeString(""); // Clan Name
-				buffer.writeString(""); // Clan Leader Name
-				buffer.writeInt(0); // Ally ID
-				buffer.writeString(""); // Ally Name
-			}
-			
-			buffer.writeInt((int) (System.currentTimeMillis() / 1000));
-			if (!_castle.isTimeRegistrationOver() && _player.isClanLeader() && (_player.getClanId() == _castle.getOwnerId()))
-			{
-				final Calendar cal = Calendar.getInstance();
-				cal.setTimeInMillis(_castle.getSiegeDate().getTimeInMillis());
-				cal.set(Calendar.MINUTE, 0);
-				cal.set(Calendar.SECOND, 0);
-				buffer.writeInt(0);
-				buffer.writeInt(FeatureConfig.SIEGE_HOUR_LIST.size());
-				for (int hour : FeatureConfig.SIEGE_HOUR_LIST)
-				{
-					cal.set(Calendar.HOUR_OF_DAY, hour);
-					buffer.writeInt((int) (cal.getTimeInMillis() / 1000));
-				}
-			}
-			else
-			{
-				buffer.writeInt((int) (_castle.getSiegeDate().getTimeInMillis() / 1000));
-				buffer.writeInt(0);
-			}
-		}
-		else
-		{
-			buffer.writeInt(_hall.getId());
-			final int ownerId = _hall.getOwnerId();
-			buffer.writeInt(((ownerId == _player.getClanId()) && (_player.isClanLeader())));
-			buffer.writeInt(ownerId);
-			if (ownerId > 0)
-			{
-				final Clan owner = ClanTable.getInstance().getClan(ownerId);
-				if (owner != null)
-				{
-					buffer.writeString(owner.getName()); // Clan Name
-					buffer.writeString(owner.getLeaderName()); // Clan Leader Name
-					buffer.writeInt(owner.getAllyId()); // Ally ID
-					buffer.writeString(owner.getAllyName()); // Ally Name
-				}
-				else
-				{
-					PacketLogger.warning("Null owner for siegable hall: " + _hall.getName());
-				}
-			}
-			else
-			{
-				buffer.writeString(""); // Clan Name
-				buffer.writeString(""); // Clan Leader Name
-				buffer.writeInt(0); // Ally ID
-				buffer.writeString(""); // Ally Name
-			}
-			
-			buffer.writeInt((int) (System.currentTimeMillis() / 1000));
-			buffer.writeInt((int) ((CHSiegeManager.getInstance().getSiegableHall(_hall.getId()).getNextSiegeTime()) / 1000));
-			buffer.writeInt(0); // number of choices?
-		}
-	}
+public class SiegeInfo extends ServerPacket {
+    private Castle _castle;
+    private ClanHall _hall;
+    private final Player _player;
+
+    public SiegeInfo(Castle castle, Player player) {
+        _castle = castle;
+        _player = player;
+    }
+
+    public SiegeInfo(ClanHall hall, Player player) {
+        _hall = hall;
+        _player = player;
+    }
+
+    @Override
+    public void writeImpl(GameClient client, WriteBuffer buffer) {
+        ServerPackets.CASTLE_SIEGE_INFO.writeId(this, buffer);
+        if (_castle != null) {
+            buffer.writeInt(_castle.getResidenceId());
+            final int ownerId = _castle.getOwnerId();
+            buffer.writeInt((ownerId == _player.getClanId()) && (_player.isClanLeader()));
+            buffer.writeInt(ownerId);
+            if (ownerId > 0) {
+                final Clan owner = ClanTable.getInstance().getClan(ownerId);
+                if (owner != null) {
+                    buffer.writeString(owner.getName()); // Clan Name
+                    buffer.writeString(owner.getLeaderName()); // Clan Leader Name
+                    buffer.writeInt(owner.getAllyId()); // Ally ID
+                    buffer.writeString(owner.getAllyName()); // Ally Name
+                } else {
+                    PacketLogger.warning("Null owner for castle: " + _castle.getName());
+                }
+            } else {
+                buffer.writeString(""); // Clan Name
+                buffer.writeString(""); // Clan Leader Name
+                buffer.writeInt(0); // Ally ID
+                buffer.writeString(""); // Ally Name
+            }
+
+            buffer.writeInt((int) (System.currentTimeMillis() / 1000));
+            if (!_castle.isTimeRegistrationOver()
+                    && _player.isClanLeader()
+                    && (_player.getClanId() == _castle.getOwnerId())) {
+                final Calendar cal = Calendar.getInstance();
+                cal.setTimeInMillis(_castle.getSiegeDate().getTimeInMillis());
+                cal.set(Calendar.MINUTE, 0);
+                cal.set(Calendar.SECOND, 0);
+                buffer.writeInt(0);
+                buffer.writeInt(FeatureConfig.SIEGE_HOUR_LIST.size());
+                for (int hour : FeatureConfig.SIEGE_HOUR_LIST) {
+                    cal.set(Calendar.HOUR_OF_DAY, hour);
+                    buffer.writeInt((int) (cal.getTimeInMillis() / 1000));
+                }
+            } else {
+                buffer.writeInt((int) (_castle.getSiegeDate().getTimeInMillis() / 1000));
+                buffer.writeInt(0);
+            }
+        } else {
+            buffer.writeInt(_hall.getId());
+            final int ownerId = _hall.getOwnerId();
+            buffer.writeInt(((ownerId == _player.getClanId()) && (_player.isClanLeader())));
+            buffer.writeInt(ownerId);
+            if (ownerId > 0) {
+                final Clan owner = ClanTable.getInstance().getClan(ownerId);
+                if (owner != null) {
+                    buffer.writeString(owner.getName()); // Clan Name
+                    buffer.writeString(owner.getLeaderName()); // Clan Leader Name
+                    buffer.writeInt(owner.getAllyId()); // Ally ID
+                    buffer.writeString(owner.getAllyName()); // Ally Name
+                } else {
+                    PacketLogger.warning("Null owner for siegable hall: " + _hall.getName());
+                }
+            } else {
+                buffer.writeString(""); // Clan Name
+                buffer.writeString(""); // Clan Leader Name
+                buffer.writeInt(0); // Ally ID
+                buffer.writeString(""); // Ally Name
+            }
+
+            buffer.writeInt((int) (System.currentTimeMillis() / 1000));
+            buffer.writeInt((int) ((CHSiegeManager.getInstance()
+                            .getSiegableHall(_hall.getId())
+                            .getNextSiegeTime())
+                    / 1000));
+            buffer.writeInt(0); // number of choices?
+        }
+    }
 }

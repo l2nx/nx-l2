@@ -2,17 +2,17 @@
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -28,86 +28,68 @@ import app.l2nx.highfive.mechanics.script.Quest;
 import app.l2nx.highfive.mechanics.script.QuestState;
 import app.l2nx.highfive.mechanics.script.State;
 
-public class Q00696_ConquerTheHallOfErosion extends Quest
-{
-	private static final int TEPIOS = 32603;
-	private static final int MARK_OF_KEUCEREUS_STAGE_1 = 13691;
-	private static final int MARK_OF_KEUCEREUS_STAGE_2 = 13692;
-	
-	public Q00696_ConquerTheHallOfErosion()
-	{
-		super(696);
-		addStartNpc(TEPIOS);
-		addTalkId(TEPIOS);
-	}
-	
-	@Override
-	public String onEvent(String event, Npc npc, Player player)
-	{
-		final String htmltext = event;
-		final QuestState qs = player.getQuestState(getName());
-		if (qs == null)
-		{
-			return htmltext;
-		}
-		
-		if (event.equalsIgnoreCase("32603-02.html"))
-		{
-			qs.startQuest();
-		}
-		
-		return htmltext;
-	}
-	
-	@Override
-	public String onTalk(Npc npc, Player player)
-	{
-		final QuestState qs = getQuestState(player, true);
-		String htmltext = getNoQuestMsg(player);
-		switch (qs.getState())
-		{
-			case State.CREATED:
-			{
-				if (player.getLevel() >= 75)
-				{
-					if ((getQuestItemsCount(player, MARK_OF_KEUCEREUS_STAGE_1) > 0) || (getQuestItemsCount(player, MARK_OF_KEUCEREUS_STAGE_2) > 0))
-					{
-						htmltext = "32603-01.htm";
-					}
-					else
-					{
-						htmltext = "32603-05.html";
-						qs.exitQuest(true);
-					}
-				}
-				else
-				{
-					htmltext = "32603-00.html";
-					qs.exitQuest(true);
-				}
-				break;
-			}
-			case State.STARTED:
-			{
-				if (qs.getInt("cohemenes") != 0)
-				{
-					if (getQuestItemsCount(player, MARK_OF_KEUCEREUS_STAGE_2) < 1)
-					{
-						takeItems(player, MARK_OF_KEUCEREUS_STAGE_1, 1);
-						giveItems(player, MARK_OF_KEUCEREUS_STAGE_2, 1);
-					}
-					
-					htmltext = "32603-04.html";
-					qs.exitQuest(true);
-				}
-				else
-				{
-					htmltext = "32603-01a.html";
-				}
-				break;
-			}
-		}
-		
-		return htmltext;
-	}
+public class Q00696_ConquerTheHallOfErosion extends Quest {
+    private static final int TEPIOS = 32603;
+    private static final int MARK_OF_KEUCEREUS_STAGE_1 = 13691;
+    private static final int MARK_OF_KEUCEREUS_STAGE_2 = 13692;
+
+    public Q00696_ConquerTheHallOfErosion() {
+        super(696);
+        addStartNpc(TEPIOS);
+        addTalkId(TEPIOS);
+    }
+
+    @Override
+    public String onEvent(String event, Npc npc, Player player) {
+        final String htmltext = event;
+        final QuestState qs = player.getQuestState(getName());
+        if (qs == null) {
+            return htmltext;
+        }
+
+        if (event.equalsIgnoreCase("32603-02.html")) {
+            qs.startQuest();
+        }
+
+        return htmltext;
+    }
+
+    @Override
+    public String onTalk(Npc npc, Player player) {
+        final QuestState qs = getQuestState(player, true);
+        String htmltext = getNoQuestMsg(player);
+        switch (qs.getState()) {
+            case State.CREATED: {
+                if (player.getLevel() >= 75) {
+                    if ((getQuestItemsCount(player, MARK_OF_KEUCEREUS_STAGE_1) > 0)
+                            || (getQuestItemsCount(player, MARK_OF_KEUCEREUS_STAGE_2) > 0)) {
+                        htmltext = "32603-01.htm";
+                    } else {
+                        htmltext = "32603-05.html";
+                        qs.exitQuest(true);
+                    }
+                } else {
+                    htmltext = "32603-00.html";
+                    qs.exitQuest(true);
+                }
+                break;
+            }
+            case State.STARTED: {
+                if (qs.getInt("cohemenes") != 0) {
+                    if (getQuestItemsCount(player, MARK_OF_KEUCEREUS_STAGE_2) < 1) {
+                        takeItems(player, MARK_OF_KEUCEREUS_STAGE_1, 1);
+                        giveItems(player, MARK_OF_KEUCEREUS_STAGE_2, 1);
+                    }
+
+                    htmltext = "32603-04.html";
+                    qs.exitQuest(true);
+                } else {
+                    htmltext = "32603-01a.html";
+                }
+                break;
+            }
+        }
+
+        return htmltext;
+    }
 }

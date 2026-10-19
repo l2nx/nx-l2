@@ -2,17 +2,17 @@
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -22,40 +22,36 @@
  */
 package app.l2nx.highfive.network.serverpackets;
 
-import java.util.Collection;
-
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.item.instance.Item;
 import app.l2nx.highfive.network.GameClient;
 import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.network.buffer.WriteBuffer;
+import java.util.Collection;
 
-public class TradeStart extends AbstractItemPacket
-{
-	private final Player _player;
-	private final Collection<Item> _itemList;
-	
-	public TradeStart(Player player)
-	{
-		_player = player;
-		_itemList = _player.getInventory().getAvailableItems(true, (_player.isGM() && GeneralConfig.GM_TRADE_RESTRICTED_ITEMS), false);
-	}
-	
-	@Override
-	public void writeImpl(GameClient client, WriteBuffer buffer)
-	{
-		if ((_player.getActiveTradeList() == null) || (_player.getActiveTradeList().getPartner() == null))
-		{
-			return;
-		}
-		
-		ServerPackets.TRADE_START.writeId(this, buffer);
-		buffer.writeInt(_player.getActiveTradeList().getPartner().getObjectId());
-		buffer.writeShort(_itemList.size());
-		for (Item item : _itemList)
-		{
-			writeItem(item, buffer);
-		}
-	}
+public class TradeStart extends AbstractItemPacket {
+    private final Player _player;
+    private final Collection<Item> _itemList;
+
+    public TradeStart(Player player) {
+        _player = player;
+        _itemList = _player.getInventory()
+                .getAvailableItems(true, (_player.isGM() && GeneralConfig.GM_TRADE_RESTRICTED_ITEMS), false);
+    }
+
+    @Override
+    public void writeImpl(GameClient client, WriteBuffer buffer) {
+        if ((_player.getActiveTradeList() == null)
+                || (_player.getActiveTradeList().getPartner() == null)) {
+            return;
+        }
+
+        ServerPackets.TRADE_START.writeId(this, buffer);
+        buffer.writeInt(_player.getActiveTradeList().getPartner().getObjectId());
+        buffer.writeShort(_itemList.size());
+        for (Item item : _itemList) {
+            writeItem(item, buffer);
+        }
+    }
 }

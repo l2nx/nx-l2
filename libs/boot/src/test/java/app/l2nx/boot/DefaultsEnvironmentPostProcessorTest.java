@@ -17,38 +17,33 @@ import org.springframework.core.env.Environment;
 /**
  * Runs the real environment preparation, so the defaults meet the application's own config data (test application.yaml).
  */
-class DefaultsEnvironmentPostProcessorTest
-{
-	@Nested
-	class PostProcessEnvironment
-	{
-		@Test
-		void postProcessEnvironment_shouldKeepApplicationValue_whenKeyIsInBoth()
-		{
-			try (ConfigurableApplicationContext context = start())
-			{
-				assertThat(context.getEnvironment().getProperty("server.address")).isEqualTo("0.0.0.0");
-			}
-		}
+class DefaultsEnvironmentPostProcessorTest {
+    @Nested
+    class PostProcessEnvironment {
+        @Test
+        void postProcessEnvironment_shouldKeepApplicationValue_whenKeyIsInBoth() {
+            try (ConfigurableApplicationContext context = start()) {
+                assertThat(context.getEnvironment().getProperty("server.address"))
+                        .isEqualTo("0.0.0.0");
+            }
+        }
 
-		@Test
-		void postProcessEnvironment_shouldAddDefault_whenApplicationLacksKey()
-		{
-			try (ConfigurableApplicationContext context = start())
-			{
-				final Environment environment = context.getEnvironment();
-				assertThat(environment.getProperty("spring.datasource.hikari.pool-name")).isEqualTo("l2nx-db");
-			}
-		}
-	}
+        @Test
+        void postProcessEnvironment_shouldAddDefault_whenApplicationLacksKey() {
+            try (ConfigurableApplicationContext context = start()) {
+                final Environment environment = context.getEnvironment();
+                assertThat(environment.getProperty("spring.datasource.hikari.pool-name"))
+                        .isEqualTo("l2nx-db");
+            }
+        }
+    }
 
-	private static ConfigurableApplicationContext start()
-	{
-		return new SpringApplicationBuilder(EmptyConfiguration.class).web(WebApplicationType.NONE).run();
-	}
+    private static ConfigurableApplicationContext start() {
+        return new SpringApplicationBuilder(EmptyConfiguration.class)
+                .web(WebApplicationType.NONE)
+                .run();
+    }
 
-	@Configuration(proxyBeanMethods = false)
-	static class EmptyConfiguration
-	{
-	}
+    @Configuration(proxyBeanMethods = false)
+    static class EmptyConfiguration {}
 }

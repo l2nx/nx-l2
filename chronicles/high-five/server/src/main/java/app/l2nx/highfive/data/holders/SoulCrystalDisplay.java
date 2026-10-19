@@ -2,17 +2,17 @@
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -24,45 +24,38 @@ package app.l2nx.highfive.data.holders;
 
 import app.l2nx.highfive.data.enums.AbsorbCrystalType;
 
-public class SoulCrystalDisplay
-{
-	private Integer _fromLevel = 0;
-	private Integer _chance = 0;
-	private Integer _npcLvl = 0;
-	private final AbsorbCrystalType _absorb;
-	private final String _name;
-	
-	public SoulCrystalDisplay(int fromLevel, int chance, AbsorbCrystalType absorb, int npcLvl, String name)
-	{
-		_fromLevel = fromLevel;
-		_chance = chance;
-		_absorb = absorb;
-		_npcLvl = npcLvl;
-		_name = name;
-	}
-	
-	public Integer getFromLevel()
-	{
-		return _fromLevel;
-	}
-	
-	public Integer getChance()
-	{
-		return _chance;
-	}
-	
-	public AbsorbCrystalType getAbsorb()
-	{
-		return _absorb;
-	}
-	
-	public Integer getLevel()
-	{
-		return _npcLvl;
-	}
-	
-	public String getName()
-	{
-		return _name;
-	}
+public class SoulCrystalDisplay {
+    private Integer _fromLevel = 0;
+    private Integer _chance = 0;
+    private Integer _npcLvl = 0;
+    private final AbsorbCrystalType _absorb;
+    private final String _name;
+
+    public SoulCrystalDisplay(int fromLevel, int chance, AbsorbCrystalType absorb, int npcLvl, String name) {
+        _fromLevel = fromLevel;
+        _chance = chance;
+        _absorb = absorb;
+        _npcLvl = npcLvl;
+        _name = name;
+    }
+
+    public Integer getFromLevel() {
+        return _fromLevel;
+    }
+
+    public Integer getChance() {
+        return _chance;
+    }
+
+    public AbsorbCrystalType getAbsorb() {
+        return _absorb;
+    }
+
+    public Integer getLevel() {
+        return _npcLvl;
+    }
+
+    public String getName() {
+        return _name;
+    }
 }

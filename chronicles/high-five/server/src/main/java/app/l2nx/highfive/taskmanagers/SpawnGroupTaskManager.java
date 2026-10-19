@@ -2,17 +2,17 @@
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -22,88 +22,74 @@
  */
 package app.l2nx.highfive.taskmanagers;
 
-import java.util.Iterator;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
-
 import app.l2nx.highfive.entity.spawns.SpawnGroup;
 import app.l2nx.highfive.entity.spawns.SpawnGroupEntry;
 import app.l2nx.highfive.threads.ThreadPool;
+import java.util.Iterator;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * Materializes pending spawn group replacements whose units were already reserved on death.<br>
  * A queue is used instead of a map because the same entry can have several replacements pending.
  * @author Altur
  */
-public class SpawnGroupTaskManager implements Runnable
-{
-	private static final Queue<PendingGroupSpawn> PENDING_SPAWNS = new ConcurrentLinkedQueue<>();
-	private static boolean _working = false;
-	
-	protected SpawnGroupTaskManager()
-	{
-		ThreadPool.scheduleAtFixedRate(this, 0, 1000);
-	}
-	
-	@Override
-	public void run()
-	{
-		if (_working)
-		{
-			return;
-		}
-		
-		_working = true;
-		
-		if (!PENDING_SPAWNS.isEmpty())
-		{
-			final long currentTime = System.currentTimeMillis();
-			final Iterator<PendingGroupSpawn> iterator = PENDING_SPAWNS.iterator();
-			while (iterator.hasNext())
-			{
-				final PendingGroupSpawn pending = iterator.next();
-				if (currentTime > pending._time)
-				{
-					iterator.remove();
-					pending._group.spawnUnits(pending._entry, 1);
-				}
-			}
-		}
-		
-		_working = false;
-	}
-	
-	public void add(SpawnGroup group, SpawnGroupEntry entry, long time)
-	{
-		PENDING_SPAWNS.add(new PendingGroupSpawn(group, entry, time));
-	}
-	
-	public void clear()
-	{
-		PENDING_SPAWNS.clear();
-	}
-	
-	private static class PendingGroupSpawn
-	{
-		final SpawnGroup _group;
-		final SpawnGroupEntry _entry;
-		final long _time;
-		
-		PendingGroupSpawn(SpawnGroup group, SpawnGroupEntry entry, long time)
-		{
-			_group = group;
-			_entry = entry;
-			_time = time;
-		}
-	}
-	
-	public static SpawnGroupTaskManager getInstance()
-	{
-		return SingletonHolder.INSTANCE;
-	}
-	
-	private static class SingletonHolder
-	{
-		protected static final SpawnGroupTaskManager INSTANCE = new SpawnGroupTaskManager();
-	}
+public class SpawnGroupTaskManager implements Runnable {
+    private static final Queue<PendingGroupSpawn> PENDING_SPAWNS = new ConcurrentLinkedQueue<>();
+    private static boolean _working = false;
+
+    protected SpawnGroupTaskManager() {
+        ThreadPool.scheduleAtFixedRate(this, 0, 1000);
+    }
+
+    @Override
+    public void run() {
+        if (_working) {
+            return;
+        }
+
+        _working = true;
+
+        if (!PENDING_SPAWNS.isEmpty()) {
+            final long currentTime = System.currentTimeMillis();
+            final Iterator<PendingGroupSpawn> iterator = PENDING_SPAWNS.iterator();
+            while (iterator.hasNext()) {
+                final PendingGroupSpawn pending = iterator.next();
+                if (currentTime > pending._time) {
+                    iterator.remove();
+                    pending._group.spawnUnits(pending._entry, 1);
+                }
+            }
+        }
+
+        _working = false;
+    }
+
+    public void add(SpawnGroup group, SpawnGroupEntry entry, long time) {
+        PENDING_SPAWNS.add(new PendingGroupSpawn(group, entry, time));
+    }
+
+    public void clear() {
+        PENDING_SPAWNS.clear();
+    }
+
+    private static class PendingGroupSpawn {
+        final SpawnGroup _group;
+        final SpawnGroupEntry _entry;
+        final long _time;
+
+        PendingGroupSpawn(SpawnGroup group, SpawnGroupEntry entry, long time) {
+            _group = group;
+            _entry = entry;
+            _time = time;
+        }
+    }
+
+    public static SpawnGroupTaskManager getInstance() {
+        return SingletonHolder.INSTANCE;
+    }
+
+    private static class SingletonHolder {
+        protected static final SpawnGroupTaskManager INSTANCE = new SpawnGroupTaskManager();
+    }
 }

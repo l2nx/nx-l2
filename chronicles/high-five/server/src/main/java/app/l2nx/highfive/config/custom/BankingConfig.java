@@ -2,17 +2,17 @@
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -28,25 +28,23 @@ import app.l2nx.highfive.config.ConfigReader;
  * This class loads all the custom banking related configurations.
  * @author Mobius
  */
-public class BankingConfig
-{
-	// File
-	private static final String BANKING_CONFIG_FILE = "./config/Custom/Banking.ini";
-	
-	// Constants
-	public static boolean BANKING_SYSTEM_ENABLED;
-	public static int BANKING_SYSTEM_GOLDBAR_COUNT;
-	public static int BANKING_SYSTEM_ADENA_COUNT;
-	public static boolean BANKING_SYSTEM_AUTO_CONVERT_ENABLED;
-	public static long BANKING_SYSTEM_AUTO_CONVERT_ADENA_LIMIT;
-	
-	public static void load()
-	{
-		final ConfigReader config = new ConfigReader(BANKING_CONFIG_FILE);
-		BANKING_SYSTEM_ENABLED = config.getBoolean("BankingEnabled", false);
-		BANKING_SYSTEM_GOLDBAR_COUNT = config.getInt("BankingGoldbarCount", 1);
-		BANKING_SYSTEM_ADENA_COUNT = config.getInt("BankingAdenaCount", 1000000000);
-		BANKING_SYSTEM_AUTO_CONVERT_ENABLED = config.getBoolean("BankingAutoConvert", false);
-		BANKING_SYSTEM_AUTO_CONVERT_ADENA_LIMIT = config.getLong("BankingAutoConvertAdenaLimit", 51000000000L);
-	}
+public class BankingConfig {
+    // File
+    private static final String BANKING_CONFIG_FILE = "./config/Custom/Banking.ini";
+
+    // Constants
+    public static boolean BANKING_SYSTEM_ENABLED;
+    public static int BANKING_SYSTEM_GOLDBAR_COUNT;
+    public static int BANKING_SYSTEM_ADENA_COUNT;
+    public static boolean BANKING_SYSTEM_AUTO_CONVERT_ENABLED;
+    public static long BANKING_SYSTEM_AUTO_CONVERT_ADENA_LIMIT;
+
+    public static void load() {
+        final ConfigReader config = new ConfigReader(BANKING_CONFIG_FILE);
+        BANKING_SYSTEM_ENABLED = config.getBoolean("BankingEnabled", false);
+        BANKING_SYSTEM_GOLDBAR_COUNT = config.getInt("BankingGoldbarCount", 1);
+        BANKING_SYSTEM_ADENA_COUNT = config.getInt("BankingAdenaCount", 1000000000);
+        BANKING_SYSTEM_AUTO_CONVERT_ENABLED = config.getBoolean("BankingAutoConvert", false);
+        BANKING_SYSTEM_AUTO_CONVERT_ADENA_LIMIT = config.getLong("BankingAutoConvertAdenaLimit", 51000000000L);
+    }
 }

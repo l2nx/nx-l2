@@ -2,17 +2,17 @@
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -73,74 +73,72 @@ import app.l2nx.highfive.config.custom.WeddingConfig;
  * The configurations are typically located in the config directory within the server root folder.
  * @author Mobius
  */
-public class ConfigLoader
-{
-	public static void init()
-	{
-		ServerConfig.load();
-		NetworkConfig.load();
-		
-		// Main configurations.
-		ConquerableHallSiegeConfig.load();
-		DevelopmentConfig.load();
-		FeatureConfig.load();
-		FloodProtectorConfig.load();
-		GeneralConfig.load();
-		GeoEngineConfig.load();
-		GraciaSeedsConfig.load();
-		GrandBossConfig.load();
-		IdManagerConfig.load();
-		NpcConfig.load();
-		OlympiadConfig.load();
-		PlayerConfig.load();
-		PvpConfig.load();
-		RatesConfig.load();
-		UndergroundColiseumConfig.load();
-		
-		// Custom configurations.
-		AllowedPlayerRacesConfig.load();
-		AutoPlayConfig.load();
-		AutoPotionsConfig.load();
-		BankingConfig.load();
-		BossAnnouncementsConfig.load();
-		CancelReturnConfig.load();
-		CaptchaConfig.load();
-		ChampionMonstersConfig.load();
-		ChatModerationConfig.load();
-		ClassBalanceConfig.load();
-		CommunityBoardConfig.load();
-		CustomMailManagerConfig.load();
-		DelevelManagerConfig.load();
-		DualboxCheckConfig.load();
-		FactionSystemConfig.load();
-		FakePlayersConfig.load();
-		FindPvpConfig.load();
-		FreeMountsConfig.load();
-		HellboundStatusConfig.load();
-		MerchantZeroSellPriceConfig.load();
-		MultilingualSupportConfig.load();
-		NoblessMasterConfig.load();
-		NpcStatMultipliersConfig.load();
-		OfflinePlayConfig.load();
-		OfflineTradeConfig.load();
-		OnlineInfoConfig.load();
-		PasswordChangeConfig.load();
-		PremiumSystemConfig.load();
-		PrivateStoreRangeConfig.load();
-		PvpAnnounceConfig.load();
-		PvpRewardItemConfig.load();
-		PvpTitleColorConfig.load();
-		RandomSpawnsConfig.load();
-		RebirthConfig.load();
-		SchemeBufferConfig.load();
-		ScreenWelcomeMessageConfig.load();
-		SellBuffsConfig.load();
-		ServerTimeConfig.load();
-		StartingLocationConfig.load();
-		StartingTitleConfig.load();
-		TransmogConfig.load();
-		WalkerBotProtectionConfig.load();
-		WarehouseSortingConfig.load();
-		WeddingConfig.load();
-	}
+public class ConfigLoader {
+    public static void init() {
+        ServerConfig.load();
+        NetworkConfig.load();
+
+        // Main configurations.
+        ConquerableHallSiegeConfig.load();
+        DevelopmentConfig.load();
+        FeatureConfig.load();
+        FloodProtectorConfig.load();
+        GeneralConfig.load();
+        GeoEngineConfig.load();
+        GraciaSeedsConfig.load();
+        GrandBossConfig.load();
+        IdManagerConfig.load();
+        NpcConfig.load();
+        OlympiadConfig.load();
+        PlayerConfig.load();
+        PvpConfig.load();
+        RatesConfig.load();
+        UndergroundColiseumConfig.load();
+
+        // Custom configurations.
+        AllowedPlayerRacesConfig.load();
+        AutoPlayConfig.load();
+        AutoPotionsConfig.load();
+        BankingConfig.load();
+        BossAnnouncementsConfig.load();
+        CancelReturnConfig.load();
+        CaptchaConfig.load();
+        ChampionMonstersConfig.load();
+        ChatModerationConfig.load();
+        ClassBalanceConfig.load();
+        CommunityBoardConfig.load();
+        CustomMailManagerConfig.load();
+        DelevelManagerConfig.load();
+        DualboxCheckConfig.load();
+        FactionSystemConfig.load();
+        FakePlayersConfig.load();
+        FindPvpConfig.load();
+        FreeMountsConfig.load();
+        HellboundStatusConfig.load();
+        MerchantZeroSellPriceConfig.load();
+        MultilingualSupportConfig.load();
+        NoblessMasterConfig.load();
+        NpcStatMultipliersConfig.load();
+        OfflinePlayConfig.load();
+        OfflineTradeConfig.load();
+        OnlineInfoConfig.load();
+        PasswordChangeConfig.load();
+        PremiumSystemConfig.load();
+        PrivateStoreRangeConfig.load();
+        PvpAnnounceConfig.load();
+        PvpRewardItemConfig.load();
+        PvpTitleColorConfig.load();
+        RandomSpawnsConfig.load();
+        RebirthConfig.load();
+        SchemeBufferConfig.load();
+        ScreenWelcomeMessageConfig.load();
+        SellBuffsConfig.load();
+        ServerTimeConfig.load();
+        StartingLocationConfig.load();
+        StartingTitleConfig.load();
+        TransmogConfig.load();
+        WalkerBotProtectionConfig.load();
+        WarehouseSortingConfig.load();
+        WeddingConfig.load();
+    }
 }

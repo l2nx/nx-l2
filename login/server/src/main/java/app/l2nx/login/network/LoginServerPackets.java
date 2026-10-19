@@ -2,17 +2,17 @@
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -27,30 +27,27 @@ import app.l2nx.network.packet.SimpleWritablePacket;
 /**
  * @author Mobius
  */
-public enum LoginServerPackets
-{
-	INIT(0x00),
-	LOGIN_FAIL(0x01),
-	ACCOUNT_KICKED(0x02),
-	LOGIN_OK(0x03),
-	SERVER_LIST(0x04),
-	PLAY_FAIL(0x06),
-	PLAY_OK(0x07),
-	
-	PI_AGREEMENT_CHECK(0x11),
-	PI_AGREEMENT_ACK(0x12),
-	GG_AUTH(0x0b),
-	LOGIN_OPT_FAIL(0x0D);
-	
-	private final int _id;
-	
-	LoginServerPackets(int id)
-	{
-		_id = id;
-	}
-	
-	public void writeId(SimpleWritablePacket packet)
-	{
-		packet.writeByte(_id);
-	}
+public enum LoginServerPackets {
+    INIT(0x00),
+    LOGIN_FAIL(0x01),
+    ACCOUNT_KICKED(0x02),
+    LOGIN_OK(0x03),
+    SERVER_LIST(0x04),
+    PLAY_FAIL(0x06),
+    PLAY_OK(0x07),
+
+    PI_AGREEMENT_CHECK(0x11),
+    PI_AGREEMENT_ACK(0x12),
+    GG_AUTH(0x0b),
+    LOGIN_OPT_FAIL(0x0D);
+
+    private final int _id;
+
+    LoginServerPackets(int id) {
+        _id = id;
+    }
+
+    public void writeId(SimpleWritablePacket packet) {
+        packet.writeByte(_id);
+    }
 }

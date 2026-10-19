@@ -2,17 +2,17 @@
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -22,82 +22,70 @@
  */
 package app.l2nx.highfive.entity.actor.instance;
 
-import java.util.StringTokenizer;
-
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.enums.creature.InstanceType;
 import app.l2nx.highfive.entity.actor.templates.NpcTemplate;
 import app.l2nx.highfive.network.serverpackets.ActionFailed;
 import app.l2nx.highfive.network.serverpackets.NpcHtmlMessage;
+import java.util.StringTokenizer;
 
-public class FortDoorman extends Doorman
-{
-	/**
-	 * Creates a fort doorman.
-	 * @param template the fort doorman NPC template
-	 */
-	public FortDoorman(NpcTemplate template)
-	{
-		super(template);
-		setInstanceType(InstanceType.FortDoorman);
-	}
-	
-	@Override
-	public void showChatWindow(Player player)
-	{
-		player.sendPacket(ActionFailed.STATIC_PACKET);
-		
-		final NpcHtmlMessage html = new NpcHtmlMessage(getObjectId());
-		if (!isOwnerClan(player))
-		{
-			html.setFile(player, "data/html/doorman/" + getTemplate().getId() + "-no.htm");
-		}
-		else if (isUnderSiege())
-		{
-			html.setFile(player, "data/html/doorman/" + getTemplate().getId() + "-busy.htm");
-		}
-		else
-		{
-			html.setFile(player, "data/html/doorman/" + getTemplate().getId() + ".htm");
-		}
-		
-		html.replace("%objectId%", String.valueOf(getObjectId()));
-		player.sendPacket(html);
-	}
-	
-	@Override
-	protected void openDoors(Player player, String command)
-	{
-		final StringTokenizer st = new StringTokenizer(command.substring(10), ", ");
-		st.nextToken();
-		
-		while (st.hasMoreTokens())
-		{
-			getFort().openDoor(player, Integer.parseInt(st.nextToken()));
-		}
-	}
-	
-	@Override
-	protected void closeDoors(Player player, String command)
-	{
-		final StringTokenizer st = new StringTokenizer(command.substring(11), ", ");
-		st.nextToken();
-		
-		while (st.hasMoreTokens())
-		{
-			getFort().closeDoor(player, Integer.parseInt(st.nextToken()));
-		}
-	}
-	
-	@Override
-	protected boolean isOwnerClan(Player player)
-	{
-		return (player.getClan() != null) && (getFort() != null) && (getFort().getOwnerClan() != null) && (player.getClanId() == getFort().getOwnerClan().getId());
-	}
-	
-	@Override
-	protected boolean isUnderSiege()
-	{
-		return getFort().getZone().isActive();
-	}
+public class FortDoorman extends Doorman {
+    /**
+     * Creates a fort doorman.
+     * @param template the fort doorman NPC template
+     */
+    public FortDoorman(NpcTemplate template) {
+        super(template);
+        setInstanceType(InstanceType.FortDoorman);
+    }
+
+    @Override
+    public void showChatWindow(Player player) {
+        player.sendPacket(ActionFailed.STATIC_PACKET);
+
+        final NpcHtmlMessage html = new NpcHtmlMessage(getObjectId());
+        if (!isOwnerClan(player)) {
+            html.setFile(player, "data/html/doorman/" + getTemplate().getId() + "-no.htm");
+        } else if (isUnderSiege()) {
+            html.setFile(player, "data/html/doorman/" + getTemplate().getId() + "-busy.htm");
+        } else {
+            html.setFile(player, "data/html/doorman/" + getTemplate().getId() + ".htm");
+        }
+
+        html.replace("%objectId%", String.valueOf(getObjectId()));
+        player.sendPacket(html);
+    }
+
+    @Override
+    protected void openDoors(Player player, String command) {
+        final StringTokenizer st = new StringTokenizer(command.substring(10), ", ");
+        st.nextToken();
+
+        while (st.hasMoreTokens()) {
+            getFort().openDoor(player, Integer.parseInt(st.nextToken()));
+        }
+    }
+
+    @Override
+    protected void closeDoors(Player player, String command) {
+        final StringTokenizer st = new StringTokenizer(command.substring(11), ", ");
+        st.nextToken();
+
+        while (st.hasMoreTokens()) {
+            getFort().closeDoor(player, Integer.parseInt(st.nextToken()));
+        }
+    }
+
+    @Override
+    protected boolean isOwnerClan(Player player) {
+        return (player.getClan() != null)
+                && (getFort() != null)
+                && (getFort().getOwnerClan() != null)
+                && (player.getClanId() == getFort().getOwnerClan().getId());
+    }
+
+    @Override
+    protected boolean isUnderSiege() {
+        return getFort().getZone().isActive();
+    }
 }

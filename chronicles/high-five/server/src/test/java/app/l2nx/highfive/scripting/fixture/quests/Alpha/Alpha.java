@@ -4,9 +4,6 @@
  */
 package app.l2nx.highfive.scripting.fixture.quests.Alpha;
 
-public class Alpha
-{
-	public static void main(String[] args)
-	{
-	}
+public class Alpha {
+    public static void main(String[] args) {}
 }

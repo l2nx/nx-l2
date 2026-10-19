@@ -2,17 +2,17 @@
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -22,53 +22,45 @@
  */
 package app.l2nx.highfive.network.serverpackets;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.instance.Pet;
 import app.l2nx.highfive.entity.item.instance.Item;
 import app.l2nx.highfive.network.GameClient;
 import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.network.buffer.WriteBuffer;
+import java.util.ArrayList;
+import java.util.List;
 
-public class GMViewItemList extends AbstractItemPacket
-{
-	private final List<Item> _items = new ArrayList<>();
-	private final int _limit;
-	private final String _playerName;
-	
-	public GMViewItemList(Player player)
-	{
-		_playerName = player.getName();
-		_limit = player.getInventoryLimit();
-		for (Item item : player.getInventory().getItems())
-		{
-			_items.add(item);
-		}
-	}
-	
-	public GMViewItemList(Pet cha)
-	{
-		_playerName = cha.getName();
-		_limit = cha.getInventoryLimit();
-		for (Item item : cha.getInventory().getItems())
-		{
-			_items.add(item);
-		}
-	}
-	
-	@Override
-	public void writeImpl(GameClient client, WriteBuffer buffer)
-	{
-		ServerPackets.GM_VIEW_ITEM_LIST.writeId(this, buffer);
-		buffer.writeString(_playerName);
-		buffer.writeInt(_limit); // inventory limit
-		buffer.writeShort(1); // show window ??
-		buffer.writeShort(_items.size());
-		for (Item item : _items)
-		{
-			writeItem(item, buffer);
-		}
-	}
+public class GMViewItemList extends AbstractItemPacket {
+    private final List<Item> _items = new ArrayList<>();
+    private final int _limit;
+    private final String _playerName;
+
+    public GMViewItemList(Player player) {
+        _playerName = player.getName();
+        _limit = player.getInventoryLimit();
+        for (Item item : player.getInventory().getItems()) {
+            _items.add(item);
+        }
+    }
+
+    public GMViewItemList(Pet cha) {
+        _playerName = cha.getName();
+        _limit = cha.getInventoryLimit();
+        for (Item item : cha.getInventory().getItems()) {
+            _items.add(item);
+        }
+    }
+
+    @Override
+    public void writeImpl(GameClient client, WriteBuffer buffer) {
+        ServerPackets.GM_VIEW_ITEM_LIST.writeId(this, buffer);
+        buffer.writeString(_playerName);
+        buffer.writeInt(_limit); // inventory limit
+        buffer.writeShort(1); // show window ??
+        buffer.writeShort(_items.size());
+        for (Item item : _items) {
+            writeItem(item, buffer);
+        }
+    }
 }

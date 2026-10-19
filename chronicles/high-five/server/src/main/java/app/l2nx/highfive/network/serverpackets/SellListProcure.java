@@ -2,17 +2,17 @@
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -22,10 +22,6 @@
  */
 package app.l2nx.highfive.network.serverpackets;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Map.Entry;
-
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.item.instance.Item;
 import app.l2nx.highfive.managers.CastleManorManager;
@@ -33,42 +29,39 @@ import app.l2nx.highfive.mechanics.siege.manor.CropProcure;
 import app.l2nx.highfive.network.GameClient;
 import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.network.buffer.WriteBuffer;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Map.Entry;
 
-public class SellListProcure extends ServerPacket
-{
-	private final long _money;
-	private final Map<Item, Long> _sellList = new HashMap<>();
-	
-	public SellListProcure(Player player, int castleId)
-	{
-		_money = player.getAdena();
-		for (CropProcure c : CastleManorManager.getInstance().getCropProcure(castleId, false))
-		{
-			final Item item = player.getInventory().getItemByItemId(c.getId());
-			if ((item != null) && (c.getAmount() > 0))
-			{
-				_sellList.put(item, c.getAmount());
-			}
-		}
-	}
-	
-	@Override
-	public void writeImpl(GameClient client, WriteBuffer buffer)
-	{
-		ServerPackets.SELL_LIST_PROCURE.writeId(this, buffer);
-		buffer.writeLong(_money); // money
-		buffer.writeInt(0); // lease ?
-		buffer.writeShort(_sellList.size()); // list size
-		for (Entry<Item, Long> entry : _sellList.entrySet())
-		{
-			final Item item = entry.getKey();
-			buffer.writeShort(item.getTemplate().getType1());
-			buffer.writeInt(item.getObjectId());
-			buffer.writeInt(item.getDisplayId());
-			buffer.writeLong(entry.getValue()); // count
-			buffer.writeShort(item.getTemplate().getType2());
-			buffer.writeShort(0); // unknown
-			buffer.writeLong(0); // price, you should not get any adena for crops, only raw materials
-		}
-	}
+public class SellListProcure extends ServerPacket {
+    private final long _money;
+    private final Map<Item, Long> _sellList = new HashMap<>();
+
+    public SellListProcure(Player player, int castleId) {
+        _money = player.getAdena();
+        for (CropProcure c : CastleManorManager.getInstance().getCropProcure(castleId, false)) {
+            final Item item = player.getInventory().getItemByItemId(c.getId());
+            if ((item != null) && (c.getAmount() > 0)) {
+                _sellList.put(item, c.getAmount());
+            }
+        }
+    }
+
+    @Override
+    public void writeImpl(GameClient client, WriteBuffer buffer) {
+        ServerPackets.SELL_LIST_PROCURE.writeId(this, buffer);
+        buffer.writeLong(_money); // money
+        buffer.writeInt(0); // lease ?
+        buffer.writeShort(_sellList.size()); // list size
+        for (Entry<Item, Long> entry : _sellList.entrySet()) {
+            final Item item = entry.getKey();
+            buffer.writeShort(item.getTemplate().getType1());
+            buffer.writeInt(item.getObjectId());
+            buffer.writeInt(item.getDisplayId());
+            buffer.writeLong(entry.getValue()); // count
+            buffer.writeShort(item.getTemplate().getType2());
+            buffer.writeShort(0); // unknown
+            buffer.writeLong(0); // price, you should not get any adena for crops, only raw materials
+        }
+    }
 }

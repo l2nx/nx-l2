@@ -2,17 +2,17 @@
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -31,11 +31,9 @@ import app.l2nx.highfive.entity.actor.templates.NpcTemplate;
 // This class is only truly used by the handlers in order to check the correctness
 // of the target.  However, no additional tasks are needed, since they are all
 // handled by scripted AI.
-public class FeedableBeast extends Monster
-{
-	public FeedableBeast(NpcTemplate template)
-	{
-		super(template);
-		setInstanceType(InstanceType.FeedableBeast);
-	}
+public class FeedableBeast extends Monster {
+    public FeedableBeast(NpcTemplate template) {
+        super(template);
+        setInstanceType(InstanceType.FeedableBeast);
+    }
 }

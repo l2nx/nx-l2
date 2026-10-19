@@ -2,17 +2,17 @@
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -22,33 +22,29 @@
  */
 package app.l2nx.highfive.mechanics.conditions;
 
-import java.util.Set;
-
 import app.l2nx.highfive.entity.WorldObject;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.item.ItemTemplate;
 import app.l2nx.highfive.mechanics.skill.Skill;
+import java.util.Set;
 
 /**
  * The Class ConditionTargetNpcId.
  */
-public class ConditionTargetNpcId extends Condition
-{
-	private final Set<Integer> _npcIds;
-	
-	/**
-	 * Instantiates a new condition target npc id.
-	 * @param npcIds the npc ids
-	 */
-	public ConditionTargetNpcId(Set<Integer> npcIds)
-	{
-		_npcIds = npcIds;
-	}
-	
-	@Override
-	public boolean testImpl(Creature effector, Creature effected, Skill skill, ItemTemplate item)
-	{
-		final WorldObject target = (effector == null) || !effector.isPlayer() ? effected : effector.getTarget();
-		return (target != null) && (target.isNpc() || target.isDoor()) && _npcIds.contains(target.getId());
-	}
+public class ConditionTargetNpcId extends Condition {
+    private final Set<Integer> _npcIds;
+
+    /**
+     * Instantiates a new condition target npc id.
+     * @param npcIds the npc ids
+     */
+    public ConditionTargetNpcId(Set<Integer> npcIds) {
+        _npcIds = npcIds;
+    }
+
+    @Override
+    public boolean testImpl(Creature effector, Creature effected, Skill skill, ItemTemplate item) {
+        final WorldObject target = (effector == null) || !effector.isPlayer() ? effected : effector.getTarget();
+        return (target != null) && (target.isNpc() || target.isDoor()) && _npcIds.contains(target.getId());
+    }
 }

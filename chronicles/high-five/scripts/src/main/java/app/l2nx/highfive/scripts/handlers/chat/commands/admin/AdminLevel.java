@@ -2,17 +2,17 @@
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -22,106 +22,79 @@
  */
 package app.l2nx.highfive.scripts.handlers.chat.commands.admin;
 
-import java.util.StringTokenizer;
-
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.data.xml.ExperienceData;
 import app.l2nx.highfive.entity.WorldObject;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.handler.IAdminCommandHandler;
 import app.l2nx.highfive.network.SystemMessageId;
+import java.util.StringTokenizer;
 
-public class AdminLevel implements IAdminCommandHandler
-{
-	private static final String[] ADMIN_COMMANDS =
-	{
-		"admin_add_level",
-		"admin_set_level"
-	};
-	
-	@Override
-	public boolean onCommand(String command, Player activeChar)
-	{
-		final WorldObject targetChar = activeChar.getTarget();
-		final StringTokenizer st = new StringTokenizer(command, " ");
-		final String actualCommand = st.nextToken(); // Get actual command
-		String val = "";
-		if (st.countTokens() >= 1)
-		{
-			val = st.nextToken();
-		}
-		
-		if (actualCommand.equalsIgnoreCase("admin_add_level"))
-		{
-			try
-			{
-				if ((targetChar != null) && targetChar.isPlayable())
-				{
-					targetChar.asPlayable().getStat().addLevel(Byte.parseByte(val));
-				}
-			}
-			catch (NumberFormatException e)
-			{
-				activeChar.sendSysMessage("Wrong Number Format");
-			}
-		}
-		else if (actualCommand.equalsIgnoreCase("admin_set_level"))
-		{
-			if ((targetChar == null) || !targetChar.isPlayer())
-			{
-				activeChar.sendPacket(SystemMessageId.THAT_IS_AN_INCORRECT_TARGET); // incorrect target!
-				return false;
-			}
-			
-			final Player targetPlayer = targetChar.asPlayer();
-			int maxLevel = ExperienceData.getInstance().getMaxLevel();
-			if (targetPlayer.isSubClassActive() && (PlayerConfig.MAX_SUBCLASS_LEVEL < maxLevel))
-			{
-				maxLevel = PlayerConfig.MAX_SUBCLASS_LEVEL;
-			}
-			
-			try
-			{
-				final byte level = Byte.parseByte(val);
-				if ((level >= 1) && (level <= maxLevel))
-				{
-					final long pXp = targetPlayer.getExp();
-					final long tXp = ExperienceData.getInstance().getExpForLevel(level);
-					if (pXp > tXp)
-					{
-						targetPlayer.getStat().setLevel(level);
-						targetPlayer.removeExpAndSp(pXp - tXp, 0);
-						activeChar.sendSysMessage("Removed " + (pXp - tXp) + " exp.");
-					}
-					else if (pXp < tXp)
-					{
-						targetPlayer.addExpAndSp(tXp - pXp, 0);
-						activeChar.sendSysMessage("Added " + (tXp - pXp) + " exp.");
-					}
-					
-					targetPlayer.setCurrentHpMp(targetPlayer.getMaxHp(), targetPlayer.getMaxMp());
-					targetPlayer.setCurrentCp(targetPlayer.getMaxCp());
-					targetPlayer.broadcastUserInfo();
-				}
-				else
-				{
-					activeChar.sendSysMessage("You must specify level between 1 and " + maxLevel + ".");
-					return false;
-				}
-			}
-			catch (NumberFormatException e)
-			{
-				activeChar.sendSysMessage("You must specify level between 1 and " + maxLevel + ".");
-				return false;
-			}
-		}
-		
-		return true;
-	}
-	
-	@Override
-	public String[] getCommandList()
-	{
-		return ADMIN_COMMANDS;
-	}
+public class AdminLevel implements IAdminCommandHandler {
+    private static final String[] ADMIN_COMMANDS = {"admin_add_level", "admin_set_level"};
+
+    @Override
+    public boolean onCommand(String command, Player activeChar) {
+        final WorldObject targetChar = activeChar.getTarget();
+        final StringTokenizer st = new StringTokenizer(command, " ");
+        final String actualCommand = st.nextToken(); // Get actual command
+        String val = "";
+        if (st.countTokens() >= 1) {
+            val = st.nextToken();
+        }
+
+        if (actualCommand.equalsIgnoreCase("admin_add_level")) {
+            try {
+                if ((targetChar != null) && targetChar.isPlayable()) {
+                    targetChar.asPlayable().getStat().addLevel(Byte.parseByte(val));
+                }
+            } catch (NumberFormatException e) {
+                activeChar.sendSysMessage("Wrong Number Format");
+            }
+        } else if (actualCommand.equalsIgnoreCase("admin_set_level")) {
+            if ((targetChar == null) || !targetChar.isPlayer()) {
+                activeChar.sendPacket(SystemMessageId.THAT_IS_AN_INCORRECT_TARGET); // incorrect target!
+                return false;
+            }
+
+            final Player targetPlayer = targetChar.asPlayer();
+            int maxLevel = ExperienceData.getInstance().getMaxLevel();
+            if (targetPlayer.isSubClassActive() && (PlayerConfig.MAX_SUBCLASS_LEVEL < maxLevel)) {
+                maxLevel = PlayerConfig.MAX_SUBCLASS_LEVEL;
+            }
+
+            try {
+                final byte level = Byte.parseByte(val);
+                if ((level >= 1) && (level <= maxLevel)) {
+                    final long pXp = targetPlayer.getExp();
+                    final long tXp = ExperienceData.getInstance().getExpForLevel(level);
+                    if (pXp > tXp) {
+                        targetPlayer.getStat().setLevel(level);
+                        targetPlayer.removeExpAndSp(pXp - tXp, 0);
+                        activeChar.sendSysMessage("Removed " + (pXp - tXp) + " exp.");
+                    } else if (pXp < tXp) {
+                        targetPlayer.addExpAndSp(tXp - pXp, 0);
+                        activeChar.sendSysMessage("Added " + (tXp - pXp) + " exp.");
+                    }
+
+                    targetPlayer.setCurrentHpMp(targetPlayer.getMaxHp(), targetPlayer.getMaxMp());
+                    targetPlayer.setCurrentCp(targetPlayer.getMaxCp());
+                    targetPlayer.broadcastUserInfo();
+                } else {
+                    activeChar.sendSysMessage("You must specify level between 1 and " + maxLevel + ".");
+                    return false;
+                }
+            } catch (NumberFormatException e) {
+                activeChar.sendSysMessage("You must specify level between 1 and " + maxLevel + ".");
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    @Override
+    public String[] getCommandList() {
+        return ADMIN_COMMANDS;
+    }
 }

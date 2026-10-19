@@ -25,36 +25,28 @@ package app.l2nx.highfive.data.sql;
 
 import java.sql.Connection;
 import java.sql.SQLException;
-
 import javax.sql.DataSource;
-
 import org.springframework.stereotype.Component;
 
 @Component
-public class DatabaseFactory
-{
-	private static volatile DataSource dataSource;
+public class DatabaseFactory {
+    private static volatile DataSource dataSource;
 
-	public DatabaseFactory(DataSource dataSource)
-	{
-		DatabaseFactory.dataSource = dataSource;
-	}
+    public DatabaseFactory(DataSource dataSource) {
+        DatabaseFactory.dataSource = dataSource;
+    }
 
-	public static Connection getConnection()
-	{
-		final DataSource current = dataSource;
-		if (current == null)
-		{
-			throw new IllegalStateException("The DataSource is not bound: DatabaseFactory is used outside the Spring context.");
-		}
+    public static Connection getConnection() {
+        final DataSource current = dataSource;
+        if (current == null) {
+            throw new IllegalStateException(
+                    "The DataSource is not bound: DatabaseFactory is used outside the Spring context.");
+        }
 
-		try
-		{
-			return current.getConnection();
-		}
-		catch (SQLException e)
-		{
-			throw new IllegalStateException("Unable to obtain a database connection.", e);
-		}
-	}
+        try {
+            return current.getConnection();
+        } catch (SQLException e) {
+            throw new IllegalStateException("Unable to obtain a database connection.", e);
+        }
+    }
 }

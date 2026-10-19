@@ -2,17 +2,17 @@
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -22,6 +22,11 @@
  */
 package app.l2nx.login.network.gameserverpackets.receive;
 
+import app.l2nx.login.GameServerThread;
+import app.l2nx.login.controller.LoginController;
+import app.l2nx.login.data.GameServerTable;
+import app.l2nx.login.data.GameServerTable.GameServerInfo;
+import app.l2nx.network.packet.SimpleReadablePacket;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.Base64;
@@ -29,12 +34,6 @@ import java.util.Base64.Encoder;
 import java.util.Collection;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import app.l2nx.login.GameServerThread;
-import app.l2nx.login.controller.LoginController;
-import app.l2nx.login.data.GameServerTable;
-import app.l2nx.login.data.GameServerTable.GameServerInfo;
-import app.l2nx.network.packet.SimpleReadablePacket;
 
 /**
  * Handles password change requests coming from game servers.<br>
@@ -46,93 +45,88 @@ import app.l2nx.network.packet.SimpleReadablePacket;
  * </ul>
  * @author BazookaRpm
  */
-public class ChangePassword extends SimpleReadablePacket
-{
-	// Logging.
-	protected static final Logger LOGGER = Logger.getLogger(ChangePassword.class.getName());
-	
-	// Password Hashing.
-	private static final String PASSWORD_DIGEST_ALGORITHM = "SHA";
-	
-	// Response Messages.
-	private static final String MSG_INVALID_PASSWORD_DATA = "Invalid password data! Try again.";
-	private static final String MSG_PASSWORD_CHANGED = "You have successfully changed your password!";
-	private static final String MSG_PASSWORD_CHANGE_FAILED = "The password change was unsuccessful!";
-	private static final String MSG_CURRENT_PASSWORD_MISMATCH = "The typed current password doesn't match with your current one.";
-	
-	/**
-	 * Reads the password change request and updates the account password when validation succeeds.<br>
-	 * Sends the result back to the owning game server thread.
-	 * @param decrypt
-	 */
-	public ChangePassword(byte[] decrypt)
-	{
-		super(decrypt);
-		
-		final int packetId = readByte();
-		final String loginName = readString();
-		final String playerName = readString();
-		final String currentPassword = readString();
-		final String newPassword = readString();
-		
-		GameServerThread ownerThread = null;
-		int ownerServerId = 0;
-		
-		final Collection<GameServerInfo> registeredServers = GameServerTable.getInstance().getRegisteredGameServers().values();
-		for (GameServerInfo serverInfo : registeredServers)
-		{
-			final GameServerThread serverThread = serverInfo.getGameServerThread();
-			if ((serverThread != null) && serverThread.hasAccountOnGameServer(loginName))
-			{
-				ownerThread = serverThread;
-				ownerServerId = serverInfo.getId();
-				break;
-			}
-		}
-		
-		if (ownerThread == null)
-		{
-			if (LOGGER.isLoggable(Level.FINER))
-			{
-				LOGGER.finer("Ignored ChangePassword packetId=" + packetId + " for account '" + loginName + "' requested by player '" + playerName + "'.");
-			}
-			return;
-		}
-		
-		if ((currentPassword == null) || (newPassword == null))
-		{
-			ownerThread.changePasswordResponse(playerName, MSG_INVALID_PASSWORD_DATA);
-			return;
-		}
-		
-		try
-		{
-			final MessageDigest digest = MessageDigest.getInstance(PASSWORD_DIGEST_ALGORITHM);
-			final Encoder encoder = Base64.getEncoder();
-			
-			final String currentHash = encoder.encodeToString(digest.digest(currentPassword.getBytes(StandardCharsets.UTF_8)));
-			final String newHash = encoder.encodeToString(digest.digest(newPassword.getBytes(StandardCharsets.UTF_8)));
-			
-			final LoginController loginController = LoginController.getInstance();
-			if (loginController.changePassword(loginName, currentHash, newHash))
-			{
-				ownerThread.changePasswordResponse(playerName, MSG_PASSWORD_CHANGED);
-				return;
-			}
+public class ChangePassword extends SimpleReadablePacket {
+    // Logging.
+    protected static final Logger LOGGER = Logger.getLogger(ChangePassword.class.getName());
 
-			if (currentHash.equals(loginController.getPasswordHash(loginName)))
-			{
-				LOGGER.warning("Password change failed for account '" + loginName + "' requested by player '" + playerName + "' on GS " + ownerServerId + " (0 rows updated).");
-				ownerThread.changePasswordResponse(playerName, MSG_PASSWORD_CHANGE_FAILED);
-			}
-			else
-			{
-				ownerThread.changePasswordResponse(playerName, MSG_CURRENT_PASSWORD_MISMATCH);
-			}
-		}
-		catch (Exception e)
-		{
-			LOGGER.log(Level.WARNING, "Error while changing password for account '" + loginName + "' requested by player '" + playerName + "' on GS " + ownerServerId + " (packetId=" + packetId + ").", e);
-		}
-	}
+    // Password Hashing.
+    private static final String PASSWORD_DIGEST_ALGORITHM = "SHA";
+
+    // Response Messages.
+    private static final String MSG_INVALID_PASSWORD_DATA = "Invalid password data! Try again.";
+    private static final String MSG_PASSWORD_CHANGED = "You have successfully changed your password!";
+    private static final String MSG_PASSWORD_CHANGE_FAILED = "The password change was unsuccessful!";
+    private static final String MSG_CURRENT_PASSWORD_MISMATCH =
+            "The typed current password doesn't match with your current one.";
+
+    /**
+     * Reads the password change request and updates the account password when validation succeeds.<br>
+     * Sends the result back to the owning game server thread.
+     * @param decrypt
+     */
+    public ChangePassword(byte[] decrypt) {
+        super(decrypt);
+
+        final int packetId = readByte();
+        final String loginName = readString();
+        final String playerName = readString();
+        final String currentPassword = readString();
+        final String newPassword = readString();
+
+        GameServerThread ownerThread = null;
+        int ownerServerId = 0;
+
+        final Collection<GameServerInfo> registeredServers =
+                GameServerTable.getInstance().getRegisteredGameServers().values();
+        for (GameServerInfo serverInfo : registeredServers) {
+            final GameServerThread serverThread = serverInfo.getGameServerThread();
+            if ((serverThread != null) && serverThread.hasAccountOnGameServer(loginName)) {
+                ownerThread = serverThread;
+                ownerServerId = serverInfo.getId();
+                break;
+            }
+        }
+
+        if (ownerThread == null) {
+            if (LOGGER.isLoggable(Level.FINER)) {
+                LOGGER.finer("Ignored ChangePassword packetId=" + packetId + " for account '" + loginName
+                        + "' requested by player '" + playerName + "'.");
+            }
+            return;
+        }
+
+        if ((currentPassword == null) || (newPassword == null)) {
+            ownerThread.changePasswordResponse(playerName, MSG_INVALID_PASSWORD_DATA);
+            return;
+        }
+
+        try {
+            final MessageDigest digest = MessageDigest.getInstance(PASSWORD_DIGEST_ALGORITHM);
+            final Encoder encoder = Base64.getEncoder();
+
+            final String currentHash =
+                    encoder.encodeToString(digest.digest(currentPassword.getBytes(StandardCharsets.UTF_8)));
+            final String newHash = encoder.encodeToString(digest.digest(newPassword.getBytes(StandardCharsets.UTF_8)));
+
+            final LoginController loginController = LoginController.getInstance();
+            if (loginController.changePassword(loginName, currentHash, newHash)) {
+                ownerThread.changePasswordResponse(playerName, MSG_PASSWORD_CHANGED);
+                return;
+            }
+
+            if (currentHash.equals(loginController.getPasswordHash(loginName))) {
+                LOGGER.warning("Password change failed for account '" + loginName + "' requested by player '"
+                        + playerName + "' on GS " + ownerServerId + " (0 rows updated).");
+                ownerThread.changePasswordResponse(playerName, MSG_PASSWORD_CHANGE_FAILED);
+            } else {
+                ownerThread.changePasswordResponse(playerName, MSG_CURRENT_PASSWORD_MISMATCH);
+            }
+        } catch (Exception e) {
+            LOGGER.log(
+                    Level.WARNING,
+                    "Error while changing password for account '" + loginName + "' requested by player '" + playerName
+                            + "' on GS " + ownerServerId + " (packetId=" + packetId + ").",
+                    e);
+        }
+    }
 }

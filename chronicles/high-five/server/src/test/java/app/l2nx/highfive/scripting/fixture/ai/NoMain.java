@@ -4,6 +4,4 @@
  */
 package app.l2nx.highfive.scripting.fixture.ai;
 
-public class NoMain
-{
-}
+public class NoMain {}

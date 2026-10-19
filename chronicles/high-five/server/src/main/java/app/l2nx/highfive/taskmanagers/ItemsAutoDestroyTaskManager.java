@@ -2,17 +2,17 @@
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -22,87 +22,70 @@
  */
 package app.l2nx.highfive.taskmanagers;
 
-import java.util.Iterator;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.entity.item.enums.ItemLocation;
 import app.l2nx.highfive.entity.item.instance.Item;
 import app.l2nx.highfive.managers.ItemsOnGroundManager;
 import app.l2nx.highfive.threads.ThreadPool;
+import java.util.Iterator;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
-public class ItemsAutoDestroyTaskManager implements Runnable
-{
-	private static final Set<Item> ITEMS = ConcurrentHashMap.newKeySet();
-	
-	protected ItemsAutoDestroyTaskManager()
-	{
-		ThreadPool.scheduleAtFixedRate(this, 5000, 5000);
-	}
-	
-	@Override
-	public void run()
-	{
-		if (ITEMS.isEmpty())
-		{
-			return;
-		}
-		
-		final long currentTime = System.currentTimeMillis();
-		final Iterator<Item> iterator = ITEMS.iterator();
-		Item itemInstance;
-		
-		while (iterator.hasNext())
-		{
-			itemInstance = iterator.next();
-			if ((itemInstance.getDropTime() == 0) || (itemInstance.getItemLocation() != ItemLocation.VOID))
-			{
-				iterator.remove();
-			}
-			else
-			{
-				final long autoDestroyTime;
-				if (itemInstance.getTemplate().getAutoDestroyTime() > 0)
-				{
-					autoDestroyTime = itemInstance.getTemplate().getAutoDestroyTime();
-				}
-				else if (itemInstance.getTemplate().hasExImmediateEffect())
-				{
-					autoDestroyTime = GeneralConfig.HERB_AUTO_DESTROY_TIME;
-				}
-				else
-				{
-					autoDestroyTime = ((GeneralConfig.AUTODESTROY_ITEM_AFTER == 0) ? 3600000 : GeneralConfig.AUTODESTROY_ITEM_AFTER * 1000);
-				}
-				
-				if ((currentTime - itemInstance.getDropTime()) > autoDestroyTime)
-				{
-					itemInstance.decayMe();
-					if (GeneralConfig.SAVE_DROPPED_ITEM)
-					{
-						ItemsOnGroundManager.getInstance().removeObject(itemInstance);
-					}
-					
-					iterator.remove();
-				}
-			}
-		}
-	}
-	
-	public void addItem(Item item)
-	{
-		item.setDropTime(System.currentTimeMillis());
-		ITEMS.add(item);
-	}
-	
-	public static ItemsAutoDestroyTaskManager getInstance()
-	{
-		return SingletonHolder.INSTANCE;
-	}
-	
-	private static class SingletonHolder
-	{
-		protected static final ItemsAutoDestroyTaskManager INSTANCE = new ItemsAutoDestroyTaskManager();
-	}
+public class ItemsAutoDestroyTaskManager implements Runnable {
+    private static final Set<Item> ITEMS = ConcurrentHashMap.newKeySet();
+
+    protected ItemsAutoDestroyTaskManager() {
+        ThreadPool.scheduleAtFixedRate(this, 5000, 5000);
+    }
+
+    @Override
+    public void run() {
+        if (ITEMS.isEmpty()) {
+            return;
+        }
+
+        final long currentTime = System.currentTimeMillis();
+        final Iterator<Item> iterator = ITEMS.iterator();
+        Item itemInstance;
+
+        while (iterator.hasNext()) {
+            itemInstance = iterator.next();
+            if ((itemInstance.getDropTime() == 0) || (itemInstance.getItemLocation() != ItemLocation.VOID)) {
+                iterator.remove();
+            } else {
+                final long autoDestroyTime;
+                if (itemInstance.getTemplate().getAutoDestroyTime() > 0) {
+                    autoDestroyTime = itemInstance.getTemplate().getAutoDestroyTime();
+                } else if (itemInstance.getTemplate().hasExImmediateEffect()) {
+                    autoDestroyTime = GeneralConfig.HERB_AUTO_DESTROY_TIME;
+                } else {
+                    autoDestroyTime = ((GeneralConfig.AUTODESTROY_ITEM_AFTER == 0)
+                            ? 3600000
+                            : GeneralConfig.AUTODESTROY_ITEM_AFTER * 1000);
+                }
+
+                if ((currentTime - itemInstance.getDropTime()) > autoDestroyTime) {
+                    itemInstance.decayMe();
+                    if (GeneralConfig.SAVE_DROPPED_ITEM) {
+                        ItemsOnGroundManager.getInstance().removeObject(itemInstance);
+                    }
+
+                    iterator.remove();
+                }
+            }
+        }
+    }
+
+    public void addItem(Item item) {
+        item.setDropTime(System.currentTimeMillis());
+        ITEMS.add(item);
+    }
+
+    public static ItemsAutoDestroyTaskManager getInstance() {
+        return SingletonHolder.INSTANCE;
+    }
+
+    private static class SingletonHolder {
+        protected static final ItemsAutoDestroyTaskManager INSTANCE = new ItemsAutoDestroyTaskManager();
+    }
 }

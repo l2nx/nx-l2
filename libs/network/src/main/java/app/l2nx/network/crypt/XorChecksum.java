@@ -12,49 +12,40 @@ import java.util.Objects;
 /**
  * Checksum stored in the last 32-bit word of a region: the XOR of all preceding little-endian words.
  */
-public final class XorChecksum
-{
-	private static final int WORD_SIZE = 4;
-	private static final VarHandle WORD = MethodHandles.byteArrayViewVarHandle(int[].class, ByteOrder.LITTLE_ENDIAN);
+public final class XorChecksum {
+    private static final int WORD_SIZE = 4;
+    private static final VarHandle WORD = MethodHandles.byteArrayViewVarHandle(int[].class, ByteOrder.LITTLE_ENDIAN);
 
-	private XorChecksum()
-	{
-	}
+    private XorChecksum() {}
 
-	public static void append(byte[] data, int offset, int size)
-	{
-		Objects.checkFromIndexSize(offset, size, data.length);
-		if (((size % WORD_SIZE) != 0) || (size < WORD_SIZE))
-		{
-			throw new IllegalArgumentException("Size " + size + " is not a positive multiple of " + WORD_SIZE);
-		}
+    public static void append(byte[] data, int offset, int size) {
+        Objects.checkFromIndexSize(offset, size, data.length);
+        if (((size % WORD_SIZE) != 0) || (size < WORD_SIZE)) {
+            throw new IllegalArgumentException("Size " + size + " is not a positive multiple of " + WORD_SIZE);
+        }
 
-		final int checksumOffset = (offset + size) - WORD_SIZE;
-		WORD.set(data, checksumOffset, xorWords(data, offset, checksumOffset));
-	}
+        final int checksumOffset = (offset + size) - WORD_SIZE;
+        WORD.set(data, checksumOffset, xorWords(data, offset, checksumOffset));
+    }
 
-	/**
-	 * Returns {@code false} instead of throwing when the region cannot hold a checksum plus payload.
-	 */
-	public static boolean verify(byte[] data, int offset, int size)
-	{
-		Objects.checkFromIndexSize(offset, size, data.length);
-		if (((size % WORD_SIZE) != 0) || (size <= WORD_SIZE))
-		{
-			return false;
-		}
+    /**
+     * Returns {@code false} instead of throwing when the region cannot hold a checksum plus payload.
+     */
+    public static boolean verify(byte[] data, int offset, int size) {
+        Objects.checkFromIndexSize(offset, size, data.length);
+        if (((size % WORD_SIZE) != 0) || (size <= WORD_SIZE)) {
+            return false;
+        }
 
-		final int checksumOffset = (offset + size) - WORD_SIZE;
-		return xorWords(data, offset, checksumOffset) == (int) WORD.get(data, checksumOffset);
-	}
+        final int checksumOffset = (offset + size) - WORD_SIZE;
+        return xorWords(data, offset, checksumOffset) == (int) WORD.get(data, checksumOffset);
+    }
 
-	private static int xorWords(byte[] data, int from, int to)
-	{
-		int checksum = 0;
-		for (int i = from; i < to; i += WORD_SIZE)
-		{
-			checksum ^= (int) WORD.get(data, i);
-		}
-		return checksum;
-	}
+    private static int xorWords(byte[] data, int from, int to) {
+        int checksum = 0;
+        for (int i = from; i < to; i += WORD_SIZE) {
+            checksum ^= (int) WORD.get(data, i);
+        }
+        return checksum;
+    }
 }

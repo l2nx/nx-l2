@@ -2,17 +2,17 @@
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -22,11 +22,6 @@
  */
 package app.l2nx.highfive.managers;
 
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ThreadLocalRandom;
-
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.config.RatesConfig;
 import app.l2nx.highfive.entity.actor.Attackable;
@@ -34,79 +29,77 @@ import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.holders.npc.EventDropHolder;
 import app.l2nx.highfive.mechanics.script.LongTimeEvent;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * @author Mobius
  */
-public class EventDropManager
-{
-	private static final Map<LongTimeEvent, List<EventDropHolder>> EVENT_DROPS = new ConcurrentHashMap<>(1);
-	
-	public void addDrops(LongTimeEvent longTimeEvent, List<EventDropHolder> dropList)
-	{
-		EVENT_DROPS.put(longTimeEvent, dropList);
-	}
-	
-	public void removeDrops(LongTimeEvent longTimeEvent)
-	{
-		EVENT_DROPS.remove(longTimeEvent);
-	}
-	
-	public void doEventDrop(Creature attacker, Attackable attackable)
-	{
-		if (EVENT_DROPS.isEmpty())
-		{
-			return;
-		}
-		
-		// Event items drop only for players.
-		if ((attacker == null) || !attacker.isPlayable() || attackable.isFakePlayer())
-		{
-			return;
-		}
-		
-		// Event items drop only within a default 9 level difference.
-		final Player player = attacker.asPlayer();
-		if ((player.getLevel() - attackable.getLevel()) > RatesConfig.EVENT_ITEM_MAX_LEVEL_DIFFERENCE)
-		{
-			return;
-		}
-		
-		for (List<EventDropHolder> eventDrops : EVENT_DROPS.values())
-		{
-			DROPS: for (EventDropHolder drop : eventDrops)
-			{
-				if (!drop.getMonsterIds().isEmpty() && !drop.getMonsterIds().contains(attackable.getId()))
-				{
-					continue DROPS;
-				}
-				
-				final int monsterLevel = attackable.getLevel();
-				final ThreadLocalRandom random = ThreadLocalRandom.current();
-				if ((monsterLevel >= drop.getMinLevel()) && (monsterLevel <= drop.getMaxLevel()) && (random.nextDouble(100) < drop.getChance()))
-				{
-					final int itemId = drop.getItemId();
-					final long itemCount = drop.getMin() < drop.getMax() ? random.nextLong(drop.getMin(), drop.getMax() + 1) : drop.getMin();
-					if (PlayerConfig.AUTO_LOOT_ITEM_IDS.contains(itemId) || PlayerConfig.AUTO_LOOT || attackable.isFlying())
-					{
-						player.doAutoLoot(attackable, itemId, itemCount); // Give the item to the player that has killed the attackable.
-					}
-					else
-					{
-						attackable.dropItem(player, itemId, itemCount); // Drop the item on the ground.
-					}
-				}
-			}
-		}
-	}
-	
-	public static EventDropManager getInstance()
-	{
-		return SingletonHolder.INSTANCE;
-	}
-	
-	private static class SingletonHolder
-	{
-		protected static final EventDropManager INSTANCE = new EventDropManager();
-	}
+public class EventDropManager {
+    private static final Map<LongTimeEvent, List<EventDropHolder>> EVENT_DROPS = new ConcurrentHashMap<>(1);
+
+    public void addDrops(LongTimeEvent longTimeEvent, List<EventDropHolder> dropList) {
+        EVENT_DROPS.put(longTimeEvent, dropList);
+    }
+
+    public void removeDrops(LongTimeEvent longTimeEvent) {
+        EVENT_DROPS.remove(longTimeEvent);
+    }
+
+    public void doEventDrop(Creature attacker, Attackable attackable) {
+        if (EVENT_DROPS.isEmpty()) {
+            return;
+        }
+
+        // Event items drop only for players.
+        if ((attacker == null) || !attacker.isPlayable() || attackable.isFakePlayer()) {
+            return;
+        }
+
+        // Event items drop only within a default 9 level difference.
+        final Player player = attacker.asPlayer();
+        if ((player.getLevel() - attackable.getLevel()) > RatesConfig.EVENT_ITEM_MAX_LEVEL_DIFFERENCE) {
+            return;
+        }
+
+        for (List<EventDropHolder> eventDrops : EVENT_DROPS.values()) {
+            DROPS:
+            for (EventDropHolder drop : eventDrops) {
+                if (!drop.getMonsterIds().isEmpty() && !drop.getMonsterIds().contains(attackable.getId())) {
+                    continue DROPS;
+                }
+
+                final int monsterLevel = attackable.getLevel();
+                final ThreadLocalRandom random = ThreadLocalRandom.current();
+                if ((monsterLevel >= drop.getMinLevel())
+                        && (monsterLevel <= drop.getMaxLevel())
+                        && (random.nextDouble(100) < drop.getChance())) {
+                    final int itemId = drop.getItemId();
+                    final long itemCount = drop.getMin() < drop.getMax()
+                            ? random.nextLong(drop.getMin(), drop.getMax() + 1)
+                            : drop.getMin();
+                    if (PlayerConfig.AUTO_LOOT_ITEM_IDS.contains(itemId)
+                            || PlayerConfig.AUTO_LOOT
+                            || attackable.isFlying()) {
+                        player.doAutoLoot(
+                                attackable,
+                                itemId,
+                                itemCount); // Give the item to the player that has killed the attackable.
+                    } else {
+                        attackable.dropItem(player, itemId, itemCount); // Drop the item on the ground.
+                    }
+                }
+            }
+        }
+    }
+
+    public static EventDropManager getInstance() {
+        return SingletonHolder.INSTANCE;
+    }
+
+    private static class SingletonHolder {
+        protected static final EventDropManager INSTANCE = new EventDropManager();
+    }
 }

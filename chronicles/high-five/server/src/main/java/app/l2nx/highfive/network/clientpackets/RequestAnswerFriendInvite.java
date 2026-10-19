@@ -2,17 +2,17 @@
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -22,88 +22,78 @@
  */
 package app.l2nx.highfive.network.clientpackets;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-
 import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.network.PacketLogger;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.serverpackets.FriendPacket;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
 
-public class RequestAnswerFriendInvite extends ClientPacket
-{
-	private int _response;
-	
-	@Override
-	protected void readImpl()
-	{
-		_response = readInt();
-	}
-	
-	@Override
-	protected void runImpl()
-	{
-		final Player player = getPlayer();
-		if (player == null)
-		{
-			return;
-		}
-		
-		final Player requestor = player.getActiveRequester();
-		if (requestor == null)
-		{
-			return;
-		}
-		
-		if (player.getFriendList().contains(requestor.getObjectId()) //
-			|| requestor.getFriendList().contains(player.getObjectId()))
-		{
-			requestor.sendPacket(SystemMessageId.THIS_PLAYER_IS_ALREADY_REGISTERED_ON_YOUR_FRIENDS_LIST);
-			return;
-		}
-		
-		if (_response == 1)
-		{
-			try (Connection con = DatabaseFactory.getConnection();
-				PreparedStatement statement = con.prepareStatement("INSERT INTO character_friends (charId, friendId) VALUES (?, ?), (?, ?)"))
-			{
-				statement.setInt(1, requestor.getObjectId());
-				statement.setInt(2, player.getObjectId());
-				statement.setInt(3, player.getObjectId());
-				statement.setInt(4, requestor.getObjectId());
-				statement.execute();
-				SystemMessage msg = new SystemMessage(SystemMessageId.THAT_PERSON_HAS_BEEN_SUCCESSFULLY_ADDED_TO_YOUR_FRIEND_LIST);
-				requestor.sendPacket(msg);
-				
-				// Player added to your friend list.
-				msg = new SystemMessage(SystemMessageId.S1_HAS_BEEN_ADDED_TO_YOUR_FRIENDS_LIST);
-				msg.addString(player.getName());
-				requestor.sendPacket(msg);
-				requestor.getFriendList().add(player.getObjectId());
-				
-				// has joined as friend.
-				msg = new SystemMessage(SystemMessageId.S1_HAS_JOINED_AS_A_FRIEND);
-				msg.addString(requestor.getName());
-				player.sendPacket(msg);
-				player.getFriendList().add(requestor.getObjectId());
-				
-				// Send notifications for both player in order to show them online
-				player.sendPacket(new FriendPacket(true, requestor.getObjectId()));
-				requestor.sendPacket(new FriendPacket(true, player.getObjectId()));
-			}
-			catch (Exception e)
-			{
-				PacketLogger.warning("Could not add friend objectid: " + e.getMessage());
-			}
-		}
-		else
-		{
-			requestor.sendPacket(new SystemMessage(SystemMessageId.YOU_HAVE_FAILED_TO_ADD_A_FRIEND_TO_YOUR_FRIENDS_LIST));
-		}
-		
-		player.setActiveRequester(null);
-		requestor.onTransactionResponse();
-	}
+public class RequestAnswerFriendInvite extends ClientPacket {
+    private int _response;
+
+    @Override
+    protected void readImpl() {
+        _response = readInt();
+    }
+
+    @Override
+    protected void runImpl() {
+        final Player player = getPlayer();
+        if (player == null) {
+            return;
+        }
+
+        final Player requestor = player.getActiveRequester();
+        if (requestor == null) {
+            return;
+        }
+
+        if (player.getFriendList().contains(requestor.getObjectId()) //
+                || requestor.getFriendList().contains(player.getObjectId())) {
+            requestor.sendPacket(SystemMessageId.THIS_PLAYER_IS_ALREADY_REGISTERED_ON_YOUR_FRIENDS_LIST);
+            return;
+        }
+
+        if (_response == 1) {
+            try (Connection con = DatabaseFactory.getConnection();
+                    PreparedStatement statement = con.prepareStatement(
+                            "INSERT INTO character_friends (charId, friendId) VALUES (?, ?), (?, ?)")) {
+                statement.setInt(1, requestor.getObjectId());
+                statement.setInt(2, player.getObjectId());
+                statement.setInt(3, player.getObjectId());
+                statement.setInt(4, requestor.getObjectId());
+                statement.execute();
+                SystemMessage msg =
+                        new SystemMessage(SystemMessageId.THAT_PERSON_HAS_BEEN_SUCCESSFULLY_ADDED_TO_YOUR_FRIEND_LIST);
+                requestor.sendPacket(msg);
+
+                // Player added to your friend list.
+                msg = new SystemMessage(SystemMessageId.S1_HAS_BEEN_ADDED_TO_YOUR_FRIENDS_LIST);
+                msg.addString(player.getName());
+                requestor.sendPacket(msg);
+                requestor.getFriendList().add(player.getObjectId());
+
+                // has joined as friend.
+                msg = new SystemMessage(SystemMessageId.S1_HAS_JOINED_AS_A_FRIEND);
+                msg.addString(requestor.getName());
+                player.sendPacket(msg);
+                player.getFriendList().add(requestor.getObjectId());
+
+                // Send notifications for both player in order to show them online
+                player.sendPacket(new FriendPacket(true, requestor.getObjectId()));
+                requestor.sendPacket(new FriendPacket(true, player.getObjectId()));
+            } catch (Exception e) {
+                PacketLogger.warning("Could not add friend objectid: " + e.getMessage());
+            }
+        } else {
+            requestor.sendPacket(
+                    new SystemMessage(SystemMessageId.YOU_HAVE_FAILED_TO_ADD_A_FRIEND_TO_YOUR_FRIENDS_LIST));
+        }
+
+        player.setActiveRequester(null);
+        requestor.onTransactionResponse();
+    }
 }

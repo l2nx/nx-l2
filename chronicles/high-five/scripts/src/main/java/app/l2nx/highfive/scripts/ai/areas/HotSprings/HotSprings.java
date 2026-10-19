@@ -2,17 +2,17 @@
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -22,8 +22,6 @@
  */
 package app.l2nx.highfive.scripts.ai.areas.HotSprings;
 
-import java.util.List;
-
 import app.l2nx.highfive.data.xml.SkillData;
 import app.l2nx.highfive.entity.WorldObject;
 import app.l2nx.highfive.entity.actor.Creature;
@@ -32,98 +30,86 @@ import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.mechanics.script.Script;
 import app.l2nx.highfive.mechanics.skill.BuffInfo;
 import app.l2nx.highfive.mechanics.skill.Skill;
+import java.util.List;
 
 /**
  * Hot Springs AI.
  * @author Mobius
  */
-public class HotSprings extends Script
-{
-	// NPCs
-	private static final int BANDERSNATCHLING = 21314;
-	private static final int FLAVA = 21316;
-	private static final int ATROXSPAWN = 21317;
-	private static final int NEPENTHES = 21319;
-	private static final int ATROX = 21321;
-	private static final int BANDERSNATCH = 21322;
-	
-	// Skills
-	private static final int RHEUMATISM = 4551;
-	private static final int CHOLERA = 4552;
-	private static final int FLU = 4553;
-	private static final int MALARIA = 4554;
-	
-	// Misc
-	private static final int DISEASE_CHANCE = 10;
-	
-	private HotSprings()
-	{
-		addAttackId(BANDERSNATCHLING, FLAVA, ATROXSPAWN, NEPENTHES, ATROX, BANDERSNATCH);
-		addSkillSeeId(BANDERSNATCHLING, FLAVA, ATROXSPAWN, NEPENTHES, ATROX, BANDERSNATCH);
-	}
-	
-	@Override
-	public void onAttack(Npc npc, Player attacker, int damage, boolean isSummon)
-	{
-		spreadDisease(npc, attacker);
-	}
-	
-	@Override
-	public void onSkillSee(Npc npc, Player caster, Skill skill, List<WorldObject> targets, boolean isSummon)
-	{
-		if (targets.contains(npc))
-		{
-			spreadDisease(npc, caster);
-		}
-	}
-	
-	private void spreadDisease(Npc npc, Creature creature)
-	{
-		if (getRandom(100) < DISEASE_CHANCE)
-		{
-			tryToInfect(npc, creature, MALARIA);
-		}
-		
-		if (getRandom(100) < DISEASE_CHANCE)
-		{
-			switch (npc.getId())
-			{
-				case BANDERSNATCHLING:
-				case ATROX:
-				{
-					tryToInfect(npc, creature, RHEUMATISM);
-					break;
-				}
-				case FLAVA:
-				case NEPENTHES:
-				{
-					tryToInfect(npc, creature, CHOLERA);
-					break;
-				}
-				case ATROXSPAWN:
-				case BANDERSNATCH:
-				{
-					tryToInfect(npc, creature, FLU);
-					break;
-				}
-			}
-		}
-	}
-	
-	private void tryToInfect(Npc npc, Creature creature, int diseaseId)
-	{
-		final BuffInfo info = creature.getEffectList().getBuffInfoBySkillId(diseaseId);
-		final int skillLevel = (info == null) ? 1 : (info.getSkill().getLevel() < 10) ? info.getSkill().getLevel() + 1 : 10;
-		final Skill skill = SkillData.getInstance().getSkill(diseaseId, skillLevel);
-		if ((skill != null) && !npc.isCastingNow() && npc.checkDoCastConditions(skill))
-		{
-			npc.setTarget(creature);
-			npc.doCast(skill);
-		}
-	}
-	
-	public static void main(String[] args)
-	{
-		new HotSprings();
-	}
+public class HotSprings extends Script {
+    // NPCs
+    private static final int BANDERSNATCHLING = 21314;
+    private static final int FLAVA = 21316;
+    private static final int ATROXSPAWN = 21317;
+    private static final int NEPENTHES = 21319;
+    private static final int ATROX = 21321;
+    private static final int BANDERSNATCH = 21322;
+
+    // Skills
+    private static final int RHEUMATISM = 4551;
+    private static final int CHOLERA = 4552;
+    private static final int FLU = 4553;
+    private static final int MALARIA = 4554;
+
+    // Misc
+    private static final int DISEASE_CHANCE = 10;
+
+    private HotSprings() {
+        addAttackId(BANDERSNATCHLING, FLAVA, ATROXSPAWN, NEPENTHES, ATROX, BANDERSNATCH);
+        addSkillSeeId(BANDERSNATCHLING, FLAVA, ATROXSPAWN, NEPENTHES, ATROX, BANDERSNATCH);
+    }
+
+    @Override
+    public void onAttack(Npc npc, Player attacker, int damage, boolean isSummon) {
+        spreadDisease(npc, attacker);
+    }
+
+    @Override
+    public void onSkillSee(Npc npc, Player caster, Skill skill, List<WorldObject> targets, boolean isSummon) {
+        if (targets.contains(npc)) {
+            spreadDisease(npc, caster);
+        }
+    }
+
+    private void spreadDisease(Npc npc, Creature creature) {
+        if (getRandom(100) < DISEASE_CHANCE) {
+            tryToInfect(npc, creature, MALARIA);
+        }
+
+        if (getRandom(100) < DISEASE_CHANCE) {
+            switch (npc.getId()) {
+                case BANDERSNATCHLING:
+                case ATROX: {
+                    tryToInfect(npc, creature, RHEUMATISM);
+                    break;
+                }
+                case FLAVA:
+                case NEPENTHES: {
+                    tryToInfect(npc, creature, CHOLERA);
+                    break;
+                }
+                case ATROXSPAWN:
+                case BANDERSNATCH: {
+                    tryToInfect(npc, creature, FLU);
+                    break;
+                }
+            }
+        }
+    }
+
+    private void tryToInfect(Npc npc, Creature creature, int diseaseId) {
+        final BuffInfo info = creature.getEffectList().getBuffInfoBySkillId(diseaseId);
+        final int skillLevel = (info == null)
+                ? 1
+                : (info.getSkill().getLevel() < 10) ? info.getSkill().getLevel() + 1 : 10;
+        final Skill skill = SkillData.getInstance().getSkill(diseaseId, skillLevel);
+        if ((skill != null) && !npc.isCastingNow() && npc.checkDoCastConditions(skill)) {
+            npc.setTarget(creature);
+            npc.doCast(skill);
+        }
+    }
+
+    public static void main(String[] args) {
+        new HotSprings();
+    }
 }

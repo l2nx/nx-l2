@@ -2,17 +2,17 @@
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -33,46 +33,39 @@ import app.l2nx.highfive.util.StatSet;
 /**
  * Heal Over Time effect implementation.
  */
-public class HealOverTime extends AbstractEffect
-{
-	private final double _power;
-	
-	public HealOverTime(Condition attachCond, Condition applyCond, StatSet set, StatSet params)
-	{
-		super(attachCond, applyCond, set, params);
-		
-		_power = params.getDouble("power", 0);
-	}
-	
-	@Override
-	public boolean onActionTime(Creature effector, Creature effected, Skill skill)
-	{
-		if (effected.isDead() || effected.isDoor())
-		{
-			return false;
-		}
-		
-		double hp = effected.getCurrentHp();
-		final double maxhp = effected.getMaxRecoverableHp();
-		
-		// Not needed to set the HP and send update packet if player is already at max HP.
-		if (hp >= maxhp)
-		{
-			return false;
-		}
-		
-		hp += _power * getTicksMultiplier();
-		hp = Math.min(hp, maxhp);
-		effected.setCurrentHp(hp);
-		return skill.isToggle();
-	}
-	
-	@Override
-	public void onStart(Creature effector, Creature effected, Skill skill)
-	{
-		if (effected.isPlayer() && (getTicks() > 0) && (skill.getAbnormalType() == AbnormalType.HP_RECOVER))
-		{
-			effected.sendPacket(new ExRegenMax(skill.getAbnormalTime(), getTicks(), _power));
-		}
-	}
+public class HealOverTime extends AbstractEffect {
+    private final double _power;
+
+    public HealOverTime(Condition attachCond, Condition applyCond, StatSet set, StatSet params) {
+        super(attachCond, applyCond, set, params);
+
+        _power = params.getDouble("power", 0);
+    }
+
+    @Override
+    public boolean onActionTime(Creature effector, Creature effected, Skill skill) {
+        if (effected.isDead() || effected.isDoor()) {
+            return false;
+        }
+
+        double hp = effected.getCurrentHp();
+        final double maxhp = effected.getMaxRecoverableHp();
+
+        // Not needed to set the HP and send update packet if player is already at max HP.
+        if (hp >= maxhp) {
+            return false;
+        }
+
+        hp += _power * getTicksMultiplier();
+        hp = Math.min(hp, maxhp);
+        effected.setCurrentHp(hp);
+        return skill.isToggle();
+    }
+
+    @Override
+    public void onStart(Creature effector, Creature effected, Skill skill) {
+        if (effected.isPlayer() && (getTicks() > 0) && (skill.getAbnormalType() == AbnormalType.HP_RECOVER)) {
+            effected.sendPacket(new ExRegenMax(skill.getAbnormalTime(), getTicks(), _power));
+        }
+    }
 }

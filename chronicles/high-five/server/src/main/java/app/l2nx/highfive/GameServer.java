@@ -3,17 +3,17 @@
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -22,19 +22,6 @@
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package app.l2nx.highfive;
-
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.net.InetSocketAddress;
-import java.time.Duration;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
-import io.micrometer.core.instrument.Gauge;
-import io.micrometer.core.instrument.MeterRegistry;
-
-import org.springframework.context.SmartLifecycle;
-import org.springframework.stereotype.Component;
 
 import app.l2nx.boot.ServerExit;
 import app.l2nx.highfive.cache.HtmCache;
@@ -181,402 +168,380 @@ import app.l2nx.highfive.taskmanagers.ItemsAutoDestroyTaskManager;
 import app.l2nx.highfive.threads.ThreadPool;
 import app.l2nx.highfive.util.DeadlockWatcher;
 import app.l2nx.network.ConnectionManager;
+import io.micrometer.core.instrument.Gauge;
+import io.micrometer.core.instrument.MeterRegistry;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.net.InetSocketAddress;
+import java.time.Duration;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import org.springframework.context.SmartLifecycle;
+import org.springframework.stereotype.Component;
 
 @Component
-public class GameServer implements SmartLifecycle
-{
-	private static final Logger LOGGER = Logger.getLogger(GameServer.class.getName());
-	
-	private static final long START_TIME = System.currentTimeMillis();
-	private long _sectionStartTime = START_TIME;
-	private String _previousSectionName = null;
-	
-	private final ServerExit serverExit;
-	private final MeterRegistry meterRegistry;
-	private ConnectionManager<GameClient> connectionManager;
-	private volatile boolean running;
-	
-	/**
-	 * @param databaseFactory not used directly: the dependency makes the static database access available before {@link #start()}
-	 */
-	public GameServer(DatabaseFactory databaseFactory, ServerExit serverExit, MeterRegistry meterRegistry)
-	{
-		this.serverExit = serverExit;
-		this.meterRegistry = meterRegistry;
-	}
-	
-	@Override
-	public void start()
-	{
-		Shutdown.bind(serverExit);
-		
-		// Outside the try: nothing to shut down yet if config fails.
-		ConfigLoader.init();
-		
-		try
-		{
-			startEngine();
-		}
-		catch (RuntimeException | Error e)
-		{
-			// Spring stops only components that have started, so whatever this start has opened is shut down here.
-			abortStart();
-			throw e;
-		}
-		
-		running = true;
-	}
-	
-	@Override
-	public void stop()
-	{
-		connectionManager.stopAccepting();
-		try
-		{
-			Shutdown.getInstance().startShutdownActions();
-		}
-		finally
-		{
-			connectionManager.shutdown();
-			running = false;
-		}
-	}
-	
-	@Override
-	public boolean isRunning()
-	{
-		return running;
-	}
-	
-	private void abortStart()
-	{
-		if (connectionManager != null)
-		{
-			connectionManager.shutdown();
-		}
-		
-		ThreadPool.shutdown();
-	}
-	
-	private void startEngine()
-	{
-		printSection("ThreadPool");
-		ThreadPool.init();
-		ThreadPool.bindMetrics(meterRegistry);
-		
-		// Start game time task manager early.
-		GameTimeTaskManager.getInstance();
-		
-		printSection("IdManager");
-		IdManager.getInstance();
-		
-		printSection("Scripting Engine");
-		EventDispatcher.getInstance();
-		ScriptEngine.getInstance();
-		
-		printSection("World");
-		InstanceManager.getInstance();
-		World.init();
-		Gauge.builder("l2nx.players.online", () -> World.getPlayers().size()).description("Players in the world, offline traders included").register(meterRegistry);
-		MapRegionData.getInstance();
-		AnnouncementsTable.getInstance();
-		GlobalVariablesManager.getInstance();
-		
-		printSection("Data");
-		CategoryData.getInstance();
-		CubicData.getInstance();
-		DynamicExpRateData.getInstance();
-		SecondaryAuthData.getInstance();
-		
-		printSection("Skills");
-		EffectHandler.getInstance().executeScript();
-		EnchantSkillGroupsData.getInstance();
-		SkillTreeData.getInstance();
-		SkillData.getInstance();
-		PetSkillData.getInstance();
-		
-		printSection("Items");
-		ItemData.getInstance();
-		EnchantItemGroupsData.getInstance();
-		EnchantItemData.getInstance();
-		EnchantItemOptionsData.getInstance();
-		ElementalAttributeData.getInstance();
-		OptionData.getInstance();
-		EnchantItemHPBonusData.getInstance();
-		MerchantPriceConfigTable.getInstance().loadInstances();
-		BuyListData.getInstance();
-		MultisellData.getInstance();
-		RecipeData.getInstance();
-		ArmorSetData.getInstance();
-		FishData.getInstance();
-		FishingMonstersData.getInstance();
-		FishingRodsData.getInstance();
-		HennaData.getInstance();
-		PrimeShopData.getInstance();
-		PcCafePointsManager.getInstance();
-		ItemLifeTimeTaskManager.getInstance();
-		
-		printSection("Characters");
-		ClassListData.getInstance();
-		InitialEquipmentData.getInstance();
-		InitialShortcutData.getInstance();
-		ExperienceData.getInstance();
-		ExperienceLossData.getInstance();
-		KarmaLossData.getInstance();
-		HitConditionBonusData.getInstance();
-		PlayerTemplateData.getInstance();
-		CharInfoTable.getInstance();
-		AdminData.getInstance();
-		RaidBossPointsManager.getInstance();
-		PetDataTable.getInstance();
-		CharSummonTable.getInstance().init();
-		CaptchaManager.getInstance();
-		
-		if (PremiumSystemConfig.PREMIUM_SYSTEM_ENABLED)
-		{
-			LOGGER.info("PremiumManager: Premium system is enabled.");
-			PremiumManager.getInstance();
-		}
-		
-		printSection("Clans");
-		ClanTable.getInstance();
-		CHSiegeManager.getInstance();
-		ClanHallTable.getInstance();
-		ClanHallAuctionManager.getInstance();
-		
-		printSection("Geodata");
-		GeoEngine.getInstance();
-		
-		printSection("NPCs");
-		DoorData.getInstance();
-		FenceData.getInstance();
-		SkillLearnData.getInstance();
-		NpcData.getInstance();
-		LevelUpCrystalData.getInstance();
-		FakePlayerChatManager.getInstance();
-		WalkingManager.getInstance();
-		StaticObjectData.getInstance();
-		ItemAuctionManager.getInstance();
-		CastleManager.getInstance().loadInstances();
-		SchemeBufferTable.getInstance();
-		ZoneManager.getInstance();
-		GrandBossManager.getInstance().initZones();
-		EventDropManager.getInstance();
-		
-		printSection("Olympiad");
-		Olympiad.getInstance();
-		Hero.getInstance();
-		
-		printSection("Seven Signs");
-		SevenSigns.getInstance();
-		
-		// Call to load caches.
-		printSection("Cache");
-		HtmCache.getInstance();
-		CrestTable.getInstance();
-		TeleporterData.getInstance();
-		PartyMatchWaitingList.getInstance();
-		PartyMatchRoomList.getInstance();
-		PetitionManager.getInstance();
-		AugmentationData.getInstance();
-		CursedWeaponsManager.getInstance();
-		TransformData.getInstance();
-		BotReportTable.getInstance();
-		
-		if (SellBuffsConfig.SELLBUFF_ENABLED)
-		{
-			SellBuffsManager.getInstance();
-		}
-		
-		if (MultilingualSupportConfig.MULTILANG_ENABLE)
-		{
-			SystemMessageId.loadLocalisations();
-			NpcStringId.loadLocalisations();
-			SendMessageLocalisationData.getInstance();
-			NpcNameLocalisationData.getInstance();
-		}
-		
-		printSection("Scripts");
-		ScriptManager.getInstance();
-		BoatManager.getInstance();
-		AirShipManager.getInstance();
-		SeedOfDestructionManager.getInstance();
-		SeedOfInfinityManager.getInstance();
-		
-		try
-		{
-			LOGGER.info("Loading server scripts...");
-			ScriptEngine.getInstance().executeScript(ScriptEngine.MASTER_HANDLER);
-			ScriptEngine.getInstance().executeScriptList();
-		}
-		catch (Exception e)
-		{
-			LOGGER.log(Level.WARNING, "Failed to execute script list!", e);
-		}
-		
-		SpawnData.getInstance();
-		DayNightSpawnManager.getInstance().trim().notifyChangeMode();
-		DimensionalRiftManager.getInstance();
-		RaidBossSpawnManager.getInstance();
-		
-		printSection("Siege");
-		SiegeManager.getInstance().getSieges();
-		CastleManager.getInstance().activateInstances();
-		FortManager.getInstance().loadInstances();
-		FortManager.getInstance().activateInstances();
-		FortSiegeManager.getInstance();
-		SiegeScheduleData.getInstance();
-		MerchantPriceConfigTable.getInstance().updateReferences();
-		TerritoryWarManager.getInstance();
-		CastleManorManager.getInstance();
-		MercTicketManager.getInstance();
-		ScriptManager.getInstance().report();
-		
-		if (GeneralConfig.SAVE_DROPPED_ITEM)
-		{
-			ItemsOnGroundManager.getInstance();
-		}
-		
-		if ((GeneralConfig.AUTODESTROY_ITEM_AFTER > 0) || (GeneralConfig.HERB_AUTO_DESTROY_TIME > 0))
-		{
-			ItemsAutoDestroyTaskManager.getInstance();
-		}
-		
-		MonsterRaceManager.getInstance();
-		LotteryManager.getInstance();
-		SevenSigns.getInstance().spawnSevenSignsNPC();
-		SevenSignsFestival.getInstance();
-		AutoSpawnHandler.getInstance();
-		LOGGER.info("AutoSpawnHandler: Loaded " + AutoSpawnHandler.getInstance().size() + " handlers in total.");
-		
-		if (WeddingConfig.ALLOW_WEDDING)
-		{
-			CoupleManager.getInstance();
-		}
-		
-		if (GeneralConfig.ALT_FISH_CHAMPIONSHIP_ENABLED)
-		{
-			FishingChampionshipManager.getInstance();
-		}
-		
-		KrateisCubeManager.getInstance();
-		UndergroundColiseumManager.getInstance();
-		DailyResetManager.getInstance();
-		AntiFeedManager.getInstance().registerEvent(AntiFeedManager.GAME_ID);
-		
-		if (OfflinePlayConfig.ENABLE_OFFLINE_PLAY_COMMAND)
-		{
-			AntiFeedManager.getInstance().registerEvent(AntiFeedManager.OFFLINE_PLAY);
-		}
-		
-		if (GeneralConfig.ALLOW_MAIL)
-		{
-			MailManager.getInstance();
-		}
-		
-		if (CustomMailManagerConfig.CUSTOM_MAIL_MANAGER_ENABLED)
-		{
-			CustomMailManager.getInstance();
-		}
-		
-		if (EventDispatcher.getInstance().hasListener(EventType.ON_SERVER_START))
-		{
-			EventDispatcher.getInstance().notifyEventAsync(new OnServerStart());
-		}
-		
-		PunishmentManager.getInstance();
-		
-		LOGGER.info("IdManager: Free ObjectID's remaining: " + IdManager.getInstance().getAvailableIdCount());
-		
-		if ((OfflineTradeConfig.OFFLINE_TRADE_ENABLE || OfflineTradeConfig.OFFLINE_CRAFT_ENABLE) && OfflineTradeConfig.RESTORE_OFFLINERS)
-		{
-			OfflineTraderTable.getInstance().restoreOfflineTraders();
-		}
-		
-		if (OfflinePlayConfig.ENABLE_OFFLINE_PLAY_COMMAND && OfflinePlayConfig.RESTORE_AUTO_PLAY_OFFLINERS)
-		{
-			OfflinePlayTable.getInstance().restoreOfflinePlayers();
-		}
-		
-		if (ServerConfig.SERVER_RESTART_SCHEDULE_ENABLED)
-		{
-			ServerRestartManager.getInstance();
-		}
-		
-		if (ServerConfig.PRECAUTIONARY_RESTART_ENABLED)
-		{
-			PrecautionaryRestartManager.getInstance();
-		}
-		
-		if (ServerConfig.DEADLOCK_WATCHER)
-		{
-			final DeadlockWatcher deadlockWatcher = new DeadlockWatcher(Duration.ofSeconds(ServerConfig.DEADLOCK_CHECK_INTERVAL), () ->
-			{
-				if (ServerConfig.RESTART_ON_DEADLOCK)
-				{
-					World.broadcastToAllOnlinePlayers("Server has stability issues - restarting now.");
-					Shutdown.getInstance().startShutdown(null, 60, true);
-				}
-			});
-			deadlockWatcher.setDaemon(true);
-			deadlockWatcher.start();
-		}
-		
-		System.gc();
-		final long totalMem = Runtime.getRuntime().maxMemory() / 1048576;
-		LOGGER.info(getClass().getSimpleName() + ": Started, using " + getUsedMemoryMB() + " of " + totalMem + " MB total memory.");
-		LOGGER.info(getClass().getSimpleName() + ": Maximum number of connected players is " + ServerConfig.MAXIMUM_ONLINE_USERS + ".");
-		LOGGER.info(getClass().getSimpleName() + ": Server loaded in " + ((System.currentTimeMillis() - START_TIME) / 1000) + " seconds.");
-		
-		try
-		{
-			connectionManager = new ConnectionManager<>(new InetSocketAddress(ServerConfig.PORT_GAME), GameClient::new, new GamePacketHandler(), NetworkConfig.SETTINGS);
-		}
-		catch (IOException e)
-		{
-			throw new UncheckedIOException("Unable to open the client port " + ServerConfig.PORT_GAME + ".", e);
-		}
-		connectionManager.bindMetrics(meterRegistry, "l2nx-game");
-		
-		LoginServerThread.getInstance().start();
-	}
-	
-	private void printSection(String section)
-	{
-		if (DevelopmentConfig.LOG_SERVER_LOAD_TIMES)
-		{
-			// Calculate elapsed time for previous section.
-			final long currentTime = System.currentTimeMillis();
-			final long sectionElapsed = currentTime - _sectionStartTime;
-			
-			// Log elapsed time for previous section if not the first section.
-			if (_previousSectionName != null)
-			{
-				LOGGER.info("...section [ " + _previousSectionName + " ] loaded in " + sectionElapsed + " ms.");
-			}
-			
-			// Update for next measurement.
-			_previousSectionName = section;
-			_sectionStartTime = currentTime;
-		}
-		
-		// Build and log the new section header.
-		final StringBuilder sb = new StringBuilder(61);
-		sb.append("=[ ").append(section).append(" ]");
-		while (sb.length() < 61)
-		{
-			sb.insert(0, '-');
-		}
-		LOGGER.info(sb.toString());
-	}
-	
-	public long getUsedMemoryMB()
-	{
-		return (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) / 1048576;
-	}
-	
-	public static long getStartTime()
-	{
-		return START_TIME;
-	}
+public class GameServer implements SmartLifecycle {
+    private static final Logger LOGGER = Logger.getLogger(GameServer.class.getName());
+
+    private static final long START_TIME = System.currentTimeMillis();
+    private long _sectionStartTime = START_TIME;
+    private String _previousSectionName = null;
+
+    private final ServerExit serverExit;
+    private final MeterRegistry meterRegistry;
+    private ConnectionManager<GameClient> connectionManager;
+    private volatile boolean running;
+
+    /**
+     * @param databaseFactory not used directly: the dependency makes the static database access available before {@link #start()}
+     */
+    public GameServer(DatabaseFactory databaseFactory, ServerExit serverExit, MeterRegistry meterRegistry) {
+        this.serverExit = serverExit;
+        this.meterRegistry = meterRegistry;
+    }
+
+    @Override
+    public void start() {
+        Shutdown.bind(serverExit);
+
+        // Outside the try: nothing to shut down yet if config fails.
+        ConfigLoader.init();
+
+        try {
+            startEngine();
+        } catch (RuntimeException | Error e) {
+            // Spring stops only components that have started, so whatever this start has opened is shut down here.
+            abortStart();
+            throw e;
+        }
+
+        running = true;
+    }
+
+    @Override
+    public void stop() {
+        connectionManager.stopAccepting();
+        try {
+            Shutdown.getInstance().startShutdownActions();
+        } finally {
+            connectionManager.shutdown();
+            running = false;
+        }
+    }
+
+    @Override
+    public boolean isRunning() {
+        return running;
+    }
+
+    private void abortStart() {
+        if (connectionManager != null) {
+            connectionManager.shutdown();
+        }
+
+        ThreadPool.shutdown();
+    }
+
+    private void startEngine() {
+        printSection("ThreadPool");
+        ThreadPool.init();
+        ThreadPool.bindMetrics(meterRegistry);
+
+        // Start game time task manager early.
+        GameTimeTaskManager.getInstance();
+
+        printSection("IdManager");
+        IdManager.getInstance();
+
+        printSection("Scripting Engine");
+        EventDispatcher.getInstance();
+        ScriptEngine.getInstance();
+
+        printSection("World");
+        InstanceManager.getInstance();
+        World.init();
+        Gauge.builder("l2nx.players.online", () -> World.getPlayers().size())
+                .description("Players in the world, offline traders included")
+                .register(meterRegistry);
+        MapRegionData.getInstance();
+        AnnouncementsTable.getInstance();
+        GlobalVariablesManager.getInstance();
+
+        printSection("Data");
+        CategoryData.getInstance();
+        CubicData.getInstance();
+        DynamicExpRateData.getInstance();
+        SecondaryAuthData.getInstance();
+
+        printSection("Skills");
+        EffectHandler.getInstance().executeScript();
+        EnchantSkillGroupsData.getInstance();
+        SkillTreeData.getInstance();
+        SkillData.getInstance();
+        PetSkillData.getInstance();
+
+        printSection("Items");
+        ItemData.getInstance();
+        EnchantItemGroupsData.getInstance();
+        EnchantItemData.getInstance();
+        EnchantItemOptionsData.getInstance();
+        ElementalAttributeData.getInstance();
+        OptionData.getInstance();
+        EnchantItemHPBonusData.getInstance();
+        MerchantPriceConfigTable.getInstance().loadInstances();
+        BuyListData.getInstance();
+        MultisellData.getInstance();
+        RecipeData.getInstance();
+        ArmorSetData.getInstance();
+        FishData.getInstance();
+        FishingMonstersData.getInstance();
+        FishingRodsData.getInstance();
+        HennaData.getInstance();
+        PrimeShopData.getInstance();
+        PcCafePointsManager.getInstance();
+        ItemLifeTimeTaskManager.getInstance();
+
+        printSection("Characters");
+        ClassListData.getInstance();
+        InitialEquipmentData.getInstance();
+        InitialShortcutData.getInstance();
+        ExperienceData.getInstance();
+        ExperienceLossData.getInstance();
+        KarmaLossData.getInstance();
+        HitConditionBonusData.getInstance();
+        PlayerTemplateData.getInstance();
+        CharInfoTable.getInstance();
+        AdminData.getInstance();
+        RaidBossPointsManager.getInstance();
+        PetDataTable.getInstance();
+        CharSummonTable.getInstance().init();
+        CaptchaManager.getInstance();
+
+        if (PremiumSystemConfig.PREMIUM_SYSTEM_ENABLED) {
+            LOGGER.info("PremiumManager: Premium system is enabled.");
+            PremiumManager.getInstance();
+        }
+
+        printSection("Clans");
+        ClanTable.getInstance();
+        CHSiegeManager.getInstance();
+        ClanHallTable.getInstance();
+        ClanHallAuctionManager.getInstance();
+
+        printSection("Geodata");
+        GeoEngine.getInstance();
+
+        printSection("NPCs");
+        DoorData.getInstance();
+        FenceData.getInstance();
+        SkillLearnData.getInstance();
+        NpcData.getInstance();
+        LevelUpCrystalData.getInstance();
+        FakePlayerChatManager.getInstance();
+        WalkingManager.getInstance();
+        StaticObjectData.getInstance();
+        ItemAuctionManager.getInstance();
+        CastleManager.getInstance().loadInstances();
+        SchemeBufferTable.getInstance();
+        ZoneManager.getInstance();
+        GrandBossManager.getInstance().initZones();
+        EventDropManager.getInstance();
+
+        printSection("Olympiad");
+        Olympiad.getInstance();
+        Hero.getInstance();
+
+        printSection("Seven Signs");
+        SevenSigns.getInstance();
+
+        // Call to load caches.
+        printSection("Cache");
+        HtmCache.getInstance();
+        CrestTable.getInstance();
+        TeleporterData.getInstance();
+        PartyMatchWaitingList.getInstance();
+        PartyMatchRoomList.getInstance();
+        PetitionManager.getInstance();
+        AugmentationData.getInstance();
+        CursedWeaponsManager.getInstance();
+        TransformData.getInstance();
+        BotReportTable.getInstance();
+
+        if (SellBuffsConfig.SELLBUFF_ENABLED) {
+            SellBuffsManager.getInstance();
+        }
+
+        if (MultilingualSupportConfig.MULTILANG_ENABLE) {
+            SystemMessageId.loadLocalisations();
+            NpcStringId.loadLocalisations();
+            SendMessageLocalisationData.getInstance();
+            NpcNameLocalisationData.getInstance();
+        }
+
+        printSection("Scripts");
+        ScriptManager.getInstance();
+        BoatManager.getInstance();
+        AirShipManager.getInstance();
+        SeedOfDestructionManager.getInstance();
+        SeedOfInfinityManager.getInstance();
+
+        try {
+            LOGGER.info("Loading server scripts...");
+            ScriptEngine.getInstance().executeScript(ScriptEngine.MASTER_HANDLER);
+            ScriptEngine.getInstance().executeScriptList();
+        } catch (Exception e) {
+            LOGGER.log(Level.WARNING, "Failed to execute script list!", e);
+        }
+
+        SpawnData.getInstance();
+        DayNightSpawnManager.getInstance().trim().notifyChangeMode();
+        DimensionalRiftManager.getInstance();
+        RaidBossSpawnManager.getInstance();
+
+        printSection("Siege");
+        SiegeManager.getInstance().getSieges();
+        CastleManager.getInstance().activateInstances();
+        FortManager.getInstance().loadInstances();
+        FortManager.getInstance().activateInstances();
+        FortSiegeManager.getInstance();
+        SiegeScheduleData.getInstance();
+        MerchantPriceConfigTable.getInstance().updateReferences();
+        TerritoryWarManager.getInstance();
+        CastleManorManager.getInstance();
+        MercTicketManager.getInstance();
+        ScriptManager.getInstance().report();
+
+        if (GeneralConfig.SAVE_DROPPED_ITEM) {
+            ItemsOnGroundManager.getInstance();
+        }
+
+        if ((GeneralConfig.AUTODESTROY_ITEM_AFTER > 0) || (GeneralConfig.HERB_AUTO_DESTROY_TIME > 0)) {
+            ItemsAutoDestroyTaskManager.getInstance();
+        }
+
+        MonsterRaceManager.getInstance();
+        LotteryManager.getInstance();
+        SevenSigns.getInstance().spawnSevenSignsNPC();
+        SevenSignsFestival.getInstance();
+        AutoSpawnHandler.getInstance();
+        LOGGER.info("AutoSpawnHandler: Loaded " + AutoSpawnHandler.getInstance().size() + " handlers in total.");
+
+        if (WeddingConfig.ALLOW_WEDDING) {
+            CoupleManager.getInstance();
+        }
+
+        if (GeneralConfig.ALT_FISH_CHAMPIONSHIP_ENABLED) {
+            FishingChampionshipManager.getInstance();
+        }
+
+        KrateisCubeManager.getInstance();
+        UndergroundColiseumManager.getInstance();
+        DailyResetManager.getInstance();
+        AntiFeedManager.getInstance().registerEvent(AntiFeedManager.GAME_ID);
+
+        if (OfflinePlayConfig.ENABLE_OFFLINE_PLAY_COMMAND) {
+            AntiFeedManager.getInstance().registerEvent(AntiFeedManager.OFFLINE_PLAY);
+        }
+
+        if (GeneralConfig.ALLOW_MAIL) {
+            MailManager.getInstance();
+        }
+
+        if (CustomMailManagerConfig.CUSTOM_MAIL_MANAGER_ENABLED) {
+            CustomMailManager.getInstance();
+        }
+
+        if (EventDispatcher.getInstance().hasListener(EventType.ON_SERVER_START)) {
+            EventDispatcher.getInstance().notifyEventAsync(new OnServerStart());
+        }
+
+        PunishmentManager.getInstance();
+
+        LOGGER.info("IdManager: Free ObjectID's remaining: "
+                + IdManager.getInstance().getAvailableIdCount());
+
+        if ((OfflineTradeConfig.OFFLINE_TRADE_ENABLE || OfflineTradeConfig.OFFLINE_CRAFT_ENABLE)
+                && OfflineTradeConfig.RESTORE_OFFLINERS) {
+            OfflineTraderTable.getInstance().restoreOfflineTraders();
+        }
+
+        if (OfflinePlayConfig.ENABLE_OFFLINE_PLAY_COMMAND && OfflinePlayConfig.RESTORE_AUTO_PLAY_OFFLINERS) {
+            OfflinePlayTable.getInstance().restoreOfflinePlayers();
+        }
+
+        if (ServerConfig.SERVER_RESTART_SCHEDULE_ENABLED) {
+            ServerRestartManager.getInstance();
+        }
+
+        if (ServerConfig.PRECAUTIONARY_RESTART_ENABLED) {
+            PrecautionaryRestartManager.getInstance();
+        }
+
+        if (ServerConfig.DEADLOCK_WATCHER) {
+            final DeadlockWatcher deadlockWatcher =
+                    new DeadlockWatcher(Duration.ofSeconds(ServerConfig.DEADLOCK_CHECK_INTERVAL), () -> {
+                        if (ServerConfig.RESTART_ON_DEADLOCK) {
+                            World.broadcastToAllOnlinePlayers("Server has stability issues - restarting now.");
+                            Shutdown.getInstance().startShutdown(null, 60, true);
+                        }
+                    });
+            deadlockWatcher.setDaemon(true);
+            deadlockWatcher.start();
+        }
+
+        System.gc();
+        final long totalMem = Runtime.getRuntime().maxMemory() / 1048576;
+        LOGGER.info(getClass().getSimpleName() + ": Started, using " + getUsedMemoryMB() + " of " + totalMem
+                + " MB total memory.");
+        LOGGER.info(getClass().getSimpleName() + ": Maximum number of connected players is "
+                + ServerConfig.MAXIMUM_ONLINE_USERS + ".");
+        LOGGER.info(getClass().getSimpleName() + ": Server loaded in "
+                + ((System.currentTimeMillis() - START_TIME) / 1000) + " seconds.");
+
+        try {
+            connectionManager = new ConnectionManager<>(
+                    new InetSocketAddress(ServerConfig.PORT_GAME),
+                    GameClient::new,
+                    new GamePacketHandler(),
+                    NetworkConfig.SETTINGS);
+        } catch (IOException e) {
+            throw new UncheckedIOException("Unable to open the client port " + ServerConfig.PORT_GAME + ".", e);
+        }
+        connectionManager.bindMetrics(meterRegistry, "l2nx-game");
+
+        LoginServerThread.getInstance().start();
+    }
+
+    private void printSection(String section) {
+        if (DevelopmentConfig.LOG_SERVER_LOAD_TIMES) {
+            // Calculate elapsed time for previous section.
+            final long currentTime = System.currentTimeMillis();
+            final long sectionElapsed = currentTime - _sectionStartTime;
+
+            // Log elapsed time for previous section if not the first section.
+            if (_previousSectionName != null) {
+                LOGGER.info("...section [ " + _previousSectionName + " ] loaded in " + sectionElapsed + " ms.");
+            }
+
+            // Update for next measurement.
+            _previousSectionName = section;
+            _sectionStartTime = currentTime;
+        }
+
+        // Build and log the new section header.
+        final StringBuilder sb = new StringBuilder(61);
+        sb.append("=[ ").append(section).append(" ]");
+        while (sb.length() < 61) {
+            sb.insert(0, '-');
+        }
+        LOGGER.info(sb.toString());
+    }
+
+    public long getUsedMemoryMB() {
+        return (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) / 1048576;
+    }
+
+    public static long getStartTime() {
+        return START_TIME;
+    }
 }

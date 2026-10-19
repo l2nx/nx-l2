@@ -2,17 +2,17 @@
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -21,9 +21,6 @@
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package app.l2nx.highfive.scripts.handlers.skill.targets;
-
-import java.util.ArrayList;
-import java.util.List;
 
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.WorldObject;
@@ -35,84 +32,71 @@ import app.l2nx.highfive.geoengine.GeoEngine;
 import app.l2nx.highfive.handler.ITargetTypeHandler;
 import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.mechanics.skill.targets.TargetType;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Aura Friendly target handler implementation.
  * @author Sahar
  */
-public class AuraFriendly implements ITargetTypeHandler
-{
-	@Override
-	public List<WorldObject> getTargetList(Skill skill, Creature creature, boolean onlyFirst, Creature target)
-	{
-		final List<WorldObject> targetList = new ArrayList<>();
-		final Player player = creature.asPlayer();
-		final int maxTargets = skill.getAffectLimit();
-		World.forEachVisibleObject(player, Creature.class, obj ->
-		{
-			if ((obj == creature) || !checkTarget(player, obj))
-			{
-				return;
-			}
-			
-			if ((maxTargets > 0) && (targetList.size() >= maxTargets))
-			{
-				return;
-			}
-			
-			targetList.add(obj);
-		});
-		
-		return targetList;
-	}
-	
-	private boolean checkTarget(Player player, Creature target)
-	{
-		if ((target == null) || !GeoEngine.getInstance().canSeeTarget(player, target))
-		{
-			return false;
-		}
-		
-		if (target.isAlikeDead() || target.isDoor() || (target instanceof SiegeFlag) || target.isMonster())
-		{
-			return false;
-		}
-		
-		if (target.isPlayable())
-		{
-			if (player.isInDuelWith(target))
-			{
-				return false;
-			}
-			
-			if (player.isInPartyWith(target))
-			{
-				return true;
-			}
-			
-			if (target.isInsideZone(ZoneId.PVP))
-			{
-				return false;
-			}
-			
-			if (player.isInClanWith(target) || player.isInAllyWith(target) || player.isInCommandChannelWith(target))
-			{
-				return true;
-			}
-			
-			final Player targetPlayer = target.asPlayer();
-			if ((targetPlayer.getPvpFlag() > 0) || (targetPlayer.getKarma() > 0))
-			{
-				return false;
-			}
-		}
-		
-		return true;
-	}
-	
-	@Override
-	public Enum<TargetType> getTargetType()
-	{
-		return TargetType.AURA_FRIENDLY;
-	}
+public class AuraFriendly implements ITargetTypeHandler {
+    @Override
+    public List<WorldObject> getTargetList(Skill skill, Creature creature, boolean onlyFirst, Creature target) {
+        final List<WorldObject> targetList = new ArrayList<>();
+        final Player player = creature.asPlayer();
+        final int maxTargets = skill.getAffectLimit();
+        World.forEachVisibleObject(player, Creature.class, obj -> {
+            if ((obj == creature) || !checkTarget(player, obj)) {
+                return;
+            }
+
+            if ((maxTargets > 0) && (targetList.size() >= maxTargets)) {
+                return;
+            }
+
+            targetList.add(obj);
+        });
+
+        return targetList;
+    }
+
+    private boolean checkTarget(Player player, Creature target) {
+        if ((target == null) || !GeoEngine.getInstance().canSeeTarget(player, target)) {
+            return false;
+        }
+
+        if (target.isAlikeDead() || target.isDoor() || (target instanceof SiegeFlag) || target.isMonster()) {
+            return false;
+        }
+
+        if (target.isPlayable()) {
+            if (player.isInDuelWith(target)) {
+                return false;
+            }
+
+            if (player.isInPartyWith(target)) {
+                return true;
+            }
+
+            if (target.isInsideZone(ZoneId.PVP)) {
+                return false;
+            }
+
+            if (player.isInClanWith(target) || player.isInAllyWith(target) || player.isInCommandChannelWith(target)) {
+                return true;
+            }
+
+            final Player targetPlayer = target.asPlayer();
+            if ((targetPlayer.getPvpFlag() > 0) || (targetPlayer.getKarma() > 0)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    @Override
+    public Enum<TargetType> getTargetType() {
+        return TargetType.AURA_FRIENDLY;
+    }
 }

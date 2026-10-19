@@ -2,17 +2,17 @@
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -28,67 +28,57 @@ import app.l2nx.highfive.entity.actor.enums.player.PrivateStoreType;
 import app.l2nx.highfive.managers.RecipeManager;
 import app.l2nx.highfive.util.LocationUtil;
 
-public class RequestRecipeShopMakeItem extends ClientPacket
-{
-	private int _id;
-	private int _recipeId;
-	@SuppressWarnings("unused")
-	private long _unknown;
-	
-	@Override
-	protected void readImpl()
-	{
-		_id = readInt();
-		_recipeId = readInt();
-		_unknown = readLong();
-	}
-	
-	@Override
-	protected void runImpl()
-	{
-		final Player player = getPlayer();
-		if (player == null)
-		{
-			return;
-		}
-		
-		if (!getClient().getFloodProtectors().canManufacture())
-		{
-			return;
-		}
-		
-		final Player manufacturer = World.getPlayer(_id);
-		if (manufacturer == null)
-		{
-			return;
-		}
-		
-		if ((manufacturer.getInstanceId() != player.getInstanceId()) && (player.getInstanceId() != -1))
-		{
-			return;
-		}
-		
-		if (player.isInStoreMode())
-		{
-			player.sendMessage("You cannot create items while trading.");
-			return;
-		}
-		
-		if (manufacturer.getPrivateStoreType() != PrivateStoreType.MANUFACTURE)
-		{
-			// player.sendMessage("You cannot create items while trading.");
-			return;
-		}
-		
-		if (player.isCrafting() || manufacturer.isCrafting())
-		{
-			player.sendMessage("You are currently in Craft Mode.");
-			return;
-		}
-		
-		if (LocationUtil.checkIfInRange(150, player, manufacturer, true))
-		{
-			RecipeManager.getInstance().requestManufactureItem(manufacturer, _recipeId, player);
-		}
-	}
+public class RequestRecipeShopMakeItem extends ClientPacket {
+    private int _id;
+    private int _recipeId;
+
+    @SuppressWarnings("unused")
+    private long _unknown;
+
+    @Override
+    protected void readImpl() {
+        _id = readInt();
+        _recipeId = readInt();
+        _unknown = readLong();
+    }
+
+    @Override
+    protected void runImpl() {
+        final Player player = getPlayer();
+        if (player == null) {
+            return;
+        }
+
+        if (!getClient().getFloodProtectors().canManufacture()) {
+            return;
+        }
+
+        final Player manufacturer = World.getPlayer(_id);
+        if (manufacturer == null) {
+            return;
+        }
+
+        if ((manufacturer.getInstanceId() != player.getInstanceId()) && (player.getInstanceId() != -1)) {
+            return;
+        }
+
+        if (player.isInStoreMode()) {
+            player.sendMessage("You cannot create items while trading.");
+            return;
+        }
+
+        if (manufacturer.getPrivateStoreType() != PrivateStoreType.MANUFACTURE) {
+            // player.sendMessage("You cannot create items while trading.");
+            return;
+        }
+
+        if (player.isCrafting() || manufacturer.isCrafting()) {
+            player.sendMessage("You are currently in Craft Mode.");
+            return;
+        }
+
+        if (LocationUtil.checkIfInRange(150, player, manufacturer, true)) {
+            RecipeManager.getInstance().requestManufactureItem(manufacturer, _recipeId, player);
+        }
+    }
 }

@@ -2,17 +2,17 @@
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -22,96 +22,74 @@
  */
 package app.l2nx.highfive.entity.actor.instance;
 
-import java.util.StringTokenizer;
-
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.enums.creature.InstanceType;
 import app.l2nx.highfive.entity.actor.templates.NpcTemplate;
 import app.l2nx.highfive.entity.clan.ClanAccess;
 import app.l2nx.highfive.mechanics.siege.clanhalls.SiegableHall;
+import java.util.StringTokenizer;
 
-public class CastleDoorman extends Doorman
-{
-	public CastleDoorman(NpcTemplate template)
-	{
-		super(template);
-		setInstanceType(InstanceType.CastleDoorman);
-	}
-	
-	@Override
-	protected void openDoors(Player player, String command)
-	{
-		final StringTokenizer st = new StringTokenizer(command.substring(10), ", ");
-		st.nextToken();
-		
-		while (st.hasMoreTokens())
-		{
-			if (getConquerableHall() != null)
-			{
-				getConquerableHall().openCloseDoor(Integer.parseInt(st.nextToken()), true);
-			}
-			else
-			{
-				getCastle().openDoor(player, Integer.parseInt(st.nextToken()));
-			}
-		}
-	}
-	
-	@Override
-	protected void closeDoors(Player player, String command)
-	{
-		final StringTokenizer st = new StringTokenizer(command.substring(11), ", ");
-		st.nextToken();
-		
-		while (st.hasMoreTokens())
-		{
-			if (getConquerableHall() != null)
-			{
-				getConquerableHall().openCloseDoor(Integer.parseInt(st.nextToken()), false);
-			}
-			else
-			{
-				getCastle().closeDoor(player, Integer.parseInt(st.nextToken()));
-			}
-		}
-	}
-	
-	@Override
-	protected boolean isOwnerClan(Player player)
-	{
-		if ((player.getClan() != null) && player.hasAccess(ClanAccess.CASTLE_OPEN_DOOR))
-		{
-			final SiegableHall hall = getConquerableHall();
-			
-			// Save in variable because it's a costly call.
-			if (hall != null)
-			{
-				if (player.getClanId() == hall.getOwnerId())
-				{
-					return true;
-				}
-			}
-			else if (getCastle() != null)
-			{
-				if (player.getClanId() == getCastle().getOwnerId())
-				{
-					return true;
-				}
-			}
-		}
-		
-		return false;
-	}
-	
-	@Override
-	protected boolean isUnderSiege()
-	{
-		final SiegableHall hall = getConquerableHall();
-		if (hall != null)
-		{
-			return hall.isInSiege();
-		}
-		
-		return getCastle().getZone().isActive();
-	}
+public class CastleDoorman extends Doorman {
+    public CastleDoorman(NpcTemplate template) {
+        super(template);
+        setInstanceType(InstanceType.CastleDoorman);
+    }
+
+    @Override
+    protected void openDoors(Player player, String command) {
+        final StringTokenizer st = new StringTokenizer(command.substring(10), ", ");
+        st.nextToken();
+
+        while (st.hasMoreTokens()) {
+            if (getConquerableHall() != null) {
+                getConquerableHall().openCloseDoor(Integer.parseInt(st.nextToken()), true);
+            } else {
+                getCastle().openDoor(player, Integer.parseInt(st.nextToken()));
+            }
+        }
+    }
+
+    @Override
+    protected void closeDoors(Player player, String command) {
+        final StringTokenizer st = new StringTokenizer(command.substring(11), ", ");
+        st.nextToken();
+
+        while (st.hasMoreTokens()) {
+            if (getConquerableHall() != null) {
+                getConquerableHall().openCloseDoor(Integer.parseInt(st.nextToken()), false);
+            } else {
+                getCastle().closeDoor(player, Integer.parseInt(st.nextToken()));
+            }
+        }
+    }
+
+    @Override
+    protected boolean isOwnerClan(Player player) {
+        if ((player.getClan() != null) && player.hasAccess(ClanAccess.CASTLE_OPEN_DOOR)) {
+            final SiegableHall hall = getConquerableHall();
+
+            // Save in variable because it's a costly call.
+            if (hall != null) {
+                if (player.getClanId() == hall.getOwnerId()) {
+                    return true;
+                }
+            } else if (getCastle() != null) {
+                if (player.getClanId() == getCastle().getOwnerId()) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    @Override
+    protected boolean isUnderSiege() {
+        final SiegableHall hall = getConquerableHall();
+        if (hall != null) {
+            return hall.isInSiege();
+        }
+
+        return getCastle().getZone().isActive();
+    }
 }

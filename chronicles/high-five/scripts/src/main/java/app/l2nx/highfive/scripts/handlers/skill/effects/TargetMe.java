@@ -2,17 +2,17 @@
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -22,62 +22,53 @@
  */
 package app.l2nx.highfive.scripts.handlers.skill.effects;
 
-import java.util.concurrent.ThreadLocalRandom;
-
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.mechanics.conditions.Condition;
 import app.l2nx.highfive.mechanics.effects.AbstractEffect;
 import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.util.StatSet;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Target Me effect implementation.
  * @author -Nemesiss-, Mobius
  */
-public class TargetMe extends AbstractEffect
-{
-	private final int _chance;
-	
-	public TargetMe(Condition attachCond, Condition applyCond, StatSet set, StatSet params)
-	{
-		super(attachCond, applyCond, set, params);
-		
-		_chance = params.getInt("chance", 100);
-	}
-	
-	@Override
-	public boolean calcSuccess(Creature effector, Creature effected, Skill skill)
-	{
-		return ThreadLocalRandom.current().nextInt(100) < _chance;
-	}
-	
-	@Override
-	public void onStart(Creature effector, Creature effected, Skill skill)
-	{
-		if (effected.isPlayable())
-		{
-			if (effected.getTarget() != effector)
-			{
-				// If effector is null, then its not a player, but NPC. If it is not null, then it should check if the skill is pvp skill.
-				final Player player = effector.asPlayer();
-				if ((player == null) || player.checkPvpSkill(effected, skill))
-				{
-					// Target is different.
-					effected.setTarget(player);
-				}
-			}
-			
-			effected.asPlayable().setLockedTarget(effector);
-		}
-	}
-	
-	@Override
-	public void onExit(Creature effector, Creature effected, Skill skill)
-	{
-		if (effected.isPlayable())
-		{
-			effected.asPlayable().setLockedTarget(null);
-		}
-	}
+public class TargetMe extends AbstractEffect {
+    private final int _chance;
+
+    public TargetMe(Condition attachCond, Condition applyCond, StatSet set, StatSet params) {
+        super(attachCond, applyCond, set, params);
+
+        _chance = params.getInt("chance", 100);
+    }
+
+    @Override
+    public boolean calcSuccess(Creature effector, Creature effected, Skill skill) {
+        return ThreadLocalRandom.current().nextInt(100) < _chance;
+    }
+
+    @Override
+    public void onStart(Creature effector, Creature effected, Skill skill) {
+        if (effected.isPlayable()) {
+            if (effected.getTarget() != effector) {
+                // If effector is null, then its not a player, but NPC. If it is not null, then it should check if the
+                // skill is pvp skill.
+                final Player player = effector.asPlayer();
+                if ((player == null) || player.checkPvpSkill(effected, skill)) {
+                    // Target is different.
+                    effected.setTarget(player);
+                }
+            }
+
+            effected.asPlayable().setLockedTarget(effector);
+        }
+    }
+
+    @Override
+    public void onExit(Creature effector, Creature effected, Skill skill) {
+        if (effected.isPlayable()) {
+            effected.asPlayable().setLockedTarget(null);
+        }
+    }
 }

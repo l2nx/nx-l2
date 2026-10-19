@@ -2,17 +2,17 @@
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -28,17 +28,15 @@ import app.l2nx.highfive.config.ConfigReader;
  * This class loads all the custom find PVP related configurations.
  * @author Mobius
  */
-public class FindPvpConfig
-{
-	// File
-	private static final String FIND_PVP_CONFIG_FILE = "./config/Custom/FindPvP.ini";
-	
-	// Constants
-	public static boolean ENABLE_FIND_PVP;
-	
-	public static void load()
-	{
-		final ConfigReader config = new ConfigReader(FIND_PVP_CONFIG_FILE);
-		ENABLE_FIND_PVP = config.getBoolean("EnableFindPvP", false);
-	}
+public class FindPvpConfig {
+    // File
+    private static final String FIND_PVP_CONFIG_FILE = "./config/Custom/FindPvP.ini";
+
+    // Constants
+    public static boolean ENABLE_FIND_PVP;
+
+    public static void load() {
+        final ConfigReader config = new ConfigReader(FIND_PVP_CONFIG_FILE);
+        ENABLE_FIND_PVP = config.getBoolean("EnableFindPvP", false);
+    }
 }

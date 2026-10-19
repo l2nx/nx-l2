@@ -3,40 +3,32 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
  * This file is part of the L2J Mobius project.
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 package app.l2nx.highfive.scripts.ai.areas.Hellbound;
-
-import java.util.logging.Logger;
 
 import app.l2nx.highfive.config.custom.HellboundStatusConfig;
 import app.l2nx.highfive.handler.AdminCommandHandler;
 import app.l2nx.highfive.handler.IAdminCommandHandler;
 import app.l2nx.highfive.handler.IVoicedCommandHandler;
 import app.l2nx.highfive.handler.VoicedCommandHandler;
-
 import app.l2nx.highfive.scripts.ai.areas.Hellbound.AI.Amaskari;
 import app.l2nx.highfive.scripts.ai.areas.Hellbound.AI.Chimeras;
 import app.l2nx.highfive.scripts.ai.areas.Hellbound.AI.DemonPrince;
 import app.l2nx.highfive.scripts.ai.areas.Hellbound.AI.HellboundCore;
 import app.l2nx.highfive.scripts.ai.areas.Hellbound.AI.Keltas;
-import app.l2nx.highfive.scripts.ai.areas.Hellbound.AI.NaiaLock;
-import app.l2nx.highfive.scripts.ai.areas.Hellbound.AI.OutpostCaptain;
-import app.l2nx.highfive.scripts.ai.areas.Hellbound.AI.Ranku;
-import app.l2nx.highfive.scripts.ai.areas.Hellbound.AI.Slaves;
-import app.l2nx.highfive.scripts.ai.areas.Hellbound.AI.Typhoon;
 import app.l2nx.highfive.scripts.ai.areas.Hellbound.AI.NPC.Bernarde.Bernarde;
 import app.l2nx.highfive.scripts.ai.areas.Hellbound.AI.NPC.Budenka.Budenka;
 import app.l2nx.highfive.scripts.ai.areas.Hellbound.AI.NPC.Buron.Buron;
@@ -51,6 +43,11 @@ import app.l2nx.highfive.scripts.ai.areas.Hellbound.AI.NPC.Quarry.Quarry;
 import app.l2nx.highfive.scripts.ai.areas.Hellbound.AI.NPC.Shadai.Shadai;
 import app.l2nx.highfive.scripts.ai.areas.Hellbound.AI.NPC.Solomon.Solomon;
 import app.l2nx.highfive.scripts.ai.areas.Hellbound.AI.NPC.Warpgate.Warpgate;
+import app.l2nx.highfive.scripts.ai.areas.Hellbound.AI.NaiaLock;
+import app.l2nx.highfive.scripts.ai.areas.Hellbound.AI.OutpostCaptain;
+import app.l2nx.highfive.scripts.ai.areas.Hellbound.AI.Ranku;
+import app.l2nx.highfive.scripts.ai.areas.Hellbound.AI.Slaves;
+import app.l2nx.highfive.scripts.ai.areas.Hellbound.AI.Typhoon;
 import app.l2nx.highfive.scripts.ai.areas.Hellbound.AI.Zones.AnomicFoundry.AnomicFoundry;
 import app.l2nx.highfive.scripts.ai.areas.Hellbound.AI.Zones.BaseTower.BaseTower;
 import app.l2nx.highfive.scripts.ai.areas.Hellbound.AI.Zones.TowerOfInfinitum.TowerOfInfinitum;
@@ -63,94 +60,86 @@ import app.l2nx.highfive.scripts.handlers.chat.commands.admin.AdminHellbound;
 import app.l2nx.highfive.scripts.handlers.chat.commands.voiced.Hellbound;
 import app.l2nx.highfive.scripts.quests.Q00130_PathToHellbound.Q00130_PathToHellbound;
 import app.l2nx.highfive.scripts.quests.Q00133_ThatsBloodyHot.Q00133_ThatsBloodyHot;
+import java.util.logging.Logger;
 
 /**
  * Hellbound class-loader.
  * @author Zoey76
  */
-public class HellboundLoader
-{
-	private static final Logger LOGGER = Logger.getLogger(HellboundLoader.class.getName());
-	
-	private static final Class<?>[] SCRIPTS =
-	{
-		// Commands
-		AdminHellbound.class,
-		Hellbound.class,
-		
-		// AIs
-		Amaskari.class,
-		Chimeras.class,
-		DemonPrince.class,
-		HellboundCore.class,
-		Keltas.class,
-		NaiaLock.class,
-		OutpostCaptain.class,
-		Ranku.class,
-		Slaves.class,
-		Typhoon.class,
-		
-		// NPCs
-		Bernarde.class,
-		Budenka.class,
-		Buron.class,
-		Deltuva.class,
-		Falk.class,
-		Hude.class,
-		Jude.class,
-		Kanaf.class,
-		Kief.class,
-		Natives.class,
-		Quarry.class,
-		Shadai.class,
-		Solomon.class,
-		Warpgate.class,
-		
-		// Zones
-		AnomicFoundry.class,
-		BaseTower.class,
-		TowerOfInfinitum.class,
-		TowerOfNaia.class,
-		TullyWorkshop.class,
-		
-		// Instances
-		DemonPrinceFloor.class,
-		UrbanArea.class,
-		RankuFloor.class,
-		
-		// Quests
-		Q00130_PathToHellbound.class,
-		Q00133_ThatsBloodyHot.class,
-	};
-	
-	public static void main(String[] args)
-	{
-		LOGGER.info(HellboundLoader.class.getSimpleName() + ": Loading Hellbound related scripts:");
-		
-		// Data
-		HellboundPointData.getInstance();
-		HellboundSpawns.getInstance();
-		
-		// Engine
-		HellboundEngine.getInstance();
-		for (Class<?> script : SCRIPTS)
-		{
-			try
-			{
-				final Object instance = script.getDeclaredConstructor().newInstance();
-				if (instance instanceof IAdminCommandHandler)
-				{
-					AdminCommandHandler.getInstance().registerHandler((IAdminCommandHandler) instance);
-				}
-				else if (HellboundStatusConfig.HELLBOUND_STATUS && (instance instanceof IVoicedCommandHandler))
-				{
-					VoicedCommandHandler.getInstance().registerHandler((IVoicedCommandHandler) instance);
-				}
-			}
-			catch (Exception e)
-			{
-				LOGGER.severe(HellboundLoader.class.getSimpleName() + ": Failed loading " + script.getSimpleName() + ":" + e.getMessage());
-			}
-		}
-	}
+public class HellboundLoader {
+    private static final Logger LOGGER = Logger.getLogger(HellboundLoader.class.getName());
+
+    private static final Class<?>[] SCRIPTS = {
+        // Commands
+        AdminHellbound.class,
+        Hellbound.class,
+
+        // AIs
+        Amaskari.class,
+        Chimeras.class,
+        DemonPrince.class,
+        HellboundCore.class,
+        Keltas.class,
+        NaiaLock.class,
+        OutpostCaptain.class,
+        Ranku.class,
+        Slaves.class,
+        Typhoon.class,
+
+        // NPCs
+        Bernarde.class,
+        Budenka.class,
+        Buron.class,
+        Deltuva.class,
+        Falk.class,
+        Hude.class,
+        Jude.class,
+        Kanaf.class,
+        Kief.class,
+        Natives.class,
+        Quarry.class,
+        Shadai.class,
+        Solomon.class,
+        Warpgate.class,
+
+        // Zones
+        AnomicFoundry.class,
+        BaseTower.class,
+        TowerOfInfinitum.class,
+        TowerOfNaia.class,
+        TullyWorkshop.class,
+
+        // Instances
+        DemonPrinceFloor.class,
+        UrbanArea.class,
+        RankuFloor.class,
+
+        // Quests
+        Q00130_PathToHellbound.class,
+        Q00133_ThatsBloodyHot.class,
+    };
+
+    public static void main(String[] args) {
+        LOGGER.info(HellboundLoader.class.getSimpleName() + ": Loading Hellbound related scripts:");
+
+        // Data
+        HellboundPointData.getInstance();
+        HellboundSpawns.getInstance();
+
+        // Engine
+        HellboundEngine.getInstance();
+        for (Class<?> script : SCRIPTS) {
+            try {
+                final Object instance = script.getDeclaredConstructor().newInstance();
+                if (instance instanceof IAdminCommandHandler) {
+                    AdminCommandHandler.getInstance().registerHandler((IAdminCommandHandler) instance);
+                } else if (HellboundStatusConfig.HELLBOUND_STATUS && (instance instanceof IVoicedCommandHandler)) {
+                    VoicedCommandHandler.getInstance().registerHandler((IVoicedCommandHandler) instance);
+                }
+            } catch (Exception e) {
+                LOGGER.severe(HellboundLoader.class.getSimpleName() + ": Failed loading " + script.getSimpleName() + ":"
+                        + e.getMessage());
+            }
+        }
+    }
 }

@@ -12,10 +12,8 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @SpringBootApplication(scanBasePackages = "app.l2nx.login")
 @ConfigurationPropertiesScan("app.l2nx.login")
 @EnableScheduling
-public class LoginApplication
-{
-	public static void main(String[] args)
-	{
-		SpringApplication.run(LoginApplication.class, args);
-	}
+public class LoginApplication {
+    public static void main(String[] args) {
+        SpringApplication.run(LoginApplication.class, args);
+    }
 }

@@ -2,17 +2,17 @@
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -25,37 +25,30 @@ package app.l2nx.highfive.entity.actor.instance;
 import app.l2nx.highfive.entity.actor.enums.creature.InstanceType;
 import app.l2nx.highfive.entity.actor.templates.NpcTemplate;
 
-public class Warehouse extends Folk
-{
-	/**
-	 * Creates a warehouse NPC.
-	 * @param template the warehouse NPC template
-	 */
-	public Warehouse(NpcTemplate template)
-	{
-		super(template);
-		setInstanceType(InstanceType.Warehouse);
-	}
-	
-	@Override
-	public boolean isWarehouse()
-	{
-		return true;
-	}
-	
-	@Override
-	public String getHtmlPath(int npcId, int value)
-	{
-		String pom = "";
-		if (value == 0)
-		{
-			pom = Integer.toString(npcId);
-		}
-		else
-		{
-			pom = npcId + "-" + value;
-		}
-		
-		return "data/html/warehouse/" + pom + ".htm";
-	}
+public class Warehouse extends Folk {
+    /**
+     * Creates a warehouse NPC.
+     * @param template the warehouse NPC template
+     */
+    public Warehouse(NpcTemplate template) {
+        super(template);
+        setInstanceType(InstanceType.Warehouse);
+    }
+
+    @Override
+    public boolean isWarehouse() {
+        return true;
+    }
+
+    @Override
+    public String getHtmlPath(int npcId, int value) {
+        String pom = "";
+        if (value == 0) {
+            pom = Integer.toString(npcId);
+        } else {
+            pom = npcId + "-" + value;
+        }
+
+        return "data/html/warehouse/" + pom + ".htm";
+    }
 }

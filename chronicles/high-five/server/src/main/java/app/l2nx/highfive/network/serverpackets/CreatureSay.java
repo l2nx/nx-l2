@@ -2,17 +2,17 @@
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -22,9 +22,6 @@
  */
 package app.l2nx.highfive.network.serverpackets;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.network.GameClient;
@@ -33,93 +30,78 @@ import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.enums.ChatType;
 import app.l2nx.network.buffer.WriteBuffer;
+import java.util.ArrayList;
+import java.util.List;
 
-public class CreatureSay extends ServerPacket
-{
-	private final Creature _sender;
-	private final ChatType _chatType;
-	private String _senderName = null;
-	private String _text = null;
-	private int _charId = 0;
-	private int _messageId = -1;
-	private List<String> _parameters;
-	
-	public CreatureSay(Creature sender, ChatType chatType, String senderName, String text)
-	{
-		_sender = sender;
-		_chatType = chatType;
-		_senderName = senderName;
-		_text = text;
-	}
-	
-	public CreatureSay(Creature sender, ChatType chatType, NpcStringId npcStringId)
-	{
-		_sender = sender;
-		_chatType = chatType;
-		_messageId = npcStringId.getId();
-		if (sender != null)
-		{
-			_senderName = sender.getName();
-		}
-	}
-	
-	public CreatureSay(ChatType chatType, int charId, SystemMessageId systemMessageId)
-	{
-		_sender = null;
-		_chatType = chatType;
-		_charId = charId;
-		_messageId = systemMessageId.getId();
-	}
-	
-	/**
-	 * String parameter for argument S1,S2,.. in npcstring-e.dat
-	 * @param text
-	 */
-	public void addStringParameter(String text)
-	{
-		if (_parameters == null)
-		{
-			_parameters = new ArrayList<>();
-		}
-		
-		_parameters.add(text);
-	}
-	
-	@Override
-	public void writeImpl(GameClient client, WriteBuffer buffer)
-	{
-		ServerPackets.SAY2.writeId(this, buffer);
-		buffer.writeInt(_sender == null ? 0 : _sender.getObjectId());
-		buffer.writeInt(_chatType.getClientId());
-		if (_senderName != null)
-		{
-			buffer.writeString(_senderName);
-		}
-		else
-		{
-			buffer.writeInt(_charId);
-		}
-		
-		buffer.writeInt(_messageId); // High Five NPCString ID
-		if (_text != null)
-		{
-			buffer.writeString(_text);
-		}
-		else if (_parameters != null)
-		{
-			for (String s : _parameters)
-			{
-				buffer.writeString(s);
-			}
-		}
-	}
-	
-	@Override
-	public void runImpl(Player player)
-	{
-		if (player != null)
-		{
-			player.broadcastSnoop(_chatType, _senderName, _text, this);
-		}
-	}
+public class CreatureSay extends ServerPacket {
+    private final Creature _sender;
+    private final ChatType _chatType;
+    private String _senderName = null;
+    private String _text = null;
+    private int _charId = 0;
+    private int _messageId = -1;
+    private List<String> _parameters;
+
+    public CreatureSay(Creature sender, ChatType chatType, String senderName, String text) {
+        _sender = sender;
+        _chatType = chatType;
+        _senderName = senderName;
+        _text = text;
+    }
+
+    public CreatureSay(Creature sender, ChatType chatType, NpcStringId npcStringId) {
+        _sender = sender;
+        _chatType = chatType;
+        _messageId = npcStringId.getId();
+        if (sender != null) {
+            _senderName = sender.getName();
+        }
+    }
+
+    public CreatureSay(ChatType chatType, int charId, SystemMessageId systemMessageId) {
+        _sender = null;
+        _chatType = chatType;
+        _charId = charId;
+        _messageId = systemMessageId.getId();
+    }
+
+    /**
+     * String parameter for argument S1,S2,.. in npcstring-e.dat
+     * @param text
+     */
+    public void addStringParameter(String text) {
+        if (_parameters == null) {
+            _parameters = new ArrayList<>();
+        }
+
+        _parameters.add(text);
+    }
+
+    @Override
+    public void writeImpl(GameClient client, WriteBuffer buffer) {
+        ServerPackets.SAY2.writeId(this, buffer);
+        buffer.writeInt(_sender == null ? 0 : _sender.getObjectId());
+        buffer.writeInt(_chatType.getClientId());
+        if (_senderName != null) {
+            buffer.writeString(_senderName);
+        } else {
+            buffer.writeInt(_charId);
+        }
+
+        buffer.writeInt(_messageId); // High Five NPCString ID
+        if (_text != null) {
+            buffer.writeString(_text);
+        } else if (_parameters != null) {
+            for (String s : _parameters) {
+                buffer.writeString(s);
+            }
+        }
+    }
+
+    @Override
+    public void runImpl(Player player) {
+        if (player != null) {
+            player.broadcastSnoop(_chatType, _senderName, _text, this);
+        }
+    }
 }

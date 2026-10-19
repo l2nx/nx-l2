@@ -2,17 +2,17 @@
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -25,38 +25,34 @@ package app.l2nx.highfive.data.holders;
 /**
  * This class describes a RecipeList component (1 line of the recipe : Item-Quantity needed).
  */
-public class RecipeHolder
-{
-	/** The Identifier of the item needed in the RecipeHolder */
-	private final int _itemId;
-	
-	/** The item quantity needed in the RecipeHolder */
-	private final int _quantity;
-	
-	/**
-	 * Constructor of RecipeHolder (create a new line in a RecipeList).
-	 * @param itemId
-	 * @param quantity
-	 */
-	public RecipeHolder(int itemId, int quantity)
-	{
-		_itemId = itemId;
-		_quantity = quantity;
-	}
-	
-	/**
-	 * @return the Identifier of the RecipeHolder Item needed.
-	 */
-	public int getItemId()
-	{
-		return _itemId;
-	}
-	
-	/**
-	 * @return the Item quantity needed of the RecipeHolder.
-	 */
-	public int getQuantity()
-	{
-		return _quantity;
-	}
+public class RecipeHolder {
+    /** The Identifier of the item needed in the RecipeHolder */
+    private final int _itemId;
+
+    /** The item quantity needed in the RecipeHolder */
+    private final int _quantity;
+
+    /**
+     * Constructor of RecipeHolder (create a new line in a RecipeList).
+     * @param itemId
+     * @param quantity
+     */
+    public RecipeHolder(int itemId, int quantity) {
+        _itemId = itemId;
+        _quantity = quantity;
+    }
+
+    /**
+     * @return the Identifier of the RecipeHolder Item needed.
+     */
+    public int getItemId() {
+        return _itemId;
+    }
+
+    /**
+     * @return the Item quantity needed of the RecipeHolder.
+     */
+    public int getQuantity() {
+        return _quantity;
+    }
 }

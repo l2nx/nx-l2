@@ -2,17 +2,17 @@
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -27,28 +27,25 @@ import app.l2nx.highfive.network.GameClient;
 import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.network.buffer.WriteBuffer;
 
-public class PartySmallWindowUpdate extends ServerPacket
-{
-	private final Player _member;
-	
-	public PartySmallWindowUpdate(Player member)
-	{
-		_member = member;
-	}
-	
-	@Override
-	public void writeImpl(GameClient client, WriteBuffer buffer)
-	{
-		ServerPackets.PARTY_SMALL_WINDOW_UPDATE.writeId(this, buffer);
-		buffer.writeInt(_member.getObjectId());
-		buffer.writeString(_member.getName());
-		buffer.writeInt((int) _member.getCurrentCp()); // c4
-		buffer.writeInt(_member.getMaxCp()); // c4
-		buffer.writeInt((int) _member.getCurrentHp());
-		buffer.writeInt(_member.getMaxHp());
-		buffer.writeInt((int) _member.getCurrentMp());
-		buffer.writeInt(_member.getMaxMp());
-		buffer.writeInt(_member.getLevel());
-		buffer.writeInt(_member.getPlayerClass().getId());
-	}
+public class PartySmallWindowUpdate extends ServerPacket {
+    private final Player _member;
+
+    public PartySmallWindowUpdate(Player member) {
+        _member = member;
+    }
+
+    @Override
+    public void writeImpl(GameClient client, WriteBuffer buffer) {
+        ServerPackets.PARTY_SMALL_WINDOW_UPDATE.writeId(this, buffer);
+        buffer.writeInt(_member.getObjectId());
+        buffer.writeString(_member.getName());
+        buffer.writeInt((int) _member.getCurrentCp()); // c4
+        buffer.writeInt(_member.getMaxCp()); // c4
+        buffer.writeInt((int) _member.getCurrentHp());
+        buffer.writeInt(_member.getMaxHp());
+        buffer.writeInt((int) _member.getCurrentMp());
+        buffer.writeInt(_member.getMaxMp());
+        buffer.writeInt(_member.getLevel());
+        buffer.writeInt(_member.getPlayerClass().getId());
+    }
 }

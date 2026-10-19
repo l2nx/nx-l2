@@ -2,17 +2,17 @@
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -22,47 +22,41 @@
  */
 package app.l2nx.highfive.mechanics.conditions;
 
-import java.util.Set;
-
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.instancezone.InstanceWorld;
 import app.l2nx.highfive.entity.item.ItemTemplate;
 import app.l2nx.highfive.managers.InstanceManager;
 import app.l2nx.highfive.mechanics.skill.Skill;
+import java.util.Set;
 
 /**
  * The Class ConditionPlayerInstanceId.
  */
-public class ConditionPlayerInstanceId extends Condition
-{
-	private final Set<Integer> _instanceIds;
-	
-	/**
-	 * Instantiates a new condition player instance id.
-	 * @param instanceIds the instance ids
-	 */
-	public ConditionPlayerInstanceId(Set<Integer> instanceIds)
-	{
-		_instanceIds = instanceIds;
-	}
-	
-	@Override
-	public boolean testImpl(Creature effector, Creature effected, Skill skill, ItemTemplate item)
-	{
-		final Player player = effector.asPlayer();
-		if (player == null)
-		{
-			return false;
-		}
-		
-		final int instanceId = effector.getInstanceId();
-		if (instanceId <= 0)
-		{
-			return false; // player not in instance
-		}
-		
-		final InstanceWorld world = InstanceManager.getInstance().getPlayerWorld(player);
-		return (world != null) && (world.getInstanceId() == instanceId) && _instanceIds.contains(world.getTemplateId());
-	}
+public class ConditionPlayerInstanceId extends Condition {
+    private final Set<Integer> _instanceIds;
+
+    /**
+     * Instantiates a new condition player instance id.
+     * @param instanceIds the instance ids
+     */
+    public ConditionPlayerInstanceId(Set<Integer> instanceIds) {
+        _instanceIds = instanceIds;
+    }
+
+    @Override
+    public boolean testImpl(Creature effector, Creature effected, Skill skill, ItemTemplate item) {
+        final Player player = effector.asPlayer();
+        if (player == null) {
+            return false;
+        }
+
+        final int instanceId = effector.getInstanceId();
+        if (instanceId <= 0) {
+            return false; // player not in instance
+        }
+
+        final InstanceWorld world = InstanceManager.getInstance().getPlayerWorld(player);
+        return (world != null) && (world.getInstanceId() == instanceId) && _instanceIds.contains(world.getTemplateId());
+    }
 }
