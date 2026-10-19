@@ -1,4 +1,7 @@
 /*
+ * SPDX-FileCopyrightText: L2J Mobius contributors
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ *
  * This file is part of the L2J Mobius project.
  * 
  * This program is free software: you can redistribute it and/or modify

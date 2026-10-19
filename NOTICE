@@ -1,0 +1,9 @@
+nx-l2
+Copyright 2026 L2NX contributors
+
+This product is based on L2J Mobius (https://gitlab.com/MobiusDevelopment/L2J_Mobius).
+The High Five chronicle was imported from upstream commit 5ddd6ff4b98 (2026-10-14),
+with its history; see docs/provenance.md.
+
+Files taken from L2J Mobius keep their upstream copyright notices and licenses (MIT or
+GPL-3.0-or-later), as stated in each file's header or in REUSE.toml.

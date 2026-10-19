@@ -5,3 +5,20 @@ path = ["docs/**", "README.md", "CONTRIBUTING.md", "LEGAL.md", ".gitignore", "RE
 precedence = "aggregate"
 SPDX-FileCopyrightText = "2026 L2NX contributors"
 SPDX-License-Identifier = "Apache-2.0"
+
+[[annotations]]
+path = [
+  "chronicles/high-five/datapack/**",
+  "chronicles/high-five/boot/src/dist/**",
+  "login/boot/src/dist/**",
+  "login/server/sql/**",
+]
+precedence = "closest"
+SPDX-FileCopyrightText = "L2J Mobius contributors"
+SPDX-License-Identifier = "MIT"
+
+[[annotations]]
+path = ["NOTICE"]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2026 L2NX contributors"
+SPDX-License-Identifier = "Apache-2.0"
