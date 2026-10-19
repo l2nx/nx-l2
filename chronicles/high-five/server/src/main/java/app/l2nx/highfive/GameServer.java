@@ -22,7 +22,6 @@
  */
 package app.l2nx.highfive;
 
-import java.awt.Toolkit;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
@@ -32,7 +31,6 @@ import java.util.logging.Level;
 import java.util.logging.LogManager;
 import java.util.logging.Logger;
 
-import app.l2nx.commons.config.InterfaceConfig;
 import app.l2nx.commons.database.DatabaseFactory;
 import app.l2nx.commons.network.ConnectionManager;
 import app.l2nx.commons.threads.ThreadPool;
@@ -177,7 +175,6 @@ import app.l2nx.highfive.scripting.ScriptEngine;
 import app.l2nx.highfive.taskmanagers.GameTimeTaskManager;
 import app.l2nx.highfive.taskmanagers.ItemLifeTimeTaskManager;
 import app.l2nx.highfive.taskmanagers.ItemsAutoDestroyTaskManager;
-import app.l2nx.highfive.ui.Gui;
 import app.l2nx.highfive.util.DeadlockWatcher;
 
 public class GameServer
@@ -190,14 +187,6 @@ public class GameServer
 	
 	public GameServer() throws Exception
 	{
-		// GUI
-		InterfaceConfig.load();
-		if (InterfaceConfig.ENABLE_GUI)
-		{
-			System.out.println("GameServer: Running in GUI mode.");
-			new Gui();
-		}
-		
 		// Create log folder
 		final File logFolder = new File(".", "log");
 		logFolder.mkdir();
@@ -484,8 +473,6 @@ public class GameServer
 		new ConnectionManager<>(new InetSocketAddress(ServerConfig.PORT_GAME), GameClient::new, new GamePacketHandler());
 		
 		LoginServerThread.getInstance().start();
-		
-		Toolkit.getDefaultToolkit().beep();
 	}
 	
 	private void printSection(String section)

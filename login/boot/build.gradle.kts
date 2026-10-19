@@ -13,6 +13,7 @@ application {
     mainClass = "app.l2nx.login.LoginServer"
     applicationDefaultJvmArgs = listOf(
         "-Dfile.encoding=UTF-8",
+        "-Djava.awt.headless=true",
         "-Dorg.slf4j.simpleLogger.log.com.zaxxer.hikari=warn",
         "-XX:+UseZGC",
         "-Xms128m",

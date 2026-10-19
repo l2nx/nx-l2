@@ -34,9 +34,6 @@ import java.util.logging.Level;
 import java.util.logging.LogManager;
 import java.util.logging.Logger;
 
-import app.l2nx.commons.config.DatabaseConfig;
-import app.l2nx.commons.config.InterfaceConfig;
-import app.l2nx.commons.database.DatabaseBackup;
 import app.l2nx.commons.database.DatabaseFactory;
 import app.l2nx.commons.network.ConnectionManager;
 import app.l2nx.commons.threads.ThreadPool;
@@ -46,7 +43,6 @@ import app.l2nx.login.data.GameServerTable;
 import app.l2nx.login.network.LoginClient;
 import app.l2nx.login.network.LoginPacketHandler;
 import app.l2nx.login.network.gameserverpackets.receive.ServerStatus;
-import app.l2nx.login.ui.Gui;
 
 /**
  * Bootstraps and drives the login server lifecycle.<br>
@@ -93,28 +89,11 @@ public class LoginServer
 	 */
 	private LoginServer()
 	{
-		initializeInterfaceLayer();
 		initializeLoggingLayer();
 		initializeCoreServices();
 		initializeSecurityAndBans();
 		configureScheduledRestart();
 		initializeNetworkListeners();
-	}
-	
-	/**
-	 * Initializes interface configuration and optional GUI.
-	 */
-	private void initializeInterfaceLayer()
-	{
-		InterfaceConfig.load();
-		
-		if (!InterfaceConfig.ENABLE_GUI)
-		{
-			return;
-		}
-		
-		System.out.println("LoginServer: Running in GUI mode.");
-		new Gui();
 	}
 	
 	/**
@@ -361,11 +340,6 @@ public class LoginServer
 	 */
 	public void shutdown(boolean restart)
 	{
-		if (DatabaseConfig.BACKUP_DATABASE)
-		{
-			DatabaseBackup.performBackup("login");
-		}
-		
 		Runtime.getRuntime().exit(restart ? EXIT_CODE_RESTART_REQUEST : EXIT_CODE_NORMAL_SHUTDOWN);
 	}
 	

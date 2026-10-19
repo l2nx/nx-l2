@@ -14,6 +14,7 @@ application {
     mainClass = "app.l2nx.highfive.GameServer"
     applicationDefaultJvmArgs = listOf(
         "-Dfile.encoding=UTF-8",
+        "-Djava.awt.headless=true",
         "-Djava.util.logging.manager=app.l2nx.commons.log.ServerLogManager",
         "-Dorg.slf4j.simpleLogger.log.com.zaxxer.hikari=warn",
         "-XX:+UseZGC",

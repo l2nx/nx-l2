@@ -23,11 +23,6 @@ precedence = "aggregate"
 SPDX-FileCopyrightText = "2026 L2NX contributors"
 SPDX-License-Identifier = "Apache-2.0"
 
-[[annotations]]
-path = ["libs/commons/src/main/resources/app/l2nx/commons/ui/images/**"]
-precedence = "aggregate"
-SPDX-FileCopyrightText = "L2J Mobius contributors"
-SPDX-License-Identifier = "MIT"
 
 [[annotations]]
 path = ["gradle/wrapper/**", "gradlew", "gradlew.bat"]

@@ -31,7 +31,6 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.logging.Logger;
 
-import app.l2nx.commons.config.InterfaceConfig;
 import app.l2nx.commons.util.Rnd;
 import app.l2nx.highfive.ai.CreatureAI;
 import app.l2nx.highfive.ai.Intention;
@@ -155,11 +154,7 @@ public class World
 			}
 		}
 		
-		// When GUI is enabled World is called early. So we need to skip this log.
-		if (!InterfaceConfig.ENABLE_GUI)
-		{
-			LOGGER.info(World.class.getSimpleName() + ": (" + REGIONS_X + " by " + REGIONS_Y + ") World Region Grid set up.");
-		}
+		LOGGER.info(World.class.getSimpleName() + ": (" + REGIONS_X + " by " + REGIONS_Y + ") World Region Grid set up.");
 	}
 	
 	/**
