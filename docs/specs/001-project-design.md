@@ -18,8 +18,8 @@ It serves three purposes:
 Positioning follows Mobius: a reference implementation for education and research. The public test server is the
 project's demo and is non-commercial.
 
-The project home is `l2nx.<tld>` (default `l2nx.dev`); the test server lives on a subdomain (`play.`). It is not
-hosted on `l2nx.top`.
+The project home is `l2nx.dev`; it hosts the documentation only ([#8](https://github.com/l2nx/nx-l2/issues/8)). The
+test server site lives on a separate domain, chosen at stage 5; it is not hosted on `l2nx.dev` or `l2nx.top`.
 
 ## 2. Legal and licensing
 
@@ -61,12 +61,34 @@ a license fails the build. The GPLv3 count per module comes from the same data.
 
 - **Files taken from Mobius keep their Mobius header and license.** This holds even after heavy changes: both MIT
   and GPLv3 require the copyright notice to be preserved.
-- **A modified Mobius file adds a line:** `Copyright (c) 2026 L2NX contributors`. Its license does not change.
+- **A modified Mobius file adds an SPDX block** with `2026 L2NX contributors` and the upstream license identifier
+  (CONTRIBUTING.md). Its license does not change.
 - **A file written from scratch carries only the project header, Apache 2.0.** Renaming packages or variables is
   not a rewrite. A rewrite of a GPLv3 file is done from the behaviour, not by editing the GPLv3 text.
 - **`NOTICE` names the upstream:** "based on L2J Mobius", with the upstream commit the import started from.
 - **Package rename is allowed:** `org.l2jmobius` becomes the package of the module the file lands in (§4), and
   the headers stay.
+
+### Legal protection
+
+[`LEGAL.md`](../../LEGAL.md) is the public legal notice. A disclaimer alone does not stop a takedown: a platform acts on a
+formal notice. What protects the project is that the repository holds no protected third-party material, that this
+can be shown quickly in a counter-notice, and that nothing about the project looks commercial.
+
+- **Interoperability basis:** EU Directive 2009/24/EC Art. 5(3) and 6, _SAS Institute v World Programming_ (C-406/10);
+  US 17 U.S.C. § 102(b), § 1201(f), _Sega v. Accolade_, _Sony v. Connectix_.
+- **Non-commercial project:** the project sells nothing, takes no donations, carries no advertising. The licenses still
+  allow commercial use; the project only does not encourage or support it. Educational purpose is a policy, not a
+  license term.
+- **Genre-neutral naming of rights holders:** the game is named only where the project cannot be described without it;
+  no publisher is named, the trademark notice is generic. Same precaution as the L2NX platform legal texts.
+- **Own takedown channel:** `support@l2nx.app`, subject "Notice" / "Counter-notice", the same notice elements as the
+  platform's notice-and-takedown policy. Answering a rights holder directly removes only the affected material instead
+  of the whole repository.
+- **Provable provenance:** REUSE headers on every file, `NOTICE`, `docs/provenance.md`, the originality policy.
+- **Datapack texts** are the main remaining risk: numbers, formulas and identifiers are functional data, texts may be
+  protected expression ([#9](https://github.com/l2nx/nx-l2/issues/9)).
+- **A mirror outside GitHub** keeps the project alive during a takedown ([#10](https://github.com/l2nx/nx-l2/issues/10)).
 
 ### Originality policy
 
@@ -99,7 +121,8 @@ Tools are shipped instead, and every operator prepares data from their own clien
 | `REUSE.toml`      | license and copyright for files without a header     |
 | `NOTICE`          | upstream attribution                                 |
 | `CONTRIBUTING.md` | originality policy, inbound = outbound, header rules |
-| `README.md`       | positioning, disclaimer, takedown contact            |
+| `README.md`       | positioning, short disclaimer, contacts              |
+| `LEGAL.md`        | legal notice: purpose, interoperability, takedown    |
 
 The MIT and GPLv3 texts land in `LICENSES/` together with the stage 1 import (`reuse download MIT
 GPL-3.0-or-later`): `reuse lint` rejects a license text no file uses. `NOTICE` lands with the same import, since it
@@ -271,7 +294,10 @@ The test server:
 
 - runs on our infrastructure (Komodo), as a separate stack;
 - is protected by SAC anti-cheat;
-- is non-commercial: no donations, no item sales;
+- is non-commercial: no donations, no item sales, no advertising, no links to commercial servers;
+- has its own site on a separate domain, with rules and the `LEGAL.md` disclaimer; it uses no publisher's name,
+  trademark or artwork;
+- limits registration (invites or a capped list) so it stays a test bed, not a game service;
 - may wipe characters on releases;
 - is deployed by chronicle tag, and the adapter e2e suite runs against it.
 
@@ -292,7 +318,7 @@ Every stage ends with a server that builds and a client that logs in and plays. 
 | 2   | Host shell                                                                      | `boot` modules, `application.yaml`, Liquibase, metrics, graceful shutdown |
 | 3   | Netty network                                                                   | own Netty transport in `libs/network`, all three connections              |
 | 4   | L2NX built in                                                                   | latest adapter, commands and events work                                  |
-| 5   | Public test server `play.l2nx.<tld>`                                            | public access, adapter e2e in CI                                          |
+| 5   | Public test server                                                              | public access, adapter e2e in CI                                          |
 | 6   | Geo SPI + open `nx-physics`                                                     | two implementations, movement on navmesh                                  |
 | 7   | HF multi-protocol                                                               | newer clients log in to HF                                                |
 | 8   | Essence + shared core extraction ([#2](https://github.com/l2nx/nx-l2/issues/2)) | second chronicle; `engine/` grows by real overlap                         |
@@ -308,9 +334,8 @@ Each stage gets its own spec in `docs/specs/` before implementation.
 
 These are recommendations from the design discussion. Each one can be overridden before stage 0.
 
-1. **Domain:** `l2nx.dev`.
-2. **Host:** Spring Boot.
-3. **Database:** MariaDB, not Postgres.
+1. **Host:** Spring Boot.
+2. **Database:** MariaDB, not Postgres.
 
 ## 13. Deferred
 
@@ -320,4 +345,7 @@ These are recommendations from the design discussion. Each one can be overridden
 - Edge gateway / horizontal scale-out — [#4](https://github.com/l2nx/nx-l2/issues/4).
 - Stable script API for other emulators — [#5](https://github.com/l2nx/nx-l2/issues/5).
 - Moving a chronicle into its own repository — [#6](https://github.com/l2nx/nx-l2/issues/6).
+- Datapack text review — [#9](https://github.com/l2nx/nx-l2/issues/9).
+- Repository mirror outside GitHub — [#10](https://github.com/l2nx/nx-l2/issues/10).
+- Documentation on `l2nx.dev` — [#8](https://github.com/l2nx/nx-l2/issues/8).
 - CLA or DCO enforcement before external contributions — [#7](https://github.com/l2nx/nx-l2/issues/7).
