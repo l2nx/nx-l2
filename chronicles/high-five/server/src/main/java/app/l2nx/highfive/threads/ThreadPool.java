@@ -36,8 +36,8 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.binder.jvm.ExecutorServiceMetrics;
 
-import app.l2nx.commons.util.StringUtil;
-import app.l2nx.commons.util.TraceUtil;
+import org.apache.commons.lang3.exception.ExceptionUtils;
+
 import app.l2nx.highfive.config.ThreadConfig;
 
 /**
@@ -80,7 +80,7 @@ public class ThreadPool
 		if (ThreadConfig.HIGH_PRIORITY_SCHEDULED_THREAD_POOL_SIZE > 0)
 		{
 			HIGH_PRIORITY_SCHEDULED_POOL = new ScheduledThreadPoolExecutor(ThreadConfig.HIGH_PRIORITY_SCHEDULED_THREAD_POOL_SIZE, new ThreadProvider("l2nx High Priority ScheduledThread", ThreadPriority.PRIORITY_8), new ThreadPoolExecutor.CallerRunsPolicy());
-			LOGGER.info(StringUtil.concat("...scheduled pool executor with ", String.valueOf(ThreadConfig.HIGH_PRIORITY_SCHEDULED_THREAD_POOL_SIZE), " high priority threads."));
+			LOGGER.info("...scheduled pool executor with " + ThreadConfig.HIGH_PRIORITY_SCHEDULED_THREAD_POOL_SIZE + " high priority threads.");
 		}
 		
 		// Configure ScheduledThreadPoolExecutor.
@@ -98,8 +98,8 @@ public class ThreadPool
 		scheduleAtFixedRate(ThreadPool::purge, PURGE_INTERVAL_MS, PURGE_INTERVAL_MS);
 		
 		// Log thread pool configuration.
-		LOGGER.info(StringUtil.concat("...scheduled pool executor with ", String.valueOf(ThreadConfig.SCHEDULED_THREAD_POOL_SIZE), " total threads."));
-		LOGGER.info(StringUtil.concat("...instant pool executor with ", String.valueOf(ThreadConfig.INSTANT_THREAD_POOL_SIZE), " total threads."));
+		LOGGER.info("...scheduled pool executor with " + ThreadConfig.SCHEDULED_THREAD_POOL_SIZE + " total threads.");
+		LOGGER.info("...instant pool executor with " + ThreadConfig.INSTANT_THREAD_POOL_SIZE + " total threads.");
 	}
 	
 	/**
@@ -142,7 +142,7 @@ public class ThreadPool
 		}
 		catch (Exception e)
 		{
-			LOGGER.warning(StringUtil.concat("ThreadPool: Failed to schedule task ", runnable.getClass().getSimpleName(), " with delay ", String.valueOf(delay), "ms: ", e.getMessage(), System.lineSeparator(), TraceUtil.getStackTrace(e)));
+			LOGGER.warning("ThreadPool: Failed to schedule task " + runnable.getClass().getSimpleName() + " with delay " + delay + "ms: " + e.getMessage() + System.lineSeparator() + ExceptionUtils.getStackTrace(e));
 			return null;
 		}
 	}
@@ -162,7 +162,7 @@ public class ThreadPool
 		}
 		catch (Exception e)
 		{
-			LOGGER.warning(StringUtil.concat("ThreadPool: Failed to schedule recurring task ", runnable.getClass().getSimpleName(), " with initial delay ", String.valueOf(initialDelay), "ms and period ", String.valueOf(period), "ms: ", e.getMessage(), System.lineSeparator(), TraceUtil.getStackTrace(e)));
+			LOGGER.warning("ThreadPool: Failed to schedule recurring task " + runnable.getClass().getSimpleName() + " with initial delay " + initialDelay + "ms and period " + period + "ms: " + e.getMessage() + System.lineSeparator() + ExceptionUtils.getStackTrace(e));
 			return null;
 		}
 	}
@@ -188,7 +188,7 @@ public class ThreadPool
 		}
 		catch (Exception e)
 		{
-			LOGGER.warning(StringUtil.concat("ThreadPool: Failed to schedule high priority task ", runnable.getClass().getSimpleName(), " with initial delay ", String.valueOf(initialDelay), "ms and period ", String.valueOf(period), "ms: ", e.getMessage(), System.lineSeparator(), TraceUtil.getStackTrace(e)));
+			LOGGER.warning("ThreadPool: Failed to schedule high priority task " + runnable.getClass().getSimpleName() + " with initial delay " + initialDelay + "ms and period " + period + "ms: " + e.getMessage() + System.lineSeparator() + ExceptionUtils.getStackTrace(e));
 			return null;
 		}
 	}
@@ -205,7 +205,7 @@ public class ThreadPool
 		}
 		catch (Exception e)
 		{
-			LOGGER.warning(StringUtil.concat("ThreadPool: Failed to execute task ", runnable.getClass().getSimpleName(), ": ", e.getMessage(), System.lineSeparator(), TraceUtil.getStackTrace(e)));
+			LOGGER.warning("ThreadPool: Failed to execute task " + runnable.getClass().getSimpleName() + ": " + e.getMessage() + System.lineSeparator() + ExceptionUtils.getStackTrace(e));
 		}
 	}
 	
@@ -218,15 +218,15 @@ public class ThreadPool
 	{
 		if (delay < MIN_DELAY_MS)
 		{
-			LOGGER.warning(StringUtil.concat("ThreadPool: Invalid delay ", String.valueOf(delay), "ms is below minimum, using ", String.valueOf(MIN_DELAY_MS), "ms instead."));
-			LOGGER.warning(TraceUtil.getStackTrace(new Exception()));
+			LOGGER.warning("ThreadPool: Invalid delay " + delay + "ms is below minimum, using " + MIN_DELAY_MS + "ms instead.");
+			LOGGER.warning(ExceptionUtils.getStackTrace(new Exception()));
 			return MIN_DELAY_MS;
 		}
 		
 		if (delay > ONE_HUNDRED_YEARS_MS)
 		{
-			LOGGER.warning(StringUtil.concat("ThreadPool: Invalid delay ", String.valueOf(delay), "ms exceeds maximum, using ", String.valueOf(ONE_HUNDRED_YEARS_MS), "ms instead."));
-			LOGGER.warning(TraceUtil.getStackTrace(new Exception()));
+			LOGGER.warning("ThreadPool: Invalid delay " + delay + "ms exceeds maximum, using " + ONE_HUNDRED_YEARS_MS + "ms instead.");
+			LOGGER.warning(ExceptionUtils.getStackTrace(new Exception()));
 			return ONE_HUNDRED_YEARS_MS;
 		}
 		
@@ -250,7 +250,7 @@ public class ThreadPool
 		}
 		catch (Throwable t)
 		{
-			LOGGER.warning(StringUtil.concat("ThreadPool: Exception occurred during shutdown: ", t.getMessage()));
+			LOGGER.warning("ThreadPool: Exception occurred during shutdown: " + t.getMessage());
 		}
 	}
 	
@@ -270,7 +270,7 @@ public class ThreadPool
 				return;
 			}
 			
-			LOGGER.warning(StringUtil.concat("ThreadPool: Task ", runnable.getClass().getSimpleName(), " rejected by executor ", String.valueOf(executor), ", attempting recovery execution."));
+			LOGGER.warning("ThreadPool: Task " + runnable.getClass().getSimpleName() + " rejected by executor " + executor + ", attempting recovery execution.");
 			
 			// Run in new thread for high priority contexts, current thread otherwise.
 			if (Thread.currentThread().getPriority() > Thread.NORM_PRIORITY)

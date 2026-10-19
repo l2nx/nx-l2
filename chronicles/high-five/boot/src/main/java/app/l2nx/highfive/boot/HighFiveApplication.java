@@ -7,7 +7,7 @@ package app.l2nx.highfive.boot;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
-@SpringBootApplication(scanBasePackages = "app.l2nx")
+@SpringBootApplication(scanBasePackages = "app.l2nx.highfive")
 public class HighFiveApplication
 {
 	public static void main(String[] args)

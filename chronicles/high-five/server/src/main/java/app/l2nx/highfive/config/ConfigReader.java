@@ -28,13 +28,11 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
-import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Properties;
 import java.util.logging.Logger;
 
-import app.l2nx.commons.time.TimeUtil;
 
 /**
  * ConfigReader is a utility class that reads and provides access to configuration properties from a file.
@@ -343,34 +341,6 @@ public class ConfigReader
 		}
 		
 		return defaultValue;
-	}
-	
-	/**
-	 * Retrieves the value associated with the specified key as a Duration.
-	 * @param config the configuration key
-	 * @param defaultValue the default value as a string if the key does not exist or is malformed
-	 * @return the property value as a Duration, or the parsed default value if the key does not exist or is malformed
-	 */
-	public Duration getDuration(String config, String defaultValue)
-	{
-		final String value = _properties.getProperty(config);
-		if (value != null)
-		{
-			try
-			{
-				return TimeUtil.parseDuration(value);
-			}
-			catch (Exception e)
-			{
-				LOGGER.warning("Invalid duration for config '" + config + "' in file '" + _file.getName() + "', using default: " + defaultValue + ".");
-			}
-		}
-		else
-		{
-			LOGGER.warning("Config '" + config + "' not found in file '" + _file.getName() + "', using default: " + defaultValue + ".");
-		}
-		
-		return TimeUtil.parseDuration(defaultValue);
 	}
 	
 	/**
