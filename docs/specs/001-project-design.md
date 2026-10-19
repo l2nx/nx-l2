@@ -55,7 +55,7 @@ MIT restricts use, and GPLv3 §7/§10 forbid adding restrictions.
 
 ### Authorship and headers
 
-Every file carries an SPDX line (`SPDX-License-Identifier: Apache-2.0`, `MIT`, `GPL-3.0-or-later` as the upstream
+Every file carries an SPDX license identifier (`Apache-2.0`, `MIT`, `GPL-3.0-or-later` as the upstream
 header states), following the [REUSE](https://reuse.software) specification. CI runs `reuse lint`: a file without
 a license fails the build. The GPLv3 count per module comes from the same data.
 
@@ -92,13 +92,18 @@ Tools are shipped instead, and every operator prepares data from their own clien
 
 ### Project files
 
-| File              | Content                                                |
-| ----------------- | ------------------------------------------------------ |
-| `LICENSE`         | Apache 2.0, the project license; points to `LICENSES/` |
-| `LICENSES/`       | every license text in use, REUSE layout                |
-| `NOTICE`          | upstream attribution                                   |
-| `CONTRIBUTING.md` | originality policy, inbound = outbound, header rules   |
-| `README.md`       | positioning, disclaimer, takedown contact              |
+| File              | Content                                              |
+| ----------------- | ---------------------------------------------------- |
+| `LICENSE`         | Apache 2.0 text, verbatim; the project license       |
+| `LICENSES/`       | every license text in use, REUSE layout              |
+| `REUSE.toml`      | license and copyright for files without a header     |
+| `NOTICE`          | upstream attribution                                 |
+| `CONTRIBUTING.md` | originality policy, inbound = outbound, header rules |
+| `README.md`       | positioning, disclaimer, takedown contact            |
+
+The MIT and GPLv3 texts land in `LICENSES/` together with the stage 1 import (`reuse download MIT
+GPL-3.0-or-later`): `reuse lint` rejects a license text no file uses. `NOTICE` lands with the same import, since it
+names the upstream commit.
 
 Contributions come under the license of the file they touch (inbound = outbound). A CLA or DCO, enforced by a PR
 bot, records this. The bot is not needed while only the owner and contracted developers commit; it is enabled
