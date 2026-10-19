@@ -19,7 +19,6 @@
  */
 package app.l2nx.highfive.scripts.ai.areas.Gracia.vehicles.AirShipGludioGracia;
 
-import app.l2nx.commons.threads.ThreadPool;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Npc;
@@ -32,6 +31,7 @@ import app.l2nx.highfive.network.NpcStringId;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.enums.ChatType;
 import app.l2nx.highfive.network.serverpackets.NpcSay;
+import app.l2nx.highfive.threads.ThreadPool;
 
 /**
  * @author DS

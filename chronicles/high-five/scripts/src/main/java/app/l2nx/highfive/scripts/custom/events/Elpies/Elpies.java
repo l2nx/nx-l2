@@ -32,15 +32,15 @@ import org.apache.commons.lang3.time.DateFormatUtils;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 
-import app.l2nx.commons.threads.ThreadPool;
-import app.l2nx.commons.util.IXmlReader;
 import app.l2nx.highfive.config.GeneralConfig;
+import app.l2nx.highfive.data.xml.IXmlReader;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.instance.EventMonster;
 import app.l2nx.highfive.mechanics.script.Event;
 import app.l2nx.highfive.schedule.RecurrenceSchedule;
+import app.l2nx.highfive.threads.ThreadPool;
 import app.l2nx.highfive.util.StatSet;
 
 public class Elpies extends Event

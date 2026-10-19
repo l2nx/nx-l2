@@ -25,7 +25,6 @@ package app.l2nx.highfive.config;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-import app.l2nx.commons.util.ConfigReader;
 
 /**
  * This class loads all the geo engine related configurations.

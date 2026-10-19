@@ -28,10 +28,10 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Logger;
 
-import app.l2nx.commons.threads.ThreadPool;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.mechanics.stats.Formulas;
+import app.l2nx.highfive.threads.ThreadPool;
 
 public class CreatureStatus
 {

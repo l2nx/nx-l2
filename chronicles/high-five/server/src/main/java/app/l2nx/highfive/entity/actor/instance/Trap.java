@@ -23,7 +23,6 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ScheduledFuture;
 
-import app.l2nx.commons.threads.ThreadPool;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Npc;
@@ -48,6 +47,7 @@ import app.l2nx.highfive.network.serverpackets.AbstractNpcInfo.TrapInfo;
 import app.l2nx.highfive.network.serverpackets.ServerPacket;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
 import app.l2nx.highfive.taskmanagers.DecayTaskManager;
+import app.l2nx.highfive.threads.ThreadPool;
 
 /**
  * Trap instance.

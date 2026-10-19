@@ -22,7 +22,6 @@
  */
 package app.l2nx.highfive.entity.actor.instance;
 
-import app.l2nx.commons.threads.ThreadPool;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
@@ -40,6 +39,7 @@ import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.serverpackets.ActionFailed;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
+import app.l2nx.highfive.threads.ThreadPool;
 
 public class SiegeFlag extends Npc
 {

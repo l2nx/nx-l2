@@ -30,10 +30,10 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 
-import app.l2nx.commons.util.IXmlReader;
 import app.l2nx.highfive.cache.HtmCache;
 import app.l2nx.highfive.config.custom.SellBuffsConfig;
 import app.l2nx.highfive.data.holders.SellBuffHolder;
+import app.l2nx.highfive.data.xml.IXmlReader;
 import app.l2nx.highfive.data.xml.ItemData;
 import app.l2nx.highfive.data.xml.SkillData;
 import app.l2nx.highfive.entity.actor.Player;

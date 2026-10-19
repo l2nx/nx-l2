@@ -31,8 +31,8 @@ import java.util.logging.Logger;
 
 import org.apache.commons.lang3.StringUtils;
 
-import app.l2nx.commons.database.DatabaseFactory;
 import app.l2nx.highfive.LoginServerThread;
+import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.data.xml.SecondaryAuthData;
 import app.l2nx.highfive.network.Disconnection;
 import app.l2nx.highfive.network.GameClient;

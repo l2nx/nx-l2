@@ -40,11 +40,10 @@ import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 
-import app.l2nx.commons.database.DatabaseFactory;
-import app.l2nx.commons.threads.ThreadPool;
-import app.l2nx.commons.util.IXmlReader;
 import app.l2nx.highfive.config.UndergroundColiseumConfig;
+import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.data.xml.DoorData;
+import app.l2nx.highfive.data.xml.IXmlReader;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.instance.Door;
@@ -54,6 +53,7 @@ import app.l2nx.highfive.mechanics.undergroundColiseum.UCBestTeam;
 import app.l2nx.highfive.mechanics.undergroundColiseum.UCPoint;
 import app.l2nx.highfive.mechanics.undergroundColiseum.UCReward;
 import app.l2nx.highfive.mechanics.undergroundColiseum.UCTeam;
+import app.l2nx.highfive.threads.ThreadPool;
 
 public class UndergroundColiseumManager implements IXmlReader
 {

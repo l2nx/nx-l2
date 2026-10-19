@@ -22,7 +22,6 @@ package app.l2nx.highfive.scripts.vehicles;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import app.l2nx.commons.threads.ThreadPool;
 import app.l2nx.highfive.entity.actor.holders.creature.VehiclePathPoint;
 import app.l2nx.highfive.entity.actor.instance.Boat;
 import app.l2nx.highfive.managers.BoatManager;
@@ -30,6 +29,7 @@ import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.enums.ChatType;
 import app.l2nx.highfive.network.serverpackets.CreatureSay;
 import app.l2nx.highfive.network.serverpackets.PlaySound;
+import app.l2nx.highfive.threads.ThreadPool;
 
 /**
  * @author DS

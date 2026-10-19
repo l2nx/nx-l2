@@ -27,7 +27,6 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import app.l2nx.commons.util.ConfigReader;
 import app.l2nx.highfive.entity.actor.enums.player.ChatBroadcastType;
 import app.l2nx.highfive.entity.actor.enums.player.IllegalActionPunishmentType;
 import app.l2nx.highfive.network.enums.ChatType;

@@ -52,7 +52,6 @@ import java.util.logging.Logger;
 
 import org.apache.commons.lang3.exception.ExceptionUtils;
 
-import app.l2nx.commons.database.DatabaseFactory;
 import app.l2nx.highfive.cache.HtmCache;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.config.PlayerConfig;
@@ -61,6 +60,7 @@ import app.l2nx.highfive.config.custom.ChampionMonstersConfig;
 import app.l2nx.highfive.config.custom.PremiumSystemConfig;
 import app.l2nx.highfive.config.custom.RandomSpawnsConfig;
 import app.l2nx.highfive.data.enums.CategoryType;
+import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.data.xml.DoorData;
 import app.l2nx.highfive.data.xml.ItemData;
 import app.l2nx.highfive.data.xml.NpcData;

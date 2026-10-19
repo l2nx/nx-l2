@@ -10,7 +10,6 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import app.l2nx.commons.util.ConfigReader;
 import app.l2nx.network.NetworkSettings;
 
 public class NetworkConfig

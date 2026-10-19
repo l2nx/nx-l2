@@ -27,9 +27,9 @@ import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 
-import app.l2nx.commons.threads.ThreadPool;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.entity.actor.Npc;
+import app.l2nx.highfive.threads.ThreadPool;
 
 /**
  * @author Mobius

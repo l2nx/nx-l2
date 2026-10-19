@@ -29,7 +29,6 @@ import java.util.logging.Logger;
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 
-import app.l2nx.commons.util.IXmlReader;
 import app.l2nx.highfive.entity.actor.enums.player.TeleportType;
 import app.l2nx.highfive.entity.teleporter.TeleportHolder;
 import app.l2nx.highfive.util.StatSet;

@@ -29,11 +29,11 @@ import java.util.Collection;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
 
-import app.l2nx.commons.threads.ThreadPool;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.mechanics.script.Script;
 import app.l2nx.highfive.taskmanagers.GameTimeTaskManager;
+import app.l2nx.highfive.threads.ThreadPool;
 
 /**
  * Fantasy Isle Parade

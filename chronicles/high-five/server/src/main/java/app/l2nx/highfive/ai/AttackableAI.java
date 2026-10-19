@@ -28,7 +28,6 @@ import java.util.Set;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
 
-import app.l2nx.commons.threads.ThreadPool;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.config.NpcConfig;
 import app.l2nx.highfive.config.custom.ChampionMonstersConfig;
@@ -78,6 +77,7 @@ import app.l2nx.highfive.mechanics.skill.holders.SkillHolder;
 import app.l2nx.highfive.mechanics.skill.targets.TargetType;
 import app.l2nx.highfive.taskmanagers.AttackableThinkTaskManager;
 import app.l2nx.highfive.taskmanagers.GameTimeTaskManager;
+import app.l2nx.highfive.threads.ThreadPool;
 import app.l2nx.highfive.util.LocationUtil;
 import app.l2nx.highfive.util.StatSet;
 

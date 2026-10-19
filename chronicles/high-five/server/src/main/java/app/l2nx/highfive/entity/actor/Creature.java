@@ -37,7 +37,6 @@ import java.util.concurrent.locks.StampedLock;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import app.l2nx.commons.threads.ThreadPool;
 import app.l2nx.highfive.ai.AttackableAI;
 import app.l2nx.highfive.ai.CreatureAI;
 import app.l2nx.highfive.ai.Intention;
@@ -178,6 +177,7 @@ import app.l2nx.highfive.taskmanagers.AttackStanceTaskManager;
 import app.l2nx.highfive.taskmanagers.CreatureSeeTaskManager;
 import app.l2nx.highfive.taskmanagers.GameTimeTaskManager;
 import app.l2nx.highfive.taskmanagers.MovementTaskManager;
+import app.l2nx.highfive.threads.ThreadPool;
 import app.l2nx.highfive.util.LocationUtil;
 
 /**

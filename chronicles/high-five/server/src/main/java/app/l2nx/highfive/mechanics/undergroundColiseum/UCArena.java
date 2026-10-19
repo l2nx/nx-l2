@@ -27,7 +27,6 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ScheduledFuture;
 
-import app.l2nx.commons.threads.ThreadPool;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.config.UndergroundColiseumConfig;
 import app.l2nx.highfive.data.SpawnTable;
@@ -43,6 +42,7 @@ import app.l2nx.highfive.network.serverpackets.ExPVPMatchRecord;
 import app.l2nx.highfive.network.serverpackets.ExPVPMatchUserDie;
 import app.l2nx.highfive.network.serverpackets.ExShowScreenMessage;
 import app.l2nx.highfive.network.serverpackets.ServerPacket;
+import app.l2nx.highfive.threads.ThreadPool;
 
 public class UCArena
 {

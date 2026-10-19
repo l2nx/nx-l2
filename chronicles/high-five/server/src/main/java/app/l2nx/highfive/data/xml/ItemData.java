@@ -33,14 +33,14 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
 import java.util.logging.Logger;
 
-import app.l2nx.commons.config.ThreadConfig;
-import app.l2nx.commons.threads.ThreadPool;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.config.ServerConfig;
+import app.l2nx.highfive.config.ThreadConfig;
 import app.l2nx.highfive.entity.item.Armor;
 import app.l2nx.highfive.entity.item.EtcItem;
 import app.l2nx.highfive.entity.item.ItemTemplate;
 import app.l2nx.highfive.entity.item.Weapon;
+import app.l2nx.highfive.threads.ThreadPool;
 import app.l2nx.highfive.util.DocumentItem;
 
 /**

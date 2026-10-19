@@ -34,9 +34,8 @@ import java.util.logging.Logger;
 
 import org.apache.commons.lang3.StringUtils;
 
-import app.l2nx.commons.database.DatabaseFactory;
-import app.l2nx.commons.threads.ThreadPool;
 import app.l2nx.highfive.config.custom.CustomMailManagerConfig;
+import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.item.enums.ItemProcessType;
@@ -45,6 +44,7 @@ import app.l2nx.highfive.entity.item.instance.Item;
 import app.l2nx.highfive.entity.itemcontainer.Mail;
 import app.l2nx.highfive.network.enums.MessageSenderType;
 import app.l2nx.highfive.network.holders.MailMessage;
+import app.l2nx.highfive.threads.ThreadPool;
 
 /**
  * @author Mobius

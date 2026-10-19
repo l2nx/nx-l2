@@ -26,7 +26,6 @@ import java.util.Calendar;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
-import app.l2nx.commons.threads.ThreadPool;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.mechanics.events.EventType;
@@ -39,6 +38,7 @@ import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.serverpackets.ExNevitAdventEffect;
 import app.l2nx.highfive.network.serverpackets.ExNevitAdventPointInfoPacket;
 import app.l2nx.highfive.network.serverpackets.ExNevitAdventTimeChange;
+import app.l2nx.highfive.threads.ThreadPool;
 
 /**
  * Nevit's Blessing handler.

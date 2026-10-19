@@ -22,9 +22,9 @@ package app.l2nx.highfive.entity.zone.type;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ThreadLocalRandom;
 
-import app.l2nx.commons.threads.ThreadPool;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.threads.ThreadPool;
 
 /**
  * Teleport residence zone for clan hall sieges

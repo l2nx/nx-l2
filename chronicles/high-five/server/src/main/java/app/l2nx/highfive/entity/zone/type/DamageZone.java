@@ -21,7 +21,6 @@ package app.l2nx.highfive.entity.zone.type;
 
 import java.util.concurrent.Future;
 
-import app.l2nx.commons.threads.ThreadPool;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.enums.creature.InstanceType;
@@ -29,6 +28,7 @@ import app.l2nx.highfive.entity.zone.ZoneType;
 import app.l2nx.highfive.managers.CastleManager;
 import app.l2nx.highfive.mechanics.siege.Castle;
 import app.l2nx.highfive.mechanics.stats.Stat;
+import app.l2nx.highfive.threads.ThreadPool;
 
 /**
  * A damage zone

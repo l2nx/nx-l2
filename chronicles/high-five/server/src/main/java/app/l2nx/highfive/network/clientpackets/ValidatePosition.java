@@ -22,7 +22,6 @@
  */
 package app.l2nx.highfive.network.clientpackets;
 
-import app.l2nx.commons.threads.ThreadPool;
 import app.l2nx.highfive.data.xml.DoorData;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.World;
@@ -30,6 +29,7 @@ import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.zone.ZoneId;
 import app.l2nx.highfive.geoengine.GeoEngine;
 import app.l2nx.highfive.network.serverpackets.ValidateLocation;
+import app.l2nx.highfive.threads.ThreadPool;
 
 public class ValidatePosition extends ClientPacket
 {

@@ -26,12 +26,12 @@ import java.sql.SQLException;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ThreadLocalRandom;
 
-import app.l2nx.commons.threads.ThreadPool;
 import app.l2nx.highfive.data.sql.CharInfoTable;
 import app.l2nx.highfive.entity.itemcontainer.Mail;
 import app.l2nx.highfive.managers.IdManager;
 import app.l2nx.highfive.managers.MailManager;
 import app.l2nx.highfive.network.enums.MessageSenderType;
+import app.l2nx.highfive.threads.ThreadPool;
 
 /**
  * @author Migi, DS

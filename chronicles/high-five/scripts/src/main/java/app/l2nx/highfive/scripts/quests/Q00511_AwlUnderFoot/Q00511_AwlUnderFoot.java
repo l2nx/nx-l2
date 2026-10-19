@@ -22,7 +22,6 @@ package app.l2nx.highfive.scripts.quests.Q00511_AwlUnderFoot;
 import java.util.HashMap;
 import java.util.Map;
 
-import app.l2nx.commons.threads.ThreadPool;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Playable;
@@ -39,6 +38,7 @@ import app.l2nx.highfive.mechanics.script.State;
 import app.l2nx.highfive.mechanics.siege.Fort;
 import app.l2nx.highfive.mechanics.skill.holders.SkillHolder;
 import app.l2nx.highfive.network.SystemMessageId;
+import app.l2nx.highfive.threads.ThreadPool;
 import app.l2nx.highfive.util.ArrayUtil;
 import app.l2nx.highfive.util.LocationUtil;
 

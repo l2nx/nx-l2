@@ -24,7 +24,6 @@ package app.l2nx.highfive.scripts.handlers.chat.commands.voiced;
 
 import java.util.StringTokenizer;
 
-import app.l2nx.commons.threads.ThreadPool;
 import app.l2nx.highfive.config.custom.MultilingualSupportConfig;
 import app.l2nx.highfive.data.xml.NpcNameLocalisationData;
 import app.l2nx.highfive.entity.World;
@@ -34,6 +33,7 @@ import app.l2nx.highfive.handler.IVoicedCommandHandler;
 import app.l2nx.highfive.network.serverpackets.AbstractNpcInfo.NpcInfo;
 import app.l2nx.highfive.network.serverpackets.DeleteObject;
 import app.l2nx.highfive.network.serverpackets.NpcHtmlMessage;
+import app.l2nx.highfive.threads.ThreadPool;
 
 public class Lang implements IVoicedCommandHandler
 {

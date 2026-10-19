@@ -21,7 +21,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package app.l2nx.commons.threads;
+package app.l2nx.highfive.threads;
 
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -36,9 +36,9 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.binder.jvm.ExecutorServiceMetrics;
 
-import app.l2nx.commons.config.ThreadConfig;
 import app.l2nx.commons.util.StringUtil;
 import app.l2nx.commons.util.TraceUtil;
+import app.l2nx.highfive.config.ThreadConfig;
 
 /**
  * Provides methods to schedule tasks with delays, fixed rates and immediate execution.<br>

@@ -25,7 +25,7 @@ package app.l2nx.highfive.config.custom;
 import java.util.ArrayList;
 import java.util.List;
 
-import app.l2nx.commons.util.ConfigReader;
+import app.l2nx.highfive.config.ConfigReader;
 import app.l2nx.highfive.mechanics.skill.AbnormalVisualEffect;
 
 /**

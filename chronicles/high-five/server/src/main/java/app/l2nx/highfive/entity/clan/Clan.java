@@ -40,7 +40,6 @@ import java.util.logging.Logger;
 
 import org.apache.commons.lang3.StringUtils;
 
-import app.l2nx.commons.database.DatabaseFactory;
 import app.l2nx.highfive.communitybbs.BB.Forum;
 import app.l2nx.highfive.communitybbs.Manager.ForumsBBSManager;
 import app.l2nx.highfive.config.FeatureConfig;
@@ -49,6 +48,7 @@ import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.data.sql.CharInfoTable;
 import app.l2nx.highfive.data.sql.ClanTable;
 import app.l2nx.highfive.data.sql.CrestTable;
+import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.data.xml.SkillData;
 import app.l2nx.highfive.data.xml.SkillTreeData;
 import app.l2nx.highfive.entity.World;

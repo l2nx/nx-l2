@@ -25,7 +25,6 @@ package app.l2nx.highfive.ai;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
 
-import app.l2nx.commons.threads.ThreadPool;
 import app.l2nx.highfive.config.GeoEngineConfig;
 import app.l2nx.highfive.entity.WorldObject;
 import app.l2nx.highfive.entity.actor.Creature;
@@ -33,6 +32,7 @@ import app.l2nx.highfive.entity.actor.Summon;
 import app.l2nx.highfive.geoengine.GeoEngine;
 import app.l2nx.highfive.geoengine.pathfinding.PathFinding;
 import app.l2nx.highfive.mechanics.skill.Skill;
+import app.l2nx.highfive.threads.ThreadPool;
 
 public class SummonAI extends PlayableAI implements Runnable
 {

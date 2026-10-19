@@ -25,7 +25,6 @@ package app.l2nx.highfive.scripts.quests.Q00726_LightWithinTheDarkness;
 import java.util.HashMap;
 import java.util.Map;
 
-import app.l2nx.commons.threads.ThreadPool;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
@@ -42,6 +41,7 @@ import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.serverpackets.ExShowScreenMessage;
 import app.l2nx.highfive.network.serverpackets.ServerPacket;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
+import app.l2nx.highfive.threads.ThreadPool;
 
 import app.l2nx.highfive.scripts.quests.Q00727_HopeWithinTheDarkness.Q00727_HopeWithinTheDarkness;
 

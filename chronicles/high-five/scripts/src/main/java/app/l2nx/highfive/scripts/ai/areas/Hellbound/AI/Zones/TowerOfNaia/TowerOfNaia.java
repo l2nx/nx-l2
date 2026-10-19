@@ -29,7 +29,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import app.l2nx.commons.threads.ThreadPool;
 import app.l2nx.highfive.data.xml.DoorData;
 import app.l2nx.highfive.data.xml.SkillData;
 import app.l2nx.highfive.entity.Location;
@@ -46,6 +45,7 @@ import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.network.NpcStringId;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.enums.ChatType;
+import app.l2nx.highfive.threads.ThreadPool;
 import app.l2nx.highfive.util.LocationUtil;
 
 /**

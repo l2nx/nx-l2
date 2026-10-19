@@ -25,7 +25,6 @@ package app.l2nx.highfive.entity.actor;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ThreadLocalRandom;
 
-import app.l2nx.commons.threads.ThreadPool;
 import app.l2nx.highfive.ai.CreatureAI;
 import app.l2nx.highfive.ai.SummonAI;
 import app.l2nx.highfive.config.GeoEngineConfig;
@@ -80,6 +79,7 @@ import app.l2nx.highfive.network.serverpackets.ServerPacket;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
 import app.l2nx.highfive.network.serverpackets.TeleportToLocation;
 import app.l2nx.highfive.taskmanagers.DecayTaskManager;
+import app.l2nx.highfive.threads.ThreadPool;
 import app.l2nx.highfive.util.ArrayUtil;
 
 public abstract class Summon extends Playable

@@ -27,8 +27,8 @@ import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Level;
 
-import app.l2nx.commons.database.DatabaseFactory;
 import app.l2nx.highfive.config.OlympiadConfig;
+import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Creature;

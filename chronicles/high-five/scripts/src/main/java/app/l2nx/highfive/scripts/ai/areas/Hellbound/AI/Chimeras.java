@@ -21,7 +21,6 @@ package app.l2nx.highfive.scripts.ai.areas.Hellbound.AI;
 
 import java.util.List;
 
-import app.l2nx.commons.threads.ThreadPool;
 import app.l2nx.highfive.config.RatesConfig;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.WorldObject;
@@ -29,6 +28,7 @@ import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.mechanics.script.Script;
 import app.l2nx.highfive.mechanics.skill.Skill;
+import app.l2nx.highfive.threads.ThreadPool;
 
 import app.l2nx.highfive.scripts.ai.areas.Hellbound.HellboundEngine;
 

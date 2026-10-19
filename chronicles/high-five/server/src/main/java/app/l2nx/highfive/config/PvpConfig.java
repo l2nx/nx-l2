@@ -24,7 +24,6 @@ package app.l2nx.highfive.config;
 
 import java.util.Arrays;
 
-import app.l2nx.commons.util.ConfigReader;
 
 /**
  * This class loads all the PVP related configurations.

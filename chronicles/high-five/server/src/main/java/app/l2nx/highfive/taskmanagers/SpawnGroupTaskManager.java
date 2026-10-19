@@ -26,9 +26,9 @@ import java.util.Iterator;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-import app.l2nx.commons.threads.ThreadPool;
 import app.l2nx.highfive.entity.spawns.SpawnGroup;
 import app.l2nx.highfive.entity.spawns.SpawnGroupEntry;
+import app.l2nx.highfive.threads.ThreadPool;
 
 /**
  * Materializes pending spawn group replacements whose units were already reserved on death.<br>

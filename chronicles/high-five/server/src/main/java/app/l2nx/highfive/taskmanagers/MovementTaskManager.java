@@ -29,8 +29,8 @@ import java.util.logging.Logger;
 
 import org.apache.commons.lang3.exception.ExceptionUtils;
 
-import app.l2nx.commons.threads.ThreadPool;
 import app.l2nx.highfive.entity.actor.Creature;
+import app.l2nx.highfive.threads.ThreadPool;
 
 /**
  * Movement task manager class.

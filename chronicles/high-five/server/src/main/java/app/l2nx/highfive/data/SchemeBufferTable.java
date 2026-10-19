@@ -43,8 +43,8 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 
-import app.l2nx.commons.database.DatabaseFactory;
 import app.l2nx.highfive.config.custom.SchemeBufferConfig;
+import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.entity.actor.holders.npc.BuffSkillHolder;
 
 /**

@@ -33,9 +33,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-import app.l2nx.commons.database.DatabaseFactory;
 import app.l2nx.highfive.cache.HtmCache;
 import app.l2nx.highfive.config.custom.TransmogConfig;
+import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.data.xml.ItemData;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;

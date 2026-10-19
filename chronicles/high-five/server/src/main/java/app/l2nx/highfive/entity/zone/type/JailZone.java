@@ -19,7 +19,6 @@
  */
 package app.l2nx.highfive.entity.zone.type;
 
-import app.l2nx.commons.threads.ThreadPool;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.actor.Creature;
@@ -28,6 +27,7 @@ import app.l2nx.highfive.entity.actor.tasks.player.TeleportTask;
 import app.l2nx.highfive.entity.zone.ZoneId;
 import app.l2nx.highfive.entity.zone.ZoneType;
 import app.l2nx.highfive.network.SystemMessageId;
+import app.l2nx.highfive.threads.ThreadPool;
 
 /**
  * A jail zone

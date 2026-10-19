@@ -31,7 +31,6 @@ import java.util.logging.Logger;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 
-import app.l2nx.commons.util.IXmlReader;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.WorldRegion;
 import app.l2nx.highfive.entity.actor.enums.creature.FenceState;

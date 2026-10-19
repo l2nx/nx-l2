@@ -22,7 +22,6 @@
  */
 package app.l2nx.highfive.ai;
 
-import app.l2nx.commons.threads.ThreadPool;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.WorldObject;
@@ -31,6 +30,7 @@ import app.l2nx.highfive.entity.actor.instance.Defender;
 import app.l2nx.highfive.entity.actor.instance.Door;
 import app.l2nx.highfive.interfaces.ILocational;
 import app.l2nx.highfive.mechanics.skill.Skill;
+import app.l2nx.highfive.threads.ThreadPool;
 
 /**
  * @author mkizub, Mobius

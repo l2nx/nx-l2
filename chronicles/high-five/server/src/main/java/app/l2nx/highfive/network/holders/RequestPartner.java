@@ -19,11 +19,11 @@
  */
 package app.l2nx.highfive.network.holders;
 
-import app.l2nx.commons.threads.ThreadPool;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.clientpackets.ClientPacket;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
+import app.l2nx.highfive.threads.ThreadPool;
 
 /**
  * This class manages requests (transactions) between two Player.

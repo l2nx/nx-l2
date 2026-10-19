@@ -36,9 +36,9 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
-import app.l2nx.commons.database.DatabaseFactory;
 import app.l2nx.highfive.config.IdManagerConfig;
 import app.l2nx.highfive.config.custom.WeddingConfig;
+import app.l2nx.highfive.data.sql.DatabaseFactory;
 
 /**
  * Manages database cleanup operations and retrieval of used IDs for ID allocation.

@@ -25,7 +25,7 @@ package app.l2nx.highfive.config.custom;
 import java.util.HashSet;
 import java.util.Set;
 
-import app.l2nx.commons.util.ConfigReader;
+import app.l2nx.highfive.config.ConfigReader;
 
 /**
  * This class loads all the custom auto play related configurations.

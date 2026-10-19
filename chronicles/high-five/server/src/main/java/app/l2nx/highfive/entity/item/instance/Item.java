@@ -36,11 +36,11 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import app.l2nx.commons.database.DatabaseFactory;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.config.OlympiadConfig;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.config.custom.TransmogConfig;
+import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.data.xml.EnchantItemOptionsData;
 import app.l2nx.highfive.data.xml.ItemData;
 import app.l2nx.highfive.data.xml.OptionData;

@@ -24,7 +24,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.logging.Logger;
 
-import app.l2nx.commons.database.DatabaseFactory;
+import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.WorldObject;
 import app.l2nx.highfive.entity.actor.Player;

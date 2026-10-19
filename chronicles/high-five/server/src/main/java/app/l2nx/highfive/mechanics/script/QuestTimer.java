@@ -24,9 +24,9 @@ package app.l2nx.highfive.mechanics.script;
 
 import java.util.concurrent.ScheduledFuture;
 
-import app.l2nx.commons.threads.ThreadPool;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.threads.ThreadPool;
 
 public class QuestTimer
 {

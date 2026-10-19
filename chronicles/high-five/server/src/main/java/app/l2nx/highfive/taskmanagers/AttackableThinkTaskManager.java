@@ -26,9 +26,9 @@ import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-import app.l2nx.commons.threads.ThreadPool;
 import app.l2nx.highfive.ai.CreatureAI;
 import app.l2nx.highfive.entity.actor.Attackable;
+import app.l2nx.highfive.threads.ThreadPool;
 
 /**
  * @author Mobius

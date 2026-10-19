@@ -24,7 +24,6 @@ package app.l2nx.highfive.entity.actor.instance;
 
 import java.util.List;
 
-import app.l2nx.commons.threads.ThreadPool;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.enums.creature.InstanceType;
 import app.l2nx.highfive.entity.actor.templates.NpcTemplate;
@@ -35,6 +34,7 @@ import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.network.NpcStringId;
 import app.l2nx.highfive.network.enums.ChatType;
 import app.l2nx.highfive.network.serverpackets.NpcSay;
+import app.l2nx.highfive.threads.ThreadPool;
 
 public class FortCommander extends Defender
 {

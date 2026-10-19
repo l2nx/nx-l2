@@ -33,8 +33,8 @@ import java.util.StringTokenizer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import app.l2nx.commons.database.DatabaseFactory;
-import app.l2nx.commons.util.ConfigReader;
+import app.l2nx.highfive.config.ConfigReader;
+import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.data.xml.SkillData;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.WorldObject;

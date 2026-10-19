@@ -28,7 +28,6 @@ import java.util.Map;
 
 import org.w3c.dom.Document;
 
-import app.l2nx.commons.util.IXmlReader;
 import app.l2nx.highfive.data.holders.ElementalItemHolder;
 import app.l2nx.highfive.entity.item.enums.ElementalItemType;
 import app.l2nx.highfive.entity.item.holders.Elementals;

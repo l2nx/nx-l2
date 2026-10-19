@@ -26,8 +26,8 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
-import app.l2nx.commons.database.DatabaseFactory;
 import app.l2nx.highfive.data.holders.AccessLevel;
+import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.data.xml.AdminData;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.WorldObject;

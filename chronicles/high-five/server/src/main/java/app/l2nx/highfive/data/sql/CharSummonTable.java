@@ -28,7 +28,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
 
-import app.l2nx.commons.database.DatabaseFactory;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.data.holders.PetData;
 import app.l2nx.highfive.data.xml.NpcData;

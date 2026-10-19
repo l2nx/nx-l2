@@ -22,7 +22,6 @@
  */
 package app.l2nx.highfive.scripts.handlers.skill.effects;
 
-import app.l2nx.commons.threads.ThreadPool;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.mechanics.conditions.Condition;
 import app.l2nx.highfive.mechanics.effects.AbstractEffect;
@@ -30,6 +29,7 @@ import app.l2nx.highfive.mechanics.skill.EffectScope;
 import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.mechanics.stats.Formulas;
 import app.l2nx.highfive.taskmanagers.DecayTaskManager;
+import app.l2nx.highfive.threads.ThreadPool;
 import app.l2nx.highfive.util.StatSet;
 
 /**

@@ -25,7 +25,6 @@ package app.l2nx.highfive.mechanics.fishing;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
 
-import app.l2nx.commons.threads.ThreadPool;
 import app.l2nx.highfive.data.xml.FishingMonstersData;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
@@ -37,6 +36,7 @@ import app.l2nx.highfive.network.serverpackets.ExFishingHpRegen;
 import app.l2nx.highfive.network.serverpackets.ExFishingStartCombat;
 import app.l2nx.highfive.network.serverpackets.PlaySound;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
+import app.l2nx.highfive.threads.ThreadPool;
 
 public class Fishing implements Runnable
 {

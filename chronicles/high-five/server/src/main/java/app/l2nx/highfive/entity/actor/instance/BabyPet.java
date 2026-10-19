@@ -27,7 +27,6 @@ import java.util.List;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
 
-import app.l2nx.commons.threads.ThreadPool;
 import app.l2nx.highfive.ai.Intention;
 import app.l2nx.highfive.data.enums.CategoryType;
 import app.l2nx.highfive.data.holders.PetData.PetSkillLearn;
@@ -44,6 +43,7 @@ import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.mechanics.skill.holders.SkillHolder;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
+import app.l2nx.highfive.threads.ThreadPool;
 
 public class BabyPet extends Pet
 {

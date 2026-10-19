@@ -37,10 +37,10 @@ import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 
-import app.l2nx.commons.database.DatabaseFactory;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.config.ServerConfig;
 import app.l2nx.highfive.data.SpawnTable;
+import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.groups.Party;

@@ -27,7 +27,6 @@ import java.util.List;
 
 import org.apache.commons.lang3.StringUtils;
 
-import app.l2nx.commons.util.ConfigReader;
 
 /**
  * This class loads all the feature related configurations.

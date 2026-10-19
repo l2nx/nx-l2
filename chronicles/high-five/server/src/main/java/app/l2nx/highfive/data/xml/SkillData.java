@@ -34,11 +34,11 @@ import java.util.logging.Logger;
 
 import org.apache.commons.lang3.exception.ExceptionUtils;
 
-import app.l2nx.commons.config.ThreadConfig;
-import app.l2nx.commons.threads.ThreadPool;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.config.ServerConfig;
+import app.l2nx.highfive.config.ThreadConfig;
 import app.l2nx.highfive.mechanics.skill.Skill;
+import app.l2nx.highfive.threads.ThreadPool;
 import app.l2nx.highfive.util.DocumentSkill;
 
 /**

@@ -31,7 +31,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
 
-import app.l2nx.commons.threads.ThreadPool;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.actor.Npc;
@@ -42,6 +41,7 @@ import app.l2nx.highfive.managers.ScriptManager;
 import app.l2nx.highfive.mechanics.script.Quest;
 import app.l2nx.highfive.mechanics.script.QuestState;
 import app.l2nx.highfive.network.serverpackets.Earthquake;
+import app.l2nx.highfive.threads.ThreadPool;
 
 /**
  * @author kombat, BazookaRpm

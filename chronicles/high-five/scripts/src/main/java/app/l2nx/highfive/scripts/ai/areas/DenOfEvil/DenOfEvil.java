@@ -19,7 +19,6 @@
  */
 package app.l2nx.highfive.scripts.ai.areas.DenOfEvil;
 
-import app.l2nx.commons.threads.ThreadPool;
 import app.l2nx.highfive.data.xml.SkillData;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.actor.Creature;
@@ -32,6 +31,7 @@ import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
 import app.l2nx.highfive.scripting.annotations.Disabled;
+import app.l2nx.highfive.threads.ThreadPool;
 import app.l2nx.highfive.util.ArrayUtil;
 
 /**

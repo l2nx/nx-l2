@@ -22,7 +22,6 @@ package app.l2nx.highfive.entity.zone.type;
 import java.util.ArrayList;
 import java.util.List;
 
-import app.l2nx.commons.threads.ThreadPool;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Npc;
@@ -41,6 +40,7 @@ import app.l2nx.highfive.network.serverpackets.ExOlympiadMatchEnd;
 import app.l2nx.highfive.network.serverpackets.ExOlympiadUserInfo;
 import app.l2nx.highfive.network.serverpackets.ServerPacket;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
+import app.l2nx.highfive.threads.ThreadPool;
 
 /**
  * An olympiad stadium

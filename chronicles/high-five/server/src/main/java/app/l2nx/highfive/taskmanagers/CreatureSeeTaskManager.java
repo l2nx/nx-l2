@@ -25,8 +25,8 @@ package app.l2nx.highfive.taskmanagers;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-import app.l2nx.commons.threads.ThreadPool;
 import app.l2nx.highfive.entity.actor.Creature;
+import app.l2nx.highfive.threads.ThreadPool;
 
 /**
  * @author Mobius

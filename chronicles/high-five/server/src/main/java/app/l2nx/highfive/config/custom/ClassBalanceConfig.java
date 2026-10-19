@@ -26,7 +26,7 @@ import java.util.Arrays;
 
 import org.apache.commons.lang3.StringUtils;
 
-import app.l2nx.commons.util.ConfigReader;
+import app.l2nx.highfive.config.ConfigReader;
 import app.l2nx.highfive.entity.actor.enums.player.PlayerClass;
 
 /**

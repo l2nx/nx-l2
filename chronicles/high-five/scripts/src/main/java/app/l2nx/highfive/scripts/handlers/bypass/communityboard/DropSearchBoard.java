@@ -31,7 +31,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.StringJoiner;
 
-import app.l2nx.commons.threads.ThreadPool;
 import app.l2nx.highfive.cache.HtmCache;
 import app.l2nx.highfive.config.RatesConfig;
 import app.l2nx.highfive.config.custom.PremiumSystemConfig;
@@ -51,6 +50,7 @@ import app.l2nx.highfive.handler.CommunityBoardHandler;
 import app.l2nx.highfive.handler.IParseBoardHandler;
 import app.l2nx.highfive.network.serverpackets.RadarControl;
 import app.l2nx.highfive.network.serverpackets.ShowMiniMap;
+import app.l2nx.highfive.threads.ThreadPool;
 
 /**
  * @author yksdtc

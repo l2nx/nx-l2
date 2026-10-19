@@ -25,7 +25,6 @@ package app.l2nx.highfive.scripts.ai.others;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import app.l2nx.commons.threads.ThreadPool;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.WorldObject;
 import app.l2nx.highfive.entity.actor.Creature;
@@ -47,6 +46,7 @@ import app.l2nx.highfive.mechanics.script.Script;
 import app.l2nx.highfive.mechanics.siege.Castle;
 import app.l2nx.highfive.mechanics.siege.Fort;
 import app.l2nx.highfive.mechanics.skill.Skill;
+import app.l2nx.highfive.threads.ThreadPool;
 
 /**
  * @author Mobius

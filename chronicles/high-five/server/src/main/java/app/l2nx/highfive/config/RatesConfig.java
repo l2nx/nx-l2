@@ -28,7 +28,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 
-import app.l2nx.commons.util.ConfigReader;
 import app.l2nx.highfive.entity.actor.enums.npc.DropType;
 import app.l2nx.highfive.entity.actor.holders.npc.DropHolder;
 

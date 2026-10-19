@@ -37,7 +37,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.logging.Logger;
 
-import app.l2nx.commons.threads.ThreadPool;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Player;
@@ -55,6 +54,7 @@ import app.l2nx.highfive.network.serverpackets.AbnormalStatusUpdate;
 import app.l2nx.highfive.network.serverpackets.ExOlympiadSpelledInfo;
 import app.l2nx.highfive.network.serverpackets.PartySpelled;
 import app.l2nx.highfive.network.serverpackets.ShortBuffStatusUpdate;
+import app.l2nx.highfive.threads.ThreadPool;
 
 /**
  * Effect lists.<br>

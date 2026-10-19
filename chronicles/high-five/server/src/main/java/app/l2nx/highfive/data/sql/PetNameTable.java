@@ -31,7 +31,6 @@ import java.util.logging.Logger;
 
 import org.apache.commons.lang3.StringUtils;
 
-import app.l2nx.commons.database.DatabaseFactory;
 import app.l2nx.highfive.config.ServerConfig;
 import app.l2nx.highfive.data.xml.PetDataTable;
 

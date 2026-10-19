@@ -26,7 +26,6 @@ import java.util.concurrent.Future;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import app.l2nx.commons.threads.ThreadPool;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Npc;
@@ -47,6 +46,7 @@ import app.l2nx.highfive.network.enums.ChatType;
 import app.l2nx.highfive.network.enums.Movie;
 import app.l2nx.highfive.network.serverpackets.NpcSay;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
+import app.l2nx.highfive.threads.ThreadPool;
 
 public abstract class AirShipController extends Script
 {

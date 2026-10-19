@@ -27,9 +27,9 @@ import java.sql.PreparedStatement;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import app.l2nx.commons.database.DatabaseFactory;
-import app.l2nx.highfive.communitybbs.TopicConstructorType;
 import app.l2nx.highfive.communitybbs.Manager.TopicBBSManager;
+import app.l2nx.highfive.communitybbs.TopicConstructorType;
+import app.l2nx.highfive.data.sql.DatabaseFactory;
 
 public class Topic
 {

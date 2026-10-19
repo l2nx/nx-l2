@@ -39,9 +39,8 @@ import org.apache.commons.lang3.time.DateFormatUtils;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 
-import app.l2nx.commons.threads.ThreadPool;
-import app.l2nx.commons.util.IXmlReader;
 import app.l2nx.highfive.config.custom.DualboxCheckConfig;
+import app.l2nx.highfive.data.xml.IXmlReader;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Creature;
@@ -87,6 +86,7 @@ import app.l2nx.highfive.network.serverpackets.ExShowScreenMessage;
 import app.l2nx.highfive.network.serverpackets.MagicSkillUse;
 import app.l2nx.highfive.network.serverpackets.NpcHtmlMessage;
 import app.l2nx.highfive.schedule.RecurrenceSchedule;
+import app.l2nx.highfive.threads.ThreadPool;
 import app.l2nx.highfive.util.MapUtil;
 import app.l2nx.highfive.util.StatSet;
 

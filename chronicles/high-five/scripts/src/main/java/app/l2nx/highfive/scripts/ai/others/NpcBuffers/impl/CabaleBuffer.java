@@ -19,7 +19,6 @@
  */
 package app.l2nx.highfive.scripts.ai.others.NpcBuffers.impl;
 
-import app.l2nx.commons.threads.ThreadPool;
 import app.l2nx.highfive.data.xml.SkillData;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Npc;
@@ -30,6 +29,7 @@ import app.l2nx.highfive.mechanics.skill.BuffInfo;
 import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.network.NpcStringId;
 import app.l2nx.highfive.network.enums.ChatType;
+import app.l2nx.highfive.threads.ThreadPool;
 
 /**
  * Preacher of Doom and Orator of Revelations AI

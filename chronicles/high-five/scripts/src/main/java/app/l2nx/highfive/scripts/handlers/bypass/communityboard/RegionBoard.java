@@ -35,9 +35,9 @@ import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
 
-import app.l2nx.commons.database.DatabaseFactory;
 import app.l2nx.highfive.cache.HtmCache;
 import app.l2nx.highfive.data.sql.ClanTable;
+import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.clan.Clan;
 import app.l2nx.highfive.handler.CommunityBoardHandler;

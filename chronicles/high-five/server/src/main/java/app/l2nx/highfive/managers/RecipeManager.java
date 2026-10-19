@@ -29,7 +29,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Logger;
 
-import app.l2nx.commons.threads.ThreadPool;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.data.enums.StatType;
@@ -59,6 +58,7 @@ import app.l2nx.highfive.network.serverpackets.SetupGauge;
 import app.l2nx.highfive.network.serverpackets.StatusUpdate;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
 import app.l2nx.highfive.taskmanagers.GameTimeTaskManager;
+import app.l2nx.highfive.threads.ThreadPool;
 
 public class RecipeManager
 {

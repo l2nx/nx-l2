@@ -25,7 +25,6 @@ package app.l2nx.highfive.mechanics.undergroundColiseum;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
-import app.l2nx.commons.threads.ThreadPool;
 import app.l2nx.highfive.config.UndergroundColiseumConfig;
 import app.l2nx.highfive.config.custom.PremiumSystemConfig;
 import app.l2nx.highfive.data.xml.NpcData;
@@ -41,6 +40,7 @@ import app.l2nx.highfive.network.serverpackets.ExPCCafePointInfo;
 import app.l2nx.highfive.network.serverpackets.ExPVPMatchUserDie;
 import app.l2nx.highfive.network.serverpackets.ServerPacket;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
+import app.l2nx.highfive.threads.ThreadPool;
 
 public class UCTeam
 {

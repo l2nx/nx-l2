@@ -24,7 +24,6 @@ package app.l2nx.highfive.scripts.ai.bosses.SeerUgoros;
 
 import java.util.concurrent.ScheduledFuture;
 
-import app.l2nx.commons.threads.ThreadPool;
 import app.l2nx.highfive.data.xml.SkillData;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.World;
@@ -38,6 +37,7 @@ import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.network.NpcStringId;
 import app.l2nx.highfive.network.enums.ChatType;
 import app.l2nx.highfive.network.serverpackets.NpcSay;
+import app.l2nx.highfive.threads.ThreadPool;
 
 import app.l2nx.highfive.scripts.quests.Q00288_HandleWithCare.Q00288_HandleWithCare;
 import app.l2nx.highfive.scripts.quests.Q00423_TakeYourBestShot.Q00423_TakeYourBestShot;

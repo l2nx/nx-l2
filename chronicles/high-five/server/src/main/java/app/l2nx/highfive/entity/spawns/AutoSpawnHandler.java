@@ -36,14 +36,14 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import app.l2nx.commons.database.DatabaseFactory;
-import app.l2nx.commons.threads.ThreadPool;
 import app.l2nx.highfive.data.SpawnTable;
+import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.data.xml.MapRegionData;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.managers.IdManager;
+import app.l2nx.highfive.threads.ThreadPool;
 
 /**
  * Auto Spawn handler.<br>

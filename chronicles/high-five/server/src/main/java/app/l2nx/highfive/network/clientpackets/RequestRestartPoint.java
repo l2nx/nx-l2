@@ -22,7 +22,6 @@
  */
 package app.l2nx.highfive.network.clientpackets;
 
-import app.l2nx.commons.threads.ThreadPool;
 import app.l2nx.highfive.data.sql.ClanHallTable;
 import app.l2nx.highfive.data.xml.MapRegionData;
 import app.l2nx.highfive.entity.Location;
@@ -44,6 +43,7 @@ import app.l2nx.highfive.mechanics.siege.Fort;
 import app.l2nx.highfive.mechanics.siege.SiegeClan;
 import app.l2nx.highfive.mechanics.siege.clanhalls.SiegableHall;
 import app.l2nx.highfive.network.PacketLogger;
+import app.l2nx.highfive.threads.ThreadPool;
 
 /**
  * @version $Revision: 1.7.2.3.2.6 $ $Date: 2005/03/27 15:29:30 $

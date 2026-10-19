@@ -25,7 +25,7 @@ package app.l2nx.highfive.network.clientpackets;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 
-import app.l2nx.commons.database.DatabaseFactory;
+import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.network.PacketLogger;
 import app.l2nx.highfive.network.SystemMessageId;

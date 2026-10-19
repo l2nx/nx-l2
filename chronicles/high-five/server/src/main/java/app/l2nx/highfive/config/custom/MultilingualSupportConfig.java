@@ -26,7 +26,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
 
-import app.l2nx.commons.util.ConfigReader;
+import app.l2nx.highfive.config.ConfigReader;
 import app.l2nx.highfive.config.GeneralConfig;
 
 /**

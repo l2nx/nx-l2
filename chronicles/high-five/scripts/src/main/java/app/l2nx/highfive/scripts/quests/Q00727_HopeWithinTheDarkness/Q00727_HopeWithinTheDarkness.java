@@ -26,7 +26,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
-import app.l2nx.commons.threads.ThreadPool;
 import app.l2nx.highfive.ai.Intention;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.World;
@@ -51,6 +50,7 @@ import app.l2nx.highfive.network.NpcStringId;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.enums.ChatType;
 import app.l2nx.highfive.network.serverpackets.NpcSay;
+import app.l2nx.highfive.threads.ThreadPool;
 import app.l2nx.highfive.util.ArrayUtil;
 import app.l2nx.highfive.util.LocationUtil;
 

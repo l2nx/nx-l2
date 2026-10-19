@@ -22,7 +22,6 @@
  */
 package app.l2nx.highfive.config;
 
-import app.l2nx.commons.util.ConfigReader;
 
 /**
  * This class loads all the id manager related configurations.

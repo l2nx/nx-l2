@@ -28,9 +28,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import app.l2nx.commons.threads.ThreadPool;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.mechanics.skill.enums.SkillFinishType;
+import app.l2nx.highfive.threads.ThreadPool;
 
 /**
  * @author Mobius

@@ -27,7 +27,6 @@ import java.util.logging.Level;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 
-import app.l2nx.commons.util.IXmlReader;
 
 /**
  * Secondary Auth data.

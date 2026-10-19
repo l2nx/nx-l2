@@ -27,7 +27,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Level;
 
-import app.l2nx.commons.threads.ThreadPool;
 import app.l2nx.highfive.ai.CreatureAI;
 import app.l2nx.highfive.ai.DoorAI;
 import app.l2nx.highfive.data.sql.ClanHallTable;
@@ -59,6 +58,7 @@ import app.l2nx.highfive.network.serverpackets.DoorStatusUpdate;
 import app.l2nx.highfive.network.serverpackets.OnEventTrigger;
 import app.l2nx.highfive.network.serverpackets.StaticObjectInfo;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
+import app.l2nx.highfive.threads.ThreadPool;
 
 public class Door extends Creature
 {

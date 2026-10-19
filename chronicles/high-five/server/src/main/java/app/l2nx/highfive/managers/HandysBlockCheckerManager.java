@@ -25,7 +25,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import app.l2nx.commons.threads.ThreadPool;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.enums.creature.Team;
@@ -39,6 +38,7 @@ import app.l2nx.highfive.network.serverpackets.ExCubeGameAddPlayer;
 import app.l2nx.highfive.network.serverpackets.ExCubeGameChangeTeam;
 import app.l2nx.highfive.network.serverpackets.ExCubeGameRemovePlayer;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
+import app.l2nx.highfive.threads.ThreadPool;
 
 /**
  * This class manage the player add/remove, team change and event arena status,<br>

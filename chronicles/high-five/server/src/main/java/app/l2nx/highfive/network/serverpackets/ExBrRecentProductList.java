@@ -28,8 +28,8 @@ import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.List;
 
-import app.l2nx.commons.database.DatabaseFactory;
 import app.l2nx.highfive.data.holders.PrimeShopProductHolder;
+import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.data.xml.PrimeShopData;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.network.GameClient;

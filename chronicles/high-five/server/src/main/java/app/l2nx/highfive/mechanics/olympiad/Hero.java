@@ -36,12 +36,12 @@ import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
 
-import app.l2nx.commons.database.DatabaseFactory;
 import app.l2nx.highfive.cache.HtmCache;
 import app.l2nx.highfive.config.FeatureConfig;
 import app.l2nx.highfive.config.OlympiadConfig;
 import app.l2nx.highfive.data.sql.CharInfoTable;
 import app.l2nx.highfive.data.sql.ClanTable;
+import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.data.xml.ClassListData;
 import app.l2nx.highfive.data.xml.NpcData;
 import app.l2nx.highfive.entity.World;

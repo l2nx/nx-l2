@@ -28,7 +28,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.logging.Logger;
 
-import app.l2nx.commons.util.ConfigReader;
 
 /**
  * This class loads all the olympiad related configurations.

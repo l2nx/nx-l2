@@ -28,7 +28,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
 
-import app.l2nx.commons.threads.ThreadPool;
 import app.l2nx.highfive.data.xml.NpcData;
 import app.l2nx.highfive.data.xml.SkillData;
 import app.l2nx.highfive.entity.Location;
@@ -44,6 +43,7 @@ import app.l2nx.highfive.network.serverpackets.AbstractNpcInfo;
 import app.l2nx.highfive.network.serverpackets.ActionFailed;
 import app.l2nx.highfive.network.serverpackets.SocialAction;
 import app.l2nx.highfive.network.serverpackets.StopMove;
+import app.l2nx.highfive.threads.ThreadPool;
 
 // While a tamed beast behaves a lot like a pet (ingame) and does have
 // an owner, in all other aspects, it acts like a mob.

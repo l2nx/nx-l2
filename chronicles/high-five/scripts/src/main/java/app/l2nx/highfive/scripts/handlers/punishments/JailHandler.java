@@ -24,7 +24,6 @@ package app.l2nx.highfive.scripts.handlers.punishments;
 
 import org.apache.commons.lang3.time.DurationFormatUtils;
 
-import app.l2nx.commons.threads.ThreadPool;
 import app.l2nx.highfive.LoginServerThread;
 import app.l2nx.highfive.cache.HtmCache;
 import app.l2nx.highfive.entity.World;
@@ -44,6 +43,7 @@ import app.l2nx.highfive.mechanics.punishment.PunishmentTask;
 import app.l2nx.highfive.mechanics.punishment.PunishmentType;
 import app.l2nx.highfive.network.GameClient;
 import app.l2nx.highfive.network.serverpackets.NpcHtmlMessage;
+import app.l2nx.highfive.threads.ThreadPool;
 
 /**
  * This class handles jail punishment.

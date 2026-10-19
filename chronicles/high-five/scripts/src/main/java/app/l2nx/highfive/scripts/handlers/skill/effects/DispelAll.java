@@ -25,7 +25,6 @@ package app.l2nx.highfive.scripts.handlers.skill.effects;
 import java.util.ArrayList;
 import java.util.List;
 
-import app.l2nx.commons.threads.ThreadPool;
 import app.l2nx.highfive.config.custom.CancelReturnConfig;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.mechanics.conditions.Condition;
@@ -34,6 +33,7 @@ import app.l2nx.highfive.mechanics.effects.EffectType;
 import app.l2nx.highfive.mechanics.skill.BuffInfo;
 import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.mechanics.skill.enums.SkillFinishType;
+import app.l2nx.highfive.threads.ThreadPool;
 import app.l2nx.highfive.util.StatSet;
 
 /**

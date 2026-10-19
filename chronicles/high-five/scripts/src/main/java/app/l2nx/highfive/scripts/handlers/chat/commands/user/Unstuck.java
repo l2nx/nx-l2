@@ -22,7 +22,6 @@
  */
 package app.l2nx.highfive.scripts.handlers.chat.commands.user;
 
-import app.l2nx.commons.threads.ThreadPool;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.config.custom.FactionSystemConfig;
 import app.l2nx.highfive.data.xml.SkillData;
@@ -35,6 +34,7 @@ import app.l2nx.highfive.network.serverpackets.ActionFailed;
 import app.l2nx.highfive.network.serverpackets.MagicSkillUse;
 import app.l2nx.highfive.network.serverpackets.SetupGauge;
 import app.l2nx.highfive.taskmanagers.GameTimeTaskManager;
+import app.l2nx.highfive.threads.ThreadPool;
 
 /**
  * Unstuck user command.

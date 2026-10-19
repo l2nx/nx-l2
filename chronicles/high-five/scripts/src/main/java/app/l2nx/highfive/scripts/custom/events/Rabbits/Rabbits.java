@@ -30,8 +30,8 @@ import org.apache.commons.lang3.time.DateFormatUtils;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 
-import app.l2nx.commons.util.IXmlReader;
 import app.l2nx.highfive.config.GeneralConfig;
+import app.l2nx.highfive.data.xml.IXmlReader;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.WorldObject;
 import app.l2nx.highfive.entity.actor.Npc;

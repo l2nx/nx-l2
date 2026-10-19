@@ -30,7 +30,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ThreadLocalRandom;
 
-import app.l2nx.commons.threads.ThreadPool;
 import app.l2nx.highfive.config.custom.CancelReturnConfig;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.holders.creature.EffectList;
@@ -41,6 +40,7 @@ import app.l2nx.highfive.mechanics.skill.AbnormalType;
 import app.l2nx.highfive.mechanics.skill.BuffInfo;
 import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.mechanics.skill.enums.SkillFinishType;
+import app.l2nx.highfive.threads.ThreadPool;
 import app.l2nx.highfive.util.StatSet;
 
 /**

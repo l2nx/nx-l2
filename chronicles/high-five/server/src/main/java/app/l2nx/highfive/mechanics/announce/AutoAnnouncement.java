@@ -27,9 +27,9 @@ import java.sql.Statement;
 import java.util.concurrent.ScheduledFuture;
 import java.util.logging.Level;
 
-import app.l2nx.commons.database.DatabaseFactory;
-import app.l2nx.commons.threads.ThreadPool;
+import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.entity.World;
+import app.l2nx.highfive.threads.ThreadPool;
 
 /**
  * @author UnAfraid

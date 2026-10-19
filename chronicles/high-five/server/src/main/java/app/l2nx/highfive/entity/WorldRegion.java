@@ -28,7 +28,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import app.l2nx.commons.threads.ThreadPool;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.config.NpcConfig;
 import app.l2nx.highfive.entity.actor.Attackable;
@@ -36,6 +35,7 @@ import app.l2nx.highfive.entity.actor.instance.Door;
 import app.l2nx.highfive.entity.actor.instance.Fence;
 import app.l2nx.highfive.entity.spawns.Spawn;
 import app.l2nx.highfive.taskmanagers.RandomAnimationTaskManager;
+import app.l2nx.highfive.threads.ThreadPool;
 
 public class WorldRegion
 {

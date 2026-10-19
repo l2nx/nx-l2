@@ -36,8 +36,6 @@ import java.util.logging.Logger;
 
 import org.apache.commons.lang3.StringUtils;
 
-import app.l2nx.commons.database.DatabaseFactory;
-import app.l2nx.commons.threads.ThreadPool;
 import app.l2nx.highfive.communitybbs.Manager.ForumsBBSManager;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.entity.actor.Player;
@@ -67,6 +65,7 @@ import app.l2nx.highfive.network.serverpackets.PledgeShowInfoUpdate;
 import app.l2nx.highfive.network.serverpackets.PledgeShowMemberListAll;
 import app.l2nx.highfive.network.serverpackets.PledgeShowMemberListUpdate;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
+import app.l2nx.highfive.threads.ThreadPool;
 
 /**
  * This class loads the clan related data.

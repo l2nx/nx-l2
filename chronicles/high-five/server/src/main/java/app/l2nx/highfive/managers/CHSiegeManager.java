@@ -27,9 +27,9 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.logging.Logger;
 
-import app.l2nx.commons.database.DatabaseFactory;
 import app.l2nx.highfive.config.ConquerableHallSiegeConfig;
 import app.l2nx.highfive.data.sql.ClanHallTable;
+import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.clan.Clan;

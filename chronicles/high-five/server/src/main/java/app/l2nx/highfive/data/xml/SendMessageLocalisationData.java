@@ -31,7 +31,6 @@ import java.util.logging.Logger;
 
 import org.w3c.dom.Document;
 
-import app.l2nx.commons.util.IXmlReader;
 import app.l2nx.highfive.config.custom.MultilingualSupportConfig;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.util.StatSet;

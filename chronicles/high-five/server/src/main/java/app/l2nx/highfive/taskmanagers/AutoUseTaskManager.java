@@ -25,7 +25,6 @@ package app.l2nx.highfive.taskmanagers;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-import app.l2nx.commons.threads.ThreadPool;
 import app.l2nx.highfive.config.custom.AutoPlayConfig;
 import app.l2nx.highfive.data.xml.PetSkillData;
 import app.l2nx.highfive.entity.WorldObject;
@@ -44,6 +43,7 @@ import app.l2nx.highfive.mechanics.skill.BuffInfo;
 import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.mechanics.skill.holders.SkillHolder;
 import app.l2nx.highfive.mechanics.skill.targets.TargetType;
+import app.l2nx.highfive.threads.ThreadPool;
 
 /**
  * @author Mobius

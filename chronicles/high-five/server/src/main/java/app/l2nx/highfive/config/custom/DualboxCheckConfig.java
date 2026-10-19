@@ -28,7 +28,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Logger;
 
-import app.l2nx.commons.util.ConfigReader;
+import app.l2nx.highfive.config.ConfigReader;
 
 /**
  * This class loads all the custom dualbox check related configurations.

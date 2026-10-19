@@ -25,7 +25,6 @@ package app.l2nx.highfive.entity.actor.instance;
 import java.util.concurrent.Future;
 import java.util.logging.Level;
 
-import app.l2nx.commons.threads.ThreadPool;
 import app.l2nx.highfive.data.xml.SkillData;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Creature;
@@ -40,6 +39,7 @@ import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.serverpackets.CharInfo;
 import app.l2nx.highfive.network.serverpackets.ServerPacket;
 import app.l2nx.highfive.taskmanagers.DecayTaskManager;
+import app.l2nx.highfive.threads.ThreadPool;
 
 public class Decoy extends Creature
 {

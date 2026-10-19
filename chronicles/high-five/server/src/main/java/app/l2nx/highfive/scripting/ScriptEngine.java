@@ -35,8 +35,8 @@ import java.util.logging.Logger;
 
 import org.w3c.dom.Document;
 
-import app.l2nx.commons.util.IXmlReader;
 import app.l2nx.highfive.config.DevelopmentConfig;
+import app.l2nx.highfive.data.xml.IXmlReader;
 import app.l2nx.highfive.scripting.annotations.Disabled;
 
 /**

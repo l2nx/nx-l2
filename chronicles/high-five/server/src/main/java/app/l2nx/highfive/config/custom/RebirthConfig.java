@@ -31,7 +31,7 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import app.l2nx.commons.util.ConfigReader;
+import app.l2nx.highfive.config.ConfigReader;
 
 /**
  * Loads and stores rebirth system configuration values from the custom rebirth configuration file.<br>

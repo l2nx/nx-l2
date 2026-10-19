@@ -29,9 +29,9 @@ import java.util.Calendar;
 import java.util.Locale;
 import java.util.logging.Logger;
 
-import app.l2nx.commons.threads.ThreadPool;
 import app.l2nx.highfive.Shutdown;
 import app.l2nx.highfive.config.ServerConfig;
+import app.l2nx.highfive.threads.ThreadPool;
 
 /**
  * @author Gigi, Mobius

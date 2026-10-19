@@ -29,7 +29,7 @@ import java.util.NoSuchElementException;
 import java.util.StringTokenizer;
 import java.util.logging.Logger;
 
-import app.l2nx.commons.database.DatabaseFactory;
+import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.data.xml.MapRegionData;
 import app.l2nx.highfive.data.xml.SpawnData;
 import app.l2nx.highfive.entity.Location;

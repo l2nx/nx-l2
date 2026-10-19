@@ -25,9 +25,9 @@ package app.l2nx.highfive.network.clientpackets;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 
-import app.l2nx.commons.database.DatabaseFactory;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.data.holders.PrimeShopProductHolder;
+import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.data.xml.ItemData;
 import app.l2nx.highfive.data.xml.PrimeShopData;
 import app.l2nx.highfive.entity.actor.Player;

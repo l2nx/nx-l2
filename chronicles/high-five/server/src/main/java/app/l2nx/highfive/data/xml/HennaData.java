@@ -32,7 +32,6 @@ import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 
-import app.l2nx.commons.util.IXmlReader;
 import app.l2nx.highfive.entity.actor.enums.player.PlayerClass;
 import app.l2nx.highfive.entity.item.Henna;
 import app.l2nx.highfive.util.StatSet;

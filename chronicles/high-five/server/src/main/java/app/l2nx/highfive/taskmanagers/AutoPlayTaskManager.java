@@ -26,7 +26,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-import app.l2nx.commons.threads.ThreadPool;
 import app.l2nx.highfive.ai.Intention;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.config.custom.AutoPlayConfig;
@@ -43,6 +42,7 @@ import app.l2nx.highfive.entity.item.instance.Item;
 import app.l2nx.highfive.entity.zone.ZoneId;
 import app.l2nx.highfive.geoengine.GeoEngine;
 import app.l2nx.highfive.mechanics.skill.Skill;
+import app.l2nx.highfive.threads.ThreadPool;
 import app.l2nx.highfive.util.LocationUtil;
 
 /**

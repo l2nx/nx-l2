@@ -21,10 +21,10 @@ package app.l2nx.highfive.entity.item.holders;
 
 import java.util.concurrent.ScheduledFuture;
 
-import app.l2nx.commons.threads.ThreadPool;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.instance.Pet;
+import app.l2nx.highfive.threads.ThreadPool;
 
 /**
  * @author DrHouse

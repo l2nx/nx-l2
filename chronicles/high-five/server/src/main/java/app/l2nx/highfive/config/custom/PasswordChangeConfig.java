@@ -22,7 +22,7 @@
  */
 package app.l2nx.highfive.config.custom;
 
-import app.l2nx.commons.util.ConfigReader;
+import app.l2nx.highfive.config.ConfigReader;
 
 /**
  * This class loads all the custom password change related configurations.

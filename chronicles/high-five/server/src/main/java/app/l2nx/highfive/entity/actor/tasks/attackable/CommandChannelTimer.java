@@ -19,9 +19,9 @@
  */
 package app.l2nx.highfive.entity.actor.tasks.attackable;
 
-import app.l2nx.commons.threads.ThreadPool;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.entity.actor.Attackable;
+import app.l2nx.highfive.threads.ThreadPool;
 
 /**
  * @author xban1x

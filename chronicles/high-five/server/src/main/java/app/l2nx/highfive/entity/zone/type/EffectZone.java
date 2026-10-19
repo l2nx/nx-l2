@@ -25,7 +25,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
 
-import app.l2nx.commons.threads.ThreadPool;
 import app.l2nx.highfive.data.xml.SkillData;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.enums.creature.InstanceType;
@@ -34,6 +33,7 @@ import app.l2nx.highfive.entity.zone.ZoneType;
 import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.mechanics.skill.enums.SkillFinishType;
 import app.l2nx.highfive.network.serverpackets.EtcStatusUpdate;
+import app.l2nx.highfive.threads.ThreadPool;
 
 /**
  * Another type of damage zone with skills.

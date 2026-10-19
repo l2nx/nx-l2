@@ -42,8 +42,8 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
-import app.l2nx.commons.database.DatabaseFactory;
 import app.l2nx.highfive.config.custom.RebirthConfig;
+import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.data.xml.ExperienceData;
 import app.l2nx.highfive.data.xml.SkillData;
 import app.l2nx.highfive.data.xml.SkillTreeData;

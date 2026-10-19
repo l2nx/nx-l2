@@ -24,7 +24,6 @@ package app.l2nx.highfive.network.clientpackets;
 
 import java.util.concurrent.TimeUnit;
 
-import app.l2nx.commons.threads.ThreadPool;
 import app.l2nx.highfive.ai.Action;
 import app.l2nx.highfive.ai.CreatureAI;
 import app.l2nx.highfive.ai.Intention;
@@ -58,6 +57,7 @@ import app.l2nx.highfive.network.serverpackets.ActionFailed;
 import app.l2nx.highfive.network.serverpackets.ExShowScreenMessage;
 import app.l2nx.highfive.network.serverpackets.ExUseSharedGroupItem;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
+import app.l2nx.highfive.threads.ThreadPool;
 
 public class UseItem extends ClientPacket
 {

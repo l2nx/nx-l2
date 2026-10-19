@@ -19,8 +19,8 @@
  */
 package app.l2nx.highfive.entity.actor.tasks.npc.trap;
 
-import app.l2nx.commons.threads.ThreadPool;
 import app.l2nx.highfive.entity.actor.instance.Trap;
+import app.l2nx.highfive.threads.ThreadPool;
 
 /**
  * Trap trigger task.

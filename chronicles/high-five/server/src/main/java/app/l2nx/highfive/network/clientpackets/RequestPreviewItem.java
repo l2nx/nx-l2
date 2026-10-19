@@ -22,7 +22,6 @@ package app.l2nx.highfive.network.clientpackets;
 import java.util.HashMap;
 import java.util.Map;
 
-import app.l2nx.commons.threads.ThreadPool;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.data.xml.BuyListData;
@@ -44,6 +43,7 @@ import app.l2nx.highfive.network.PacketLogger;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.serverpackets.ActionFailed;
 import app.l2nx.highfive.network.serverpackets.ShopPreviewInfo;
+import app.l2nx.highfive.threads.ThreadPool;
 
 /**
  ** @author Gnacik

@@ -28,13 +28,13 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ThreadLocalRandom;
 
-import app.l2nx.commons.threads.ThreadPool;
 import app.l2nx.highfive.config.NpcConfig;
 import app.l2nx.highfive.data.xml.NpcData;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.instance.Monster;
 import app.l2nx.highfive.entity.actor.templates.NpcTemplate;
+import app.l2nx.highfive.threads.ThreadPool;
 
 /**
  * Manages minion spawning, tracking and lifecycle for monster masters.<br>

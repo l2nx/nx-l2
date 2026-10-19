@@ -24,11 +24,11 @@ package app.l2nx.highfive.network;
 
 import java.util.logging.Logger;
 
-import app.l2nx.commons.threads.ThreadPool;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.managers.AntiFeedManager;
 import app.l2nx.highfive.network.serverpackets.ServerPacket;
 import app.l2nx.highfive.taskmanagers.AttackStanceTaskManager;
+import app.l2nx.highfive.threads.ThreadPool;
 
 /**
  * Handles the disconnection process for a player or client.

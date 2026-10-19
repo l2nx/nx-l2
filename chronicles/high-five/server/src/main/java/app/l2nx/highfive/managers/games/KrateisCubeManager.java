@@ -35,11 +35,10 @@ import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 
-import app.l2nx.commons.threads.ThreadPool;
-import app.l2nx.commons.util.IXmlReader;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.data.SpawnTable;
 import app.l2nx.highfive.data.xml.DoorData;
+import app.l2nx.highfive.data.xml.IXmlReader;
 import app.l2nx.highfive.data.xml.SkillData;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.actor.Npc;
@@ -54,6 +53,7 @@ import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.network.NpcStringId;
 import app.l2nx.highfive.network.enums.ChatType;
 import app.l2nx.highfive.network.serverpackets.CreatureSay;
+import app.l2nx.highfive.threads.ThreadPool;
 import app.l2nx.highfive.util.StatSet;
 
 /**

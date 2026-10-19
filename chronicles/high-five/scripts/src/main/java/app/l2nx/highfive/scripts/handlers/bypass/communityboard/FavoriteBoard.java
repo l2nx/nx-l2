@@ -27,8 +27,8 @@ import java.time.format.DateTimeFormatter;
 
 import org.apache.commons.lang3.StringUtils;
 
-import app.l2nx.commons.database.DatabaseFactory;
 import app.l2nx.highfive.cache.HtmCache;
+import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.handler.CommunityBoardHandler;
 import app.l2nx.highfive.handler.IParseBoardHandler;

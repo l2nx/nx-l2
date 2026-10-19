@@ -39,7 +39,6 @@ import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 
-import app.l2nx.commons.util.IXmlReader;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.config.RatesConfig;
 import app.l2nx.highfive.config.custom.FakePlayersConfig;

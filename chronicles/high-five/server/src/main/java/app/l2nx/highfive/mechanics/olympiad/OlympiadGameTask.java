@@ -22,11 +22,11 @@ package app.l2nx.highfive.mechanics.olympiad;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import app.l2nx.commons.threads.ThreadPool;
 import app.l2nx.highfive.config.OlympiadConfig;
 import app.l2nx.highfive.entity.zone.type.OlympiadStadiumZone;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
+import app.l2nx.highfive.threads.ThreadPool;
 
 /**
  * @author DS
