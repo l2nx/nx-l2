@@ -11,7 +11,8 @@ the database pool, logging, the HTTP management surface, packaging and tests. In
 - **Spring is allowed in every module**, game logic included, together with Lombok and the other de-facto
   standards. The code is not kept framework-free.
 - **Stage 2 changes the host, not the game.** The Mobius startup sequence, singletons (`getInstance()`) and the
-  game `.ini` settings stay. They move to Spring beans and Spring Boot configuration in later work:
+  game `.ini` settings stay (the login server is already on Spring: `@ConfigurationProperties`, `JdbcClient`,
+  `TaskScheduler`). The game code moves to Spring beans and Spring Boot configuration in later work:
   [#17](https://github.com/l2nx/nx-l2/issues/17) (settings), [spec 003](003-engine-core/wiring-layout.md)
   (architecture and wiring of the game code).
 
@@ -30,8 +31,8 @@ the database pool, logging, the HTTP management surface, packaging and tests. In
   - starters `actuator`, `webmvc` (Tomcat), `jdbc`, plus `micrometer-registry-prometheus`;
   - tests: `spring-boot-starter-test`, `spring-boot-testcontainers`, Testcontainers (`testcontainers-mysql`, see §9).
 - **Main classes:** `app.l2nx.login.boot.LoginApplication` and `app.l2nx.highfive.boot.HighFiveApplication`
-  (`@SpringBootApplication(scanBasePackages = "app.l2nx")`, so the beans of `libs/commons` and `server` are
-  found). `boot` stays the assembly module: it is the only one that sees `server` and `scripts` together.
+  (`@SpringBootApplication(scanBasePackages = "app.l2nx.login")` and `"app.l2nx.highfive"`, so the beans of `server`
+  are found; the beans of `libs/boot` come through auto-configuration, not scanning). `boot` stays the assembly module: it is the only one that sees `server` and `scripts` together.
 - **No CLI tools.** The Mobius `account-manager` and `game-server-register` are removed with their start scripts
   and `console.cfg`.
 
@@ -71,9 +72,9 @@ the database pool, logging, the HTTP management surface, packaging and tests. In
   watcher keep the `Shutdown` countdown. At its end `Shutdown` calls `ServerExit.exit(ServerExitCode)`, so the
   shutdown actions run once, through `stop()`.
 - `LoginServer.shutdown()` calls the same in place of `Runtime.exit`.
-- **`ServerExit`** is a bean in `libs/commons`, shared by both servers:
+- **`ServerExit`** is a bean of `libs/boot` (auto-configuration `app.l2nx.boot.BootAutoConfiguration`), shared by both servers:
   `System.exit(SpringApplication.exit(context, code))` on a thread of its own (`server-exit`). A caller running on
-  a `ThreadPool` thread (the scheduled login restart) would otherwise close the context from inside the pool that
+  a pool thread (the scheduled restart) would otherwise close the context from inside the pool that
   the close waits for. **`ServerExitCode`** is an enum next to it,
   `SHUTDOWN(0)` and `RESTART(2)`, implementing Spring's `ExitCodeGenerator`; the codes below live in this one
   place. Code 1 has no constant: Boot sets it on a failed start.
@@ -98,10 +99,14 @@ and `systemctl stop` are not restarted.
   operator overrides in `config/application.yaml` of the distribution (Spring Boot reads `./config/` by default,
   next to the `.ini` files), environment variables on top (`SPRING_DATASOURCE_PASSWORD`).
 - **Shared defaults** (datasource, `server.address`, management) live once in
-  `libs/commons/src/main/resources/l2nx-defaults.yaml`; each server's `application.yaml` imports it
-  (`spring.config.import`) and adds only its own keys (`spring.application.name`, `server.port`, pool size).
+  `libs/boot/src/main/resources/l2nx-defaults.yaml`. An `EnvironmentPostProcessor` of `libs/boot`
+  (`DefaultsEnvironmentPostProcessor`, registered in `META-INF/spring.factories`) adds it as the lowest-priority
+  property source, so a server needs no `spring.config.import`; each server's `application.yaml` adds only its own keys (`spring.application.name`, `server.port`, pool size).
 - **Moved to `application.yaml` at stage 2:** `spring.datasource.*`, `server.*`, `management.*`, `logging.*`. `Database.ini` and `DatabaseConfig` are removed.
-- **Stays in `.ini`:** every game and login setting, including thread pool sizes and the client ports, until
+- **Login settings are `application.yaml`:** `@ConfigurationProperties` under `l2nx.login.*` (client and game-server
+  endpoints, ban, flood protection, scheduled restart, `auto-create-accounts`, `network.*` with thread and buffer
+  pool sizes). `Server.ini`, `Network.ini` and `Threads.ini` are removed from the login distribution and Dockerfile.
+- **Stays in `.ini`:** every game setting, including thread pool sizes and the client ports, until
   [#17](https://github.com/l2nx/nx-l2/issues/17).
 
 ## 5. Database pool
@@ -109,18 +114,19 @@ and `systemctl stop` are not restarted.
 - `spring-boot-starter-jdbc` creates the `HikariDataSource` from `spring.datasource.*`. Only
   `maximum-pool-size` and `pool-name` are set; the Mobius timeouts (connection 60 s, idle 5 min, lifetime
   10 min, minimum idle of a tenth of the pool) give way to the Hikari defaults.
-- `DatabaseFactory` becomes a bean that receives the `DataSource`. Its static `getConnection()` stays for the
-  existing callers until they receive the `DataSource` or a `JdbcClient` through the constructor.
+- The login server reads and writes through repositories on `JdbcClient`. The game server's `DatabaseFactory` is a
+  bean that receives the `DataSource`; its static `getConnection()` stays for the existing callers until stage 3
+  moves them to repositories.
 - The driver stays `mysql-connector-j` against MariaDB; the database changes at stage 3.
 
 ## 6. Logging
 
-- **Log4j2 behind Spring Boot.** One `log4j2-spring.xml` in `libs/commons`, shared by both servers (a channel file
+- **Log4j2 behind Spring Boot.** One `log4j2-spring.xml` in `libs/boot`, shared by both servers (a channel file
   is created on first use only); an operator replaces
   it with the standard `logging.config`.
 - **JUL calls keep working** through `-Djava.util.logging.manager=org.apache.logging.log4j.jul.LogManager`, which
-  replaces `ServerLogManager`. `log.cfg`, `ServerLogManager` and the JUL handlers, formatters and filters in
-  `commons/log` are removed. Moving the code to the SLF4J API is
+  replaces `ServerLogManager`. `log.cfg`, `ServerLogManager` and the JUL handlers, formatters and filters of the
+  former `commons/log` are removed. Moving the code to the SLF4J API is
   [#14](https://github.com/l2nx/nx-l2/issues/14).
 - **Async throughout:** `AsyncLoggerContextSelector` with the LMAX Disruptor; logging does not block game
   threads and does not allocate on the hot path. Boot's `LoggingSystem` stops Log4j2 on shutdown, so the queue
@@ -164,7 +170,8 @@ Left out on purpose: `heapdump` (gigabytes of memory with credentials in it; `jc
 - The standard Boot binders: JVM, process, system, `log4j2.events`, `hikaricp.*`, `tomcat.*`; percentile
   histograms for `jvm.gc.pause` and `hikaricp.connections.acquire`; common tag `application`
   (`${spring.application.name}`).
-- The `ThreadPool` executors and the network executors (I/O and packets) are bound with Micrometer's
+- The login scheduler is a Spring `TaskScheduler`; Boot binds its executor metrics (`executor.*`).
+- The game `ThreadPool` executors and the network executors (I/O and packets) are bound with Micrometer's
   `ExecutorServiceMetrics` (`executor.*` gauges, tag `name`). They are bound, not wrapped with
   `ExecutorServiceMetrics.monitor`: the code uses them through the `ThreadPoolExecutor` API (`purge`, the queue),
   which a wrapper would hide, so the task timers `executor` and `executor.idle` are not published.
@@ -178,7 +185,7 @@ Left out on purpose: `heapdump` (gigabytes of memory with credentials in it; `jc
 - **One `Dockerfile` per `boot` module** on top of `installDist`: `eclipse-temurin:25-jre` until the JDK is
   chosen ([#16](https://github.com/l2nx/nx-l2/issues/16)), a non-root user, `WORKDIR` at the distribution root,
   `HEALTHCHECK` on `/actuator/health/readiness`, geodata mounted as a volume.
-- **`compose.yaml`** keeps the database only. Running both servers in Compose needs their network settings out of
+- **`compose.yaml`** keeps the database only. Running both servers in Compose needs the game network settings out of
   the `.ini` files: [#19](https://github.com/l2nx/nx-l2/issues/19).
 
 ## 9. Tests
@@ -190,9 +197,9 @@ Left out on purpose: `heapdump` (gigabytes of memory with credentials in it; `jc
   starts, readiness turns `UP`, the client port accepts TCP, `health`, `info` and `prometheus` answer, and closing
   the context runs the shutdown actions without `System.exit`. Missing geodata is not an error (regions without a
   file are empty), so the test runs in CI as is. A login and game pair cannot run in one JVM (both use the static
-  state of `libs/commons`); the end-to-end registration test comes with
+  state of the game server); the end-to-end registration test comes with
   [#19](https://github.com/l2nx/nx-l2/issues/19).
-- **Shared base:** `BootSmokeTest` in the test fixtures of `libs/commons` (`app.l2nx.commons.integration`) holds the
+- **Shared base:** `BootSmokeTest` in the test fixtures of `libs/boot` (`app.l2nx.boot.integration`) holds the
   database container, the HTTP and port helpers; the smoke tests live in `<boot package>.integration`.
 - **Unit tests** for the failure cleanup of `start()`: `LoginServerTest` occupies the client port, `GameServerTest`
   gives the engine a `DataSource` that always fails; both check that `start()` rethrows and leaves no pool threads.

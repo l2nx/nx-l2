@@ -23,7 +23,7 @@ spec 001 §2 (`libs/*` holds no GPLv3 file).
 | Class                                            | Replacement                                                                                                      |
 | ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------- |
 | `Rnd`                                            | `ThreadLocalRandom` (see §2.5)                                                                                   |
-| `StringUtil`, `TimeUtil`, `HexUtil`, `TraceUtil` | JDK (`String`, `java.time`, `HexFormat`, `Throwable`); Apache commons-lang3 only where the JDK has no equivalent |
+| `StringUtil`, `TimeUtil`, `HexUtil`, `TraceUtil` | JDK (`String`, `java.time`) and Apache commons-lang3 where it removes boilerplate the JDK needs (`StringUtils`, `NumberUtils`, `DateFormatUtils`, `DurationFormatUtils`, `ExceptionUtils`); a helper with no library twin became a private method of its only caller |
 | `SchedulingPattern`                              | RFC 5545 RRULE via `org.dmfs:lib-recur`, the format the L2NX platform already uses for schedules (see §2.6)      |
 | `BlowfishEngine`                                 | JCE `Blowfish/ECB/NoPadding` behind a little-endian word swap (see §2.4)                                         |
 
@@ -46,7 +46,7 @@ The game's persistence technology is chosen at stage 3.
 | ------------------------------------------------------------------------------------------ | -------------------------------------- | ------------------------------------------------------------------------- |
 | `network/*` (17 files)                                                                     | `libs/network`                         | Netty transport, stage 4                                                  |
 | `BlowfishEngine`, `NewCrypt`                                                               | `libs/network`, as cipher primitives   | §2.4; the L2 protocol on top stays in `login` and the chronicle           |
-| `ThreadPool`, `ThreadProvider`, `ThreadPriority`, `ThreadConfig`                           | `high-five/server`, scheduling package | partition deadlines, step E7 of spec 003                                  |
+| `ThreadPool`, `ThreadProvider`, `ThreadPriority`, `ThreadConfig`                           | `high-five/server`, package `threads`  | partition deadlines, step E7 of spec 003                                  |
 | `IXmlReader`                                                                               | `high-five/server`, datapack loading   | XML library chosen in [#22](https://github.com/l2nx/nx-l2/issues/22)      |
 | `DatabaseFactory`                                                                          | `high-five/server`                     | repositories, stage 3 (PostgreSQL baseline)                               |
 | `ConfigReader`                                                                             | `high-five/server`                     | Spring Boot configuration, [#17](https://github.com/l2nx/nx-l2/issues/17) |
@@ -79,9 +79,14 @@ word before and after a JCE `Blowfish/ECB/NoPadding` pass yields the same bytes 
 - Before the old engine is deleted, golden vectors (keys, plain and cipher blocks, including the static login key)
   are captured from it and committed as test data. The JCE path must match them byte for byte.
 - A JMH benchmark compares both on packet-sized buffers. If JCE is slower, the engine stays in `libs/network`
-  under the same golden test and the replacement is dropped.
-- `NewCrypt` splits into generic primitives (`PacketCipher` implementations: Blowfish-LE, XOR checksum) in
-  `libs/network`; which primitive a connection uses stays in `login` and the chronicle.
+  under the same golden test and the replacement is dropped. Measured (ns/op, encrypt, old engine vs JCE): 64 B
+  500 vs 549, 256 B 1998 vs 1990, 1024 B 8095 vs 7803, 4096 B 31942 vs 31495; decrypt alike. JCE is on par from
+  256 B, so the engine was removed; it survives only in the `jmh` source set as the benchmark baseline.
+- `NewCrypt` splits into generic primitives in `libs/network`: `LittleEndianBlowfishCipher` implements `PacketCipher`;
+  `XorChecksum` and `RollingXor` are static primitives (no symmetric encrypt/decrypt pair). Which primitive a
+  connection uses stays in `login` and the chronicle. A GS-link packet whose length is not a multiple of the block
+  closes the connection, as a bad checksum does.
+- JCE accepts keys of 1 to 56 bytes (Blowfish allows 72); the keys in use are 16, 22 and 40 bytes.
 
 ### 2.5 `Rnd` to `ThreadLocalRandom`
 
@@ -99,6 +104,12 @@ carried over. A random window, when a feature needs one, is a separate field nex
 semantics: a point drawn from `[base, base + jitter)`. Delay-based respawns (`respawnDelay` + `respawnRandom`) are
 not schedules and do not change.
 
+The rule has no DTSTART: it is evaluated from the current minute. Everything RFC 5545 would take from DTSTART is
+therefore rejected at load (COUNT, INTERVAL, and a missing minute, hour or day part for the rule's frequency), so a
+schedule never depends on when it is computed. The Underground Coliseum default `0 21 * * 5,6,7` became
+`FREQ=WEEKLY;BYDAY=FR,SA,SU;BYHOUR=21;BYMINUTE=0`: it now fires on Sunday as documented (the old parser never matched
+day 7).
+
 ## 3. Order of work
 
 Each step is a commit (or a move commit followed by a change commit) after which the build, the tests and both
@@ -111,7 +122,7 @@ servers' boot smoke tests pass.
 3. **`login` on Spring** (§2.2). Login goes first so the classes of §2.3 become game-only. Check: repository tests on
    Testcontainers MySQL; tests for the login-timeout purge and the scheduled restart; a configuration binding
    test where an invalid value fails startup.
-4. **Library replacements**, one commit per class (§2.1). Check: `Rnd` call sites reviewed one by one against §2.5;
+4. **Library replacements** (§2.1) in one commit, the RRULE switch (§2.6) in its own. Check: `Rnd` call sites reviewed one by one against §2.5;
    a test that every shipped cron string and its RRULE give the same next fire times.
 5. **Game moves** (§2.3) with `git mv`.
 6. **Removal and docs.** Delete `libs/commons` and its `settings.gradle.kts` entry. Spec 001 §4: drop `commons` and

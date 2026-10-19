@@ -42,11 +42,13 @@ on a target path reach 2016 without `--follow`.
 | `dist/game/*`, `dist/images/`, `dist/db_installer/*`, `dist/backup/`, `readme.txt` | `chronicles/high-five/boot/src/dist/`                                        |
 | `dist/login/*`                                                                     | `login/boot/src/dist/`                                                       |
 
-The three log formatters go to the chronicle because they import the game server; with them out, `libs/commons`
-holds no GPLv3 file (spec 001 §2). The root `util/` package exists only in old history: upstream moved it into
+The three log formatters go to the chronicle because they import the game server; with them out, the import-time
+`libs/commons` held no GPLv3 file (spec 001 §2). The root `util/` package exists only in old history: upstream moved it into
 `commons/util` in `f54b892ebcd`, so it maps there and each file keeps one history.
 
 The mapping is [`provenance/filter-repo.py`](provenance/filter-repo.py); a path it does not know fails the import.
+The `libs/commons` targets are the import-time paths: the module was dissolved afterwards (item 8 under "After the
+import"), and the files carry their history to the new locations.
 
 ## Stripped from history
 
@@ -82,8 +84,17 @@ Changes on top of the imported history, each its own commit:
    code comments keep the upstream attribution.
 7. **Stage 2, Spring Boot runtime ([spec 002](specs/002-spring-boot-runtime.md)):** the JUL logging setup
    (`log.cfg`, `console.cfg`, `ServerLogManager`, the handlers, formatters and filters of `commons/log`) gives way to
-   Log4j2; `Database.ini` and `DatabaseConfig` to `application.yaml`; the console tools `account-manager` and
+   Log4j2 (`log4j2-spring.xml` in `libs/boot`); `Database.ini` and `DatabaseConfig` to `application.yaml`; the console tools `account-manager` and
    `game-server-register` are removed.
+8. **`libs/commons` dissolved:**
+   - the Spring Boot glue (`ServerExit`, the shared `l2nx-defaults.yaml`, `log4j2-spring.xml`) is in `libs/boot`
+     (`app.l2nx.boot`);
+   - the transport and cryptography (`commons/network`, the crypt classes) are in `libs/network`
+     (`app.l2nx.network`);
+   - the game-only code (`ThreadPool`, `ConfigReader`, `IXmlReader`, `DatabaseFactory`) is in
+     `chronicles/high-five/server` (`threads`, `config`, `data/xml`, `data/sql`);
+   - the helpers that duplicated the JDK or commons-lang3 are removed in favour of them.
+   The login server dropped its `.ini` files for `l2nx.login.*` in `application.yaml`.
 
 ## License labels
 
@@ -110,7 +121,7 @@ Done once, at the import (2026-10-19):
 - **History:** 2001 commits, the oldest HF change on 2016-10-21. Upstream has 2027 HF commits; 30 touched only
   stripped files, and 4 upstream commits that were already empty for HF (the 2015 root commit and folder cleanups)
   stay as they are.
-- **Modules:** `commons`, `login/server`, `high-five/server` and `high-five/scripts` compile separately along the
+- **Modules:** `commons` (since dissolved), `login/server`, `high-five/server` and `high-five/scripts` compile separately along the
   module boundaries after the package rename.
 - **Startup:** against the upstream schema the login server starts, the game server loads 539 quests and 308
   scripts, registers on the login server and listens for clients. A login with a High Five client is not checked yet.

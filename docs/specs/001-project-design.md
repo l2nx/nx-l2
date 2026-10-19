@@ -173,9 +173,8 @@ The move is mechanical because a chronicle is one self-contained directory (§4)
 
 ```
 libs/                 knows nothing about Lineage 2; reusable by any server
-  commons             app.l2nx.commons     utilities
+  boot                app.l2nx.boot        Spring Boot auto-configuration shared by the servers
   network             app.l2nx.network     Netty transport (framing, PacketCipher, server/client)
-  db                  app.l2nx.db          connection pool, Liquibase mechanics
   telemetry           app.l2nx.telemetry   Micrometer
 engine/               Lineage 2 mechanics shared by every chronicle
   geo                 app.l2nx.engine.geo      movement / pathfinding / line-of-sight SPI + classic geodata

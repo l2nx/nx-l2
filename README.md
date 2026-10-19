@@ -53,10 +53,10 @@ specific to Lineage 2, and every departure from a standard is a recorded decisio
 
 ## Layout
 
-The target layout; stage 2 has `libs/commons`, `login/` and `chronicles/high-five/`.
+The target layout; stage 2 has `libs/boot`, `libs/network`, `login/` and `chronicles/high-five/`.
 
 ```
-libs/          infrastructure with no Lineage 2 knowledge: commons, network, db, telemetry
+libs/          infrastructure with no Lineage 2 knowledge: boot, network, telemetry
 engine/        mechanics shared by every chronicle: geo, L2NX adapter host, shared core
 login/         one login server for every chronicle
 chronicles/    one self-contained directory per chronicle: server, scripts, datapack, boot
