@@ -16,6 +16,11 @@ lists what is open.
 - [#10](https://github.com/l2nx/nx-l2/issues/10) Mirror the repository outside GitHub
 - [#11](https://github.com/l2nx/nx-l2/issues/11) Release the High Five scripts as their own artifact
 - [#13](https://github.com/l2nx/nx-l2/issues/13) PostgreSQL support in the adapter CDC engine
+- [#14](https://github.com/l2nx/nx-l2/issues/14) Migrate logging to the SLF4J API
+- [#15](https://github.com/l2nx/nx-l2/issues/15) Adopt Lombok for boilerplate
+- [#16](https://github.com/l2nx/nx-l2/issues/16) Finalize the JDK: distribution, version and flags
+- [#17](https://github.com/l2nx/nx-l2/issues/17) Move game and login settings to Spring Boot configuration
+- [#18](https://github.com/l2nx/nx-l2/issues/18) Target architecture of the game code: package layout, tick model, ECS
 
 ## Done
 

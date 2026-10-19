@@ -31,6 +31,13 @@ not shipped: put it into `data/geodata` of the game server distribution.
 - **Community development.** The engine is maintained in the open.
 - **A reference implementation for education and research,** as Mobius positions itself.
 
+## Principles
+
+**Minimum custom code, maximum reuse of industry standards.** Where an established library, framework default or
+convention covers the job, nx-l2 uses it as is instead of writing its own: Spring Boot defaults, standard Actuator
+endpoints and Micrometer metric names, Log4j2, Liquibase, Testcontainers. Custom code is written only for what is
+specific to Lineage 2, and every departure from a standard is a recorded decision in the spec.
+
 ## Layout
 
 The target layout; stage 1 has `libs/commons`, `login/` and `chronicles/high-five/`.
