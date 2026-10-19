@@ -88,9 +88,6 @@ public class GameServerTable
 		INSTANCE = this;
 	}
 
-	/**
-	 * Loads the server names, the registered game servers and the RSA keys.
-	 */
 	public void load()
 	{
 		loadServerNames();

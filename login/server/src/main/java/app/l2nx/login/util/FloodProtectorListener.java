@@ -40,7 +40,6 @@ import app.l2nx.login.config.LoginProperties;
  * <ul>
  * <li>Binds a server socket on a configured address and port.</li>
  * <li>Tracks connection count and timestamps per remote IP.</li>
- * <li>Uses {@link LoginProperties.FloodProtection} limits to mitigate abusive connection patterns.</li>
  * </ul>
  * @author BazookaRpm
  */
@@ -63,7 +62,6 @@ public abstract class FloodProtectorListener extends Thread
 	 * Creates a new flood protector listener bound to the given IP and port.
 	 * @param listenIp The IP address to bind, or "*" to listen on all interfaces.
 	 * @param port The TCP port to listen on.
-	 * @param floodProtection The connection limits per remote address.
 	 * @throws IOException If the socket cannot be created or bound.
 	 */
 	public FloodProtectorListener(String listenIp, int port, LoginProperties.FloodProtection floodProtection) throws IOException

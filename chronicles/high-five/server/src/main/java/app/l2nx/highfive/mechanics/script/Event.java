@@ -40,10 +40,7 @@ import app.l2nx.highfive.util.StatSet;
  */
 public abstract class Event extends Script
 {
-	/**
-	 * Name prefix of the timers {@link #scheduleStart(String, StatSet)} sets; the script's timer handler starts the event on
-	 * them and calls {@link #scheduleStart(String, StatSet)} again for the next start.
-	 */
+	/** Prefix the script's timer handler matches to start the event and reschedule via {@link #scheduleStart}. */
 	protected static final String SCHEDULE_TIMER = "Schedule";
 
 	public abstract boolean eventStart(Player eventMaker);
@@ -52,10 +49,6 @@ public abstract class Event extends Script
 
 	public abstract boolean eventBypass(Player player, String bypass);
 
-	/**
-	 * Schedules a start of the event for every {@code <schedule rrule="..."/>} of the config file.
-	 * @param configFile the config file path in the datapack
-	 */
 	protected void loadSchedules(String configFile)
 	{
 		new IXmlReader()
@@ -94,11 +87,6 @@ public abstract class Event extends Script
 		}.load();
 	}
 
-	/**
-	 * Sets the timer to the next instance of the schedule in {@code params}.
-	 * @param timer the timer name, starting with {@link #SCHEDULE_TIMER}
-	 * @param params the event name and its schedule, as set by {@link #loadSchedules(String)}
-	 */
 	protected void scheduleStart(String timer, StatSet params)
 	{
 		params.getObject("Schedule", RecurrenceSchedule.class).next().ifPresentOrElse(start ->

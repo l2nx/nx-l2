@@ -116,7 +116,6 @@ public class ChangePassword extends SimpleReadablePacket
 			final LoginController loginController = LoginController.getInstance();
 			if (loginController.changePassword(loginName, currentHash, newHash))
 			{
-				// LOGGER.info("Password changed for account '" + loginName + "' requested by player '" + playerName + "' on GS " + ownerServerId + ".");
 				ownerThread.changePasswordResponse(playerName, MSG_PASSWORD_CHANGED);
 				return;
 			}

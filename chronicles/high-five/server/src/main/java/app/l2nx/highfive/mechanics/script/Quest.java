@@ -5195,8 +5195,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
 	}
 	
 	/**
-	 * Get a random integer from 0 (inclusive) to {@code max} (exclusive).<br>
-	 * Returns {@code 0} when {@code max <= 0}.
+	 * Get a random integer from 0 (inclusive) to {@code max} (exclusive).
 	 * @param max the maximum value for randomization
 	 * @return a random integer number from 0 to {@code max - 1}
 	 */
@@ -5206,8 +5205,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
 	}
 
 	/**
-	 * Get a random integer from {@code min} (inclusive) to {@code max} (inclusive).<br>
-	 * Returns {@code min} when {@code min >= max}.
+	 * Get a random integer from {@code min} (inclusive) to {@code max} (inclusive).
 	 * @param min the minimum value for randomization
 	 * @param max the maximum value for randomization
 	 * @return a random integer number from {@code min} to {@code max}
@@ -5219,13 +5217,11 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
 			return min;
 		}
 
-		// Integer.MAX_VALUE + 1 would overflow, so that single value stays unreachable.
 		return ThreadLocalRandom.current().nextInt(min, max == Integer.MAX_VALUE ? max : max + 1);
 	}
 
 	/**
-	 * Get a random long from 0 (inclusive) to {@code max} (exclusive).<br>
-	 * Returns {@code 0} when {@code max <= 0}.
+	 * Get a random long from 0 (inclusive) to {@code max} (exclusive).
 	 * @param max the maximum value for randomization
 	 * @return a random long number from 0 to {@code max - 1}
 	 */
@@ -5235,8 +5231,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
 	}
 
 	/**
-	 * Get a random long from {@code min} (inclusive) to {@code max} (inclusive).<br>
-	 * Returns {@code min} when {@code min >= max}.
+	 * Get a random long from {@code min} (inclusive) to {@code max} (inclusive).
 	 * @param min the minimum value for randomization
 	 * @param max the maximum value for randomization
 	 * @return a random long number from {@code min} to {@code max}
@@ -5248,7 +5243,6 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
 			return min;
 		}
 
-		// Long.MAX_VALUE + 1 would overflow, so that single value stays unreachable.
 		return ThreadLocalRandom.current().nextLong(min, max == Long.MAX_VALUE ? max : max + 1);
 	}
 

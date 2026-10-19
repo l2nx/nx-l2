@@ -19,8 +19,7 @@ import org.testcontainers.mysql.MySQLContainer;
 import org.testcontainers.utility.DockerImageName;
 
 /**
- * One database for every repository test class, with the schema of {@code login/server/sql}. Tests use their own account
- * names, so the classes may run concurrently.
+ * One database shared by all repository test classes; tests use their own account names, so classes may run concurrently.
  */
 abstract class RepositoryTest
 {

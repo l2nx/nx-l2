@@ -77,7 +77,6 @@ public class ConnectionConfig
 		dropPacketThreshold = settings.dropPacketThreshold();
 		resourcePool.setBufferSegmentSize(settings.bufferSegmentSize());
 		
-		// Set up custom buffer pools from settings.
 		for (NetworkSettings.BufferPool pool : settings.bufferPools())
 		{
 			resourcePool.addBufferPool(pool.bufferSize(), new BufferPool(pool.size(), pool.bufferSize()));

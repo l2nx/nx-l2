@@ -22,10 +22,6 @@ import org.springframework.validation.annotation.Validated;
 
 import app.l2nx.network.config.NetworkSettings;
 
-/**
- * @param client the listener for game clients
- * @param datapackRoot the directory {@code data/} is resolved against
- */
 @Validated
 @ConfigurationProperties("l2nx.login")
 public record LoginProperties(@NotNull @Valid Client client, @NotNull @Valid GameServer gameServer, @NotNull @Valid Ban ban, @NotNull @Valid FloodProtection floodProtection, @NotNull @Valid ScheduledRestart scheduledRestart, boolean showLicence, boolean autoCreateAccounts, @NotNull File datapackRoot, @NotNull NetworkSettings network)
@@ -50,9 +46,6 @@ public record LoginProperties(@NotNull @Valid Client client, @NotNull @Valid Gam
 	{
 	}
 	
-	/**
-	 * Limits the connection rate of game servers per remote address.
-	 */
 	public record FloodProtection(boolean enabled, @Positive int fastConnectionLimit, @NotNull Duration normalConnectionTime, @NotNull Duration fastConnectionTime, @Positive int maxConnectionsPerIp)
 	{
 	}

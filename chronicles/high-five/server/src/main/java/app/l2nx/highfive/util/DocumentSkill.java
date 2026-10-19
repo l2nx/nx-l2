@@ -1772,11 +1772,6 @@ public class DocumentSkill extends DocumentBase
 		parseInlineLevelTable(n, set, level, 0);
 	}
 
-	/**
-	 * Converts a level table value to {@link Boolean}, {@link Long} or {@link Float}, falling back to the trimmed string.
-	 * @param value the raw table value
-	 * @return the typed value
-	 */
 	private static Object parseValue(String value)
 	{
 		final String val = value.trim();

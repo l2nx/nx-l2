@@ -57,7 +57,6 @@ import app.l2nx.network.ConnectionManager;
  * Bootstraps and drives the login server lifecycle.<br>
  * Coordinates core service initialization and network listener startup.
  * <ul>
- * <li>Schedules the client purge and the optional restart.</li>
  * <li>Loads login controller and game server table.</li>
  * <li>Registers IP bans and starts listeners for game servers and login clients.</li>
  * </ul>

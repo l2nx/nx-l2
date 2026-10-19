@@ -25,10 +25,6 @@ public final class RollingXor
 
 	/**
 	 * Encrypts the region in place and stores the final key in it.
-	 * @param data the buffer
-	 * @param offset the start of the region
-	 * @param size the region length, a multiple of 4 and at least 12
-	 * @param key the initial key
 	 * @throws IllegalArgumentException if {@code size} is not a multiple of 4 or is below 12
 	 */
 	public static void encrypt(byte[] data, int offset, int size, int key)

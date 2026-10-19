@@ -60,7 +60,7 @@ public class LoginEncryption
 		(byte) 0x6c
 	};
 	
-	// Static crypt instance used while the protocol is in the bootstrap phase; shared by all connections, so it must stay thread-safe.
+	// Shared by all connections, so the cipher must be thread-safe.
 	private static final PacketCipher STATIC_CRYPT = new LittleEndianBlowfishCipher(STATIC_BLOWFISH_KEY);
 	
 	// Blowfish block size and protocol overhead constants.

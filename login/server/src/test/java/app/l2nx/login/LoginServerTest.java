@@ -37,7 +37,6 @@ import app.l2nx.login.config.TestLoginProperties;
 import app.l2nx.login.controller.LoginController;
 import app.l2nx.login.data.GameServerTable;
 
-// The server keeps static state (singletons), so nothing here may run concurrently.
 @Execution(ExecutionMode.SAME_THREAD)
 class LoginServerTest
 {

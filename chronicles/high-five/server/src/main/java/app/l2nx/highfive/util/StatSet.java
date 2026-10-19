@@ -733,12 +733,6 @@ public class StatSet
 		return parseDuration(String.valueOf(val));
 	}
 
-	/**
-	 * Parses a datapack duration such as {@code 30secs}, {@code 5mins}, {@code 2hours}, {@code 7days}, {@code 1week}, {@code 1month} (30 days) or {@code 1year} (365 days).
-	 * @param durationString an integer immediately followed by a unit, unit case-insensitive
-	 * @return the parsed duration
-	 * @throws IllegalArgumentException if the format is invalid or the unit is unrecognized
-	 */
 	private static Duration parseDuration(String durationString)
 	{
 		int index = 0;

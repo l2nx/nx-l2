@@ -23,11 +23,6 @@ class RecurrenceScheduleTest
 	@Nested
 	class NextAfter
 	{
-		/**
-		 * Each RRULE replaces a cron string shipped before the switch: {@code 0 20 * * *} (custom events),
-		 * {@code 0 17 * * *} (Underground Coliseum default) and {@code 0 21 * * 5,6,7} (Underground Coliseum config).
-		 * The expected times are the cron implementation's results, kept as literals.
-		 */
 		@ParameterizedTest(name = "{0} in {1} after {2} -> {3}")
 		@CsvSource(delimiter = '|', textBlock = """
 			FREQ=DAILY;BYHOUR=20;BYMINUTE=0                  | Europe/Berlin    | 2026-10-19T12:00:00Z     | 2026-10-19T18:00:00Z
@@ -59,10 +54,6 @@ class RecurrenceScheduleTest
 			assertThat(schedule.nextAfter(Instant.parse(now), ZoneId.of(zone))).contains(Instant.parse(expected));
 		}
 
-		/**
-		 * The cron implementation accepted day of week 7 and never matched it, so {@code 0 21 * * 5,6,7} skipped Sunday
-		 * against its documented "Friday, Saturday, and Sunday"; the RRULE keeps Sunday.
-		 */
 		@ParameterizedTest(name = "{0} in {1} -> {2}")
 		@CsvSource(delimiter = '|', textBlock = """
 			2026-10-25T10:00:00Z | Europe/Berlin    | 2026-10-25T20:00:00Z
@@ -76,10 +67,6 @@ class RecurrenceScheduleTest
 			assertThat(schedule.nextAfter(Instant.parse(now), ZoneId.of(zone))).contains(Instant.parse(expected));
 		}
 
-		/**
-		 * The accepted day forms leave nothing to the evaluation moment: moments on different weekdays, days of the month and
-		 * months before the same instance all find it.
-		 */
 		@ParameterizedTest(name = "{0} after {1} -> {2}")
 		@CsvSource(delimiter = '|', textBlock = """
 			FREQ=WEEKLY;BYDAY=FR;BYHOUR=20;BYMINUTE=0                 | 2026-01-12T11:17:00Z | 2026-01-16T20:00:00Z

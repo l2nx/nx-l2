@@ -7,9 +7,6 @@ package app.l2nx.login.repository;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
-/**
- * Per-account variables in {@code account_data}.
- */
 @Repository
 public class AccountDataRepository
 {

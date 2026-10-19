@@ -39,8 +39,7 @@ public class SessionKey
 	// Constants.
 	private static final String LABEL_PLAY_OK = "PlayOk:";
 	private static final String LABEL_LOGIN_OK = "LoginOk:";
-	private static final boolean CHECK_LOGIN_PAIR = LoginServer.getInstance().getProperties().showLicence(); // Policy snapshot for equality consistency.
-	
+	private static final boolean CHECK_LOGIN_PAIR = LoginServer.getInstance().getProperties().showLicence();	
 	// Session key parts.
 	private final int _playOkID1;
 	private final int _playOkID2;

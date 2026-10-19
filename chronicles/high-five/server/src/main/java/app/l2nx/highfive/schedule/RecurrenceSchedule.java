@@ -18,11 +18,8 @@ import org.dmfs.rfc5545.recur.RecurrenceRule.RfcMode;
 import org.dmfs.rfc5545.recur.RecurrenceRuleIterator;
 
 /**
- * A recurring start time configured as an RFC 5545 RRULE ({@code FREQ=DAILY;BYHOUR=20;BYMINUTE=0}).<br>
- * The rule has no DTSTART of its own and is evaluated from the current minute, so everything that would depend on
- * DTSTART is rejected: COUNT, INTERVAL, a left-out BYMINUTE / BYHOUR that would take the minute or hour of the
- * evaluation, and a left-out day part (BYDAY for WEEKLY, BYMONTHDAY or BYDAY for MONTHLY, BYYEARDAY, BYDAY or
- * BYMONTHDAY with BYMONTH for YEARLY) that would take the weekday, day of the month or month of the evaluation.
+ * An RFC 5545 RRULE ({@code FREQ=DAILY;BYHOUR=20;BYMINUTE=0}) evaluated from the current minute with no DTSTART, so
+ * COUNT, INTERVAL and any left-out minute, hour or day part, which would be taken from the evaluation moment, are rejected.
  */
 public final class RecurrenceSchedule
 {
@@ -45,7 +42,6 @@ public final class RecurrenceSchedule
 			throw new IllegalArgumentException("Invalid RRULE: " + rrule, e);
 		}
 
-		// Without a fixed DTSTART these would count from whenever the next start is computed, not from a stable origin.
 		if ((rule.getCount() != null) || (rule.getInterval() > 1))
 		{
 			throw new IllegalArgumentException("COUNT and INTERVAL are not supported, list the times with BYHOUR / BYDAY instead: " + rrule);
@@ -65,9 +61,8 @@ public final class RecurrenceSchedule
 	}
 
 	/**
-	 * RFC 5545 takes a day the rule leaves open from DTSTART: the weekday for WEEKLY, the day of the month for MONTHLY,
-	 * the month and day for YEARLY, the weekday for YEARLY with BYWEEKNO alone. lib-recur also takes the month from
-	 * DTSTART for a YEARLY BYMONTHDAY without BYMONTH or BYWEEKNO.
+	 * Whether the rule fixes its day itself; lib-recur also takes the month from DTSTART for a YEARLY BYMONTHDAY without
+	 * BYMONTH or BYWEEKNO.
 	 */
 	private static boolean dayFixed(RecurrenceRule rule)
 	{
@@ -80,19 +75,11 @@ public final class RecurrenceSchedule
 		};
 	}
 
-	/**
-	 * @return the first instance strictly after now in the server time zone, empty when the rule has no further instances
-	 */
 	public Optional<Instant> next()
 	{
 		return nextAfter(Instant.now(), ZoneId.systemDefault());
 	}
 
-	/**
-	 * @param now the moment to search after
-	 * @param zone the time zone the rule's local times are in
-	 * @return the first instance strictly after {@code now}, empty when the rule has no further instances
-	 */
 	public Optional<Instant> nextAfter(Instant now, ZoneId zone)
 	{
 		// The DTSTART minute itself is an instance when it matches the rule, and it is never after now.

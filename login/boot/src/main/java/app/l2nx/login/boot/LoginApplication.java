@@ -9,7 +9,6 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
-// @EnableScheduling makes Spring Boot auto-configure the TaskScheduler the login server schedules its tasks on.
 @SpringBootApplication(scanBasePackages = "app.l2nx.login")
 @ConfigurationPropertiesScan("app.l2nx.login")
 @EnableScheduling

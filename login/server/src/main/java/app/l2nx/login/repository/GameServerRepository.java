@@ -10,9 +10,6 @@ import java.util.Map;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
-/**
- * Registered game servers in {@code gameservers}.
- */
 @Repository
 public class GameServerRepository
 {
@@ -26,9 +23,6 @@ public class GameServerRepository
 		this.jdbcClient = jdbcClient;
 	}
 	
-	/**
-	 * @return the hex id of every registered game server by server id
-	 */
 	public Map<Integer, String> findHexIds()
 	{
 		final Map<Integer, String> hexIds = new HashMap<>();

@@ -17,9 +17,6 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
 import app.l2nx.login.config.LoginProperties;
 
-/**
- * Binds {@link LoginProperties} from the shipped {@code application.yaml}.
- */
 class LoginPropertiesTest
 {
 	private final ApplicationContextRunner runner = new ApplicationContextRunner().withInitializer(new ConfigDataApplicationContextInitializer()).withUserConfiguration(PropertiesConfiguration.class);

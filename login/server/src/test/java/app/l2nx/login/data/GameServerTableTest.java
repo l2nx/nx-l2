@@ -21,7 +21,6 @@ import org.junit.jupiter.api.parallel.ExecutionMode;
 import app.l2nx.login.config.TestLoginProperties;
 import app.l2nx.login.repository.GameServerRepository;
 
-// The table keeps the server names in static state, so nothing here may run concurrently.
 @Execution(ExecutionMode.SAME_THREAD)
 class GameServerTableTest
 {

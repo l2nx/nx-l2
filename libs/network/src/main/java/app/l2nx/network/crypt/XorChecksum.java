@@ -21,13 +21,6 @@ public final class XorChecksum
 	{
 	}
 
-	/**
-	 * Computes the checksum of the region and writes it into the region's last word.
-	 * @param data the buffer
-	 * @param offset the start of the region
-	 * @param size the region length including the checksum word, a positive multiple of 4
-	 * @throws IllegalArgumentException if {@code size} is not a positive multiple of 4
-	 */
 	public static void append(byte[] data, int offset, int size)
 	{
 		Objects.checkFromIndexSize(offset, size, data.length);
@@ -41,11 +34,7 @@ public final class XorChecksum
 	}
 
 	/**
-	 * Checks the checksum in the region's last word.
-	 * @param data the buffer
-	 * @param offset the start of the region
-	 * @param size the region length including the checksum word
-	 * @return {@code true} if the region holds more than the checksum word, its size is a multiple of 4 and the checksum matches
+	 * Returns {@code false} instead of throwing when the region cannot hold a checksum plus payload.
 	 */
 	public static boolean verify(byte[] data, int offset, int size)
 	{

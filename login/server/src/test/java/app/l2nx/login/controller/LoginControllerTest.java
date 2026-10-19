@@ -31,7 +31,6 @@ import app.l2nx.login.network.LoginClient;
 import app.l2nx.login.repository.AccountDataRepository;
 import app.l2nx.login.repository.AccountRepository;
 
-// The controller registers itself as the static instance, so nothing here may run concurrently.
 @Execution(ExecutionMode.SAME_THREAD)
 class LoginControllerTest
 {

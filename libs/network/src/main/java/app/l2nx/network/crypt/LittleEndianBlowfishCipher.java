@@ -15,9 +15,8 @@ import javax.crypto.Cipher;
 import javax.crypto.spec.SecretKeySpec;
 
 /**
- * Blowfish in ECB mode over 32-bit words stored little-endian.<br>
- * Standard Blowfish (JCE {@code Blowfish/ECB/NoPadding}) reads each half of a block big-endian, so every 4-byte word is byte-swapped before and after the JCE pass.<br>
- * Thread-safe: each direction owns one {@link Cipher} and serializes on it, so one instance may be shared across connections.
+ * Blowfish/ECB over little-endian 32-bit words: JCE reads block halves big-endian, so every word is byte-swapped around the JCE pass.<br>
+ * Thread-safe: each direction serializes on its own {@link Cipher}.
  */
 public final class LittleEndianBlowfishCipher implements PacketCipher
 {

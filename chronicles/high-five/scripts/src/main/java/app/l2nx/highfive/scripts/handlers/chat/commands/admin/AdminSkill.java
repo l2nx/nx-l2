@@ -776,9 +776,6 @@ public class AdminSkill implements IAdminCommandHandler
 		showMainPage(activeChar);
 	}
 
-	/**
-	 * Formats an enum constant name for display, e.g. {@code DARK_ELF} as "Dark Elf".
-	 */
 	private static String enumToString(Enum<?> enumeration)
 	{
 		final String name = enumeration.name().toLowerCase();

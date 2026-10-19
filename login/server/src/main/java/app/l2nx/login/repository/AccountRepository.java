@@ -12,9 +12,6 @@ import org.springframework.stereotype.Repository;
 
 import app.l2nx.login.controller.AccountInfo;
 
-/**
- * The {@code accounts} table and the IP restrictions of an account in {@code accounts_ipauth}.
- */
 @Repository
 public class AccountRepository
 {

@@ -75,7 +75,6 @@ public class LoginController
 	
 	private static final int BLOWFISH_KEYS = 20;
 	
-	/** Session ids and keys reach the client, so they must not be predictable from earlier ones. */
 	public static final SecureRandom SECURE_RANDOM = new SecureRandom();
 	protected byte[][] _blowfishKeys;
 	protected ScrambledKeyPair[] _keyPairs;
@@ -103,10 +102,6 @@ public class LoginController
 		INSTANCE = this;
 	}
 
-	/**
-	 * Generates the keys and starts the purge of clients that did not log in within {@link #LOGIN_TIMEOUT}.
-	 * @throws GeneralSecurityException if the RSA keys cannot be generated
-	 */
 	public void load() throws GeneralSecurityException
 	{
 		LOGGER.info("Loading LoginController...");
@@ -254,7 +249,6 @@ public class LoginController
 				final AccountInfo info = stored.get();
 				if (!info.checkPassHash(hashBase64))
 				{
-					// Wrong password.
 					recordFailedLoginAttemp(clientAddr);
 					return null;
 				}
@@ -499,9 +493,6 @@ public class LoginController
 		}
 	}
 
-	/**
-	 * @return whether the password was changed: the account exists and its password hash is {@code currentHash}
-	 */
 	public boolean changePassword(String account, String currentHash, String newHash)
 	{
 		return accounts.updatePassword(account, currentHash, newHash);
