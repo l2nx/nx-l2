@@ -60,6 +60,15 @@ with the identifier the upstream header states (`MIT` or `GPL-3.0-or-later`).
 
 <!-- REUSE-IgnoreEnd -->
 
+## Code style
+
+- **Java is formatted with [palantir-java-format](https://github.com/palantir/palantir-java-format)** through
+  Spotless. Run `./gradlew spotlessApply` before a commit; `spotlessCheck` is part of `./gradlew build`, so CI fails
+  on an unformatted file.
+- **Line endings are LF** (`.gitattributes`), Windows scripts excepted.
+- **Blame:** the bulk line-ending and reformat commits are listed in `.git-blame-ignore-revs`. GitHub skips them by
+  itself; locally run `git config blame.ignoreRevsFile .git-blame-ignore-revs` once.
+
 ## Workflow
 
 - **Design first.** A feature gets a spec in `docs/specs/NNN-<feature>.md` before implementation; the index is in

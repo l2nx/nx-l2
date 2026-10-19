@@ -53,13 +53,12 @@ Commits and pushes happen only on the owner's command.
 ## 4. nx-l2 build
 
 - `gradle/libs.versions.toml`: versions `spotless` and `palantir`; library
-  `spotless-plugin-gradle = { module = "com.diffplug.spotless:spotless-plugin-gradle", version.ref = "spotless" }`.
-- `build-logic/build.gradle.kts`: `implementation(libs.spotless.plugin.gradle)`.
+  `spotless-gradle-plugin = { module = "com.diffplug.spotless:spotless-plugin-gradle", version.ref = "spotless" }`.
+- `build-logic/build.gradle.kts`: `implementation(libs.spotless.gradle.plugin)`.
 - `nx-l2.java-conventions.gradle.kts` applies `id("com.diffplug.spotless")`, so every Java module gets it:
 
   ```kotlin
   spotless {
-      ratchetFrom("origin/main")
       java {
           target("src/**/*.java")
           palantirJavaFormat(libs.findVersion("palantir").get().requiredVersion)
@@ -67,32 +66,21 @@ Commits and pushes happen only on the owner's command.
   }
   ```
 
-- `.gitattributes`, the platform template; the existing `*.sh` and `gradlew` LF rules are covered by the first line:
+- **No ratchet.** The whole tree is formatted, so `spotlessCheck` holds every file to the format. It is part of
+  `check`, so CI's `./gradlew build` fails on an unformatted file. Unlike the other repos (ratchet, local gate only),
+  the check needs no git: it works on a pull request checkout without `origin/main` and from a source archive.
+- **Root `build.gradle.kts`** applies `id("nx-l2.java-conventions") apply false`: Spotless 8 shares one build service
+  across modules and fails when each module loads the plugin into its own classloader; the root load gives them one.
+- `.gitattributes`, the platform template: `* text=auto eol=lf`, `*.bat text eol=crlf`, and a `binary` line per
+  binary type the repo tracks (here only `*.jar`). It replaced the partial `*.sh` / `gradlew` / `*.bat` rules.
+- `src/**/*.java` covers every source set in use: `main`, `test`, `jmh`, `testFixtures` (3184 files).
+- `.git-blame-ignore-revs` lists the line-ending commit `c7d35c36a` and the reformat commit `d1d5b3cbc`.
 
-  ```gitattributes
-  * text=auto eol=lf
-  *.bat text eol=crlf
-  *.cmd text eol=crlf
-  *.jar binary
-  *.png binary
-  *.jpg binary
-  *.ico binary
-  *.woff2 binary
-  ```
+## 5. Lasting facts folded in
 
-  Binary formats the repo tracks beyond these (`git ls-files` by extension) get a `binary` line too.
-
-- `src/**/*.java` covers every source set in use: `main`, `test`, `jmh`, `testFixtures` (3184 files today).
-- Spotless is a local gate, not CI, as in the other repos: the hook formats each edited file, `spotlessApply` covers
-  mass edits, `spotlessCheck` runs before a commit. The ratchet needs a fresh `origin/main` (`git fetch`).
-
-## 5. Lasting facts to fold in
-
-- Spec 001 §5, a `Format` row: palantir-java-format through Spotless, ratchet from `origin/main`, the full reformat
-  listed in `.git-blame-ignore-revs`.
-- `CONTRIBUTING.md`, a Code style section: palantir-java-format, `./gradlew spotlessApply` / `spotlessCheck` before a
-  commit, the ratchet, the blame-ignore setup.
-- `CLAUDE.md`: one line that Java is formatted with palantir and the reformat is in `.git-blame-ignore-revs`.
+- Spec 001 §5, a `Format` row.
+- `CONTRIBUTING.md`, a Code style section: palantir, `spotlessApply`, the check in `build`, LF, the blame-ignore setup.
+- `CLAUDE.md`: a pointer to the code style and `.git-blame-ignore-revs`.
 
 ## 6. Risks
 
