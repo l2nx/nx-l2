@@ -36,7 +36,7 @@ SPDX-FileCopyrightText = "Gradle contributors"
 SPDX-License-Identifier = "Apache-2.0"
 
 [[annotations]]
-path = ["**/*.gradle.kts", "gradle.properties", "gradle/libs.versions.toml", "build-logic/**", "renovate.json", "compose.yaml", "docker/**"]
+path = ["**/*.gradle.kts", "gradle.properties", "gradle/libs.versions.toml", "build-logic/**", "renovate.json", "compose.yaml", "docker/**", ".github/**"]
 precedence = "aggregate"
 SPDX-FileCopyrightText = "2026 L2NX contributors"
 SPDX-License-Identifier = "Apache-2.0"
