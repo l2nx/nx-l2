@@ -1,4 +1,5 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -25,7 +26,8 @@ package app.l2nx.highfive;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import app.l2nx.commons.database.DatabaseFactory;
+import app.l2nx.commons.lifecycle.ServerExit;
+import app.l2nx.commons.lifecycle.ServerExitCode;
 import app.l2nx.commons.threads.ThreadPool;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.config.ServerConfig;
@@ -83,7 +85,8 @@ public class Shutdown extends Thread
 	};
 	
 	private static Shutdown _counterInstance;
-	private static boolean _countdownFinished;
+	private static volatile boolean _countdownFinished;
+	private static volatile ServerExit serverExit;
 	
 	private static volatile int _secondsShut;
 	private static volatile int _shutdownMode;
@@ -100,7 +103,7 @@ public class Shutdown extends Thread
 	}
 	
 	/**
-	 * Default constructor is only used internal to create the shutdown-hook instance
+	 * Default constructor is only used internal to create the singleton instance
 	 */
 	protected Shutdown()
 	{
@@ -119,20 +122,17 @@ public class Shutdown extends Thread
 		_shutdownMode = restart ? GM_RESTART : GM_SHUTDOWN;
 	}
 	
+	public static void bind(ServerExit exit)
+	{
+		serverExit = exit;
+	}
+	
 	/**
-	 * This function is called, when a new thread starts if this thread is the thread of getInstance, then this is the shutdown hook and we save all data and disconnect all clients.<br>
-	 * After this thread ends, the server will completely exit if this is not the thread of getInstance, then this is a countdown thread.<br>
-	 * We start the countdown, and when we finished it, and it was not aborted, we tell the shutdown-hook why we call exit, and then call exit when the exit status of the server is 1, startServer.sh / startServer.bat will restart the server.
+	 * A supervisor restarts the process on {@link ServerExitCode#RESTART}.
 	 */
 	@Override
 	public void run()
 	{
-		if (this == getInstance())
-		{
-			startShutdownActions();
-			return;
-		}
-		
 		if (_countdownFinished)
 		{
 			return;
@@ -141,7 +141,12 @@ public class Shutdown extends Thread
 		// Send warnings and then call exit to start shutdown sequence.
 		countdown();
 		
-		// Last point where logging is operational.
+		// The context may have been closed during the countdown.
+		if (_countdownFinished)
+		{
+			return;
+		}
+		
 		LOGGER.warning("GM shutdown countdown is over. " + MODE_TEXT[_shutdownMode] + " NOW!");
 		
 		switch (_shutdownMode)
@@ -149,15 +154,13 @@ public class Shutdown extends Thread
 			case GM_SHUTDOWN:
 			{
 				getInstance().setMode(GM_SHUTDOWN);
-				startShutdownActions();
-				System.exit(0);
+				serverExit.exit(ServerExitCode.SHUTDOWN);
 				break;
 			}
 			case GM_RESTART:
 			{
 				getInstance().setMode(GM_RESTART);
-				startShutdownActions();
-				System.exit(2);
+				serverExit.exit(ServerExitCode.RESTART);
 				break;
 			}
 			case ABORT:
@@ -227,7 +230,7 @@ public class Shutdown extends Thread
 			PrecautionaryRestartManager.getInstance().restartEnabled();
 		}
 		
-		// The main instance should only run for shutdown hook, so we start a new instance.
+		// The main instance never runs, so we start a new instance.
 		_counterInstance = new Shutdown(seconds, restart);
 		_counterInstance.start();
 	}
@@ -335,9 +338,9 @@ public class Shutdown extends Thread
 	}
 	
 	/**
-	 * Actions performed when shutdown countdown completes.
+	 * Actions performed when the server stops.
 	 */
-	private void startShutdownActions()
+	void startShutdownActions()
 	{
 		if (_countdownFinished)
 		{
@@ -420,18 +423,6 @@ public class Shutdown extends Thread
 		
 		// last byebye, save all data and quit this server
 		saveData();
-		tc.restartCounter();
-		
-		// commit data, last chance
-		try
-		{
-			DatabaseFactory.close();
-			LOGGER.info("Database Factory: Database connection has been shut down(" + tc.getEstimatedTimeAndRestartCounter() + "ms).");
-		}
-		catch (Throwable t)
-		{
-			// ignore
-		}
 		
 		LOGGER.info("The server has been successfully shut down in " + (tc1.getEstimatedTime() / 1000) + "seconds.");
 	}
@@ -591,8 +582,8 @@ public class Shutdown extends Thread
 	}
 	
 	/**
-	 * Get the shutdown-hook instance the shutdown-hook instance is created by the first call of this function, but it has to be registered externally.
-	 * @return instance of Shutdown, to be used as shutdown hook
+	 * Get the singleton instance, created by the first call of this function.
+	 * @return instance of Shutdown
 	 */
 	public static Shutdown getInstance()
 	{

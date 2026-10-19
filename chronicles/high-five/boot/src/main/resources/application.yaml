@@ -1,0 +1,14 @@
+# SPDX-FileCopyrightText: 2026 L2NX contributors
+# SPDX-License-Identifier: Apache-2.0
+
+spring:
+  application:
+    name: game-server
+  config:
+    import: classpath:l2nx-defaults.yaml
+  datasource:
+    hikari:
+      maximum-pool-size: 100
+
+server:
+  port: 8777

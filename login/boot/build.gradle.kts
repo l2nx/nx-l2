@@ -4,41 +4,21 @@ plugins {
 
 dependencies {
     implementation(project(":login:server"))
-    runtimeOnly(libs.mysql.connector)
-    runtimeOnly(libs.slf4j.simple)
 }
 
 application {
     applicationName = "login-server"
-    mainClass = "app.l2nx.login.LoginServer"
-    applicationDefaultJvmArgs = listOf(
-        "-Dfile.encoding=UTF-8",
-        "-Djava.awt.headless=true",
-        "-Dorg.slf4j.simpleLogger.log.com.zaxxer.hikari=warn",
+    mainClass = "app.l2nx.login.boot.LoginApplication"
+    applicationDefaultJvmArgs = applicationDefaultJvmArgs + listOf(
         "-XX:+UseZGC",
         "-Xms128m",
         "-Xmx256m",
     )
 }
 
-val tools = mapOf(
-    "account-manager" to "app.l2nx.login.tools.AccountManager",
-    "game-server-register" to "app.l2nx.login.tools.GameServerRegister",
-)
+val loginSql = layout.settingsDirectory.dir("login/server/sql")
 
-for ((name, main) in tools) {
-    val scripts = tasks.register<CreateStartScripts>("${name}StartScripts") {
-        applicationName = name
-        mainClass = main
-        classpath = tasks.startScripts.get().classpath
-        outputDir = layout.buildDirectory.dir("tool-scripts/$name").get().asFile
-        defaultJvmOpts = listOf("-Djava.util.logging.config.file=console.cfg")
-    }
-    distributions.main {
-        contents {
-            from(scripts) {
-                into("bin")
-            }
-        }
-    }
+tasks.withType<Test>().configureEach {
+    inputs.dir(loginSql).withPropertyName("loginSql").withPathSensitivity(PathSensitivity.RELATIVE)
+    systemProperty("l2nx.test.login-sql-dir", loginSql.asFile.absolutePath)
 }

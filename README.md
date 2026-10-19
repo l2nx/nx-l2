@@ -4,7 +4,8 @@ An open-source Lineage 2 server built on [L2J Mobius](https://gitlab.com/MobiusD
 [L2NX](https://l2nx.dev) platform integration built in. One repository holds every chronicle (High Five first, then
 Essence and Interlude), the login server, the network stack and the shared libraries.
 
-> **Status: stage 1.** High Five is imported from L2J Mobius and runs locally. The design lives in
+> **Status: stage 2.** High Five is imported from L2J Mobius; both servers run on Spring Boot with Actuator, metrics and a
+> Docker image. The design lives in
 > [docs/specs/001-project-design.md](docs/specs/001-project-design.md); the stages in its §11, the import in
 > [docs/provenance.md](docs/provenance.md). User documentation: [l2nx.dev/l2](https://l2nx.dev/l2/overview/), from
 > [docs/public](docs/public) (English source, Russian translation).
@@ -21,8 +22,20 @@ docker compose up -d                          # MariaDB `l2nx` with the upstream
 ```
 
 `./gradlew installDist` builds runnable distributions in `login/boot/build/install/login-server` and
-`chronicles/high-five/boot/build/install/game-server`; configuration is in their `config/` directories. Geodata is
-not shipped: put it into `data/geodata` of the game server distribution.
+`chronicles/high-five/boot/build/install/game-server`; configuration is in their `config/` directories: the game and
+login settings in `.ini` files, the database and the management surface in `config/application.yaml` (or environment
+variables such as `SPRING_DATASOURCE_PASSWORD`). Geodata is not shipped: put it into `data/geodata` of the game server
+distribution.
+
+Each server also serves Spring Boot Actuator (health, info, Prometheus metrics, loggers, thread dump) on a management
+port bound to `127.0.0.1`: `8106` for login, `8777` for game. Docker images are built from the distributions:
+
+```sh
+./gradlew :chronicles:high-five:boot:installDist
+docker build -t l2nx/game-server chronicles/high-five/boot   # login: :login:boot:installDist, login/boot
+```
+
+Operator guide: [docs/public/en/operations.md](docs/public/en/operations.md).
 
 ## Goals
 
@@ -40,7 +53,7 @@ specific to Lineage 2, and every departure from a standard is a recorded decisio
 
 ## Layout
 
-The target layout; stage 1 has `libs/commons`, `login/` and `chronicles/high-five/`.
+The target layout; stage 2 has `libs/commons`, `login/` and `chronicles/high-five/`.
 
 ```
 libs/          infrastructure with no Lineage 2 knowledge: commons, network, db, telemetry

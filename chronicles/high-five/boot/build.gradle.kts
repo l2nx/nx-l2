@@ -5,18 +5,12 @@ plugins {
 dependencies {
     implementation(project(":chronicles:high-five:server"))
     runtimeOnly(project(":chronicles:high-five:scripts"))
-    runtimeOnly(libs.mysql.connector)
-    runtimeOnly(libs.slf4j.simple)
 }
 
 application {
     applicationName = "game-server"
-    mainClass = "app.l2nx.highfive.GameServer"
-    applicationDefaultJvmArgs = listOf(
-        "-Dfile.encoding=UTF-8",
-        "-Djava.awt.headless=true",
-        "-Djava.util.logging.manager=app.l2nx.commons.log.ServerLogManager",
-        "-Dorg.slf4j.simpleLogger.log.com.zaxxer.hikari=warn",
+    mainClass = "app.l2nx.highfive.boot.HighFiveApplication"
+    applicationDefaultJvmArgs = applicationDefaultJvmArgs + listOf(
         "-XX:+UseZGC",
         "-Xms2g",
         "-Xmx4g",
@@ -31,4 +25,15 @@ distributions {
             }
         }
     }
+}
+
+val loginSql = layout.settingsDirectory.dir("login/server/sql")
+val gameSql = layout.projectDirectory.dir("../datapack/sql")
+
+tasks.withType<Test>().configureEach {
+    maxHeapSize = "4g"
+    inputs.dir(loginSql).withPropertyName("loginSql").withPathSensitivity(PathSensitivity.RELATIVE)
+    inputs.dir(gameSql).withPropertyName("gameSql").withPathSensitivity(PathSensitivity.RELATIVE)
+    systemProperty("l2nx.test.login-sql-dir", loginSql.asFile.absolutePath)
+    systemProperty("l2nx.test.game-sql-dir", gameSql.asFile.absolutePath)
 }

@@ -1,0 +1,7 @@
+# SPDX-FileCopyrightText: 2026 L2NX contributors
+# SPDX-License-Identifier: Apache-2.0
+#
+# Only the installed distribution goes into the image; logs are written at runtime.
+*
+!build/install/login-server/
+build/install/login-server/log/

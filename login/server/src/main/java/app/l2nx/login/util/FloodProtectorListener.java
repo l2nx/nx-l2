@@ -1,4 +1,5 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -213,10 +214,12 @@ public abstract class FloodProtectorListener extends Thread
 	}
 	
 	/**
-	 * Closes the listening socket.
+	 * Closes the listening socket and ends the accept loop.
 	 */
 	public void close()
 	{
+		// Interrupt first: the loop exits only when interrupted, otherwise the closed socket makes accept() fail in a busy loop.
+		interrupt();
 		try
 		{
 			_serverSocket.close();

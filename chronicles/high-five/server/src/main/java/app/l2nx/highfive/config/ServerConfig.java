@@ -1,4 +1,5 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -537,8 +538,7 @@ public class ServerConfig
 			}
 			catch (SocketException e)
 			{
-				LOGGER.log(Level.INFO, "Network Config: Configuration failed please configure manually using ipconfig.xml", e);
-				System.exit(0);
+				throw new IllegalStateException("Network Config: Configuration failed please configure manually using ipconfig.xml", e);
 			}
 		}
 		

@@ -1,19 +1,90 @@
 plugins {
     id("nx-l2.java-conventions")
     application
+    id("org.springframework.boot")
+    id("com.gorylenko.gradle-git-properties")
+}
+
+val libs = versionCatalogs.named("libs")
+
+configurations.configureEach {
+    exclude(group = "org.springframework.boot", module = "spring-boot-starter-logging")
+}
+
+dependencies {
+    implementation(libs.findLibrary("spring-boot-starter-actuator").get())
+    implementation(libs.findLibrary("spring-boot-starter-jdbc").get())
+    implementation(libs.findLibrary("spring-boot-starter-log4j2").get())
+    implementation(libs.findLibrary("spring-boot-starter-webmvc").get())
+    runtimeOnly(libs.findLibrary("disruptor").get())
+    runtimeOnly(libs.findLibrary("log4j-jul").get())
+    runtimeOnly(libs.findLibrary("micrometer-registry-prometheus").get())
+    runtimeOnly(libs.findLibrary("mysql-connector").get())
+
+    testImplementation(libs.findLibrary("spring-boot-starter-test").get())
+    testImplementation(testFixtures(project(":libs:commons")))
+}
+
+springBoot {
+    buildInfo()
+}
+
+// A source archive without .git must still build; info then has no git section.
+gitProperties {
+    failOnNoGitDirectory = false
+}
+
+// JUL must be routed to Log4j2 before the first JUL logger exists, so it is a JVM flag, not configuration.
+val jvmFlags = listOf(
+    "-Dfile.encoding=UTF-8",
+    "-Djava.awt.headless=true",
+    "-Djava.util.logging.manager=org.apache.logging.log4j.jul.LogManager",
+)
+
+application {
+    applicationDefaultJvmArgs = jvmFlags
+}
+
+// The distribution runs the plain jar from lib/; the fat jar and its distribution are not built.
+tasks.named("bootJar") {
+    enabled = false
+}
+tasks.named<Jar>("jar") {
+    archiveClassifier = ""
+}
+listOf("bootStartScripts", "bootDistZip", "bootDistTar", "installBootDist", "bootRun").forEach {
+    tasks.named(it) {
+        enabled = false
+    }
 }
 
 // `run` starts in the installed distribution (the server resolves ./config, ./data, ./log against the working dir);
 // installDist is a Sync, so server-written and operator-added files must be preserved.
-tasks.named<Sync>("installDist") {
+val installDist = tasks.named<Sync>("installDist") {
     preserve {
         include("log/**", "data/geodata/**")
     }
 }
 
 tasks.named<JavaExec>("run") {
-    val install = tasks.named<Sync>("installDist")
-    dependsOn(install)
-    workingDir = install.get().destinationDir
+    dependsOn(installDist)
+    workingDir = installDist.get().destinationDir
     standardInput = System.`in`
+}
+
+// The tests run in a copy, so what a test run writes (logs, config/hexid.txt) never reaches the distribution or the image.
+val testDistribution = tasks.register<Sync>("testDistribution") {
+    from(installDist) {
+        exclude("data/geodata/**", "log/**")
+    }
+    into(layout.buildDirectory.dir("test-distribution"))
+}
+
+tasks.withType<Test>().configureEach {
+    dependsOn(testDistribution)
+    workingDir = testDistribution.get().destinationDir
+    jvmArgs(jvmFlags)
+    maxHeapSize = "2g"
+    // Pausing a cached test context stops and restarts its lifecycle beans; the servers hold static state and start once per JVM.
+    systemProperty("spring.test.context.cache.pause", "never")
 }

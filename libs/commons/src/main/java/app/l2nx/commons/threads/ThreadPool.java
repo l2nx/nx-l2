@@ -1,4 +1,5 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -30,6 +31,10 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
+
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Tags;
+import io.micrometer.core.instrument.binder.jvm.ExecutorServiceMetrics;
 
 import app.l2nx.commons.config.ThreadConfig;
 import app.l2nx.commons.util.StringUtil;
@@ -95,6 +100,19 @@ public class ThreadPool
 		// Log thread pool configuration.
 		LOGGER.info(StringUtil.concat("...scheduled pool executor with ", String.valueOf(ThreadConfig.SCHEDULED_THREAD_POOL_SIZE), " total threads."));
 		LOGGER.info(StringUtil.concat("...instant pool executor with ", String.valueOf(ThreadConfig.INSTANT_THREAD_POOL_SIZE), " total threads."));
+	}
+	
+	/**
+	 * Call once, after {@link #init()}: the pools do not exist before.
+	 */
+	public static void bindMetrics(MeterRegistry registry)
+	{
+		new ExecutorServiceMetrics(SCHEDULED_POOL, "l2nx-scheduled", Tags.empty()).bindTo(registry);
+		new ExecutorServiceMetrics(INSTANT_POOL, "l2nx-instant", Tags.empty()).bindTo(registry);
+		if (HIGH_PRIORITY_SCHEDULED_POOL != null)
+		{
+			new ExecutorServiceMetrics(HIGH_PRIORITY_SCHEDULED_POOL, "l2nx-high-priority-scheduled", Tags.empty()).bindTo(registry);
+		}
 	}
 	
 	/**

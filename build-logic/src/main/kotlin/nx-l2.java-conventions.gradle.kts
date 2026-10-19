@@ -21,6 +21,7 @@ tasks.withType<JavaCompile>().configureEach {
 }
 
 dependencies {
+    implementation(platform(libs.findLibrary("spring-boot-dependencies").get()))
     testImplementation(platform(libs.findLibrary("junit-bom").get()))
     testImplementation(libs.findLibrary("junit-jupiter").get())
     testImplementation(libs.findLibrary("assertj-core").get())

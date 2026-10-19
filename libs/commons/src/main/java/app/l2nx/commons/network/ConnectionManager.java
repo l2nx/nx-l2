@@ -1,4 +1,5 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -35,6 +36,10 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Tags;
+import io.micrometer.core.instrument.binder.jvm.ExecutorServiceMetrics;
+
 import app.l2nx.commons.network.handler.ReadHandler;
 import app.l2nx.commons.network.handler.WriteHandler;
 import app.l2nx.commons.network.packet.PacketExecutor;
@@ -51,6 +56,8 @@ import app.l2nx.commons.network.packet.ReadablePacket;
  */
 public class ConnectionManager<T extends Client<Connection<T>>>
 {
+	private final ThreadPoolExecutor ioPool;
+	private final PacketExecutor<T> packetExecutor;
 	private final AsynchronousChannelGroup _group;
 	private final AsynchronousServerSocketChannel _socketChannel;
 	private final ConnectionConfig _config;
@@ -69,21 +76,49 @@ public class ConnectionManager<T extends Client<Connection<T>>>
 	{
 		_config = new ConnectionConfig(address);
 		_clientFactory = clientFactory;
-		_readHandler = new ReadHandler<>(packetHandler, new PacketExecutor<>(_config));
+		packetExecutor = new PacketExecutor<>(_config);
+		_readHandler = new ReadHandler<>(packetHandler, packetExecutor);
 		_writeHandler = new WriteHandler<>();
 		
 		// Bounded thread pool: core == max == threadPoolSize; idle threads kept alive for 1 minute.
 		// LinkedBlockingQueue buffers short accept bursts without spawning extra threads.
 		final ThreadPoolExecutor threadPool = new ThreadPoolExecutor(_config.threadPoolSize, _config.threadPoolSize, 1, TimeUnit.MINUTES, new LinkedBlockingQueue<>(), new PacketThreadFactory("Server", _config.threadPriority));
 		threadPool.allowCoreThreadTimeOut(true);
+		ioPool = threadPool;
 		
 		_group = AsynchronousChannelGroup.withThreadPool(threadPool);
-		_socketChannel = _group.provider().openAsynchronousServerSocketChannel(_group);
-		_socketChannel.setOption(StandardSocketOptions.SO_REUSEADDR, true);
-		_socketChannel.bind(_config.address);
+		try
+		{
+			_socketChannel = _group.provider().openAsynchronousServerSocketChannel(_group);
+			_socketChannel.setOption(StandardSocketOptions.SO_REUSEADDR, true);
+			_socketChannel.bind(_config.address);
+		}
+		catch (IOException | RuntimeException e)
+		{
+			// The group's threads are non-daemon: left running, they would keep a server that failed to bind alive.
+			_group.shutdownNow();
+			throw e;
+		}
 		
 		// Begin the accept loop.
 		_socketChannel.accept(null, new AcceptConnectionHandler());
+	}
+	
+	public void bindMetrics(MeterRegistry registry, String name)
+	{
+		new ExecutorServiceMetrics(ioPool, name + "-io", Tags.empty()).bindTo(registry);
+		packetExecutor.bindMetrics(registry, name + "-packets");
+	}
+	
+	public void stopAccepting()
+	{
+		try
+		{
+			_socketChannel.close();
+		}
+		catch (IOException e)
+		{
+		}
 	}
 	
 	/**
@@ -97,7 +132,6 @@ public class ConnectionManager<T extends Client<Connection<T>>>
 			_socketChannel.close();
 			_group.shutdown();
 			_group.awaitTermination(_config.shutdownWaitTime, TimeUnit.MILLISECONDS);
-			_group.shutdownNow();
 		}
 		catch (InterruptedException e)
 		{
@@ -106,6 +140,17 @@ public class ConnectionManager<T extends Client<Connection<T>>>
 		catch (Exception e)
 		{
 			// Best-effort shutdown; errors here are not actionable.
+		}
+		finally
+		{
+			try
+			{
+				_group.shutdownNow();
+			}
+			catch (IOException e)
+			{
+			}
+			packetExecutor.shutdown(_config.shutdownWaitTime);
 		}
 	}
 	

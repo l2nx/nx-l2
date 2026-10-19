@@ -182,7 +182,7 @@ engine/               Lineage 2 mechanics shared by every chronicle
   adapter             app.l2nx.engine.adapter  L2NX adapter host
   core                app.l2nx.engine.core     partition runtime (spec 003); later what HF and Essence share
 login/
-  server              app.l2nx.login       login logic, protocol variants, GS-link, tools; sql/
+  server              app.l2nx.login       login logic, protocol variants, GS-link; sql/
   boot                app.l2nx.login.boot  launcher; runtime files (config, data) in src/dist
 chronicles/
   high-five/
@@ -207,8 +207,7 @@ What goes where:
 - **`boot`** is the assembly module: the Spring Boot application class, `application.yaml`, the distribution
   and the Docker image. A chronicle's `boot` assembles `server`, `scripts`, `datapack`, `engine/*` and `libs/*`
   into one runnable server; it is the only module that sees `server` and `scripts` together. Its distribution
-  has the Mobius `dist/` layout (`./config`, `./data`), and `run` starts from the installed distribution. The
-  login distribution also carries the account and game server registration tools. Runtime details:
+  has the Mobius `dist/` layout (`./config`, `./data`), and `run` starts from the installed distribution. Runtime details:
   [spec 002](002-spring-boot-runtime.md).
 
 Rules:
@@ -262,17 +261,17 @@ How the server finds scripts (`server` cannot depend on `scripts`, so discovery 
 
 ## 5. Stack
 
-| Concern  | Choice                                                                             |
-| -------- | ---------------------------------------------------------------------------------- |
-| Java     | 25 LTS (Mobius targets 27; the imported tree compiles on 25 as is)                 |
-| Build    | Gradle Kotlin DSL, version catalog, no committed jars but the Gradle wrapper       |
-| Local DB | `compose.yaml`: database (`l2nx-db`); servers from Gradle or the `servers` profile |
-| Host     | Spring Boot 4.1 (spec 002)                                                         |
-| Network  | Netty for every connection: client↔game, client↔login, login↔game                  |
-| Database | PostgreSQL from stage 3 (§5.1); MariaDB with the imported SQL until then           |
-| Metrics  | Micrometer, Actuator, Prometheus scrape                                            |
-| Logging  | Log4j2 (async)                                                                     |
-| Docs     | English; the public pages on `l2nx.dev` also in Russian                            |
+| Concern  | Choice                                                                       |
+| -------- | ---------------------------------------------------------------------------- |
+| Java     | 25 LTS (Mobius targets 27; the imported tree compiles on 25 as is)           |
+| Build    | Gradle Kotlin DSL, version catalog, no committed jars but the Gradle wrapper |
+| Local DB | `compose.yaml`: database only (`l2nx-db`), servers run from Gradle           |
+| Host     | Spring Boot 4.1 (spec 002)                                                   |
+| Network  | Netty for every connection: client↔game, client↔login, login↔game            |
+| Database | PostgreSQL from stage 3 (§5.1); MariaDB with the imported SQL until then     |
+| Metrics  | Micrometer, Actuator, Prometheus scrape                                      |
+| Logging  | Log4j2 (async)                                                               |
+| Docs     | English; the public pages on `l2nx.dev` also in Russian                      |
 
 ### 5.1. Database
 

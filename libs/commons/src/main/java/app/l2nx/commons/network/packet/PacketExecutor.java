@@ -1,4 +1,5 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -29,6 +30,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Tags;
+import io.micrometer.core.instrument.binder.jvm.ExecutorServiceMetrics;
+
 import app.l2nx.commons.network.Client;
 import app.l2nx.commons.network.Connection;
 import app.l2nx.commons.network.ConnectionConfig;
@@ -52,6 +57,28 @@ public class PacketExecutor<T extends Client<Connection<T>>>
 	public PacketExecutor(ConnectionConfig config)
 	{
 		_executor = new ThreadPoolExecutor(config.threadPoolSize, Integer.MAX_VALUE, 1, TimeUnit.MINUTES, new LinkedBlockingQueue<>(), new PacketThreadFactory("PacketExecutor", config.threadPriority));
+	}
+	
+	public void bindMetrics(MeterRegistry registry, String name)
+	{
+		new ExecutorServiceMetrics(_executor, name, Tags.empty()).bindTo(registry);
+	}
+	
+	public void shutdown(long waitMillis)
+	{
+		_executor.shutdown();
+		try
+		{
+			if (!_executor.awaitTermination(waitMillis, TimeUnit.MILLISECONDS))
+			{
+				_executor.shutdownNow();
+			}
+		}
+		catch (InterruptedException e)
+		{
+			_executor.shutdownNow();
+			Thread.currentThread().interrupt();
+		}
 	}
 	
 	/**

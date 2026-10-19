@@ -80,6 +80,10 @@ Changes on top of the imported history, each its own commit:
 6. **Rebranded:** user-visible Mobius names in runtime strings (database `l2jmobiush5` → `l2nx`, pool and thread
    names, tool banners, default announcements, server news and admin help pages). License headers, `@author` tags and
    code comments keep the upstream attribution.
+7. **Stage 2, Spring Boot runtime ([spec 002](specs/002-spring-boot-runtime.md)):** the JUL logging setup
+   (`log.cfg`, `console.cfg`, `ServerLogManager`, the handlers, formatters and filters of `commons/log`) gives way to
+   Log4j2; `Database.ini` and `DatabaseConfig` to `application.yaml`; the console tools `account-manager` and
+   `game-server-register` are removed.
 
 ## License labels
 

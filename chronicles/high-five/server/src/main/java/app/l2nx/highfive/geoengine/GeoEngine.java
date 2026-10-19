@@ -1,4 +1,5 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -120,8 +121,7 @@ public class GeoEngine
 		}
 		catch (Exception e)
 		{
-			LOGGER.log(Level.SEVERE, getClass().getSimpleName() + ": Critical error during geodata initialization!", e);
-			System.exit(1);
+			throw new IllegalStateException(getClass().getSimpleName() + ": Critical error during geodata initialization!", e);
 		}
 		
 		LOGGER.info(getClass().getSimpleName() + ": Loaded " + loadedRegions + " regions.");

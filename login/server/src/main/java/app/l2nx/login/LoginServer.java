@@ -1,4 +1,5 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -25,16 +26,22 @@ package app.l2nx.login;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
+import java.io.UncheckedIOException;
 import java.net.InetSocketAddress;
 import java.security.GeneralSecurityException;
 import java.util.logging.Level;
-import java.util.logging.LogManager;
 import java.util.logging.Logger;
 
+import io.micrometer.core.instrument.MeterRegistry;
+
+import org.springframework.context.SmartLifecycle;
+import org.springframework.stereotype.Component;
+
 import app.l2nx.commons.database.DatabaseFactory;
+import app.l2nx.commons.lifecycle.ServerExit;
+import app.l2nx.commons.lifecycle.ServerExitCode;
 import app.l2nx.commons.network.ConnectionManager;
 import app.l2nx.commons.threads.ThreadPool;
 import app.l2nx.login.config.LoginConfig;
@@ -48,29 +55,23 @@ import app.l2nx.login.network.gameserverpackets.receive.ServerStatus;
  * Bootstraps and drives the login server lifecycle.<br>
  * Coordinates configuration loading, core service initialization and network listener startup.
  * <ul>
- * <li>Initializes logging, configuration, database and thread pool.</li>
+ * <li>Initializes configuration and thread pool.</li>
  * <li>Loads login controller and game server table.</li>
  * <li>Registers IP bans and starts listeners for game servers and login clients.</li>
  * </ul>
  * @author BazookaRpm
  */
-public class LoginServer
+@Component
+public class LoginServer implements SmartLifecycle
 {
 	// Logger.
 	public static final Logger LOGGER = Logger.getLogger(LoginServer.class.getName());
 	
 	// Configuration paths.
-	private static final String LOG_DIRECTORY_NAME = "log";
-	private static final String LOG_CONFIGURATION_PATH = "./log.cfg";
 	private static final String BANNED_IPS_CONFIGURATION_PATH = "./banned_ip.cfg";
 	
 	// Time constants.
 	private static final int MILLISECONDS_PER_HOUR = 3600000;
-	
-	// Process exit codes.
-	private static final int EXIT_CODE_NORMAL_SHUTDOWN = 0;
-	private static final int EXIT_CODE_RESTART_REQUEST = 2;
-	private static final int EXIT_CODE_FATAL_ERROR = 1;
 	
 	// Protocol.
 	public static final int PROTOCOL_REV = 0x0106;
@@ -80,66 +81,89 @@ public class LoginServer
 	
 	// Network listeners.
 	private GameServerListener _gameServerListener;
+	private ConnectionManager<LoginClient> clientConnectionManager;
 	
 	// Login server status.
 	private static volatile int _loginStatus = ServerStatus.STATUS_NORMAL;
 	
+	private final ServerExit serverExit;
+	private final MeterRegistry meterRegistry;
+	private boolean threadPoolStarted;
+	private volatile boolean running;
+	
 	/**
-	 * Creates a new login server instance and initializes all required services.
+	 * @param databaseFactory not used directly: the dependency makes the static {@link DatabaseFactory#getConnection()} bound before {@link #start()}
 	 */
-	private LoginServer()
+	public LoginServer(DatabaseFactory databaseFactory, ServerExit serverExit, MeterRegistry meterRegistry)
 	{
-		initializeLoggingLayer();
-		initializeCoreServices();
-		initializeSecurityAndBans();
-		configureScheduledRestart();
-		initializeNetworkListeners();
+		this.serverExit = serverExit;
+		this.meterRegistry = meterRegistry;
+		_instance = this;
 	}
 	
 	/**
-	 * Initializes logging directory and configuration from file.
+	 * On failure, shuts down whatever already started before rethrowing: Spring calls {@link #stop()} only on started components.
 	 */
-	private void initializeLoggingLayer()
+	@Override
+	public void start()
 	{
-		final File logDirectory = new File(".", LOG_DIRECTORY_NAME);
-		if (!logDirectory.exists() && !logDirectory.mkdir())
+		try
 		{
-			LOGGER.warning(getClass().getSimpleName() + ": Unable to create log directory at " + logDirectory.getAbsolutePath() + ".");
+			initializeCoreServices();
+			initializeSecurityAndBans();
+			configureScheduledRestart();
+			initializeNetworkListeners();
+		}
+		catch (RuntimeException | Error e)
+		{
+			shutdownServices();
+			throw e;
 		}
 		
-		final File logConfigurationFile = new File(LOG_CONFIGURATION_PATH);
-		if (!logConfigurationFile.exists())
+		running = true;
+	}
+	
+	@Override
+	public void stop()
+	{
+		shutdownServices();
+		running = false;
+	}
+	
+	@Override
+	public boolean isRunning()
+	{
+		return running;
+	}
+	
+	private void shutdownServices()
+	{
+		if (clientConnectionManager != null)
 		{
-			LOGGER.warning(getClass().getSimpleName() + ": Logging configuration file is missing at " + logConfigurationFile.getAbsolutePath() + ". Using default logging settings.");
-			return;
+			clientConnectionManager.shutdown();
+			clientConnectionManager = null;
 		}
 		
-		if (logConfigurationFile.isDirectory())
+		if (_gameServerListener != null)
 		{
-			LOGGER.warning(getClass().getSimpleName() + ": Logging configuration path points to a directory (" + logConfigurationFile.getAbsolutePath() + "). Using default logging settings.");
-			return;
+			_gameServerListener.close();
 		}
 		
-		try (InputStream logConfigurationInputStream = new FileInputStream(logConfigurationFile))
+		if (threadPoolStarted)
 		{
-			LogManager.getLogManager().readConfiguration(logConfigurationInputStream);
-		}
-		catch (IOException e)
-		{
-			LOGGER.log(Level.WARNING, getClass().getSimpleName() + ": Failed to apply logging configuration from " + logConfigurationFile.getAbsolutePath() + ". Reason: " + e.getMessage(), e);
+			ThreadPool.shutdown();
+			threadPoolStarted = false;
 		}
 	}
 	
-	/**
-	 * Initializes configuration, database connectivity, thread pool and login controller.
-	 */
 	private void initializeCoreServices()
 	{
 		LoginConfig.load();
 		
-		DatabaseFactory.init();
-		
+		// Set before init(): pools created by a failing init() must be shut down too.
+		threadPoolStarted = true;
 		ThreadPool.init();
+		ThreadPool.bindMetrics(meterRegistry);
 		
 		try
 		{
@@ -147,8 +171,7 @@ public class LoginServer
 		}
 		catch (GeneralSecurityException e)
 		{
-			LOGGER.log(Level.SEVERE, "FATAL: LoginController initialization failed due to security configuration error. Reason: " + e.getMessage(), e);
-			System.exit(EXIT_CODE_FATAL_ERROR);
+			throw new IllegalStateException("LoginController initialization failed due to security configuration error.", e);
 		}
 		
 		GameServerTable.getInstance();
@@ -207,8 +230,7 @@ public class LoginServer
 		}
 		catch (IOException e)
 		{
-			LOGGER.log(Level.SEVERE, "FATAL: Game server listener could not be started on " + LoginConfig.GAME_SERVER_LOGIN_HOST + ":" + LoginConfig.GAME_SERVER_LOGIN_PORT + ". Reason: " + e.getMessage(), e);
-			System.exit(EXIT_CODE_FATAL_ERROR);
+			throw new UncheckedIOException("Game server listener could not be started on " + LoginConfig.GAME_SERVER_LOGIN_HOST + ":" + LoginConfig.GAME_SERVER_LOGIN_PORT + ".", e);
 		}
 	}
 	
@@ -219,13 +241,13 @@ public class LoginServer
 	{
 		try
 		{
-			new ConnectionManager<>(new InetSocketAddress(LoginConfig.LOGIN_BIND_ADDRESS, LoginConfig.PORT_LOGIN), LoginClient::new, new LoginPacketHandler());
+			clientConnectionManager = new ConnectionManager<>(new InetSocketAddress(LoginConfig.LOGIN_BIND_ADDRESS, LoginConfig.PORT_LOGIN), LoginClient::new, new LoginPacketHandler());
+			clientConnectionManager.bindMetrics(meterRegistry, "l2nx-login");
 			LOGGER.info(getClass().getSimpleName() + ": Login client listener started on " + LoginConfig.LOGIN_BIND_ADDRESS + ":" + LoginConfig.PORT_LOGIN + ".");
 		}
 		catch (IOException e)
 		{
-			LOGGER.log(Level.SEVERE, "FATAL: Login client listener could not be started on " + LoginConfig.LOGIN_BIND_ADDRESS + ":" + LoginConfig.PORT_LOGIN + ". Reason: " + e.getMessage(), e);
-			System.exit(EXIT_CODE_FATAL_ERROR);
+			throw new UncheckedIOException("Login client listener could not be started on " + LoginConfig.LOGIN_BIND_ADDRESS + ":" + LoginConfig.PORT_LOGIN + ".", e);
 		}
 	}
 	
@@ -335,12 +357,12 @@ public class LoginServer
 	}
 	
 	/**
-	 * Shuts down the login server and optionally signals restart to the wrapper.
+	 * Shuts down the login server and optionally signals restart to the supervisor.
 	 * @param restart True to request a restart exit code.
 	 */
 	public void shutdown(boolean restart)
 	{
-		Runtime.getRuntime().exit(restart ? EXIT_CODE_RESTART_REQUEST : EXIT_CODE_NORMAL_SHUTDOWN);
+		serverExit.exit(restart ? ServerExitCode.RESTART : ServerExitCode.SHUTDOWN);
 	}
 	
 	/**
@@ -368,14 +390,5 @@ public class LoginServer
 	public static LoginServer getInstance()
 	{
 		return _instance;
-	}
-	
-	/**
-	 * Application entry point for the login server process.
-	 * @param args The command line arguments.
-	 */
-	public static void main(String[] args)
-	{
-		_instance = new LoginServer();
 	}
 }

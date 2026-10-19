@@ -1,4 +1,5 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -22,16 +23,21 @@
  */
 package app.l2nx.highfive;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.InputStream;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.InetSocketAddress;
 import java.time.Duration;
 import java.util.logging.Level;
-import java.util.logging.LogManager;
 import java.util.logging.Logger;
 
+import io.micrometer.core.instrument.Gauge;
+import io.micrometer.core.instrument.MeterRegistry;
+
+import org.springframework.context.SmartLifecycle;
+import org.springframework.stereotype.Component;
+
 import app.l2nx.commons.database.DatabaseFactory;
+import app.l2nx.commons.lifecycle.ServerExit;
 import app.l2nx.commons.network.ConnectionManager;
 import app.l2nx.commons.threads.ThreadPool;
 import app.l2nx.commons.time.TimeUtil;
@@ -177,7 +183,8 @@ import app.l2nx.highfive.taskmanagers.ItemLifeTimeTaskManager;
 import app.l2nx.highfive.taskmanagers.ItemsAutoDestroyTaskManager;
 import app.l2nx.highfive.util.DeadlockWatcher;
 
-public class GameServer
+@Component
+public class GameServer implements SmartLifecycle
 {
 	private static final Logger LOGGER = Logger.getLogger(GameServer.class.getName());
 	
@@ -185,26 +192,78 @@ public class GameServer
 	private long _sectionStartTime = START_TIME;
 	private String _previousSectionName = null;
 	
-	public GameServer() throws Exception
+	private final ServerExit serverExit;
+	private final MeterRegistry meterRegistry;
+	private ConnectionManager<GameClient> connectionManager;
+	private volatile boolean running;
+	
+	/**
+	 * @param databaseFactory not used directly: the dependency makes the static database access available before {@link #start()}
+	 */
+	public GameServer(DatabaseFactory databaseFactory, ServerExit serverExit, MeterRegistry meterRegistry)
 	{
-		// Create log folder
-		final File logFolder = new File(".", "log");
-		logFolder.mkdir();
+		this.serverExit = serverExit;
+		this.meterRegistry = meterRegistry;
+	}
+	
+	@Override
+	public void start()
+	{
+		Shutdown.bind(serverExit);
 		
-		// Create input stream for log file -- or store file data into memory.
-		try (InputStream is = new FileInputStream(new File("./log.cfg")))
-		{
-			LogManager.getLogManager().readConfiguration(is);
-		}
-		
-		// Initialize config
+		// Outside the try: nothing to shut down yet if config fails.
 		ConfigLoader.init();
 		
-		printSection("Database");
-		DatabaseFactory.init();
+		try
+		{
+			startEngine();
+		}
+		catch (RuntimeException | Error e)
+		{
+			// Spring stops only components that have started, so whatever this start has opened is shut down here.
+			abortStart();
+			throw e;
+		}
 		
+		running = true;
+	}
+	
+	@Override
+	public void stop()
+	{
+		connectionManager.stopAccepting();
+		try
+		{
+			Shutdown.getInstance().startShutdownActions();
+		}
+		finally
+		{
+			connectionManager.shutdown();
+			running = false;
+		}
+	}
+	
+	@Override
+	public boolean isRunning()
+	{
+		return running;
+	}
+	
+	private void abortStart()
+	{
+		if (connectionManager != null)
+		{
+			connectionManager.shutdown();
+		}
+		
+		ThreadPool.shutdown();
+	}
+	
+	private void startEngine()
+	{
 		printSection("ThreadPool");
 		ThreadPool.init();
+		ThreadPool.bindMetrics(meterRegistry);
 		
 		// Start game time task manager early.
 		GameTimeTaskManager.getInstance();
@@ -219,6 +278,7 @@ public class GameServer
 		printSection("World");
 		InstanceManager.getInstance();
 		World.init();
+		Gauge.builder("l2nx.players.online", () -> World.getPlayers().size()).description("Players in the world, offline traders included").register(meterRegistry);
 		MapRegionData.getInstance();
 		AnnouncementsTable.getInstance();
 		GlobalVariablesManager.getInstance();
@@ -427,7 +487,6 @@ public class GameServer
 		
 		PunishmentManager.getInstance();
 		
-		Runtime.getRuntime().addShutdownHook(Shutdown.getInstance());
 		LOGGER.info("IdManager: Free ObjectID's remaining: " + IdManager.getInstance().getAvailableIdCount());
 		
 		if ((OfflineTradeConfig.OFFLINE_TRADE_ENABLE || OfflineTradeConfig.OFFLINE_CRAFT_ENABLE) && OfflineTradeConfig.RESTORE_OFFLINERS)
@@ -470,7 +529,15 @@ public class GameServer
 		LOGGER.info(StringUtil.concat(getClass().getSimpleName(), ": Maximum number of connected players is ", ServerConfig.MAXIMUM_ONLINE_USERS, "."));
 		LOGGER.info(StringUtil.concat(getClass().getSimpleName(), ": Server loaded in ", ((System.currentTimeMillis() - START_TIME) / 1000), " seconds."));
 		
-		new ConnectionManager<>(new InetSocketAddress(ServerConfig.PORT_GAME), GameClient::new, new GamePacketHandler());
+		try
+		{
+			connectionManager = new ConnectionManager<>(new InetSocketAddress(ServerConfig.PORT_GAME), GameClient::new, new GamePacketHandler());
+		}
+		catch (IOException e)
+		{
+			throw new UncheckedIOException("Unable to open the client port " + ServerConfig.PORT_GAME + ".", e);
+		}
+		connectionManager.bindMetrics(meterRegistry, "l2nx-game");
 		
 		LoginServerThread.getInstance().start();
 	}
@@ -512,10 +579,5 @@ public class GameServer
 	public static long getStartTime()
 	{
 		return START_TIME;
-	}
-	
-	public static void main(String[] args) throws Exception
-	{
-		new GameServer();
 	}
 }

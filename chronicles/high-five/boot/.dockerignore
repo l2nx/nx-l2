@@ -1,0 +1,8 @@
+# SPDX-FileCopyrightText: 2026 L2NX contributors
+# SPDX-License-Identifier: Apache-2.0
+#
+# Only the installed distribution goes into the image; logs are written at runtime, geodata is mounted.
+*
+!build/install/game-server/
+build/install/game-server/log/
+build/install/game-server/data/geodata/

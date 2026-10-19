@@ -20,6 +20,7 @@ lists what is open.
 - [#15](https://github.com/l2nx/nx-l2/issues/15) Adopt Lombok for boilerplate
 - [#16](https://github.com/l2nx/nx-l2/issues/16) Finalize the JDK: distribution, version and flags
 - [#17](https://github.com/l2nx/nx-l2/issues/17) Move game and login settings to Spring Boot configuration
+- [#19](https://github.com/l2nx/nx-l2/issues/19) Run both servers in Compose with an end-to-end login test
 - [#20](https://github.com/l2nx/nx-l2/issues/20) Time dilation for overloaded partitions
 - [#21](https://github.com/l2nx/nx-l2/issues/21) Parallel open world if one partition exceeds its budget
 

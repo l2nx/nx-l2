@@ -1,17 +1,32 @@
 [versions]
 assertj = "3.27.7"
 classgraph = "6.0.0"
-hikaricp = "7.1.0"
+disruptor = "4.0.0"
+gradle-git-properties = "4.0.1"
 junit = "6.1.3"
 mysql-connector = "26.7.0"
-slf4j = "2.0.20"
+spring-boot = "4.1.1"
 
 [libraries]
 assertj-core = { module = "org.assertj:assertj-core", version.ref = "assertj" }
 classgraph = { module = "io.github.classgraph:classgraph", version.ref = "classgraph" }
-hikaricp = { module = "com.zaxxer:HikariCP", version.ref = "hikaricp" }
+disruptor = { module = "com.lmax:disruptor", version.ref = "disruptor" }
 junit-bom = { module = "org.junit:junit-bom", version.ref = "junit" }
 junit-jupiter = { module = "org.junit.jupiter:junit-jupiter" }
 junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
+log4j-jul = { module = "org.apache.logging.log4j:log4j-jul" }
+micrometer-core = { module = "io.micrometer:micrometer-core" }
+micrometer-registry-prometheus = { module = "io.micrometer:micrometer-registry-prometheus" }
 mysql-connector = { module = "com.mysql:mysql-connector-j", version.ref = "mysql-connector" }
-slf4j-simple = { module = "org.slf4j:slf4j-simple", version.ref = "slf4j" }
+spring-boot = { module = "org.springframework.boot:spring-boot" }
+spring-boot-dependencies = { module = "org.springframework.boot:spring-boot-dependencies", version.ref = "spring-boot" }
+spring-boot-starter-actuator = { module = "org.springframework.boot:spring-boot-starter-actuator" }
+spring-boot-starter-jdbc = { module = "org.springframework.boot:spring-boot-starter-jdbc" }
+spring-boot-starter-log4j2 = { module = "org.springframework.boot:spring-boot-starter-log4j2" }
+spring-boot-starter-test = { module = "org.springframework.boot:spring-boot-starter-test" }
+spring-boot-starter-webmvc = { module = "org.springframework.boot:spring-boot-starter-webmvc" }
+spring-boot-testcontainers = { module = "org.springframework.boot:spring-boot-testcontainers" }
+testcontainers-junit-jupiter = { module = "org.testcontainers:testcontainers-junit-jupiter" }
+testcontainers-mysql = { module = "org.testcontainers:testcontainers-mysql" }
+gradle-git-properties-plugin = { module = "com.gorylenko.gradle-git-properties:gradle-git-properties", version.ref = "gradle-git-properties" }
+spring-boot-gradle-plugin = { module = "org.springframework.boot:spring-boot-gradle-plugin", version.ref = "spring-boot" }
