@@ -2,7 +2,7 @@
  * SPDX-FileCopyrightText: 2026 L2NX contributors
  * SPDX-License-Identifier: Apache-2.0
  */
-package app.l2nx.commons.integration;
+package app.l2nx.boot.integration;
 
 import java.io.IOException;
 import java.net.InetAddress;

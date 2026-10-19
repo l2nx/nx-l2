@@ -3,6 +3,7 @@ plugins {
 }
 
 dependencies {
+    api(project(":libs:boot"))
     api(project(":libs:commons"))
     implementation(libs.classgraph)
 }

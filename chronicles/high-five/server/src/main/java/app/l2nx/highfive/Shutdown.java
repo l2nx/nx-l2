@@ -26,8 +26,8 @@ package app.l2nx.highfive;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import app.l2nx.commons.lifecycle.ServerExit;
-import app.l2nx.commons.lifecycle.ServerExitCode;
+import app.l2nx.boot.ServerExit;
+import app.l2nx.boot.ServerExitCode;
 import app.l2nx.commons.threads.ThreadPool;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.config.ServerConfig;

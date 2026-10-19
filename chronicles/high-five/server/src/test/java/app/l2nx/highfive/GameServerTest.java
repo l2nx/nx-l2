@@ -22,7 +22,7 @@ import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.springframework.context.support.GenericApplicationContext;
 
 import app.l2nx.commons.database.DatabaseFactory;
-import app.l2nx.commons.lifecycle.ServerExit;
+import app.l2nx.boot.ServerExit;
 
 // The engine keeps static state (config, thread pools, singletons), so nothing here may run concurrently.
 @Execution(ExecutionMode.SAME_THREAD)

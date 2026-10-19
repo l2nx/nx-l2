@@ -22,7 +22,7 @@ dependencies {
     runtimeOnly(libs.findLibrary("mysql-connector").get())
 
     testImplementation(libs.findLibrary("spring-boot-starter-test").get())
-    testImplementation(testFixtures(project(":libs:commons")))
+    testImplementation(testFixtures(project(":libs:boot")))
 }
 
 springBoot {

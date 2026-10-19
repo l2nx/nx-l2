@@ -37,7 +37,7 @@ import org.springframework.context.SmartLifecycle;
 import org.springframework.stereotype.Component;
 
 import app.l2nx.commons.database.DatabaseFactory;
-import app.l2nx.commons.lifecycle.ServerExit;
+import app.l2nx.boot.ServerExit;
 import app.l2nx.commons.network.ConnectionManager;
 import app.l2nx.commons.threads.ThreadPool;
 import app.l2nx.commons.time.TimeUtil;

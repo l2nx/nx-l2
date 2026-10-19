@@ -24,7 +24,7 @@ import org.springframework.test.annotation.DirtiesContext;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
-import app.l2nx.commons.integration.BootSmokeTest;
+import app.l2nx.boot.integration.BootSmokeTest;
 import app.l2nx.login.LoginServer;
 import app.l2nx.login.config.LoginConfig;
 

@@ -28,9 +28,9 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
-import app.l2nx.commons.integration.BootSmokeTest;
-import app.l2nx.commons.lifecycle.ServerExit;
-import app.l2nx.commons.lifecycle.ServerExitCode;
+import app.l2nx.boot.integration.BootSmokeTest;
+import app.l2nx.boot.ServerExit;
+import app.l2nx.boot.ServerExitCode;
 import app.l2nx.highfive.GameServer;
 import app.l2nx.highfive.Shutdown;
 import app.l2nx.highfive.config.ServerConfig;

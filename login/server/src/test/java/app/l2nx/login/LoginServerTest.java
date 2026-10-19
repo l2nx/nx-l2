@@ -21,7 +21,7 @@ import org.springframework.context.support.GenericApplicationContext;
 
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 
-import app.l2nx.commons.lifecycle.ServerExit;
+import app.l2nx.boot.ServerExit;
 import app.l2nx.login.config.LoginConfig;
 
 // The server keeps static state (config, thread pools, singletons), so nothing here may run concurrently.
