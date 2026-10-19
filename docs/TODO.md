@@ -5,13 +5,13 @@ lists what is open.
 
 ## Open
 
-- [#1](https://github.com/l2nx/nx-l2/issues/1) Relicensing to AGPLv3 or MIT
+- [#1](https://github.com/l2nx/nx-l2/issues/1) Push GPLv3 out of the build
 - [#2](https://github.com/l2nx/nx-l2/issues/2) Essence chronicle and shared core extraction
 - [#3](https://github.com/l2nx/nx-l2/issues/3) Interlude chronicle
 - [#4](https://github.com/l2nx/nx-l2/issues/4) Edge gateway / horizontal scale-out
 - [#5](https://github.com/l2nx/nx-l2/issues/5) Stable script API for other emulators
 - [#6](https://github.com/l2nx/nx-l2/issues/6) Move a chronicle into its own repository
-- [#7](https://github.com/l2nx/nx-l2/issues/7) CLA bot before external contributions
+- [#7](https://github.com/l2nx/nx-l2/issues/7) CLA or DCO before external contributions
 
 ## Done
 

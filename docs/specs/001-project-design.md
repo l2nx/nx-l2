@@ -25,27 +25,45 @@ hosted on `l2nx.top`.
 
 ### Licenses
 
-| Component       | License    | Why                                                                            |
-| --------------- | ---------- | ------------------------------------------------------------------------------ |
-| `nx-l2`         | GPLv3      | Mobius HF still holds GPLv3 files, so the combined work is GPLv3-bound         |
-| `nx-physics`    | Apache 2.0 | Any emulator can adopt it, including MIT forks; patent grant; GPLv3-compatible |
-| `nx-gs-adapter` | Apache 2.0 | Unchanged; links into a GPLv3 engine without conflict                          |
+The goal: a build anyone may distribute and modify in any way, closed forks included. Licenses are assigned per
+file, as Mobius does it: its own files are MIT, the files inherited from L2J are GPLv3.
+
+| Component                     | License                            | Why                                                                 |
+| ----------------------------- | ---------------------------------- | ------------------------------------------------------------------- |
+| New and rewritten files       | Apache 2.0                         | one license with the adapter and `nx-physics`; patent grant         |
+| Mobius MIT files              | MIT                                | kept; MIT and Apache 2.0 combine freely                             |
+| Mobius GPLv3 files            | GPLv3                              | cannot be relicensed; they go away only by a rewrite                |
+| `nx-l2` build as a whole      | GPLv3 while any GPLv3 file remains | one GPLv3 file binds the combined work                              |
+| `nx-physics`, `nx-gs-adapter` | Apache 2.0                         | any emulator can adopt them, closed ones included; GPLv3-compatible |
 
 The Mobius HF tree imported at the start holds 905 GPLv3 and 990 MIT Java files in the core, plus 927 GPLv3 scripts.
 
-GPLv3 is chosen over AGPLv3 for adoption: server operators keep closed customisations, and L2NX still runs inside
-their servers. AGPLv3 stays available later, since GPLv3 code combines with it. That switch needs the right to
-relicense contributions, which the CLA provides ([#1](https://github.com/l2nx/nx-l2/issues/1)).
+**GPLv3 is pushed out, not kept** ([#1](https://github.com/l2nx/nx-l2/issues/1)):
+
+- **`libs/*` and `engine/*` hold no GPLv3 file.** They are Apache 2.0 / MIT from the first commit and can be
+  published as permissive artifacts for any emulator. A Mobius GPLv3 file needed there is rewritten first; until
+  then it stays in its chronicle.
+- **A chronicle module turns permissive when its last GPLv3 file is rewritten.** CI prints the GPLv3 file count
+  per module from the SPDX headers (§2, REUSE).
+- **While GPLv3 files remain, the build is distributed under GPLv3:** anyone may distribute and modify it, with
+  the source. Running a server without handing the build to anyone is not distribution and carries no obligation.
+- **Inbound = outbound:** a contribution comes under the license of the file it touches, so no relicensing right
+  is needed for the GPLv3 exit. Whether a CLA or a DCO enforces this is decided in [#7](https://github.com/l2nx/nx-l2/issues/7).
 
 Mobius' "for education" wording is a fair-use argument and a project policy, not a license term. Neither GPLv3 nor
 MIT restricts use, and GPLv3 §7/§10 forbid adding restrictions.
 
 ### Authorship and headers
 
-- **Files taken from Mobius keep their Mobius header.** This holds even after heavy changes: both MIT and GPLv3
-  require the copyright notice to be preserved.
-- **A modified file adds a line:** `Copyright (c) 2026 L2NX contributors`.
-- **A file written from scratch carries only the project header.** Renaming packages or variables is not a rewrite.
+Every file carries an SPDX line (`SPDX-License-Identifier: Apache-2.0`, `MIT`, `GPL-3.0-or-later` as the upstream
+header states), following the [REUSE](https://reuse.software) specification. CI runs `reuse lint`: a file without
+a license fails the build. The GPLv3 count per module comes from the same data.
+
+- **Files taken from Mobius keep their Mobius header and license.** This holds even after heavy changes: both MIT
+  and GPLv3 require the copyright notice to be preserved.
+- **A modified Mobius file adds a line:** `Copyright (c) 2026 L2NX contributors`. Its license does not change.
+- **A file written from scratch carries only the project header, Apache 2.0.** Renaming packages or variables is
+  not a rewrite. A rewrite of a GPLv3 file is done from the behaviour, not by editing the GPLv3 text.
 - **`NOTICE` names the upstream:** "based on L2J Mobius", with the upstream commit the import started from.
 - **Package rename is allowed:** `org.l2jmobius` becomes the package of the module the file lands in (§4), and
   the headers stay.
@@ -74,16 +92,17 @@ Tools are shipped instead, and every operator prepares data from their own clien
 
 ### Project files
 
-| File              | Content                                   |
-| ----------------- | ----------------------------------------- |
-| `LICENSE`         | GPLv3                                     |
-| `NOTICE`          | upstream attribution                      |
-| `CONTRIBUTING.md` | originality policy, CLA, header rules     |
-| `README.md`       | positioning, disclaimer, takedown contact |
+| File              | Content                                                |
+| ----------------- | ------------------------------------------------------ |
+| `LICENSE`         | Apache 2.0, the project license; points to `LICENSES/` |
+| `LICENSES/`       | every license text in use, REUSE layout                |
+| `NOTICE`          | upstream attribution                                   |
+| `CONTRIBUTING.md` | originality policy, inbound = outbound, header rules   |
+| `README.md`       | positioning, disclaimer, takedown contact              |
 
-Contributions require a CLA, based on the Apache ICLA and enforced by a PR bot. The bot is not needed while only the
-owner and contracted developers commit; it is enabled before the repository goes public or accepts its first
-external PR, whichever comes first ([#7](https://github.com/l2nx/nx-l2/issues/7)).
+Contributions come under the license of the file they touch (inbound = outbound). A CLA or DCO, enforced by a PR
+bot, records this. The bot is not needed while only the owner and contracted developers commit; it is enabled
+before the repository goes public or accepts its first external PR, whichever comes first ([#7](https://github.com/l2nx/nx-l2/issues/7)).
 
 ## 3. Repositories
 
@@ -284,18 +303,16 @@ Each stage gets its own spec in `docs/specs/` before implementation.
 
 These are recommendations from the design discussion. Each one can be overridden before stage 0.
 
-1. **License:** GPLv3, not AGPLv3.
-2. **Contributions:** CLA, not DCO.
-3. **Domain:** `l2nx.dev`.
-4. **Host:** Spring Boot.
-5. **Database:** MariaDB, not Postgres.
+1. **Domain:** `l2nx.dev`.
+2. **Host:** Spring Boot.
+3. **Database:** MariaDB, not Postgres.
 
 ## 13. Deferred
 
-- Relicensing to AGPLv3 or MIT — [#1](https://github.com/l2nx/nx-l2/issues/1).
+- Pushing GPLv3 out of the build — [#1](https://github.com/l2nx/nx-l2/issues/1).
 - Essence chronicle and shared core extraction — [#2](https://github.com/l2nx/nx-l2/issues/2).
 - Interlude chronicle — [#3](https://github.com/l2nx/nx-l2/issues/3).
 - Edge gateway / horizontal scale-out — [#4](https://github.com/l2nx/nx-l2/issues/4).
 - Stable script API for other emulators — [#5](https://github.com/l2nx/nx-l2/issues/5).
 - Moving a chronicle into its own repository — [#6](https://github.com/l2nx/nx-l2/issues/6).
-- CLA bot before external contributions — [#7](https://github.com/l2nx/nx-l2/issues/7).
+- CLA or DCO enforcement before external contributions — [#7](https://github.com/l2nx/nx-l2/issues/7).
