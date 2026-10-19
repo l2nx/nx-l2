@@ -20,18 +20,18 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package app.l2nx.commons.network.handler;
+package app.l2nx.network.handler;
 
 import java.nio.ByteBuffer;
 import java.nio.channels.CompletionHandler;
 
-import app.l2nx.commons.network.Client;
-import app.l2nx.commons.network.Connection;
-import app.l2nx.commons.network.ConnectionConfig;
-import app.l2nx.commons.network.buffer.ReadBuffer;
-import app.l2nx.commons.network.packet.PacketExecutor;
-import app.l2nx.commons.network.packet.PacketHandler;
-import app.l2nx.commons.network.packet.ReadablePacket;
+import app.l2nx.network.Client;
+import app.l2nx.network.Connection;
+import app.l2nx.network.ConnectionConfig;
+import app.l2nx.network.buffer.ReadBuffer;
+import app.l2nx.network.packet.PacketExecutor;
+import app.l2nx.network.packet.PacketHandler;
+import app.l2nx.network.packet.ReadablePacket;
 
 /**
  * {@link CompletionHandler} for async read operations.<br>

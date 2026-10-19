@@ -19,12 +19,12 @@
  */
 package app.l2nx.highfive.network.serverpackets;
 
-import app.l2nx.commons.network.buffer.WriteBuffer;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.interfaces.ILocational;
 import app.l2nx.highfive.mechanics.skill.enums.FlyType;
 import app.l2nx.highfive.network.GameClient;
 import app.l2nx.highfive.network.ServerPackets;
+import app.l2nx.network.buffer.WriteBuffer;
 
 /**
  * @author KenM

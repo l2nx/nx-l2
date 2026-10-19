@@ -21,7 +21,6 @@ package app.l2nx.highfive.network.serverpackets;
 
 import java.util.List;
 
-import app.l2nx.commons.network.buffer.WriteBuffer;
 import app.l2nx.highfive.entity.spawns.Spawn;
 import app.l2nx.highfive.managers.FortSiegeManager;
 import app.l2nx.highfive.mechanics.siege.Fort;
@@ -29,6 +28,7 @@ import app.l2nx.highfive.mechanics.siege.FortSiege;
 import app.l2nx.highfive.mechanics.siege.FortSpawnHolder;
 import app.l2nx.highfive.network.GameClient;
 import app.l2nx.highfive.network.ServerPackets;
+import app.l2nx.network.buffer.WriteBuffer;
 
 /**
  * @author KenM

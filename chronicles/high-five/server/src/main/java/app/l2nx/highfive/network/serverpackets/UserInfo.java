@@ -24,7 +24,6 @@ package app.l2nx.highfive.network.serverpackets;
 
 import java.util.Map;
 
-import app.l2nx.commons.network.buffer.WriteBuffer;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.data.xml.ExperienceData;
 import app.l2nx.highfive.entity.actor.Player;
@@ -37,6 +36,7 @@ import app.l2nx.highfive.managers.TerritoryWarManager;
 import app.l2nx.highfive.mechanics.skill.AbnormalVisualEffect;
 import app.l2nx.highfive.network.GameClient;
 import app.l2nx.highfive.network.ServerPackets;
+import app.l2nx.network.buffer.WriteBuffer;
 
 public class UserInfo extends ServerPacket
 {

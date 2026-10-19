@@ -22,8 +22,8 @@
  */
 package app.l2nx.highfive.network.loginserverpackets.send;
 
-import app.l2nx.commons.network.packet.SimpleWritablePacket;
 import app.l2nx.highfive.LoginServerThread.SessionKey;
+import app.l2nx.network.packet.SimpleWritablePacket;
 
 /**
  * Sends the session key parts (play/login) for an account to the login server.<br>

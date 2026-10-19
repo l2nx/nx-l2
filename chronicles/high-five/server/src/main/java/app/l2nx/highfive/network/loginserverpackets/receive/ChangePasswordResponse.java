@@ -22,9 +22,9 @@
  */
 package app.l2nx.highfive.network.loginserverpackets.receive;
 
-import app.l2nx.commons.network.packet.SimpleReadablePacket;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.network.packet.SimpleReadablePacket;
 
 public class ChangePasswordResponse extends SimpleReadablePacket
 {

@@ -20,7 +20,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package app.l2nx.commons.network;
+package app.l2nx.network;
 
 import java.util.Collection;
 import java.util.Queue;
@@ -28,12 +28,12 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import app.l2nx.commons.network.buffer.ReadBuffer;
-import app.l2nx.commons.network.buffer.WriteBuffer;
-import app.l2nx.commons.network.handler.ReadHandler;
-import app.l2nx.commons.network.handler.WriteHandler;
-import app.l2nx.commons.network.packet.WritablePacket;
-import app.l2nx.commons.network.pool.ResourcePool;
+import app.l2nx.network.buffer.ReadBuffer;
+import app.l2nx.network.buffer.WriteBuffer;
+import app.l2nx.network.handler.ReadHandler;
+import app.l2nx.network.handler.WriteHandler;
+import app.l2nx.network.packet.WritablePacket;
+import app.l2nx.network.pool.ResourcePool;
 
 /**
  * Abstract client entity that owns a {@link Connection} and manages packet I/O.<br>

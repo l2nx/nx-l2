@@ -22,13 +22,13 @@
  */
 package app.l2nx.highfive.network.serverpackets;
 
-import app.l2nx.commons.network.buffer.WriteBuffer;
 import app.l2nx.highfive.data.xml.RecipeData;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.item.recipe.RecipeList;
 import app.l2nx.highfive.network.GameClient;
 import app.l2nx.highfive.network.PacketLogger;
 import app.l2nx.highfive.network.ServerPackets;
+import app.l2nx.network.buffer.WriteBuffer;
 
 public class RecipeItemMakeInfo extends ServerPacket
 {

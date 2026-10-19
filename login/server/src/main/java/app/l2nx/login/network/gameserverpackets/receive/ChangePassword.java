@@ -34,10 +34,10 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import app.l2nx.commons.database.DatabaseFactory;
-import app.l2nx.commons.network.packet.SimpleReadablePacket;
 import app.l2nx.login.GameServerThread;
 import app.l2nx.login.data.GameServerTable;
 import app.l2nx.login.data.GameServerTable.GameServerInfo;
+import app.l2nx.network.packet.SimpleReadablePacket;
 
 /**
  * Handles password change requests coming from game servers.<br>

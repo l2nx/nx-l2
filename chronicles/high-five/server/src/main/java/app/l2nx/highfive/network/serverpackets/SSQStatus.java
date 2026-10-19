@@ -19,13 +19,13 @@
  */
 package app.l2nx.highfive.network.serverpackets;
 
-import app.l2nx.commons.network.buffer.WriteBuffer;
 import app.l2nx.highfive.mechanics.sevensigns.SevenSigns;
 import app.l2nx.highfive.mechanics.sevensigns.SevenSignsFestival;
 import app.l2nx.highfive.network.GameClient;
 import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.util.StatSet;
+import app.l2nx.network.buffer.WriteBuffer;
 
 /**
  * Seven Signs Record Update

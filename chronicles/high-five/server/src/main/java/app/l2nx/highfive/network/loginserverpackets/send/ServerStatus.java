@@ -22,7 +22,7 @@
  */
 package app.l2nx.highfive.network.loginserverpackets.send;
 
-import app.l2nx.commons.network.packet.SimpleWritablePacket;
+import app.l2nx.network.packet.SimpleWritablePacket;
 
 /**
  * Announces Game Server availability and classification to the Login Server using a compact attribute list.<br>

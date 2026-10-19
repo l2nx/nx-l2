@@ -22,14 +22,14 @@
  */
 package app.l2nx.highfive.network.serverpackets;
 
-import app.l2nx.commons.network.buffer.WriteBuffer;
-import app.l2nx.commons.network.packet.WritablePacket;
 import app.l2nx.commons.util.TraceUtil;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.itemcontainer.Inventory;
 import app.l2nx.highfive.network.ConnectionState;
 import app.l2nx.highfive.network.GameClient;
 import app.l2nx.highfive.network.PacketLogger;
+import app.l2nx.network.buffer.WriteBuffer;
+import app.l2nx.network.packet.WritablePacket;
 
 /**
  * @author Mobius

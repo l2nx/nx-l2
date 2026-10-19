@@ -22,13 +22,13 @@
  */
 package app.l2nx.highfive.network.serverpackets;
 
-import app.l2nx.commons.network.buffer.WriteBuffer;
 import app.l2nx.highfive.entity.actor.Summon;
 import app.l2nx.highfive.entity.actor.instance.Pet;
 import app.l2nx.highfive.entity.actor.instance.Servitor;
 import app.l2nx.highfive.entity.zone.ZoneId;
 import app.l2nx.highfive.network.GameClient;
 import app.l2nx.highfive.network.ServerPackets;
+import app.l2nx.network.buffer.WriteBuffer;
 
 public class PetInfo extends ServerPacket
 {

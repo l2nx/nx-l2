@@ -26,8 +26,8 @@ package app.l2nx.login.network.clientpackets;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import app.l2nx.commons.network.packet.ReadablePacket;
 import app.l2nx.login.network.LoginClient;
+import app.l2nx.network.packet.ReadablePacket;
 
 /**
  * Base implementation for all incoming login client packets.<br>

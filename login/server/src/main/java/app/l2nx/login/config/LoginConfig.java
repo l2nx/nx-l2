@@ -32,8 +32,8 @@ import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import app.l2nx.commons.network.NetworkSettings;
 import app.l2nx.commons.util.ConfigReader;
+import app.l2nx.network.NetworkSettings;
 
 /**
  * This class loads all the server related configurations.

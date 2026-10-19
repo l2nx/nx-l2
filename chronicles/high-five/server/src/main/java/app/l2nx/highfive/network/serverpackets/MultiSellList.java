@@ -24,12 +24,12 @@ package app.l2nx.highfive.network.serverpackets;
 
 import static app.l2nx.highfive.data.xml.MultisellData.PAGE_SIZE;
 
-import app.l2nx.commons.network.buffer.WriteBuffer;
 import app.l2nx.highfive.mechanics.multisell.Entry;
 import app.l2nx.highfive.mechanics.multisell.Ingredient;
 import app.l2nx.highfive.mechanics.multisell.ListContainer;
 import app.l2nx.highfive.network.GameClient;
 import app.l2nx.highfive.network.ServerPackets;
+import app.l2nx.network.buffer.WriteBuffer;
 
 public class MultiSellList extends ServerPacket
 {

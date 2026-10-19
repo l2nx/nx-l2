@@ -22,9 +22,9 @@
  */
 package app.l2nx.highfive.network;
 
-import app.l2nx.commons.network.buffer.WriteBuffer;
 import app.l2nx.highfive.config.DevelopmentConfig;
 import app.l2nx.highfive.network.serverpackets.ServerPacket;
+import app.l2nx.network.buffer.WriteBuffer;
 
 /**
  * @author Mobius

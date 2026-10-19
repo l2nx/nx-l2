@@ -23,10 +23,10 @@ import java.awt.Color;
 import java.util.ArrayList;
 import java.util.List;
 
-import app.l2nx.commons.network.buffer.WriteBuffer;
 import app.l2nx.highfive.interfaces.ILocational;
 import app.l2nx.highfive.network.GameClient;
 import app.l2nx.highfive.network.ServerPackets;
+import app.l2nx.network.buffer.WriteBuffer;
 
 /**
  * A packet used to draw points and lines on client.<br/>

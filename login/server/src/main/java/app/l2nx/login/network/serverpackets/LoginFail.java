@@ -22,9 +22,9 @@
  */
 package app.l2nx.login.network.serverpackets;
 
-import app.l2nx.commons.network.buffer.WriteBuffer;
 import app.l2nx.login.enums.LoginFailReason;
 import app.l2nx.login.network.LoginClient;
+import app.l2nx.network.buffer.WriteBuffer;
 
 /**
  * Format: d d: the failure reason

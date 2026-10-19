@@ -33,8 +33,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
 
-import app.l2nx.commons.crypt.NewCrypt;
-import app.l2nx.commons.network.packet.SimpleWritablePacket;
 import app.l2nx.commons.util.TraceUtil;
 import app.l2nx.login.controller.LoginController;
 import app.l2nx.login.controller.ScrambledKeyPair;
@@ -47,6 +45,8 @@ import app.l2nx.login.network.gameserverpackets.send.InitLS;
 import app.l2nx.login.network.gameserverpackets.send.KickPlayer;
 import app.l2nx.login.network.gameserverpackets.send.LoginServerFail;
 import app.l2nx.login.network.gameserverpackets.send.RequestCharacters;
+import app.l2nx.network.crypt.NewCrypt;
+import app.l2nx.network.packet.SimpleWritablePacket;
 
 /**
  * Handles connection and communication between login server and game server.<br>

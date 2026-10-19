@@ -21,7 +21,6 @@ package app.l2nx.highfive.network.serverpackets;
 
 import java.util.Collection;
 
-import app.l2nx.commons.network.buffer.WriteBuffer;
 import app.l2nx.highfive.data.sql.ClanTable;
 import app.l2nx.highfive.entity.clan.Clan;
 import app.l2nx.highfive.mechanics.siege.Castle;
@@ -29,6 +28,7 @@ import app.l2nx.highfive.mechanics.siege.SiegeClan;
 import app.l2nx.highfive.mechanics.siege.clanhalls.SiegableHall;
 import app.l2nx.highfive.network.GameClient;
 import app.l2nx.highfive.network.ServerPackets;
+import app.l2nx.network.buffer.WriteBuffer;
 
 /**
  * Populates the Siege Attacker List in the SiegeInfo Window<br>

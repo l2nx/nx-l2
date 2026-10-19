@@ -30,11 +30,11 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.logging.Logger;
 
-import app.l2nx.commons.network.buffer.WriteBuffer;
 import app.l2nx.login.data.GameServerTable;
 import app.l2nx.login.data.GameServerTable.GameServerInfo;
 import app.l2nx.login.network.LoginClient;
 import app.l2nx.login.network.gameserverpackets.receive.ServerStatus;
+import app.l2nx.network.buffer.WriteBuffer;
 
 /**
  * ServerList

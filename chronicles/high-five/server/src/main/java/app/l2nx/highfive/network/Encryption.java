@@ -22,8 +22,8 @@
  */
 package app.l2nx.highfive.network;
 
-import app.l2nx.commons.network.buffer.ReadBuffer;
-import app.l2nx.commons.network.buffer.WriteBuffer;
+import app.l2nx.network.buffer.ReadBuffer;
+import app.l2nx.network.buffer.WriteBuffer;
 
 /**
  * Stateful XOR cipher used by the game protocol.<br>

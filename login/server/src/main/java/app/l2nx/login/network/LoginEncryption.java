@@ -22,10 +22,10 @@
  */
 package app.l2nx.login.network;
 
-import app.l2nx.commons.crypt.NewCrypt;
-import app.l2nx.commons.network.buffer.ReadBuffer;
-import app.l2nx.commons.network.buffer.WriteBuffer;
 import app.l2nx.commons.util.Rnd;
+import app.l2nx.network.buffer.ReadBuffer;
+import app.l2nx.network.buffer.WriteBuffer;
+import app.l2nx.network.crypt.NewCrypt;
 
 /**
  * Blowfish cipher used by the login protocol.<br>

@@ -21,12 +21,12 @@ package app.l2nx.highfive.network.serverpackets;
 
 import java.util.Map;
 
-import app.l2nx.commons.network.buffer.WriteBuffer;
 import app.l2nx.highfive.mechanics.olympiad.Hero;
 import app.l2nx.highfive.mechanics.olympiad.Olympiad;
 import app.l2nx.highfive.network.GameClient;
 import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.highfive.util.StatSet;
+import app.l2nx.network.buffer.WriteBuffer;
 
 /**
  * @author -Wooden-, KenM, godson

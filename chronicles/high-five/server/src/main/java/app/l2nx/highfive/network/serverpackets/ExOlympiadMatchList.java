@@ -22,7 +22,6 @@ package app.l2nx.highfive.network.serverpackets;
 import java.util.ArrayList;
 import java.util.List;
 
-import app.l2nx.commons.network.buffer.WriteBuffer;
 import app.l2nx.highfive.mechanics.olympiad.AbstractOlympiadGame;
 import app.l2nx.highfive.mechanics.olympiad.OlympiadGameClassed;
 import app.l2nx.highfive.mechanics.olympiad.OlympiadGameManager;
@@ -31,6 +30,7 @@ import app.l2nx.highfive.mechanics.olympiad.OlympiadGameTask;
 import app.l2nx.highfive.mechanics.olympiad.OlympiadGameTeams;
 import app.l2nx.highfive.network.GameClient;
 import app.l2nx.highfive.network.ServerPackets;
+import app.l2nx.network.buffer.WriteBuffer;
 
 /**
  * @author mrTJO

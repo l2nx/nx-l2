@@ -24,12 +24,12 @@ package app.l2nx.highfive.network.serverpackets;
 
 import java.util.List;
 
-import app.l2nx.commons.network.buffer.WriteBuffer;
 import app.l2nx.highfive.data.xml.HennaData;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.item.Henna;
 import app.l2nx.highfive.network.GameClient;
 import app.l2nx.highfive.network.ServerPackets;
+import app.l2nx.network.buffer.WriteBuffer;
 
 public class HennaEquipList extends ServerPacket
 {

@@ -25,7 +25,6 @@ package app.l2nx.login.network.gameserverpackets.receive;
 import java.util.Arrays;
 import java.util.logging.Logger;
 
-import app.l2nx.commons.network.packet.SimpleReadablePacket;
 import app.l2nx.login.GameServerThread;
 import app.l2nx.login.config.LoginConfig;
 import app.l2nx.login.data.GameServerTable;
@@ -33,6 +32,7 @@ import app.l2nx.login.data.GameServerTable.GameServerInfo;
 import app.l2nx.login.network.GameServerPacketHandler.GameServerState;
 import app.l2nx.login.network.gameserverpackets.send.AuthResponse;
 import app.l2nx.login.network.gameserverpackets.send.LoginServerFail;
+import app.l2nx.network.packet.SimpleReadablePacket;
 
 /**
  * Authenticates a game server connection and binds it to a registered server entry.<br>

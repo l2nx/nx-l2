@@ -20,12 +20,12 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package app.l2nx.commons.network;
+package app.l2nx.network;
 
 import java.net.SocketAddress;
 
-import app.l2nx.commons.network.pool.BufferPool;
-import app.l2nx.commons.network.pool.ResourcePool;
+import app.l2nx.network.pool.BufferPool;
+import app.l2nx.network.pool.ResourcePool;
 
 /**
  * Configures and initializes connection parameters for the network layer.<br>

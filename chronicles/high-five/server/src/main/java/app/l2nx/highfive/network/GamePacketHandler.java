@@ -24,9 +24,6 @@ package app.l2nx.highfive.network;
 
 import java.util.logging.Logger;
 
-import app.l2nx.commons.network.buffer.ReadBuffer;
-import app.l2nx.commons.network.packet.PacketHandler;
-import app.l2nx.commons.network.packet.ReadablePacket;
 import app.l2nx.commons.util.TraceUtil;
 import app.l2nx.highfive.network.clientpackets.RequestBookMarkSlotInfo;
 import app.l2nx.highfive.network.clientpackets.RequestChangeBookMarkSlot;
@@ -34,6 +31,9 @@ import app.l2nx.highfive.network.clientpackets.RequestDeleteBookMarkSlot;
 import app.l2nx.highfive.network.clientpackets.RequestModifyBookMarkSlot;
 import app.l2nx.highfive.network.clientpackets.RequestSaveBookMarkSlot;
 import app.l2nx.highfive.network.clientpackets.RequestTeleportBookMark;
+import app.l2nx.network.buffer.ReadBuffer;
+import app.l2nx.network.packet.PacketHandler;
+import app.l2nx.network.packet.ReadablePacket;
 
 /**
  * @author Mobius

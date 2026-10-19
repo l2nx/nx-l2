@@ -22,9 +22,9 @@
  */
 package app.l2nx.login.network.serverpackets;
 
-import app.l2nx.commons.network.buffer.WriteBuffer;
 import app.l2nx.login.enums.PlayFailReason;
 import app.l2nx.login.network.LoginClient;
+import app.l2nx.network.buffer.WriteBuffer;
 
 /**
  * @version $Revision: 1.2.4.1 $ $Date: 2005/03/27 15:30:11 $

@@ -24,7 +24,6 @@ package app.l2nx.login.network;
 
 import java.util.logging.Logger;
 
-import app.l2nx.commons.network.packet.SimpleReadablePacket;
 import app.l2nx.login.GameServerThread;
 import app.l2nx.login.network.gameserverpackets.receive.BlowFishKey;
 import app.l2nx.login.network.gameserverpackets.receive.ChangeAccessLevel;
@@ -38,6 +37,7 @@ import app.l2nx.login.network.gameserverpackets.receive.ReplyCharacters;
 import app.l2nx.login.network.gameserverpackets.receive.RequestTempBan;
 import app.l2nx.login.network.gameserverpackets.receive.ServerStatus;
 import app.l2nx.login.network.gameserverpackets.send.LoginServerFail;
+import app.l2nx.network.packet.SimpleReadablePacket;
 
 /**
  * Handles routing of packets received from game server connections.

@@ -25,11 +25,11 @@ package app.l2nx.highfive.network.serverpackets;
 import java.util.ArrayList;
 import java.util.List;
 
-import app.l2nx.commons.network.buffer.WriteBuffer;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.mechanics.skill.BuffInfo;
 import app.l2nx.highfive.network.GameClient;
 import app.l2nx.highfive.network.ServerPackets;
+import app.l2nx.network.buffer.WriteBuffer;
 
 public class PartySpelled extends ServerPacket
 {

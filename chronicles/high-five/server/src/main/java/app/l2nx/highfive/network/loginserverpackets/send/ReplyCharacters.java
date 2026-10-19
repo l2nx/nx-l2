@@ -25,7 +25,7 @@ package app.l2nx.highfive.network.loginserverpackets.send;
 import java.util.Collections;
 import java.util.List;
 
-import app.l2nx.commons.network.packet.SimpleWritablePacket;
+import app.l2nx.network.packet.SimpleWritablePacket;
 
 /**
  * Reports character count and pending delete timers for an account.<br>

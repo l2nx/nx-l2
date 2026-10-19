@@ -28,9 +28,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import app.l2nx.commons.database.DatabaseFactory;
-import app.l2nx.commons.network.Client;
-import app.l2nx.commons.network.buffer.ReadBuffer;
-import app.l2nx.commons.network.buffer.WriteBuffer;
 import app.l2nx.commons.threads.ThreadPool;
 import app.l2nx.commons.util.TraceUtil;
 import app.l2nx.highfive.LoginServerThread;
@@ -51,12 +48,15 @@ import app.l2nx.highfive.network.serverpackets.ServerPacket;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
 import app.l2nx.highfive.security.SecondaryPasswordAuth;
 import app.l2nx.highfive.util.FloodProtectors;
+import app.l2nx.network.Client;
+import app.l2nx.network.buffer.ReadBuffer;
+import app.l2nx.network.buffer.WriteBuffer;
 
 /**
  * Represents a client connected on GameServer.
  * @author KenM
  */
-public class GameClient extends Client<app.l2nx.commons.network.Connection<GameClient>>
+public class GameClient extends Client<app.l2nx.network.Connection<GameClient>>
 {
 	private static final Logger LOGGER = Logger.getLogger(GameClient.class.getName());
 	private static final Logger LOGGER_ACCOUNTING = Logger.getLogger("accounting");
@@ -78,7 +78,7 @@ public class GameClient extends Client<app.l2nx.commons.network.Connection<GameC
 	private int _protocolVersion;
 	private int[][] _trace;
 	
-	public GameClient(app.l2nx.commons.network.Connection<GameClient> connection)
+	public GameClient(app.l2nx.network.Connection<GameClient> connection)
 	{
 		super(connection);
 		_ip = connection.getRemoteAddress();

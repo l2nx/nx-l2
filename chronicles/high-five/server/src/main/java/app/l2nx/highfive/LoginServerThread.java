@@ -47,9 +47,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import app.l2nx.commons.crypt.NewCrypt;
 import app.l2nx.commons.database.DatabaseFactory;
-import app.l2nx.commons.network.packet.SimpleWritablePacket;
 import app.l2nx.commons.util.HexUtil;
 import app.l2nx.commons.util.TraceUtil;
 import app.l2nx.highfive.config.GeneralConfig;
@@ -82,6 +80,8 @@ import app.l2nx.highfive.network.loginserverpackets.send.TempBan;
 import app.l2nx.highfive.network.serverpackets.CharSelectionInfo;
 import app.l2nx.highfive.network.serverpackets.LoginFail;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
+import app.l2nx.network.crypt.NewCrypt;
+import app.l2nx.network.packet.SimpleWritablePacket;
 
 /**
  * Handles communication between the game server and login server.<br>

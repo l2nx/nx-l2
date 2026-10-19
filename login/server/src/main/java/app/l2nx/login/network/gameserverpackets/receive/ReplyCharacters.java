@@ -19,9 +19,9 @@
  */
 package app.l2nx.login.network.gameserverpackets.receive;
 
-import app.l2nx.commons.network.packet.SimpleReadablePacket;
 import app.l2nx.login.GameServerThread;
 import app.l2nx.login.controller.LoginController;
+import app.l2nx.network.packet.SimpleReadablePacket;
 
 /**
  * Thanks to mochitto.

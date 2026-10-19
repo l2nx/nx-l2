@@ -39,10 +39,9 @@ import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.context.SmartLifecycle;
 import org.springframework.stereotype.Component;
 
-import app.l2nx.commons.database.DatabaseFactory;
 import app.l2nx.boot.ServerExit;
 import app.l2nx.boot.ServerExitCode;
-import app.l2nx.commons.network.ConnectionManager;
+import app.l2nx.commons.database.DatabaseFactory;
 import app.l2nx.commons.threads.ThreadPool;
 import app.l2nx.login.config.LoginConfig;
 import app.l2nx.login.controller.LoginController;
@@ -50,6 +49,7 @@ import app.l2nx.login.data.GameServerTable;
 import app.l2nx.login.network.LoginClient;
 import app.l2nx.login.network.LoginPacketHandler;
 import app.l2nx.login.network.gameserverpackets.receive.ServerStatus;
+import app.l2nx.network.ConnectionManager;
 
 /**
  * Bootstraps and drives the login server lifecycle.<br>

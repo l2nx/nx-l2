@@ -22,11 +22,11 @@
  */
 package app.l2nx.highfive.network.clientpackets;
 
-import app.l2nx.commons.network.packet.ReadablePacket;
 import app.l2nx.commons.util.TraceUtil;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.network.GameClient;
 import app.l2nx.highfive.network.PacketLogger;
+import app.l2nx.network.packet.ReadablePacket;
 
 /**
  * @author Mobius

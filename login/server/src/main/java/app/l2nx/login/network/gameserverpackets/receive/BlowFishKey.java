@@ -28,10 +28,10 @@ import java.util.logging.Logger;
 
 import javax.crypto.Cipher;
 
-import app.l2nx.commons.crypt.NewCrypt;
-import app.l2nx.commons.network.packet.SimpleReadablePacket;
 import app.l2nx.login.GameServerThread;
 import app.l2nx.login.network.GameServerPacketHandler.GameServerState;
+import app.l2nx.network.crypt.NewCrypt;
+import app.l2nx.network.packet.SimpleReadablePacket;
 
 /**
  * Receives the Blowfish session key from the game server, encrypted with RSA.<br>

@@ -29,7 +29,7 @@ import java.util.logging.Logger;
 
 import javax.crypto.Cipher;
 
-import app.l2nx.commons.network.packet.SimpleWritablePacket;
+import app.l2nx.network.packet.SimpleWritablePacket;
 
 /**
  * Sends the Blowfish session key encrypted to the login server during the initial handshake.<br>

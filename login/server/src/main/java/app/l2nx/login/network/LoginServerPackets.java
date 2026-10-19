@@ -22,7 +22,7 @@
  */
 package app.l2nx.login.network;
 
-import app.l2nx.commons.network.packet.SimpleWritablePacket;
+import app.l2nx.network.packet.SimpleWritablePacket;
 
 /**
  * @author Mobius

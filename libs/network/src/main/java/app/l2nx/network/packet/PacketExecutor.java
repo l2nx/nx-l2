@@ -21,7 +21,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package app.l2nx.commons.network.packet;
+package app.l2nx.network.packet;
 
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -34,9 +34,9 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.binder.jvm.ExecutorServiceMetrics;
 
-import app.l2nx.commons.network.Client;
-import app.l2nx.commons.network.Connection;
-import app.l2nx.commons.network.ConnectionConfig;
+import app.l2nx.network.Client;
+import app.l2nx.network.Connection;
+import app.l2nx.network.ConnectionConfig;
 
 /**
  * Thread-pool-based executor for incoming network packets.<br>

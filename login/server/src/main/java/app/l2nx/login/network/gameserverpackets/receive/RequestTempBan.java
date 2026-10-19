@@ -25,8 +25,8 @@ import java.sql.SQLException;
 import java.util.logging.Logger;
 
 import app.l2nx.commons.database.DatabaseFactory;
-import app.l2nx.commons.network.packet.SimpleReadablePacket;
 import app.l2nx.login.controller.LoginController;
+import app.l2nx.network.packet.SimpleReadablePacket;
 
 /**
  * @author mrTJO

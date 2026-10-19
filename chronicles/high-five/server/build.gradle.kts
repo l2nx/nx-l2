@@ -5,6 +5,7 @@ plugins {
 dependencies {
     api(project(":libs:boot"))
     api(project(":libs:commons"))
+    api(project(":libs:network"))
     implementation(libs.classgraph)
 }
 

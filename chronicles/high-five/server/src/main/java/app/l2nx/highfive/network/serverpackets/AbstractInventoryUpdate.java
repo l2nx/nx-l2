@@ -24,9 +24,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import app.l2nx.commons.network.buffer.WriteBuffer;
 import app.l2nx.highfive.entity.item.holders.ItemInfo;
 import app.l2nx.highfive.entity.item.instance.Item;
+import app.l2nx.network.buffer.WriteBuffer;
 
 /**
  * @author UnAfraid

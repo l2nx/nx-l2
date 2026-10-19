@@ -23,11 +23,11 @@
 
 package app.l2nx.login.network.gameserverpackets.receive;
 
-import app.l2nx.commons.network.packet.SimpleReadablePacket;
 import app.l2nx.login.GameServerThread;
 import app.l2nx.login.controller.LoginController;
 import app.l2nx.login.controller.SessionKey;
 import app.l2nx.login.network.gameserverpackets.send.PlayerAuthResponse;
+import app.l2nx.network.packet.SimpleReadablePacket;
 
 /**
  * Reads an authentication request from a game server and validates it against the stored session key.<br>

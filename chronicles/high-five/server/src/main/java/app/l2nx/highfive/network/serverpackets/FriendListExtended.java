@@ -26,12 +26,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 import app.l2nx.commons.database.DatabaseFactory;
-import app.l2nx.commons.network.buffer.WriteBuffer;
 import app.l2nx.highfive.data.sql.CharInfoTable;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.network.GameClient;
 import app.l2nx.highfive.network.ServerPackets;
+import app.l2nx.network.buffer.WriteBuffer;
 
 /**
  * Support for "Chat with Friends" dialog. <br />

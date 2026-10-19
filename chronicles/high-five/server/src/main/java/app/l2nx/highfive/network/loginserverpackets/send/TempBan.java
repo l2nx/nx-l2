@@ -22,7 +22,7 @@
  */
 package app.l2nx.highfive.network.loginserverpackets.send;
 
-import app.l2nx.commons.network.packet.SimpleWritablePacket;
+import app.l2nx.network.packet.SimpleWritablePacket;
 
 /**
  * Issues a temporary ban for an account and/or IP at the login server.<br>

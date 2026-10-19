@@ -24,11 +24,11 @@ package app.l2nx.login.network;
 
 import java.util.logging.Logger;
 
-import app.l2nx.commons.network.buffer.ReadBuffer;
-import app.l2nx.commons.network.packet.PacketHandler;
-import app.l2nx.commons.network.packet.ReadablePacket;
 import app.l2nx.commons.util.TraceUtil;
 import app.l2nx.login.enums.LoginFailReason;
+import app.l2nx.network.buffer.ReadBuffer;
+import app.l2nx.network.packet.PacketHandler;
+import app.l2nx.network.packet.ReadablePacket;
 
 /**
  * @author Mobius

@@ -22,7 +22,6 @@
  */
 package app.l2nx.highfive.network.serverpackets;
 
-import app.l2nx.commons.network.buffer.WriteBuffer;
 import app.l2nx.highfive.data.holders.AccessLevel;
 import app.l2nx.highfive.data.xml.AdminData;
 import app.l2nx.highfive.entity.actor.Creature;
@@ -39,6 +38,7 @@ import app.l2nx.highfive.mechanics.siege.SiegeClan;
 import app.l2nx.highfive.mechanics.siege.clanhalls.SiegableHall;
 import app.l2nx.highfive.network.GameClient;
 import app.l2nx.highfive.network.ServerPackets;
+import app.l2nx.network.buffer.WriteBuffer;
 
 public class Die extends ServerPacket
 {

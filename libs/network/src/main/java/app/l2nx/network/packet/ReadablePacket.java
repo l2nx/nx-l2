@@ -20,13 +20,13 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package app.l2nx.commons.network.packet;
+package app.l2nx.network.packet;
 
 import java.nio.charset.StandardCharsets;
 
-import app.l2nx.commons.network.Client;
-import app.l2nx.commons.network.Connection;
-import app.l2nx.commons.network.buffer.ReadBuffer;
+import app.l2nx.network.Client;
+import app.l2nx.network.Connection;
+import app.l2nx.network.buffer.ReadBuffer;
 
 /**
  * Base class for all packets received from a client.<br>

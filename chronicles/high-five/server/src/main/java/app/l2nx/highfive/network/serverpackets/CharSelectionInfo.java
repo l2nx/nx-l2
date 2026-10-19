@@ -29,7 +29,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import app.l2nx.commons.database.DatabaseFactory;
-import app.l2nx.commons.network.buffer.WriteBuffer;
 import app.l2nx.highfive.config.ServerConfig;
 import app.l2nx.highfive.config.custom.MultilingualSupportConfig;
 import app.l2nx.highfive.config.custom.OfflinePlayConfig;
@@ -45,6 +44,7 @@ import app.l2nx.highfive.network.GameClient;
 import app.l2nx.highfive.network.PacketLogger;
 import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.highfive.network.holders.CharacterInfoHolder;
+import app.l2nx.network.buffer.WriteBuffer;
 
 public class CharSelectionInfo extends ServerPacket
 {

@@ -22,7 +22,7 @@
  */
 package app.l2nx.highfive.network.loginserverpackets.send;
 
-import app.l2nx.commons.network.packet.SimpleWritablePacket;
+import app.l2nx.network.packet.SimpleWritablePacket;
 
 /**
  * Notifies the login server that a player has logged out.
