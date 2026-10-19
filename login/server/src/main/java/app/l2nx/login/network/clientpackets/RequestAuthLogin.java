@@ -28,7 +28,7 @@ import java.util.logging.Logger;
 
 import javax.crypto.Cipher;
 
-import app.l2nx.login.config.LoginConfig;
+import app.l2nx.login.LoginServer;
 import app.l2nx.login.controller.AccountInfo;
 import app.l2nx.login.controller.LoginController;
 import app.l2nx.login.data.GameServerTable.GameServerInfo;
@@ -130,7 +130,7 @@ public class RequestAuthLogin extends LoginClientPacket
 				client.setConnectionState(ConnectionState.AUTHED_LOGIN);
 				client.setSessionKey(lc.assignSessionKeyToClient(info.getLogin(), client));
 				lc.getCharactersOnAccount(info.getLogin());
-				if (LoginConfig.SHOW_LICENCE)
+				if (LoginServer.getInstance().getProperties().showLicence())
 				{
 					client.sendPacket(new LoginOk(client.getSessionKey()));
 				}

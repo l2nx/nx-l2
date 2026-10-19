@@ -14,7 +14,6 @@ WORKDIR /opt/login-server
 COPY build/install/login-server/bin bin
 COPY build/install/login-server/lib lib
 # The distribution stays read-only for the server user; it creates and writes only log/.
-COPY build/install/login-server/config config
 COPY build/install/login-server/data data
 COPY build/install/login-server/banned_ip.cfg banned_ip.cfg
 RUN install -d -o l2nx -g l2nx log
@@ -25,7 +24,7 @@ USER l2nx
 # published port reaches it. Nothing is published by default.
 ENV SERVER_ADDRESS=0.0.0.0
 
-# 2106 login clients (LoginserverPort in config/Server.ini), 9014 game servers (LoginPort), 8106 Actuator (server.port).
+# 2106 login clients (l2nx.login.client.port), 9014 game servers (l2nx.login.game-server.port), 8106 Actuator (server.port).
 EXPOSE 2106 9014 8106
 
 # The image has neither curl nor wget, so the probe speaks HTTP over bash's /dev/tcp.

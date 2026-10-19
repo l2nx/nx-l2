@@ -23,7 +23,6 @@
 package app.l2nx.login.network.clientpackets;
 
 import app.l2nx.login.LoginServer;
-import app.l2nx.login.config.LoginConfig;
 import app.l2nx.login.controller.LoginController;
 import app.l2nx.login.controller.SessionKey;
 import app.l2nx.login.enums.LoginFailReason;
@@ -67,7 +66,7 @@ public class RequestServerLogin extends LoginClientPacket
 		final SessionKey sk = client.getSessionKey();
 		
 		// If we didn't showed the license we can't check these values.
-		if (!LoginConfig.SHOW_LICENCE || sk.checkLoginPair(_skey1, _skey2))
+		if (!LoginServer.getInstance().getProperties().showLicence() || sk.checkLoginPair(_skey1, _skey2))
 		{
 			if ((LoginServer.getInstance().getStatus() == ServerStatus.STATUS_DOWN) || ((LoginServer.getInstance().getStatus() == ServerStatus.STATUS_GM_ONLY) && (client.getAccessLevel() < 1)))
 			{

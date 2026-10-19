@@ -28,9 +28,8 @@ import java.security.KeyPairGenerator;
 import java.security.MessageDigest;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.spec.RSAKeyGenParameterSpec;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collection;
@@ -39,36 +38,37 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ScheduledFuture;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.crypto.Cipher;
 
-import app.l2nx.commons.database.DatabaseFactory;
-import app.l2nx.commons.threads.ThreadPool;
+import org.springframework.dao.DataAccessException;
+import org.springframework.scheduling.TaskScheduler;
+import org.springframework.stereotype.Component;
+
 import app.l2nx.commons.util.Rnd;
 import app.l2nx.login.GameServerThread;
-import app.l2nx.login.config.LoginConfig;
+import app.l2nx.login.config.LoginProperties;
 import app.l2nx.login.data.GameServerTable;
 import app.l2nx.login.data.GameServerTable.GameServerInfo;
 import app.l2nx.login.enums.LoginFailReason;
 import app.l2nx.login.enums.LoginResult;
 import app.l2nx.login.network.LoginClient;
+import app.l2nx.login.repository.AccountDataRepository;
+import app.l2nx.login.repository.AccountRepository;
+import app.l2nx.login.repository.AccountRepository.IpAuth;
 
+@Component
 public class LoginController
 {
 	protected static final Logger LOGGER = Logger.getLogger(LoginController.class.getName());
-	
-	// SQL Queries.
-	private static final String USER_INFO_SELECT = "SELECT login, password, IF(? > value OR value IS NULL, accessLevel, -1) AS accessLevel, lastServer FROM accounts LEFT JOIN (account_data) ON (account_data.account_name=accounts.login AND account_data.var=\"ban_temp\") WHERE login=?";
-	private static final String AUTOCREATE_ACCOUNTS_INSERT = "INSERT INTO accounts (login, password, lastactive, accessLevel, lastIP) values (?, ?, ?, ?, ?)";
-	private static final String ACCOUNT_INFO_UPDATE = "UPDATE accounts SET lastactive = ?, lastIP = ? WHERE login = ?";
-	private static final String ACCOUNT_LAST_SERVER_UPDATE = "UPDATE accounts SET lastServer = ? WHERE login = ?";
-	private static final String ACCOUNT_ACCESS_LEVEL_UPDATE = "UPDATE accounts SET accessLevel = ? WHERE login = ?";
-	private static final String ACCOUNT_IPS_UPDATE = "UPDATE accounts SET pcIp = ?, hop1 = ?, hop2 = ?, hop3 = ?, hop4 = ? WHERE login = ?";
-	private static final String ACCOUNT_IPAUTH_SELECT = "SELECT * FROM accounts_ipauth WHERE login = ?";
-	
+
+	private static final String TEMP_BAN_VAR = "ban_temp";
+
 	/** Time before kicking the client if he didn't logged yet */
 	public static final int LOGIN_TIMEOUT = 5 * 60 * 1000; // 5 minutes.
 	
@@ -82,9 +82,28 @@ public class LoginController
 	private final Map<String, Integer> _failedLoginAttemps = new HashMap<>();
 	private final Map<String, Long> _bannedIps = new ConcurrentHashMap<>();
 	
+	private final AccountRepository accounts;
+	private final AccountDataRepository accountData;
+	private final LoginProperties properties;
+	private final TaskScheduler taskScheduler;
+	private ScheduledFuture<?> purgeTask;
+
 	private static LoginController INSTANCE;
-	
-	private LoginController() throws GeneralSecurityException
+
+	public LoginController(AccountRepository accounts, AccountDataRepository accountData, LoginProperties properties, TaskScheduler taskScheduler)
+	{
+		this.accounts = accounts;
+		this.accountData = accountData;
+		this.properties = properties;
+		this.taskScheduler = taskScheduler;
+		INSTANCE = this;
+	}
+
+	/**
+	 * Generates the keys and starts the purge of clients that did not log in within {@link #LOGIN_TIMEOUT}.
+	 * @throws GeneralSecurityException if the RSA keys cannot be generated
+	 */
+	public void load() throws GeneralSecurityException
 	{
 		LOGGER.info("Loading LoginController...");
 		_keyPairs = new ScrambledKeyPair[10];
@@ -107,7 +126,16 @@ public class LoginController
 		generateBlowFishKeys();
 		
 		// Start the client purge task.
-		ThreadPool.scheduleAtFixedRate(this::purge, LOGIN_TIMEOUT, LOGIN_TIMEOUT);
+		purgeTask = taskScheduler.scheduleAtFixedRate(this::purge, Instant.now().plusMillis(LOGIN_TIMEOUT), Duration.ofMillis(LOGIN_TIMEOUT));
+	}
+
+	public void shutdown()
+	{
+		if (purgeTask != null)
+		{
+			purgeTask.cancel(false);
+			purgeTask = null;
+		}
 	}
 	
 	/**
@@ -193,9 +221,9 @@ public class LoginController
 			_failedLoginAttemps.put(addr, failedLoginAttemps);
 		}
 		
-		if (failedLoginAttemps >= LoginConfig.LOGIN_TRY_BEFORE_BAN)
+		if (failedLoginAttemps >= properties.ban().failedLogins())
 		{
-			addBanForAddress(addr, LoginConfig.LOGIN_BLOCK_AFTER_BAN * 1000);
+			addBanForAddress(addr, properties.ban().duration().toMillis());
 			
 			// We need to clear the failed login attempts here, so after the IP ban is over the client has another 5 attempts.
 			clearFailedLoginAttemps(addr);
@@ -219,45 +247,31 @@ public class LoginController
 			final byte[] raw = password.getBytes(StandardCharsets.UTF_8);
 			final String hashBase64 = Base64.getEncoder().encodeToString(md.digest(raw));
 			
-			try (Connection con = DatabaseFactory.getConnection();
-				PreparedStatement ps = con.prepareStatement(USER_INFO_SELECT))
+			final Optional<AccountInfo> stored = accounts.findAccountInfo(login, System.currentTimeMillis());
+			if (stored.isPresent())
 			{
-				ps.setString(1, Long.toString(System.currentTimeMillis()));
-				ps.setString(2, login);
-				try (ResultSet rset = ps.executeQuery())
+				final AccountInfo info = stored.get();
+				if (!info.checkPassHash(hashBase64))
 				{
-					if (rset.next())
-					{
-						final AccountInfo info = new AccountInfo(rset.getString("login"), rset.getString("password"), rset.getInt("accessLevel"), rset.getInt("lastServer"));
-						if (!info.checkPassHash(hashBase64))
-						{
-							// Wrong password.
-							recordFailedLoginAttemp(clientAddr);
-							return null;
-						}
-						
-						clearFailedLoginAttemps(clientAddr);
-						return info;
-					}
+					// Wrong password.
+					recordFailedLoginAttemp(clientAddr);
+					return null;
 				}
+
+				clearFailedLoginAttemps(clientAddr);
+				return info;
 			}
-			
-			if (!autoCreateIfEnabled || !LoginConfig.AUTO_CREATE_ACCOUNTS)
+
+			if (!autoCreateIfEnabled || !properties.autoCreateAccounts())
 			{
 				// Account does not exist and auto create account is not desired.
 				recordFailedLoginAttemp(clientAddr);
 				return null;
 			}
-			
-			try (Connection con = DatabaseFactory.getConnection();
-				PreparedStatement ps = con.prepareStatement(AUTOCREATE_ACCOUNTS_INSERT))
+
+			try
 			{
-				ps.setString(1, login);
-				ps.setString(2, hashBase64);
-				ps.setLong(3, System.currentTimeMillis());
-				ps.setInt(4, 0);
-				ps.setString(5, clientAddr);
-				ps.execute();
+				accounts.create(login, hashBase64, System.currentTimeMillis(), clientAddr);
 			}
 			catch (Exception e)
 			{
@@ -429,12 +443,9 @@ public class LoginController
 			final boolean loginOk = gsi.canLogin(client);
 			if (loginOk && (client.getLastServer() != serverId))
 			{
-				try (Connection con = DatabaseFactory.getConnection();
-					PreparedStatement ps = con.prepareStatement(ACCOUNT_LAST_SERVER_UPDATE))
+				try
 				{
-					ps.setInt(1, serverId);
-					ps.setString(2, client.getAccount());
-					ps.executeUpdate();
+					accounts.updateLastServer(client.getAccount(), serverId);
 				}
 				catch (Exception e)
 				{
@@ -450,36 +461,57 @@ public class LoginController
 	
 	public void setAccountAccessLevel(String account, int banLevel)
 	{
-		try (Connection con = DatabaseFactory.getConnection();
-			PreparedStatement ps = con.prepareStatement(ACCOUNT_ACCESS_LEVEL_UPDATE))
+		try
 		{
-			ps.setInt(1, banLevel);
-			ps.setString(2, account);
-			ps.executeUpdate();
+			accounts.updateAccessLevel(account, banLevel);
 		}
 		catch (Exception e)
 		{
 			LOGGER.log(Level.WARNING, "Could not set accessLevel: " + e.getMessage(), e);
 		}
 	}
-	
+
 	public void setAccountLastTracert(String account, String pcIp, String hop1, String hop2, String hop3, String hop4)
 	{
-		try (Connection con = DatabaseFactory.getConnection();
-			PreparedStatement ps = con.prepareStatement(ACCOUNT_IPS_UPDATE))
+		try
 		{
-			ps.setString(1, pcIp);
-			ps.setString(2, hop1);
-			ps.setString(3, hop2);
-			ps.setString(4, hop3);
-			ps.setString(5, hop4);
-			ps.setString(6, account);
-			ps.executeUpdate();
+			accounts.updateTracert(account, pcIp, hop1, hop2, hop3, hop4);
 		}
 		catch (Exception e)
 		{
 			LOGGER.log(Level.WARNING, "Could not set last tracert: " + e.getMessage(), e);
 		}
+	}
+
+	/**
+	 * @param banTime stored as {@code ban_temp}; the account reads as banned while it lies after the current time
+	 */
+	public void setAccountTempBan(String account, long banTime)
+	{
+		try
+		{
+			accountData.save(account, TEMP_BAN_VAR, Long.toString(banTime));
+		}
+		catch (DataAccessException e)
+		{
+			LOGGER.warning("Could not set temporary ban: " + e.getMessage());
+		}
+	}
+
+	/**
+	 * @return whether the password was changed: the account exists and its password hash is {@code currentHash}
+	 */
+	public boolean changePassword(String account, String currentHash, String newHash)
+	{
+		return accounts.updatePassword(account, currentHash, newHash);
+	}
+
+	/**
+	 * @return the stored password hash, {@code null} if the account does not exist
+	 */
+	public String getPasswordHash(String account)
+	{
+		return accounts.findPassword(account).orElse(null);
 	}
 	
 	public void setCharactersOnServer(String account, int charsNum, long[] timeToDel, int serverId)
@@ -522,32 +554,22 @@ public class LoginController
 		{
 			final List<String> ipWhiteList = new ArrayList<>();
 			final List<String> ipBlackList = new ArrayList<>();
-			try (Connection con = DatabaseFactory.getConnection();
-				PreparedStatement ps = con.prepareStatement(ACCOUNT_IPAUTH_SELECT))
+			for (IpAuth ipAuth : accounts.findIpAuths(info.getLogin()))
 			{
-				ps.setString(1, info.getLogin());
-				try (ResultSet rset = ps.executeQuery())
+				final String ip = ipAuth.ip();
+				final String type = ipAuth.type();
+				if (!isValidIPAddress(ip))
 				{
-					String ip;
-					String type;
-					while (rset.next())
-					{
-						ip = rset.getString("ip");
-						type = rset.getString("type");
-						if (!isValidIPAddress(ip))
-						{
-							continue;
-						}
-						
-						if (type.equals("allow"))
-						{
-							ipWhiteList.add(ip);
-						}
-						else if (type.equals("deny"))
-						{
-							ipBlackList.add(ip);
-						}
-					}
+					continue;
+				}
+
+				if (type.equals("allow"))
+				{
+					ipWhiteList.add(ip);
+				}
+				else if (type.equals("deny"))
+				{
+					ipBlackList.add(ip);
 				}
 			}
 			
@@ -569,15 +591,7 @@ public class LoginController
 			
 			client.setAccessLevel(info.getAccessLevel());
 			client.setLastServer(info.getLastServer());
-			try (Connection con = DatabaseFactory.getConnection();
-				PreparedStatement ps = con.prepareStatement(ACCOUNT_INFO_UPDATE))
-			{
-				ps.setLong(1, System.currentTimeMillis());
-				ps.setString(2, address);
-				ps.setString(3, info.getLogin());
-				ps.execute();
-			}
-			
+			accounts.updateLastActive(info.getLogin(), System.currentTimeMillis(), address);
 			return true;
 		}
 		catch (Exception e)
@@ -623,21 +637,6 @@ public class LoginController
 			{
 				client.close(LoginFailReason.REASON_ACCESS_FAILED);
 				iterator.remove();
-			}
-		}
-	}
-	
-	public static void load() throws GeneralSecurityException
-	{
-		synchronized (LoginController.class)
-		{
-			if (INSTANCE == null)
-			{
-				INSTANCE = new LoginController();
-			}
-			else
-			{
-				throw new IllegalStateException("LoginController can only be loaded a single time.");
 			}
 		}
 	}

@@ -30,7 +30,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import app.l2nx.login.config.LoginConfig;
+import app.l2nx.login.config.LoginProperties;
 import app.l2nx.login.util.FloodProtectorListener;
 
 /**
@@ -38,7 +38,7 @@ import app.l2nx.login.util.FloodProtectorListener;
  * Delegates each accepted connection to a dedicated handler thread and tracks active handlers.
  * <ul>
  * <li>Uses flood protection to mitigate abusive connection attempts.</li>
- * <li>Binds to host and port configured in {@link LoginConfig}.</li>
+ * <li>Binds to host and port configured in {@link LoginProperties.GameServer}.</li>
  * <li>Creates one {@link GameServerThread} per accepted socket.</li>
  * <li>Tracks active game server threads in a concurrent collection for monitoring.</li>
  * </ul>
@@ -56,15 +56,10 @@ public class GameServerListener extends FloodProtectorListener
 	 * Uses flood protection to limit abusive connection attempts.
 	 * @throws IOException If binding the server socket fails.
 	 */
-	public GameServerListener() throws IOException
+	public GameServerListener(LoginProperties.GameServer gameServer, LoginProperties.FloodProtection floodProtection) throws IOException
 	{
-		super(LoginConfig.GAME_SERVER_LOGIN_HOST, LoginConfig.GAME_SERVER_LOGIN_PORT);
-		setName(getClass().getSimpleName() + "-" + LoginConfig.GAME_SERVER_LOGIN_HOST + ":" + LoginConfig.GAME_SERVER_LOGIN_PORT);
-		
-		// if (LOGGER.isLoggable(Level.INFO))
-		// {
-		// LOGGER.info(getClass().getSimpleName() + ": Listening for game servers on " + LoginConfig.GAME_SERVER_LOGIN_HOST + ":" + LoginConfig.GAME_SERVER_LOGIN_PORT + ".");
-		// }
+		super(gameServer.host(), gameServer.port(), floodProtection);
+		setName(getClass().getSimpleName() + "-" + gameServer.host() + ":" + gameServer.port());
 	}
 	
 	/**

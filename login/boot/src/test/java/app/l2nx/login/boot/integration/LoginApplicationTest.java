@@ -26,7 +26,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 import app.l2nx.boot.integration.BootSmokeTest;
 import app.l2nx.login.LoginServer;
-import app.l2nx.login.config.LoginConfig;
+import app.l2nx.login.config.LoginProperties;
 
 // One context for the whole class, closed after the last nested class: the server keeps static state, so neither
 // concurrent tests nor a second context in this JVM are possible.
@@ -57,7 +57,7 @@ class LoginApplicationTest extends BootSmokeTest
 		@Test
 		void clientPort_shouldAcceptTcp_whenStarted() throws Exception
 		{
-			try (Socket socket = connect(LoginConfig.PORT_LOGIN))
+			try (Socket socket = connect(properties().client().port()))
 			{
 				assertThat(socket.isConnected()).isTrue();
 			}
@@ -99,8 +99,7 @@ class LoginApplicationTest extends BootSmokeTest
 		@ParameterizedTest(name = "{0}")
 		@ValueSource(strings =
 		{
-			"l2nx-scheduled",
-			"l2nx-instant",
+			"taskScheduler",
 			"l2nx-login-io",
 			"l2nx-login-packets"
 		})
@@ -121,7 +120,12 @@ class LoginApplicationTest extends BootSmokeTest
 	static void stopsCleanly()
 	{
 		assertThat(LoginServer.getInstance().isRunning()).isFalse();
-		assertThatThrownBy(() -> connect(LoginConfig.PORT_LOGIN).close()).as("client port").isInstanceOf(ConnectException.class);
-		assertThatThrownBy(() -> connect(LoginConfig.GAME_SERVER_LOGIN_PORT).close()).as("game server port").isInstanceOf(ConnectException.class);
+		assertThatThrownBy(() -> connect(properties().client().port()).close()).as("client port").isInstanceOf(ConnectException.class);
+		assertThatThrownBy(() -> connect(properties().gameServer().port()).close()).as("game server port").isInstanceOf(ConnectException.class);
+	}
+
+	private static LoginProperties properties()
+	{
+		return LoginServer.getInstance().getProperties();
 	}
 }

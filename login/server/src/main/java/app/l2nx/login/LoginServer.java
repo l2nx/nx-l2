@@ -31,19 +31,21 @@ import java.io.LineNumberReader;
 import java.io.UncheckedIOException;
 import java.net.InetSocketAddress;
 import java.security.GeneralSecurityException;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.concurrent.ScheduledFuture;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import io.micrometer.core.instrument.MeterRegistry;
 
 import org.springframework.context.SmartLifecycle;
+import org.springframework.scheduling.TaskScheduler;
 import org.springframework.stereotype.Component;
 
 import app.l2nx.boot.ServerExit;
 import app.l2nx.boot.ServerExitCode;
-import app.l2nx.commons.database.DatabaseFactory;
-import app.l2nx.commons.threads.ThreadPool;
-import app.l2nx.login.config.LoginConfig;
+import app.l2nx.login.config.LoginProperties;
 import app.l2nx.login.controller.LoginController;
 import app.l2nx.login.data.GameServerTable;
 import app.l2nx.login.network.LoginClient;
@@ -53,9 +55,9 @@ import app.l2nx.network.ConnectionManager;
 
 /**
  * Bootstraps and drives the login server lifecycle.<br>
- * Coordinates configuration loading, core service initialization and network listener startup.
+ * Coordinates core service initialization and network listener startup.
  * <ul>
- * <li>Initializes configuration and thread pool.</li>
+ * <li>Schedules the client purge and the optional restart.</li>
  * <li>Loads login controller and game server table.</li>
  * <li>Registers IP bans and starts listeners for game servers and login clients.</li>
  * </ul>
@@ -70,9 +72,6 @@ public class LoginServer implements SmartLifecycle
 	// Configuration paths.
 	private static final String BANNED_IPS_CONFIGURATION_PATH = "./banned_ip.cfg";
 	
-	// Time constants.
-	private static final int MILLISECONDS_PER_HOUR = 3600000;
-	
 	// Protocol.
 	public static final int PROTOCOL_REV = 0x0106;
 	
@@ -86,16 +85,21 @@ public class LoginServer implements SmartLifecycle
 	// Login server status.
 	private static volatile int _loginStatus = ServerStatus.STATUS_NORMAL;
 	
+	private final LoginProperties properties;
+	private final LoginController loginController;
+	private final GameServerTable gameServerTable;
+	private final TaskScheduler taskScheduler;
 	private final ServerExit serverExit;
 	private final MeterRegistry meterRegistry;
-	private boolean threadPoolStarted;
+	private ScheduledFuture<?> restartTask;
 	private volatile boolean running;
-	
-	/**
-	 * @param databaseFactory not used directly: the dependency makes the static {@link DatabaseFactory#getConnection()} bound before {@link #start()}
-	 */
-	public LoginServer(DatabaseFactory databaseFactory, ServerExit serverExit, MeterRegistry meterRegistry)
+
+	public LoginServer(LoginProperties properties, LoginController loginController, GameServerTable gameServerTable, TaskScheduler taskScheduler, ServerExit serverExit, MeterRegistry meterRegistry)
 	{
+		this.properties = properties;
+		this.loginController = loginController;
+		this.gameServerTable = gameServerTable;
+		this.taskScheduler = taskScheduler;
 		this.serverExit = serverExit;
 		this.meterRegistry = meterRegistry;
 		_instance = this;
@@ -149,32 +153,27 @@ public class LoginServer implements SmartLifecycle
 			_gameServerListener.close();
 		}
 		
-		if (threadPoolStarted)
+		if (restartTask != null)
 		{
-			ThreadPool.shutdown();
-			threadPoolStarted = false;
+			restartTask.cancel(false);
+			restartTask = null;
 		}
+
+		loginController.shutdown();
 	}
-	
+
 	private void initializeCoreServices()
 	{
-		LoginConfig.load();
-		
-		// Set before init(): pools created by a failing init() must be shut down too.
-		threadPoolStarted = true;
-		ThreadPool.init();
-		ThreadPool.bindMetrics(meterRegistry);
-		
 		try
 		{
-			LoginController.load();
+			loginController.load();
 		}
 		catch (GeneralSecurityException e)
 		{
 			throw new IllegalStateException("LoginController initialization failed due to security configuration error.", e);
 		}
-		
-		GameServerTable.getInstance();
+
+		gameServerTable.load();
 	}
 	
 	/**
@@ -190,21 +189,14 @@ public class LoginServer implements SmartLifecycle
 	 */
 	private void configureScheduledRestart()
 	{
-		if (!LoginConfig.LOGIN_SERVER_SCHEDULE_RESTART)
+		if (!properties.scheduledRestart().enabled())
 		{
 			return;
 		}
-		
-		final long restartDelayHours = LoginConfig.LOGIN_SERVER_SCHEDULE_RESTART_TIME;
-		final long restartDelayMillis = restartDelayHours * MILLISECONDS_PER_HOUR;
-		if (restartDelayMillis <= 0)
-		{
-			LOGGER.warning("Login server restart scheduling is enabled but the computed delay is invalid. Configured hours: " + restartDelayHours + ".");
-			return;
-		}
-		
-		LOGGER.info("Login server restart scheduled in " + restartDelayHours + " hour(s). Computed delay: " + restartDelayMillis + " ms.");
-		ThreadPool.schedule(() -> shutdown(true), restartDelayMillis);
+
+		final Duration restartDelay = properties.scheduledRestart().delay();
+		LOGGER.info("Login server restart scheduled in " + restartDelay + ".");
+		restartTask = taskScheduler.schedule(() -> shutdown(true), Instant.now().plus(restartDelay));
 	}
 	
 	/**
@@ -221,16 +213,17 @@ public class LoginServer implements SmartLifecycle
 	 */
 	private void startGameServerListener()
 	{
+		final LoginProperties.GameServer gameServer = properties.gameServer();
 		try
 		{
-			_gameServerListener = new GameServerListener();
+			_gameServerListener = new GameServerListener(gameServer, properties.floodProtection());
 			_gameServerListener.start();
-			
-			LOGGER.info("Game server listener is listening on " + LoginConfig.GAME_SERVER_LOGIN_HOST + ":" + LoginConfig.GAME_SERVER_LOGIN_PORT + ".");
+
+			LOGGER.info("Game server listener is listening on " + gameServer.host() + ":" + gameServer.port() + ".");
 		}
 		catch (IOException e)
 		{
-			throw new UncheckedIOException("Game server listener could not be started on " + LoginConfig.GAME_SERVER_LOGIN_HOST + ":" + LoginConfig.GAME_SERVER_LOGIN_PORT + ".", e);
+			throw new UncheckedIOException("Game server listener could not be started on " + gameServer.host() + ":" + gameServer.port() + ".", e);
 		}
 	}
 	
@@ -239,18 +232,24 @@ public class LoginServer implements SmartLifecycle
 	 */
 	private void startLoginClientListener()
 	{
+		final LoginProperties.Client client = properties.client();
 		try
 		{
-			clientConnectionManager = new ConnectionManager<>(new InetSocketAddress(LoginConfig.LOGIN_BIND_ADDRESS, LoginConfig.PORT_LOGIN), LoginClient::new, new LoginPacketHandler(), LoginConfig.NETWORK);
+			clientConnectionManager = new ConnectionManager<>(new InetSocketAddress(client.host(), client.port()), LoginClient::new, new LoginPacketHandler(), properties.network());
 			clientConnectionManager.bindMetrics(meterRegistry, "l2nx-login");
-			LOGGER.info(getClass().getSimpleName() + ": Login client listener started on " + LoginConfig.LOGIN_BIND_ADDRESS + ":" + LoginConfig.PORT_LOGIN + ".");
+			LOGGER.info(getClass().getSimpleName() + ": Login client listener started on " + client.host() + ":" + client.port() + ".");
 		}
 		catch (IOException e)
 		{
-			throw new UncheckedIOException("Login client listener could not be started on " + LoginConfig.LOGIN_BIND_ADDRESS + ":" + LoginConfig.PORT_LOGIN + ".", e);
+			throw new UncheckedIOException("Login client listener could not be started on " + client.host() + ":" + client.port() + ".", e);
 		}
 	}
 	
+	public LoginProperties getProperties()
+	{
+		return properties;
+	}
+
 	/**
 	 * Gets the game server listener instance.
 	 * @return The game server listener instance.

@@ -24,17 +24,14 @@ package app.l2nx.login.network.gameserverpackets.receive;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.util.Base64;
 import java.util.Base64.Encoder;
 import java.util.Collection;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import app.l2nx.commons.database.DatabaseFactory;
 import app.l2nx.login.GameServerThread;
+import app.l2nx.login.controller.LoginController;
 import app.l2nx.login.data.GameServerTable;
 import app.l2nx.login.data.GameServerTable.GameServerInfo;
 import app.l2nx.network.packet.SimpleReadablePacket;
@@ -56,10 +53,6 @@ public class ChangePassword extends SimpleReadablePacket
 	
 	// Password Hashing.
 	private static final String PASSWORD_DIGEST_ALGORITHM = "SHA";
-	
-	// Database Queries.
-	private static final String SELECT_PASSWORD_SQL = "SELECT password FROM accounts WHERE login=?";
-	private static final String UPDATE_PASSWORD_MATCHING_SQL = "UPDATE accounts SET password=? WHERE login=? AND password=?";
 	
 	// Response Messages.
 	private static final String MSG_INVALID_PASSWORD_DATA = "Invalid password data! Try again.";
@@ -120,46 +113,22 @@ public class ChangePassword extends SimpleReadablePacket
 			final String currentHash = encoder.encodeToString(digest.digest(currentPassword.getBytes(StandardCharsets.UTF_8)));
 			final String newHash = encoder.encodeToString(digest.digest(newPassword.getBytes(StandardCharsets.UTF_8)));
 			
-			try (Connection con = DatabaseFactory.getConnection())
+			final LoginController loginController = LoginController.getInstance();
+			if (loginController.changePassword(loginName, currentHash, newHash))
 			{
-				int updatedRows = 0;
-				try (PreparedStatement updateStatement = con.prepareStatement(UPDATE_PASSWORD_MATCHING_SQL))
-				{
-					updateStatement.setString(1, newHash);
-					updateStatement.setString(2, loginName);
-					updateStatement.setString(3, currentHash);
-					updatedRows = updateStatement.executeUpdate();
-				}
-				
-				if (updatedRows > 0)
-				{
-					// LOGGER.info("Password changed for account '" + loginName + "' requested by player '" + playerName + "' on GS " + ownerServerId + ".");
-					ownerThread.changePasswordResponse(playerName, MSG_PASSWORD_CHANGED);
-					return;
-				}
-				
-				String storedHash = null;
-				try (PreparedStatement selectStatement = con.prepareStatement(SELECT_PASSWORD_SQL))
-				{
-					selectStatement.setString(1, loginName);
-					try (ResultSet resultSet = selectStatement.executeQuery())
-					{
-						if (resultSet.next())
-						{
-							storedHash = resultSet.getString("password");
-						}
-					}
-				}
-				
-				if (currentHash.equals(storedHash))
-				{
-					LOGGER.warning("Password change failed for account '" + loginName + "' requested by player '" + playerName + "' on GS " + ownerServerId + " (0 rows updated).");
-					ownerThread.changePasswordResponse(playerName, MSG_PASSWORD_CHANGE_FAILED);
-				}
-				else
-				{
-					ownerThread.changePasswordResponse(playerName, MSG_CURRENT_PASSWORD_MISMATCH);
-				}
+				// LOGGER.info("Password changed for account '" + loginName + "' requested by player '" + playerName + "' on GS " + ownerServerId + ".");
+				ownerThread.changePasswordResponse(playerName, MSG_PASSWORD_CHANGED);
+				return;
+			}
+
+			if (currentHash.equals(loginController.getPasswordHash(loginName)))
+			{
+				LOGGER.warning("Password change failed for account '" + loginName + "' requested by player '" + playerName + "' on GS " + ownerServerId + " (0 rows updated).");
+				ownerThread.changePasswordResponse(playerName, MSG_PASSWORD_CHANGE_FAILED);
+			}
+			else
+			{
+				ownerThread.changePasswordResponse(playerName, MSG_CURRENT_PASSWORD_MISMATCH);
 			}
 		}
 		catch (Exception e)

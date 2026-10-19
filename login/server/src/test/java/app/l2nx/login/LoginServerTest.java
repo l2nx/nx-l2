@@ -7,28 +7,46 @@ package app.l2nx.login;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
+import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
-import java.util.List;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.concurrent.ScheduledFuture;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
-import org.springframework.context.support.GenericApplicationContext;
+import org.mockito.ArgumentCaptor;
+import org.springframework.scheduling.TaskScheduler;
 
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 
 import app.l2nx.boot.ServerExit;
-import app.l2nx.login.config.LoginConfig;
+import app.l2nx.boot.ServerExitCode;
+import app.l2nx.login.config.LoginProperties;
+import app.l2nx.login.config.TestLoginProperties;
+import app.l2nx.login.controller.LoginController;
+import app.l2nx.login.data.GameServerTable;
 
-// The server keeps static state (config, thread pools, singletons), so nothing here may run concurrently.
+// The server keeps static state (singletons), so nothing here may run concurrently.
 @Execution(ExecutionMode.SAME_THREAD)
 class LoginServerTest
 {
 	private static final long THREAD_EXIT_TIMEOUT_MS = 10_000;
+	private static final Duration RESTART_DELAY = Duration.ofHours(6);
+
+	private final LoginController loginController = mock(LoginController.class);
+	private final TaskScheduler taskScheduler = mock(TaskScheduler.class);
+	private final ServerExit serverExit = mock(ServerExit.class);
 
 	@Nested
 	class Start
@@ -36,25 +54,72 @@ class LoginServerTest
 		@Test
 		void start_shouldShutDownStartedServices_whenClientPortIsTaken() throws Exception
 		{
-			LoginConfig.load();
-			final LoginServer server = new LoginServer(null, new ServerExit(new GenericApplicationContext()), new SimpleMeterRegistry());
-
-			try (ServerSocket blocker = new ServerSocket(LoginConfig.PORT_LOGIN, 1, InetAddress.getByName(LoginConfig.LOGIN_BIND_ADDRESS)))
+			final int gameServerPort = freePort();
+			try (ServerSocket blocker = new ServerSocket(0, 1, InetAddress.getLoopbackAddress()))
 			{
-				assertThatThrownBy(server::start).isInstanceOf(UncheckedIOException.class).hasMessageContaining(String.valueOf(LoginConfig.PORT_LOGIN));
+				final LoginServer server = server(TestLoginProperties.create(blocker.getLocalPort(), gameServerPort, TestLoginProperties.noRestart()));
+
+				assertThatThrownBy(server::start).isInstanceOf(UncheckedIOException.class).hasMessageContaining(String.valueOf(blocker.getLocalPort()));
+
+				assertThat(server.isRunning()).isFalse();
+				awaitExit(server.getGameServerListener());
+				assertThat(server.getGameServerListener().isAlive()).as("game server listener thread").isFalse();
 			}
 
-			assertThat(server.isRunning()).isFalse();
-			awaitExit(server.getGameServerListener());
-			assertThat(server.getGameServerListener().isAlive()).as("game server listener thread").isFalse();
-			assertThatCode(() -> new ServerSocket(LoginConfig.GAME_SERVER_LOGIN_PORT, 1, InetAddress.getByName(LoginConfig.GAME_SERVER_LOGIN_HOST)).close()).as("game server port released").doesNotThrowAnyException();
+			assertThatCode(() -> new ServerSocket(gameServerPort, 1, InetAddress.getLoopbackAddress()).close()).as("game server port released").doesNotThrowAnyException();
+			verify(loginController).shutdown();
+		}
 
-			final List<Thread> poolThreads = Thread.getAllStackTraces().keySet().stream().filter(thread -> thread.getName().startsWith("l2nx ")).toList();
-			for (Thread thread : poolThreads)
+		@Test
+		void start_shouldScheduleRestartOnTaskScheduler_whenScheduledRestartEnabled() throws Exception
+		{
+			final ScheduledFuture<?> restartTask = mock(ScheduledFuture.class);
+			when(taskScheduler.schedule(any(Runnable.class), any(Instant.class))).thenAnswer(invocation -> restartTask);
+			final LoginServer server = server(TestLoginProperties.create(freePort(), freePort(), new LoginProperties.ScheduledRestart(true, RESTART_DELAY)));
+
+			final Instant before = Instant.now();
+			server.start();
+			final Instant after = Instant.now();
+			try
 			{
-				awaitExit(thread);
+				final ArgumentCaptor<Runnable> task = ArgumentCaptor.forClass(Runnable.class);
+				final ArgumentCaptor<Instant> startTime = ArgumentCaptor.forClass(Instant.class);
+				verify(taskScheduler).schedule(task.capture(), startTime.capture());
+				assertThat(startTime.getValue()).isBetween(before.plus(RESTART_DELAY), after.plus(RESTART_DELAY));
+
+				task.getValue().run();
+				verify(serverExit).exit(ServerExitCode.RESTART);
 			}
-			assertThat(poolThreads).as("thread pool threads").noneMatch(Thread::isAlive);
+			finally
+			{
+				server.stop();
+			}
+
+			verify(restartTask).cancel(false);
+		}
+
+		@Test
+		void start_shouldNotScheduleRestart_whenScheduledRestartDisabled() throws Exception
+		{
+			final LoginServer server = server(TestLoginProperties.create(freePort(), freePort(), TestLoginProperties.noRestart()));
+
+			server.start();
+			server.stop();
+
+			verify(taskScheduler, never()).schedule(any(Runnable.class), any(Instant.class));
+		}
+	}
+
+	private LoginServer server(LoginProperties properties)
+	{
+		return new LoginServer(properties, loginController, mock(GameServerTable.class), taskScheduler, serverExit, new SimpleMeterRegistry());
+	}
+
+	private static int freePort() throws IOException
+	{
+		try (ServerSocket socket = new ServerSocket(0, 1, InetAddress.getLoopbackAddress()))
+		{
+			return socket.getLocalPort();
 		}
 	}
 

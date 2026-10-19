@@ -23,82 +23,115 @@
 package app.l2nx.login.data;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.math.BigInteger;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.nio.file.Files;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.spec.RSAKeyGenParameterSpec;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.w3c.dom.Document;
-import org.w3c.dom.NodeList;
+import javax.xml.stream.XMLInputFactory;
+import javax.xml.stream.XMLStreamConstants;
+import javax.xml.stream.XMLStreamException;
+import javax.xml.stream.XMLStreamReader;
 
-import app.l2nx.commons.database.DatabaseFactory;
-import app.l2nx.commons.util.IXmlReader;
+import org.springframework.stereotype.Component;
+
 import app.l2nx.commons.util.Rnd;
 import app.l2nx.login.GameServerThread;
 import app.l2nx.login.LoginServer;
+import app.l2nx.login.config.LoginProperties;
 import app.l2nx.login.network.LoginClient;
 import app.l2nx.login.network.gameserverpackets.receive.ServerStatus;
+import app.l2nx.login.repository.GameServerRepository;
 import app.l2nx.login.util.Subnet;
 
 /**
  * The Class GameServerTable loads the game server names and initialize the game server tables.
  * @author KenM
  */
-public class GameServerTable implements IXmlReader
+@Component
+public class GameServerTable
 {
 	private static final Logger LOGGER = Logger.getLogger(GameServerTable.class.getName());
-	
+
+	private static final String SERVER_NAMES_FILE = "data/servername.xml";
+
 	// Map for storing server names with their corresponding IDs.
 	private static final Map<Integer, String> SERVER_NAMES = new HashMap<>();
-	
+
 	// Table for storing game server information.
 	private static final Map<Integer, GameServerInfo> GAME_SERVER_TABLE = new HashMap<>();
-	
+
 	// Configuration for RSA key pairs.
 	private static final int KEYS_SIZE = 10;
 	private KeyPair[] _keyPairs;
-	
-	/**
-	 * Instantiates a new game server table.
-	 */
-	public GameServerTable()
+
+	private static GameServerTable INSTANCE;
+
+	private final GameServerRepository gameServers;
+	private final LoginProperties properties;
+
+	public GameServerTable(GameServerRepository gameServers, LoginProperties properties)
 	{
-		load();
-		
+		this.gameServers = gameServers;
+		this.properties = properties;
+		INSTANCE = this;
+	}
+
+	/**
+	 * Loads the server names, the registered game servers and the RSA keys.
+	 */
+	public void load()
+	{
+		loadServerNames();
+
 		loadRegisteredGameServers();
 		LOGGER.info("Loaded " + GAME_SERVER_TABLE.size() + " registered Game Servers.");
-		
+
 		initRSAKeys();
 		LOGGER.info("Cached " + _keyPairs.length + " RSA keys for Game Server communication.");
 	}
-	
-	@Override
-	public void load()
+
+	private void loadServerNames()
 	{
 		SERVER_NAMES.clear();
-		parseDatapackFile("data/servername.xml");
-		LOGGER.info("Loaded " + SERVER_NAMES.size() + " server names.");
-	}
-	
-	@Override
-	public void parseDocument(Document document, File file)
-	{
-		final NodeList servers = document.getElementsByTagName("server");
-		for (int s = 0; s < servers.getLength(); s++)
+		final File file = new File(properties.datapackRoot(), SERVER_NAMES_FILE);
+		try (InputStream input = Files.newInputStream(file.toPath()))
 		{
-			SERVER_NAMES.put(parseInteger(servers.item(s).getAttributes(), "id"), parseString(servers.item(s).getAttributes(), "name"));
+			final XMLInputFactory factory = XMLInputFactory.newFactory();
+			factory.setProperty(XMLInputFactory.SUPPORT_DTD, false);
+			final XMLStreamReader reader = factory.createXMLStreamReader(input);
+			try
+			{
+				while (reader.hasNext())
+				{
+					if ((reader.next() == XMLStreamConstants.START_ELEMENT) && "server".equals(reader.getLocalName()))
+					{
+						SERVER_NAMES.put(Integer.parseInt(reader.getAttributeValue(null, "id")), reader.getAttributeValue(null, "name"));
+					}
+				}
+			}
+			finally
+			{
+				reader.close();
+			}
 		}
+		catch (IOException | XMLStreamException | RuntimeException e)
+		{
+			LOGGER.log(Level.WARNING, "Error parsing " + file.getAbsolutePath() + ".", e);
+		}
+
+		LOGGER.info("Loaded " + SERVER_NAMES.size() + " server names.");
 	}
 	
 	/**
@@ -127,16 +160,9 @@ public class GameServerTable implements IXmlReader
 	 */
 	private void loadRegisteredGameServers()
 	{
-		try (Connection con = DatabaseFactory.getConnection();
-			Statement ps = con.createStatement();
-			ResultSet rs = ps.executeQuery("SELECT * FROM gameservers"))
+		try
 		{
-			int id;
-			while (rs.next())
-			{
-				id = rs.getInt("server_id");
-				GAME_SERVER_TABLE.put(id, new GameServerInfo(id, stringToHex(rs.getString("hexid"))));
-			}
+			gameServers.findHexIds().forEach((id, hexId) -> GAME_SERVER_TABLE.put(id, new GameServerInfo(id, stringToHex(hexId))));
 		}
 		catch (Exception e)
 		{
@@ -236,13 +262,9 @@ public class GameServerTable implements IXmlReader
 	public void registerServerOnDB(byte[] hexId, int id, String externalHost)
 	{
 		register(id, new GameServerInfo(id, hexId));
-		try (Connection con = DatabaseFactory.getConnection();
-			PreparedStatement ps = con.prepareStatement("INSERT INTO gameservers (hexid,server_id,host) values (?,?,?)"))
+		try
 		{
-			ps.setString(1, hexToString(hexId));
-			ps.setInt(2, id);
-			ps.setString(3, externalHost);
-			ps.executeUpdate();
+			gameServers.create(id, hexToString(hexId), externalHost);
 		}
 		catch (Exception e)
 		{
@@ -740,14 +762,6 @@ public class GameServerTable implements IXmlReader
 	 */
 	public static GameServerTable getInstance()
 	{
-		return SingletonHolder.INSTANCE;
-	}
-	
-	/**
-	 * The Class SingletonHolder.
-	 */
-	private static class SingletonHolder
-	{
-		protected static final GameServerTable INSTANCE = new GameServerTable();
+		return INSTANCE;
 	}
 }

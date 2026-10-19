@@ -26,7 +26,7 @@ import java.util.Arrays;
 import java.util.logging.Logger;
 
 import app.l2nx.login.GameServerThread;
-import app.l2nx.login.config.LoginConfig;
+import app.l2nx.login.LoginServer;
 import app.l2nx.login.data.GameServerTable;
 import app.l2nx.login.data.GameServerTable.GameServerInfo;
 import app.l2nx.login.network.GameServerPacketHandler.GameServerState;
@@ -155,7 +155,7 @@ public class GameServerAuth extends SimpleReadablePacket
 		final GameServerInfo registeredInfo = gameServerTable.getRegisteredGameServerById(desiredId);
 		if (registeredInfo == null)
 		{
-			if (!LoginConfig.ACCEPT_NEW_GAMESERVER)
+			if (!LoginServer.getInstance().getProperties().gameServer().acceptNew())
 			{
 				LOGGER.info("Rejected GS auth for desiredServerId=" + desiredId + " because new game servers are not accepted.");
 				_server.forceClose(LoginServerFail.REASON_WRONG_HEXID);
@@ -191,7 +191,7 @@ public class GameServerAuth extends SimpleReadablePacket
 			}
 		}
 		
-		if (!LoginConfig.ACCEPT_NEW_GAMESERVER || !_acceptAlternativeId)
+		if (!LoginServer.getInstance().getProperties().gameServer().acceptNew() || !_acceptAlternativeId)
 		{
 			LOGGER.info("Rejected GS auth for desiredServerId=" + desiredId + " due to wrong hexId and no alternative id allowed.");
 			_server.forceClose(LoginServerFail.REASON_WRONG_HEXID);

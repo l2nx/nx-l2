@@ -23,13 +23,13 @@
 package app.l2nx.login.controller;
 
 import app.l2nx.commons.util.StringUtil;
-import app.l2nx.login.config.LoginConfig;
+import app.l2nx.login.LoginServer;
 
 /**
  * Session key used by the client to authenticate against the gameserver.<br>
  * It holds two 32-bit pairs: PlayOk and LoginOk.
  * <ul>
- * <li>Equality may require both pairs depending on {@code LoginConfig.SHOW_LICENCE}.</li>
+ * <li>Equality may require both pairs depending on {@code l2nx.login.show-licence}.</li>
  * <li>Lightweight container with no I/O.</li>
  * <li>Immutable fields for thread safety.</li>
  * </ul>
@@ -40,7 +40,7 @@ public class SessionKey
 	// Constants.
 	private static final String LABEL_PLAY_OK = "PlayOk:";
 	private static final String LABEL_LOGIN_OK = "LoginOk:";
-	private static final boolean CHECK_LOGIN_PAIR = LoginConfig.SHOW_LICENCE; // Policy snapshot for equality consistency.
+	private static final boolean CHECK_LOGIN_PAIR = LoginServer.getInstance().getProperties().showLicence(); // Policy snapshot for equality consistency.
 	
 	// Session key parts.
 	private final int _playOkID1;

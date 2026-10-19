@@ -32,7 +32,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import app.l2nx.login.config.LoginConfig;
+import app.l2nx.login.config.LoginProperties;
 
 /**
  * Listens for incoming login connections and applies basic IP based flood protection.<br>
@@ -40,7 +40,7 @@ import app.l2nx.login.config.LoginConfig;
  * <ul>
  * <li>Binds a server socket on a configured address and port.</li>
  * <li>Tracks connection count and timestamps per remote IP.</li>
- * <li>Uses {@link LoginConfig} limits to mitigate abusive connection patterns.</li>
+ * <li>Uses {@link LoginProperties.FloodProtection} limits to mitigate abusive connection patterns.</li>
  * </ul>
  * @author BazookaRpm
  */
@@ -56,15 +56,20 @@ public abstract class FloodProtectorListener extends Thread
 	
 	// Login server listening socket.
 	private final ServerSocket _serverSocket;
+
+	private final LoginProperties.FloodProtection floodProtectionSettings;
 	
 	/**
 	 * Creates a new flood protector listener bound to the given IP and port.
 	 * @param listenIp The IP address to bind, or "*" to listen on all interfaces.
 	 * @param port The TCP port to listen on.
+	 * @param floodProtection The connection limits per remote address.
 	 * @throws IOException If the socket cannot be created or bound.
 	 */
-	public FloodProtectorListener(String listenIp, int port) throws IOException
+	public FloodProtectorListener(String listenIp, int port, LoginProperties.FloodProtection floodProtection) throws IOException
 	{
+		floodProtectionSettings = floodProtection;
+
 		// If listening IP is "*", listen on all interfaces.
 		if ("*".equals(listenIp))
 		{
@@ -91,7 +96,7 @@ public abstract class FloodProtectorListener extends Thread
 				// Accept incoming connections.
 				clientSocket = _serverSocket.accept();
 				
-				if (LoginConfig.FLOOD_PROTECTION)
+				if (floodProtectionSettings.enabled())
 				{
 					// Check flood protection for this remote address.
 					final String clientAddress = clientSocket.getInetAddress().getHostAddress();
@@ -100,7 +105,7 @@ public abstract class FloodProtectorListener extends Thread
 					{
 						foreignConnection.connectionNumber += 1;
 						
-						if (((foreignConnection.connectionNumber > LoginConfig.FAST_CONNECTION_LIMIT) && ((System.currentTimeMillis() - foreignConnection.lastConnection) < LoginConfig.NORMAL_CONNECTION_TIME)) || ((System.currentTimeMillis() - foreignConnection.lastConnection) < LoginConfig.FAST_CONNECTION_TIME) || (foreignConnection.connectionNumber > LoginConfig.MAX_CONNECTION_PER_IP))
+						if (((foreignConnection.connectionNumber > floodProtectionSettings.fastConnectionLimit()) && ((System.currentTimeMillis() - foreignConnection.lastConnection) < floodProtectionSettings.normalConnectionTime().toMillis())) || ((System.currentTimeMillis() - foreignConnection.lastConnection) < floodProtectionSettings.fastConnectionTime().toMillis()) || (foreignConnection.connectionNumber > floodProtectionSettings.maxConnectionsPerIp()))
 						{
 							foreignConnection.lastConnection = System.currentTimeMillis();
 							clientSocket.close();
@@ -192,7 +197,7 @@ public abstract class FloodProtectorListener extends Thread
 	public void removeFloodProtection(String ip)
 	{
 		// Only proceed if flood protection is enabled.
-		if (!LoginConfig.FLOOD_PROTECTION)
+		if (!floodProtectionSettings.enabled())
 		{
 			return;
 		}
