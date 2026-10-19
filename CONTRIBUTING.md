@@ -66,8 +66,6 @@ with the identifier the upstream header states (`MIT` or `GPL-3.0-or-later`).
   Spotless. Run `./gradlew spotlessApply` before a commit; `spotlessCheck` is part of `./gradlew build`, so CI fails
   on an unformatted file.
 - **Line endings are LF** (`.gitattributes`), Windows scripts excepted.
-- **Blame:** the bulk line-ending and reformat commits are listed in `.git-blame-ignore-revs`. GitHub skips them by
-  itself; locally run `git config blame.ignoreRevsFile .git-blame-ignore-revs` once.
 
 ## Workflow
 

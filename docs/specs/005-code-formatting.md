@@ -7,7 +7,7 @@
   on an unformatted file. No ratchet: the check needs no git, so it works on a pull request checkout and from a
   source archive.
 - **Line endings are LF** for every text file, Windows scripts (`*.bat`) excepted.
-- **The bulk commits stay out of `git blame`** through `.git-blame-ignore-revs`.
+- **Bulk commits stay in `git blame`.** The repository keeps no blame ignore list.
 
 ## 2. Why
 
@@ -45,6 +45,6 @@ together. Current: Spotless 8.10.4, palantir-java-format 2.102.0.
 
 - `.gitattributes`: `* text=auto eol=lf`, `*.bat text eol=crlf`, and a `binary` line per binary type the repo tracks
   (today only `*.jar`). The same template is used across the platform repos.
-- `.git-blame-ignore-revs` lists the LF normalization `c7d35c36a` and the full reformat `d1d5b3cbc`. GitHub reads it
-  by itself; locally `git config blame.ignoreRevsFile .git-blame-ignore-revs`. A future bulk reformat (a palantir
-  bump that rewraps many files) goes into the same file.
+- **No `.git-blame-ignore-revs`.** The LF normalization `c7d35c36a`, the full reformat `d1d5b3cbc` and later bulk
+  changes (a palantir bump that rewraps many files, a code conversion) stay in `git blame` under their author. Owner's
+  choice: the person who carried out the change is credited on the lines it touched.
