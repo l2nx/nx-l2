@@ -11,6 +11,7 @@ lists what is open.
 - [#4](https://github.com/l2nx/nx-l2/issues/4) Edge gateway / horizontal scale-out
 - [#5](https://github.com/l2nx/nx-l2/issues/5) Stable script API for other emulators
 - [#6](https://github.com/l2nx/nx-l2/issues/6) Move a chronicle into its own repository
+- [#7](https://github.com/l2nx/nx-l2/issues/7) CLA bot before external contributions
 
 ## Done
 

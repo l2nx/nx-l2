@@ -81,7 +81,9 @@ Tools are shipped instead, and every operator prepares data from their own clien
 | `CONTRIBUTING.md` | originality policy, CLA, header rules     |
 | `README.md`       | positioning, disclaimer, takedown contact |
 
-Contributions require a CLA, based on the Apache ICLA and enforced by a PR bot.
+Contributions require a CLA, based on the Apache ICLA and enforced by a PR bot. The bot is not needed while only the
+owner and contracted developers commit; it is enabled before the repository goes public or accepts its first
+external PR, whichever comes first ([#7](https://github.com/l2nx/nx-l2/issues/7)).
 
 ## 3. Repositories
 
@@ -259,18 +261,18 @@ The test server:
 
 Every stage ends with a server that builds and a client that logs in and plays. No stage breaks the game.
 
-| #   | Stage                                                          | Done when                                                                 |
-| --- | -------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| 0   | Repository and legal                                           | `LICENSE`, `NOTICE`, `CONTRIBUTING.md`, CLA bot, README disclaimer        |
-| 1   | Import HF with history (subtree split of Mobius), Gradle build | server starts locally, an HF client logs in and plays                     |
-| 2   | Host shell                                                     | `boot` modules, `application.yaml`, Liquibase, metrics, graceful shutdown |
-| 3   | Netty network                                                  | own Netty transport in `libs/network`, all three connections              |
-| 4   | L2NX built in                                                  | latest adapter, commands and events work                                  |
-| 5   | Public test server `play.l2nx.<tld>`                           | public access, adapter e2e in CI                                          |
-| 6   | Geo SPI + open `nx-physics`                                    | two implementations, movement on navmesh                                  |
-| 7   | HF multi-protocol                                              | newer clients log in to HF                                                |
-| 8   | Essence + shared core extraction ([#2](https://github.com/l2nx/nx-l2/issues/2))                     | second chronicle; `engine/` grows by real overlap                         |
-| 9   | Interlude ([#3](https://github.com/l2nx/nx-l2/issues/3))                                            | third chronicle                                                           |
+| #   | Stage                                                                           | Done when                                                                 |
+| --- | ------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| 0   | Repository and legal                                                            | `LICENSE`, `NOTICE`, `CONTRIBUTING.md`, README disclaimer                 |
+| 1   | Import HF with history (subtree split of Mobius), Gradle build                  | server starts locally, an HF client logs in and plays                     |
+| 2   | Host shell                                                                      | `boot` modules, `application.yaml`, Liquibase, metrics, graceful shutdown |
+| 3   | Netty network                                                                   | own Netty transport in `libs/network`, all three connections              |
+| 4   | L2NX built in                                                                   | latest adapter, commands and events work                                  |
+| 5   | Public test server `play.l2nx.<tld>`                                            | public access, adapter e2e in CI                                          |
+| 6   | Geo SPI + open `nx-physics`                                                     | two implementations, movement on navmesh                                  |
+| 7   | HF multi-protocol                                                               | newer clients log in to HF                                                |
+| 8   | Essence + shared core extraction ([#2](https://github.com/l2nx/nx-l2/issues/2)) | second chronicle; `engine/` grows by real overlap                         |
+| 9   | Interlude ([#3](https://github.com/l2nx/nx-l2/issues/3))                        | third chronicle                                                           |
 
 Stage 1 lands the Mobius tree directly in the §4 layout: game server code in `chronicles/high-five/server`,
 scripts in `chronicles/high-five/scripts`, data in `chronicles/high-five/datapack`, the login server in
@@ -296,3 +298,4 @@ These are recommendations from the design discussion. Each one can be overridden
 - Edge gateway / horizontal scale-out — [#4](https://github.com/l2nx/nx-l2/issues/4).
 - Stable script API for other emulators — [#5](https://github.com/l2nx/nx-l2/issues/5).
 - Moving a chronicle into its own repository — [#6](https://github.com/l2nx/nx-l2/issues/6).
+- CLA bot before external contributions — [#7](https://github.com/l2nx/nx-l2/issues/7).
