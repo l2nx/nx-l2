@@ -12,12 +12,13 @@ lists what is open.
 - [#5](https://github.com/l2nx/nx-l2/issues/5) Stable script API for other emulators
 - [#6](https://github.com/l2nx/nx-l2/issues/6) Move a chronicle into its own repository
 - [#7](https://github.com/l2nx/nx-l2/issues/7) CLA or DCO before external contributions
-- [#8](https://github.com/l2nx/nx-l2/issues/8) Publish project docs on l2nx.dev
 - [#9](https://github.com/l2nx/nx-l2/issues/9) Review texts shipped in the datapack
 - [#10](https://github.com/l2nx/nx-l2/issues/10) Mirror the repository outside GitHub
 - [#11](https://github.com/l2nx/nx-l2/issues/11) Release the High Five scripts as their own artifact
 
 ## Done
 
+- [#8](https://github.com/l2nx/nx-l2/issues/8) Publish project docs on l2nx.dev: the `/l2/` section, from
+  `docs/public/{en,ru}/` (spec 001 §1).
 - Ownership of the reference L2NX host layer: not ours; the adapter host is written from scratch against the
   `nx-gs-adapter` API (spec 001 §2, stage 4).

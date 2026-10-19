@@ -1,0 +1,36 @@
+name: Publish docs
+
+# Publishes docs/public/{en,ru}/ as the `l2` section of l2nx.dev; sync-docs.sh skips a source older than the last synced one.
+on:
+  push:
+    branches: [main]
+    paths: ['docs/public/**']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  docs:
+    runs-on: [self-hosted, linux, nexus]
+    steps:
+      # Full history: the regress guard checks the source sha against the last synced one with merge-base.
+      - uses: actions/checkout@v7
+        with:
+          path: source
+          fetch-depth: 0
+
+      - uses: actions/checkout@v7
+        with:
+          repository: l2nx/nx-dev-web
+          token: ${{ secrets.NX_INFRA_PAT }}
+          path: portal
+          fetch-depth: 0
+
+      - name: Publish docs to l2nx.dev
+        working-directory: portal
+        env:
+          VERSION: main@${{ github.sha }}
+          DOCS_DENYLIST: ${{ secrets.DOCS_DENYLIST }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: bash scripts/sync-docs.sh l2 "$GITHUB_WORKSPACE/source" "$VERSION"

@@ -6,11 +6,13 @@ Essence and Interlude), the login server, the network stack and the shared libra
 
 > **Status: stage 1.** High Five is imported from L2J Mobius and runs locally. The design lives in
 > [docs/specs/001-project-design.md](docs/specs/001-project-design.md); the stages in its §11, the import in
-> [docs/provenance.md](docs/provenance.md).
+> [docs/provenance.md](docs/provenance.md). User documentation: [l2nx.dev/l2](https://l2nx.dev/l2/overview/), from
+> [docs/public](docs/public) (English source, Russian translation).
 
 ## Quick start
 
-Requirements: JDK 25, Docker.
+Requirements: JDK 25, Docker. On Windows, clone with `git clone -c core.longpaths=true`: some script paths exceed
+the default path limit.
 
 ```sh
 docker compose up -d                          # MariaDB with the upstream schema, on 127.0.0.1:3306
@@ -30,6 +32,8 @@ not shipped: put it into `data/geodata` of the game server distribution.
 - **A reference implementation for education and research,** as Mobius positions itself.
 
 ## Layout
+
+The target layout; stage 1 has `libs/commons`, `login/` and `chronicles/high-five/`.
 
 ```
 libs/          infrastructure with no Lineage 2 knowledge: commons, network, db, telemetry

@@ -18,7 +18,8 @@ It serves three purposes:
 Positioning follows Mobius: a reference implementation for education and research. The public test server is the
 project's demo and is non-commercial.
 
-The project home is `l2nx.dev`; it hosts the documentation only ([#8](https://github.com/l2nx/nx-l2/issues/8)). The
+The project home is `l2nx.dev`; it hosts the documentation only: the section `/l2/`, published from
+`docs/public/{en,ru}/` of this repository whenever those pages change on `main`. The
 test server site lives on a separate domain, chosen at stage 5; it is not hosted on `l2nx.dev` or `l2nx.top`.
 
 ## 2. Legal and licensing
@@ -260,16 +261,16 @@ How the server finds scripts (`server` cannot depend on `scripts`, so discovery 
 
 ## 5. Stack
 
-| Concern  | Choice                                                                  |
-| -------- | ----------------------------------------------------------------------- |
-| Java     | 25 LTS (Mobius targets 27; the imported tree compiles on 25 as is)      |
+| Concern  | Choice                                                                       |
+| -------- | ---------------------------------------------------------------------------- |
+| Java     | 25 LTS (Mobius targets 27; the imported tree compiles on 25 as is)           |
 | Build    | Gradle Kotlin DSL, version catalog, no committed jars but the Gradle wrapper |
-| Local DB | `compose.yaml`: MariaDB LTS, schema from the imported SQL until stage 2 |
-| Host     | Spring Boot in `*/boot` only; every other module is plain code          |
-| Network  | Netty for every connection: client↔game, client↔login, login↔game       |
-| Database | MariaDB (Mobius native), schema managed by Liquibase                    |
-| Metrics  | Micrometer                                                              |
-| Docs     | English, as an international open-source project                        |
+| Local DB | `compose.yaml`: MariaDB LTS, schema from the imported SQL until stage 2      |
+| Host     | Spring Boot in `*/boot` only; every other module is plain code               |
+| Network  | Netty for every connection: client↔game, client↔login, login↔game            |
+| Database | MariaDB (Mobius native), schema managed by Liquibase                         |
+| Metrics  | Micrometer                                                                   |
+| Docs     | English; the public pages on `l2nx.dev` also in Russian                      |
 
 ## 6. L2NX integration
 
@@ -342,18 +343,18 @@ The test server:
 
 Every stage ends with a server that builds and a client that logs in and plays. No stage breaks the game.
 
-| #   | Stage                                                                           | Done when                                                                        |
-| --- | ------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
-| 0   | Repository and legal                                                            | `LICENSE`, `NOTICE`, `CONTRIBUTING.md`, README disclaimer                        |
-| 1   | Import HF with history (`git filter-repo` of Mobius), Gradle build              | server starts locally, an HF client logs in and plays                            |
+| #   | Stage                                                                           | Done when                                                                                             |
+| --- | ------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| 0   | Repository and legal                                                            | `LICENSE`, `NOTICE`, `CONTRIBUTING.md`, README disclaimer                                             |
+| 1   | Import HF with history (`git filter-repo` of Mobius), Gradle build              | server starts locally, an HF client logs in and plays                                                 |
 | 2   | Host shell                                                                      | Spring Boot in `boot` (ArchUnit guards it), `application.yaml`, Liquibase, metrics, graceful shutdown |
-| 3   | Netty network                                                                   | own Netty transport in `libs/network`, all three connections                     |
-| 4   | L2NX built in                                                                   | latest adapter, commands and events work                                         |
-| 5   | Public test server                                                              | public access, adapter e2e in CI                                                 |
-| 6   | Geo SPI + open `nx-physics`                                                     | two implementations, movement on navmesh                                         |
-| 7   | HF multi-protocol                                                               | newer clients log in to HF                                                       |
-| 8   | Essence + shared core extraction ([#2](https://github.com/l2nx/nx-l2/issues/2)) | second chronicle; `engine/` grows by real overlap                                |
-| 9   | Interlude ([#3](https://github.com/l2nx/nx-l2/issues/3))                        | third chronicle                                                                  |
+| 3   | Netty network                                                                   | own Netty transport in `libs/network`, all three connections                                          |
+| 4   | L2NX built in                                                                   | latest adapter, commands and events work                                                              |
+| 5   | Public test server                                                              | public access, adapter e2e in CI                                                                      |
+| 6   | Geo SPI + open `nx-physics`                                                     | two implementations, movement on navmesh                                                              |
+| 7   | HF multi-protocol                                                               | newer clients log in to HF                                                                            |
+| 8   | Essence + shared core extraction ([#2](https://github.com/l2nx/nx-l2/issues/2)) | second chronicle; `engine/` grows by real overlap                                                     |
+| 9   | Interlude ([#3](https://github.com/l2nx/nx-l2/issues/3))                        | third chronicle                                                                                       |
 
 Stage 1 lands the Mobius tree directly in the §4 layout and the `app.l2nx.*` packages: `git filter-repo` rewrites
 both historical HF paths of Mobius into the target paths, so file history runs unbroken from 2016 without
@@ -379,6 +380,5 @@ These are recommendations from the design discussion. Each one can be overridden
 - Moving a chronicle into its own repository — [#6](https://github.com/l2nx/nx-l2/issues/6).
 - Datapack text review — [#9](https://github.com/l2nx/nx-l2/issues/9).
 - Repository mirror outside GitHub — [#10](https://github.com/l2nx/nx-l2/issues/10).
-- Documentation on `l2nx.dev` — [#8](https://github.com/l2nx/nx-l2/issues/8).
 - CLA or DCO enforcement before external contributions — [#7](https://github.com/l2nx/nx-l2/issues/7).
 - Separate release of the High Five scripts — [#11](https://github.com/l2nx/nx-l2/issues/11).
