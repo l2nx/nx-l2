@@ -25,8 +25,6 @@ package app.l2nx.highfive;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import app.l2nx.commons.config.DatabaseConfig;
-import app.l2nx.commons.database.DatabaseBackup;
 import app.l2nx.commons.database.DatabaseFactory;
 import app.l2nx.commons.threads.ThreadPool;
 import app.l2nx.highfive.config.GeneralConfig;
@@ -433,12 +431,6 @@ public class Shutdown extends Thread
 		catch (Throwable t)
 		{
 			// ignore
-		}
-		
-		// Backup database.
-		if (DatabaseConfig.BACKUP_DATABASE)
-		{
-			DatabaseBackup.performBackup("game");
 		}
 		
 		LOGGER.info("The server has been successfully shut down in " + (tc1.getEstimatedTime() / 1000) + "seconds.");
