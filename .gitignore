@@ -1,0 +1,6 @@
+.plan/
+PLAN-*.md
+.gradle/
+build/
+.idea/
+*.iml
