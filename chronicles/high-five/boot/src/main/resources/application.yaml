@@ -4,8 +4,6 @@
 spring:
   application:
     name: game-server
-  config:
-    import: classpath:l2nx-defaults.yaml
   datasource:
     hikari:
       maximum-pool-size: 100

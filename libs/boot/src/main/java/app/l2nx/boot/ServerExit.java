@@ -6,9 +6,7 @@ package app.l2nx.boot;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.context.ApplicationContext;
-import org.springframework.stereotype.Component;
 
-@Component
 public class ServerExit
 {
 	private final ApplicationContext context;
