@@ -36,7 +36,8 @@ file, as Mobius does it: its own files are MIT, the files inherited from L2J are
 | `nx-l2` build as a whole      | GPLv3 while any GPLv3 file remains | one GPLv3 file binds the combined work                              |
 | `nx-physics`, `nx-gs-adapter` | Apache 2.0                         | any emulator can adopt them, closed ones included; GPLv3-compatible |
 
-The Mobius HF tree imported at the start holds 905 GPLv3 and 990 MIT Java files in the core, plus 927 GPLv3 scripts.
+The Mobius HF tree imported at stage 1 (upstream commit in [`docs/provenance.md`](../provenance.md)) holds 898 GPLv3
+and 1005 MIT Java files in the core, plus 924 GPLv3 and 367 MIT scripts.
 
 **GPLv3 is pushed out, not kept** ([#1](https://github.com/l2nx/nx-l2/issues/1)):
 
@@ -60,9 +61,14 @@ header states), following the [REUSE](https://reuse.software) specification. CI 
 a license fails the build. The GPLv3 count per module comes from the same data.
 
 - **Files taken from Mobius keep their Mobius header and license.** This holds even after heavy changes: both MIT
-  and GPLv3 require the copyright notice to be preserved.
-- **A modified Mobius file adds an SPDX block** with `2026 L2NX contributors` and the upstream license identifier
-  (CONTRIBUTING.md). Its license does not change.
+  and GPLv3 require the copyright notice to be preserved. The import inserts the SPDX identifier into the existing
+  header and leaves the upstream text as is.
+- **Mobius files without a header** (datapack XML/HTML, SQL, configs) are labelled `MIT`, "L2J Mobius
+  contributors", in `REUSE.toml`. Basis: upstream states it is moving to MIT and that the header governs each
+  file; it makes no statement for headerless files. The owner chose MIT over the conservative GPLv3 reading.
+- **A substantively modified Mobius file adds an SPDX block** with `2026 L2NX contributors` and the upstream
+  license identifier (CONTRIBUTING.md). Its license does not change. Mechanical changes (package rename, SPDX
+  insertion) add no block.
 - **A file written from scratch carries only the project header, Apache 2.0.** Renaming packages or variables is
   not a rewrite. A rewrite of a GPLv3 file is done from the behaviour, not by editing the GPLv3 text.
 - **`NOTICE` names the upstream:** "based on L2J Mobius", with the upstream commit the import started from.
@@ -114,15 +120,16 @@ Tools are shipped instead, and every operator prepares data from their own clien
 
 ### Project files
 
-| File              | Content                                              |
-| ----------------- | ---------------------------------------------------- |
-| `LICENSE`         | Apache 2.0 text, verbatim; the project license       |
-| `LICENSES/`       | every license text in use, REUSE layout              |
-| `REUSE.toml`      | license and copyright for files without a header     |
-| `NOTICE`          | upstream attribution                                 |
-| `CONTRIBUTING.md` | originality policy, inbound = outbound, header rules |
-| `README.md`       | positioning, short disclaimer, contacts              |
-| `LEGAL.md`        | legal notice: purpose, interoperability, takedown    |
+| File                 | Content                                              |
+| -------------------- | ---------------------------------------------------- |
+| `LICENSE`            | Apache 2.0 text, verbatim; the project license       |
+| `LICENSES/`          | every license text in use, REUSE layout              |
+| `REUSE.toml`         | license and copyright for files without a header     |
+| `NOTICE`             | upstream attribution                                 |
+| `CONTRIBUTING.md`    | originality policy, inbound = outbound, header rules |
+| `README.md`          | positioning, short disclaimer, contacts              |
+| `LEGAL.md`           | legal notice: purpose, interoperability, takedown    |
+| `docs/provenance.md` | upstream commit, import mapping, labelling rules     |
 
 The MIT and GPLv3 texts land in `LICENSES/` together with the stage 1 import (`reuse download MIT
 GPL-3.0-or-later`): `reuse lint` rejects a license text no file uses. `NOTICE` lands with the same import, since it
@@ -174,17 +181,18 @@ engine/               Lineage 2 mechanics shared by every chronicle
   adapter             app.l2nx.engine.adapter  L2NX adapter host
   core                app.l2nx.engine.core     created at stage 8: what HF and Essence share
 login/
-  server              app.l2nx.login       login logic, protocol variants, GS-link; plain Java
-  boot                app.l2nx.login.boot  Spring Boot launcher
+  server              app.l2nx.login       login logic, protocol variants, GS-link, tools; plain Java; sql/
+  boot                app.l2nx.login.boot  launcher; runtime files (config, data) in src/dist
 chronicles/
   high-five/
     server            app.l2nx.highfive          the chronicle's game server; plain Java
-    scripts           app.l2nx.highfive.scripts  quests, NPC AI, events
-    datapack                                     XML / SQL
-    boot              app.l2nx.highfive.boot     Spring Boot launcher
+    scripts           app.l2nx.highfive.scripts  quests, NPC AI, events, handlers; Java only
+    datapack                                     data/ (incl. data/scripts html/xml), config/, sql/
+    boot              app.l2nx.highfive.boot     launcher; runtime files in src/dist
   essence/            app.l2nx.essence     stage 8, same four modules
   interlude/          app.l2nx.interlude   stage 9, same four modules
 tools/                data preparation from the operator's own client
+build-logic/          Gradle convention plugins
 ```
 
 What goes where:
@@ -197,15 +205,19 @@ What goes where:
 - **`scripts`** is a delivery unit of its own (§4.1).
 - **`boot`** is the only place that knows Spring Boot: `main`, `application.yaml`, wiring, lifecycle, graceful
   shutdown, the distribution and the Docker image. A chronicle's `boot` assembles `server`, `scripts`,
-  `datapack`, `engine/*` and `libs/*` into one runnable server.
+  `datapack`, `engine/*` and `libs/*` into one runnable server. Until stage 2 it is a plain Gradle `application`
+  launching the Mobius `main`; its distribution has the Mobius `dist/` layout (`./config`, `./data`), and
+  `run` starts from the installed distribution. The login distribution also carries the account and game server
+  registration tools.
 
 Rules:
 
 - **Dependencies point down only.** `chronicles/* → engine/* → libs/*`, `login → libs/*`. Inside a chronicle,
   `scripts → server` and `boot → server, scripts`. `engine` does not know about chronicles, `libs` does not know
-  about `engine`, chronicles do not depend on each other. ArchUnit and the Gradle module boundaries enforce this.
+  about `engine`, chronicles do not depend on each other. The Gradle module boundaries enforce this: a module
+  compiles only against the modules it declares.
 - **Spring Boot is present only in `*/boot` modules.** Every other module is plain Java; ArchUnit forbids
-  `org.springframework` imports outside `boot`.
+  `org.springframework` imports outside `boot` from stage 2, when Spring arrives.
 - **The engine provides mechanisms, the chronicle provides rules.** Formulas, classes, skills, enchanting and
   game systems belong to the chronicle. The engine exposes extension points: SPI, handler registries.
 - **The engine is not extracted up front.** With HF alone, `engine/` takes only `geo` and `adapter`. The shared
@@ -226,20 +238,38 @@ quests and NPC behaviour it covers. It is meant to become a recognisable unit th
 - **Now:** scripts compile against the chronicle's `server` (`Quest`, `Npc`, `Player`, as in Mobius). Builds on
   top of `nx-l2` (forks, operator customisations) consume the artifact as is.
 - **Target:** a stable script API that other emulators implement, so the scripts run outside `nx-l2`. [#5](https://github.com/l2nx/nx-l2/issues/5).
-- **Cost of a compiled module:** Mobius' runtime compilation of script sources and reloading a quest without a
-  restart are gone. An operator changes scripts through their own build or a module on top.
+- **Release:** stage 1 builds `scripts` as a module; the separate release and its README come later ([#11](https://github.com/l2nx/nx-l2/issues/11)).
+- **Cost of a compiled module:** Mobius' runtime compilation of script sources is gone; a change to script code
+  needs a rebuild. An operator changes scripts through their own build or a module on top. Reloading without a
+  restart stays, on the loaded classes: `//quest_reload` replaces the quest with a new instance of its class (a class
+  without a public no-argument constructor runs its script's `main` again), `//script_load` and
+  `//reload handler|effect` run a script's `main` again. Instances start with fresh state; static fields keep their
+  values, because the classes are not loaded anew.
+
+How the server finds scripts (`server` cannot depend on `scripts`, so discovery goes through the classpath):
+
+- **`ScriptEngine` scans `app.l2nx.highfive.scripts` with ClassGraph** and calls the
+  `public static void main(String[])` of each top-level class, sorted by name, as Mobius did after compiling.
+  `handlers.MasterHandler` and `handlers.EffectMasterHandler` run first. A script is named relative to that package
+  (`quests.QuestMasterHandler`); admin commands also accept the Mobius path form (`quests/QuestMasterHandler.java`).
+- **`config/Scripts.xml` keeps its meaning:** an excluded folder or file name matches a package segment or a
+  simple class name; `include` inside an excluded folder re-admits a class.
+- **Script data stays on disk** in `datapack/data/scripts/<path>/`, the path Mobius used, so `HtmCache` and the
+  core are unchanged. `Quest.getPath()` derives `<path>` from the class name: the `app.l2nx.highfive.scripts.`
+  prefix is cut, the dots become `/`, the class name is dropped.
 
 ## 5. Stack
 
-| Concern  | Choice                                                               |
-| -------- | -------------------------------------------------------------------- |
-| Java     | 25, matching Mobius                                                  |
-| Build    | Gradle Kotlin DSL, version catalog, no committed jars                |
-| Host     | Spring Boot in `*/boot` only; every other module is plain code       |
-| Network  | Netty for every connection: client↔game, client↔login, login↔game |
-| Database | MariaDB (Mobius native), schema managed by Liquibase                 |
-| Metrics  | Micrometer                                                           |
-| Docs     | English, as an international open-source project                     |
+| Concern  | Choice                                                                  |
+| -------- | ----------------------------------------------------------------------- |
+| Java     | 25 LTS (Mobius targets 27; the imported tree compiles on 25 as is)      |
+| Build    | Gradle Kotlin DSL, version catalog, no committed jars but the Gradle wrapper |
+| Local DB | `compose.yaml`: MariaDB LTS, schema from the imported SQL until stage 2 |
+| Host     | Spring Boot in `*/boot` only; every other module is plain code          |
+| Network  | Netty for every connection: client↔game, client↔login, login↔game       |
+| Database | MariaDB (Mobius native), schema managed by Liquibase                    |
+| Metrics  | Micrometer                                                              |
+| Docs     | English, as an international open-source project                        |
 
 ## 6. L2NX integration
 
@@ -303,7 +333,8 @@ The test server:
 
 ## 10. Upstream
 
-- **`docs/provenance.md`** records the Mobius commit the import started from and the import rules.
+- **[`docs/provenance.md`](../provenance.md)** records the Mobius commit the import started from, the path
+  mapping, what was stripped and the labelling rules.
 - **Upstream fixes are ported by hand** (cherry-pick with adaptation) once the structure diverges. This is the
   accepted cost of the fork.
 
@@ -311,24 +342,25 @@ The test server:
 
 Every stage ends with a server that builds and a client that logs in and plays. No stage breaks the game.
 
-| #   | Stage                                                                           | Done when                                                                 |
-| --- | ------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| 0   | Repository and legal                                                            | `LICENSE`, `NOTICE`, `CONTRIBUTING.md`, README disclaimer                 |
-| 1   | Import HF with history (subtree split of Mobius), Gradle build                  | server starts locally, an HF client logs in and plays                     |
-| 2   | Host shell                                                                      | `boot` modules, `application.yaml`, Liquibase, metrics, graceful shutdown |
-| 3   | Netty network                                                                   | own Netty transport in `libs/network`, all three connections              |
-| 4   | L2NX built in                                                                   | latest adapter, commands and events work                                  |
-| 5   | Public test server                                                              | public access, adapter e2e in CI                                          |
-| 6   | Geo SPI + open `nx-physics`                                                     | two implementations, movement on navmesh                                  |
-| 7   | HF multi-protocol                                                               | newer clients log in to HF                                                |
-| 8   | Essence + shared core extraction ([#2](https://github.com/l2nx/nx-l2/issues/2)) | second chronicle; `engine/` grows by real overlap                         |
-| 9   | Interlude ([#3](https://github.com/l2nx/nx-l2/issues/3))                        | third chronicle                                                           |
+| #   | Stage                                                                           | Done when                                                                        |
+| --- | ------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| 0   | Repository and legal                                                            | `LICENSE`, `NOTICE`, `CONTRIBUTING.md`, README disclaimer                        |
+| 1   | Import HF with history (`git filter-repo` of Mobius), Gradle build              | server starts locally, an HF client logs in and plays                            |
+| 2   | Host shell                                                                      | Spring Boot in `boot` (ArchUnit guards it), `application.yaml`, Liquibase, metrics, graceful shutdown |
+| 3   | Netty network                                                                   | own Netty transport in `libs/network`, all three connections                     |
+| 4   | L2NX built in                                                                   | latest adapter, commands and events work                                         |
+| 5   | Public test server                                                              | public access, adapter e2e in CI                                                 |
+| 6   | Geo SPI + open `nx-physics`                                                     | two implementations, movement on navmesh                                         |
+| 7   | HF multi-protocol                                                               | newer clients log in to HF                                                       |
+| 8   | Essence + shared core extraction ([#2](https://github.com/l2nx/nx-l2/issues/2)) | second chronicle; `engine/` grows by real overlap                                |
+| 9   | Interlude ([#3](https://github.com/l2nx/nx-l2/issues/3))                        | third chronicle                                                                  |
 
-Stage 1 lands the Mobius tree directly in the §4 layout: game server code in `chronicles/high-five/server`,
-scripts in `chronicles/high-five/scripts`, data in `chronicles/high-five/datapack`, the login server in
-`login/server`.
+Stage 1 lands the Mobius tree directly in the §4 layout and the `app.l2nx.*` packages: `git filter-repo` rewrites
+both historical HF paths of Mobius into the target paths, so file history runs unbroken from 2016 without
+`--follow`. Mapping and stripped files: [`docs/provenance.md`](../provenance.md).
 
-Each stage gets its own spec in `docs/specs/` before implementation.
+A stage updates the living docs (this spec, `docs/provenance.md`, README). A new spec is created only for a
+feature with its own lifecycle.
 
 ## 12. Defaults taken without explicit confirmation
 
@@ -349,3 +381,4 @@ These are recommendations from the design discussion. Each one can be overridden
 - Repository mirror outside GitHub — [#10](https://github.com/l2nx/nx-l2/issues/10).
 - Documentation on `l2nx.dev` — [#8](https://github.com/l2nx/nx-l2/issues/8).
 - CLA or DCO enforcement before external contributions — [#7](https://github.com/l2nx/nx-l2/issues/7).
+- Separate release of the High Five scripts — [#11](https://github.com/l2nx/nx-l2/issues/11).

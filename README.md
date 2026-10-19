@@ -4,8 +4,23 @@ An open-source Lineage 2 server built on [L2J Mobius](https://gitlab.com/MobiusD
 [L2NX](https://l2nx.dev) platform integration built in. One repository holds every chronicle (High Five first, then
 Essence and Interlude), the login server, the network stack and the shared libraries.
 
-> **Status: design stage.** There is no runnable code yet. The design lives in
-> [docs/specs/001-project-design.md](docs/specs/001-project-design.md); the stages in its §11.
+> **Status: stage 1.** High Five is imported from L2J Mobius and runs locally. The design lives in
+> [docs/specs/001-project-design.md](docs/specs/001-project-design.md); the stages in its §11, the import in
+> [docs/provenance.md](docs/provenance.md).
+
+## Quick start
+
+Requirements: JDK 25, Docker.
+
+```sh
+docker compose up -d                          # MariaDB with the upstream schema, on 127.0.0.1:3306
+./gradlew :login:boot:run                     # login server, client port 2106
+./gradlew :chronicles:high-five:boot:run      # High Five game server, registers on the login server
+```
+
+`./gradlew installDist` builds runnable distributions in `login/boot/build/install/login-server` and
+`chronicles/high-five/boot/build/install/game-server`; configuration is in their `config/` directories. Geodata is
+not shipped: put it into `data/geodata` of the game server distribution.
 
 ## Goals
 

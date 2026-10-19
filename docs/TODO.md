@@ -15,6 +15,7 @@ lists what is open.
 - [#8](https://github.com/l2nx/nx-l2/issues/8) Publish project docs on l2nx.dev
 - [#9](https://github.com/l2nx/nx-l2/issues/9) Review texts shipped in the datapack
 - [#10](https://github.com/l2nx/nx-l2/issues/10) Mirror the repository outside GitHub
+- [#11](https://github.com/l2nx/nx-l2/issues/11) Release the High Five scripts as their own artifact
 
 ## Done
 

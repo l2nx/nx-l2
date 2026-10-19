@@ -23,7 +23,10 @@ Inbound = outbound: a contribution comes under the license of the file it touche
 | upstream Mobius file, MIT      | MIT        | keep the upstream header, add the L2NX copyright line |
 | upstream Mobius file, GPLv3    | GPLv3      | keep the upstream header, add the L2NX copyright line |
 
-- Renaming packages or variables is not a rewrite.
+- Renaming packages or variables is not a rewrite. A purely mechanical change (package rename, header insertion)
+  adds no L2NX copyright line either.
+- An upstream file without a header (data, SQL, config) is MIT, labelled in [REUSE.toml](REUSE.toml)
+  ([docs/provenance.md](docs/provenance.md#license-labels)).
 - **Rewriting a GPLv3 file** to move it to Apache 2.0 starts from the behaviour, not from editing the GPLv3 text. This
   is how the build gets rid of GPLv3 ([#1](https://github.com/l2nx/nx-l2/issues/1)).
 - `libs/` and `engine/` take no GPLv3 file.
