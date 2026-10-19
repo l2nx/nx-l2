@@ -180,7 +180,7 @@ libs/                 knows nothing about Lineage 2; reusable by any server
 engine/               Lineage 2 mechanics shared by every chronicle
   geo                 app.l2nx.engine.geo      movement / pathfinding / line-of-sight SPI + classic geodata
   adapter             app.l2nx.engine.adapter  L2NX adapter host
-  core                app.l2nx.engine.core     created at stage 9: what HF and Essence share
+  core                app.l2nx.engine.core     partition runtime (spec 003); later what HF and Essence share
 login/
   server              app.l2nx.login       login logic, protocol variants, GS-link, tools; sql/
   boot                app.l2nx.login.boot  launcher; runtime files (config, data) in src/dist
@@ -218,13 +218,13 @@ Rules:
   about `engine`, chronicles do not depend on each other. The Gradle module boundaries enforce this: a module
   compiles only against the modules it declares.
 - **Spring, Lombok and other de-facto standards are allowed in every module,** game logic included. The code
-  is not kept framework-free; the target layout of the game code is decided in
-  [#18](https://github.com/l2nx/nx-l2/issues/18).
+  is not kept framework-free; wiring and the layout of the game code: [spec 003](003-engine-core/wiring-layout.md).
 - **The engine provides mechanisms, the chronicle provides rules.** Formulas, classes, skills, enchanting and
   game systems belong to the chronicle. The engine exposes extension points: SPI, handler registries.
-- **The engine is not extracted up front.** With HF alone, `engine/` takes only `geo` and `adapter`. The shared
-  game core is extracted when Essence arrives, by comparing the two Mobius trees. An empty `engine/core` is not
-  created ahead of time.
+- **The engine is not extracted up front.** With HF alone, `engine/` takes `geo`, `adapter` and `core`, where
+  `core` holds only the chronicle-agnostic runtime of [spec 003](003-engine-core/spec.md): partition loops, clock,
+  identity, sessions, replication and persistence mechanisms. Shared game mechanics are extracted when Essence
+  arrives, by comparing the two Mobius trees.
 - **A datapack lives in its chronicle's directory.** Code and data change in one commit, so they cannot drift
   apart.
 - **The package follows the path.** A module's root package is listed above; a new module picks its package by
@@ -405,9 +405,10 @@ the imported MySQL DDL, so the schema is written once. The port covers case-inse
 (today they rely on the `_ci` collation), the stricter type handling of pgjdbc (`setBoolean` into TINYINT columns,
 `setString` into numeric ones), the MySQL-only statements (`REPLACE INTO`, `ON DUPLICATE KEY UPDATE`, `IF()`,
 backticks), the data types PostgreSQL lacks (UNSIGNED, MEDIUMINT, ENUM) and empty-string defaults that stand
-for no value (`gameservers.host`), which become NULL. The adapter's change capture reads only
-MySQL and MariaDB today; its PostgreSQL path ([#13](https://github.com/l2nx/nx-l2/issues/13)) is needed before
-stage 5.
+for no value (`gameservers.host`), which become NULL. Keys are UUIDv7 and object ids on the wire become handles
+allocated on load ([spec 003, identity](003-engine-core/persistence.md#1-persistent-identity)). The adapter's
+change capture reads only MySQL and MariaDB today; its PostgreSQL path
+([#13](https://github.com/l2nx/nx-l2/issues/13)) is needed before stage 5.
 
 A stage updates the living docs (this spec, `docs/provenance.md`, README). A new spec is created only for a
 feature with its own lifecycle.

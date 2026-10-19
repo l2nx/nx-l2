@@ -20,10 +20,13 @@ lists what is open.
 - [#15](https://github.com/l2nx/nx-l2/issues/15) Adopt Lombok for boilerplate
 - [#16](https://github.com/l2nx/nx-l2/issues/16) Finalize the JDK: distribution, version and flags
 - [#17](https://github.com/l2nx/nx-l2/issues/17) Move game and login settings to Spring Boot configuration
-- [#18](https://github.com/l2nx/nx-l2/issues/18) Target architecture of the game code: package layout, tick model, ECS
+- [#20](https://github.com/l2nx/nx-l2/issues/20) Time dilation for overloaded partitions
+- [#21](https://github.com/l2nx/nx-l2/issues/21) Parallel open world if one partition exceeds its budget
 
 ## Done
 
+- [#18](https://github.com/l2nx/nx-l2/issues/18) Target architecture of the game code: package layout, tick model, ECS
+  ([spec 003](specs/003-engine-core/spec.md)).
 - [#8](https://github.com/l2nx/nx-l2/issues/8) Publish project docs on l2nx.dev: the `/l2/` section, from
   `docs/public/{en,ru}/` (spec 001 §1).
 - Ownership of the reference L2NX host layer: not ours; the adapter host is written from scratch against the
