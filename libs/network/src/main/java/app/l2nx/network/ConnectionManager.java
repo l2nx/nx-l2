@@ -40,6 +40,8 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.binder.jvm.ExecutorServiceMetrics;
 
+import app.l2nx.network.config.ConnectionConfig;
+import app.l2nx.network.config.NetworkSettings;
 import app.l2nx.network.handler.ReadHandler;
 import app.l2nx.network.handler.WriteHandler;
 import app.l2nx.network.packet.PacketExecutor;

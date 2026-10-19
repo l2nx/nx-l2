@@ -2,7 +2,7 @@
  * SPDX-FileCopyrightText: 2026 L2NX contributors
  * SPDX-License-Identifier: Apache-2.0
  */
-package app.l2nx.network;
+package app.l2nx.network.config;
 
 import java.time.Duration;
 import java.util.List;

@@ -27,7 +27,7 @@ import java.nio.channels.CompletionHandler;
 
 import app.l2nx.network.Client;
 import app.l2nx.network.Connection;
-import app.l2nx.network.ConnectionConfig;
+import app.l2nx.network.config.ConnectionConfig;
 import app.l2nx.network.buffer.ReadBuffer;
 import app.l2nx.network.packet.PacketExecutor;
 import app.l2nx.network.packet.PacketHandler;

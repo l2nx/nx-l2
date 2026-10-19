@@ -7,7 +7,7 @@ package app.l2nx.login.config;
 import java.io.File;
 import java.time.Duration;
 
-import app.l2nx.network.NetworkSettings;
+import app.l2nx.network.config.NetworkSettings;
 
 public final class TestLoginProperties
 {

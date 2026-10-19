@@ -24,7 +24,7 @@ package app.l2nx.network.packet;
 
 import app.l2nx.network.Client;
 import app.l2nx.network.Connection;
-import app.l2nx.network.ConnectionConfig;
+import app.l2nx.network.config.ConnectionConfig;
 import app.l2nx.network.buffer.WriteBuffer;
 
 /**

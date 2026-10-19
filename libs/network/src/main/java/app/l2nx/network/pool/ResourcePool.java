@@ -28,7 +28,7 @@ import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 
-import app.l2nx.network.ConnectionConfig;
+import app.l2nx.network.config.ConnectionConfig;
 
 /**
  * Manages multiple {@link BufferPool}s indexed by buffer size for efficient {@link ByteBuffer} reuse.<br>

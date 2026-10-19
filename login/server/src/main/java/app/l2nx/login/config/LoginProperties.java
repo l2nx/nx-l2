@@ -20,7 +20,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.convert.DurationUnit;
 import org.springframework.validation.annotation.Validated;
 
-import app.l2nx.network.NetworkSettings;
+import app.l2nx.network.config.NetworkSettings;
 
 /**
  * @param client the listener for game clients

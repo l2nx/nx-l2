@@ -29,6 +29,7 @@ import java.nio.channels.AsynchronousSocketChannel;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import app.l2nx.network.config.ConnectionConfig;
 import app.l2nx.network.handler.ReadHandler;
 import app.l2nx.network.handler.WriteHandler;
 import app.l2nx.network.pool.ResourcePool;

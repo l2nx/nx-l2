@@ -36,7 +36,7 @@ import io.micrometer.core.instrument.binder.jvm.ExecutorServiceMetrics;
 
 import app.l2nx.network.Client;
 import app.l2nx.network.Connection;
-import app.l2nx.network.ConnectionConfig;
+import app.l2nx.network.config.ConnectionConfig;
 
 /**
  * Thread-pool-based executor for incoming network packets.<br>
