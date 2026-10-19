@@ -88,7 +88,7 @@ public class DatabaseFactory
 			config.setLeakDetectionThreshold(600000); // 10 minutes.
 			
 			// Pool Name for Identification.
-			config.setPoolName("L2JMobiusPool");
+			config.setPoolName("l2nx-db");
 			
 			// Register MBeans for Monitoring.
 			config.setRegisterMbeans(true);

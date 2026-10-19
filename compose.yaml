@@ -1,17 +1,28 @@
-# Local DB for the built servers; mirrors config/Database.ini defaults (l2jmobiush5, passwordless root), localhost only.
+name: l2nx
+
 services:
-  mariadb:
+  db:
     image: mariadb:11.8
+    container_name: l2nx-db
     environment:
-      MARIADB_DATABASE: l2jmobiush5
-      MARIADB_ALLOW_EMPTY_ROOT_PASSWORD: "yes"
+      MARIADB_DATABASE: l2nx
+      MARIADB_USER: l2nx
+      MARIADB_PASSWORD: l2nx
+      MARIADB_RANDOM_ROOT_PASSWORD: "yes"
     ports:
       - "127.0.0.1:3306:3306"
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
     volumes:
-      - mariadb:/var/lib/mysql
+      - l2nx-db-data:/var/lib/mysql
       - ./docker/mariadb-init.sh:/docker-entrypoint-initdb.d/nx-l2.sh:ro
       - ./login/server/sql:/sql/login:ro
       - ./chronicles/high-five/datapack/sql:/sql/game:ro
 
 volumes:
-  mariadb:
+  l2nx-db-data:
+    name: l2nx-db-data

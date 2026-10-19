@@ -74,18 +74,18 @@ public class ThreadPool
 		// Configure High Priority ScheduledThreadPoolExecutor.
 		if (ThreadConfig.HIGH_PRIORITY_SCHEDULED_THREAD_POOL_SIZE > 0)
 		{
-			HIGH_PRIORITY_SCHEDULED_POOL = new ScheduledThreadPoolExecutor(ThreadConfig.HIGH_PRIORITY_SCHEDULED_THREAD_POOL_SIZE, new ThreadProvider("L2jMobius High Priority ScheduledThread", ThreadPriority.PRIORITY_8), new ThreadPoolExecutor.CallerRunsPolicy());
+			HIGH_PRIORITY_SCHEDULED_POOL = new ScheduledThreadPoolExecutor(ThreadConfig.HIGH_PRIORITY_SCHEDULED_THREAD_POOL_SIZE, new ThreadProvider("l2nx High Priority ScheduledThread", ThreadPriority.PRIORITY_8), new ThreadPoolExecutor.CallerRunsPolicy());
 			LOGGER.info(StringUtil.concat("...scheduled pool executor with ", String.valueOf(ThreadConfig.HIGH_PRIORITY_SCHEDULED_THREAD_POOL_SIZE), " high priority threads."));
 		}
 		
 		// Configure ScheduledThreadPoolExecutor.
-		SCHEDULED_POOL = new ScheduledThreadPoolExecutor(ThreadConfig.SCHEDULED_THREAD_POOL_SIZE, new ThreadProvider("L2jMobius ScheduledThread"), new ThreadPoolExecutor.CallerRunsPolicy());
+		SCHEDULED_POOL = new ScheduledThreadPoolExecutor(ThreadConfig.SCHEDULED_THREAD_POOL_SIZE, new ThreadProvider("l2nx ScheduledThread"), new ThreadPoolExecutor.CallerRunsPolicy());
 		SCHEDULED_POOL.setRejectedExecutionHandler(new RejectedExecutionHandlerImpl());
 		SCHEDULED_POOL.setRemoveOnCancelPolicy(true);
 		SCHEDULED_POOL.prestartAllCoreThreads();
 		
 		// Configure ThreadPoolExecutor.
-		INSTANT_POOL = new ThreadPoolExecutor(ThreadConfig.INSTANT_THREAD_POOL_SIZE, Integer.MAX_VALUE, INSTANT_POOL_KEEP_ALIVE_MINUTES, TimeUnit.MINUTES, new LinkedBlockingQueue<>(), new ThreadProvider("L2jMobius Thread"));
+		INSTANT_POOL = new ThreadPoolExecutor(ThreadConfig.INSTANT_THREAD_POOL_SIZE, Integer.MAX_VALUE, INSTANT_POOL_KEEP_ALIVE_MINUTES, TimeUnit.MINUTES, new LinkedBlockingQueue<>(), new ThreadProvider("l2nx Thread"));
 		INSTANT_POOL.setRejectedExecutionHandler(new RejectedExecutionHandlerImpl());
 		INSTANT_POOL.prestartAllCoreThreads();
 		

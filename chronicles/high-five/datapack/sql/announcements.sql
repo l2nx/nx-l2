@@ -10,5 +10,5 @@ CREATE TABLE IF NOT EXISTS `announcements` (
 ) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 INSERT INTO announcements (`type`, `author`, `content`) VALUES 
-(0, 'L2jMobius', 'Thanks for using L2jMobius!'),
-(0, 'L2jMobius', '[=http://www.l2jmobius.org/=]');
+(0, 'nx-l2', 'Thanks for using nx-l2!'),
+(0, 'nx-l2', '[=https://l2nx.dev/l2/=]');
