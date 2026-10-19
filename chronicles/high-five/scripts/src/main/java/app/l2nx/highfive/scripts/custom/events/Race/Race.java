@@ -19,18 +19,11 @@
  */
 package app.l2nx.highfive.scripts.custom.events.Race;
 
-import java.io.File;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import org.apache.commons.lang3.time.DateFormatUtils;
-import org.w3c.dom.Document;
-import org.w3c.dom.Node;
 
 import app.l2nx.highfive.config.GeneralConfig;
-import app.l2nx.highfive.data.xml.IXmlReader;
 import app.l2nx.highfive.data.xml.SkillData;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Npc;
@@ -44,7 +37,6 @@ import app.l2nx.highfive.mechanics.skill.enums.SkillFinishType;
 import app.l2nx.highfive.network.enums.ChatType;
 import app.l2nx.highfive.network.serverpackets.CreatureSay;
 import app.l2nx.highfive.network.serverpackets.NpcHtmlMessage;
-import app.l2nx.highfive.schedule.RecurrenceSchedule;
 import app.l2nx.highfive.threads.ThreadPool;
 import app.l2nx.highfive.util.StatSet;
 
@@ -133,66 +125,19 @@ public class Race extends Event
 		addFirstTalkId(STOP_NPC);
 		addTalkId(STOP_NPC);
 		
-		loadConfig();
+		loadSchedules("data/scripts/custom/events/Race/config.xml");
 	}
-	
-	private void loadConfig()
-	{
-		new IXmlReader()
-		{
-			@Override
-			public void load()
-			{
-				parseDatapackFile("data/scripts/custom/events/Race/config.xml");
-			}
-			
-			@Override
-			public void parseDocument(Document document, File file)
-			{
-				final AtomicInteger count = new AtomicInteger(0);
-				forEach(document, "event", eventNode ->
-				{
-					final StatSet att = new StatSet(parseAttributes(eventNode));
-					final String name = att.getString("name");
-					for (Node node = document.getDocumentElement().getFirstChild(); node != null; node = node.getNextSibling())
-					{
-						switch (node.getNodeName())
-						{
-							case "schedule":
-							{
-								final StatSet attributes = new StatSet(parseAttributes(node));
-								final StatSet params = new StatSet();
-								params.set("Name", name);
-								params.set("Schedule", new RecurrenceSchedule(attributes.getString("rrule")));
-								scheduleStart("Schedule" + count.incrementAndGet(), params);
-								break;
-							}
-						}
-					}
-				});
-			}
-		}.load();
-	}
-	
+
 	@Override
 	public void onTimerEvent(String event, StatSet params, Npc npc, Player player)
 	{
-		if (event.startsWith("Schedule"))
+		if (event.startsWith(SCHEDULE_TIMER))
 		{
 			eventStart(null);
 			scheduleStart(event, params);
 		}
 	}
 
-	private void scheduleStart(String timer, StatSet params)
-	{
-		params.getObject("Schedule", RecurrenceSchedule.class).next().ifPresentOrElse(start ->
-		{
-			getTimers().addTimer(timer, params, (start.toEpochMilli() - System.currentTimeMillis()) + 5000, null, null); // Added 5 seconds to prevent overlapping.
-			LOGGER.info("Event " + params.getString("Name") + " scheduled at " + DateFormatUtils.format(start.toEpochMilli(), "dd/MM/yyyy HH:mm:ss"));
-		}, () -> LOGGER.warning("Event " + params.getString("Name") + " has no further start in its schedule."));
-	}
-	
 	@Override
 	public boolean eventStart(Player eventMaker)
 	{

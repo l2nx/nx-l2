@@ -6,9 +6,11 @@ package app.l2nx.highfive.schedule;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
+import static org.assertj.core.api.Assertions.assertThatNoException;
 
 import java.time.Instant;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -74,6 +76,32 @@ class RecurrenceScheduleTest
 			assertThat(schedule.nextAfter(Instant.parse(now), ZoneId.of(zone))).contains(Instant.parse(expected));
 		}
 
+		/**
+		 * The accepted day forms leave nothing to the evaluation moment: moments on different weekdays, days of the month and
+		 * months before the same instance all find it.
+		 */
+		@ParameterizedTest(name = "{0} after {1} -> {2}")
+		@CsvSource(delimiter = '|', textBlock = """
+			FREQ=WEEKLY;BYDAY=FR;BYHOUR=20;BYMINUTE=0                 | 2026-01-12T11:17:00Z | 2026-01-16T20:00:00Z
+			FREQ=WEEKLY;BYDAY=FR;BYHOUR=20;BYMINUTE=0                 | 2026-01-14T03:41:00Z | 2026-01-16T20:00:00Z
+			FREQ=MONTHLY;BYMONTHDAY=20;BYHOUR=20;BYMINUTE=0           | 2026-01-03T11:17:00Z | 2026-01-20T20:00:00Z
+			FREQ=MONTHLY;BYMONTHDAY=20;BYHOUR=20;BYMINUTE=0           | 2026-01-14T03:41:00Z | 2026-01-20T20:00:00Z
+			FREQ=YEARLY;BYMONTH=3;BYMONTHDAY=5;BYHOUR=20;BYMINUTE=0   | 2025-12-31T03:41:00Z | 2026-03-05T20:00:00Z
+			FREQ=YEARLY;BYMONTH=3;BYMONTHDAY=5;BYHOUR=20;BYMINUTE=0   | 2026-02-14T11:17:00Z | 2026-03-05T20:00:00Z
+			FREQ=YEARLY;BYWEEKNO=10;BYDAY=MO;BYHOUR=20;BYMINUTE=0     | 2025-12-31T03:41:00Z | 2026-03-02T20:00:00Z
+			FREQ=YEARLY;BYWEEKNO=10;BYDAY=MO;BYHOUR=20;BYMINUTE=0     | 2026-02-14T11:17:00Z | 2026-03-02T20:00:00Z
+			FREQ=YEARLY;BYWEEKNO=10;BYMONTHDAY=5;BYHOUR=20;BYMINUTE=0 | 2025-12-31T03:41:00Z | 2026-03-05T20:00:00Z
+			FREQ=YEARLY;BYWEEKNO=10;BYMONTHDAY=5;BYHOUR=20;BYMINUTE=0 | 2026-02-14T11:17:00Z | 2026-03-05T20:00:00Z
+			FREQ=YEARLY;BYYEARDAY=100;BYHOUR=20;BYMINUTE=0            | 2025-12-31T03:41:00Z | 2026-04-10T20:00:00Z
+			FREQ=YEARLY;BYYEARDAY=100;BYHOUR=20;BYMINUTE=0            | 2026-02-14T11:17:00Z | 2026-04-10T20:00:00Z
+			""")
+		void nextAfter_shouldNotDependOnEvaluationMoment_whenRuleFixesTheDay(String rrule, String now, String expected)
+		{
+			final RecurrenceSchedule schedule = new RecurrenceSchedule(rrule);
+
+			assertThat(schedule.nextAfter(Instant.parse(now), ZoneOffset.UTC)).contains(Instant.parse(expected));
+		}
+
 		@Test
 		void nextAfter_shouldBeEmpty_whenRuleHasEnded()
 		{
@@ -96,10 +124,44 @@ class RecurrenceScheduleTest
 			"FREQ=HOURLY",
 			"FREQ=DAILY;BYMINUTE=0",
 			"FREQ=WEEKLY;BYDAY=SA;BYMINUTE=0",
+			"FREQ=WEEKLY;BYHOUR=20;BYMINUTE=0",
+			"FREQ=WEEKLY;BYMONTH=3;BYHOUR=20;BYMINUTE=0",
+			"FREQ=MONTHLY;BYHOUR=20;BYMINUTE=0",
+			"FREQ=MONTHLY;BYMONTH=3;BYHOUR=20;BYMINUTE=0",
+			"FREQ=MONTHLY;BYYEARDAY=100;BYHOUR=20;BYMINUTE=0",
+			"FREQ=MONTHLY;BYWEEKNO=10;BYHOUR=20;BYMINUTE=0",
+			"FREQ=YEARLY;BYHOUR=20;BYMINUTE=0",
+			"FREQ=YEARLY;BYMONTH=3;BYHOUR=20;BYMINUTE=0",
+			"FREQ=YEARLY;BYMONTHDAY=1;BYHOUR=20;BYMINUTE=0",
+			"FREQ=YEARLY;BYMONTHDAY=13;BYDAY=FR;BYHOUR=20;BYMINUTE=0",
+			"FREQ=YEARLY;BYWEEKNO=10;BYHOUR=20;BYMINUTE=0",
+			"FREQ=YEARLY;BYWEEKNO=10;BYMONTH=3;BYHOUR=20;BYMINUTE=0",
 		})
 		void create_shouldThrow_whenRuleIsInvalid(String rrule)
 		{
 			assertThatIllegalArgumentException().isThrownBy(() -> new RecurrenceSchedule(rrule)).withMessageContaining(rrule);
+		}
+
+		@ParameterizedTest(name = "{0}")
+		@ValueSource(strings = {
+			"FREQ=DAILY;BYHOUR=20;BYMINUTE=0",
+			"FREQ=DAILY;BYHOUR=0,4,8,12,16,20;BYMINUTE=0",
+			"FREQ=WEEKLY;BYDAY=FR,SA,SU;BYHOUR=21;BYMINUTE=0",
+			"FREQ=WEEKLY;BYDAY=SA,SU;BYHOUR=18;BYMINUTE=30",
+			"FREQ=HOURLY;BYMINUTE=15",
+			"FREQ=MINUTELY",
+			"FREQ=MONTHLY;BYMONTHDAY=-1;BYHOUR=20;BYMINUTE=0",
+			"FREQ=MONTHLY;BYDAY=-1FR;BYHOUR=20;BYMINUTE=0",
+			"FREQ=YEARLY;BYYEARDAY=100;BYHOUR=20;BYMINUTE=0",
+			"FREQ=YEARLY;BYDAY=20MO;BYHOUR=20;BYMINUTE=0",
+			"FREQ=YEARLY;BYMONTH=3;BYDAY=MO;BYHOUR=20;BYMINUTE=0",
+			"FREQ=YEARLY;BYMONTH=3;BYMONTHDAY=5;BYHOUR=20;BYMINUTE=0",
+			"FREQ=YEARLY;BYWEEKNO=10;BYDAY=MO;BYHOUR=20;BYMINUTE=0",
+			"FREQ=YEARLY;BYWEEKNO=10;BYMONTHDAY=5;BYHOUR=20;BYMINUTE=0",
+		})
+		void create_shouldAccept_whenRuleFixesEveryPart(String rrule)
+		{
+			assertThatNoException().isThrownBy(() -> new RecurrenceSchedule(rrule));
 		}
 	}
 }

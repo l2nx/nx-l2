@@ -20,8 +20,9 @@ import org.dmfs.rfc5545.recur.RecurrenceRuleIterator;
 /**
  * A recurring start time configured as an RFC 5545 RRULE ({@code FREQ=DAILY;BYHOUR=20;BYMINUTE=0}).<br>
  * The rule has no DTSTART of its own and is evaluated from the current minute, so everything that would depend on
- * DTSTART is rejected: COUNT, INTERVAL, and a left-out BYMINUTE / BYHOUR that would take the minute or hour of the
- * evaluation.
+ * DTSTART is rejected: COUNT, INTERVAL, a left-out BYMINUTE / BYHOUR that would take the minute or hour of the
+ * evaluation, and a left-out day part (BYDAY for WEEKLY, BYMONTHDAY or BYDAY for MONTHLY, BYYEARDAY, BYDAY or
+ * BYMONTHDAY with BYMONTH for YEARLY) that would take the weekday, day of the month or month of the evaluation.
  */
 public final class RecurrenceSchedule
 {
@@ -50,12 +51,33 @@ public final class RecurrenceSchedule
 			throw new IllegalArgumentException("COUNT and INTERVAL are not supported, list the times with BYHOUR / BYDAY instead: " + rrule);
 		}
 
-		final boolean minuteMissing = (rule.getFreq().compareTo(Freq.HOURLY) <= 0) && (rule.getByPart(Part.BYMINUTE) == null);
-		final boolean hourMissing = (rule.getFreq().compareTo(Freq.DAILY) <= 0) && (rule.getByPart(Part.BYHOUR) == null);
+		final boolean minuteMissing = (rule.getFreq().compareTo(Freq.HOURLY) <= 0) && !rule.hasPart(Part.BYMINUTE);
+		final boolean hourMissing = (rule.getFreq().compareTo(Freq.DAILY) <= 0) && !rule.hasPart(Part.BYHOUR);
 		if (minuteMissing || hourMissing)
 		{
 			throw new IllegalArgumentException("The rule must set BYMINUTE when FREQ is HOURLY or longer, and BYHOUR when it is DAILY or longer: " + rrule);
 		}
+
+		if (!dayFixed(rule))
+		{
+			throw new IllegalArgumentException("The rule must set BYDAY when FREQ is WEEKLY, BYMONTHDAY or BYDAY when it is MONTHLY, and BYYEARDAY, BYDAY or BYMONTHDAY with BYMONTH when it is YEARLY: " + rrule);
+		}
+	}
+
+	/**
+	 * RFC 5545 takes a day the rule leaves open from DTSTART: the weekday for WEEKLY, the day of the month for MONTHLY,
+	 * the month and day for YEARLY, the weekday for YEARLY with BYWEEKNO alone. lib-recur also takes the month from
+	 * DTSTART for a YEARLY BYMONTHDAY without BYMONTH or BYWEEKNO.
+	 */
+	private static boolean dayFixed(RecurrenceRule rule)
+	{
+		return switch (rule.getFreq())
+		{
+			case WEEKLY -> rule.hasPart(Part.BYDAY);
+			case MONTHLY -> rule.hasPart(Part.BYMONTHDAY) || rule.hasPart(Part.BYDAY);
+			case YEARLY -> rule.hasPart(Part.BYYEARDAY) || (rule.hasPart(Part.BYMONTHDAY) ? rule.hasPart(Part.BYMONTH) || rule.hasPart(Part.BYWEEKNO) : rule.hasPart(Part.BYDAY));
+			default -> true;
+		};
 	}
 
 	/**
