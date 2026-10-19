@@ -1,3 +1,7 @@
+> **Archived 2026-10-19.** One-time work, done: `libs/commons` is gone. Its lasting facts live in spec 001 §4
+> (modules), spec 002 (`libs/boot`, login configuration) and `docs/provenance.md`; the XML library choice is
+> [#22](https://github.com/l2nx/nx-l2/issues/22), the game settings move [#17](https://github.com/l2nx/nx-l2/issues/17).
+
 # 004. Dissolve `libs/commons`
 
 **One-time:** archived when `libs/commons` is gone and its lasting facts are folded into spec 001 §4,
