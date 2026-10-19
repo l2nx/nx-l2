@@ -25,7 +25,10 @@ package app.l2nx.login.network;
 import app.l2nx.commons.util.Rnd;
 import app.l2nx.network.buffer.ReadBuffer;
 import app.l2nx.network.buffer.WriteBuffer;
-import app.l2nx.network.crypt.NewCrypt;
+import app.l2nx.network.crypt.LittleEndianBlowfishCipher;
+import app.l2nx.network.crypt.PacketCipher;
+import app.l2nx.network.crypt.RollingXor;
+import app.l2nx.network.crypt.XorChecksum;
 
 /**
  * Blowfish cipher used by the login protocol.<br>
@@ -56,8 +59,8 @@ public class LoginEncryption
 		(byte) 0x6c
 	};
 	
-	// Static crypt instance used while the protocol is in the bootstrap phase.
-	private static final NewCrypt STATIC_CRYPT = new NewCrypt(STATIC_BLOWFISH_KEY);
+	// Static crypt instance used while the protocol is in the bootstrap phase; shared by all connections, so it must stay thread-safe.
+	private static final PacketCipher STATIC_CRYPT = new LittleEndianBlowfishCipher(STATIC_BLOWFISH_KEY);
 	
 	// Blowfish block size and protocol overhead constants.
 	private static final int BLOWFISH_BLOCK_SIZE = 8;
@@ -66,7 +69,7 @@ public class LoginEncryption
 	private static final int CHECKSUM_SIZE = 8;
 	
 	// Session-specific crypt instance, set once the client key is negotiated.
-	private NewCrypt _sessionCrypt;
+	private PacketCipher _sessionCrypt;
 	
 	// Tracks whether the connection is still using the static key for encryption.
 	private boolean _usingStaticKey = true;
@@ -77,7 +80,7 @@ public class LoginEncryption
 	 */
 	public void setKey(byte[] key)
 	{
-		_sessionCrypt = new NewCrypt(key);
+		_sessionCrypt = new LittleEndianBlowfishCipher(key);
 	}
 	
 	/**
@@ -98,7 +101,7 @@ public class LoginEncryption
 		
 		// Decrypt and verify.
 		_sessionCrypt.decrypt(raw, 0, size);
-		final boolean valid = NewCrypt.verifyChecksum(raw, 0, size);
+		final boolean valid = XorChecksum.verify(raw, 0, size);
 		
 		// Write back to buffer if valid.
 		if (valid)
@@ -152,14 +155,14 @@ public class LoginEncryption
 		// Encrypt.
 		if (_usingStaticKey)
 		{
-			NewCrypt.encXORPass(raw, 0, packetSize, Rnd.nextInt());
-			STATIC_CRYPT.crypt(raw, 0, packetSize);
+			RollingXor.encrypt(raw, 0, packetSize, Rnd.nextInt());
+			STATIC_CRYPT.encrypt(raw, 0, packetSize);
 			_usingStaticKey = false;
 		}
 		else
 		{
-			NewCrypt.appendChecksum(raw, 0, packetSize);
-			_sessionCrypt.crypt(raw, 0, packetSize);
+			XorChecksum.append(raw, 0, packetSize);
+			_sessionCrypt.encrypt(raw, 0, packetSize);
 		}
 		
 		// Write back to buffer.

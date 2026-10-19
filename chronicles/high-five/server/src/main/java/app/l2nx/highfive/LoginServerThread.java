@@ -30,6 +30,7 @@ import java.math.BigInteger;
 import java.net.Socket;
 import java.net.SocketException;
 import java.net.UnknownHostException;
+import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.KeyFactory;
 import java.security.interfaces.RSAPublicKey;
@@ -80,7 +81,9 @@ import app.l2nx.highfive.network.loginserverpackets.send.TempBan;
 import app.l2nx.highfive.network.serverpackets.CharSelectionInfo;
 import app.l2nx.highfive.network.serverpackets.LoginFail;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
-import app.l2nx.network.crypt.NewCrypt;
+import app.l2nx.network.crypt.LittleEndianBlowfishCipher;
+import app.l2nx.network.crypt.PacketCipher;
+import app.l2nx.network.crypt.XorChecksum;
 import app.l2nx.network.packet.SimpleWritablePacket;
 
 /**
@@ -111,7 +114,7 @@ public class LoginServerThread extends Thread
 	// Connection state.
 	private Socket _socket;
 	private OutputStream _out;
-	private NewCrypt _blowfish;
+	private PacketCipher _blowfish;
 	private byte[] _hexID;
 	private int _requestID;
 	
@@ -169,7 +172,7 @@ public class LoginServerThread extends Thread
 				
 				// Initialize Blowfish encryption with default key.
 				final byte[] blowfishKey = HexUtil.generateHexBytes(BLOWFISH_KEY_SIZE);
-				_blowfish = new NewCrypt("_;v.]05-31!|+-%xT!^[$\00");
+				_blowfish = new LittleEndianBlowfishCipher("_;v.]05-31!|+-%xT!^[$\00".getBytes(StandardCharsets.UTF_8));
 				
 				while (!isInterrupted())
 				{
@@ -203,7 +206,7 @@ public class LoginServerThread extends Thread
 					
 					// Decrypt and verify packet.
 					_blowfish.decrypt(incoming, 0, incoming.length);
-					checksumOk = NewCrypt.verifyChecksum(incoming);
+					checksumOk = XorChecksum.verify(incoming, 0, incoming.length);
 					if (!checksumOk)
 					{
 						LOGGER.warning(getClass().getSimpleName() + ": Incorrect packet checksum, ignoring packet (LS)");
@@ -240,7 +243,7 @@ public class LoginServerThread extends Thread
 							
 							// Send encrypted blowfish key and switch to secure communication.
 							sendPacket(new BlowFishKey(blowfishKey, publicKey));
-							_blowfish = new NewCrypt(blowfishKey);
+							_blowfish = new LittleEndianBlowfishCipher(blowfishKey);
 							sendPacket(new AuthRequest(_requestID, _acceptAlternate, _hexID, _gamePort, _reserveHost, _maxPlayer, _subnets, _hosts));
 							break;
 						}
@@ -639,8 +642,8 @@ public class LoginServerThread extends Thread
 			
 			synchronized (_out)
 			{
-				NewCrypt.appendChecksum(data, 2, size);
-				_blowfish.crypt(data, 2, size);
+				XorChecksum.append(data, 2, size);
+				_blowfish.encrypt(data, 2, size);
 				
 				_out.write(data);
 				try

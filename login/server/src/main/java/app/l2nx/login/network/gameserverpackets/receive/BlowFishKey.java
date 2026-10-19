@@ -30,7 +30,7 @@ import javax.crypto.Cipher;
 
 import app.l2nx.login.GameServerThread;
 import app.l2nx.login.network.GameServerPacketHandler.GameServerState;
-import app.l2nx.network.crypt.NewCrypt;
+import app.l2nx.network.crypt.LittleEndianBlowfishCipher;
 import app.l2nx.network.packet.SimpleReadablePacket;
 
 /**
@@ -80,12 +80,16 @@ public class BlowFishKey extends SimpleReadablePacket
 			}
 			
 			// Configures Blowfish encryption and updates connection state.
-			server.setBlowFish(new NewCrypt(blowfishKey));
+			server.setBlowFish(new LittleEndianBlowfishCipher(blowfishKey));
 			server.setLoginConnectionState(GameServerState.BF_CONNECTED);
 		}
 		catch (GeneralSecurityException e)
 		{
 			LOGGER.log(Level.SEVERE, "Error while decrypting Blowfish key (RSA).", e);
+		}
+		catch (IllegalArgumentException e)
+		{
+			LOGGER.warning("Rejected Blowfish key: " + e.getMessage());
 		}
 	}
 	

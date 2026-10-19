@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.util.Set;
@@ -45,7 +46,9 @@ import app.l2nx.login.network.gameserverpackets.send.InitLS;
 import app.l2nx.login.network.gameserverpackets.send.KickPlayer;
 import app.l2nx.login.network.gameserverpackets.send.LoginServerFail;
 import app.l2nx.login.network.gameserverpackets.send.RequestCharacters;
-import app.l2nx.network.crypt.NewCrypt;
+import app.l2nx.network.crypt.LittleEndianBlowfishCipher;
+import app.l2nx.network.crypt.PacketCipher;
+import app.l2nx.network.crypt.XorChecksum;
 import app.l2nx.network.packet.SimpleWritablePacket;
 
 /**
@@ -81,7 +84,7 @@ public class GameServerThread extends Thread
 	// Cryptography.
 	private final RSAPublicKey _publicKey;
 	private final RSAPrivateKey _privateKey;
-	private NewCrypt _blowfishCipher;
+	private PacketCipher _blowfishCipher;
 	
 	// Connection State Management.
 	private final String _connectionIp;
@@ -116,7 +119,7 @@ public class GameServerThread extends Thread
 		_publicKey = (RSAPublicKey) keyPair.getPublicKey();
 		
 		// Initialize Blowfish cipher with default key for packet encryption.
-		_blowfishCipher = new NewCrypt(DEFAULT_BLOWFISH_KEY);
+		_blowfishCipher = new LittleEndianBlowfishCipher(DEFAULT_BLOWFISH_KEY.getBytes(StandardCharsets.UTF_8));
 		
 		// Set thread name for easier debugging and monitoring.
 		// Java 18: setName(getClass().getSimpleName() + "-" + getId() + "@" + _connectionIp);
@@ -196,7 +199,7 @@ public class GameServerThread extends Thread
 				_blowfishCipher.decrypt(packetData, 0, packetData.length);
 				
 				// Verify packet integrity using checksum.
-				checksumValid = NewCrypt.verifyChecksum(packetData);
+				checksumValid = XorChecksum.verify(packetData, 0, packetData.length);
 				if (!checksumValid)
 				{
 					LOGGER.warning("Packet checksum verification failed. Possible data corruption or tampering detected. Closing connection.");
@@ -355,10 +358,10 @@ public class GameServerThread extends Thread
 			synchronized (_outputStream)
 			{
 				// Append checksum for integrity verification.
-				NewCrypt.appendChecksum(packetData, PACKET_HEADER_SIZE, dataSize);
-				
+				XorChecksum.append(packetData, PACKET_HEADER_SIZE, dataSize);
+
 				// Encrypt the data portion (excluding header).
-				_blowfishCipher.crypt(packetData, PACKET_HEADER_SIZE, dataSize);
+				_blowfishCipher.encrypt(packetData, PACKET_HEADER_SIZE, dataSize);
 				
 				// Send the complete packet.
 				_outputStream.write(packetData);
@@ -513,7 +516,7 @@ public class GameServerThread extends Thread
 	 * This is typically called after the initial key exchange to use the session key.
 	 * @param blowfishCipher the new Blowfish cipher to use
 	 */
-	public void setBlowFish(NewCrypt blowfishCipher)
+	public void setBlowFish(PacketCipher blowfishCipher)
 	{
 		_blowfishCipher = blowfishCipher;
 	}
