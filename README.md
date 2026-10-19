@@ -15,7 +15,7 @@ Requirements: JDK 25, Docker. On Windows, clone with `git clone -c core.longpath
 the default path limit.
 
 ```sh
-docker compose up -d                          # MariaDB with the upstream schema, on 127.0.0.1:3306
+docker compose up -d                          # MariaDB `l2nx` with the upstream schema, on 127.0.0.1:3306
 ./gradlew :login:boot:run                     # login server, client port 2106
 ./gradlew :chronicles:high-five:boot:run      # High Five game server, registers on the login server
 ```

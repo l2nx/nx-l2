@@ -20,7 +20,7 @@ project's demo and is non-commercial.
 
 The project home is `l2nx.dev`; it hosts the documentation only: the section `/l2/`, published from
 `docs/public/{en,ru}/` of this repository whenever those pages change on `main`. The
-test server site lives on a separate domain, chosen at stage 5; it is not hosted on `l2nx.dev` or `l2nx.top`.
+test server site lives on a separate domain, chosen at stage 6; it is not hosted on `l2nx.dev` or `l2nx.top`.
 
 ## 2. Legal and licensing
 
@@ -106,8 +106,8 @@ servers to find the best behaviour.
 - **Reference servers are consulted for behaviour only.** What a mechanic does is re-implemented from scratch on
   top of Mobius; no code, data or structure is copied from them.
 - **Own code with a single author and no L2J-derived parts may be brought in.** The first case is the Netty
-  transport that becomes `libs/network` (stage 3).
-- **The L2NX adapter host is written from scratch** against the `nx-gs-adapter` API (stage 4).
+  transport that becomes `libs/network` (stage 4).
+- **The L2NX adapter host is written from scratch** against the `nx-gs-adapter` API (stage 5).
 
 ### Assets
 
@@ -156,13 +156,13 @@ All three live in the `l2nx` GitHub organisation.
 make about 1 GB of working tree; contributors who need one chronicle use `git clone --filter=blob:none` plus
 sparse checkout.
 
-The reason is the shared game core: it is extracted by diffing HF and Essence (§4, stage 8), a long refactoring
+The reason is the shared game core: it is extracted by diffing HF and Essence (§4, stage 9), a long refactoring
 that moves code across the shared ↔ chronicle boundary. Across repositories every such move would cost a release
 and a bump per consumer.
 
 A chronicle moves to its own repository `nx-l2-<chronicle>` when either holds:
 
-- `engine/core` has gone through releases without breaking API changes after stage 8;
+- `engine/core` has gone through releases without breaking API changes after stage 9;
 - the chronicle has its own maintainer.
 
 The move is mechanical because a chronicle is one self-contained directory (§4):
@@ -180,7 +180,7 @@ libs/                 knows nothing about Lineage 2; reusable by any server
 engine/               Lineage 2 mechanics shared by every chronicle
   geo                 app.l2nx.engine.geo      movement / pathfinding / line-of-sight SPI + classic geodata
   adapter             app.l2nx.engine.adapter  L2NX adapter host
-  core                app.l2nx.engine.core     created at stage 8: what HF and Essence share
+  core                app.l2nx.engine.core     created at stage 9: what HF and Essence share
 login/
   server              app.l2nx.login       login logic, protocol variants, GS-link, tools; plain Java; sql/
   boot                app.l2nx.login.boot  launcher; runtime files (config, data) in src/dist
@@ -190,8 +190,8 @@ chronicles/
     scripts           app.l2nx.highfive.scripts  quests, NPC AI, events, handlers; Java only
     datapack                                     data/ (incl. data/scripts html/xml), config/, sql/
     boot              app.l2nx.highfive.boot     launcher; runtime files in src/dist
-  essence/            app.l2nx.essence     stage 8, same four modules
-  interlude/          app.l2nx.interlude   stage 9, same four modules
+  essence/            app.l2nx.essence     stage 9, same four modules
+  interlude/          app.l2nx.interlude   stage 10, same four modules
 tools/                data preparation from the operator's own client
 build-logic/          Gradle convention plugins
 ```
@@ -265,12 +265,49 @@ How the server finds scripts (`server` cannot depend on `scripts`, so discovery 
 | -------- | ---------------------------------------------------------------------------- |
 | Java     | 25 LTS (Mobius targets 27; the imported tree compiles on 25 as is)           |
 | Build    | Gradle Kotlin DSL, version catalog, no committed jars but the Gradle wrapper |
-| Local DB | `compose.yaml`: MariaDB LTS, schema from the imported SQL until stage 2      |
+| Local DB | `compose.yaml`: database only (`l2nx-db`), servers run from Gradle           |
 | Host     | Spring Boot in `*/boot` only; every other module is plain code               |
 | Network  | Netty for every connection: client↔game, client↔login, login↔game            |
-| Database | MariaDB (Mobius native), schema managed by Liquibase                         |
+| Database | PostgreSQL from stage 3 (§5.1); MariaDB with the imported SQL until then     |
 | Metrics  | Micrometer                                                                   |
 | Docs     | English; the public pages on `l2nx.dev` also in Russian                      |
+
+### 5.1. Database
+
+The database is chosen by what a game server needs from it, not by what Mobius was written for. Game state lives
+in the JVM; the database persists it: a character is loaded at login, its changes are written back, and the data
+must survive a crash. Analytics is not its job: the platform receives the data through the adapter.
+
+The load, measured on a production snapshot of a large L2J-derived server (57k characters over its lifetime):
+
+- **Small.** About 0.7 GB and 13M rows; the whole database fits in memory.
+- **Many small writes.** A synchronous UPDATE per item change, upserts of character and quest variables, a periodic
+  autosave of the whole character, DELETE + INSERT pairs for skills and shortcuts. Reads happen mostly at login and
+  at boot.
+- **Low concurrency.** A pool of 30 connections.
+- **The main risk is a lost or duplicated item.** The imported code uses no transactions; character saves and item
+  transfers become atomic as the code is reworked.
+
+**PostgreSQL** fits this best:
+
+- **Integrity in the schema:** CHECK and foreign keys, strict types with no silent truncation, partial unique
+  indexes. Case-insensitive character and account names become a real UNIQUE constraint (`citext` or a
+  nondeterministic collation); today they rely on the table collation alone.
+- **Durability per transaction:** an item transfer commits synchronously, a routine autosave with
+  `SET LOCAL synchronous_commit = off`. InnoDB only has a global setting.
+- **Transactional DDL:** a failed Liquibase migration rolls back whole, instead of leaving an operator's server
+  with a half-applied schema.
+- **`jsonb` and arrays** for the structured values the imported schema keeps as strings.
+- **Logical replication** (pgoutput) for change capture.
+
+The case for InnoDB is cheap in-place UPDATEs and a clustered primary key. A PostgreSQL UPDATE writes a new row
+version that vacuum later reclaims, and its indexes are rewritten when an indexed column changes. At this size
+(everything in memory) and write rate the difference does not matter; `fillfactor` and autovacuum settings cover
+the hot tables (`items`, character variables).
+
+Rejected: SQLite (login and several game servers share one database), distributed SQL such as CockroachDB or
+YugabyteDB (a network round trip on every write, nothing to gain at this size), key-value stores (no schema, no
+constraints).
 
 ## 6. L2NX integration
 
@@ -311,7 +348,7 @@ How the server finds scripts (`server` cannot depend on `scripts`, so discovery 
 
 Inside a chronicle, the packet codec is selected by the client protocol version: the client speaks first
 (`ProtocolVersion`), so the choice is deterministic. Codecs live in `server/.../network/protocol/<version>/`. The
-game stays one; only the clients differ. This comes after the test server is live (stage 7).
+game stays one; only the clients differ. This comes after the test server is live (stage 8).
 
 ### Edge gateway
 
@@ -347,18 +384,28 @@ Every stage ends with a server that builds and a client that logs in and plays. 
 | --- | ------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
 | 0   | Repository and legal                                                            | `LICENSE`, `NOTICE`, `CONTRIBUTING.md`, README disclaimer                                             |
 | 1   | Import HF with history (`git filter-repo` of Mobius), Gradle build              | server starts locally, an HF client logs in and plays                                                 |
-| 2   | Host shell                                                                      | Spring Boot in `boot` (ArchUnit guards it), `application.yaml`, Liquibase, metrics, graceful shutdown |
-| 3   | Netty network                                                                   | own Netty transport in `libs/network`, all three connections                                          |
-| 4   | L2NX built in                                                                   | latest adapter, commands and events work                                                              |
-| 5   | Public test server                                                              | public access, adapter e2e in CI                                                                      |
-| 6   | Geo SPI + open `nx-physics`                                                     | two implementations, movement on navmesh                                                              |
-| 7   | HF multi-protocol                                                               | newer clients log in to HF                                                                            |
-| 8   | Essence + shared core extraction ([#2](https://github.com/l2nx/nx-l2/issues/2)) | second chronicle; `engine/` grows by real overlap                                                     |
-| 9   | Interlude ([#3](https://github.com/l2nx/nx-l2/issues/3))                        | third chronicle                                                                                       |
+| 2   | Host shell                                                                      | Spring Boot in `boot` (ArchUnit guards it), `application.yaml`, metrics, graceful shutdown            |
+| 3   | PostgreSQL (§5.1)                                                               | Liquibase baseline written for PostgreSQL, the SQL ported and covered by Testcontainers tests         |
+| 4   | Netty network                                                                   | own Netty transport in `libs/network`, all three connections                                          |
+| 5   | L2NX built in ([#13](https://github.com/l2nx/nx-l2/issues/13))                  | latest adapter, commands and events work                                                              |
+| 6   | Public test server                                                              | public access, adapter e2e in CI                                                                      |
+| 7   | Geo SPI + open `nx-physics`                                                     | two implementations, movement on navmesh                                                              |
+| 8   | HF multi-protocol                                                               | newer clients log in to HF                                                                            |
+| 9   | Essence + shared core extraction ([#2](https://github.com/l2nx/nx-l2/issues/2)) | second chronicle; `engine/` grows by real overlap                                                     |
+| 10  | Interlude ([#3](https://github.com/l2nx/nx-l2/issues/3))                        | third chronicle                                                                                       |
 
 Stage 1 lands the Mobius tree directly in the §4 layout and the `app.l2nx.*` packages: `git filter-repo` rewrites
 both historical HF paths of Mobius into the target paths, so file history runs unbroken from 2016 without
 `--follow`. Mapping and stripped files: [`docs/provenance.md`](../provenance.md).
+
+Stage 3 replaces the schema in one step: the Liquibase baseline is written for PostgreSQL rather than ported from
+the imported MySQL DDL, so the schema is written once. The port covers case-insensitive name and login checks
+(today they rely on the `_ci` collation), the stricter type handling of pgjdbc (`setBoolean` into TINYINT columns,
+`setString` into numeric ones), the MySQL-only statements (`REPLACE INTO`, `ON DUPLICATE KEY UPDATE`, `IF()`,
+backticks), the data types PostgreSQL lacks (UNSIGNED, MEDIUMINT, ENUM) and empty-string defaults that stand
+for no value (`gameservers.host`), which become NULL. The adapter's change capture reads only
+MySQL and MariaDB today; its PostgreSQL path ([#13](https://github.com/l2nx/nx-l2/issues/13)) is needed before
+stage 5.
 
 A stage updates the living docs (this spec, `docs/provenance.md`, README). A new spec is created only for a
 feature with its own lifecycle.
@@ -368,7 +415,6 @@ feature with its own lifecycle.
 These are recommendations from the design discussion. Each one can be overridden before stage 0.
 
 1. **Host:** Spring Boot.
-2. **Database:** MariaDB, not Postgres.
 
 ## 13. Deferred
 
@@ -382,3 +428,4 @@ These are recommendations from the design discussion. Each one can be overridden
 - Repository mirror outside GitHub — [#10](https://github.com/l2nx/nx-l2/issues/10).
 - CLA or DCO enforcement before external contributions — [#7](https://github.com/l2nx/nx-l2/issues/7).
 - Separate release of the High Five scripts — [#11](https://github.com/l2nx/nx-l2/issues/11).
+- PostgreSQL in the adapter's change capture — [#13](https://github.com/l2nx/nx-l2/issues/13).

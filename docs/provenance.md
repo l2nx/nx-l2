@@ -71,10 +71,15 @@ Changes on top of the imported history, each its own commit:
    notes copied from a third-party forum). The Gradle distributions (`bin/game-server`, `bin/login-server`,
    `bin/account-manager`, `bin/game-server-register`) and `compose.yaml` replace them; `java.cfg` became the
    start scripts' JVM options.
-4. **Kept and adapted:** `GameServerTask.sh` / `LoginServerTask.sh` keep the restart loop (exit code 2 restarts the
-   server) and now start the distribution's script.
-5. **Moved:** the GUI images went from `dist/images/` to `libs/commons` resources and load from the classpath, so
-   both servers and the tools find them from any working directory.
+4. **Headless only:** the Swing GUI of both servers and the tools (`ui` packages, splash screen, dark theme,
+   `Interface.ini`, the images) is removed; `account-manager` and `game-server-register` keep their console mode.
+5. **Removed:** the restart-loop launchers `GameServer.sh`, `GameServerTask.sh`, `LoginServer.sh`,
+   `LoginServerTask.sh`; exit code 2 still asks for a restart, which a supervisor performs. The `mysqldump` backup
+   on shutdown (`DatabaseBackup`, the `Backup*` keys of `Database.ini`, `backup/`) is removed: backups are the
+   operator's job.
+6. **Rebranded:** user-visible Mobius names in runtime strings (database `l2jmobiush5` → `l2nx`, pool and thread
+   names, tool banners, default announcements, server news and admin help pages). License headers, `@author` tags and
+   code comments keep the upstream attribution.
 
 ## License labels
 
