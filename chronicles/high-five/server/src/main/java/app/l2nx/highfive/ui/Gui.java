@@ -33,14 +33,11 @@ import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.io.File;
 import java.io.OutputStream;
 import java.io.PrintStream;
-import java.util.ArrayList;
 import java.util.List;
 
 import javax.swing.DropMode;
-import javax.swing.ImageIcon;
 import javax.swing.JFrame;
 import javax.swing.JLayeredPane;
 import javax.swing.JMenu;
@@ -57,6 +54,7 @@ import javax.swing.event.PopupMenuEvent;
 import javax.swing.event.PopupMenuListener;
 
 import app.l2nx.commons.config.InterfaceConfig;
+import app.l2nx.commons.ui.AppImages;
 import app.l2nx.commons.ui.DarkTheme;
 import app.l2nx.commons.ui.LineLimitListener;
 import app.l2nx.commons.ui.SplashScreen;
@@ -336,11 +334,7 @@ public class Gui
 		mnHelp.add(mntmAbout);
 		
 		// Set icons.
-		final List<Image> icons = new ArrayList<>();
-		icons.add(new ImageIcon(".." + File.separator + "images" + File.separator + "l2jmobius_16x16.png").getImage());
-		icons.add(new ImageIcon(".." + File.separator + "images" + File.separator + "l2jmobius_32x32.png").getImage());
-		icons.add(new ImageIcon(".." + File.separator + "images" + File.separator + "l2jmobius_64x64.png").getImage());
-		icons.add(new ImageIcon(".." + File.separator + "images" + File.separator + "l2jmobius_128x128.png").getImage());
+		final List<Image> icons = AppImages.icons();
 		
 		// Set Panels.
 		final JPanel systemPanel = new SystemPanel();
@@ -384,7 +378,7 @@ public class Gui
 		redirectSystemStreams();
 		
 		// Show SplashScreen.
-		new SplashScreen(".." + File.separator + "images" + File.separator + "splash.png", 5000, frame);
+		new SplashScreen("images/splash.png", 5000, frame);
 	}
 	
 	/**

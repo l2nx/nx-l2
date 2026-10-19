@@ -45,7 +45,6 @@ import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.Icon;
-import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JFrame;
@@ -66,6 +65,7 @@ import javax.swing.text.DefaultHighlighter;
 import javax.swing.text.Highlighter;
 
 import app.l2nx.commons.config.InterfaceConfig;
+import app.l2nx.commons.ui.AppImages;
 import app.l2nx.commons.ui.DarkTheme;
 
 /**
@@ -106,11 +106,7 @@ public class LogPanel extends JFrame
 		add(topPanel, BorderLayout.NORTH);
 		
 		// Set icons.
-		final List<Image> icons = new ArrayList<>();
-		icons.add(new ImageIcon(".." + File.separator + "images" + File.separator + "l2jmobius_16x16.png").getImage());
-		icons.add(new ImageIcon(".." + File.separator + "images" + File.separator + "l2jmobius_32x32.png").getImage());
-		icons.add(new ImageIcon(".." + File.separator + "images" + File.separator + "l2jmobius_64x64.png").getImage());
-		icons.add(new ImageIcon(".." + File.separator + "images" + File.separator + "l2jmobius_128x128.png").getImage());
+		final List<Image> icons = AppImages.icons();
 		
 		if (!deleteMode)
 		{

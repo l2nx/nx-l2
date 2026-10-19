@@ -41,7 +41,6 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -49,7 +48,6 @@ import java.util.Properties;
 import java.util.Scanner;
 
 import javax.swing.BorderFactory;
-import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JMenuItem;
@@ -68,6 +66,7 @@ import javax.swing.table.DefaultTableModel;
 
 import app.l2nx.commons.config.InterfaceConfig;
 import app.l2nx.commons.database.DatabaseFactory;
+import app.l2nx.commons.ui.AppImages;
 import app.l2nx.commons.ui.DarkTheme;
 import app.l2nx.commons.ui.SplashScreen;
 import app.l2nx.commons.util.HexUtil;
@@ -114,7 +113,7 @@ public class GameServerRegister extends JFrame
 	private void gui()
 	{
 		// Show Splash Screen for 3 seconds.
-		new SplashScreen(".." + File.separator + "images" + File.separator + "splash.png", 3000, this);
+		new SplashScreen("images/splash.png", 3000, this);
 		
 		setTitle("Mobius - Game Server Register");
 		setMinimumSize(new Dimension(500, 300));
@@ -139,11 +138,7 @@ public class GameServerRegister extends JFrame
 		});
 		
 		// Set icons.
-		final List<Image> icons = new ArrayList<>();
-		icons.add(new ImageIcon(".." + File.separator + "images" + File.separator + "l2jmobius_16x16.png").getImage());
-		icons.add(new ImageIcon(".." + File.separator + "images" + File.separator + "l2jmobius_32x32.png").getImage());
-		icons.add(new ImageIcon(".." + File.separator + "images" + File.separator + "l2jmobius_64x64.png").getImage());
-		icons.add(new ImageIcon(".." + File.separator + "images" + File.separator + "l2jmobius_128x128.png").getImage());
+		final List<Image> icons = AppImages.icons();
 		
 		setLayout(new BorderLayout());
 		

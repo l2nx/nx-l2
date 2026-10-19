@@ -42,14 +42,14 @@ public class SplashScreen extends JWindow
 	private final Image _image;
 	
 	/**
-	 * @param path of image file
+	 * @param path of the image, a classpath resource relative to this class
 	 * @param time in milliseconds
 	 * @param parent frame to set visible after time ends
 	 */
 	public SplashScreen(String path, long time, JFrame parent)
 	{
 		setBackground(new Color(0, 255, 0, 0)); // Transparency.
-		_image = Toolkit.getDefaultToolkit().getImage(path);
+		_image = Toolkit.getDefaultToolkit().getImage(SplashScreen.class.getResource(path));
 		final ImageIcon imageIcon = new ImageIcon(_image);
 		setSize(imageIcon.getIconWidth(), imageIcon.getIconHeight());
 		setLocationRelativeTo(null);

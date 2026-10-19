@@ -43,7 +43,6 @@ import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -64,7 +63,6 @@ import java.util.Scanner;
 import java.util.Set;
 
 import javax.swing.BorderFactory;
-import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
@@ -94,6 +92,7 @@ import javax.swing.table.TableRowSorter;
 import app.l2nx.commons.config.InterfaceConfig;
 import app.l2nx.commons.database.DatabaseFactory;
 import app.l2nx.commons.time.TimeUtil;
+import app.l2nx.commons.ui.AppImages;
 import app.l2nx.commons.ui.DarkTheme;
 import app.l2nx.commons.ui.SplashScreen;
 
@@ -161,7 +160,7 @@ public class AccountManager extends JFrame
 	private void gui()
 	{
 		// Show Splash Screen for 3 seconds.
-		new SplashScreen(".." + File.separator + "images" + File.separator + "splash.png", 3000, this);
+		new SplashScreen("images/splash.png", 3000, this);
 		
 		setTitle("Mobius - Account Manager");
 		setMinimumSize(new Dimension(600, 400));
@@ -198,11 +197,7 @@ public class AccountManager extends JFrame
 		});
 		
 		// Set icons.
-		final List<Image> icons = new ArrayList<>();
-		icons.add(new ImageIcon(".." + File.separator + "images" + File.separator + "l2jmobius_16x16.png").getImage());
-		icons.add(new ImageIcon(".." + File.separator + "images" + File.separator + "l2jmobius_32x32.png").getImage());
-		icons.add(new ImageIcon(".." + File.separator + "images" + File.separator + "l2jmobius_64x64.png").getImage());
-		icons.add(new ImageIcon(".." + File.separator + "images" + File.separator + "l2jmobius_128x128.png").getImage());
+		final List<Image> icons = AppImages.icons();
 		
 		add(_tabPanel);
 		setIconImages(icons);
