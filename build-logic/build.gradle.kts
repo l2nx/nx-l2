@@ -5,4 +5,5 @@ plugins {
 dependencies {
     implementation(libs.spring.boot.gradle.plugin)
     implementation(libs.gradle.git.properties.plugin)
+    implementation(libs.spotless.plugin.gradle)
 }
