@@ -46,6 +46,7 @@ import app.l2nx.highfive.cache.HtmCache;
 import app.l2nx.highfive.config.ConfigLoader;
 import app.l2nx.highfive.config.DevelopmentConfig;
 import app.l2nx.highfive.config.GeneralConfig;
+import app.l2nx.highfive.config.NetworkConfig;
 import app.l2nx.highfive.config.ServerConfig;
 import app.l2nx.highfive.config.custom.CustomMailManagerConfig;
 import app.l2nx.highfive.config.custom.MultilingualSupportConfig;
@@ -531,7 +532,7 @@ public class GameServer implements SmartLifecycle
 		
 		try
 		{
-			connectionManager = new ConnectionManager<>(new InetSocketAddress(ServerConfig.PORT_GAME), GameClient::new, new GamePacketHandler());
+			connectionManager = new ConnectionManager<>(new InetSocketAddress(ServerConfig.PORT_GAME), GameClient::new, new GamePacketHandler(), NetworkConfig.SETTINGS);
 		}
 		catch (IOException e)
 		{

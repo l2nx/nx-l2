@@ -24,9 +24,15 @@ package app.l2nx.login.config;
 
 import java.io.File;
 import java.io.IOException;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
+import app.l2nx.commons.network.NetworkSettings;
 import app.l2nx.commons.util.ConfigReader;
 
 /**
@@ -39,6 +45,8 @@ public class LoginConfig
 	
 	// File
 	private static final String SERVER_CONFIG_FILE = "./config/Server.ini";
+	private static final String NETWORK_CONFIG_FILE = "./config/Network.ini";
+	private static final Pattern BUFFER_POOL_PROPERTY = Pattern.compile("(BufferPool\\.\\w+?\\.)Size", Pattern.CASE_INSENSITIVE);
 	
 	// Constants
 	public static int GAME_SERVER_LOGIN_PORT;
@@ -58,6 +66,7 @@ public class LoginConfig
 	public static int NORMAL_CONNECTION_TIME;
 	public static int FAST_CONNECTION_TIME;
 	public static int MAX_CONNECTION_PER_IP;
+	public static NetworkSettings NETWORK;
 	
 	public static void load()
 	{
@@ -87,5 +96,18 @@ public class LoginConfig
 		NORMAL_CONNECTION_TIME = config.getInt("NormalConnectionTime", 700);
 		FAST_CONNECTION_TIME = config.getInt("FastConnectionTime", 350);
 		MAX_CONNECTION_PER_IP = config.getInt("MaxConnectionPerIP", 50);
+		
+		final ConfigReader network = new ConfigReader(NETWORK_CONFIG_FILE);
+		final NetworkSettings defaults = NetworkSettings.defaults();
+		final List<NetworkSettings.BufferPool> bufferPools = new ArrayList<>();
+		for (String property : network.getStringPropertyNames())
+		{
+			final Matcher matcher = BUFFER_POOL_PROPERTY.matcher(property);
+			if (matcher.matches())
+			{
+				bufferPools.add(new NetworkSettings.BufferPool(network.getInt(property, 10), network.getInt(matcher.group(1) + "BufferSize", 1024)));
+			}
+		}
+		NETWORK = new NetworkSettings(Duration.ofSeconds(network.getInt("ShutdownWaitTime", (int) defaults.shutdownWaitTime().toSeconds())), network.getInt("ThreadPoolSize", defaults.threadPoolSize()), network.getInt("ThreadPriority", defaults.threadPriority()), network.getBoolean("DropPackets", defaults.dropPackets()), network.getInt("DropPacketThreshold", defaults.dropPacketThreshold()), network.getInt("BufferSegmentSize", defaults.bufferSegmentSize()), network.getBoolean("BufferPool.AutoExpandCapacity", defaults.autoExpandPoolCapacity()), network.getFloat("BufferPool.InitFactor", defaults.initBufferPoolFactor()), bufferPools);
 	}
 }

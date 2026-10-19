@@ -23,12 +23,9 @@
 package app.l2nx.commons.network;
 
 import java.net.SocketAddress;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import app.l2nx.commons.network.pool.BufferPool;
 import app.l2nx.commons.network.pool.ResourcePool;
-import app.l2nx.commons.util.ConfigReader;
 
 /**
  * Configures and initializes connection parameters for the network layer.<br>
@@ -39,7 +36,6 @@ public class ConnectionConfig
 {
 	public static final int HEADER_SIZE = 2;
 	
-	private static final Pattern BUFFER_POOL_PROPERTY = Pattern.compile("(BufferPool\\.\\w+?\\.)Size", Pattern.CASE_INSENSITIVE);
 	private static final int MINIMUM_POOL_GROUPS = 3;
 	
 	public ResourcePool resourcePool;
@@ -57,44 +53,35 @@ public class ConnectionConfig
 	/**
 	 * Initializes the connection configuration with the specified socket address.
 	 * @param socketAddress the address to which this configuration applies
+	 * @param settings the network settings of the server
 	 */
-	public ConnectionConfig(SocketAddress socketAddress)
+	public ConnectionConfig(SocketAddress socketAddress, NetworkSettings settings)
 	{
 		address = socketAddress;
-		threadPoolSize = 2;
 		
 		// Initialize Resource Pool and default buffer settings.
 		resourcePool = new ResourcePool();
 		resourcePool.addBufferPool(HEADER_SIZE, new BufferPool(100, HEADER_SIZE));
 		
-		// Read configuration properties.
-		final ConfigReader networkConfig = new ConfigReader("config/Network.ini");
-		shutdownWaitTime = networkConfig.getInt("ShutdownWaitTime", 5) * 1000L;
+		shutdownWaitTime = settings.shutdownWaitTime().toMillis();
 		
 		// Configure thread pool based on processor count.
 		final int processors = Runtime.getRuntime().availableProcessors();
-		threadPoolSize = networkConfig.getInt("ThreadPoolSize", threadPoolSize);
-		threadPoolSize = threadPoolSize < 1 ? processors * 4 : threadPoolSize;
+		threadPoolSize = settings.threadPoolSize() < 1 ? processors * 4 : settings.threadPoolSize();
 		
 		// Other network and buffer configurations.
-		threadPriority = networkConfig.getInt("ThreadPriority", Thread.NORM_PRIORITY);
-		autoExpandPoolCapacity = networkConfig.getBoolean("BufferPool.AutoExpandCapacity", true);
-		initBufferPoolFactor = networkConfig.getFloat("BufferPool.InitFactor", 0);
-		dropPackets = networkConfig.getBoolean("DropPackets", dropPackets);
-		dropPacketThreshold = networkConfig.getInt("DropPacketThreshold", 250);
-		resourcePool.setBufferSegmentSize(networkConfig.getInt("BufferSegmentSize", resourcePool.getSegmentSize()));
+		threadPriority = settings.threadPriority();
+		autoExpandPoolCapacity = settings.autoExpandPoolCapacity();
+		initBufferPoolFactor = settings.initBufferPoolFactor();
+		dropPackets = settings.dropPackets();
+		dropPacketThreshold = settings.dropPacketThreshold();
+		resourcePool.setBufferSegmentSize(settings.bufferSegmentSize());
 		
-		// Set up custom buffer pools from properties.
-		networkConfig.getStringPropertyNames().forEach(property ->
+		// Set up custom buffer pools from settings.
+		for (NetworkSettings.BufferPool pool : settings.bufferPools())
 		{
-			final Matcher matcher = BUFFER_POOL_PROPERTY.matcher(property);
-			if (matcher.matches())
-			{
-				final int size = networkConfig.getInt(property, 10);
-				final int bufferSize = networkConfig.getInt(matcher.group(1) + "BufferSize", 1024);
-				resourcePool.addBufferPool(bufferSize, new BufferPool(size, bufferSize));
-			}
-		});
+			resourcePool.addBufferPool(pool.bufferSize(), new BufferPool(pool.size(), pool.bufferSize()));
+		}
 		
 		// Add additional buffer pool for segment size.
 		resourcePool.addBufferPool(resourcePool.getSegmentSize(), new BufferPool(100, resourcePool.getSegmentSize()));

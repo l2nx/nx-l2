@@ -70,11 +70,12 @@ public class ConnectionManager<T extends Client<Connection<T>>>
 	 * @param address the local address and port to listen on
 	 * @param clientFactory function that creates a {@link Client} for a given {@link Connection}
 	 * @param packetHandler handler that maps incoming bytes to concrete {@link ReadablePacket}s
+	 * @param settings the network settings of the server
 	 * @throws IOException if the server socket cannot be opened or bound
 	 */
-	public ConnectionManager(InetSocketAddress address, Function<Connection<T>, T> clientFactory, PacketHandler<T> packetHandler) throws IOException
+	public ConnectionManager(InetSocketAddress address, Function<Connection<T>, T> clientFactory, PacketHandler<T> packetHandler, NetworkSettings settings) throws IOException
 	{
-		_config = new ConnectionConfig(address);
+		_config = new ConnectionConfig(address, settings);
 		_clientFactory = clientFactory;
 		packetExecutor = new PacketExecutor<>(_config);
 		_readHandler = new ReadHandler<>(packetHandler, packetExecutor);

@@ -78,6 +78,7 @@ public class ConfigLoader
 	public static void init()
 	{
 		ServerConfig.load();
+		NetworkConfig.load();
 		
 		// Main configurations.
 		ConquerableHallSiegeConfig.load();

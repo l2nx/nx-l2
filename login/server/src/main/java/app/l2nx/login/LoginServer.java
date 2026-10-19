@@ -241,7 +241,7 @@ public class LoginServer implements SmartLifecycle
 	{
 		try
 		{
-			clientConnectionManager = new ConnectionManager<>(new InetSocketAddress(LoginConfig.LOGIN_BIND_ADDRESS, LoginConfig.PORT_LOGIN), LoginClient::new, new LoginPacketHandler());
+			clientConnectionManager = new ConnectionManager<>(new InetSocketAddress(LoginConfig.LOGIN_BIND_ADDRESS, LoginConfig.PORT_LOGIN), LoginClient::new, new LoginPacketHandler(), LoginConfig.NETWORK);
 			clientConnectionManager.bindMetrics(meterRegistry, "l2nx-login");
 			LOGGER.info(getClass().getSimpleName() + ": Login client listener started on " + LoginConfig.LOGIN_BIND_ADDRESS + ":" + LoginConfig.PORT_LOGIN + ".");
 		}
