@@ -110,7 +110,7 @@ public class SeedOfInfinityManager {
         GlobalVariablesManager.getInstance().set("SoI_opened", closeTime / 1000);
         log.info(
                 "Seed of Infinity Manager: Opening the seed until {}",
-                DateFormatUtils.format(time, "dd/MM/yyyy HH:mm:ss"));
+                DateFormatUtils.format(closeTime, "dd/MM/yyyy HH:mm:ss"));
         spawnOpenedSeed();
         DoorData.getInstance().getDoor(14240102).openMe();
 

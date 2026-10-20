@@ -22,7 +22,6 @@ lists what is open.
 - [#20](https://github.com/l2nx/nx-l2/issues/20) Time dilation for overloaded partitions
 - [#21](https://github.com/l2nx/nx-l2/issues/21) Parallel open world if one partition exceeds its budget
 - [#22](https://github.com/l2nx/nx-l2/issues/22) Choose an XML library for the datapack loaders
-- [#26](https://github.com/l2nx/nx-l2/issues/26) Seed of Infinity logs the open duration as the close date
 - [#29](https://github.com/l2nx/nx-l2/issues/29) WorldObject overrides equals without hashCode
 - [#27](https://github.com/l2nx/nx-l2/issues/27) Client protocol 140 over High Five content
 - [#28](https://github.com/l2nx/nx-l2/issues/28) Client protocol 557 over High Five content
@@ -64,3 +63,4 @@ lists what is open.
   [spec 006](specs/006-database.md)).
 - [#50](https://github.com/l2nx/nx-l2/issues/50) Dimensional Rift runs world changes on its own java.util.Timer threads
 - [#25](https://github.com/l2nx/nx-l2/issues/25) Weapon damage_range with 2 or 3 parts breaks item loading
+- [#26](https://github.com/l2nx/nx-l2/issues/26) Seed of Infinity logs the open duration as the close date
