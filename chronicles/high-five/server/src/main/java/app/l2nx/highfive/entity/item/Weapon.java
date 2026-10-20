@@ -125,8 +125,11 @@ public class Weapon extends ItemTemplate {
         spiritShotCount = set.getInt("spiritshots", 0);
         mpConsume = set.getInt("mp_consume", 0);
         baseAttackRange = set.getInt("attack_range", 40);
-        final String[] damageRange = set.getString("damage_range", "").split(";"); // 0?;0?;fan sector;base attack angle
-        if ((damageRange.length > 1)
+        final String damageRangeValue = set.getString("damage_range", null);
+        // 0?;0?;fan sector;base attack angle
+        final String[] damageRange = damageRangeValue == null ? null : damageRangeValue.split(";");
+        if ((damageRange != null)
+                && (damageRange.length >= 4)
                 && StringUtils.isNumeric(damageRange[2])
                 && StringUtils.isNumeric(damageRange[3])) {
             baseAttackRadius = Integer.parseInt(damageRange[2]);
