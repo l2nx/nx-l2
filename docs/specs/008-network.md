@@ -24,7 +24,8 @@ client protocol becomes an adapter in front of a game that knows no packets. Sta
 | `engine/core` `session`                          | session queue, session states, command dispatch, `ClientPort` ([wiring-layout §4](003-engine-core/wiring-layout.md#4-layout)) |
 | `login/server` `protocol/<variant>/`             | login protocol variants (decoders, packets)                                                                                   |
 | `login/server` `gslink`                          | login side of the GS-link                                                                                                     |
-| `chronicles/<c>/server` `network`                | game pipeline, version handshake, protocol registry, GS-link client                                                           |
+| `chronicles/<c>/server` `login`                  | the game server's side of the login server as a slice: online accounts, server listing, `LoginPort`, the login commands       |
+| `chronicles/<c>/server` `network`                | game pipeline, version handshake, protocol registry, `gslink/` (the GS-link client, adapter of `LoginPort`)                   |
 | `chronicles/<c>/server` `network/protocol/<id>/` | one client protocol adapter: inbound decoders, outbound mappers, serialization                                                |
 
 `libs/network` knows no game rules; it knows bytes, frames and the Lineage 2 ciphers (LE Blowfish, rolling XOR,
@@ -162,13 +163,14 @@ flowchart LR
 
 ### Commands and view events
 
-- **Commands are intents of a player,** records owned by their feature slice: `movement.MoveTo`, `item.UseItem`,
-  `trade.ConfirmTrade`, `html.FollowLink`. They are not one to one with packets: several packets may map to one
-  command, one packet to several or to none. A link in an HTML dialog, a bypass and a chat command are commands
-  of the slice that owns them.
-- **View events are facts a client must learn,** records owned by their slices: `Spawned`, `Despawned`,
-  `CreatureMoved`, `StatusChanged`, `MessageShown`, `HtmlDialogOpened`. An event carries handles and domain values;
-  a mapper reads what else it needs from the slice's read-only views, on the thread that emits the event.
+- **Commands are intents of a player,** records in the `command/` package of their feature slice:
+  `movement.command.MoveTo`, `item.command.UseItem`, `trade.command.ConfirmTrade`, `html.command.FollowLink`. They
+  are not one to one with packets: several packets may map to one command, one packet to several or to none. A link
+  in an HTML dialog, a bypass and a chat command are commands of the slice that owns them. What the login server
+  sends is a command too (§10).
+- **View events are facts a client must learn,** records in the `view/` package of their slices: `Spawned`,
+  `Despawned`, `CreatureMoved`, `StatusChanged`, `MessageShown`, `HtmlDialogOpened`. An event carries handles and
+  domain values; a mapper reads what else it needs from the slice's read-only views, on the thread that emits the event.
 - **No wire values in ports:** commands and events carry domain enums and value types. Object references are wire
   handles ([persistence.md §2](003-engine-core/persistence.md#2-wire-handles)), which are protocol-independent.
   Messages are domain message keys with typed parameters (player, NPC, item, skill, number, text); each adapter
@@ -278,6 +280,10 @@ Packets not yet moved to ports pass through the `highfive` adapter as they are:
 - **Packets** carry the account by UUID ([persistence.md §1](003-engine-core/persistence.md#1-persistent-identity),
   [spec 006](006-database.md));
   the game server reports its chronicle when it registers.
+- **The game side is a port and an adapter:** game code talks to the login server only through the `login` slice
+  (`LoginService`), which sends through the `LoginPort` interface; `network/gslink/LoginServerLink` implements it and
+  turns every inbound packet into a command of the slice (`KickAccount`, `ReportCharacters`, `AuthenticationResult`,
+  [wiring-layout §4](003-engine-core/wiring-layout.md#ports)).
 
 ## 11. Metrics
 

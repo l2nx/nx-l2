@@ -74,21 +74,84 @@ The chronicle server (`app.l2nx.highfive`) is cut by feature, not by technical l
 ```
 app.l2nx.highfive
   entity      facades (Player, Npc, Item, ...) and templates
-  network     pipeline, protocol registry, protocol/<id>/ adapters (packets); no game logic
+  network     pipeline, protocol registry, protocol/<id>/ adapters (packets), gslink/; no game logic
+  session     shared session kernel: the command handler base, legacy notices
+  login       the game server's side of the login server: online accounts, server listing, LoginPort
   combat  skill  effect  movement  ai  item  trade  mail  auction
   clan  party  siege  olympiad  quest  chat  instance  ...
 ```
 
 - **A slice owns** its components and systems, its static data loader and registry, its commands and their
-  handlers, the view events it emits to clients, its tables and Liquibase changesets, its
+  handlers, the view events it emits to clients, its repositories, tables and Liquibase changesets, its
   `@ConfigurationProperties`. Packets belong to the protocol adapters, not to slices
   ([spec 008 §8](../008-network.md#8-ports-and-protocol-adapters)).
-- **Ports and adapters only at the outer edges:** client protocols, repositories for the database, the adapter and
-  Kafka. Game logic is not split into `api` / `domain` / `infra`.
 - **Catch-all packages dissolve** into slices as code is reworked: `managers`, `util`, `holders`, `taskmanagers`,
-  `data/xml`.
-- **Slice boundaries are verified by Spring Modulith** (`ApplicationModules.verify()` in a test): no cycles, and a
-  slice uses another only through that slice's exposed API.
+  `data/xml`, and the stage 3 `repository` groups ([#49](https://github.com/l2nx/nx-l2/issues/49)).
+
+#### Inside a slice
+
+Each slice is a Spring Modulith application module. Its root package is its API; subpackages are internal unless
+declared a named interface. The subpackage names are fixed, and a subpackage exists only when it has content:
+
+```
+app.l2nx.highfive.<slice>
+  (root)       API: facade or service, outbound <Edge>Port, value types and enums carried by commands or view events
+  command/     command records (public) and their handlers (package-private)      named interface
+  view/        view events and read-only view interfaces                          named interface
+  event/       domain events (entities.md §4)                                     named interface
+  system/      systems                                                            internal
+  model/       components, internal value types and enums                         internal
+  template/    static data: templates, loader, registry                           internal
+  repository/  @Repository classes and their row records                          internal
+```
+
+- **`view/` is what an adapter may read:** the view events and the read-only views a mapper reads to serialize them.
+  Components in `model/` implement those view interfaces; they are mutable and owned by their system, so no adapter
+  reaches them.
+- **View events and domain events are kept apart:** a view event (`ViewEvent`) is a fact for clients, a domain event
+  (`DomainEvent`) is dispatched inside the partition to systems and scripts.
+- **A command and its one handler sit together** in `command/`; the handler class is package-private, so the named
+  interface exposes the records only.
+- **Value types that cross a port** (a chat type, a move input, a message key, a failure reason) are API and live in
+  the root, not in `model/`.
+- **Repositories are concrete classes,** not an interface and an adapter: there is one database and one
+  implementation, and the repository is already the adapter of that edge. They are tested against PostgreSQL.
+- **Another slice is used only through its root API.**
+
+#### Ports
+
+Ports exist only at the outer edges that are a network or another process. Game logic is not split into `api` /
+`domain` / `infra`.
+
+| Edge       | Into the game       | Out of the game                              | Adapter                                      |
+| ---------- | ------------------- | -------------------------------------------- | -------------------------------------------- |
+| client     | command and handler | view event to `ClientPort` (`engine/core`)   | `network/protocol/<id>/` (`HighFiveAdapter`) |
+| login link | command and handler | `LoginPort` (slice `login`)                  | `network/gslink/` (`LoginServerLink`)        |
+| database   | —                   | `@Repository` class in `<slice>/repository/` | the repository itself                        |
+| Kafka      | command and handler | a port in the owning slice                   | the L2NX adapter module (stage 5)            |
+
+- **Everything that enters the game is a command,** whatever its source; there are no inbound port interfaces. A
+  command is named as an intent (`KickAccount`, `SendChat`); the answer to a request the game made is a noun
+  (`AuthenticationResult`). Its handler is `<Command>Handler`.
+- **An outbound port is an interface named `<Edge>Port`.** `*Port` names only interfaces; the class implementing
+  one is an adapter and may carry the `Adapter` suffix (`GameClientAdapter`). The suffixes `Impl` and `Gateway` are
+  not used.
+- **Adapters live under `network/`** (or in an integration module). Slices never depend on `network`; `network`
+  sees a slice only through its root, `command/` and `view/`.
+
+#### Verification
+
+`SliceLayoutRules` in the `boot` tests checks the layout on every build:
+
+- **Spring Modulith** `ApplicationModules.verify()` over the migrated slices: no cycles, no access to another slice's
+  internals. Legacy packages are excluded, and the list of verified slices only grows as slices migrate.
+- **ArchUnit:** the fixed subpackage names; commands are records in `command/` and handlers are package-private
+  there; `ViewEvent` types only in `view/`, `DomainEvent` types only in `event/`; `*Port` only as interfaces in a
+  slice root or `engine/core`; `@Repository` only in `<slice>/repository/`; no `*Impl` or `*Gateway` types; no slice
+  depends on `network`.
+- **Legacy violations are frozen,** not allowed: a rule the imported code breaks is a `FreezingArchRule` with its
+  violation store in the repository. A new violation fails the build; fixed ones leave the store, so it only
+  shrinks.
 
 ### Moves
 

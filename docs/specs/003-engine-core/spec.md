@@ -142,8 +142,9 @@ single-writer even though the code still looks like Mobius; E7 then replaces the
 
 Each step ends with a rule in the ArchUnit tests of the `boot` modules, so a migrated area cannot regress: the
 forbidden time and randomness APIs (E5), no JDBC on loop threads (E4), no `ThreadPool` in a migrated subsystem
-(E7), no server packets in a migrated slice (E8, E10, [spec 008 §8](../008-network.md#8-ports-and-protocol-adapters)),
-Spring Modulith `verify()` (E10).
+(E7), no server packets in a migrated slice (E8, E10, [spec 008 §8](../008-network.md#8-ports-and-protocol-adapters)).
+The slice layout and Spring Modulith `verify()` are checked from stage 4, when the first slice (`login`) appears,
+over the migrated slices only ([wiring-layout.md §4](wiring-layout.md#verification)).
 
 E6 is the step with the main risk: legacy code running on one thread may not fit the budget. E1 measures it before
 E6 lands; an overrun is fixed by profiling, not by returning to shared-pool threading.

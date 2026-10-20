@@ -46,6 +46,7 @@ lists what is open.
 - [#46](https://github.com/l2nx/nx-l2/issues/46) Timer wheel: a handler re-arming an overdue timer at its own deadline starves later timers
 - [#47](https://github.com/l2nx/nx-l2/issues/47) Game server's fixed pool of 100 takes every PostgreSQL connection, so the login server cannot start after it
 - [#48](https://github.com/l2nx/nx-l2/issues/48) Real-client checks left open after moving the login connection to Netty
+- [#49](https://github.com/l2nx/nx-l2/issues/49) Move the stage 3 repositories into their feature slices
 
 ## Done
 
