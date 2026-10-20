@@ -11,3 +11,6 @@ build/
 # Python venv for docs/diagrams generators
 /.venv/
 __pycache__/
+
+# Per-developer Claude Code instructions
+CLAUDE.local.md
