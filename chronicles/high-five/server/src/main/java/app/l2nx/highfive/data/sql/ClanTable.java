@@ -36,8 +36,10 @@ import app.l2nx.highfive.entity.clan.Clan;
 import app.l2nx.highfive.entity.clan.ClanMember;
 import app.l2nx.highfive.entity.clan.ClanPrivileges;
 import app.l2nx.highfive.entity.item.enums.ItemProcessType;
+import app.l2nx.highfive.entity.residences.ClanHall;
 import app.l2nx.highfive.entity.residences.ClanHallAuction;
 import app.l2nx.highfive.managers.CHSiegeManager;
+import app.l2nx.highfive.managers.CastleManager;
 import app.l2nx.highfive.managers.ClanHallAuctionManager;
 import app.l2nx.highfive.managers.FortManager;
 import app.l2nx.highfive.managers.FortSiegeManager;
@@ -49,6 +51,7 @@ import app.l2nx.highfive.mechanics.events.holders.actor.player.clan.OnPlayerClan
 import app.l2nx.highfive.mechanics.events.holders.actor.player.clan.OnPlayerClanDestroy;
 import app.l2nx.highfive.mechanics.events.holders.clan.OnClanWarFinish;
 import app.l2nx.highfive.mechanics.events.holders.clan.OnClanWarStart;
+import app.l2nx.highfive.mechanics.siege.Castle;
 import app.l2nx.highfive.mechanics.siege.Fort;
 import app.l2nx.highfive.mechanics.siege.FortSiege;
 import app.l2nx.highfive.mechanics.siege.Siege;
@@ -263,31 +266,25 @@ public class ClanTable {
         }
 
         clan.broadcastToOnlineMembers(new SystemMessage(SystemMessageId.CLAN_HAS_DISPERSED));
-        final int castleId = clan.getCastleId();
-        if (castleId == 0) {
-            for (Siege siege : SiegeManager.getInstance().getSieges()) {
-                siege.removeSiegeClan(clan);
-            }
-        }
-
-        final int fortId = clan.getFortId();
-        if (fortId == 0) {
-            for (FortSiege siege : FortSiegeManager.getInstance().getSieges()) {
-                siege.removeAttacker(clan);
-            }
-        }
-
-        final int hallId = clan.getHideoutId();
-        if (hallId == 0) {
-            for (SiegableHall hall :
-                    CHSiegeManager.getInstance().getConquerableHalls().values()) {
-                hall.removeAttacker(clan);
-            }
-        }
-
         final ClanHallAuction auction = ClanHallAuctionManager.getInstance().getAuction(clan.getAuctionBiddedAt());
         if (auction != null) {
             auction.cancelBid(clan.getId());
+        }
+
+        releaseResidences(clan);
+        // After the release: releasing a castle mid-siege runs midVictory, which ends the siege on a lone attacker with
+        // no defender, so the owner's entry must still be present.
+        for (Siege siege : SiegeManager.getInstance().getSieges()) {
+            siege.removeDissolvedClan(clanId);
+        }
+
+        for (FortSiege siege : FortSiegeManager.getInstance().getSieges()) {
+            siege.removeAttacker(clan);
+        }
+
+        for (SiegableHall hall :
+                CHSiegeManager.getInstance().getConquerableHalls().values()) {
+            hall.removeAttacker(clan);
         }
 
         final ClanMember leaderMember = clan.getLeader();
@@ -311,28 +308,45 @@ public class ClanTable {
         clanRepository.delete(clanId);
         IdManager.getInstance().releaseId(clanId);
 
-        if (castleId != 0) {
-            castleStateRepository.updateTaxPercent(castleId, 0);
-        }
-
-        if (fortId != 0) {
-            final Fort fort = FortManager.getInstance().getFortById(fortId);
-            if ((fort != null) && (clan == fort.getOwnerClan())) {
-                fort.removeOwner(true);
-            }
-        }
-
-        if (hallId != 0) {
-            final SiegableHall hall = CHSiegeManager.getInstance().getSiegableHall(hallId);
-            if ((hall != null) && (hall.getOwnerId() == clanId)) {
-                hall.free();
-            }
-        }
-
         // Notify to scripts
         if (EventDispatcher.getInstance().hasListener(EventType.ON_PLAYER_CLAN_DESTROY)) {
             EventDispatcher.getInstance().notifyEventAsync(new OnPlayerClanDestroy(leaderMember, clan));
         }
+    }
+
+    /**
+     * Frees every residence the clan owns. Must run while the clan is still in the table with its members and row: the
+     * release paths look the owner up there, and a hall sale auction references the clan row without a cascade.
+     */
+    private void releaseResidences(Clan clan) {
+        final Castle castle = CastleManager.getInstance().getCastleByOwner(clan);
+        if (castle != null) {
+            castle.removeOwner(clan);
+            castle.setTaxPercent(0);
+        }
+
+        final Fort fort = FortManager.getInstance().getFortByOwner(clan);
+        if (fort != null) {
+            fort.removeOwner(true);
+        }
+
+        final ClanHall hall = ClanHallTable.getInstance().getAbstractHallByOwner(clan);
+        if (hall == null) {
+            return;
+        }
+
+        if (hall.isSiegableHall()) {
+            hall.free();
+            return;
+        }
+
+        final ClanHallAuction sale = ClanHallAuctionManager.getInstance().getAuction(hall.getId());
+        if (sale != null) {
+            sale.cancelAuction();
+        }
+
+        ClanHallTable.getInstance().setFree(hall.getId());
+        ClanHallAuctionManager.getInstance().initNPC(hall.getId());
     }
 
     public void scheduleRemoveClan(int clanId) {

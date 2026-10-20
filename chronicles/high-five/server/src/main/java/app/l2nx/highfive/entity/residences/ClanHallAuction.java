@@ -48,6 +48,7 @@ import app.l2nx.highfive.threads.ThreadPool;
 import java.util.Calendar;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ScheduledFuture;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -91,6 +92,10 @@ public class ClanHallAuction {
 
     @Getter
     private final Map<Integer, Bidder> bidders = new ConcurrentHashMap<>();
+
+    private ScheduledFuture<?> endTask;
+
+    private boolean cancelled = false;
 
     public static class Bidder {
         @Getter
@@ -200,7 +205,7 @@ public class ClanHallAuction {
             taskDelay = endDate - currentTime;
         }
 
-        ThreadPool.schedule(new AutoEndTask(), taskDelay);
+        endTask = ThreadPool.schedule(new AutoEndTask(), taskDelay);
     }
 
     /** Save Auction Data End */
@@ -362,7 +367,11 @@ public class ClanHallAuction {
     }
 
     /** End of auction */
-    public void endAuction() {
+    public synchronized void endAuction() {
+        if (cancelled) {
+            return;
+        }
+
         if (ClanHallTable.getInstance().loaded()) {
             if ((highestBidderId == 0) && (sellerClanId == 0)) {
                 startAutoTask();
@@ -395,7 +404,7 @@ public class ClanHallAuction {
             ClanHallTable.getInstance().setOwner(id, clan);
         } else {
             /** Task waiting ClanHallManager is loaded every 3s */
-            ThreadPool.schedule(new AutoEndTask(), 3000);
+            endTask = ThreadPool.schedule(new AutoEndTask(), 3000);
         }
     }
 
@@ -417,7 +426,12 @@ public class ClanHallAuction {
     }
 
     /** Cancel auction */
-    public void cancelAuction() {
+    public synchronized void cancelAuction() {
+        cancelled = true;
+        if (endTask != null) {
+            endTask.cancel(false);
+        }
+
         deleteAuctionFromDB();
         removeBids();
     }

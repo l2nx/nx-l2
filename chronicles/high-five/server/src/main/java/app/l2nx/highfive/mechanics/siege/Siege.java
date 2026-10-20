@@ -862,6 +862,19 @@ public class Siege implements Siegable {
     }
 
     /**
+     * Drops a dissolved clan from whichever side it holds, the castle owner's entry included. Unlike
+     * {@link #removeSiegeClan(int)} it does not reload the sides, so a mid-victory's rearrangement survives.
+     */
+    public void removeDissolvedClan(int clanId) {
+        removeAttacker(getAttackerClan(clanId));
+        removeDefender(getDefenderClan(clanId));
+        final SiegeClan waiting = getDefenderWaitingClan(clanId);
+        if (waiting != null) {
+            defenderWaitingClans.remove(waiting);
+        }
+    }
+
+    /**
      * Remove clan from siege
      * @param clan clan being removed
      */

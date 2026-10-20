@@ -25,7 +25,6 @@ lists what is open.
 - [#27](https://github.com/l2nx/nx-l2/issues/27) Client protocol 140 over High Five content
 - [#28](https://github.com/l2nx/nx-l2/issues/28) Client protocol 557 over High Five content
 - [#31](https://github.com/l2nx/nx-l2/issues/31) Not every effect should freeze while its owner is offline
-- [#32](https://github.com/l2nx/nx-l2/issues/32) A dissolved clan keeps its castle and clan hall in memory until restart
 - [#40](https://github.com/l2nx/nx-l2/issues/40) Dropped items lose augmentation and elemental attributes across a restart
 - [#41](https://github.com/l2nx/nx-l2/issues/41) E10: inject beans instead of the static getInstance() bridges
 - [#42](https://github.com/l2nx/nx-l2/issues/42) E7/E8: cadence settings for periodic systems (`l2nx.engine.cadence.*`)
@@ -67,3 +66,4 @@ lists what is open.
 - [#35](https://github.com/l2nx/nx-l2/issues/35) A long-time event deletes item rows that may still be loaded
 - [#65](https://github.com/l2nx/nx-l2/issues/65) Inventory.MAX_ADENA freezes the config value at class initialisation
 - [#63](https://github.com/l2nx/nx-l2/issues/63) ClanHallAuctionTest passes only after other tests initialise shared state
+- [#32](https://github.com/l2nx/nx-l2/issues/32) A dissolved clan keeps its castle and clan hall in memory until restart

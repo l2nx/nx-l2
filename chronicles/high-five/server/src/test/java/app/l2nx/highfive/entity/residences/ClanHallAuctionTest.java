@@ -20,7 +20,9 @@ import static org.mockito.Mockito.when;
 
 import app.l2nx.highfive.clock.ClockBridgeExtension;
 import app.l2nx.highfive.config.PlayerConfig;
+import app.l2nx.highfive.data.sql.ClanHallTable;
 import app.l2nx.highfive.data.sql.ClanTable;
+import app.l2nx.highfive.data.xml.ClanHallData;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.clan.Clan;
 import app.l2nx.highfive.entity.item.enums.ItemProcessType;
@@ -28,7 +30,14 @@ import app.l2nx.highfive.entity.itemcontainer.Inventory;
 import app.l2nx.highfive.entity.itemcontainer.ItemContainer;
 import app.l2nx.highfive.managers.ClanHallAuctionManager;
 import app.l2nx.highfive.repository.auction.ClanHallAuctionRepository;
+import app.l2nx.highfive.repository.auction.model.ClanHallAuctionRow;
+import app.l2nx.highfive.repository.auction.model.ClanHallBid;
+import app.l2nx.highfive.threads.ThreadPool;
 import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.ScheduledFuture;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -113,6 +122,98 @@ class ClanHallAuctionTest {
             verify(bidderClan, never()).setAuctionBiddedAt(anyInt(), anyBoolean());
             assertThat(auction.getHighestBidderId()).isZero();
             assertThat(auction.getBidders()).isEmpty();
+        }
+    }
+
+    @Nested
+    class CancelAuction {
+        private static final int SELLER = 268_435_456;
+        private static final int BIDDER = 268_435_457;
+
+        private final ClanHallAuctionManager manager = mock(ClanHallAuctionManager.class);
+        private final ClanHallTable halls = mock(ClanHallTable.class);
+        private final ScheduledFuture<?> endTask = mock(ScheduledFuture.class);
+        private final List<ClanHallAuction> auctions = new ArrayList<>();
+        private final List<MockedStatic<?>> bridges = new ArrayList<>();
+
+        @BeforeEach
+        void bindBridges() {
+            final ClanTable clans = mock(ClanTable.class);
+            bind(ClanHallAuctionManager.class, ClanHallAuctionManager::getInstance, manager);
+            bind(ClanHallTable.class, ClanHallTable::getInstance, halls);
+            bind(ClanTable.class, ClanTable::getInstance, clans);
+            bind(ClanHallData.class, ClanHallData::getInstance, mock(ClanHallData.class));
+            final MockedStatic<ThreadPool> threadPool = mockStatic(ThreadPool.class);
+            threadPool.when(() -> ThreadPool.schedule(any(), anyLong())).thenAnswer(invocation -> endTask);
+            bridges.add(threadPool);
+
+            when(manager.getAuctions()).thenReturn(auctions);
+            when(manager.findAuction(HALL))
+                    .thenReturn(Optional.of(ClanHallAuctionRow.builder()
+                            .clanHallId(HALL)
+                            .sellerClanId(SELLER)
+                            .startingBid(STARTING_BID)
+                            .endDate(ClockBridgeExtension.WALL_START.plusSeconds(86_400))
+                            .build()));
+            when(halls.loaded()).thenReturn(true);
+            when(halls.getAuctionableHallById(HALL)).thenReturn(mock(AuctionableHall.class));
+            when(clans.getClan(anyInt())).thenReturn(mock(Clan.class));
+        }
+
+        @AfterEach
+        void releaseBridges() {
+            bridges.forEach(MockedStatic::close);
+        }
+
+        private <T> void bind(Class<T> type, MockedStatic.Verification getInstance, T instance) {
+            final MockedStatic<T> bridge = mockStatic(type);
+            bridge.when(getInstance).thenReturn(instance);
+            bridges.add(bridge);
+        }
+
+        private ClanHallAuction storedSale() {
+            final ClanHallAuction sale = new ClanHallAuction(HALL);
+            auctions.add(sale);
+            return sale;
+        }
+
+        @Test
+        void cancelAuction_shouldCancelScheduledEnd() {
+            final ClanHallAuction sale = storedSale();
+
+            sale.cancelAuction();
+
+            verify(endTask).cancel(false);
+        }
+
+        @Test
+        void endAuction_shouldKeepNextAuction_whenCancelledSaleHadNoBids() {
+            final ClanHallAuction sale = storedSale();
+            final ClanHallAuction next = mock(ClanHallAuction.class);
+            when(next.getId()).thenReturn(HALL);
+            sale.cancelAuction();
+            auctions.add(next);
+
+            sale.endAuction();
+
+            assertThat(auctions).containsExactly(next);
+        }
+
+        @Test
+        void endAuction_shouldNotSellHall_whenCancelledSaleHadBids() {
+            when(manager.findBids(HALL))
+                    .thenReturn(List.of(ClanHallBid.builder()
+                            .clanId(BIDDER)
+                            .bid(BID)
+                            .timeBid(ClockBridgeExtension.WALL_START)
+                            .build()));
+            final ClanHallAuction sale = storedSale();
+            sale.cancelAuction();
+
+            sale.endAuction();
+
+            verify(halls, never()).setOwner(anyInt(), any());
+            verify(manager).deleteAuction(HALL);
         }
     }
 }

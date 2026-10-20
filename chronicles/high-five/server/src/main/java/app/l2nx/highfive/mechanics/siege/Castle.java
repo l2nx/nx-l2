@@ -511,6 +511,11 @@ public class Castle extends AbstractResidence {
             getSiege().midVictory();
         }
 
+        final Territory territory = TerritoryWarManager.getInstance().getTerritory(getResidenceId());
+        if (territory != null) {
+            territory.setOwnerClan(null);
+        }
+
         for (Integer fc : function.keySet()) {
             removeFunction(fc);
         }
@@ -734,10 +739,14 @@ public class Castle extends AbstractResidence {
 
     public void updateClansReputation() {
         final Clan owner = ClanTable.getInstance().getClan(getOwnerId());
-        if (formerOwner != null) {
-            if (formerOwner != owner) {
-                final int maxreward = Math.max(0, formerOwner.getReputationScore());
-                formerOwner.takeReputationScore(FeatureConfig.LOOSE_CASTLE_POINTS);
+        // A dissolved former owner has nothing to lose and does not cap the winner's reward.
+        final Clan former = (formerOwner != null) && (ClanTable.getInstance().getClan(formerOwner.getId()) != null)
+                ? formerOwner
+                : null;
+        if (former != null) {
+            if (former != owner) {
+                final int maxreward = Math.max(0, former.getReputationScore());
+                former.takeReputationScore(FeatureConfig.LOOSE_CASTLE_POINTS);
                 if (owner != null) {
                     owner.addReputationScore(Math.min(FeatureConfig.TAKE_CASTLE_POINTS, maxreward));
                     owner.broadcastToOnlineMembers(new SystemMessage(
@@ -746,13 +755,13 @@ public class Castle extends AbstractResidence {
                             .addInt(Math.min(FeatureConfig.TAKE_CASTLE_POINTS, maxreward)));
                 }
 
-                formerOwner.broadcastToOnlineMembers(new SystemMessage(
+                former.broadcastToOnlineMembers(new SystemMessage(
                                 SystemMessageId
                                         .SINCE_YOUR_CLAN_WAS_DEFEATED_IN_A_SIEGE_S1_POINTS_HAVE_BEEN_DEDUCTED_FROM_YOUR_CLAN_S_REPUTATION_SCORE_AND_GIVEN_TO_THE_OPPOSING_CLAN)
                         .addInt(FeatureConfig.LOOSE_CASTLE_POINTS));
             } else {
-                formerOwner.addReputationScore(FeatureConfig.CASTLE_DEFENDED_POINTS);
-                formerOwner.broadcastToOnlineMembers(new SystemMessage(
+                former.addReputationScore(FeatureConfig.CASTLE_DEFENDED_POINTS);
+                former.broadcastToOnlineMembers(new SystemMessage(
                                 SystemMessageId
                                         .SINCE_YOUR_CLAN_EMERGED_VICTORIOUS_FROM_THE_SIEGE_S1_POINTS_HAVE_BEEN_ADDED_TO_YOUR_CLAN_S_REPUTATION_SCORE)
                         .addInt(FeatureConfig.CASTLE_DEFENDED_POINTS));
