@@ -21,11 +21,11 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  * DEALINGS IN THE SOFTWARE.
  */
-package app.l2nx.login.network.clientpackets;
+package app.l2nx.login.protocol.c621.clientpackets;
 
 import app.l2nx.login.enums.LoginFailReason;
-import app.l2nx.login.network.ConnectionState;
-import app.l2nx.login.network.serverpackets.GGAuth;
+import app.l2nx.login.protocol.c621.ConnectionState;
+import app.l2nx.login.protocol.c621.serverpackets.GGAuth;
 import lombok.extern.slf4j.Slf4j;
 
 /**

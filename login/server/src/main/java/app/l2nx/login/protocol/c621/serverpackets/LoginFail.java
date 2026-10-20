@@ -20,13 +20,25 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package app.l2nx.login.network;
+package app.l2nx.login.protocol.c621.serverpackets;
+
+import app.l2nx.login.enums.LoginFailReason;
+import app.l2nx.login.network.LoginClient;
+import app.l2nx.network.buffer.WriteBuffer;
 
 /**
- * @author Mobius
+ * Format: d d: the failure reason
  */
-public enum ConnectionState {
-    CONNECTED,
-    AUTHED_GG,
-    AUTHED_LOGIN;
+public class LoginFail extends LoginServerPacket {
+    private final LoginFailReason reason;
+
+    public LoginFail(LoginFailReason reason) {
+        this.reason = reason;
+    }
+
+    @Override
+    protected void writeImpl(LoginClient client, WriteBuffer buffer) {
+        buffer.writeByte(0x01);
+        buffer.writeByte(reason.getCode());
+    }
 }

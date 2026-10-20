@@ -20,25 +20,57 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package app.l2nx.login.network.serverpackets;
+package app.l2nx.login.protocol.c621.serverpackets;
 
-import app.l2nx.login.enums.PlayFailReason;
 import app.l2nx.login.network.LoginClient;
 import app.l2nx.network.buffer.WriteBuffer;
 
 /**
- * @version $Revision: 1.2.4.1 $ $Date: 2005/03/27 15:30:11 $
+ * <pre>
+ * Format: dd b dddd s
+ * d: session id
+ * d: protocol revision
+ * b: 0x90 bytes : 0x80 bytes for the scrambled RSA public key
+ *                 0x10 bytes at 0x00
+ * d: unknow
+ * d: unknow
+ * d: unknow
+ * d: unknow
+ * s: blowfish key
+ * </pre>
  */
-public class PlayFail extends LoginServerPacket {
-    private final PlayFailReason reason;
+public class Init extends LoginServerPacket {
+    private final int sessionId;
 
-    public PlayFail(PlayFailReason reason) {
-        this.reason = reason;
+    private final byte[] publicKey;
+    private final byte[] blowfishKey;
+
+    public Init(LoginClient client) {
+        this(client.getScrambledModulus(), client.getBlowfishKey(), client.getSessionId());
+    }
+
+    public Init(byte[] publickey, byte[] blowfishkey, int sessionId) {
+        this.sessionId = sessionId;
+        publicKey = publickey;
+        blowfishKey = blowfishkey;
     }
 
     @Override
     protected void writeImpl(LoginClient client, WriteBuffer buffer) {
-        buffer.writeByte(0x06);
-        buffer.writeByte(reason.getCode());
+        buffer.writeByte(0x00); // Init packet id.
+
+        buffer.writeInt(sessionId); // Session id.
+        buffer.writeInt(0x0000c621); // Protocol revision.
+
+        buffer.writeBytes(publicKey); // RSA Public Key.
+
+        // GG related.
+        buffer.writeInt(0x29DD954E);
+        buffer.writeInt(0x77C39CFC);
+        buffer.writeInt(0x97ADB620);
+        buffer.writeInt(0x07BDE0F7);
+
+        buffer.writeBytes(blowfishKey); // BlowFish key.
+        buffer.writeByte(0); // Null termination.
     }
 }

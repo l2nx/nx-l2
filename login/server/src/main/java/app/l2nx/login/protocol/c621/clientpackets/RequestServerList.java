@@ -20,34 +20,45 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package app.l2nx.login.network;
+package app.l2nx.login.protocol.c621.clientpackets;
 
-import app.l2nx.network.packet.SimpleWritablePacket;
+import app.l2nx.login.enums.LoginFailReason;
+import app.l2nx.login.network.LoginClient;
+import app.l2nx.login.protocol.c621.serverpackets.ServerList;
 
 /**
- * @author Mobius
+ * <pre>
+ * Format: ddc
+ * d: fist part of session id
+ * d: second part of session id
+ * c: ?
+ * </pre>
  */
-public enum LoginServerPackets {
-    INIT(0x00),
-    LOGIN_FAIL(0x01),
-    ACCOUNT_KICKED(0x02),
-    LOGIN_OK(0x03),
-    SERVER_LIST(0x04),
-    PLAY_FAIL(0x06),
-    PLAY_OK(0x07),
+public class RequestServerList extends LoginClientPacket {
+    private int skey1;
+    private int skey2;
 
-    PI_AGREEMENT_CHECK(0x11),
-    PI_AGREEMENT_ACK(0x12),
-    GG_AUTH(0x0b),
-    LOGIN_OPT_FAIL(0x0D);
+    @SuppressWarnings("unused")
+    private int data3;
 
-    private final int id;
+    @Override
+    protected boolean readImpl() {
+        if (remaining() >= 8) {
+            skey1 = readInt(); // loginOk 1
+            skey2 = readInt(); // loginOk 2
+            return true;
+        }
 
-    LoginServerPackets(int id) {
-        this.id = id;
+        return false;
     }
 
-    public void writeId(SimpleWritablePacket packet) {
-        packet.writeByte(id);
+    @Override
+    public void run() {
+        final LoginClient client = getClient();
+        if (client.getSessionKey().checkLoginPair(skey1, skey2)) {
+            client.sendPacket(new ServerList(client));
+        } else {
+            client.close(LoginFailReason.REASON_ACCESS_FAILED);
+        }
     }
 }

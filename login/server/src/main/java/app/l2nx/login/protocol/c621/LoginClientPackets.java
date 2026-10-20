@@ -20,13 +20,13 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package app.l2nx.login.network;
+package app.l2nx.login.protocol.c621;
 
-import app.l2nx.login.network.clientpackets.AuthGameGuard;
-import app.l2nx.login.network.clientpackets.LoginClientPacket;
-import app.l2nx.login.network.clientpackets.RequestAuthLogin;
-import app.l2nx.login.network.clientpackets.RequestServerList;
-import app.l2nx.login.network.clientpackets.RequestServerLogin;
+import app.l2nx.login.protocol.c621.clientpackets.AuthGameGuard;
+import app.l2nx.login.protocol.c621.clientpackets.LoginClientPacket;
+import app.l2nx.login.protocol.c621.clientpackets.RequestAuthLogin;
+import app.l2nx.login.protocol.c621.clientpackets.RequestServerList;
+import app.l2nx.login.protocol.c621.clientpackets.RequestServerLogin;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;

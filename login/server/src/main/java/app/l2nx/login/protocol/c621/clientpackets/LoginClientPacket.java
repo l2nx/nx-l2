@@ -21,7 +21,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  * DEALINGS IN THE SOFTWARE.
  */
-package app.l2nx.login.network.clientpackets;
+package app.l2nx.login.protocol.c621.clientpackets;
 
 import app.l2nx.login.network.LoginClient;
 import app.l2nx.network.packet.ReadablePacket;

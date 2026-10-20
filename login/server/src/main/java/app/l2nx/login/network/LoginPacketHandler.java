@@ -23,6 +23,7 @@
 package app.l2nx.login.network;
 
 import app.l2nx.login.enums.LoginFailReason;
+import app.l2nx.login.protocol.c621.LoginClientPackets;
 import app.l2nx.network.buffer.ReadBuffer;
 import app.l2nx.network.packet.PacketHandler;
 import app.l2nx.network.packet.ReadablePacket;

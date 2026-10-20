@@ -20,25 +20,28 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package app.l2nx.login.network.serverpackets;
+package app.l2nx.login.protocol.c621.serverpackets;
 
-import app.l2nx.login.enums.LoginFailReason;
 import app.l2nx.login.network.LoginClient;
 import app.l2nx.network.buffer.WriteBuffer;
 
 /**
- * Format: d d: the failure reason
+ * Format: d d: response
  */
-public class LoginFail extends LoginServerPacket {
-    private final LoginFailReason reason;
+public class GGAuth extends LoginServerPacket {
+    private final int response;
 
-    public LoginFail(LoginFailReason reason) {
-        this.reason = reason;
+    public GGAuth(int response) {
+        this.response = response;
     }
 
     @Override
     protected void writeImpl(LoginClient client, WriteBuffer buffer) {
-        buffer.writeByte(0x01);
-        buffer.writeByte(reason.getCode());
+        buffer.writeByte(0x0b);
+        buffer.writeInt(response);
+        buffer.writeInt(0);
+        buffer.writeInt(0);
+        buffer.writeInt(0);
+        buffer.writeInt(0);
     }
 }

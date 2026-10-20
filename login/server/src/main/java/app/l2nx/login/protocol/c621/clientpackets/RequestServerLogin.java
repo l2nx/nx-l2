@@ -20,7 +20,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package app.l2nx.login.network.clientpackets;
+package app.l2nx.login.protocol.c621.clientpackets;
 
 import app.l2nx.login.LoginServer;
 import app.l2nx.login.controller.LoginController;
@@ -29,7 +29,7 @@ import app.l2nx.login.enums.LoginFailReason;
 import app.l2nx.login.enums.PlayFailReason;
 import app.l2nx.login.network.LoginClient;
 import app.l2nx.login.network.gameserverpackets.receive.ServerStatus;
-import app.l2nx.login.network.serverpackets.PlayOk;
+import app.l2nx.login.protocol.c621.serverpackets.PlayOk;
 
 /**
  * <pre>

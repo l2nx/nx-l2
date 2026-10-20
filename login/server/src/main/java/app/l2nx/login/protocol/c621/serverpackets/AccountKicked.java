@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package app.l2nx.login.network.serverpackets;
+package app.l2nx.login.protocol.c621.serverpackets;
 
 import app.l2nx.login.enums.AccountKickedReason;
 import app.l2nx.login.network.LoginClient;

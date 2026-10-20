@@ -20,45 +20,25 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package app.l2nx.login.network.clientpackets;
+package app.l2nx.login.protocol.c621.serverpackets;
 
-import app.l2nx.login.enums.LoginFailReason;
+import app.l2nx.login.enums.PlayFailReason;
 import app.l2nx.login.network.LoginClient;
-import app.l2nx.login.network.serverpackets.ServerList;
+import app.l2nx.network.buffer.WriteBuffer;
 
 /**
- * <pre>
- * Format: ddc
- * d: fist part of session id
- * d: second part of session id
- * c: ?
- * </pre>
+ * @version $Revision: 1.2.4.1 $ $Date: 2005/03/27 15:30:11 $
  */
-public class RequestServerList extends LoginClientPacket {
-    private int skey1;
-    private int skey2;
+public class PlayFail extends LoginServerPacket {
+    private final PlayFailReason reason;
 
-    @SuppressWarnings("unused")
-    private int data3;
-
-    @Override
-    protected boolean readImpl() {
-        if (remaining() >= 8) {
-            skey1 = readInt(); // loginOk 1
-            skey2 = readInt(); // loginOk 2
-            return true;
-        }
-
-        return false;
+    public PlayFail(PlayFailReason reason) {
+        this.reason = reason;
     }
 
     @Override
-    public void run() {
-        final LoginClient client = getClient();
-        if (client.getSessionKey().checkLoginPair(skey1, skey2)) {
-            client.sendPacket(new ServerList(client));
-        } else {
-            client.close(LoginFailReason.REASON_ACCESS_FAILED);
-        }
+    protected void writeImpl(LoginClient client, WriteBuffer buffer) {
+        buffer.writeByte(0x06);
+        buffer.writeByte(reason.getCode());
     }
 }

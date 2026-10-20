@@ -20,28 +20,13 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package app.l2nx.login.network.serverpackets;
-
-import app.l2nx.login.network.LoginClient;
-import app.l2nx.network.buffer.WriteBuffer;
+package app.l2nx.login.protocol.c621;
 
 /**
- * Format: d d: response
+ * @author Mobius
  */
-public class GGAuth extends LoginServerPacket {
-    private final int response;
-
-    public GGAuth(int response) {
-        this.response = response;
-    }
-
-    @Override
-    protected void writeImpl(LoginClient client, WriteBuffer buffer) {
-        buffer.writeByte(0x0b);
-        buffer.writeInt(response);
-        buffer.writeInt(0);
-        buffer.writeInt(0);
-        buffer.writeInt(0);
-        buffer.writeInt(0);
-    }
+public enum ConnectionState {
+    CONNECTED,
+    AUTHED_GG,
+    AUTHED_LOGIN;
 }

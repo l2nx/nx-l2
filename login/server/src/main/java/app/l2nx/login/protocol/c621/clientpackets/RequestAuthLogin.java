@@ -24,7 +24,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package app.l2nx.login.network.clientpackets;
+package app.l2nx.login.protocol.c621.clientpackets;
 
 import app.l2nx.login.LoginServer;
 import app.l2nx.login.controller.AccountInfo;
@@ -32,11 +32,11 @@ import app.l2nx.login.controller.LoginController;
 import app.l2nx.login.data.GameServerTable.GameServerInfo;
 import app.l2nx.login.enums.AccountKickedReason;
 import app.l2nx.login.enums.LoginFailReason;
-import app.l2nx.login.network.ConnectionState;
 import app.l2nx.login.network.LoginClient;
-import app.l2nx.login.network.serverpackets.AccountKicked;
-import app.l2nx.login.network.serverpackets.LoginOk;
-import app.l2nx.login.network.serverpackets.ServerList;
+import app.l2nx.login.protocol.c621.ConnectionState;
+import app.l2nx.login.protocol.c621.serverpackets.AccountKicked;
+import app.l2nx.login.protocol.c621.serverpackets.LoginOk;
+import app.l2nx.login.protocol.c621.serverpackets.ServerList;
 import java.security.GeneralSecurityException;
 import javax.crypto.Cipher;
 import lombok.extern.slf4j.Slf4j;
