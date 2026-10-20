@@ -27,6 +27,8 @@ lists what is open.
 - [#25](https://github.com/l2nx/nx-l2/issues/25) Weapon damage_range with 2 or 3 parts breaks item loading
 - [#26](https://github.com/l2nx/nx-l2/issues/26) Seed of Infinity logs the open duration as the close date
 - [#29](https://github.com/l2nx/nx-l2/issues/29) WorldObject overrides equals without hashCode
+- [#27](https://github.com/l2nx/nx-l2/issues/27) Client protocol 140 over High Five content
+- [#28](https://github.com/l2nx/nx-l2/issues/28) Client protocol 557 over High Five content
 
 ## Done
 

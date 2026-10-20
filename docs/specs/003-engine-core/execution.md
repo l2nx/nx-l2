@@ -35,8 +35,12 @@ loop forever.
 ## 3. Inbox and session queues
 
 - **One FIFO per client session.** Netty binds a channel to one IO thread, so a session has exactly one producer:
-  decoded packets go into the session's single-producer queue (JCTools `SpscUnboundedArrayQueue`). The partition
-  inbox (JCTools `MpscUnboundedArrayQueue`) receives only "this session has input".
+  decoded commands (and legacy packets during the migration) go into the session's bounded single-producer queue
+  (JCTools `SpscArrayQueue`, capacity `inbound-queue-limit`; overflow closes the connection,
+  [spec 008 §5](../008-network.md#5-inbound-pipeline)). The partition inbox (JCTools `MpscUnboundedArrayQueue`)
+  receives only "this session has input".
+- **Before the world partition exists (E6)** the queue is drained by the legacy packet pool, one drain per session
+  at a time, so the order below already holds from stage 4.
 - **Packets of one client are processed strictly in arrival order.** Mobius ran them on a shared executor where two
   packets of one client could execute concurrently or reorder (trade confirm against an item move, target change
   against attack); that class of race and duplication disappears.
@@ -47,14 +51,17 @@ loop forever.
   machine outside the partition, in order. A packet that arrives in the wrong state is dropped.
 - **Entity transfer between partitions:** while a session is transferring, its queue keeps filling; after the
   target partition attaches the entity, the queue is drained there in the same order. Nothing is lost or reordered.
-- **Coalescing is opt-in.** Only packets explicitly marked as intent, where only the latest matters (movement
-  requests), may be collapsed; `nx-physics` already keeps the last intent. Every other packet executes.
+- **Coalescing is opt-in.** Only command types explicitly marked as intent, where only the latest matters (movement
+  requests), may be collapsed; `nx-physics` already keeps the last intent. Every other command executes, and a
+  legacy packet is never collapsed.
 - **Order across clients** is the order of processing within a pass. It is deterministic and recorded (§9): when
   two players pick up the same item, the one processed first wins.
 
 ## 4. Timers
 
-- **One timer wheel per partition:** Agrona `DeadlineTimerWheel`, polled by the loop; no timer threads.
+- **One timer wheel per partition:** Agrona `DeadlineTimerWheel` with a 1 ms tick, polled by the loop; no timer
+  threads. The wheel does not order timers inside one tick, so the loop collects the due timers of a pass and sorts
+  them by `(deadline, sequence)` before running them.
 - **Deadlines are absolute** in the partition's game time or wall-clock time (§6). Due timers run in
   `(deadline, sequence)` order; the sequence keeps registration order for equal deadlines.
 - **Periodic actions carry the remainder.** The next occurrence is `previous deadline + period`, not `now + period`.
@@ -93,31 +100,58 @@ not a scan.
   - **wall-clock:** siege start and registration, olympiad periods, auctions, daily and weekly resets, restart
     countdowns: anything a player checks against a real clock.
 
-  Today both run at the same rate; the split makes time dilation ([#20](https://github.com/l2nx/nx-l2/issues/20))
-  a clock policy rather than a redesign.
+  Game time is monotonic (`System.nanoTime()` from process start) and is never persisted as an instant; how
+  game-time state is stored is [persistence.md §4](persistence.md#4-write-behind). It starts at a fixed origin of
+  2^32 ms, not 0, so the many legacy fields that hold 0 for "never" still read as long ago. Wall-clock time
+  is epoch time with a zone (`java.time.Clock`). Today both run at the same rate; the split makes time dilation
+  ([#20](https://github.com/l2nx/nx-l2/issues/20)) a clock policy rather than a redesign.
+
+- **Legacy code not yet migrated** reaches the clock and RNG through a static bridge bound by a bean. Until the
+  world partition exists (E6) the bridge returns one process-wide `GameClock`, and the RNG delegates to `ThreadLocalRandom`, since legacy code still runs on many
+  threads. From E6 the bridge returns the clock and seeded RNG of the partition or global service whose loop owns
+  the calling thread, and fails on any other thread. The bridge is removed when its last caller receives the clock
+  and RNG from its system (E7, E10).
 
 - **RNG per partition**, a seeded `java.util.random.RandomGenerator` (`L64X128MixRandom`). The seed is recorded
   (§9).
 - **Forbidden in game code:** `System.currentTimeMillis()`, `System.nanoTime()`, `Instant.now()`,
-  `ThreadLocalRandom`, `Math.random()`, the Mobius `Rnd`. Step E5 replaces them mechanically.
+  `LocalDateTime.now()`, `ZonedDateTime.now()`, `Calendar.getInstance()`, `new Date()`, `ThreadLocalRandom`,
+  `Math.random()`, `new Random()`, `Collections.shuffle` without a generator. Step E5 replaces them and an ArchUnit
+  test enforces the list in the game packages (`app.l2nx.highfive..`); only the chronicle's `clock` package is
+  exempt there. Network, logging and metrics code lives outside the game packages, so the rule does not reach it.
 
 ## 7. Threads
 
-| Thread               | Count                         | Touches                                                           |
-| -------------------- | ----------------------------- | ----------------------------------------------------------------- |
-| Netty IO             | Netty default                 | sockets, codec, cipher, session queues; never game state          |
-| Loop threads         | configurable, default = cores | partitions and global services; one owner per partition at a time |
-| Persistence executor | small pool, ordered per key   | database only; results return through inboxes                     |
-| Spring / Tomcat      | framework                     | management endpoints; reach game state only through inboxes       |
+| Thread               | Count                         | Touches                                                              |
+| -------------------- | ----------------------------- | -------------------------------------------------------------------- |
+| Netty IO             | Netty default                 | sockets, framing, cipher, decoders, session queues; never game state |
+| Loop threads         | configurable, default = cores | partitions and global services; one owner per partition at a time    |
+| Persistence executor | small pool, ordered per key   | database only; results return through inboxes                        |
+| Spring / Tomcat      | framework                     | management endpoints; reach game state only through inboxes          |
 
-A thread that is not the current owner of a partition never reads or writes its mutable state. Debug builds
-assert ownership on entry to partition code.
+- **A partition is pinned to one loop thread** for its lifetime, as a Netty channel is to its event loop: a loop
+  thread runs the passes of the partitions assigned to it and sleeps (`LockSupport.parkNanos`) until the earliest
+  inbox signal, deadline or periodic system among them. An offer to a sleeping loop's inbox wakes it; a loop that
+  is awake is not woken again.
+- **The world partition has a loop thread of its own;** instances, olympiad matches and global services share the
+  others, assigned to the least loaded thread. A heavy partition therefore delays only partitions on its thread.
+
+A thread that is not the owner of a partition never reads or writes its mutable state. Debug builds assert
+ownership on entry to partition code.
 
 ## 8. Budget and metrics
 
 - **Micrometer meters per partition:** pass duration (timer with p95, p99), time per phase and per periodic system,
   inbox depth, session queue depth, overdue timers, packets per pass.
 - **A pass over budget** (`pass-budget`, configurable, default 50 ms) is counted and logged with the phase breakdown.
+- **Baseline of the legacy execution (E1),** before partitions exist:
+  - `l2nx.legacy.task`: run time of every `ThreadPool` task, tagged with the pool and the class that declares the
+    task (a lambda counts as its enclosing class); count, sum and max per class, one histogram with p95 and p99
+    across all tasks, so the series stay bounded;
+  - `l2nx.legacy.task.lag`: start delay of scheduled tasks against their planned time, per pool;
+  - `l2nx.legacy.packet`: run time of every client packet, tagged with the packet class; from stage 4 measured by
+    the session drain under the same name, next to `l2nx.session.command` for commands (tagged with the command
+    type).
 - **Bot load tests** with a siege scenario on the full local stack are the acceptance criterion for every migration
   step ([spec.md §6](spec.md#6-migration)).
 

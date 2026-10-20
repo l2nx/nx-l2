@@ -64,6 +64,12 @@ one save point.
 
 Everything that is not a value transfer: position, experience, HP and MP, effects, skills, quest progress, settings.
 
+- **Game-time state is stored without game-time instants,** since game time restarts with the process:
+  - effects store their remaining duration and tick phase and stand still while the player is offline
+    ([effects.md §9](effects.md#9-persistence));
+  - cooldowns of skills and items store the wall-clock instant they end, so offline time counts; on load the
+    remaining part becomes a game-time deadline.
+
 - **Dirty tracking per component;** changes to the same key within the window are coalesced.
 - **Window about 30 s** (`write-behind-interval`, configurable); a crash loses at most that much progress, never
   values.

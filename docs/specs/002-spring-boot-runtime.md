@@ -104,9 +104,11 @@ and `systemctl stop` are not restarted.
   property source, so a server needs no `spring.config.import`; each server's `application.yaml` adds only its own keys (`spring.application.name`, `server.port`, pool size).
 - **Moved to `application.yaml` at stage 2:** `spring.datasource.*`, `server.*`, `management.*`, `logging.*`. `Database.ini` and `DatabaseConfig` are removed.
 - **Login settings are `application.yaml`:** `@ConfigurationProperties` under `l2nx.login.*` (client and game-server
-  endpoints, ban, flood protection, scheduled restart, `auto-create-accounts`, `network.*` with thread and buffer
-  pool sizes). `Server.ini`, `Network.ini` and `Threads.ini` are removed from the login distribution and Dockerfile.
-- **Stays in `.ini`:** every game setting, including thread pool sizes and the client ports, until
+  endpoints, ban, flood protection, scheduled restart, `auto-create-accounts`). `Server.ini`, `Network.ini` and `Threads.ini` are removed from the login distribution and Dockerfile.
+- **Network settings of both servers are `l2nx.network.*`** from stage 4 ([spec 008 §3](008-network.md#3-configuration)):
+  they replace `l2nx.login.network.*`, the connection limits of `l2nx.login.flood-protection` and the game server's
+  `Network.ini`.
+- **Stays in `.ini`:** every other game setting, including thread pool sizes and the client ports, until
   [#17](https://github.com/l2nx/nx-l2/issues/17).
 
 ## 5. Database pool

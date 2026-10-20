@@ -9,7 +9,7 @@ shutdown order: [spec 002](../002-spring-boot-runtime.md).
   - static data registries ([entities.md §3](entities.md#3-static-data));
   - systems (combat, casting, effects, movement, AI, regeneration);
   - global services and partition runtime, the wire-handle allocator, persistence services;
-  - handler registries (packets, admin commands, bypasses, effect handlers);
+  - handler registries (commands, protocol adapters, admin commands, effect handlers);
   - the `ScriptContext` implementation.
 - **Plain objects, never beans:** entities (`Player`, `Npc`, `Item`, ...), their components, partition state,
   events, commands and messages. The engine creates them; they get collaborators from the systems that handle them,
@@ -43,18 +43,20 @@ code on other threads are not used in partition code:
 
 ### Engine
 
-`engine/core` (`app.l2nx.engine.core`) is created with the first runtime code (step E1/E6), not at stage 9. It holds
-the chronicle-agnostic mechanisms:
+`engine/core` (`app.l2nx.engine.core`) is created by its first package, not at stage 9. Each package lands with its
+first consumer, never ahead of it: `clock` with E5, `identity` with stage 3, `session` with stage 4, `loop` and
+`partition` with E6, `replication` with E8, `persistence` with E3 and E4. It holds the chronicle-agnostic
+mechanisms:
 
-| Package       | Contents                                                     |
-| ------------- | ------------------------------------------------------------ |
-| `loop`        | partition and service loops, inbox, pass phases, timer wheel |
-| `clock`       | `GameClock`, RNG                                             |
-| `partition`   | partitions, entity transfer, global service base             |
-| `identity`    | UUIDv7 generation, wire-handle allocator                     |
-| `session`     | session queues, connection state machine                     |
-| `replication` | client view, visibility grid, packet classes, budgets        |
-| `persistence` | write-behind, value transaction runner, outbox               |
+| Package       | Contents                                                                       |
+| ------------- | ------------------------------------------------------------------------------ |
+| `loop`        | partition and service loops, inbox, pass phases, timer wheel                   |
+| `clock`       | `GameClock`, RNG                                                               |
+| `partition`   | partitions, entity transfer, global service base                               |
+| `identity`    | UUIDv7 generation, wire-handle allocator                                       |
+| `session`     | session queues and their drain, session states, command dispatch, `ClientPort` |
+| `replication` | client view, visibility grid, event classes, budgets                           |
+| `persistence` | write-behind, value transaction runner, outbox                                 |
 
 Game mechanics shared by chronicles still join `engine/` only by proven overlap when Essence arrives
 ([spec 001 §4](../001-project-design.md#4-module-layout)).
@@ -66,15 +68,17 @@ The chronicle server (`app.l2nx.highfive`) is cut by feature, not by technical l
 ```
 app.l2nx.highfive
   entity      facades (Player, Npc, Item, ...) and templates
-  network     codec, opcode registry, session states; no game logic
+  network     pipeline, protocol registry, protocol/<id>/ adapters (packets); no game logic
   combat  skill  effect  movement  ai  item  trade  mail  auction
   clan  party  siege  olympiad  quest  chat  instance  ...
 ```
 
-- **A slice owns** its components and systems, its static data loader and registry, its incoming packet handlers
-  and outgoing packets, its tables and Liquibase changesets, its `@ConfigurationProperties`.
-- **Ports and adapters only at the outer edges:** repositories for the database, the adapter and Kafka. Game logic
-  is not split into `api` / `domain` / `infra`.
+- **A slice owns** its components and systems, its static data loader and registry, its commands and their
+  handlers, the view events it emits to clients, its tables and Liquibase changesets, its
+  `@ConfigurationProperties`. Packets belong to the protocol adapters, not to slices
+  ([spec 008 §8](../008-network.md#8-ports-and-protocol-adapters)).
+- **Ports and adapters only at the outer edges:** client protocols, repositories for the database, the adapter and
+  Kafka. Game logic is not split into `api` / `domain` / `infra`.
 - **Catch-all packages dissolve** into slices as code is reworked: `managers`, `util`, `holders`, `taskmanagers`,
   `data/xml`.
 - **Slice boundaries are verified by Spring Modulith** (`ApplicationModules.verify()` in a test): no cycles, and a

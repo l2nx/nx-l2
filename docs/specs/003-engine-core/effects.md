@@ -67,7 +67,8 @@ the target clock, and the entries are registered on the target wheel.
 ## 9. Persistence
 
 On save, an effect is stored with its remaining duration (`endsAt − now` in game time) and its tick phase; on load,
-deadlines are rebuilt from them. Effects that do not survive logout are not stored.
+deadlines are rebuilt from them, so an effect does not run down while the player is offline. Effects that do not
+survive logout are not stored.
 
 ## 10. Global effects
 

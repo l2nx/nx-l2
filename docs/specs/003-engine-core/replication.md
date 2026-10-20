@@ -25,14 +25,19 @@ Mobius has no known lists: visibility is computed per query by scanning neighbou
 
 ## 3. Outgoing events
 
-- **Simulation never writes to sockets.** Systems append replication events to the entity's outbox: started moving,
+- **Simulation never writes to sockets.** Systems append view events to the entity's outbox: started moving,
   attacked, cast, appearance changed, status changed.
 - **The replication phase,** once per pass:
-  1. computes view diffs and emits spawn and despawn packets, spawns before any event about the object;
+  1. computes view diffs and emits spawn and despawn events, spawns before any event about the object;
   2. routes each entity's events to the sessions whose view contains it;
-  3. coalesces state: several HP changes in a pass become one `StatusUpdate`; `UserInfo` and `CharInfo` go once.
+  3. coalesces state: several HP changes in a pass become one status change; the player's own state and its
+     appearance to others go once.
+- **Replication emits view events, not packets.** Each session's `ClientPort` hands them to the session's
+  protocol adapter, which maps them to packets and serializes them
+  ([spec 008 §8](../008-network.md#8-ports-and-protocol-adapters)). The classes below are properties of the
+  events; packet names in this document are those of the High Five protocol.
 
-## 4. Packet classes
+## 4. Event classes
 
 | Class              | Examples                                                                  | Rule                        |
 | ------------------ | ------------------------------------------------------------------------- | --------------------------- |
@@ -42,18 +47,19 @@ Mobius has no known lists: visibility is computed per query by scanning neighbou
 
 ## 5. Priority and budgets
 
-- **Byte budget per connection per pass,** configurable, default 32 KB. Critical packets are never cut; coalescable state of
-  low-priority objects is sent less often; cosmetic packets are dropped first.
+- **Byte budget per connection per pass,** configurable, default 32 KB. Bytes exist only after the adapter maps an
+  event, so the phase orders a session's events by class and priority, the adapter maps and serializes them in that
+  order, and the budget cuts after serialization: critical events are never cut; coalescable state of low-priority
+  objects is sent less often; cosmetic events are dropped first.
 - **Priority:** own target, own party, whoever attacks the player, then by distance. This is what keeps a siege with
   hundreds of players inside the network budget.
 
 ## 6. Network hand-off
 
-- **A packet broadcast to many clients is serialized once;** each connection encrypts its copy with its own session
-  key in the Netty encoder on its IO thread.
-- **The partition hands Netty ready buffers without flushing** per packet; one flush per connection ends the pass.
-- The transport itself (framing, cipher, server bootstrap) is `libs/network`
-  ([spec 001 §4](../001-project-design.md#4-module-layout)).
+- **Events and legacy packets emitted earlier in the pass are buffered per session** and released by the
+  replication phase in emission order, after the spawns of the pass; the phase then schedules each connection's
+  outbound drain once, so a pass ends with one flush per connection. Serialization once per audience, encryption on the
+  IO thread and buffer ownership are [spec 008 §6](../008-network.md#6-outbound-path).
 
 ## 7. Movement contract
 

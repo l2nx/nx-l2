@@ -172,7 +172,7 @@ The move is mechanical because a chronicle is one self-contained directory (§4)
 ## 4. Module layout
 
 ```
-libs/                 knows nothing about Lineage 2; reusable by any server
+libs/                 knows no game rules; reusable by any server
   boot                app.l2nx.boot        Spring Boot auto-configuration shared by the servers
   network             app.l2nx.network     Netty transport (framing, PacketCipher, server/client)
   telemetry           app.l2nx.telemetry   Micrometer
@@ -197,7 +197,7 @@ build-logic/          Gradle convention plugins
 
 What goes where:
 
-- **`libs/`** holds infrastructure with no game knowledge. Login and every game server use it.
+- **`libs/`** holds infrastructure that knows no game rules. Login and every game server use it.
 - **`engine/`** knows _how_: moving, seeing a target, talking to L2NX.
 - **`chronicles/<chronicle>/server`** knows _what_ the chronicle is: classes, damage formulas, enchanting,
   olympiad, the chronicle's client packets. Today almost all Mobius code lands here; it moves into `engine/`
@@ -347,9 +347,11 @@ constraints).
 
 ### Game server
 
-Inside a chronicle, the packet codec is selected by the client protocol version: the client speaks first
-(`ProtocolVersion`), so the choice is deterministic. Codecs live in `server/.../network/protocol/<version>/`. The
-game stays one; only the clients differ. This comes after the test server is live (stage 8).
+Inside a chronicle, the protocol adapter is selected by the client protocol version: the client speaks first
+(`ProtocolVersion`), so the choice is deterministic. The game takes commands and emits view events through ports; an
+adapter in `server/.../network/protocol/<id>/` maps packets to them and back, so the game stays one and only the
+clients differ ([spec 008 §8](008-network.md#8-ports-and-protocol-adapters)). The port framework and the High Five
+adapter come with stage 4; further client protocols come after the test server is live (stage 8).
 
 ### Edge gateway
 
@@ -381,19 +383,19 @@ The test server:
 
 Every stage ends with a server that builds and a client that logs in and plays. No stage breaks the game.
 
-| #   | Stage                                                                           | Done when                                                                                       |
-| --- | ------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| 0   | Repository and legal                                                            | `LICENSE`, `NOTICE`, `CONTRIBUTING.md`, README disclaimer                                       |
-| 1   | Import HF with history (`git filter-repo` of Mobius), Gradle build              | server starts locally, an HF client logs in and plays                                           |
-| 2   | Spring Boot runtime ([spec 002](002-spring-boot-runtime.md))                    | Spring Boot hosts both servers, Actuator and metrics, graceful shutdown, boot smoke tests in CI |
-| 3   | PostgreSQL (§5.1)                                                               | Liquibase baseline written for PostgreSQL, the SQL ported and covered by Testcontainers tests   |
-| 4   | Netty network                                                                   | own Netty transport in `libs/network`, all three connections                                    |
-| 5   | L2NX built in ([#13](https://github.com/l2nx/nx-l2/issues/13))                  | latest adapter, commands and events work                                                        |
-| 6   | Public test server                                                              | public access, adapter e2e in CI                                                                |
-| 7   | Geo SPI + open `nx-physics`                                                     | two implementations, movement on navmesh                                                        |
-| 8   | HF multi-protocol                                                               | newer clients log in to HF                                                                      |
-| 9   | Essence + shared core extraction ([#2](https://github.com/l2nx/nx-l2/issues/2)) | second chronicle; `engine/` grows by real overlap                                               |
-| 10  | Interlude ([#3](https://github.com/l2nx/nx-l2/issues/3))                        | third chronicle                                                                                 |
+| #   | Stage                                                                           | Done when                                                                                                                               |
+| --- | ------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| 0   | Repository and legal                                                            | `LICENSE`, `NOTICE`, `CONTRIBUTING.md`, README disclaimer                                                                               |
+| 1   | Import HF with history (`git filter-repo` of Mobius), Gradle build              | server starts locally, an HF client logs in and plays                                                                                   |
+| 2   | Spring Boot runtime ([spec 002](002-spring-boot-runtime.md))                    | Spring Boot hosts both servers, Actuator and metrics, graceful shutdown, boot smoke tests in CI                                         |
+| 3   | PostgreSQL (§5.1)                                                               | Liquibase baseline written for PostgreSQL, the SQL ported and covered by Testcontainers tests                                           |
+| 4   | Netty network                                                                   | own Netty transport in `libs/network`, all three connections, protocol ports ([spec 008](008-network.md))                               |
+| 5   | L2NX built in ([#13](https://github.com/l2nx/nx-l2/issues/13))                  | latest adapter, commands and events work                                                                                                |
+| 6   | Public test server                                                              | public access, adapter e2e in CI                                                                                                        |
+| 7   | Geo SPI + open `nx-physics`                                                     | two implementations, movement on navmesh                                                                                                |
+| 8   | HF multi-protocol                                                               | newer clients log in to HF; needs every packet on ports (spec 003 E8, E10; [spec 008 §8](008-network.md#8-ports-and-protocol-adapters)) |
+| 9   | Essence + shared core extraction ([#2](https://github.com/l2nx/nx-l2/issues/2)) | second chronicle; `engine/` grows by real overlap                                                                                       |
+| 10  | Interlude ([#3](https://github.com/l2nx/nx-l2/issues/3))                        | third chronicle                                                                                                                         |
 
 Stage 1 lands the Mobius tree directly in the §4 layout and the `app.l2nx.*` packages: `git filter-repo` rewrites
 both historical HF paths of Mobius into the target paths, so file history runs unbroken from 2016 without
