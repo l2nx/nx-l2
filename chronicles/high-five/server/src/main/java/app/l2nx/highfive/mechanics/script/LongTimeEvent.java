@@ -34,9 +34,7 @@ import app.l2nx.highfive.data.xml.NpcData;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Npc;
-import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.holders.npc.EventDropHolder;
-import app.l2nx.highfive.entity.item.enums.ItemProcessType;
 import app.l2nx.highfive.entity.spawns.Spawn;
 import app.l2nx.highfive.managers.EventDropManager;
 import app.l2nx.highfive.managers.ItemManager;
@@ -59,7 +57,6 @@ import java.util.Set;
 import java.util.function.Consumer;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.dao.DataAccessException;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 
@@ -552,21 +549,11 @@ public class LongTimeEvent extends Script {
     }
 
     protected void destroyItemsOnEnd() {
-        if (!destroyItemsOnEnd.isEmpty()) {
-            for (int itemId : destroyItemsOnEnd) {
-                // Remove item from online players.
-                for (Player player : World.getPlayers()) {
-                    if (player != null) {
-                        player.destroyItemByItemId(ItemProcessType.DESTROY, itemId, -1, player, true);
-                    }
-                }
-
-                // Update database.
-                try {
-                    ItemManager.getInstance().deleteItemsOfTemplate(itemId);
-                } catch (DataAccessException e) {
-                    log.warn("Could not delete the items {} of the ended event: {}", itemId, e.getMessage(), e);
-                }
+        for (int itemId : destroyItemsOnEnd) {
+            try {
+                ItemManager.getInstance().destroyItemsOfTemplate(itemId);
+            } catch (RuntimeException e) {
+                log.warn("Could not destroy the items {} of the ended event: {}", itemId, e.getMessage(), e);
             }
         }
     }

@@ -28,19 +28,24 @@ package app.l2nx.highfive.managers;
 
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.config.PlayerConfig;
+import app.l2nx.highfive.data.sql.ClanTable;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.WorldObject;
 import app.l2nx.highfive.entity.actor.Attackable;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.instance.EventMonster;
+import app.l2nx.highfive.entity.actor.instance.Pet;
+import app.l2nx.highfive.entity.clan.Clan;
 import app.l2nx.highfive.entity.item.enums.ItemLocation;
 import app.l2nx.highfive.entity.item.enums.ItemProcessType;
 import app.l2nx.highfive.entity.item.instance.Item;
 import app.l2nx.highfive.entity.itemcontainer.Inventory;
+import app.l2nx.highfive.entity.itemcontainer.ItemContainer;
 import app.l2nx.highfive.mechanics.events.EventDispatcher;
 import app.l2nx.highfive.mechanics.events.EventType;
 import app.l2nx.highfive.mechanics.events.holders.item.OnItemCreate;
+import app.l2nx.highfive.network.holders.MailMessage;
 import app.l2nx.highfive.repository.item.ItemAugmentationRepository;
 import app.l2nx.highfive.repository.item.ItemElementalRepository;
 import app.l2nx.highfive.repository.item.ItemRepository;
@@ -51,11 +56,14 @@ import app.l2nx.highfive.repository.item.model.LotteryTicket;
 import app.l2nx.highfive.repository.item.model.PaperdollItem;
 import app.l2nx.highfive.threads.ThreadPool;
 import app.l2nx.highfive.util.GMAudit;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ScheduledFuture;
+import java.util.function.Function;
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -65,6 +73,7 @@ import org.springframework.transaction.support.TransactionTemplate;
  * Manages the creation and destruction of items within the game.
  * @author Mobius
  */
+@Slf4j
 @Component
 public class ItemManager {
 
@@ -356,11 +365,95 @@ public class ItemManager {
         return itemRepository.deleteByOwner(ownerId, itemId);
     }
 
-    /**
-     * Deletes every stored item of the template, whoever owns it.
-     */
-    public void deleteItemsOfTemplate(int itemId) {
-        itemRepository.deleteByItemId(itemId);
+    public void destroyItemsOfTemplate(int itemId) {
+        for (Item item : loadedItems(itemId)) {
+            if (!destroyQuietly(item)) {
+                log.warn(
+                        "Item {} stays loaded in {} of {}: it was not destroyed through a container.",
+                        item,
+                        item.getItemLocation(),
+                        item.getOwnerId());
+            }
+        }
+
+        // Deleting the row of an item still loaded would leave a copy that is used and saved again.
+        final List<Integer> stillLoaded =
+                loadedItems(itemId).stream().map(Item::getObjectId).toList();
+        itemRepository.deleteByItemIdExcept(itemId, stillLoaded);
+    }
+
+    private static List<Item> loadedItems(int itemId) {
+        final List<Item> loaded = new ArrayList<>();
+        for (WorldObject object : World.getVisibleObjects()) {
+            if ((object instanceof Item item) && (item.getId() == itemId)) {
+                loaded.add(item);
+            }
+        }
+
+        return loaded;
+    }
+
+    private static boolean destroyQuietly(Item item) {
+        try {
+            return destroyLoaded(item);
+        } catch (RuntimeException e) {
+            log.warn("Could not destroy the loaded item {}: {}", item, e.getMessage(), e);
+            return false;
+        }
+    }
+
+    private static boolean destroyLoaded(Item item) {
+        final int ownerId = item.getOwnerId();
+        final int objectId = item.getObjectId();
+        final long count = item.getCount();
+        return switch (item.getItemLocation()) {
+            case INVENTORY, PAPERDOLL -> {
+                final Player player = World.getPlayer(ownerId);
+                yield (player != null) && player.destroyItem(ItemProcessType.DESTROY, objectId, count, null, true);
+            }
+            case PET, PET_EQUIP -> {
+                final Pet pet = World.getPet(ownerId);
+                yield (pet != null) && pet.destroyItem(ItemProcessType.DESTROY, objectId, count, null, true);
+            }
+            case VOID -> {
+                if (!item.isSpawned() || !item.decayMe()) {
+                    yield false;
+                }
+
+                // ItemsAutoDestroyTaskManager drops an item without a drop time instead of decaying it again,
+                // which would hit the object that reuses the released id.
+                item.setDropTime(0);
+                destroyItem(ItemProcessType.DESTROY, item, null, null);
+                yield true;
+            }
+            default -> {
+                final ItemContainer container = storageOf(item);
+                yield (container != null)
+                        && (container.destroyItem(ItemProcessType.DESTROY, objectId, count, null, null) != null);
+            }
+        };
+    }
+
+    private static ItemContainer storageOf(Item item) {
+        return switch (item.getItemLocation()) {
+            case WAREHOUSE -> ofPlayer(item, Player::getWarehouse);
+            case FREIGHT -> ofPlayer(item, Player::getFreight);
+            case REFUND -> ofPlayer(item, Player::getRefund);
+            case CLANWH -> {
+                final Clan clan = ClanTable.getInstance().getClan(item.getOwnerId());
+                yield clan == null ? null : clan.getWarehouse();
+            }
+            case MAIL -> {
+                final MailMessage message = MailManager.getInstance().getMessage(item.getLocationSlot());
+                yield message == null ? null : message.getAttachments();
+            }
+            default -> null;
+        };
+    }
+
+    private static ItemContainer ofPlayer(Item item, Function<Player, ItemContainer> container) {
+        final Player player = World.getPlayer(item.getOwnerId());
+        return player == null ? null : container.apply(player);
     }
 
     public Optional<Integer> findAugmentation(int objectId) {

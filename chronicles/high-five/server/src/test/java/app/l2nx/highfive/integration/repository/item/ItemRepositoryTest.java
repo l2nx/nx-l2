@@ -447,6 +447,32 @@ class ItemRepositoryTest extends RepositoryTest {
             assertThat(count("SELECT count(*) FROM items WHERE item_template_id = ?", template))
                     .isZero();
         }
+
+        @Test
+        void deleteByItemIdExcept_shouldKeepOnlyTheGivenItems() {
+            final int template = uniqueTemplate();
+            final UUID owner = insertCharacter();
+            final UUID kept = insertItem(owner, template, 1);
+            insertItem(owner, template, 1);
+            insertItem(insertClan(), template, 1);
+
+            repository.deleteByItemIdExcept(template, List.of(handle(kept)));
+
+            assertThat(count("SELECT count(*) FROM items WHERE item_template_id = ?", template))
+                    .isOne();
+            assertThat(count("SELECT count(*) FROM items WHERE id = ?", kept)).isOne();
+        }
+
+        @Test
+        void deleteByItemIdExcept_shouldRemoveTheTemplate_whenNothingIsKept() {
+            final int template = uniqueTemplate();
+            insertItem(insertCharacter(), template, 1);
+
+            repository.deleteByItemIdExcept(template, List.of());
+
+            assertThat(count("SELECT count(*) FROM items WHERE item_template_id = ?", template))
+                    .isZero();
+        }
     }
 
     @Nested

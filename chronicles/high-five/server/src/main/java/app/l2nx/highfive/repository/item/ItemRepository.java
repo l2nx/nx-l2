@@ -83,12 +83,15 @@ public class ItemRepository {
         SET owner_id = ?, location = 'WAREHOUSE', mail_id = NULL
         WHERE mail_id = ?
         RETURNING id, item_template_id, count, location, location_slot, mail_id, enchant_level,
-                  custom_type1, custom_type2, mana_left, expires_at        """;
+                  custom_type1, custom_type2, mana_left, expires_at\
+        """;
     private static final String DELETE_BY_OWNER = "DELETE FROM items WHERE owner_id = ? RETURNING id";
     private static final String DELETE_BY_MAIL = "DELETE FROM items WHERE mail_id = ? RETURNING id";
     private static final String DELETE_BY_OWNER_AND_TEMPLATE =
             "DELETE FROM items WHERE owner_id = ? AND item_template_id = ?";
     private static final String DELETE_BY_TEMPLATE = "DELETE FROM items WHERE item_template_id = ?";
+    private static final String DELETE_BY_TEMPLATE_EXCEPT =
+            "DELETE FROM items WHERE item_template_id = :templateId AND id NOT IN (:kept)";
     // Items in mail transit have no owner and are removed too.
     private static final String DELETE_BY_TEMPLATES_EXCEPT_STAFF = """
         DELETE FROM items i
@@ -270,6 +273,23 @@ public class ItemRepository {
 
     public void deleteByItemId(int itemId) {
         jdbcClient.sql(DELETE_BY_TEMPLATE).param(itemId).update();
+    }
+
+    public void deleteByItemIdExcept(int itemId, Collection<Integer> keptObjectIds) {
+        final List<UUID> kept = keptObjectIds.stream()
+                .map(registry::findId)
+                .flatMap(Optional::stream)
+                .toList();
+        if (kept.isEmpty()) {
+            deleteByItemId(itemId);
+            return;
+        }
+
+        jdbcClient
+                .sql(DELETE_BY_TEMPLATE_EXCEPT)
+                .param("templateId", itemId)
+                .param("kept", kept)
+                .update();
     }
 
     public void deleteExceptStaff(Collection<Integer> itemIds) {
