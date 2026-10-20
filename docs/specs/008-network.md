@@ -287,9 +287,10 @@ service GsLink {
 - **Registration:** the first message is `Register` with the hex id and the chronicle; a stream that sends anything
   else first, or nothing within `handshake-timeout`, is cancelled. A registration with the hex id of a live stream
   cancels the old one.
-- **Authentication:** the game server sends `l2nx.gslink.secret` (required on both servers, no default) as call
-  credentials in the `authorization` metadata; a server interceptor compares it in constant time and rejects the
-  call with `UNAUTHENTICATED`. The secret travels in clear only on loopback: the login server refuses to start when
+- **Authentication:** the game server sends `l2nx.gslink.secret` (required on both servers, no default, at least
+  32 characters) as a bearer token in the `authorization` metadata through Spring gRPC's
+  `BearerTokenAuthenticationInterceptor`; a server interceptor compares it in constant time and rejects the call with
+  `UNAUTHENTICATED`. The secret travels in clear only on loopback: the login server refuses to start when
   the gRPC server listens on another address without TLS, and the game server refuses a non-loopback target without
   TLS. TLS comes from a Spring Boot SSL bundle; the game server verifies the login server's certificate, host name
   included. The server binds to `127.0.0.1` by default.
