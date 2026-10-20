@@ -27,7 +27,6 @@ lists what is open.
 - [#31](https://github.com/l2nx/nx-l2/issues/31) Not every effect should freeze while its owner is offline
 - [#32](https://github.com/l2nx/nx-l2/issues/32) A dissolved clan keeps its castle and clan hall in memory until restart
 - [#35](https://github.com/l2nx/nx-l2/issues/35) A long-time event deletes item rows that may still be loaded
-- [#39](https://github.com/l2nx/nx-l2/issues/39) A fort whose owner clan is not loaded fails to load
 - [#40](https://github.com/l2nx/nx-l2/issues/40) Dropped items lose augmentation and elemental attributes across a restart
 - [#41](https://github.com/l2nx/nx-l2/issues/41) E10: inject beans instead of the static getInstance() bridges
 - [#42](https://github.com/l2nx/nx-l2/issues/42) E7/E8: cadence settings for periodic systems (`l2nx.engine.cadence.*`)
@@ -65,3 +64,4 @@ lists what is open.
 - [#33](https://github.com/l2nx/nx-l2/issues/33) Creating a second academy is never reported, and the academy leader differs between memory and database
 - [#34](https://github.com/l2nx/nx-l2/issues/34) Editing a community board post by index can hit the wrong post
 - [#38](https://github.com/l2nx/nx-l2/issues/38) A siegable clan hall without a loaded owner clan fails to load
+- [#39](https://github.com/l2nx/nx-l2/issues/39) A fort whose owner clan is not loaded fails to load

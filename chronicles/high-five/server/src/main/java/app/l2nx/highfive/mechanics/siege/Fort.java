@@ -506,8 +506,8 @@ public class Fort extends AbstractResidence {
         contractedCastleId = state.contractedCastleId();
         supplyLeveL = state.supplyLevel();
 
-        if (ownerId > 0) {
-            final Clan clan = ClanTable.getInstance().getClan(ownerId); // Try to find clan instance.
+        final Clan clan = ownerId > 0 ? ClanTable.getInstance().getClan(ownerId) : null;
+        if (clan != null) {
             clan.setFortId(getResidenceId());
             setOwnerClan(clan);
             final int runCount = getOwnedTime() / (FeatureConfig.FS_UPDATE_FRQ * 60);
@@ -535,7 +535,27 @@ public class Fort extends AbstractResidence {
             }
         } else {
             setOwnerClan(null);
+            if (ownerId > 0) {
+                releaseUnloadedOwner(ownerId);
+            }
         }
+    }
+
+    /**
+     * Leaves the fort as {@link #removeOwner} would when the stored owner clan is not loaded. Runs from the constructor,
+     * so it calls no overridable method.
+     */
+    private void releaseUnloadedOwner(int ownerId) {
+        log.warn("Fort {}: owner clan {} is not loaded, the fort is left without an owner.", getResidenceId(), ownerId);
+        supplyLeveL = 0;
+        FortManager.getInstance().saveSupplyLevel(getResidenceId(), supplyLeveL);
+        for (ResidenceFunction stored : FortManager.getInstance().findFunctions(getResidenceId())) {
+            FortManager.getInstance().deleteFunction(getResidenceId(), stored.type());
+        }
+
+        fortState = 0;
+        contractedCastleId = 0;
+        updateOwnerInDB();
     }
 
     /** Load All Functions */
