@@ -48,14 +48,6 @@ class NetworkPropertiesTest {
             assertThat(actual.connectionsPerIp()).isEqualTo(10);
             assertThat(actual.acceptPerIpPerSecond()).isEqualTo(5);
             assertThat(actual.maxConnections()).isEqualTo(10_000);
-            assertThat(actual.gslink().secret()).isNull();
-            assertThat(actual.gslink().tls()).isFalse();
-            assertThat(actual.gslink().pingInterval()).isEqualTo(Duration.ofSeconds(15));
-            assertThat(actual.gslink().reconnectDelay())
-                    .isEqualTo(NetworkProperties.ReconnectDelay.builder()
-                            .initial(Duration.ofSeconds(1))
-                            .max(Duration.ofSeconds(30))
-                            .build());
             assertThat(actual.shutdownQuietPeriod()).isEqualTo(Duration.ofSeconds(2));
             assertThat(actual.shutdownTimeout()).isEqualTo(Duration.ofSeconds(15));
         });

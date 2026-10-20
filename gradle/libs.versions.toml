@@ -7,6 +7,8 @@ classgraph = "6.0.0"
 disruptor = "4.0.0"
 fastutil = "8.5.19"
 gradle-git-properties = "4.0.1"
+# protoc-gen-grpc-java only: the grpc-java jars come from the Spring Boot BOM, keep both equal.
+grpc = "1.83.1"
 jctools = "4.0.7"
 jmh-plugin = "0.7.3"
 junit = "6.1.3"
@@ -15,6 +17,9 @@ liquibase = "5.0.4"
 lombok = "1.18.48"
 palantir = "2.102.0"
 postgresql = "42.7.14"
+# protoc only: protobuf-java comes from the Spring Boot BOM, keep both equal.
+protobuf = "4.35.1"
+protobuf-plugin = "0.10.0"
 spotless = "8.10.4"
 spring-boot = "4.1.1"
 spring-modulith = "2.1.1"
@@ -30,6 +35,9 @@ commons-lang3 = { module = "org.apache.commons:commons-lang3" }
 disruptor = { module = "com.lmax:disruptor", version.ref = "disruptor" }
 fastutil = { module = "it.unimi.dsi:fastutil", version.ref = "fastutil" }
 jctools-core = { module = "org.jctools:jctools-core", version.ref = "jctools" }
+grpc-inprocess = { module = "io.grpc:grpc-inprocess" }
+grpc-protobuf = { module = "io.grpc:grpc-protobuf" }
+grpc-stub = { module = "io.grpc:grpc-stub" }
 junit-bom = { module = "org.junit:junit-bom", version.ref = "junit" }
 junit-jupiter = { module = "org.junit.jupiter:junit-jupiter" }
 junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
@@ -43,14 +51,23 @@ netty-handler = { module = "io.netty:netty-handler" }
 netty-transport-classes-epoll = { module = "io.netty:netty-transport-classes-epoll" }
 netty-transport-classes-io-uring = { module = "io.netty:netty-transport-classes-io_uring" }
 netty-transport-native-epoll = { module = "io.netty:netty-transport-native-epoll" }
+netty-pkitesting = { module = "io.netty:netty-pkitesting" }
 netty-transport-native-io-uring = { module = "io.netty:netty-transport-native-io_uring" }
 postgresql = { module = "org.postgresql:postgresql", version.ref = "postgresql" }
+protobuf-java = { module = "com.google.protobuf:protobuf-java" }
+protoc = { module = "com.google.protobuf:protoc", version.ref = "protobuf" }
+protoc-gen-grpc-java = { module = "io.grpc:protoc-gen-grpc-java", version.ref = "grpc" }
 slf4j-api = { module = "org.slf4j:slf4j-api" }
 spring-boot = { module = "org.springframework.boot:spring-boot" }
 spring-boot-autoconfigure = { module = "org.springframework.boot:spring-boot-autoconfigure" }
 spring-boot-configuration-processor = { module = "org.springframework.boot:spring-boot-configuration-processor" }
+spring-boot-grpc-client = { module = "org.springframework.boot:spring-boot-grpc-client" }
+spring-boot-grpc-server = { module = "org.springframework.boot:spring-boot-grpc-server" }
+spring-boot-grpc-test = { module = "org.springframework.boot:spring-boot-grpc-test" }
 spring-boot-dependencies = { module = "org.springframework.boot:spring-boot-dependencies", version.ref = "spring-boot" }
 spring-boot-starter-actuator = { module = "org.springframework.boot:spring-boot-starter-actuator" }
+spring-boot-starter-grpc-client = { module = "org.springframework.boot:spring-boot-starter-grpc-client" }
+spring-boot-starter-grpc-server = { module = "org.springframework.boot:spring-boot-starter-grpc-server" }
 spring-boot-starter-jdbc = { module = "org.springframework.boot:spring-boot-starter-jdbc" }
 spring-boot-starter-liquibase = { module = "org.springframework.boot:spring-boot-starter-liquibase" }
 spring-boot-starter-log4j2 = { module = "org.springframework.boot:spring-boot-starter-log4j2" }
@@ -70,3 +87,4 @@ spring-boot-gradle-plugin = { module = "org.springframework.boot:spring-boot-gra
 
 [plugins]
 jmh = { id = "me.champeau.jmh", version.ref = "jmh-plugin" }
+protobuf = { id = "com.google.protobuf", version.ref = "protobuf-plugin" }

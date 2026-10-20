@@ -58,7 +58,6 @@ public record NetworkProperties(
         @Positive @DefaultValue("10") int connectionsPerIp,
         @Positive @DefaultValue("5") int acceptPerIpPerSecond,
         @Positive @DefaultValue("10000") int maxConnections,
-        @NotNull @Valid @DefaultValue GsLink gslink,
         @NotNull @DurationMin(nanos = 0) @DefaultValue("2s") Duration shutdownQuietPeriod,
 
         @NotNull @DurationMin(nanos = 0, inclusive = false) @DefaultValue("15s")
@@ -70,27 +69,6 @@ public record NetworkProperties(
 
             @NotNull @DurationMin(nanos = 0, inclusive = false) @DefaultValue("60s")
             Duration window) {}
-
-    /**
-     * @param secret shared by the login and the game servers; validated where the GS-link starts
-     */
-    @Builder(toBuilder = true)
-    public record GsLink(
-            String secret,
-            @DefaultValue("false") boolean tls,
-
-            @NotNull @DurationMin(nanos = 0, inclusive = false) @DefaultValue("15s")
-            Duration pingInterval,
-
-            @NotNull @Valid @DefaultValue ReconnectDelay reconnectDelay) {}
-
-    @Builder(toBuilder = true)
-    public record ReconnectDelay(
-            @NotNull @DurationMin(nanos = 0, inclusive = false) @DefaultValue("1s")
-            Duration initial,
-
-            @NotNull @DurationMin(nanos = 0, inclusive = false) @DefaultValue("30s")
-            Duration max) {}
 
     @AssertTrue(message = "max-frame must be positive and at most 65535 bytes")
     public boolean isMaxFrameInRange() {

@@ -1,0 +1,165 @@
+// SPDX-FileCopyrightText: 2026 L2NX contributors
+// SPDX-License-Identifier: Apache-2.0
+
+syntax = "proto3";
+
+// The login-game link (spec 008 §10). A breaking change is a new package (v2), never a revision field.
+package l2nx.gslink.v1;
+
+import "google/protobuf/duration.proto";
+import "google/protobuf/timestamp.proto";
+
+option java_package = "app.l2nx.gslink.v1";
+// One outer class: the game server's adapter names these messages next to the login slice's records of the same name.
+option java_outer_classname = "GsLinkProto";
+
+// One bidirectional stream per game server; the first message the game server sends is Register.
+service GsLink {
+  rpc Connect(stream GameServerMessage) returns (stream LoginServerMessage);
+}
+
+// Game server to login server: the calls of the login slice's LoginPort.
+message GameServerMessage {
+  oneof message {
+    Register register = 1;
+    Authenticate authenticate = 2;
+    AccountsEntered accounts_entered = 3;
+    AccountLeft account_left = 4;
+    ChangeAccessLevel change_access_level = 5;
+    ReportRoute report_route = 6;
+    RequestTempBan request_temp_ban = 7;
+    ChangePassword change_password = 8;
+    CharacterReport character_report = 9;
+    PublishListing publish_listing = 10;
+  }
+}
+
+// Login server to game server: the commands of the login slice.
+message LoginServerMessage {
+  oneof message {
+    RegistrationResult registration_result = 1;
+    AuthenticationResult authentication_result = 2;
+    KickAccount kick_account = 3;
+    ReportCharacters report_characters = 4;
+    PasswordChangeResult password_change_result = 5;
+  }
+}
+
+message Register {
+  // The id the game server asks for; with accept_alternative_id the login server may give a free one instead.
+  int32 server_id = 1;
+  bool accept_alternative_id = 2;
+  bytes hex_id = 3;
+  // The chronicle directory name, e.g. "high-five" (spec 001 §8).
+  string chronicle = 4;
+  int32 port = 5;
+  int32 max_players = 6;
+  repeated GameServerAddress addresses = 7;
+}
+
+// The address clients of one subnet connect to.
+message GameServerAddress {
+  string subnet = 1;
+  string address = 2;
+}
+
+message RegistrationResult {
+  int32 server_id = 1;
+  // Unset when the login server's server names have no entry for the id.
+  optional string server_name = 2;
+}
+
+message SessionKey {
+  int32 login_ok1 = 1;
+  int32 login_ok2 = 2;
+  int32 play_ok1 = 3;
+  int32 play_ok2 = 4;
+}
+
+message Authenticate {
+  string login = 1;
+  SessionKey key = 2;
+}
+
+message AuthenticationResult {
+  string login = 1;
+  bool accepted = 2;
+  // Set only when accepted.
+  optional string account_id = 3;
+}
+
+message AccountsEntered {
+  repeated string account_ids = 1;
+}
+
+message AccountLeft {
+  string account_id = 1;
+}
+
+message ChangeAccessLevel {
+  string account_id = 1;
+  int32 level = 2;
+}
+
+message ReportRoute {
+  string account_id = 1;
+  optional string client_address = 2;
+  // The hops the client traced, nearest first.
+  repeated string hops = 3;
+}
+
+message RequestTempBan {
+  string account_id = 1;
+  // Unset bans the account only.
+  optional string ip = 2;
+  google.protobuf.Duration duration = 3;
+}
+
+message ChangePassword {
+  string account_id = 1;
+  string character_name = 2;
+  string old_password = 3;
+  string new_password = 4;
+}
+
+// The answer to ReportCharacters; ReportCharacters itself is the login server's request.
+message CharacterReport {
+  string account_id = 1;
+  int32 count = 2;
+  // One per character marked for deletion.
+  repeated google.protobuf.Timestamp delete_times = 3;
+}
+
+// The status codes of the client's server list.
+enum ListingStatus {
+  LISTING_STATUS_AUTO = 0;
+  LISTING_STATUS_GOOD = 1;
+  LISTING_STATUS_NORMAL = 2;
+  LISTING_STATUS_FULL = 3;
+  LISTING_STATUS_DOWN = 4;
+  LISTING_STATUS_GM_ONLY = 5;
+}
+
+// Only the attributes that are set change.
+message PublishListing {
+  optional ListingStatus status = 1;
+  // Server type bit flags of the client's server list.
+  optional int32 type = 2;
+  optional bool square_bracket = 3;
+  optional int32 max_players = 4;
+  // 15, 18 or 0 for no age limit.
+  optional int32 age = 5;
+}
+
+message KickAccount {
+  string account_id = 1;
+}
+
+message ReportCharacters {
+  string account_id = 1;
+}
+
+message PasswordChangeResult {
+  string character_name = 1;
+  string message = 2;
+}
