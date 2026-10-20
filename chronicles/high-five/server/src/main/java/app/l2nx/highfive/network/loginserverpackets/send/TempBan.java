@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.network.loginserverpackets.send;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.network.packet.SimpleWritablePacket;
 
 /**
@@ -62,7 +63,7 @@ public class TempBan extends SimpleWritablePacket {
         writeByte(OPCODE);
         writeString(accountName);
         writeString(ip);
-        writeLong(System.currentTimeMillis() + (minutes * MINUTE_MILLIS));
+        writeLong(ClockBridge.wallMillis() + (minutes * MINUTE_MILLIS));
         writeByte(0x00);
     }
 }

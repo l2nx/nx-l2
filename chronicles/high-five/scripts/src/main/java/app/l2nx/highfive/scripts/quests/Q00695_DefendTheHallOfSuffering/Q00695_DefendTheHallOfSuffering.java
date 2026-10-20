@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.scripts.quests.Q00695_DefendTheHallOfSuffering;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.instancezone.Instance;
@@ -202,7 +203,7 @@ public class Q00695_DefendTheHallOfSuffering extends Quest {
 
     private void finishInstance(Player player) {
         final InstanceWorld world = InstanceManager.getInstance().getPlayerWorld(player);
-        final Calendar reenter = Calendar.getInstance();
+        final Calendar reenter = ClockBridge.calendar();
         reenter.set(Calendar.MINUTE, 30);
         if (reenter.get(Calendar.HOUR_OF_DAY) >= 6) {
             reenter.add(Calendar.DATE, 1);

@@ -24,6 +24,7 @@
 package app.l2nx.highfive.mechanics.script;
 
 import app.l2nx.highfive.cache.HtmCache;
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.config.RatesConfig;
@@ -179,10 +180,10 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.PriorityBlockingQueue;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.random.RandomGenerator;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -1743,7 +1744,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
             return player;
         }
 
-        final ThreadLocalRandom random = ThreadLocalRandom.current();
+        final RandomGenerator random = ClockBridge.random();
         Player member = members.get(random.nextInt(members.size()));
         while (player.getInstanceId() != member.getInstanceId()) {
             member = members.get(random.nextInt(members.size()));
@@ -1828,7 +1829,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
         }
 
         // If a match was found from the party, return one of them at random.
-        return candidates.get(ThreadLocalRandom.current().nextInt(candidates.size()));
+        return candidates.get(ClockBridge.random().nextInt(candidates.size()));
     }
 
     /**
@@ -1889,7 +1890,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
         }
 
         // If a match was found from the party, return one of them at random.
-        return candidates.get(ThreadLocalRandom.current().nextInt(candidates.size()));
+        return candidates.get(ClockBridge.random().nextInt(candidates.size()));
     }
 
     /**
@@ -3949,7 +3950,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
             int x = xValue;
             int y = yValue;
             if (randomOffset) {
-                final ThreadLocalRandom random = ThreadLocalRandom.current();
+                final RandomGenerator random = ClockBridge.random();
                 int offset = random.nextInt(50, 101);
                 if (random.nextBoolean()) {
                     offset *= -1;
@@ -4538,7 +4539,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
         }
 
         long amountToGive = getRandom(minAmountWithBonus, maxAmountWithBonus);
-        final double random = ThreadLocalRandom.current().nextDouble();
+        final double random = ClockBridge.random().nextDouble();
 
         // Inventory slot check (almost useless for non-stacking items).
         if ((dropChanceWithBonus >= random)
@@ -4720,7 +4721,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
      * @return a random integer number from 0 to {@code max - 1}
      */
     public static int getRandom(int max) {
-        return max > 0 ? ThreadLocalRandom.current().nextInt(max) : 0;
+        return max > 0 ? ClockBridge.random().nextInt(max) : 0;
     }
 
     /**
@@ -4734,7 +4735,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
             return min;
         }
 
-        return ThreadLocalRandom.current().nextInt(min, max == Integer.MAX_VALUE ? max : max + 1);
+        return ClockBridge.random().nextInt(min, max == Integer.MAX_VALUE ? max : max + 1);
     }
 
     /**
@@ -4743,7 +4744,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
      * @return a random long number from 0 to {@code max - 1}
      */
     public static long getRandom(long max) {
-        return max > 0 ? ThreadLocalRandom.current().nextLong(max) : 0;
+        return max > 0 ? ClockBridge.random().nextLong(max) : 0;
     }
 
     /**
@@ -4757,7 +4758,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
             return min;
         }
 
-        return ThreadLocalRandom.current().nextLong(min, max == Long.MAX_VALUE ? max : max + 1);
+        return ClockBridge.random().nextLong(min, max == Long.MAX_VALUE ? max : max + 1);
     }
 
     /**
@@ -4765,7 +4766,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
      * @return {@code true} or {@code false} randomly
      */
     public static boolean getRandomBoolean() {
-        return ThreadLocalRandom.current().nextBoolean();
+        return ClockBridge.random().nextBoolean();
     }
 
     /**
@@ -4780,7 +4781,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
             return null;
         }
 
-        return array[ThreadLocalRandom.current().nextInt(array.length)];
+        return array[ClockBridge.random().nextInt(array.length)];
     }
 
     /**
@@ -4794,7 +4795,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
             return null;
         }
 
-        return list.get(ThreadLocalRandom.current().nextInt(list.size()));
+        return list.get(ClockBridge.random().nextInt(list.size()));
     }
 
     /**
@@ -4803,7 +4804,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
      * @return one Integer from array.
      */
     public static int getRandomEntry(int... array) {
-        return array[ThreadLocalRandom.current().nextInt(array.length)];
+        return array[ClockBridge.random().nextInt(array.length)];
     }
 
     /**

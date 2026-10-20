@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.scripts.handlers.chat.commands.admin;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.handler.IAdminCommandHandler;
@@ -107,7 +108,7 @@ public class AdminInstanceZone implements IAdminCommandHandler {
         for (Entry<Integer, Long> entry : instanceTimes.entrySet()) {
             int hours = 0;
             int minutes = 0;
-            final long remainingTime = (entry.getValue() - System.currentTimeMillis()) / 1000;
+            final long remainingTime = (entry.getValue() - ClockBridge.wallMillis()) / 1000;
             if (remainingTime > 0) {
                 hours = (int) (remainingTime / 3600);
                 minutes = (int) ((remainingTime % 3600) / 60);

@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.scripts.handlers.bypass.npc;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.FeatureConfig;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Player;
@@ -323,7 +324,7 @@ public class Festival implements IBypassHandler {
 
     private String calculateDate(String milliFromEpoch) {
         final long numMillis = Long.parseLong(milliFromEpoch);
-        final Calendar calCalc = Calendar.getInstance();
+        final Calendar calCalc = ClockBridge.calendar();
         calCalc.setTimeInMillis(numMillis);
         return calCalc.get(Calendar.YEAR) + "/" + calCalc.get(Calendar.MONTH) + "/"
                 + calCalc.get(Calendar.DAY_OF_MONTH);

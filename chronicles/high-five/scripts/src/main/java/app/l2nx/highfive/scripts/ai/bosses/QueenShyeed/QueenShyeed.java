@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.scripts.ai.bosses.QueenShyeed;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
@@ -81,7 +82,7 @@ public class QueenShyeed extends Script {
 
     private void spawnShyeed() {
         final long respawn = GlobalVariablesManager.getInstance().getLong("QueenShyeedRespawn", 0);
-        final long remain = respawn != 0 ? respawn - System.currentTimeMillis() : 0;
+        final long remain = respawn != 0 ? respawn - ClockBridge.wallMillis() : 0;
         if (remain > 0) {
             startQuestTimer("respawn", remain, null, null);
             return;
@@ -98,7 +99,7 @@ public class QueenShyeed extends Script {
     private void startRespawn() {
         final int respawnTime = RESPAWN - getRandom(RANDOM_RESPAWN);
         GlobalVariablesManager.getInstance()
-                .set("QueenShyeedRespawn", Long.toString(System.currentTimeMillis() + respawnTime));
+                .set("QueenShyeedRespawn", Long.toString(ClockBridge.wallMillis() + respawnTime));
         startQuestTimer("respawn", respawnTime, null, null);
 
         // MOB_BUFF_ZONE.setEnabled(false);

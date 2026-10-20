@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.scripts.handlers.skill.effects;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.WorldObject;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.handler.ITargetTypeHandler;
@@ -32,7 +33,6 @@ import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.mechanics.skill.holders.SkillHolder;
 import app.l2nx.highfive.mechanics.skill.targets.TargetType;
 import app.l2nx.highfive.util.StatSet;
-import java.util.concurrent.ThreadLocalRandom;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -70,7 +70,7 @@ public class TriggerSkillByAvoid extends AbstractEffect {
             return;
         }
 
-        if (ThreadLocalRandom.current().nextInt(100) > chance) {
+        if (ClockBridge.random().nextInt(100) > chance) {
             return;
         }
 

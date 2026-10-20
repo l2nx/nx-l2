@@ -20,6 +20,7 @@
 package app.l2nx.highfive.scripts.ai.bosses.Beleth;
 
 import app.l2nx.highfive.cache.HtmCache;
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.GrandBossConfig;
 import app.l2nx.highfive.data.xml.DoorData;
 import app.l2nx.highfive.data.xml.MapRegionData;
@@ -117,7 +118,7 @@ public class Beleth extends Script {
         final StatSet info = GrandBossManager.getInstance().getStatSet(REAL_BELETH);
         final int status = GrandBossManager.getInstance().getStatus(REAL_BELETH);
         if (status == DEAD) {
-            final long time = info.getLong("respawn_time") - System.currentTimeMillis();
+            final long time = info.getLong("respawn_time") - ClockBridge.wallMillis();
             if (time > 0) {
                 startQuestTimer("BELETH_UNLOCK", time, null, null);
             } else {
@@ -322,7 +323,7 @@ public class Beleth extends Script {
                     c.setImmobilized(false);
                 }
 
-                lastAttack = System.currentTimeMillis();
+                lastAttack = ClockBridge.gameMillis();
                 startQuestTimer("CHECK_ATTACK", 60000, null, null);
                 startQuestTimer("SPAWN25", 60000, null, null);
                 break;
@@ -468,7 +469,7 @@ public class Beleth extends Script {
                 break;
             }
             case "CHECK_ATTACK": {
-                if ((lastAttack + 900000) < System.currentTimeMillis()) {
+                if ((lastAttack + 900000) < ClockBridge.gameMillis()) {
                     GrandBossManager.getInstance().setStatus(REAL_BELETH, ALIVE);
                     for (Creature creature : ZONE.getCharactersInside()) {
                         if (creature != null) {
@@ -650,7 +651,7 @@ public class Beleth extends Script {
             final long randomRangeMillis = GrandBossConfig.BELETH_SPAWN_RANDOM * 3600000;
             final long respawnTime = baseIntervalMillis + getRandom(-randomRangeMillis, randomRangeMillis);
             final StatSet info = GrandBossManager.getInstance().getStatSet(REAL_BELETH);
-            info.set("respawn_time", System.currentTimeMillis() + respawnTime);
+            info.set("respawn_time", ClockBridge.wallMillis() + respawnTime);
             GrandBossManager.getInstance().setStatSet(REAL_BELETH, info);
             startQuestTimer("BELETH_UNLOCK", respawnTime, null, null);
             deleteAll();

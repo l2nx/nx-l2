@@ -20,6 +20,7 @@
 package app.l2nx.highfive.scripts.handlers.punishments;
 
 import app.l2nx.highfive.LoginServerThread;
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.handler.IPunishmentHandler;
@@ -130,7 +131,7 @@ public class ChatBanHandler implements IPunishmentHandler {
      * @param player
      */
     private void applyToPlayer(PunishmentTask task, Player player) {
-        final long delay = ((task.getExpirationTime() - System.currentTimeMillis()) / 1000) + 1;
+        final long delay = ((task.getExpirationTime() - ClockBridge.wallMillis()) / 1000) + 1;
         if (delay > 0) {
             final long hours = delay / 3600;
             final long minutes = (delay % 3600) / 60;

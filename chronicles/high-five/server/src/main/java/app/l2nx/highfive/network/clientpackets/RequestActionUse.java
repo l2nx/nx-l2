@@ -26,6 +26,7 @@ import app.l2nx.highfive.ai.Action;
 import app.l2nx.highfive.ai.Intention;
 import app.l2nx.highfive.ai.NextAction;
 import app.l2nx.highfive.ai.SummonAI;
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.data.BotReportTable;
 import app.l2nx.highfive.data.xml.PetDataTable;
@@ -60,7 +61,6 @@ import app.l2nx.highfive.network.serverpackets.SocialAction;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
 import app.l2nx.highfive.taskmanagers.AttackStanceTaskManager;
 import java.util.Arrays;
-import java.util.concurrent.ThreadLocalRandom;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -465,7 +465,7 @@ public class RequestActionUse extends ClientPacket {
                             summon.getObjectId(),
                             ChatType.NPC_GENERAL,
                             summon.getId(),
-                            NPC_STRINGS[ThreadLocalRandom.current().nextInt(NPC_STRINGS.length)]));
+                            NPC_STRINGS[ClockBridge.random().nextInt(NPC_STRINGS.length)]));
                 }
                 break;
             }

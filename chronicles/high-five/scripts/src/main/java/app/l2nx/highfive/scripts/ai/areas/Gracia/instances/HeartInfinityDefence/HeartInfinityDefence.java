@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.scripts.ai.areas.Gracia.instances.HeartInfinityDefence;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.GraciaSeedsConfig;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.actor.Attackable;
@@ -282,7 +283,7 @@ public class HeartInfinityDefence extends Script {
 
             final Long reentertime =
                     InstanceManager.getInstance().getInstanceTime(partyMember.getObjectId(), INSTANCEID);
-            if (System.currentTimeMillis() < reentertime) {
+            if (ClockBridge.wallMillis() < reentertime) {
                 final SystemMessage sm = new SystemMessage(2100);
                 sm.addPcName(partyMember);
                 party.getCommandChannel().broadcastPacket(sm);
@@ -337,7 +338,7 @@ public class HeartInfinityDefence extends Script {
                 }
             }
 
-            ((HIDWorld) world).startTime = System.currentTimeMillis();
+            ((HIDWorld) world).startTime = ClockBridge.gameMillis();
             ((HIDWorld) world).finishTask = ThreadPool.schedule(new FinishTask((HIDWorld) world), 30 * 60000);
             ((HIDWorld) world).timerTask =
                     ThreadPool.scheduleAtFixedRate(new TimerTask((HIDWorld) world), 298 * 1000, 5 * 60 * 1000);
@@ -639,7 +640,7 @@ public class HeartInfinityDefence extends Script {
 
         @Override
         public void run() {
-            final long time = ((world.startTime + (25 * 60 * 1000)) - System.currentTimeMillis()) / 60000;
+            final long time = ((world.startTime + (25 * 60 * 1000)) - ClockBridge.gameMillis()) / 60000;
             if (time == 0) {
                 conquestConclusion(world);
             } else {

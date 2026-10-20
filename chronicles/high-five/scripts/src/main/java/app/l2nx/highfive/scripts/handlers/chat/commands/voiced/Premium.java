@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.scripts.handlers.chat.commands.voiced;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.RatesConfig;
 import app.l2nx.highfive.config.custom.PremiumSystemConfig;
 import app.l2nx.highfive.entity.actor.Player;
@@ -29,7 +30,6 @@ import app.l2nx.highfive.handler.IVoicedCommandHandler;
 import app.l2nx.highfive.managers.PremiumManager;
 import app.l2nx.highfive.network.serverpackets.NpcHtmlMessage;
 import java.time.Instant;
-import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 
 public class Premium implements IVoicedCommandHandler {
@@ -121,11 +121,12 @@ public class Premium implements IVoicedCommandHandler {
                                 * PremiumSystemConfig.PREMIUM_RATE_SPOIL_AMOUNT)
                         + " <br1></font></td></tr>");
                 html.append("<tr><td>Expires: <font color=\"00A5FF\">"
-                        + DATE_FORMAT.format(Instant.ofEpochMilli(endDate).atZone(ZoneId.systemDefault()))
+                        + DATE_FORMAT.format(Instant.ofEpochMilli(endDate)
+                                .atZone(ClockBridge.wallClock().getZone()))
                         + "</font></td></tr>");
                 html.append("<tr><td>Current Date: <font color=\"70FFCA\">"
-                        + DATE_FORMAT.format(
-                                Instant.ofEpochMilli(System.currentTimeMillis()).atZone(ZoneId.systemDefault()))
+                        + DATE_FORMAT.format(Instant.ofEpochMilli(ClockBridge.wallMillis())
+                                .atZone(ClockBridge.wallClock().getZone()))
                         + "<br><br></font></td></tr>");
                 html.append("<tr><td><center>Premium Info & Rules<br></center></td></tr>");
                 html.append(

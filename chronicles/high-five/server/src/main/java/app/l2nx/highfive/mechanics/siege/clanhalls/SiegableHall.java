@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.mechanics.siege.clanhalls;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.instance.Door;
@@ -78,9 +79,9 @@ public class SiegableHall extends ClanHall {
             log.warn("{}: Wrong schedule_config value in siegable_halls table, using default (7 days)", getName());
         }
 
-        siegeDate = Calendar.getInstance();
+        siegeDate = ClockBridge.calendar();
         final long nextSiege = set.getLong("nextSiege");
-        if ((nextSiege - System.currentTimeMillis() - 3600000) < 0) {
+        if ((nextSiege - ClockBridge.wallMillis() - 3600000) < 0) {
             updateNextSiege();
         } else {
             siegeDate.setTimeInMillis(nextSiege);
@@ -144,7 +145,7 @@ public class SiegableHall extends ClanHall {
     }
 
     public void updateNextSiege() {
-        final Calendar callendar = Calendar.getInstance();
+        final Calendar callendar = ClockBridge.calendar();
         callendar.add(Calendar.DAY_OF_YEAR, scheduleConfig[0]);
         callendar.add(Calendar.MONTH, scheduleConfig[1]);
         callendar.add(Calendar.YEAR, scheduleConfig[2]);

@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.entity.actor.instance;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.data.xml.CubicData;
 import app.l2nx.highfive.entity.WorldObject;
@@ -49,7 +50,6 @@ import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.threads.ThreadPool;
 import java.util.List;
 import java.util.concurrent.Future;
-import java.util.concurrent.ThreadLocalRandom;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -214,7 +214,7 @@ public class Cubic {
 
     private CubicSkill getRandomCubicSkill() {
         final int normalSkillCount = getNormalCubicSkillCount();
-        int index = normalSkillCount > 0 ? ThreadLocalRandom.current().nextInt(normalSkillCount) : 0;
+        int index = normalSkillCount > 0 ? ClockBridge.random().nextInt(normalSkillCount) : 0;
         for (CubicSkill cubicSkill : cubicSkills) {
             if (cubicSkill.isPriority()) {
                 continue;
@@ -235,7 +235,7 @@ public class Cubic {
             }
 
             if ((cubicSkill.getTriggerRate() >= 100)
-                    || (ThreadLocalRandom.current().nextInt(100) < cubicSkill.getTriggerRate())) {
+                    || (ClockBridge.random().nextInt(100) < cubicSkill.getTriggerRate())) {
                 return cubicSkill;
             }
         }
@@ -255,7 +255,7 @@ public class Cubic {
             return getRandomCubicSkill();
         }
 
-        int chance = ThreadLocalRandom.current().nextInt(totalRate);
+        int chance = ClockBridge.random().nextInt(totalRate);
         for (CubicSkill cubicSkill : cubicSkills) {
             if (cubicSkill.isPriority() || (cubicSkill.getTriggerRate() <= 0)) {
                 continue;
@@ -557,7 +557,7 @@ public class Cubic {
 
                 // Shield Deflect Magic: If target is reflecting the skill then no damage is done.
                 if (target.getStat().calcStat(Stat.VENGEANCE_SKILL_MAGIC_DAMAGE, 0, target, skill)
-                        > ThreadLocalRandom.current().nextInt(100)) {
+                        > ClockBridge.random().nextInt(100)) {
                     damage = 0;
                 } else {
                     owner.sendDamageMessage(target, damage, mcrit, false, false);

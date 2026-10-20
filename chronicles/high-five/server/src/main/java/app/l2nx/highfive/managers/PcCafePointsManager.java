@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.managers;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.custom.PremiumSystemConfig;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.zone.ZoneId;
@@ -29,7 +30,6 @@ import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.serverpackets.ExPCCafePointInfo;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
 import app.l2nx.highfive.threads.ThreadPool;
-import java.util.concurrent.ThreadLocalRandom;
 
 public class PcCafePointsManager {
     public void run(Player player) {
@@ -66,12 +66,12 @@ public class PcCafePointsManager {
 
         if (PremiumSystemConfig.PC_CAFE_RANDOM_POINT) {
             final int minPoints = points / 2;
-            points = minPoints < points ? ThreadLocalRandom.current().nextInt(minPoints, points + 1) : minPoints;
+            points = minPoints < points ? ClockBridge.random().nextInt(minPoints, points + 1) : minPoints;
         }
 
         SystemMessage message = null;
         if (PremiumSystemConfig.PC_CAFE_ENABLE_DOUBLE_POINTS
-                && (ThreadLocalRandom.current().nextInt(100) < PremiumSystemConfig.PC_CAFE_DOUBLE_POINTS_CHANCE)) {
+                && (ClockBridge.random().nextInt(100) < PremiumSystemConfig.PC_CAFE_DOUBLE_POINTS_CHANCE)) {
             points *= 2;
             message = new SystemMessage(SystemMessageId.DOUBLE_POINTS_YOU_ACQUIRED_S1_PC_BANG_POINT);
         } else {
@@ -115,13 +115,13 @@ public class PcCafePointsManager {
         int points = (int) (exp * 0.0001 * PremiumSystemConfig.PC_CAFE_POINT_RATE);
         if (PremiumSystemConfig.PC_CAFE_RANDOM_POINT) {
             final int minPoints = points / 2;
-            points = minPoints < points ? ThreadLocalRandom.current().nextInt(minPoints, points + 1) : minPoints;
+            points = minPoints < points ? ClockBridge.random().nextInt(minPoints, points + 1) : minPoints;
         }
 
         if ((points == 0)
                 && (exp > 0)
                 && PremiumSystemConfig.PC_CAFE_REWARD_LOW_EXP_KILLS
-                && (ThreadLocalRandom.current().nextInt(100) < PremiumSystemConfig.PC_CAFE_LOW_EXP_KILLS_CHANCE)) {
+                && (ClockBridge.random().nextInt(100) < PremiumSystemConfig.PC_CAFE_LOW_EXP_KILLS_CHANCE)) {
             points = 1; // minimum points
         }
 
@@ -131,7 +131,7 @@ public class PcCafePointsManager {
 
         SystemMessage message = null;
         if (PremiumSystemConfig.PC_CAFE_ENABLE_DOUBLE_POINTS
-                && (ThreadLocalRandom.current().nextInt(100) < PremiumSystemConfig.PC_CAFE_DOUBLE_POINTS_CHANCE)) {
+                && (ClockBridge.random().nextInt(100) < PremiumSystemConfig.PC_CAFE_DOUBLE_POINTS_CHANCE)) {
             points *= 2;
             message = new SystemMessage(SystemMessageId.DOUBLE_POINTS_YOU_ACQUIRED_S1_PC_BANG_POINT);
         } else {

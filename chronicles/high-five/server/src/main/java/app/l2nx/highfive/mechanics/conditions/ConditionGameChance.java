@@ -19,10 +19,10 @@
  */
 package app.l2nx.highfive.mechanics.conditions;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.item.ItemTemplate;
 import app.l2nx.highfive.mechanics.skill.Skill;
-import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * The Class ConditionGameChance.
@@ -45,6 +45,6 @@ public class ConditionGameChance extends Condition {
      */
     @Override
     public boolean testImpl(Creature effector, Creature effected, Skill skill, ItemTemplate item) {
-        return ThreadLocalRandom.current().nextInt(100) < chance;
+        return ClockBridge.random().nextInt(100) < chance;
     }
 }

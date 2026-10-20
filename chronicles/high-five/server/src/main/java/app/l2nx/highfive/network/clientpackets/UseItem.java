@@ -26,6 +26,7 @@ import app.l2nx.highfive.ai.Action;
 import app.l2nx.highfive.ai.CreatureAI;
 import app.l2nx.highfive.ai.Intention;
 import app.l2nx.highfive.ai.NextAction;
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.data.xml.EnchantItemGroupsData;
 import app.l2nx.highfive.entity.actor.Player;
@@ -55,7 +56,6 @@ import app.l2nx.highfive.network.serverpackets.ExShowScreenMessage;
 import app.l2nx.highfive.network.serverpackets.ExUseSharedGroupItem;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
 import app.l2nx.highfive.threads.ThreadPool;
-import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -322,12 +322,10 @@ public class UseItem extends ClientPacket {
                 }));
             } else // Equip or unEquip.
             {
-                final long currentTime = System.nanoTime();
+                final long currentTime = ClockBridge.gameMillis();
                 final long attackEndTime = player.getAttackEndTime();
                 if (attackEndTime > currentTime) {
-                    ThreadPool.schedule(
-                            () -> player.useEquippableItem(item, false),
-                            TimeUnit.NANOSECONDS.toMillis(attackEndTime - currentTime));
+                    ThreadPool.schedule(() -> player.useEquippableItem(item, false), attackEndTime - currentTime);
                 } else {
                     player.useEquippableItem(item, true);
                 }

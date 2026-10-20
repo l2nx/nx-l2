@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.entity.actor.instance;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.enums.creature.InstanceType;
@@ -31,7 +32,6 @@ import app.l2nx.highfive.managers.RaidBossPointsManager;
 import app.l2nx.highfive.mechanics.olympiad.Hero;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
-import java.util.concurrent.ThreadLocalRandom;
 import lombok.Setter;
 
 /**
@@ -76,8 +76,7 @@ public class GrandBoss extends Monster {
                             .addPoints(
                                     member,
                                     getId(),
-                                    (getLevel() / 2)
-                                            + ThreadLocalRandom.current().nextInt(-5, 6));
+                                    (getLevel() / 2) + ClockBridge.random().nextInt(-5, 6));
                     if (member.isNoble()) {
                         Hero.getInstance().setRBkilled(member.getObjectId(), getId());
                     }
@@ -88,7 +87,7 @@ public class GrandBoss extends Monster {
                         .addPoints(
                                 player,
                                 getId(),
-                                (getLevel() / 2) + ThreadLocalRandom.current().nextInt(-5, 6));
+                                (getLevel() / 2) + ClockBridge.random().nextInt(-5, 6));
                 if (player.isNoble()) {
                     Hero.getInstance().setRBkilled(player.getObjectId(), getId());
                 }

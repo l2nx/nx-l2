@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.entity.spawns;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.custom.ChampionMonstersConfig;
 import app.l2nx.highfive.config.custom.RandomSpawnsConfig;
 import app.l2nx.highfive.data.xml.NpcData;
@@ -42,7 +43,7 @@ import java.util.Deque;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
-import java.util.concurrent.ThreadLocalRandom;
+import java.util.random.RandomGenerator;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -201,9 +202,9 @@ public class Spawn extends Location {
             RespawnTaskManager.getInstance()
                     .add(
                             oldNpc,
-                            System.currentTimeMillis()
+                            ClockBridge.gameMillis()
                                     + (respawnMinDelay < respawnMaxDelay
-                                            ? ThreadLocalRandom.current().nextInt(respawnMinDelay, respawnMaxDelay + 1)
+                                            ? ClockBridge.random().nextInt(respawnMinDelay, respawnMaxDelay + 1)
                                             : respawnMinDelay));
         }
 
@@ -349,7 +350,7 @@ public class Spawn extends Location {
                 && !npc.isFlying()
                 && (water == null)
                 && !RandomSpawnsConfig.MOBS_LIST_NOT_RANDOM.contains(npc.getId())) {
-            final ThreadLocalRandom random = ThreadLocalRandom.current();
+            final RandomGenerator random = ClockBridge.random();
             final int minRange = RandomSpawnsConfig.MOB_MIN_SPAWN_RANGE;
             final int maxRange = RandomSpawnsConfig.MOB_MAX_SPAWN_RANGE;
             final int randX = newlocx + (minRange < maxRange ? random.nextInt(minRange, maxRange + 1) : minRange);
@@ -397,7 +398,7 @@ public class Spawn extends Location {
 
         // Set the heading of the Npc (random heading if not defined).
         if (getHeading() == -1) {
-            npc.setHeading(ThreadLocalRandom.current().nextInt(61794));
+            npc.setHeading(ClockBridge.random().nextInt(61794));
         } else {
             npc.setHeading(getHeading());
         }
@@ -453,7 +454,7 @@ public class Spawn extends Location {
                 && (npc.getLevel() >= ChampionMonstersConfig.CHAMP_MIN_LEVEL)
                 && (npc.getLevel() <= ChampionMonstersConfig.CHAMP_MAX_LEVEL)
                 && (ChampionMonstersConfig.CHAMPION_ENABLE_IN_INSTANCES || (getInstanceId() == 0))
-                && (ThreadLocalRandom.current().nextInt(100) < ChampionMonstersConfig.CHAMPION_FREQUENCY)) {
+                && (ClockBridge.random().nextInt(100) < ChampionMonstersConfig.CHAMPION_FREQUENCY)) {
             npc.asAttackable().setChampion(true);
         }
 

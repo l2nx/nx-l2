@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.scripts.ai.areas.PaganTemple;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.mechanics.script.Script;
 import app.l2nx.highfive.network.NpcStringId;
@@ -44,7 +45,7 @@ public class AltarGatekeeper extends Script {
 
     @Override
     public void onSpawn(Npc npc) {
-        final long now = System.currentTimeMillis();
+        final long now = ClockBridge.gameMillis();
         if ((now - lastShoutAt) < SHOUT_COOLDOWN) {
             return;
         }

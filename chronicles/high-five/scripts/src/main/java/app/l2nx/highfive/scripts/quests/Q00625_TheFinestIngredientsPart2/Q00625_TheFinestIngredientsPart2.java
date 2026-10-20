@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.scripts.quests.Q00625_TheFinestIngredientsPart2;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.NpcConfig;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.entity.Location;
@@ -254,7 +255,7 @@ public class Q00625_TheFinestIngredientsPart2 extends Quest {
         final int respawnMaxDelay = (int) (129600000 * NpcConfig.RAID_MAX_RESPAWN_MULTIPLIER);
         final int respawnDelay = getRandom(respawnMinDelay, respawnMaxDelay);
         GlobalVariablesManager.getInstance()
-                .set(ICICLE_EMPEROR_BUMBALUMP_RESPAWN_TIME, System.currentTimeMillis() + respawnDelay);
+                .set(ICICLE_EMPEROR_BUMBALUMP_RESPAWN_TIME, ClockBridge.wallMillis() + respawnDelay);
     }
 
     @Override
@@ -269,7 +270,7 @@ public class Q00625_TheFinestIngredientsPart2 extends Quest {
     }
 
     private static boolean isBumbalumpSpawned() {
-        if (System.currentTimeMillis()
+        if (ClockBridge.wallMillis()
                 > GlobalVariablesManager.getInstance().getLong(ICICLE_EMPEROR_BUMBALUMP_RESPAWN_TIME, 0)) {
             return World.getVisibleObjects().stream().anyMatch(object -> object.getId() == ICICLE_EMPEROR_BUMBALUMP);
         }

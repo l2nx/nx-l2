@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.network.serverpackets;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.FeatureConfig;
 import app.l2nx.highfive.data.sql.ClanTable;
 import app.l2nx.highfive.entity.actor.Player;
@@ -89,11 +90,11 @@ public class SiegeInfo extends ServerPacket {
                 buffer.writeString(""); // Ally Name
             }
 
-            buffer.writeInt((int) (System.currentTimeMillis() / 1000));
+            buffer.writeInt((int) (ClockBridge.wallMillis() / 1000));
             if (!castle.isTimeRegistrationOver()
                     && player.isClanLeader()
                     && (player.getClanId() == castle.getOwnerId())) {
-                final Calendar cal = Calendar.getInstance();
+                final Calendar cal = ClockBridge.calendar();
                 cal.setTimeInMillis(castle.getSiegeDate().getTimeInMillis());
                 cal.set(Calendar.MINUTE, 0);
                 cal.set(Calendar.SECOND, 0);
@@ -129,7 +130,7 @@ public class SiegeInfo extends ServerPacket {
                 buffer.writeString(""); // Ally Name
             }
 
-            buffer.writeInt((int) (System.currentTimeMillis() / 1000));
+            buffer.writeInt((int) (ClockBridge.wallMillis() / 1000));
             buffer.writeInt((int)
                     ((CHSiegeManager.getInstance().getSiegableHall(hall.getId()).getNextSiegeTime()) / 1000));
             buffer.writeInt(0); // number of choices?

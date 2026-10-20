@@ -23,6 +23,7 @@
 package app.l2nx.highfive.entity.actor.instance;
 
 import app.l2nx.highfive.ai.Intention;
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.data.enums.CategoryType;
 import app.l2nx.highfive.data.holders.PetData.PetSkillLearn;
 import app.l2nx.highfive.data.xml.PetDataTable;
@@ -42,7 +43,6 @@ import app.l2nx.highfive.threads.ThreadPool;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Future;
-import java.util.concurrent.ThreadLocalRandom;
 import lombok.Getter;
 
 public class BabyPet extends Pet {
@@ -257,7 +257,7 @@ public class BabyPet extends Pet {
                 if ((isImprovedBaby && (hpPercent < 0.3)) || (!isImprovedBaby && (hpPercent < 0.15))) {
                     skill = majorHeal.getSkill();
                     if (!baby.isSkillDisabled(skill)
-                            && (ThreadLocalRandom.current().nextInt(100) <= 75)
+                            && (ClockBridge.random().nextInt(100) <= 75)
                             && (baby.getCurrentMp() >= skill.getMpConsume())) {
                         castSkill(skill);
                         return;
@@ -267,7 +267,7 @@ public class BabyPet extends Pet {
                     // Cast minorHeal only if it's different than majorHeal, then pet has two heals available.
                     skill = minorHeal.getSkill();
                     if (!baby.isSkillDisabled(skill)
-                            && (ThreadLocalRandom.current().nextInt(100) <= 25)
+                            && (ClockBridge.random().nextInt(100) <= 25)
                             && (baby.getCurrentMp() >= skill.getMpConsume())) {
                         castSkill(skill);
                         return;
@@ -311,7 +311,7 @@ public class BabyPet extends Pet {
                 }
 
                 if (!currentBuffs.isEmpty()) {
-                    skill = currentBuffs.get(ThreadLocalRandom.current().nextInt(currentBuffs.size()));
+                    skill = currentBuffs.get(ClockBridge.random().nextInt(currentBuffs.size()));
                     castSkill(skill);
                     currentBuffs.clear();
                     return;
@@ -322,7 +322,7 @@ public class BabyPet extends Pet {
             if ((recharge != null)
                     && owner.isInCombat()
                     && ((owner.getCurrentMp() / owner.getMaxMp()) < 0.6)
-                    && (ThreadLocalRandom.current().nextInt(100) <= 60)) {
+                    && (ClockBridge.random().nextInt(100) <= 60)) {
                 skill = recharge.getSkill();
                 if (!baby.isSkillDisabled(skill) && (baby.getCurrentMp() >= skill.getMpConsume())) {
                     castSkill(skill);

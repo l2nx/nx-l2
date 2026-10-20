@@ -23,6 +23,7 @@
 package app.l2nx.highfive.scripts.handlers.chat.commands.admin;
 
 import app.l2nx.highfive.cache.HtmCache;
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.custom.PremiumSystemConfig;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Player;
@@ -31,7 +32,6 @@ import app.l2nx.highfive.managers.PcCafePointsManager;
 import app.l2nx.highfive.managers.PremiumManager;
 import app.l2nx.highfive.network.serverpackets.NpcHtmlMessage;
 import java.time.Instant;
-import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.concurrent.TimeUnit;
 
@@ -104,7 +104,7 @@ public class AdminPremium implements IAdminCommandHandler {
         admin.sendMessage(entityType + accountName + " will now have premium status until "
                 + PREMIUM_FORMAT.format(
                         Instant.ofEpochMilli(PremiumManager.getInstance().getPremiumExpiration(accountName))
-                                .atZone(ZoneId.systemDefault()))
+                                .atZone(ClockBridge.wallClock().getZone()))
                 + ".");
         if (PremiumSystemConfig.PC_CAFE_RETAIL_LIKE) {
             for (Player player : World.getPlayers()) {
@@ -127,7 +127,7 @@ public class AdminPremium implements IAdminCommandHandler {
             admin.sendMessage(entityType + accountName + " has premium status until "
                     + PREMIUM_FORMAT.format(
                             Instant.ofEpochMilli(PremiumManager.getInstance().getPremiumExpiration(accountName))
-                                    .atZone(ZoneId.systemDefault()))
+                                    .atZone(ClockBridge.wallClock().getZone()))
                     + ".");
         } else {
             admin.sendMessage(entityType + accountName + " has no premium status.");

@@ -27,6 +27,7 @@ import app.l2nx.highfive.ai.CreatureAI;
 import app.l2nx.highfive.ai.FortSiegeGuardAI;
 import app.l2nx.highfive.ai.Intention;
 import app.l2nx.highfive.ai.SiegeGuardAI;
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.config.NpcConfig;
 import app.l2nx.highfive.config.PlayerConfig;
@@ -161,7 +162,7 @@ public class Attackable extends Npc {
     private boolean mustGiveExpSp;
 
     @Getter
-    private long spawnTime = System.currentTimeMillis();
+    private long spawnTime = ClockBridge.gameMillis();
 
     @Getter
     @Setter
@@ -264,7 +265,7 @@ public class Attackable extends Npc {
                         firstCommandChannelAttacked = attacker.getParty().getCommandChannel();
                         if (firstCommandChannelAttacked != null) {
                             commandChannelTimer = new CommandChannelTimer(this);
-                            commandChannelLastAttack = System.currentTimeMillis();
+                            commandChannelLastAttack = ClockBridge.gameMillis();
                             ThreadPool.schedule(commandChannelTimer, 10000); // check for last attack
                             firstCommandChannelAttacked.broadcastPacket(new CreatureSay(
                                     null, ChatType.PARTYROOM_ALL, "", "You have looting rights!")); // TODO: retail msg
@@ -275,7 +276,7 @@ public class Attackable extends Npc {
                     .getCommandChannel()
                     .equals(firstCommandChannelAttacked)) // is in same channel
             {
-                commandChannelLastAttack = System.currentTimeMillis(); // update last attack time
+                commandChannelLastAttack = ClockBridge.gameMillis(); // update last attack time
             }
         }
 
@@ -1372,7 +1373,7 @@ public class Attackable extends Npc {
     @Override
     public void onSpawn() {
         // Keep track of the spawn time.
-        spawnTime = System.currentTimeMillis();
+        spawnTime = ClockBridge.gameMillis();
 
         super.onSpawn();
 

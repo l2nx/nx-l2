@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.mechanics.krateisCube;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.custom.PremiumSystemConfig;
 import app.l2nx.highfive.data.SpawnTable;
 import app.l2nx.highfive.entity.Location;
@@ -52,7 +53,6 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 import lombok.Getter;
 
@@ -360,7 +360,7 @@ public class KrateiArena {
                 if (player != null) {
                     player.teleToLocation(
                             getBattleLoc()
-                                    .get(ThreadLocalRandom.current()
+                                    .get(ClockBridge.random()
                                             .nextInt(getBattleLoc().size())),
                             true);
                     addEffects(player);
@@ -377,8 +377,7 @@ public class KrateiArena {
             if (getPlayers().containsKey(player)) {
                 player.teleToLocation(
                         getBattleLoc()
-                                .get(ThreadLocalRandom.current()
-                                        .nextInt(getBattleLoc().size())),
+                                .get(ClockBridge.random().nextInt(getBattleLoc().size())),
                         true);
             }
         } else {
@@ -399,10 +398,7 @@ public class KrateiArena {
             }
 
             player.teleToLocation(
-                    getWaitLoc()
-                            .get(ThreadLocalRandom.current()
-                                    .nextInt(getWaitLoc().size())),
-                    true);
+                    getWaitLoc().get(ClockBridge.random().nextInt(getWaitLoc().size())), true);
         }
     }
 
@@ -709,7 +705,7 @@ public class KrateiArena {
                     respawnEffects(player);
                     player.teleToLocation(
                             getWaitLoc()
-                                    .get(ThreadLocalRandom.current()
+                                    .get(ClockBridge.random()
                                             .nextInt(getWaitLoc().size())),
                             true);
                 }

@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.network.clientpackets;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.entity.actor.Player;
 import java.sql.Connection;
@@ -62,7 +63,7 @@ public class RequestPetitionFeedback extends ClientPacket {
             statement.setString(2, player.getLastPetitionGmName());
             statement.setInt(3, rate);
             statement.setString(4, message);
-            statement.setLong(5, System.currentTimeMillis());
+            statement.setLong(5, ClockBridge.wallMillis());
             statement.execute();
         } catch (SQLException e) {
             log.warn("{}: Error while saving petition feedback: {}", getClass().getSimpleName(), e.getMessage());

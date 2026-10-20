@@ -22,13 +22,13 @@
  */
 package app.l2nx.highfive.taskmanagers;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.threads.ThreadPool;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * @author Mobius
@@ -49,7 +49,7 @@ public class RandomAnimationTaskManager implements Runnable {
 
         working = true;
 
-        final long currentTime = System.currentTimeMillis();
+        final long currentTime = ClockBridge.gameMillis();
         for (Entry<Npc, Long> entry : PENDING_ANIMATIONS.entrySet()) {
             if (currentTime > entry.getValue().longValue()) {
                 final Npc npc = entry.getKey();
@@ -60,7 +60,7 @@ public class RandomAnimationTaskManager implements Runnable {
                         && !npc.isStunned()
                         && !npc.isSleeping()
                         && !npc.isParalyzed()) {
-                    npc.onRandomAnimation(ThreadLocalRandom.current().nextInt(2, 4));
+                    npc.onRandomAnimation(ClockBridge.random().nextInt(2, 4));
                 }
 
                 PENDING_ANIMATIONS.put(npc, currentTime + getAnimationDelay(npc));
@@ -72,14 +72,14 @@ public class RandomAnimationTaskManager implements Runnable {
 
     public void add(Npc npc) {
         if (npc.hasRandomAnimation()) {
-            PENDING_ANIMATIONS.putIfAbsent(npc, System.currentTimeMillis() + getAnimationDelay(npc));
+            PENDING_ANIMATIONS.putIfAbsent(npc, ClockBridge.gameMillis() + getAnimationDelay(npc));
         }
     }
 
     private static long getAnimationDelay(Npc npc) {
         final int minDelay = npc.isAttackable() ? GeneralConfig.MIN_MONSTER_ANIMATION : GeneralConfig.MIN_NPC_ANIMATION;
         final int maxDelay = npc.isAttackable() ? GeneralConfig.MAX_MONSTER_ANIMATION : GeneralConfig.MAX_NPC_ANIMATION;
-        return (minDelay < maxDelay ? ThreadLocalRandom.current().nextInt(minDelay, maxDelay + 1) : minDelay) * 1000;
+        return (minDelay < maxDelay ? ClockBridge.random().nextInt(minDelay, maxDelay + 1) : minDelay) * 1000;
     }
 
     public void remove(Npc npc) {

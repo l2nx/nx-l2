@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.entity.item.auction;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.data.sql.CharInfoTable;
 import app.l2nx.highfive.data.sql.DatabaseFactory;
@@ -40,7 +41,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Instant;
-import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -50,7 +50,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import lombok.Getter;
@@ -219,15 +218,15 @@ public class ItemAuctionInstance {
 
         switch (auctions.length) {
             case 0: {
-                nextAuction = createAuction(System.currentTimeMillis() + START_TIME_SPACE);
+                nextAuction = createAuction(ClockBridge.wallMillis() + START_TIME_SPACE);
                 break;
             }
             case 1: {
                 switch (auctions[0].getAuctionState()) {
                     case CREATED: {
-                        if (auctions[0].getStartingTime() < (System.currentTimeMillis() + START_TIME_SPACE)) {
+                        if (auctions[0].getStartingTime() < (ClockBridge.wallMillis() + START_TIME_SPACE)) {
                             currentAuction = auctions[0];
-                            nextAuction = createAuction(System.currentTimeMillis() + START_TIME_SPACE);
+                            nextAuction = createAuction(ClockBridge.wallMillis() + START_TIME_SPACE);
                         } else {
                             nextAuction = auctions[0];
                         }
@@ -237,12 +236,12 @@ public class ItemAuctionInstance {
                         currentAuction = auctions[0];
                         nextAuction = createAuction(Math.max(
                                 currentAuction.getEndingTime() + FINISH_TIME_SPACE,
-                                System.currentTimeMillis() + START_TIME_SPACE));
+                                ClockBridge.wallMillis() + START_TIME_SPACE));
                         break;
                     }
                     case FINISHED: {
                         currentAuction = auctions[0];
-                        nextAuction = createAuction(System.currentTimeMillis() + START_TIME_SPACE);
+                        nextAuction = createAuction(ClockBridge.wallMillis() + START_TIME_SPACE);
                         break;
                     }
                     default: {
@@ -257,7 +256,7 @@ public class ItemAuctionInstance {
                         Comparator.comparingLong(ItemAuction::getStartingTime).reversed());
 
                 // Just to make sure we won't skip any auction because of little different times.
-                final long currentTime = System.currentTimeMillis();
+                final long currentTime = ClockBridge.wallMillis();
 
                 for (ItemAuction auction : auctions) {
                     if ((auction.getAuctionState() == ItemAuctionState.STARTED)
@@ -275,7 +274,7 @@ public class ItemAuctionInstance {
                 }
 
                 if (nextAuction == null) {
-                    nextAuction = createAuction(System.currentTimeMillis() + START_TIME_SPACE);
+                    nextAuction = createAuction(ClockBridge.wallMillis() + START_TIME_SPACE);
                 }
                 break;
             }
@@ -290,23 +289,23 @@ public class ItemAuctionInstance {
             if (currentAuction.getAuctionState() == ItemAuctionState.STARTED) {
                 setStateTask(ThreadPool.schedule(
                         new ScheduleAuctionTask(currentAuction),
-                        Math.max(currentAuction.getEndingTime() - System.currentTimeMillis(), 0)));
+                        Math.max(currentAuction.getEndingTime() - ClockBridge.wallMillis(), 0)));
             } else {
                 setStateTask(ThreadPool.schedule(
                         new ScheduleAuctionTask(currentAuction),
-                        Math.max(currentAuction.getStartingTime() - System.currentTimeMillis(), 0)));
+                        Math.max(currentAuction.getStartingTime() - ClockBridge.wallMillis(), 0)));
             }
 
             log.info("Schedule current auction {} for instance {}", currentAuction.getAuctionId(), instanceId);
         } else {
             setStateTask(ThreadPool.schedule(
                     new ScheduleAuctionTask(nextAuction),
-                    Math.max(nextAuction.getStartingTime() - System.currentTimeMillis(), 0)));
+                    Math.max(nextAuction.getStartingTime() - ClockBridge.wallMillis(), 0)));
             log.info(
                     "Schedule next auction {} on {} for instance {}",
                     nextAuction.getAuctionId(),
-                    DATE_FORMAT.format(
-                            Instant.ofEpochMilli(nextAuction.getStartingTime()).atZone(ZoneId.systemDefault())),
+                    DATE_FORMAT.format(Instant.ofEpochMilli(nextAuction.getStartingTime())
+                            .atZone(ClockBridge.wallClock().getZone())),
                     instanceId);
         }
     }
@@ -372,7 +371,7 @@ public class ItemAuctionInstance {
                             if (auction.getScheduledAuctionEndingExtendState() == ItemAuctionExtendState.INITIAL) {
                                 auction.setScheduledAuctionEndingExtendState(ItemAuctionExtendState.EXTEND_BY_5_MIN);
                                 setStateTask(ThreadPool.schedule(
-                                        this, Math.max(auction.getEndingTime() - System.currentTimeMillis(), 0)));
+                                        this, Math.max(auction.getEndingTime() - ClockBridge.wallMillis(), 0)));
                                 return;
                             }
                             break;
@@ -382,7 +381,7 @@ public class ItemAuctionInstance {
                                     != ItemAuctionExtendState.EXTEND_BY_3_MIN) {
                                 auction.setScheduledAuctionEndingExtendState(ItemAuctionExtendState.EXTEND_BY_3_MIN);
                                 setStateTask(ThreadPool.schedule(
-                                        this, Math.max(auction.getEndingTime() - System.currentTimeMillis(), 0)));
+                                        this, Math.max(auction.getEndingTime() - ClockBridge.wallMillis(), 0)));
                                 return;
                             }
                             break;
@@ -393,7 +392,7 @@ public class ItemAuctionInstance {
                                 auction.setScheduledAuctionEndingExtendState(
                                         ItemAuctionExtendState.EXTEND_BY_CONFIG_PHASE_B);
                                 setStateTask(ThreadPool.schedule(
-                                        this, Math.max(auction.getEndingTime() - System.currentTimeMillis(), 0)));
+                                        this, Math.max(auction.getEndingTime() - ClockBridge.wallMillis(), 0)));
                                 return;
                             }
                             break;
@@ -404,7 +403,7 @@ public class ItemAuctionInstance {
                                 auction.setScheduledAuctionEndingExtendState(
                                         ItemAuctionExtendState.EXTEND_BY_CONFIG_PHASE_A);
                                 setStateTask(ThreadPool.schedule(
-                                        this, Math.max(auction.getEndingTime() - System.currentTimeMillis(), 0)));
+                                        this, Math.max(auction.getEndingTime() - ClockBridge.wallMillis(), 0)));
                                 return;
                             }
                         }
@@ -478,7 +477,7 @@ public class ItemAuctionInstance {
     }
 
     private ItemAuction createAuction(long after) {
-        final AuctionItem auctionItem = items.get(ThreadLocalRandom.current().nextInt(items.size()));
+        final AuctionItem auctionItem = items.get(ClockBridge.random().nextInt(items.size()));
         final long startingTime = dateGenerator.nextDate(after);
         final long endingTime =
                 startingTime + TimeUnit.MILLISECONDS.convert(auctionItem.getAuctionLength(), TimeUnit.MINUTES);
@@ -528,7 +527,7 @@ public class ItemAuctionInstance {
 
             if ((auctionState == ItemAuctionState.FINISHED)
                     && (startingTime
-                            < (System.currentTimeMillis()
+                            < (ClockBridge.wallMillis()
                                     - TimeUnit.MILLISECONDS.convert(
                                             GeneralConfig.ALT_ITEM_AUCTION_EXPIRED_AFTER, TimeUnit.DAYS)))) {
                 log.info("Clearing expired auction: {}", auctionId);

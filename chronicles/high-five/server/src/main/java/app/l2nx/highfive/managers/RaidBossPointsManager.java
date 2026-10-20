@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.managers;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.FeatureConfig;
 import app.l2nx.highfive.data.sql.ClanTable;
 import app.l2nx.highfive.data.sql.DatabaseFactory;
@@ -55,11 +56,11 @@ public class RaidBossPointsManager {
         init();
 
         // Start reset task at 00:10 and repeat every 24 hours.
-        final ZonedDateTime now = ZonedDateTime.now();
+        final ZonedDateTime now = ZonedDateTime.now(ClockBridge.wallClock());
         final ZonedDateTime todayResetTime = now.with(LocalTime.of(0, 10));
         final ZonedDateTime nextResetTime = todayResetTime.isBefore(now) ? todayResetTime.plusDays(1) : todayResetTime;
         ThreadPool.scheduleAtFixedRate(
-                this::resetRaidPoints, nextResetTime.toInstant().toEpochMilli() - System.currentTimeMillis(), 86400000);
+                this::resetRaidPoints, nextResetTime.toInstant().toEpochMilli() - ClockBridge.wallMillis(), 86400000);
     }
 
     private void init() {
@@ -86,7 +87,7 @@ public class RaidBossPointsManager {
     }
 
     private void resetRaidPoints() {
-        final Calendar calendar = Calendar.getInstance();
+        final Calendar calendar = ClockBridge.calendar();
         if (calendar.get(Calendar.DAY_OF_WEEK) != Calendar.MONDAY) {
             return;
         }

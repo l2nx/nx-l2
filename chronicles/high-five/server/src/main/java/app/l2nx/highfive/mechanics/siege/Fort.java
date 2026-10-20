@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.mechanics.siege;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.FeatureConfig;
 import app.l2nx.highfive.data.SpawnTable;
 import app.l2nx.highfive.data.sql.ClanTable;
@@ -159,7 +160,7 @@ public class Fort extends AbstractResidence {
                 return;
             }
 
-            final long currentTime = System.currentTimeMillis();
+            final long currentTime = ClockBridge.wallMillis();
             if (endTime > currentTime) {
                 ThreadPool.schedule(new FunctionTask(cwh), endTime - currentTime);
             } else {
@@ -181,7 +182,7 @@ public class Fort extends AbstractResidence {
 
                     if ((ownerClan.getWarehouse().getAdena() >= lease) || !cwh) {
                         final int fee = endTime == -1 ? tempFee : lease;
-                        setEndTime(System.currentTimeMillis() + rate);
+                        setEndTime(ClockBridge.wallMillis() + rate);
                         dbSave();
                         if (cwh) {
                             ownerClan
@@ -503,8 +504,8 @@ public class Fort extends AbstractResidence {
                 while (rs.next()) {
                     setName(rs.getString("name"));
 
-                    siegeDate = Calendar.getInstance();
-                    lastOwnedTime = Calendar.getInstance();
+                    siegeDate = ClockBridge.calendar();
+                    lastOwnedTime = ClockBridge.calendar();
                     siegeDate.setTimeInMillis(rs.getLong("siegeDate"));
                     lastOwnedTime.setTimeInMillis(rs.getLong("lastOwnedTime"));
                     ownerId = rs.getInt("owner");
@@ -520,7 +521,7 @@ public class Fort extends AbstractResidence {
                 clan.setFortId(getResidenceId());
                 setOwnerClan(clan);
                 final int runCount = getOwnedTime() / (FeatureConfig.FS_UPDATE_FRQ * 60);
-                long initial = System.currentTimeMillis() - lastOwnedTime.getTimeInMillis();
+                long initial = ClockBridge.wallMillis() - lastOwnedTime.getTimeInMillis();
                 while (initial > (FeatureConfig.FS_UPDATE_FRQ * 60000)) {
                     initial -= FeatureConfig.FS_UPDATE_FRQ * 60000;
                 }
@@ -694,7 +695,7 @@ public class Fort extends AbstractResidence {
         int clanId = 0;
         if (clan != null) {
             clanId = clan.getId();
-            lastOwnedTime.setTimeInMillis(System.currentTimeMillis());
+            lastOwnedTime.setTimeInMillis(ClockBridge.wallMillis());
         } else {
             lastOwnedTime.setTimeInMillis(0);
         }
@@ -788,14 +789,14 @@ public class Fort extends AbstractResidence {
     public int getOwnedTime() {
         return lastOwnedTime.getTimeInMillis() == 0
                 ? 0
-                : (int) ((System.currentTimeMillis() - lastOwnedTime.getTimeInMillis()) / 1000);
+                : (int) ((ClockBridge.wallMillis() - lastOwnedTime.getTimeInMillis()) / 1000);
     }
 
     public int getTimeTillRebelArmy() {
         return lastOwnedTime.getTimeInMillis() == 0
                 ? 0
                 : (int) (((lastOwnedTime.getTimeInMillis() + (FeatureConfig.FS_MAX_OWN_TIME * 3600000))
-                                - System.currentTimeMillis())
+                                - ClockBridge.wallMillis())
                         / 1000);
     }
 

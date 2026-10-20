@@ -21,6 +21,7 @@ package app.l2nx.highfive.network;
 
 import app.l2nx.highfive.LoginServerThread;
 import app.l2nx.highfive.LoginServerThread.SessionKey;
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.config.ServerConfig;
 import app.l2nx.highfive.config.custom.WeddingConfig;
@@ -251,8 +252,8 @@ public class GameClient extends Client<app.l2nx.network.Connection<GameClient>> 
                                 con.prepareStatement("UPDATE characters SET deletetime=? WHERE charId=?")) {
                             ps2.setLong(
                                     1,
-                                    System.currentTimeMillis()
-                                            + (PlayerConfig.DELETE_DAYS * 86400000)); // 24*60*60*1000 = 86400000
+                                    ClockBridge.wallMillis()
+                                            + (PlayerConfig.DELETE_DAYS * 86400000L)); // 24*60*60*1000 = 86400000
                             ps2.setInt(2, objectId);
                             ps2.execute();
                         }

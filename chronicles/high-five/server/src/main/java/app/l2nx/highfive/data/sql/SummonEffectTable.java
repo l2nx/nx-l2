@@ -24,6 +24,7 @@ import app.l2nx.highfive.entity.actor.Summon;
 import app.l2nx.highfive.entity.actor.instance.Pet;
 import app.l2nx.highfive.entity.actor.instance.Servitor;
 import app.l2nx.highfive.mechanics.skill.Skill;
+import app.l2nx.highfive.mechanics.skill.StoredEffect;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
@@ -81,7 +82,7 @@ public class SummonEffectTable {
 
         for (SummonEffect se : summonEffects) {
             if (se != null) {
-                se.getSkill().applyEffects(summon, summon, false, se.getEffectCurTime());
+                se.getSkill().applyStoredEffects(summon, se.getStored());
             }
         }
     }
@@ -98,11 +99,11 @@ public class SummonEffectTable {
         }
     }
 
-    public void addServitorEffect(Player owner, int referenceSkill, Skill skill, int effectCurTime) {
+    public void addServitorEffect(Player owner, int referenceSkill, Skill skill, StoredEffect stored) {
         servitorEffects.putIfAbsent(owner.getObjectId(), new ConcurrentHashMap<>());
         servitorEffects.get(owner.getObjectId()).putIfAbsent(owner.getClassIndex(), new ConcurrentHashMap<>());
         getServitorEffects(owner).putIfAbsent(referenceSkill, ConcurrentHashMap.newKeySet());
-        getServitorEffects(owner).get(referenceSkill).add(new SummonEffect(skill, effectCurTime));
+        getServitorEffects(owner).get(referenceSkill).add(new SummonEffect(skill, stored));
     }
 
     public void removeServitorEffects(Player owner, int referenceSkill, int skillId) {
@@ -117,10 +118,10 @@ public class SummonEffectTable {
     private final Map<Integer, Collection<SummonEffect>> petEffects =
             new ConcurrentHashMap<>(); // key: petItemObjectId, value: Effects list
 
-    public void addPetEffect(int controlObjectId, Skill skill, int effectCurTime) {
+    public void addPetEffect(int controlObjectId, Skill skill, StoredEffect stored) {
         petEffects
                 .computeIfAbsent(controlObjectId, _ -> ConcurrentHashMap.newKeySet())
-                .add(new SummonEffect(skill, effectCurTime));
+                .add(new SummonEffect(skill, stored));
     }
 
     public boolean containsPetId(int controlObjectId) {
@@ -139,16 +140,16 @@ public class SummonEffectTable {
         removeEffects(petEffects.get(controlObjectId), skillId);
     }
 
-    private class SummonEffect {
+    private static final class SummonEffect {
         @Getter
-        Skill skill;
+        private final Skill skill;
 
         @Getter
-        int effectCurTime;
+        private final StoredEffect stored;
 
-        public SummonEffect(Skill skill, int effectCurTime) {
+        SummonEffect(Skill skill, StoredEffect stored) {
             this.skill = skill;
-            this.effectCurTime = effectCurTime;
+            this.stored = stored;
         }
     }
 

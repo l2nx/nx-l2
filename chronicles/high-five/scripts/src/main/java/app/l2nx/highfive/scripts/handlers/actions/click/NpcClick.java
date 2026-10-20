@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.scripts.handlers.actions.click;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.entity.WorldObject;
 import app.l2nx.highfive.entity.actor.Npc;
@@ -33,7 +34,6 @@ import app.l2nx.highfive.mechanics.events.EventDispatcher;
 import app.l2nx.highfive.mechanics.events.EventType;
 import app.l2nx.highfive.mechanics.events.holders.actor.npc.OnNpcFirstTalk;
 import app.l2nx.highfive.network.serverpackets.MoveToPawn;
-import java.util.concurrent.ThreadLocalRandom;
 
 public class NpcClick implements IActionClickHandler {
     /**
@@ -90,7 +90,7 @@ public class NpcClick implements IActionClickHandler {
                     // Turn NPC to the player.
                     player.sendPacket(new MoveToPawn(player, npc, 100));
                     if (npc.hasRandomAnimation()) {
-                        npc.onRandomAnimation(ThreadLocalRandom.current().nextInt(8));
+                        npc.onRandomAnimation(ClockBridge.random().nextInt(8));
                     }
 
                     // Stop movement when trying to talk to a moving NPC.

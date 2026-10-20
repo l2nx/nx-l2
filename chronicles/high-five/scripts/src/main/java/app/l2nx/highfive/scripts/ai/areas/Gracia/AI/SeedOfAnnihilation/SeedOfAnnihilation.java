@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.scripts.ai.areas.Gracia.AI.SeedOfAnnihilation;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.data.xml.SkillData;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.actor.Creature;
@@ -128,7 +129,7 @@ public class SeedOfAnnihilation extends Script {
 
         int buffsNow = 0;
         final Long var = GlobalVariablesManager.getInstance().getLong("SeedNextStatusChange", 0);
-        if (var < System.currentTimeMillis()) {
+        if (var < ClockBridge.wallMillis()) {
             buffsNow = getRandom(ZONE_BUFFS_LIST.length);
             GlobalVariablesManager.getInstance().set("SeedBuffsList", String.valueOf(buffsNow));
             seedsNextStatusChange = getNextSeedsStatusChangeTime();
@@ -144,12 +145,12 @@ public class SeedOfAnnihilation extends Script {
     }
 
     private Long getNextSeedsStatusChangeTime() {
-        final Calendar reenter = Calendar.getInstance();
+        final Calendar reenter = ClockBridge.calendar();
         reenter.set(Calendar.SECOND, 0);
         reenter.set(Calendar.MINUTE, 0);
         reenter.set(Calendar.HOUR_OF_DAY, 13);
         reenter.set(Calendar.DAY_OF_WEEK, Calendar.MONDAY);
-        if (reenter.getTimeInMillis() <= System.currentTimeMillis()) {
+        if (reenter.getTimeInMillis() <= ClockBridge.wallMillis()) {
             reenter.add(Calendar.DAY_OF_MONTH, 7);
         }
 
@@ -175,7 +176,7 @@ public class SeedOfAnnihilation extends Script {
                     .addSkill(ZONE_BUFFS[aRegionsData.activeBuff], 1);
         }
 
-        startQuestTimer("ChangeSeedsStatus", seedsNextStatusChange - System.currentTimeMillis(), null, null);
+        startQuestTimer("ChangeSeedsStatus", seedsNextStatusChange - ClockBridge.wallMillis(), null, null);
     }
 
     private void spawnGroupOfMinion(Monster npc, int[] mobIds) {
@@ -213,7 +214,7 @@ public class SeedOfAnnihilation extends Script {
                 zone.addSkill(ZONE_BUFFS[regionsData[i].activeBuff], 1);
             }
 
-            startQuestTimer("ChangeSeedsStatus", seedsNextStatusChange - System.currentTimeMillis(), null, null);
+            startQuestTimer("ChangeSeedsStatus", seedsNextStatusChange - ClockBridge.wallMillis(), null, null);
         } else if (event.equalsIgnoreCase("transform")) {
             if (player.isAffectedBySkill(6408)) {
                 npc.showChatWindow(player, 2);

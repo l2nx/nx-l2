@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.managers;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.ConfigReader;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.data.sql.ClanTable;
@@ -114,7 +115,7 @@ public class TerritoryWarManager implements Siegable {
 
     private final Map<Clan, SiegeFlag> clanFlags = new ConcurrentHashMap<>();
     private final Map<Integer, Integer[]> participantPoints = new ConcurrentHashMap<>();
-    protected Calendar twStart = Calendar.getInstance();
+    protected Calendar twStart = ClockBridge.calendar();
 
     @Getter
     protected boolean registrationOver = true;
@@ -952,14 +953,14 @@ public class TerritoryWarManager implements Siegable {
     }
 
     public void setNextTWDate() {
-        final Calendar cal = Calendar.getInstance();
+        final Calendar cal = ClockBridge.calendar();
         final long nextSiegeDate = GlobalVariablesManager.getInstance().getLong(GLOBAL_VARIABLE, 0);
-        if (nextSiegeDate > System.currentTimeMillis()) {
+        if (nextSiegeDate > ClockBridge.wallMillis()) {
             cal.setTimeInMillis(nextSiegeDate);
         } else {
             // Let's check if territory war date was in the past.
-            if (cal.before(Calendar.getInstance())) {
-                cal.setTimeInMillis(System.currentTimeMillis());
+            if (cal.before(ClockBridge.calendar())) {
+                cal.setTimeInMillis(ClockBridge.wallMillis());
             }
 
             final boolean hasOwnedCastle = CastleManager.getInstance().hasOwnedCastle();
@@ -967,7 +968,7 @@ public class TerritoryWarManager implements Siegable {
             cal.set(Calendar.HOUR_OF_DAY, hasOwnedCastle ? 20 : 22);
             cal.set(Calendar.MINUTE, 0);
             cal.set(Calendar.SECOND, 0);
-            if (cal.before(Calendar.getInstance())) {
+            if (cal.before(ClockBridge.calendar())) {
                 cal.add(Calendar.WEEK_OF_YEAR, 2);
             }
 
@@ -1085,7 +1086,7 @@ public class TerritoryWarManager implements Siegable {
         public void run() {
             scheduledStartTWTask.cancel(false);
             try {
-                final long timeRemaining = twStart.getTimeInMillis() - System.currentTimeMillis();
+                final long timeRemaining = twStart.getTimeInMillis() - ClockBridge.wallMillis();
                 if (timeRemaining > 7200000) {
                     registrationOver = false;
                     scheduledStartTWTask = ThreadPool.schedule(
@@ -1158,7 +1159,7 @@ public class TerritoryWarManager implements Siegable {
         public void run() {
             try {
                 scheduledEndTWTask.cancel(false);
-                final long timeRemaining = (twStart.getTimeInMillis() + WARLENGTH) - System.currentTimeMillis();
+                final long timeRemaining = (twStart.getTimeInMillis() + WARLENGTH) - ClockBridge.wallMillis();
                 if (timeRemaining > 3600000) {
                     final SystemMessage sm = new SystemMessage(SystemMessageId.THE_TERRITORY_WAR_WILL_END_IN_S1_HOUR_S);
                     sm.addInt(2);

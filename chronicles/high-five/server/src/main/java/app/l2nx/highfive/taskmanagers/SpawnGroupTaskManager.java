@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.taskmanagers;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.spawns.SpawnGroup;
 import app.l2nx.highfive.entity.spawns.SpawnGroupEntry;
 import app.l2nx.highfive.threads.ThreadPool;
@@ -51,7 +52,7 @@ public class SpawnGroupTaskManager implements Runnable {
         working = true;
 
         if (!PENDING_SPAWNS.isEmpty()) {
-            final long currentTime = System.currentTimeMillis();
+            final long currentTime = ClockBridge.gameMillis();
             final Iterator<PendingGroupSpawn> iterator = PENDING_SPAWNS.iterator();
             while (iterator.hasNext()) {
                 final PendingGroupSpawn pending = iterator.next();

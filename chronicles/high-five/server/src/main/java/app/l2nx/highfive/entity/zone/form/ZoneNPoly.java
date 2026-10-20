@@ -22,12 +22,13 @@
  */
 package app.l2nx.highfive.entity.zone.form;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.itemcontainer.Inventory;
 import app.l2nx.highfive.entity.zone.ZoneForm;
 import app.l2nx.highfive.geoengine.GeoEngine;
 import java.awt.Polygon;
-import java.util.concurrent.ThreadLocalRandom;
+import java.util.random.RandomGenerator;
 import lombok.Getter;
 
 /**
@@ -144,7 +145,7 @@ public class ZoneNPoly extends ZoneForm {
         final int minY = p.getBounds().y;
         final int maxY = p.getBounds().y + p.getBounds().height;
 
-        final ThreadLocalRandom random = ThreadLocalRandom.current();
+        final RandomGenerator random = ClockBridge.random();
         int x = random.nextInt(minX, maxX + 1);
         int y = random.nextInt(minY, maxY + 1);
 

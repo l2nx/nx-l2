@@ -25,27 +25,24 @@ package app.l2nx.highfive.mechanics.skill;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.mechanics.skill.enums.SkillFinishType;
 import app.l2nx.highfive.threads.ThreadPool;
-import java.util.Map;
-import java.util.Map.Entry;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author Mobius
  */
 public class BuffFinishTask {
-    private final Map<BuffInfo, AtomicInteger> buffInfos = new ConcurrentHashMap<>();
+    private final Set<BuffInfo> buffInfos = ConcurrentHashMap.newKeySet();
     private ScheduledFuture<?> task = null;
     private boolean stopped = false;
 
     private class BuffFinishRunnable implements Runnable {
         @Override
         public void run() {
-            for (Entry<BuffInfo, AtomicInteger> entry : buffInfos.entrySet()) {
-                final BuffInfo info = entry.getKey();
+            for (BuffInfo info : buffInfos) {
                 final Creature effected = info.getEffected();
-                if ((effected != null) && (entry.getValue().incrementAndGet() > info.getAbnormalTime())) {
+                if ((effected != null) && info.isExpired()) {
                     // Stop this exact buff once, a newer buff of the same skill must not be affected.
                     ThreadPool.execute(() -> effected.getEffectList().remove(SkillFinishType.NORMAL, info));
                     removeBuffInfo(info);
@@ -64,7 +61,7 @@ public class BuffFinishTask {
     }
 
     public synchronized void addBuffInfo(BuffInfo info) {
-        buffInfos.put(info, new AtomicInteger());
+        buffInfos.add(info);
 
         if ((task == null) && !stopped) {
             task = ThreadPool.scheduleAtFixedRate(new BuffFinishRunnable(), 0, 1000);

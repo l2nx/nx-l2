@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.scripts.ai.bosses.Sailren;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Npc;
@@ -148,7 +149,7 @@ public class Sailren extends Script {
         addAttackId(VELOCIRAPTOR_NPC_ID, PTEROSAUR_NPC_ID, TREX_NPC_ID, SAILREN_NPC_ID);
 
         final long storedRespawnTime = GlobalVariablesManager.getInstance().getLong(GLOBAL_VAR_RESPAWN_TIME, 0);
-        final long remainingDelay = storedRespawnTime - System.currentTimeMillis();
+        final long remainingDelay = storedRespawnTime - ClockBridge.wallMillis();
         if (remainingDelay > 0) {
             raidStatus = STATUS_DEAD;
             startQuestTimer(EVENT_CLEAR_STATUS, remainingDelay, null, null);
@@ -307,7 +308,7 @@ public class Sailren extends Script {
             takeItems(player, GAZKH_ITEM_ID, 1);
             raidStatus = STATUS_IN_FIGHT;
             killCount = 0;
-            lastAttackTime = System.currentTimeMillis();
+            lastAttackTime = ClockBridge.gameMillis();
 
             for (Player member : party.getMembers()) {
                 if ((member != null) && member.isInsideRadius3D(npc, TELEPORT_STATUE_RADIUS)) {
@@ -413,7 +414,7 @@ public class Sailren extends Script {
             return;
         }
 
-        if ((lastAttackTime + INACTIVITY_LIMIT_MILLIS) < System.currentTimeMillis()) {
+        if ((lastAttackTime + INACTIVITY_LIMIT_MILLIS) < ClockBridge.gameMillis()) {
             cancelQuestTimer(EVENT_TIMEOUT, null, null);
             cancelQuestTimer(EVENT_CHECK_INACTIVITY, null, null);
             notifyEvent(EVENT_TIMEOUT, null, null);
@@ -433,7 +434,7 @@ public class Sailren extends Script {
     @Override
     public void onAttack(Npc npc, Player attacker, int damage, boolean isSummon) {
         if ((attacker != null) && (SAILREN_ZONE != null) && SAILREN_ZONE.isCharacterInZone(attacker)) {
-            lastAttackTime = System.currentTimeMillis();
+            lastAttackTime = ClockBridge.gameMillis();
         }
     }
 
@@ -462,7 +463,7 @@ public class Sailren extends Script {
 
                 addSpawn(TELEPORT_CUBE_NPC_ID, TELEPORT_CUBE_SPAWN_LOCATION, false, TELEPORT_CUBE_LIFETIME_MILLIS);
 
-                final long respawnTime = System.currentTimeMillis() + RESPAWN_DELAY_MILLIS;
+                final long respawnTime = ClockBridge.wallMillis() + RESPAWN_DELAY_MILLIS;
                 GlobalVariablesManager.getInstance().set(GLOBAL_VAR_RESPAWN_TIME, respawnTime);
 
                 cancelQuestTimer(EVENT_CHECK_INACTIVITY, null, null);

@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.scripts.handlers.items;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Playable;
 import app.l2nx.highfive.entity.actor.Player;
@@ -34,7 +35,6 @@ import app.l2nx.highfive.handler.IItemHandler;
 import app.l2nx.highfive.mechanics.skill.holders.SkillHolder;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.serverpackets.MagicSkillUse;
-import java.util.concurrent.ThreadLocalRandom;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -88,7 +88,7 @@ public class SoulShots implements IItemHandler {
         // Consume Soul shots if player has enough of them.
         int count = weaponItem.getSoulShotCount();
         if ((weaponItem.getReducedSoulShot() > 0)
-                && (ThreadLocalRandom.current().nextInt(100) < weaponItem.getReducedSoulShotChance())) {
+                && (ClockBridge.random().nextInt(100) < weaponItem.getReducedSoulShotChance())) {
             count = weaponItem.getReducedSoulShot();
         }
 

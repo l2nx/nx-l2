@@ -19,10 +19,11 @@
  */
 package app.l2nx.highfive.util;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.Location;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.ThreadLocalRandom;
+import java.util.random.RandomGenerator;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -136,7 +137,7 @@ public class PolygonTerritory {
     }
 
     public Location getRandomPoint() {
-        final ThreadLocalRandom random = ThreadLocalRandom.current();
+        final RandomGenerator random = ClockBridge.random();
         if (procMax > 0) {
             int pos = 0;
             final int rnd = random.nextInt(procMax);

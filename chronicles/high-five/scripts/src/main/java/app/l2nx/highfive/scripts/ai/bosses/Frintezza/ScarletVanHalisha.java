@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.scripts.ai.bosses.Frintezza;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.data.xml.SkillData;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Npc;
@@ -119,10 +120,10 @@ public class ScarletVanHalisha extends Script {
                     return SkillData.getInstance().getSkill(FRINTEZZA_DAEMON_CHARGE, 6);
                 } else if (getRandom(100) < 10) {
                     return SkillData.getInstance().getSkill(FRINTEZZA_DAEMON_CHARGE, 2);
-                } else if (((lastRangedSkillTime + RANGED_SKILL_MIN_COOLTIME) < System.currentTimeMillis())
+                } else if (((lastRangedSkillTime + RANGED_SKILL_MIN_COOLTIME) < ClockBridge.gameMillis())
                         && (getRandom(100) < 10)) {
                     return SkillData.getInstance().getSkill(FRINTEZZA_DAEMON_FIELD, 1);
-                } else if (((lastRangedSkillTime + RANGED_SKILL_MIN_COOLTIME) < System.currentTimeMillis())
+                } else if (((lastRangedSkillTime + RANGED_SKILL_MIN_COOLTIME) < ClockBridge.gameMillis())
                         && (getRandom(100) < 10)) {
                     return SkillData.getInstance().getSkill(FRINTEZZA_DAEMON_MORPH, 1);
                 } else if (getRandom(100) < 2) {
@@ -203,7 +204,7 @@ public class ScarletVanHalisha extends Script {
                     }
                     case FRINTEZZA_DAEMON_MORPH:
                     case FRINTEZZA_DAEMON_FIELD: {
-                        lastRangedSkillTime = System.currentTimeMillis();
+                        lastRangedSkillTime = ClockBridge.gameMillis();
                         skillRange = 550;
                         break;
                     }

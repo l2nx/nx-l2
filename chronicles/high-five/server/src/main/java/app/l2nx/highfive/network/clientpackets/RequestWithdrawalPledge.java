@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.network.clientpackets;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.clan.Clan;
@@ -62,7 +63,7 @@ public class RequestWithdrawalPledge extends ClientPacket {
         final Clan clan = player.getClan();
         clan.removeClanMember(
                 player.getObjectId(),
-                System.currentTimeMillis() + TimeUnit.DAYS.toMillis(PlayerConfig.ALT_CLAN_JOIN_DAYS));
+                ClockBridge.wallMillis() + TimeUnit.DAYS.toMillis(PlayerConfig.ALT_CLAN_JOIN_DAYS));
 
         final SystemMessage sm = new SystemMessage(SystemMessageId.S1_HAS_WITHDRAWN_FROM_THE_CLAN);
         sm.addString(player.getName());

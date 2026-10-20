@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.managers.games;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.UndergroundColiseumConfig;
 import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.data.xml.DoorData;
@@ -76,7 +77,7 @@ public class UndergroundColiseumManager implements IXmlReader {
         periodStartTime = GlobalVariablesManager.getInstance().getLong("UC_START_TIME", 0);
         periodEndTime = GlobalVariablesManager.getInstance().getLong("UC_STOP_TIME", 0);
 
-        final long curerntTime = System.currentTimeMillis();
+        final long curerntTime = ClockBridge.wallMillis();
         if ((periodStartTime < curerntTime) && (periodEndTime < curerntTime)) {
             generateNewDate();
         }
@@ -300,12 +301,12 @@ public class UndergroundColiseumManager implements IXmlReader {
 
         setStarted(isStart);
         if (isStart) {
-            final long nextTime = periodEndTime - System.currentTimeMillis();
+            final long nextTime = periodEndTime - ClockBridge.wallMillis();
             regTask = ThreadPool.schedule(new UCRegistrationTask(false), nextTime);
             log.info("Ends at {}", DateFormatUtils.format(periodEndTime, "dd/MM/yyyy HH:mm:ss"));
         } else {
             generateNewDate();
-            final long nextTime = periodStartTime - System.currentTimeMillis();
+            final long nextTime = periodStartTime - ClockBridge.wallMillis();
             regTask = ThreadPool.schedule(new UCRegistrationTask(true), nextTime);
             log.info("Starts at {}", DateFormatUtils.format(periodStartTime, "dd/MM/yyyy HH:mm:ss"));
         }

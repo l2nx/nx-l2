@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.managers;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.data.xml.AdminData;
 import app.l2nx.highfive.entity.actor.Player;
@@ -30,7 +31,6 @@ import app.l2nx.highfive.network.serverpackets.CreatureSay;
 import app.l2nx.highfive.network.serverpackets.NpcHtmlMessage;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
 import java.time.Instant;
-import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
@@ -321,8 +321,8 @@ public class PetitionManager {
 
             htmlContent.append("<tr><td width=\"270\"><table width=\"270\" cellpadding=\"2\" bgcolor="
                     + (color ? "131210" : "444444") + "><tr><td width=\"130\">"
-                    + DATE_FORMAT.format(
-                            Instant.ofEpochMilli(currPetition.getSubmitTime()).atZone(ZoneId.systemDefault())));
+                    + DATE_FORMAT.format(Instant.ofEpochMilli(currPetition.getSubmitTime())
+                            .atZone(ClockBridge.wallClock().getZone())));
             htmlContent.append("</td><td width=\"140\" align=right><font color=\""
                     + (currPetition.getPetitioner().isOnline() ? "00FF00" : "999999") + "\">"
                     + currPetition.getPetitioner().getName() + "</font></td></tr>");
@@ -382,8 +382,8 @@ public class PetitionManager {
         html.replace("%petition%", String.valueOf(currPetition.getId()));
         html.replace(
                 "%time%",
-                DATE_FORMAT.format(
-                        Instant.ofEpochMilli(currPetition.getSubmitTime()).atZone(ZoneId.systemDefault())));
+                DATE_FORMAT.format(Instant.ofEpochMilli(currPetition.getSubmitTime())
+                        .atZone(ClockBridge.wallClock().getZone())));
         html.replace("%type%", currPetition.getTypeAsString());
         html.replace("%petitioner%", currPetition.getPetitioner().getName());
         html.replace("%online%", currPetition.getPetitioner().isOnline() ? "00FF00" : "999999");

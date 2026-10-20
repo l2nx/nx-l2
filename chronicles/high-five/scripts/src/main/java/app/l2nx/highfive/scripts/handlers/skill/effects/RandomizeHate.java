@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.scripts.handlers.skill.effects;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.actor.Attackable;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.mechanics.conditions.Condition;
@@ -31,7 +32,6 @@ import app.l2nx.highfive.mechanics.stats.Formulas;
 import app.l2nx.highfive.util.StatSet;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Randomize Hate effect implementation.
@@ -74,7 +74,7 @@ public class RandomizeHate extends AbstractEffect {
         }
 
         // Choosing randomly a new target.
-        final Creature target = aggroList.get(ThreadLocalRandom.current().nextInt(aggroList.size()));
+        final Creature target = aggroList.get(ClockBridge.random().nextInt(aggroList.size()));
         final long hate = effectedMob.getHating(effector);
         effectedMob.stopHating(effector);
         effectedMob.addDamageHate(target, 0, hate);

@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.managers;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.data.xml.IXmlReader;
@@ -42,7 +43,6 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.time.Instant;
-import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -54,7 +54,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.concurrent.ThreadLocalRandom;
 import lombok.extern.slf4j.Slf4j;
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
@@ -95,7 +94,7 @@ public class CastleManorManager implements IXmlReader {
             loadDb();
 
             // Set the initial manor mode based on the current time.
-            final Calendar currentTime = Calendar.getInstance();
+            final Calendar currentTime = ClockBridge.calendar();
             final int hour = currentTime.get(Calendar.HOUR_OF_DAY);
             final int min = currentTime.get(Calendar.MINUTE);
             final int maintenanceMin = GeneralConfig.ALT_MANOR_REFRESH_MIN + GeneralConfig.ALT_MANOR_MAINTENANCE_MIN;
@@ -245,7 +244,7 @@ public class CastleManorManager implements IXmlReader {
 
     private void scheduleModeChange() {
         // Initialize next mode change time to the current date with seconds reset to zero.
-        nextModeChange = Calendar.getInstance();
+        nextModeChange = ClockBridge.calendar();
         nextModeChange.set(Calendar.SECOND, 0);
 
         // Determine mode-specific time for the next change.
@@ -255,7 +254,7 @@ public class CastleManorManager implements IXmlReader {
                 nextModeChange.set(Calendar.MINUTE, GeneralConfig.ALT_MANOR_APPROVE_MIN);
 
                 // If the time has already passed today, schedule for tomorrow.
-                if (nextModeChange.before(Calendar.getInstance())) {
+                if (nextModeChange.before(ClockBridge.calendar())) {
                     nextModeChange.add(Calendar.DATE, 1);
                 }
                 break;
@@ -266,7 +265,7 @@ public class CastleManorManager implements IXmlReader {
                         Calendar.MINUTE, GeneralConfig.ALT_MANOR_REFRESH_MIN + GeneralConfig.ALT_MANOR_MAINTENANCE_MIN);
 
                 // If the time has already passed today, schedule for tomorrow.
-                if (nextModeChange.before(Calendar.getInstance())) {
+                if (nextModeChange.before(ClockBridge.calendar())) {
                     nextModeChange.add(Calendar.DATE, 1);
                 }
                 break;
@@ -276,7 +275,7 @@ public class CastleManorManager implements IXmlReader {
                 nextModeChange.set(Calendar.MINUTE, GeneralConfig.ALT_MANOR_REFRESH_MIN);
 
                 // If the time has already passed today, schedule for tomorrow.
-                if (nextModeChange.before(Calendar.getInstance())) {
+                if (nextModeChange.before(ClockBridge.calendar())) {
                     nextModeChange.add(Calendar.DATE, 1);
                 }
                 break;
@@ -292,12 +291,12 @@ public class CastleManorManager implements IXmlReader {
         }
 
         // Schedule mode change.
-        long delay = nextModeChange.getTimeInMillis() - System.currentTimeMillis();
+        long delay = nextModeChange.getTimeInMillis() - ClockBridge.wallMillis();
 
         // Ensure delay is not negative (minimum 1 second).
         if (delay < 1000) {
             delay = 1000; // Schedule for at least 1 second from now.
-            nextModeChange.setTimeInMillis(System.currentTimeMillis() + delay);
+            nextModeChange.setTimeInMillis(ClockBridge.wallMillis() + delay);
         }
 
         ThreadPool.schedule(this::changeMode, delay);
@@ -326,7 +325,7 @@ public class CastleManorManager implements IXmlReader {
                             if (crop.getStartAmount() != crop.getAmount()) {
                                 long harvestedAmount = (long) ((crop.getStartAmount() - crop.getAmount()) * 0.9);
                                 if ((harvestedAmount < 1)
-                                        && (ThreadLocalRandom.current().nextInt(99) < 90)) {
+                                        && (ClockBridge.random().nextInt(99) < 90)) {
                                     harvestedAmount = 1;
                                 }
 
@@ -737,8 +736,8 @@ public class CastleManorManager implements IXmlReader {
             return "Disabled";
         }
 
-        return DATE_FORMAT.format(
-                Instant.ofEpochMilli(nextModeChange.getTimeInMillis()).atZone(ZoneId.systemDefault()));
+        return DATE_FORMAT.format(Instant.ofEpochMilli(nextModeChange.getTimeInMillis())
+                .atZone(ClockBridge.wallClock().getZone()));
     }
 
     public List<Seed> getCrops() {

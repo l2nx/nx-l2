@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.scripts.handlers.chat.commands.admin;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.DevelopmentConfig;
 import app.l2nx.highfive.data.sql.ClanTable;
 import app.l2nx.highfive.entity.WorldObject;
@@ -125,19 +126,19 @@ public class AdminCHSiege implements IAdminCommandHandler {
                                 || (d <= 0)
                                 || (month <= 0)
                                 || (month > 12)
-                                || (year < Calendar.getInstance().get(Calendar.YEAR))) {
+                                || (year < ClockBridge.calendar().get(Calendar.YEAR))) {
                             activeChar.sendSysMessage("Wrong day/month/year gave!");
                         } else if ((h <= 0) || (h > 24) || (min < 0) || (min >= 60)) {
                             activeChar.sendSysMessage("Wrong hour/minutes gave!");
                         } else {
-                            final Calendar c = Calendar.getInstance();
+                            final Calendar c = ClockBridge.calendar();
                             c.set(Calendar.YEAR, year);
                             c.set(Calendar.MONTH, month);
                             c.set(Calendar.DAY_OF_MONTH, d);
                             c.set(Calendar.HOUR_OF_DAY, h);
                             c.set(Calendar.MINUTE, min);
                             c.set(Calendar.SECOND, 0);
-                            if (c.getTimeInMillis() > System.currentTimeMillis()) {
+                            if (c.getTimeInMillis() > ClockBridge.wallMillis()) {
                                 activeChar.sendMessage(hall.getName() + " siege: " + c.getTime());
                                 hall.setNextSiegeDate(c.getTimeInMillis());
                                 hall.getSiege().updateSiege();

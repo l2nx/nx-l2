@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.data.xml;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.config.custom.FactionSystemConfig;
 import app.l2nx.highfive.data.sql.ClanHallTable;
@@ -52,7 +53,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ThreadLocalRandom;
 import lombok.extern.slf4j.Slf4j;
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
@@ -252,7 +252,7 @@ public class MapRegionData implements IXmlReader {
         }
 
         if (PlayerConfig.RANDOM_RESPAWN_IN_TOWN_ENABLED) {
-            return region.spawnLocs.get(ThreadLocalRandom.current().nextInt(region.spawnLocs.size()));
+            return region.spawnLocs.get(ClockBridge.random().nextInt(region.spawnLocs.size()));
         }
 
         return region.spawnLocs.get(0);
@@ -267,7 +267,7 @@ public class MapRegionData implements IXmlReader {
     private Location getChaoticSpawnLoc(RegionData region) {
         if (region.chaoticSpawnLocs != null) {
             if (PlayerConfig.RANDOM_RESPAWN_IN_TOWN_ENABLED) {
-                return region.chaoticSpawnLocs.get(ThreadLocalRandom.current().nextInt(region.chaoticSpawnLocs.size()));
+                return region.chaoticSpawnLocs.get(ClockBridge.random().nextInt(region.chaoticSpawnLocs.size()));
             }
 
             return region.chaoticSpawnLocs.get(0);
@@ -697,7 +697,7 @@ public class MapRegionData implements IXmlReader {
         }
 
         if (PlayerConfig.RANDOM_RESPAWN_IN_TOWN_ENABLED) {
-            return region.spawnLocs.get(ThreadLocalRandom.current().nextInt(region.spawnLocs.size()));
+            return region.spawnLocs.get(ClockBridge.random().nextInt(region.spawnLocs.size()));
         }
 
         return region.spawnLocs.get(0);

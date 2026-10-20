@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.entity.clan;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.communitybbs.BB.Forum;
 import app.l2nx.highfive.communitybbs.Manager.ForumsBBSManager;
 import app.l2nx.highfive.config.FeatureConfig;
@@ -494,7 +495,7 @@ public class Clan {
             if (player.isClanLeader()) {
                 SiegeManager.getInstance().removeSiegeSkills(player);
                 player.setClanCreateExpiryTime(
-                        System.currentTimeMillis() + TimeUnit.DAYS.toMillis(PlayerConfig.ALT_CLAN_CREATE_DAYS));
+                        ClockBridge.wallMillis() + TimeUnit.DAYS.toMillis(PlayerConfig.ALT_CLAN_CREATE_DAYS));
             }
 
             // Remove Clan skills from Player.
@@ -533,7 +534,7 @@ public class Clan {
                     exMember.getObjectId(),
                     clanJoinExpiryTime,
                     getLeaderId() == objectId
-                            ? System.currentTimeMillis() + TimeUnit.DAYS.toMillis(PlayerConfig.ALT_CLAN_CREATE_DAYS)
+                            ? ClockBridge.wallMillis() + TimeUnit.DAYS.toMillis(PlayerConfig.ALT_CLAN_CREATE_DAYS)
                             : 0);
         }
 
@@ -880,13 +881,13 @@ public class Clan {
                     setAllyName(clanData.getString("ally_name"));
                     setAllyPenaltyExpiryTime(
                             clanData.getLong("ally_penalty_expiry_time"), clanData.getInt("ally_penalty_type"));
-                    if (allyPenaltyExpiryTime < System.currentTimeMillis()) {
+                    if (allyPenaltyExpiryTime < ClockBridge.wallMillis()) {
                         setAllyPenaltyExpiryTime(0, 0);
                     }
 
                     setCharPenaltyExpiryTime(clanData.getLong("char_penalty_expiry_time"));
                     if ((charPenaltyExpiryTime + (PlayerConfig.ALT_CLAN_JOIN_DAYS * 86400000))
-                            < System.currentTimeMillis()) // 24*60*60*1000 = 86400000
+                            < ClockBridge.wallMillis()) // 24*60*60*1000 = 86400000
                     {
                         setCharPenaltyExpiryTime(0);
                     }
@@ -1745,7 +1746,7 @@ public class Clan {
             return false;
         }
 
-        if (charPenaltyExpiryTime > System.currentTimeMillis()) {
+        if (charPenaltyExpiryTime > ClockBridge.wallMillis()) {
             player.sendPacket(
                     SystemMessageId
                             .AFTER_A_CLAN_MEMBER_IS_DISMISSED_FROM_A_CLAN_THE_CLAN_MUST_WAIT_AT_LEAST_A_DAY_BEFORE_ACCEPTING_A_NEW_MEMBER);
@@ -1759,7 +1760,7 @@ public class Clan {
             return false;
         }
 
-        if (target.getClanJoinExpiryTime() > System.currentTimeMillis()) {
+        if (target.getClanJoinExpiryTime() > ClockBridge.wallMillis()) {
             final SystemMessage sm = new SystemMessage(
                     SystemMessageId
                             .C1_CANNOT_JOIN_THE_CLAN_BECAUSE_ONE_DAY_HAS_NOT_YET_PASSED_SINCE_THEY_LEFT_ANOTHER_CLAN);
@@ -1813,7 +1814,7 @@ public class Clan {
         }
 
         final Clan leaderClan = player.getClan();
-        if ((leaderClan.getAllyPenaltyExpiryTime() > System.currentTimeMillis())
+        if ((leaderClan.getAllyPenaltyExpiryTime() > ClockBridge.wallMillis())
                 && (leaderClan.getAllyPenaltyType() == PENALTY_TYPE_DISMISS_CLAN)) {
             player.sendPacket(SystemMessageId.YOU_MAY_NOT_ACCEPT_ANY_CLAN_WITHIN_A_DAY_AFTER_EXPELLING_ANOTHER_CLAN);
             return false;
@@ -1850,7 +1851,7 @@ public class Clan {
             return false;
         }
 
-        if (targetClan.getAllyPenaltyExpiryTime() > System.currentTimeMillis()) {
+        if (targetClan.getAllyPenaltyExpiryTime() > ClockBridge.wallMillis()) {
             if (targetClan.getAllyPenaltyType() == PENALTY_TYPE_CLAN_LEAVED) {
                 final SystemMessage sm = new SystemMessage(
                         SystemMessageId
@@ -1915,12 +1916,12 @@ public class Clan {
             return;
         }
 
-        if ((allyPenaltyExpiryTime > System.currentTimeMillis()) && (allyPenaltyType == PENALTY_TYPE_DISSOLVE_ALLY)) {
+        if ((allyPenaltyExpiryTime > ClockBridge.wallMillis()) && (allyPenaltyType == PENALTY_TYPE_DISSOLVE_ALLY)) {
             player.sendPacket(SystemMessageId.YOU_CANNOT_CREATE_A_NEW_ALLIANCE_WITHIN_1_DAY_OF_DISSOLUTION);
             return;
         }
 
-        if (dissolvingExpiryTime > System.currentTimeMillis()) {
+        if (dissolvingExpiryTime > ClockBridge.wallMillis()) {
             player.sendPacket(
                     SystemMessageId.AS_YOU_ARE_CURRENTLY_SCHEDULE_FOR_CLAN_DISSOLUTION_NO_ALLIANCE_CAN_BE_CREATED);
             return;
@@ -1972,7 +1973,7 @@ public class Clan {
 
         broadcastToOnlineAllyMembers(new SystemMessage(SystemMessageId.THE_ALLIANCE_HAS_BEEN_DISSOLVED));
 
-        final long currentTime = System.currentTimeMillis();
+        final long currentTime = ClockBridge.wallMillis();
         for (Clan clan : ClanTable.getInstance().getClanAllies(getAllyId())) {
             if (clan.getId() != getId()) {
                 clan.setAllyId(0);
@@ -1997,7 +1998,7 @@ public class Clan {
             return false;
         }
 
-        if (System.currentTimeMillis() < dissolvingExpiryTime) {
+        if (ClockBridge.wallMillis() < dissolvingExpiryTime) {
             player.sendPacket(
                     SystemMessageId
                             .AS_YOU_ARE_CURRENTLY_SCHEDULE_FOR_CLAN_DISSOLUTION_YOUR_CLAN_LEVEL_CANNOT_BE_INCREASED);

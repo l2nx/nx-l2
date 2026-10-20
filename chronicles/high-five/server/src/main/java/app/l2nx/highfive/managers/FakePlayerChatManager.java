@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.managers;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.custom.FakePlayersConfig;
 import app.l2nx.highfive.data.SpawnTable;
 import app.l2nx.highfive.data.holders.FakePlayerChatHolder;
@@ -38,7 +39,6 @@ import app.l2nx.highfive.util.StatSet;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ThreadLocalRandom;
 import lombok.extern.slf4j.Slf4j;
 import org.w3c.dom.Document;
 
@@ -89,13 +89,13 @@ public class FakePlayerChatManager implements IXmlReader {
     public void manageChat(Player player, String fpcName, String message) {
         ThreadPool.schedule(
                 () -> manageResponce(player, fpcName, message),
-                ThreadLocalRandom.current().nextInt(MIN_DELAY, MAX_DELAY + 1));
+                ClockBridge.random().nextInt(MIN_DELAY, MAX_DELAY + 1));
     }
 
     public void manageChat(Player player, String fpcName, String message, int minDelay, int maxDelay) {
         ThreadPool.schedule(
                 () -> manageResponce(player, fpcName, message),
-                minDelay < maxDelay ? ThreadLocalRandom.current().nextInt(minDelay, maxDelay + 1) : minDelay);
+                minDelay < maxDelay ? ClockBridge.random().nextInt(minDelay, maxDelay + 1) : minDelay);
     }
 
     private void manageResponce(Player player, String fpcName, String message) {
@@ -117,16 +117,16 @@ public class FakePlayerChatManager implements IXmlReader {
                             sendChat(
                                     player,
                                     fpcName,
-                                    ThreadLocalRandom.current().nextBoolean()
+                                    ClockBridge.random().nextBoolean()
                                             ? "i am not blind"
-                                            : ThreadLocalRandom.current().nextBoolean() ? "of course i can" : "yes");
+                                            : ClockBridge.random().nextBoolean() ? "of course i can" : "yes");
                         } else {
                             sendChat(
                                     player,
                                     fpcName,
-                                    ThreadLocalRandom.current().nextBoolean()
+                                    ClockBridge.random().nextBoolean()
                                             ? "i know you are around"
-                                            : ThreadLocalRandom.current().nextBoolean()
+                                            : ClockBridge.random().nextBoolean()
                                                     ? "not at the moment :P"
                                                     : "no, where are you?");
                         }
@@ -134,9 +134,9 @@ public class FakePlayerChatManager implements IXmlReader {
                         sendChat(
                                 player,
                                 fpcName,
-                                ThreadLocalRandom.current().nextBoolean()
+                                ClockBridge.random().nextBoolean()
                                         ? "nope, can't see you"
-                                        : ThreadLocalRandom.current().nextBoolean() ? "nope" : "no");
+                                        : ClockBridge.random().nextBoolean() ? "nope" : "no");
                     }
                     return;
                 }
@@ -157,7 +157,7 @@ public class FakePlayerChatManager implements IXmlReader {
                                 fpcName,
                                 chatHolder
                                         .getAnswers()
-                                        .get(ThreadLocalRandom.current()
+                                        .get(ClockBridge.random()
                                                 .nextInt(chatHolder.getAnswers().size())));
                     }
                     break;
@@ -169,7 +169,7 @@ public class FakePlayerChatManager implements IXmlReader {
                                 fpcName,
                                 chatHolder
                                         .getAnswers()
-                                        .get(ThreadLocalRandom.current()
+                                        .get(ClockBridge.random()
                                                 .nextInt(chatHolder.getAnswers().size())));
                     }
                     break;
@@ -188,7 +188,7 @@ public class FakePlayerChatManager implements IXmlReader {
                                 fpcName,
                                 chatHolder
                                         .getAnswers()
-                                        .get(ThreadLocalRandom.current()
+                                        .get(ClockBridge.random()
                                                 .nextInt(chatHolder.getAnswers().size())));
                     }
                     break;

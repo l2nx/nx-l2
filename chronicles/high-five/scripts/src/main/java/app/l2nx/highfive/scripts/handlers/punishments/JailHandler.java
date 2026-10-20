@@ -24,6 +24,7 @@ package app.l2nx.highfive.scripts.handlers.punishments;
 
 import app.l2nx.highfive.LoginServerThread;
 import app.l2nx.highfive.cache.HtmCache;
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.tasks.player.TeleportTask;
@@ -69,7 +70,7 @@ public class JailHandler implements IPunishmentHandler {
             PunishmentTask task = PunishmentManager.getInstance()
                     .getPunishment(player.getObjectId(), PunishmentAffect.CHARACTER, PunishmentType.JAIL);
             if (task != null) {
-                long timeRemaining = task.getExpirationTime() - System.currentTimeMillis();
+                long timeRemaining = task.getExpirationTime() - ClockBridge.wallMillis();
                 if (timeRemaining > 0) {
                     // Round up to nearest second to avoid showing 1 second less.
                     timeRemaining = ((timeRemaining + 999) / 1000) * 1000;
@@ -205,7 +206,7 @@ public class JailHandler implements IPunishmentHandler {
 
         // Inform the player about jail duration.
         if (task != null) {
-            long jailDuration = task.getExpirationTime() - System.currentTimeMillis();
+            long jailDuration = task.getExpirationTime() - ClockBridge.wallMillis();
             if (jailDuration > 0) {
                 // Round up to nearest second to avoid showing 1 second less.
                 jailDuration = ((jailDuration + 999) / 1000) * 1000;

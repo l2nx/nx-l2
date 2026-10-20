@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.scripts.custom.events.Deathmatch;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.custom.DualboxCheckConfig;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.World;
@@ -243,7 +244,7 @@ public class Deathmatch extends Event {
                 // Randomize player list.
                 final List<Player> playerList = new ArrayList<>(PLAYER_LIST.size());
                 playerList.addAll(PLAYER_LIST);
-                Collections.shuffle(playerList);
+                Collections.shuffle(playerList, ClockBridge.random());
                 PLAYER_LIST.clear();
                 PLAYER_LIST.addAll(playerList);
 

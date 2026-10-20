@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.scripts.instances.RimKamaloka;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.custom.PremiumSystemConfig;
 import app.l2nx.highfive.data.xml.NpcData;
 import app.l2nx.highfive.entity.Location;
@@ -47,7 +48,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.ThreadLocalRandom;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -483,14 +483,14 @@ public class RimKamaloka extends Script {
         if (tmpWorld instanceof RimKamaWorld) {
             final RimKamaWorld world = (RimKamaWorld) tmpWorld;
             synchronized (world.lastAttack) {
-                world.lastAttack.put(npc.getObjectId(), System.currentTimeMillis());
+                world.lastAttack.put(npc.getObjectId(), ClockBridge.gameMillis());
             }
 
             final int maxHp = npc.getMaxHp();
             if (npc.getCurrentHp() == maxHp) {
                 if (((damage * 100) / maxHp) > 40) {
                     final int npcId = npc.getId();
-                    final int chance = ThreadLocalRandom.current().nextInt(100);
+                    final int chance = ClockBridge.random().nextInt(100);
                     int nextId = 0;
 
                     if (npcId == world.KANABION) {
@@ -531,7 +531,7 @@ public class RimKamaloka extends Script {
             }
 
             final int npcId = npc.getId();
-            final int chance = ThreadLocalRandom.current().nextInt(100);
+            final int chance = ClockBridge.random().nextInt(100);
             int nextId = 0;
 
             if (npcId == world.KANABION) {
@@ -621,7 +621,7 @@ public class RimKamaloka extends Script {
                 }
 
                 // If found instance still can't be reentered - exit.
-                if (System.currentTimeMillis() < instanceTimes.get(id)) {
+                if (ClockBridge.wallMillis() < instanceTimes.get(id)) {
                     final SystemMessage sm = new SystemMessage(SystemMessageId.C1_MAY_NOT_RE_ENTER_YET);
                     sm.addPcName(player);
                     player.sendPacket(sm);
@@ -776,7 +776,7 @@ public class RimKamaloka extends Script {
         }
 
         synchronized (world.lastAttack) {
-            world.lastAttack.put(monster.getObjectId(), System.currentTimeMillis());
+            world.lastAttack.put(monster.getObjectId(), ClockBridge.gameMillis());
         }
 
         monster.setCurrentHpMp(monster.getMaxHp(), monster.getMaxMp());
@@ -822,7 +822,7 @@ public class RimKamaloka extends Script {
         @Override
         public void run() {
             if (world != null) {
-                final Calendar reenter = Calendar.getInstance();
+                final Calendar reenter = ClockBridge.calendar();
                 reenter.set(Calendar.MINUTE, RESET_MIN);
 
                 // If time is >= RESET_HOUR - roll to the next day.
@@ -936,7 +936,7 @@ public class RimKamaloka extends Script {
         @Override
         public void run() {
             if ((world != null) && !world.finished && !world.lastAttack.isEmpty() && !world.spawnedMobs.isEmpty()) {
-                final long time = System.currentTimeMillis();
+                final long time = ClockBridge.gameMillis();
                 for (Monster mob : world.spawnedMobs) {
                     if ((mob == null) || mob.isDead() || mob.isInvisible()) {
                         continue;

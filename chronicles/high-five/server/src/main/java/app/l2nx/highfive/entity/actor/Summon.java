@@ -24,6 +24,7 @@ package app.l2nx.highfive.entity.actor;
 
 import app.l2nx.highfive.ai.CreatureAI;
 import app.l2nx.highfive.ai.SummonAI;
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.GeoEngineConfig;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.config.custom.FakePlayersConfig;
@@ -59,7 +60,10 @@ import app.l2nx.highfive.mechanics.events.EventDispatcher;
 import app.l2nx.highfive.mechanics.events.EventType;
 import app.l2nx.highfive.mechanics.events.holders.actor.player.OnPlayerSummonSpawn;
 import app.l2nx.highfive.mechanics.olympiad.OlympiadGameManager;
+import app.l2nx.highfive.mechanics.skill.AbnormalType;
+import app.l2nx.highfive.mechanics.skill.BuffInfo;
 import app.l2nx.highfive.mechanics.skill.Skill;
+import app.l2nx.highfive.mechanics.skill.StoredEffect;
 import app.l2nx.highfive.mechanics.skill.targets.TargetType;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.serverpackets.AbstractNpcInfo.SummonInfo;
@@ -78,8 +82,11 @@ import app.l2nx.highfive.network.serverpackets.TeleportToLocation;
 import app.l2nx.highfive.taskmanagers.DecayTaskManager;
 import app.l2nx.highfive.threads.ThreadPool;
 import app.l2nx.highfive.util.ArrayUtil;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.ThreadLocalRandom;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -89,7 +96,7 @@ public abstract class Summon extends Playable {
     private Player owner;
 
     @Getter
-    private int attackRange = 36; // Melee range
+    private int attackRange = 36;
 
     private boolean followStatus = true;
     private boolean previousFollowStatus = true;
@@ -105,20 +112,14 @@ public abstract class Summon extends Playable {
     };
     // @formatter:on
 
-    /**
-     * Creates an abstract summon.
-     * @param template the summon NPC template
-     * @param owner the owner
-     */
     public Summon(NpcTemplate template, Player owner) {
         super(template);
         setInstanceType(InstanceType.Summon);
-        setInstanceId(owner.getInstanceId()); // Set instance to same as owner.
+        setInstanceId(owner.getInstanceId());
         setShowSummonAnimation(true);
         this.owner = owner;
         getAI();
 
-        // Make sure summon does not spawn in a wall.
         final int x = owner.getX();
         final int y = owner.getY();
         final int z = owner.getZ();
@@ -127,8 +128,8 @@ public abstract class Summon extends Playable {
                         x,
                         y,
                         z,
-                        x + ThreadLocalRandom.current().nextInt(-100, 101),
-                        y + ThreadLocalRandom.current().nextInt(-100, 101),
+                        x + ClockBridge.random().nextInt(-100, 101),
+                        y + ClockBridge.random().nextInt(-100, 101),
                         z,
                         owner.getInstanceId());
         setXYZInvisible(location.getX(), location.getY(), location.getZ());
@@ -156,13 +157,12 @@ public abstract class Summon extends Playable {
             party.broadcastToPartyMembers(owner, new ExPartyPetWindowAdd(this));
         }
 
-        setShowSummonAnimation(false); // AddVisibleObject created the info packets with summon animation.
+        setShowSummonAnimation(false);
 
         // If someone comes into range now, the animation shouldn't show any more.
         restoreSummon = false;
         rechargeShots(true, true);
 
-        // Notify to scripts.
         if (EventDispatcher.getInstance().hasListener(EventType.ON_PLAYER_SUMMON_SPAWN, this)) {
             EventDispatcher.getInstance().notifyEventAsync(new OnPlayerSummonSpawn(this), this);
         }
@@ -229,9 +229,6 @@ public abstract class Summon extends Playable {
         }
     }
 
-    /**
-     * @return Returns the mountable.
-     */
     public boolean isMountable() {
         return false;
     }
@@ -267,10 +264,6 @@ public abstract class Summon extends Playable {
         return owner != null ? owner.getTeam() : Team.NONE;
     }
 
-    /**
-     * Gets the summon ID.
-     * @return the summon ID
-     */
     @Override
     public int getId() {
         return getTemplate().getId();
@@ -294,6 +287,45 @@ public abstract class Summon extends Playable {
 
     public void followOwner() {
         setFollowStatus(true);
+    }
+
+    protected Map<Skill, StoredEffect> effectsToStore() {
+        final Map<Skill, StoredEffect> effects = new LinkedHashMap<>();
+        final Set<Integer> storedSkills = new HashSet<>();
+        for (BuffInfo info : getEffectList().getEffects()) {
+            if (info == null) {
+                continue;
+            }
+
+            final Skill skill = info.getSkill();
+
+            if (skill.getAbnormalType() == AbnormalType.LIFE_FORCE_OTHERS) {
+                continue;
+            }
+
+            if (skill.isToggle()) {
+                continue;
+            }
+
+            // Dances and songs are not kept in retail.
+            if (skill.isDance() && !PlayerConfig.ALT_STORE_DANCES) {
+                continue;
+            }
+
+            if (storedSkills.contains(skill.getReuseHashCode())) {
+                continue;
+            }
+
+            final StoredEffect stored = info.toStoredEffect();
+            if (stored == null) {
+                continue;
+            }
+
+            storedSkills.add(skill.getReuseHashCode());
+            effects.put(skill, stored);
+        }
+
+        return effects;
     }
 
     @Override
@@ -376,7 +408,6 @@ public abstract class Summon extends Playable {
             }
         }
 
-        // pet will be deleted along with all his items
         if (getInventory() != null) {
             getInventory().destroyAllItems(ItemProcessType.DESTROY, this.owner, this);
         }
@@ -419,7 +450,6 @@ public abstract class Summon extends Playable {
                 owner.setPet(null);
             }
 
-            // Stop AI tasks.
             if (hasAI()) {
                 getAI().stopAITask();
             }
@@ -498,17 +528,11 @@ public abstract class Summon extends Playable {
         return null;
     }
 
-    /**
-     * Return True if the Summon is invulnerable or if the summoner is in spawn protection.
-     */
     @Override
     public boolean isInvul() {
         return super.isInvul() || owner.isSpawnProtected();
     }
 
-    /**
-     * Return the Party object of its Player owner or null.
-     */
     @Override
     public Party getParty() {
         if (owner == null) {
@@ -518,52 +542,27 @@ public abstract class Summon extends Playable {
         return owner.getParty();
     }
 
-    /**
-     * Return True if the Creature has a Party in progress.
-     */
     @Override
     public boolean isInParty() {
         return (owner != null) && owner.isInParty();
     }
 
-    /**
-     * Check if the active Skill can be casted.<br>
-     * <br>
-     * <b><u>Actions</u>:</b>
-     * <ul>
-     * <li>Check if the target is correct</li>
-     * <li>Check if the target is in the skill cast range</li>
-     * <li>Check if the summon owns enough HP and MP to cast the skill</li>
-     * <li>Check if all skills are enabled and this skill is enabled</li>
-     * <li>Check if the skill is active</li>
-     * <li>Notify the AI with CAST and target</li>
-     * </ul>
-     * @param skill The Skill to use
-     * @param forceUse used to force ATTACK on players
-     * @param dontMove used to prevent movement, if not in range
-     */
     @Override
     public boolean useMagic(Skill skill, boolean forceUse, boolean dontMove) {
-        // Null skill, dead summon or null owner are reasons to prevent casting.
         if ((skill == null) || isDead() || (owner == null)) {
             return false;
         }
 
-        // Check if the skill is active.
         if (skill.isPassive()) {
-            // Just ignore the passive skill request. Why does the client send it anyway??
             return false;
         }
 
-        // If a skill is currently being used.
         if (isCastingNow()) {
             return false;
         }
 
-        // Set current pet skill.
         owner.setCurrentPetSkill(skill, forceUse, dontMove);
 
-        // Get the target for the skill.
         WorldObject target = null;
         switch (skill.getTargetType()) {
             // OWNER_PET should be cast even if no target has been found
@@ -583,34 +582,27 @@ public abstract class Summon extends Playable {
                 break;
             }
             default: {
-                // Get the first target of the list.
                 target = skill.getFirstOfTargetList(this);
                 break;
             }
         }
 
-        // Check the validity of the target.
         if (target == null) {
             sendPacket(SystemMessageId.YOUR_TARGET_CANNOT_BE_FOUND);
             return false;
         }
 
-        // Check if this skill is enabled (e.g. reuse time).
         if (isSkillDisabled(skill)) {
             sendPacket(SystemMessageId.THAT_PET_SERVITOR_SKILL_CANNOT_BE_USED_BECAUSE_IT_IS_RECHARGING);
             return false;
         }
 
-        // Check if the summon has enough MP.
         if (getCurrentMp() < (getStat().getMpConsume(skill) + getStat().getMpInitialConsume(skill))) {
-            // Send a System Message to the caster.
             sendPacket(SystemMessageId.NOT_ENOUGH_MP);
             return false;
         }
 
-        // Check if the summon has enough HP.
         if (getCurrentHp() <= skill.getHpConsume()) {
-            // Send a System Message to the caster.
             sendPacket(SystemMessageId.NOT_ENOUGH_HP);
             return false;
         }
@@ -633,7 +625,6 @@ public abstract class Summon extends Playable {
             return false;
         }
 
-        // Check if this is bad magic skill.
         if (skill.hasNegativeEffect()) {
             if (owner == target) {
                 return false;
@@ -641,12 +632,10 @@ public abstract class Summon extends Playable {
 
             // Summons can cast skills on NPCs inside peace zones.
             if (isInsidePeaceZone(this, target) && !owner.getAccessLevel().allowPeaceAttack()) {
-                // If summon or target is in a peace zone, send a system message:
                 sendPacket(SystemMessageId.YOU_MAY_NOT_ATTACK_THIS_TARGET_IN_A_PEACEFUL_ZONE);
                 return false;
             }
 
-            // If Player is in Olympiad and the match isn't already start, send a Server->Client packet ActionFailed
             if (owner.isInOlympiadMode() && !owner.isOlympiadStart()) {
                 sendPacket(ActionFailed.STATIC_PACKET);
                 return false;
@@ -665,18 +654,15 @@ public abstract class Summon extends Playable {
                 return false;
             }
 
-            // Check if the target is attackable.
             if (target.isDoor()) {
                 if (!target.isAutoAttackable(owner)) {
                     return false;
                 }
             } else {
-                // Summons can cast skills on NPCs inside peace zones.
                 if (!target.canBeAttacked() && !owner.getAccessLevel().allowPeaceAttack()) {
                     return false;
                 }
 
-                // Check if a Forced attack is in progress on non-attackable target.
                 if (!target.isAutoAttackable(this)
                         && !forceUse
                         && !target.isNpc()
@@ -691,7 +677,6 @@ public abstract class Summon extends Playable {
             }
         }
 
-        // Notify the AI with CAST and target.
         getAI().setIntentionCast(skill, target);
         return true;
     }
@@ -703,12 +688,10 @@ public abstract class Summon extends Playable {
         if (value) {
             previousFollowStatus = followStatus;
 
-            // If immobilized temporarily disable follow mode.
             if (previousFollowStatus) {
                 setFollowStatus(false);
             }
         } else {
-            // If not more immobilized restore previous follow mode.
             setFollowStatus(previousFollowStatus);
         }
     }
@@ -767,10 +750,8 @@ public abstract class Summon extends Playable {
         final Player actingPlayer = getOwner();
         if (!actingPlayer.checkPvpSkill(getTarget(), skill)
                 && !actingPlayer.getAccessLevel().allowPeaceAttack()) {
-            // Send a System Message to the Player.
             actingPlayer.sendPacket(SystemMessageId.THAT_IS_AN_INCORRECT_TARGET);
 
-            // Send a Server->Client packet ActionFailed to the Player.
             actingPlayer.sendPacket(ActionFailed.STATIC_PACKET);
             return;
         }
@@ -831,7 +812,6 @@ public abstract class Summon extends Playable {
 
     @Override
     public void sendInfo(Player player) {
-        // Check if the Player is the owner of the Pet.
         if (player == owner) {
             player.sendPacket(new PetInfo(this, 0));
 
@@ -856,26 +836,14 @@ public abstract class Summon extends Playable {
         return getTemplate().getRace() == Race.UNDEAD;
     }
 
-    /**
-     * Change the summon's state.
-     */
-    public void switchMode() {
-        // Do nothing.
-    }
+    public void switchMode() {}
 
-    /**
-     * Cancel the summon's action.
-     */
     public void cancelAction() {
         if (!isMovementDisabled()) {
             getAI().setIntentionActive();
         }
     }
 
-    /**
-     * Performs an attack to the owner's target.
-     * @param target the target to attack.
-     */
     public void doSummonAttack(WorldObject target) {
         if ((owner != null) && (target != null)) {
             setTarget(target);
@@ -886,11 +854,6 @@ public abstract class Summon extends Playable {
         }
     }
 
-    /**
-     * Verify if the summon can perform an attack.
-     * @param ctrlPressed {@code true} if Ctrl key is pressed
-     * @return {@code true} if the summon can attack, {@code false} otherwise
-     */
     public boolean canAttack(boolean ctrlPressed) {
         if (owner == null) {
             return false;
@@ -921,7 +884,6 @@ public abstract class Summon extends Playable {
         }
 
         if (owner.isInOlympiadMode() && !owner.isOlympiadStart()) {
-            // If owner is in Olympiad and the match isn't already start, send a Server->Client packet ActionFailed.
             owner.sendPacket(ActionFailed.STATIC_PACKET);
             return false;
         }
@@ -955,7 +917,7 @@ public abstract class Summon extends Playable {
             return false;
         }
 
-        // Siege golems AI doesn't support attacking other than doors/walls at the moment.
+        // Siege golem AI only supports attacking doors and walls.
         if (target.isDoor() && (getTemplate().getRace() != Race.SIEGE_WEAPON)) {
             return false;
         }

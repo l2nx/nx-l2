@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.scripts.ai.areas.Hellbound.Instances.DemonPrinceFloor;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
@@ -137,7 +138,7 @@ public class DemonPrinceFloor extends InstanceScript {
 
             final Long reentertime =
                     InstanceManager.getInstance().getInstanceTime(partyMember.getObjectId(), TEMPLATE_ID);
-            if (System.currentTimeMillis() < reentertime) {
+            if (ClockBridge.wallMillis() < reentertime) {
                 party.broadcastPacket(
                         new SystemMessage(SystemMessageId.C1_MAY_NOT_RE_ENTER_YET).addPcName(partyMember));
                 return false;

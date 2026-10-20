@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.mechanics.skill;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.data.xml.SkillData;
@@ -61,30 +62,27 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ThreadLocalRandom;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class Skill {
-
-    /** Skill ID. */
     @Getter
     private final int id;
-    /** Skill level. */
+
     @Getter
     private final int level;
-    /** Custom skill ID displayed by the client. */
+
     @Getter
     private final int displayId;
-    /** Custom skill level displayed by the client. */
+
     @Getter
     private final int displayLevel;
-    /** Skill client's name. */
+
     @Getter
     private final String name;
-    /** Operative type: passive, active, toggle. */
+
     private final SkillOperateType operateType;
 
     private final int magic;
@@ -94,55 +92,53 @@ public class Skill {
 
     @Getter
     private final boolean staticReuse;
-    /** MP consumption. */
+
     @Getter
     private final int mpConsume;
-    /** Initial MP consumption. */
+
     @Getter
     private final int mpInitialConsume;
-    /** MP consumption per channeling. */
+
     @Getter
     private final int mpPerChanneling;
-    /** HP consumption. */
+
     @Getter
     private final int hpConsume;
-    /** Amount of items consumed by this skill from caster. */
+
     @Getter
     private final int itemConsumeCount;
-    /** Id of item consumed by this skill from caster. */
+
     @Getter
     private final int itemConsumeId;
-    /** Cast range: how far can be the target. */
+
     @Getter
     private final int castRange;
-    /** Effect range: how far the skill affect the target. */
+
     @Getter
     private final int effectRange;
-    /** Abnormal instant, used for herbs mostly. */
+
     @Getter
     private final boolean abnormalInstant;
-    /** Abnormal level, global effect level. */
+
     @Getter
     private final int abnormalLevel;
-    /** Abnormal type: global effect "group". */
+
     @Getter
     private final AbnormalType abnormalType;
-    /** Abnormal time: global effect duration time. */
+
     @Getter
     private final int abnormalTime;
-    /** Abnormal visual effect: the visual effect displayed ingame. */
+
     private AbnormalVisualEffect[] abnormalVisualEffects = null;
-    /** Abnormal visual effect special: the visual effect displayed ingame. */
     private AbnormalVisualEffect[] abnormalVisualEffectsSpecial = null;
-    /** Abnormal visual effect event: the visual effect displayed ingame. */
     private AbnormalVisualEffect[] abnormalVisualEffectsEvent = null;
-    /** If {@code true} this skill's effect should stay after death. */
+
     @Getter
     private final boolean stayAfterDeath;
-    /** If {@code true} this skill's effect should stay after class-subclass change. */
+
     @Getter
     private final boolean stayOnSubclassChange;
-    /** If {@code true} this skill's effect recovery HP/MP or CP from herb. */
+
     @Getter
     private final boolean recoveryHerb;
 
@@ -153,7 +149,7 @@ public class Skill {
     // All times in milliseconds.
     @Getter
     private final int hitTime;
-    // private final int _skillInterruptTime;
+
     @Getter
     private final int coolTime;
 
@@ -163,14 +159,12 @@ public class Skill {
     @Getter
     private final int reuseDelay;
 
-    /** Target type of the skill : SELF, PARTY, CLAN, PET... */
     @Getter
     private final TargetType targetType;
 
     @Getter
     private final int feed;
 
-    // base success chance
     @Getter
     private final double power;
 
@@ -195,9 +189,7 @@ public class Skill {
     @Getter
     private final int blowChance;
 
-    // Effecting area of the skill, in radius.
-    // The radius center varies according to the targetType:
-    // "caster" if targetType = AURA/PARTY/CLAN or "target" if targetType = AREA
+    // Effect area radius, centered on the caster for AURA/PARTY/CLAN and on the target for AREA.
     @Getter
     private final int affectRange;
 
@@ -236,34 +228,29 @@ public class Skill {
     private final int maxSoulConsumeCount;
 
     @Getter
-    private final boolean heroSkill; // If true the skill is a Hero Skill.
+    private final boolean heroSkill;
 
-    private final boolean gmSkill; // True if skill is GM skill.
+    private final boolean gmSkill;
     private final boolean sevenSigns;
 
     @Getter
-    private final int
-            baseCritRate; // percent of success for skill critical hit (especially for PhysicalDamage & Blow - they're
-    // not affected by rCrit values or buffs).
-    private final boolean dmgDirectlyToHP; // If true then damage is being make directly.
+    private final int baseCritRate; // Percent; ignores rCrit and buffs.
+
+    private final boolean dmgDirectlyToHP;
 
     @Getter
-    private final boolean
-            triggeredSkill; // If true the skill will take activation buff slot instead of a normal buff slot.
+    private final boolean triggeredSkill;
 
     @Getter
     private final int effectPoint;
 
-    // Condition lists
     private List<Condition> preCondition;
     private List<Condition> itemPreCondition;
 
-    // Function lists
     private List<FuncTemplate> funcTemplates;
 
     private final Map<EffectScope, List<AbstractEffect>> effectLists = new EnumMap<>(EffectScope.class);
 
-    // Flying support
     @Getter
     private final FlyType flyType;
 
@@ -300,7 +287,6 @@ public class Skill {
 
     private volatile Byte[] effectTypes;
 
-    // Channeling data
     @Getter
     private final int channelingSkillId;
 
@@ -443,14 +429,6 @@ public class Skill {
                 EffectType.PHYSICAL_ATTACK_HP_LINK);
     }
 
-    /**
-     * Return the power of the skill.
-     * @param creature
-     * @param target
-     * @param isPvP
-     * @param isPvE
-     * @return
-     */
     public double getPower(Creature creature, Creature target, boolean isPvP, boolean isPvE) {
         if (creature == null) {
             return getPower(isPvP, isPvE);
@@ -471,93 +449,52 @@ public class Skill {
         return isPvE ? pvePower : isPvP ? pvpPower : power;
     }
 
-    /**
-     * Gets the skill abnormal visual effect.
-     * @return the abnormal visual effect
-     */
     public AbnormalVisualEffect[] getAbnormalVisualEffects() {
         return abnormalVisualEffects;
     }
 
-    /**
-     * Verify if the skill has abnormal visual effects.
-     * @return {@code true} if the skill has abnormal visual effects, {@code false} otherwise
-     */
     public boolean hasAbnormalVisualEffects() {
         return (abnormalVisualEffects != null) && (abnormalVisualEffects.length > 0);
     }
 
-    /**
-     * Gets the skill special abnormal visual effect.
-     * @return the abnormal visual effect
-     */
     public AbnormalVisualEffect[] getAbnormalVisualEffectsSpecial() {
         return abnormalVisualEffectsSpecial;
     }
 
-    /**
-     * Verify if the skill has special abnormal visual effects.
-     * @return {@code true} if the skill has special abnormal visual effects, {@code false} otherwise
-     */
     public boolean hasAbnormalVisualEffectsSpecial() {
         return (abnormalVisualEffectsSpecial != null) && (abnormalVisualEffectsSpecial.length > 0);
     }
 
-    /**
-     * Gets the skill event abnormal visual effect.
-     * @return the abnormal visual effect
-     */
     public AbnormalVisualEffect[] getAbnormalVisualEffectsEvent() {
         return abnormalVisualEffectsEvent;
     }
 
-    /**
-     * Verify if the skill has event abnormal visual effects.
-     * @return {@code true} if the skill has event abnormal visual effects, {@code false} otherwise
-     */
     public boolean hasAbnormalVisualEffectsEvent() {
         return (abnormalVisualEffectsEvent != null) && (abnormalVisualEffectsEvent.length > 0);
     }
 
-    /**
-     * Return true if character should attack target after skill
-     * @return
-     */
     public boolean nextActionIsAttack() {
         return nextActionIsAttack;
     }
 
-    /**
-     * @return Returns true to set physical skills.
-     */
     public boolean isPhysical() {
         return magic == 0;
     }
 
-    /**
-     * @return Returns true to set magic skills.
-     */
     public boolean isMagic() {
         return magic == 1;
     }
 
-    /**
-     * @return Returns true to set static skills.
-     */
     public boolean isStatic() {
         return magic == 2;
     }
 
-    /**
-     * @return Returns true to set dance skills.
-     */
     public boolean isDance() {
         return magic == 3;
     }
 
     public int getAffectLimit() {
-        return affectLimit[0]
-                + (affectLimit[1] > 0 ? ThreadLocalRandom.current().nextInt(affectLimit[1]) : 0);
+        return affectLimit[0] + (affectLimit[1] > 0 ? ClockBridge.random().nextInt(affectLimit[1]) : 0);
     }
 
     public boolean isActive() {
@@ -584,10 +521,6 @@ public class Skill {
         return (operateType != null) && operateType.isChanneling();
     }
 
-    /**
-     * Verify if the skill is a transformation skill.
-     * @return {@code true} if the skill is a transformation, {@code false} otherwise
-     */
     public boolean isTransformation() {
         return abnormalType == AbnormalType.TRANSFORM;
     }
@@ -612,10 +545,6 @@ public class Skill {
         return sevenSigns;
     }
 
-    /**
-     * Verify if this is a healing potion skill.
-     * @return {@code true} if this is a healing potion skill, {@code false} otherwise
-     */
     public boolean isHealingPotionSkill() {
         return abnormalType == AbnormalType.HP_RECOVER;
     }
@@ -672,13 +601,10 @@ public class Skill {
     }
 
     public List<WorldObject> getTargetList(Creature creature, boolean onlyFirst) {
-        // Init to null the target of the skill.
         Creature target = null;
 
-        // Get the WorldObject targeted by the user of the skill at this moment.
         final WorldObject objTarget = creature.getTarget();
 
-        // If the WorldObject targeted is a Creature, it becomes the Creature target.
         if ((objTarget != null) && objTarget.isCreature()) {
             target = objTarget.asCreature();
         }
@@ -686,35 +612,12 @@ public class Skill {
         return getTargetList(creature, onlyFirst, target);
     }
 
-    /**
-     * Return all targets of the skill in a table in function a the skill type.<br>
-     * <br>
-     * <b><u>Values of skill type</u>:</b>
-     * <ul>
-     * <li>ONE : The skill can only be used on the Player targeted, or on the caster if it's a Player and no Player targeted</li>
-     * <li>SELF</li>
-     * <li>HOLY, UNDEAD</li>
-     * <li>PET</li>
-     * <li>AURA, AURA_CLOSE</li>
-     * <li>AREA</li>
-     * <li>MULTIFACE</li>
-     * <li>PARTY, CLAN</li>
-     * <li>CORPSE_PLAYER, CORPSE_MOB, CORPSE_CLAN</li>
-     * <li>UNLOCKABLE</li>
-     * <li>ITEM</li>
-     * <ul>
-     * @param creature The Creature who use the skill
-     * @param onlyFirst
-     * @param target
-     * @return
-     */
     public List<WorldObject> getTargetList(Creature creature, boolean onlyFirst, Creature target) {
         final ITargetTypeHandler handler = TargetHandler.getInstance().getHandler(getTargetType());
         if (handler != null) {
             try {
                 final List<WorldObject> result = handler.getTargetList(this, creature, onlyFirst, target);
 
-                // Prevent monsters buffing playables.
                 if ((creature != null)
                         && creature.isMonster()
                         && !hasNegativeEffect()
@@ -748,16 +651,6 @@ public class Skill {
         return targets.get(0);
     }
 
-    /**
-     * Check if should be target added to the target list false if target is dead, target same as caster,<br>
-     * target inside peace zone, target in the same party with caster, caster can see target Additional checks if not in PvP zones (arena, siege):<br>
-     * target in not the same clan and alliance with caster, and usual skill PvP check. If TvT event is active - performing additional checks. Caution: distance is not checked.
-     * @param caster
-     * @param target
-     * @param skill
-     * @param sourceInArena
-     * @return
-     */
     public static boolean checkForAreaOffensiveSkills(
             Creature caster, Creature target, Skill skill, boolean sourceInArena) {
         if ((target == null) || target.isDead() || (target == caster)) {
@@ -772,7 +665,6 @@ public class Skill {
                     return false;
                 }
 
-                // Auto play.
                 if (player.isAutoPlaying()) {
                     final int targetMode = player.getAutoPlaySettings().getNextTargetMode();
                     if ((targetMode == 1 /* Monster */) || (targetMode == 3 /* NPC */)) {
@@ -799,12 +691,10 @@ public class Skill {
                 final Party party = player.getParty();
                 final Party targetParty = targetPlayer.getParty();
                 if ((party != null) && (targetParty != null)) {
-                    // Same party
                     if (party.getLeaderObjectId() == targetParty.getLeaderObjectId()) {
                         return false;
                     }
 
-                    // Same command channel
                     if (party.isInCommandChannel() && (party.getCommandChannel() == targetParty.getCommandChannel())) {
                         return false;
                     }
@@ -817,7 +707,6 @@ public class Skill {
                     return false;
                 }
 
-                // Auto play target mode check.
                 if (player.isAutoPlaying() && ((targetPlayer.getPvpFlag() == 0) || (targetPlayer.getKarma() < 1))) {
                     final int targetMode = player.getAutoPlaySettings().getNextTargetMode();
                     if ((targetMode != 0 /* Any Target */) && (targetMode != 2 /* Characters */)) {
@@ -841,7 +730,6 @@ public class Skill {
                 }
             }
         } else {
-            // target is mob
             if ((targetPlayer == null) && target.isAttackable() && caster.isAttackable()) {
                 return false;
             }
@@ -885,7 +773,7 @@ public class Skill {
 
         final List<AbstractFunction> funcs = new ArrayList<>(funcTemplates.size());
         for (FuncTemplate t : funcTemplates) {
-            final AbstractFunction f = t.getFunc(creature, null, this, this); // skill is owner
+            final AbstractFunction f = t.getFunc(creature, null, this, this);
             if (f != null) {
                 funcs.add(f);
             }
@@ -894,32 +782,15 @@ public class Skill {
         return funcs;
     }
 
-    /**
-     * Gets the skill effects.
-     * @param effectScope the effect scope
-     * @return the list of effects for the give scope
-     */
     public List<AbstractEffect> getEffects(EffectScope effectScope) {
         return effectLists.get(effectScope);
     }
 
-    /**
-     * Verify if this skill has effects for the given scope.
-     * @param effectScope the effect scope
-     * @return {@code true} if this skill has effects for the given scope, {@code false} otherwise
-     */
     public boolean hasEffects(EffectScope effectScope) {
         final List<AbstractEffect> effects = effectLists.get(effectScope);
         return (effects != null) && !effects.isEmpty();
     }
 
-    /**
-     * Applies the effects from this skill to the target for the given effect scope.
-     * @param effectScope the effect scope
-     * @param info the buff info
-     * @param applyInstantEffects if {@code true} instant effects will be applied to the effected
-     * @param addContinuousEffects if {@code true} continuous effects will be applied to the effected
-     */
     public void applyEffectScope(
             EffectScope effectScope, BuffInfo info, boolean applyInstantEffects, boolean addContinuousEffects) {
         if ((effectScope != null) && hasEffects(effectScope)) {
@@ -939,45 +810,35 @@ public class Skill {
         }
     }
 
-    /**
-     * Method overload for {@link Skill#applyEffects(Creature, Creature, boolean, boolean, boolean, int)}.<br>
-     * Simplify the calls.
-     * @param effector the caster of the skill
-     * @param effected the target of the effect
-     */
     public void applyEffects(Creature effector, Creature effected) {
         applyEffects(effector, effected, false, false, true, 0);
     }
 
-    /**
-     * Method overload for {@link Skill#applyEffects(Creature, Creature, boolean, boolean, boolean, int)}.<br>
-     * Simplify the calls, allowing abnormal time time customization.
-     * @param effector the caster of the skill
-     * @param effected the target of the effect
-     * @param instant if {@code true} instant effects will be applied to the effected
-     * @param abnormalTime custom abnormal time, if equal or lesser than zero will be ignored
-     */
     public void applyEffects(Creature effector, Creature effected, boolean instant, int abnormalTime) {
         applyEffects(effector, effected, false, false, instant, abnormalTime);
     }
 
-    /**
-     * Applies the effects from this skill to the target.
-     * @param effector the caster of the skill
-     * @param effected the target of the effect
-     * @param self if {@code true} self-effects will be casted on the caster
-     * @param passive if {@code true} passive effects will be applied to the effector
-     * @param instant if {@code true} instant effects will be applied to the effected
-     * @param abnormalTime custom abnormal time, if equal or lesser than zero will be ignored
-     */
     public void applyEffects(
             Creature effector, Creature effected, boolean self, boolean passive, boolean instant, int abnormalTime) {
-        // Null targets cannot receive any effects.
+        applyEffects(effector, effected, self, passive, instant, abnormalTime, null);
+    }
+
+    public void applyStoredEffects(Creature effected, StoredEffect stored) {
+        applyEffects(effected, effected, false, false, false, 0, stored);
+    }
+
+    private void applyEffects(
+            Creature effector,
+            Creature effected,
+            boolean self,
+            boolean passive,
+            boolean instant,
+            int abnormalTime,
+            StoredEffect stored) {
         if (effected == null) {
             return;
         }
 
-        // Check negative effect skills against target.
         if ((effector != effected)
                 && hasNegativeEffect()
                 && (effected.isInvul()
@@ -994,8 +855,12 @@ public class Skill {
                         || (operateType.isContinuous() && Formulas.calcEffectSuccess(effector, effected, this)));
         if (!self && !passive) {
             final BuffInfo info = new BuffInfo(effector, effected, this);
-            if (addContinuousEffects && (abnormalTime > 0)) {
-                info.setAbnormalTime(abnormalTime);
+            if (addContinuousEffects) {
+                if (stored != null) {
+                    info.restoreTiming(stored);
+                } else if (abnormalTime > 0) {
+                    info.setAbnormalTime(abnormalTime);
+                }
             }
 
             applyEffectScope(EffectScope.GENERAL, info, instant, addContinuousEffects);
@@ -1008,17 +873,6 @@ public class Skill {
             if (addContinuousEffects) {
                 effected.getEffectList().add(info);
             }
-
-            // Support for buff sharing feature including healing herbs.
-            // if (effected.isPlayer())
-            // {
-            // final Player player = effected.asPlayer();
-            // if (player.hasServitor() && (abnormalType != AbnormalType.TRANSFORM) && ((addContinuousEffects &&
-            // isContinuous() && !_isDebuff) || _isRecoveryHerb))
-            // {
-            // applyEffects(effector, player.getSummon(), _isRecoveryHerb, 0);
-            // }
-            // }
         }
 
         if (self) {
@@ -1038,22 +892,6 @@ public class Skill {
             if (addContinuousEffects && hasEffectType(EffectType.BUFF)) {
                 info.getEffector().getEffectList().add(info);
             }
-
-            // Support for buff sharing feature.
-            // Avoiding Servitor Share since it's implementation already "shares" the effect.
-            // if (addContinuousEffects)
-            // {
-            // final Creature effectedCreature = info.getEffected();
-            // if (effectedCreature.isPlayer())
-            // {
-            // final Player player = effectedCreature.asPlayer();
-            // if (player.hasServitor() && isContinuous() && !isDebuff && (getId() !=
-            // CommonSkill.SERVITOR_SHARE.getId()))
-            // {
-            // applyEffects(effector, player.getSummon(), false, 0);
-            // }
-            // }
-            // }
         }
 
         if (passive) {
@@ -1063,30 +901,14 @@ public class Skill {
         }
     }
 
-    /**
-     * Activates a skill for the given creature and targets.
-     * @param caster the caster
-     * @param targets the targets
-     */
     public void activateSkill(Creature caster, Collection<WorldObject> targets) {
         activateSkill(caster, null, targets);
     }
 
-    /**
-     * Activates a skill for the given cubic and targets.
-     * @param cubic the cubic
-     * @param targets the targets
-     */
     public void activateSkill(Cubic cubic, Collection<WorldObject> targets) {
         activateSkill(cubic.getOwner(), cubic, targets);
     }
 
-    /**
-     * Activates the skill to the targets.
-     * @param caster the caster
-     * @param cubic the cubic, can be {@code null}
-     * @param targets the targets
-     */
     private void activateSkill(Creature caster, Cubic cubic, Collection<WorldObject> targets) {
         for (WorldObject obj : targets) {
             final Creature target = obj.asCreature();
@@ -1107,7 +929,6 @@ public class Skill {
             }
         }
 
-        // Self Effect
         if (hasEffects(EffectScope.SELF)) {
             if (caster.isAffectedBySkill(id)) {
                 caster.stopSkillEffects(SkillFinishType.REMOVED, id);
@@ -1141,11 +962,6 @@ public class Skill {
         funcTemplates.add(f);
     }
 
-    /**
-     * Adds an effect to the effect list for the give effect scope.
-     * @param effectScope the effect scope
-     * @param effect the effect to add
-     */
     public void addEffect(EffectScope effectScope, AbstractEffect effect) {
         List<AbstractEffect> effects = effectLists.get(effectScope);
         if (effects == null) {
@@ -1185,10 +1001,6 @@ public class Skill {
         return canBeDispeled;
     }
 
-    /**
-     * Verify if the skill can be stolen.
-     * @return {@code true} if skill can be stolen, {@code false} otherwise
-     */
     public boolean canBeStolen() {
         return !isPassive()
                 && !isToggle()
@@ -1200,10 +1012,6 @@ public class Skill {
                 && (getId() != CommonSkill.SERVITOR_SHARE.getId());
     }
 
-    /**
-     * Parses all the abnormal visual effects.
-     * @param abnormalVisualEffects the abnormal visual effects list
-     */
     private void parseAbnormalVisualEffect(String abnormalVisualEffects) {
         if (abnormalVisualEffects != null) {
             final String[] data = abnormalVisualEffects.split(";");
@@ -1253,11 +1061,6 @@ public class Skill {
         }
     }
 
-    /**
-     * @param effectType Effect type to check if it is present on this skill effects.
-     * @param effectTypes Effect types to check if are present on this skill effects.
-     * @return {@code true} if at least one of specified {@link EffectType} types is present on this skill effects, {@code false} otherwise.
-     */
     public boolean hasEffectType(EffectType effectType, EffectType... effectTypes) {
         if (this.effectTypes == null) {
             synchronized (this) {

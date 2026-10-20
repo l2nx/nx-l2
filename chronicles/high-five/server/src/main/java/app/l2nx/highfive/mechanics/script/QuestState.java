@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.mechanics.script;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.managers.ScriptManager;
@@ -622,7 +623,7 @@ public class QuestState {
      * Set the restart time for the daily quests.
      */
     public void setRestartTime() {
-        final Calendar reDo = Calendar.getInstance();
+        final Calendar reDo = ClockBridge.calendar();
         if (reDo.get(Calendar.HOUR_OF_DAY) >= RESET_HOUR) {
             reDo.add(Calendar.DATE, 1);
         }
@@ -638,6 +639,6 @@ public class QuestState {
      */
     public boolean isNowAvailable() {
         final String val = get(RESTART_VAR);
-        return (val != null) && (Long.parseLong(val) <= System.currentTimeMillis());
+        return (val != null) && (Long.parseLong(val) <= ClockBridge.wallMillis());
     }
 }

@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.ai;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.WorldObject;
 import app.l2nx.highfive.entity.actor.Attackable;
@@ -38,7 +39,6 @@ import app.l2nx.highfive.threads.ThreadPool;
 import app.l2nx.highfive.util.LocationUtil;
 import java.util.Collection;
 import java.util.concurrent.Future;
-import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * This class manages AI of Attackable.
@@ -382,7 +382,7 @@ public class SiegeGuardAI extends CreatureAI implements Runnable {
                         }
 
                         final int chance = 5;
-                        if (chance >= ThreadLocalRandom.current().nextInt(100)) {
+                        if (chance >= ClockBridge.random().nextInt(100)) {
                             continue;
                         }
 
@@ -433,7 +433,7 @@ public class SiegeGuardAI extends CreatureAI implements Runnable {
                         }
 
                         final int chance = 4;
-                        if (chance >= ThreadLocalRandom.current().nextInt(100)) {
+                        if (chance >= ClockBridge.random().nextInt(100)) {
                             continue;
                         }
 
@@ -603,7 +603,7 @@ public class SiegeGuardAI extends CreatureAI implements Runnable {
                         MAX_ATTACK_TIMEOUT + GameTimeTaskManager.getInstance().getGameTicks();
 
                 // check for close combat skills && heal/buff skills
-                if (!actor.isMuted() && (ThreadLocalRandom.current().nextInt(100) <= 5)) {
+                if (!actor.isMuted() && (ClockBridge.random().nextInt(100) <= 5)) {
                     for (Skill sk : skills) {
                         final int castRange = sk.getCastRange();
                         if ((castRange >= distance)

@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.mechanics.announce;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.managers.IdManager;
 import java.util.Date;
 import lombok.Getter;
@@ -60,7 +61,7 @@ public class EventAnnouncement implements IAnnouncement {
 
     @Override
     public boolean isValid() {
-        final Date now = new Date();
+        final Date now = new Date(ClockBridge.wallMillis());
         return (startDate != null) && (endDate != null) && !now.before(startDate) && !now.after(endDate);
     }
 

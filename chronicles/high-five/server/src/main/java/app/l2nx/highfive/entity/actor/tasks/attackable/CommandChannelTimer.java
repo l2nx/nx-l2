@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.entity.actor.tasks.attackable;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.entity.actor.Attackable;
 import app.l2nx.highfive.threads.ThreadPool;
@@ -39,7 +40,7 @@ public class CommandChannelTimer implements Runnable {
             return;
         }
 
-        if ((System.currentTimeMillis() - attackable.getCommandChannelLastAttack())
+        if ((ClockBridge.gameMillis() - attackable.getCommandChannelLastAttack())
                 > PlayerConfig.LOOT_RAIDS_PRIVILEGE_INTERVAL) {
             attackable.setCommandChannelTimer(null);
             attackable.setFirstCommandChannelAttacked(null);

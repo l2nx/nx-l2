@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.managers;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.data.xml.ItemData;
@@ -39,7 +40,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
-import java.util.concurrent.ThreadLocalRandom;
+import java.util.random.RandomGenerator;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -77,16 +78,16 @@ public class FishingChampionshipManager {
         refreshWinResult();
         recalculateMinLength();
 
-        if (enddate <= System.currentTimeMillis()) {
-            enddate = System.currentTimeMillis();
+        if (enddate <= ClockBridge.wallMillis()) {
+            enddate = ClockBridge.wallMillis();
             new finishChamp().run();
         } else {
-            ThreadPool.schedule(new finishChamp(), enddate - System.currentTimeMillis());
+            ThreadPool.schedule(new finishChamp(), enddate - ClockBridge.wallMillis());
         }
     }
 
     protected void setEndOfChamp() {
-        final Calendar finishtime = Calendar.getInstance();
+        final Calendar finishtime = ClockBridge.calendar();
         finishtime.setTimeInMillis(enddate);
         finishtime.set(Calendar.MINUTE, 0);
         finishtime.set(Calendar.SECOND, 0);
@@ -123,7 +124,7 @@ public class FishingChampionshipManager {
             return;
         }
 
-        final ThreadLocalRandom random = ThreadLocalRandom.current();
+        final RandomGenerator random = ClockBridge.random();
         double len = random.nextInt(60, 90) + (random.nextInt(1001) / 1000.);
         if ((lureId >= 8484) && (lureId <= 8486)) {
             len += random.nextInt(3001) / 1000.;
@@ -190,7 +191,7 @@ public class FishingChampionshipManager {
     }
 
     public long getTimeRemaining() {
-        return (enddate - System.currentTimeMillis()) / 60000;
+        return (enddate - ClockBridge.wallMillis()) / 60000;
     }
 
     public String getWinnerName(int par) {
@@ -429,7 +430,7 @@ public class FishingChampionshipManager {
             shutdown();
 
             log.info("FishingChampionshipManager : new event period start.");
-            ThreadPool.schedule(new finishChamp(), enddate - System.currentTimeMillis());
+            ThreadPool.schedule(new finishChamp(), enddate - ClockBridge.wallMillis());
         }
     }
 

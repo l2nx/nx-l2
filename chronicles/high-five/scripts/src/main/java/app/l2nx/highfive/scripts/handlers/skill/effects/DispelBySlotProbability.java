@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.scripts.handlers.skill.effects;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.custom.CancelReturnConfig;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.holders.creature.EffectList;
@@ -40,7 +41,6 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Dispel By Slot Probability effect implementation.
@@ -106,7 +106,7 @@ public class DispelBySlotProbability extends AbstractEffect {
         final EffectList effectList = effected.getEffectList();
         final List<BuffInfo> canceled = new ArrayList<>();
         for (Entry<AbnormalType, Short> entry : dispelAbnormals.entrySet()) {
-            if (ThreadLocalRandom.current().nextInt(100) < rate) {
+            if (ClockBridge.random().nextInt(100) < rate) {
                 // Dispel transformations (buff and by GM).
                 if ((entry.getKey() == AbnormalType.TRANSFORM)
                         && (effected.isTransformed()
@@ -164,7 +164,7 @@ public class DispelBySlotProbability extends AbstractEffect {
     private void normalCancel(Creature effected) {
         final EffectList effectList = effected.getEffectList();
         for (Entry<AbnormalType, Short> entry : dispelAbnormals.entrySet()) {
-            if (ThreadLocalRandom.current().nextInt(100) < rate) {
+            if (ClockBridge.random().nextInt(100) < rate) {
                 // Dispel transformations (buff and by GM).
                 if ((entry.getKey() == AbnormalType.TRANSFORM)
                         && (effected.isTransformed()

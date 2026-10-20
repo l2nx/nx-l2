@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.scripts.handlers.chat.commands.user;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.custom.ServerTimeConfig;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.handler.IUserCommandHandler;
@@ -67,7 +68,7 @@ public class Time implements IUserCommandHandler {
 
         player.sendPacket(sm);
         if (ServerTimeConfig.DISPLAY_SERVER_TIME) {
-            player.sendMessage("Server time is " + SDF.format(LocalDateTime.now()));
+            player.sendMessage("Server time is " + SDF.format(LocalDateTime.now(ClockBridge.wallClock())));
         }
 
         return true;

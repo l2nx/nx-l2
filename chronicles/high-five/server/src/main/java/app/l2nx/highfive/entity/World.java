@@ -24,6 +24,7 @@ package app.l2nx.highfive.entity;
 
 import app.l2nx.highfive.ai.CreatureAI;
 import app.l2nx.highfive.ai.Intention;
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.custom.FactionSystemConfig;
 import app.l2nx.highfive.data.sql.CharInfoTable;
 import app.l2nx.highfive.entity.actor.Creature;
@@ -44,7 +45,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import lombok.Getter;
@@ -1583,7 +1583,7 @@ public class World {
                 }
 
                 count++;
-                if (ThreadLocalRandom.current().nextInt(count) == 0) {
+                if (ClockBridge.random().nextInt(count) == 0) {
                     selected = clazz.cast(wo);
                 }
             }
@@ -1633,7 +1633,7 @@ public class World {
                 }
 
                 count++;
-                if (ThreadLocalRandom.current().nextInt(count) == 0) {
+                if (ClockBridge.random().nextInt(count) == 0) {
                     selected = clazz.cast(wo);
                 }
             }
@@ -1687,7 +1687,7 @@ public class World {
                     }
 
                     count++;
-                    if (ThreadLocalRandom.current().nextInt(count) == 0) {
+                    if (ClockBridge.random().nextInt(count) == 0) {
                         selected = cast;
                     }
                 }
@@ -1746,7 +1746,7 @@ public class World {
                     }
 
                     count++;
-                    if (ThreadLocalRandom.current().nextInt(count) == 0) {
+                    if (ClockBridge.random().nextInt(count) == 0) {
                         selected = cast;
                     }
                 }
@@ -1799,7 +1799,7 @@ public class World {
                 }
 
                 count++;
-                if (ThreadLocalRandom.current().nextInt(count) == 0) {
+                if (ClockBridge.random().nextInt(count) == 0) {
                     selected = cast;
                 }
             }
@@ -1858,7 +1858,7 @@ public class World {
                 }
 
                 count++;
-                if (ThreadLocalRandom.current().nextInt(count) == 0) {
+                if (ClockBridge.random().nextInt(count) == 0) {
                     selected = cast;
                 }
             }
@@ -1915,7 +1915,7 @@ public class World {
                     }
 
                     count++;
-                    if (ThreadLocalRandom.current().nextInt(count) == 0) {
+                    if (ClockBridge.random().nextInt(count) == 0) {
                         selected = cast;
                     }
                 }
@@ -1978,7 +1978,7 @@ public class World {
                     }
 
                     count++;
-                    if (ThreadLocalRandom.current().nextInt(count) == 0) {
+                    if (ClockBridge.random().nextInt(count) == 0) {
                         selected = cast;
                     }
                 }

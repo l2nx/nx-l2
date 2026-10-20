@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.mechanics.fishing;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.data.xml.FishingMonstersData;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
@@ -35,7 +36,6 @@ import app.l2nx.highfive.network.serverpackets.PlaySound;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
 import app.l2nx.highfive.threads.ThreadPool;
 import java.util.concurrent.Future;
-import java.util.concurrent.ThreadLocalRandom;
 
 public class Fishing implements Runnable {
     private Player fisher;
@@ -86,14 +86,14 @@ public class Fishing implements Runnable {
         this.lureId = lureId;
         final int lureType;
         if (isUpperGrade) {
-            deceptiveMode = (ThreadLocalRandom.current().nextInt(100) >= 90) ? 1 : 0;
+            deceptiveMode = (ClockBridge.random().nextInt(100) >= 90) ? 1 : 0;
             lureType = 2;
         } else {
             deceptiveMode = 0;
             lureType = isNoob ? 0 : 1;
         }
 
-        mode = (ThreadLocalRandom.current().nextInt(100) >= 80) ? 1 : 0;
+        mode = (ClockBridge.random().nextInt(100) >= 80) ? 1 : 0;
         this.fisher.broadcastPacket(
                 new ExFishingStartCombat(this.fisher, time, fishMaxHp, mode, lureType, deceptiveMode));
         this.fisher.sendPacket(new PlaySound(1, "SF_S_01", 0, 0, 0, 0, 0));
@@ -136,7 +136,7 @@ public class Fishing implements Runnable {
             final FishingMonster fishingMonster =
                     FishingMonstersData.getInstance().getFishingMonster(fisher.getLevel());
             if (fishingMonster != null) {
-                if (ThreadLocalRandom.current().nextInt(100) <= fishingMonster.getProbability()) {
+                if (ClockBridge.random().nextInt(100) <= fishingMonster.getProbability()) {
                     fisher.sendPacket(
                             SystemMessageId.YOU_CAUGHT_SOMETHING_SMELLY_AND_SCARY_MAYBE_YOU_SHOULD_THROW_IT_BACK);
                     final Npc monster = Quest.addSpawn(fishingMonster.getFishingMonsterId(), fisher);
@@ -170,13 +170,13 @@ public class Fishing implements Runnable {
 
             if (stop == 0) {
                 stop = 1;
-                int check = ThreadLocalRandom.current().nextInt(100);
+                int check = ClockBridge.random().nextInt(100);
                 if (check >= 70) {
                     mode = mode == 0 ? 1 : 0;
                 }
 
                 if (upperGrade) {
-                    check = ThreadLocalRandom.current().nextInt(100);
+                    check = ClockBridge.random().nextInt(100);
                     if (check >= 90) {
                         deceptiveMode = deceptiveMode == 0 ? 1 : 0;
                     }
@@ -198,7 +198,7 @@ public class Fishing implements Runnable {
 
     public void useReeling(int dmg, int pen) {
         anim = 2;
-        if (ThreadLocalRandom.current().nextInt(100) > 90) {
+        if (ClockBridge.random().nextInt(100) > 90) {
             fisher.sendPacket(SystemMessageId.THE_FISH_HAS_RESISTED_YOUR_ATTEMPT_TO_BRING_IT_IN);
             goodUse = 0;
             changeHp(0, pen);
@@ -258,7 +258,7 @@ public class Fishing implements Runnable {
 
     public void usePumping(int dmg, int pen) {
         anim = 1;
-        if (ThreadLocalRandom.current().nextInt(100) > 90) {
+        if (ClockBridge.random().nextInt(100) > 90) {
             fisher.sendPacket(SystemMessageId.THE_FISH_HAS_RESISTED_YOUR_ATTEMPT_TO_BRING_IT_IN);
             goodUse = 0;
             changeHp(0, pen);

@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.taskmanagers;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.item.instance.Item;
 import app.l2nx.highfive.threads.ThreadPool;
@@ -51,7 +52,7 @@ public class ItemManaTaskManager implements Runnable {
         working = true;
 
         if (!ITEMS.isEmpty()) {
-            final long currentTime = System.currentTimeMillis();
+            final long currentTime = ClockBridge.gameMillis();
             final Iterator<Entry<Item, Long>> iterator = ITEMS.entrySet().iterator();
             Entry<Item, Long> entry;
 
@@ -75,7 +76,7 @@ public class ItemManaTaskManager implements Runnable {
     }
 
     public void add(Item item) {
-        ITEMS.computeIfAbsent(item, k -> System.currentTimeMillis() + MANA_CONSUMPTION_RATE);
+        ITEMS.computeIfAbsent(item, k -> ClockBridge.gameMillis() + MANA_CONSUMPTION_RATE);
     }
 
     public static ItemManaTaskManager getInstance() {

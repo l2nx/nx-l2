@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.network.clientpackets;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.actor.Player;
@@ -62,7 +63,7 @@ public class RequestMoveToLocationInVehicle extends ClientPacket {
 
         if ((PlayerConfig.PLAYER_MOVEMENT_BLOCK_TIME > 0)
                 && !player.isGM()
-                && (player.getNotMoveUntil() > System.currentTimeMillis())) {
+                && (player.getNotMoveUntil() > ClockBridge.gameMillis())) {
             player.sendPacket(SystemMessageId.YOU_CANNOT_MOVE_WHILE_SPEAKING_TO_AN_NPC_ONE_MOMENT_PLEASE);
             player.sendPacket(ActionFailed.STATIC_PACKET);
             return;

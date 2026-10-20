@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.taskmanagers;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.enums.creature.Race;
@@ -35,7 +36,8 @@ import app.l2nx.highfive.mechanics.skill.enums.SkillFinishType;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
 import app.l2nx.highfive.threads.ThreadPool;
-import java.util.Calendar;
+import java.time.Clock;
+import java.time.LocalTime;
 import lombok.Getter;
 
 /**
@@ -50,13 +52,8 @@ public class GameTimeTaskManager extends Thread {
     public static final int SECONDS_PER_IG_DAY = MILLIS_PER_IG_DAY / 1000;
     public static final int TICKS_PER_IG_DAY = SECONDS_PER_IG_DAY * TICKS_PER_SECOND;
 
-    private final long referenceTime;
-
     @Getter
     private boolean night;
-
-    @Getter
-    private int gameTicks;
 
     @Getter
     private int gameTime;
@@ -68,40 +65,27 @@ public class GameTimeTaskManager extends Thread {
         super("GameTimeTaskManager");
         super.setDaemon(true);
         super.setPriority(MAX_PRIORITY);
-
-        final Calendar c = Calendar.getInstance();
-        c.set(Calendar.HOUR_OF_DAY, 0);
-        c.set(Calendar.MINUTE, 0);
-        c.set(Calendar.SECOND, 0);
-        c.set(Calendar.MILLISECOND, 0);
-        referenceTime = c.getTimeInMillis();
-
-        super.start();
     }
 
     @Override
     public void run() {
         while (true) {
-            gameTicks = (int) ((System.currentTimeMillis() - referenceTime) / MILLIS_IN_TICK);
-            gameTime = (gameTicks % TICKS_PER_IG_DAY) / MILLIS_IN_TICK;
+            gameTime = inGameMinutesAt(ClockBridge.wallClock());
             gameHour = gameTime / 60;
 
             if ((gameHour < 6) != night) {
                 night = !night;
 
-                // Shadow Sense skill for Dark Elf players.
                 for (Player player : World.getPlayers()) {
                     if (player.getRace() == Race.DARK_ELF) {
                         final Skill shadowSense = player.getKnownSkill(CommonSkill.SHADOW_SENSE.getId());
                         if (shadowSense != null) {
                             if (night) {
-                                // It is night, apply the skill.
                                 player.sendPacket(new SystemMessage(
                                                 SystemMessageId.IT_IS_NOW_MIDNIGHT_AND_THE_EFFECT_OF_S1_CAN_BE_FELT)
                                         .addSkillName(shadowSense));
                                 player.addSkill(shadowSense, false);
                             } else {
-                                // It is day, remove the skill.
                                 player.sendPacket(new SystemMessage(
                                                 SystemMessageId.IT_IS_DAWN_AND_THE_EFFECT_OF_S1_WILL_NOW_DISAPPEAR)
                                         .addSkillName(shadowSense));
@@ -121,9 +105,27 @@ public class GameTimeTaskManager extends Thread {
             try {
                 Thread.sleep(MILLIS_IN_TICK);
             } catch (InterruptedException e) {
-                // Ignore.
+                return;
             }
         }
+    }
+
+    /** Read from the clock on every call: a value cached by the thread would lag the clock by up to a tick. */
+    public int getGameTicks() {
+        return ticksAt(ClockBridge.gameMillis());
+    }
+
+    static int ticksAt(long gameMillis) {
+        return (int) (gameMillis / MILLIS_IN_TICK);
+    }
+
+    /**
+     * Counts from the local time of day, not from the time elapsed since midnight: on a DST change day the two differ
+     * by an hour, which is six in-game hours.
+     */
+    static int inGameMinutesAt(Clock wallClock) {
+        final long realTicks = (LocalTime.now(wallClock).toNanoOfDay() / 1_000_000) / MILLIS_IN_TICK;
+        return (int) ((realTicks % TICKS_PER_IG_DAY) / MILLIS_IN_TICK);
     }
 
     public int getGameMinute() {
@@ -135,6 +137,11 @@ public class GameTimeTaskManager extends Thread {
     }
 
     private static class SingletonHolder {
-        protected static final GameTimeTaskManager INSTANCE = new GameTimeTaskManager();
+        protected static final GameTimeTaskManager INSTANCE = started(new GameTimeTaskManager());
+
+        private static GameTimeTaskManager started(GameTimeTaskManager manager) {
+            manager.start();
+            return manager;
+        }
     }
 }

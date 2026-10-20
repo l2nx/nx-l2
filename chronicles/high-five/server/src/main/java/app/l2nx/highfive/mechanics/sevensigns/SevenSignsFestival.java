@@ -20,6 +20,7 @@
 package app.l2nx.highfive.mechanics.sevensigns;
 
 import app.l2nx.highfive.ai.Intention;
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.FeatureConfig;
 import app.l2nx.highfive.data.SpawnTable;
 import app.l2nx.highfive.data.sql.CharInfoTable;
@@ -57,7 +58,6 @@ import java.util.Map;
 import java.util.StringJoiner;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.ThreadLocalRandom;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -1069,11 +1069,11 @@ public class SevenSignsFestival {
     }
 
     public void setNextCycleStart() {
-        nextFestivalCycleStart = System.currentTimeMillis() + FeatureConfig.ALT_FESTIVAL_CYCLE_LENGTH;
+        nextFestivalCycleStart = ClockBridge.gameMillis() + FeatureConfig.ALT_FESTIVAL_CYCLE_LENGTH;
     }
 
     public void setNextFestivalStart(long milliFromNow) {
-        nextFestivalStart = System.currentTimeMillis() + milliFromNow;
+        nextFestivalStart = ClockBridge.gameMillis() + milliFromNow;
     }
 
     public long getMinsToNextCycle() {
@@ -1081,7 +1081,7 @@ public class SevenSignsFestival {
             return -1;
         }
 
-        return (nextFestivalCycleStart - System.currentTimeMillis()) / 60000;
+        return (nextFestivalCycleStart - ClockBridge.gameMillis()) / 60000;
     }
 
     public int getMinsToNextFestival() {
@@ -1089,7 +1089,7 @@ public class SevenSignsFestival {
             return -1;
         }
 
-        return (int) (((nextFestivalStart - System.currentTimeMillis()) / 60000) + 1);
+        return (int) (((nextFestivalStart - ClockBridge.gameMillis()) / 60000) + 1);
     }
 
     public String getTimeToNextFestivalStr() {
@@ -1336,7 +1336,7 @@ public class SevenSignsFestival {
             }
 
             // Update the highest scores and party list.
-            currFestData.set("date", String.valueOf(System.currentTimeMillis()));
+            currFestData.set("date", String.valueOf(ClockBridge.wallMillis()));
             currFestData.set("score", offeringScore);
             currFestData.set("members", sj.toString());
 
@@ -1770,12 +1770,12 @@ public class SevenSignsFestival {
                         // Randomize the spawn point around the specific centerpoint for each player.
                         int x = startLocation.x;
                         int y = startLocation.y;
-                        if (ThreadLocalRandom.current().nextBoolean()) {
-                            x += ThreadLocalRandom.current().nextInt(FESTIVAL_MAX_OFFSET_X);
-                            y += ThreadLocalRandom.current().nextInt(FESTIVAL_MAX_OFFSET_Y);
+                        if (ClockBridge.random().nextBoolean()) {
+                            x += ClockBridge.random().nextInt(FESTIVAL_MAX_OFFSET_X);
+                            y += ClockBridge.random().nextInt(FESTIVAL_MAX_OFFSET_Y);
                         } else {
-                            x -= ThreadLocalRandom.current().nextInt(FESTIVAL_MAX_OFFSET_X);
-                            y -= ThreadLocalRandom.current().nextInt(FESTIVAL_MAX_OFFSET_Y);
+                            x -= ClockBridge.random().nextInt(FESTIVAL_MAX_OFFSET_X);
+                            y -= ClockBridge.random().nextInt(FESTIVAL_MAX_OFFSET_Y);
                         }
 
                         participant.getAI().setIntentionIdle();
@@ -1846,22 +1846,19 @@ public class SevenSignsFestival {
                 /*
                  * Random X and Y coords around the player start location, up to half of the maximum allowed offset are generated to prevent the mobs from all moving to the exact same place.
                  */
-                if (ThreadLocalRandom.current().nextBoolean()) {
-                    x += ThreadLocalRandom.current().nextInt(FESTIVAL_MAX_OFFSET_X);
-                    y += ThreadLocalRandom.current().nextInt(FESTIVAL_MAX_OFFSET_Y);
+                if (ClockBridge.random().nextBoolean()) {
+                    x += ClockBridge.random().nextInt(FESTIVAL_MAX_OFFSET_X);
+                    y += ClockBridge.random().nextInt(FESTIVAL_MAX_OFFSET_Y);
                 } else {
-                    x -= ThreadLocalRandom.current().nextInt(FESTIVAL_MAX_OFFSET_X);
-                    y -= ThreadLocalRandom.current().nextInt(FESTIVAL_MAX_OFFSET_Y);
+                    x -= ClockBridge.random().nextInt(FESTIVAL_MAX_OFFSET_X);
+                    y -= ClockBridge.random().nextInt(FESTIVAL_MAX_OFFSET_Y);
                 }
 
                 festivalMob.setRunning();
                 festivalMob
                         .getAI()
                         .setIntentionMoveTo(new Location(
-                                x,
-                                y,
-                                startLocation.z,
-                                ThreadLocalRandom.current().nextInt(65536)));
+                                x, y, startLocation.z, ClockBridge.random().nextInt(65536)));
             }
         }
 
@@ -1914,7 +1911,7 @@ public class SevenSignsFestival {
                 try {
                     final Spawn npcSpawn = new Spawn(currSpawn.npcId);
                     npcSpawn.setXYZ(currSpawn.x, currSpawn.y, currSpawn.z);
-                    npcSpawn.setHeading(ThreadLocalRandom.current().nextInt(65536));
+                    npcSpawn.setHeading(ClockBridge.random().nextInt(65536));
                     npcSpawn.setAmount(1);
                     npcSpawn.setRespawnDelay(respawnDelay);
 
@@ -2045,7 +2042,7 @@ public class SevenSignsFestival {
             this.z = z;
 
             // Generate a random heading if no positive one given.
-            this.heading = (heading < 0) ? ThreadLocalRandom.current().nextInt(65536) : heading;
+            this.heading = (heading < 0) ? ClockBridge.random().nextInt(65536) : heading;
             npcId = -1;
         }
 
@@ -2053,7 +2050,7 @@ public class SevenSignsFestival {
             x = spawnData[0];
             y = spawnData[1];
             z = spawnData[2];
-            heading = (spawnData[3] < 0) ? ThreadLocalRandom.current().nextInt(65536) : spawnData[3];
+            heading = (spawnData[3] < 0) ? ClockBridge.random().nextInt(65536) : spawnData[3];
             if (spawnData.length > 4) {
                 npcId = spawnData[4];
             } else {

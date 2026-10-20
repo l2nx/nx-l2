@@ -23,6 +23,7 @@
 package app.l2nx.highfive.scripts.handlers.chat.commands.admin;
 
 import app.l2nx.highfive.cache.HtmCache;
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.zone.type.NoRestartZone;
 import app.l2nx.highfive.handler.IAdminCommandHandler;
@@ -35,7 +36,6 @@ import app.l2nx.highfive.scripts.ai.bosses.Antharas.Antharas;
 import app.l2nx.highfive.scripts.ai.bosses.Baium.Baium;
 import app.l2nx.highfive.util.StatSet;
 import java.time.Instant;
-import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.StringTokenizer;
@@ -265,8 +265,8 @@ public class AdminGrandBoss implements IAdminCommandHandler {
             }
 
             final StatSet info = GrandBossManager.getInstance().getStatSet(grandBossId);
-            final String bossRespawn = RESPAWN_FORMAT.format(
-                    Instant.ofEpochMilli(info.getLong("respawn_time")).atZone(ZoneId.systemDefault()));
+            final String bossRespawn = RESPAWN_FORMAT.format(Instant.ofEpochMilli(info.getLong("respawn_time"))
+                    .atZone(ClockBridge.wallClock().getZone()));
             final NpcHtmlMessage html = new NpcHtmlMessage(0, 1);
             html.setHtml(HtmCache.getInstance().getHtm(activeChar, htmlPatch));
             html.replace("%bossStatus%", text);

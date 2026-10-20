@@ -19,12 +19,12 @@
  */
 package app.l2nx.highfive.data.xml;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.spawns.Spawn;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * This class holds parameter, specific to certain NPCs.<br>
@@ -49,7 +49,7 @@ public class NpcPersonalAIData {
             // Check for spawn name. Since spawn name is key for AI Data, generate random name, if spawn name isn't
             // specified.
             if (spawnDat.getName() == null) {
-                spawnDat.setName(Long.toString(ThreadLocalRandom.current().nextLong()));
+                spawnDat.setName(Long.toString(ClockBridge.random().nextLong()));
             }
 
             aiData.put(spawnDat.getName(), data);

@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.data.sql;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.custom.DualboxCheckConfig;
 import app.l2nx.highfive.config.custom.OfflineTradeConfig;
 import app.l2nx.highfive.data.holders.SellBuffHolder;
@@ -43,7 +44,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.Calendar;
-import java.util.concurrent.ThreadLocalRandom;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -178,10 +178,10 @@ public class OfflineTraderTable {
             while (rs.next()) {
                 final long time = rs.getLong("time");
                 if (OfflineTradeConfig.OFFLINE_MAX_DAYS > 0) {
-                    final Calendar cal = Calendar.getInstance();
+                    final Calendar cal = ClockBridge.calendar();
                     cal.setTimeInMillis(time);
                     cal.add(Calendar.DAY_OF_YEAR, OfflineTradeConfig.OFFLINE_MAX_DAYS);
-                    if (cal.getTimeInMillis() <= System.currentTimeMillis()) {
+                    if (cal.getTimeInMillis() <= ClockBridge.wallMillis()) {
                         continue;
                     }
                 }
@@ -283,7 +283,7 @@ public class OfflineTraderTable {
                     if (!OfflineTradeConfig.OFFLINE_ABNORMAL_EFFECTS.isEmpty()) {
                         player.startAbnormalVisualEffect(
                                 false,
-                                OfflineTradeConfig.OFFLINE_ABNORMAL_EFFECTS.get(ThreadLocalRandom.current()
+                                OfflineTradeConfig.OFFLINE_ABNORMAL_EFFECTS.get(ClockBridge.random()
                                         .nextInt(OfflineTradeConfig.OFFLINE_ABNORMAL_EFFECTS.size())));
                     }
 
@@ -515,7 +515,7 @@ public class OfflineTraderTable {
         }
 
         if (player.getOfflineStartTime() == 0) {
-            player.setOfflineStartTime(System.currentTimeMillis());
+            player.setOfflineStartTime(ClockBridge.wallMillis());
         }
 
         // Store trade on exit, if realtime saving is enabled.
@@ -530,7 +530,7 @@ public class OfflineTraderTable {
             player.startAbnormalVisualEffect(
                     true,
                     OfflineTradeConfig.OFFLINE_ABNORMAL_EFFECTS.get(
-                            ThreadLocalRandom.current().nextInt(OfflineTradeConfig.OFFLINE_ABNORMAL_EFFECTS.size())));
+                            ClockBridge.random().nextInt(OfflineTradeConfig.OFFLINE_ABNORMAL_EFFECTS.size())));
         }
 
         return true;

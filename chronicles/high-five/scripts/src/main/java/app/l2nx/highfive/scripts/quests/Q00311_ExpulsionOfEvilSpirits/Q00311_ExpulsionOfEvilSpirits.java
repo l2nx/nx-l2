@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.scripts.quests.Q00311_ExpulsionOfEvilSpirits;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.data.xml.SkillData;
 import app.l2nx.highfive.entity.actor.Attackable;
 import app.l2nx.highfive.entity.actor.Creature;
@@ -37,7 +38,7 @@ import app.l2nx.highfive.threads.ThreadPool;
 import app.l2nx.highfive.util.LocationUtil;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ThreadLocalRandom;
+import java.util.random.RandomGenerator;
 
 /**
  * Expulsion of Evil Spirits (311)
@@ -102,10 +103,10 @@ public class Q00311_ExpulsionOfEvilSpirits extends Quest {
         }
 
         GlobalVariablesManager.getInstance().set("VarangkaRespawn", respawnTime);
-        if ((respawnTime == 0) || ((respawnTime - System.currentTimeMillis()) < 0)) {
+        if ((respawnTime == 0) || ((respawnTime - ClockBridge.wallMillis()) < 0)) {
             startQuestTimer("altarSpawn", 5000, null, null);
         } else {
-            startQuestTimer("altarSpawn", respawnTime - System.currentTimeMillis(), null, null);
+            startQuestTimer("altarSpawn", respawnTime - ClockBridge.wallMillis(), null, null);
         }
     }
 
@@ -124,7 +125,7 @@ public class Q00311_ExpulsionOfEvilSpirits extends Quest {
             return null;
         } else if (event.equalsIgnoreCase("minion1") && checkIfSpawned(VARANGKA)) {
             if (!checkIfSpawned(VARANGKA + 1) && checkIfSpawned(VARANGKA)) {
-                final ThreadLocalRandom random = ThreadLocalRandom.current();
+                final RandomGenerator random = ClockBridge.random();
                 varangkaMinion1 = addSpawn(
                         VARANGKA + 1,
                         player.getX() + random.nextInt(10, 51),
@@ -143,7 +144,7 @@ public class Q00311_ExpulsionOfEvilSpirits extends Quest {
             return null;
         } else if (event.equalsIgnoreCase("minion2")) {
             if (!checkIfSpawned(VARANGKA + 2) && checkIfSpawned(VARANGKA)) {
-                final ThreadLocalRandom random = ThreadLocalRandom.current();
+                final RandomGenerator random = ClockBridge.random();
                 varangkaMinion2 = addSpawn(
                         VARANGKA + 2,
                         player.getX() + random.nextInt(10, 51),
@@ -233,18 +234,18 @@ public class Q00311_ExpulsionOfEvilSpirits extends Quest {
                 cancelQuestTimers("minion2");
                 varangkaMinion1 = null;
                 varangkaMinion2 = null;
-                final long respawn = ThreadLocalRandom.current().nextInt(14400000, 28800001);
-                GlobalVariablesManager.getInstance().set("VarangkaRespawn", System.currentTimeMillis() + respawn);
+                final long respawn = ClockBridge.random().nextInt(14400000, 28800001);
+                GlobalVariablesManager.getInstance().set("VarangkaRespawn", ClockBridge.wallMillis() + respawn);
                 startQuestTimer("altarSpawn", respawn, null, null);
                 takeItems(member, PROTECTION_SOULS_PENDANT, 1);
                 return;
             } else if (npc.getId() == (VARANGKA + 1)) {
                 varangkaMinion1 = null;
-                startQuestTimer("minion1", ThreadLocalRandom.current().nextInt(60000, 120001), npc, killer);
+                startQuestTimer("minion1", ClockBridge.random().nextInt(60000, 120001), npc, killer);
                 return;
             } else if (npc.getId() == (VARANGKA + 2)) {
                 varangkaMinion2 = null;
-                startQuestTimer("minion2", ThreadLocalRandom.current().nextInt(60000, 120001), npc, killer);
+                startQuestTimer("minion2", ClockBridge.random().nextInt(60000, 120001), npc, killer);
                 return;
             }
 
@@ -257,7 +258,7 @@ public class Q00311_ExpulsionOfEvilSpirits extends Quest {
                 qs.setMemoStateEx(1, count);
             }
 
-            if (MONSTERS.get(npc.getId()) < ThreadLocalRandom.current().nextDouble()) {
+            if (MONSTERS.get(npc.getId()) < ClockBridge.random().nextDouble()) {
                 giveItems(member, RAGNA_ORCS_AMULET, 1);
             }
         }
@@ -285,7 +286,7 @@ public class Q00311_ExpulsionOfEvilSpirits extends Quest {
             return;
         }
 
-        final ThreadLocalRandom random = ThreadLocalRandom.current();
+        final RandomGenerator random = ClockBridge.random();
         if (hasQuestItems(player, PROTECTION_SOULS_PENDANT) && (random.nextInt(100) < 20)) {
             if ((varangka == null) && !checkIfSpawned(VARANGKA)) {
                 varangka = addSpawn(VARANGKA, 74914, -101922, -967, 0, false, 0);

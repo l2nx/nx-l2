@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.taskmanagers;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.NpcConfig;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.config.custom.OfflinePlayConfig;
@@ -54,7 +55,7 @@ public class DecayTaskManager implements Runnable {
         working = true;
 
         if (!DECAY_SCHEDULES.isEmpty()) {
-            final long currentTime = System.currentTimeMillis();
+            final long currentTime = ClockBridge.gameMillis();
             final Iterator<Entry<Creature, Long>> iterator =
                     DECAY_SCHEDULES.entrySet().iterator();
             Entry<Creature, Long> entry;
@@ -104,7 +105,7 @@ public class DecayTaskManager implements Runnable {
         }
 
         // Add to decay schedules.
-        DECAY_SCHEDULES.put(creature, System.currentTimeMillis() + (delay * 1000));
+        DECAY_SCHEDULES.put(creature, ClockBridge.gameMillis() + (delay * 1000));
     }
 
     /**
@@ -122,7 +123,7 @@ public class DecayTaskManager implements Runnable {
      */
     public long getRemainingTime(Creature creature) {
         final Long time = DECAY_SCHEDULES.get(creature);
-        return time != null ? time.longValue() - System.currentTimeMillis() : Long.MAX_VALUE;
+        return time != null ? time.longValue() - ClockBridge.gameMillis() : Long.MAX_VALUE;
     }
 
     @Override
@@ -136,7 +137,7 @@ public class DecayTaskManager implements Runnable {
         ret.append("Tasks dump:");
         ret.append(System.lineSeparator());
 
-        final long time = System.currentTimeMillis();
+        final long time = ClockBridge.gameMillis();
         for (Entry<Creature, Long> entry : DECAY_SCHEDULES.entrySet()) {
             ret.append("Class/Name: ");
             ret.append(entry.getKey().getClass().getSimpleName());

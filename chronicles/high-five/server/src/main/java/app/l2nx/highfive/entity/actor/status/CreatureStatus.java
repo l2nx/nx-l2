@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.entity.actor.status;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.mechanics.stats.Formulas;
@@ -29,7 +30,6 @@ import app.l2nx.highfive.threads.ThreadPool;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
-import java.util.concurrent.ThreadLocalRandom;
 import lombok.Getter;
 
 public class CreatureStatus {
@@ -155,7 +155,7 @@ public class CreatureStatus {
 
         if (!isDOT && !isHPConsumption) {
             activeChar.stopEffectsOnDamage(awake);
-            if (activeChar.isStunned() && (ThreadLocalRandom.current().nextInt(10) == 0)) {
+            if (activeChar.isStunned() && (ClockBridge.random().nextInt(10) == 0)) {
                 activeChar.stopStunning(true);
             }
         }

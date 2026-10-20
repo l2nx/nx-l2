@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.network.serverpackets;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.ServerConfig;
 import app.l2nx.highfive.config.custom.MultilingualSupportConfig;
 import app.l2nx.highfive.config.custom.OfflinePlayConfig;
@@ -144,7 +145,7 @@ public class CharSelectionInfo extends ServerPacket {
             if (charInfoPackage.getAccessLevel() > -1) {
                 // Deleted.
                 if (charInfoPackage.getDeleteTimer() > 0) {
-                    buffer.writeInt((int) ((charInfoPackage.getDeleteTimer() - System.currentTimeMillis()) / 1000));
+                    buffer.writeInt((int) ((charInfoPackage.getDeleteTimer() - ClockBridge.wallMillis()) / 1000));
                 } else // Normal.
                 {
                     buffer.writeInt(0);
@@ -236,7 +237,7 @@ public class CharSelectionInfo extends ServerPacket {
 
         // See if the char must be deleted.
         final long deletetime = chardata.getLong("deletetime");
-        if ((deletetime > 0) && (System.currentTimeMillis() > deletetime)) {
+        if ((deletetime > 0) && (ClockBridge.wallMillis() > deletetime)) {
             final Clan clan = ClanTable.getInstance().getClan(chardata.getInt("clanid"));
             if (clan != null) {
                 clan.removeClanMember(objectId, 0);

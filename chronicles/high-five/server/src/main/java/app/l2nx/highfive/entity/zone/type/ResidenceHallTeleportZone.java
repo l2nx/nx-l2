@@ -19,11 +19,11 @@
  */
 package app.l2nx.highfive.entity.zone.type;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.threads.ThreadPool;
 import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.ThreadLocalRandom;
 import lombok.Getter;
 
 /**
@@ -62,7 +62,7 @@ public class ResidenceHallTeleportZone extends ResidenceTeleportZone {
         @Override
         public void run() {
             final int index = getSpawns().size() > 1
-                    ? ThreadLocalRandom.current().nextInt(getSpawns().size())
+                    ? ClockBridge.random().nextInt(getSpawns().size())
                     : 0;
             final Location loc = getSpawns().get(index);
             if (loc == null) {

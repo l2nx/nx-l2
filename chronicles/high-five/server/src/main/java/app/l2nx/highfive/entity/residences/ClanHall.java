@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.entity.residences;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.data.sql.ClanTable;
 import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.entity.actor.Player;
@@ -125,7 +126,7 @@ public abstract class ClanHall {
                 return;
             }
 
-            final long currentTime = System.currentTimeMillis();
+            final long currentTime = ClockBridge.wallMillis();
             if (endTime > currentTime) {
                 ThreadPool.schedule(new FunctionTask(cwh), endTime - currentTime);
             } else {
@@ -152,7 +153,7 @@ public abstract class ClanHall {
                                     >= lease)
                             || !cwh) {
                         final int fee = endTime == -1 ? tempFee : lease;
-                        setEndTime(System.currentTimeMillis() + rate);
+                        setEndTime(ClockBridge.wallMillis() + rate);
                         dbSave();
                         if (cwh) {
                             ClanTable.getInstance()

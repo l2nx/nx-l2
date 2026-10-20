@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.entity;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.actor.Attackable;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Npc;
@@ -724,7 +725,7 @@ public abstract class WorldObject extends ListenersContainer implements IPositio
      * @param hide if {@code true} hide the player
      */
     private void sendInstanceUpdate(Instance instance, boolean hide) {
-        final int startTime = (int) ((System.currentTimeMillis() - instance.getInstanceStartTime()) / 1000);
+        final int startTime = (int) ((ClockBridge.gameMillis() - instance.getInstanceStartTime()) / 1000);
         final int endTime = (int) ((instance.getInstanceEndTime() - instance.getInstanceStartTime()) / 1000);
         if (instance.isTimerIncrease()) {
             sendPacket(new ExSendUIEvent(asPlayer(), hide, true, startTime, endTime, instance.getTimerText()));

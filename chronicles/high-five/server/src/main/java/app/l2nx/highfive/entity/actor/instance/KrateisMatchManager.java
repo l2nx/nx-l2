@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.entity.actor.instance;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.Summon;
 import app.l2nx.highfive.entity.actor.templates.NpcTemplate;
@@ -29,7 +30,6 @@ import app.l2nx.highfive.managers.games.KrateisCubeManager;
 import app.l2nx.highfive.mechanics.krateisCube.KrateiArena;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.serverpackets.ExPVPMatchCCRetire;
-import java.util.concurrent.ThreadLocalRandom;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -53,7 +53,7 @@ public class KrateisMatchManager extends Folk {
                 if (arena.isActiveNow()) {
                     player.teleToLocation(
                             arena.getBattleLoc()
-                                    .get(ThreadLocalRandom.current()
+                                    .get(ClockBridge.random()
                                             .nextInt(arena.getBattleLoc().size())),
                             true);
                     arena.addEffects(player);

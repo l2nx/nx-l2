@@ -19,13 +19,13 @@
  */
 package app.l2nx.highfive.mechanics.sevensigns;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.spawns.Spawn;
 import java.awt.Polygon;
 import java.awt.Shape;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ThreadLocalRandom;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -89,11 +89,11 @@ public class DimensionalRiftRoom {
     }
 
     public int getRandomX() {
-        return xMin < xMax ? ThreadLocalRandom.current().nextInt(xMin, xMax + 1) : xMin;
+        return xMin < xMax ? ClockBridge.random().nextInt(xMin, xMax + 1) : xMin;
     }
 
     public int getRandomY() {
-        return yMin < yMax ? ThreadLocalRandom.current().nextInt(yMin, yMax + 1) : yMin;
+        return yMin < yMax ? ClockBridge.random().nextInt(yMin, yMax + 1) : yMin;
     }
 
     public boolean checkIfInZone(int x, int y, int z) {

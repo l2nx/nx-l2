@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.entity.actor.tasks.player;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.data.xml.AdminData;
 import app.l2nx.highfive.entity.actor.Player;
@@ -100,7 +101,7 @@ public class IllegalPlayerActionTask implements Runnable {
                                     actor.getObjectId(),
                                     PunishmentAffect.CHARACTER,
                                     PunishmentType.BAN,
-                                    System.currentTimeMillis() + (GeneralConfig.DEFAULT_PUNISH_PARAM * 1000),
+                                    ClockBridge.wallMillis() + (GeneralConfig.DEFAULT_PUNISH_PARAM * 1000),
                                     message,
                                     getClass().getSimpleName()));
                     break;
@@ -111,7 +112,7 @@ public class IllegalPlayerActionTask implements Runnable {
                                     actor.getObjectId(),
                                     PunishmentAffect.CHARACTER,
                                     PunishmentType.JAIL,
-                                    System.currentTimeMillis() + (GeneralConfig.DEFAULT_PUNISH_PARAM * 1000),
+                                    ClockBridge.wallMillis() + (GeneralConfig.DEFAULT_PUNISH_PARAM * 1000),
                                     message,
                                     getClass().getSimpleName()));
                     break;

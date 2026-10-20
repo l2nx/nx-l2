@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.taskmanagers;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.threads.ThreadPool;
@@ -50,7 +51,7 @@ public class PlayerAutoSaveTaskManager implements Runnable {
         working = true;
 
         if (!PLAYER_TIMES.isEmpty()) {
-            final long currentTime = System.currentTimeMillis();
+            final long currentTime = ClockBridge.gameMillis();
             final Iterator<Entry<Player, Long>> iterator =
                     PLAYER_TIMES.entrySet().iterator();
             Entry<Player, Long> entry;
@@ -78,7 +79,7 @@ public class PlayerAutoSaveTaskManager implements Runnable {
     }
 
     public void add(Player player) {
-        PLAYER_TIMES.put(player, System.currentTimeMillis() + GeneralConfig.CHAR_DATA_STORE_INTERVAL);
+        PLAYER_TIMES.put(player, ClockBridge.gameMillis() + GeneralConfig.CHAR_DATA_STORE_INTERVAL);
     }
 
     public void remove(Player player) {

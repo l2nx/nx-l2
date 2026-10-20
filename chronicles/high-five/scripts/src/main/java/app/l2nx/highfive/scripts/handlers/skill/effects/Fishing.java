@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.scripts.handlers.skill.effects;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.actor.Creature;
@@ -42,7 +43,6 @@ import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.util.LocationUtil;
 import app.l2nx.highfive.util.StatSet;
-import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Fishing effect implementation.
@@ -121,7 +121,7 @@ public class Fishing extends AbstractEffect {
         }
 
         // calculate a position in front of the player with a random distance
-        int distance = ThreadLocalRandom.current().nextInt(MIN_BAIT_DISTANCE, MAX_BAIT_DISTANCE + 1);
+        int distance = ClockBridge.random().nextInt(MIN_BAIT_DISTANCE, MAX_BAIT_DISTANCE + 1);
         final double angle = LocationUtil.convertHeadingToDegree(player.getHeading());
         final double radian = Math.toRadians(angle);
         final double sin = Math.sin(radian);

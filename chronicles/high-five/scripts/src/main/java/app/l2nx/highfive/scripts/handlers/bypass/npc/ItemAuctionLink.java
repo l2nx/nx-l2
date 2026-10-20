@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.scripts.handlers.bypass.npc;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Player;
@@ -32,7 +33,6 @@ import app.l2nx.highfive.managers.ItemAuctionManager;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.serverpackets.ExItemAuctionInfoPacket;
 import java.time.Instant;
-import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.StringTokenizer;
 import lombok.extern.slf4j.Slf4j;
@@ -84,7 +84,7 @@ public class ItemAuctionLink implements IBypassHandler {
                     if (nextAuction != null) {
                         player.sendMessage("The next auction will begin on the "
                                 + SDF.format(Instant.ofEpochMilli(nextAuction.getStartingTime())
-                                        .atZone(ZoneId.systemDefault()))
+                                        .atZone(ClockBridge.wallClock().getZone()))
                                 + ".");
                     }
 

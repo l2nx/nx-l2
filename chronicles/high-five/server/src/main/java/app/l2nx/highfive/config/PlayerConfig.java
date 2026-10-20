@@ -329,6 +329,10 @@ public class PlayerConfig {
         ALT_GAME_SHIELD_BLOCKS = config.getBoolean("AltShieldBlocks", false);
         ALT_PERFECT_SHLD_BLOCK = config.getInt("AltPerfectShieldBlockRate", 10);
         EFFECT_TICK_RATIO = config.getLong("EffectTickRatio", 666);
+        if (EFFECT_TICK_RATIO <= 0) {
+            throw new IllegalStateException("EffectTickRatio must be positive, was " + EFFECT_TICK_RATIO);
+        }
+
         FAKE_DEATH_UNTARGET = config.getBoolean("FakeDeathUntarget", false);
         FAKE_DEATH_DAMAGE_STAND = config.getBoolean("FakeDeathDamageStand", true);
         CALCULATE_MAGIC_SUCCESS_BY_SKILL_MAGIC_LEVEL =

@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.scripts.ai.bosses.Valakas;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.GrandBossConfig;
 import app.l2nx.highfive.data.xml.SkillData;
 import app.l2nx.highfive.entity.Location;
@@ -204,7 +205,7 @@ public class Valakas extends Script {
 
         if (status == STATUS_DEAD) {
             final long respawnTime = info.getLong("respawn_time");
-            final long remaining = respawnTime - System.currentTimeMillis();
+            final long remaining = respawnTime - ClockBridge.wallMillis();
             if (remaining > 0) {
                 startQuestTimer(EVT_UNLOCK, remaining, null, null);
             } else {
@@ -224,7 +225,7 @@ public class Valakas extends Script {
             valakas.setRunning();
 
             if (status == STATUS_FIGHTING) {
-                lastAttackTime = System.currentTimeMillis();
+                lastAttackTime = ClockBridge.gameMillis();
                 startQuestTimer(EVT_REGEN_TICK, REGEN_TICK_DELAY, valakas, null, true);
                 startQuestTimer(EVT_SKILL_TICK, SKILL_TICK_DELAY, valakas, null, true);
             } else {
@@ -395,7 +396,7 @@ public class Valakas extends Script {
             npc.doCast(SKILL_ANTI_STRIDER.getSkill());
         }
 
-        lastAttackTime = System.currentTimeMillis();
+        lastAttackTime = ClockBridge.gameMillis();
     }
 
     @Override
@@ -426,7 +427,7 @@ public class Valakas extends Script {
         final long baseIntervalMillis = GrandBossConfig.VALAKAS_SPAWN_INTERVAL * MILLIS_PER_HOUR;
         final long randomRangeMillis = GrandBossConfig.VALAKAS_SPAWN_RANDOM * MILLIS_PER_HOUR;
         final long respawnDelay = baseIntervalMillis + getRandom(-randomRangeMillis, randomRangeMillis);
-        final long nextRespawnTime = System.currentTimeMillis() + respawnDelay;
+        final long nextRespawnTime = ClockBridge.wallMillis() + respawnDelay;
 
         log.info("Valakas will respawn at: {}", DateFormatUtils.format(nextRespawnTime, "dd/MM/yyyy HH:mm:ss"));
 
@@ -470,7 +471,7 @@ public class Valakas extends Script {
      * @param npc Valakas instance.
      */
     private void handleEncounterStart(Npc npc) {
-        lastAttackTime = System.currentTimeMillis();
+        lastAttackTime = ClockBridge.gameMillis();
         npc.teleToLocation(LOC_VALAKAS_LAIR);
 
         startQuestTimer(EVT_BROADCAST_SPAWN, BROADCAST_SPAWN_DELAY, npc, null);
@@ -493,7 +494,7 @@ public class Valakas extends Script {
     private void handleRegenTick(Npc npc) {
         final GrandBossManager bossManager = GrandBossManager.getInstance();
         if ((bossManager.getStatus(VALAKAS) == STATUS_FIGHTING)
-                && ((lastAttackTime + INACTIVITY_TIMEOUT) < System.currentTimeMillis())) {
+                && ((lastAttackTime + INACTIVITY_TIMEOUT) < ClockBridge.gameMillis())) {
             npc.getAI().setIntentionIdle();
             npc.teleToLocation(LOC_VALAKAS_REGEN);
             bossManager.setStatus(VALAKAS, STATUS_DORMANT);

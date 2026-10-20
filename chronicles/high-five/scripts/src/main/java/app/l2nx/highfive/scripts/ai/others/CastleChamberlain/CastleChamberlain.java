@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.scripts.ai.others.CastleChamberlain;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.FeatureConfig;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.data.sql.ClanTable;
@@ -182,7 +183,7 @@ public class CastleChamberlain extends Script {
             html.replace("%" + str + "Reset%", "");
         } else {
             final String fstring = ((func == Castle.FUNC_SUPPORT) || (func == Castle.FUNC_TELEPORT)) ? "9" : "10";
-            final Calendar calendar = Calendar.getInstance();
+            final Calendar calendar = ClockBridge.calendar();
             calendar.setTimeInMillis(function.getEndTime());
             html.replace("%" + str + "Depth%", "<fstring p1=\"" + function.getLvl() + "\">" + fstring + "</fstring>");
             html.replace(

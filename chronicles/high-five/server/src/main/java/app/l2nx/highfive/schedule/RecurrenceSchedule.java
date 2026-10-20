@@ -4,6 +4,8 @@
  */
 package app.l2nx.highfive.schedule;
 
+import app.l2nx.highfive.clock.ClockBridge;
+import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
@@ -51,7 +53,8 @@ public final class RecurrenceSchedule {
 
         if (!dayFixed(rule)) {
             throw new IllegalArgumentException(
-                    "The rule must set BYDAY when FREQ is WEEKLY, BYMONTHDAY or BYDAY when it is MONTHLY, and BYYEARDAY, BYDAY or BYMONTHDAY with BYMONTH when it is YEARLY: "
+                    "The rule must set BYDAY when FREQ is WEEKLY, BYMONTHDAY or BYDAY when it is MONTHLY, and"
+                            + " BYYEARDAY, BYDAY or BYMONTHDAY with BYMONTH when it is YEARLY: "
                             + rrule);
         }
     }
@@ -74,7 +77,8 @@ public final class RecurrenceSchedule {
     }
 
     public Optional<Instant> next() {
-        return nextAfter(Instant.now(), ZoneId.systemDefault());
+        final Clock wall = ClockBridge.wallClock();
+        return nextAfter(wall.instant(), wall.getZone());
     }
 
     public Optional<Instant> nextAfter(Instant now, ZoneId zone) {

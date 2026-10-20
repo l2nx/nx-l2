@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.network.clientpackets;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.data.sql.ClanTable;
 import app.l2nx.highfive.entity.actor.Player;
@@ -79,7 +80,7 @@ public class AllyDismiss extends ClientPacket {
             return;
         }
 
-        final long currentTime = System.currentTimeMillis();
+        final long currentTime = ClockBridge.wallMillis();
         leaderClan.setAllyPenaltyExpiryTime(
                 currentTime + (PlayerConfig.ALT_ACCEPT_CLAN_DAYS_WHEN_DISMISSED * 86400000),
                 Clan.PENALTY_TYPE_DISMISS_CLAN); // 24*60*60*1000 = 86400000

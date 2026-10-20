@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.entity.item.auction;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.util.StatSet;
 import java.util.Calendar;
 import java.util.concurrent.TimeUnit;
@@ -42,7 +43,7 @@ public class AuctionDateGenerator {
     private int minute_of_hour;
 
     public AuctionDateGenerator(StatSet config) {
-        calendar = Calendar.getInstance();
+        calendar = ClockBridge.calendar();
         interval = config.getInt(FIELD_INTERVAL, -1);
 
         // NC week start in Monday.

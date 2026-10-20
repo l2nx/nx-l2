@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.network.clientpackets;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.data.sql.CrestTable;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.clan.Clan;
@@ -67,7 +68,7 @@ public class RequestExSetPledgeCrestLarge extends ClientPacket {
             return;
         }
 
-        if (clan.getDissolvingExpiryTime() > System.currentTimeMillis()) {
+        if (clan.getDissolvingExpiryTime() > ClockBridge.wallMillis()) {
             player.sendPacket(
                     SystemMessageId
                             .AS_YOU_ARE_CURRENTLY_SCHEDULE_FOR_CLAN_DISSOLUTION_YOU_CANNOT_REGISTER_OR_DELETE_A_CLAN_CREST);

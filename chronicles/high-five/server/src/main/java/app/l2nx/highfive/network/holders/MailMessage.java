@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.network.holders;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.data.sql.CharInfoTable;
 import app.l2nx.highfive.entity.itemcontainer.Mail;
 import app.l2nx.highfive.managers.IdManager;
@@ -30,7 +31,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.ThreadLocalRandom;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -121,8 +121,8 @@ public class MailMessage {
         this.subject = subject;
         content = text;
         expiration = isCod
-                ? System.currentTimeMillis() + (COD_EXPIRATION * 3600000)
-                : System.currentTimeMillis() + (EXPIRATION * 3600000);
+                ? ClockBridge.wallMillis() + (COD_EXPIRATION * 3600000)
+                : ClockBridge.wallMillis() + (EXPIRATION * 3600000);
         hasAttachments = false;
         unread = true;
         deletedBySender = false;
@@ -139,7 +139,7 @@ public class MailMessage {
         this.receiverId = receiverId;
         this.subject = subject;
         this.content = content;
-        expiration = System.currentTimeMillis() + (EXPIRATION * 3600000);
+        expiration = ClockBridge.wallMillis() + (EXPIRATION * 3600000);
         reqAdena = 0;
         hasAttachments = false;
         unread = true;
@@ -158,7 +158,7 @@ public class MailMessage {
         receiverId = msg.getSenderId();
         subject = "";
         content = "";
-        expiration = System.currentTimeMillis() + (EXPIRATION * 3600000);
+        expiration = ClockBridge.wallMillis() + (EXPIRATION * 3600000);
         unread = true;
         deletedBySender = true;
         deletedByReceiver = false;
@@ -171,7 +171,7 @@ public class MailMessage {
         attachments.setNewMessageId(id);
         unloadTask = ThreadPool.schedule(
                 new AttachmentsUnloadTask(this),
-                UNLOAD_ATTACHMENTS_INTERVAL + ThreadLocalRandom.current().nextInt(UNLOAD_ATTACHMENTS_INTERVAL));
+                UNLOAD_ATTACHMENTS_INTERVAL + ClockBridge.random().nextInt(UNLOAD_ATTACHMENTS_INTERVAL));
     }
 
     public static PreparedStatement getStatement(MailMessage msg, Connection con) throws SQLException {
@@ -272,7 +272,7 @@ public class MailMessage {
             attachments.restore();
             unloadTask = ThreadPool.schedule(
                     new AttachmentsUnloadTask(this),
-                    UNLOAD_ATTACHMENTS_INTERVAL + ThreadLocalRandom.current().nextInt(UNLOAD_ATTACHMENTS_INTERVAL));
+                    UNLOAD_ATTACHMENTS_INTERVAL + ClockBridge.random().nextInt(UNLOAD_ATTACHMENTS_INTERVAL));
         }
 
         return attachments;
@@ -304,7 +304,7 @@ public class MailMessage {
         hasAttachments = true;
         unloadTask = ThreadPool.schedule(
                 new AttachmentsUnloadTask(this),
-                UNLOAD_ATTACHMENTS_INTERVAL + ThreadLocalRandom.current().nextInt(UNLOAD_ATTACHMENTS_INTERVAL));
+                UNLOAD_ATTACHMENTS_INTERVAL + ClockBridge.random().nextInt(UNLOAD_ATTACHMENTS_INTERVAL));
         return attachments;
     }
 

@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.ai;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.GeoEngineConfig;
 import app.l2nx.highfive.entity.WorldObject;
 import app.l2nx.highfive.entity.actor.Creature;
@@ -31,7 +32,6 @@ import app.l2nx.highfive.geoengine.pathfinding.PathFinding;
 import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.threads.ThreadPool;
 import java.util.concurrent.Future;
-import java.util.concurrent.ThreadLocalRandom;
 
 public class SummonAI extends PlayableAI implements Runnable {
     private static final int AVOID_RADIUS = 70;
@@ -276,7 +276,7 @@ public class SummonAI extends PlayableAI implements Runnable {
 
         final int ownerX = actor.asSummon().getOwner().getX();
         final int ownerY = actor.asSummon().getOwner().getY();
-        final double angle = Math.toRadians(ThreadLocalRandom.current().nextInt(-90, 91))
+        final double angle = Math.toRadians(ClockBridge.random().nextInt(-90, 91))
                 + Math.atan2(ownerY - actor.getY(), ownerX - actor.getX());
         final int targetX = ownerX + (int) (AVOID_RADIUS * Math.cos(angle));
         final int targetY = ownerY + (int) (AVOID_RADIUS * Math.sin(angle));

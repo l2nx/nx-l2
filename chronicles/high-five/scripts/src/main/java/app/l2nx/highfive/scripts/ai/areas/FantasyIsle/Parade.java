@@ -22,13 +22,13 @@
  */
 package app.l2nx.highfive.scripts.ai.areas.FantasyIsle;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.mechanics.script.Script;
 import app.l2nx.highfive.taskmanagers.GameTimeTaskManager;
 import app.l2nx.highfive.threads.ThreadPool;
 import java.time.Instant;
-import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Collection;
 import java.util.concurrent.ConcurrentHashMap;
@@ -165,8 +165,8 @@ public class Parade extends Script {
 
         log.info(
                 "Fantasy Isle: Parade starting at {} and is scheduled each next {} hours.",
-                DATE_FORMAT.format(
-                        Instant.ofEpochMilli(System.currentTimeMillis() + diff).atZone(ZoneId.systemDefault())),
+                DATE_FORMAT.format(Instant.ofEpochMilli(ClockBridge.wallMillis() + diff)
+                        .atZone(ClockBridge.wallClock().getZone())),
                 (cycle / 3600000));
     }
 
@@ -185,13 +185,13 @@ public class Parade extends Script {
     }
 
     private long timeLeftMilli(int hh, int mm, int ss) {
-        final int now = (GameTimeTaskManager.getInstance().getGameTicks() * 60) / 100;
+        final int now = GameTimeTaskManager.getInstance().getGameTime() * 60;
         int dd = ((hh * 3600) + (mm * 60) + ss) - (now % 86400);
         if (dd < 0) {
             dd += 86400;
         }
 
-        return (dd * 1000) / 6;
+        return (dd * 1000L) / 6;
     }
 
     class Start implements Runnable {

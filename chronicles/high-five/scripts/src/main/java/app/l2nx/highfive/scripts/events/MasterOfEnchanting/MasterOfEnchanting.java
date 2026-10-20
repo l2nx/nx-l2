@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.scripts.events.MasterOfEnchanting;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.itemcontainer.Inventory;
@@ -74,7 +75,7 @@ public class MasterOfEnchanting extends LongTimeEvent {
 
             final String value = player.getVariables().getString("MasterOfEnchanting", "");
             final long reuse = value.isEmpty() ? 0 : Long.parseLong(value);
-            final long curTime = System.currentTimeMillis();
+            final long curTime = ClockBridge.wallMillis();
             if (curTime > reuse) {
                 if (getQuestItemsCount(player, Inventory.ADENA_ID) > SCROLL_24_PRICE) {
                     takeItems(player, Inventory.ADENA_ID, SCROLL_24_PRICE);
@@ -82,7 +83,7 @@ public class MasterOfEnchanting extends LongTimeEvent {
                     player.getVariables()
                             .set(
                                     "MasterOfEnchanting",
-                                    Long.toString(System.currentTimeMillis() + (SCROLL_24_TIME * 3600000)));
+                                    Long.toString(ClockBridge.wallMillis() + (SCROLL_24_TIME * 3600000)));
                     htmltext = "32599-scroll24.htm";
                 } else {
                     htmltext = "32599-s24-no.htm";
@@ -115,7 +116,7 @@ public class MasterOfEnchanting extends LongTimeEvent {
                     player.getVariables()
                             .set(
                                     "MasterOfEnchanting",
-                                    Long.toString(System.currentTimeMillis() + (SCROLL_24_TIME * 3600000)));
+                                    Long.toString(ClockBridge.wallMillis() + (SCROLL_24_TIME * 3600000)));
                     htmltext = "32599-scroll24.htm";
                 } else {
                     htmltext = "32599-s24-no.htm";

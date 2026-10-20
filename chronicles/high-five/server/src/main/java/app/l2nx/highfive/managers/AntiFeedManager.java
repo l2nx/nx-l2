@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.managers;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.PvpConfig;
 import app.l2nx.highfive.config.custom.DualboxCheckConfig;
 import app.l2nx.highfive.entity.actor.Creature;
@@ -55,7 +56,7 @@ public class AntiFeedManager {
      * @param objectId Player's objectId
      */
     public void setLastDeathTime(int objectId) {
-        lastDeathTimes.put(objectId, System.currentTimeMillis());
+        lastDeathTimes.put(objectId, ClockBridge.gameMillis());
     }
 
     /**
@@ -85,7 +86,7 @@ public class AntiFeedManager {
 
         if ((PvpConfig.ANTIFEED_INTERVAL > 0)
                 && lastDeathTimes.containsKey(targetPlayer.getObjectId())
-                && ((System.currentTimeMillis() - lastDeathTimes.get(targetPlayer.getObjectId()))
+                && ((ClockBridge.gameMillis() - lastDeathTimes.get(targetPlayer.getObjectId()))
                         < PvpConfig.ANTIFEED_INTERVAL)) {
             return false;
         }

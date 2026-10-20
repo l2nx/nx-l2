@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.mechanics.olympiad;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.OlympiadConfig;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.World;
@@ -33,7 +34,6 @@ import app.l2nx.highfive.network.serverpackets.ServerPacket;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ThreadLocalRandom;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -98,7 +98,7 @@ public class OlympiadGameTeams extends AbstractOlympiadGame {
         final List<Player> teamTwoPlayers = new ArrayList<>(MAX_TEAM_SIZE);
 
         while (list.size() > 1) {
-            teamOne = list.remove(ThreadLocalRandom.current().nextInt(list.size()));
+            teamOne = list.remove(ClockBridge.random().nextInt(list.size()));
 
             if ((teamOne == null) || teamOne.isEmpty()) {
                 continue;
@@ -118,7 +118,7 @@ public class OlympiadGameTeams extends AbstractOlympiadGame {
                 continue;
             }
 
-            teamTwo = list.remove(ThreadLocalRandom.current().nextInt(list.size()));
+            teamTwo = list.remove(ClockBridge.random().nextInt(list.size()));
             if ((teamTwo == null) || teamTwo.isEmpty()) {
                 list.add(teamOne);
                 teamOnePlayers.clear();

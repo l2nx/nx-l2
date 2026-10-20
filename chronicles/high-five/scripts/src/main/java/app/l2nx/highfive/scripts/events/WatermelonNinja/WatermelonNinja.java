@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.scripts.events.WatermelonNinja;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.WorldObject;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
@@ -37,7 +38,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ThreadLocalRandom;
+import java.util.random.RandomGenerator;
 
 /**
  * @URL https://eu.4gameforum.com/threads/653089/
@@ -418,7 +419,7 @@ public class WatermelonNinja extends LongTimeEvent {
             return;
         }
 
-        final ThreadLocalRandom random = ThreadLocalRandom.current();
+        final RandomGenerator random = ClockBridge.random();
         final int size = drops.size();
         final int startIndex = random.nextInt(size); // Random starting index.
         int dropCount = 0;

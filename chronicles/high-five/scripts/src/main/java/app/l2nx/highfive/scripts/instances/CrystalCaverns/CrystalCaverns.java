@@ -23,6 +23,7 @@
 package app.l2nx.highfive.scripts.instances.CrystalCaverns;
 
 import app.l2nx.highfive.ai.Intention;
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.RatesConfig;
 import app.l2nx.highfive.data.xml.SkillData;
 import app.l2nx.highfive.entity.Location;
@@ -491,7 +492,7 @@ public class CrystalCaverns extends InstanceScript {
                 return false;
             }
 
-            if (System.currentTimeMillis()
+            if (ClockBridge.wallMillis()
                     < InstanceManager.getInstance().getInstanceTime(partyMember.getObjectId(), TEMPLATE_ID)) {
                 final SystemMessage sm = new SystemMessage(SystemMessageId.C1_MAY_NOT_RE_ENTER_YET);
                 sm.addPcName(partyMember);
@@ -891,9 +892,9 @@ public class CrystalCaverns extends InstanceScript {
             final InstanceWorld tmpworld = InstanceManager.getInstance().getWorld(npc);
             if (tmpworld instanceof CCWorld) {
                 final CCWorld world = (CCWorld) tmpworld;
-                if (((world.dragonClawStart + DRAGONCLAWTIME) <= System.currentTimeMillis())
+                if (((world.dragonClawStart + DRAGONCLAWTIME) <= ClockBridge.gameMillis())
                         || (world.dragonClawNeed <= 0)) {
-                    world.dragonClawStart = System.currentTimeMillis();
+                    world.dragonClawStart = ClockBridge.gameMillis();
                     world.dragonClawNeed = caster.getParty().getMemberCount() - 1;
                 } else {
                     world.dragonClawNeed--;
@@ -914,9 +915,9 @@ public class CrystalCaverns extends InstanceScript {
                 final Party party = caster.getParty();
                 if ((party == null) && !caster.isGM()) {
                     return;
-                } else if (((world.dragonScaleStart + DRAGONSCALETIME) <= System.currentTimeMillis())
+                } else if (((world.dragonScaleStart + DRAGONSCALETIME) <= ClockBridge.gameMillis())
                         || (world.dragonScaleNeed <= 0)) {
-                    world.dragonScaleStart = System.currentTimeMillis();
+                    world.dragonScaleStart = ClockBridge.gameMillis();
                     world.dragonScaleNeed =
                             ((party == null) && caster.isGM()) ? 0 : party != null ? (party.getMemberCount() - 1) : 100;
                 } else {
@@ -1585,7 +1586,7 @@ public class CrystalCaverns extends InstanceScript {
             }
 
             if (checkConditions(player)) {
-                final InstanceWorld instance = new CCWorld(System.currentTimeMillis() + 5400000);
+                final InstanceWorld instance = new CCWorld(ClockBridge.gameMillis() + 5400000);
                 instance.setInstance(InstanceManager.getInstance().createDynamicInstance(TEMPLATE_ID));
                 InstanceManager.getInstance().addWorld(instance);
                 onEnterInstance(player, instance, true);
@@ -1727,7 +1728,7 @@ public class CrystalCaverns extends InstanceScript {
                 }
 
                 world.setStatus(30);
-                final long time = world.endTime - System.currentTimeMillis();
+                final long time = world.endTime - ClockBridge.gameMillis();
                 final Instance baylorInstance = InstanceManager.getInstance().getInstance(world.getInstanceId());
                 baylorInstance.setDuration((int) time);
 

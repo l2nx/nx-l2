@@ -25,6 +25,7 @@ package app.l2nx.highfive;
 
 import app.l2nx.boot.ServerExit;
 import app.l2nx.boot.ServerExitCode;
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.config.ServerConfig;
 import app.l2nx.highfive.config.custom.AutoPlayConfig;
@@ -503,17 +504,17 @@ public class Shutdown extends Thread {
         }
 
         public void restartCounter() {
-            startTime = System.currentTimeMillis();
+            startTime = ClockBridge.gameMillis();
         }
 
         public long getEstimatedTimeAndRestartCounter() {
-            final long toReturn = System.currentTimeMillis() - startTime;
+            final long toReturn = ClockBridge.gameMillis() - startTime;
             restartCounter();
             return toReturn;
         }
 
         public long getEstimatedTime() {
-            return System.currentTimeMillis() - startTime;
+            return ClockBridge.gameMillis() - startTime;
         }
     }
 

@@ -68,6 +68,7 @@ import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.KeyFactory;
+import java.security.SecureRandom;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.RSAKeyGenParameterSpec;
 import java.security.spec.RSAPublicKeySpec;
@@ -80,7 +81,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ThreadLocalRandom;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
@@ -101,6 +101,7 @@ public class LoginServerThread extends Thread {
     private static final int BLOWFISH_KEY_SIZE = 40;
     private static final int HEX_ID_SIZE = 16;
     private static final int PACKET_PADDING = 8;
+    private static final SecureRandom KEY_RANDOM = new SecureRandom();
 
     // Connection configuration.
     private final String hostname;
@@ -498,12 +499,11 @@ public class LoginServerThread extends Thread {
     }
 
     private static byte[] generateHexBytes(int size) {
-        final ThreadLocalRandom random = ThreadLocalRandom.current();
         final byte[] array = new byte[size];
-        random.nextBytes(array);
+        KEY_RANDOM.nextBytes(array);
         for (int i = 0; i < array.length; i++) {
             while (array[i] == 0) {
-                array[i] = (byte) random.nextInt(Byte.MAX_VALUE);
+                array[i] = (byte) KEY_RANDOM.nextInt(Byte.MAX_VALUE);
             }
         }
 

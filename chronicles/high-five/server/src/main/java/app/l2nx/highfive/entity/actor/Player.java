@@ -22,12 +22,14 @@
  */
 package app.l2nx.highfive.entity.actor;
 
+import app.l2nx.engine.core.clock.GameClock;
 import app.l2nx.highfive.LoginServerThread;
 import app.l2nx.highfive.ai.CreatureAI;
 import app.l2nx.highfive.ai.Intention;
 import app.l2nx.highfive.ai.PlayerAI;
 import app.l2nx.highfive.ai.SummonAI;
 import app.l2nx.highfive.cache.RelationCache;
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.communitybbs.BB.Forum;
 import app.l2nx.highfive.communitybbs.Manager.ForumsBBSManager;
 import app.l2nx.highfive.config.FeatureConfig;
@@ -59,6 +61,7 @@ import app.l2nx.highfive.data.sql.ClanTable;
 import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.data.sql.OfflinePlayTable;
 import app.l2nx.highfive.data.sql.OfflineTraderTable;
+import app.l2nx.highfive.data.sql.StoredEffectRows;
 import app.l2nx.highfive.data.xml.AdminData;
 import app.l2nx.highfive.data.xml.CategoryData;
 import app.l2nx.highfive.data.xml.ClassListData;
@@ -250,6 +253,7 @@ import app.l2nx.highfive.mechanics.skill.AbnormalType;
 import app.l2nx.highfive.mechanics.skill.BuffInfo;
 import app.l2nx.highfive.mechanics.skill.CommonSkill;
 import app.l2nx.highfive.mechanics.skill.Skill;
+import app.l2nx.highfive.mechanics.skill.StoredEffect;
 import app.l2nx.highfive.mechanics.skill.enums.FlyType;
 import app.l2nx.highfive.mechanics.skill.enums.SkillFinishType;
 import app.l2nx.highfive.mechanics.skill.holders.EnchantSkillLearn;
@@ -348,6 +352,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -365,7 +370,6 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -392,17 +396,17 @@ public class Player extends Playable {
 
     // Character Skill Save SQL String Definitions:
     private static final String ADD_SKILL_SAVE =
-            "REPLACE INTO character_skills_save (charId,skill_id,skill_level,remaining_time,reuse_delay,systime,restore_type,class_index,buff_index) VALUES (?,?,?,?,?,?,?,?,?)";
+            "REPLACE INTO character_skills_save (charId,skill_id,skill_level,remaining_ms,tick_phase_ms,reuse_delay,reuse_ends_at,restore_type,class_index,buff_index) VALUES (?,?,?,?,?,?,?,?,?,?)";
     private static final String RESTORE_SKILL_SAVE =
-            "SELECT skill_id,skill_level,remaining_time, reuse_delay, systime, restore_type FROM character_skills_save WHERE charId=? AND class_index=? ORDER BY buff_index ASC";
+            "SELECT skill_id,skill_level,remaining_ms,tick_phase_ms,reuse_delay,reuse_ends_at,restore_type FROM character_skills_save WHERE charId=? AND class_index=? ORDER BY buff_index ASC";
     private static final String DELETE_SKILL_SAVE =
             "DELETE FROM character_skills_save WHERE charId=? AND class_index=?";
 
     // Character Item Reuse Time String Definition:
     private static final String ADD_ITEM_REUSE_SAVE =
-            "INSERT INTO character_item_reuse_save (charId,itemId,itemObjId,reuseDelay,systime) VALUES (?,?,?,?,?)";
+            "INSERT INTO character_item_reuse_save (charId,itemId,itemObjId,reuseDelay,reuse_ends_at) VALUES (?,?,?,?,?)";
     private static final String RESTORE_ITEM_REUSE_SAVE =
-            "SELECT charId,itemId,itemObjId,reuseDelay,systime FROM character_item_reuse_save WHERE charId=?";
+            "SELECT charId,itemId,itemObjId,reuseDelay,reuse_ends_at FROM character_item_reuse_save WHERE charId=?";
     private static final String DELETE_ITEM_REUSE_SAVE = "DELETE FROM character_item_reuse_save WHERE charId=?";
 
     // Character Character SQL String Definitions:
@@ -491,7 +495,7 @@ public class Player extends Playable {
 
     @Getter
     @Setter
-    private Calendar createDate = Calendar.getInstance();
+    private Calendar createDate = ClockBridge.calendar();
 
     @Getter
     private String lang = null;
@@ -1360,7 +1364,7 @@ public class Player extends Playable {
         player.setName(name);
 
         // Set Character's create time.
-        player.setCreateDate(Calendar.getInstance());
+        player.setCreateDate(ClockBridge.calendar());
 
         // Set the base class ID to that of the actual class ID.
         player.setBaseClass(player.getPlayerClass());
@@ -2738,11 +2742,11 @@ public class Player extends Playable {
 
     public void setOnlineTime(long time) {
         onlineTime = time;
-        onlineBeginTime = System.currentTimeMillis();
+        onlineBeginTime = ClockBridge.gameMillis();
     }
 
     public int getOnlineTimeMillis() {
-        return (int) (System.currentTimeMillis() - onlineBeginTime);
+        return (int) (ClockBridge.gameMillis() - onlineBeginTime);
     }
 
     /**
@@ -3512,8 +3516,8 @@ public class Player extends Playable {
 
         droppedItem.dropMe(
                 this,
-                (getX() + ThreadLocalRandom.current().nextInt(50)) - 25,
-                (getY() + ThreadLocalRandom.current().nextInt(50)) - 25,
+                (getX() + ClockBridge.random().nextInt(50)) - 25,
+                (getY() + ClockBridge.random().nextInt(50)) - 25,
                 getZ() + 20);
         if ((GeneralConfig.AUTODESTROY_ITEM_AFTER > 0)
                 && GeneralConfig.DESTROY_DROPPED_PLAYER_ITEM
@@ -3674,20 +3678,20 @@ public class Player extends Playable {
     }
 
     public boolean isSpawnProtected() {
-        return (spawnProtectEndTime != 0) && (spawnProtectEndTime > System.currentTimeMillis());
+        return (spawnProtectEndTime != 0) && (spawnProtectEndTime > ClockBridge.gameMillis());
     }
 
     public boolean isTeleportProtected() {
-        return (teleportProtectEndTime != 0) && (teleportProtectEndTime > System.currentTimeMillis());
+        return (teleportProtectEndTime != 0) && (teleportProtectEndTime > ClockBridge.gameMillis());
     }
 
     public void setSpawnProtection(boolean protect) {
-        spawnProtectEndTime = protect ? System.currentTimeMillis() + (PlayerConfig.PLAYER_SPAWN_PROTECTION * 1000) : 0;
+        spawnProtectEndTime = protect ? ClockBridge.gameMillis() + (PlayerConfig.PLAYER_SPAWN_PROTECTION * 1000) : 0;
     }
 
     public void setTeleportProtection(boolean protect) {
         teleportProtectEndTime =
-                protect ? System.currentTimeMillis() + (PlayerConfig.PLAYER_TELEPORT_PROTECTION * 1000) : 0;
+                protect ? ClockBridge.gameMillis() + (PlayerConfig.PLAYER_TELEPORT_PROTECTION * 1000) : 0;
     }
 
     /**
@@ -4885,7 +4889,7 @@ public class Player extends Playable {
                 dropLimit = RatesConfig.PLAYER_DROP_LIMIT;
             }
 
-            if ((dropPercent > 0) && (ThreadLocalRandom.current().nextInt(100) < dropPercent)) {
+            if ((dropPercent > 0) && (ClockBridge.random().nextInt(100) < dropPercent)) {
                 int dropCount = 0;
                 int itemDropPercent = 0;
                 for (Item itemDrop : inventory.getItems()) {
@@ -4920,7 +4924,7 @@ public class Player extends Playable {
 
                     // NOTE: Each time an item is dropped, the chance of another item being dropped gets lesser
                     // (dropCount * 2)
-                    if (ThreadLocalRandom.current().nextInt(100) < itemDropPercent) {
+                    if (ClockBridge.random().nextInt(100) < itemDropPercent) {
                         if (itemDrop.isEquipped()) {
                             inventory.unEquipItemInSlot(itemDrop.getLocationSlot());
                         }
@@ -5098,7 +5102,7 @@ public class Player extends Playable {
             return;
         }
 
-        setPvpFlagLasts(System.currentTimeMillis() + PvpConfig.PVP_NORMAL_TIME);
+        setPvpFlagLasts(ClockBridge.gameMillis() + PvpConfig.PVP_NORMAL_TIME);
         if (pvpFlag == 0) {
             startPvPFlag();
         }
@@ -5126,9 +5130,9 @@ public class Player extends Playable {
 
         if ((!isInsideZone(ZoneId.PVP) || !target.isInsideZone(ZoneId.PVP)) && (targetPlayer.getKarma() == 0)) {
             if (checkIfPvP(targetPlayer)) {
-                setPvpFlagLasts(System.currentTimeMillis() + PvpConfig.PVP_PVP_TIME);
+                setPvpFlagLasts(ClockBridge.gameMillis() + PvpConfig.PVP_PVP_TIME);
             } else {
-                setPvpFlagLasts(System.currentTimeMillis() + PvpConfig.PVP_NORMAL_TIME);
+                setPvpFlagLasts(ClockBridge.gameMillis() + PvpConfig.PVP_NORMAL_TIME);
             }
 
             if (pvpFlag == 0) {
@@ -5870,7 +5874,7 @@ public class Player extends Playable {
     }
 
     public long getUptime() {
-        return System.currentTimeMillis() - uptime;
+        return ClockBridge.gameMillis() - uptime;
     }
 
     /**
@@ -6038,7 +6042,7 @@ public class Player extends Playable {
                 PreparedStatement ps =
                         con.prepareStatement("UPDATE characters SET online=?, lastAccess=? WHERE charId=?")) {
             ps.setInt(1, isOnlineInt());
-            ps.setLong(2, System.currentTimeMillis());
+            ps.setLong(2, ClockBridge.wallMillis());
             ps.setInt(3, getObjectId());
             ps.execute();
         } catch (Exception e) {
@@ -6090,7 +6094,7 @@ public class Player extends Playable {
             ps.setInt(35, noble ? 1 : 0);
             ps.setLong(36, 0);
             ps.setTimestamp(37, new Timestamp(createDate.getTimeInMillis()));
-            ps.setLong(38, System.currentTimeMillis());
+            ps.setLong(38, ClockBridge.wallMillis());
             ps.executeUpdate();
         } catch (Exception e) {
             log.error("Could not insert char data: {}", e.getMessage(), e);
@@ -6158,12 +6162,12 @@ public class Player extends Playable {
                     }
 
                     player.setClanJoinExpiryTime(rset.getLong("clan_join_expiry_time"));
-                    if (player.getClanJoinExpiryTime() < System.currentTimeMillis()) {
+                    if (player.getClanJoinExpiryTime() < ClockBridge.wallMillis()) {
                         player.setClanJoinExpiryTime(0);
                     }
 
                     player.setClanCreateExpiryTime(rset.getLong("clan_create_expiry_time"));
-                    if (player.getClanCreateExpiryTime() < System.currentTimeMillis()) {
+                    if (player.getClanCreateExpiryTime() < ClockBridge.wallMillis()) {
                         player.setClanCreateExpiryTime(0);
                     }
 
@@ -6180,7 +6184,7 @@ public class Player extends Playable {
                     }
 
                     player.setFistsWeaponItem(player.findFistsWeaponItem(activeClassId));
-                    player.setUptime(System.currentTimeMillis());
+                    player.setUptime(ClockBridge.gameMillis());
 
                     currentHp = rset.getDouble("curHp");
                     currentCp = rset.getDouble("curCp");
@@ -6609,7 +6613,7 @@ public class Player extends Playable {
             ps.setInt(34, baseClass);
             long totalOnlineTime = onlineTime;
             if (onlineBeginTime > 0) {
-                totalOnlineTime += (System.currentTimeMillis() - onlineBeginTime) / 1000;
+                totalOnlineTime += (ClockBridge.gameMillis() - onlineBeginTime) / 1000;
             }
 
             ps.setLong(35, offlineStartTime > 0 ? onlineTime : totalOnlineTime);
@@ -6685,7 +6689,8 @@ public class Player extends Playable {
 
             int buffIndex = 0;
             final List<Integer> storedSkills = new ArrayList<>();
-            final long currentTime = System.currentTimeMillis();
+            final GameClock clock = ClockBridge.clock();
+            final long now = clock.gameMillis();
 
             // Store all effect data along with calulated remaining.
             // reuse delays for matching skills. 'restore_type'= 0.
@@ -6717,19 +6722,25 @@ public class Player extends Playable {
                             continue;
                         }
 
+                        final StoredEffect stored = info.toStoredEffect();
+                        if (stored == null) {
+                            continue;
+                        }
+
                         storedSkills.add(skill.getReuseHashCode());
 
+                        final TimeStamp t = getSkillReuseTimeStamp(skill.getReuseHashCode());
+                        final boolean underReuse = (t != null) && (now < t.getStamp());
                         statement.setInt(1, getObjectId());
                         statement.setInt(2, skill.getId());
                         statement.setInt(3, skill.getLevel());
-                        statement.setInt(4, info.getTime());
-
-                        final TimeStamp t = getSkillReuseTimeStamp(skill.getReuseHashCode());
-                        statement.setLong(5, (t != null) && (currentTime < t.getStamp()) ? t.getReuse() : 0);
-                        statement.setLong(6, (t != null) && (currentTime < t.getStamp()) ? t.getStamp() : 0);
-                        statement.setInt(7, 0); // Store type 0, active buffs/debuffs.
-                        statement.setInt(8, classIndex);
-                        statement.setInt(9, ++buffIndex);
+                        statement.setObject(4, stored.remainingMillis(), Types.BIGINT);
+                        statement.setLong(5, stored.tickPhaseMillis());
+                        statement.setLong(6, underReuse ? t.getReuse() : 0);
+                        statement.setObject(7, underReuse ? clock.wallMillisAt(t.getStamp()) : null, Types.BIGINT);
+                        statement.setInt(8, 0); // Store type 0, active buffs/debuffs.
+                        statement.setInt(9, classIndex);
+                        statement.setInt(10, ++buffIndex);
                         statement.addBatch();
                     }
                 }
@@ -6742,18 +6753,19 @@ public class Player extends Playable {
                     }
 
                     final TimeStamp t = ts.getValue();
-                    if ((t != null) && (currentTime < t.getStamp())) {
+                    if ((t != null) && (now < t.getStamp())) {
                         storedSkills.add(hash);
 
                         statement.setInt(1, getObjectId());
                         statement.setInt(2, t.getSkillId());
                         statement.setInt(3, t.getSkillLevel());
-                        statement.setInt(4, -1);
-                        statement.setLong(5, t.getReuse());
-                        statement.setLong(6, t.getStamp());
-                        statement.setInt(7, 1); // Restore type 1, skill reuse.
-                        statement.setInt(8, classIndex);
-                        statement.setInt(9, ++buffIndex);
+                        statement.setNull(4, Types.BIGINT);
+                        statement.setNull(5, Types.BIGINT);
+                        statement.setLong(6, t.getReuse());
+                        statement.setLong(7, clock.wallMillisAt(t.getStamp()));
+                        statement.setInt(8, 1); // Restore type 1, skill reuse.
+                        statement.setInt(9, classIndex);
+                        statement.setInt(10, ++buffIndex);
                         statement.addBatch();
                     }
                 }
@@ -6772,14 +6784,15 @@ public class Player extends Playable {
             ps1.setInt(1, getObjectId());
             ps1.execute();
 
-            final long currentTime = System.currentTimeMillis();
+            final GameClock clock = ClockBridge.clock();
+            final long now = clock.gameMillis();
             for (TimeStamp ts : getItemReuseTimeStamps().values()) {
-                if ((ts != null) && (currentTime < ts.getStamp())) {
+                if ((ts != null) && (now < ts.getStamp())) {
                     ps2.setInt(1, getObjectId());
                     ps2.setInt(2, ts.getItemId());
                     ps2.setInt(3, ts.getItemObjectId());
                     ps2.setLong(4, ts.getReuse());
-                    ps2.setLong(5, ts.getStamp());
+                    ps2.setLong(5, clock.wallMillisAt(ts.getStamp()));
                     ps2.addBatch();
                 }
             }
@@ -6833,8 +6846,8 @@ public class Player extends Playable {
         if (!OfflinePlayConfig.OFFLINE_PLAY_ABNORMAL_EFFECTS.isEmpty()) {
             startAbnormalVisualEffect(
                     true,
-                    OfflinePlayConfig.OFFLINE_PLAY_ABNORMAL_EFFECTS.get(ThreadLocalRandom.current()
-                            .nextInt(OfflinePlayConfig.OFFLINE_PLAY_ABNORMAL_EFFECTS.size())));
+                    OfflinePlayConfig.OFFLINE_PLAY_ABNORMAL_EFFECTS.get(
+                            ClockBridge.random().nextInt(OfflinePlayConfig.OFFLINE_PLAY_ABNORMAL_EFFECTS.size())));
         }
 
         broadcastUserInfo();
@@ -7072,7 +7085,7 @@ public class Player extends Playable {
             ps.setInt(1, getObjectId());
             ps.setInt(2, classIndex);
             try (ResultSet rs = ps.executeQuery()) {
-                final long currentTime = System.currentTimeMillis();
+                final GameClock clock = ClockBridge.clock();
                 while (rs.next()) {
                     final Skill skill =
                             SkillData.getInstance().getSkill(rs.getInt("skill_id"), rs.getInt("skill_level"));
@@ -7080,11 +7093,14 @@ public class Player extends Playable {
                         continue;
                     }
 
-                    final long systime = rs.getLong("systime");
-                    final long time = systime - currentTime;
-                    if (time > 10) {
-                        disableSkill(skill, time);
-                        addTimeStamp(skill, rs.getLong("reuse_delay"), systime);
+                    final Long reuseEndsAt = rs.getObject("reuse_ends_at", Long.class);
+                    if (reuseEndsAt != null) {
+                        final long endsAt = clock.gameMillisAtWall(reuseEndsAt);
+                        final long remaining = endsAt - clock.gameMillis();
+                        if (remaining > 10) {
+                            disableSkill(skill, remaining);
+                            addTimeStamp(skill, rs.getLong("reuse_delay"), endsAt);
+                        }
                     }
 
                     // Restore Type 1 The remaning skills lost effect upon logout but were still under a high reuse
@@ -7096,7 +7112,8 @@ public class Player extends Playable {
                     // Restore Type 0 These skill were still in effect on the character upon logout.
                     // Some of which were self casted and might still have had a long reuse delay which also is
                     // restored.
-                    skill.applyEffects(this, this, false, rs.getInt("remaining_time"));
+                    StoredEffectRows.read(rs, getObjectId())
+                            .ifPresent(stored -> skill.applyStoredEffects(this, stored));
                 }
             }
 
@@ -7117,20 +7134,15 @@ public class Player extends Playable {
     private void restoreItemReuse() {
         try (Connection con = DatabaseFactory.getConnection();
                 PreparedStatement ps = con.prepareStatement(RESTORE_ITEM_REUSE_SAVE);
-                PreparedStatement delete = con.prepareStatement(DELETE_ITEM_REUSE_SAVE); ) {
+                PreparedStatement delete = con.prepareStatement(DELETE_ITEM_REUSE_SAVE)) {
             ps.setInt(1, getObjectId());
             try (ResultSet rs = ps.executeQuery()) {
-                int itemId;
-                long reuseDelay;
-                long systime;
-                boolean isInInventory;
-                long remainingTime;
-                final long currentTime = System.currentTimeMillis();
+                final GameClock clock = ClockBridge.clock();
                 while (rs.next()) {
-                    itemId = rs.getInt("itemId");
-                    reuseDelay = rs.getLong("reuseDelay");
-                    systime = rs.getLong("systime");
-                    isInInventory = true;
+                    final int itemId = rs.getInt("itemId");
+                    final long reuseDelay = rs.getLong("reuseDelay");
+                    final long endsAt = clock.gameMillisAtWall(rs.getLong("reuse_ends_at"));
+                    boolean isInInventory = true;
 
                     // Using item Id
                     Item item = inventory.getItemByItemId(itemId);
@@ -7140,9 +7152,9 @@ public class Player extends Playable {
                     }
 
                     if ((item != null) && (item.getId() == itemId) && (item.getReuseDelay() > 0)) {
-                        remainingTime = systime - currentTime;
+                        final long remainingTime = endsAt - clock.gameMillis();
                         if (remainingTime > 10) {
-                            addTimeStampItem(item, reuseDelay, systime);
+                            addTimeStampItem(item, reuseDelay, endsAt);
                             if (isInInventory && item.isEtcItem()) {
                                 final int group = item.getSharedReuseGroup();
                                 if (group > 0) {
@@ -10085,8 +10097,8 @@ public class Player extends Playable {
                     inst.removePlayer(getObjectId());
                     final Location loc = inst.getExitLoc();
                     if (loc != null) {
-                        final int x = loc.getX() + ThreadLocalRandom.current().nextInt(-30, 31);
-                        final int y = loc.getY() + ThreadLocalRandom.current().nextInt(-30, 31);
+                        final int x = loc.getX() + ClockBridge.random().nextInt(-30, 31);
+                        final int y = loc.getY() + ClockBridge.random().nextInt(-30, 31);
                         setXYZInvisible(x, y, loc.getZ());
                         if (hasSummon()) // dead pet
                         {
@@ -10189,7 +10201,7 @@ public class Player extends Playable {
         }
 
         // Use a copy constructor else the fish data may be over-written below
-        this.fish = fish.get(ThreadLocalRandom.current().nextInt(fish.size())).clone();
+        this.fish = fish.get(ClockBridge.random().nextInt(fish.size())).clone();
         fish.clear();
         sendPacket(SystemMessageId.YOU_CAST_YOUR_LINE_AND_START_TO_FISH);
         // Night lures only catch at night, ordinary lures only during the day.
@@ -10283,7 +10295,7 @@ public class Player extends Playable {
     }
 
     private int getRandomFishGroup(int group) {
-        final int check = ThreadLocalRandom.current().nextInt(100);
+        final int check = ClockBridge.random().nextInt(100);
         int type = 1;
         switch (group) {
             case 0: // fish for novices
@@ -10474,7 +10486,7 @@ public class Player extends Playable {
         }
 
         int randomlvl;
-        final int check = ThreadLocalRandom.current().nextInt(100);
+        final int check = ClockBridge.random().nextInt(100);
         if (check <= 50) {
             randomlvl = skillLevel;
         } else if (check <= 85) {
@@ -10773,7 +10785,7 @@ public class Player extends Playable {
             percent *= calcStat(Stat.REDUCE_DEATH_PENALTY_BY_PVP, 1);
         }
 
-        if ((ThreadLocalRandom.current().nextInt(1, 101) <= ((PlayerConfig.DEATH_PENALTY_CHANCE) * percent))
+        if ((ClockBridge.random().nextInt(1, 101) <= ((PlayerConfig.DEATH_PENALTY_CHANCE) * percent))
                 && (!killer.isPlayable() || (getKarma() > 0))) {
             increaseDeathPenaltyBuffLevel();
         }
@@ -11450,7 +11462,7 @@ public class Player extends Playable {
      * @return number of days to char birthday.
      */
     public int checkBirthDay() {
-        final Calendar now = Calendar.getInstance();
+        final Calendar now = ClockBridge.calendar();
 
         // "Characters with a February 29 creation date will receive a gift on February 28."
         if ((createDate.get(Calendar.DAY_OF_MONTH) == 29) && (createDate.get(Calendar.MONTH) == 1)) {
@@ -11635,7 +11647,7 @@ public class Player extends Playable {
             return false;
         }
 
-        if ((fallingTimestamp != 0) && (System.currentTimeMillis() < fallingTimestamp)) {
+        if ((fallingTimestamp != 0) && (ClockBridge.gameMillis() < fallingTimestamp)) {
             return true;
         }
 
@@ -11684,14 +11696,14 @@ public class Player extends Playable {
      * Set falling timestamp
      */
     public void setFalling() {
-        fallingTimestamp = System.currentTimeMillis() + FALLING_VALIDATION_DELAY;
+        fallingTimestamp = ClockBridge.gameMillis() + FALLING_VALIDATION_DELAY;
     }
 
     /**
      * Update last item auction request timestamp to current
      */
     public void updateLastItemAuctionRequest() {
-        lastItemAuctionInfoRequest = System.currentTimeMillis();
+        lastItemAuctionInfoRequest = ClockBridge.gameMillis();
     }
 
     /**
@@ -11699,7 +11711,7 @@ public class Player extends Playable {
      *         (last request was in 2 seconds before)
      */
     public boolean isItemAuctionPolling() {
-        return (System.currentTimeMillis() - lastItemAuctionInfoRequest) < 2000;
+        return (ClockBridge.gameMillis() - lastItemAuctionInfoRequest) < 2000;
     }
 
     @Override
@@ -12066,7 +12078,7 @@ public class Player extends Playable {
     }
 
     public void updateNotMoveUntil() {
-        notMoveUntil = System.currentTimeMillis() + PlayerConfig.PLAYER_MOVEMENT_BLOCK_TIME;
+        notMoveUntil = ClockBridge.gameMillis() + PlayerConfig.PLAYER_MOVEMENT_BLOCK_TIME;
     }
 
     @Override

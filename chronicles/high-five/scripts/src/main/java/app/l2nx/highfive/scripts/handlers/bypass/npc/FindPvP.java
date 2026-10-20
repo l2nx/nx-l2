@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.scripts.handlers.bypass.npc;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.PvpConfig;
 import app.l2nx.highfive.config.custom.FindPvpConfig;
 import app.l2nx.highfive.entity.World;
@@ -34,7 +35,7 @@ import app.l2nx.highfive.network.serverpackets.CreatureSay;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.concurrent.ThreadLocalRandom;
+import java.util.random.RandomGenerator;
 
 /**
  * Based on Tenkai pvpzone.
@@ -115,14 +116,14 @@ public class FindPvP implements IBypassHandler {
                 }
             }
 
-            final ThreadLocalRandom random = ThreadLocalRandom.current();
+            final RandomGenerator random = ClockBridge.random();
             player.teleToLocation(
                     (mostPvP.getX() + random.nextInt(300)) - 150,
                     (mostPvP.getY() + random.nextInt(300)) - 150,
                     mostPvP.getZ());
             player.setSpawnProtection(true);
             if (!player.isGM()) {
-                player.setPvpFlagLasts(System.currentTimeMillis() + PvpConfig.PVP_PVP_TIME);
+                player.setPvpFlagLasts(ClockBridge.gameMillis() + PvpConfig.PVP_PVP_TIME);
                 player.startPvPFlag();
             }
         } else {

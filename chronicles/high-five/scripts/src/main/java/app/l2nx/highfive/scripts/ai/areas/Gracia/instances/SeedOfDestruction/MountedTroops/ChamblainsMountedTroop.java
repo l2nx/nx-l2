@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.scripts.ai.areas.Gracia.instances.SeedOfDestruction.MountedTroops;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.actor.Attackable;
@@ -128,7 +129,7 @@ public final class ChamblainsMountedTroop extends InstanceScript {
                 if ((npc.getId() == EDRIC) && checkConditions(player)) {
                     for (Player partyMember : player.getParty().getMembers()) {
                         InstanceManager.getInstance()
-                                .setInstanceTime(partyMember.getObjectId(), TEMPLATE_ID, System.currentTimeMillis());
+                                .setInstanceTime(partyMember.getObjectId(), TEMPLATE_ID, ClockBridge.wallMillis());
                         enterInstance(partyMember, TEMPLATE_ID);
                     }
 
@@ -181,7 +182,7 @@ public final class ChamblainsMountedTroop extends InstanceScript {
                 return false;
             }
 
-            if (System.currentTimeMillis()
+            if (ClockBridge.wallMillis()
                     < (InstanceManager.getInstance().getInstanceTime(partyMember.getObjectId(), TEMPLATE_ID)
                             + 86400000 /* 24 hours */)) {
                 final NpcHtmlMessage packet = new NpcHtmlMessage();

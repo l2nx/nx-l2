@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.mechanics.petition;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.managers.IdManager;
 import app.l2nx.highfive.managers.PetitionManager;
@@ -38,7 +39,7 @@ import lombok.Setter;
  */
 public class Petition {
     @Getter
-    private final long submitTime = System.currentTimeMillis();
+    private final long submitTime = ClockBridge.wallMillis();
 
     @Getter
     private final int id;

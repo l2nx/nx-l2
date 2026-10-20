@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.scripts.handlers.chat.commands.user;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.instancezone.InstanceWorld;
 import app.l2nx.highfive.handler.IUserCommandHandler;
@@ -58,7 +59,7 @@ public class InstanceZone implements IUserCommandHandler {
         boolean firstMessage = true;
         if (instanceTimes != null) {
             for (Entry<Integer, Long> entry : instanceTimes.entrySet()) {
-                final long remainingTime = (entry.getValue() - System.currentTimeMillis()) / 1000;
+                final long remainingTime = (entry.getValue() - ClockBridge.wallMillis()) / 1000;
                 if (remainingTime > 60) {
                     if (firstMessage) {
                         firstMessage = false;

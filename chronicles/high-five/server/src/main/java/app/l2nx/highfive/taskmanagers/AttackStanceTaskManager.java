@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.taskmanagers;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.instance.Cubic;
@@ -56,7 +57,7 @@ public class AttackStanceTaskManager implements Runnable {
 
         if (!CREATURE_ATTACK_STANCES.isEmpty()) {
             try {
-                final long currentTime = System.currentTimeMillis();
+                final long currentTime = ClockBridge.gameMillis();
                 final Iterator<Entry<Creature, Long>> iterator =
                         CREATURE_ATTACK_STANCES.entrySet().iterator();
                 Entry<Creature, Long> entry;
@@ -108,7 +109,7 @@ public class AttackStanceTaskManager implements Runnable {
             }
         }
 
-        CREATURE_ATTACK_STANCES.put(creature, System.currentTimeMillis());
+        CREATURE_ATTACK_STANCES.put(creature, ClockBridge.gameMillis());
     }
 
     /**

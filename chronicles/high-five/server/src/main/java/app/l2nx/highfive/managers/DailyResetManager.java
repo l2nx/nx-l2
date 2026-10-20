@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.managers;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.data.sql.ClanTable;
 import app.l2nx.highfive.data.sql.DatabaseFactory;
@@ -61,15 +62,15 @@ public class DailyResetManager {
 
     protected DailyResetManager() {
         // Schedule reset everyday at 6:30.
-        final ZonedDateTime now = ZonedDateTime.now();
+        final ZonedDateTime now = ZonedDateTime.now(ClockBridge.wallClock());
         final ZonedDateTime todayResetTime = now.with(LocalTime.of(6, 30));
         final long nextResetTime = (todayResetTime.isBefore(now) ? todayResetTime.plusDays(1) : todayResetTime)
                 .toInstant()
                 .toEpochMilli();
-        final long currentTime = System.currentTimeMillis();
+        final long currentTime = ClockBridge.wallMillis();
 
         // Get today's 6:30 AM timestamp.
-        final Calendar calendar = Calendar.getInstance();
+        final Calendar calendar = ClockBridge.calendar();
         calendar.set(Calendar.HOUR_OF_DAY, 6);
         calendar.set(Calendar.MINUTE, 30);
         calendar.set(Calendar.SECOND, 0);
@@ -98,10 +99,10 @@ public class DailyResetManager {
         log.info("Starting reset of daily tasks...");
 
         // Store last reset time.
-        GlobalVariablesManager.getInstance().set(GlobalVariablesManager.DAILY_TASK_RESET, System.currentTimeMillis());
+        GlobalVariablesManager.getInstance().set(GlobalVariablesManager.DAILY_TASK_RESET, ClockBridge.wallMillis());
 
         // Wednesday weekly tasks.
-        final Calendar calendar = Calendar.getInstance();
+        final Calendar calendar = ClockBridge.calendar();
         if (calendar.get(Calendar.DAY_OF_WEEK) == Calendar.WEDNESDAY) {
             clanLeaderApply();
         }

@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.data;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.data.xml.SkillData;
@@ -111,8 +112,8 @@ public class BotReportTable {
             try {
                 final int hour = Integer.parseInt(GeneralConfig.BOTREPORT_RESETPOINT_HOUR[0]);
                 final int minute = Integer.parseInt(GeneralConfig.BOTREPORT_RESETPOINT_HOUR[1]);
-                final long currentTime = System.currentTimeMillis();
-                final Calendar calendar = Calendar.getInstance();
+                final long currentTime = ClockBridge.wallMillis();
+                final Calendar calendar = ClockBridge.calendar();
                 calendar.set(Calendar.HOUR_OF_DAY, hour);
                 calendar.set(Calendar.MINUTE, minute);
                 if (currentTime < calendar.getTimeInMillis()) {
@@ -265,7 +266,7 @@ public class BotReportTable {
                     return false;
                 }
 
-                final long reuse = (System.currentTimeMillis() - rcdRep.getLastReporTime());
+                final long reuse = (ClockBridge.wallMillis() - rcdRep.getLastReporTime());
                 if (reuse < GeneralConfig.BOTREPORT_REPORT_DELAY) {
                     final SystemMessage sm =
                             new SystemMessage(SystemMessageId.FIVE_YEARS_HAVE_PASSED_SINCE_THIS_CHARACTER_S_CREATION);
@@ -276,7 +277,7 @@ public class BotReportTable {
                 }
             }
 
-            final long curTime = System.currentTimeMillis();
+            final long curTime = ClockBridge.wallMillis();
             if (rcd == null) {
                 rcd = new ReportedCharData();
                 reports.put(bot.getObjectId(), rcd);
@@ -379,8 +380,8 @@ public class BotReportTable {
         try {
             final int hour = Integer.parseInt(GeneralConfig.BOTREPORT_RESETPOINT_HOUR[0]);
             final int minute = Integer.parseInt(GeneralConfig.BOTREPORT_RESETPOINT_HOUR[1]);
-            final long currentTime = System.currentTimeMillis();
-            final Calendar calendar = Calendar.getInstance();
+            final long currentTime = ClockBridge.wallMillis();
+            final Calendar calendar = ClockBridge.calendar();
             calendar.set(Calendar.HOUR_OF_DAY, hour);
             calendar.set(Calendar.MINUTE, minute);
             if (calendar.getTimeInMillis() < currentTime) {
@@ -422,8 +423,7 @@ public class BotReportTable {
      */
     private static boolean timeHasPassed(Map<Integer, Long> map, int objectId) {
         final Long time = map.get(objectId);
-        return (time == null)
-                || ((System.currentTimeMillis() - time.longValue()) > GeneralConfig.BOTREPORT_REPORT_DELAY);
+        return (time == null) || ((ClockBridge.wallMillis() - time.longValue()) > GeneralConfig.BOTREPORT_REPORT_DELAY);
     }
 
     /**

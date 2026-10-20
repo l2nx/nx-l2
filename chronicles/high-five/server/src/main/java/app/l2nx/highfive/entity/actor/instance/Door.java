@@ -24,6 +24,7 @@ package app.l2nx.highfive.entity.actor.instance;
 
 import app.l2nx.highfive.ai.CreatureAI;
 import app.l2nx.highfive.ai.DoorAI;
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.data.sql.ClanHallTable;
 import app.l2nx.highfive.data.xml.DoorData;
 import app.l2nx.highfive.entity.Location;
@@ -56,7 +57,6 @@ import app.l2nx.highfive.network.serverpackets.SystemMessage;
 import app.l2nx.highfive.threads.ThreadPool;
 import java.util.Set;
 import java.util.concurrent.Future;
-import java.util.concurrent.ThreadLocalRandom;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -132,7 +132,7 @@ public class Door extends Creature {
     private void startTimerOpen() {
         int delay = open ? getTemplate().getOpenTime() : getTemplate().getCloseTime();
         if (getTemplate().getRandomTime() > 0) {
-            delay += ThreadLocalRandom.current().nextInt(getTemplate().getRandomTime());
+            delay += ClockBridge.random().nextInt(getTemplate().getRandomTime());
         }
 
         ThreadPool.schedule(new TimerOpen(), delay * 1000);
@@ -643,7 +643,7 @@ public class Door extends Creature {
 
             int delay = open ? getTemplate().getCloseTime() : getTemplate().getOpenTime();
             if (getTemplate().getRandomTime() > 0) {
-                delay += ThreadLocalRandom.current().nextInt(getTemplate().getRandomTime());
+                delay += ClockBridge.random().nextInt(getTemplate().getRandomTime());
             }
 
             ThreadPool.schedule(this, delay * 1000);

@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.data.sql;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.custom.AutoPlayConfig;
 import app.l2nx.highfive.config.custom.AutoPotionsConfig;
 import app.l2nx.highfive.config.custom.OfflinePlayConfig;
@@ -40,7 +41,6 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Statement;
-import java.util.concurrent.ThreadLocalRandom;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -147,7 +147,7 @@ public class OfflinePlayTable {
                     if (!OfflinePlayConfig.OFFLINE_PLAY_ABNORMAL_EFFECTS.isEmpty()) {
                         player.startAbnormalVisualEffect(
                                 true,
-                                OfflinePlayConfig.OFFLINE_PLAY_ABNORMAL_EFFECTS.get(ThreadLocalRandom.current()
+                                OfflinePlayConfig.OFFLINE_PLAY_ABNORMAL_EFFECTS.get(ClockBridge.random()
                                         .nextInt(OfflinePlayConfig.OFFLINE_PLAY_ABNORMAL_EFFECTS.size())));
                     }
 

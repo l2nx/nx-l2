@@ -23,6 +23,7 @@
 package app.l2nx.highfive.scripts.handlers.bypass.communityboard;
 
 import app.l2nx.highfive.cache.HtmCache;
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.data.sql.ClanTable;
 import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.entity.actor.Player;
@@ -36,7 +37,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Instant;
-import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
@@ -145,7 +145,7 @@ public class RegionBoard implements IWriteBoardHandler {
                             "%siegeDate%",
                             SIEGE_FORMAT.format(
                                     Instant.ofEpochMilli(castle.getSiegeDate().getTimeInMillis())
-                                            .atZone(ZoneId.systemDefault())));
+                                            .atZone(ClockBridge.wallClock().getZone())));
 
             final StringBuilder hallsList = new StringBuilder();
             hallsList.append(

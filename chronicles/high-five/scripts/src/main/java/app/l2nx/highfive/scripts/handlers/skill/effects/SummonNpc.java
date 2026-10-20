@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.scripts.handlers.skill.effects;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.data.xml.NpcData;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.actor.Creature;
@@ -34,7 +35,7 @@ import app.l2nx.highfive.mechanics.effects.EffectType;
 import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.mechanics.skill.targets.TargetType;
 import app.l2nx.highfive.util.StatSet;
-import java.util.concurrent.ThreadLocalRandom;
+import java.util.random.RandomGenerator;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -140,7 +141,7 @@ public class SummonNpc extends AbstractEffect {
                 int x = player.getX();
                 int y = player.getY();
                 if (randomOffset) {
-                    final ThreadLocalRandom random = ThreadLocalRandom.current();
+                    final RandomGenerator random = ClockBridge.random();
                     x += (random.nextBoolean() ? random.nextInt(20, 51) : random.nextInt(-50, -19));
                     y += (random.nextBoolean() ? random.nextInt(20, 51) : random.nextInt(-50, -19));
                 }

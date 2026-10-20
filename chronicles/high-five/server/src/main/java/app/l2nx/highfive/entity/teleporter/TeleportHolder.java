@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.entity.teleporter;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.data.xml.ItemData;
 import app.l2nx.highfive.entity.actor.Npc;
@@ -221,7 +222,7 @@ public class TeleportHolder {
                 return 0;
             }
 
-            final Calendar cal = Calendar.getInstance();
+            final Calendar cal = ClockBridge.calendar();
             final int hour = cal.get(Calendar.HOUR_OF_DAY);
             final int dayOfWeek = cal.get(Calendar.DAY_OF_WEEK);
             if ((hour >= 20) && ((dayOfWeek >= Calendar.MONDAY) && (dayOfWeek <= Calendar.TUESDAY))) {

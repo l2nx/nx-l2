@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.entity.actor.holders.player;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.mechanics.events.EventType;
@@ -63,15 +64,14 @@ public class Nevit {
 
     @RegisterEvent(EventType.ON_PLAYER_LOGIN)
     private void onPlayerLogin(OnPlayerLogin event) {
-        final Calendar cal = Calendar.getInstance();
+        final Calendar cal = ClockBridge.calendar();
         cal.set(Calendar.HOUR_OF_DAY, 6);
         cal.set(Calendar.MINUTE, 30);
         cal.set(Calendar.SECOND, 0);
         cal.set(Calendar.MILLISECOND, 0);
 
         // Reset Nevit's Blessing
-        if ((player.getLastAccess() < (cal.getTimeInMillis() / 1000))
-                && (System.currentTimeMillis() > cal.getTimeInMillis())) {
+        if ((player.getLastAccess() < cal.getTimeInMillis()) && (ClockBridge.wallMillis() > cal.getTimeInMillis())) {
             player.getVariables().set("hunting_time", 0);
         }
 

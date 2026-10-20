@@ -23,6 +23,7 @@
 package app.l2nx.highfive.managers;
 
 import app.l2nx.highfive.LoginServerThread;
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.data.holders.PunishmentHolder;
 import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.entity.actor.Player;
@@ -73,7 +74,7 @@ public class PunishmentManager {
                 final PunishmentType type = PunishmentType.getByName(rset.getString("type"));
                 final long expirationTime = rset.getLong("expiration");
                 if ((type != null) && (affect != null)) {
-                    if ((expirationTime > 0) && (System.currentTimeMillis() > expirationTime)) // expired task.
+                    if ((expirationTime > 0) && (ClockBridge.wallMillis() > expirationTime)) // expired task.
                     {
                         expired++;
                     } else {

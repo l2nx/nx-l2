@@ -22,14 +22,15 @@
  */
 package app.l2nx.highfive.scripts.handlers.chat.channels;
 
-import java.util.concurrent.ThreadLocalRandom;
+import app.l2nx.highfive.clock.ClockBridge;
+import java.util.random.RandomGenerator;
 
 /**
  * @author Mobius
  */
 class ChatRandomizer {
     static String randomize(String text) {
-        final ThreadLocalRandom random = ThreadLocalRandom.current();
+        final RandomGenerator random = ClockBridge.random();
         final StringBuilder textOut = new StringBuilder();
         for (char c : text.toCharArray()) {
             if ((c > 96) && (c < 123)) {

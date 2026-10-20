@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.scripts.ai.areas.PaganTemple;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.data.xml.DoorData;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.actor.Npc;
@@ -113,7 +114,7 @@ public class AndreasVanHalter extends Script {
         boss = npc;
         status = STATUS_DORMANT;
         balconyKills.set(0);
-        lastAttack = System.currentTimeMillis();
+        lastAttack = ClockBridge.gameMillis();
 
         openDoor(BALCONY_DOOR_1);
         openDoor(BALCONY_DOOR_2);
@@ -128,7 +129,7 @@ public class AndreasVanHalter extends Script {
         if ((npc.getId() != BOSS) || (attacker == null)) {
             return;
         }
-        lastAttack = System.currentTimeMillis();
+        lastAttack = ClockBridge.gameMillis();
 
         if (npc.getZ() <= ANTI_GLITCH_Z) {
             npc.teleToLocation(BOSS_FALLBACK, false);
@@ -281,7 +282,7 @@ public class AndreasVanHalter extends Script {
                 if ((boss != null)
                         && !boss.isDead()
                         && !boss.isAttackingNow()
-                        && ((System.currentTimeMillis() - lastAttack) >= RAID_RESET_DELAY)) {
+                        && ((ClockBridge.gameMillis() - lastAttack) >= RAID_RESET_DELAY)) {
                     resetRaid();
                 }
                 break;
@@ -293,7 +294,7 @@ public class AndreasVanHalter extends Script {
     private void resetRaid() {
         status = STATUS_DORMANT;
         balconyKills.set(0);
-        lastAttack = System.currentTimeMillis();
+        lastAttack = ClockBridge.gameMillis();
         despawnEphemeral();
         openDoor(BALCONY_DOOR_1);
         openDoor(BALCONY_DOOR_2);

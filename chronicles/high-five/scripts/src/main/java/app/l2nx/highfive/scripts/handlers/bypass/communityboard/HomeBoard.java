@@ -23,6 +23,7 @@
 package app.l2nx.highfive.scripts.handlers.bypass.communityboard;
 
 import app.l2nx.highfive.cache.HtmCache;
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.custom.CommunityBoardConfig;
 import app.l2nx.highfive.config.custom.PremiumSystemConfig;
 import app.l2nx.highfive.data.sql.ClanTable;
@@ -331,7 +332,7 @@ public class HomeBoard implements IParseBoardHandler {
                 player.sendMessage("You will now have premium status until "
                         + PREMIUM_FORMAT.format(Instant.ofEpochMilli(
                                         PremiumManager.getInstance().getPremiumExpiration(premiumKey))
-                                .atZone(java.time.ZoneId.systemDefault()))
+                                .atZone(ClockBridge.wallClock().getZone()))
                         + ".");
                 if (PremiumSystemConfig.PC_CAFE_RETAIL_LIKE) {
                     PcCafePointsManager.getInstance().run(player);

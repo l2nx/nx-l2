@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.mechanics.siege;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.data.sql.ClanTable;
 import app.l2nx.highfive.data.sql.DatabaseFactory;
@@ -653,13 +654,13 @@ public class FortSiege implements Siegable {
             if (this.fort.getSiege().getAttackerClans().isEmpty()
                     && (player.getInventory().getAdena() < 250000)) {
                 return 1; // Player does not havee enough adena to register.
-            } else if ((System.currentTimeMillis()
+            } else if ((ClockBridge.wallMillis()
                             < TerritoryWarManager.getInstance().getTWStartTimeInMillis())
                     && TerritoryWarManager.getInstance().isRegistrationOver()) {
                 return 2; // Is not right time to register Fortress now.
             }
 
-            if ((System.currentTimeMillis() > TerritoryWarManager.getInstance().getTWStartTimeInMillis())
+            if ((ClockBridge.wallMillis() > TerritoryWarManager.getInstance().getTWStartTimeInMillis())
                     && TerritoryWarManager.getInstance().isTWChannelOpen()) {
                 return 2; // Is not right time to register Fortress now.
             }
@@ -744,7 +745,7 @@ public class FortSiege implements Siegable {
             return;
         }
 
-        final long delay = getFort().getSiegeDate().getTimeInMillis() - System.currentTimeMillis();
+        final long delay = getFort().getSiegeDate().getTimeInMillis() - ClockBridge.wallMillis();
         if (delay < 0) {
             // siege time in past
             saveFortSiege();
@@ -870,7 +871,7 @@ public class FortSiege implements Siegable {
     }
 
     private void setSiegeDateTime(boolean merchant) {
-        final Calendar newDate = Calendar.getInstance();
+        final Calendar newDate = ClockBridge.calendar();
         if (merchant) {
             newDate.add(Calendar.MINUTE, FortSiegeManager.getInstance().getSuspiciousMerchantRespawnDelay());
         } else {

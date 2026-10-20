@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.entity.actor.holders.npc;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.NpcConfig;
 import app.l2nx.highfive.data.xml.NpcData;
 import app.l2nx.highfive.entity.Location;
@@ -33,7 +34,7 @@ import java.util.Collection;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.ThreadLocalRandom;
+import java.util.random.RandomGenerator;
 
 /**
  * Manages minion spawning, tracking and lifecycle for monster masters.<br>
@@ -203,7 +204,7 @@ public class MinionList {
     public void onMasterTeleported() {
         final int spawnRadius = SPAWN_OFFSET_RADIUS;
         final int minimumRadius = (int) master.getCollisionRadius() + MINIMUM_SPAWN_RADIUS;
-        final ThreadLocalRandom random = ThreadLocalRandom.current();
+        final RandomGenerator random = ClockBridge.random();
         for (Monster minion : spawnedMinions) {
             if ((minion != null) && !minion.isDead() && !minion.isMovementDisabled()) {
                 int newX = minimumRadius < spawnRadius
@@ -324,7 +325,7 @@ public class MinionList {
         // Initialize the position of the Minion and add it in the world as a visible object.
         final int spawnRadius = SPAWN_OFFSET_RADIUS;
         final int minimumRadius = (int) master.getCollisionRadius() + MINIMUM_SPAWN_RADIUS;
-        final ThreadLocalRandom random = ThreadLocalRandom.current();
+        final RandomGenerator random = ClockBridge.random();
         int newX = minimumRadius < spawnRadius
                 ? random.nextInt(minimumRadius * 2, (spawnRadius * 2) + 1)
                 : minimumRadius * 2; // x

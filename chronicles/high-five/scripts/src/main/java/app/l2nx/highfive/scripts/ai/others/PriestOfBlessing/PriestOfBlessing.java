@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.scripts.ai.others.PriestOfBlessing;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
@@ -99,13 +100,13 @@ public class PriestOfBlessing extends Script {
             if (player.getAdena() >= PRICE_VOICE) {
                 final String value = player.getVariables().getString("PriestOfBlessing_voice", "");
                 final long reuseTime = value.isEmpty() ? 0 : Long.parseLong(value);
-                if (System.currentTimeMillis() > reuseTime) {
+                if (ClockBridge.wallMillis() > reuseTime) {
                     takeItems(player, Inventory.ADENA_ID, PRICE_VOICE);
                     giveItems(player, NEVIT_VOICE, 1);
                     player.getVariables()
-                            .set("PriestOfBlessing_voice", Long.toString(System.currentTimeMillis() + (20 * 3600000)));
+                            .set("PriestOfBlessing_voice", Long.toString(ClockBridge.wallMillis() + (20 * 3600000)));
                 } else {
-                    final long remainingTime = (reuseTime - System.currentTimeMillis()) / 1000;
+                    final long remainingTime = (reuseTime - ClockBridge.wallMillis()) / 1000;
                     final int hours = (int) (remainingTime / 3600);
                     final int minutes = (int) ((remainingTime % 3600) / 60);
                     final SystemMessage sm = new SystemMessage(
@@ -126,7 +127,7 @@ public class PriestOfBlessing extends Script {
             if (player.getAdena() >= priceHourglass) {
                 final String value = player.getVariables().getString("PriestOfBlessing_hg_" + index, "");
                 final long reuseTime = value.isEmpty() ? 0 : Long.parseLong(value);
-                if (System.currentTimeMillis() > reuseTime) {
+                if (ClockBridge.wallMillis() > reuseTime) {
                     final int[] hg = HOURGLASSES[index];
                     final int nevitHourglass = hg[getRandom(0, hg.length - 1)];
                     takeItems(player, Inventory.ADENA_ID, priceHourglass);
@@ -134,9 +135,9 @@ public class PriestOfBlessing extends Script {
                     player.getVariables()
                             .set(
                                     "PriestOfBlessing_hg_" + index,
-                                    Long.toString(System.currentTimeMillis() + (20 * 3600000)));
+                                    Long.toString(ClockBridge.wallMillis() + (20 * 3600000)));
                 } else {
-                    final long remainingTime = (reuseTime - System.currentTimeMillis()) / 1000;
+                    final long remainingTime = (reuseTime - ClockBridge.wallMillis()) / 1000;
                     final int hours = (int) (remainingTime / 3600);
                     final int minutes = (int) ((remainingTime % 3600) / 60);
                     final SystemMessage sm = new SystemMessage(

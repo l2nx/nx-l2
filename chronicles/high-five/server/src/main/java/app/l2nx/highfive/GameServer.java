@@ -25,6 +25,7 @@ package app.l2nx.highfive;
 
 import app.l2nx.boot.ServerExit;
 import app.l2nx.highfive.cache.HtmCache;
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.ConfigLoader;
 import app.l2nx.highfive.config.DevelopmentConfig;
 import app.l2nx.highfive.config.GeneralConfig;
@@ -183,13 +184,14 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class GameServer implements SmartLifecycle {
 
-    private static final long START_TIME = System.currentTimeMillis();
-    private long sectionStartTime = START_TIME;
-    private String previousSectionName = null;
+    private static volatile long startTime;
+    private long sectionStartTime;
+    private String previousSectionName;
 
     private final ServerExit serverExit;
     private final MeterRegistry meterRegistry;
     private ConnectionManager<GameClient> connectionManager;
+    private GameTimeTaskManager gameTimeTaskManager;
 
     @Getter
     private volatile boolean running;
@@ -204,6 +206,8 @@ public class GameServer implements SmartLifecycle {
 
     @Override
     public void start() {
+        startTime = ClockBridge.gameMillis();
+        sectionStartTime = startTime;
         Shutdown.bind(serverExit);
 
         // Outside the try: nothing to shut down yet if config fails.
@@ -236,6 +240,10 @@ public class GameServer implements SmartLifecycle {
             connectionManager.shutdown();
         }
 
+        if (gameTimeTaskManager != null) {
+            gameTimeTaskManager.interrupt();
+        }
+
         ThreadPool.shutdown();
     }
 
@@ -244,8 +252,7 @@ public class GameServer implements SmartLifecycle {
         ThreadPool.init();
         ThreadPool.bindMetrics(meterRegistry);
 
-        // Start game time task manager early.
-        GameTimeTaskManager.getInstance();
+        gameTimeTaskManager = GameTimeTaskManager.getInstance();
 
         printSection("IdManager");
         IdManager.getInstance();
@@ -351,7 +358,6 @@ public class GameServer implements SmartLifecycle {
         printSection("Seven Signs");
         SevenSigns.getInstance();
 
-        // Call to load caches.
         printSection("Cache");
         HtmCache.getInstance();
         CrestTable.getInstance();
@@ -493,7 +499,7 @@ public class GameServer implements SmartLifecycle {
         final long totalMem = Runtime.getRuntime().maxMemory() / 1048576;
         log.info("Started, using {} of {} MB total memory.", getUsedMemoryMB(), totalMem);
         log.info("Maximum number of connected players is {}.", ServerConfig.MAXIMUM_ONLINE_USERS);
-        log.info("Server loaded in {} seconds.", ((System.currentTimeMillis() - START_TIME) / 1000));
+        log.info("Server loaded in {} seconds.", ((ClockBridge.gameMillis() - startTime) / 1000));
 
         try {
             connectionManager = new ConnectionManager<>(
@@ -511,21 +517,17 @@ public class GameServer implements SmartLifecycle {
 
     private void printSection(String section) {
         if (DevelopmentConfig.LOG_SERVER_LOAD_TIMES) {
-            // Calculate elapsed time for previous section.
-            final long currentTime = System.currentTimeMillis();
+            final long currentTime = ClockBridge.gameMillis();
             final long sectionElapsed = currentTime - sectionStartTime;
 
-            // Log elapsed time for previous section if not the first section.
             if (previousSectionName != null) {
                 log.info("...section [ {} ] loaded in {} ms.", previousSectionName, sectionElapsed);
             }
 
-            // Update for next measurement.
             previousSectionName = section;
             sectionStartTime = currentTime;
         }
 
-        // Build and log the new section header.
         final StringBuilder sb = new StringBuilder(61);
         sb.append("=[ ").append(section).append(" ]");
         while (sb.length() < 61) {
@@ -539,6 +541,6 @@ public class GameServer implements SmartLifecycle {
     }
 
     public static long getStartTime() {
-        return START_TIME;
+        return startTime;
     }
 }

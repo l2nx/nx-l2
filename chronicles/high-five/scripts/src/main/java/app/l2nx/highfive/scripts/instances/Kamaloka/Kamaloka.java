@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.scripts.instances.Kamaloka;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.data.xml.SkillData;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.actor.Creature;
@@ -552,7 +553,7 @@ public class Kamaloka extends InstanceScript {
                     }
 
                     // if found instance still can't be reentered - exit
-                    if (System.currentTimeMillis() < entry.getValue()) {
+                    if (ClockBridge.wallMillis() < entry.getValue()) {
                         final SystemMessage sm = new SystemMessage(SystemMessageId.C1_MAY_NOT_RE_ENTER_YET);
                         sm.addPcName(partyMember);
                         player.sendPacket(sm);
@@ -678,7 +679,7 @@ public class Kamaloka extends InstanceScript {
     @Override
     protected void finishInstance(InstanceWorld world) {
         if (world instanceof KamaWorld) {
-            final Calendar reenter = Calendar.getInstance();
+            final Calendar reenter = ClockBridge.calendar();
             reenter.set(Calendar.MINUTE, RESET_MIN);
 
             // if time is >= RESET_HOUR - roll to the next day

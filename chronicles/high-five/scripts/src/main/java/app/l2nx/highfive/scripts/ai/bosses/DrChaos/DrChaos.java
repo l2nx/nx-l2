@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.scripts.ai.bosses.DrChaos;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Npc;
@@ -104,7 +105,7 @@ public class DrChaos extends Script {
 
         if (status == STATUS_DEAD) {
             if (info != null) {
-                final long remaining = info.getLong("respawn_time") - System.currentTimeMillis();
+                final long remaining = info.getLong("respawn_time") - ClockBridge.wallMillis();
                 if (remaining > 0) {
                     startQuestTimer("reset_drchaos", remaining, null, null, false);
                 } else {
@@ -132,7 +133,7 @@ public class DrChaos extends Script {
                 golem.setCurrentHpMp(currentHp, currentMp);
                 golem.setRunning();
 
-                lastGolemAttackTime = System.currentTimeMillis();
+                lastGolemAttackTime = ClockBridge.gameMillis();
                 startQuestTimer("golem_despawn", GOLEM_DESPAWN_CHECK_DELAY_MS, golem, null, true);
             } else {
                 // Missing StatSet for CRAZY status, fallback to NORMAL spawn.
@@ -163,7 +164,7 @@ public class DrChaos extends Script {
                 // Despawn the Chaos Golem after 30 minutes of inactivity since last hit.
                 if ((npc != null)
                         && (npc.getId() == CHAOS_GOLEM_NPC_ID)
-                        && ((lastGolemAttackTime + GOLEM_INACTIVITY_LIMIT_MS) < System.currentTimeMillis())) {
+                        && ((lastGolemAttackTime + GOLEM_INACTIVITY_LIMIT_MS) < ClockBridge.gameMillis())) {
                     final Npc chaos = addSpawn(DOCTOR_CHAOS_NPC_ID, CHAOS_SPAWN_LOCATION, false, 0, false);
                     GrandBossManager.getInstance().setStatus(CHAOS_GOLEM_NPC_ID, STATUS_NORMAL);
 
@@ -202,7 +203,7 @@ public class DrChaos extends Script {
                 golem.broadcastPacket(new SocialAction(npc.getObjectId(), 1));
                 golem.broadcastPacket(new PlaySound(1, "Rm03_A", 0, 0, 0, 0, 0));
 
-                lastGolemAttackTime = System.currentTimeMillis();
+                lastGolemAttackTime = ClockBridge.gameMillis();
                 startQuestTimer("golem_despawn", GOLEM_DESPAWN_CHECK_DELAY_MS, golem, null, true);
 
                 npc.deleteMe();
@@ -320,7 +321,7 @@ public class DrChaos extends Script {
         if (info == null) {
             info = new StatSet();
         }
-        info.set("respawn_time", System.currentTimeMillis() + respawnTime);
+        info.set("respawn_time", ClockBridge.wallMillis() + respawnTime);
         bossManager.setStatSet(CHAOS_GOLEM_NPC_ID, info);
 
         cancelQuestTimers("DISTANCE_CHECK");
@@ -339,7 +340,7 @@ public class DrChaos extends Script {
             return;
         }
 
-        lastGolemAttackTime = System.currentTimeMillis();
+        lastGolemAttackTime = ClockBridge.gameMillis();
 
         final int chance = getRandom(300);
         if (chance < 3) {

@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.scripts.events.FreyaCelebration;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.WorldObject;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
@@ -72,7 +73,7 @@ public class FreyaCelebration extends LongTimeEvent {
     public String onEvent(String event, Npc npc, Player player) {
         if (event.equalsIgnoreCase("give_potion")) {
             if (getQuestItemsCount(player, Inventory.ADENA_ID) > 1) {
-                final long currentTime = System.currentTimeMillis();
+                final long currentTime = ClockBridge.wallMillis();
                 final long reuseTime = player.getVariables().getLong(RESET_VAR, 0);
                 if (currentTime > reuseTime) {
                     takeItems(player, Inventory.ADENA_ID, 1);

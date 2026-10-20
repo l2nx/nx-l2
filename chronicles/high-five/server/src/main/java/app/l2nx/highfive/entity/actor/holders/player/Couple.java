@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.entity.actor.holders.player;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.managers.IdManager;
@@ -63,10 +64,10 @@ public class Couple {
                     player1Id = rs.getInt("player1Id");
                     player2Id = rs.getInt("player2Id");
                     maried = Boolean.parseBoolean(rs.getString("married"));
-                    affiancedDate = Calendar.getInstance();
+                    affiancedDate = ClockBridge.calendar();
                     affiancedDate.setTimeInMillis(rs.getLong("affianceDate"));
 
-                    weddingDate = Calendar.getInstance();
+                    weddingDate = ClockBridge.calendar();
                     weddingDate.setTimeInMillis(rs.getLong("weddingDate"));
                 }
             }
@@ -76,14 +77,14 @@ public class Couple {
     }
 
     public Couple(Player player1, Player player2) {
-        final long currentTime = System.currentTimeMillis();
+        final long currentTime = ClockBridge.wallMillis();
         player1Id = player1.getObjectId();
         player2Id = player2.getObjectId();
 
-        affiancedDate = Calendar.getInstance();
+        affiancedDate = ClockBridge.calendar();
         affiancedDate.setTimeInMillis(currentTime);
 
-        weddingDate = Calendar.getInstance();
+        weddingDate = ClockBridge.calendar();
         weddingDate.setTimeInMillis(currentTime);
 
         try (Connection con = DatabaseFactory.getConnection();
@@ -107,7 +108,7 @@ public class Couple {
                 PreparedStatement ps =
                         con.prepareStatement("UPDATE mods_wedding set married = ?, weddingDate = ? where id = ?")) {
             ps.setBoolean(1, true);
-            weddingDate = Calendar.getInstance();
+            weddingDate = ClockBridge.calendar();
             ps.setLong(2, weddingDate.getTimeInMillis());
             ps.setInt(3, id);
             ps.execute();

@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.entity.actor.templates;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.NpcConfig;
 import app.l2nx.highfive.config.RatesConfig;
 import app.l2nx.highfive.config.custom.ChampionMonstersConfig;
@@ -53,7 +54,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ThreadLocalRandom;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -654,7 +654,7 @@ public class NpcTemplate extends CreatureTemplate {
                     }
 
                     // check level gap that may prevent to drop item
-                    if ((ThreadLocalRandom.current().nextDouble() * 100)
+                    if ((ClockBridge.random().nextDouble() * 100)
                             > (dropItem.getItemId() == Inventory.ADENA_ID
                                     ? levelGapChanceToDropAdena
                                     : levelGapChanceToDrop)) {
@@ -717,7 +717,7 @@ public class NpcTemplate extends CreatureTemplate {
 
             // champion extra drop
             if (victim.isChampion()
-                    && (ThreadLocalRandom.current().nextInt(100)
+                    && (ClockBridge.random().nextInt(100)
                             < (victim.getLevel() < killer.getLevel()
                                     ? ChampionMonstersConfig.CHAMPION_REWARD_LOWER_LEVEL_ITEM_CHANCE
                                     : ChampionMonstersConfig.CHAMPION_REWARD_HIGHER_LEVEL_ITEM_CHANCE))) {
@@ -773,7 +773,7 @@ public class NpcTemplate extends CreatureTemplate {
                 }
 
                 // check level gap that may prevent to drop item
-                if ((ThreadLocalRandom.current().nextDouble() * 100)
+                if ((ClockBridge.random().nextDouble() * 100)
                         > (dropItem.getItemId() == Inventory.ADENA_ID
                                 ? levelGapChanceToDropAdena
                                 : levelGapChanceToDrop)) {
@@ -824,7 +824,7 @@ public class NpcTemplate extends CreatureTemplate {
 
         // champion extra drop
         if (victim.isChampion()
-                && (ThreadLocalRandom.current().nextInt(100)
+                && (ClockBridge.random().nextInt(100)
                         < (victim.getLevel() < killer.getLevel()
                                 ? ChampionMonstersConfig.CHAMPION_REWARD_LOWER_LEVEL_ITEM_CHANCE
                                 : ChampionMonstersConfig.CHAMPION_REWARD_HIGHER_LEVEL_ITEM_CHANCE))) {
@@ -856,7 +856,7 @@ public class NpcTemplate extends CreatureTemplate {
         final boolean champion = victim.isChampion();
 
         // calculate if item will drop
-        if ((ThreadLocalRandom.current().nextDouble() * 100) < chance) {
+        if ((ClockBridge.random().nextDouble() * 100) < chance) {
             // amount is calculated after chance returned success
             double rateAmount = 1;
             if (RatesConfig.RATE_DROP_AMOUNT_BY_ID.get(itemId) != null) {
@@ -898,7 +898,7 @@ public class NpcTemplate extends CreatureTemplate {
 
             // finally
             return new ItemHolder(itemId, (long) ((dropItem.getMin() < dropItem.getMax()
-                            ? ThreadLocalRandom.current().nextLong(dropItem.getMin(), dropItem.getMax() + 1)
+                            ? ClockBridge.random().nextLong(dropItem.getMin(), dropItem.getMax() + 1)
                             : dropItem.getMin())
                     * rateAmount));
         }
@@ -959,7 +959,7 @@ public class NpcTemplate extends CreatureTemplate {
                 }
 
                 // calculate if item will drop
-                if ((ThreadLocalRandom.current().nextDouble() * 100) < (dropItem.getChance() * rateChance)) {
+                if ((ClockBridge.random().nextDouble() * 100) < (dropItem.getChance() * rateChance)) {
                     // amount is calculated after chance returned success
                     double rateAmount = 1;
                     if (RatesConfig.RATE_DROP_AMOUNT_BY_ID.get(itemId) != null) {
@@ -1000,7 +1000,7 @@ public class NpcTemplate extends CreatureTemplate {
 
                     // finally
                     return new ItemHolder(itemId, (long) ((dropItem.getMin() < dropItem.getMax()
-                                    ? ThreadLocalRandom.current().nextLong(dropItem.getMin(), dropItem.getMax() + 1)
+                                    ? ClockBridge.random().nextLong(dropItem.getMin(), dropItem.getMax() + 1)
                                     : dropItem.getMin())
                             * rateAmount));
                 }
@@ -1022,7 +1022,7 @@ public class NpcTemplate extends CreatureTemplate {
                 }
 
                 // calculate if item will be rewarded
-                if ((ThreadLocalRandom.current().nextDouble() * 100) < (dropItem.getChance() * rateChance)) {
+                if ((ClockBridge.random().nextDouble() * 100) < (dropItem.getChance() * rateChance)) {
                     // amount is calculated after chance returned success
                     double rateAmount = RatesConfig.RATE_SPOIL_DROP_AMOUNT_MULTIPLIER;
 
@@ -1033,7 +1033,7 @@ public class NpcTemplate extends CreatureTemplate {
 
                     // finally
                     return new ItemHolder(dropItem.getItemId(), (long) ((dropItem.getMin() < dropItem.getMax()
-                                    ? ThreadLocalRandom.current().nextLong(dropItem.getMin(), dropItem.getMax() + 1)
+                                    ? ClockBridge.random().nextLong(dropItem.getMin(), dropItem.getMax() + 1)
                                     : dropItem.getMin())
                             * rateAmount));
                 }

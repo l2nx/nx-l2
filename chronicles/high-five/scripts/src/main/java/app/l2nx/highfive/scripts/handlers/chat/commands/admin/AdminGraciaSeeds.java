@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.scripts.handlers.chat.commands.admin;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.handler.IAdminCommandHandler;
 import app.l2nx.highfive.managers.SeedOfDestructionManager;
@@ -68,8 +69,8 @@ public class AdminGraciaSeeds implements IAdminCommandHandler {
                 "%sodtiatkill%",
                 String.valueOf(SeedOfDestructionManager.getInstance().getSoDTiatKilled()));
         if (SeedOfDestructionManager.getInstance().getSoDTimeForNextStateChange() > 0) {
-            final Calendar nextChangeDate = Calendar.getInstance();
-            nextChangeDate.setTimeInMillis(System.currentTimeMillis()
+            final Calendar nextChangeDate = ClockBridge.calendar();
+            nextChangeDate.setTimeInMillis(ClockBridge.wallMillis()
                     + SeedOfDestructionManager.getInstance().getSoDTimeForNextStateChange());
             html.replace("%sodtime%", nextChangeDate.getTime().toString());
         } else {

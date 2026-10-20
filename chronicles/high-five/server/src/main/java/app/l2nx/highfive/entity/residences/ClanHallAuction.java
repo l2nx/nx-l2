@@ -25,6 +25,7 @@ package app.l2nx.highfive.entity.residences;
 import static app.l2nx.highfive.entity.itemcontainer.Inventory.ADENA_ID;
 import static app.l2nx.highfive.entity.itemcontainer.Inventory.MAX_ADENA;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.data.sql.ClanHallTable;
 import app.l2nx.highfive.data.sql.ClanTable;
 import app.l2nx.highfive.data.sql.DatabaseFactory;
@@ -117,7 +118,7 @@ public class ClanHallAuction {
             this.name = name;
             this.clanName = clanName;
             this.bid = bid;
-            this.timeBid = Calendar.getInstance();
+            this.timeBid = ClockBridge.calendar();
             this.timeBid.setTimeInMillis(timeBid);
         }
 
@@ -150,7 +151,7 @@ public class ClanHallAuction {
 
     public ClanHallAuction(int itemId, Clan clan, long delay, long bid, String name) {
         id = itemId;
-        endDate = System.currentTimeMillis() + delay;
+        endDate = ClockBridge.wallMillis() + delay;
         this.itemId = itemId;
         itemName = name;
         itemType = "ClanHall";
@@ -220,7 +221,7 @@ public class ClanHallAuction {
 
     /** Task Manage */
     private void startAutoTask() {
-        final long currentTime = System.currentTimeMillis();
+        final long currentTime = ClockBridge.wallMillis();
         long taskDelay = 0;
         if (endDate <= currentTime) {
             endDate = currentTime + (7 * 24 * 3600000);
@@ -329,7 +330,7 @@ public class ClanHallAuction {
                     ps.setInt(1, bidder.getClanId());
                     ps.setString(2, bidder.getClan().getLeaderName());
                     ps.setLong(3, bid);
-                    ps.setLong(4, System.currentTimeMillis());
+                    ps.setLong(4, ClockBridge.wallMillis());
                     ps.setInt(5, id);
                     ps.setInt(6, bidder.getClanId());
                     ps.execute();
@@ -343,7 +344,7 @@ public class ClanHallAuction {
                     ps.setString(4, bidder.getName());
                     ps.setLong(5, bid);
                     ps.setString(6, bidder.getClan().getName());
-                    ps.setLong(7, System.currentTimeMillis());
+                    ps.setLong(7, ClockBridge.wallMillis());
                     ps.execute();
                 }
 
@@ -352,7 +353,7 @@ public class ClanHallAuction {
                 }
             }
 
-            final long currentTime = System.currentTimeMillis();
+            final long currentTime = ClockBridge.wallMillis();
             highestBidderId = bidder.getClanId();
             highestBidderMaxBid = bid;
             highestBidderName = bidder.getClan().getLeaderName();

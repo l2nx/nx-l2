@@ -23,6 +23,7 @@
 package app.l2nx.highfive.scripts.ai.bosses.QueenAnt;
 
 import app.l2nx.highfive.ai.Intention;
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.GrandBossConfig;
 import app.l2nx.highfive.config.NpcConfig;
 import app.l2nx.highfive.entity.Location;
@@ -140,7 +141,7 @@ public class QueenAnt extends Script {
 
         if (currentStatus == STATUS_DEAD) {
             final long respawnTime = bossInfo.getLong(VAR_RESPAWN_TIME);
-            final long remainingDelay = respawnTime - System.currentTimeMillis();
+            final long remainingDelay = respawnTime - ClockBridge.wallMillis();
             if (remainingDelay > 0) {
                 startQuestTimer(EVENT_QUEEN_UNLOCK, remainingDelay, null, null);
             } else {
@@ -405,7 +406,7 @@ public class QueenAnt extends Script {
             final long randomRangeMillis = GrandBossConfig.QUEEN_ANT_SPAWN_RANDOM * MILLIS_PER_HOUR;
             final long respawnDelay = baseIntervalMillis + getRandom(-randomRangeMillis, randomRangeMillis);
 
-            final long nextRespawnTime = System.currentTimeMillis() + respawnDelay;
+            final long nextRespawnTime = ClockBridge.wallMillis() + respawnDelay;
             log.info("Queen Ant will respawn at: {}", DateFormatUtils.format(nextRespawnTime, "dd/MM/yyyy HH:mm:ss"));
 
             startQuestTimer(EVENT_QUEEN_UNLOCK, respawnDelay, null, null);

@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.managers.games;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.data.xml.NpcData;
@@ -48,7 +49,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ThreadLocalRandom;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -357,7 +357,7 @@ public class MonsterRaceManager {
         history.add(new HistoryInfo(raceNumber, 0, 0, 0));
 
         // Randomize npcTemplates.
-        Collections.shuffle(npcTemplates);
+        Collections.shuffle(npcTemplates, ClockBridge.random());
 
         // Setup 8 new creatures ; pickup the first 8 from npcTemplates.
         for (int i = 0; i < 8; i++) {
@@ -389,7 +389,7 @@ public class MonsterRaceManager {
                 if (j == 19) {
                     speeds[i][j] = 100;
                 } else {
-                    speeds[i][j] = ThreadLocalRandom.current().nextInt(60) + 65;
+                    speeds[i][j] = ClockBridge.random().nextInt(60) + 65;
                 }
 
                 // Feed actual total to current lane total.

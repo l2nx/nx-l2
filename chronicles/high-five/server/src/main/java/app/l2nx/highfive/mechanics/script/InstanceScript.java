@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.mechanics.script;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.data.holders.InstanceReenterTimeHolder;
 import app.l2nx.highfive.entity.actor.Player;
@@ -150,17 +151,17 @@ public abstract class InstanceScript extends Script {
 
         for (InstanceReenterTimeHolder reenterData : reenterDataList) {
             if (reenterData.getTime() > 0) {
-                earliestReenterTime = System.currentTimeMillis() + reenterData.getTime();
+                earliestReenterTime = ClockBridge.wallMillis() + reenterData.getTime();
                 break;
             }
 
-            final Calendar calendar = Calendar.getInstance();
+            final Calendar calendar = ClockBridge.calendar();
             calendar.set(Calendar.AM_PM, reenterData.getHour() >= MIDNIGHT_HOUR ? 1 : 0);
             calendar.set(Calendar.HOUR_OF_DAY, reenterData.getHour());
             calendar.set(Calendar.MINUTE, reenterData.getMinute());
             calendar.set(Calendar.SECOND, 0);
 
-            if (calendar.getTimeInMillis() <= System.currentTimeMillis()) {
+            if (calendar.getTimeInMillis() <= ClockBridge.wallMillis()) {
                 calendar.add(Calendar.DAY_OF_MONTH, CALENDAR_DAY_OFFSET);
             }
 

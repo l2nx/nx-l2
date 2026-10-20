@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.scripts.instances.CavernOfThePirateCaptain;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.actor.Attackable;
 import app.l2nx.highfive.entity.actor.Npc;
@@ -153,7 +154,7 @@ public class CavernOfThePirateCaptain extends InstanceScript {
         if (firstEntrance) {
             world.setParameter("is83", world.getTemplateId() == TEMPLATE_ID_83);
             world.setParameter("isNight", world.getTemplateId() == TEMPLATE_ID_60_NIGHT);
-            world.setParameter("storeTime", System.currentTimeMillis());
+            world.setParameter("storeTime", ClockBridge.gameMillis());
 
             final List<Player> playersInside = new ArrayList<>();
             final Party party = player.getParty();
@@ -238,7 +239,7 @@ public class CavernOfThePirateCaptain extends InstanceScript {
                     .getInstanceTime(
                             groupMembers.getObjectId(),
                             (is83 ? TEMPLATE_ID_83 : isNight ? TEMPLATE_ID_60_NIGHT : TEMPLATE_ID_60));
-            if (System.currentTimeMillis() < reentertime) {
+            if (ClockBridge.wallMillis() < reentertime) {
                 broadcastSystemMessage(player, groupMembers, SystemMessageId.C1_MAY_NOT_RE_ENTER_YET, true);
                 return false;
             }
@@ -378,8 +379,8 @@ public class CavernOfThePirateCaptain extends InstanceScript {
                     if ((playersInside != null)
                             && ((playersInside.getInstanceId() == world.getInstanceId())
                                     && playersInside.isInsideRadius3D(npc, 1500))) {
-                        final long time = System.currentTimeMillis()
-                                - world.getParameters().getLong("storeTime", 0);
+                        final long time =
+                                ClockBridge.gameMillis() - world.getParameters().getLong("storeTime", 0);
                         if (time <= 300000) // 5 minutes
                         {
                             if (getRandomBoolean()) {

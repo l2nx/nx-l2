@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.entity.actor.instance;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.config.ServerConfig;
 import app.l2nx.highfive.data.enums.CategoryType;
@@ -933,12 +934,12 @@ public class VillageMaster extends Folk {
             return;
         }
 
-        if (clan.getDissolvingExpiryTime() > System.currentTimeMillis()) {
+        if (clan.getDissolvingExpiryTime() > ClockBridge.wallMillis()) {
             player.sendPacket(SystemMessageId.YOU_HAVE_ALREADY_REQUESTED_THE_DISSOLUTION_OF_YOUR_CLAN);
             return;
         }
 
-        clan.setDissolvingExpiryTime(System.currentTimeMillis()
+        clan.setDissolvingExpiryTime(ClockBridge.wallMillis()
                 + (PlayerConfig.ALT_CLAN_DISSOLVE_DAYS * 86400000)); // 24*60*60*1000 = 86400000
         clan.updateClanInDB();
 

@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.scripts.ai.areas.Gracia.instances.SeedOfDestruction;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.GraciaSeedsConfig;
 import app.l2nx.highfive.data.xml.SkillData;
 import app.l2nx.highfive.entity.Location;
@@ -838,7 +839,7 @@ public class SeedOfDestruction extends Script {
 
             final Long reentertime =
                     InstanceManager.getInstance().getInstanceTime(channelMember.getObjectId(), INSTANCE_ID);
-            if (System.currentTimeMillis() < reentertime) {
+            if (ClockBridge.wallMillis() < reentertime) {
                 final SystemMessage sm = (new SystemMessage(SystemMessageId.C1_MAY_NOT_RE_ENTER_YET));
                 sm.addPcName(channelMember);
                 channel.broadcastPacket(sm);
@@ -883,7 +884,7 @@ public class SeedOfDestruction extends Script {
             return 0;
         }
 
-        world = new SODWorld(System.currentTimeMillis() + 5400000);
+        world = new SODWorld(ClockBridge.gameMillis() + 5400000);
         world.setInstance(InstanceManager.getInstance().createDynamicInstance(INSTANCE_ID));
         InstanceManager.getInstance().addWorld(world);
         spawnState((SODWorld) world);
@@ -907,7 +908,7 @@ public class SeedOfDestruction extends Script {
         if (party == null) {
             player.sendMessage("Welcome to Seed of Destruction. Time to finish the instance is 130 minutes.");
             InstanceManager.getInstance()
-                    .setInstanceTime(player.getObjectId(), INSTANCE_ID, (System.currentTimeMillis()));
+                    .setInstanceTime(player.getObjectId(), INSTANCE_ID, (ClockBridge.wallMillis()));
             teleportplayer(player, teleto, (SODWorld) world);
             if (InstanceManager.getInstance().getInstance(instanceId).isRemoveBuffEnabled()) {
                 removeBuffs(player);
@@ -918,7 +919,7 @@ public class SeedOfDestruction extends Script {
             for (Player channelMember : party.getCommandChannel().getMembers()) {
                 player.sendMessage("Welcome to Seed of Destruction. Time to finish the instance is 130 minutes.");
                 InstanceManager.getInstance()
-                        .setInstanceTime(channelMember.getObjectId(), INSTANCE_ID, (System.currentTimeMillis()));
+                        .setInstanceTime(channelMember.getObjectId(), INSTANCE_ID, (ClockBridge.wallMillis()));
                 teleportplayer(channelMember, teleto, (SODWorld) world);
                 if (InstanceManager.getInstance().getInstance(instanceId).isRemoveBuffEnabled()) {
                     removeBuffs(channelMember);
@@ -930,7 +931,7 @@ public class SeedOfDestruction extends Script {
             for (Player partyMember : party.getMembers()) {
                 player.sendMessage("Welcome to Seed of Destruction. Time to finish the instance is 130 minutes.");
                 InstanceManager.getInstance()
-                        .setInstanceTime(partyMember.getObjectId(), INSTANCE_ID, (System.currentTimeMillis()));
+                        .setInstanceTime(partyMember.getObjectId(), INSTANCE_ID, (ClockBridge.wallMillis()));
                 teleportplayer(partyMember, teleto, (SODWorld) world);
                 if (InstanceManager.getInstance().getInstance(instanceId).isRemoveBuffEnabled()) {
                     removeBuffs(partyMember);
@@ -1093,12 +1094,12 @@ public class SeedOfDestruction extends Script {
     }
 
     protected void setInstanceTimeRestrictions(SODWorld world) {
-        final Calendar reenter = Calendar.getInstance();
+        final Calendar reenter = ClockBridge.calendar();
         reenter.set(Calendar.MINUTE, RESET_MIN);
         reenter.set(Calendar.HOUR_OF_DAY, RESET_HOUR);
 
         // if time is >= RESET_HOUR - roll to the next day
-        if (reenter.getTimeInMillis() <= System.currentTimeMillis()) {
+        if (reenter.getTimeInMillis() <= ClockBridge.wallMillis()) {
             reenter.add(Calendar.DAY_OF_MONTH, 1);
         }
 

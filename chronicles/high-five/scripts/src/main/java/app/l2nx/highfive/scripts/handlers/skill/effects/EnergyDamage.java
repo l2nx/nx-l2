@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.scripts.handlers.skill.effects;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.custom.ClassBalanceConfig;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Player;
@@ -33,7 +34,6 @@ import app.l2nx.highfive.mechanics.stats.BaseStat;
 import app.l2nx.highfive.mechanics.stats.Formulas;
 import app.l2nx.highfive.mechanics.stats.Stat;
 import app.l2nx.highfive.util.StatSet;
-import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Energy Attack effect implementation.
@@ -138,7 +138,7 @@ public class EnergyDamage extends AbstractEffect {
             }
 
             critical = (BaseStat.STR.calcBonus(attacker) * criticalChance)
-                    > (ThreadLocalRandom.current().nextDouble() * 100);
+                    > (ClockBridge.random().nextDouble() * 100);
             if (critical) {
                 damage *= 2;
                 // Critical Boost: “True Damage” from your Passive 193 (Critical Power).

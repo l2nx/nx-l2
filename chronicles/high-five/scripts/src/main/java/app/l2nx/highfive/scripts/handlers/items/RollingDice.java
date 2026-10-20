@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.scripts.handlers.items;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Playable;
@@ -34,7 +35,6 @@ import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.serverpackets.Dice;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
 import app.l2nx.highfive.util.LocationUtil;
-import java.util.concurrent.ThreadLocalRandom;
 
 public class RollingDice implements IItemHandler {
     @Override
@@ -99,6 +99,6 @@ public class RollingDice implements IItemHandler {
             return 0;
         }
 
-        return ThreadLocalRandom.current().nextInt(1, 7);
+        return ClockBridge.random().nextInt(1, 7);
     }
 }

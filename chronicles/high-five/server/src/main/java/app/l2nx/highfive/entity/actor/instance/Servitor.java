@@ -22,6 +22,7 @@ package app.l2nx.highfive.entity.actor.instance;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.data.sql.CharSummonTable;
 import app.l2nx.highfive.data.sql.DatabaseFactory;
+import app.l2nx.highfive.data.sql.StoredEffectRows;
 import app.l2nx.highfive.data.sql.SummonEffectTable;
 import app.l2nx.highfive.data.xml.SkillData;
 import app.l2nx.highfive.entity.WorldObject;
@@ -32,10 +33,9 @@ import app.l2nx.highfive.entity.actor.enums.creature.InstanceType;
 import app.l2nx.highfive.entity.actor.templates.NpcTemplate;
 import app.l2nx.highfive.entity.item.enums.ItemProcessType;
 import app.l2nx.highfive.entity.item.holders.ItemHolder;
-import app.l2nx.highfive.mechanics.skill.AbnormalType;
-import app.l2nx.highfive.mechanics.skill.BuffInfo;
 import app.l2nx.highfive.mechanics.skill.EffectScope;
 import app.l2nx.highfive.mechanics.skill.Skill;
+import app.l2nx.highfive.mechanics.skill.StoredEffect;
 import app.l2nx.highfive.mechanics.skill.enums.SkillFinishType;
 import app.l2nx.highfive.mechanics.stats.Stat;
 import app.l2nx.highfive.network.SystemMessageId;
@@ -45,8 +45,8 @@ import app.l2nx.highfive.threads.ThreadPool;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.util.ArrayList;
-import java.util.List;
+import java.sql.Types;
+import java.util.Map.Entry;
 import java.util.concurrent.Future;
 import lombok.Getter;
 import lombok.Setter;
@@ -59,9 +59,9 @@ import lombok.extern.slf4j.Slf4j;
 public class Servitor extends Summon implements Runnable {
 
     private static final String ADD_SKILL_SAVE =
-            "REPLACE INTO character_summon_skills_save (ownerId,ownerClassIndex,summonSkillId,skill_id,skill_level,remaining_time,buff_index) VALUES (?,?,?,?,?,?,?)";
+            "REPLACE INTO character_summon_skills_save (ownerId,ownerClassIndex,summonSkillId,skill_id,skill_level,remaining_ms,tick_phase_ms,buff_index) VALUES (?,?,?,?,?,?,?,?)";
     private static final String RESTORE_SKILL_SAVE =
-            "SELECT skill_id,skill_level,remaining_time,buff_index FROM character_summon_skills_save WHERE ownerId=? AND ownerClassIndex=? AND summonSkillId=? ORDER BY buff_index ASC";
+            "SELECT skill_id,skill_level,remaining_ms,tick_phase_ms,buff_index FROM character_summon_skills_save WHERE ownerId=? AND ownerClassIndex=? AND summonSkillId=? ORDER BY buff_index ASC";
     private static final String DELETE_SKILL_SAVE =
             "DELETE FROM character_summon_skills_save WHERE ownerId=? AND ownerClassIndex=? AND summonSkillId=?";
 
@@ -184,49 +184,25 @@ public class Servitor extends Summon implements Runnable {
 
             int buffIndex = 0;
 
-            final List<Integer> storedSkills = new ArrayList<>();
-
             // Store all effect data along with calculated remaining.
             if (storeEffects) {
                 try (PreparedStatement ps2 = con.prepareStatement(ADD_SKILL_SAVE)) {
-                    for (BuffInfo info : getEffectList().getEffects()) {
-                        if (info == null) {
-                            continue;
-                        }
-
-                        final Skill skill = info.getSkill();
-
-                        // Do not save heals.
-                        if (skill.getAbnormalType() == AbnormalType.LIFE_FORCE_OTHERS) {
-                            continue;
-                        }
-
-                        if (skill.isToggle()) {
-                            continue;
-                        }
-
-                        // Dances and songs are not kept in retail.
-                        if (skill.isDance() && !PlayerConfig.ALT_STORE_DANCES) {
-                            continue;
-                        }
-
-                        if (storedSkills.contains(skill.getReuseHashCode())) {
-                            continue;
-                        }
-
-                        storedSkills.add(skill.getReuseHashCode());
+                    for (Entry<Skill, StoredEffect> entry : effectsToStore().entrySet()) {
+                        final Skill skill = entry.getKey();
+                        final StoredEffect stored = entry.getValue();
 
                         ps2.setInt(1, getOwner().getObjectId());
                         ps2.setInt(2, getOwner().getClassIndex());
                         ps2.setInt(3, referenceSkill);
                         ps2.setInt(4, skill.getId());
                         ps2.setInt(5, skill.getLevel());
-                        ps2.setInt(6, info.getTime());
-                        ps2.setInt(7, ++buffIndex);
+                        ps2.setObject(6, stored.remainingMillis(), Types.BIGINT);
+                        ps2.setLong(7, stored.tickPhaseMillis());
+                        ps2.setInt(8, ++buffIndex);
                         ps2.addBatch();
 
                         SummonEffectTable.getInstance()
-                                .addServitorEffect(getOwner(), getReferenceSkill(), skill, info.getTime());
+                                .addServitorEffect(getOwner(), getReferenceSkill(), skill, stored);
                     }
 
                     ps2.executeBatch();
@@ -258,9 +234,9 @@ public class Servitor extends Summon implements Runnable {
                             }
 
                             if (skill.hasEffects(EffectScope.GENERAL)) {
-                                SummonEffectTable.getInstance()
-                                        .addServitorEffect(
-                                                getOwner(), getReferenceSkill(), skill, rs.getInt("remaining_time"));
+                                StoredEffectRows.read(rs, getOwner().getObjectId())
+                                        .ifPresent(stored -> SummonEffectTable.getInstance()
+                                                .addServitorEffect(getOwner(), getReferenceSkill(), skill, stored));
                             }
                         }
                     }

@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.scripts.ai.areas.Gracia.instances.HeartInfinityAttack;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.GraciaSeedsConfig;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.actor.Npc;
@@ -265,7 +266,7 @@ public class HeartInfinityAttack extends Script {
 
             final Long reentertime =
                     InstanceManager.getInstance().getInstanceTime(partyMember.getObjectId(), INSTANCEID);
-            if (System.currentTimeMillis() < reentertime) {
+            if (ClockBridge.wallMillis() < reentertime) {
                 final SystemMessage sm = new SystemMessage(2100);
                 sm.addPcName(partyMember);
                 party.getCommandChannel().broadcastPacket(sm);
@@ -390,7 +391,7 @@ public class HeartInfinityAttack extends Script {
                 NpcStringId.I_SHALL_ACCEPT_YOUR_CHALLENGE_S1_COME_AND_DIE_IN_THE_ARMS_OF_IMMORTALITY));
         world.hounds.add(addSpawn(HOUND, -179224, 209624, -15504, 16384, false, 0, false, world.getInstanceId()));
         world.hounds.add(addSpawn(HOUND, -179880, 209464, -15504, 16384, false, 0, false, world.getInstanceId()));
-        world.startTime = System.currentTimeMillis();
+        world.startTime = ClockBridge.gameMillis();
         world.timerTask = ThreadPool.scheduleAtFixedRate(new TimerTask(world), 298 * 1000, 5 * 60 * 1000);
     }
 
@@ -490,7 +491,7 @@ public class HeartInfinityAttack extends Script {
             final HIAWorld world = (HIAWorld) tmpworld;
             if (!world.bossAttacked) {
                 world.bossAttacked = true;
-                final Calendar reenter = Calendar.getInstance();
+                final Calendar reenter = ClockBridge.calendar();
                 reenter.add(Calendar.HOUR, INSTANCEPENALTY);
 
                 final SystemMessage sm = new SystemMessage(
@@ -631,7 +632,7 @@ public class HeartInfinityAttack extends Script {
 
         @Override
         public void run() {
-            final long time = ((world.startTime + (25 * 60 * 1000)) - System.currentTimeMillis()) / 60000;
+            final long time = ((world.startTime + (25 * 60 * 1000)) - ClockBridge.gameMillis()) / 60000;
             if (time == 0) {
                 broadCastPacket(
                         world,

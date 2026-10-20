@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.scripts.quests.Q00693_DefeatingDragonkinRemnants;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
@@ -155,12 +156,12 @@ public class Q00693_DefeatingDragonkinRemnants extends Quest {
     }
 
     private boolean checkInstances(Player talker) {
-        if ((System.currentTimeMillis() < InstanceManager.getInstance().getInstanceTime(talker.getObjectId(), 123)) //
-                || (System.currentTimeMillis()
+        if ((ClockBridge.wallMillis() < InstanceManager.getInstance().getInstanceTime(talker.getObjectId(), 123)) //
+                || (ClockBridge.wallMillis()
                         < InstanceManager.getInstance().getInstanceTime(talker.getObjectId(), 124)) //
-                || (System.currentTimeMillis()
+                || (ClockBridge.wallMillis()
                         < InstanceManager.getInstance().getInstanceTime(talker.getObjectId(), 125)) //
-                || (System.currentTimeMillis()
+                || (ClockBridge.wallMillis()
                         < InstanceManager.getInstance().getInstanceTime(talker.getObjectId(), 126))) {
             return false;
         }

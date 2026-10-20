@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.managers;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.NpcConfig;
 import app.l2nx.highfive.data.SpawnTable;
 import app.l2nx.highfive.data.sql.DatabaseFactory;
@@ -37,7 +38,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.ThreadLocalRandom;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -152,14 +152,14 @@ public class RaidBossSpawnManager {
             final int respawnMaxDelay =
                     (int) (boss.getSpawn().getRespawnMaxDelay() * NpcConfig.RAID_MAX_RESPAWN_MULTIPLIER);
             final int respawnDelay = respawnMinDelay < respawnMaxDelay
-                    ? ThreadLocalRandom.current().nextInt(respawnMinDelay, respawnMaxDelay + 1)
+                    ? ClockBridge.random().nextInt(respawnMinDelay, respawnMaxDelay + 1)
                     : respawnMinDelay;
-            final long respawnTime = System.currentTimeMillis() + respawnDelay;
+            final long respawnTime = ClockBridge.wallMillis() + respawnDelay;
             info.set("currentHP", boss.getMaxHp());
             info.set("currentMP", boss.getMaxMp());
             info.set("respawnTime", respawnTime);
             if (!schedules.containsKey(boss.getId()) && ((respawnMinDelay > 0) || (respawnMaxDelay > 0))) {
-                final Calendar time = Calendar.getInstance();
+                final Calendar time = ClockBridge.calendar();
                 time.setTimeInMillis(respawnTime);
                 log.info("Updated {} respawn time to {}", boss.getName(), time.getTime());
                 schedules.put(boss.getId(), ThreadPool.schedule(new SpawnSchedule(boss.getId()), respawnDelay));
@@ -190,7 +190,7 @@ public class RaidBossSpawnManager {
         }
 
         final int bossId = spawnDat.getId();
-        final long currentTime = System.currentTimeMillis();
+        final long currentTime = ClockBridge.wallMillis();
         SpawnTable.getInstance().addSpawn(spawnDat);
         if ((respawnTime == 0) || (currentTime > respawnTime)) {
             final RaidBoss raidboss = (RaidBoss) spawnDat.doSpawn();

@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.scripts.ai.others.BlackMarketeerOfMammon;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.itemcontainer.Inventory;
@@ -81,12 +82,12 @@ public class BlackMarketeerOfMammon extends Script {
     }
 
     private boolean exchangeAvailable() {
-        final Calendar currentTime = Calendar.getInstance();
-        final Calendar minTime = Calendar.getInstance();
+        final Calendar currentTime = ClockBridge.calendar();
+        final Calendar minTime = ClockBridge.calendar();
         minTime.set(Calendar.HOUR_OF_DAY, 20);
         minTime.set(Calendar.MINUTE, 0);
         minTime.set(Calendar.SECOND, 0);
-        final Calendar maxtTime = Calendar.getInstance();
+        final Calendar maxtTime = ClockBridge.calendar();
         maxtTime.set(Calendar.HOUR_OF_DAY, 23);
         maxtTime.set(Calendar.MINUTE, 59);
         maxtTime.set(Calendar.SECOND, 59);

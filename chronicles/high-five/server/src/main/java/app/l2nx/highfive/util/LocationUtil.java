@@ -22,11 +22,12 @@
  */
 package app.l2nx.highfive.util;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.WorldObject;
 import app.l2nx.highfive.interfaces.ILocational;
-import java.util.concurrent.ThreadLocalRandom;
+import java.util.random.RandomGenerator;
 
 /**
  * Utility class providing a set of methods for spatial calculations between locations and objects.
@@ -190,7 +191,7 @@ public class LocationUtil {
      * @return a random location between minRange and maxRange of the center location
      */
     public static Location getRandomLocation(ILocational center, int minRadius, int maxRadius) {
-        final ThreadLocalRandom random = ThreadLocalRandom.current();
+        final RandomGenerator random = ClockBridge.random();
         final int randomX = minRadius < maxRadius ? random.nextInt(minRadius, maxRadius + 1) : minRadius;
         final int randomY = minRadius < maxRadius ? random.nextInt(minRadius, maxRadius + 1) : minRadius;
         final double angle = Math.toRadians(random.nextInt(360));

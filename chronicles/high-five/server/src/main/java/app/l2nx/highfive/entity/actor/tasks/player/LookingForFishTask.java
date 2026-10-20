@@ -19,8 +19,8 @@
  */
 package app.l2nx.highfive.entity.actor.tasks.player;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.actor.Player;
-import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Task dedicated for looking for fishes.
@@ -43,7 +43,7 @@ public class LookingForFishTask implements Runnable {
             boolean isUpperGrade) {
         this.player = player;
         this.fishGutsCheck = fishGutsCheck;
-        endTaskTime = System.currentTimeMillis() + (startCombatTime * 1000) + 10000;
+        endTaskTime = ClockBridge.gameMillis() + (startCombatTime * 1000) + 10000;
         this.fishGroup = fishGroup;
         noob = isNoob;
         upperGrade = isUpperGrade;
@@ -52,7 +52,7 @@ public class LookingForFishTask implements Runnable {
     @Override
     public void run() {
         if (player != null) {
-            if (System.currentTimeMillis() >= endTaskTime) {
+            if (ClockBridge.gameMillis() >= endTaskTime) {
                 player.endFishing(false);
                 return;
             }
@@ -61,7 +61,7 @@ public class LookingForFishTask implements Runnable {
                 return;
             }
 
-            final int check = ThreadLocalRandom.current().nextInt(100);
+            final int check = ClockBridge.random().nextInt(100);
             if (fishGutsCheck > check) {
                 player.stopLookingForFishTask();
                 player.startFishCombat(noob, upperGrade);

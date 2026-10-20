@@ -20,6 +20,7 @@
 package app.l2nx.highfive.entity.zone.type;
 
 import app.l2nx.highfive.GameServer;
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.actor.Attackable;
 import app.l2nx.highfive.entity.actor.Creature;
@@ -129,13 +130,13 @@ public class BossZone extends ZoneType {
                 // with legal entries, do nothing.
                 if (expirationTime == null) // legal null expirationTime entries
                 {
-                    if (GameServer.getStartTime() > (System.currentTimeMillis() - timeInvade)) {
+                    if (GameServer.getStartTime() > (ClockBridge.gameMillis() - timeInvade)) {
                         return;
                     }
                 } else {
                     // legal non-null logoutTime entries
                     getSettings().getPlayerAllowedReEntryTimes().remove(player.getObjectId());
-                    if (expirationTime.longValue() > System.currentTimeMillis()) {
+                    if (expirationTime.longValue() > ClockBridge.gameMillis()) {
                         return;
                     }
                 }
@@ -185,7 +186,7 @@ public class BossZone extends ZoneType {
                 // mark the time that the player left the zone
                 getSettings()
                         .getPlayerAllowedReEntryTimes()
-                        .put(player.getObjectId(), System.currentTimeMillis() + timeInvade);
+                        .put(player.getObjectId(), ClockBridge.gameMillis() + timeInvade);
             } else {
                 if (getSettings().getPlayersAllowed().contains(player.getObjectId())) {
                     getSettings()
@@ -326,7 +327,7 @@ public class BossZone extends ZoneType {
 
         getSettings()
                 .getPlayerAllowedReEntryTimes()
-                .put(player.getObjectId(), System.currentTimeMillis() + (durationInSec * 1000));
+                .put(player.getObjectId(), ClockBridge.gameMillis() + (durationInSec * 1000));
     }
 
     public void removePlayer(Player player) {

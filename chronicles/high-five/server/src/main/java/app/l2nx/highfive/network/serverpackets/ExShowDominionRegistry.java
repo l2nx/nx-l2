@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.network.serverpackets;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.clan.Clan;
 import app.l2nx.highfive.managers.TerritoryWarManager;
@@ -39,8 +40,8 @@ public class ExShowDominionRegistry extends ServerPacket {
     private int mercReq = 0;
     private boolean mercRegistered = false;
     private boolean clanRegistered = false;
-    private int warTime = (int) (System.currentTimeMillis() / 1000);
-    private final int currentTime = (int) (System.currentTimeMillis() / 1000);
+    private int warTime = (int) (ClockBridge.wallMillis() / 1000);
+    private final int currentTime = (int) (ClockBridge.wallMillis() / 1000);
 
     public ExShowDominionRegistry(int castleId, Player player) {
         this.castleId = castleId;

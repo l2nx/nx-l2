@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.scripts.quests.Q00307_ControlDeviceOfTheGiants;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.managers.GlobalVariablesManager;
@@ -99,7 +100,7 @@ public class Q00307_ControlDeviceOfTheGiants extends Quest {
                 }
 
                 if ((GlobalVariablesManager.getInstance().getLong("GiantsControlDeviceRespawn", 0)
-                                - System.currentTimeMillis())
+                                - ClockBridge.wallMillis())
                         > 0) {
                     return "32711-09a.html";
                 }
@@ -158,9 +159,7 @@ public class Q00307_ControlDeviceOfTheGiants extends Quest {
                     }
 
                     GlobalVariablesManager.getInstance()
-                            .set(
-                                    "GiantsControlDeviceRespawn",
-                                    Long.toString(System.currentTimeMillis() + RESPAWN_DELAY));
+                            .set("GiantsControlDeviceRespawn", Long.toString(ClockBridge.wallMillis() + RESPAWN_DELAY));
                 }
                 break;
             }

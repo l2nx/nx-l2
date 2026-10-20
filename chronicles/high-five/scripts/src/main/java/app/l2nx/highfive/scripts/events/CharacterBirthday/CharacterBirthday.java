@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.scripts.events.CharacterBirthday;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.entity.actor.Npc;
@@ -118,7 +119,7 @@ public class CharacterBirthday extends Script {
         int birthdayGiftCount = 0;
         try (Connection con = DatabaseFactory.getConnection();
                 PreparedStatement statement = con.prepareStatement(SELECT_PENDING_BIRTHDAY_GIFTS)) {
-            statement.setLong(1, System.currentTimeMillis() - (24 * 60 * 60 * 1000)); // Last 24 hours.
+            statement.setLong(1, ClockBridge.wallMillis() - (24 * 60 * 60 * 1000)); // Last 24 hours.
             try (ResultSet rs = statement.executeQuery()) {
                 while (rs.next()) {
                     final String text = GeneralConfig.ALT_BIRTHDAY_MAIL_TEXT

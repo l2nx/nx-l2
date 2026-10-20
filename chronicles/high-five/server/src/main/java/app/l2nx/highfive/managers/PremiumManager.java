@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.managers;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.custom.PremiumSystemConfig;
 import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.entity.World;
@@ -81,7 +82,7 @@ public class PremiumManager {
         final String accountName =
                 PremiumSystemConfig.ACCOUNT_WIDE_PREMIUM ? player.getAccountName() : player.getName();
         loadPremiumData(accountName);
-        final long now = System.currentTimeMillis();
+        final long now = ClockBridge.wallMillis();
         final long premiumExpiration = getPremiumExpiration(accountName);
         player.setPremiumStatus(premiumExpiration > now);
         if (player.hasPremiumStatus()) {
@@ -147,7 +148,7 @@ public class PremiumManager {
 
     public void addPremiumTime(String accountName, int timeValue, TimeUnit timeUnit) {
         final long addTime = timeUnit.toMillis(timeValue);
-        final long now = System.currentTimeMillis();
+        final long now = ClockBridge.wallMillis();
 
         // New premium task at least from now.
         final long oldPremiumExpiration = Math.max(now, getPremiumExpiration(accountName));

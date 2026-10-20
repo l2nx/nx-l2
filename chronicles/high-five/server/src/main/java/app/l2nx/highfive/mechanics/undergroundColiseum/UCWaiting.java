@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.mechanics.undergroundColiseum;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.groups.Party;
 import lombok.Getter;
 
@@ -60,6 +61,6 @@ public class UCWaiting {
     }
 
     public void hasRegisterdNow() {
-        registerMillis = System.currentTimeMillis();
+        registerMillis = ClockBridge.gameMillis();
     }
 }

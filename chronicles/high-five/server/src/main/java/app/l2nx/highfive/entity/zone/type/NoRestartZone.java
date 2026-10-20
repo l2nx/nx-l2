@@ -20,6 +20,7 @@
 package app.l2nx.highfive.entity.zone.type;
 
 import app.l2nx.highfive.GameServer;
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.enums.player.TeleportWhereType;
@@ -78,9 +79,8 @@ public class NoRestartZone extends ZoneType {
             return;
         }
 
-        final long currentTime = System.currentTimeMillis();
-        if (((currentTime - player.getLastAccess()) > restartTime)
-                && ((currentTime - GameServer.getStartTime()) > restartAllowedTime)) {
+        if (((ClockBridge.wallMillis() - player.getLastAccess()) > restartTime)
+                && ((ClockBridge.gameMillis() - GameServer.getStartTime()) > restartAllowedTime)) {
             player.teleToLocation(TeleportWhereType.TOWN);
         }
     }

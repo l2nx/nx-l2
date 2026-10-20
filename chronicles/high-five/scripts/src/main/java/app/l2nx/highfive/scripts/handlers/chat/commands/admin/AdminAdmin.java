@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.scripts.handlers.chat.commands.admin;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.config.RatesConfig;
 import app.l2nx.highfive.data.xml.AdminData;
@@ -96,7 +97,7 @@ public class AdminAdmin implements IAdminCommandHandler {
 
             AdminHtml.showAdminHtml(activeChar, "gm_menu.htm");
         } else if (command.startsWith("admin_checkolympiad")) {
-            final long currentTimeMillis = System.currentTimeMillis();
+            final long currentTimeMillis = ClockBridge.wallMillis();
             final long olympiadEndMillis = Olympiad.getInstance().getMillisToOlympiadEnd();
             final long weeklyChangeMillis = Olympiad.getInstance().getMillisToWeekChange();
 

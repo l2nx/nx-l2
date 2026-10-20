@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.scripts.handlers.chat.commands.admin;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.data.sql.ClanHallTable;
 import app.l2nx.highfive.data.sql.ClanTable;
 import app.l2nx.highfive.entity.actor.Player;
@@ -234,8 +235,8 @@ public class AdminSiege implements IAdminCommandHandler {
                     }
                     case "admin_setsiegetime": {
                         if (st.hasMoreTokens()) {
-                            final long currentTime = System.currentTimeMillis();
-                            final Calendar calendar = Calendar.getInstance();
+                            final long currentTime = ClockBridge.wallMillis();
+                            final Calendar calendar = ClockBridge.calendar();
                             calendar.setTimeInMillis(castle.getSiegeDate().getTimeInMillis());
                             val = st.nextToken();
                             if ("month".equals(val)) {
@@ -418,7 +419,7 @@ public class AdminSiege implements IAdminCommandHandler {
         adminReply.setFile(player, "data/html/admin/castlesiegetime.htm");
         adminReply.replace("%castleName%", castle.getName());
         adminReply.replace("%time%", castle.getSiegeDate().getTime().toString());
-        final Calendar newDay = Calendar.getInstance();
+        final Calendar newDay = ClockBridge.calendar();
         boolean isSunday = false;
         if (newDay.get(Calendar.DAY_OF_WEEK) == Calendar.SUNDAY) {
             isSunday = true;

@@ -23,6 +23,7 @@
 package app.l2nx.highfive.entity.actor.instance;
 
 import app.l2nx.highfive.cache.HtmCache;
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.FeatureConfig;
 import app.l2nx.highfive.config.custom.WarehouseSortingConfig;
 import app.l2nx.highfive.data.xml.SkillData;
@@ -43,7 +44,6 @@ import app.l2nx.highfive.network.serverpackets.SortedWareHouseWithdrawalList;
 import app.l2nx.highfive.network.serverpackets.WareHouseDepositList;
 import app.l2nx.highfive.network.serverpackets.WareHouseWithdrawalList;
 import java.time.Instant;
-import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.StringTokenizer;
 import lombok.extern.slf4j.Slf4j;
@@ -617,7 +617,8 @@ public class FortManager extends Merchant {
                                             + Instant.ofEpochMilli(getFort()
                                                             .getFunction(Fort.FUNC_RESTORE_HP)
                                                             .getEndTime())
-                                                    .atZone(ZoneId.systemDefault())
+                                                    .atZone(ClockBridge.wallClock()
+                                                            .getZone())
                                                     .format(DATE_FORMAT));
                             html.replace(
                                     "%change_hp%",
@@ -644,7 +645,8 @@ public class FortManager extends Merchant {
                                             + Instant.ofEpochMilli(getFort()
                                                             .getFunction(Fort.FUNC_RESTORE_EXP)
                                                             .getEndTime())
-                                                    .atZone(ZoneId.systemDefault())
+                                                    .atZone(ClockBridge.wallClock()
+                                                            .getZone())
                                                     .format(DATE_FORMAT));
                             html.replace(
                                     "%change_exp%",
@@ -671,7 +673,8 @@ public class FortManager extends Merchant {
                                             + Instant.ofEpochMilli(getFort()
                                                             .getFunction(Fort.FUNC_RESTORE_MP)
                                                             .getEndTime())
-                                                    .atZone(ZoneId.systemDefault())
+                                                    .atZone(ClockBridge.wallClock()
+                                                            .getZone())
                                                     .format(DATE_FORMAT));
                             html.replace(
                                     "%change_mp%",
@@ -885,7 +888,8 @@ public class FortManager extends Merchant {
                                             + Instant.ofEpochMilli(getFort()
                                                             .getFunction(Fort.FUNC_TELEPORT)
                                                             .getEndTime())
-                                                    .atZone(ZoneId.systemDefault())
+                                                    .atZone(ClockBridge.wallClock()
+                                                            .getZone())
                                                     .format(DATE_FORMAT));
                             html.replace(
                                     "%change_tele%",
@@ -914,7 +918,8 @@ public class FortManager extends Merchant {
                                             + Instant.ofEpochMilli(getFort()
                                                             .getFunction(Fort.FUNC_SUPPORT)
                                                             .getEndTime())
-                                                    .atZone(ZoneId.systemDefault())
+                                                    .atZone(ClockBridge.wallClock()
+                                                            .getZone())
                                                     .format(DATE_FORMAT));
                             html.replace(
                                     "%change_support%",

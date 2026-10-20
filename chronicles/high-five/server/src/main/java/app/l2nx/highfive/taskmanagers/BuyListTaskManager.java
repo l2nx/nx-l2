@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.taskmanagers;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.mechanics.buylist.Product;
 import app.l2nx.highfive.threads.ThreadPool;
 import java.util.ArrayList;
@@ -53,7 +54,7 @@ public class BuyListTaskManager {
 
             workingProducts = true;
 
-            final long currentTime = System.currentTimeMillis();
+            final long currentTime = ClockBridge.wallMillis();
             for (Entry<Product, Long> entry : PRODUCTS.entrySet()) {
                 if (currentTime > entry.getValue().longValue()) {
                     final Product product = entry.getKey();

@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.scripts.quests.Q00610_MagicalPowerOfWaterPart2;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.NpcConfig;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.entity.actor.Npc;
@@ -59,7 +60,7 @@ public class Q00610_MagicalPowerOfWaterPart2 extends Quest {
         registerQuestItems(GREEN_TOTEM, ASHUTAR_HEART);
 
         final long test = GlobalVariablesManager.getInstance().getLong("Q00610_respawn", 0);
-        final long remain = test != 0 ? test - System.currentTimeMillis() : 0;
+        final long remain = test != 0 ? test - ClockBridge.wallMillis() : 0;
         if (remain > 0) {
             startQuestTimer("spawn_npc", remain, null, null);
         } else {
@@ -144,7 +145,7 @@ public class Q00610_MagicalPowerOfWaterPart2 extends Quest {
         final int respawnDelay = getRandom(respawnMinDelay, respawnMaxDelay);
         cancelQuestTimer("despawn_ashutar", npc, null);
         GlobalVariablesManager.getInstance()
-                .set("Q00610_respawn", String.valueOf(System.currentTimeMillis() + respawnDelay));
+                .set("Q00610_respawn", String.valueOf(ClockBridge.wallMillis() + respawnDelay));
         startQuestTimer("spawn_npc", respawnDelay, null, null);
         executeForEachPlayer(killer, npc, isSummon, true, false);
     }

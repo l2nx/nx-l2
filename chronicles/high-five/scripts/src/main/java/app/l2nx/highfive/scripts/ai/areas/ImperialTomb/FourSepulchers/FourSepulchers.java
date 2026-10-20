@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.scripts.ai.areas.ImperialTomb.FourSepulchers;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.data.xml.IXmlReader;
 import app.l2nx.highfive.entity.Location;
@@ -271,7 +272,7 @@ public class FourSepulchers extends Script implements IXmlReader {
                 GREAT_SAGES_BOSS,
                 JUDGE_BOSS);
 
-        final Calendar calendar = Calendar.getInstance();
+        final Calendar calendar = ClockBridge.calendar();
         calendar.set(Calendar.SECOND, 0);
         calendar.set(Calendar.MILLISECOND, 0);
         if (calendar.get(Calendar.MINUTE) >= ENTRY_TIME) {
@@ -279,7 +280,7 @@ public class FourSepulchers extends Script implements IXmlReader {
         }
 
         calendar.set(Calendar.MINUTE, ENTRY_TIME);
-        startQuestTimer("ANNOUNCE", calendar.getTimeInMillis() - System.currentTimeMillis(), null, null);
+        startQuestTimer("ANNOUNCE", calendar.getTimeInMillis() - ClockBridge.wallMillis(), null, null);
     }
 
     @Override
@@ -411,7 +412,7 @@ public class FourSepulchers extends Script implements IXmlReader {
                     }
                 }
 
-                final Calendar calendar = Calendar.getInstance();
+                final Calendar calendar = ClockBridge.calendar();
                 calendar.set(Calendar.SECOND, 0);
                 calendar.set(Calendar.MILLISECOND, 0);
                 if (calendar.get(Calendar.MINUTE) >= ENTRY_TIME) {
@@ -419,7 +420,7 @@ public class FourSepulchers extends Script implements IXmlReader {
                 }
 
                 calendar.set(Calendar.MINUTE, ENTRY_TIME);
-                startQuestTimer("ANNOUNCE", calendar.getTimeInMillis() - System.currentTimeMillis(), null, null);
+                startQuestTimer("ANNOUNCE", calendar.getTimeInMillis() - ClockBridge.wallMillis(), null, null);
                 break;
             }
         }
@@ -564,7 +565,7 @@ public class FourSepulchers extends Script implements IXmlReader {
         }
 
         // Get current time in minutes for entering.
-        final int currentMinute = (int) ((System.currentTimeMillis() / 1000 / 60) % 60);
+        final int currentMinute = (int) ((ClockBridge.wallMillis() / 1000 / 60) % 60);
         if ((currentMinute >= 0) && (currentMinute < ENTRY_TIME)) {
             showHtmlFile(player, npcId + "-NE.html", npc, null);
             return;

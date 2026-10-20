@@ -19,12 +19,12 @@
  */
 package app.l2nx.highfive.scripts.handlers.chat.commands.user;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.clan.Clan;
 import app.l2nx.highfive.handler.IUserCommandHandler;
 import app.l2nx.highfive.network.serverpackets.NpcHtmlMessage;
 import java.time.Instant;
-import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 
 /**
@@ -45,27 +45,27 @@ public class ClanPenalty implements IUserCommandHandler {
         final StringBuilder htmlContent = new StringBuilder(500);
         htmlContent.append(
                 "<html><body><center><table width=270 border=0 bgcolor=111111><tr><td width=170>Penalty</td><td width=100 align=center>Expiration Date</td></tr></table><table width=270 border=0><tr>");
-        if (player.getClanJoinExpiryTime() > System.currentTimeMillis()) {
+        if (player.getClanJoinExpiryTime() > ClockBridge.wallMillis()) {
             htmlContent.append("<td width=170>Unable to join a clan.</td><td width=100 align=center>");
-            htmlContent.append(DATE_FORMAT.format(
-                    Instant.ofEpochMilli(player.getClanJoinExpiryTime()).atZone(ZoneId.systemDefault())));
+            htmlContent.append(DATE_FORMAT.format(Instant.ofEpochMilli(player.getClanJoinExpiryTime())
+                    .atZone(ClockBridge.wallClock().getZone())));
             htmlContent.append("</td>");
             penalty = true;
         }
 
-        if (player.getClanCreateExpiryTime() > System.currentTimeMillis()) {
+        if (player.getClanCreateExpiryTime() > ClockBridge.wallMillis()) {
             htmlContent.append("<td width=170>Unable to create a clan.</td><td width=100 align=center>");
-            htmlContent.append(DATE_FORMAT.format(
-                    Instant.ofEpochMilli(player.getClanCreateExpiryTime()).atZone(ZoneId.systemDefault())));
+            htmlContent.append(DATE_FORMAT.format(Instant.ofEpochMilli(player.getClanCreateExpiryTime())
+                    .atZone(ClockBridge.wallClock().getZone())));
             htmlContent.append("</td>");
             penalty = true;
         }
 
         final Clan clan = player.getClan();
-        if ((clan != null) && (clan.getCharPenaltyExpiryTime() > System.currentTimeMillis())) {
+        if ((clan != null) && (clan.getCharPenaltyExpiryTime() > ClockBridge.wallMillis())) {
             htmlContent.append("<td width=170>Unable to invite a clan member.</td><td width=100 align=center>");
-            htmlContent.append(DATE_FORMAT.format(
-                    Instant.ofEpochMilli(clan.getCharPenaltyExpiryTime()).atZone(ZoneId.systemDefault())));
+            htmlContent.append(DATE_FORMAT.format(Instant.ofEpochMilli(clan.getCharPenaltyExpiryTime())
+                    .atZone(ClockBridge.wallClock().getZone())));
             htmlContent.append("</td>");
             penalty = true;
         }

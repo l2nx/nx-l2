@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.scripts.ai.areas.Gracia.instances.HallOfErosionAttack;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.GraciaSeedsConfig;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.actor.Npc;
@@ -256,7 +257,7 @@ public class HallOfErosionAttack extends Script {
 
             final Long reentertime =
                     InstanceManager.getInstance().getInstanceTime(partyMember.getObjectId(), INSTANCEID);
-            if (System.currentTimeMillis() < reentertime) {
+            if (ClockBridge.wallMillis() < reentertime) {
                 final SystemMessage sm = new SystemMessage(2100);
                 sm.addPcName(partyMember);
                 party.getCommandChannel().broadcastPacket(sm);
@@ -293,7 +294,7 @@ public class HallOfErosionAttack extends Script {
         if (checkConditions(player)) {
             world = new HEAWorld();
             world.setInstance(InstanceManager.getInstance().createDynamicInstance(INSTANCEID));
-            ((HEAWorld) world).startTime = System.currentTimeMillis();
+            ((HEAWorld) world).startTime = ClockBridge.gameMillis();
             InstanceManager.getInstance().addWorld(world);
             log.info(
                     "Hall Of Erosion Attack started {} Instance: {} created by player: {}",
@@ -434,7 +435,7 @@ public class HallOfErosionAttack extends Script {
             final HEAWorld world = (HEAWorld) tmpworld;
             if (!world.bossAttacked) {
                 world.bossAttacked = true;
-                final Calendar reenter = Calendar.getInstance();
+                final Calendar reenter = ClockBridge.calendar();
                 reenter.add(Calendar.HOUR, INSTANCEPENALTY);
 
                 final SystemMessage sm = new SystemMessage(
@@ -569,7 +570,7 @@ public class HallOfErosionAttack extends Script {
 
     private void finishInstance(InstanceWorld world) {
         if (world instanceof HEAWorld) {
-            final Calendar reenter = Calendar.getInstance();
+            final Calendar reenter = ClockBridge.calendar();
             reenter.set(Calendar.MINUTE, 30);
             if (reenter.get(Calendar.HOUR_OF_DAY) >= 6) {
                 reenter.add(Calendar.DATE, 1);

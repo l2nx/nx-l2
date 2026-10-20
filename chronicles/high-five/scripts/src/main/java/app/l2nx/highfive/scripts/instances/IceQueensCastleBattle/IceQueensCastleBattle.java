@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.scripts.instances.IceQueensCastleBattle;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Attackable;
@@ -299,7 +300,7 @@ public class IceQueensCastleBattle extends InstanceScript {
                             manageTimer(world, 360, NpcStringId.BATTLE_END_LIMIT_TIME);
                             controller
                                     .getVariables()
-                                    .set("TIMER_END", System.currentTimeMillis() + (GLAKIAS_KILL_TIMER * 60 * 1000));
+                                    .set("TIMER_END", ClockBridge.gameMillis() + (GLAKIAS_KILL_TIMER * 60 * 1000));
                         }
                         break;
                     }
@@ -709,9 +710,8 @@ public class IceQueensCastleBattle extends InstanceScript {
                         break;
                     }
                     case "SHOW_GLAKIAS_TIMER": {
-                        final int time =
-                                (int) ((controller.getVariables().getLong("TIMER_END", 0) - System.currentTimeMillis())
-                                        / 1000);
+                        final int time = (int)
+                                ((controller.getVariables().getLong("TIMER_END", 0) - ClockBridge.gameMillis()) / 1000);
                         manageTimer(world, time, NpcStringId.BATTLE_END_LIMIT_TIME);
                         break;
                     }
@@ -1201,13 +1201,13 @@ public class IceQueensCastleBattle extends InstanceScript {
                 sm.addPcName(channelMember);
                 party.broadcastPacket(sm);
                 return false;
-            } else if (System.currentTimeMillis()
+            } else if (ClockBridge.wallMillis()
                     < InstanceManager.getInstance().getInstanceTime(channelMember.getObjectId(), TEMPLATE_ID_EASY)) {
                 final SystemMessage sm = new SystemMessage(SystemMessageId.C1_MAY_NOT_RE_ENTER_YET);
                 sm.addPcName(channelMember);
                 party.broadcastPacket(sm);
                 return false;
-            } else if (System.currentTimeMillis()
+            } else if (ClockBridge.wallMillis()
                     < InstanceManager.getInstance().getInstanceTime(channelMember.getObjectId(), TEMPLATE_ID_HARD)) {
                 final SystemMessage sm = new SystemMessage(SystemMessageId.C1_MAY_NOT_RE_ENTER_YET);
                 sm.addPcName(channelMember);
@@ -1230,7 +1230,7 @@ public class IceQueensCastleBattle extends InstanceScript {
             }
         }
 
-        Collections.shuffle(players);
+        Collections.shuffle(players, ClockBridge.random());
         final Player target = (!players.isEmpty()) ? players.get(0) : null;
         if (target != null) {
             mob.addDamageHate(target, 0, 999);

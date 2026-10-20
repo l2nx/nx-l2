@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.scripts.quests.Q00726_LightWithinTheDarkness;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
@@ -242,7 +243,7 @@ public class Q00726_LightWithinTheDarkness extends Quest {
         final Instance instance = InstanceManager.getInstance().createDynamicInstance(dungeon.getInstanceId());
         world.setInstance(instance);
         instance.setExitLoc(new Location(player));
-        dungeon.setReEnterTime(System.currentTimeMillis() + 14400000);
+        dungeon.setReEnterTime(ClockBridge.wallMillis() + 14400000);
         InstanceManager.getInstance().addWorld(world);
         ThreadPool.schedule(new spawnNpcs((PAWORLD) world), 10000);
         for (Player partyMember : party.getMembers()) {
@@ -305,7 +306,7 @@ public class Q00726_LightWithinTheDarkness extends Quest {
             return "FortWarden-07.htm";
         } else if (fort.getFortState() == 2) {
             return "FortWarden-08.htm";
-        } else if (isEnter && (dungeon.getReEnterTime() > System.currentTimeMillis())) {
+        } else if (isEnter && (dungeon.getReEnterTime() > ClockBridge.wallMillis())) {
             return "FortWarden-09.htm";
         }
 

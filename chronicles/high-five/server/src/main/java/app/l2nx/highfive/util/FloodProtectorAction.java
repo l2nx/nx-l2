@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.util;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.managers.PunishmentManager;
 import app.l2nx.highfive.mechanics.punishment.PunishmentAffect;
@@ -125,7 +126,7 @@ public class FloodProtectorAction {
                                                     client.getAccountName(),
                                                     PunishmentAffect.ACCOUNT,
                                                     PunishmentType.BAN,
-                                                    System.currentTimeMillis() + punishmentTime,
+                                                    ClockBridge.wallMillis() + punishmentTime,
                                                     "",
                                                     getClass().getSimpleName()));
 
@@ -148,7 +149,7 @@ public class FloodProtectorAction {
                                                             characterId,
                                                             PunishmentAffect.CHARACTER,
                                                             PunishmentType.JAIL,
-                                                            System.currentTimeMillis() + punishmentTime,
+                                                            ClockBridge.wallMillis() + punishmentTime,
                                                             "",
                                                             getClass().getSimpleName()));
                                         }

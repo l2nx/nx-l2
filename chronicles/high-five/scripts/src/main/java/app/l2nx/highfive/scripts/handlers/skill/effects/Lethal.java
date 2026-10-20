@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.scripts.handlers.skill.effects;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.mechanics.conditions.Condition;
 import app.l2nx.highfive.mechanics.effects.AbstractEffect;
@@ -26,7 +27,6 @@ import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.mechanics.stats.Formulas;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.util.StatSet;
-import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Lethal effect implementation.
@@ -66,7 +66,7 @@ public class Lethal extends AbstractEffect {
                 * Formulas.calcGeneralTraitBonus(effector, effected, skill.getTraitType(), false);
 
         // Lethal Strike
-        if (ThreadLocalRandom.current().nextInt(100) < (fullLethal * chanceMultiplier)) {
+        if (ClockBridge.random().nextInt(100) < (fullLethal * chanceMultiplier)) {
             // for Players CP and HP is set to 1.
             if (effected.isPlayer()) {
                 effected.notifyDamageReceived(effected.getCurrentHp() - 1, effector, skill, true, false);
@@ -83,7 +83,7 @@ public class Lethal extends AbstractEffect {
             effector.sendPacket(SystemMessageId.YOUR_LETHAL_STRIKE_WAS_SUCCESSFUL);
         }
         // Half-Kill
-        else if (ThreadLocalRandom.current().nextInt(100) < (halfLethal * chanceMultiplier)) {
+        else if (ClockBridge.random().nextInt(100) < (halfLethal * chanceMultiplier)) {
             // for Players CP is set to 1.
             if (effected.isPlayer()) {
                 effected.setCurrentCp(1);

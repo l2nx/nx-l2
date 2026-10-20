@@ -10,6 +10,12 @@ conventions as is: Spring Boot defaults, standard Actuator endpoints and Microme
 Testcontainers. Custom code only for what is specific to Lineage 2. A departure from a standard is a decision
 recorded in the spec with its reason, not a silent choice.
 
+## Invariants
+
+- **Game code never reads the system clock or a global random generator.** Legacy code uses
+  `app.l2nx.highfive.clock.ClockBridge` (game time vs wall-clock time per mechanic); an ArchUnit test in
+  `chronicles/high-five/boot` enforces it. Design: [spec 003, execution](docs/specs/003-engine-core/execution.md).
+
 ## Found bugs
 
 **Every bug found and not fixed in the current change is filed at once**, so it is not lost in a report: a GitHub

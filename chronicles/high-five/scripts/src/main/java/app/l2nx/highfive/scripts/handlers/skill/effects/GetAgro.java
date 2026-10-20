@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.scripts.handlers.skill.effects;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Attackable;
 import app.l2nx.highfive.entity.actor.Creature;
@@ -32,7 +33,6 @@ import app.l2nx.highfive.mechanics.effects.EffectType;
 import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.util.StatSet;
 import java.util.Set;
-import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Get Agro effect implementation.
@@ -54,7 +54,7 @@ public class GetAgro extends AbstractEffect {
 
     @Override
     public boolean calcSuccess(Creature effector, Creature effected, Skill skill) {
-        return ThreadLocalRandom.current().nextInt(100) < chance;
+        return ClockBridge.random().nextInt(100) < chance;
     }
 
     @Override

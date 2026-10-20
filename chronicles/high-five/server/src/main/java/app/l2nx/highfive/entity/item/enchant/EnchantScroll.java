@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.entity.item.enchant;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.data.xml.EnchantItemData;
 import app.l2nx.highfive.data.xml.EnchantItemGroupsData;
 import app.l2nx.highfive.entity.actor.Player;
@@ -32,7 +33,6 @@ import app.l2nx.highfive.util.StatSet;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ThreadLocalRandom;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -158,7 +158,7 @@ public class EnchantScroll extends AbstractEnchantItem {
         final double bonusRate = getBonusRate();
         final double supportBonusRate = (supportItem != null) ? supportItem.getBonusRate() : 0;
         final double finalChance = Math.min(chance + bonusRate + supportBonusRate, 100);
-        final double random = 100 * ThreadLocalRandom.current().nextDouble();
+        final double random = 100 * ClockBridge.random().nextDouble();
         final boolean success = (random < finalChance);
         return success ? EnchantResultType.SUCCESS : EnchantResultType.FAILURE;
     }

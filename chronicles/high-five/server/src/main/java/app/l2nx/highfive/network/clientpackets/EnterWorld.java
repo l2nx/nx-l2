@@ -24,6 +24,7 @@ package app.l2nx.highfive.network.clientpackets;
 
 import app.l2nx.highfive.LoginServerThread;
 import app.l2nx.highfive.cache.HtmCache;
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.config.RatesConfig;
@@ -355,7 +356,7 @@ public class EnterWorld extends ClientPacket {
 
         if (PlayerConfig.ENABLE_VITALITY && PlayerConfig.RECOVER_VITALITY_ON_RECONNECT) {
             final float points =
-                    (RatesConfig.RATE_RECOVERY_ON_RECONNECT * (System.currentTimeMillis() - player.getLastAccess()))
+                    (RatesConfig.RATE_RECOVERY_ON_RECONNECT * (ClockBridge.wallMillis() - player.getLastAccess()))
                             / 60000;
             if (points > 0) {
                 player.updateVitalityPoints(points, false, true);
@@ -514,7 +515,7 @@ public class EnterWorld extends ClientPacket {
             DimensionalRiftManager.getInstance().teleportToWaitingRoom(player);
         }
 
-        if (player.getClanJoinExpiryTime() > System.currentTimeMillis()) {
+        if (player.getClanJoinExpiryTime() > ClockBridge.wallMillis()) {
             player.sendPacket(
                     SystemMessageId
                             .YOU_HAVE_RECENTLY_BEEN_DISMISSED_FROM_A_CLAN_YOU_ARE_NOT_ALLOWED_TO_JOIN_ANOTHER_CLAN_FOR_24_HOURS);

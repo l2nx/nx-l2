@@ -22,11 +22,12 @@
  */
 package app.l2nx.highfive.entity.zone.form;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.itemcontainer.Inventory;
 import app.l2nx.highfive.entity.zone.ZoneForm;
 import app.l2nx.highfive.geoengine.GeoEngine;
-import java.util.concurrent.ThreadLocalRandom;
+import java.util.random.RandomGenerator;
 import lombok.Getter;
 
 /**
@@ -153,7 +154,7 @@ public class ZoneCylinder extends ZoneForm {
         final int y3 = this.y + rad;
         double dx = this.x - x;
         double dy = this.y - y;
-        final ThreadLocalRandom random = ThreadLocalRandom.current();
+        final RandomGenerator random = ClockBridge.random();
         while (((dx * dx) + (dy * dy)) > radS) {
             x = random.nextInt(x2, x3 + 1);
             y = random.nextInt(y2, y3 + 1);

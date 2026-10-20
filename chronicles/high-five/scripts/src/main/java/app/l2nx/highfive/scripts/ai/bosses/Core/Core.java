@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.scripts.ai.bosses.Core;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.GrandBossConfig;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.actor.Attackable;
@@ -166,7 +167,7 @@ public class Core extends Script {
         final StatSet info = bossManager.getStatSet(CORE_NPC_ID);
         final int status = bossManager.getStatus(CORE_NPC_ID);
         if (status == STATUS_DEAD) {
-            final long remaining = info.getLong("respawn_time") - System.currentTimeMillis();
+            final long remaining = info.getLong("respawn_time") - ClockBridge.wallMillis();
             if (remaining > 0) {
                 startQuestTimer(EVENT_CORE_UNLOCK, remaining, null, null);
             } else {
@@ -362,7 +363,7 @@ public class Core extends Script {
             final long randomRangeMillis = GrandBossConfig.CORE_SPAWN_RANDOM * MILLIS_PER_HOUR;
             final long respawnTime = baseIntervalMillis + getRandom(-randomRangeMillis, randomRangeMillis);
 
-            final long nextRespawnTime = System.currentTimeMillis() + respawnTime;
+            final long nextRespawnTime = ClockBridge.wallMillis() + respawnTime;
             log.info("Core will respawn at: {}", DateFormatUtils.format(nextRespawnTime, "dd/MM/yyyy HH:mm:ss"));
 
             startQuestTimer(EVENT_CORE_UNLOCK, respawnTime, null, null);

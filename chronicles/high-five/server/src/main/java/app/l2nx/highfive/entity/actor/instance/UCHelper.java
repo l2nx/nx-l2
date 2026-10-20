@@ -22,11 +22,11 @@
  */
 package app.l2nx.highfive.entity.actor.instance;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.templates.NpcTemplate;
 import java.util.StringTokenizer;
-import java.util.concurrent.ThreadLocalRandom;
 
 public class UCHelper extends Folk {
     private static final Location[][] LOCATIONS = {
@@ -48,7 +48,7 @@ public class UCHelper extends Folk {
         if (actualCommand.startsWith("coliseum")) {
             final int index = Integer.parseInt(token.nextToken());
             final Location[] locs = LOCATIONS[index];
-            player.teleToLocation(locs[ThreadLocalRandom.current().nextInt(locs.length)], true);
+            player.teleToLocation(locs[ClockBridge.random().nextInt(locs.length)], true);
         } else {
             super.onBypassFeedback(player, command);
         }

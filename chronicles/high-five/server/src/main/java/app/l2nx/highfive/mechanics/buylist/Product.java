@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.mechanics.buylist;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.entity.item.ItemTemplate;
 import app.l2nx.highfive.taskmanagers.BuyListTaskManager;
@@ -91,7 +92,7 @@ public class Product {
             return false;
         }
 
-        BuyListTaskManager.getInstance().add(this, System.currentTimeMillis() + restockDelay);
+        BuyListTaskManager.getInstance().add(this, ClockBridge.wallMillis() + restockDelay);
 
         final boolean result = count.addAndGet(-value) >= 0;
         save();
@@ -103,9 +104,8 @@ public class Product {
     }
 
     public void restartRestockTask(long nextRestockTime) {
-        final long remainTime = nextRestockTime - System.currentTimeMillis();
-        if (remainTime > 0) {
-            BuyListTaskManager.getInstance().update(this, remainTime);
+        if (nextRestockTime > ClockBridge.wallMillis()) {
+            BuyListTaskManager.getInstance().update(this, nextRestockTime);
         } else {
             restock();
         }
@@ -119,7 +119,8 @@ public class Product {
     private void save() {
         try (Connection con = DatabaseFactory.getConnection();
                 PreparedStatement statement = con.prepareStatement(
-                        "INSERT INTO `buylists`(`buylist_id`, `item_id`, `count`, `next_restock_time`) VALUES(?, ?, ?, ?) ON DUPLICATE KEY UPDATE `count` = ?, `next_restock_time` = ?")) {
+                        "INSERT INTO `buylists`(`buylist_id`, `item_id`, `count`, `next_restock_time`) VALUES(?, ?, ?,"
+                                + " ?) ON DUPLICATE KEY UPDATE `count` = ?, `next_restock_time` = ?")) {
             statement.setInt(1, buyListId);
             statement.setInt(2, item.getId());
             statement.setLong(3, getCount());

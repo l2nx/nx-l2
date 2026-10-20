@@ -25,6 +25,7 @@ package app.l2nx.highfive.entity.item.instance;
 import static app.l2nx.highfive.entity.itemcontainer.Inventory.ADENA_ID;
 import static app.l2nx.highfive.entity.itemcontainer.Inventory.MAX_ADENA;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.config.OlympiadConfig;
 import app.l2nx.highfive.config.PlayerConfig;
@@ -230,7 +231,7 @@ public class Item extends WorldObject {
         customType2 = 0;
         dropTime = 0;
         mana = template.getDuration();
-        time = template.getTime() == -1 ? -1 : System.currentTimeMillis() + (template.getTime() * 60 * 1000);
+        time = template.getTime() == -1 ? -1 : ClockBridge.wallMillis() + (template.getTime() * 60 * 1000);
         enchantLevel = 0;
         scheduleLifeTimeTask();
     }
@@ -253,7 +254,7 @@ public class Item extends WorldObject {
         setCount(1);
         itemLocation = ItemLocation.VOID;
         mana = template.getDuration();
-        time = template.getTime() == -1 ? -1 : System.currentTimeMillis() + (template.getTime() * 60 * 1000);
+        time = template.getTime() == -1 ? -1 : ClockBridge.wallMillis() + (template.getTime() * 60 * 1000);
         scheduleLifeTimeTask();
     }
 
@@ -1390,7 +1391,7 @@ public class Item extends WorldObject {
         setSpawned(true);
         setXYZ(x, y, z);
 
-        setDropTime(System.currentTimeMillis());
+        setDropTime(ClockBridge.wallMillis());
         setDropperObjectId(
                 dropper != null
                         ? dropper.getObjectId()
@@ -1564,7 +1565,7 @@ public class Item extends WorldObject {
     }
 
     public long getRemainingTime() {
-        return time - System.currentTimeMillis();
+        return time - ClockBridge.wallMillis();
     }
 
     public void endOfLife() {

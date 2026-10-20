@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.scripts.ai.areas.Gracia.AI;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.data.SpawnTable;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Npc;
@@ -32,7 +33,6 @@ import app.l2nx.highfive.network.NpcStringId;
 import app.l2nx.highfive.network.enums.ChatType;
 import app.l2nx.highfive.network.enums.Movie;
 import java.util.Calendar;
-import java.util.GregorianCalendar;
 
 /**
  * Lindvior Scene AI.
@@ -115,10 +115,10 @@ public class Lindvior extends Script {
     }
 
     protected long scheduleNextLindviorDate() {
-        final GregorianCalendar date = new GregorianCalendar();
+        final Calendar date = ClockBridge.calendar();
         date.set(Calendar.MINUTE, RESET_MIN);
         date.set(Calendar.HOUR_OF_DAY, RESET_HOUR);
-        if (System.currentTimeMillis() >= date.getTimeInMillis()) {
+        if (ClockBridge.wallMillis() >= date.getTimeInMillis()) {
             date.add(Calendar.DAY_OF_WEEK, 1);
         }
 
@@ -131,6 +131,6 @@ public class Lindvior extends Script {
             date.add(Calendar.DAY_OF_WEEK, 1 + RESET_DAY_1);
         }
 
-        return date.getTimeInMillis() - System.currentTimeMillis();
+        return date.getTimeInMillis() - ClockBridge.wallMillis();
     }
 }

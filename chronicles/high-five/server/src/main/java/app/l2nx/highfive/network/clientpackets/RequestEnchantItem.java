@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.network.clientpackets;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.data.xml.EnchantItemData;
@@ -116,7 +117,7 @@ public class RequestEnchantItem extends ClientPacket {
 
         // Fast auto-enchant cheat check.
         if ((player.getActiveEnchantTimestamp() == 0)
-                || ((System.currentTimeMillis() - player.getActiveEnchantTimestamp()) < 2000)) {
+                || ((ClockBridge.gameMillis() - player.getActiveEnchantTimestamp()) < 2000)) {
             PunishmentManager.handleIllegalPlayerAction(
                     player, player + " use autoenchant program ", GeneralConfig.DEFAULT_PUNISH);
             player.setActiveEnchantItemId(Player.ID_NONE);

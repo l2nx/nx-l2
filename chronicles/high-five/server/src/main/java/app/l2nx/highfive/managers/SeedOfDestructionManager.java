@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.managers;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.GraciaSeedsConfig;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Npc;
@@ -52,7 +53,7 @@ public class SeedOfDestructionManager {
     private final Calendar soDLastStateChangeDate;
 
     protected SeedOfDestructionManager() {
-        soDLastStateChangeDate = Calendar.getInstance();
+        soDLastStateChangeDate = ClockBridge.calendar();
         loadData();
         handleSodStages();
         log.info("Seed of Destruction Manager: Loaded. Current stage is: {}", soDState);
@@ -103,7 +104,7 @@ public class SeedOfDestructionManager {
             }
             case 2: {
                 // Conquest Complete state, if too much time is passed than change to defense state
-                final long timePast = System.currentTimeMillis() - soDLastStateChangeDate.getTimeInMillis();
+                final long timePast = ClockBridge.wallMillis() - soDLastStateChangeDate.getTimeInMillis();
                 if (timePast >= GraciaSeedsConfig.SOD_STAGE_2_LENGTH) {
                     // change to Attack state because Defend statet is not implemented
                     setSoDState(1, true);
@@ -169,7 +170,7 @@ public class SeedOfDestructionManager {
 
     public void setSoDState(int value, boolean doSave) {
         log.info("New Seed of Destruction state -> {}.", value);
-        soDLastStateChangeDate.setTimeInMillis(System.currentTimeMillis());
+        soDLastStateChangeDate.setTimeInMillis(ClockBridge.wallMillis());
         soDState = value;
 
         // Reset number of Tiat kills.
@@ -191,7 +192,7 @@ public class SeedOfDestructionManager {
             }
             case 2: {
                 return ((soDLastStateChangeDate.getTimeInMillis() + GraciaSeedsConfig.SOD_STAGE_2_LENGTH)
-                        - System.currentTimeMillis());
+                        - ClockBridge.wallMillis());
             }
             case 3: {
                 // not implemented yet

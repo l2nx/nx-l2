@@ -19,11 +19,11 @@
  */
 package app.l2nx.highfive.entity.zone;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.entity.Location;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ThreadLocalRandom;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.LoggerFactory;
@@ -103,7 +103,7 @@ public abstract class ZoneRespawn extends ZoneType {
 
     public Location getSpawnLoc() {
         if (PlayerConfig.RANDOM_RESPAWN_IN_TOWN_ENABLED) {
-            return spawns.get(ThreadLocalRandom.current().nextInt(spawns.size()));
+            return spawns.get(ClockBridge.random().nextInt(spawns.size()));
         }
 
         return spawns.get(0);
@@ -112,7 +112,7 @@ public abstract class ZoneRespawn extends ZoneType {
     public Location getOtherSpawnLoc() {
         if (otherSpawnLocs != null) {
             if (PlayerConfig.RANDOM_RESPAWN_IN_TOWN_ENABLED) {
-                return otherSpawnLocs.get(ThreadLocalRandom.current().nextInt(otherSpawnLocs.size()));
+                return otherSpawnLocs.get(ClockBridge.random().nextInt(otherSpawnLocs.size()));
             }
 
             return otherSpawnLocs.get(0);
@@ -124,7 +124,7 @@ public abstract class ZoneRespawn extends ZoneType {
     public Location getChaoticSpawnLoc() {
         if (chaoticSpawnLocs != null) {
             if (PlayerConfig.RANDOM_RESPAWN_IN_TOWN_ENABLED) {
-                return chaoticSpawnLocs.get(ThreadLocalRandom.current().nextInt(chaoticSpawnLocs.size()));
+                return chaoticSpawnLocs.get(ClockBridge.random().nextInt(chaoticSpawnLocs.size()));
             }
 
             return chaoticSpawnLocs.get(0);
@@ -136,7 +136,7 @@ public abstract class ZoneRespawn extends ZoneType {
     public Location getBanishSpawnLoc() {
         if (banishSpawnLocs != null) {
             if (PlayerConfig.RANDOM_RESPAWN_IN_TOWN_ENABLED) {
-                return banishSpawnLocs.get(ThreadLocalRandom.current().nextInt(banishSpawnLocs.size()));
+                return banishSpawnLocs.get(ClockBridge.random().nextInt(banishSpawnLocs.size()));
             }
 
             return banishSpawnLocs.get(0);

@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.entity.spawns;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.data.SpawnTable;
 import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.data.xml.MapRegionData;
@@ -39,7 +40,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -376,7 +376,7 @@ public class AutoSpawnHandler {
                 }
 
                 final int locationCount = locationList.size();
-                int locationIndex = ThreadLocalRandom.current().nextInt(locationCount);
+                int locationIndex = ClockBridge.random().nextInt(locationCount);
 
                 // If random spawning is disabled, the spawn at the next set of co-ordinates after the last.
                 // If the index is greater than the number of possible spawns, reset the counter to zero.
@@ -419,8 +419,8 @@ public class AutoSpawnHandler {
                         // To prevent spawning of more than one NPC in the exact same spot, move it slightly by a small
                         // random offset.
                         npcInst.setXYZ(
-                                npcInst.getX() + ThreadLocalRandom.current().nextInt(50),
-                                npcInst.getY() + ThreadLocalRandom.current().nextInt(50),
+                                npcInst.getX() + ClockBridge.random().nextInt(50),
+                                npcInst.getY() + ClockBridge.random().nextInt(50),
                                 npcInst.getZ());
 
                         // Add the NPC instance to the list of managed instances.
@@ -436,7 +436,7 @@ public class AutoSpawnHandler {
                             // LOGGER.log(Level.INFO, "AutoSpawnHandler: Random spawn location " + npcInst.getLocation()
                             // + " for " + npcInst + " is occupied. Teleporting...");
                             npcInst.teleToLocation(
-                                    locationList.get(ThreadLocalRandom.current().nextInt(locationList.size())));
+                                    locationList.get(ClockBridge.random().nextInt(locationList.size())));
                         }
                     }
 

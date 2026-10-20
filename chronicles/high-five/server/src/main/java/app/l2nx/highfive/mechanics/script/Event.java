@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.mechanics.script;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.data.xml.IXmlReader;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.schedule.RecurrenceSchedule;
@@ -89,7 +90,7 @@ public abstract class Event extends Script {
                                     .addTimer(
                                             timer,
                                             params,
-                                            (start.toEpochMilli() - System.currentTimeMillis()) + 5000,
+                                            (start.toEpochMilli() - ClockBridge.wallMillis()) + 5000,
                                             null,
                                             null); // Added 5 seconds to prevent overlapping.
                             log.info(

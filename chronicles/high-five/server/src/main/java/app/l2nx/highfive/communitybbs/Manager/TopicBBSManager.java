@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.communitybbs.Manager;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.communitybbs.BB.Forum;
 import app.l2nx.highfive.communitybbs.BB.Post;
 import app.l2nx.highfive.communitybbs.BB.Topic;
@@ -81,7 +82,7 @@ public class TopicBBSManager extends BaseBBSManager {
                                 + " is not implemented yet</center><br><br></body></html>",
                         player);
             } else {
-                final long currentTime = System.currentTimeMillis();
+                final long currentTime = ClockBridge.wallMillis();
                 f.vload();
                 final Topic t = new Topic(
                         TopicConstructorType.CREATE,

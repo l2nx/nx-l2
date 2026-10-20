@@ -53,7 +53,8 @@ specific to Lineage 2, and every departure from a standard is a recorded decisio
 
 ## Layout
 
-The target layout; stage 2 has `libs/boot`, `libs/network`, `login/` and `chronicles/high-five/`.
+The target layout; the repository has `libs/boot`, `libs/network`, `engine/core` (so far only the game clock),
+`login/` and `chronicles/high-five/`.
 
 ```
 libs/          infrastructure with no Lineage 2 knowledge: boot, network, telemetry

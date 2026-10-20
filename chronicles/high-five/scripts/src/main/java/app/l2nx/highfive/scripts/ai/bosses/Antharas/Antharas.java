@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.scripts.ai.bosses.Antharas;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.GrandBossConfig;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.World;
@@ -240,13 +241,13 @@ public class Antharas extends Script {
                 antharasBoss = (GrandBoss) addSpawn(ANTHARAS_NPC_ID, savedX, savedY, savedZ, savedHeading, false, 0);
                 antharasBoss.setCurrentHpMp(currentHp, currentMp);
                 addBoss(antharasBoss);
-                lastAttackTime = System.currentTimeMillis();
+                lastAttackTime = ClockBridge.gameMillis();
                 startQuestTimer(EVENT_CHECK_ATTACK, CHECK_ATTACK_INTERVAL, antharasBoss, null);
                 startQuestTimer(EVENT_SPAWN_MINION, MINION_SPAWN_INTERVAL, antharasBoss, null);
                 break;
             }
             case STATUS_DEAD: {
-                final long remainingTime = respawnTime - System.currentTimeMillis();
+                final long remainingTime = respawnTime - ClockBridge.wallMillis();
                 if (remainingTime > 0) {
                     startQuestTimer(EVENT_CLEAR_STATUS, remainingTime, null, null);
                 } else {
@@ -330,7 +331,7 @@ public class Antharas extends Script {
                 antharasBoss.setRandomWalking(false);
                 antharasBoss.teleToLocation(ANTHARAS_SPAWN_LOCATION);
                 setStatus(STATUS_IN_FIGHT);
-                lastAttackTime = System.currentTimeMillis();
+                lastAttackTime = ClockBridge.gameMillis();
                 ANTHARAS_NEST_ZONE.broadcastPacket(new PlaySound("BS02_A"));
                 startQuestTimer(EVENT_CAMERA_1, 23, antharasBoss, null);
                 break;
@@ -449,7 +450,7 @@ public class Antharas extends Script {
                     break;
                 }
 
-                if ((lastAttackTime + INACTIVITY_LIMIT) < System.currentTimeMillis()) {
+                if ((lastAttackTime + INACTIVITY_LIMIT) < ClockBridge.gameMillis()) {
                     setStatus(STATUS_ALIVE);
                     for (Creature creature : ANTHARAS_NEST_ZONE.getCharactersInside()) {
                         if (creature == null) {
@@ -719,7 +720,7 @@ public class Antharas extends Script {
                 npc.doDie(attacker);
             }
         } else if (npcId == ANTHARAS_NPC_ID) {
-            lastAttackTime = System.currentTimeMillis();
+            lastAttackTime = ClockBridge.gameMillis();
 
             if (!ANTHARAS_NEST_ZONE.isCharacterInZone(attacker) || (getStatus() != STATUS_IN_FIGHT)) {
                 log.warn("Player {} attacked Antharas in invalid conditions!", attacker.getName());
@@ -779,7 +780,7 @@ public class Antharas extends Script {
             startQuestTimer(EVENT_CLEAR_ZONE, TELEPORT_CUBE_DURATION, null, null);
             setStatus(STATUS_DEAD);
 
-            final long nextRespawnTime = System.currentTimeMillis() + respawnDelay;
+            final long nextRespawnTime = ClockBridge.wallMillis() + respawnDelay;
             log.info("Antharas will respawn at: {}", DateFormatUtils.format(nextRespawnTime, "dd/MM/yyyy HH:mm:ss"));
 
             resetFightState();
@@ -869,7 +870,7 @@ public class Antharas extends Script {
     private void setRespawn(long respawnTime) {
         GrandBossManager.getInstance()
                 .getStatSet(ANTHARAS_NPC_ID)
-                .set("respawn_time", System.currentTimeMillis() + respawnTime);
+                .set("respawn_time", ClockBridge.wallMillis() + respawnTime);
     }
 
     private void resetFightState() {

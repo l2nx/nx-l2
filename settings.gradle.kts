@@ -12,6 +12,7 @@ dependencyResolutionManagement {
 rootProject.name = "nx-l2"
 
 include(":libs:boot", ":libs:network")
+include(":engine:core")
 include(":login:server", ":login:boot")
 
 // -Pchronicles=high-five,essence limits the build; the default is every directory under chronicles/.

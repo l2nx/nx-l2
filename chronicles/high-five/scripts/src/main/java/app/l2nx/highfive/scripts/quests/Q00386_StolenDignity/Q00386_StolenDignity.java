@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.scripts.quests.Q00386_StolenDignity;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
@@ -499,7 +500,7 @@ public class Q00386_StolenDignity extends Quest {
         // @formatter:off
         final Integer[] arr = {1, 2, 3, 4, 5, 6, 7, 8, 9};
         // @formatter:on
-        Collections.shuffle(Arrays.asList(arr));
+        Collections.shuffle(Arrays.asList(arr), ClockBridge.random());
         qs.set("numbers", Arrays.asList(arr).toString().replaceAll("[^\\d ]", ""));
         qs.set("selected", "? ? ? ? ? ? ? ? ?");
     }

@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.scripts.ai.areas.ForgeOfTheGods;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.data.xml.IXmlReader;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.actor.Npc;
@@ -32,7 +33,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.ThreadLocalRandom;
+import java.util.random.RandomGenerator;
 import lombok.extern.slf4j.Slf4j;
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
@@ -195,7 +196,7 @@ public class TarBeetleSpawn implements IXmlReader {
         public void refreshSpawn() {
             try {
                 while (this.spawn.size() < maxNpcCount) {
-                    final ThreadLocalRandom random = ThreadLocalRandom.current();
+                    final RandomGenerator random = ClockBridge.random();
                     final Location location =
                             zones.get(random.nextInt(zones.size())).getRandomPoint();
                     if (location != null) {

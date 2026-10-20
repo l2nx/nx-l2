@@ -19,9 +19,9 @@
  */
 package app.l2nx.highfive.mechanics.olympiad;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.OlympiadConfig;
 import java.util.List;
-import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * @author DS
@@ -59,7 +59,7 @@ public class OlympiadGameClassed extends OlympiadGameNormal {
         List<Integer> list;
         Participant[] opponents;
         while (!classList.isEmpty()) {
-            list = classList.get(ThreadLocalRandom.current().nextInt(classList.size()));
+            list = classList.get(ClockBridge.random().nextInt(classList.size()));
             if ((list == null) || (list.size() < 2)) {
                 classList.remove(list);
                 continue;

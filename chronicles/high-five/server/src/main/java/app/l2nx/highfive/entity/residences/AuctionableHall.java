@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.entity.residences;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.data.sql.ClanHallTable;
 import app.l2nx.highfive.data.sql.ClanTable;
 import app.l2nx.highfive.data.sql.DatabaseFactory;
@@ -83,7 +84,7 @@ public class AuctionableHall extends ClanHall {
     @Override
     public void setOwner(Clan clan) {
         super.setOwner(clan);
-        paidUntil = System.currentTimeMillis();
+        paidUntil = ClockBridge.wallMillis();
         initialyzeTask(true);
     }
 
@@ -92,14 +93,14 @@ public class AuctionableHall extends ClanHall {
      * @param forced
      */
     private void initialyzeTask(boolean forced) {
-        final long currentTime = System.currentTimeMillis();
+        final long currentTime = ClockBridge.wallMillis();
         if (paidUntil > currentTime) {
             ThreadPool.schedule(new FeeTask(), paidUntil - currentTime);
         } else if (!paid && !forced) {
-            if ((System.currentTimeMillis() + (3600000 * 24)) <= (paidUntil + CH_RATE)) {
-                ThreadPool.schedule(new FeeTask(), System.currentTimeMillis() + (3600000 * 24));
+            if ((ClockBridge.wallMillis() + (3600000 * 24)) <= (paidUntil + CH_RATE)) {
+                ThreadPool.schedule(new FeeTask(), 3600000 * 24);
             } else {
-                ThreadPool.schedule(new FeeTask(), (paidUntil + CH_RATE) - System.currentTimeMillis());
+                ThreadPool.schedule(new FeeTask(), (paidUntil + CH_RATE) - ClockBridge.wallMillis());
             }
         } else {
             ThreadPool.schedule(new FeeTask(), 0);
@@ -116,7 +117,7 @@ public class AuctionableHall extends ClanHall {
                     return;
                 }
 
-                final long time = System.currentTimeMillis();
+                final long time = ClockBridge.wallMillis();
                 if (paidUntil > time) {
                     ThreadPool.schedule(new FeeTask(), paidUntil - time);
                     return;

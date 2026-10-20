@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.mechanics.punishment;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.handler.IPunishmentHandler;
 import app.l2nx.highfive.handler.PunishmentHandler;
@@ -107,7 +108,7 @@ public class PunishmentTask implements Runnable {
      * @return {@code true} if current punishment task has expired, {@code false} otherwise.
      */
     public boolean isExpired() {
-        return (expirationTime > 0) && (System.currentTimeMillis() > expirationTime);
+        return (expirationTime > 0) && (ClockBridge.wallMillis() > expirationTime);
     }
 
     /**
@@ -121,7 +122,7 @@ public class PunishmentTask implements Runnable {
         onStart();
         if (expirationTime > 0) // Has expiration?
         {
-            task = ThreadPool.schedule(this, expirationTime - System.currentTimeMillis());
+            task = ThreadPool.schedule(this, expirationTime - ClockBridge.wallMillis());
         }
     }
 
@@ -187,7 +188,7 @@ public class PunishmentTask implements Runnable {
         if (stored) {
             try (Connection con = DatabaseFactory.getConnection();
                     PreparedStatement ps = con.prepareStatement(UPDATE_QUERY)) {
-                ps.setLong(1, System.currentTimeMillis());
+                ps.setLong(1, ClockBridge.wallMillis());
                 ps.setLong(2, id);
                 ps.execute();
             } catch (SQLException e) {

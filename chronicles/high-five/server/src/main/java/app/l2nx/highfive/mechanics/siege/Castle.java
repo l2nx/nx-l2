@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.mechanics.siege;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.FeatureConfig;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.data.sql.ClanTable;
@@ -164,7 +165,7 @@ public class Castle extends AbstractResidence {
                 return;
             }
 
-            final long currentTime = System.currentTimeMillis();
+            final long currentTime = ClockBridge.wallMillis();
             if (endTime > currentTime) {
                 ThreadPool.schedule(new FunctionTask(cwh), endTime - currentTime);
             } else {
@@ -195,7 +196,7 @@ public class Castle extends AbstractResidence {
                             fee = tempFee;
                         }
 
-                        setEndTime(System.currentTimeMillis() + rate);
+                        setEndTime(ClockBridge.wallMillis() + rate);
                         dbSave();
                         if (cwh) {
                             ClanTable.getInstance()
@@ -573,9 +574,9 @@ public class Castle extends AbstractResidence {
                 while (rs.next()) {
                     setName(rs.getString("name"));
                     // _OwnerId = rs.getInt("ownerId");
-                    siegeDate = Calendar.getInstance();
+                    siegeDate = ClockBridge.calendar();
                     siegeDate.setTimeInMillis(rs.getLong("siegeDate"));
-                    siegeTimeRegistrationEndDate = Calendar.getInstance();
+                    siegeTimeRegistrationEndDate = ClockBridge.calendar();
                     siegeTimeRegistrationEndDate.setTimeInMillis(rs.getLong("regTimeEnd"));
                     timeRegistrationOver = Boolean.parseBoolean(rs.getString("regTimeOver"));
                     taxPercent = rs.getInt("taxPercent");
@@ -793,7 +794,7 @@ public class Castle extends AbstractResidence {
 
     public Calendar getTimeRegistrationOverDate() {
         if (siegeTimeRegistrationEndDate == null) {
-            siegeTimeRegistrationEndDate = Calendar.getInstance();
+            siegeTimeRegistrationEndDate = ClockBridge.calendar();
         }
 
         return siegeTimeRegistrationEndDate;

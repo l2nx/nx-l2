@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.entity.actor.holders.creature;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.item.instance.Item;
 import app.l2nx.highfive.mechanics.skill.Skill;
 import lombok.Getter;
@@ -33,90 +34,56 @@ import lombok.Getter;
  * @author Yesod, Zoey76, Mobius
  */
 public class TimeStamp {
-    /** Item or skill ID. */
     private final int id1;
-    /** Item object ID or skill level. */
     private final int id2;
-    /** Item or skill reuse time. */
+
     @Getter
     private final long reuse;
-    /** Time stamp. */
+
     @Getter
     private volatile long stamp;
-    /** Shared reuse group. */
+
     @Getter
     private final int sharedReuseGroup;
 
-    /**
-     * Skill time stamp constructor.
-     * @param skill the skill upon the stamp will be created.
-     * @param reuse the reuse time for this skill.
-     * @param systime overrides the system time with a customized one.
-     */
-    public TimeStamp(Skill skill, long reuse, long systime) {
+    public TimeStamp(Skill skill, long reuse, long endsAt) {
         id1 = skill.getId();
         id2 = skill.getLevel();
         this.reuse = reuse;
-        stamp = systime > 0 ? systime : reuse != 0 ? System.currentTimeMillis() + reuse : 0;
+        stamp = endsAt > 0 ? endsAt : reuse != 0 ? ClockBridge.gameMillis() + reuse : 0;
         sharedReuseGroup = -1;
     }
 
-    /**
-     * Item time stamp constructor.
-     * @param item the item upon the stamp will be created.
-     * @param reuse the reuse time for this item.
-     * @param systime overrides the system time with a customized one.
-     */
-    public TimeStamp(Item item, long reuse, long systime) {
+    public TimeStamp(Item item, long reuse, long endsAt) {
         id1 = item.getId();
         id2 = item.getObjectId();
         this.reuse = reuse;
-        stamp = systime > 0 ? systime : reuse != 0 ? System.currentTimeMillis() + reuse : 0;
+        stamp = endsAt > 0 ? endsAt : reuse != 0 ? ClockBridge.gameMillis() + reuse : 0;
         sharedReuseGroup = item.getSharedReuseGroup();
     }
 
-    /**
-     * Gets the item ID.
-     * @return the item ID
-     */
     public int getItemId() {
         return id1;
     }
 
-    /**
-     * Gets the item object ID.
-     * @return the item object ID
-     */
     public int getItemObjectId() {
         return id2;
     }
 
-    /**
-     * Gets the skill ID.
-     * @return the skill ID
-     */
     public int getSkillId() {
         return id1;
     }
 
-    /**
-     * Gets the skill level.
-     * @return the skill level
-     */
     public int getSkillLevel() {
         return id2;
     }
 
-    /**
-     * Gets the remaining time.
-     * @return the remaining time for this time stamp to expire
-     */
     public long getRemaining() {
         if (stamp == 0) {
             return 0;
         }
 
-        final long remainingTime = stamp - System.currentTimeMillis();
+        final long remainingTime = stamp - ClockBridge.gameMillis();
         if (remainingTime <= 0) {
             stamp = 0;
             return 0;
@@ -125,16 +92,12 @@ public class TimeStamp {
         return remainingTime;
     }
 
-    /**
-     * Verifies if the reuse delay has passed.
-     * @return {@code true} if this time stamp has expired, {@code false} otherwise
-     */
     public boolean hasNotPassed() {
         if (stamp == 0) {
             return false;
         }
 
-        if (System.currentTimeMillis() >= stamp) {
+        if (ClockBridge.gameMillis() >= stamp) {
             stamp = 0;
             return false;
         }

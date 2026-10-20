@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.network.clientpackets;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.data.xml.EnchantItemData;
 import app.l2nx.highfive.entity.actor.Player;
@@ -82,7 +83,7 @@ public class RequestExTryToPutEnchantTargetItem extends ClientPacket {
         }
 
         player.setEnchanting(true);
-        player.setActiveEnchantTimestamp(System.currentTimeMillis());
+        player.setActiveEnchantTimestamp(ClockBridge.gameMillis());
         player.sendPacket(new ExPutEnchantTargetItemResult(objectId));
     }
 }

@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.scripts.events.SavingSanta;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.data.xml.ItemData;
 import app.l2nx.highfive.data.xml.SkillData;
 import app.l2nx.highfive.entity.Location;
@@ -324,13 +325,13 @@ public class SavingSanta extends LongTimeEvent {
                             && !pl.isFlyingMounted()) {
                         if (rewardedPlayers.containsKey(pl.getAccountName())) {
                             final long elapsedTimeSinceLastRewarded =
-                                    System.currentTimeMillis() - rewardedPlayers.get(pl.getAccountName());
+                                    ClockBridge.wallMillis() - rewardedPlayers.get(pl.getAccountName());
                             if (elapsedTimeSinceLastRewarded < MIN_TIME_BETWEEN_2_REWARDS) {
                                 continue;
                             }
                         } else {
                             final long time = player.getVariables().getLong("LAST_SANTA_REWARD", 0);
-                            if ((System.currentTimeMillis() - time) < MIN_TIME_BETWEEN_2_REWARDS) {
+                            if ((ClockBridge.wallMillis() - time) < MIN_TIME_BETWEEN_2_REWARDS) {
                                 rewardedPlayers.put(pl.getAccountName(), time);
                                 continue;
                             }
@@ -340,8 +341,8 @@ public class SavingSanta extends LongTimeEvent {
                         final int locy = (int) (pl.getY() + (MathUtil.pow(-1, getRandom(1, 2)) * 50));
                         final int heading = LocationUtil.calculateHeadingFrom(locx, locy, pl.getX(), pl.getY());
                         final Npc santa = addSpawn(HOLIDAY_SANTA_ID, locx, locy, pl.getZ(), heading, false, 30000);
-                        rewardedPlayers.put(pl.getAccountName(), System.currentTimeMillis());
-                        player.getVariables().set("LAST_SANTA_REWARD", System.currentTimeMillis());
+                        rewardedPlayers.put(pl.getAccountName(), ClockBridge.wallMillis());
+                        player.getVariables().set("LAST_SANTA_REWARD", ClockBridge.wallMillis());
                         startQuestTimer("SantaRewarding0", 500, santa, pl);
                     }
                 }
@@ -417,7 +418,7 @@ public class SavingSanta extends LongTimeEvent {
             }
         } else if (event.equalsIgnoreCase("SantaBlessings") && SANTAS_HELPER_AUTOBUFF) {
             startQuestTimer("SantaBlessings", 15000, null, null);
-            final long currentTime = System.currentTimeMillis();
+            final long currentTime = ClockBridge.wallMillis();
             for (Npc santaHelper1 : santaHelpers) {
                 World.forEachVisibleObject(santaHelper1, Player.class, plb -> {
                     if ((plb.getLevel() >= 20) && !plb.isFlyingMounted()) {

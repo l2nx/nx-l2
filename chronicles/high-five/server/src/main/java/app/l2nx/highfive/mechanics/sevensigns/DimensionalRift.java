@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.mechanics.sevensigns;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.actor.Npc;
@@ -40,7 +41,6 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
-import java.util.concurrent.ThreadLocalRandom;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -298,7 +298,7 @@ public class DimensionalRift {
                     emptyRooms = DimensionalRiftManager.getInstance().getFreeRooms(type);
                 }
 
-                currentRoom = emptyRooms.get(ThreadLocalRandom.current().nextInt(emptyRooms.size()));
+                currentRoom = emptyRooms.get(ClockBridge.random().nextInt(emptyRooms.size()));
             } while (DimensionalRiftManager.getInstance()
                     .getRoom(type, currentRoom)
                     .isPartyInside());
@@ -362,8 +362,7 @@ public class DimensionalRift {
     private long calcTimeToNextJump() {
         final int minTime = GeneralConfig.RIFT_AUTO_JUMPS_TIME_MIN;
         final int maxTime = GeneralConfig.RIFT_AUTO_JUMPS_TIME_MAX;
-        final int time =
-                (minTime < maxTime ? ThreadLocalRandom.current().nextInt(minTime, maxTime + 1) : minTime) * 1000;
+        final int time = (minTime < maxTime ? ClockBridge.random().nextInt(minTime, maxTime + 1) : minTime) * 1000;
 
         if (bossRoom) {
             return (long) (time * GeneralConfig.RIFT_BOSS_ROOM_TIME_MUTIPLY);

@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.entity.zone.type;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.data.xml.SkillData;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.enums.creature.InstanceType;
@@ -32,7 +33,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
-import java.util.concurrent.ThreadLocalRandom;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -237,7 +237,7 @@ public class EffectZone extends ZoneType {
                 if ((character != null)
                         && character.isPlayer()
                         && !character.isDead()
-                        && (ThreadLocalRandom.current().nextInt(100) < chance)) {
+                        && (ClockBridge.random().nextInt(100) < chance)) {
                     for (Entry<Integer, Integer> e : skills.entrySet()) {
                         final Skill skill = SkillData.getInstance()
                                 .getSkill(e.getKey().intValue(), e.getValue().intValue());

@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.managers;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.data.enums.StatType;
@@ -56,7 +57,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ThreadLocalRandom;
 import lombok.extern.slf4j.Slf4j;
 
 public class RecipeManager {
@@ -367,7 +367,7 @@ public class RecipeManager {
 
             items = listItems(true); // This line actually takes materials from inventory.
             if (items != null) {
-                final boolean success = ThreadLocalRandom.current().nextInt(100) < recipeList.getSuccessRate();
+                final boolean success = ClockBridge.random().nextInt(100) < recipeList.getSuccessRate();
                 if (success) {
                     rewardPlayer();
                 } else {
@@ -574,7 +574,7 @@ public class RecipeManager {
 
             // check that the current recipe has a rare production or not
             if ((rareProdId != -1) && ((rareProdId == itemId) || PlayerConfig.CRAFT_MASTERWORK)) {
-                if (ThreadLocalRandom.current().nextInt(100)
+                if (ClockBridge.random().nextInt(100)
                         < (recipeList.getRarity() * PlayerConfig.CRAFT_MASTERWORK_CHANCE_RATE)) {
                     itemId = rareProdId;
                     itemCount = recipeList.getRareCount();

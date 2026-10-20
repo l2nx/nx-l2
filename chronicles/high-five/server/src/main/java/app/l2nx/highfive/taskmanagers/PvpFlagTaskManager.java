@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.taskmanagers;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.threads.ThreadPool;
 import java.util.Set;
@@ -47,7 +48,7 @@ public class PvpFlagTaskManager implements Runnable {
         working = true;
 
         if (!PLAYERS.isEmpty()) {
-            final long currentTime = System.currentTimeMillis();
+            final long currentTime = ClockBridge.gameMillis();
             for (Player player : PLAYERS) {
                 if (currentTime > player.getPvpFlagLasts()) {
                     player.stopPvPFlag();

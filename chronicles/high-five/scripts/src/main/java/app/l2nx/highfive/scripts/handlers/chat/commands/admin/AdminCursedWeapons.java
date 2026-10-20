@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.scripts.handlers.chat.commands.admin;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.WorldObject;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.holders.player.CursedWeapon;
@@ -179,7 +180,7 @@ public class AdminCursedWeapons implements IAdminCommandHandler {
                         activeChar.addItem(ItemProcessType.QUEST, id, 1, activeChar, true);
                     }
 
-                    cw.setEndTime(System.currentTimeMillis() + (cw.getDuration() * 60000));
+                    cw.setEndTime(ClockBridge.wallMillis() + (cw.getDuration() * 60000));
                     cw.reActivate();
                 }
             } else {

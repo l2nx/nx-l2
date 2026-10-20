@@ -22,7 +22,7 @@
  */
 package app.l2nx.highfive.network;
 
-import java.util.concurrent.ThreadLocalRandom;
+import java.security.SecureRandom;
 
 /**
  * Blowfish key generator for GameServer sessions.<br>
@@ -37,6 +37,8 @@ public class BlowFishKeygen {
         (byte) 0xC8, (byte) 0x27, (byte) 0x93, (byte) 0x01, (byte) 0xA1, (byte) 0x6C, (byte) 0x31, (byte) 0x97
     };
 
+    private static final SecureRandom KEY_RANDOM = new SecureRandom();
+
     private BlowFishKeygen() {}
 
     /**
@@ -45,7 +47,7 @@ public class BlowFishKeygen {
      */
     public static byte[] getRandomKey() {
         final byte[] key = new byte[KEY_LENGTH_BYTES];
-        ThreadLocalRandom.current().nextBytes(key);
+        KEY_RANDOM.nextBytes(key);
         System.arraycopy(KEY_TAIL_BYTES, 0, key, RANDOM_PREFIX_LENGTH, KEY_TAIL_BYTES.length);
         return key;
     }

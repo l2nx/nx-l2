@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.taskmanagers;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.entity.item.enums.ItemLocation;
 import app.l2nx.highfive.entity.item.instance.Item;
@@ -44,7 +45,7 @@ public class ItemsAutoDestroyTaskManager implements Runnable {
             return;
         }
 
-        final long currentTime = System.currentTimeMillis();
+        final long currentTime = ClockBridge.wallMillis();
         final Iterator<Item> iterator = ITEMS.iterator();
         Item itemInstance;
 
@@ -77,7 +78,7 @@ public class ItemsAutoDestroyTaskManager implements Runnable {
     }
 
     public void addItem(Item item) {
-        item.setDropTime(System.currentTimeMillis());
+        item.setDropTime(ClockBridge.wallMillis());
         ITEMS.add(item);
     }
 

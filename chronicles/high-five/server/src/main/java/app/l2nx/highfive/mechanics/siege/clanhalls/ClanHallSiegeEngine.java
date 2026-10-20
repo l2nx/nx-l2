@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.mechanics.siege.clanhalls;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.ConquerableHallSiegeConfig;
 import app.l2nx.highfive.data.sql.ClanTable;
 import app.l2nx.highfive.data.sql.DatabaseFactory;
@@ -88,7 +89,7 @@ public abstract class ClanHallSiegeEngine extends Script implements Siegable {
         hall.setSiege(this);
 
         siegeTask =
-                ThreadPool.schedule(new PrepareOwner(), hall.getNextSiegeTime() - System.currentTimeMillis() - 3600000);
+                ThreadPool.schedule(new PrepareOwner(), hall.getNextSiegeTime() - ClockBridge.wallMillis() - 3600000);
         log.info(
                 "{} siege scheduled for {}.",
                 hall.getName(),
@@ -355,7 +356,7 @@ public abstract class ClanHallSiegeEngine extends Script implements Siegable {
         onSiegeEnds();
 
         siegeTask =
-                ThreadPool.schedule(new PrepareOwner(), hall.getNextSiegeTime() - System.currentTimeMillis() - 3600000);
+                ThreadPool.schedule(new PrepareOwner(), hall.getNextSiegeTime() - ClockBridge.wallMillis() - 3600000);
         log.info(
                 "Siege of {} scheduled for {}.",
                 hall.getName(),

@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.data.sql;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.communitybbs.Manager.ForumsBBSManager;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.entity.actor.Player;
@@ -160,7 +161,7 @@ public class ClanTable {
             return null;
         }
 
-        if (System.currentTimeMillis() < player.getClanCreateExpiryTime()) {
+        if (ClockBridge.wallMillis() < player.getClanCreateExpiryTime()) {
             player.sendPacket(SystemMessageId.YOU_MUST_WAIT_10_DAYS_BEFORE_CREATING_A_NEW_CLAN);
             return null;
         }
@@ -333,7 +334,7 @@ public class ClanTable {
                         destroyClan(clanId);
                     }
                 },
-                Math.max(getClan(clanId).getDissolvingExpiryTime() - System.currentTimeMillis(), 300000));
+                Math.max(getClan(clanId).getDissolvingExpiryTime() - ClockBridge.wallMillis(), 300000));
     }
 
     public boolean isAllyExists(String allyName) {

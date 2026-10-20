@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.scripts.handlers.skill.effects;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.Summon;
@@ -28,7 +29,6 @@ import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.mechanics.stats.Formulas;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.util.StatSet;
-import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Unsummon effect implementation.
@@ -50,7 +50,7 @@ public class Unsummon extends AbstractEffect {
             final double chance = this.chance
                     * Formulas.calcAttributeBonus(effector, effected, skill)
                     * Formulas.calcGeneralTraitBonus(effector, effected, skill.getTraitType(), false);
-            if (chance > (ThreadLocalRandom.current().nextDouble() * 100)) {
+            if (chance > (ClockBridge.random().nextDouble() * 100)) {
                 return true;
             }
         }

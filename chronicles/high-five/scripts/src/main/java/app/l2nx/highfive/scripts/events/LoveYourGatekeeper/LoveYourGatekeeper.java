@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.scripts.events.LoveYourGatekeeper;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.itemcontainer.Inventory;
@@ -58,8 +59,8 @@ public class LoveYourGatekeeper extends LongTimeEvent {
             case "transform_stick": {
                 if (player.getAdena() >= PRICE) {
                     final long reuse = player.getVariables().getLong(REUSE, 0);
-                    if (reuse > System.currentTimeMillis()) {
-                        final long remainingTime = (reuse - System.currentTimeMillis()) / 1000;
+                    if (reuse > ClockBridge.wallMillis()) {
+                        final long remainingTime = (reuse - ClockBridge.wallMillis()) / 1000;
                         final int hours = (int) (remainingTime / 3600);
                         final int minutes = (int) ((remainingTime % 3600) / 60);
                         final SystemMessage sm = new SystemMessage(
@@ -71,7 +72,7 @@ public class LoveYourGatekeeper extends LongTimeEvent {
                     } else {
                         takeItems(player, Inventory.ADENA_ID, PRICE);
                         giveItems(player, GATEKEEPER_TRANSFORMATION_STICK, 1);
-                        player.getVariables().set(REUSE, System.currentTimeMillis() + (HOURS * 3600000));
+                        player.getVariables().set(REUSE, ClockBridge.wallMillis() + (HOURS * 3600000));
                     }
                 } else {
                     return "32477-3.htm";

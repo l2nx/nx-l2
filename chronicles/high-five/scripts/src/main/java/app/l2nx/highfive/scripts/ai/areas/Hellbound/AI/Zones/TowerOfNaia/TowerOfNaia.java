@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.scripts.ai.areas.Hellbound.AI.Zones.TowerOfNaia;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.data.xml.DoorData;
 import app.l2nx.highfive.data.xml.SkillData;
 import app.l2nx.highfive.entity.Location;
@@ -612,7 +613,7 @@ public class TowerOfNaia extends Script {
     }
 
     private void markElpyRespawn() {
-        final long respawnTime = (getRandom(43200, 216000) * 1000) + System.currentTimeMillis();
+        final long respawnTime = (getRandom(43200, 216000) * 1000) + ClockBridge.wallMillis();
         GlobalVariablesManager.getInstance().set("elpy_respawn_time", respawnTime);
     }
 
@@ -634,12 +635,12 @@ public class TowerOfNaia extends Script {
 
     private void spawnElpy() {
         final long respawnTime = GlobalVariablesManager.getInstance().getLong("elpy_respawn_time", 0);
-        if (respawnTime <= System.currentTimeMillis()) {
+        if (respawnTime <= ClockBridge.wallMillis()) {
             addSpawn(MUTATED_ELPY, -45474, 247450, -13994, 49152, false, 0, false);
         } else {
             ThreadPool.schedule(
                     () -> addSpawn(MUTATED_ELPY, -45474, 247450, -13994, 49152, false, 0, false),
-                    respawnTime - System.currentTimeMillis());
+                    respawnTime - ClockBridge.wallMillis());
         }
     }
 

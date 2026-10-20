@@ -21,6 +21,7 @@ package app.l2nx.highfive.scripts.handlers.chat.commands.admin;
 
 import app.l2nx.highfive.GameServer;
 import app.l2nx.highfive.cache.HtmCache;
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.GeoEngineConfig;
 import app.l2nx.highfive.config.ServerConfig;
 import app.l2nx.highfive.data.xml.AdminData;
@@ -73,7 +74,7 @@ public class AdminServerInfo implements IAdminCommandHandler {
                             + GameTimeTaskManager.getInstance().getGameMinute());
             html.replace("%dayNight%", GameTimeTaskManager.getInstance().isNight() ? "Night" : "Day");
             html.replace("%geodata%", GeoEngineConfig.PATHFINDING > 0 ? "Enabled" : "Disabled");
-            html.replace("%serverTime%", SDF.format(LocalDateTime.now()));
+            html.replace("%serverTime%", SDF.format(LocalDateTime.now(ClockBridge.wallClock())));
             html.replace("%serverUpTime%", getServerUpTime());
             html.replace("%onlineAll%", getPlayersCount("ALL"));
             html.replace("%offlineTrade%", getPlayersCount("OFF_TRADE"));
@@ -100,7 +101,7 @@ public class AdminServerInfo implements IAdminCommandHandler {
     }
 
     private String getServerUpTime() {
-        long time = System.currentTimeMillis() - GameServer.getStartTime();
+        long time = ClockBridge.gameMillis() - GameServer.getStartTime();
 
         final long days = TimeUnit.MILLISECONDS.toDays(time);
         time -= TimeUnit.DAYS.toMillis(days);

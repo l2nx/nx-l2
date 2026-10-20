@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.managers;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.config.RatesConfig;
 import app.l2nx.highfive.entity.actor.Attackable;
@@ -32,7 +33,7 @@ import app.l2nx.highfive.mechanics.script.LongTimeEvent;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ThreadLocalRandom;
+import java.util.random.RandomGenerator;
 
 /**
  * @author Mobius
@@ -72,7 +73,7 @@ public class EventDropManager {
                 }
 
                 final int monsterLevel = attackable.getLevel();
-                final ThreadLocalRandom random = ThreadLocalRandom.current();
+                final RandomGenerator random = ClockBridge.random();
                 if ((monsterLevel >= drop.getMinLevel())
                         && (monsterLevel <= drop.getMaxLevel())
                         && (random.nextDouble(100) < drop.getChance())) {

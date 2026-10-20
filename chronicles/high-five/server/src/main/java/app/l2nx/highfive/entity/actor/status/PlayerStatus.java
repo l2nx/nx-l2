@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.entity.actor.status;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.config.custom.MultilingualSupportConfig;
 import app.l2nx.highfive.config.custom.OfflineTradeConfig;
@@ -41,7 +42,6 @@ import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.serverpackets.ActionFailed;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
 import app.l2nx.highfive.util.LocationUtil;
-import java.util.concurrent.ThreadLocalRandom;
 import lombok.Getter;
 
 public class PlayerStatus extends PlayableStatus {
@@ -103,7 +103,7 @@ public class PlayerStatus extends PlayableStatus {
                 player.standUp();
             }
 
-            if (!isDOT && player.isStunned() && (ThreadLocalRandom.current().nextInt(10) == 0)) {
+            if (!isDOT && player.isStunned() && (ClockBridge.random().nextInt(10) == 0)) {
                 player.stopStunning(true);
             }
         }

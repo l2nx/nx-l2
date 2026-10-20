@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.entity.actor.instance;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.FeatureConfig;
 import app.l2nx.highfive.config.ServerConfig;
 import app.l2nx.highfive.data.sql.ClanHallTable;
@@ -44,7 +45,6 @@ import app.l2nx.highfive.network.serverpackets.AgitDecoInfo;
 import app.l2nx.highfive.network.serverpackets.NpcHtmlMessage;
 import java.io.File;
 import java.time.Instant;
-import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.StringTokenizer;
 
@@ -117,7 +117,7 @@ public class ClanHallManager extends Merchant {
                         html.replace(
                                 "%date%",
                                 Instant.ofEpochMilli(getClanHall().getPaidUntil())
-                                        .atZone(ZoneId.systemDefault())
+                                        .atZone(ClockBridge.wallClock().getZone())
                                         .format(DATE_FORMAT));
                     }
 
@@ -703,7 +703,8 @@ public class ClanHallManager extends Merchant {
                                             + Instant.ofEpochMilli(getClanHall()
                                                             .getFunction(ClanHall.FUNC_RESTORE_HP)
                                                             .getEndTime())
-                                                    .atZone(ZoneId.systemDefault())
+                                                    .atZone(ClockBridge.wallClock()
+                                                            .getZone())
                                                     .format(DATE_FORMAT));
                             final int grade = getClanHall().getGrade();
                             switch (grade) {
@@ -776,7 +777,8 @@ public class ClanHallManager extends Merchant {
                                             + Instant.ofEpochMilli(getClanHall()
                                                             .getFunction(ClanHall.FUNC_RESTORE_EXP)
                                                             .getEndTime())
-                                                    .atZone(ZoneId.systemDefault())
+                                                    .atZone(ClockBridge.wallClock()
+                                                            .getZone())
                                                     .format(DATE_FORMAT));
                             final int grade = getClanHall().getGrade();
                             switch (grade) {
@@ -849,7 +851,8 @@ public class ClanHallManager extends Merchant {
                                             + Instant.ofEpochMilli(getClanHall()
                                                             .getFunction(ClanHall.FUNC_RESTORE_MP)
                                                             .getEndTime())
-                                                    .atZone(ZoneId.systemDefault())
+                                                    .atZone(ClockBridge.wallClock()
+                                                            .getZone())
                                                     .format(DATE_FORMAT));
                             final int grade = getClanHall().getGrade();
                             switch (grade) {
@@ -1269,7 +1272,8 @@ public class ClanHallManager extends Merchant {
                                             + Instant.ofEpochMilli(getClanHall()
                                                             .getFunction(ClanHall.FUNC_TELEPORT)
                                                             .getEndTime())
-                                                    .atZone(ZoneId.systemDefault())
+                                                    .atZone(ClockBridge.wallClock()
+                                                            .getZone())
                                                     .format(DATE_FORMAT));
                             html.replace(
                                     "%change_tele%",
@@ -1298,7 +1302,8 @@ public class ClanHallManager extends Merchant {
                                             + Instant.ofEpochMilli(getClanHall()
                                                             .getFunction(ClanHall.FUNC_SUPPORT)
                                                             .getEndTime())
-                                                    .atZone(ZoneId.systemDefault())
+                                                    .atZone(ClockBridge.wallClock()
+                                                            .getZone())
                                                     .format(DATE_FORMAT));
                             final int grade = getClanHall().getGrade();
                             switch (grade) {
@@ -1372,7 +1377,8 @@ public class ClanHallManager extends Merchant {
                                             + Instant.ofEpochMilli(getClanHall()
                                                             .getFunction(ClanHall.FUNC_ITEM_CREATE)
                                                             .getEndTime())
-                                                    .atZone(ZoneId.systemDefault())
+                                                    .atZone(ClockBridge.wallClock()
+                                                            .getZone())
                                                     .format(DATE_FORMAT));
                             html.replace(
                                     "%change_item%",
@@ -1590,7 +1596,8 @@ public class ClanHallManager extends Merchant {
                                             + Instant.ofEpochMilli(getClanHall()
                                                             .getFunction(ClanHall.FUNC_DECO_CURTAINS)
                                                             .getEndTime())
-                                                    .atZone(ZoneId.systemDefault())
+                                                    .atZone(ClockBridge.wallClock()
+                                                            .getZone())
                                                     .format(DATE_FORMAT));
                             html.replace(
                                     "%change_curtain%",
@@ -1619,7 +1626,8 @@ public class ClanHallManager extends Merchant {
                                             + Instant.ofEpochMilli(getClanHall()
                                                             .getFunction(ClanHall.FUNC_DECO_FRONTPLATEFORM)
                                                             .getEndTime())
-                                                    .atZone(ZoneId.systemDefault())
+                                                    .atZone(ClockBridge.wallClock()
+                                                            .getZone())
                                                     .format(DATE_FORMAT));
                             html.replace(
                                     "%change_fixture%",

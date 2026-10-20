@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.scripts.handlers.chat.commands.voiced;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.data.sql.CharInfoTable;
 import app.l2nx.highfive.data.xml.AdminData;
 import app.l2nx.highfive.entity.World;
@@ -95,7 +96,7 @@ public class ChatAdmin implements IVoicedCommandHandler {
                                         objId,
                                         PunishmentAffect.CHARACTER,
                                         PunishmentType.CHAT_BAN,
-                                        System.currentTimeMillis() + (expirationTime * 1000 * 60),
+                                        ClockBridge.wallMillis() + (expirationTime * 1000 * 60),
                                         "Chat banned by moderator",
                                         activeChar.getName()));
                         if (expirationTime > 0) {

@@ -19,7 +19,7 @@
  */
 package app.l2nx.highfive.entity.actor.holders.npc;
 
-import java.util.concurrent.ThreadLocalRandom;
+import app.l2nx.highfive.clock.ClockBridge;
 import lombok.Getter;
 
 /**
@@ -60,7 +60,7 @@ public class MinionHolder {
      */
     public int getCount() {
         if (max > count) {
-            return ThreadLocalRandom.current().nextInt(count, max + 1);
+            return ClockBridge.random().nextInt(count, max + 1);
         }
 
         return count;

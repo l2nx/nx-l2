@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.scripts.handlers.skill.effects;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.item.enums.ShotType;
@@ -29,7 +30,6 @@ import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.mechanics.stats.Formulas;
 import app.l2nx.highfive.mechanics.stats.Stat;
 import app.l2nx.highfive.util.StatSet;
-import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Magical damage by abnormal effect implementation.
@@ -77,7 +77,7 @@ public class MagicalDamageByAbnormal extends AbstractEffect {
 
             // Shield Deflect Magic: Reflect all damage on caster.
             if (effected.getStat().calcStat(Stat.VENGEANCE_SKILL_MAGIC_DAMAGE, 0, effected, skill)
-                    > ThreadLocalRandom.current().nextInt(100)) {
+                    > ClockBridge.random().nextInt(100)) {
                 effector.reduceCurrentHp(damage, effected, skill);
                 effector.notifyDamageReceived(damage, effected, skill, mcrit, false);
             } else {

@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.ai;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.GeoEngineConfig;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.World;
@@ -53,8 +54,6 @@ import app.l2nx.highfive.threads.ThreadPool;
 import app.l2nx.highfive.util.LocationUtil;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
 
 /**
  * This class manages AI of Creature.<br>
@@ -305,7 +304,7 @@ public class CreatureAI extends AbstractAI {
 
             final int gameTime = GameTimeTaskManager.getInstance().getGameTicks();
             final int bowAttackEndTime = actor.getBowAttackEndTime();
-            final long currentTime = System.nanoTime();
+            final long currentTime = ClockBridge.gameMillis();
             final long attackEndTime = actor.getAttackEndTime();
 
             // Wait for the current attack to finish, so its pending hit does not land during the cast.
@@ -313,7 +312,7 @@ public class CreatureAI extends AbstractAI {
             if (bowAttackEndTime > gameTime) {
                 delay = (bowAttackEndTime - gameTime) * GameTimeTaskManager.MILLIS_IN_TICK;
             } else if (attackEndTime > currentTime) {
-                delay = TimeUnit.NANOSECONDS.toMillis(attackEndTime - currentTime);
+                delay = attackEndTime - currentTime;
             }
 
             if (delay > 0) {
@@ -1521,7 +1520,7 @@ public class CreatureAI extends AbstractAI {
 
         public void update(Creature target) {
             // Update status once in 4 seconds.
-            if ((target == creature) && (ThreadLocalRandom.current().nextInt(100) > 25)) {
+            if ((target == creature) && (ClockBridge.random().nextInt(100) > 25)) {
                 return;
             }
 

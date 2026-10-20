@@ -22,13 +22,13 @@
  */
 package app.l2nx.highfive.entity.actor.holders.npc;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.managers.WalkingManager;
 import app.l2nx.highfive.mechanics.events.EventDispatcher;
 import app.l2nx.highfive.mechanics.events.EventType;
 import app.l2nx.highfive.mechanics.events.holders.actor.npc.OnNpcMoveRouteFinished;
 import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.ThreadLocalRandom;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -162,7 +162,7 @@ public class WalkInfo {
             final int base = currentNodeId;
             int selected = base;
             while (selected == base) {
-                final int candidate = ThreadLocalRandom.current().nextInt(nodesCount);
+                final int candidate = ClockBridge.random().nextInt(nodesCount);
                 if (candidate != base) {
                     selected = candidate;
                 }

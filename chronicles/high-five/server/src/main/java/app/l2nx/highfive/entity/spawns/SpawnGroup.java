@@ -22,10 +22,10 @@
  */
 package app.l2nx.highfive.entity.spawns;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.taskmanagers.SpawnGroupTaskManager;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ThreadLocalRandom;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -124,8 +124,7 @@ public class SpawnGroup {
             case RANDOM: {
                 // A single roll over the entry index, the whole quota of the rolled entry spawns. Nothing is filled up
                 // and the cap is not read.
-                final SpawnGroupEntry entry =
-                        entries.get(ThreadLocalRandom.current().nextInt(entries.size()));
+                final SpawnGroupEntry entry = entries.get(ClockBridge.random().nextInt(entries.size()));
                 if (tryReserve(entry, entry.getTotal())) {
                     spawned += spawnUnits(entry, entry.getTotal());
                 }
@@ -136,7 +135,7 @@ public class SpawnGroup {
                 // lost.
                 for (int i = 0; i < maximumNpc; i++) {
                     final SpawnGroupEntry entry =
-                            entries.get(ThreadLocalRandom.current().nextInt(entries.size()));
+                            entries.get(ClockBridge.random().nextInt(entries.size()));
                     if (tryReserve(entry, 1)) {
                         spawned += spawnUnits(entry, 1);
                     }
@@ -174,7 +173,7 @@ public class SpawnGroup {
             return;
         }
 
-        final SpawnGroupEntry rolled = entries.get(ThreadLocalRandom.current().nextInt(entries.size()));
+        final SpawnGroupEntry rolled = entries.get(ClockBridge.random().nextInt(entries.size()));
         if (tryReserve(rolled, 1)) {
             // Reserve now, materialize later. The delay comes from the rolled entry, not from the dead one.
             final int respawnDelay = rolled.getRespawnDelay();
@@ -185,9 +184,9 @@ public class SpawnGroup {
                     .add(
                             this,
                             rolled,
-                            System.currentTimeMillis()
+                            ClockBridge.gameMillis()
                                     + (respawnRandom > 0
-                                            ? ThreadLocalRandom.current().nextInt(minDelay, maxDelay + 1)
+                                            ? ClockBridge.random().nextInt(minDelay, maxDelay + 1)
                                             : minDelay));
         }
     }
@@ -225,7 +224,7 @@ public class SpawnGroup {
         int spawned = 0;
         final List<Spawn> slots = entry.getSlots();
         for (int i = 0; i < count; i++) {
-            final Spawn slot = slots.get(ThreadLocalRandom.current().nextInt(slots.size()));
+            final Spawn slot = slots.get(ClockBridge.random().nextInt(slots.size()));
             if (slot.doSpawn(false) == null) {
                 release(entry, 1);
             } else {

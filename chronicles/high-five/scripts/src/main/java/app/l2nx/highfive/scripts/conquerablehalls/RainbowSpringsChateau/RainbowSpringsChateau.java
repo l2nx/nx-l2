@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.scripts.conquerablehalls.RainbowSpringsChateau;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.ConquerableHallSiegeConfig;
 import app.l2nx.highfive.data.sql.ClanHallTable;
 import app.l2nx.highfive.data.sql.ClanTable;
@@ -55,14 +56,12 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.time.Instant;
-import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Future;
-import java.util.concurrent.ThreadLocalRandom;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -474,7 +473,7 @@ public class RainbowSpringsChateau extends ClanHallSiegeEngine {
                         player.destroyItemByItemId(ItemProcessType.DESTROY, itemInfo[0], itemInfo[1], player, true);
                     }
 
-                    final int rnd = ThreadLocalRandom.current().nextInt(100);
+                    final int rnd = ClockBridge.random().nextInt(100);
                     if ((generated >= 0) && (generated <= 5)) {
                         if (rnd < 70) {
                             giveItems(player, RAINBOW_NECTAR, 1);
@@ -535,7 +534,7 @@ public class RainbowSpringsChateau extends ClanHallSiegeEngine {
             html.replace(
                     "%nextSiege%",
                     Instant.ofEpochMilli(hall.getSiegeDate().getTimeInMillis())
-                            .atZone(ZoneId.systemDefault())
+                            .atZone(ClockBridge.wallClock().getZone())
                             .format(SIMPLE_FORMAT));
             if (hall.getOwnerId() > 0) {
                 html.replace(
@@ -646,7 +645,7 @@ public class RainbowSpringsChateau extends ClanHallSiegeEngine {
             chestDie(npc);
             chests.remove(npc);
 
-            final int chance = ThreadLocalRandom.current().nextInt(100);
+            final int chance = ClockBridge.random().nextInt(100);
             if (chance <= 5) {
                 npc.dropItem(killer, ITEM_A, 1);
             } else if ((chance > 5) && (chance <= 10)) {
@@ -1117,7 +1116,7 @@ public class RainbowSpringsChateau extends ClanHallSiegeEngine {
     private int rndEx(int size, int ex) {
         int rnd = Integer.MIN_VALUE;
         for (int i = 0; i < Byte.MAX_VALUE; i++) {
-            rnd = ThreadLocalRandom.current().nextInt(size);
+            rnd = ClockBridge.random().nextInt(size);
             if (rnd != ex) {
                 break;
             }

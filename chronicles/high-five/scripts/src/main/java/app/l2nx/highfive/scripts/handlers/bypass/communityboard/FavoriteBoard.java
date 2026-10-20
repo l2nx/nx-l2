@@ -20,6 +20,7 @@
 package app.l2nx.highfive.scripts.handlers.bypass.communityboard;
 
 import app.l2nx.highfive.cache.HtmCache;
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.handler.CommunityBoardHandler;
@@ -27,7 +28,6 @@ import app.l2nx.highfive.handler.IParseBoardHandler;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -72,7 +72,7 @@ public class FavoriteBoard implements IParseBoardHandler {
                                 "%fav_add_date%",
                                 FAVORITE_FORMAT.format(rs.getTimestamp("favAddDate")
                                         .toInstant()
-                                        .atZone(ZoneId.systemDefault())));
+                                        .atZone(ClockBridge.wallClock().getZone())));
                         link = link.replace("%fav_id%", String.valueOf(rs.getInt("favId")));
                         sb.append(link);
                     }

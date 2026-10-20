@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.entity.actor.holders.player;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
@@ -47,12 +48,11 @@ import app.l2nx.highfive.network.serverpackets.ServerPacket;
 import app.l2nx.highfive.network.serverpackets.SocialAction;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
 import app.l2nx.highfive.threads.ThreadPool;
-import java.util.Calendar;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ThreadLocalRandom;
+import java.util.random.RandomGenerator;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -83,7 +83,7 @@ public class Duel {
     @Getter
     private final boolean partyDuel;
 
-    private final Calendar duelEndTime;
+    private final long duelEndTime;
     private int surrenderRequest = 0;
     private int countdown = 5;
 
@@ -113,8 +113,8 @@ public class Duel {
             this.playerB.setStartingDuel();
         }
 
-        duelEndTime = Calendar.getInstance();
-        duelEndTime.add(Calendar.SECOND, this.partyDuel ? PARTY_DUEL_DURATION : PLAYER_DUEL_DURATION);
+        duelEndTime =
+                ClockBridge.gameMillis() + ((this.partyDuel ? PARTY_DUEL_DURATION : PLAYER_DUEL_DURATION) * 1000L);
         setFinished(false);
 
         if (this.partyDuel) {
@@ -499,7 +499,7 @@ public class Duel {
      * @return remaining time
      */
     public int getRemainingTime() {
-        return (int) (duelEndTime.getTimeInMillis() - System.currentTimeMillis());
+        return (int) (duelEndTime - ClockBridge.gameMillis());
     }
 
     public boolean getFinished() {
@@ -515,7 +515,7 @@ public class Duel {
         }
 
         dueldInstanceId = InstanceManager.getInstance()
-                .createDynamicInstance(ThreadLocalRandom.current().nextInt(147, 151))
+                .createDynamicInstance(ClockBridge.random().nextInt(147, 151))
                 .getId(); // Random Olympiad arena.
         final OlympiadStadiumZone zone = ZoneManager.getInstance()
                 .getZone(
@@ -537,7 +537,7 @@ public class Duel {
             }
         }
 
-        final ThreadLocalRandom random = ThreadLocalRandom.current();
+        final RandomGenerator random = ClockBridge.random();
         final Location spawn1 = spawns.get(spawns.size() > 1 ? random.nextInt(spawns.size() / 2) : 0);
         for (Player temp : playerA.getParty().getMembers()) {
             temp.teleToLocation(spawn1.getX(), spawn1.getY(), spawn1.getZ(), 0, dueldInstanceId, 0);

@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.handler;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.data.xml.AdminData;
 import app.l2nx.highfive.entity.WorldObject;
@@ -102,7 +103,7 @@ public class AdminCommandHandler implements IHandler<IAdminCommandHandler, Strin
             // Admin Commands must run through a long running task, otherwise a command that takes too much time will
             // freeze the server, this way you'll feel only a minor spike.
             ThreadPool.execute(() -> {
-                final long begin = System.currentTimeMillis();
+                final long begin = ClockBridge.gameMillis();
                 try {
                     if (GeneralConfig.GMAUDIT) {
                         final WorldObject target = player.getTarget();
@@ -117,7 +118,7 @@ public class AdminCommandHandler implements IHandler<IAdminCommandHandler, Strin
                     player.sendMessage("Exception during execution of  '" + fullCommand + "': " + e.toString());
                     log.warn("Exception during execution of {}", fullCommand, e);
                 } finally {
-                    final long runtime = System.currentTimeMillis() - begin;
+                    final long runtime = ClockBridge.gameMillis() - begin;
                     if (runtime > 5000) {
                         player.sendMessage("The execution of '" + fullCommand + "' took "
                                 + DurationFormatUtils.formatDurationWords(runtime, true, true) + ".");

@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.mechanics.script;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.data.sql.AnnouncementsTable;
 import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.data.xml.IXmlReader;
@@ -46,7 +47,6 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.time.LocalDate;
-import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -115,12 +115,12 @@ public class LongTimeEvent extends Script {
         loadConfig();
 
         if ((startDate != null) && (endDate != null)) {
-            final Date now = new Date();
+            final Date now = new Date(ClockBridge.wallMillis());
             if (isWithinRange(now)) {
                 startEvent();
                 log.info("Event {} active till {}", eventName, endDate);
             } else if (startDate.after(now)) {
-                final long delay = startDate.getTime() - System.currentTimeMillis();
+                final long delay = startDate.getTime() - ClockBridge.wallMillis();
                 ThreadPool.schedule(new ScheduleStart(), delay);
                 log.info("Event {} will be started at {}", eventName, startDate);
             } else {
@@ -166,10 +166,10 @@ public class LongTimeEvent extends Script {
         if (dates.length == 2) {
             try {
                 final Date start = Date.from(LocalDate.parse(dates[0].trim(), format)
-                        .atStartOfDay(ZoneId.systemDefault())
+                        .atStartOfDay(ClockBridge.wallClock().getZone())
                         .toInstant());
                 final Date end = Date.from(LocalDate.parse(dates[1].trim(), format)
-                        .atStartOfDay(ZoneId.systemDefault())
+                        .atStartOfDay(ClockBridge.wallClock().getZone())
                         .toInstant());
                 return new Date[] {start, end};
             } catch (Exception e) {
@@ -200,7 +200,7 @@ public class LongTimeEvent extends Script {
                         .getAttributes()
                         .getNamedItem("name")
                         .getNodeValue();
-                final String currentYear = String.valueOf(Calendar.getInstance().get(Calendar.YEAR));
+                final String currentYear = String.valueOf(ClockBridge.calendar().get(Calendar.YEAR));
                 final String period = document.getDocumentElement()
                         .getAttributes()
                         .getNamedItem("active")
@@ -265,7 +265,7 @@ public class LongTimeEvent extends Script {
                     throw new NullPointerException("WARNING!!! " + getName() + " event: illegal event period");
                 }
 
-                final Date today = new Date();
+                final Date today = new Date(ClockBridge.wallMillis());
 
                 if (startDate.after(today) || isWithinRange(today)) {
                     for (Node n = document.getDocumentElement().getFirstChild(); n != null; n = n.getNextSibling()) {
@@ -456,7 +456,9 @@ public class LongTimeEvent extends Script {
         eventPeriod = true;
 
         // Add event drops if within the drop period.
-        if ((dropStartDate != null) && (dropEndDate != null) && isWithinDropPeriod(new Date())) {
+        if ((dropStartDate != null)
+                && (dropEndDate != null)
+                && isWithinDropPeriod(new Date(ClockBridge.wallMillis()))) {
             EventDropManager.getInstance().addDrops(this, dropList);
         }
 
@@ -484,7 +486,7 @@ public class LongTimeEvent extends Script {
         }
 
         // Schedule event end.
-        final Long millisToEventEnd = endDate.getTime() - System.currentTimeMillis();
+        final Long millisToEventEnd = endDate.getTime() - ClockBridge.wallMillis();
         ThreadPool.schedule(new ScheduleEnd(), millisToEventEnd);
     }
 
@@ -497,7 +499,7 @@ public class LongTimeEvent extends Script {
     };
 
     protected void spawnNpcs() {
-        final Long millisToEventEnd = endDate.getTime() - System.currentTimeMillis();
+        final Long millisToEventEnd = endDate.getTime() - ClockBridge.wallMillis();
         for (NpcSpawn npcSpawn : spawnList) {
             final Npc npc = addSpawn(
                     npcSpawn.npcId,

@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.managers;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.data.holders.StringStringHolder;
 import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.data.xml.IXmlReader;
@@ -177,7 +178,7 @@ public class InstanceManager implements IXmlReader {
                 while (rs.next()) {
                     final int id = rs.getInt("instanceId");
                     final long time = rs.getLong("time");
-                    if (time < System.currentTimeMillis()) {
+                    if (time < ClockBridge.wallMillis()) {
                         deleteInstanceTime(playerObjId, id);
                     } else {
                         playerTimes.get(playerObjId).put(id, time);

@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.network.clientpackets;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.clan.Clan;
 import app.l2nx.highfive.entity.clan.ClanAccess;
@@ -64,7 +65,7 @@ public class RequestJoinSiege extends ClientPacket {
         final Castle castle = CastleManager.getInstance().getCastleById(castleId);
         if (castle != null) {
             if (isJoining == 1) {
-                if (System.currentTimeMillis() < clan.getDissolvingExpiryTime()) {
+                if (ClockBridge.wallMillis() < clan.getDissolvingExpiryTime()) {
                     player.sendPacket(
                             SystemMessageId
                                     .YOUR_CLAN_MAY_NOT_REGISTER_TO_PARTICIPATE_IN_A_SIEGE_WHILE_UNDER_A_GRACE_PERIOD_OF_THE_CLAN_S_DISSOLUTION);
@@ -86,7 +87,7 @@ public class RequestJoinSiege extends ClientPacket {
         final SiegableHall hall = CHSiegeManager.getInstance().getSiegableHall(castleId);
         if (hall != null) {
             if (isJoining == 1) {
-                if (System.currentTimeMillis() < clan.getDissolvingExpiryTime()) {
+                if (ClockBridge.wallMillis() < clan.getDissolvingExpiryTime()) {
                     player.sendPacket(
                             SystemMessageId
                                     .YOUR_CLAN_MAY_NOT_REGISTER_TO_PARTICIPATE_IN_A_SIEGE_WHILE_UNDER_A_GRACE_PERIOD_OF_THE_CLAN_S_DISSOLUTION);

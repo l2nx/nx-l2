@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.mechanics.stats;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.config.NpcConfig;
 import app.l2nx.highfive.config.PlayerConfig;
@@ -86,7 +87,6 @@ import app.l2nx.highfive.util.LocationUtil;
 import app.l2nx.highfive.util.MathUtil;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Global calculations.
@@ -1108,11 +1108,11 @@ public class Formulas {
 
         return (target.getStat().calcStat(Stat.DEFENCE_CRITICAL_RATE, rate, null, null)
                         + target.getStat().calcStat(Stat.DEFENCE_CRITICAL_RATE_ADD, 0, null, null))
-                > ThreadLocalRandom.current().nextInt(1000);
+                > ClockBridge.random().nextInt(1000);
     }
 
     public static boolean calcMCrit(double mRate) {
-        return mRate > ThreadLocalRandom.current().nextInt(1000);
+        return mRate > ClockBridge.random().nextInt(1000);
     }
 
     /**
@@ -1154,7 +1154,7 @@ public class Formulas {
         // Adjust the rate to be between 1 and 99.
         rate = Math.clamp(rate, 1, 99);
 
-        return ThreadLocalRandom.current().nextInt(100) < rate;
+        return ClockBridge.random().nextInt(100) < rate;
     }
 
     /**
@@ -1204,7 +1204,7 @@ public class Formulas {
         chance = Math.max(chance, 200);
         chance = Math.min(chance, 980);
 
-        return chance < ThreadLocalRandom.current().nextInt(1000);
+        return chance < ClockBridge.random().nextInt(1000);
     }
 
     /**
@@ -1251,9 +1251,9 @@ public class Formulas {
 
         if ((shldRate > 0)
                 && ((100 - PlayerConfig.ALT_PERFECT_SHLD_BLOCK)
-                        < ThreadLocalRandom.current().nextInt(100))) {
+                        < ClockBridge.random().nextInt(100))) {
             shldSuccess = SHIELD_DEFENSE_PERFECT_BLOCK;
-        } else if (shldRate > ThreadLocalRandom.current().nextInt(100)) {
+        } else if (shldRate > ClockBridge.random().nextInt(100)) {
             shldSuccess = SHIELD_DEFENSE_SUCCEED;
         }
 
@@ -1300,7 +1300,7 @@ public class Formulas {
             }
         }
 
-        d += 0.5 * ThreadLocalRandom.current().nextGaussian();
+        d += 0.5 * ClockBridge.random().nextGaussian();
         return d > 0;
     }
 
@@ -1394,7 +1394,7 @@ public class Formulas {
         final double rate = baseMod * elementMod * traitMod * mAtkMod * buffDebuffMod;
         final double finalRate = traitMod > 0 ? Math.clamp(rate, skill.getMinChance(), skill.getMaxChance()) : 0;
 
-        if (finalRate <= ThreadLocalRandom.current().nextInt(100)) {
+        if (finalRate <= ClockBridge.random().nextInt(100)) {
             final SystemMessage sm = new SystemMessage(SystemMessageId.C1_HAS_RESISTED_YOUR_S2);
             sm.addString(target.getName());
             sm.addSkillName(skill);
@@ -1451,7 +1451,7 @@ public class Formulas {
         // Check the Rate Limits.
         final double finalRate = Math.clamp(rate, skill.getMinChance(), skill.getMaxChance());
 
-        return (ThreadLocalRandom.current().nextInt(100) < finalRate);
+        return (ClockBridge.random().nextInt(100) < finalRate);
     }
 
     public static boolean calcMagicSuccess(Creature attacker, Creature target, Skill skill) {
@@ -1485,7 +1485,7 @@ public class Formulas {
         final double resModifier = target.calcStat(Stat.MAGIC_SUCCESS_RES, 1, null, skill);
         final int rate = 100 - Math.round((float) (lvlModifier * targetModifier * resModifier));
 
-        return (ThreadLocalRandom.current().nextInt(100) < rate);
+        return (ClockBridge.random().nextInt(100) < rate);
     }
 
     public static double calcManaDam(
@@ -1584,7 +1584,7 @@ public class Formulas {
             return false;
         }
 
-        if (ThreadLocalRandom.current().nextInt(100) < target.calcStat(Stat.P_SKILL_EVASION, 0, null, skill)) {
+        if (ClockBridge.random().nextInt(100) < target.calcStat(Stat.P_SKILL_EVASION, 0, null, skill)) {
             if (creature.isPlayer()) {
                 final SystemMessage sm = new SystemMessage(SystemMessageId.C1_DODGES_THE_ATTACK);
                 sm.addString(target.getName());
@@ -1632,7 +1632,7 @@ public class Formulas {
         }
 
         chance *= actor.getStat().calcStat(Stat.SKILL_MASTERY_RATE, 1, null, null);
-        return (ThreadLocalRandom.current().nextInt(100)
+        return (ClockBridge.random().nextInt(100)
                 < (chance
                         * ClassBalanceConfig.SKILL_MASTERY_CHANCE_MULTIPLIERS[
                                 actor.asPlayer().getPlayerClass().getId()]));
@@ -1679,7 +1679,7 @@ public class Formulas {
         }
 
         final double chance = target.calcStat(Stat.VENGEANCE_SKILL_PHYSICAL_DAMAGE, 0, target, skill);
-        if (ThreadLocalRandom.current().nextInt(100) < chance) {
+        if (ClockBridge.random().nextInt(100) < chance) {
             if (target.isPlayer()) {
                 final SystemMessage sm = new SystemMessage(SystemMessageId.YOU_COUNTERED_C1_S_ATTACK);
                 sm.addString(attacker.getName());
@@ -1718,7 +1718,7 @@ public class Formulas {
 
         final double reflectChance =
                 target.calcStat(skill.isMagic() ? Stat.REFLECT_SKILL_MAGIC : Stat.REFLECT_SKILL_PHYSIC, 0, null, skill);
-        return reflectChance > ThreadLocalRandom.current().nextInt(100);
+        return reflectChance > ClockBridge.random().nextInt(100);
     }
 
     /**
@@ -1749,7 +1749,7 @@ public class Formulas {
 
         // Apply blow rates
         final double rate = creature.calcStat(Stat.BLOW_RATE, baseRate, target, null);
-        return ThreadLocalRandom.current().nextInt(100) < rate;
+        return ClockBridge.random().nextInt(100) < rate;
     }
 
     public static List<BuffInfo> calcCancelStealEffects(
@@ -1798,7 +1798,7 @@ public class Formulas {
                     final BuffInfo info = debuffs.get(i);
                     if (info.getSkill().isDebuff()
                             && info.getSkill().canBeDispeled()
-                            && (ThreadLocalRandom.current().nextInt(100) <= rate)) {
+                            && (ClockBridge.random().nextInt(100) <= rate)) {
                         canceled.add(info);
                         if (canceled.size() >= max) {
                             break;
@@ -1818,8 +1818,7 @@ public class Formulas {
                 * (info.getSkill().getMagicLevel() > 0
                         ? 1 + ((cancelMagicLvl - info.getSkill().getMagicLevel()) / 100.)
                         : 1));
-        return ThreadLocalRandom.current().nextInt(100)
-                < Math.clamp(chance, skill.getMinChance(), skill.getMaxChance());
+        return ClockBridge.random().nextInt(100) < Math.clamp(chance, skill.getMinChance(), skill.getMaxChance());
     }
 
     /**
@@ -1880,7 +1879,7 @@ public class Formulas {
      * @return chance for effect to succeed
      */
     public static boolean calcProbability(double baseChance, Creature attacker, Creature target, Skill skill) {
-        return ThreadLocalRandom.current().nextInt(100)
+        return ClockBridge.random().nextInt(100)
                 < ((((((skill.getMagicLevel() + baseChance) - target.getLevel()) + 30) - target.getINT())
                                 * calcAttributeBonus(attacker, target, skill))
                         * calcGeneralTraitBonus(attacker, target, skill.getTraitType(), false));

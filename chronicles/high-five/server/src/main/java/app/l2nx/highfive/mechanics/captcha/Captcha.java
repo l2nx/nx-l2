@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.mechanics.captcha;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.managers.CaptchaManager.PlayerData;
 import app.l2nx.highfive.network.serverpackets.PledgeCrest;
@@ -32,9 +33,9 @@ import java.awt.FontMetrics;
 import java.awt.Graphics2D;
 import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
+import java.security.SecureRandom;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ThreadLocalRandom;
 
 public class Captcha {
     private static final char[] CAPTCHA_TEXT_POSSIBILITIES = {
@@ -44,6 +45,9 @@ public class Captcha {
 
     private static final int CAPTCHA_MIN_ID = 19000;
     private static final int CAPTCHA_MAX_ID = 25000;
+
+    // The answer and the id are secrets: a seeded, recorded game RNG would make them predictable.
+    private static final SecureRandom SECRET_RANDOM = new SecureRandom();
 
     char[] captchaText;
     int captchaId;
@@ -88,15 +92,14 @@ public class Captcha {
     private static char[] generateCaptchaText() {
         final char[] text = new char[CAPTCHA_WORD_LENGTH];
         for (int i = 0; i < CAPTCHA_WORD_LENGTH; i++) {
-            text[i] =
-                    CAPTCHA_TEXT_POSSIBILITIES[ThreadLocalRandom.current().nextInt(CAPTCHA_TEXT_POSSIBILITIES.length)];
+            text[i] = CAPTCHA_TEXT_POSSIBILITIES[SECRET_RANDOM.nextInt(CAPTCHA_TEXT_POSSIBILITIES.length)];
         }
 
         return text;
     }
 
     private static int generateRandomCaptchaId() {
-        return ThreadLocalRandom.current().nextInt(CAPTCHA_MIN_ID, CAPTCHA_MAX_ID + 1);
+        return SECRET_RANDOM.nextInt(CAPTCHA_MIN_ID, CAPTCHA_MAX_ID + 1);
     }
 
     public static BufferedImage generateCaptcha(char[] text) {
@@ -113,15 +116,14 @@ public class Captcha {
 
         final Graphics2D g = (Graphics2D) bufferedImage.getGraphics();
 
-        // Draw an oval
         g.setColor(new Color(30, 31, 31));
         g.fillRect(0, 0, width, height);
 
         g.setColor(circleColor);
         for (int i = 0; i < circlesToDraw; i++) {
-            final int circleRadius = (int) ((Math.random() * height) / 2.0);
-            final int circleX = (int) ((Math.random() * width) - circleRadius);
-            final int circleY = (int) ((Math.random() * height) - circleRadius);
+            final int circleRadius = (int) ((ClockBridge.random().nextDouble() * height) / 2.0);
+            final int circleX = (int) ((ClockBridge.random().nextDouble() * width) - circleRadius);
+            final int circleY = (int) ((ClockBridge.random().nextDouble() * height) - circleRadius);
             g.drawOval(circleX, circleY, circleRadius * 2, circleRadius * 2);
         }
 
@@ -146,7 +148,7 @@ public class Captcha {
             final BufferedImage charImage = new BufferedImage(charDim, charDim, BufferedImage.TYPE_INT_ARGB);
             final Graphics2D charGraphics = charImage.createGraphics();
             charGraphics.translate(halfCharDim, halfCharDim);
-            final double angle = (Math.random() - 0.5) * rotationRange;
+            final double angle = (ClockBridge.random().nextDouble() - 0.5) * rotationRange;
             charGraphics.transform(AffineTransform.getRotateInstance(angle));
             charGraphics.translate(-halfCharDim, -halfCharDim);
             charGraphics.setColor(textColor);

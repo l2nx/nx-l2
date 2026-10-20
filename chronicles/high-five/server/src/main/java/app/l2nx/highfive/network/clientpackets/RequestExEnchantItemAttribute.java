@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.network.clientpackets;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.data.holders.ElementalItemHolder;
@@ -34,7 +35,6 @@ import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.serverpackets.ExAttributeEnchantResult;
 import app.l2nx.highfive.network.serverpackets.InventoryUpdate;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
-import java.util.concurrent.ThreadLocalRandom;
 
 public class RequestExEnchantItemAttribute extends ClientPacket {
     private int objectId;
@@ -177,19 +177,19 @@ public class RequestExEnchantItemAttribute extends ClientPacket {
         switch (Elementals.getItemElemental(stoneId).getType()) {
             case STONE:
             case ROUGH_ORE: {
-                success = ThreadLocalRandom.current().nextInt(100) < PlayerConfig.ENCHANT_CHANCE_ELEMENT_STONE;
+                success = ClockBridge.random().nextInt(100) < PlayerConfig.ENCHANT_CHANCE_ELEMENT_STONE;
                 break;
             }
             case CRYSTAL: {
-                success = ThreadLocalRandom.current().nextInt(100) < PlayerConfig.ENCHANT_CHANCE_ELEMENT_CRYSTAL;
+                success = ClockBridge.random().nextInt(100) < PlayerConfig.ENCHANT_CHANCE_ELEMENT_CRYSTAL;
                 break;
             }
             case JEWEL: {
-                success = ThreadLocalRandom.current().nextInt(100) < PlayerConfig.ENCHANT_CHANCE_ELEMENT_JEWEL;
+                success = ClockBridge.random().nextInt(100) < PlayerConfig.ENCHANT_CHANCE_ELEMENT_JEWEL;
                 break;
             }
             case ENERGY: {
-                success = ThreadLocalRandom.current().nextInt(100) < PlayerConfig.ENCHANT_CHANCE_ELEMENT_ENERGY;
+                success = ClockBridge.random().nextInt(100) < PlayerConfig.ENCHANT_CHANCE_ELEMENT_ENERGY;
                 break;
             }
         }

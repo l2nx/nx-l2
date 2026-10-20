@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.managers;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.config.ServerConfig;
 import app.l2nx.highfive.data.SpawnTable;
@@ -40,7 +41,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ThreadLocalRandom;
 import javax.xml.parsers.DocumentBuilderFactory;
 import lombok.extern.slf4j.Slf4j;
 import org.w3c.dom.Document;
@@ -322,7 +322,7 @@ public class DimensionalRiftManager {
         List<Byte> emptyRooms;
         do {
             emptyRooms = getFreeRooms(type);
-            room = emptyRooms.get(ThreadLocalRandom.current().nextInt(emptyRooms.size()));
+            room = emptyRooms.get(ClockBridge.random().nextInt(emptyRooms.size()));
         }
 
         // find empty room

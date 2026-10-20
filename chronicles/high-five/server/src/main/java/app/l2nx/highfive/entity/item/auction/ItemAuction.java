@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.entity.item.auction;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.entity.World;
@@ -153,11 +154,11 @@ public class ItemAuction {
     }
 
     public long getStartingTimeRemaining() {
-        return Math.max(endingTime - System.currentTimeMillis(), 0);
+        return Math.max(endingTime - ClockBridge.wallMillis(), 0);
     }
 
     public long getFinishingTimeRemaining() {
-        return Math.max(endingTime - System.currentTimeMillis(), 0);
+        return Math.max(endingTime - ClockBridge.wallMillis(), 0);
     }
 
     public void storeMe() {
@@ -282,7 +283,7 @@ public class ItemAuction {
             highestBid = bid;
         }
 
-        if ((endingTime - System.currentTimeMillis()) <= (1000 * 60 * 10)) // 10 minutes
+        if ((endingTime - ClockBridge.wallMillis()) <= (1000 * 60 * 10)) // 10 minutes
         {
             switch (auctionEndingExtendState) {
                 case INITIAL: {
@@ -355,7 +356,7 @@ public class ItemAuction {
             }
             case FINISHED: {
                 if (startingTime
-                        < (System.currentTimeMillis()
+                        < (ClockBridge.wallMillis()
                                 - TimeUnit.MILLISECONDS.convert(
                                         GeneralConfig.ALT_ITEM_AUCTION_EXPIRED_AFTER, TimeUnit.DAYS))) {
                     return false;

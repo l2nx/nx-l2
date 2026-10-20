@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.util;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -57,7 +58,7 @@ public class GMAudit {
      * @param params additional parameters or details related to the action
      */
     public static void logAction(String gmName, String action, String target, String params) {
-        final String timestamp = DATE_FORMAT.format(LocalDateTime.now());
+        final String timestamp = DATE_FORMAT.format(LocalDateTime.now(ClockBridge.wallClock()));
 
         // Sanitize the GM's name for the filename.
         String sanitizedGmName = sanitizeFileName(gmName);

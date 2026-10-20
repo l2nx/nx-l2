@@ -20,6 +20,7 @@
 package app.l2nx.highfive.mechanics.olympiad;
 
 import app.l2nx.highfive.cache.HtmCache;
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.FeatureConfig;
 import app.l2nx.highfive.config.OlympiadConfig;
 import app.l2nx.highfive.data.sql.CharInfoTable;
@@ -48,7 +49,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.time.Instant;
-import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -222,8 +222,8 @@ public class Hero {
                     final long time = rset.getLong("time");
                     final int action = rset.getInt("action");
                     final int param = rset.getInt("param");
-                    final String date =
-                            DIARY_DATE_FORMAT.format(Instant.ofEpochMilli(time).atZone(ZoneId.systemDefault()));
+                    final String date = DIARY_DATE_FORMAT.format(Instant.ofEpochMilli(time)
+                            .atZone(ClockBridge.wallClock().getZone()));
                     diaryEntry.set("date", date);
                     if (action == ACTION_RAID_KILLED) {
                         final NpcTemplate template = NpcData.getInstance().getTemplate(param);
@@ -258,7 +258,7 @@ public class Hero {
     public void loadFights(int charId) {
         final List<StatSet> fights = new ArrayList<>();
         final StatSet heroCountData = new StatSet();
-        final Calendar data = Calendar.getInstance();
+        final Calendar data = ClockBridge.calendar();
         data.set(Calendar.DAY_OF_MONTH, 1);
         data.set(Calendar.HOUR_OF_DAY, 0);
         data.set(Calendar.MINUTE, 0);
@@ -304,8 +304,8 @@ public class Hero {
                             fight.set("oponent", name);
                             fight.set("oponentclass", cls);
                             fight.set("time", calcFightTime(time));
-                            final String date = FIGHT_DATE_FORMAT.format(
-                                    Instant.ofEpochMilli(start).atZone(ZoneId.systemDefault()));
+                            final String date = FIGHT_DATE_FORMAT.format(Instant.ofEpochMilli(start)
+                                    .atZone(ClockBridge.wallClock().getZone()));
                             fight.set("start", date);
                             fight.set("classed", classed);
                             if (winner == 1) {
@@ -332,8 +332,8 @@ public class Hero {
                             fight.set("oponent", name);
                             fight.set("oponentclass", cls);
                             fight.set("time", calcFightTime(time));
-                            final String date = FIGHT_DATE_FORMAT.format(
-                                    Instant.ofEpochMilli(start).atZone(ZoneId.systemDefault()));
+                            final String date = FIGHT_DATE_FORMAT.format(Instant.ofEpochMilli(start)
+                                    .atZone(ClockBridge.wallClock().getZone()));
                             fight.set("start", date);
                             fight.set("classed", classed);
                             if (winner == 1) {
@@ -706,8 +706,8 @@ public class Hero {
 
         // Prepare new data
         final StatSet diaryEntry = new StatSet();
-        final String date = DIARY_DATE_FORMAT.format(
-                Instant.ofEpochMilli(System.currentTimeMillis()).atZone(ZoneId.systemDefault()));
+        final String date = DIARY_DATE_FORMAT.format(Instant.ofEpochMilli(ClockBridge.wallMillis())
+                .atZone(ClockBridge.wallClock().getZone()));
         diaryEntry.set("date", date);
         diaryEntry.set("action", template.getName() + " was defeated");
 
@@ -726,8 +726,8 @@ public class Hero {
 
         // Prepare new data
         final StatSet diaryEntry = new StatSet();
-        final String date = DIARY_DATE_FORMAT.format(
-                Instant.ofEpochMilli(System.currentTimeMillis()).atZone(ZoneId.systemDefault()));
+        final String date = DIARY_DATE_FORMAT.format(Instant.ofEpochMilli(ClockBridge.wallMillis())
+                .atZone(ClockBridge.wallClock().getZone()));
         diaryEntry.set("date", date);
         diaryEntry.set("action", castle.getName() + " Castle was successfuly taken");
 
@@ -740,7 +740,7 @@ public class Hero {
                 PreparedStatement ps = con.prepareStatement(
                         "INSERT INTO heroes_diary (charId, time, action, param) values(?,?,?,?)")) {
             ps.setInt(1, charId);
-            ps.setLong(2, System.currentTimeMillis());
+            ps.setLong(2, ClockBridge.wallMillis());
             ps.setInt(3, action);
             ps.setInt(4, param);
             ps.execute();

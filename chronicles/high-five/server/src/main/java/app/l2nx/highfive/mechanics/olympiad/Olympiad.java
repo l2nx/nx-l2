@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.mechanics.olympiad;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.OlympiadConfig;
 import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.entity.World;
@@ -54,7 +55,6 @@ import org.slf4j.LoggerFactory;
  */
 @Slf4j
 public class Olympiad extends ListenersContainer {
-
     private static final Logger OLYMPIAD_LOG = LoggerFactory.getLogger("olympiad");
 
     private static final Map<Integer, StatSet> NOBLES = new ConcurrentHashMap<>();
@@ -112,11 +112,11 @@ public class Olympiad extends ListenersContainer {
         113, 114, 115, 116, 117, 118, 131, 132, 133, 134
     };
 
-    private static final int COMP_START = OlympiadConfig.OLYMPIAD_START_TIME; // 6PM
-    private static final int COMP_MIN = OlympiadConfig.OLYMPIAD_MIN; // 00 mins
-    private static final long COMP_PERIOD = OlympiadConfig.OLYMPIAD_CPERIOD; // 6 hours
-    protected static final long WEEKLY_PERIOD = OlympiadConfig.OLYMPIAD_WPERIOD; // 1 week
-    protected static final long VALIDATION_PERIOD = OlympiadConfig.OLYMPIAD_VPERIOD; // 24 hours
+    private static final int COMP_START = OlympiadConfig.OLYMPIAD_START_TIME;
+    private static final int COMP_MIN = OlympiadConfig.OLYMPIAD_MIN;
+    private static final long COMP_PERIOD = OlympiadConfig.OLYMPIAD_CPERIOD;
+    protected static final long WEEKLY_PERIOD = OlympiadConfig.OLYMPIAD_WPERIOD;
+    protected static final long VALIDATION_PERIOD = OlympiadConfig.OLYMPIAD_VPERIOD;
 
     protected static final int DEFAULT_POINTS = OlympiadConfig.OLYMPIAD_START_POINTS;
     protected static final int WEEKLY_POINTS = OlympiadConfig.OLYMPIAD_WEEKLY_POINTS;
@@ -137,11 +137,7 @@ public class Olympiad extends ListenersContainer {
     protected long olympiadEnd;
     protected long validationEnd;
 
-    /**
-     * The current period of the olympiad.<br>
-     * <b>0 -</b> Competition period<br>
-     * <b>1 -</b> Validation Period
-     */
+    /** 0 = competition period, 1 = validation period. */
     @Getter
     protected int period;
 
@@ -201,7 +197,7 @@ public class Olympiad extends ListenersContainer {
             nextWeeklyChange = 0;
         }
 
-        final long currentTime = System.currentTimeMillis();
+        final long currentTime = ClockBridge.wallMillis();
         switch (period) {
             case 0: {
                 if ((olympiadEnd == 0) || (olympiadEnd < currentTime)) {
@@ -342,7 +338,6 @@ public class Olympiad extends ListenersContainer {
             }
         }
 
-        // Store remaining hero reward points to player variables.
         for (int noblesId : NOBLES.keySet()) {
             final int points = getNoblessePasses(noblesId);
             if (points > 0) {
@@ -350,7 +345,6 @@ public class Olympiad extends ListenersContainer {
                 if (player != null) {
                     player.getVariables().set(UNCLAIMED_OLYMPIAD_PASSES_VAR, points);
                 } else {
-                    // Remove previous record.
                     try (Connection con = DatabaseFactory.getConnection();
                             PreparedStatement statement = con.prepareStatement(REMOVE_UNCLAIMED_POINTS)) {
                         statement.setInt(1, noblesId);
@@ -360,7 +354,6 @@ public class Olympiad extends ListenersContainer {
                         log.warn("Olympiad System: Couldn't remove unclaimed olympiad points from DB!");
                     }
 
-                    // Add new value.
                     try (Connection con = DatabaseFactory.getConnection();
                             PreparedStatement statement = con.prepareStatement(INSERT_UNCLAIMED_POINTS)) {
                         statement.setInt(1, noblesId);
@@ -380,7 +373,7 @@ public class Olympiad extends ListenersContainer {
             return;
         }
 
-        compStart = Calendar.getInstance();
+        compStart = ClockBridge.calendar();
         if (OlympiadConfig.OLYMPIAD_USE_CUSTOM_PERIOD_SETTINGS) {
             final int currentDay = compStart.get(Calendar.DAY_OF_WEEK);
             boolean dayFound = false;
@@ -451,7 +444,7 @@ public class Olympiad extends ListenersContainer {
             saveOlympiadStatus();
             updateMonthlyData();
 
-            final Calendar validationEnd = Calendar.getInstance();
+            final Calendar validationEnd = ClockBridge.calendar();
             Olympiad.this.validationEnd = validationEnd.getTimeInMillis() + VALIDATION_PERIOD;
 
             loadNoblesRank();
@@ -480,8 +473,6 @@ public class Olympiad extends ListenersContainer {
     }
 
     private void updateCompStatus() {
-        // _compStarted = false;
-
         final long milliToStart = getMillisToCompBegin();
         final double numSecs = (milliToStart / 1000) % 60;
         double countDown = ((milliToStart / 1000.) - numSecs) / 60;
@@ -538,13 +529,10 @@ public class Olympiad extends ListenersContainer {
                                                         .MUCH_CARNAGE_HAS_BEEN_LEFT_FOR_THE_CLEANUP_CREW_OF_THE_OLYMPIAD_STADIUM_BATTLES_IN_THE_GRAND_OLYMPIAD_GAMES_ARE_NOW_OVER));
                                 log.info("Olympiad System: Olympiad games have ended.");
 
-                                while (OlympiadGameManager.getInstance().isBattleStarted()) // cleared in game manager
-                                {
+                                while (OlympiadGameManager.getInstance().isBattleStarted()) {
                                     try {
-                                        // wait 1 minutes for end of pending games
                                         Thread.sleep(60000);
                                     } catch (Exception e) {
-                                        // Ignore.
                                     }
                                 }
 
@@ -568,9 +556,7 @@ public class Olympiad extends ListenersContainer {
     }
 
     public long getMillisToOlympiadEnd() {
-        // if (_olympiadEnd > System.currentTimeMillis())
-        return olympiadEnd - System.currentTimeMillis();
-        // return 10;
+        return olympiadEnd - ClockBridge.wallMillis();
     }
 
     public void manualSelectHeroes() {
@@ -582,7 +568,7 @@ public class Olympiad extends ListenersContainer {
     }
 
     protected long getMillisToValidationEnd() {
-        final long currentTime = System.currentTimeMillis();
+        final long currentTime = ClockBridge.wallMillis();
         if (validationEnd > currentTime) {
             return validationEnd - currentTime;
         }
@@ -600,7 +586,7 @@ public class Olympiad extends ListenersContainer {
         World.broadcastToAllOnlinePlayers(sm);
 
         if (!OlympiadConfig.OLYMPIAD_USE_CUSTOM_PERIOD_SETTINGS) {
-            final Calendar currentTime = Calendar.getInstance();
+            final Calendar currentTime = ClockBridge.calendar();
             currentTime.add(Calendar.MONTH, 1);
             currentTime.set(Calendar.DAY_OF_MONTH, 1);
             currentTime.set(Calendar.AM_PM, Calendar.AM);
@@ -609,16 +595,16 @@ public class Olympiad extends ListenersContainer {
             currentTime.set(Calendar.SECOND, 0);
             olympiadEnd = currentTime.getTimeInMillis();
 
-            final Calendar nextChange = Calendar.getInstance();
+            final Calendar nextChange = ClockBridge.calendar();
             nextWeeklyChange = nextChange.getTimeInMillis() + WEEKLY_PERIOD;
         } else {
-            final Calendar currentTime = Calendar.getInstance();
+            final Calendar currentTime = ClockBridge.calendar();
             currentTime.set(Calendar.AM_PM, Calendar.AM);
             currentTime.set(Calendar.HOUR_OF_DAY, 12);
             currentTime.set(Calendar.MINUTE, 0);
             currentTime.set(Calendar.SECOND, 0);
 
-            final Calendar nextChange = Calendar.getInstance();
+            final Calendar nextChange = ClockBridge.calendar();
 
             switch (OlympiadConfig.OLYMPIAD_PERIOD) {
                 case "DAY": {
@@ -636,7 +622,7 @@ public class Olympiad extends ListenersContainer {
                 }
                 case "WEEK": {
                     currentTime.add(Calendar.WEEK_OF_MONTH, OlympiadConfig.OLYMPIAD_PERIOD_MULTIPLIER);
-                    currentTime.add(Calendar.DAY_OF_MONTH, -1); // last day is for validation
+                    currentTime.add(Calendar.DAY_OF_MONTH, -1);
 
                     if (OlympiadConfig.OLYMPIAD_PERIOD_MULTIPLIER > 1) {
                         nextWeeklyChange = nextChange.getTimeInMillis() + WEEKLY_PERIOD;
@@ -647,7 +633,7 @@ public class Olympiad extends ListenersContainer {
                 }
                 case "MONTH": {
                     currentTime.add(Calendar.MONTH, OlympiadConfig.OLYMPIAD_PERIOD_MULTIPLIER);
-                    currentTime.add(Calendar.DAY_OF_MONTH, -1); // last day is for validation
+                    currentTime.add(Calendar.DAY_OF_MONTH, -1);
 
                     nextWeeklyChange = nextChange.getTimeInMillis() + WEEKLY_PERIOD;
                     break;
@@ -665,7 +651,7 @@ public class Olympiad extends ListenersContainer {
     }
 
     private long getMillisToCompBegin() {
-        final long currentTime = System.currentTimeMillis();
+        final long currentTime = ClockBridge.wallMillis();
         if ((compStart.getTimeInMillis() < currentTime) && (compEnd > currentTime)) {
             return 10;
         }
@@ -678,13 +664,12 @@ public class Olympiad extends ListenersContainer {
     }
 
     private long setNewCompBegin() {
-        compStart = Calendar.getInstance();
+        compStart = ClockBridge.calendar();
 
         int currentDay = compStart.get(Calendar.DAY_OF_WEEK);
         compStart.set(Calendar.HOUR_OF_DAY, COMP_START);
         compStart.set(Calendar.MINUTE, COMP_MIN);
 
-        // Today's competitions ended, start checking from next day.
         if (currentDay == compStart.get(Calendar.DAY_OF_WEEK)) {
             if (currentDay == Calendar.SATURDAY) {
                 currentDay = Calendar.SUNDAY;
@@ -725,17 +710,15 @@ public class Olympiad extends ListenersContainer {
 
         log.info("Olympiad System: New Schedule @ {}", compStart.getTime());
 
-        return compStart.getTimeInMillis() - System.currentTimeMillis();
+        return compStart.getTimeInMillis() - ClockBridge.wallMillis();
     }
 
     protected long getMillisToCompEnd() {
-        // if (_compEnd > System.currentTimeMillis())
-        return compEnd - System.currentTimeMillis();
-        // return 10;
+        return compEnd - ClockBridge.wallMillis();
     }
 
     public long getMillisToWeekChange() {
-        final long currentTime = System.currentTimeMillis();
+        final long currentTime = ClockBridge.wallMillis();
         if (nextWeeklyChange > currentTime) {
             return nextWeeklyChange - currentTime;
         }
@@ -751,7 +734,7 @@ public class Olympiad extends ListenersContainer {
                     resetWeeklyMatches();
                     log.info("Olympiad System: Reset weekly matches to nobles");
 
-                    nextWeeklyChange = System.currentTimeMillis() + WEEKLY_PERIOD;
+                    nextWeeklyChange = ClockBridge.wallMillis() + WEEKLY_PERIOD;
                 },
                 getMillisToWeekChange(),
                 WEEKLY_PERIOD);
@@ -773,9 +756,6 @@ public class Olympiad extends ListenersContainer {
         }
     }
 
-    /**
-     * Resets number of matches, classed matches, non classed matches, team matches done by noble characters in the week.
-     */
     protected void resetWeeklyMatches() {
         if (period == 1) {
             return;
@@ -793,9 +773,6 @@ public class Olympiad extends ListenersContainer {
         return ZoneManager.getInstance().getOlympiadStadium(player) != null;
     }
 
-    /**
-     * Save noblesse data to database
-     */
     protected synchronized void saveNobleData() {
         if (NOBLES.isEmpty()) {
             return;
@@ -862,9 +839,6 @@ public class Olympiad extends ListenersContainer {
         }
     }
 
-    /**
-     * Save olympiad.properties file with current olympiad status and update noblesse table in database
-     */
     public void saveOlympiadStatus() {
         saveNobleData();
 
@@ -885,22 +859,6 @@ public class Olympiad extends ListenersContainer {
             log.error("Olympiad System: Failed to save olympiad data to database: ", e);
         }
         // @formatter:off
-        /*
-        Properties OlympiadProperties = new Properties();
-        try (FileOutputStream fos = new FileOutputStream(new File("./" + OLYMPIAD_DATA_FILE)))
-        {
-        	OlympiadProperties.setProperty("CurrentCycle", String.valueOf(_currentCycle));
-        	OlympiadProperties.setProperty("Period", String.valueOf(_period));
-        	OlympiadProperties.setProperty("OlympiadEnd", String.valueOf(_olympiadEnd));
-        	OlympiadProperties.setProperty("ValdationEnd", String.valueOf(_validationEnd));
-        	OlympiadProperties.setProperty("NextWeeklyChange", String.valueOf(_nextWeeklyChange));
-        	OlympiadProperties.store(fos, "Olympiad Properties");
-        }
-        catch (Exception e)
-        {
-        	LOGGER.warning("Olympiad System: Unable to save olympiad properties to file: ", e);
-        }
-        */
         // @formatter:on
     }
 
@@ -1061,12 +1019,10 @@ public class Olympiad extends ListenersContainer {
             return 0;
         }
 
-        // Hero point bonus
         int points = Hero.getInstance().isHero(objectId) || Hero.getInstance().isUnclaimedHero(objectId)
                 ? OlympiadConfig.OLYMPIAD_HERO_POINTS
                 : 0;
 
-        // Rank point bonus
         switch (NOBLES_RANK.get(objectId)) {
             case 1: {
                 points += OlympiadConfig.OLYMPIAD_RANK1_POINTS;
@@ -1089,7 +1045,6 @@ public class Olympiad extends ListenersContainer {
             }
         }
 
-        // Win/no win matches point bonus.
         points += getCompetitionWon(objectId) > 0 ? 10 : 5;
 
         // This is a one time calculation.
@@ -1132,75 +1087,35 @@ public class Olympiad extends ListenersContainer {
         return NOBLES.containsKey(objId) ? NOBLES.get(objId).getInt(COMP_LOST) : 0;
     }
 
-    /**
-     * Gets how many matches a noble character did in the week
-     * @param objId id of a noble character
-     * @return number of weekly competitions done
-     */
     public int getCompetitionDoneWeek(int objId) {
         return NOBLES.containsKey(objId) ? NOBLES.get(objId).getInt(COMP_DONE_WEEK) : 0;
     }
 
-    /**
-     * Gets how many classed matches a noble character did in the week
-     * @param objId id of a noble character
-     * @return number of weekly <i>classed</i> competitions done
-     */
     public int getCompetitionDoneWeekClassed(int objId) {
         return NOBLES.containsKey(objId) ? NOBLES.get(objId).getInt(COMP_DONE_WEEK_CLASSED) : 0;
     }
 
-    /**
-     * Gets how many non classed matches a noble character did in the week
-     * @param objId id of a noble character
-     * @return number of weekly <i>non classed</i> competitions done
-     */
     public int getCompetitionDoneWeekNonClassed(int objId) {
         return NOBLES.containsKey(objId) ? NOBLES.get(objId).getInt(COMP_DONE_WEEK_NON_CLASSED) : 0;
     }
 
-    /**
-     * Gets how many team matches a noble character did in the week
-     * @param objId id of a noble character
-     * @return number of weekly <i>team</i> competitions done
-     */
     public int getCompetitionDoneWeekTeam(int objId) {
         return NOBLES.containsKey(objId) ? NOBLES.get(objId).getInt(COMP_DONE_WEEK_TEAM) : 0;
     }
 
-    /**
-     * Number of remaining matches a noble character can join in the week
-     * @param objId id of a noble character
-     * @return difference between maximum allowed weekly matches and currently done weekly matches.
-     */
     public int getRemainingWeeklyMatches(int objId) {
         return Math.max(OlympiadConfig.OLYMPIAD_MAX_WEEKLY_MATCHES - getCompetitionDoneWeek(objId), 0);
     }
 
-    /**
-     * Number of remaining <i>classed</i> matches a noble character can join in the week
-     * @param objId id of a noble character
-     * @return difference between maximum allowed weekly classed matches and currently done weekly classed matches.
-     */
     public int getRemainingWeeklyMatchesClassed(int objId) {
         return Math.max(OlympiadConfig.OLYMPIAD_MAX_WEEKLY_MATCHES_CLASSED - getCompetitionDoneWeekClassed(objId), 0);
     }
 
-    /**
-     * Number of remaining <i>non classed</i> matches a noble character can join in the week
-     * @param objId id of a noble character
-     * @return difference between maximum allowed weekly non classed matches and currently done weekly non classed matches.
-     */
     public int getRemainingWeeklyMatchesNonClassed(int objId) {
         return Math.max(
                 OlympiadConfig.OLYMPIAD_MAX_WEEKLY_MATCHES_NON_CLASSED - getCompetitionDoneWeekNonClassed(objId), 0);
     }
 
-    /**
-     * Number of remaining <i>team</i> matches a noble character can join in the week
-     * @param objId id of a noble character
-     * @return difference between maximum allowed weekly team matches and currently done weekly team matches.
-     */
     public int getRemainingWeeklyMatchesTeam(int objId) {
         return Math.max(OlympiadConfig.OLYMPIAD_MAX_WEEKLY_MATCHES_TEAM - getCompetitionDoneWeekTeam(objId), 0);
     }
@@ -1216,11 +1131,7 @@ public class Olympiad extends ListenersContainer {
         NOBLES.clear();
     }
 
-    /**
-     * @param charId the noble object Id.
-     * @param data the stats set data to add.
-     * @return the old stats set if the noble is already present, null otherwise.
-     */
+    /** @return the previous stats, or null if the noble was absent. */
     protected static StatSet addNobleStats(int charId, StatSet data) {
         return NOBLES.put(charId, data);
     }

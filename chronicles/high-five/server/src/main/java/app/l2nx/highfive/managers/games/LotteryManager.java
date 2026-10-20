@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.managers.games;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.entity.World;
@@ -36,7 +37,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Calendar;
-import java.util.concurrent.ThreadLocalRandom;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -77,7 +77,7 @@ public class LotteryManager {
         prize = GeneralConfig.ALT_LOTTERY_PRIZE;
         sellableTickets = false;
         started = false;
-        endDate = System.currentTimeMillis();
+        endDate = ClockBridge.wallMillis();
         if (GeneralConfig.ALLOW_LOTTERY) {
             (new startLottery()).run();
         }
@@ -114,20 +114,20 @@ public class LotteryManager {
                     } else {
                         prize = rset.getLong("prize");
                         LotteryManager.this.endDate = rset.getLong("enddate");
-                        if (LotteryManager.this.endDate <= (System.currentTimeMillis() + (2 * MINUTE))) {
+                        if (LotteryManager.this.endDate <= (ClockBridge.wallMillis() + (2 * MINUTE))) {
                             (new finishLottery()).run();
                             return;
                         }
 
-                        if (LotteryManager.this.endDate > System.currentTimeMillis()) {
+                        if (LotteryManager.this.endDate > ClockBridge.wallMillis()) {
                             started = true;
                             ThreadPool.schedule(
-                                    new finishLottery(), LotteryManager.this.endDate - System.currentTimeMillis());
-                            if (LotteryManager.this.endDate > (System.currentTimeMillis() + (12 * MINUTE))) {
+                                    new finishLottery(), LotteryManager.this.endDate - ClockBridge.wallMillis());
+                            if (LotteryManager.this.endDate > (ClockBridge.wallMillis() + (12 * MINUTE))) {
                                 sellableTickets = true;
                                 ThreadPool.schedule(
                                         new stopSellingTickets(),
-                                        LotteryManager.this.endDate - System.currentTimeMillis() - (10 * MINUTE));
+                                        LotteryManager.this.endDate - ClockBridge.wallMillis() - (10 * MINUTE));
                             }
                             return;
                         }
@@ -140,7 +140,7 @@ public class LotteryManager {
             sellableTickets = true;
             started = true;
             World.broadcastToAllOnlinePlayers("Lottery tickets are now available for Lucky Lottery #" + id + ".");
-            final Calendar finishtime = Calendar.getInstance();
+            final Calendar finishtime = ClockBridge.calendar();
             finishtime.setTimeInMillis(LotteryManager.this.endDate);
             finishtime.set(Calendar.MINUTE, 0);
             finishtime.set(Calendar.SECOND, 0);
@@ -154,7 +154,7 @@ public class LotteryManager {
                 LotteryManager.this.endDate = finishtime.getTimeInMillis();
             }
 
-            final long endDate = LotteryManager.this.endDate - System.currentTimeMillis();
+            final long endDate = LotteryManager.this.endDate - ClockBridge.wallMillis();
             ThreadPool.schedule(new stopSellingTickets(), Math.max(endDate - (10 * MINUTE), 0));
             ThreadPool.schedule(new finishLottery(), Math.max(endDate, 0));
 
@@ -198,7 +198,7 @@ public class LotteryManager {
                 boolean found = true;
 
                 while (found) {
-                    luckynum = ThreadLocalRandom.current().nextInt(20) + 1;
+                    luckynum = ClockBridge.random().nextInt(20) + 1;
                     found = false;
                     for (int j = 0; j < i; j++) {
                         if (luckynums[j] == luckynum) {

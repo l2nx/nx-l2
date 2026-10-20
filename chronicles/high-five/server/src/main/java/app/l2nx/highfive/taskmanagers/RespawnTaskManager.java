@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.taskmanagers;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.spawns.Spawn;
 import app.l2nx.highfive.threads.ThreadPool;
@@ -50,7 +51,7 @@ public class RespawnTaskManager implements Runnable {
         working = true;
 
         if (!PENDING_RESPAWNS.isEmpty()) {
-            final long currentTime = System.currentTimeMillis();
+            final long currentTime = ClockBridge.gameMillis();
             final Iterator<Entry<Npc, Long>> iterator =
                     PENDING_RESPAWNS.entrySet().iterator();
             Entry<Npc, Long> entry;

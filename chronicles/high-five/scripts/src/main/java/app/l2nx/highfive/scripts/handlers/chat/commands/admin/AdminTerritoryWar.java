@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.scripts.handlers.chat.commands.admin;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.handler.IAdminCommandHandler;
 import app.l2nx.highfive.managers.GlobalVariablesManager;
@@ -51,8 +52,8 @@ public class AdminTerritoryWar implements IAdminCommandHandler {
             showMainPage(activeChar);
         } else if (command.equalsIgnoreCase("admin_territory_war_time")) {
             if (st.hasMoreTokens()) {
-                final long currentTime = System.currentTimeMillis();
-                final Calendar cal = Calendar.getInstance();
+                final long currentTime = ClockBridge.wallMillis();
+                final Calendar cal = ClockBridge.calendar();
                 cal.setTimeInMillis(TerritoryWarManager.getInstance().getTWStartTimeInMillis());
 
                 final String val = st.nextToken();
@@ -114,10 +115,10 @@ public class AdminTerritoryWar implements IAdminCommandHandler {
 
             showSiegeTimePage(activeChar);
         } else if (command.equalsIgnoreCase("admin_territory_war_start")) {
-            TerritoryWarManager.getInstance().setTWStartTimeInMillis(System.currentTimeMillis());
+            TerritoryWarManager.getInstance().setTWStartTimeInMillis(ClockBridge.wallMillis());
         } else if (command.equalsIgnoreCase("admin_territory_war_end")) {
             TerritoryWarManager.getInstance()
-                    .setTWStartTimeInMillis(System.currentTimeMillis() - TerritoryWarManager.WARLENGTH);
+                    .setTWStartTimeInMillis(ClockBridge.wallMillis() - TerritoryWarManager.WARLENGTH);
         } else if (command.equalsIgnoreCase("admin_territory_wards_list")) {
             // build beginning of html page
             final NpcHtmlMessage npcHtmlMessage = new NpcHtmlMessage(0, 1);

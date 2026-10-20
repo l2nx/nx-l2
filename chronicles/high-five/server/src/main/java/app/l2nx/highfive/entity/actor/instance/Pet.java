@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.entity.actor.instance;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.config.NpcConfig;
 import app.l2nx.highfive.config.PlayerConfig;
@@ -30,6 +31,7 @@ import app.l2nx.highfive.data.holders.PetData;
 import app.l2nx.highfive.data.holders.PetLevelData;
 import app.l2nx.highfive.data.sql.CharSummonTable;
 import app.l2nx.highfive.data.sql.DatabaseFactory;
+import app.l2nx.highfive.data.sql.StoredEffectRows;
 import app.l2nx.highfive.data.sql.SummonEffectTable;
 import app.l2nx.highfive.data.xml.PetDataTable;
 import app.l2nx.highfive.data.xml.SkillData;
@@ -56,10 +58,9 @@ import app.l2nx.highfive.managers.CursedWeaponsManager;
 import app.l2nx.highfive.managers.FortSiegeManager;
 import app.l2nx.highfive.managers.ItemManager;
 import app.l2nx.highfive.managers.ItemsOnGroundManager;
-import app.l2nx.highfive.mechanics.skill.AbnormalType;
-import app.l2nx.highfive.mechanics.skill.BuffInfo;
 import app.l2nx.highfive.mechanics.skill.EffectScope;
 import app.l2nx.highfive.mechanics.skill.Skill;
+import app.l2nx.highfive.mechanics.skill.StoredEffect;
 import app.l2nx.highfive.mechanics.skill.enums.SkillFinishType;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.serverpackets.ActionFailed;
@@ -74,11 +75,10 @@ import app.l2nx.highfive.threads.ThreadPool;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.util.ArrayList;
-import java.util.List;
+import java.sql.Types;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.Future;
-import java.util.concurrent.ThreadLocalRandom;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -86,9 +86,9 @@ import lombok.extern.slf4j.Slf4j;
 public class Pet extends Summon {
 
     private static final String ADD_SKILL_SAVE =
-            "INSERT INTO character_pet_skills_save (petObjItemId,skill_id,skill_level,remaining_time,buff_index) VALUES (?,?,?,?,?)";
+            "INSERT INTO character_pet_skills_save (petObjItemId,skill_id,skill_level,remaining_ms,tick_phase_ms,buff_index) VALUES (?,?,?,?,?,?)";
     private static final String RESTORE_SKILL_SAVE =
-            "SELECT petObjItemId,skill_id,skill_level,remaining_time,buff_index FROM character_pet_skills_save WHERE petObjItemId=? ORDER BY buff_index ASC";
+            "SELECT petObjItemId,skill_id,skill_level,remaining_ms,tick_phase_ms,buff_index FROM character_pet_skills_save WHERE petObjItemId=? ORDER BY buff_index ASC";
     private static final String DELETE_SKILL_SAVE = "DELETE FROM character_pet_skills_save WHERE petObjItemId=?";
 
     @Getter
@@ -190,15 +190,14 @@ public class Pet extends Summon {
                 broadcastStatusUpdate();
 
                 if (isUncontrollable()) {
-                    if (ThreadLocalRandom.current().nextInt(100) < 30) {
+                    if (ClockBridge.random().nextInt(100) < 30) {
                         // Owl Monk remove PK.
                         if ((getTemplate().getId() == 16050) && (getOwner() != null)) {
                             getOwner()
                                     .setPkKills(Math.max(
                                             0,
                                             getOwner().getPkKills()
-                                                    - ThreadLocalRandom.current()
-                                                            .nextInt(1, 7)));
+                                                    - ClockBridge.random().nextInt(1, 7)));
                         }
 
                         sendPacket(SystemMessageId.STARVING_GRUMPY_AND_FED_UP_YOUR_PET_HAS_LEFT);
@@ -885,45 +884,21 @@ public class Pet extends Summon {
 
             int buffIndex = 0;
 
-            final List<Integer> storedSkills = new ArrayList<>();
-
             // Store all effect data along with calculated remaining.
             if (storeEffects) {
-                for (BuffInfo info : getEffectList().getEffects()) {
-                    if (info == null) {
-                        continue;
-                    }
-
-                    final Skill skill = info.getSkill();
-
-                    // Do not save heals.
-                    if (skill.getAbnormalType() == AbnormalType.LIFE_FORCE_OTHERS) {
-                        continue;
-                    }
-
-                    if (skill.isToggle()) {
-                        continue;
-                    }
-
-                    // Dances and songs are not kept in retail.
-                    if (skill.isDance() && !PlayerConfig.ALT_STORE_DANCES) {
-                        continue;
-                    }
-
-                    if (storedSkills.contains(skill.getReuseHashCode())) {
-                        continue;
-                    }
-
-                    storedSkills.add(skill.getReuseHashCode());
+                for (Entry<Skill, StoredEffect> entry : effectsToStore().entrySet()) {
+                    final Skill skill = entry.getKey();
+                    final StoredEffect stored = entry.getValue();
 
                     ps2.setInt(1, controlObjectId);
                     ps2.setInt(2, skill.getId());
                     ps2.setInt(3, skill.getLevel());
-                    ps2.setInt(4, info.getTime());
-                    ps2.setInt(5, ++buffIndex);
+                    ps2.setObject(4, stored.remainingMillis(), Types.BIGINT);
+                    ps2.setLong(5, stored.tickPhaseMillis());
+                    ps2.setInt(6, ++buffIndex);
                     ps2.addBatch();
 
-                    SummonEffectTable.getInstance().addPetEffect(getControlObjectId(), skill, info.getTime());
+                    SummonEffectTable.getInstance().addPetEffect(getControlObjectId(), skill, stored);
                 }
 
                 ps2.executeBatch();
@@ -949,8 +924,9 @@ public class Pet extends Summon {
                         }
 
                         if (skill.hasEffects(EffectScope.GENERAL)) {
-                            SummonEffectTable.getInstance()
-                                    .addPetEffect(getControlObjectId(), skill, rs.getInt("remaining_time"));
+                            StoredEffectRows.read(rs, controlObjectId)
+                                    .ifPresent(stored -> SummonEffectTable.getInstance()
+                                            .addPetEffect(getControlObjectId(), skill, stored));
                         }
                     }
                 }

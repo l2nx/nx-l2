@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.scripts.ai.areas.Gracia.instances.HallOfSufferingDefence;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.data.xml.SkillData;
 import app.l2nx.highfive.entity.WorldObject;
 import app.l2nx.highfive.entity.actor.Creature;
@@ -173,7 +174,7 @@ public class HallOfSufferingDefence extends Script {
 
             final Long reentertime =
                     InstanceManager.getInstance().getInstanceTime(partyMember.getObjectId(), INSTANCEID);
-            if (System.currentTimeMillis() < reentertime) {
+            if (ClockBridge.wallMillis() < reentertime) {
                 final SystemMessage sm = new SystemMessage(SystemMessageId.C1_MAY_NOT_RE_ENTER_YET);
                 sm.addPcName(partyMember);
                 party.broadcastPacket(sm);
@@ -218,7 +219,7 @@ public class HallOfSufferingDefence extends Script {
         if (checkConditions(player)) {
             world = new HSDWorld();
             world.setInstance(InstanceManager.getInstance().createDynamicInstance(INSTANCEID));
-            ((HSDWorld) world).storeTime[0] = System.currentTimeMillis();
+            ((HSDWorld) world).storeTime[0] = ClockBridge.gameMillis();
             InstanceManager.getInstance().addWorld(world);
             log.info(
                     "Hall Of Suffering Defence started {} Instance: {} created by player: {}",
@@ -449,7 +450,7 @@ public class HallOfSufferingDefence extends Script {
             final HSDWorld world = (HSDWorld) tmpworld;
             if (!world.bossesAttacked) {
                 world.bossesAttacked = true;
-                final Calendar reenter = Calendar.getInstance();
+                final Calendar reenter = ClockBridge.calendar();
                 reenter.add(Calendar.HOUR, INSTANCEPENALTY);
 
                 final SystemMessage sm = new SystemMessage(
@@ -518,7 +519,7 @@ public class HallOfSufferingDefence extends Script {
             } else if (((world.getStatus() == 6) && ((npc.getId() == KLODEKUS) || (npc.getId() == KLANIKUS))) //
                     && (world.klanikus.isDead() && world.klodekus.isDead())) {
                 world.incStatus();
-                world.storeTime[1] = System.currentTimeMillis();
+                world.storeTime[1] = ClockBridge.gameMillis();
 
                 final Long finishDiff = world.storeTime[1] - world.storeTime[0];
                 if (finishDiff < 1260000) {

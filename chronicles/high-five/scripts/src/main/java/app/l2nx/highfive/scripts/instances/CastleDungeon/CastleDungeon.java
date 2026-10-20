@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.scripts.instances.CastleDungeon;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
@@ -169,7 +170,7 @@ public class CastleDungeon extends InstanceScript {
                 return "36403-02.html";
             }
 
-            if (System.currentTimeMillis()
+            if (ClockBridge.wallMillis()
                     < InstanceManager.getInstance()
                             .getInstanceTime(partyMember.getObjectId(), CASTLE_DUNGEON.get(npc.getId()))) {
                 return "36403-03.html";

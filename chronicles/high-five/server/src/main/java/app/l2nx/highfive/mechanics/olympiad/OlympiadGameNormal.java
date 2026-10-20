@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.mechanics.olympiad;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.OlympiadConfig;
 import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.entity.Location;
@@ -39,7 +40,6 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ThreadLocalRandom;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -76,13 +76,13 @@ public abstract class OlympiadGameNormal extends AbstractOlympiadGame {
         Player playerTwo = null;
 
         while (list.size() > 1) {
-            playerOneObjectId = list.remove(ThreadLocalRandom.current().nextInt(list.size()));
+            playerOneObjectId = list.remove(ClockBridge.random().nextInt(list.size()));
             playerOne = World.getPlayer(playerOneObjectId);
             if ((playerOne == null) || !playerOne.isOnline()) {
                 continue;
             }
 
-            playerTwo = World.getPlayer(list.remove(ThreadLocalRandom.current().nextInt(list.size())));
+            playerTwo = World.getPlayer(list.remove(ClockBridge.random().nextInt(list.size())));
             if ((playerTwo == null) || !playerTwo.isOnline()) {
                 list.add(playerOneObjectId);
                 continue;
@@ -585,7 +585,7 @@ public abstract class OlympiadGameNormal extends AbstractOlympiadGame {
             String winner = "draw";
 
             // Calculate Fight time
-            final long fightTime = System.currentTimeMillis() - startTime;
+            final long fightTime = ClockBridge.wallMillis() - startTime;
 
             double playerOneHp = 0;
             if ((playerOne.getPlayer() != null) && !playerOne.getPlayer().isDead()) {

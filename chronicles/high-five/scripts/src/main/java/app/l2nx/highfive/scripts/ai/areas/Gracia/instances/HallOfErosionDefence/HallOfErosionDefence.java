@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.scripts.ai.areas.Gracia.instances.HallOfErosionDefence;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.GraciaSeedsConfig;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.actor.Attackable;
@@ -254,7 +255,7 @@ public class HallOfErosionDefence extends Script {
 
             final Long reentertime =
                     InstanceManager.getInstance().getInstanceTime(partyMember.getObjectId(), INSTANCEID);
-            if (System.currentTimeMillis() < reentertime) {
+            if (ClockBridge.wallMillis() < reentertime) {
                 final SystemMessage sm = new SystemMessage(2100);
                 sm.addPcName(partyMember);
                 party.getCommandChannel().broadcastPacket(sm);
@@ -291,7 +292,7 @@ public class HallOfErosionDefence extends Script {
         if (checkConditions(player)) {
             world = new HEDWorld();
             world.setInstance(InstanceManager.getInstance().createDynamicInstance(INSTANCEID));
-            ((HEDWorld) world).startTime = System.currentTimeMillis();
+            ((HEDWorld) world).startTime = ClockBridge.gameMillis();
             InstanceManager.getInstance().addWorld(world);
             log.info(
                     "Hall Of Erosion Defence started {} Instance: {} created by player: {}",

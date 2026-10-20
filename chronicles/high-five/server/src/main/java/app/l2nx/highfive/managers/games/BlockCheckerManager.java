@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.managers.games;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.data.SpawnTable;
 import app.l2nx.highfive.data.xml.SkillData;
 import app.l2nx.highfive.entity.actor.Player;
@@ -47,7 +48,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.ThreadLocalRandom;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -348,7 +348,7 @@ public class BlockCheckerManager {
             setUpPlayers();
 
             // Set the started time.
-            starterTime = System.currentTimeMillis() + 300000;
+            starterTime = ClockBridge.gameMillis() + 300000;
         }
     }
 
@@ -398,10 +398,8 @@ public class BlockCheckerManager {
                 for (int i = 0; i < numOfBoxes; i++) {
                     final Spawn spawn = new Spawn(18672);
                     spawn.setXYZ(
-                            arenaCoordinates[arena][4]
-                                    + ThreadLocalRandom.current().nextInt(-400, 401),
-                            arenaCoordinates[arena][5]
-                                    + ThreadLocalRandom.current().nextInt(-400, 401),
+                            arenaCoordinates[arena][4] + ClockBridge.random().nextInt(-400, 401),
+                            arenaCoordinates[arena][5] + ClockBridge.random().nextInt(-400, 401),
                             Z_COORD);
                     spawn.setAmount(1);
                     spawn.setHeading(1);
@@ -425,10 +423,8 @@ public class BlockCheckerManager {
                 try {
                     final Spawn girlSpawn = new Spawn(18676);
                     girlSpawn.setXYZ(
-                            arenaCoordinates[arena][4]
-                                    + ThreadLocalRandom.current().nextInt(-400, 401),
-                            arenaCoordinates[arena][5]
-                                    + ThreadLocalRandom.current().nextInt(-400, 401),
+                            arenaCoordinates[arena][4] + ClockBridge.random().nextInt(-400, 401),
+                            arenaCoordinates[arena][5] + ClockBridge.random().nextInt(-400, 401),
                             Z_COORD);
                     girlSpawn.setAmount(1);
                     girlSpawn.setHeading(1);
@@ -447,7 +443,7 @@ public class BlockCheckerManager {
             redPoints += numOfBoxes / 2;
             bluePoints += numOfBoxes / 2;
             holder.broadCastPacketToTeam(new ExCubeGameChangePoints(
-                    (int) ((starterTime - System.currentTimeMillis()) / 1000), getBluePoints(), getRedPoints()));
+                    (int) ((starterTime - ClockBridge.gameMillis()) / 1000), getBluePoints(), getRedPoints()));
         }
     }
 

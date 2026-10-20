@@ -24,13 +24,13 @@ package app.l2nx.highfive.taskmanagers;
 
 import app.l2nx.highfive.ai.CreatureAI;
 import app.l2nx.highfive.ai.Intention;
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.WorldObject;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.threads.ThreadPool;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * @author Mobius
@@ -99,8 +99,7 @@ public class CreatureFollowTaskManager {
                         return;
                     }
 
-                    final int followRange =
-                            range == -1 ? ThreadLocalRandom.current().nextInt(50, 101) : range;
+                    final int followRange = range == -1 ? ClockBridge.random().nextInt(50, 101) : range;
                     if (!creature.isInsideRadius3D(followTarget, followRange)) {
                         if (!creature.isInsideRadius3D(followTarget, 3000)) {
                             // If the target is too far (maybe also teleported).

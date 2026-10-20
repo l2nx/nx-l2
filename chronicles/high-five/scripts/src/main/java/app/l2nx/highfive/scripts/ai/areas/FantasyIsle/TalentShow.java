@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.scripts.ai.areas.FantasyIsle;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
@@ -28,7 +29,6 @@ import app.l2nx.highfive.network.enums.ChatType;
 import app.l2nx.highfive.network.serverpackets.PlaySound;
 import app.l2nx.highfive.taskmanagers.GameTimeTaskManager;
 import java.time.Instant;
-import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
@@ -253,8 +253,8 @@ public class TalentShow extends Script {
         diff = hourDiff + minDiff;
         log.info(
                 "Fantasy Isle: MC show script starting at {} and is scheduled each next 4 hours.",
-                DATE_FORMAT.format(
-                        Instant.ofEpochMilli(System.currentTimeMillis() + diff).atZone(ZoneId.systemDefault())));
+                DATE_FORMAT.format(Instant.ofEpochMilli(ClockBridge.wallMillis() + diff)
+                        .atZone(ClockBridge.wallClock().getZone())));
         startQuestTimer("Start", diff, null, null); // first start
     }
 

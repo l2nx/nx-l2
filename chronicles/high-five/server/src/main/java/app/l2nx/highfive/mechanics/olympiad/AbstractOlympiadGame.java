@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.mechanics.olympiad;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.OlympiadConfig;
 import app.l2nx.highfive.config.custom.DualboxCheckConfig;
 import app.l2nx.highfive.entity.Location;
@@ -80,7 +81,7 @@ public abstract class AbstractOlympiadGame {
     }
 
     protected boolean makeCompetitionStart() {
-        startTime = System.currentTimeMillis();
+        startTime = ClockBridge.wallMillis();
         return !aborted;
     }
 

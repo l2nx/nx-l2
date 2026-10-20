@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.scripts.ai.areas.Gracia.AI.NPC.DestroyedTumors;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.instancezone.InstanceWorld;
@@ -33,7 +34,7 @@ import app.l2nx.highfive.mechanics.script.Script;
  * @author LordWinter, Mobius
  */
 public class DestroyedTumors extends Script {
-    private final long warpTimer = System.currentTimeMillis();
+    private final long warpTimer = ClockBridge.gameMillis();
 
     public DestroyedTumors() {
         addStartNpc(32535);
@@ -66,7 +67,7 @@ public class DestroyedTumors extends Script {
             } else if (event.equalsIgnoreCase("showcheckpage")) {
                 if (player.getInventory().getItemByItemId(13797) == null) {
                     htmltext = "32535-6.htm";
-                } else if ((warpTimer + 60000) > System.currentTimeMillis()) {
+                } else if ((warpTimer + 60000) > ClockBridge.gameMillis()) {
                     htmltext = "32535-4.htm";
                 } else if (world.getParameters().getInt("tag", 0) <= 0) {
                     htmltext = "32535-3.htm";
@@ -84,7 +85,7 @@ public class DestroyedTumors extends Script {
             } else if (event.equalsIgnoreCase("showcheckpage")) {
                 if (player.getInventory().getItemByItemId(13797) == null) {
                     htmltext = "32535-6.htm";
-                } else if ((warpTimer + 60000) > System.currentTimeMillis()) {
+                } else if ((warpTimer + 60000) > ClockBridge.gameMillis()) {
                     htmltext = "32535-4.htm";
                 } else if (world.getParameters().getInt("tag", 0) <= 0) {
                     htmltext = "32535-3.htm";
@@ -112,7 +113,7 @@ public class DestroyedTumors extends Script {
             } else if (event.equalsIgnoreCase("showcheckpage")) {
                 if (player.getInventory().getItemByItemId(13797) == null) {
                     htmltext = "32535-6.htm";
-                } else if ((warpTimer + 60000) > System.currentTimeMillis()) {
+                } else if ((warpTimer + 60000) > ClockBridge.gameMillis()) {
                     htmltext = "32535-4.htm";
                 } else if (world.getParameters().getInt("tag", 0) <= 0) {
                     htmltext = "32535-3.htm";

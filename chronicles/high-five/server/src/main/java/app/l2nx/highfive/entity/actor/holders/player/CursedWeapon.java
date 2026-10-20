@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.entity.actor.holders.player;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.data.xml.SkillData;
 import app.l2nx.highfive.data.xml.TransformData;
@@ -47,7 +48,6 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.ThreadLocalRandom;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -228,7 +228,7 @@ public class CursedWeapon {
 
         @Override
         public void run() {
-            if (System.currentTimeMillis() >= endTime) {
+            if (ClockBridge.wallMillis() >= endTime) {
                 endOfLife();
             }
         }
@@ -342,7 +342,7 @@ public class CursedWeapon {
 
     public void reActivate() {
         activated = true;
-        if ((endTime - System.currentTimeMillis()) <= 0) {
+        if ((endTime - ClockBridge.wallMillis()) <= 0) {
             endOfLife();
         } else {
             removeTask = ThreadPool.scheduleAtFixedRate(new RemoveTask(), durationLost * 12000, durationLost * 12000);
@@ -350,12 +350,12 @@ public class CursedWeapon {
     }
 
     public boolean checkDrop(Attackable attackable, Player player) {
-        if (ThreadLocalRandom.current().nextInt(100000) < dropRate) {
+        if (ClockBridge.random().nextInt(100000) < dropRate) {
             // Drop the item
             dropIt(attackable, player);
 
             // Start the Life Task.
-            endTime = System.currentTimeMillis() + (duration * 60000);
+            endTime = ClockBridge.wallMillis() + (duration * 60000);
             removeTask = ThreadPool.scheduleAtFixedRate(new RemoveTask(), durationLost * 12000, durationLost * 12000);
             return true;
         }
@@ -446,7 +446,7 @@ public class CursedWeapon {
     }
 
     public void dropIt(Creature killer) {
-        if (ThreadLocalRandom.current().nextInt(100) <= disapearChance) {
+        if (ClockBridge.random().nextInt(100) <= disapearChance) {
             // Remove it
             endOfLife();
         } else {
@@ -494,7 +494,7 @@ public class CursedWeapon {
     }
 
     public long getTimeLeft() {
-        return endTime - System.currentTimeMillis();
+        return endTime - ClockBridge.wallMillis();
     }
 
     public void goTo(Player player) {

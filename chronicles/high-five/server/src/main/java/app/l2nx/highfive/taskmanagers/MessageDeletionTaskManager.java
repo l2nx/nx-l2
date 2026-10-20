@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.taskmanagers;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.managers.MailManager;
@@ -54,7 +55,7 @@ public class MessageDeletionTaskManager implements Runnable {
         working = true;
 
         if (!PENDING_MESSAGES.isEmpty()) {
-            final long currentTime = System.currentTimeMillis();
+            final long currentTime = ClockBridge.wallMillis();
             final Iterator<Entry<Integer, Long>> iterator =
                     PENDING_MESSAGES.entrySet().iterator();
             Entry<Integer, Long> entry;

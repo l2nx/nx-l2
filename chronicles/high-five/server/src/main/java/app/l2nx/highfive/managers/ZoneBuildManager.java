@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.managers;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.handler.AdminCommandHandler;
@@ -164,7 +165,7 @@ public class ZoneBuildManager {
             return;
         }
 
-        final long currentTime = System.currentTimeMillis();
+        final long currentTime = ClockBridge.wallMillis();
         final String fileName = "data/zones/" + player.getName() + "-" + currentTime + ".xml";
         final File spawnFile = new File(fileName);
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(spawnFile))) {

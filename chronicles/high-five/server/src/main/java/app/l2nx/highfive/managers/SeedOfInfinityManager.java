@@ -22,12 +22,12 @@
  */
 package app.l2nx.highfive.managers;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.GraciaSeedsConfig;
 import app.l2nx.highfive.data.xml.DoorData;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.threads.ThreadPool;
-import java.util.concurrent.ThreadLocalRandom;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.DateFormatUtils;
 
@@ -75,7 +75,7 @@ public class SeedOfInfinityManager {
             return 0;
         }
 
-        return (GlobalVariablesManager.getInstance().getLong("SoI_opened", 0) * 1000) - System.currentTimeMillis();
+        return (GlobalVariablesManager.getInstance().getLong("SoI_opened", 0) * 1000) - ClockBridge.wallMillis();
     }
 
     public static void setCurrentStage(int stage) {
@@ -106,7 +106,7 @@ public class SeedOfInfinityManager {
             return;
         }
 
-        final long closeTime = System.currentTimeMillis() + time;
+        final long closeTime = ClockBridge.wallMillis() + time;
         GlobalVariablesManager.getInstance().set("SoI_opened", closeTime / 1000);
         log.info(
                 "Seed of Infinity Manager: Opening the seed until {}",
@@ -219,8 +219,7 @@ public class SeedOfInfinityManager {
     }
 
     public static void teleportInSeed(Player player) {
-        player.teleToLocation(
-                openSeedTeleportLocs[ThreadLocalRandom.current().nextInt(openSeedTeleportLocs.length)], false);
+        player.teleToLocation(openSeedTeleportLocs[ClockBridge.random().nextInt(openSeedTeleportLocs.length)], false);
     }
 
     /**

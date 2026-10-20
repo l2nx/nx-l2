@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.scripts.ai.areas.Rune.RuneCastle.Venom;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
@@ -106,10 +107,10 @@ public class Venom extends Script {
         setCastleSiegeStartId(this::onSiegeStart, CASTLE);
         setCastleSiegeFinishId(this::onSiegeFinish, CASTLE);
 
-        final long currentTime = System.currentTimeMillis();
+        final long currentTime = ClockBridge.wallMillis();
         final long startSiegeDate =
                 CastleManager.getInstance().getCastleById(CASTLE).getSiegeDate().getTimeInMillis();
-        if ((currentTime > (startSiegeDate - (HOURS_BEFORE * 360000))) && (currentTime < startSiegeDate)) {
+        if ((currentTime > (startSiegeDate - (HOURS_BEFORE * 3600000L))) && (currentTime < startSiegeDate)) {
             prisonIsOpen = true;
         }
     }

@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.network.clientpackets;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.data.xml.EnchantSkillGroupsData;
@@ -35,7 +36,6 @@ import app.l2nx.highfive.network.serverpackets.ExEnchantSkillInfo;
 import app.l2nx.highfive.network.serverpackets.ExEnchantSkillInfoDetail;
 import app.l2nx.highfive.network.serverpackets.ExEnchantSkillResult;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
-import java.util.concurrent.ThreadLocalRandom;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -146,7 +146,7 @@ public class RequestExEnchantSkill extends ClientPacket {
 
             // ok. Destroy ONE copy of the book
             final int rate = esd.getRate(player);
-            if (ThreadLocalRandom.current().nextInt(100) <= rate) {
+            if (ClockBridge.random().nextInt(100) <= rate) {
                 if (GeneralConfig.LOG_SKILL_ENCHANTS) {
                     final StringBuilder sb = new StringBuilder();
                     ENCHANT_SKILLS_LOG.info(sb.append("Success, Character:")

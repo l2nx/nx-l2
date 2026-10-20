@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.managers;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.ServerConfig;
 import app.l2nx.highfive.config.custom.AutoPlayConfig;
 import app.l2nx.highfive.config.custom.CaptchaConfig;
@@ -49,7 +50,6 @@ import java.awt.image.BufferedImage;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 
@@ -110,7 +110,7 @@ public class CaptchaManager {
         }
 
         if (CaptchaConfig.KILL_COUNTER_RESET) {
-            final long currentTime = System.currentTimeMillis();
+            final long currentTime = ClockBridge.gameMillis();
             final long previousKillTime = LAST_KILL_TIME.getOrDefault(killer.getObjectId(), currentTime);
             if ((currentTime - previousKillTime) > CaptchaConfig.KILL_COUNTER_RESET_TIME) {
                 MONSTER_COUNTER.put(killer.getObjectId(), 0);
@@ -125,7 +125,7 @@ public class CaptchaManager {
         }
 
         final int next = CaptchaConfig.KILL_COUNTER_RANDOMIZATION > 0
-                ? ThreadLocalRandom.current().nextInt(CaptchaConfig.KILL_COUNTER_RANDOMIZATION)
+                ? ClockBridge.random().nextInt(CaptchaConfig.KILL_COUNTER_RANDOMIZATION)
                 : 0;
         if ((CaptchaConfig.KILL_COUNTER + next) < count) {
             validationTasks(killer);
@@ -285,7 +285,7 @@ public class CaptchaManager {
 
     private void applyJailPunishment(Player player) {
         if (player.isOnline()) {
-            final long currentTime = System.currentTimeMillis();
+            final long currentTime = ClockBridge.wallMillis();
             int jailTime;
 
             if (CaptchaConfig.DOUBLE_JAIL_TIME) {

@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.scripts.ai.bosses.Baium;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.GrandBossConfig;
 import app.l2nx.highfive.data.enums.CategoryType;
 import app.l2nx.highfive.entity.Location;
@@ -187,7 +188,7 @@ public class Baium extends Script {
                         (GrandBoss) addSpawn(BAIUM_NPC_ID, storedX, storedY, storedZ, storedHeading, false, 0);
                 baiumInstance = restoredBaium;
                 baiumInstance.setCurrentHpMp(storedHp, storedMp);
-                lastAttackTime = System.currentTimeMillis();
+                lastAttackTime = ClockBridge.gameMillis();
                 addBoss(baiumInstance);
 
                 for (Location archangelLocation : ARCHANGEL_SPAWN_LOCATIONS) {
@@ -199,7 +200,7 @@ public class Baium extends Script {
                 break;
             }
             case STATUS_DEAD: {
-                final long remainingDelay = storedRespawnTime - System.currentTimeMillis();
+                final long remainingDelay = storedRespawnTime - ClockBridge.wallMillis();
                 if (remainingDelay > 0) {
                     startQuestTimer(EVENT_CLEAR_STATUS, remainingDelay, null, null);
                 } else {
@@ -262,7 +263,7 @@ public class Baium extends Script {
                     baiumInstance.setRandomWalking(false);
 
                     addBoss(baiumInstance);
-                    lastAttackTime = System.currentTimeMillis();
+                    lastAttackTime = ClockBridge.gameMillis();
 
                     startQuestTimer(EVENT_WAKEUP_ACTION, 50, baiumInstance, null);
                     startQuestTimer(EVENT_MANAGE_EARTHQUAKE, 2000, baiumInstance, null);
@@ -404,7 +405,7 @@ public class Baium extends Script {
             }
             // Inactivity handling, self-heal checks and status reset.
             case EVENT_CHECK_ATTACK: {
-                if ((npc != null) && ((lastAttackTime + INACTIVITY_LIMIT_MILLIS) < System.currentTimeMillis())) {
+                if ((npc != null) && ((lastAttackTime + INACTIVITY_LIMIT_MILLIS) < ClockBridge.gameMillis())) {
                     cancelQuestTimers(EVENT_SELECT_TARGET);
                     notifyEvent(EVENT_CLEAR_ZONE, null, null);
                     addSpawn(BAIUM_STONE_NPC_ID, LOCATION_BAIUM_SPAWN, false, 0);
@@ -413,7 +414,7 @@ public class Baium extends Script {
                     final long healCheckTime = lastAttackTime + 300000;
                     final double healThresholdHp = npc.getMaxHp() * 0.75;
 
-                    if ((healCheckTime < System.currentTimeMillis()) && (npc.getCurrentHp() < healThresholdHp)) {
+                    if ((healCheckTime < ClockBridge.gameMillis()) && (npc.getCurrentHp() < healThresholdHp)) {
                         npc.setTarget(npc);
                         npc.doCast(SKILL_HEAL_OF_BAIUM.getSkill());
                     }
@@ -510,7 +511,7 @@ public class Baium extends Script {
      */
     @Override
     public void onAttack(Npc npc, Player attacker, int damage, boolean isSummon, Skill skill) {
-        lastAttackTime = System.currentTimeMillis();
+        lastAttackTime = ClockBridge.gameMillis();
         final int npcId = npc.getId();
 
         if (npcId == BAIUM_NPC_ID) {
@@ -582,7 +583,7 @@ public class Baium extends Script {
         final long baseIntervalMillis = GrandBossConfig.BAIUM_SPAWN_INTERVAL * 3600000L;
         final long randomRangeMillis = GrandBossConfig.BAIUM_SPAWN_RANDOM * 3600000L;
         final long respawnDelayMillis = baseIntervalMillis + getRandom(-randomRangeMillis, randomRangeMillis);
-        final long nextRespawnTime = System.currentTimeMillis() + respawnDelayMillis;
+        final long nextRespawnTime = ClockBridge.wallMillis() + respawnDelayMillis;
 
         log.info("Baium will respawn at: {}", DateFormatUtils.format(nextRespawnTime, "dd/MM/yyyy HH:mm:ss"));
 
@@ -728,7 +729,7 @@ public class Baium extends Script {
     private void setRespawn(long respawnDelayMillis) {
         GrandBossManager.getInstance()
                 .getStatSet(BAIUM_NPC_ID)
-                .set("respawn_time", System.currentTimeMillis() + respawnDelayMillis);
+                .set("respawn_time", ClockBridge.wallMillis() + respawnDelayMillis);
     }
 
     /**

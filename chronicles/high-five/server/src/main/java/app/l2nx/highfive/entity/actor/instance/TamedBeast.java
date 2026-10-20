@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.entity.actor.instance;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.data.xml.NpcData;
 import app.l2nx.highfive.data.xml.SkillData;
 import app.l2nx.highfive.entity.Location;
@@ -42,7 +43,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
-import java.util.concurrent.ThreadLocalRandom;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -318,7 +318,7 @@ public class TamedBeast extends FeedableBeast {
             for (Skill skill : getTemplate().getSkills().values()) {
                 // if the skill is a debuff, check if the attacker has it already [ attacker.getEffect(Skill skill) ]
                 if (skill.isDebuff()
-                        && (ThreadLocalRandom.current().nextInt(3) < 1)
+                        && (ClockBridge.random().nextInt(3) < 1)
                         && ((attacker != null) && attacker.isAffectedBySkill(skill.getId()))) {
                     sitCastAndFollow(skill, attacker);
                 }
@@ -336,7 +336,7 @@ public class TamedBeast extends FeedableBeast {
             // If the owner has a lot of HP, then debuff the enemy with a random debuff among the available skills.
             for (Skill skill : getTemplate().getSkills().values()) {
                 // If the skill is a buff, check if the owner has it already [ owner.getEffect(Skill skill) ].
-                if ((ThreadLocalRandom.current().nextInt(5) < chance)
+                if ((ClockBridge.random().nextInt(5) < chance)
                         && skill.hasEffectType(
                                 EffectType.CPHEAL,
                                 EffectType.HEAL,
@@ -467,7 +467,7 @@ public class TamedBeast extends FeedableBeast {
 
             int totalBuffsOnOwner = 0;
             int i = 0;
-            final int rand = numBuffs > 0 ? ThreadLocalRandom.current().nextInt(numBuffs) : 0;
+            final int rand = numBuffs > 0 ? ClockBridge.random().nextInt(numBuffs) : 0;
             Skill buffToGive = null;
 
             // Get this npc's skills: getSkills().

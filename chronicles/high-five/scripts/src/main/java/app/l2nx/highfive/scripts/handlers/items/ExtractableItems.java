@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.scripts.handlers.items;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.RatesConfig;
 import app.l2nx.highfive.data.xml.ItemData;
 import app.l2nx.highfive.entity.actor.Playable;
@@ -40,7 +41,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.concurrent.ThreadLocalRandom;
+import java.util.random.RandomGenerator;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -75,7 +76,7 @@ public class ExtractableItems implements IItemHandler {
             return false;
         }
 
-        final ThreadLocalRandom random = ThreadLocalRandom.current();
+        final RandomGenerator random = ClockBridge.random();
         final Map<Item, Long> extractedItems = new HashMap<>();
         final List<Item> enchantedItems = new ArrayList<>();
         if (etcitem.getExtractableCountMin() > 0) {

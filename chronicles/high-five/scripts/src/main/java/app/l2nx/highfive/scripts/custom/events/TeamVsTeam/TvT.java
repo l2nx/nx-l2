@@ -24,6 +24,7 @@ package app.l2nx.highfive.scripts.custom.events.TeamVsTeam;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.custom.DualboxCheckConfig;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.World;
@@ -279,7 +280,7 @@ public class TvT extends Event {
                 // Randomize player list and separate teams.
                 final List<Player> playerList = new ArrayList<>(PLAYER_LIST.size());
                 playerList.addAll(PLAYER_LIST);
-                Collections.shuffle(playerList);
+                Collections.shuffle(playerList, ClockBridge.random());
                 PLAYER_LIST.clear();
                 PLAYER_LIST.addAll(playerList);
                 boolean team = getRandomBoolean(); // If teams are not even, randomize where extra player goes.

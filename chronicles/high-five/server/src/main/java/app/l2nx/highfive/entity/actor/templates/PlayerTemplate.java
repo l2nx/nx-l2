@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.entity.actor.templates;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.data.xml.ExperienceData;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.actor.enums.player.PlayerClass;
@@ -27,7 +28,6 @@ import app.l2nx.highfive.util.StatSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ThreadLocalRandom;
 import lombok.Getter;
 
 /**
@@ -91,7 +91,7 @@ public class PlayerTemplate extends CreatureTemplate {
      * @return random Location of created character spawn.
      */
     public Location getCreationPoint() {
-        return creationPoints.get(ThreadLocalRandom.current().nextInt(creationPoints.size()));
+        return creationPoints.get(ClockBridge.random().nextInt(creationPoints.size()));
     }
 
     /**

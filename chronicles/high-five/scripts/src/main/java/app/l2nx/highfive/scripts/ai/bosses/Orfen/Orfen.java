@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.scripts.ai.bosses.Orfen;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.GrandBossConfig;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.WorldObject;
@@ -144,7 +145,7 @@ public class Orfen extends Script {
         final StatSet info = bossManager.getStatSet(ORFEN_NPC_ID);
         if (bossManager.getStatus(ORFEN_NPC_ID) == STATUS_DEAD) {
             // Load the unlock date and time for Orfen from DB.
-            final long remainingMillis = info.getLong("respawn_time") - System.currentTimeMillis();
+            final long remainingMillis = info.getLong("respawn_time") - ClockBridge.wallMillis();
 
             // If Orfen is locked until a certain time, start unlock timer if time has not yet expired.
             if (remainingMillis > 0) {
@@ -401,7 +402,7 @@ public class Orfen extends Script {
             final long respawnTime = baseIntervalMillis + getRandom(-randomRangeMillis, randomRangeMillis);
 
             // Next respawn time.
-            final long nextRespawnTime = System.currentTimeMillis() + respawnTime;
+            final long nextRespawnTime = ClockBridge.wallMillis() + respawnTime;
             log.info("Orfen will respawn at: {}", DateFormatUtils.format(nextRespawnTime, "dd/MM/yyyy HH:mm:ss"));
 
             startQuestTimer(EVENT_ORFEN_UNLOCK, respawnTime, null, null);

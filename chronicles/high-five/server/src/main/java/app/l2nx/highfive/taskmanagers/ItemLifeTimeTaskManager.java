@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.taskmanagers;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.item.instance.Item;
 import app.l2nx.highfive.threads.ThreadPool;
 import java.util.Iterator;
@@ -49,7 +50,7 @@ public class ItemLifeTimeTaskManager implements Runnable {
         working = true;
 
         if (!ITEMS.isEmpty()) {
-            final long currentTime = System.currentTimeMillis();
+            final long currentTime = ClockBridge.wallMillis();
             final Iterator<Entry<Item, Long>> iterator = ITEMS.entrySet().iterator();
             Entry<Item, Long> entry;
 

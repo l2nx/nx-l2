@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.network.clientpackets;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.data.xml.EnchantSkillGroupsData;
@@ -35,7 +36,6 @@ import app.l2nx.highfive.network.serverpackets.ExEnchantSkillInfo;
 import app.l2nx.highfive.network.serverpackets.ExEnchantSkillInfoDetail;
 import app.l2nx.highfive.network.serverpackets.ExEnchantSkillResult;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
-import java.util.concurrent.ThreadLocalRandom;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -146,8 +146,7 @@ public class RequestExEnchantSkillRouteChange extends ClientPacket {
             }
 
             final int maxPenalty = Math.min(4, currentEnchantLevel);
-            final int levelPenalty =
-                    maxPenalty > 0 ? ThreadLocalRandom.current().nextInt(maxPenalty) : 0;
+            final int levelPenalty = maxPenalty > 0 ? ClockBridge.random().nextInt(maxPenalty) : 0;
             skillLevel -= levelPenalty;
             if ((skillLevel % 100) == 0) {
                 skillLevel = s.getBaseLevel();

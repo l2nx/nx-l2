@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.managers.games;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.data.SpawnTable;
 import app.l2nx.highfive.data.xml.DoorData;
@@ -379,7 +380,7 @@ public class KrateisCubeManager implements IXmlReader {
             eventTask.cancel(false);
         }
 
-        final Calendar calendar = Calendar.getInstance();
+        final Calendar calendar = ClockBridge.calendar();
         if (calendar.get(Calendar.MINUTE) >= 57) {
             calendar.add(Calendar.HOUR, 1);
             calendar.set(Calendar.MINUTE, 27);
@@ -393,7 +394,7 @@ public class KrateisCubeManager implements IXmlReader {
             halfAnHour = false;
         }
 
-        final long currentTime = System.currentTimeMillis();
+        final long currentTime = ClockBridge.wallMillis();
         if (calendar.getTimeInMillis() < currentTime) {
             calendar.add(Calendar.DAY_OF_YEAR, 1);
         }
@@ -432,7 +433,7 @@ public class KrateisCubeManager implements IXmlReader {
     }
 
     private void getManagerMessage(KrateiMsgType state) {
-        final long lastTime = nextMatchTime - System.currentTimeMillis();
+        final long lastTime = nextMatchTime - ClockBridge.wallMillis();
         switch (state) {
             case INITIALIZED: {
                 final CreatureSay msg = new CreatureSay(

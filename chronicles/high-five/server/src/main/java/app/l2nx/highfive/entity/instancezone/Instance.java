@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.entity.instancezone;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.data.holders.InstanceReenterTimeHolder;
 import app.l2nx.highfive.data.xml.DoorData;
@@ -138,7 +139,7 @@ public class Instance {
 
     public Instance(int id) {
         this.id = id;
-        instanceStartTime = System.currentTimeMillis();
+        instanceStartTime = ClockBridge.gameMillis();
     }
 
     /**
@@ -159,7 +160,7 @@ public class Instance {
         }
 
         checkTimeUpTask = ThreadPool.schedule(new CheckTimeUp(duration), 500);
-        instanceEndTime = System.currentTimeMillis() + duration + 500;
+        instanceEndTime = ClockBridge.gameMillis() + duration + 500;
     }
 
     /**
@@ -189,8 +190,8 @@ public class Instance {
             return;
         }
 
-        lastLeft = System.currentTimeMillis();
-        setDuration((int) (instanceEndTime - System.currentTimeMillis() - 500));
+        lastLeft = ClockBridge.gameMillis();
+        setDuration((int) (instanceEndTime - ClockBridge.gameMillis() - 500));
     }
 
     public void addNpc(Npc npc) {
@@ -380,8 +381,7 @@ public class Instance {
                     if (a != null) {
                         checkTimeUpTask =
                                 ThreadPool.schedule(new CheckTimeUp(Integer.parseInt(a.getNodeValue()) * 60000), 15000);
-                        instanceEndTime =
-                                System.currentTimeMillis() + (Long.parseLong(a.getNodeValue()) * 60000) + 15000;
+                        instanceEndTime = ClockBridge.gameMillis() + (Long.parseLong(a.getNodeValue()) * 60000) + 15000;
                     }
                     break;
                 }
@@ -624,7 +624,7 @@ public class Instance {
             remaining = 0;
             interval = 500;
         } else if (players.isEmpty() && (emptyDestroyTime > 0)) {
-            final Long emptyTimeLeft = (lastLeft + emptyDestroyTime) - System.currentTimeMillis();
+            final Long emptyTimeLeft = (lastLeft + emptyDestroyTime) - ClockBridge.gameMillis();
             if (emptyTimeLeft <= 0) {
                 interval = 0;
                 remaining = 0;

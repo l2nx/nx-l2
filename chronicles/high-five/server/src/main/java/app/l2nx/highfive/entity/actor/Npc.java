@@ -23,6 +23,7 @@
 package app.l2nx.highfive.entity.actor;
 
 import app.l2nx.highfive.cache.HtmCache;
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.FeatureConfig;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.config.NpcConfig;
@@ -122,7 +123,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ThreadLocalRandom;
+import java.util.random.RandomGenerator;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -244,7 +245,7 @@ public class Npc extends Creature {
         leftHandItem = getTemplate().getLHandId();
         rightHandItem = getTemplate().getRHandId();
         enchantEffect = NpcConfig.ENABLE_RANDOM_ENCHANT_EFFECT
-                ? ThreadLocalRandom.current().nextInt(4, 22)
+                ? ClockBridge.random().nextInt(4, 22)
                 : getTemplate().getWeaponEnchant();
 
         // Initialize the "current" collisions.
@@ -282,7 +283,7 @@ public class Npc extends Creature {
      * @return {@code true} if the NPC has chances of casting a skill
      */
     public boolean hasSkillChance() {
-        final ThreadLocalRandom random = ThreadLocalRandom.current();
+        final RandomGenerator random = ClockBridge.random();
         final int minChance = getMinSkillChance();
         final int maxChance = getMaxSkillChance();
         return random.nextInt(100) < (minChance < maxChance ? random.nextInt(minChance, maxChance + 1) : minChance);
@@ -310,7 +311,7 @@ public class Npc extends Creature {
      */
     public void onRandomAnimation(int animationId) {
         // Send a packet SocialAction to all Player in the _KnownPlayers of the Npc.
-        final long now = System.currentTimeMillis();
+        final long now = ClockBridge.gameMillis();
         if ((now - lastSocialBroadcast) > MINIMUM_SOCIAL_INTERVAL) {
             lastSocialBroadcast = now;
             broadcastSocialAction(animationId);
@@ -1442,7 +1443,7 @@ public class Npc extends Creature {
             }
         } else if ((soulshotamount > 0) || (spiritshotamount > 0)) {
             if (physical) {
-                if ((soulshotamount == 0) || (ThreadLocalRandom.current().nextInt(100) > getSoulShotChance())) {
+                if ((soulshotamount == 0) || (ClockBridge.random().nextInt(100) > getSoulShotChance())) {
                     return;
                 }
 
@@ -1452,7 +1453,7 @@ public class Npc extends Creature {
             }
 
             if (magic) {
-                if ((spiritshotamount == 0) || (ThreadLocalRandom.current().nextInt(100) > getSpiritShotChance())) {
+                if ((spiritshotamount == 0) || (ClockBridge.random().nextInt(100) > getSpiritShotChance())) {
                     return;
                 }
 
@@ -1577,7 +1578,7 @@ public class Npc extends Creature {
             return new Location(getX(), getY(), getZ());
         }
 
-        final ThreadLocalRandom random = ThreadLocalRandom.current();
+        final RandomGenerator random = ClockBridge.random();
         final int radius = random.nextInt(radiusMin, radiusMax + 1);
         final double angle = random.nextDouble() * 2 * Math.PI;
         return new Location(
@@ -1609,10 +1610,10 @@ public class Npc extends Creature {
             }
 
             // Randomize drop position.
-            final int newX = (getX() + ThreadLocalRandom.current().nextInt((RANDOM_ITEM_DROP_LIMIT * 2) + 1))
-                    - RANDOM_ITEM_DROP_LIMIT;
-            final int newY = (getY() + ThreadLocalRandom.current().nextInt((RANDOM_ITEM_DROP_LIMIT * 2) + 1))
-                    - RANDOM_ITEM_DROP_LIMIT;
+            final int newX =
+                    (getX() + ClockBridge.random().nextInt((RANDOM_ITEM_DROP_LIMIT * 2) + 1)) - RANDOM_ITEM_DROP_LIMIT;
+            final int newY =
+                    (getY() + ClockBridge.random().nextInt((RANDOM_ITEM_DROP_LIMIT * 2) + 1)) - RANDOM_ITEM_DROP_LIMIT;
             final int newZ = getZ() + 20;
 
             item.dropMe(this, newX, newY, newZ);

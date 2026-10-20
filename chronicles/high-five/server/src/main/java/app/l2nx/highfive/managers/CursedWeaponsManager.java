@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.managers;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.config.ServerConfig;
 import app.l2nx.highfive.data.sql.DatabaseFactory;
@@ -300,7 +301,7 @@ public class CursedWeaponsManager {
                 final SystemMessage sm = new SystemMessage(SystemMessageId.S1_HAS_S2_MINUTE_S_OF_USAGE_TIME_REMAINING);
                 sm.addString(cw.getName());
                 // sm.addItemName(cw.getItemId());
-                sm.addInt((int) ((cw.getEndTime() - System.currentTimeMillis()) / 60000));
+                sm.addInt((int) ((cw.getEndTime() - ClockBridge.wallMillis()) / 60000));
                 player.sendPacket(sm);
             }
         }

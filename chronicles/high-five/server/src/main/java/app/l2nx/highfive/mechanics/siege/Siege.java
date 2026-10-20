@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.mechanics.siege;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.data.sql.ClanTable;
 import app.l2nx.highfive.data.sql.DatabaseFactory;
@@ -127,7 +128,7 @@ public class Siege implements Siegable {
             }
 
             try {
-                final long timeRemaining = siegeEndDate.getTimeInMillis() - System.currentTimeMillis();
+                final long timeRemaining = siegeEndDate.getTimeInMillis() - ClockBridge.wallMillis();
                 if (timeRemaining > 3600000) {
                     final SystemMessage sm = new SystemMessage(SystemMessageId.S1_HOUR_S_UNTIL_CASTLE_SIEGE_CONCLUSION);
                     sm.addInt(2);
@@ -190,7 +191,7 @@ public class Siege implements Siegable {
             }
 
             try {
-                final long currentTime = System.currentTimeMillis();
+                final long currentTime = ClockBridge.wallMillis();
                 if (!isTimeRegistrationOver()) {
                     final long regTimeRemaining = getTimeRegistrationOverDate().getTimeInMillis() - currentTime;
                     if (regTimeRemaining > 0) {
@@ -483,7 +484,7 @@ public class Siege implements Siegable {
             castle.getZone().updateZoneStatusForCharactersInside();
 
             // Schedule a task to prepare auto siege end.
-            siegeEndDate = Calendar.getInstance();
+            siegeEndDate = ClockBridge.calendar();
             siegeEndDate.add(Calendar.MINUTE, SiegeManager.getInstance().getSiegeLength());
             ThreadPool.schedule(new ScheduleEndSiegeTask(castle), 1000); // Prepare auto end task.
 
@@ -1094,7 +1095,7 @@ public class Siege implements Siegable {
      */
     public void correctSiegeDateTime() {
         boolean corrected = false;
-        if (getCastle().getSiegeDate().getTimeInMillis() < System.currentTimeMillis()) {
+        if (getCastle().getSiegeDate().getTimeInMillis() < ClockBridge.wallMillis()) {
             // Since siege has past reschedule it to the next one.
             // This is usually caused by server being down.
             corrected = true;
@@ -1181,7 +1182,7 @@ public class Siege implements Siegable {
         setNextSiegeDate(); // Set the next set date for 2 weeks from now.
 
         // Schedule Time registration end.
-        getTimeRegistrationOverDate().setTimeInMillis(System.currentTimeMillis());
+        getTimeRegistrationOverDate().setTimeInMillis(ClockBridge.wallMillis());
         getTimeRegistrationOverDate().add(Calendar.DAY_OF_MONTH, 1);
         getCastle().setTimeRegistrationOver(false);
 
@@ -1272,8 +1273,8 @@ public class Siege implements Siegable {
         }
 
         final Calendar calendar = castle.getSiegeDate();
-        if (calendar.getTimeInMillis() < System.currentTimeMillis()) {
-            calendar.setTimeInMillis(System.currentTimeMillis());
+        if (calendar.getTimeInMillis() < ClockBridge.wallMillis()) {
+            calendar.setTimeInMillis(ClockBridge.wallMillis());
         }
 
         calendar.set(Calendar.DAY_OF_WEEK, holder.getDay());
@@ -1281,7 +1282,7 @@ public class Siege implements Siegable {
         calendar.set(Calendar.MINUTE, 0);
         calendar.set(Calendar.SECOND, 0);
 
-        if (calendar.before(Calendar.getInstance())) {
+        if (calendar.before(ClockBridge.calendar())) {
             calendar.add(Calendar.WEEK_OF_YEAR, SiegeManager.getInstance().getSiegeCycle());
         }
 

@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.scripts.quests.Q00511_AwlUnderFoot;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Playable;
@@ -198,7 +199,7 @@ public class Q00511_AwlUnderFoot extends Quest {
             return "FortressWarden-02a.htm";
         } else if (fortress.getFortState() == 2) {
             return "FortressWarden-02b.htm";
-        } else if (isEnter && (dungeon.getReEnterTime() > System.currentTimeMillis())) {
+        } else if (isEnter && (dungeon.getReEnterTime() > ClockBridge.wallMillis())) {
             return "FortressWarden-07.htm";
         }
 
@@ -250,7 +251,7 @@ public class Q00511_AwlUnderFoot extends Quest {
         final Instance instance = InstanceManager.getInstance().createDynamicInstance(dungeon.getInstanceId());
         world.setInstance(instance);
         instance.setExitLoc(new Location(player));
-        dungeon.setReEnterTime(System.currentTimeMillis() + REENTERTIME);
+        dungeon.setReEnterTime(ClockBridge.wallMillis() + REENTERTIME);
         InstanceManager.getInstance().addWorld(world);
         final int instanceId = world.getInstanceId();
         log.info(

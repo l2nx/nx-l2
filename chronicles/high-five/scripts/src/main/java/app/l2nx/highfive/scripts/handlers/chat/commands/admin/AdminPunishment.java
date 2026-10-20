@@ -23,6 +23,7 @@
 package app.l2nx.highfive.scripts.handlers.chat.commands.admin;
 
 import app.l2nx.highfive.cache.HtmCache;
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.ServerConfig;
 import app.l2nx.highfive.data.sql.CharInfoTable;
 import app.l2nx.highfive.entity.World;
@@ -39,7 +40,6 @@ import app.l2nx.highfive.util.GMAudit;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.time.Instant;
-import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.StringTokenizer;
@@ -142,7 +142,8 @@ public class AdminPunishment implements IAdminCommandHandler {
                                         String expire = "never";
                                         if (expiration > 0) {
                                             expire = DATE_FORMATTER.format(Instant.ofEpochMilli(expiration)
-                                                    .atZone(ZoneId.systemDefault()));
+                                                    .atZone(ClockBridge.wallClock()
+                                                            .getZone()));
                                         }
 
                                         sb.append("<tr><td><font color=\"LEVEL\">" + type + "</font></td><td>" + expire
@@ -253,7 +254,7 @@ public class AdminPunishment implements IAdminCommandHandler {
 
                 long expirationTime = Integer.parseInt(exp);
                 if (expirationTime > 0) {
-                    expirationTime = System.currentTimeMillis() + (expirationTime * 60 * 1000);
+                    expirationTime = ClockBridge.wallMillis() + (expirationTime * 60 * 1000);
                 }
 
                 final PunishmentAffect affect = PunishmentAffect.getByName(af);

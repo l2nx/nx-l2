@@ -24,6 +24,7 @@ package app.l2nx.highfive.entity.actor.instance;
 
 import static app.l2nx.highfive.entity.itemcontainer.Inventory.MAX_ADENA;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.data.sql.ClanHallTable;
 import app.l2nx.highfive.data.xml.MapRegionData;
 import app.l2nx.highfive.entity.actor.Npc;
@@ -38,7 +39,6 @@ import app.l2nx.highfive.managers.ClanHallAuctionManager;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.serverpackets.NpcHtmlMessage;
 import java.time.Instant;
-import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Calendar;
 import java.util.List;
@@ -120,7 +120,7 @@ public class Auctioneer extends Npc {
                         html.replace(
                                 "%AGIT_AUCTION_END%",
                                 Instant.ofEpochMilli(a.getEndDate())
-                                        .atZone(ZoneId.systemDefault())
+                                        .atZone(ClockBridge.wallClock().getZone())
                                         .format(DATE_FORMAT));
                         html.replace("%AGIT_AUCTION_MINBID%", String.valueOf(a.getStartingBid()));
                         html.replace("%AGIT_AUCTION_MIN%", String.valueOf(a.getStartingBid()));
@@ -185,12 +185,12 @@ public class Auctioneer extends Npc {
                         html.replace(
                                 "%AGIT_AUCTION_END%",
                                 Instant.ofEpochMilli(a.getEndDate())
-                                        .atZone(ZoneId.systemDefault())
+                                        .atZone(ClockBridge.wallClock().getZone())
                                         .format(DATE_FORMAT));
                         html.replace(
                                 "%AGIT_AUCTION_REMAIN%",
-                                ((a.getEndDate() - System.currentTimeMillis()) / 3600000) + " hours "
-                                        + (((a.getEndDate() - System.currentTimeMillis()) / 60000) % 60) + " minutes");
+                                ((a.getEndDate() - ClockBridge.wallMillis()) / 3600000) + " hours "
+                                        + (((a.getEndDate() - ClockBridge.wallMillis()) / 60000) % 60) + " minutes");
                         html.replace("%AGIT_AUCTION_MINBID%", String.valueOf(a.getStartingBid()));
                         html.replace(
                                 "%AGIT_AUCTION_COUNT%",
@@ -339,7 +339,7 @@ public class Auctioneer extends Npc {
                     items.append("</a></td>");
                     items.append("<td>"
                             + Instant.ofEpochMilli(a.getEndDate())
-                                    .atZone(ZoneId.systemDefault())
+                                    .atZone(ClockBridge.wallClock().getZone())
                                     .format(DATE_FORMAT_SHORT));
                     items.append("</td>");
                     items.append("<td>");
@@ -420,12 +420,12 @@ public class Auctioneer extends Npc {
                         html.replace(
                                 "%AGIT_AUCTION_END%",
                                 Instant.ofEpochMilli(a.getEndDate())
-                                        .atZone(ZoneId.systemDefault())
+                                        .atZone(ClockBridge.wallClock().getZone())
                                         .format(DATE_FORMAT));
                         html.replace(
                                 "%AGIT_AUCTION_REMAIN%",
-                                ((a.getEndDate() - System.currentTimeMillis()) / 3600000) + " hours "
-                                        + (((a.getEndDate() - System.currentTimeMillis()) / 60000) % 60) + " minutes");
+                                ((a.getEndDate() - ClockBridge.wallMillis()) / 3600000) + " hours "
+                                        + (((a.getEndDate() - ClockBridge.wallMillis()) / 60000) % 60) + " minutes");
                         html.replace("%AGIT_AUCTION_MINBID%", String.valueOf(a.getStartingBid()));
                         html.replace(
                                 "%AGIT_AUCTION_MYBID%",
@@ -474,12 +474,12 @@ public class Auctioneer extends Npc {
                         html.replace(
                                 "%AGIT_AUCTION_END%",
                                 Instant.ofEpochMilli(a.getEndDate())
-                                        .atZone(ZoneId.systemDefault())
+                                        .atZone(ClockBridge.wallClock().getZone())
                                         .format(DATE_FORMAT));
                         html.replace(
                                 "%AGIT_AUCTION_REMAIN%",
-                                ((a.getEndDate() - System.currentTimeMillis()) / 3600000) + " hours "
-                                        + (((a.getEndDate() - System.currentTimeMillis()) / 60000) % 60) + " minutes");
+                                ((a.getEndDate() - ClockBridge.wallMillis()) / 3600000) + " hours "
+                                        + (((a.getEndDate() - ClockBridge.wallMillis()) / 60000) % 60) + " minutes");
                         html.replace("%AGIT_AUCTION_MINBID%", String.valueOf(a.getStartingBid()));
                         html.replace(
                                 "%AGIT_AUCTION_BIDCOUNT%",
@@ -658,7 +658,7 @@ public class Auctioneer extends Npc {
                         html.replace(
                                 "%AGIT_AUCTION_END%",
                                 Instant.ofEpochMilli(a.getEndDate())
-                                        .atZone(ZoneId.systemDefault())
+                                        .atZone(ClockBridge.wallClock().getZone())
                                         .format(DATE_FORMAT));
                         html.replace("%AGIT_LINK_BACK%", "bypass -h npc_" + getObjectId() + "_selectedItems");
                         html.replace("npc_%objectId%_bid1", "npc_" + getObjectId() + "_bid1 " + a.getId());

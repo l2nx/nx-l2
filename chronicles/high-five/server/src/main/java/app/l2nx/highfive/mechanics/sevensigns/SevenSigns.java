@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.mechanics.sevensigns;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.FeatureConfig;
 import app.l2nx.highfive.config.NpcConfig;
 import app.l2nx.highfive.data.sql.DatabaseFactory;
@@ -111,7 +112,7 @@ public class SevenSigns {
     public static final int GREEN_CONTRIB_POINTS = 5;
     public static final int RED_CONTRIB_POINTS = 10;
 
-    private final Calendar nextPeriodChange = Calendar.getInstance();
+    private final Calendar nextPeriodChange = ClockBridge.calendar();
 
     @Getter
     protected int currentPeriod;
@@ -125,7 +126,7 @@ public class SevenSigns {
     protected int duskFestivalScore;
     protected int compWinner;
     protected int previousWinner;
-    protected Calendar lastSave = Calendar.getInstance();
+    protected Calendar lastSave = ClockBridge.calendar();
 
     protected Map<Integer, StatSet> signsPlayerData = new LinkedHashMap<>();
     private final Map<Integer, Integer> signsSealOwners = new LinkedHashMap<>();
@@ -181,7 +182,7 @@ public class SevenSigns {
     }
 
     private boolean isNextPeriodChangeInPast() {
-        final Calendar lastPeriodChange = Calendar.getInstance();
+        final Calendar lastPeriodChange = ClockBridge.calendar();
         switch (currentPeriod) {
             case PERIOD_SEAL_VALIDATION:
             case PERIOD_COMPETITION: {
@@ -191,7 +192,7 @@ public class SevenSigns {
                 lastPeriodChange.set(Calendar.SECOND, 0);
 
                 // if we hit next week, just turn back 1 week
-                if (Calendar.getInstance().before(lastPeriodChange)) {
+                if (ClockBridge.calendar().before(lastPeriodChange)) {
                     lastPeriodChange.add(Calendar.HOUR, -24 * 7);
                 }
                 break;
@@ -439,7 +440,7 @@ public class SevenSigns {
     }
 
     public long getMilliToPeriodChange() {
-        return (nextPeriodChange.getTimeInMillis() - System.currentTimeMillis());
+        return (nextPeriodChange.getTimeInMillis() - ClockBridge.wallMillis());
     }
 
     protected void setCalendarForNextPeriodChange() {
@@ -526,7 +527,7 @@ public class SevenSigns {
         final long nextPeriodChange = getMilliToPeriodChange();
         long nextQuestStart = 0;
         long nextValidStart = 0;
-        long tillDate = date.getTimeInMillis() - System.currentTimeMillis();
+        long tillDate = date.getTimeInMillis() - ClockBridge.wallMillis();
         while (((2 * PERIOD_MAJOR_LENGTH) + (2 * PERIOD_MINOR_LENGTH)) < tillDate) {
             tillDate -= ((2 * PERIOD_MAJOR_LENGTH) + (2 * PERIOD_MINOR_LENGTH));
         }
@@ -836,7 +837,7 @@ public class SevenSigns {
                 ps.setInt(18 + i, SevenSignsFestival.getInstance().getAccumulatedBonus(i));
             }
 
-            lastSave = Calendar.getInstance();
+            lastSave = ClockBridge.calendar();
             ps.setLong(18 + SevenSignsFestival.FESTIVAL_COUNT, lastSave.getTimeInMillis());
             ps.execute();
         } catch (SQLException e) {

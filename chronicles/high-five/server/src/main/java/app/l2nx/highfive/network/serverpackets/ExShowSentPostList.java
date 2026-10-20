@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.network.serverpackets;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.managers.MailManager;
 import app.l2nx.highfive.network.GameClient;
 import app.l2nx.highfive.network.ServerPackets;
@@ -39,7 +40,7 @@ public class ExShowSentPostList extends ServerPacket {
     @Override
     public void writeImpl(GameClient client, WriteBuffer buffer) {
         ServerPackets.EX_SHOW_SENT_POST_LIST.writeId(this, buffer);
-        buffer.writeInt((int) (System.currentTimeMillis() / 1000));
+        buffer.writeInt((int) (ClockBridge.wallMillis() / 1000));
         if ((outbox != null) && !outbox.isEmpty()) {
             buffer.writeInt(outbox.size());
             for (MailMessage msg : outbox) {

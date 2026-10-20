@@ -20,12 +20,12 @@
 package app.l2nx.highfive.scripts.handlers.skill.effects;
 
 import app.l2nx.highfive.ai.AttackableAI;
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.mechanics.conditions.Condition;
 import app.l2nx.highfive.mechanics.effects.AbstractEffect;
 import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.util.StatSet;
-import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Run Away effect implementation.
@@ -53,7 +53,7 @@ public class RunAway extends AbstractEffect {
             return;
         }
 
-        if (ThreadLocalRandom.current().nextInt(100) > power) {
+        if (ClockBridge.random().nextInt(100) > power) {
             return;
         }
 

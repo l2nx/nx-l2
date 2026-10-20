@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.scripts.ai.bosses.Frintezza;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.WorldObject;
 import app.l2nx.highfive.entity.actor.Npc;
@@ -721,7 +722,7 @@ public class LastImperialTomb extends InstanceScript {
 
             final Long reentertime =
                     InstanceManager.getInstance().getInstanceTime(channelMember.getObjectId(), TEMPLATE_ID);
-            if (System.currentTimeMillis() < reentertime) {
+            if (ClockBridge.wallMillis() < reentertime) {
                 party.broadcastPacket(
                         new SystemMessage(SystemMessageId.C1_MAY_NOT_RE_ENTER_YET).addPcName(channelMember));
                 return false;

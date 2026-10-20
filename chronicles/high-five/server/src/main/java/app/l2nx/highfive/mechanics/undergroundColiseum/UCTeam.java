@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.mechanics.undergroundColiseum;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.UndergroundColiseumConfig;
 import app.l2nx.highfive.config.custom.PremiumSystemConfig;
 import app.l2nx.highfive.data.xml.NpcData;
@@ -39,7 +40,7 @@ import app.l2nx.highfive.network.serverpackets.ServerPacket;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
 import app.l2nx.highfive.threads.ThreadPool;
 import java.util.List;
-import java.util.concurrent.ThreadLocalRandom;
+import java.util.random.RandomGenerator;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -167,7 +168,7 @@ public class UCTeam {
 
                     if (player.isDead()) {
                         resPlayer(player);
-                        final ThreadLocalRandom random = ThreadLocalRandom.current();
+                        final RandomGenerator random = ClockBridge.random();
                         player.teleToLocation(x + random.nextInt(2, 51), y + random.nextInt(10, 101), z, true);
                         if (player.hasSummon()) {
                             final Summon summon = player.getSummon();

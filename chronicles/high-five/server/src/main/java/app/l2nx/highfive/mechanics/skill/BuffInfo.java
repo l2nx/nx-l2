@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.mechanics.skill;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.holders.creature.EffectList;
@@ -32,7 +33,6 @@ import app.l2nx.highfive.mechanics.skill.enums.SkillFinishType;
 import app.l2nx.highfive.mechanics.stats.Formulas;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
-import app.l2nx.highfive.taskmanagers.GameTimeTaskManager;
 import app.l2nx.highfive.threads.ThreadPool;
 import java.util.ArrayList;
 import java.util.List;
@@ -48,8 +48,6 @@ import lombok.Setter;
  * @author Zoey76, Mobius
  */
 public class BuffInfo {
-    // Data
-    /** Data. */
     @Getter
     private final Creature effector;
 
@@ -58,102 +56,78 @@ public class BuffInfo {
 
     @Getter
     private final Skill skill;
-    /** The effects. */
+
     @Getter
     private final List<AbstractEffect> effects = new ArrayList<>(1);
 
-    // Tasks
-    /** Effect tasks for ticks. */
     private final Map<AbstractEffect, EffectTaskInfo> tasks = new ConcurrentHashMap<>();
 
-    // Time and ticks
-    /** Abnormal time. */
-    @Getter
-    @Setter
-    private int abnormalTime;
-    /** The game ticks at the start of this effect. */
-    @Getter
-    private final int periodStartTicks;
+    private final EffectTiming timing;
 
-    // Misc
-    /** If {@code true} then this effect has been cancelled. */
     @Setter
     private volatile SkillFinishType finishType = SkillFinishType.NORMAL;
-    /** If {@code true} then this effect is in use (or has been stop because an Herb took place). */
+
     @Getter
     @Setter
     private boolean inUse = true;
 
-    /**
-     * Buff Info constructor.
-     * @param effector
-     * @param effected
-     * @param skill
-     */
     public BuffInfo(Creature effector, Creature effected, Skill skill) {
         this.effector = effector;
         this.effected = effected;
         this.skill = skill;
-        abnormalTime = Formulas.calcEffectAbnormalTime(effector, effected, skill);
-        periodStartTicks = GameTimeTaskManager.getInstance().getGameTicks();
+        timing = new EffectTiming(Formulas.calcEffectAbnormalTime(effector, effected, skill), ClockBridge.gameMillis());
     }
 
-    /**
-     * Adds an effect to this buff info.
-     * @param effect the effect to add
-     */
+    public int getAbnormalTime() {
+        return timing.abnormalTime();
+    }
+
+    public void setAbnormalTime(int abnormalTime) {
+        timing.setAbnormalTime(abnormalTime);
+    }
+
     public void addEffect(AbstractEffect effect) {
         effects.add(effect);
     }
 
-    /**
-     * Adds an effect task to this buff info.
-     * @param effect the effect that owns the task
-     * @param effectTaskInfo the task info
-     */
     private void addTask(AbstractEffect effect, EffectTaskInfo effectTaskInfo) {
         tasks.put(effect, effectTaskInfo);
     }
 
-    /**
-     * Gets the task for the given effect.
-     * @param effect the effect
-     * @return the task
-     */
     private EffectTaskInfo getEffectTask(AbstractEffect effect) {
         return tasks.get(effect);
     }
 
-    /**
-     * Get the remaining time in seconds for this buff info.
-     * @return the elapsed time
-     */
+    /** @return the remaining time in seconds. */
     public int getTime() {
-        return abnormalTime
-                - ((GameTimeTaskManager.getInstance().getGameTicks() - periodStartTicks)
-                        / GameTimeTaskManager.TICKS_PER_SECOND);
+        return timing.remainingSeconds(ClockBridge.gameMillis());
     }
 
-    /**
-     * Verify if this buff info has been cancelled.
-     * @return {@code true} if this buff info has been cancelled, {@code false} otherwise
-     */
+    public boolean isExpired() {
+        return timing.isExpired(ClockBridge.gameMillis());
+    }
+
+    /** {@code null} when the effect has already run out and is waiting for removal. */
+    public StoredEffect toStoredEffect() {
+        return timing.toStored(ClockBridge.gameMillis());
+    }
+
+    /** Must be called before the buff is added to the effect list, which schedules its ticks. */
+    public void restoreTiming(StoredEffect stored) {
+        timing.restore(stored, ClockBridge.gameMillis());
+    }
+
     public boolean isRemoved() {
         return finishType == SkillFinishType.REMOVED;
     }
 
     /**
-     * Stops all the effects for this buff info.<br>
-     * Removes effects stats.<br>
-     * <b>It will not remove the buff info from the effect list</b>.<br>
-     * Instead call {@link EffectList#stopSkillEffects(SkillFinishType, Skill)}
-     * @param type determines the system message that will be sent.
-     * @param broadcast if {@code true} broadcast abnormal visual effects
+     * Does not remove the buff info from the effect list; call
+     * {@link EffectList#stopSkillEffects(SkillFinishType, Skill)} for that.
      */
     public void stopAllEffects(SkillFinishType type, boolean broadcast) {
         setFinishType(type);
 
-        // Remove this buff info from BuffFinishTask.
         effected.removeBuffInfoTime(this);
         finishEffects(broadcast);
     }
@@ -172,8 +146,7 @@ public class BuffInfo {
             effected.sendPacket(sm);
         }
 
-        // Creates a task that will stop all the effects.
-        if (abnormalTime > 0) {
+        if (timing.abnormalTime() > 0) {
             effected.addBuffInfoTime(this);
         }
 
@@ -183,7 +156,6 @@ public class BuffInfo {
                 continue;
             }
 
-            // Call on start.
             effect.onStart(effector, effected, skill);
 
             // Do not add continuous effect if target just died from the initial effect, otherwise they'll be ticked
@@ -192,10 +164,8 @@ public class BuffInfo {
                 continue;
             }
 
-            // If it's a continuous effect, if has ticks schedule a task with period, otherwise schedule a simple task
-            // to end it.
             if (effect.getTicks() > 0) {
-                // The task for the effect ticks.
+                final long tickPeriod = (long) effect.getTicks() * PlayerConfig.EFFECT_TICK_RATIO;
                 final EffectTickTask effectTask = new EffectTickTask(this, effect);
                 addTask(
                         effect,
@@ -203,11 +173,10 @@ public class BuffInfo {
                                 effectTask,
                                 ThreadPool.scheduleAtFixedRate(
                                         effectTask,
-                                        effect.getTicks() * PlayerConfig.EFFECT_TICK_RATIO,
-                                        effect.getTicks() * PlayerConfig.EFFECT_TICK_RATIO)));
+                                        timing.firstTickDelay(ClockBridge.gameMillis(), tickPeriod),
+                                        tickPeriod)));
             }
 
-            // Add stats.
             effected.addStatFuncs(effect.getStatFuncs(effector, effected, skill));
 
             update = true;
@@ -218,22 +187,14 @@ public class BuffInfo {
                 effected.asSummon().updateAndBroadcastStatus(1);
             }
 
-            // Add abnormal visual effects.
             addAbnormalVisualEffects();
         }
     }
 
-    /**
-     * Called on each tick.<br>
-     * Verify if the effect should end and the effect task should be cancelled.
-     * @param effect the effect that is ticking
-     */
     public void onTick(AbstractEffect effect) {
         boolean continueForever = false;
 
-        // If the effect is in use, allow it to affect the effected.
         if (inUse) {
-            // Callback for on action time event.
             continueForever = effect.onActionTime(effector, effected, skill);
         }
 
@@ -242,28 +203,24 @@ public class BuffInfo {
             if (task != null) {
                 final ScheduledFuture<?> schedule = task.getScheduledFuture();
                 if ((schedule != null) && !schedule.isCancelled() && !schedule.isDone()) {
-                    schedule.cancel(true); // Don't allow to finish current run.
+                    schedule.cancel(true);
                 }
 
-                effected.getEffectList()
-                        .stopSkillEffects(SkillFinishType.REMOVED, skill); // Remove the buff from the effect list.
+                effected.getEffectList().stopSkillEffects(SkillFinishType.REMOVED, skill);
             }
         }
     }
 
     public void finishEffects(boolean broadcast) {
-        // Cancels the ticking task.
         for (EffectTaskInfo effectTask : tasks.values()) {
             final ScheduledFuture<?> schedule = effectTask.getScheduledFuture();
             if ((schedule != null) && !schedule.isCancelled() && !schedule.isDone()) {
-                schedule.cancel(true); // Don't allow to finish current run.
+                schedule.cancel(true);
             }
         }
 
-        // Remove stats
         removeStats();
 
-        // Notify on exit.
         for (AbstractEffect effect : effects) {
             // Instant effects shouldn't call onExit(..).
             if ((effect != null) && !effect.isInstant()) {
@@ -271,14 +228,11 @@ public class BuffInfo {
             }
         }
 
-        // Remove abnormal visual effects.
         removeAbnormalVisualEffects(broadcast);
 
-        // Set the proper system message.
         if (!(effected.isSummon() && !effected.asSummon().getOwner().hasSummon())) {
             SystemMessageId smId = null;
             if (finishType == SkillFinishType.SILENT) {
-                // smId is null.
             } else if (skill.isToggle()) {
                 smId = SystemMessageId.S1_HAS_BEEN_ABORTED;
             } else if (finishType == SkillFinishType.REMOVED) {
@@ -294,7 +248,6 @@ public class BuffInfo {
             }
         }
 
-        // Remove short buff.
         if (this == effected.getEffectList().getShortBuff()) {
             effected.getEffectList().shortBuffStatusUpdate(null);
         }
@@ -304,10 +257,6 @@ public class BuffInfo {
         return skill.getAbnormalType() == type;
     }
 
-    /**
-     * Applies all the abnormal visual effects to the effected.<br>
-     * Prevents multiple updates.
-     */
     private void addAbnormalVisualEffects() {
         if (skill.hasAbnormalVisualEffects()) {
             effected.startAbnormalVisualEffect(false, skill.getAbnormalVisualEffects());
@@ -321,15 +270,9 @@ public class BuffInfo {
             effected.startAbnormalVisualEffect(false, skill.getAbnormalVisualEffectsSpecial());
         }
 
-        // Update abnormal visual effects.
         effected.updateAbnormalEffect();
     }
 
-    /**
-     * Removes all the abnormal visual effects from the effected.<br>
-     * Prevents multiple updates.
-     * @param broadcast if {@code true} broadcast abnormal visual effects
-     */
     private void removeAbnormalVisualEffects(boolean broadcast) {
         if ((effected == null) || (skill == null)) {
             return;
@@ -352,16 +295,10 @@ public class BuffInfo {
         }
     }
 
-    /**
-     * Adds the buff stats.
-     */
     public void addStats() {
         effects.forEach(effect -> effected.addStatFuncs(effect.getStatFuncs(effector, effected, skill)));
     }
 
-    /**
-     * Removes the buff stats.
-     */
     public void removeStats() {
         effects.forEach(effected::removeStatsOwner);
         effected.removeStatsOwner(skill);
@@ -369,8 +306,8 @@ public class BuffInfo {
 
     @Override
     public String toString() {
-        return "BuffInfo [effector=" + effector + ", effected=" + effected + ", skill=" + skill + ", effects="
-                + effects + ", tasks=" + tasks + ", abnormalTime=" + abnormalTime + ", periodStartTicks="
-                + periodStartTicks + ", isRemoved=" + isRemoved() + ", isInUse=" + inUse + "]";
+        return "BuffInfo [effector=" + effector + ", effected=" + effected + ", skill=" + skill + ", effects=" + effects
+                + ", tasks=" + tasks + ", abnormalTime=" + timing.abnormalTime() + ", isRemoved=" + isRemoved()
+                + ", isInUse=" + inUse + "]";
     }
 }

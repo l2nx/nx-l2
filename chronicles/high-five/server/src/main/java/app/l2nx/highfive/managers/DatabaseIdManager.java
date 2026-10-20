@@ -22,6 +22,7 @@
  */
 package app.l2nx.highfive.managers;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.IdManagerConfig;
 import app.l2nx.highfive.config.custom.WeddingConfig;
 import app.l2nx.highfive.data.sql.DatabaseFactory;
@@ -114,7 +115,7 @@ public class DatabaseIdManager {
     private static final String UPDATE_CHARACTER_STATUS_QUERY = "UPDATE characters SET online = 0";
     private static final String[] EXPIRATION_CLEANUP_QUERIES = {
         "DELETE FROM character_instance_time WHERE time <= ?",
-        "DELETE FROM character_skills_save WHERE restore_type = 1 AND systime <= ?"
+        "DELETE FROM character_skills_save WHERE restore_type = 1 AND reuse_ends_at <= ?"
     };
     private static final String[] EXTRACT_USED_OBJECT_ID_QUERIES = {
         "SELECT charId FROM characters",
@@ -135,7 +136,7 @@ public class DatabaseIdManager {
         }
 
         int cleanCount = 0;
-        final long cleanupStart = System.currentTimeMillis();
+        final long cleanupStart = ClockBridge.gameMillis();
         if (WeddingConfig.ALLOW_WEDDING) {
             try (Connection con = DatabaseFactory.getConnection();
                     Statement statement = con.createStatement()) {
@@ -157,8 +158,7 @@ public class DatabaseIdManager {
             }
         }
 
-        log.info(
-                "Cleaned {} elements in {} seconds.", cleanCount, ((System.currentTimeMillis() - cleanupStart) / 1000));
+        log.info("Cleaned {} elements in {} seconds.", cleanCount, ((ClockBridge.gameMillis() - cleanupStart) / 1000));
 
         for (String query : UPDATE_QUERIES) {
             try (Connection con = DatabaseFactory.getConnection();
@@ -191,7 +191,7 @@ public class DatabaseIdManager {
             int cleanCount = 0;
             for (String query : EXPIRATION_CLEANUP_QUERIES) {
                 try (PreparedStatement statement = con.prepareStatement(query)) {
-                    statement.setLong(1, System.currentTimeMillis());
+                    statement.setLong(1, ClockBridge.wallMillis());
                     cleanCount += statement.executeUpdate();
                 }
             }

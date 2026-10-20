@@ -23,6 +23,7 @@
 package app.l2nx.highfive.scripts.quests.Q00727_HopeWithinTheDarkness;
 
 import app.l2nx.highfive.ai.Intention;
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Creature;
@@ -497,7 +498,7 @@ public class Q00727_HopeWithinTheDarkness extends Quest {
             }
         }
 
-        if (dungeon.getReEnterTime() > System.currentTimeMillis()) {
+        if (dungeon.getReEnterTime() > ClockBridge.wallMillis()) {
             return "CastleWarden-18.html";
         }
 
@@ -532,7 +533,7 @@ public class Q00727_HopeWithinTheDarkness extends Quest {
         world.setInstance(instance);
         instance.setExitLoc(new Location(player));
         final int instanceId = world.getInstanceId();
-        dungeon.setReEnterTime(System.currentTimeMillis() + REENTER_INTERVAL);
+        dungeon.setReEnterTime(ClockBridge.wallMillis() + REENTER_INTERVAL);
         InstanceManager.getInstance().addWorld(world);
         ThreadPool.schedule(new spawnNpcs((CAUWorld) world), INITIAL_SPAWN_DELAY);
         if (DEBUG) {

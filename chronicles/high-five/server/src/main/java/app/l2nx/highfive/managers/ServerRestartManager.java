@@ -23,10 +23,10 @@
 package app.l2nx.highfive.managers;
 
 import app.l2nx.highfive.Shutdown;
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.ServerConfig;
 import app.l2nx.highfive.threads.ThreadPool;
 import java.time.Instant;
-import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Calendar;
 import java.util.Locale;
@@ -46,8 +46,8 @@ public class ServerRestartManager {
 
     protected ServerRestartManager() {
         try {
-            final Calendar currentTime = Calendar.getInstance();
-            final Calendar restartTime = Calendar.getInstance();
+            final Calendar currentTime = ClockBridge.calendar();
+            final Calendar restartTime = ClockBridge.calendar();
             Calendar lastRestart = null;
             long delay = 0;
             long lastDelay = 0;
@@ -82,14 +82,14 @@ public class ServerRestartManager {
 
             if (lastRestart != null) {
                 if (ServerConfig.SERVER_RESTART_DAYS.isEmpty() || (ServerConfig.SERVER_RESTART_DAYS.size() == 7)) {
-                    nextRestartTime = TIME_FORMAT.format(
-                            Instant.ofEpochMilli(lastRestart.getTimeInMillis()).atZone(ZoneId.systemDefault()));
+                    nextRestartTime = TIME_FORMAT.format(Instant.ofEpochMilli(lastRestart.getTimeInMillis())
+                            .atZone(ClockBridge.wallClock().getZone()));
                 } else {
                     nextRestartTime = DateTimeFormatter.ofPattern(
                                     "MMMM d'" + getDayNumberSuffix(lastRestart.get(Calendar.DAY_OF_MONTH)) + "' HH:mm",
                                     Locale.UK)
                             .format(Instant.ofEpochMilli(lastRestart.getTimeInMillis())
-                                    .atZone(ZoneId.systemDefault()));
+                                    .atZone(ClockBridge.wallClock().getZone()));
                 }
 
                 ThreadPool.schedule(

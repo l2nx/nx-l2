@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.entity.actor.instance;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.holders.player.ArenaParticipantsHolder;
@@ -31,7 +32,6 @@ import app.l2nx.highfive.network.serverpackets.AbstractNpcInfo;
 import app.l2nx.highfive.network.serverpackets.ActionFailed;
 import app.l2nx.highfive.network.serverpackets.ExCubeGameChangePoints;
 import app.l2nx.highfive.network.serverpackets.ExCubeGameExtendedChangePoints;
-import java.util.concurrent.ThreadLocalRandom;
 import lombok.Getter;
 
 /**
@@ -76,7 +76,7 @@ public class Block extends Monster {
             }
 
             // 30% chance to drop the event items
-            final int random = ThreadLocalRandom.current().nextInt(100);
+            final int random = ClockBridge.random().nextInt(100);
 
             // Bond
             if ((random > 69) && (random <= 84)) {
@@ -128,7 +128,7 @@ public class Block extends Monster {
     private void increaseTeamPointsAndSend(Player player, int team, BlockCheckerManager eng) {
         eng.increasePlayerPoints(player, team);
 
-        final int timeLeft = (int) ((eng.getStarterTime() - System.currentTimeMillis()) / 1000);
+        final int timeLeft = (int) ((eng.getStarterTime() - ClockBridge.gameMillis()) / 1000);
         final boolean isRed = eng.getHolder().getRedPlayers().contains(player);
         final ExCubeGameChangePoints changePoints =
                 new ExCubeGameChangePoints(timeLeft, eng.getBluePoints(), eng.getRedPoints());
@@ -140,8 +140,8 @@ public class Block extends Monster {
 
     private void dropItem(int id, BlockCheckerManager eng, Player player) {
         final Item drop = ItemManager.createItem(ItemProcessType.LOOT, id, 1, player, this);
-        final int x = getX() + ThreadLocalRandom.current().nextInt(50);
-        final int y = getY() + ThreadLocalRandom.current().nextInt(50);
+        final int x = getX() + ClockBridge.random().nextInt(50);
+        final int y = getY() + ClockBridge.random().nextInt(50);
         final int z = getZ();
         drop.dropMe(this, x, y, z);
         eng.addNewDrop(drop);

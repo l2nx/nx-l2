@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.managers;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.entity.World;
@@ -77,7 +78,7 @@ public class ItemsOnGroundManager implements Runnable {
 
             try (Connection con = DatabaseFactory.getConnection();
                     PreparedStatement ps = con.prepareStatement(str)) {
-                ps.setLong(1, System.currentTimeMillis());
+                ps.setLong(1, ClockBridge.wallMillis());
                 ps.execute();
             } catch (Exception e) {
                 log.error("Error while updating table ItemsOnGround {}", e.getMessage(), e);

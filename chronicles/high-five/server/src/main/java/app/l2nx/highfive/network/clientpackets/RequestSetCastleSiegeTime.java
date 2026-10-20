@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.network.clientpackets;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.FeatureConfig;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Player;
@@ -95,12 +96,12 @@ public class RequestSetCastleSiegeTime extends ClientPacket {
     }
 
     private static boolean isSiegeTimeValid(long siegeDate, long choosenDate) {
-        final Calendar cal1 = Calendar.getInstance();
+        final Calendar cal1 = ClockBridge.calendar();
         cal1.setTimeInMillis(siegeDate);
         cal1.set(Calendar.MINUTE, 0);
         cal1.set(Calendar.SECOND, 0);
 
-        final Calendar cal2 = Calendar.getInstance();
+        final Calendar cal2 = ClockBridge.calendar();
         cal2.setTimeInMillis(choosenDate);
 
         for (int hour : FeatureConfig.SIEGE_HOUR_LIST) {

@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.scripts.handlers.skill.effects;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.instance.Door;
 import app.l2nx.highfive.entity.instancezone.Instance;
@@ -28,7 +29,6 @@ import app.l2nx.highfive.mechanics.effects.AbstractEffect;
 import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.util.StatSet;
-import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Open Door effect implementation.
@@ -84,7 +84,7 @@ public class OpenDoor extends AbstractEffect {
             return;
         }
 
-        if ((ThreadLocalRandom.current().nextInt(100) < chance) && !door.isOpen()) {
+        if ((ClockBridge.random().nextInt(100) < chance) && !door.isOpen()) {
             door.openMe();
         } else {
             effector.sendPacket(SystemMessageId.YOU_HAVE_FAILED_TO_UNLOCK_THE_DOOR);

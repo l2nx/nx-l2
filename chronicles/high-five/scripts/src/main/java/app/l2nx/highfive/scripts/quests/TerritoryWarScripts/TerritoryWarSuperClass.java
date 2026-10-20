@@ -19,6 +19,7 @@
  */
 package app.l2nx.highfive.scripts.quests.TerritoryWarScripts;
 
+import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.WorldObject;
 import app.l2nx.highfive.entity.actor.Creature;
@@ -103,7 +104,7 @@ public class TerritoryWarSuperClass extends Quest {
             if (kill >= max) {
                 TerritoryWarManager.getInstance().giveTWQuestPoint(player);
                 addExpAndSp(player, 534000, 51000);
-                qs.set("doneDate", String.valueOf(Calendar.getInstance().get(Calendar.DAY_OF_YEAR)));
+                qs.set("doneDate", String.valueOf(ClockBridge.calendar().get(Calendar.DAY_OF_YEAR)));
                 qs.exitQuest(true);
                 player.sendPacket(new ExShowScreenMessage(npcString[1], 2, 10000));
             } else {
@@ -114,7 +115,7 @@ public class TerritoryWarSuperClass extends Quest {
                 message.addStringParameter(String.valueOf(kill));
                 player.sendPacket(message);
             }
-        } else if (qs.getInt("doneDate") != Calendar.getInstance().get(Calendar.DAY_OF_YEAR)) {
+        } else if (qs.getInt("doneDate") != ClockBridge.calendar().get(Calendar.DAY_OF_YEAR)) {
             qs.setState(State.STARTED);
             qs.setCond(1);
             qs.set("kill", "1");
