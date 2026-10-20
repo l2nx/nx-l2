@@ -30,6 +30,7 @@ tasks.withType<JavaCompile>().configureEach {
 
 dependencies {
     implementation(platform(libs.findLibrary("spring-boot-dependencies").get()))
+    implementation(platform(libs.findLibrary("spring-modulith-bom").get()))
     implementation(libs.findLibrary("slf4j-api").get())
     testImplementation(platform(libs.findLibrary("junit-bom").get()))
     testImplementation(libs.findLibrary("junit-jupiter").get())

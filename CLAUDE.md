@@ -17,6 +17,10 @@ recorded in the spec with its reason, not a silent choice.
   `chronicles/high-five/boot` enforces it. Design: [spec 003, execution](docs/specs/003-engine-core/execution.md).
 - **Game code never uses `java.util.Timer` / `TimerTask`:** delayed work goes through `ThreadPool`, because a timer
   thread dies silently on the first exception (ArchUnit `ScheduledWorkRules`, same module).
+- **Chronicle slices keep one layout.** A migrated slice `app.l2nx.highfive.<slice>` has its API in the root and only
+  the fixed subpackages, adapters live under `network/` and no slice depends on it; `SliceLayoutArchitectureTest` in
+  `chronicles/high-five/boot` checks it with Spring Modulith and ArchUnit, legacy violations frozen in
+  `src/test/archunit-store`. Design: [spec 003, wiring and layout §4](docs/specs/003-engine-core/wiring-layout.md#4-layout).
 
 ## Found bugs
 
