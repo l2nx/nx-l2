@@ -22,12 +22,12 @@
  */
 package app.l2nx.highfive.network.loginserverpackets.send;
 
-import app.l2nx.highfive.LoginServerThread.SessionKey;
+import app.l2nx.highfive.network.gslink.LoginServerLink.SessionKey;
 import app.l2nx.network.packet.SimpleWritablePacket;
 
 /**
  * Sends the session key parts (play/login) for an account to the login server.<br>
- * Accepts {@code LoginServerThread.SessionKey} to match callsites.
+ * Accepts {@code LoginServerLink.SessionKey} to match callsites.
  * <ul>
  * <li>Opcode: 0x05.</li>
  * <li>Payload: account (String), playOk1 (int), playOk2 (int), loginOk1 (int), loginOk2 (int).</li>
@@ -44,7 +44,7 @@ public class PlayerAuthRequest extends SimpleWritablePacket {
 
     /**
      * @param account account name
-     * @param key session key (LoginServerThread.SessionKey)
+     * @param key session key (LoginServerLink.SessionKey)
      */
     public PlayerAuthRequest(String account, SessionKey key) {
         this.account = (account != null) ? account : "";

@@ -55,6 +55,7 @@ import app.l2nx.highfive.mechanics.sevensigns.SevenSigns;
 import app.l2nx.highfive.mechanics.sevensigns.SevenSignsFestival;
 import app.l2nx.highfive.network.Disconnection;
 import app.l2nx.highfive.network.SystemMessageId;
+import app.l2nx.highfive.network.gslink.LoginServerLink;
 import app.l2nx.highfive.network.loginserverpackets.send.ServerStatus;
 import app.l2nx.highfive.network.serverpackets.ServerClose;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
@@ -147,7 +148,7 @@ public class Shutdown extends Thread {
                 break;
             }
             case ABORT: {
-                LoginServerThread.getInstance().setServerStatus(ServerStatus.STATUS_AUTO);
+                LoginServerLink.getInstance().setServerStatus(ServerStatus.STATUS_AUTO);
                 break;
             }
         }
@@ -266,8 +267,8 @@ public class Shutdown extends Thread {
             while (secondsShut > 0) {
                 // Rehabilitate previous server status if shutdown is aborted.
                 if (shutdownMode == ABORT) {
-                    if (LoginServerThread.getInstance().getServerStatus() == ServerStatus.STATUS_DOWN) {
-                        LoginServerThread.getInstance()
+                    if (LoginServerLink.getInstance().getServerStatus() == ServerStatus.STATUS_DOWN) {
+                        LoginServerLink.getInstance()
                                 .setServerStatus(
                                         (GeneralConfig.SERVER_GMONLY)
                                                 ? ServerStatus.STATUS_GM_ONLY
@@ -299,8 +300,8 @@ public class Shutdown extends Thread {
 
                 // Prevent players from logging in.
                 if ((secondsShut <= 60)
-                        && (LoginServerThread.getInstance().getServerStatus() != ServerStatus.STATUS_DOWN)) {
-                    LoginServerThread.getInstance().setServerStatus(ServerStatus.STATUS_DOWN);
+                        && (LoginServerLink.getInstance().getServerStatus() != ServerStatus.STATUS_DOWN)) {
+                    LoginServerLink.getInstance().setServerStatus(ServerStatus.STATUS_DOWN);
                 }
 
                 secondsShut--;
@@ -372,7 +373,7 @@ public class Shutdown extends Thread {
         }
 
         try {
-            LoginServerThread.getInstance().interrupt();
+            LoginServerLink.getInstance().interrupt();
             log.info("Login Server Thread: Thread interruped({}ms).", tc.getEstimatedTimeAndRestartCounter());
         } catch (Throwable t) {
             // ignore

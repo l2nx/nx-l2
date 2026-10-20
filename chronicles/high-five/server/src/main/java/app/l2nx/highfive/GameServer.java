@@ -162,6 +162,7 @@ import app.l2nx.highfive.network.GameClient;
 import app.l2nx.highfive.network.GamePacketHandler;
 import app.l2nx.highfive.network.NpcStringId;
 import app.l2nx.highfive.network.SystemMessageId;
+import app.l2nx.highfive.network.gslink.LoginServerLink;
 import app.l2nx.highfive.scripting.ScriptEngine;
 import app.l2nx.highfive.taskmanagers.GameTimeTaskManager;
 import app.l2nx.highfive.taskmanagers.ItemLifeTimeTaskManager;
@@ -505,8 +506,8 @@ public class GameServer implements SmartLifecycle {
         }
         connectionManager.bindMetrics(meterRegistry, "l2nx-game");
 
-        LoginServerThread.getInstance().load();
-        LoginServerThread.getInstance().start();
+        LoginServerLink.getInstance().load();
+        LoginServerLink.getInstance().start();
     }
 
     private void printSection(String section) {

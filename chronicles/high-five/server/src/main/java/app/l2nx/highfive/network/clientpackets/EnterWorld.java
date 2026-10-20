@@ -26,7 +26,6 @@
  */
 package app.l2nx.highfive.network.clientpackets;
 
-import app.l2nx.highfive.LoginServerThread;
 import app.l2nx.highfive.cache.HtmCache;
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.GeneralConfig;
@@ -92,6 +91,7 @@ import app.l2nx.highfive.network.Disconnection;
 import app.l2nx.highfive.network.GameClient;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.enums.ChatType;
+import app.l2nx.highfive.network.gslink.LoginServerLink;
 import app.l2nx.highfive.network.holders.ClientHardwareInfoHolder;
 import app.l2nx.highfive.network.serverpackets.ActionFailed;
 import app.l2nx.highfive.network.serverpackets.CreatureSay;
@@ -175,7 +175,7 @@ public class EnterWorld extends ClientPacket {
             adress[i] = tracert[i][0] + "." + tracert[i][1] + "." + tracert[i][2] + "." + tracert[i][3];
         }
 
-        LoginServerThread.getInstance().sendClientTracert(client.getAccountId(), adress);
+        LoginServerLink.getInstance().sendClientTracert(client.getAccountId(), adress);
         client.setClientTracert(tracert);
 
         player.sendPacket(new UserInfo(player));

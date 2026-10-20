@@ -22,9 +22,9 @@
  */
 package app.l2nx.highfive.network.clientpackets;
 
-import app.l2nx.highfive.LoginServerThread;
-import app.l2nx.highfive.LoginServerThread.SessionKey;
 import app.l2nx.highfive.network.GameClient;
+import app.l2nx.highfive.network.gslink.LoginServerLink;
+import app.l2nx.highfive.network.gslink.LoginServerLink.SessionKey;
 
 /**
  * @version $Revision: 1.9.2.3.2.4 $ $Date: 2005/03/27 15:29:30 $
@@ -58,12 +58,12 @@ public class AuthLogin extends ClientPacket {
         if (client.getAccountName() == null) {
             // Preventing duplicate login in case client login server socket was disconnected or this packet was not
             // sent yet.
-            if (LoginServerThread.getInstance().addGameServerLogin(loginName, client)) {
+            if (LoginServerLink.getInstance().addGameServerLogin(loginName, client)) {
                 client.setAccountName(loginName);
                 final SessionKey key = new SessionKey(loginKey1, loginKey2, playKey1, playKey2);
 
                 // client.setSessionId(key);
-                LoginServerThread.getInstance().addWaitingClientAndSendRequest(loginName, client, key);
+                LoginServerLink.getInstance().addWaitingClientAndSendRequest(loginName, client, key);
             } else {
                 client.close(null);
             }

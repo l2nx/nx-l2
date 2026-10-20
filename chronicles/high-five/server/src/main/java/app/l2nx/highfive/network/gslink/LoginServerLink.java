@@ -24,7 +24,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package app.l2nx.highfive;
+package app.l2nx.highfive.network.gslink;
 
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.config.ServerConfig;
@@ -95,7 +95,7 @@ import org.springframework.stereotype.Component;
  */
 @Slf4j
 @Component
-public class LoginServerThread extends Thread {
+public class LoginServerLink extends Thread {
 
     private static final Logger ACCOUNTING_LOG = LoggerFactory.getLogger("accounting");
 
@@ -107,7 +107,7 @@ public class LoginServerThread extends Thread {
     private static final int PACKET_PADDING = 8;
     private static final SecureRandom KEY_RANDOM = new SecureRandom();
 
-    private static volatile LoginServerThread instance;
+    private static volatile LoginServerLink instance;
 
     private final CharacterRepository characters;
 
@@ -140,8 +140,8 @@ public class LoginServerThread extends Thread {
     @Getter
     private String serverName;
 
-    public LoginServerThread(CharacterRepository characters) {
-        super("LoginServerThread");
+    public LoginServerLink(CharacterRepository characters) {
+        super("LoginServerLink");
         this.characters = characters;
         instance = this;
     }
@@ -739,10 +739,10 @@ public class LoginServerThread extends Thread {
     }
 
     // TODO: callers receive the bean through their constructor (#41).
-    public static LoginServerThread getInstance() {
-        final LoginServerThread current = instance;
+    public static LoginServerLink getInstance() {
+        final LoginServerLink current = instance;
         if (current == null) {
-            throw new IllegalStateException("LoginServerThread is used before the Spring context created it.");
+            throw new IllegalStateException("LoginServerLink is used before the Spring context created it.");
         }
         return current;
     }

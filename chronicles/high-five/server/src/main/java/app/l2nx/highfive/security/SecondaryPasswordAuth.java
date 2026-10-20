@@ -23,11 +23,11 @@
  */
 package app.l2nx.highfive.security;
 
-import app.l2nx.highfive.LoginServerThread;
 import app.l2nx.highfive.data.xml.SecondaryAuthData;
 import app.l2nx.highfive.managers.AccountVariablesManager;
 import app.l2nx.highfive.network.Disconnection;
 import app.l2nx.highfive.network.GameClient;
+import app.l2nx.highfive.network.gslink.LoginServerLink;
 import app.l2nx.highfive.network.serverpackets.Ex2ndPasswordAck;
 import app.l2nx.highfive.network.serverpackets.Ex2ndPasswordCheck;
 import app.l2nx.highfive.network.serverpackets.Ex2ndPasswordVerify;
@@ -157,12 +157,12 @@ public class SecondaryPasswordAuth {
                 activeClient.sendPacket(new Ex2ndPasswordVerify(Ex2ndPasswordVerify.PASSWORD_WRONG, wrongAttempts));
                 insertWrongAttempt(wrongAttempts);
             } else {
-                LoginServerThread.getInstance()
+                LoginServerLink.getInstance()
                         .sendTempBan(
                                 activeClient.getAccountId(),
                                 activeClient.getIp(),
                                 SecondaryAuthData.getInstance().getBanTime());
-                LoginServerThread.getInstance()
+                LoginServerLink.getInstance()
                         .sendMail(
                                 activeClient.getAccountId(),
                                 "SATempBan",

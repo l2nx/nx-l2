@@ -29,7 +29,6 @@ package app.l2nx.highfive.managers;
 import static app.l2nx.highfive.repository.LegacyValues.epochMillisOrZero;
 import static app.l2nx.highfive.repository.LegacyValues.instantOrNull;
 
-import app.l2nx.highfive.LoginServerThread;
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.data.holders.PunishmentHolder;
 import app.l2nx.highfive.entity.actor.Player;
@@ -38,6 +37,7 @@ import app.l2nx.highfive.entity.actor.tasks.player.IllegalPlayerActionTask;
 import app.l2nx.highfive.mechanics.punishment.PunishmentAffect;
 import app.l2nx.highfive.mechanics.punishment.PunishmentTask;
 import app.l2nx.highfive.mechanics.punishment.PunishmentType;
+import app.l2nx.highfive.network.gslink.LoginServerLink;
 import app.l2nx.highfive.repository.character.CharacterRepository;
 import app.l2nx.highfive.repository.world.PunishmentRepository;
 import app.l2nx.highfive.repository.world.model.Punishment;
@@ -162,7 +162,7 @@ public class PunishmentManager {
         if (task.getType() == PunishmentType.BAN) {
             switch (affect) {
                 case ACCOUNT: {
-                    LoginServerThread.getInstance().sendAccessLevel((UUID) task.getKey(), -1);
+                    LoginServerLink.getInstance().sendAccessLevel((UUID) task.getKey(), -1);
                     break;
                 }
                 case CHARACTER: {
@@ -184,7 +184,7 @@ public class PunishmentManager {
         if (type == PunishmentType.BAN) {
             switch (affect) {
                 case ACCOUNT: {
-                    LoginServerThread.getInstance().sendAccessLevel((UUID) task.getKey(), 0);
+                    LoginServerLink.getInstance().sendAccessLevel((UUID) task.getKey(), 0);
                     break;
                 }
                 case CHARACTER: {

@@ -30,7 +30,6 @@ import static app.l2nx.highfive.repository.LegacyValues.epochMillisOrZero;
 import static app.l2nx.highfive.repository.LegacyValues.instantOrNull;
 
 import app.l2nx.engine.core.clock.GameClock;
-import app.l2nx.highfive.LoginServerThread;
 import app.l2nx.highfive.ai.CreatureAI;
 import app.l2nx.highfive.ai.Intention;
 import app.l2nx.highfive.ai.PlayerAI;
@@ -279,6 +278,7 @@ import app.l2nx.highfive.network.GameClient;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.enums.ChatType;
 import app.l2nx.highfive.network.enums.HtmlActionScope;
+import app.l2nx.highfive.network.gslink.LoginServerLink;
 import app.l2nx.highfive.network.holders.RequestPartner;
 import app.l2nx.highfive.network.holders.TradeList;
 import app.l2nx.highfive.network.serverpackets.AbstractHtmlPacket;
@@ -5899,7 +5899,7 @@ public class Player extends Playable {
     }
 
     public void setAccountAccesslevel(int level) {
-        LoginServerThread.getInstance().sendAccountAccessLevel(this, level);
+        LoginServerLink.getInstance().sendAccountAccessLevel(this, level);
     }
 
     /**

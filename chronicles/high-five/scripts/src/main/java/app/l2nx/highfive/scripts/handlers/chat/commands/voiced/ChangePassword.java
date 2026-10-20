@@ -23,10 +23,10 @@
  */
 package app.l2nx.highfive.scripts.handlers.chat.commands.voiced;
 
-import app.l2nx.highfive.LoginServerThread;
 import app.l2nx.highfive.cache.HtmCache;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.handler.IVoicedCommandHandler;
+import app.l2nx.highfive.network.gslink.LoginServerLink;
 import app.l2nx.highfive.network.serverpackets.NpcHtmlMessage;
 import java.util.StringTokenizer;
 import lombok.extern.slf4j.Slf4j;
@@ -76,7 +76,7 @@ public class ChangePassword implements IVoicedCommandHandler {
                         return false;
                     }
 
-                    LoginServerThread.getInstance()
+                    LoginServerLink.getInstance()
                             .sendChangePassword(
                                     activeChar.getClient().getAccountId(), activeChar.getName(), curpass, newpass);
                 } else {
