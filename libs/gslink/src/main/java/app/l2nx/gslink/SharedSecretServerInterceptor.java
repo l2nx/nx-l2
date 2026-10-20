@@ -14,7 +14,6 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import lombok.extern.slf4j.Slf4j;
 
-/** Lets a GS-link call through only with the shared secret in its {@code authorization} metadata. */
 @Slf4j
 public final class SharedSecretServerInterceptor implements ServerInterceptor {
     private static final Metadata.Key<String> AUTHORIZATION =

@@ -6,7 +6,7 @@ package app.l2nx.gslink;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import app.l2nx.gslink.testing.RecordingStreamObserver;
+import app.l2nx.gslink.test.RecordingStreamObserver;
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 import java.util.concurrent.ExecutorService;

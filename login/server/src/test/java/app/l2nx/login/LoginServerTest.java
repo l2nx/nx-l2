@@ -5,7 +5,6 @@
 package app.l2nx.login;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -36,12 +35,16 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
+import org.junit.jupiter.api.parallel.ResourceLock;
 import org.mockito.ArgumentCaptor;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.grpc.server.GrpcServerFactory;
+import org.springframework.grpc.server.lifecycle.GrpcServerLifecycle;
 import org.springframework.scheduling.TaskScheduler;
 
+@ResourceLock("GameServerTable")
 @Execution(ExecutionMode.SAME_THREAD)
 class LoginServerTest {
-    private static final long THREAD_EXIT_TIMEOUT_MS = 10_000;
     private static final Duration RESTART_DELAY = Duration.ofHours(6);
 
     private final LoginController loginController = mock(LoginController.class);
@@ -64,25 +67,17 @@ class LoginServerTest {
     class Start {
         @Test
         void start_shouldShutDownStartedServices_whenClientPortIsTaken() throws Exception {
-            final int gameServerPort = freePort();
             try (ServerSocket blocker = new ServerSocket(0, 1, InetAddress.getLoopbackAddress())) {
-                final LoginServer server = server(TestLoginProperties.create(
-                        blocker.getLocalPort(), gameServerPort, TestLoginProperties.noRestart()));
+                final LoginServer server =
+                        server(TestLoginProperties.create(blocker.getLocalPort(), TestLoginProperties.noRestart()));
 
                 assertThatThrownBy(server::start)
                         .isInstanceOf(IllegalStateException.class)
                         .hasMessageContaining(String.valueOf(blocker.getLocalPort()));
 
                 assertThat(server.isRunning()).isFalse();
-                awaitExit(server.getGameServerListener());
-                assertThat(server.getGameServerListener().isAlive())
-                        .as("game server listener thread")
-                        .isFalse();
             }
 
-            assertThatCode(() -> new ServerSocket(gameServerPort, 1, InetAddress.getLoopbackAddress()).close())
-                    .as("game server port released")
-                    .doesNotThrowAnyException();
             verify(loginController).shutdown();
         }
 
@@ -91,8 +86,8 @@ class LoginServerTest {
             final ScheduledFuture<?> restartTask = mock(ScheduledFuture.class);
             when(taskScheduler.schedule(any(Runnable.class), any(Instant.class)))
                     .thenAnswer(invocation -> restartTask);
-            final LoginServer server = server(TestLoginProperties.create(
-                    freePort(), freePort(), new LoginProperties.ScheduledRestart(true, RESTART_DELAY)));
+            final LoginServer server = server(
+                    TestLoginProperties.create(freePort(), new LoginProperties.ScheduledRestart(true, RESTART_DELAY)));
 
             final Instant before = Instant.now();
             server.start();
@@ -114,13 +109,25 @@ class LoginServerTest {
 
         @Test
         void start_shouldNotScheduleRestart_whenScheduledRestartDisabled() throws Exception {
-            final LoginServer server =
-                    server(TestLoginProperties.create(freePort(), freePort(), TestLoginProperties.noRestart()));
+            final LoginServer server = server(TestLoginProperties.create(freePort(), TestLoginProperties.noRestart()));
 
             server.start();
             server.stop();
 
             verify(taskScheduler, never()).schedule(any(Runnable.class), any(Instant.class));
+        }
+    }
+
+    @Nested
+    class Phase {
+        @Test
+        void getPhase_shouldStartBeforeAndStopAfterTheGrpcServer() throws Exception {
+            final GrpcServerLifecycle grpcServer = new GrpcServerLifecycle(
+                    mock(GrpcServerFactory.class), Duration.ZERO, mock(ApplicationEventPublisher.class));
+
+            final LoginServer server = server(TestLoginProperties.create(freePort(), TestLoginProperties.noRestart()));
+
+            assertThat(server.getPhase()).isLessThan(grpcServer.getPhase());
         }
     }
 
@@ -141,9 +148,5 @@ class LoginServerTest {
         try (ServerSocket socket = new ServerSocket(0, 1, InetAddress.getLoopbackAddress())) {
             return socket.getLocalPort();
         }
-    }
-
-    private static void awaitExit(Thread thread) throws InterruptedException {
-        thread.join(THREAD_EXIT_TIMEOUT_MS);
     }
 }

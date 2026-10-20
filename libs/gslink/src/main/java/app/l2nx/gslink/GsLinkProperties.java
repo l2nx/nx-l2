@@ -6,9 +6,7 @@ package app.l2nx.gslink;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.AssertTrue;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
 import java.time.Duration;
 import lombok.Builder;
 import org.hibernate.validator.constraints.time.DurationMin;
@@ -21,16 +19,28 @@ import org.springframework.validation.annotation.Validated;
 /**
  * GS-link settings both servers share; address, TLS and keepalive are Spring Boot's {@code spring.grpc.*}.
  *
- * @param secret shared by the login and the game servers (at least 32 characters, 256 bits), sent as {@code authorization: Bearer <secret>}
+ * @param secret shared by both servers, sent as {@code authorization: Bearer <secret>}
  */
 @Validated
 @Builder(toBuilder = true)
 @ConfigurationProperties("l2nx.gslink")
 public record GsLinkProperties(
-        @NotBlank @Size(min = 32) String secret,
-        @NotNull @Valid @DefaultValue ReconnectDelay reconnectDelay) {
+        String secret, @NotNull @Valid @DefaultValue ReconnectDelay reconnectDelay) {
+    private static final int MIN_SECRET_LENGTH = 32;
 
-    // Metadata values are printable ASCII. A @Pattern would print the rejected secret in the startup failure.
+    // The secret is checked by methods, not by constraints on the component: a failed constraint on the component
+    // prints the rejected value in the startup failure, a failed method prints only false.
+    @AssertTrue(message = "secret must be set")
+    public boolean isSecretSet() {
+        return (secret != null) && !secret.isBlank();
+    }
+
+    @AssertTrue(message = "secret must have at least " + MIN_SECRET_LENGTH + " characters")
+    public boolean isSecretLongEnough() {
+        return (secret == null) || (secret.length() >= MIN_SECRET_LENGTH);
+    }
+
+    // Metadata values are printable ASCII.
     @AssertTrue(message = "secret must be printable ASCII without spaces")
     public boolean isSecretUsable() {
         return (secret == null) || secret.chars().allMatch(c -> (c > ' ') && (c < 0x7F));

@@ -60,9 +60,6 @@ public class SecondaryPasswordAuth {
     private static final String VAR_PWD = VAR_PREFIX + "pwd";
     private static final String VAR_WTE = VAR_PREFIX + "wte";
 
-    /**
-     * @param activeClient
-     */
     public SecondaryPasswordAuth(GameClient activeClient) {
         this.activeClient = activeClient;
         password = null;

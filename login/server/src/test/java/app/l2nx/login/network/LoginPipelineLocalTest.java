@@ -72,12 +72,14 @@ import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.junit.jupiter.api.parallel.Isolated;
+import org.junit.jupiter.api.parallel.ResourceLock;
 import org.springframework.scheduling.TaskScheduler;
 
 /**
  * A packet's answer is offered from its lane's virtual thread, so these tests run on the local transport instead of
  * {@code EmbeddedChannel}, which is not thread-safe.
  */
+@ResourceLock("GameServerTable")
 @Execution(ExecutionMode.SAME_THREAD)
 @Isolated
 class LoginPipelineLocalTest {
@@ -168,7 +170,6 @@ class LoginPipelineLocalTest {
             final LoginProperties properties = TestLoginProperties.create(datapackRoot.toFile()).toBuilder()
                     .autoCreateAccounts(autoCreateAccounts)
                     .build();
-            // Each constructor registers itself as the singleton RequestAuthLogin reaches.
             final GameServerTable gameServers = new GameServerTable(mock(GameServerRepository.class), properties);
             final LoginController controller = new LoginController(accounts, properties, mock(TaskScheduler.class));
             new LoginServer(
@@ -187,7 +188,6 @@ class LoginPipelineLocalTest {
             return new AccountInfo(ACCOUNT_ID, LOGIN, passwordHash(PASSWORD), 0, 1);
         }
 
-        /** Runs the client's side up to the answer to RequestAuthLogin. */
         private byte[] authenticate(String login, String password) throws Exception {
             connect();
             assertThat(received.poll(5, TimeUnit.SECONDS)).as("Init").isNotNull();
@@ -242,8 +242,10 @@ class LoginPipelineLocalTest {
 
         @BeforeEach
         void setUp() {
-            // The constructor registers itself as GameServerTable.getInstance(); no server is registered.
-            new GameServerTable(mock(GameServerRepository.class), TestLoginProperties.create(datapackRoot.toFile()));
+            // The constructor registers itself as GameServerTable.getInstance(); load() drops the servers other tests
+            // registered in the static table, and the database has none.
+            new GameServerTable(mock(GameServerRepository.class), TestLoginProperties.create(datapackRoot.toFile()))
+                    .load();
         }
 
         @Test
@@ -351,7 +353,6 @@ class LoginPipelineLocalTest {
         return sessions.poll(5, TimeUnit.SECONDS);
     }
 
-    /** The group has one event loop, so this reads on the loop that owns the session's state. */
     private <T> T onEventLoop(Callable<T> read) throws Exception {
         return group.submit(read).get(5, TimeUnit.SECONDS);
     }

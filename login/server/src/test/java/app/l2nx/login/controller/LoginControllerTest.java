@@ -7,9 +7,11 @@ package app.l2nx.login.controller;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -39,12 +41,14 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
+import org.junit.jupiter.api.parallel.ResourceLock;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 import org.springframework.scheduling.TaskScheduler;
 
+@ResourceLock("GameServerTable")
 @Execution(ExecutionMode.SAME_THREAD)
 class LoginControllerTest {
     private static final UUID ACCOUNT_ID = UUID.fromString("0190a6b2-0000-7000-8000-000000000001");
@@ -221,7 +225,7 @@ class LoginControllerTest {
 
         @BeforeEach
         void setUp() {
-            // The constructor registers itself as GameServerTable.getInstance(); no server is registered.
+            // The constructor registers itself as GameServerTable.getInstance().
             new GameServerTable(mock(GameServerRepository.class), TestLoginProperties.create(datapackRoot.toFile()));
         }
 
@@ -275,23 +279,63 @@ class LoginControllerTest {
     @Nested
     class RequestCharacters {
         @Test
-        void requestCharacters_shouldAskAndAwaitOnlyTheAuthedServersWithALink() {
+        void requestCharacters_shouldAskAndAwaitOnlyTheAuthedServersWithALink_thatTheClientCanEnter() {
             final LoginClient client = mock(LoginClient.class);
             when(client.getAccountId()).thenReturn(ACCOUNT_ID);
+            when(client.getVariant()).thenReturn(LoginVariant.C621);
             final GameServerLink link = mock(GameServerLink.class);
-            final GameServerInfo linked = new GameServerInfo(1, new byte[0], link);
-            linked.setAuthed(true);
-            final GameServerInfo linkGone = new GameServerInfo(2, new byte[0]);
-            linkGone.setAuthed(true);
-            final GameServerInfo notAuthed = new GameServerInfo(3, new byte[0], mock(GameServerLink.class));
+            final GameServerInfo linked = server(1, "high-five", link, true);
+            final GameServerInfo linkGone = server(2, "high-five", null, true);
+            final GameServerInfo notAuthed = server(3, "high-five", mock(GameServerLink.class), false);
+            final GameServerLink otherChronicleLink = mock(GameServerLink.class);
+            final GameServerInfo otherChronicle = server(4, "essence", otherChronicleLink, true);
 
-            controller.requestCharacters(client, List.of(linked, linkGone, notAuthed));
+            controller.requestCharacters(client, List.of(linked, linkGone, notAuthed, otherChronicle));
 
             final ArgumentCaptor<Collection<Integer>> awaited = ArgumentCaptor.captor();
             verify(client).awaitCharacters(awaited.capture());
             assertThat(awaited.getValue()).containsExactly(1);
             verify(link).requestCharacters(ACCOUNT_ID);
+            verify(otherChronicleLink, never()).requestCharacters(any());
         }
+    }
+
+    @Nested
+    class IsLoginPossible {
+        @TempDir
+        Path datapackRoot;
+
+        private final LoginClient client = mock(LoginClient.class);
+
+        @BeforeEach
+        void setUp() {
+            // The constructor registers itself as GameServerTable.getInstance(); load() drops other tests' servers.
+            new GameServerTable(mock(GameServerRepository.class), TestLoginProperties.create(datapackRoot.toFile()))
+                    .load();
+            when(client.getVariant()).thenReturn(LoginVariant.C621);
+            when(client.getAccountId()).thenReturn(ACCOUNT_ID);
+        }
+
+        @ParameterizedTest(name = "{0} -> {1}")
+        @CsvSource({"high-five, true", "essence, false", ", false"})
+        void isLoginPossible_shouldAdmitOnlyServersOfTheClientsChronicles(String chronicle, boolean expected) {
+            // A spy: an open listing status needs the running login server.
+            final GameServerInfo server = spy(server(1, chronicle, mock(GameServerLink.class), true));
+            doReturn(true).when(server).canLogin(client);
+            GameServerTable.getInstance().register(1, server);
+
+            final boolean actual = controller.isLoginPossible(client, 1);
+
+            assertThat(actual).isEqualTo(expected);
+        }
+    }
+
+    private static GameServerInfo server(int id, String chronicle, GameServerLink link, boolean authed) {
+        final GameServerInfo info = new GameServerInfo(id, new byte[] {(byte) id});
+        info.setChronicle(chronicle);
+        info.setGameServerLink(link);
+        info.setAuthed(authed);
+        return info;
     }
 
     @Nested

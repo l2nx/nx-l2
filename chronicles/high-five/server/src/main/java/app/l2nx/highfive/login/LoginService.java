@@ -29,15 +29,19 @@ package app.l2nx.highfive.login;
 import app.l2nx.highfive.login.system.OnlineAccounts;
 import app.l2nx.highfive.login.system.ServerListing;
 import app.l2nx.highfive.network.GameClient;
+import app.l2nx.highfive.network.serverpackets.LoginFail;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-/** The game's entry to the login server: the sessions of accounts on this server and its entry in the server list. */
+@Slf4j
 @Component
 public class LoginService {
+    public static final String PASSWORD_CHANGE_FAILED = "A problem occurred while changing password!";
+
     private static volatile LoginService instance;
 
     private final LoginPort port;
@@ -67,19 +71,23 @@ public class LoginService {
 
     public void authenticate(String login, GameClient client, SessionKey key) {
         accounts.awaitAuthentication(login, client, key);
-        port.authenticate(login, key);
+        if (!port.authenticate(login, key)) {
+            log.warn("The login server is unreachable, closing the connection of login {}", login);
+            accounts.takePending(login);
+            failAuthentication(login, client);
+        }
+    }
+
+    public void failAuthentication(String login, GameClient client) {
+        client.close(new LoginFail(LoginFail.SYSTEM_ERROR_LOGIN_LATER));
+        logout(login, null);
     }
 
     public void cancelAuthentication(GameClient client) {
         accounts.cancelAuthentication(client);
     }
 
-    /**
-     * Ends the session of an account on this game server and tells the login server when it had accepted the session.
-     *
-     * @param login the login of the session, {@code null} if none
-     * @param accountId the account, {@code null} while the login server has not accepted the session
-     */
+    /** @param accountId {@code null} while the login server has not accepted the session */
     public void logout(String login, UUID accountId) {
         if (login != null) {
             final GameClient released = accounts.release(login);
@@ -93,17 +101,14 @@ public class LoginService {
         }
     }
 
-    /** Spec 008 §12 step 3: before the link closes, the login server frees every account still on this server. */
+    /** Frees every account still held here, offline traders included. */
     public void logoutAll() {
         for (UUID accountId : accounts.leaveAll()) {
             port.accountLeft(accountId);
         }
     }
 
-    /**
-     * @return the session of the account on this server, {@code null} for none; a session has its account id only once
-     *     the login server accepted it
-     */
+    /** A session has its account id only once the login server accepted it. */
     public GameClient findClient(UUID accountId) {
         return accountId != null ? accounts.find(accountId) : null;
     }
@@ -120,8 +125,14 @@ public class LoginService {
         port.requestTempBan(accountId, ip, duration);
     }
 
-    public void changePassword(UUID accountId, String characterName, String oldPassword, String newPassword) {
-        port.changePassword(accountId, characterName, oldPassword, newPassword);
+    public boolean changePassword(UUID accountId, String characterName, String oldPassword, String newPassword) {
+        // Awaited before the request goes out: the answer may arrive before the port call returns.
+        accounts.awaitPasswordChange(characterName);
+        if (!port.changePassword(accountId, characterName, oldPassword, newPassword)) {
+            accounts.takePasswordChange(characterName);
+            return false;
+        }
+        return true;
     }
 
     public ListingStatus getStatus() {

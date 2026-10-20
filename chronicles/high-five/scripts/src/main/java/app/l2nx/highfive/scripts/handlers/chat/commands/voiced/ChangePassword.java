@@ -76,19 +76,21 @@ public class ChangePassword implements IVoicedCommandHandler {
                         return false;
                     }
 
-                    LoginService.getInstance()
+                    if (!LoginService.getInstance()
                             .changePassword(
-                                    activeChar.getClient().getAccountId(), activeChar.getName(), curpass, newpass);
+                                    activeChar.getClient().getAccountId(), activeChar.getName(), curpass, newpass)) {
+                        activeChar.sendMessage(LoginService.PASSWORD_CHANGE_FAILED);
+                        return false;
+                    }
                 } else {
                     activeChar.sendMessage("Invalid password data! You have to fill all boxes.");
                     return false;
                 }
             } catch (Exception e) {
-                activeChar.sendMessage("A problem occurred while changing password!");
+                activeChar.sendMessage(LoginService.PASSWORD_CHANGE_FAILED);
                 log.warn("", e);
             }
         } else {
-            // showHTML(activeChar);
             String html = HtmCache.getInstance().getHtm(null, "data/html/mods/ChangePassword.htm");
             if (html == null) {
                 html =

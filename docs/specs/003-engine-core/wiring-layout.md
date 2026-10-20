@@ -148,7 +148,12 @@ Ports exist only at the outer edges that are a network or another process. Game 
 - **ArchUnit:** the fixed subpackage names; commands are records in `command/` and handlers are package-private
   there; `ViewEvent` types only in `view/`, `DomainEvent` types only in `event/`; `*Port` only as interfaces in a
   slice root or `engine/core`; `@Repository` only in `<slice>/repository/`; no `*Impl` or `*Gateway` types; no slice
-  depends on `network`.
+  depends on `network`. The marker rules (`ViewEvent`, `DomainEvent`, commands and handlers by type) start with the
+  marker types in `engine/core`; until then commands and handlers are checked by package and name.
+- **Legacy classes a slice still needs are named, not tolerated by pattern:** a slice migrated before the port
+  framework covers its whole path may use a few legacy `network` classes (the game client, its disconnection, the
+  server packets it still sends). They are listed in one constant of the rules (`LEGACY_NETWORK_FACADES`), every
+  entry leaves the list when the slice moves to commands and view events, and the list never grows.
 - **Legacy violations are frozen,** not allowed: a rule the imported code breaks is a `FreezingArchRule` with its
   violation store in the repository. A new violation fails the build; fixed ones leave the store, so it only
   shrinks.

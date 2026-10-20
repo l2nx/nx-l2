@@ -32,10 +32,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-/** What this game server tells the login server; the GS-link adapter implements it. */
+/**
+ * Messages sent while the link is down are dropped; a call that awaits an answer returns {@code false} when its
+ * request did not go out.
+ */
 public interface LoginPort {
-    /** Asks the login server to check a client's key; the answer comes back as an {@code AuthenticationResult}. */
-    void authenticate(String login, SessionKey key);
+    /** The answer arrives as an {@code AuthenticationResult}. */
+    boolean authenticate(String login, SessionKey key);
 
     void accountsEntered(List<UUID> accountIds);
 
@@ -49,7 +52,8 @@ public interface LoginPort {
     /** @param ip the address banned with the account, {@code null} for the account only */
     void requestTempBan(UUID accountId, String ip, Duration duration);
 
-    void changePassword(UUID accountId, String characterName, String oldPassword, String newPassword);
+    /** The answer arrives as a {@code PasswordChangeResult}. */
+    boolean changePassword(UUID accountId, String characterName, String oldPassword, String newPassword);
 
     /** @param deleteTimes one per character marked for deletion, so its size is not {@code count} */
     void reportCharacters(UUID accountId, int count, List<Instant> deleteTimes);

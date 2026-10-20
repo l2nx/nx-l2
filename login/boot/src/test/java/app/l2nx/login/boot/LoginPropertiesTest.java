@@ -34,10 +34,8 @@ class LoginPropertiesTest {
                 strings = {
                     "l2nx.login.client.host=",
                     "l2nx.login.client.max-concurrent-tasks=0",
-                    "l2nx.login.game-server.port=0",
                     "l2nx.login.ban.failed-logins=0",
                     "l2nx.login.ban.duration=-1s",
-                    "l2nx.login.flood-protection.max-connections-per-ip=0",
                     "l2nx.login.scheduled-restart.delay=0"
                 })
         void bind_shouldFailStartup_whenValueIsInvalid(String property) {

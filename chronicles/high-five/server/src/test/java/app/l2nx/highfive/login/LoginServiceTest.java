@@ -5,6 +5,7 @@
 package app.l2nx.highfive.login;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
@@ -14,6 +15,7 @@ import app.l2nx.highfive.login.system.OnlineAccounts;
 import app.l2nx.highfive.login.system.OnlineAccounts.PendingAuthentication;
 import app.l2nx.highfive.login.system.ServerListing;
 import app.l2nx.highfive.network.GameClient;
+import app.l2nx.highfive.network.serverpackets.LoginFail;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Nested;
@@ -44,6 +46,43 @@ class LoginServiceTest {
                             .client(client)
                             .sessionKey(KEY)
                             .build());
+        }
+
+        @Test
+        void authenticate_shouldCloseTheClient_andFreeItsLogin_whenTheLoginServerIsUnreachable() {
+            port.setLinkUp(false);
+            service.reserveLogin("alice", client);
+
+            service.authenticate("alice", client, KEY);
+
+            verify(client).close(any(LoginFail.class));
+            verify(client).disconnect();
+            assertThat(accounts.takePending("alice")).isNull();
+            assertThat(service.reserveLogin("alice", client)).isTrue();
+        }
+    }
+
+    @Nested
+    class ChangePassword {
+        private final UUID accountId = UUID.randomUUID();
+
+        @Test
+        void changePassword_shouldAwaitTheAnswer_whenTheRequestWentOut() {
+            final boolean actual = service.changePassword(accountId, "Hero", "old", "new");
+
+            assertThat(actual).isTrue();
+            assertThat(port.getCalls()).containsExactly(Call.of("changePassword", accountId, "Hero", "old", "new"));
+            assertThat(accounts.takeAllPasswordChanges()).containsExactly("Hero");
+        }
+
+        @Test
+        void changePassword_shouldAwaitNothing_whenTheLoginServerIsUnreachable() {
+            port.setLinkUp(false);
+
+            final boolean actual = service.changePassword(accountId, "Hero", "old", "new");
+
+            assertThat(actual).isFalse();
+            assertThat(accounts.takeAllPasswordChanges()).isEmpty();
         }
     }
 

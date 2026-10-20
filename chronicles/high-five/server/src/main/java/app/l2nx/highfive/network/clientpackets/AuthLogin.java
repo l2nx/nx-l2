@@ -26,11 +26,7 @@ import app.l2nx.highfive.login.LoginService;
 import app.l2nx.highfive.login.SessionKey;
 import app.l2nx.highfive.network.GameClient;
 
-/**
- * @version $Revision: 1.9.2.3.2.4 $ $Date: 2005/03/27 15:29:30 $
- */
 public class AuthLogin extends ClientPacket {
-    // loginName + keys must match what the loginserver used.
     private String loginName;
     private int playKey1;
     private int playKey2;
@@ -54,10 +50,8 @@ public class AuthLogin extends ClientPacket {
             return;
         }
 
-        // Avoid potential exploits.
         if (client.getAccountName() == null) {
-            // Preventing duplicate login in case client login server socket was disconnected or this packet was not
-            // sent yet.
+            // Blocks a duplicate login while the login-server socket is down or this packet is not yet sent.
             if (LoginService.getInstance().reserveLogin(loginName, client)) {
                 client.setAccountName(loginName);
                 final SessionKey key = SessionKey.builder()
@@ -67,7 +61,6 @@ public class AuthLogin extends ClientPacket {
                         .playOk2(playKey2)
                         .build();
 
-                // client.setSessionId(key);
                 LoginService.getInstance().authenticate(loginName, client, key);
             } else {
                 client.close(null);

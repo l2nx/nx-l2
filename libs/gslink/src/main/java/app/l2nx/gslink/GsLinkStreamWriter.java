@@ -10,8 +10,7 @@ import io.grpc.stub.StreamObserver;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * The one way to send on a GS-link stream. A {@link StreamObserver} is not thread-safe, so every call runs in a
- * {@link SynchronizationContext}: in the caller's thread, or queued behind the send already running. Nothing is sent
+ * A {@link StreamObserver} is not thread-safe, so every call runs in a {@link SynchronizationContext}. Nothing is sent
  * after the stream ended.
  */
 @Slf4j

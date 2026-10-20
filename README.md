@@ -53,11 +53,11 @@ specific to Lineage 2, and every departure from a standard is a recorded decisio
 
 ## Layout
 
-The target layout; the repository has `libs/boot`, `libs/database`, `libs/network`, `engine/core`,
+The target layout; the repository has `libs/boot`, `libs/database`, `libs/gslink`, `libs/network`, `engine/core`,
 `login/` and `chronicles/high-five/`.
 
 ```
-libs/          infrastructure with no Lineage 2 knowledge: boot, database, network, telemetry
+libs/          infrastructure with no Lineage 2 knowledge: boot, database, gslink (login-link transport), network, telemetry
 engine/        mechanics shared by every chronicle: geo, L2NX adapter host, shared core
 login/         one login server for every chronicle
 chronicles/    one self-contained directory per chronicle: server, scripts, datapack, boot

@@ -15,6 +15,7 @@ import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.context.properties.bind.validation.BindValidationException;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.util.backoff.BackOffExecution;
+import org.springframework.validation.FieldError;
 
 class GsLinkPropertiesTest {
     private static final String SECRET = "l2nx.gslink.secret=gslink-test-secret-0123456789abcdef";
@@ -68,11 +69,22 @@ class GsLinkPropertiesTest {
                         .isInstanceOf(BindValidationException.class));
     }
 
-    @Test
-    void bind_shouldNotPrintTheSecret_whenItIsRejected() {
-        runner.withPropertyValues("l2nx.gslink.secret=leaky secret leaky secret leaky secret")
-                .run(context ->
-                        assertThat(context).hasFailed().getFailure().rootCause().hasMessageNotContaining("leaky"));
+    @ParameterizedTest(name = "{0}")
+    @ValueSource(strings = {"leaky secret leaky secret leaky secret", "leaky-short", "", "   "})
+    void bind_shouldNotPrintTheSecret_whenItIsRejected(String secret) {
+        runner.withPropertyValues("l2nx.gslink.secret=" + secret)
+                .run(context -> assertThat(context)
+                        .hasFailed()
+                        .getFailure()
+                        .rootCause()
+                        .hasMessageNotContaining("leaky")
+                        .isInstanceOfSatisfying(
+                                BindValidationException.class,
+                                actual -> assertThat(
+                                                actual.getValidationErrors().getAllErrors())
+                                        .as("errors that carry the secret as their rejected value")
+                                        .noneMatch(error -> (error instanceof FieldError field)
+                                                && "secret".equals(field.getField()))));
     }
 
     @Test

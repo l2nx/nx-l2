@@ -25,12 +25,12 @@ package app.l2nx.login;
 
 import app.l2nx.boot.ServerExit;
 import app.l2nx.boot.ServerExitCode;
+import app.l2nx.gslink.v1.GsLinkProto.ListingStatus;
 import app.l2nx.login.config.LoginProperties;
 import app.l2nx.login.controller.LoginController;
 import app.l2nx.login.data.GameServerTable;
 import app.l2nx.login.network.LoginChannelInitializer;
 import app.l2nx.login.network.LoginKeys;
-import app.l2nx.login.network.gameserverpackets.receive.ServerStatus;
 import app.l2nx.network.bootstrap.NetworkServer;
 import app.l2nx.network.channel.guard.ConnectionLimiter;
 import app.l2nx.network.config.NetworkProperties;
@@ -43,7 +43,6 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
-import java.io.UncheckedIOException;
 import java.net.InetSocketAddress;
 import java.security.GeneralSecurityException;
 import java.time.Duration;
@@ -58,34 +57,18 @@ import org.springframework.scheduling.TaskScheduler;
 import org.springframework.stereotype.Component;
 
 /**
- * Bootstraps and drives the login server lifecycle.<br>
- * Coordinates core service initialization and network listener startup.
- * <ul>
- * <li>Loads login controller and game server table.</li>
- * <li>Registers IP bans and starts listeners for game servers and login clients.</li>
- * </ul>
  * @author BazookaRpm
  */
 @Component
 @Slf4j
 public class LoginServer implements SmartLifecycle {
 
-    // Configuration paths.
     private static final String BANNED_IPS_CONFIGURATION_PATH = "./banned_ip.cfg";
 
-    // Protocol.
-    public static final int PROTOCOL_REV = 0x0107;
-
-    // Singleton instance.
     @Getter
     private static LoginServer instance;
 
-    // Network listeners.
-    @Getter
-    private GameServerListener gameServerListener;
-
-    // Login server status.
-    private static volatile int status = ServerStatus.STATUS_NORMAL;
+    private static volatile int status = ListingStatus.LISTING_STATUS_NORMAL_VALUE;
 
     @Getter
     private final LoginProperties properties;
@@ -136,13 +119,20 @@ public class LoginServer implements SmartLifecycle {
             initializeCoreServices();
             initializeSecurityAndBans();
             configureScheduledRestart();
-            initializeNetworkListeners();
+            startLoginClientListener();
         } catch (RuntimeException | Error e) {
             shutdownServices();
             throw e;
         }
 
         running = true;
+    }
+
+    // Before Boot's gRPC server (Integer.MAX_VALUE): game servers register only against the loaded server table, and
+    // their streams end before the client listeners close.
+    @Override
+    public int getPhase() {
+        return Integer.MAX_VALUE - 1;
     }
 
     @Override
@@ -160,10 +150,6 @@ public class LoginServer implements SmartLifecycle {
         if (blockingTasks != null) {
             blockingTasks.close();
             blockingTasks = null;
-        }
-
-        if (gameServerListener != null) {
-            gameServerListener.close();
         }
 
         if (restartTask != null) {
@@ -185,16 +171,10 @@ public class LoginServer implements SmartLifecycle {
         gameServerTable.load();
     }
 
-    /**
-     * Initializes security-related resources such as IP bans.
-     */
     private void initializeSecurityAndBans() {
         loadBanFile();
     }
 
-    /**
-     * Configures an optional scheduled restart for the login server based on configuration values.
-     */
     private void configureScheduledRestart() {
         if (!properties.scheduledRestart().enabled()) {
             return;
@@ -203,31 +183,6 @@ public class LoginServer implements SmartLifecycle {
         final Duration restartDelay = properties.scheduledRestart().delay();
         log.info("Login server restart scheduled in {}.", restartDelay);
         restartTask = taskScheduler.schedule(() -> shutdown(true), Instant.now().plus(restartDelay));
-    }
-
-    /**
-     * Starts listeners for game servers and login clients.
-     */
-    private void initializeNetworkListeners() {
-        startGameServerListener();
-        startLoginClientListener();
-    }
-
-    /**
-     * Starts the game server listener socket.
-     */
-    private void startGameServerListener() {
-        final LoginProperties.GameServer gameServer = properties.gameServer();
-        try {
-            gameServerListener = new GameServerListener(gameServer, properties.floodProtection());
-            gameServerListener.start();
-
-            log.info("Game server listener is listening on {}:{}.", gameServer.host(), gameServer.port());
-        } catch (IOException e) {
-            throw new UncheckedIOException(
-                    "Game server listener could not be started on " + gameServer.host() + ":" + gameServer.port() + ".",
-                    e);
-        }
     }
 
     private void startLoginClientListener() {
@@ -253,9 +208,6 @@ public class LoginServer implements SmartLifecycle {
         }
     }
 
-    /**
-     * Loads banned IP definitions from configuration file and registers them into the login controller.
-     */
     public void loadBanFile() {
         final File bannedIpConfigurationFile = new File(BANNED_IPS_CONFIGURATION_PATH);
         if (!bannedIpConfigurationFile.exists() || !bannedIpConfigurationFile.isFile()) {
@@ -286,12 +238,6 @@ public class LoginServer implements SmartLifecycle {
                 LoginController.getInstance().getBannedIps().size());
     }
 
-    /**
-     * Parses and registers a single IP ban definition line.
-     * @param sourceFile The configuration file being processed.
-     * @param lineReader The line reader used to obtain the current line number.
-     * @param rawLine The raw line text to parse.
-     */
     private void processBanLine(File sourceFile, LineNumberReader lineReader, String rawLine) {
         if (rawLine == null) {
             return;
@@ -355,26 +301,14 @@ public class LoginServer implements SmartLifecycle {
         }
     }
 
-    /**
-     * Shuts down the login server and optionally signals restart to the supervisor.
-     * @param restart True to request a restart exit code.
-     */
     public void shutdown(boolean restart) {
         serverExit.exit(restart ? ServerExitCode.RESTART : ServerExitCode.SHUTDOWN);
     }
 
-    /**
-     * Gets the current login server status.
-     * @return The current login server status.
-     */
     public int getStatus() {
         return status;
     }
 
-    /**
-     * Sets the current login server status.
-     * @param status The new login server status.
-     */
     public void setStatus(int status) {
         LoginServer.status = status;
     }

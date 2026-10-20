@@ -8,8 +8,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import app.l2nx.boot.integration.BootSmokeTest;
+import app.l2nx.gslink.test.RecordingStreamObserver;
+import app.l2nx.gslink.v1.GsLinkGrpc;
+import app.l2nx.gslink.v1.GsLinkProto.GameServerMessage;
+import app.l2nx.gslink.v1.GsLinkProto.LoginServerMessage;
 import app.l2nx.login.LoginServer;
 import app.l2nx.login.config.LoginProperties;
+import io.grpc.ManagedChannel;
+import io.grpc.ManagedChannelBuilder;
+import io.grpc.Status;
+import io.grpc.health.v1.HealthCheckRequest;
+import io.grpc.health.v1.HealthCheckResponse;
+import io.grpc.health.v1.HealthGrpc;
 import java.net.ConnectException;
 import java.net.Socket;
 import java.net.http.HttpResponse;
@@ -19,17 +29,28 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.grpc.test.autoconfigure.LocalGrpcServerPort;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.test.annotation.DirtiesContext;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
-// One context for the whole class, closed after the last nested class: the server keeps static state, so neither
-// concurrent tests nor a second context in this JVM are possible.
-@SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
+// One context for the class, closed after the last nested class: the server keeps static state.
+// Port 0 for the GS-link: parallel sessions on one machine share 9014.
+@SpringBootTest(
+        webEnvironment = WebEnvironment.RANDOM_PORT,
+        properties = {"l2nx.gslink.secret=login-application-test-secret-0123456789", "spring.grpc.server.port=0"})
 class LoginApplicationTest extends BootSmokeTest {
     private static final JsonMapper JSON = JsonMapper.builder().build();
+
+    private static volatile int gsLinkPort;
+
+    @Autowired
+    void gsLinkPort(@LocalGrpcServerPort int port) {
+        gsLinkPort = port;
+    }
 
     @Nested
     @Order(1)
@@ -62,6 +83,25 @@ class LoginApplicationTest extends BootSmokeTest {
 
                 // Init is the first frame: 192 bytes after the 2-byte length that counts itself.
                 assertThat(low | (high << 8)).isEqualTo(194);
+            }
+        }
+
+        @Test
+        void gsLinkPort_shouldServeHealthWithoutTheSecret_andRefuseTheGsLinkWithoutIt() throws Exception {
+            final ManagedChannel channel = ManagedChannelBuilder.forAddress("127.0.0.1", gsLinkPort)
+                    .usePlaintext()
+                    .build();
+            try {
+                assertThat(HealthGrpc.newBlockingStub(channel)
+                                .check(HealthCheckRequest.getDefaultInstance())
+                                .getStatus())
+                        .isEqualTo(HealthCheckResponse.ServingStatus.SERVING);
+
+                final RecordingStreamObserver<LoginServerMessage> responses = new RecordingStreamObserver<>();
+                GsLinkGrpc.newStub(channel).connect(responses).onNext(GameServerMessage.getDefaultInstance());
+                assertThat(responses.awaitEnd().getCode()).isEqualTo(Status.Code.UNAUTHENTICATED);
+            } finally {
+                channel.shutdownNow();
             }
         }
     }
@@ -137,9 +177,7 @@ class LoginApplicationTest extends BootSmokeTest {
                         connect(properties().client().ports().getFirst().port()).close())
                 .as("client port")
                 .isInstanceOf(ConnectException.class);
-        assertThatThrownBy(() -> connect(properties().gameServer().port()).close())
-                .as("game server port")
-                .isInstanceOf(ConnectException.class);
+        assertThatThrownBy(() -> connect(gsLinkPort).close()).as("GS-link port").isInstanceOf(ConnectException.class);
     }
 
     private static LoginProperties properties() {

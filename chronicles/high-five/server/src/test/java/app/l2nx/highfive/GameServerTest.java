@@ -6,9 +6,11 @@ package app.l2nx.highfive;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.mock;
 
 import app.l2nx.boot.ServerExit;
 import app.l2nx.highfive.clock.ClockBridgeExtension;
+import app.l2nx.highfive.network.gslink.LoginServerLink;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.List;
 import org.junit.jupiter.api.Nested;
@@ -35,7 +37,8 @@ class GameServerTest {
         @Test
         void start_shouldStopEngineThreads_whenStartFails() throws Exception {
             final SimpleMeterRegistry registry = new SimpleMeterRegistry();
-            final GameServer server = new GameServer(new ServerExit(new GenericApplicationContext()), registry);
+            final GameServer server = new GameServer(
+                    new ServerExit(new GenericApplicationContext()), registry, mock(LoginServerLink.class));
 
             assertThatThrownBy(server::start)
                     .isInstanceOf(IllegalStateException.class)

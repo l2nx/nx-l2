@@ -24,7 +24,7 @@ USER l2nx
 # published port reaches it. Nothing is published by default.
 ENV SERVER_ADDRESS=0.0.0.0
 
-# 2106 login clients (l2nx.login.client.port), 9014 game servers (l2nx.login.game-server.port), 8106 Actuator (server.port).
+# 2106 login clients (l2nx.login.client.port), 9014 game servers (spring.grpc.server.port), 8106 Actuator (server.port).
 EXPOSE 2106 9014 8106
 
 # The image has neither curl nor wget, so the probe speaks HTTP over bash's /dev/tcp.

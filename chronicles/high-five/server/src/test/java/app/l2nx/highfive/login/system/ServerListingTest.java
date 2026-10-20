@@ -67,6 +67,16 @@ class ServerListingTest {
                             ListingAttribute.AGE, 18,
                             ListingAttribute.MAX_PLAYERS, 500));
         }
+
+        @Test
+        void full_shouldCarryTheRuntimeStatus_whenTheServerSetIt() {
+            GeneralConfig.SERVER_GMONLY = false;
+            listing.setStatus(ListingStatus.DOWN);
+
+            final Map<ListingAttribute, Integer> actual = listing.full();
+
+            assertThat(actual).containsEntry(ListingAttribute.STATUS, ListingStatus.DOWN.code());
+        }
     }
 
     @Nested

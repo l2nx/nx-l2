@@ -30,7 +30,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.math.BigInteger;
 import java.net.Inet6Address;
 import java.net.InterfaceAddress;
 import java.net.NetworkInterface;
@@ -43,6 +42,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Enumeration;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Properties;
 import java.util.regex.Pattern;
@@ -61,17 +61,13 @@ import org.w3c.dom.Node;
 @Slf4j
 public class ServerConfig {
 
-    // Files
     private static final String SERVER_CONFIG_FILE = "./config/Server.ini";
     private static final String IPCONFIG_FILE = "./config/ipconfig.xml";
     private static final String CHAT_FILTER_FILE = "./config/chatfilter.txt";
     private static final String HEXID_FILE = "./config/hexid.txt";
 
-    // Constants
     public static String GAMESERVER_HOSTNAME;
     public static int PORT_GAME;
-    public static int GAME_SERVER_LOGIN_PORT;
-    public static String GAME_SERVER_LOGIN_HOST;
     public static boolean PACKET_ENCRYPTION;
     public static int REQUEST_ID;
     public static boolean ACCEPT_ALTERNATE_ID;
@@ -108,8 +104,6 @@ public class ServerConfig {
     public static List<String> GAME_SERVER_SUBNETS;
     public static List<String> GAME_SERVER_HOSTS;
 
-    // Other
-    public static boolean RESERVE_HOST_ON_LOGIN = false;
     public static List<String> FILTER_LIST;
     public static int SERVER_ID;
     public static byte[] HEX_ID;
@@ -118,8 +112,6 @@ public class ServerConfig {
         final ConfigReader config = new ConfigReader(SERVER_CONFIG_FILE);
         GAMESERVER_HOSTNAME = config.getString("GameserverHostname", "0.0.0.0");
         PORT_GAME = config.getInt("GameserverPort", 7777);
-        GAME_SERVER_LOGIN_PORT = config.getInt("LoginPort", 9014);
-        GAME_SERVER_LOGIN_HOST = config.getString("LoginHost", "127.0.0.1");
         PACKET_ENCRYPTION = config.getBoolean("PacketEncryption", false);
         REQUEST_ID = config.getInt("RequestServerID", 0);
         ACCEPT_ALTERNATE_ID = config.getBoolean("AcceptAlternateID", true);
@@ -219,18 +211,11 @@ public class ServerConfig {
         GAME_SERVER_SUBNETS = ipConfigData.getSubnets();
         GAME_SERVER_HOSTS = ipConfigData.getHosts();
 
-        // Load chatfilter.txt file.
         loadChatFilter();
 
-        // Load hexid.txt file.
         loadHexid();
     }
 
-    /**
-     * Loads the chat filter words from the specified file.<br>
-     * This method reads lines from the {@code CHAT_FILTER_FILE}, trims whitespace and ignores empty lines or lines starting with a '#' character.<br>
-     * The filtered words are collected into the {@code FILTER_LIST}. If an error occurs during file reading, a warning message is logged.
-     */
     private static void loadChatFilter() {
         try {
             FILTER_LIST = Files.lines(Paths.get(CHAT_FILTER_FILE), StandardCharsets.UTF_8)
@@ -243,73 +228,79 @@ public class ServerConfig {
         }
     }
 
-    /**
-     * Loads the HexID configuration from a properties file.<br>
-     * This method reads the {@code HEXID_FILE} and attempts to load the server ID and hexadecimal ID if available.<br>
-     * If the file exists, it parses the properties to retrieve the {@code ServerID} and {@code HexID} values.<br>
-     * The {@code ServerID} is stored as an integer, while the {@code HexID} is converted from a hexadecimal string to a byte array.<br>
-     * If the file does not contain valid data or cannot be loaded, a warning is logged and the system attempts to retrieve the HexID from another source.
-     */
     private static void loadHexid() {
-        final File hexIdFile = new File(HEXID_FILE);
-        if (hexIdFile.exists()) {
-            final ConfigReader hexId = new ConfigReader(HEXID_FILE);
-            if (hexId.containsKey("ServerID") && hexId.containsKey("HexID")) {
-                SERVER_ID = hexId.getInt("ServerID", 1);
-                try {
-                    HEX_ID = new BigInteger(hexId.getString("HexID", null), 16).toByteArray();
-                } catch (Exception e) {
-                    log.warn("Could not load HexID file ({}). Hopefully login will give us one.", HEXID_FILE);
-                }
-            }
-        }
-
-        if (HEX_ID == null) {
-            log.warn("Could not load HexID file ({}). Hopefully login will give us one.", HEXID_FILE);
-        }
+        loadHexid(HEXID_FILE);
     }
 
     /**
-     * Save hexadecimal ID of the server in the config file.<br>
-     * Check {@link #HEXID_FILE}.
-     * @param serverId the ID of the server whose hexId to save
-     * @param hexId the hexadecimal ID to store
+     * Loads the server id and the hex id the login server registered this game server under. Without a valid file both
+     * stay unset: the game server asks for {@code RequestServerID} with a newly generated hex id, as on its first start.
      */
+    static void loadHexid(String fileName) {
+        SERVER_ID = 0;
+        HEX_ID = null;
+        if (!new File(fileName).exists()) {
+            log.info("No HexID file {}: the game server registers on login with a new hex id.", fileName);
+            return;
+        }
+
+        final ConfigReader stored = new ConfigReader(fileName);
+        final String serverId = stored.getValue("ServerID");
+        final String hexId = stored.getValue("HexID");
+        if ((serverId == null) || (hexId == null)) {
+            log.info(
+                    "The HexID file {} lacks ServerID or HexID: the game server registers on login with a new hex id.",
+                    fileName);
+            return;
+        }
+
+        try {
+            final int id = Integer.parseInt(serverId.trim());
+            final byte[] hex = HexFormat.of().parseHex(hexId.trim());
+            if (hex.length == 0) {
+                throw new IllegalArgumentException("the hex id is empty");
+            }
+            SERVER_ID = id;
+            HEX_ID = hex;
+        } catch (IllegalArgumentException e) {
+            // A hexid.txt written by L2J Mobius holds a signed BigInteger: odd length or a minus sign fail here.
+            log.info(
+                    "The HexID file {} is not a server id with an even-length hex id ({}): the game server registers"
+                            + " on login with a new hex id.",
+                    fileName,
+                    e.getMessage());
+        }
+    }
+
+    /** Skips the write when the file already holds these values. */
     public static void saveHexid(int serverId, String hexId) {
         saveHexid(serverId, hexId, HEXID_FILE);
     }
 
-    /**
-     * Save hexadecimal ID of the server in the config file.
-     * @param serverId the ID of the server whose hexId to save
-     * @param hexId the hexadecimal ID to store
-     * @param fileName name of the config file
-     */
-    private static void saveHexid(int serverId, String hexId, String fileName) {
-        try {
-            final Properties hexSetting = new Properties();
-            final File file = new File(fileName);
-
-            // Create a new empty file only if it doesn't exist.
-            if (!file.exists()) {
-                try (OutputStream out = new FileOutputStream(file)) {
-                    hexSetting.setProperty("ServerID", String.valueOf(serverId));
-                    hexSetting.setProperty("HexID", hexId);
-                    hexSetting.store(out, "The HexId to Auth into LoginServer");
-                    log.info("Gameserver: Generated new HexID file for server id {}.", serverId);
-                }
+    static void saveHexid(int serverId, String hexId, String fileName) {
+        // The client key packet and the captcha crests read the id now, not after the next start.
+        SERVER_ID = serverId;
+        HEX_ID = HexFormat.of().parseHex(hexId);
+        final File file = new File(fileName);
+        if (file.exists()) {
+            final ConfigReader stored = new ConfigReader(fileName);
+            if (String.valueOf(serverId).equals(stored.getValue("ServerID"))
+                    && hexId.equals(stored.getValue("HexID"))) {
+                return;
             }
-        } catch (Exception e) {
-            log.warn("Failed to save hex id to {} File.", fileName);
-            log.warn("Config: {}", e.getMessage());
+        }
+
+        final Properties hexSetting = new Properties();
+        hexSetting.setProperty("ServerID", String.valueOf(serverId));
+        hexSetting.setProperty("HexID", hexId);
+        try (OutputStream out = new FileOutputStream(file)) {
+            hexSetting.store(out, "The HexId to Auth into LoginServer");
+            log.info("Saved the HexID file {} for server id {}.", fileName, serverId);
+        } catch (IOException e) {
+            log.warn("Failed to save the HexID file {}.", fileName, e);
         }
     }
 
-    /**
-     * Calculates a bitwise ID representing the types of servers specified. Each server type is associated with a unique bit position, allowing multiple types to be combined in a single integer using bitwise OR.
-     * @param serverTypes An array of server type names as strings. Any unrecognized types are ignored.
-     * @return An integer representing the combined server types, where each bit corresponds to a specific server type. The result is 0 if no recognized types are provided.
-     */
     public static int getServerTypeId(String[] serverTypes) {
         int serverType = 0;
         for (String cType : serverTypes) {
@@ -351,12 +342,6 @@ public class ServerConfig {
         return serverType;
     }
 
-    /**
-     * A configuration class for managing server IP and subnet settings. This class loads network configuration settings from an XML file or performs automatic configuration if the file is unavailable.<br>
-     * <p>
-     * If the configuration file exists, it parses the file to define subnets and hosts manually. If the file is missing, it attempts automatic configuration by retrieving the external IP address and identifying local network interfaces to configure internal IP addresses and subnets.
-     * </p>
-     */
     @Slf4j
     private static class IPConfigData implements IXmlReader {
         private static final List<String> subnets = new ArrayList<>(5);
@@ -372,8 +357,7 @@ public class ServerConfig {
             if (file.exists()) {
                 log.info("Network Config: ipconfig.xml exists, using manual configuration...");
                 parseFile(new File(IPCONFIG_FILE));
-            } else // Auto configuration...
-            {
+            } else {
                 log.info("Network Config: ipconfig.xml does not exist, using automatic configuration...");
                 autoIpConfig();
             }
@@ -414,16 +398,13 @@ public class ServerConfig {
         protected void autoIpConfig() {
             String externalIp = "127.0.0.1";
             try {
-                // Java 19
-                // final URL autoIp = new URL("http://checkip.amazonaws.com");
-                // Java 20
                 final URL autoIp = URI.create("http://checkip.amazonaws.com").toURL();
                 try (BufferedReader in = new BufferedReader(new InputStreamReader(autoIp.openStream()))) {
                     externalIp = in.readLine();
                 }
             } catch (IOException e) {
-                log.info(
-                        "Failed to connect to checkip.amazonaws.com please check your internet connection using 127.0.0.1!");
+                log.info("Failed to connect to checkip.amazonaws.com please check your internet connection using"
+                        + " 127.0.0.1!");
                 externalIp = "127.0.0.1";
             }
 
@@ -468,7 +449,6 @@ public class ServerConfig {
                     }
                 }
 
-                // External host and subnet.
                 hosts.add(externalIp);
                 subnets.add("0.0.0.0/0");
                 log.info("Network Config: Adding new subnet: 0.0.0.0/0 address: {}", externalIp);

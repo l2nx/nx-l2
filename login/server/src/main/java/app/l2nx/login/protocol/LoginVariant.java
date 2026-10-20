@@ -4,21 +4,27 @@
  */
 package app.l2nx.login.protocol;
 
+import java.util.Set;
+
 /**
- * The login server speaks first, so a port names its variant; the client or launcher points at the port of its
- * variant.
+ * The login server speaks first, so a port names its variant.
  */
 public enum LoginVariant {
-    /** High Five login protocol, revision 0xc621 in {@code Init}. */
-    C621("c621");
+    C621("c621", Set.of("high-five"));
 
     private final String id;
+    private final Set<String> chronicles;
 
-    LoginVariant(String id) {
+    LoginVariant(String id, Set<String> chronicles) {
         this.id = id;
+        this.chronicles = chronicles;
     }
 
     public String id() {
         return id;
+    }
+
+    public Set<String> chronicles() {
+        return chronicles;
     }
 }

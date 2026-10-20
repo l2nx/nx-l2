@@ -13,15 +13,20 @@ import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.Setter;
 
-/** Records every port call in order. */
+/** Records every port call in order; a call that waits for an answer reports whether the link is up. */
 public final class FakeLoginPort implements LoginPort {
     @Getter
     private final List<Call> calls = new CopyOnWriteArrayList<>();
 
+    @Setter
+    private volatile boolean linkUp = true;
+
     @Override
-    public void authenticate(String login, SessionKey key) {
+    public boolean authenticate(String login, SessionKey key) {
         calls.add(Call.of("authenticate", login, key));
+        return linkUp;
     }
 
     @Override
@@ -50,8 +55,9 @@ public final class FakeLoginPort implements LoginPort {
     }
 
     @Override
-    public void changePassword(UUID accountId, String characterName, String oldPassword, String newPassword) {
+    public boolean changePassword(UUID accountId, String characterName, String oldPassword, String newPassword) {
         calls.add(Call.of("changePassword", accountId, characterName, oldPassword, newPassword));
+        return linkUp;
     }
 
     @Override

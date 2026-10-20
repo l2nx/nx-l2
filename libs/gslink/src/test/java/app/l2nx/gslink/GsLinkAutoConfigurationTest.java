@@ -78,6 +78,8 @@ class GsLinkAutoConfigurationTest {
                     "static://localhost:9014",
                     "127.0.0.1:9014",
                     "dns:///localhost:9014",
+                    "dns://192.0.2.53/localhost:9014",
+                    "tcp://127.0.0.1:9014",
                     "static://[::1]:9014"
                 })
         void channel_shouldBeCreated_whenTheTargetIsLocal(String target) {
@@ -86,7 +88,15 @@ class GsLinkAutoConfigurationTest {
         }
 
         @ParameterizedTest(name = "{0}")
-        @ValueSource(strings = {"static://192.0.2.10:9014", "login.invalid:9014"})
+        @ValueSource(
+                strings = {
+                    "static://192.0.2.10:9014",
+                    "tcp://192.0.2.10:9014",
+                    "login.invalid:9014",
+                    "dns:///192.0.2.10:9014",
+                    "dns://127.0.0.1/192.0.2.10:9014",
+                    "dns:///127.0.0.1.login.invalid:9014"
+                })
         void channel_shouldBeRefused_whenARemoteTargetHasNoTls(String target) {
             runner.withPropertyValues("spring.grpc.client.channel.login.target=" + target)
                     .run(context -> assertThat(context)
@@ -104,7 +114,12 @@ class GsLinkAutoConfigurationTest {
             "in-process:gslink, false",
             "in-process:gslink, true",
             "static://:9014, false",
-            "static://:9014, true"
+            "static://:9014, true",
+            "dns:localhost:9014, false",
+            "dns://127.0.0.1, false",
+            "dns://127.0.0.1, true",
+            "unix:/tmp/gslink.sock, false",
+            "xds:///login:9014, true"
         })
         void channel_shouldBeRefused_whenTheTargetIsNotAHostAndPort(String target, boolean tls) {
             runner.withPropertyValues(
@@ -142,13 +157,8 @@ class GsLinkAutoConfigurationTest {
         }
 
         @Test
-        void channel_shouldBeRefused_whenTheLoginChannelIsNotConfigured() {
-            runner.run(context -> assertThat(context)
-                    .hasFailed()
-                    .getFailure()
-                    .rootCause()
-                    .isInstanceOf(IllegalStateException.class)
-                    .hasMessageContaining("spring.grpc.client.channel.login"));
+        void channel_shouldNotBeCreated_whenNoLoginTargetIsSet() {
+            runner.run(context -> assertThat(context).hasNotFailed().doesNotHaveBean(ManagedChannel.class));
         }
     }
 }

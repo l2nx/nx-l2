@@ -22,28 +22,26 @@
  */
 package app.l2nx.login.data;
 
+import app.l2nx.gslink.v1.GsLinkProto.ListingStatus;
 import app.l2nx.login.LoginServer;
 import app.l2nx.login.config.LoginProperties;
 import app.l2nx.login.gslink.GameServerLink;
 import app.l2nx.login.network.LoginClient;
-import app.l2nx.login.network.gameserverpackets.receive.ServerStatus;
+import app.l2nx.login.protocol.LoginVariant;
 import app.l2nx.login.repository.GameServerRepository;
+import app.l2nx.login.repository.GameServerRepository.StoredGameServer;
 import app.l2nx.login.util.Subnet;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.math.BigInteger;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.file.Files;
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
-import java.security.spec.RSAKeyGenParameterSpec;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.ConcurrentHashMap;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
@@ -51,6 +49,7 @@ import javax.xml.stream.XMLStreamReader;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Component;
 
 /**
@@ -63,15 +62,10 @@ public class GameServerTable {
 
     private static final String SERVER_NAMES_FILE = "data/servername.xml";
 
-    // Map for storing server names with their corresponding IDs.
     private static final Map<Integer, String> SERVER_NAMES = new HashMap<>();
 
-    // Table for storing game server information.
-    private static final Map<Integer, GameServerInfo> GAME_SERVER_TABLE = new HashMap<>();
-
-    // Configuration for RSA key pairs.
-    private static final int KEYS_SIZE = 10;
-    private KeyPair[] keyPairs;
+    // Registered from gRPC threads while client threads iterate it for the server list.
+    private static final Map<Integer, GameServerInfo> GAME_SERVER_TABLE = new ConcurrentHashMap<>();
 
     private static GameServerTable INSTANCE;
 
@@ -89,9 +83,6 @@ public class GameServerTable {
 
         loadRegisteredGameServers();
         log.info("Loaded {} registered Game Servers.", GAME_SERVER_TABLE.size());
-
-        initRSAKeys();
-        log.info("Cached {} RSA keys for Game Server communication.", keyPairs.length);
     }
 
     private void loadServerNames() {
@@ -119,92 +110,37 @@ public class GameServerTable {
         log.info("Loaded {} server names.", SERVER_NAMES.size());
     }
 
-    /**
-     * Inits the RSA keys.
-     */
-    private void initRSAKeys() {
+    private void loadRegisteredGameServers() {
+        // A reload starts from the database alone; the table is static.
+        GAME_SERVER_TABLE.clear();
         try {
-            final KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA");
-            keyGen.initialize(new RSAKeyGenParameterSpec(512, RSAKeyGenParameterSpec.F4));
-            keyPairs = new KeyPair[KEYS_SIZE];
-            for (int i = 0; i < KEYS_SIZE; i++) {
-                keyPairs[i] = keyGen.genKeyPair();
+            for (StoredGameServer stored : gameServers.findAll()) {
+                final GameServerInfo info = new GameServerInfo(stored.serverId(), stored.hexId());
+                info.setChronicle(stored.chronicle());
+                GAME_SERVER_TABLE.put(stored.serverId(), info);
             }
         } catch (Exception e) {
-            log.error("Error loading RSA keys for Game Server communication!");
+            log.error("Error loading registered game servers!", e);
         }
     }
 
-    /**
-     * Load registered game servers.
-     */
-    private void loadRegisteredGameServers() {
-        try {
-            gameServers
-                    .findHexIds()
-                    .forEach((id, hexId) -> GAME_SERVER_TABLE.put(id, new GameServerInfo(id, stringToHex(hexId))));
-        } catch (Exception e) {
-            log.error("Error loading registered game servers!");
-        }
-    }
-
-    /**
-     * Gets the registered game servers.
-     * @return the registered game servers
-     */
     public Map<Integer, GameServerInfo> getRegisteredGameServers() {
         return GAME_SERVER_TABLE;
     }
 
-    /**
-     * Gets the registered game server by id.
-     * @param id the game server Id
-     * @return the registered game server by id
-     */
     public GameServerInfo getRegisteredGameServerById(int id) {
         return GAME_SERVER_TABLE.get(id);
     }
 
-    /**
-     * Checks for registered game server on id.
-     * @param id the id
-     * @return true, if successful
-     */
     public boolean hasRegisteredGameServerOnId(int id) {
         return GAME_SERVER_TABLE.containsKey(id);
     }
 
-    /**
-     * Register with first available id.
-     * @param gsi the game server information DTO
-     * @return true, if successful
-     */
     public boolean registerWithFirstAvailableId(GameServerInfo gsi) {
-        // Avoid two servers registering with the same "free" id.
-        synchronized (GAME_SERVER_TABLE) {
-            for (Integer serverId : SERVER_NAMES.keySet()) {
-                if (!GAME_SERVER_TABLE.containsKey(serverId)) {
-                    GAME_SERVER_TABLE.put(serverId, gsi);
-                    gsi.setId(serverId);
-                    return true;
-                }
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * Register a game server.
-     * @param id the id
-     * @param gsi the gsi
-     * @return true, if successful
-     */
-    public boolean register(int id, GameServerInfo gsi) {
-        // Avoid two servers registering with the same id.
-        synchronized (GAME_SERVER_TABLE) {
-            if (!GAME_SERVER_TABLE.containsKey(id)) {
-                GAME_SERVER_TABLE.put(id, gsi);
+        for (Integer serverId : SERVER_NAMES.keySet()) {
+            // Set before the put, so nobody sees the server under an id it does not carry; a lost race tries the next.
+            gsi.setId(serverId);
+            if (GAME_SERVER_TABLE.putIfAbsent(serverId, gsi) == null) {
                 return true;
             }
         }
@@ -212,80 +148,41 @@ public class GameServerTable {
         return false;
     }
 
-    /**
-     * Wrapper method.
-     * @param gsi the game server info DTO.
-     */
+    public boolean register(int id, GameServerInfo gsi) {
+        return GAME_SERVER_TABLE.putIfAbsent(id, gsi) == null;
+    }
+
     public void registerServerOnDB(GameServerInfo gsi) {
         registerServerOnDB(gsi.getHexId(), gsi.getId());
     }
 
-    /**
-     * Register server on db.
-     * @param hexId the hex id
-     * @param id the id
-     */
     public void registerServerOnDB(byte[] hexId, int id) {
         register(id, new GameServerInfo(id, hexId));
         try {
-            gameServers.create(id, hexToString(hexId));
+            gameServers.create(id, hexId);
         } catch (Exception e) {
             log.error("Error while saving gameserver!", e);
         }
     }
 
-    /**
-     * Gets the server name by id.
-     * @param id the id
-     * @return the server name by id
-     */
+    /** Stores the chronicle a game server registered with: the server list shows the server before it next connects. */
+    public void storeChronicle(int id, String chronicle) {
+        try {
+            gameServers.updateChronicle(id, chronicle);
+        } catch (DataAccessException e) {
+            log.error("Error while saving the chronicle of game server {}!", id, e);
+        }
+    }
+
     public String getServerNameById(int id) {
         return SERVER_NAMES.get(id);
     }
 
-    /**
-     * Gets the server names.
-     * @return the game server names map.
-     */
     public Map<Integer, String> getServerNames() {
         return SERVER_NAMES;
     }
 
-    /**
-     * Gets the key pair.
-     * @return a random key pair.
-     */
-    public KeyPair getKeyPair() {
-        return keyPairs[ThreadLocalRandom.current().nextInt(keyPairs.length)];
-    }
-
-    /**
-     * String to hex.
-     * @param string the string to convert.
-     * @return return the hex representation.
-     */
-    private byte[] stringToHex(String string) {
-        return new BigInteger(string, 16).toByteArray();
-    }
-
-    /**
-     * Hex to string.
-     * @param hex the hex value to convert.
-     * @return the string representation.
-     */
-    private String hexToString(byte[] hex) {
-        if (hex == null) {
-            return "null";
-        }
-
-        return new BigInteger(hex).toString(16);
-    }
-
-    /**
-     * The Class GameServerInfo.
-     */
     public static class GameServerInfo {
-        // Authentication fields.
         @Getter
         @Setter
         private int id;
@@ -297,22 +194,24 @@ public class GameServerTable {
         @Setter
         private boolean authed;
 
-        // Status information.
         @Getter
         @Setter
-        private GameServerLink gameServerLink;
+        private volatile GameServerLink gameServerLink;
+
+        /** The chronicle the game server last registered with, {@code null} if it never registered. */
+        @Getter
+        @Setter
+        private volatile String chronicle;
 
         @Getter
         private int status;
 
-        // Network configuration.
         private final List<GameServerAddress> addrs = new ArrayList<>(5);
 
         @Getter
         @Setter
         private int port;
 
-        // Configuration settings.
         private static final boolean IS_PVP = true;
 
         @Getter
@@ -331,26 +230,10 @@ public class GameServerTable {
         @Setter
         private int maxPlayers;
 
-        /**
-         * Instantiates a new game server info.
-         * @param id the id
-         * @param hexId the hex id
-         * @param gst the gst
-         */
-        public GameServerInfo(int id, byte[] hexId, GameServerLink gst) {
+        public GameServerInfo(int id, byte[] hexId) {
             this.id = id;
             this.hexId = hexId;
-            gameServerLink = gst;
-            status = ServerStatus.STATUS_DOWN;
-        }
-
-        /**
-         * Instantiates a new game server info.
-         * @param id the id
-         * @param hexId the hex id
-         */
-        public GameServerInfo(int id, byte[] hexId) {
-            this(id, hexId, null);
+            status = ListingStatus.LISTING_STATUS_DOWN_VALUE;
         }
 
         public String getName() {
@@ -358,15 +241,11 @@ public class GameServerTable {
             return getInstance().getServerNameById(id);
         }
 
-        /**
-         * Sets the status.
-         * @param status the new status
-         */
         public void setStatus(int status) {
-            if (LoginServer.getInstance().getStatus() == ServerStatus.STATUS_DOWN) {
-                this.status = ServerStatus.STATUS_DOWN;
-            } else if (LoginServer.getInstance().getStatus() == ServerStatus.STATUS_GM_ONLY) {
-                this.status = ServerStatus.STATUS_GM_ONLY;
+            if (LoginServer.getInstance().getStatus() == ListingStatus.LISTING_STATUS_DOWN_VALUE) {
+                this.status = ListingStatus.LISTING_STATUS_DOWN_VALUE;
+            } else if (LoginServer.getInstance().getStatus() == ListingStatus.LISTING_STATUS_GM_ONLY_VALUE) {
+                this.status = ListingStatus.LISTING_STATUS_GM_ONLY_VALUE;
             } else {
                 this.status = status;
             }
@@ -398,37 +277,30 @@ public class GameServerTable {
             }
         }
 
-        /**
-         * Gets the current player count.
-         * @return the current player count
-         */
         public int getCurrentPlayerCount() {
-            if (gameServerLink == null) {
-                return 0;
-            }
+            final GameServerLink link = gameServerLink;
+            return (link != null) ? link.getPlayerCount() : 0;
+        }
 
-            return gameServerLink.getPlayerCount();
+        /** Whether clients of the variant can enter the server; a server that never registered has no chronicle. */
+        public boolean isOpenTo(LoginVariant variant) {
+            final String current = chronicle;
+            return (current != null) && variant.chronicles().contains(current);
         }
 
         public boolean canLogin(LoginClient client) {
-            // DOWN status doesn't allow anyone to login.
-            if (status == ServerStatus.STATUS_DOWN) {
+            if (status == ListingStatus.LISTING_STATUS_DOWN_VALUE) {
                 return false;
             }
 
-            // GM_ONLY status or full server only allows superior access levels accounts to login.
-            if ((status == ServerStatus.STATUS_GM_ONLY) || (getCurrentPlayerCount() >= getMaxPlayers())) {
+            if ((status == ListingStatus.LISTING_STATUS_GM_ONLY_VALUE)
+                    || (getCurrentPlayerCount() >= getMaxPlayers())) {
                 return client.getAccessLevel() > 0;
             }
 
-            // Otherwise, any positive access level account can login.
             return client.getAccessLevel() >= 0;
         }
 
-        /**
-         * Gets the external host.
-         * @return the external host
-         */
         public String getExternalHost() {
             try {
                 return getServerAddress(InetAddress.getByName("0.0.0.0"));
@@ -439,39 +311,21 @@ public class GameServerTable {
             return null;
         }
 
-        /**
-         * Checks if is pvp.
-         * @return true, if is pvp
-         */
         public boolean isPvp() {
             return IS_PVP;
         }
 
-        /**
-         * Sets the down.
-         */
         public void setDown() {
             setAuthed(false);
             setPort(0);
             setGameServerLink(null);
-            setStatus(ServerStatus.STATUS_DOWN);
+            status = ListingStatus.LISTING_STATUS_DOWN_VALUE;
         }
 
-        /**
-         * Adds the server address.
-         * @param subnet the subnet
-         * @param addr the addr
-         * @throws UnknownHostException the unknown host exception
-         */
         public void addServerAddress(String subnet, String addr) throws UnknownHostException {
             addrs.add(new GameServerAddress(subnet, addr));
         }
 
-        /**
-         * Gets the server address.
-         * @param addr the addr
-         * @return the server address
-         */
         @SuppressWarnings("unlikely-arg-type")
         public String getServerAddress(InetAddress addr) {
             for (GameServerAddress a : addrs) {
@@ -480,13 +334,9 @@ public class GameServerTable {
                 }
             }
 
-            return null; // Should not happen.
+            return null;
         }
 
-        /**
-         * Gets the server addresses.
-         * @return the server addresses
-         */
         public String[] getServerAddresses() {
             final String[] result = new String[addrs.size()];
             for (int i = 0; i < result.length; i++) {
@@ -496,26 +346,14 @@ public class GameServerTable {
             return result;
         }
 
-        /**
-         * Clear server addresses.
-         */
         public void clearServerAddresses() {
             addrs.clear();
         }
 
-        /**
-         * The Class GameServerAddress.
-         */
         private class GameServerAddress extends Subnet {
             @Getter
             private final String serverAddress;
 
-            /**
-             * Instantiates a new game server address.
-             * @param subnet the subnet
-             * @param address the address
-             * @throws UnknownHostException the unknown host exception
-             */
             public GameServerAddress(String subnet, String address) throws UnknownHostException {
                 super(subnet);
                 serverAddress = address;
@@ -528,10 +366,6 @@ public class GameServerTable {
         }
     }
 
-    /**
-     * Gets the single instance of GameServerTable.
-     * @return single instance of GameServerTable
-     */
     public static GameServerTable getInstance() {
         return INSTANCE;
     }

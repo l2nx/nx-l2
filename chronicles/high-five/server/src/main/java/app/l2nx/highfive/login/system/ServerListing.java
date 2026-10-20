@@ -42,9 +42,8 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class ServerListing {
-    @Getter
-    @Setter
-    private volatile ListingStatus status = ListingStatus.AUTO;
+    // General.ini ServerGMOnly until the server or an admin sets it.
+    private volatile ListingStatus status;
 
     @Getter
     @Setter
@@ -53,17 +52,27 @@ public class ServerListing {
     // Server.ini MaximumOnlineUsers until an admin sets it.
     private volatile Integer maxPlayers;
 
-    /** The whole entry, sent each time the login server accepts the registration. */
     public Map<ListingAttribute, Integer> full() {
         final Map<ListingAttribute, Integer> attributes = new EnumMap<>(ListingAttribute.class);
         attributes.put(ListingAttribute.SQUARE_BRACKET, ServerConfig.SERVER_LIST_BRACKET ? 1 : 0);
         attributes.put(ListingAttribute.TYPE, ServerConfig.SERVER_LIST_TYPE);
-        attributes.put(
-                ListingAttribute.STATUS,
-                (GeneralConfig.SERVER_GMONLY ? ListingStatus.GM_ONLY : ListingStatus.AUTO).code());
+        // The runtime status: a registration during shutdown must not open the server again.
+        attributes.put(ListingAttribute.STATUS, getStatus().code());
         attributes.put(ListingAttribute.AGE, ageCode(ServerConfig.SERVER_LIST_AGE));
         attributes.put(ListingAttribute.MAX_PLAYERS, getMaxPlayers());
         return attributes;
+    }
+
+    public ListingStatus getStatus() {
+        final ListingStatus set = status;
+        if (set != null) {
+            return set;
+        }
+        return GeneralConfig.SERVER_GMONLY ? ListingStatus.GM_ONLY : ListingStatus.AUTO;
+    }
+
+    public void setStatus(ListingStatus status) {
+        this.status = status;
     }
 
     public int getMaxPlayers() {

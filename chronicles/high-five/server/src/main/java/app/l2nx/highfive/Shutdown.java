@@ -64,11 +64,6 @@ import app.l2nx.highfive.taskmanagers.GameTimeTaskManager;
 import app.l2nx.highfive.threads.ThreadPool;
 import lombok.extern.slf4j.Slf4j;
 
-/**
- * This class provides the functions for shutting down and restarting the server.<br>
- * It closes all open client connections and saves all data.
- * @version $Revision: 1.2.4.5 $ $Date: 2005/03/27 15:29:09 $
- */
 @Slf4j
 public class Shutdown extends Thread {
 
@@ -85,10 +80,6 @@ public class Shutdown extends Thread {
     private static volatile int secondsShut;
     private static volatile int shutdownMode;
 
-    /**
-     * This function starts a shutdown count down (Copied from Function startShutdown())
-     * @param seconds seconds until shutdown
-     */
     private void sendServerQuit(int seconds) {
         final SystemMessage sysm = new SystemMessage(
                 SystemMessageId.THE_SERVER_WILL_BE_COMING_DOWN_IN_S1_SECOND_S_PLEASE_FIND_A_SAFE_PLACE_TO_LOG_OUT);
@@ -96,19 +87,11 @@ public class Shutdown extends Thread {
         World.broadcastToAllOnlinePlayers(sysm);
     }
 
-    /**
-     * Default constructor is only used internal to create the singleton instance
-     */
     protected Shutdown() {
         secondsShut = -1;
         shutdownMode = SIGTERM;
     }
 
-    /**
-     * This creates a countdown instance of Shutdown.
-     * @param seconds how many seconds until shutdown
-     * @param restart true is the server shall restart after shutdown
-     */
     public Shutdown(int seconds, boolean restart) {
         secondsShut = Math.max(0, seconds);
         shutdownMode = restart ? GM_RESTART : GM_SHUTDOWN;
@@ -127,7 +110,6 @@ public class Shutdown extends Thread {
             return;
         }
 
-        // Send warnings and then call exit to start shutdown sequence.
         countdown();
 
         // The context may have been closed during the countdown.
@@ -155,12 +137,6 @@ public class Shutdown extends Thread {
         }
     }
 
-    /**
-     * This functions starts a shutdown countdown.
-     * @param player GM who issued the shutdown command
-     * @param seconds seconds until shutdown
-     * @param restart true if the server will restart after shutdown
-     */
     public void startShutdown(Player player, int seconds, boolean restart) {
         shutdownMode = restart ? GM_RESTART : GM_SHUTDOWN;
 
@@ -217,10 +193,6 @@ public class Shutdown extends Thread {
         counterInstance.start();
     }
 
-    /**
-     * This function aborts a running countdown.
-     * @param player GM who issued the abort command
-     */
     public void abort(Player player) {
         if (countdownFinished) {
             log.warn(
@@ -245,28 +217,17 @@ public class Shutdown extends Thread {
         }
     }
 
-    /**
-     * Set the shutdown mode.
-     * @param mode what mode shall be set
-     */
     private void setMode(int mode) {
         shutdownMode = mode;
     }
 
-    /**
-     * Set shutdown mode to ABORT.
-     */
     private void abort() {
         shutdownMode = ABORT;
     }
 
-    /**
-     * This counts the countdown and reports it to all players countdown is aborted if mode changes to ABORT.
-     */
     private void countdown() {
         try {
             while (secondsShut > 0) {
-                // Rehabilitate previous server status if shutdown is aborted.
                 if (shutdownMode == ABORT) {
                     if (LoginService.getInstance().getStatus() == ListingStatus.DOWN) {
                         LoginService.getInstance()
@@ -296,7 +257,6 @@ public class Shutdown extends Thread {
                     }
                 }
 
-                // Prevent players from logging in.
                 if ((secondsShut <= 60) && (LoginService.getInstance().getStatus() != ListingStatus.DOWN)) {
                     LoginService.getInstance().setStatus(ListingStatus.DOWN);
                 }
@@ -306,13 +266,9 @@ public class Shutdown extends Thread {
                 Thread.sleep(1000);
             }
         } catch (Exception e) {
-            // This will never happen.
         }
     }
 
-    /**
-     * Actions performed when the server stops.
-     */
     void startShutdownActions() {
         if (countdownFinished) {
             return;
@@ -349,42 +305,40 @@ public class Shutdown extends Thread {
             disconnectAllCharacters();
             log.info("All players disconnected and saved({}ms).", tc.getEstimatedTimeAndRestartCounter());
         } catch (Throwable t) {
-            // ignore
         }
-
-        // ensure all services are stopped
 
         try {
             GameTimeTaskManager.getInstance().interrupt();
             log.info("Game Time Task Manager: Thread interruped({}ms).", tc.getEstimatedTimeAndRestartCounter());
         } catch (Throwable t) {
-            // ignore
         }
 
-        // stop all thread pools
         try {
             ThreadPool.shutdown();
             log.info("Thread Pool Manager: Manager has been shut down({}ms).", tc.getEstimatedTimeAndRestartCounter());
         } catch (Throwable t) {
-            // ignore
+        }
+
+        // The accounts leave first: the link sends nothing once it is closed.
+        try {
+            LoginService.getInstance().logoutAll();
+            log.info("Login server: all accounts left({}ms).", tc.getEstimatedTimeAndRestartCounter());
+        } catch (Throwable t) {
+            log.warn("Error freeing the accounts on the login server.", t);
         }
 
         try {
-            LoginServerLink.getInstance().interrupt();
-            log.info("Login Server Thread: Thread interruped({}ms).", tc.getEstimatedTimeAndRestartCounter());
+            LoginServerLink.getInstance().shutdown();
+            log.info("Login server link closed({}ms).", tc.getEstimatedTimeAndRestartCounter());
         } catch (Throwable t) {
-            // ignore
+            log.warn("Error closing the login server link.", t);
         }
 
-        // last byebye, save all data and quit this server
         saveData();
 
         log.info("The server has been successfully shut down in {}seconds.", (tc1.getEstimatedTime() / 1000));
     }
 
-    /**
-     * This sends a last byebye, disconnects all players and saves data.
-     */
     private void saveData() {
         switch (shutdownMode) {
             case SIGTERM: {
@@ -403,19 +357,16 @@ public class Shutdown extends Thread {
 
         final TimeCounter tc = new TimeCounter();
 
-        // Seven Signs data is now saved along with Festival data.
         if (!SevenSigns.getInstance().isSealValidationPeriod()) {
             SevenSignsFestival.getInstance().saveFestivalData(false);
             log.info("SevenSignsFestival: Festival data saved({}ms).", tc.getEstimatedTimeAndRestartCounter());
         }
 
-        // Save Seven Signs data before closing. :)
         SevenSigns.getInstance().saveSevenSignsData();
         log.info("SevenSigns: Seven Signs data saved({}ms).", tc.getEstimatedTimeAndRestartCounter());
         SevenSigns.getInstance().saveSevenSignsStatus();
         log.info("SevenSigns: Seven Signs status saved({}ms).", tc.getEstimatedTimeAndRestartCounter());
 
-        // Save all raidboss and GrandBoss status ^_^
         RaidBossSpawnManager.getInstance().cleanUp();
         log.info("RaidBossSpawnManager: All raidboss info saved({}ms).", tc.getEstimatedTimeAndRestartCounter());
         GrandBossManager.getInstance().cleanUp();
@@ -429,11 +380,9 @@ public class Shutdown extends Thread {
         ClanTable.getInstance().shutdown();
         log.info("Clan System: Data saved({}ms).", tc.getEstimatedTimeAndRestartCounter());
 
-        // Save Cursed Weapons data before closing.
         CursedWeaponsManager.getInstance().saveData();
         log.info("Cursed Weapons Manager: Data saved({}ms).", tc.getEstimatedTimeAndRestartCounter());
 
-        // Save all manor data.
         if (!GeneralConfig.ALT_MANOR_SAVE_ALL_ACTIONS) {
             CastleManorManager.getInstance().storeMe();
             log.info("Castle Manor Manager: Data saved({}ms).", tc.getEstimatedTimeAndRestartCounter());
@@ -442,25 +391,20 @@ public class Shutdown extends Thread {
         CHSiegeManager.getInstance().onServerShutDown();
         log.info("CHSiegeManager: Siegable hall attacker lists saved!");
 
-        // Save all global (non-player specific) Quest data that needs to persist after reboot.
         ScriptManager.getInstance().save();
         log.info("Script Manager: Data saved({}ms).", tc.getEstimatedTimeAndRestartCounter());
 
-        // Save all global variables data.
         GlobalVariablesManager.getInstance().storeMe();
         log.info("Global Variables Manager: Variables saved({}ms).", tc.getEstimatedTimeAndRestartCounter());
 
-        // Save Fishing tournament data.
         if (GeneralConfig.ALT_FISH_CHAMPIONSHIP_ENABLED) {
             FishingChampionshipManager.getInstance().shutdown();
             log.info("Fishing Championship Manager: Data saved({}ms).", tc.getEstimatedTimeAndRestartCounter());
         }
 
-        // Schemes save.
         SchemeBufferTable.getInstance().saveSchemes();
         log.info("SchemeBufferTable: Data saved({}ms).", tc.getEstimatedTimeAndRestartCounter());
 
-        // Save items on ground before closing.
         if (GeneralConfig.SAVE_DROPPED_ITEM) {
             ItemsOnGroundManager.getInstance().saveInDb();
             log.info("Items On Ground Manager: Data saved({}ms).", tc.getEstimatedTimeAndRestartCounter());
@@ -468,7 +412,6 @@ public class Shutdown extends Thread {
             log.info("Items On Ground Manager: Cleaned up({}ms).", tc.getEstimatedTimeAndRestartCounter());
         }
 
-        // Save bot reports to database.
         if (GeneralConfig.BOTREPORT_ENABLE) {
             BotReportTable.getInstance().saveReportedCharData();
             log.info("Bot Report Table: Successfully saved reports to database!");
@@ -477,23 +420,15 @@ public class Shutdown extends Thread {
         try {
             Thread.sleep(5000);
         } catch (Exception e) {
-            // This will never happen.
         }
     }
 
-    /**
-     * This disconnects all clients from the server.
-     */
     private void disconnectAllCharacters() {
         for (Player player : World.getPlayers()) {
             Disconnection.of(player).storeAndDeleteWith(ServerClose.STATIC_PACKET);
         }
     }
 
-    /**
-     * A simple class used to track down the estimated time of method executions.<br>
-     * Once this class is created, it saves the start time, and when you want to get the estimated time, use the getEstimatedTime() method.
-     */
     private static class TimeCounter {
         private long startTime;
 
@@ -516,10 +451,6 @@ public class Shutdown extends Thread {
         }
     }
 
-    /**
-     * Get the singleton instance, created by the first call of this function.
-     * @return instance of Shutdown
-     */
     public static Shutdown getInstance() {
         return SingletonHolder.INSTANCE;
     }

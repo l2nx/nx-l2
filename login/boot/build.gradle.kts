@@ -6,6 +6,10 @@ dependencies {
     implementation(project(":login:server"))
 
     testImplementation(testFixtures(project(":libs:network")))
+    testImplementation(testFixtures(project(":libs:gslink")))
+    testImplementation(libs.spring.boot.grpc.test)
+    // The health stubs (grpc-services) the GS-link port test calls; the app gets them through :login:server.
+    testImplementation(libs.spring.boot.starter.grpc.server)
 }
 
 application {

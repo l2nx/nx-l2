@@ -110,8 +110,8 @@ and `systemctl stop` are not restarted.
   (`DefaultsEnvironmentPostProcessor`, registered in `META-INF/spring.factories`) adds it as the lowest-priority
   property source, so a server needs no `spring.config.import`; each server's `application.yaml` adds only its own keys (`spring.application.name`, `server.port`, pool size).
 - **Moved to `application.yaml` at stage 2:** `spring.datasource.*`, `server.*`, `management.*`, `logging.*`. `Database.ini` and `DatabaseConfig` are removed.
-- **Login settings are `application.yaml`:** `@ConfigurationProperties` under `l2nx.login.*` (client and game-server
-  endpoints, ban, flood protection, scheduled restart, `auto-create-accounts`). `Server.ini`, `Network.ini` and `Threads.ini` are removed from the login distribution and Dockerfile.
+- **Login settings are `application.yaml`:** `@ConfigurationProperties` under `l2nx.login.*` (client endpoints,
+  game server registration, ban, scheduled restart, `auto-create-accounts`). `Server.ini`, `Network.ini` and `Threads.ini` are removed from the login distribution and Dockerfile.
 - **Network settings of both servers are `l2nx.network.*`** from stage 4 ([spec 008 §3](008-network.md#3-configuration)):
   they replace `l2nx.login.network.*`, the connection limits of `l2nx.login.flood-protection` and the game server's
   `Network.ini`. The GS-link uses Spring Boot's `spring.grpc.*` properties and `l2nx.gslink.*`; they replace the

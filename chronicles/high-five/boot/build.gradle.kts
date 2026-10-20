@@ -4,6 +4,7 @@ plugins {
 
 dependencies {
     implementation(project(":chronicles:high-five:server"))
+    implementation(libs.spring.boot.starter.grpc.client)
     runtimeOnly(project(":chronicles:high-five:scripts"))
 
     testImplementation(testFixtures(project(":libs:database")))
@@ -34,8 +35,7 @@ tasks.withType<Test>().configureEach {
     val archunitStore = layout.projectDirectory.dir("src/test/archunit-store")
     systemProperty("archunit.freeze.store.default.path", archunitStore.asFile.absolutePath)
     inputs.files(archunitStore.asFileTree).withPropertyName("archunitStore").withPathSensitivity(PathSensitivity.RELATIVE)
-    // -Parchunit.freeze.refreeze=true or -Parchunit.freeze.store.default.allowStoreCreation=true rewrites the store
-    // on purpose; both reach the test JVM only when given.
+    // Store-rewriting flags are forwarded only when passed explicitly with -P.
     listOf("freeze.refreeze", "freeze.store.default.allowStoreCreation").forEach { key ->
         providers.gradleProperty("archunit.$key").orNull?.let { systemProperty("archunit.$key", it) }
     }

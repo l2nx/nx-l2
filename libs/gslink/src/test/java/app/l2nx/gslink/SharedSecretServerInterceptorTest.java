@@ -6,7 +6,7 @@ package app.l2nx.gslink;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import app.l2nx.gslink.testing.RecordingStreamObserver;
+import app.l2nx.gslink.test.RecordingStreamObserver;
 import app.l2nx.gslink.v1.GsLinkGrpc;
 import app.l2nx.gslink.v1.GsLinkProto.GameServerMessage;
 import app.l2nx.gslink.v1.GsLinkProto.LoginServerMessage;

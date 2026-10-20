@@ -6,7 +6,7 @@ package app.l2nx.gslink;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import app.l2nx.gslink.testing.RecordingStreamObserver;
+import app.l2nx.gslink.test.RecordingStreamObserver;
 import app.l2nx.gslink.v1.GsLinkGrpc;
 import app.l2nx.gslink.v1.GsLinkProto.GameServerMessage;
 import app.l2nx.gslink.v1.GsLinkProto.LoginServerMessage;
@@ -30,7 +30,6 @@ import org.springframework.boot.grpc.client.autoconfigure.GrpcClientAutoConfigur
 import org.springframework.boot.grpc.server.autoconfigure.GrpcServerAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
-/** The production path: Spring Boot SSL bundles on both ends, the game server checking the login server's name. */
 class GsLinkTlsTest {
     @TempDir
     static Path certificates;

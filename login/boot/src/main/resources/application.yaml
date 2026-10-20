@@ -8,6 +8,21 @@ spring:
     username: l2nx_login
     hikari:
       maximum-pool-size: 5
+  grpc:
+    server:
+      # Without TLS the GS-link secret travels in clear, so any other address needs spring.grpc.server.ssl.bundle.
+      address: 127.0.0.1
+      port: 9014
+      keepalive:
+        time: 15s
+        timeout: 10s
+        permit:
+          # Below the game server's keepalive time, or the server would answer its pings with GOAWAY.
+          time: 10s
+      reflection:
+        enabled: false
+      shutdown:
+        grace-period: 15s
 
 server:
   port: 8106
@@ -22,19 +37,11 @@ l2nx:
         - port: 2106
           variant: c621
     game-server:
-      host: 127.0.0.1
-      port: 9014
       accept-new: true
     ban:
       failed-logins: 5
       # A number without a unit is seconds.
       duration: 15m
-    flood-protection:
-      enabled: true
-      fast-connection-limit: 15
-      normal-connection-time: 700ms
-      fast-connection-time: 350ms
-      max-connections-per-ip: 50
     scheduled-restart:
       enabled: false
       # A number without a unit is hours.

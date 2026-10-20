@@ -8,6 +8,15 @@ spring:
     username: l2nx_game
     hikari:
       maximum-pool-size: 20
+  grpc:
+    client:
+      channel:
+        login:
+          # A target other than loopback needs spring.grpc.client.channel.login.ssl.bundle: the secret travels in it.
+          target: static://127.0.0.1:9014
+          keepalive:
+            time: 15s
+            timeout: 10s
 
 server:
   port: 8777

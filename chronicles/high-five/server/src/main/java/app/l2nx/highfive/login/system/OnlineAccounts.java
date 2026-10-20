@@ -28,6 +28,8 @@ package app.l2nx.highfive.login.system;
 
 import app.l2nx.highfive.login.SessionKey;
 import app.l2nx.highfive.network.GameClient;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -44,6 +46,8 @@ public class OnlineAccounts {
     private final Map<String, GameClient> logins = new ConcurrentHashMap<>();
     private final Map<UUID, GameClient> accounts = new ConcurrentHashMap<>();
     private final Map<String, PendingAuthentication> pending = new ConcurrentHashMap<>();
+    // Requests in flight per character: a character may send a second change before the first is answered.
+    private final Map<String, Integer> passwordChanges = new ConcurrentHashMap<>();
 
     public boolean reserve(String login, GameClient client) {
         return logins.putIfAbsent(login, client) == null;
@@ -65,8 +69,39 @@ public class OnlineAccounts {
         return pending.remove(login);
     }
 
+    /** @return every session waiting for the login server's answer, by login; none is left waiting */
+    public Map<String, PendingAuthentication> takeAllPending() {
+        final Map<String, PendingAuthentication> taken = new HashMap<>();
+        for (String login : pending.keySet()) {
+            final PendingAuthentication waiting = pending.remove(login);
+            if (waiting != null) {
+                taken.put(login, waiting);
+            }
+        }
+        return taken;
+    }
+
     public void cancelAuthentication(GameClient client) {
         pending.values().removeIf(waiting -> waiting.client() == client);
+    }
+
+    public void awaitPasswordChange(String characterName) {
+        passwordChanges.merge(characterName, 1, Integer::sum);
+    }
+
+    public void takePasswordChange(String characterName) {
+        passwordChanges.computeIfPresent(characterName, (name, count) -> (count > 1) ? count - 1 : null);
+    }
+
+    /** @return the characters waiting for the login server's answer to a password change; none waits afterwards */
+    public List<String> takeAllPasswordChanges() {
+        final List<String> taken = new ArrayList<>();
+        for (String characterName : passwordChanges.keySet()) {
+            if (passwordChanges.remove(characterName) != null) {
+                taken.add(characterName);
+            }
+        }
+        return taken;
     }
 
     public void enter(UUID accountId, GameClient client) {
@@ -85,7 +120,6 @@ public class OnlineAccounts {
         return List.copyOf(accounts.keySet());
     }
 
-    /** @return the accounts held until now */
     public List<UUID> leaveAll() {
         final List<UUID> accountIds = accountIds();
         accountIds.forEach(accounts::remove);

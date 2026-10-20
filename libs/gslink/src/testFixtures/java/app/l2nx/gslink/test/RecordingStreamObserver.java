@@ -2,7 +2,7 @@
  * SPDX-FileCopyrightText: 2026 L2NX contributors
  * SPDX-License-Identifier: Apache-2.0
  */
-package app.l2nx.gslink.testing;
+package app.l2nx.gslink.test;
 
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
@@ -13,7 +13,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
-/** Records a gRPC stream for tests that wait for single messages and for the end of the stream. */
 public final class RecordingStreamObserver<T> implements StreamObserver<T> {
     private static final long TIMEOUT_SECONDS = 5;
 

@@ -23,6 +23,28 @@ class OnlineAccountsTest {
     private final GameClient client = mock(GameClient.class);
 
     @Nested
+    class PasswordChanges {
+        @Test
+        void takePasswordChange_shouldKeepTheCharacterWaiting_whileASecondChangeIsUnanswered() {
+            accounts.awaitPasswordChange("Hero");
+            accounts.awaitPasswordChange("Hero");
+
+            accounts.takePasswordChange("Hero");
+
+            assertThat(accounts.takeAllPasswordChanges()).containsExactly("Hero");
+        }
+
+        @Test
+        void takePasswordChange_shouldEndTheWait_whenTheOnlyChangeIsAnswered() {
+            accounts.awaitPasswordChange("Hero");
+
+            accounts.takePasswordChange("Hero");
+
+            assertThat(accounts.takeAllPasswordChanges()).isEmpty();
+        }
+    }
+
+    @Nested
     class Reserve {
         @Test
         void reserve_shouldRefuseASecondSession_whenTheLoginIsHeld() {

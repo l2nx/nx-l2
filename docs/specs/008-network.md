@@ -285,8 +285,9 @@ service GsLink {
   message names are the commands and port calls of the `login` slice. The proto package carries the version
   (`l2nx.gslink.v1`); a breaking change is a new package, not a revision field.
 - **Registration:** the first message is `Register` with the hex id and the chronicle; a stream that sends anything
-  else first, or nothing within `handshake-timeout`, is cancelled. A registration with the hex id of a live stream
-  cancels the old one.
+  else first, or nothing within `handshake-timeout`, is cancelled. A registration with the hex id of a live stream is
+  refused (`ALREADY_EXISTS`), so two processes started with the same hex id cannot evict each other in a loop; a dead
+  stream is closed by keepalive or by its end, and the game server's next attempt then registers.
 - **Authentication:** the game server sends `l2nx.gslink.secret` (required on both servers, no default, at least
   32 characters) as a bearer token in the `authorization` metadata through Spring gRPC's
   `BearerTokenAuthenticationInterceptor`; a server interceptor compares it in constant time and rejects the call with
@@ -302,7 +303,15 @@ service GsLink {
   thread, so each link is a serial lane without an executor of ours; sends to a stream go through one serializing
   writer, since a `StreamObserver` is not thread-safe.
 - **Messages** carry the account by UUID ([persistence.md §1](003-engine-core/persistence.md#1-persistent-identity),
-  [spec 006](006-database.md)); the game server reports its chronicle when it registers.
+  [spec 006](006-database.md)). `Register` is bounded: a hex id of 1 to 64 bytes (stored as raw bytes, `bytea`) and
+  at most 32 host and subnet pairs; anything else is refused with `INVALID_ARGUMENT`.
+- **Chronicle:** the game server reports its chronicle when it registers, and the login server stores it with the
+  server. A client sees and enters only servers of the chronicles its protocol variant serves; a server that never
+  registered has no chronicle and is listed to nobody.
+- **A lost link fails what waits for it:** the game side marks every request that needs an answer (a player's
+  authentication, a password change) as pending, and when the stream ends while the server runs, each one is failed
+  at once (the client gets the login failure, the player the error text) instead of waiting forever. A request sent
+  while no stream is open fails the same way.
 - **The game side is a port and an adapter:** game code talks to the login server only through the `login` slice
   (`LoginService`), which sends through the `LoginPort` interface; `network/gslink/LoginServerLink` implements it and
   turns every inbound message into a command of the slice (`KickAccount`, `ReportCharacters`, `AuthenticationResult`,
@@ -355,7 +364,7 @@ The network steps of the stop order of [spec 002](002-spring-boot-runtime.md#sto
   and game handshakes, a frame buffered behind the protocol version, unknown opcodes, decode errors, queue
   overflow, rate limit, slow client and outbound limit, close with queued buffers.
 - **GS-link tests on gRPC's in-process transport:** registration, a wrong or missing secret, the registration
-  timeout, replacement of a live hex id, re-registration after a dropped stream, ordering on shutdown; one test over
+  timeout, refusal of a live hex id, re-registration after a dropped stream, ordering on shutdown; one test over
   TLS with a test certificate.
 - **Leak detection** at `paranoid` in every test JVM.
 - **Golden tests** of the ciphers, of each adapter's decoders (bytes in, command out) and mappers (event in, bytes

@@ -35,7 +35,13 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
 /** The engine keeps static state, so the nested classes share one context and run in a fixed order, the engine stop last. */
-@SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
+@SpringBootTest(
+        webEnvironment = WebEnvironment.RANDOM_PORT,
+        properties = {
+            "l2nx.gslink.secret=high-five-application-test-secret",
+            // Port 1 refuses at once, so the GS-link only retries in the background; 9014 may be another session's.
+            "spring.grpc.client.channel.login.target=static://127.0.0.1:1"
+        })
 class HighFiveApplicationTest extends BootSmokeTest {
     private static final JsonMapper JSON = JsonMapper.builder().build();
 
@@ -105,7 +111,7 @@ class HighFiveApplicationTest extends BootSmokeTest {
         }
 
         @ParameterizedTest(name = "{0}")
-        @ValueSource(strings = {"l2nx-scheduled", "l2nx-instant", "l2nx-game-io", "l2nx-game-packets"})
+        @ValueSource(strings = {"l2nx-scheduled", "l2nx-instant", "l2nx-game-io", "l2nx-game-packets", "taskScheduler"})
         void prometheus_shouldExposeExecutorMetrics(String executor) throws Exception {
             final HttpResponse<String> actual = get("/actuator/prometheus");
 
@@ -191,10 +197,7 @@ class HighFiveApplicationTest extends BootSmokeTest {
         }
     }
 
-    /**
-     * The state a running server leaves behind, so the start loads stored rows (times, owners, positions) and not only
-     * the defaults of an empty database.
-     */
+    // Seeds what a running server leaves behind, so the start loads stored rows, not just empty-database defaults.
     private static void storeWorldState() {
         final JdbcClient jdbc =
                 JdbcClient.create(PostgresDatabase.migratedSuperuserSchema("game", "db/liquibase-changelog.yaml"));

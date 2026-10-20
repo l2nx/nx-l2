@@ -192,15 +192,17 @@ public class GameServer implements SmartLifecycle {
 
     private final ServerExit serverExit;
     private final MeterRegistry meterRegistry;
+    private final LoginServerLink loginServerLink;
     private ConnectionManager<GameClient> connectionManager;
     private GameTimeTaskManager gameTimeTaskManager;
 
     @Getter
     private volatile boolean running;
 
-    public GameServer(ServerExit serverExit, MeterRegistry meterRegistry) {
+    public GameServer(ServerExit serverExit, MeterRegistry meterRegistry, LoginServerLink loginServerLink) {
         this.serverExit = serverExit;
         this.meterRegistry = meterRegistry;
+        this.loginServerLink = loginServerLink;
     }
 
     @Override
@@ -506,8 +508,7 @@ public class GameServer implements SmartLifecycle {
         }
         connectionManager.bindMetrics(meterRegistry, "l2nx-game");
 
-        LoginServerLink.getInstance().load();
-        LoginServerLink.getInstance().start();
+        loginServerLink.start();
     }
 
     private void printSection(String section) {

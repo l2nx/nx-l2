@@ -57,7 +57,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataAccessException;
 
 /**
- * Represents a client connected on GameServer.
  * @author KenM
  */
 @Slf4j
@@ -171,10 +170,8 @@ public class GameClient extends Client<app.l2nx.network.Connection<GameClient>> 
         if (packet == null) {
             closeNow();
         } else {
-            // Send the close packet.
             sendPacket(packet);
 
-            // Wait for packet to be sent.
             ThreadPool.schedule(this::closeNow, 1000);
         }
     }
@@ -205,16 +202,13 @@ public class GameClient extends Client<app.l2nx.network.Connection<GameClient>> 
     }
 
     public void sendPacket(ServerPacket packet) {
-        // Packet should never be null.
         if (packet == null) {
             log.warn("Null packet sent", new Exception());
             return;
         }
 
-        // Send the packet data.
         writePacket(packet);
 
-        // Run packet implementation.
         packet.runImpl(player);
     }
 
@@ -223,9 +217,7 @@ public class GameClient extends Client<app.l2nx.network.Connection<GameClient>> 
     }
 
     /**
-     * Method to handle character deletion
-     * @param characterSlot
-     * @return a byte:
+     * @return the deletion answer:
      *         <li>-1: Error: No char was found for such charslot, caught exception, etc...
      *         <li>0: character is not member of any clan, proceed with deletion
      *         <li>1: character is member of a clan, but not clan leader
@@ -243,7 +235,7 @@ public class GameClient extends Client<app.l2nx.network.Connection<GameClient>> 
             if (clanId != 0) {
                 final Clan clan = ClanTable.getInstance().getClan(clanId);
                 if (clan == null) {
-                    answer = 0; // jeezes!
+                    answer = 0;
                 } else if (clan.getLeaderId() == objectId) {
                     answer = 2;
                 } else {
@@ -251,16 +243,13 @@ public class GameClient extends Client<app.l2nx.network.Connection<GameClient>> 
                 }
             }
 
-            // Setting delete time
             if (answer == 0) {
                 if (PlayerConfig.DELETE_DAYS == 0) {
                     deleteCharByObjId(objectId);
                 } else {
                     PlayerPersistenceManager.getInstance()
                             .updateDeleteTime(
-                                    objectId,
-                                    ClockBridge.wallMillis()
-                                            + (PlayerConfig.DELETE_DAYS * 86400000L)); // 24*60*60*1000 = 86400000
+                                    objectId, ClockBridge.wallMillis() + (PlayerConfig.DELETE_DAYS * 86400000L));
                 }
 
                 ACCOUNTING_LOG.info("Delete, {}, {}", objectId, this);
@@ -311,7 +300,7 @@ public class GameClient extends Client<app.l2nx.network.Connection<GameClient>> 
 
         Player player = World.getPlayer(objectId);
         if (player != null) {
-            // exploit prevention, should not happens in normal way
+            // a character still in the world means a double login
             if (player.isOnlineInt() == 1) {
                 log.error("Attempt of double login: {}({}) {}", player.getName(), objectId, accountName);
             }
@@ -328,9 +317,8 @@ public class GameClient extends Client<app.l2nx.network.Connection<GameClient>> 
 
         player = Player.load(objectId);
         if (player != null) {
-            // prevent some values for each login
-            player.setRunning(); // running is default
-            player.standUp(); // standing is default
+            player.setRunning();
+            player.standUp();
             player.refreshOverloaded();
             player.refreshExpertisePenalty();
         } else {
@@ -352,10 +340,6 @@ public class GameClient extends Client<app.l2nx.network.Connection<GameClient>> 
         return charSlotMapping.get(charslot);
     }
 
-    /**
-     * @param characterSlot
-     * @return
-     */
     private int getObjectIdForSlot(int characterSlot) {
         final CharacterInfoHolder info = getCharSelection(characterSlot);
         if (info == null) {
@@ -373,9 +357,6 @@ public class GameClient extends Client<app.l2nx.network.Connection<GameClient>> 
         trace = tracert;
     }
 
-    /**
-     * Produces the best possible string representation of this client.
-     */
     @Override
     public String toString() {
         try {

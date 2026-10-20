@@ -31,7 +31,6 @@ public record LoginProperties(
         @NotNull @Valid Client client,
         @NotNull @Valid GameServer gameServer,
         @NotNull @Valid Ban ban,
-        @NotNull @Valid FloodProtection floodProtection,
         @NotNull @Valid ScheduledRestart scheduledRestart,
         boolean showLicence,
         boolean autoCreateAccounts,
@@ -56,12 +55,10 @@ public record LoginProperties(
             @Min(1) @Max(65535) int port, @NotNull LoginVariant variant) {}
 
     /**
-     * @param host {@code *} listens on all interfaces
      * @param acceptNew whether a game server may take a free id that is not registered yet
      */
     @Builder(toBuilder = true)
-    public record GameServer(
-            @NotBlank String host, @Min(1) @Max(65535) int port, boolean acceptNew) {}
+    public record GameServer(boolean acceptNew) {}
 
     /**
      * @param duration zero bans the address permanently
@@ -72,14 +69,6 @@ public record LoginProperties(
 
             @NotNull @DurationMin(nanos = 0) @DurationUnit(ChronoUnit.SECONDS)
             Duration duration) {}
-
-    @Builder(toBuilder = true)
-    public record FloodProtection(
-            boolean enabled,
-            @Positive int fastConnectionLimit,
-            @NotNull Duration normalConnectionTime,
-            @NotNull Duration fastConnectionTime,
-            @Positive int maxConnectionsPerIp) {}
 
     @Builder(toBuilder = true)
     public record ScheduledRestart(

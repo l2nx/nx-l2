@@ -32,17 +32,16 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.modulith.core.ApplicationModules;
 import org.springframework.stereotype.Repository;
 
-/** The slice layout of spec 003 (wiring and layout, §4) over the migrated slices of a chronicle. */
 @RequiredArgsConstructor(access = AccessLevel.PACKAGE)
 final class SliceLayoutRules {
     static final String CHRONICLE_ROOT = "app.l2nx.highfive";
-    // Only grows: 04c adds character, movement, chat, message and action.
+    // Only grows: a slice moved to the layout never falls back to the legacy shape.
     static final List<String> MIGRATED = List.of("login");
     static final SliceLayoutRules CHRONICLE = new SliceLayoutRules(CHRONICLE_ROOT, MIGRATED);
 
     /**
-     * Legacy connection classes the migrated slices may still use until E10 (decision P1). The list may only shrink:
-     * 04c leaves GameClient and Disconnection.
+     * Legacy connection classes the migrated slices may still use: the network layer has no ports for the client
+     * connection yet. The list may only shrink, a class leaves it once the slices reach the client through a port.
      */
     static final DescribedPredicate<JavaClass> LEGACY_NETWORK_FACADES = JavaClass.Predicates.belongToAnyOf(
             GameClient.class,
@@ -62,7 +61,6 @@ final class SliceLayoutRules {
     private final String root;
     private final List<String> slices;
 
-    /** Spring Modulith over the migrated slices; every other class of the chronicle is ignored. */
     ApplicationModules modules() {
         return ApplicationModules.of(root, DescribedPredicate.not(resideInAnyPackage(sliceTrees())));
     }

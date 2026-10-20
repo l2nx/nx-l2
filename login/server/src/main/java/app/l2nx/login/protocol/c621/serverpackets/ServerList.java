@@ -22,10 +22,10 @@
  */
 package app.l2nx.login.protocol.c621.serverpackets;
 
+import app.l2nx.gslink.v1.GsLinkProto.ListingStatus;
 import app.l2nx.login.data.GameServerTable;
 import app.l2nx.login.data.GameServerTable.GameServerInfo;
 import app.l2nx.login.network.LoginClient;
-import app.l2nx.login.network.gameserverpackets.receive.ServerStatus;
 import app.l2nx.network.codec.PacketWriter;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -74,12 +74,13 @@ public class ServerList extends LoginServerPacket {
             serverType = gsi.getServerType();
             currentPlayers = gsi.getCurrentPlayerCount();
             maxPlayers = gsi.getMaxPlayers();
-            ageLimit = 0;
+            ageLimit = gsi.getAgeLimit();
             brackets = gsi.isShowingBrackets();
 
             status = (client.getAccessLevel() < 0)
-                            || ((gsi.getStatus() == ServerStatus.STATUS_GM_ONLY) && (client.getAccessLevel() <= 0))
-                    ? ServerStatus.STATUS_DOWN
+                            || ((gsi.getStatus() == ListingStatus.LISTING_STATUS_GM_ONLY_VALUE)
+                                    && (client.getAccessLevel() <= 0))
+                    ? ListingStatus.LISTING_STATUS_DOWN_VALUE
                     : gsi.getStatus();
             serverId = gsi.getId();
         }
@@ -91,7 +92,11 @@ public class ServerList extends LoginServerPacket {
         lastServer = client.getLastServer();
         for (GameServerInfo gsi :
                 GameServerTable.getInstance().getRegisteredGameServers().values()) {
-            if ((gsi.getStatus() == ServerStatus.STATUS_GM_ONLY) && (client.getAccessLevel() < 1)) {
+            if ((gsi.getStatus() == ListingStatus.LISTING_STATUS_GM_ONLY_VALUE) && (client.getAccessLevel() < 1)) {
+                continue;
+            }
+
+            if (!gsi.isOpenTo(client.getVariant())) {
                 continue;
             }
 
@@ -101,6 +106,10 @@ public class ServerList extends LoginServerPacket {
         // Snapshot: game servers answer from other threads, possibly after sendServerList stopped waiting.
         charsOnServers = Map.copyOf(client.getCharsOnServ());
         charsToDelete = Map.copyOf(client.getCharsWaitingDelOnServ());
+    }
+
+    List<Integer> serverIds() {
+        return servers.stream().map(server -> server.serverId).toList();
     }
 
     @Override
@@ -121,7 +130,7 @@ public class ServerList extends LoginServerPacket {
             buffer.writeByte(server.pvp ? 1 : 0);
             buffer.writeShort(server.currentPlayers);
             buffer.writeShort(server.maxPlayers);
-            buffer.writeByte(server.status == ServerStatus.STATUS_DOWN ? 0 : 1);
+            buffer.writeByte(server.status == ListingStatus.LISTING_STATUS_DOWN_VALUE ? 0 : 1);
             // serverType flags: 1 Normal, 2 Relax, 4 Public Test, 8 No Label, 16 Character Creation Restricted,
             // 32 Event, 64 Free.
             buffer.writeInt(server.serverType);

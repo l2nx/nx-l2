@@ -6,6 +6,7 @@ dependencies {
     api(project(":libs:boot"))
     api(project(":libs:network"))
     implementation(project(":libs:database"))
+    implementation(project(":libs:gslink"))
     api(project(":engine:core"))
     implementation(libs.classgraph)
     implementation(libs.commons.lang3)
@@ -16,6 +17,8 @@ dependencies {
     testImplementation(testFixtures(project(":engine:core")))
     testImplementation(testFixtures(project(":libs:database")))
     testImplementation(libs.spring.boot.starter.test)
+    testImplementation(testFixtures(project(":libs:gslink")))
+    testImplementation(libs.grpc.inprocess)
     testImplementation(libs.liquibase.core)
     testRuntimeOnly(libs.postgresql)
 }

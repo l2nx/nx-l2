@@ -37,17 +37,14 @@ import app.l2nx.login.repository.AccountRepository;
 import app.l2nx.login.repository.AccountRepository.IpRule;
 import java.net.Inet4Address;
 import java.net.InetAddress;
-import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.KeyPairGenerator;
-import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.spec.RSAKeyGenParameterSpec;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -81,7 +78,6 @@ public class LoginController {
     protected byte[][] blowfishKeys;
     protected ScrambledKeyPair[] keyPairs;
 
-    /** Authed Clients on LoginServer */
     protected Map<UUID, LoginClient> loginServerClients = new ConcurrentHashMap<>();
 
     private final Map<String, Integer> failedLoginAttemps = new HashMap<>();
@@ -111,7 +107,6 @@ public class LoginController {
         final RSAKeyGenParameterSpec spec = new RSAKeyGenParameterSpec(1024, RSAKeyGenParameterSpec.F4);
         keygen.initialize(spec);
 
-        // Generate the initial set of keys.
         for (int i = 0; i < 10; i++) {
             keyPairs[i] = new ScrambledKeyPair(keygen.generateKeyPair());
         }
@@ -120,10 +115,8 @@ public class LoginController {
 
         testCipher((RSAPrivateKey) keyPairs[0].getPrivateKey());
 
-        // Store keys for blowfish communication.
         generateBlowFishKeys();
 
-        // Start the client purge task.
         purgeTask = taskScheduler.scheduleAtFixedRate(this::purge, Instant.now().plus(LOGIN_TIMEOUT), LOGIN_TIMEOUT);
     }
 
@@ -134,14 +127,8 @@ public class LoginController {
         }
     }
 
-    /**
-     * This is mostly to force the initialization of the Crypto Implementation, avoiding it being done on runtime when its first needed.<br>
-     * In short it avoids the worst-case execution time on runtime by doing it on loading.
-     * @param key Any private RSA Key just for testing purposes.
-     * @throws GeneralSecurityException if a underlying exception was thrown by the Cipher
-     */
+    /** Forces the RSA provider to initialize at load, so the first login does not pay for it. */
     private void testCipher(RSAPrivateKey key) throws GeneralSecurityException {
-        // Avoid worst-case execution.
         final Cipher rsaCipher = Cipher.getInstance("RSA/ECB/nopadding");
         rsaCipher.init(Cipher.DECRYPT_MODE, key);
     }
@@ -157,8 +144,8 @@ public class LoginController {
     }
 
     /**
-     * The client takes the key of {@code Init} as a zero-terminated string: a zero byte inside would leave the client
-     * a shorter key than the server's, every frame it sends would fail the checksum and the login would hang.
+     * The client reads the {@code Init} key as a zero-terminated string; a zero byte would shorten it, fail the
+     * checksum of every frame it sends and hang the login.
      */
     static byte[] newBlowfishKey(RandomGenerator random) {
         final byte[] key = new byte[BLOWFISH_KEY_SIZE];
@@ -168,9 +155,6 @@ public class LoginController {
         return key;
     }
 
-    /**
-     * @return Returns a random key.
-     */
     public byte[] getBlowfishKey() {
         return blowfishKeys[(int) (Math.random() * BLOWFISH_KEYS)];
     }
@@ -227,9 +211,6 @@ public class LoginController {
     }
 
     private void recordFailedLoginAttemp(String addr) {
-        // We need to synchronize this!
-        // When multiple connections from the same address fail to login at the same time, unexpected behavior can
-        // happen.
         Integer failedLoginAttemps;
         synchronized (this.failedLoginAttemps) {
             failedLoginAttemps = this.failedLoginAttemps.get(addr);
@@ -245,8 +226,7 @@ public class LoginController {
         if (failedLoginAttemps >= properties.ban().failedLogins()) {
             addBanForAddress(addr, properties.ban().duration().toMillis());
 
-            // We need to clear the failed login attempts here, so after the IP ban is over the client has another 5
-            // attempts.
+            // Fresh attempts once the ban ends.
             clearFailedLoginAttemps(addr);
             log.warn("Added banned address {}! Too many login attempts.", addr);
         }
@@ -261,9 +241,7 @@ public class LoginController {
     private AccountInfo retriveAccountInfo(
             String clientAddr, String login, String password, boolean autoCreateIfEnabled) {
         try {
-            final MessageDigest md = MessageDigest.getInstance("SHA");
-            final byte[] raw = password.getBytes(StandardCharsets.UTF_8);
-            final String hashBase64 = Base64.getEncoder().encodeToString(md.digest(raw));
+            final String hashBase64 = PasswordHash.of(password);
 
             final Optional<AccountInfo> stored = accounts.findAccountInfo(login, Instant.now());
             if (stored.isPresent()) {
@@ -278,7 +256,6 @@ public class LoginController {
             }
 
             if (!autoCreateIfEnabled || !properties.autoCreateAccounts()) {
-                // Account does not exist and auto create account is not desired.
                 recordFailedLoginAttemp(clientAddr);
                 return null;
             }
@@ -305,12 +282,9 @@ public class LoginController {
 
         LoginResult ret = LoginResult.INVALID_PASSWORD;
 
-        // Check auth.
         if (canCheckin(client, address, info)) {
-            // Login was successful, verify presence on Gameservers.
             ret = LoginResult.ALREADY_ON_GS;
             if (!isAccountInAnyGameServer(info.getId())) {
-                // Account is not on any GS verify LS itself.
                 ret = LoginResult.ALREADY_ON_LS;
                 // Set before the entry exists, so a close from now on finds the entry it has to remove.
                 client.setAccountId(info.getId());
@@ -328,9 +302,8 @@ public class LoginController {
     }
 
     /**
-     * Adds the address to the ban list of the login server, with the given duration.
      * @param address an IP literal; a host name is refused, not resolved
-     * @param duration is milliseconds
+     * @param duration milliseconds; zero or less bans permanently
      * @return {@code false} when the address is not an IP literal
      */
     public boolean addBanForAddress(String address, long duration) {
@@ -341,8 +314,7 @@ public class LoginController {
         }
         if (duration > 0) {
             bannedIps.putIfAbsent(key, System.currentTimeMillis() + duration);
-        } else // Permanent ban.
-        {
+        } else {
             bannedIps.putIfAbsent(key, Long.MAX_VALUE);
         }
         return true;
@@ -386,11 +358,6 @@ public class LoginController {
         return false;
     }
 
-    /**
-     * Remove the specified address from the ban list
-     * @param address The address to be removed from the ban list
-     * @return true if the ban was removed, false if there was no ban for this ip
-     */
     public boolean removeBanForAddress(String address) {
         final String key = banKey(address);
         return (key != null) && (bannedIps.remove(key) != null);
@@ -432,7 +399,7 @@ public class LoginController {
         for (GameServerInfo gsi : servers) {
             // The link may drop concurrently; a server without one cannot answer, so it is not awaited.
             final GameServerLink link = gsi.getGameServerLink();
-            if (gsi.isAuthed() && (link != null)) {
+            if (gsi.isAuthed() && (link != null) && gsi.isOpenTo(client.getVariant())) {
                 online.put(gsi.getId(), link);
             }
         }
@@ -442,7 +409,7 @@ public class LoginController {
 
     public boolean isLoginPossible(LoginClient client, int serverId) {
         final GameServerInfo gsi = GameServerTable.getInstance().getRegisteredGameServerById(serverId);
-        if ((gsi != null) && gsi.isAuthed()) {
+        if ((gsi != null) && gsi.isAuthed() && gsi.isOpenTo(client.getVariant())) {
             final boolean loginOk = gsi.canLogin(client);
             if (loginOk && (client.getLastServer() != serverId)) {
                 try {
@@ -509,20 +476,10 @@ public class LoginController {
         client.charactersArrived(serverId);
     }
 
-    /**
-     * This method returns one of the cached {@link ScrambledKeyPair ScrambledKeyPairs} for communication with Login Clients.
-     * @return a scrambled keypair
-     */
     public ScrambledKeyPair getScrambledRSAKeyPair() {
         return keyPairs[ThreadLocalRandom.current().nextInt(keyPairs.length)];
     }
 
-    /**
-     * @param client the client
-     * @param address client host address
-     * @param info the account info to checkin
-     * @return true when ok to checkin, false otherwise
-     */
     public boolean canCheckin(LoginClient client, String address, AccountInfo info) {
         try {
             final List<String> ipWhiteList = new ArrayList<>();
@@ -535,7 +492,6 @@ public class LoginController {
                 }
             }
 
-            // Check IP.
             if (!ipWhiteList.isEmpty() || !ipBlackList.isEmpty()) {
                 if (!ipWhiteList.isEmpty() && !ipWhiteList.contains(address)) {
                     log.warn(

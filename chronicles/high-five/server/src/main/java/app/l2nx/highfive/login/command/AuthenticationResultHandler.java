@@ -33,7 +33,6 @@ import app.l2nx.highfive.login.system.OnlineAccounts.PendingAuthentication;
 import app.l2nx.highfive.network.ConnectionState;
 import app.l2nx.highfive.network.GameClient;
 import app.l2nx.highfive.network.serverpackets.CharSelectionInfo;
-import app.l2nx.highfive.network.serverpackets.LoginFail;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.Consumer;
@@ -59,8 +58,7 @@ class AuthenticationResultHandler implements Consumer<AuthenticationResult> {
         final GameClient client = pending.client();
         if (!result.accepted()) {
             log.warn("Session key incorrect, closing the connection of login {}", result.login());
-            client.close(new LoginFail(LoginFail.SYSTEM_ERROR_LOGIN_LATER));
-            loginService.logout(result.login(), null);
+            loginService.failAuthentication(result.login(), client);
             return;
         }
         final UUID accountId = result.accountId();

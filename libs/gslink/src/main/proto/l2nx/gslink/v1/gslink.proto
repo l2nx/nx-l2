@@ -3,7 +3,7 @@
 
 syntax = "proto3";
 
-// The login-game link (spec 008 §10). A breaking change is a new package (v2), never a revision field.
+// A breaking change is a new package (v2), never a revision field.
 package l2nx.gslink.v1;
 
 import "google/protobuf/duration.proto";
@@ -13,12 +13,11 @@ option java_package = "app.l2nx.gslink.v1";
 // One outer class: the game server's adapter names these messages next to the login slice's records of the same name.
 option java_outer_classname = "GsLinkProto";
 
-// One bidirectional stream per game server; the first message the game server sends is Register.
+// The first message the game server sends is Register.
 service GsLink {
   rpc Connect(stream GameServerMessage) returns (stream LoginServerMessage);
 }
 
-// Game server to login server: the calls of the login slice's LoginPort.
 message GameServerMessage {
   oneof message {
     Register register = 1;
@@ -34,7 +33,6 @@ message GameServerMessage {
   }
 }
 
-// Login server to game server: the commands of the login slice.
 message LoginServerMessage {
   oneof message {
     RegistrationResult registration_result = 1;
@@ -49,15 +47,16 @@ message Register {
   // The id the game server asks for; with accept_alternative_id the login server may give a free one instead.
   int32 server_id = 1;
   bool accept_alternative_id = 2;
+  // At most 64 bytes.
   bytes hex_id = 3;
-  // The chronicle directory name, e.g. "high-five" (spec 001 §8).
+  // The chronicle, e.g. "high-five": the login server lists the server only to clients whose protocol enters it.
   string chronicle = 4;
   int32 port = 5;
   int32 max_players = 6;
+  // At most 32.
   repeated GameServerAddress addresses = 7;
 }
 
-// The address clients of one subnet connect to.
 message GameServerAddress {
   string subnet = 1;
   string address = 2;
@@ -130,7 +129,6 @@ message CharacterReport {
   repeated google.protobuf.Timestamp delete_times = 3;
 }
 
-// The status codes of the client's server list.
 enum ListingStatus {
   LISTING_STATUS_AUTO = 0;
   LISTING_STATUS_GOOD = 1;

@@ -129,9 +129,6 @@ public class AdminLogin implements IAdminCommandHandler {
         return true;
     }
 
-    /**
-     * @param activeChar
-     */
     private void showMainPage(Player activeChar) {
         final NpcHtmlMessage html = new NpcHtmlMessage();
         html.setFile(activeChar, "data/html/admin/login.htm");

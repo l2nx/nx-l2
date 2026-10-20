@@ -22,13 +22,13 @@
  */
 package app.l2nx.login.protocol.c621.clientpackets;
 
+import app.l2nx.gslink.v1.GsLinkProto.ListingStatus;
 import app.l2nx.login.LoginServer;
 import app.l2nx.login.controller.LoginController;
 import app.l2nx.login.controller.SessionKey;
 import app.l2nx.login.enums.LoginFailReason;
 import app.l2nx.login.enums.PlayFailReason;
 import app.l2nx.login.network.LoginClient;
-import app.l2nx.login.network.gameserverpackets.receive.ServerStatus;
 import app.l2nx.login.protocol.c621.serverpackets.PlayOk;
 
 /**
@@ -63,8 +63,8 @@ public class RequestServerLogin extends LoginClientPacket {
 
         // The login pair is checked only when the license screen was shown.
         if (!LoginServer.getInstance().getProperties().showLicence() || sk.checkLoginPair(skey1, skey2)) {
-            if ((LoginServer.getInstance().getStatus() == ServerStatus.STATUS_DOWN)
-                    || ((LoginServer.getInstance().getStatus() == ServerStatus.STATUS_GM_ONLY)
+            if ((LoginServer.getInstance().getStatus() == ListingStatus.LISTING_STATUS_DOWN_VALUE)
+                    || ((LoginServer.getInstance().getStatus() == ListingStatus.LISTING_STATUS_GM_ONLY_VALUE)
                             && (client.getAccessLevel() < 1))) {
                 client.close(LoginFailReason.REASON_ACCESS_FAILED);
             } else if (LoginController.getInstance().isLoginPossible(client, serverId)) {

@@ -32,6 +32,7 @@ import app.l2nx.login.controller.LoginController;
 import app.l2nx.login.data.GameServerTable.GameServerInfo;
 import app.l2nx.login.enums.AccountKickedReason;
 import app.l2nx.login.enums.LoginFailReason;
+import app.l2nx.login.gslink.GameServerLink;
 import app.l2nx.login.network.LoginClient;
 import app.l2nx.login.protocol.c621.ConnectionState;
 import app.l2nx.login.protocol.c621.serverpackets.AccountKicked;
@@ -152,8 +153,9 @@ public class RequestAuthLogin extends LoginClientPacket {
                 final GameServerInfo gsi = lc.getAccountOnGameServer(info.getId());
                 if (gsi != null) {
                     client.close(LoginFailReason.REASON_ACCOUNT_IN_USE);
-                    if (gsi.isAuthed()) {
-                        gsi.getGameServerLink().kickPlayer(info.getId());
+                    final GameServerLink link = gsi.getGameServerLink();
+                    if (link != null) {
+                        link.kickPlayer(info.getId());
                     }
                 }
                 break;

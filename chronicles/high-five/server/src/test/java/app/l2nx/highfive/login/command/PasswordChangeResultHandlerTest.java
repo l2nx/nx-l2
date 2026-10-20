@@ -4,6 +4,7 @@
  */
 package app.l2nx.highfive.login.command;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.verify;
@@ -11,11 +12,13 @@ import static org.mockito.Mockito.verifyNoInteractions;
 
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.login.system.OnlineAccounts;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 
 class PasswordChangeResultHandlerTest {
-    private final PasswordChangeResultHandler handler = new PasswordChangeResultHandler();
+    private final OnlineAccounts accounts = new OnlineAccounts();
+    private final PasswordChangeResultHandler handler = new PasswordChangeResultHandler(accounts);
     private final Player player = mock(Player.class);
 
     @Test
@@ -30,6 +33,20 @@ class PasswordChangeResultHandlerTest {
         }
 
         verify(player).sendMessage("Password changed.");
+    }
+
+    @Test
+    void accept_shouldEndTheWaitForTheAnswer() {
+        accounts.awaitPasswordChange("Alice");
+
+        try (MockedStatic<World> world = mockStatic(World.class)) {
+            handler.accept(PasswordChangeResult.builder()
+                    .characterName("Alice")
+                    .message("Password changed.")
+                    .build());
+        }
+
+        assertThat(accounts.takeAllPasswordChanges()).isEmpty();
     }
 
     @Test

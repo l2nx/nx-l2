@@ -30,5 +30,6 @@ CREATE TABLE account_ip_rules (
 
 CREATE TABLE game_servers (
     server_id integer PRIMARY KEY,
-    hex_id text NOT NULL CHECK (hex_id <> '')
+    hex_id bytea NOT NULL CHECK (octet_length(hex_id) BETWEEN 1 AND 64),
+    chronicle text CHECK (chronicle <> '')
 );
