@@ -114,7 +114,8 @@ and `systemctl stop` are not restarted.
   endpoints, ban, flood protection, scheduled restart, `auto-create-accounts`). `Server.ini`, `Network.ini` and `Threads.ini` are removed from the login distribution and Dockerfile.
 - **Network settings of both servers are `l2nx.network.*`** from stage 4 ([spec 008 §3](008-network.md#3-configuration)):
   they replace `l2nx.login.network.*`, the connection limits of `l2nx.login.flood-protection` and the game server's
-  `Network.ini`.
+  `Network.ini`. The GS-link uses Spring Boot's `spring.grpc.*` properties and `l2nx.gslink.*`; they replace the
+  game-server endpoint of `l2nx.login.*` and `LoginHost` / `LoginPort` of `Server.ini`.
 - **Stays in `.ini`:** every other game setting, including thread pool sizes and the client ports, until
   [#17](https://github.com/l2nx/nx-l2/issues/17).
 

@@ -188,6 +188,7 @@ libs/                 knows no game rules; reusable by any server
   boot                app.l2nx.boot        Spring Boot auto-configuration shared by the servers
   database            app.l2nx.database    schema check, Instant/timestamptz bridge, PostgreSQL test fixtures (spec 006)
   network             app.l2nx.network     Netty transport (framing, PacketCipher, server/client)
+  gslink              app.l2nx.gslink      GS-link gRPC contract (proto, stubs, secret interceptors)
   telemetry           app.l2nx.telemetry   Micrometer
 engine/               Lineage 2 mechanics shared by every chronicle
   geo                 app.l2nx.engine.geo      movement / pathfinding / line-of-sight SPI + classic geodata
@@ -358,8 +359,8 @@ constraints).
   filter follows from the port.
 - **Layout inside `login/server`:** `protocol/<variant>/` (codec, packets) next to the shared domain: accounts,
   bans, sessions, GS-link.
-- **GS-link login↔game** runs on Netty and is the same for every chronicle. A game server reports its chronicle
-  when it registers.
+- **GS-link login↔game** runs on gRPC ([spec 008 §10](008-network.md#10-gs-link)) and is the same for every
+  chronicle. A game server reports its chronicle when it registers.
 
 ### Game server
 

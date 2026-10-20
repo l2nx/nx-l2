@@ -7,7 +7,10 @@ client protocol becomes an adapter in front of a game that knows no packets. Sta
 
 ## 1. Principles
 
-- **One transport: Netty.** The Mobius NIO2 stack and the blocking GS-link sockets are removed when stage 4 ends.
+- **Netty for the client protocols, gRPC between our own servers.** The game client's protocol is the one fixed
+  contract and runs on Netty with our framing and ciphers; the login↔game link is ours on both ends, so it uses the
+  industry standard for service-to-service calls, gRPC over HTTP/2 through Spring Boot's gRPC support (§10). The
+  Mobius NIO2 stack and the blocking GS-link sockets are removed when stage 4 ends.
 - **The game knows no protocol.** Game code receives commands and emits view events through ports; a client
   protocol is an adapter that maps packets to commands and view events to packets (§8). Adding a protocol adds
   mappers, not game code.
@@ -23,9 +26,10 @@ client protocol becomes an adapter in front of a game that knows no packets. Sta
 | `libs/network` (`app.l2nx.network`)              | bootstraps, transport selection, framing, cipher contract and handler, frame encoder, limits, metrics, the ciphers            |
 | `engine/core` `session`                          | session queue, session states, command dispatch, `ClientPort` ([wiring-layout §4](003-engine-core/wiring-layout.md#4-layout)) |
 | `login/server` `protocol/<variant>/`             | login protocol variants (decoders, packets)                                                                                   |
-| `login/server` `gslink`                          | login side of the GS-link                                                                                                     |
+| `libs/gslink` (`app.l2nx.gslink`)                | the GS-link contract: `.proto` (`l2nx.gslink.v1`), generated stubs, the shared-secret interceptors, `l2nx.gslink` settings    |
+| `login/server` `gslink`                          | login side of the GS-link: the gRPC service                                                                                   |
 | `chronicles/<c>/server` `login`                  | the game server's side of the login server as a slice: online accounts, server listing, `LoginPort`, the login commands       |
-| `chronicles/<c>/server` `network`                | game pipeline, version handshake, protocol registry, `gslink/` (the GS-link client, adapter of `LoginPort`)                   |
+| `chronicles/<c>/server` `network`                | game pipeline, version handshake, protocol registry, `gslink/` (the gRPC client of the GS-link, adapter of `LoginPort`)       |
 | `chronicles/<c>/server` `network/protocol/<id>/` | one client protocol adapter: inbound decoders, outbound mappers, serialization                                                |
 
 `libs/network` knows no game rules; it knows bytes, frames and the Lineage 2 ciphers (LE Blowfish, rolling XOR,
@@ -34,35 +38,33 @@ XOR checksum).
 ## 3. Configuration
 
 New settings are Spring Boot properties under `l2nx.network`, shared by both servers through
-`@ConfigurationProperties` in `libs/network`; they replace `l2nx.login.network.*`. The game client port and the
-GS-link address stay where the server reads them today (login: `l2nx.login.*`; game: `.ini` until
-[#17](https://github.com/l2nx/nx-l2/issues/17)).
+`@ConfigurationProperties` in `libs/network`; they replace `l2nx.login.network.*`. The game client port stays where
+the server reads it today (login: `l2nx.login.*`; game: `.ini` until [#17](https://github.com/l2nx/nx-l2/issues/17)).
+The GS-link is configured by Spring Boot's gRPC properties (`spring.grpc.server.*` on the login server,
+`spring.grpc.client.channel.login.*` on the game server: address, TLS through an SSL bundle, keepalive) plus
+`l2nx.gslink` (§10).
 
-| Property                                  | Default         | Meaning                                                                    |
-| ----------------------------------------- | --------------- | -------------------------------------------------------------------------- |
-| `transport`                               | `auto`          | `auto`, `epoll`, `nio`, `io-uring` (§4)                                    |
-| `worker-threads`                          | Netty default   | IO threads per process                                                     |
-| `max-frame`                               | 16 KB           | largest inbound frame; larger closes the connection                        |
-| `read-timeout`                            | 120 s           | a connection silent before `IN_GAME` (login: before auth, §9) is closed    |
-| `ping-interval`                           | 30 s            | in game, read idle this long sends `NetPing`                               |
-| `ping-misses`                             | 3               | unanswered pings in a row that close an in-game connection                 |
-| `handshake-timeout`                       | 10 s            | time from accept to the protocol version (game) or `AuthGameGuard` (login) |
-| `auth-timeout`                            | 60 s            | time from accept to a completed login or game authentication               |
-| `inbound-queue-limit`                     | 256             | session queue capacity (§5)                                                |
-| `packets-per-drain`                       | 16              | items one session drain run executes before E6 (§5)                        |
-| `packets-per-second`                      | 200             | sustained inbound packets per session; burst = `inbound-queue-limit`       |
-| `decode-error-limit.count` / `.window`    | 10 / 60 s       | decode errors tolerated in game before the connection is closed            |
-| `write-buffer-low` / `-high`              | 32 KB / 128 KB  | Netty write watermarks                                                     |
-| `outbound-limit`                          | 1 MB            | pending outbound bytes per connection (queue plus channel buffer)          |
-| `slow-client-timeout`                     | 10 s            | longest time a connection may stay unwritable                              |
-| `connections-per-ip`                      | 10              | concurrent connections from one address                                    |
-| `accept-per-ip-per-second`                | 5               | new connections from one address                                           |
-| `max-connections`                         | 10000           | concurrent connections per server                                          |
-| `gslink.secret`                           | none (required) | shared secret of the GS-link challenge (§10)                               |
-| `gslink.tls`                              | `false`         | TLS on the GS-link                                                         |
-| `gslink.ping-interval`                    | 15 s            | ping on write idle; no read for 3 intervals closes the link                |
-| `gslink.reconnect-delay.initial` / `.max` | 1 s / 30 s      | reconnect backoff of the game server, doubling from `initial` to `max`     |
-| `shutdown-quiet-period` / `-timeout`      | 2 s / 15 s      | `shutdownGracefully` of the event loop groups                              |
+| Property                               | Default        | Meaning                                                                    |
+| -------------------------------------- | -------------- | -------------------------------------------------------------------------- |
+| `transport`                            | `auto`         | `auto`, `epoll`, `nio`, `io-uring` (§4)                                    |
+| `worker-threads`                       | Netty default  | IO threads per process                                                     |
+| `max-frame`                            | 16 KB          | largest inbound frame; larger closes the connection                        |
+| `read-timeout`                         | 120 s          | a connection silent before `IN_GAME` (login: before auth, §9) is closed    |
+| `ping-interval`                        | 30 s           | in game, read idle this long sends `NetPing`                               |
+| `ping-misses`                          | 3              | unanswered pings in a row that close an in-game connection                 |
+| `handshake-timeout`                    | 10 s           | time from accept to the protocol version (game) or `AuthGameGuard` (login) |
+| `auth-timeout`                         | 60 s           | time from accept to a completed login or game authentication               |
+| `inbound-queue-limit`                  | 256            | session queue capacity (§5)                                                |
+| `packets-per-drain`                    | 16             | items one session drain run executes before E6 (§5)                        |
+| `packets-per-second`                   | 200            | sustained inbound packets per session; burst = `inbound-queue-limit`       |
+| `decode-error-limit.count` / `.window` | 10 / 60 s      | decode errors tolerated in game before the connection is closed            |
+| `write-buffer-low` / `-high`           | 32 KB / 128 KB | Netty write watermarks                                                     |
+| `outbound-limit`                       | 1 MB           | pending outbound bytes per connection (queue plus channel buffer)          |
+| `slow-client-timeout`                  | 10 s           | longest time a connection may stay unwritable                              |
+| `connections-per-ip`                   | 10             | concurrent connections from one address                                    |
+| `accept-per-ip-per-second`             | 5              | new connections from one address                                           |
+| `max-connections`                      | 10000          | concurrent connections per server                                          |
+| `shutdown-quiet-period` / `-timeout`   | 2 s / 15 s     | `shutdownGracefully` of the event loop groups                              |
 
 ## 4. Event loops and transports
 
@@ -267,22 +269,42 @@ Packets not yet moved to ports pass through the `highfive` adapter as they are:
 
 ## 10. GS-link
 
-- **Netty on both ends:** the login server listens, the game server connects as a client and reconnects after a
-  close with `gslink.reconnect-delay` backoff. A ping on write idle (`gslink.ping-interval`) keeps the link busy, and a link with no read for three intervals
-  is closed as dead.
-- **Authentication:** every registration answers a challenge: the login server sends a nonce, the game server
-  returns its hex id, its chronicle and an HMAC-SHA256 over the nonce, the hex id and the chronicle under
-  `gslink.secret`, so an answer cannot be replayed for another server. A link without a valid answer is closed. A new registration with the hex id of a live link replaces the old link and closes it.
-- **Transport security:** the login server binds the GS-link to loopback by default (`l2nx.login.game-server.host`
-  defaults to `127.0.0.1` instead of `*`). Across hosts, `gslink.tls`
-  turns on Netty `SslHandler`, and the game server verifies the login server's certificate. The custom RSA and
-  Blowfish exchange of Mobius is not kept.
-- **Packets** carry the account by UUID ([persistence.md §1](003-engine-core/persistence.md#1-persistent-identity),
-  [spec 006](006-database.md));
-  the game server reports its chronicle when it registers.
+The login↔game link is gRPC: Spring Boot's gRPC server on the login server, a named client channel on the game
+server, the contract in `libs/gslink`. The Mobius packet set, its RSA and Blowfish key exchange and its revision
+number are not kept.
+
+```proto
+service GsLink {
+  rpc Connect(stream GameServerMessage) returns (stream LoginServerMessage);
+}
+```
+
+- **One bidirectional stream per game server.** A registration lives as long as its stream; messages keep their
+  order in both directions (a logout is never overtaken by the status that takes the server down), and the login
+  server pushes its requests (kick, character count) on the same stream. Each direction is a `oneof` envelope; the
+  message names are the commands and port calls of the `login` slice. The proto package carries the version
+  (`l2nx.gslink.v1`); a breaking change is a new package, not a revision field.
+- **Registration:** the first message is `Register` with the hex id and the chronicle; a stream that sends anything
+  else first, or nothing within `handshake-timeout`, is cancelled. A registration with the hex id of a live stream
+  cancels the old one.
+- **Authentication:** the game server sends `l2nx.gslink.secret` (required on both servers, no default) as call
+  credentials in the `authorization` metadata; a server interceptor compares it in constant time and rejects the
+  call with `UNAUTHENTICATED`. The secret travels in clear only on loopback: the login server refuses to start when
+  the gRPC server listens on another address without TLS, and the game server refuses a non-loopback target without
+  TLS. TLS comes from a Spring Boot SSL bundle; the game server verifies the login server's certificate, host name
+  included. The server binds to `127.0.0.1` by default.
+- **Liveness:** gRPC keepalive pings (`keepAliveTime` 15 s and its timeout on the game server's channel, a matching
+  `permitKeepAliveTime` on the login server) detect a dead link. The channel reconnects by gRPC's own connection
+  backoff; when the stream fails, the game server opens a new one after a delay from Spring's `ExponentialBackOff`
+  (`l2nx.gslink.reconnect-delay.initial` 1 s doubling to `.max` 30 s) and registers again.
+- **Threading:** gRPC delivers the messages of one stream one at a time on its executor, never on a Netty IO
+  thread, so each link is a serial lane without an executor of ours; sends to a stream go through one serializing
+  writer, since a `StreamObserver` is not thread-safe.
+- **Messages** carry the account by UUID ([persistence.md §1](003-engine-core/persistence.md#1-persistent-identity),
+  [spec 006](006-database.md)); the game server reports its chronicle when it registers.
 - **The game side is a port and an adapter:** game code talks to the login server only through the `login` slice
   (`LoginService`), which sends through the `LoginPort` interface; `network/gslink/LoginServerLink` implements it and
-  turns every inbound packet into a command of the slice (`KickAccount`, `ReportCharacters`, `AuthenticationResult`,
+  turns every inbound message into a command of the slice (`KickAccount`, `ReportCharacters`, `AuthenticationResult`,
   [wiring-layout §4](003-engine-core/wiring-layout.md#ports)).
 
 ## 11. Metrics
@@ -309,6 +331,9 @@ the timers `executor.execution` and `executor.idle` (run time and wait for a slo
 `executor.queued` and `executor.pool.max`. The gauges read the semaphore, since Micrometer cannot read a
 `ThreadPerTaskExecutor` without `--add-opens`; closing the executor removes all five.
 
+The GS-link has the standard gRPC observations of Spring Boot (`grpc.server`, `grpc.client`) and the gRPC health
+service.
+
 Run time of commands is `l2nx.session.command` ([execution.md §8](003-engine-core/execution.md#8-budget-and-metrics)).
 
 ## 12. Shutdown
@@ -318,14 +343,18 @@ The network steps of the stop order of [spec 002](002-spring-boot-runtime.md#sto
 1. Close the server channels and stop reading on client channels (`autoRead = false`).
 2. After the engine has saved the players, send the server close packet to each client with a close-on-write
    promise and wait for the writes up to `shutdown-timeout`.
-3. Close the GS-link after the logout packets are flushed, bounded by `shutdown-timeout`.
+3. The game server sends its last status (down) and completes the GS-link stream after the logouts, then shuts the
+   channel down, bounded by `shutdown-timeout`; the login server stops its gRPC server gracefully.
 4. `shutdownGracefully` with `shutdown-quiet-period` and `shutdown-timeout`.
 
 ## 13. Tests
 
-- **Pipeline tests on `EmbeddedChannel`:** fragmented and merged frames, oversize frames, bad checksum, the login,
-  game and GS-link handshakes, a frame buffered behind the protocol version, unknown opcodes, decode errors, queue
+- **Pipeline tests on `EmbeddedChannel`:** fragmented and merged frames, oversize frames, bad checksum, the login
+  and game handshakes, a frame buffered behind the protocol version, unknown opcodes, decode errors, queue
   overflow, rate limit, slow client and outbound limit, close with queued buffers.
+- **GS-link tests on gRPC's in-process transport:** registration, a wrong or missing secret, the registration
+  timeout, replacement of a live hex id, re-registration after a dropped stream, ordering on shutdown; one test over
+  TLS with a test certificate.
 - **Leak detection** at `paranoid` in every test JVM.
 - **Golden tests** of the ciphers, of each adapter's decoders (bytes in, command out) and mappers (event in, bytes
   out).
@@ -337,7 +366,7 @@ The network steps of the stop order of [spec 002](002-spring-boot-runtime.md#sto
 
 Stage 4 is done when:
 
-- all three connections run on Netty and the Mobius transport is gone;
+- both client connections run on Netty, the GS-link runs on gRPC, and the Mobius transport is gone;
 - the port framework exists (commands, handler registry, `ClientPort`, session states, `GameProtocolRegistry`)
   with the `highfive` adapter and the legacy-route gate;
 - the first slice runs through ports: character selection (`AuthLogin`, `CharacterSelect`, `CharacterCreate`,
