@@ -22,7 +22,6 @@ lists what is open.
 - [#20](https://github.com/l2nx/nx-l2/issues/20) Time dilation for overloaded partitions
 - [#21](https://github.com/l2nx/nx-l2/issues/21) Parallel open world if one partition exceeds its budget
 - [#22](https://github.com/l2nx/nx-l2/issues/22) Choose an XML library for the datapack loaders
-- [#29](https://github.com/l2nx/nx-l2/issues/29) WorldObject overrides equals without hashCode
 - [#27](https://github.com/l2nx/nx-l2/issues/27) Client protocol 140 over High Five content
 - [#28](https://github.com/l2nx/nx-l2/issues/28) Client protocol 557 over High Five content
 - [#31](https://github.com/l2nx/nx-l2/issues/31) Not every effect should freeze while its owner is offline
@@ -64,3 +63,4 @@ lists what is open.
 - [#26](https://github.com/l2nx/nx-l2/issues/26) Seed of Infinity logs the open duration as the close date
 - [#36](https://github.com/l2nx/nx-l2/issues/36) Grand boss status lookup throws for a boss missing from the datapack
 - [#37](https://github.com/l2nx/nx-l2/issues/37) Hero processing throws when a character's clan is missing
+- [#29](https://github.com/l2nx/nx-l2/issues/29) WorldObject overrides equals without hashCode

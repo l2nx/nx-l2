@@ -138,6 +138,7 @@ public abstract class WorldObject extends ListenersContainer implements IPositio
         return true;
     }
 
+    // The new id changes hashCode: take the object out of every hash-based collection before calling this.
     public void refreshId() {
         World.removeObject(this);
         IdManager.getInstance().releaseId(getObjectId());
@@ -868,6 +869,11 @@ public abstract class WorldObject extends ListenersContainer implements IPositio
     @Override
     public boolean equals(Object obj) {
         return (obj instanceof WorldObject) && (((WorldObject) obj).getObjectId() == getObjectId());
+    }
+
+    @Override
+    public int hashCode() {
+        return Integer.hashCode(objectId);
     }
 
     @Override

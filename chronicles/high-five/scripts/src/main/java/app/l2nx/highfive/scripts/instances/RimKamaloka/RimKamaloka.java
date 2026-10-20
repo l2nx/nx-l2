@@ -763,7 +763,11 @@ public class RimKamaloka extends Script {
                 mob.setDecayed(false);
                 mob.setDead(false);
                 mob.overhitEnabled(false);
+                // A new id changes the hash: leave the hash sets holding the mob first, join them again after.
+                world.spawnedMobs.remove(mob);
+                mob.setInstanceId(0);
                 mob.refreshId();
+                world.spawnedMobs.add(mob);
                 monster = mob;
                 break;
             }
