@@ -26,7 +26,7 @@
  */
 package app.l2nx.login.network.gameserverpackets.receive;
 
-import app.l2nx.login.GameServerThread;
+import app.l2nx.login.gslink.GameServerLink;
 import app.l2nx.network.packet.SimpleReadablePacket;
 import java.util.UUID;
 
@@ -44,7 +44,7 @@ import java.util.UUID;
 public class PlayerInGame extends SimpleReadablePacket {
     private static final int ACCOUNT_ID_SIZE = 2 * Long.BYTES;
 
-    public PlayerInGame(byte[] decrypt, GameServerThread server) {
+    public PlayerInGame(byte[] decrypt, GameServerLink server) {
         super(decrypt);
 
         if (decrypt == null) {
@@ -52,7 +52,7 @@ public class PlayerInGame extends SimpleReadablePacket {
         }
 
         if (server == null) {
-            throw new IllegalArgumentException("PlayerInGame target GameServerThread cannot be null.");
+            throw new IllegalArgumentException("PlayerInGame target GameServerLink cannot be null.");
         }
 
         if (getRemainingLength() < 3) {

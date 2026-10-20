@@ -12,9 +12,9 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import app.l2nx.login.GameServerThread;
 import app.l2nx.login.config.TestLoginProperties;
 import app.l2nx.login.controller.LoginController;
+import app.l2nx.login.gslink.GameServerLink;
 import app.l2nx.login.repository.AccountRepository;
 import java.io.File;
 import java.net.InetAddress;
@@ -36,7 +36,7 @@ class RequestTempBanTest {
     private static final String ADDRESS = "10.1.2.3";
 
     private final AccountRepository accounts = mock(AccountRepository.class);
-    private final GameServerThread server = mock(GameServerThread.class);
+    private final GameServerLink server = mock(GameServerLink.class);
 
     private LoginController controller;
 

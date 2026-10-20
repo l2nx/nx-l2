@@ -27,9 +27,9 @@
 
 package app.l2nx.login.network.gameserverpackets.receive;
 
-import app.l2nx.login.GameServerThread;
 import app.l2nx.login.controller.LoginController;
 import app.l2nx.login.controller.SessionKey;
+import app.l2nx.login.gslink.GameServerLink;
 import app.l2nx.login.network.LoginClient;
 import app.l2nx.login.network.gameserverpackets.send.PlayerAuthResponse;
 import app.l2nx.network.packet.SimpleReadablePacket;
@@ -45,7 +45,7 @@ import app.l2nx.network.packet.SimpleReadablePacket;
  * @author -Wooden-, BazookaRpm
  */
 public class PlayerAuthRequest extends SimpleReadablePacket {
-    public PlayerAuthRequest(byte[] decrypt, GameServerThread server) {
+    public PlayerAuthRequest(byte[] decrypt, GameServerLink server) {
         super(decrypt);
         readByte();
         final String login = readString();

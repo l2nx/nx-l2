@@ -22,9 +22,9 @@
  */
 package app.l2nx.login.data;
 
-import app.l2nx.login.GameServerThread;
 import app.l2nx.login.LoginServer;
 import app.l2nx.login.config.LoginProperties;
+import app.l2nx.login.gslink.GameServerLink;
 import app.l2nx.login.network.LoginClient;
 import app.l2nx.login.network.gameserverpackets.receive.ServerStatus;
 import app.l2nx.login.repository.GameServerRepository;
@@ -300,7 +300,7 @@ public class GameServerTable {
         // Status information.
         @Getter
         @Setter
-        private GameServerThread gameServerThread;
+        private GameServerLink gameServerLink;
 
         @Getter
         private int status;
@@ -337,10 +337,10 @@ public class GameServerTable {
          * @param hexId the hex id
          * @param gst the gst
          */
-        public GameServerInfo(int id, byte[] hexId, GameServerThread gst) {
+        public GameServerInfo(int id, byte[] hexId, GameServerLink gst) {
             this.id = id;
             this.hexId = hexId;
-            gameServerThread = gst;
+            gameServerLink = gst;
             status = ServerStatus.STATUS_DOWN;
         }
 
@@ -403,11 +403,11 @@ public class GameServerTable {
          * @return the current player count
          */
         public int getCurrentPlayerCount() {
-            if (gameServerThread == null) {
+            if (gameServerLink == null) {
                 return 0;
             }
 
-            return gameServerThread.getPlayerCount();
+            return gameServerLink.getPlayerCount();
         }
 
         public boolean canLogin(LoginClient client) {
@@ -453,7 +453,7 @@ public class GameServerTable {
         public void setDown() {
             setAuthed(false);
             setPort(0);
-            setGameServerThread(null);
+            setGameServerLink(null);
             setStatus(ServerStatus.STATUS_DOWN);
         }
 

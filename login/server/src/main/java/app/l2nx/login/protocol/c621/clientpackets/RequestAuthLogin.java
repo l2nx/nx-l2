@@ -153,7 +153,7 @@ public class RequestAuthLogin extends LoginClientPacket {
                 if (gsi != null) {
                     client.close(LoginFailReason.REASON_ACCOUNT_IN_USE);
                     if (gsi.isAuthed()) {
-                        gsi.getGameServerThread().kickPlayer(info.getId());
+                        gsi.getGameServerLink().kickPlayer(info.getId());
                     }
                 }
                 break;

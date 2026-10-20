@@ -22,7 +22,7 @@
  */
 package app.l2nx.login.network.gameserverpackets.receive;
 
-import app.l2nx.login.GameServerThread;
+import app.l2nx.login.gslink.GameServerLink;
 import app.l2nx.login.network.GameServerPacketHandler.GameServerState;
 import app.l2nx.network.crypt.LittleEndianBlowfishCipher;
 import app.l2nx.network.packet.SimpleReadablePacket;
@@ -44,7 +44,7 @@ public class BlowFishKey extends SimpleReadablePacket {
      * @param decrypt Byte array containing the received encrypted packet
      * @param server Game server thread instance that will process the key
      */
-    public BlowFishKey(byte[] decrypt, GameServerThread server) {
+    public BlowFishKey(byte[] decrypt, GameServerLink server) {
         super(decrypt);
 
         readByte(); // Packet id, it is already processed.
@@ -89,7 +89,7 @@ public class BlowFishKey extends SimpleReadablePacket {
      * @return Byte array with the decrypted block
      * @throws GeneralSecurityException If an error occurs during the decryption process
      */
-    private static byte[] decryptRsaBlock(byte[] encryptedBlock, GameServerThread server)
+    private static byte[] decryptRsaBlock(byte[] encryptedBlock, GameServerLink server)
             throws GeneralSecurityException {
         final Cipher rsaCipher = Cipher.getInstance("RSA/ECB/NoPadding");
         rsaCipher.init(Cipher.DECRYPT_MODE, server.getPrivateKey());

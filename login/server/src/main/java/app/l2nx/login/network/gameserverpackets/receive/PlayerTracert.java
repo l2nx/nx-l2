@@ -23,8 +23,8 @@
  */
 package app.l2nx.login.network.gameserverpackets.receive;
 
-import app.l2nx.login.GameServerThread;
 import app.l2nx.login.controller.LoginController;
+import app.l2nx.login.gslink.GameServerLink;
 import app.l2nx.network.packet.SimpleReadablePacket;
 import java.util.UUID;
 import org.apache.commons.lang3.StringUtils;
@@ -34,7 +34,7 @@ import org.apache.commons.lang3.StringUtils;
  */
 public class PlayerTracert extends SimpleReadablePacket {
 
-    public PlayerTracert(byte[] decrypt, GameServerThread server) {
+    public PlayerTracert(byte[] decrypt, GameServerLink server) {
         super(decrypt);
         readByte(); // Packet id, it is already processed.
 

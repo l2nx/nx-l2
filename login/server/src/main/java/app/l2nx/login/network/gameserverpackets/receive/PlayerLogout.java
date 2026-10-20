@@ -26,7 +26,7 @@
  */
 package app.l2nx.login.network.gameserverpackets.receive;
 
-import app.l2nx.login.GameServerThread;
+import app.l2nx.login.gslink.GameServerLink;
 import app.l2nx.network.packet.SimpleReadablePacket;
 import java.util.UUID;
 
@@ -44,7 +44,7 @@ import java.util.UUID;
 public class PlayerLogout extends SimpleReadablePacket {
     private static final int PACKET_SIZE = 1 + (2 * Long.BYTES);
 
-    public PlayerLogout(byte[] decrypt, GameServerThread server) {
+    public PlayerLogout(byte[] decrypt, GameServerLink server) {
         super(decrypt);
 
         if (decrypt == null) {
@@ -52,7 +52,7 @@ public class PlayerLogout extends SimpleReadablePacket {
         }
 
         if (server == null) {
-            throw new IllegalArgumentException("PlayerLogout target GameServerThread cannot be null.");
+            throw new IllegalArgumentException("PlayerLogout target GameServerLink cannot be null.");
         }
 
         if (getRemainingLength() < PACKET_SIZE) {

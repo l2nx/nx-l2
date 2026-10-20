@@ -22,10 +22,10 @@
  */
 package app.l2nx.login.network.gameserverpackets.receive;
 
-import app.l2nx.login.GameServerThread;
 import app.l2nx.login.LoginServer;
 import app.l2nx.login.data.GameServerTable;
 import app.l2nx.login.data.GameServerTable.GameServerInfo;
+import app.l2nx.login.gslink.GameServerLink;
 import app.l2nx.login.network.GameServerPacketHandler.GameServerState;
 import app.l2nx.login.network.gameserverpackets.send.AuthResponse;
 import app.l2nx.login.network.gameserverpackets.send.LoginServerFail;
@@ -52,7 +52,7 @@ public class GameServerAuth extends SimpleReadablePacket {
     private static final int HOST_STRINGS_PER_PAIR = 2;
 
     // Connection Context.
-    private final GameServerThread server;
+    private final GameServerLink server;
 
     // Packet Data.
     private final int desiredServerId;
@@ -68,7 +68,7 @@ public class GameServerAuth extends SimpleReadablePacket {
      * @param decrypt
      * @param server
      */
-    public GameServerAuth(byte[] decrypt, GameServerThread server) {
+    public GameServerAuth(byte[] decrypt, GameServerLink server) {
         super(decrypt);
         readByte(); // Packet id, it is already processed.
 

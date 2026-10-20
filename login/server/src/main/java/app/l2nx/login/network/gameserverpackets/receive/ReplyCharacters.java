@@ -23,8 +23,8 @@
  */
 package app.l2nx.login.network.gameserverpackets.receive;
 
-import app.l2nx.login.GameServerThread;
 import app.l2nx.login.controller.LoginController;
+import app.l2nx.login.gslink.GameServerLink;
 import app.l2nx.network.packet.SimpleReadablePacket;
 import java.util.UUID;
 
@@ -33,7 +33,7 @@ import java.util.UUID;
  * @author mrTJO
  */
 public class ReplyCharacters extends SimpleReadablePacket {
-    public ReplyCharacters(byte[] decrypt, GameServerThread server) {
+    public ReplyCharacters(byte[] decrypt, GameServerLink server) {
         super(decrypt);
         readByte(); // Packet id, it is already processed.
 

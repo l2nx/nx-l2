@@ -26,8 +26,8 @@
  */
 package app.l2nx.login.network.gameserverpackets.receive;
 
-import app.l2nx.login.GameServerThread;
 import app.l2nx.login.controller.LoginController;
+import app.l2nx.login.gslink.GameServerLink;
 import app.l2nx.network.packet.SimpleReadablePacket;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -41,7 +41,7 @@ import org.apache.commons.lang3.StringUtils;
  * Handles password change requests coming from game servers.<br>
  * Performs credential verification and persists the updated password hash in the login database.
  * <ul>
- * <li>Resolves the session owner GameServerThread for the requested account.</li>
+ * <li>Resolves the session owner GameServerLink for the requested account.</li>
  * <li>Validates the provided current password hash against the stored value.</li>
  * <li>Updates the stored hash and replies with the result.</li>
  * </ul>
@@ -65,7 +65,7 @@ public class ChangePassword extends SimpleReadablePacket {
      * Sends the result back to the owning game server thread.
      * @param decrypt
      */
-    public ChangePassword(byte[] decrypt, GameServerThread server) {
+    public ChangePassword(byte[] decrypt, GameServerLink server) {
         super(decrypt);
 
         final int packetId = readByte();
@@ -75,7 +75,7 @@ public class ChangePassword extends SimpleReadablePacket {
         final String newPassword = readString();
 
         // A game server may only change the password of an account it holds.
-        final GameServerThread ownerThread = server.hasAccountOnGameServer(accountId) ? server : null;
+        final GameServerLink ownerThread = server.hasAccountOnGameServer(accountId) ? server : null;
 
         if (ownerThread == null) {
             if (log.isTraceEnabled()) {

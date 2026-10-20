@@ -19,9 +19,9 @@
  */
 package app.l2nx.login.network.gameserverpackets.receive;
 
-import app.l2nx.login.GameServerThread;
 import app.l2nx.login.data.GameServerTable;
 import app.l2nx.login.data.GameServerTable.GameServerInfo;
+import app.l2nx.login.gslink.GameServerLink;
 import app.l2nx.network.packet.SimpleReadablePacket;
 
 /**
@@ -62,7 +62,7 @@ public class ServerStatus extends SimpleReadablePacket {
     public static final int ON = 0x01;
     public static final int OFF = 0x00;
 
-    public ServerStatus(byte[] decrypt, GameServerThread server) {
+    public ServerStatus(byte[] decrypt, GameServerLink server) {
         super(decrypt);
         readByte(); // Packet id, it is already processed.
 

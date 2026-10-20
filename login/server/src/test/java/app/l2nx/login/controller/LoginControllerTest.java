@@ -13,12 +13,12 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import app.l2nx.login.GameServerThread;
 import app.l2nx.login.config.TestLoginProperties;
 import app.l2nx.login.data.GameServerTable;
 import app.l2nx.login.data.GameServerTable.GameServerInfo;
 import app.l2nx.login.enums.LoginFailReason;
 import app.l2nx.login.enums.LoginResult;
+import app.l2nx.login.gslink.GameServerLink;
 import app.l2nx.login.network.LoginClient;
 import app.l2nx.login.protocol.LoginVariant;
 import app.l2nx.login.repository.AccountRepository;
@@ -278,12 +278,12 @@ class LoginControllerTest {
         void requestCharacters_shouldAskAndAwaitOnlyTheAuthedServersWithALink() {
             final LoginClient client = mock(LoginClient.class);
             when(client.getAccountId()).thenReturn(ACCOUNT_ID);
-            final GameServerThread link = mock(GameServerThread.class);
+            final GameServerLink link = mock(GameServerLink.class);
             final GameServerInfo linked = new GameServerInfo(1, new byte[0], link);
             linked.setAuthed(true);
             final GameServerInfo linkGone = new GameServerInfo(2, new byte[0]);
             linkGone.setAuthed(true);
-            final GameServerInfo notAuthed = new GameServerInfo(3, new byte[0], mock(GameServerThread.class));
+            final GameServerInfo notAuthed = new GameServerInfo(3, new byte[0], mock(GameServerLink.class));
 
             controller.requestCharacters(client, List.of(linked, linkGone, notAuthed));
 

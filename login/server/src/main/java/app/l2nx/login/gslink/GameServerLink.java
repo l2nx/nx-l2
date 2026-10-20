@@ -24,8 +24,9 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package app.l2nx.login;
+package app.l2nx.login.gslink;
 
+import app.l2nx.login.LoginServer;
 import app.l2nx.login.controller.LoginController;
 import app.l2nx.login.controller.ScrambledKeyPair;
 import app.l2nx.login.data.GameServerTable;
@@ -69,7 +70,7 @@ import lombok.extern.slf4j.Slf4j;
  * @author -Wooden-, KenM, Mobius
  */
 @Slf4j
-public class GameServerThread extends Thread {
+public class GameServerLink extends Thread {
 
     // Constants.
     private static final int PACKET_HEADER_SIZE = 2;
@@ -108,11 +109,11 @@ public class GameServerThread extends Thread {
     private GameServerState loginConnectionState = GameServerState.CONNECTED;
 
     /**
-     * Constructs a new GameServerThread for handling communication with a game server.<br>
+     * Constructs a new GameServerLink for handling communication with a game server.<br>
      * Initializes the network streams, RSA key pair and Blowfish encryption. The thread automatically starts upon construction.
      * @param socket the TCP socket connection to the game server
      */
-    public GameServerThread(Socket socket) {
+    public GameServerLink(Socket socket) {
         this.socket = socket;
         connectionIp = socket.getInetAddress().getHostAddress();
 
@@ -286,7 +287,7 @@ public class GameServerThread extends Thread {
     public void attachGameServerInfo(GameServerInfo gameServerInfo, int port, String[] hosts, int maxPlayers) {
         // Establish bidirectional relationship between thread and server info.
         setGameServerInfo(gameServerInfo);
-        gameServerInfo.setGameServerThread(this);
+        gameServerInfo.setGameServerLink(this);
 
         // Configure server network settings.
         gameServerInfo.setPort(port);

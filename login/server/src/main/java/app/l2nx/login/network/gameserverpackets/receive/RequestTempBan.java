@@ -23,8 +23,8 @@
  */
 package app.l2nx.login.network.gameserverpackets.receive;
 
-import app.l2nx.login.GameServerThread;
 import app.l2nx.login.controller.LoginController;
+import app.l2nx.login.gslink.GameServerLink;
 import app.l2nx.network.packet.SimpleReadablePacket;
 import java.time.Duration;
 import java.util.UUID;
@@ -40,7 +40,7 @@ public class RequestTempBan extends SimpleReadablePacket {
     private final String ip;
     private final Duration duration;
 
-    public RequestTempBan(byte[] decrypt, GameServerThread server) {
+    public RequestTempBan(byte[] decrypt, GameServerLink server) {
         super(decrypt);
         readByte(); // Packet id, it is already processed.
 

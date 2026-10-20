@@ -26,12 +26,12 @@
  */
 package app.l2nx.login.controller;
 
-import app.l2nx.login.GameServerThread;
 import app.l2nx.login.config.LoginProperties;
 import app.l2nx.login.data.GameServerTable;
 import app.l2nx.login.data.GameServerTable.GameServerInfo;
 import app.l2nx.login.enums.LoginFailReason;
 import app.l2nx.login.enums.LoginResult;
+import app.l2nx.login.gslink.GameServerLink;
 import app.l2nx.login.network.LoginClient;
 import app.l2nx.login.repository.AccountRepository;
 import app.l2nx.login.repository.AccountRepository.IpRule;
@@ -400,7 +400,7 @@ public class LoginController {
         final Collection<GameServerInfo> serverList =
                 GameServerTable.getInstance().getRegisteredGameServers().values();
         for (GameServerInfo gsi : serverList) {
-            final GameServerThread gst = gsi.getGameServerThread();
+            final GameServerLink gst = gsi.getGameServerLink();
             if ((gst != null) && gst.hasAccountOnGameServer(accountId)) {
                 return true;
             }
@@ -413,7 +413,7 @@ public class LoginController {
         final Collection<GameServerInfo> serverList =
                 GameServerTable.getInstance().getRegisteredGameServers().values();
         for (GameServerInfo gsi : serverList) {
-            final GameServerThread gst = gsi.getGameServerThread();
+            final GameServerLink gst = gsi.getGameServerLink();
             if ((gst != null) && gst.hasAccountOnGameServer(accountId)) {
                 return gsi;
             }
@@ -428,10 +428,10 @@ public class LoginController {
     }
 
     void requestCharacters(LoginClient client, Collection<GameServerInfo> servers) {
-        final Map<Integer, GameServerThread> online = new HashMap<>();
+        final Map<Integer, GameServerLink> online = new HashMap<>();
         for (GameServerInfo gsi : servers) {
             // The link may drop concurrently; a server without one cannot answer, so it is not awaited.
-            final GameServerThread link = gsi.getGameServerThread();
+            final GameServerLink link = gsi.getGameServerLink();
             if (gsi.isAuthed() && (link != null)) {
                 online.put(gsi.getId(), link);
             }

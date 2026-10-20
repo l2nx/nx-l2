@@ -24,6 +24,7 @@
 package app.l2nx.login;
 
 import app.l2nx.login.config.LoginProperties;
+import app.l2nx.login.gslink.GameServerLink;
 import app.l2nx.login.util.FloodProtectorListener;
 import java.io.IOException;
 import java.net.Socket;
@@ -38,7 +39,7 @@ import lombok.extern.slf4j.Slf4j;
  * <ul>
  * <li>Uses flood protection to mitigate abusive connection attempts.</li>
  * <li>Binds to host and port configured in {@link LoginProperties.GameServer}.</li>
- * <li>Creates one {@link GameServerThread} per accepted socket.</li>
+ * <li>Creates one {@link GameServerLink} per accepted socket.</li>
  * <li>Tracks active game server threads in a concurrent collection for monitoring.</li>
  * </ul>
  * @author BazookaRpm
@@ -48,7 +49,7 @@ public class GameServerListener extends FloodProtectorListener {
 
     // Active game server handler threads.
     @Getter
-    private static final Collection<GameServerThread> gameServers = ConcurrentHashMap.newKeySet();
+    private static final Collection<GameServerLink> gameServers = ConcurrentHashMap.newKeySet();
 
     /**
      * Constructs a new game server listener bound to the configured host and port.<br>
@@ -74,9 +75,9 @@ public class GameServerListener extends FloodProtectorListener {
         }
 
         try {
-            final GameServerThread gameServerThread =
-                    new GameServerThread(socket); // The constructor itself already does start().
-            gameServers.add(gameServerThread);
+            final GameServerLink gameServerLink =
+                    new GameServerLink(socket); // The constructor itself already does start().
+            gameServers.add(gameServerLink);
 
             if (log.isDebugEnabled()) {
                 final String address = (socket.getInetAddress() != null)
@@ -102,20 +103,20 @@ public class GameServerListener extends FloodProtectorListener {
     /**
      * Removes a game server thread from the active collection.<br>
      * Intended to be called when a game server handler terminates.
-     * @param gameServerThread The game server thread to remove.
+     * @param gameServerLink The game server thread to remove.
      */
-    public void removeGameServer(GameServerThread gameServerThread) {
-        if (gameServerThread == null) {
+    public void removeGameServer(GameServerLink gameServerLink) {
+        if (gameServerLink == null) {
             log.warn("Attempted to remove null game server thread.");
             return;
         }
 
-        final boolean removed = gameServers.remove(gameServerThread);
+        final boolean removed = gameServers.remove(gameServerLink);
 
         if (log.isDebugEnabled()) {
             log.debug(
                     "Removed game server thread {} (removed={}). Active game servers: {}.",
-                    gameServerThread,
+                    gameServerLink,
                     removed,
                     gameServers.size());
         }

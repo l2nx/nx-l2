@@ -22,7 +22,7 @@
  */
 package app.l2nx.login.network;
 
-import app.l2nx.login.GameServerThread;
+import app.l2nx.login.gslink.GameServerLink;
 import app.l2nx.login.network.gameserverpackets.receive.BlowFishKey;
 import app.l2nx.login.network.gameserverpackets.receive.ChangeAccessLevel;
 import app.l2nx.login.network.gameserverpackets.receive.ChangePassword;
@@ -53,7 +53,7 @@ public class GameServerPacketHandler {
 
     private GameServerPacketHandler() {}
 
-    public static SimpleReadablePacket handle(byte[] data, GameServerThread server) {
+    public static SimpleReadablePacket handle(byte[] data, GameServerLink server) {
         if ((data == null) || (data.length == 0)) {
             log.warn("Received empty packet from {}", server);
             server.forceClose(LoginServerFail.NOT_AUTHED);
@@ -133,7 +133,7 @@ public class GameServerPacketHandler {
         }
     }
 
-    private static void logInvalidOpcode(int opcode, GameServerState state, GameServerThread server) {
+    private static void logInvalidOpcode(int opcode, GameServerState state, GameServerLink server) {
         log.warn(
                 "Unknown opcode ({}) in state {} from {}, closing connection.",
                 Integer.toHexString(opcode).toUpperCase(),
