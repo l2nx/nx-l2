@@ -30,7 +30,6 @@ lists what is open.
 - [#33](https://github.com/l2nx/nx-l2/issues/33) Creating a second academy is never reported, and the academy leader differs between memory and database
 - [#34](https://github.com/l2nx/nx-l2/issues/34) Editing a community board post by index can hit the wrong post
 - [#35](https://github.com/l2nx/nx-l2/issues/35) A long-time event deletes item rows that may still be loaded
-- [#36](https://github.com/l2nx/nx-l2/issues/36) Grand boss status lookup throws for a boss missing from the datapack
 - [#37](https://github.com/l2nx/nx-l2/issues/37) Hero processing throws when a character's clan is missing
 - [#38](https://github.com/l2nx/nx-l2/issues/38) A siegable clan hall without a loaded owner clan fails to load
 - [#39](https://github.com/l2nx/nx-l2/issues/39) A fort whose owner clan is not loaded fails to load
@@ -64,3 +63,4 @@ lists what is open.
 - [#50](https://github.com/l2nx/nx-l2/issues/50) Dimensional Rift runs world changes on its own java.util.Timer threads
 - [#25](https://github.com/l2nx/nx-l2/issues/25) Weapon damage_range with 2 or 3 parts breaks item loading
 - [#26](https://github.com/l2nx/nx-l2/issues/26) Seed of Infinity logs the open duration as the close date
+- [#36](https://github.com/l2nx/nx-l2/issues/36) Grand boss status lookup throws for a boss missing from the datapack

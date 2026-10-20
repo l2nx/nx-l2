@@ -196,7 +196,12 @@ public class GrandBossManager {
     }
 
     public int getStatus(int bossId) {
-        return bossStatus.get(bossId);
+        final Integer status = bossStatus.get(bossId);
+        if (status == null) {
+            throw new IllegalArgumentException("Grand boss " + bossId + " is not in GrandBosses.xml");
+        }
+
+        return status;
     }
 
     public void setStatus(int bossId, int status) {
