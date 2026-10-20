@@ -1,7 +1,8 @@
 # 003 — Engine core: identity and persistence
 
 How game objects are identified, how values move without duplication, and how the rest of the state reaches
-PostgreSQL. Part of [spec 003](spec.md). Database choice: [spec 001 §5.1](../001-project-design.md#51-database).
+PostgreSQL. Part of [spec 003](spec.md). Database choice: [spec 001 §5.1](../001-project-design.md#51-database). Schemas, migrations and repositories:
+[spec 006](../006-database.md).
 
 ## 1. Persistent identity
 

@@ -10,5 +10,6 @@ Finished one-time specs are kept in [archive/](archive/).
 | 002 | Spring Boot runtime | 2026-10-19 | [002-spring-boot-runtime.md](specs/002-spring-boot-runtime.md) |
 | 003 | engine core         | 2026-10-19 | [003-engine-core/spec.md](specs/003-engine-core/spec.md)       |
 | 005 | code formatting     | 2026-10-19 | [005-code-formatting.md](specs/005-code-formatting.md)         |
+| 006 | database            | 2026-10-19 | [006-database.md](specs/006-database.md)                       |
 | 007 | java conventions    | 2026-10-19 | [007-java-conventions.md](specs/007-java-conventions.md)       |
 | 008 | network             | 2026-10-19 | [008-network.md](specs/008-network.md)                         |

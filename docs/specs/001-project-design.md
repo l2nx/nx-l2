@@ -55,6 +55,18 @@ and 1005 MIT Java files in the core, plus 924 GPLv3 and 367 MIT scripts.
 Mobius' "for education" wording is a fair-use argument and a project policy, not a license term. Neither GPLv3 nor
 MIT restricts use, and GPLv3 §7/§10 forbid adding restrictions.
 
+### Third-party licenses
+
+Dependencies are permissive (Apache 2.0, MIT, BSD) with one accepted exception:
+
+- **Liquibase 5** (schema migrations, [spec 006](006-database.md)) is licensed under FSL-1.1-ALv2. Its only
+  restriction, "competing use", covers products that compete with Liquibase, which a game server does not; each
+  release becomes Apache 2.0 two years after it ships. FSL is not GPLv3-compatible, so the combination is unclean only
+  while GPLv3 files remain in the build. The owner accepted this: the goal is replacing all Mobius code
+  ([#1](https://github.com/l2nx/nx-l2/issues/1)), after which the build is permissive. Liquibase 4.x (Apache 2.0) is
+  frozen; Flyway would be a second migration tool beside the L2NX platform services.
+- `NOTICE` names Liquibase and its license.
+
 ### Authorship and headers
 
 Every file carries an SPDX license identifier (`Apache-2.0`, `MIT`, `GPL-3.0-or-later` as the upstream
@@ -69,7 +81,7 @@ a license fails the build. The GPLv3 count per module comes from the same data.
   file; it makes no statement for headerless files. The owner chose MIT over the conservative GPLv3 reading.
 - **A substantively modified Mobius file adds an SPDX block** with `2026 L2NX contributors` and the upstream
   license identifier (CONTRIBUTING.md). Its license does not change. Mechanical changes (package rename, SPDX
-  insertion) add no block.
+  insertion, the code reformat of spec 005, the canon conversion of spec 007) add no block.
 - **A file written from scratch carries only the project header, Apache 2.0.** Renaming packages or variables is
   not a rewrite. A rewrite of a GPLv3 file is done from the behaviour, not by editing the GPLv3 text.
 - **`NOTICE` names the upstream:** "based on L2J Mobius", with the upstream commit the import started from.
@@ -260,18 +272,21 @@ How the server finds scripts (`server` cannot depend on `scripts`, so discovery 
 
 ## 5. Stack
 
-| Concern  | Choice                                                                       |
-| -------- | ---------------------------------------------------------------------------- |
-| Java     | 25 LTS (Mobius targets 27; the imported tree compiles on 25 as is)           |
-| Build    | Gradle Kotlin DSL, version catalog, no committed jars but the Gradle wrapper |
-| Format   | palantir-java-format via Spotless, checked by `build`; LF (spec 005)         |
-| Local DB | `compose.yaml`: database only (`l2nx-db`), servers run from Gradle           |
-| Host     | Spring Boot 4.1 (spec 002)                                                   |
-| Network  | Netty for every connection: client↔game, client↔login, login↔game            |
-| Database | PostgreSQL from stage 3 (§5.1); MariaDB with the imported SQL until then     |
-| Metrics  | Micrometer, Actuator, Prometheus scrape                                      |
-| Logging  | Log4j2 (async)                                                               |
-| Docs     | English; the public pages on `l2nx.dev` also in Russian                      |
+| Concern  | Choice                                                                             |
+| -------- | ---------------------------------------------------------------------------------- |
+| Java     | 25 LTS (Mobius targets 27; the imported tree compiles on 25 as is)                 |
+| Build    | Gradle Kotlin DSL, version catalog, no committed jars but the Gradle wrapper       |
+| Format   | palantir-java-format via Spotless, checked by `build`; LF (spec 005)               |
+| Local DB | `compose.yaml`: database only (`l2nx-db`), servers run from Gradle                 |
+| Host     | Spring Boot 4.1 (spec 002)                                                         |
+| Network  | Netty for every connection: client↔game, client↔login, login↔game                  |
+| Database | PostgreSQL from stage 3 (§5.1, spec 006); MariaDB with the imported SQL until then |
+| Metrics  | Micrometer, Actuator, Prometheus scrape                                            |
+| Logging  | Log4j2 (async)                                                                     |
+| Docs     | English; the public pages on `l2nx.dev` also in Russian                            |
+
+**Versions:** every library, image and tool takes its latest LTS line, or its latest stable release where the
+project has no LTS (PostgreSQL); Renovate keeps them current.
 
 ### 5.1. Database
 
@@ -407,7 +422,10 @@ the imported MySQL DDL, so the schema is written once. The port covers case-inse
 `setString` into numeric ones), the MySQL-only statements (`REPLACE INTO`, `ON DUPLICATE KEY UPDATE`, `IF()`,
 backticks), the data types PostgreSQL lacks (UNSIGNED, MEDIUMINT, ENUM) and empty-string defaults that stand
 for no value (`gameservers.host`), which become NULL. Keys are UUIDv7 and object ids on the wire become handles
-allocated on load ([spec 003, identity](003-engine-core/persistence.md#1-persistent-identity)). The adapter's
+allocated on load ([spec 003, identity](003-engine-core/persistence.md#1-persistent-identity)). Schemas,
+migrations, static data and repositories: [spec 006](006-database.md). The login server moves first; the game server
+moves in one switch (baseline, identity, repositories, static data to the datapack), since a schema keyed by UUIDv7
+cannot be loaded without the handle allocator. The adapter's
 change capture reads only MySQL and MariaDB today; its PostgreSQL path
 ([#13](https://github.com/l2nx/nx-l2/issues/13)) is needed before stage 5.
 

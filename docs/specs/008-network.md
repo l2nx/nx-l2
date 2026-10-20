@@ -260,7 +260,8 @@ Packets not yet moved to ports pass through the `highfive` adapter as they are:
   defaults to `127.0.0.1` instead of `*`). Across hosts, `gslink.tls`
   turns on Netty `SslHandler`, and the game server verifies the login server's certificate. The custom RSA and
   Blowfish exchange of Mobius is not kept.
-- **Packets** carry the account by UUID ([persistence.md §1](003-engine-core/persistence.md#1-persistent-identity));
+- **Packets** carry the account by UUID ([persistence.md §1](003-engine-core/persistence.md#1-persistent-identity),
+  [spec 006](006-database.md));
   the game server reports its chronicle when it registers.
 
 ## 11. Metrics
