@@ -36,6 +36,11 @@ servers from MariaDB.
   `options=-c idle_in_transaction_session_timeout=60s` through `spring.datasource.hikari.data-source-properties`, so it
   survives an operator's own JDBC URL and a connection left in a transaction cannot hold locks indefinitely whatever
   the role is. Hikari keeps `auto-commit=true`; transactions are opened explicitly (§5).
+- **Pools fit the database's connection limit.** Both pools are fixed-size, as Hikari recommends (`minimum-idle`
+  left at its default, the maximum): the game server 20 connections, since game threads still run JDBC directly
+  until write-behind (spec 003), the login server 5. Every process on one database adds its maximum, and the sum
+  stays well below `max_connections` (100 by default, 3 reserved for superusers); an operator who raises a pool or
+  adds game servers raises `max_connections` with it.
 
 ## 2. Migrations
 

@@ -7,7 +7,7 @@ spring:
   datasource:
     username: l2nx_game
     hikari:
-      maximum-pool-size: 100
+      maximum-pool-size: 20
 
 server:
   port: 8777
