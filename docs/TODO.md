@@ -35,6 +35,18 @@ lists what is open.
 - [#47](https://github.com/l2nx/nx-l2/issues/47) Game server's fixed pool of 100 takes every PostgreSQL connection, so the login server cannot start after it
 - [#48](https://github.com/l2nx/nx-l2/issues/48) Real-client checks left open after moving the login connection to Netty
 - [#49](https://github.com/l2nx/nx-l2/issues/49) Move the stage 3 repositories into their feature slices
+- [#53](https://github.com/l2nx/nx-l2/issues/53) Community board post cache loads a topic twice under a race
+- [#54](https://github.com/l2nx/nx-l2/issues/54) Dimensional Rift state races between player actions and its jump task
+- [#55](https://github.com/l2nx/nx-l2/issues/55) Pet.destroyItem never sends the disappeared message
+- [#56](https://github.com/l2nx/nx-l2/issues/56) Ended long-time event items on the ground come back after a restart
+- [#57](https://github.com/l2nx/nx-l2/issues/57) Mail keeps its cash-on-delivery price after its attachments are destroyed
+- [#58](https://github.com/l2nx/nx-l2/issues/58) Castle circlets stay with the old owner from the second change of owner on
+- [#59](https://github.com/l2nx/nx-l2/issues/59) A clan hall sale auction without bids leaves its row behind
+- [#60](https://github.com/l2nx/nx-l2/issues/60) Event item cleanup can delete rows of a container that loads during it
+- [#61](https://github.com/l2nx/nx-l2/issues/61) Castle.setOwner throws for a castle without a territory
+- [#62](https://github.com/l2nx/nx-l2/issues/62) AutoSpawnDataTest sometimes sees no groups in the full test run
+- [#64](https://github.com/l2nx/nx-l2/issues/64) Bidders lose 10% when a clan hall sale is cancelled by the seller's dissolution
+- [#66](https://github.com/l2nx/nx-l2/issues/66) Siege flags of a dissolved clan stay until the siege ends
 
 ## Done
 
