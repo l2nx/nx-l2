@@ -7,3 +7,7 @@ with its history; see docs/provenance.md.
 
 Files taken from L2J Mobius keep their upstream copyright notices and licenses (MIT or
 GPL-3.0-or-later), as stated in each file's header or in REUSE.toml.
+
+The game and login servers migrate their databases with Liquibase (https://www.liquibase.com),
+which is licensed under the Functional Source License, Version 1.1, Apache 2.0 Future License
+(FSL-1.1-ALv2).

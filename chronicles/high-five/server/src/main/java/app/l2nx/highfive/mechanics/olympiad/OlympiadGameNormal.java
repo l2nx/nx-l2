@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+/*
  * SPDX-FileCopyrightText: L2J Mobius contributors
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
@@ -19,9 +23,10 @@
  */
 package app.l2nx.highfive.mechanics.olympiad;
 
+import static app.l2nx.highfive.repository.LegacyValues.instantOrNull;
+
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.OlympiadConfig;
-import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Creature;
@@ -35,9 +40,7 @@ import app.l2nx.highfive.network.serverpackets.ExOlympiadMatchResult;
 import app.l2nx.highfive.network.serverpackets.ExOlympiadUserInfo;
 import app.l2nx.highfive.network.serverpackets.ServerPacket;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
+import app.l2nx.highfive.repository.olympiad.model.OlympiadFight;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
@@ -846,23 +849,17 @@ public abstract class OlympiadGameNormal extends AbstractOlympiadGame {
 
     protected void saveResults(
             Participant one, Participant two, int winner, long startTime, long fightTime, CompetitionType type) {
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement(
-                        "INSERT INTO olympiad_fights (charOneId, charTwoId, charOneClass, charTwoClass, winner, start, time, classed) values(?,?,?,?,?,?,?,?)")) {
-            ps.setInt(1, one.getObjectId());
-            ps.setInt(2, two.getObjectId());
-            ps.setInt(3, one.getBaseClass());
-            ps.setInt(4, two.getBaseClass());
-            ps.setInt(5, winner);
-            ps.setLong(6, startTime);
-            ps.setLong(7, fightTime);
-            ps.setInt(8, type == CompetitionType.CLASSED ? 1 : 0);
-            ps.execute();
-        } catch (SQLException e) {
-            if (log.isErrorEnabled()) {
-                log.error("SQL exception while saving olympiad fight.", e);
-            }
-        }
+        Olympiad.getInstance()
+                .saveFight(OlympiadFight.builder()
+                        .firstObjectId(one.getObjectId())
+                        .secondObjectId(two.getObjectId())
+                        .firstClassId(one.getBaseClass())
+                        .secondClassId(two.getBaseClass())
+                        .winner(winner)
+                        .startedAt(instantOrNull(startTime))
+                        .durationMs(fightTime)
+                        .classed(type == CompetitionType.CLASSED)
+                        .build());
     }
 
     @Override

@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -24,18 +28,17 @@ package app.l2nx.highfive.network.clientpackets;
 
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.data.holders.PrimeShopProductHolder;
-import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.data.xml.ItemData;
 import app.l2nx.highfive.data.xml.PrimeShopData;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.item.ItemTemplate;
 import app.l2nx.highfive.entity.item.enums.ItemProcessType;
+import app.l2nx.highfive.managers.PrimeShopManager;
 import app.l2nx.highfive.network.serverpackets.ExBrBuyProduct;
 import app.l2nx.highfive.network.serverpackets.ExBrGamePoint;
 import app.l2nx.highfive.network.serverpackets.StatusUpdate;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataAccessException;
 
 /**
  * @author Mobius
@@ -58,7 +61,7 @@ public class RequestBrBuyProduct extends ClientPacket {
             return;
         }
 
-        if ((count > 99) || (count < 0)) {
+        if ((count > 99) || (count <= 0)) {
             return;
         }
 
@@ -118,14 +121,9 @@ public class RequestBrBuyProduct extends ClientPacket {
         player.broadcastUserInfo();
 
         // Save transaction info at SQL table prime_shop_transactions
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement statement = con.prepareStatement(
-                        "INSERT INTO prime_shop_transactions (charId, productId, quantity) values (?,?,?)")) {
-            statement.setLong(1, player.getObjectId());
-            statement.setInt(2, product.getProductId());
-            statement.setLong(3, count);
-            statement.executeUpdate();
-        } catch (Exception e) {
+        try {
+            PrimeShopManager.getInstance().recordPurchase(player.getObjectId(), product.getProductId(), count);
+        } catch (DataAccessException e) {
             log.warn("Could not save Item Mall transaction: {}", e.getMessage());
         }
     }

@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+/*
  * SPDX-FileCopyrightText: L2J Mobius contributors
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
@@ -19,30 +23,11 @@
  */
 package app.l2nx.highfive.entity.item.auction;
 
-import lombok.Getter;
-
 /**
  * @author Forsaiken
  */
 public enum ItemAuctionState {
-    CREATED((byte) 0),
-    STARTED((byte) 1),
-    FINISHED((byte) 2);
-
-    @Getter
-    private final byte stateId;
-
-    private ItemAuctionState(byte stateId) {
-        this.stateId = stateId;
-    }
-
-    public static ItemAuctionState stateForStateId(byte stateId) {
-        for (ItemAuctionState state : ItemAuctionState.values()) {
-            if (state.getStateId() == stateId) {
-                return state;
-            }
-        }
-
-        return null;
-    }
+    CREATED,
+    STARTED,
+    FINISHED
 }

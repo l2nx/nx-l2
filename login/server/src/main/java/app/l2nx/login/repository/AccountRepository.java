@@ -4,81 +4,100 @@
  */
 package app.l2nx.login.repository;
 
+import static app.l2nx.database.JdbcTimes.utc;
+
 import app.l2nx.login.controller.AccountInfo;
+import com.github.f4b6a3.uuid.UuidCreator;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import lombok.Builder;
+import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
 @Repository
+@RequiredArgsConstructor
 public class AccountRepository {
-    // account_data.value is a VARCHAR: ban_temp is compared with the current epoch milliseconds as a string.
-    private static final String SELECT_ACCOUNT_INFO =
-            "SELECT login, password, IF(? > value OR value IS NULL, accessLevel, -1) AS accessLevel, lastServer FROM accounts LEFT JOIN (account_data) ON (account_data.account_name=accounts.login AND account_data.var=\"ban_temp\") WHERE login=?";
-    private static final String INSERT_ACCOUNT =
-            "INSERT INTO accounts (login, password, lastactive, accessLevel, lastIP) values (?, ?, ?, ?, ?)";
-    private static final String UPDATE_LAST_ACTIVE = "UPDATE accounts SET lastactive = ?, lastIP = ? WHERE login = ?";
-    private static final String UPDATE_LAST_SERVER = "UPDATE accounts SET lastServer = ? WHERE login = ?";
-    private static final String UPDATE_ACCESS_LEVEL = "UPDATE accounts SET accessLevel = ? WHERE login = ?";
-    private static final String UPDATE_TRACERT =
-            "UPDATE accounts SET pcIp = ?, hop1 = ?, hop2 = ?, hop3 = ?, hop4 = ? WHERE login = ?";
-    private static final String SELECT_PASSWORD = "SELECT password FROM accounts WHERE login=?";
+    // An account inside a temporary ban reads with access level -1.
+    private static final String SELECT_ACCOUNT_INFO = """
+        SELECT id, login, password, last_server_id,
+               CASE WHEN banned_until > ? THEN -1 ELSE access_level END AS access_level
+        FROM accounts
+        WHERE login = ?\
+        """;
+    private static final String INSERT_ACCOUNT = """
+        INSERT INTO accounts (id, login, password, last_active_at, last_ip)
+        VALUES (?, ?, ?, ?, ?::inet)\
+        """;
+    private static final String UPDATE_LAST_ACTIVE =
+            "UPDATE accounts SET last_active_at = ?, last_ip = ?::inet WHERE id = ?";
+    private static final String UPDATE_LAST_SERVER = "UPDATE accounts SET last_server_id = ? WHERE id = ?";
+    private static final String UPDATE_ACCESS_LEVEL = "UPDATE accounts SET access_level = ? WHERE id = ?";
+    private static final String UPDATE_BANNED_UNTIL = "UPDATE accounts SET banned_until = ? WHERE id = ?";
+    private static final String UPDATE_TRACERT = """
+        UPDATE accounts
+        SET pc_ip = ?::inet, hop1 = ?::inet, hop2 = ?::inet, hop3 = ?::inet, hop4 = ?::inet
+        WHERE id = ?\
+        """;
+    private static final String SELECT_PASSWORD = "SELECT password FROM accounts WHERE id = ?";
     private static final String UPDATE_PASSWORD_MATCHING =
-            "UPDATE accounts SET password=? WHERE login=? AND password=?";
-    private static final String SELECT_IP_AUTH = "SELECT * FROM accounts_ipauth WHERE login = ?";
+            "UPDATE accounts SET password = ? WHERE id = ? AND password = ?";
+    private static final String SELECT_IP_RULES =
+            "SELECT host(ip) AS ip, rule FROM account_ip_rules WHERE account_id = ?";
 
     private final JdbcClient jdbcClient;
 
-    public AccountRepository(JdbcClient jdbcClient) {
-        this.jdbcClient = jdbcClient;
-    }
-
-    /**
-     * @param now epoch milliseconds; an account whose {@code ban_temp} lies after it reads with access level -1
-     */
-    public Optional<AccountInfo> findAccountInfo(String login, long now) {
+    public Optional<AccountInfo> findAccountInfo(String login, Instant now) {
         return jdbcClient
                 .sql(SELECT_ACCOUNT_INFO)
-                .param(Long.toString(now))
+                .param(utc(now))
                 .param(login)
                 .query((rs, rowNum) -> new AccountInfo(
+                        rs.getObject("id", UUID.class),
                         rs.getString("login"),
                         rs.getString("password"),
-                        rs.getInt("accessLevel"),
-                        rs.getInt("lastServer")))
+                        rs.getInt("access_level"),
+                        rs.getInt("last_server_id")))
                 .optional();
     }
 
-    public void create(String login, String passwordHash, long lastActive, String lastIp) {
+    public UUID create(String login, String passwordHash, Instant lastActive, String lastIp) {
+        final UUID id = UuidCreator.getTimeOrderedEpoch();
         jdbcClient
                 .sql(INSERT_ACCOUNT)
+                .param(id)
                 .param(login)
                 .param(passwordHash)
-                .param(lastActive)
-                .param(0)
+                .param(utc(lastActive))
                 .param(lastIp)
                 .update();
+        return id;
     }
 
-    public void updateLastActive(String login, long lastActive, String lastIp) {
+    public void updateLastActive(UUID id, Instant lastActive, String lastIp) {
         jdbcClient
                 .sql(UPDATE_LAST_ACTIVE)
-                .param(lastActive)
+                .param(utc(lastActive))
                 .param(lastIp)
-                .param(login)
+                .param(id)
                 .update();
     }
 
-    public void updateLastServer(String login, int serverId) {
-        jdbcClient.sql(UPDATE_LAST_SERVER).param(serverId).param(login).update();
+    public void updateLastServer(UUID id, int serverId) {
+        jdbcClient.sql(UPDATE_LAST_SERVER).param(serverId).param(id).update();
     }
 
-    public void updateAccessLevel(String login, int accessLevel) {
-        jdbcClient.sql(UPDATE_ACCESS_LEVEL).param(accessLevel).param(login).update();
+    public void updateAccessLevel(UUID id, int accessLevel) {
+        jdbcClient.sql(UPDATE_ACCESS_LEVEL).param(accessLevel).param(id).update();
     }
 
-    public void updateTracert(String login, String pcIp, String hop1, String hop2, String hop3, String hop4) {
+    public void updateBannedUntil(UUID id, Instant bannedUntil) {
+        jdbcClient.sql(UPDATE_BANNED_UNTIL).param(utc(bannedUntil)).param(id).update();
+    }
+
+    public void updateTracert(UUID id, String pcIp, String hop1, String hop2, String hop3, String hop4) {
         jdbcClient
                 .sql(UPDATE_TRACERT)
                 .param(pcIp)
@@ -86,38 +105,38 @@ public class AccountRepository {
                 .param(hop2)
                 .param(hop3)
                 .param(hop4)
-                .param(login)
+                .param(id)
                 .update();
     }
 
-    public Optional<String> findPassword(String login) {
-        return jdbcClient.sql(SELECT_PASSWORD).param(login).query(String.class).optional();
+    public Optional<String> findPassword(UUID id) {
+        return jdbcClient.sql(SELECT_PASSWORD).param(id).query(String.class).optional();
     }
 
     /**
      * @return whether the password was changed: the account exists and its password hash is {@code currentHash}
      */
-    public boolean updatePassword(String login, String currentHash, String newHash) {
+    public boolean updatePassword(UUID id, String currentHash, String newHash) {
         return jdbcClient
                         .sql(UPDATE_PASSWORD_MATCHING)
                         .param(newHash)
-                        .param(login)
+                        .param(id)
                         .param(currentHash)
                         .update()
                 > 0;
     }
 
-    public List<IpAuth> findIpAuths(String login) {
+    public List<IpRule> findIpRules(UUID accountId) {
         return jdbcClient
-                .sql(SELECT_IP_AUTH)
-                .param(login)
-                .query((rs, rowNum) -> IpAuth.builder()
+                .sql(SELECT_IP_RULES)
+                .param(accountId)
+                .query((rs, rowNum) -> IpRule.builder()
                         .ip(rs.getString("ip"))
-                        .type(rs.getString("type"))
+                        .allow("ALLOW".equals(rs.getString("rule")))
                         .build())
                 .list();
     }
 
     @Builder(toBuilder = true)
-    public record IpAuth(String ip, String type) {}
+    public record IpRule(String ip, boolean allow) {}
 }

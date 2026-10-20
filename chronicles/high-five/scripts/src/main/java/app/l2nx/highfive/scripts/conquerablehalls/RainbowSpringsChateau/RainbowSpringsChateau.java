@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -26,7 +30,6 @@ import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.ConquerableHallSiegeConfig;
 import app.l2nx.highfive.data.sql.ClanHallTable;
 import app.l2nx.highfive.data.sql.ClanTable;
-import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.data.xml.MapRegionData;
 import app.l2nx.highfive.data.xml.SkillData;
 import app.l2nx.highfive.entity.World;
@@ -38,6 +41,7 @@ import app.l2nx.highfive.entity.clan.Clan;
 import app.l2nx.highfive.entity.groups.Party;
 import app.l2nx.highfive.entity.item.enums.ItemProcessType;
 import app.l2nx.highfive.entity.item.instance.Item;
+import app.l2nx.highfive.managers.CHSiegeManager;
 import app.l2nx.highfive.mechanics.siege.SiegeClan;
 import app.l2nx.highfive.mechanics.siege.SiegeClanType;
 import app.l2nx.highfive.mechanics.siege.clanhalls.ClanHallSiegeEngine;
@@ -52,9 +56,6 @@ import app.l2nx.highfive.network.serverpackets.SystemMessage;
 import app.l2nx.highfive.threads.ThreadPool;
 import app.l2nx.highfive.util.ArrayUtil;
 import app.l2nx.highfive.util.LocationUtil;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -320,6 +321,7 @@ public class RainbowSpringsChateau extends ClanHallSiegeEngine {
                                         npc,
                                         true);
                                 warDecreesCount.remove(clan.getId());
+                                updateAttacker(clan.getId(), 0, true);
                                 htmltext = "35604-14.htm";
                             } else {
                                 htmltext = "35604-16.htm";
@@ -960,54 +962,26 @@ public class RainbowSpringsChateau extends ClanHallSiegeEngine {
     }
 
     private void updateAttacker(int clanId, long count, boolean remove) {
-        try (Connection con = DatabaseFactory.getConnection()) {
-            PreparedStatement statement;
-            if (remove) {
-                statement = con.prepareStatement("DELETE FROM rainbowsprings_attacker_list WHERE clanId = ?");
-                statement.setInt(1, clanId);
-            } else {
-                statement = con.prepareStatement("INSERT INTO rainbowsprings_attacker_list VALUES (?,?)");
-                statement.setInt(1, clanId);
-                statement.setLong(2, count);
-            }
-
-            statement.execute();
-            statement.close();
-        } catch (Exception e) {
-            log.warn("Problem with updateAttacker: {}", e.getMessage());
+        if (remove) {
+            CHSiegeManager.getInstance().deleteRainbowSpringsAttacker(clanId);
+        } else {
+            CHSiegeManager.getInstance().saveRainbowSpringsAttacker(clanId, count);
         }
     }
 
     @Override
     public void loadAttackers() {
-        try (Connection con = DatabaseFactory.getConnection()) {
-            final PreparedStatement statement = con.prepareStatement("SELECT * FROM rainbowsprings_attacker_list");
-            final ResultSet rset = statement.executeQuery();
-            while (rset.next()) {
-                final int clanId = rset.getInt("clanId");
-                final long count = rset.getLong("war_decrees_count");
-                warDecreesCount.put(clanId, count);
-                for (int clan : warDecreesCount.keySet()) {
-                    final Clan loadClan = ClanTable.getInstance().getClan(clan);
-                    acceptedClans.add(loadClan);
-                }
+        warDecreesCount.putAll(CHSiegeManager.getInstance().findRainbowSpringsAttackers());
+        for (int clanId : warDecreesCount.keySet()) {
+            final Clan loadClan = ClanTable.getInstance().getClan(clanId);
+            if (loadClan != null) {
+                acceptedClans.add(loadClan);
             }
-
-            rset.close();
-            statement.close();
-        } catch (Exception e) {
-            log.warn("loadAttackers() failed", e);
         }
     }
 
     private void clearTables() {
-        try (Connection con = DatabaseFactory.getConnection()) {
-            final PreparedStatement stat1 = con.prepareStatement("DELETE FROM rainbowsprings_attacker_list");
-            stat1.execute();
-            stat1.close();
-        } catch (Exception e) {
-            log.warn("clearTables() failed", e);
-        }
+        CHSiegeManager.getInstance().deleteRainbowSpringsAttackers();
     }
 
     protected class ChestsSpawn implements Runnable {

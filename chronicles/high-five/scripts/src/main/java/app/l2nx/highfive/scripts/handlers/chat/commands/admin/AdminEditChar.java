@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -25,7 +29,6 @@ package app.l2nx.highfive.scripts.handlers.chat.commands.admin;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.config.custom.AutoPlayConfig;
 import app.l2nx.highfive.data.sql.CharInfoTable;
-import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.data.xml.ClassListData;
 import app.l2nx.highfive.data.xml.TransformData;
 import app.l2nx.highfive.entity.World;
@@ -41,6 +44,7 @@ import app.l2nx.highfive.entity.clan.Clan;
 import app.l2nx.highfive.entity.groups.Party;
 import app.l2nx.highfive.entity.groups.PartyDistributionType;
 import app.l2nx.highfive.handler.IAdminCommandHandler;
+import app.l2nx.highfive.managers.AdminCharacterManager;
 import app.l2nx.highfive.mechanics.html.PageBuilder;
 import app.l2nx.highfive.mechanics.html.PageResult;
 import app.l2nx.highfive.mechanics.html.formatters.BypassParserFormatter;
@@ -55,8 +59,6 @@ import app.l2nx.highfive.network.serverpackets.PartySmallWindowAll;
 import app.l2nx.highfive.network.serverpackets.PartySmallWindowDeleteAll;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
 import app.l2nx.highfive.threads.ThreadPool;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -491,12 +493,13 @@ public class AdminEditChar implements IAdminCommandHandler {
                 Player player = null;
                 player = World.getPlayer(playerName);
                 if (player == null) {
-                    final Connection con = DatabaseFactory.getConnection();
-                    final PreparedStatement ps = con.prepareStatement("UPDATE characters SET "
-                            + (changeCreateExpiryTime ? "clan_create_expiry_time" : "clan_join_expiry_time")
-                            + " WHERE char_name=? LIMIT 1");
-                    ps.setString(1, playerName);
-                    ps.execute();
+                    final boolean found = changeCreateExpiryTime
+                            ? AdminCharacterManager.getInstance().clearClanCreatePenalty(playerName)
+                            : AdminCharacterManager.getInstance().clearClanJoinPenalty(playerName);
+                    if (!found) {
+                        activeChar.sendSysMessage("Character not found: " + playerName);
+                        return false;
+                    }
                 } else {
                     // removing penalty
                     if (changeCreateExpiryTime) {
@@ -1067,8 +1070,8 @@ public class AdminEditChar implements IAdminCommandHandler {
             replyMSG2 = "s. Maybe they got d/c? :)";
         } else if (charactersFound > 20) {
             adminReply.replace("%number%", " more than " + charactersFound);
-            replyMSG2 =
-                    "s.<br>In order to avoid you a client crash I won't <br1>display results beyond the 20th character.";
+            replyMSG2 = "s.<br>In order to avoid you a client crash I won't <br1>display results beyond the 20th"
+                    + " character.";
         } else if (charactersFound == 1) {
             replyMSG2 = ".";
         } else {

@@ -15,11 +15,11 @@ import static org.mockito.Mockito.when;
 import app.l2nx.login.config.TestLoginProperties;
 import app.l2nx.login.enums.LoginFailReason;
 import app.l2nx.login.network.LoginClient;
-import app.l2nx.login.repository.AccountDataRepository;
 import app.l2nx.login.repository.AccountRepository;
 import java.io.File;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.UUID;
 import java.util.concurrent.ScheduledFuture;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -31,16 +31,13 @@ import org.springframework.scheduling.TaskScheduler;
 
 @Execution(ExecutionMode.SAME_THREAD)
 class LoginControllerTest {
-    private static final String ACCOUNT = "account";
+    private static final UUID ACCOUNT_ID = UUID.fromString("0190a6b2-0000-7000-8000-000000000001");
     private static final Duration LOGIN_TIMEOUT = Duration.ofMillis(LoginController.LOGIN_TIMEOUT);
 
     private final TaskScheduler taskScheduler = mock(TaskScheduler.class);
     private final ScheduledFuture<?> purgeTask = mock(ScheduledFuture.class);
     private final LoginController controller = new LoginController(
-            mock(AccountRepository.class),
-            mock(AccountDataRepository.class),
-            TestLoginProperties.create(new File(".")),
-            taskScheduler);
+            mock(AccountRepository.class), TestLoginProperties.create(new File(".")), taskScheduler);
 
     @BeforeEach
     void setUp() {
@@ -71,7 +68,7 @@ class LoginControllerTest {
             runPurge();
 
             verify(client).close(LoginFailReason.REASON_ACCESS_FAILED);
-            assertThat(controller.getAuthedClient(ACCOUNT)).isNull();
+            assertThat(controller.getAuthedClient(ACCOUNT_ID)).isNull();
         }
 
         @Test
@@ -81,7 +78,7 @@ class LoginControllerTest {
             runPurge();
 
             verify(client).close(LoginFailReason.REASON_ACCESS_FAILED);
-            assertThat(controller.getAuthedClient(ACCOUNT)).isNull();
+            assertThat(controller.getAuthedClient(ACCOUNT_ID)).isNull();
         }
 
         @Test
@@ -91,7 +88,7 @@ class LoginControllerTest {
             runPurge();
 
             verify(client, never()).close(any(LoginFailReason.class));
-            assertThat(controller.getAuthedClient(ACCOUNT)).isSameAs(client);
+            assertThat(controller.getAuthedClient(ACCOUNT_ID)).isSameAs(client);
         }
 
         private LoginClient client(boolean joinedGameServer, long connectionStartTime, boolean connected) {
@@ -99,7 +96,7 @@ class LoginControllerTest {
             when(client.hasJoinedGS()).thenReturn(joinedGameServer);
             when(client.getConnectionStartTime()).thenReturn(connectionStartTime);
             when(client.isConnected()).thenReturn(connected);
-            controller.assignSessionKeyToClient(ACCOUNT, client);
+            controller.assignSessionKeyToClient(ACCOUNT_ID, client);
             return client;
         }
 
@@ -108,6 +105,33 @@ class LoginControllerTest {
             final ArgumentCaptor<Runnable> task = ArgumentCaptor.forClass(Runnable.class);
             verify(taskScheduler).scheduleAtFixedRate(task.capture(), any(Instant.class), any(Duration.class));
             task.getValue().run();
+        }
+    }
+
+    @Nested
+    class GetAuthedClientByLogin {
+        @Test
+        void getAuthedClientByLogin_shouldReturnClientOfThatLogin() {
+            final LoginClient expected = authedClient(ACCOUNT_ID, "first");
+            authedClient(UUID.fromString("0190a6b2-0000-7000-8000-000000000002"), "second");
+
+            final LoginClient actual = controller.getAuthedClientByLogin("first");
+
+            assertThat(actual).isSameAs(expected);
+        }
+
+        @Test
+        void getAuthedClientByLogin_shouldReturnNull_whenNoClientHasThatLogin() {
+            authedClient(ACCOUNT_ID, "first");
+
+            assertThat(controller.getAuthedClientByLogin("other")).isNull();
+        }
+
+        private LoginClient authedClient(UUID accountId, String login) {
+            final LoginClient client = mock(LoginClient.class);
+            when(client.getAccount()).thenReturn(login);
+            controller.assignSessionKeyToClient(accountId, client);
+            return client;
         }
     }
 

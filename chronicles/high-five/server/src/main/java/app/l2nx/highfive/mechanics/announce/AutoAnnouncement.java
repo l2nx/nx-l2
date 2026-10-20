@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+/*
  * SPDX-FileCopyrightText: L2J Mobius contributors
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
@@ -19,29 +23,17 @@
  */
 package app.l2nx.highfive.mechanics.announce;
 
-import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.entity.World;
+import app.l2nx.highfive.repository.world.model.AnnouncementRow;
 import app.l2nx.highfive.threads.ThreadPool;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.concurrent.ScheduledFuture;
 import lombok.Getter;
 import lombok.Setter;
-import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author UnAfraid
  */
-@Slf4j
 public class AutoAnnouncement extends Announcement implements Runnable {
-    private static final String INSERT_QUERY =
-            "INSERT INTO announcements (`type`, `content`, `author`, `initial`, `delay`, `repeat`) VALUES (?, ?, ?, ?, ?, ?)";
-    private static final String UPDATE_QUERY =
-            "UPDATE announcements SET `type` = ?, `content` = ?, `author` = ?, `initial` = ?, `delay` = ?, `repeat` = ? WHERE id = ?";
-
     @Getter
     @Setter
     private long initial;
@@ -66,55 +58,25 @@ public class AutoAnnouncement extends Announcement implements Runnable {
         restartMe();
     }
 
-    public AutoAnnouncement(ResultSet rset) throws SQLException {
-        super(rset);
-        initial = rset.getLong("initial");
-        delay = rset.getLong("delay");
-        repeat = rset.getInt("repeat");
+    public AutoAnnouncement(AnnouncementRow row) {
+        super(row);
+        initial = row.initialDelayMs();
+        delay = row.intervalMs();
+        repeat = row.repeat();
         restartMe();
     }
 
     @Override
-    public boolean storeMe() {
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement(INSERT_QUERY, Statement.RETURN_GENERATED_KEYS)) {
-            ps.setInt(1, getType().ordinal());
-            ps.setString(2, getContent());
-            ps.setString(3, getAuthor());
-            ps.setLong(4, initial);
-            ps.setLong(5, delay);
-            ps.setInt(6, repeat);
-            ps.execute();
-            try (ResultSet rset = ps.getGeneratedKeys()) {
-                if (rset.next()) {
-                    id = rset.getInt(1);
-                }
-            }
-        } catch (Exception e) {
-            log.warn("Couldn't store announcement: ", e);
-            return false;
-        }
-
-        return true;
+    protected AnnouncementRow toRow() {
+        return super.toRow().toBuilder()
+                .initialDelayMs(initial)
+                .intervalMs(delay)
+                .repeat(repeat)
+                .build();
     }
 
     @Override
-    public boolean updateMe() {
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement(UPDATE_QUERY)) {
-            ps.setInt(1, getType().ordinal());
-            ps.setString(2, getContent());
-            ps.setString(3, getAuthor());
-            ps.setLong(4, initial);
-            ps.setLong(5, delay);
-            ps.setLong(6, repeat);
-            ps.setLong(7, getId());
-            ps.execute();
-        } catch (Exception e) {
-            log.warn("Couldn't update announcement: ", e);
-            return false;
-        }
-
+    protected boolean isStorable() {
         return true;
     }
 

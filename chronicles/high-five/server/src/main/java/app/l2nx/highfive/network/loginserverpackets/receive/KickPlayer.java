@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -23,16 +27,17 @@
 package app.l2nx.highfive.network.loginserverpackets.receive;
 
 import app.l2nx.network.packet.SimpleReadablePacket;
+import java.util.UUID;
 import lombok.Getter;
 
 public class KickPlayer extends SimpleReadablePacket {
     @Getter
-    private final String account;
+    private final UUID accountId;
 
     public KickPlayer(byte[] decrypt) {
         super(decrypt);
         readByte(); // Packet id, it is already processed.
 
-        account = readString();
+        accountId = new UUID(readLong(), readLong());
     }
 }

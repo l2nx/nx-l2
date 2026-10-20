@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -24,11 +28,11 @@ package app.l2nx.highfive.managers.games;
 
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.UndergroundColiseumConfig;
-import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.data.xml.DoorData;
 import app.l2nx.highfive.data.xml.IXmlReader;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.World;
+import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.instance.Door;
 import app.l2nx.highfive.managers.GlobalVariablesManager;
 import app.l2nx.highfive.mechanics.undergroundColiseum.UCArena;
@@ -36,12 +40,10 @@ import app.l2nx.highfive.mechanics.undergroundColiseum.UCBestTeam;
 import app.l2nx.highfive.mechanics.undergroundColiseum.UCPoint;
 import app.l2nx.highfive.mechanics.undergroundColiseum.UCReward;
 import app.l2nx.highfive.mechanics.undergroundColiseum.UCTeam;
+import app.l2nx.highfive.repository.world.UndergroundColiseumBestTeamRepository;
+import app.l2nx.highfive.repository.world.model.UndergroundColiseumBestTeam;
 import app.l2nx.highfive.threads.ThreadPool;
 import java.io.File;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -51,12 +53,16 @@ import java.util.concurrent.ScheduledFuture;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.DateFormatUtils;
+import org.springframework.dao.DataAccessException;
+import org.springframework.stereotype.Component;
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 
 @Slf4j
+@Component
 public class UndergroundColiseumManager implements IXmlReader {
+    private static volatile UndergroundColiseumManager instance;
 
     private final Map<Integer, UCArena> arenas = new HashMap<>(5);
 
@@ -68,8 +74,11 @@ public class UndergroundColiseumManager implements IXmlReader {
     private ScheduledFuture<?> regTask = null;
     private final Map<Integer, UCBestTeam> bestTeams = new HashMap<>(5);
 
-    protected UndergroundColiseumManager() {
-        load();
+    private final UndergroundColiseumBestTeamRepository bestTeamRepository;
+
+    public UndergroundColiseumManager(UndergroundColiseumBestTeamRepository bestTeamRepository) {
+        this.bestTeamRepository = bestTeamRepository;
+        instance = this;
     }
 
     @Override
@@ -195,48 +204,27 @@ public class UndergroundColiseumManager implements IXmlReader {
 
     private void restoreBestTeams() {
         bestTeams.clear();
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement statement =
-                        con.prepareStatement("SELECT * FROM underground_coliseum ORDER BY arenaId");
-                ResultSet rset = statement.executeQuery()) {
-            while (rset.next()) {
-                final int arenaId = rset.getInt("arenaId");
-                final String leader = rset.getString("leader");
-                final int wins = rset.getInt("wins");
-                bestTeams.put(arenaId, new UCBestTeam(arenaId, leader, wins));
+        try {
+            for (UndergroundColiseumBestTeam team : bestTeamRepository.findAll()) {
+                bestTeams.put(
+                        team.arenaId(),
+                        new UCBestTeam(team.arenaId(), team.leaderId(), team.leaderName(), team.wins()));
             }
-        } catch (SQLException e) {
-            log.warn("Could not load underground_coliseum table");
-        } catch (Exception e) {
-            log.warn("Error while initializing UndergroundColiseumManager: {}", e.getMessage());
+        } catch (DataAccessException e) {
+            log.warn("Could not load underground coliseum best teams: {}", e.getMessage());
         }
     }
 
-    private void saveBestTeam(UCBestTeam team, boolean isNew) {
-        if (isNew) {
-            try (Connection con = DatabaseFactory.getConnection();
-                    PreparedStatement ps = con.prepareStatement(
-                            "INSERT INTO underground_coliseum (`arenaId`, `leader`, `wins`) VALUES (?,?,?) ")) {
-                ps.setInt(1, team.getArenaId());
-                ps.setString(2, team.getLeaderName());
-                ps.setInt(3, team.getWins());
-                ps.executeUpdate();
-            } catch (SQLException e) {
-                log.warn("Could not save underground_coliseum: {}", e.getMessage());
-            }
-        } else {
-            try (Connection con = DatabaseFactory.getConnection()) {
-                final PreparedStatement stmt =
-                        con.prepareStatement("UPDATE underground_coliseum SET leader = ?, wins = ?  WHERE arenaId = ?");
-                stmt.setInt(1, team.getArenaId());
-                stmt.setInt(2, team.getWins());
-                stmt.setInt(3, team.getArenaId());
-                stmt.execute();
-                stmt.close();
-            } catch (Exception e) {
-                log.warn(
-                        "Could not clean status for underground_coliseum areanaId: {} in database!", team.getArenaId());
-            }
+    private void saveBestTeam(UCBestTeam team) {
+        try {
+            bestTeamRepository.save(UndergroundColiseumBestTeam.builder()
+                    .arenaId(team.getArenaId())
+                    .leaderId(team.getLeaderId())
+                    .wins(team.getWins())
+                    .build());
+        } catch (DataAccessException e) {
+            log.warn(
+                    "Could not save underground coliseum best team of arena {}: {}", team.getArenaId(), e.getMessage());
         }
     }
 
@@ -244,19 +232,17 @@ public class UndergroundColiseumManager implements IXmlReader {
         return bestTeams.get(arenaId);
     }
 
-    public void updateBestTeam(int arenaId, String name, int wins) {
-        if (bestTeams.containsKey(arenaId)) {
-            final UCBestTeam team = getBestTeam(arenaId);
-            if (team != null) {
-                team.setLeader(name);
-                team.setWins(wins);
-                saveBestTeam(team, false);
-            }
-        } else {
-            final UCBestTeam team = new UCBestTeam(arenaId, name, wins);
+    public void updateBestTeam(int arenaId, Player leader, int wins) {
+        UCBestTeam team = getBestTeam(arenaId);
+        if (team == null) {
+            team = new UCBestTeam(arenaId, leader.getObjectId(), leader.getName(), wins);
             bestTeams.put(arenaId, team);
-            saveBestTeam(team, true);
+        } else {
+            team.setLeader(leader.getObjectId(), leader.getName());
+            team.setWins(wins);
         }
+
+        saveBestTeam(team);
     }
 
     private void generateNewDate() {
@@ -325,11 +311,12 @@ public class UndergroundColiseumManager implements IXmlReader {
         }
     }
 
+    // TODO: callers receive the bean through their constructor (#41).
     public static UndergroundColiseumManager getInstance() {
-        return SingletonHolder.INSTANCE;
-    }
-
-    private static class SingletonHolder {
-        protected static final UndergroundColiseumManager INSTANCE = new UndergroundColiseumManager();
+        final UndergroundColiseumManager current = instance;
+        if (current == null) {
+            throw new IllegalStateException("UndergroundColiseumManager is used before the Spring context created it.");
+        }
+        return current;
     }
 }

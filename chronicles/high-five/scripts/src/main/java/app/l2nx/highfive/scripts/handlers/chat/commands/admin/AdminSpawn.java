@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -561,11 +565,7 @@ public class AdminSpawn implements IAdminCommandHandler {
                         permanent = false;
                     }
 
-                    if (permanent) {
-                        SpawnData.getInstance().addNewSpawn(spawn);
-                    } else {
-                        SpawnTable.getInstance().addSpawn(spawn);
-                    }
+                    SpawnTable.getInstance().addSpawn(spawn);
 
                     spawn.init();
                     if (!permanent || (respawn <= 0)) {
@@ -734,13 +734,9 @@ public class AdminSpawn implements IAdminCommandHandler {
                     spawn.setRespawnMinDelay(43200);
                     spawn.setRespawnMaxDelay(129600);
                     RaidBossSpawnManager.getInstance()
-                            .addNewSpawn(spawn, 0, template.getBaseHpMax(), template.getBaseMpMax(), permanent);
+                            .addNewSpawn(spawn, 0, template.getBaseHpMax(), template.getBaseMpMax());
                 } else {
-                    if (permanent) {
-                        SpawnData.getInstance().addNewSpawn(spawn);
-                    } else {
-                        SpawnTable.getInstance().addSpawn(spawn);
-                    }
+                    SpawnTable.getInstance().addSpawn(spawn);
 
                     spawn.init();
                 }
@@ -778,7 +774,7 @@ public class AdminSpawn implements IAdminCommandHandler {
                 spawn.setInstanceId(activeChar.getInstanceId());
             }
 
-            SpawnData.getInstance().addNewSpawn(spawn);
+            SpawnTable.getInstance().addSpawn(spawn);
             spawn.init();
 
             if (activeChar.isInInstance()) {

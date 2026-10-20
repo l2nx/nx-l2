@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -31,44 +35,35 @@ import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.holders.player.AutoUseSettingsHolder;
 import app.l2nx.highfive.entity.groups.Party;
-import app.l2nx.highfive.entity.groups.PartyDistributionType;
 import app.l2nx.highfive.network.Disconnection;
 import app.l2nx.highfive.network.serverpackets.LeaveWorld;
+import app.l2nx.highfive.repository.offline.OfflinePlayRepository;
+import app.l2nx.highfive.repository.offline.model.OfflinePlayEntry;
+import app.l2nx.highfive.repository.offline.model.OfflinePlayEntryType;
+import app.l2nx.highfive.repository.offline.model.OfflinePlayPartyMember;
 import app.l2nx.highfive.taskmanagers.AutoPlayTaskManager;
 import app.l2nx.highfive.taskmanagers.AutoPotionTaskManager;
 import app.l2nx.highfive.taskmanagers.AutoUseTaskManager;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataAccessException;
+import org.springframework.stereotype.Component;
 
 /**
  * @author Mobius
  */
 @Slf4j
+@Component
 public class OfflinePlayTable {
+    private static volatile OfflinePlayTable instance;
 
-    private static final String LOAD_PLAYER_IDS = "SELECT DISTINCT charId FROM character_offline_play";
-    private static final String LOAD_PLAYER = "SELECT * FROM character_offline_play WHERE charId=?";
-    private static final String SAVE_PLAYER = "INSERT INTO character_offline_play (charId, type, id) VALUES (?, ?, ?)";
-    private static final String REMOVE_PLAYER = "DELETE FROM character_offline_play WHERE charId=?";
-    private static final String LOAD_GROUP_LEADER_IDS = "SELECT DISTINCT leaderId FROM character_offline_play_group";
-    private static final String LOAD_GROUP_MEMBERS =
-            "SELECT charId, type FROM character_offline_play_group WHERE leaderId=?";
-    private static final String SAVE_GROUP_MEMBER =
-            "INSERT INTO character_offline_play_group (leaderId, charId, type) VALUES (?, ?, ?)";
-    private static final String REMOVE_GROUP_MEMBERS = "TRUNCATE TABLE character_offline_play_group";
+    private final OfflinePlayRepository offlinePlayRepository;
 
-    private static final int TYPE_ACTIVE_SOULSHOT = 0;
-    private static final int TYPE_AUTO_SUPPLY_ITEM = 1;
-    private static final int TYPE_AUTO_BUFF = 2;
-    private static final int TYPE_AUTO_SKILL = 3;
-    private static final int TYPE_AUTO_ACTION = 4;
-    private static final int TYPE_AUTO_POTION_ITEM = 5;
-    private static final int TYPE_CUSTOM_AUTO_POTION_SYSTEM = 100; // config\Custom\AutoPotions.ini
-
-    protected OfflinePlayTable() {}
+    public OfflinePlayTable(OfflinePlayRepository offlinePlayRepository) {
+        this.offlinePlayRepository = offlinePlayRepository;
+        instance = this;
+    }
 
     /**
      * Restores all offline play players on server start.
@@ -76,60 +71,31 @@ public class OfflinePlayTable {
     public void restoreOfflinePlayers() {
         log.info("Loading offline auto players...");
 
-        try (Connection con = DatabaseFactory.getConnection();
-                Statement statement = con.createStatement();
-                ResultSet result = statement.executeQuery(LOAD_PLAYER_IDS)) {
+        try {
             int nPlayers = 0;
 
-            while (result.next()) {
+            for (int characterId : offlinePlayRepository.findCharacterIds()) {
                 Player player = null;
 
                 try {
-                    player = Player.load(result.getInt("charId"));
+                    player = Player.load(characterId);
                     player.setOnlineStatus(true, false);
                     player.spawnMe(player.getX(), player.getY(), player.getZ());
 
-                    try (PreparedStatement stmItems = con.prepareStatement(LOAD_PLAYER)) {
-                        stmItems.setInt(1, player.getObjectId());
-
-                        try (ResultSet items = stmItems.executeQuery()) {
-                            final AutoUseSettingsHolder settings = player.getAutoUseSettings();
-
-                            while (items.next()) {
-                                final int type = items.getInt("type");
-                                final int id = items.getInt("id");
-
-                                switch (type) {
-                                    case TYPE_ACTIVE_SOULSHOT: {
-                                        player.addAutoSoulShot(id);
-                                        break;
-                                    }
-                                    case TYPE_AUTO_SUPPLY_ITEM: {
-                                        settings.getAutoSupplyItems().add(id);
-                                        break;
-                                    }
-                                    case TYPE_AUTO_BUFF: {
-                                        settings.getAutoBuffs().add(id);
-                                        break;
-                                    }
-                                    case TYPE_AUTO_SKILL: {
-                                        settings.getAutoSkills().add(id);
-                                        break;
-                                    }
-                                    case TYPE_AUTO_ACTION: {
-                                        settings.getAutoActions().add(id);
-                                        break;
-                                    }
-                                    case TYPE_AUTO_POTION_ITEM: {
-                                        settings.setAutoPotionItem(id);
-                                        break;
-                                    }
-                                    case TYPE_CUSTOM_AUTO_POTION_SYSTEM: {
-                                        if (AutoPotionsConfig.AUTO_POTIONS_ENABLED) {
-                                            AutoPotionTaskManager.getInstance().add(player);
-                                        }
-                                        break;
-                                    }
+                    final AutoUseSettingsHolder settings = player.getAutoUseSettings();
+                    for (OfflinePlayEntry entry : offlinePlayRepository.findEntries(player.getObjectId())) {
+                        final int id = entry.targetId();
+                        switch (entry.type()) {
+                            case ACTIVE_SOULSHOT -> player.addAutoSoulShot(id);
+                            case AUTO_SUPPLY_ITEM ->
+                                settings.getAutoSupplyItems().add(id);
+                            case AUTO_BUFF -> settings.getAutoBuffs().add(id);
+                            case AUTO_SKILL -> settings.getAutoSkills().add(id);
+                            case AUTO_ACTION -> settings.getAutoActions().add(id);
+                            case AUTO_POTION_ITEM -> settings.setAutoPotionItem(id);
+                            case CUSTOM_AUTO_POTION_SYSTEM -> {
+                                if (AutoPotionsConfig.AUTO_POTIONS_ENABLED) {
+                                    AutoPotionTaskManager.getInstance().add(player);
                                 }
                             }
                         }
@@ -167,57 +133,44 @@ public class OfflinePlayTable {
             }
 
             log.info("Loaded {} offline auto players.", nPlayers);
-        } catch (Exception e) {
+        } catch (DataAccessException e) {
             log.warn("Error while loading offline auto players. {}", e.getMessage(), e);
         }
 
         // Restore parties.
         if (AutoPlayConfig.ENABLE_AUTO_ASSIST) {
-            try (Connection con = DatabaseFactory.getConnection();
-                    Statement statement = con.createStatement();
-                    ResultSet result = statement.executeQuery(LOAD_GROUP_LEADER_IDS)) {
+            try {
                 int nParties = 0;
 
-                while (result.next()) {
-                    final int leaderId = result.getInt("leaderId");
+                for (int leaderId : offlinePlayRepository.findPartyLeaderIds()) {
                     final Player leader = World.getPlayer(leaderId);
                     if (leader != null) {
                         nParties++;
 
-                        try (PreparedStatement stmtMembers = con.prepareStatement(LOAD_GROUP_MEMBERS)) {
-                            stmtMembers.setInt(1, leaderId);
-
-                            try (ResultSet members = stmtMembers.executeQuery()) {
-                                Party party = null;
-
-                                while (members.next()) {
-                                    final int charId = members.getInt("charId");
-                                    final Player member = World.getPlayer(charId);
-                                    if (member != null) {
-                                        if (party == null) {
-                                            party = new Party(
-                                                    leader, PartyDistributionType.findById(members.getInt("type")));
-                                        }
-
-                                        member.joinParty(party);
-                                    }
+                        Party party = null;
+                        for (OfflinePlayPartyMember partyMember : offlinePlayRepository.findPartyMembers(leaderId)) {
+                            final Player member = World.getPlayer(partyMember.characterId());
+                            if (member != null) {
+                                if (party == null) {
+                                    party = new Party(leader, partyMember.distributionType());
                                 }
+
+                                member.joinParty(party);
                             }
                         }
                     }
                 }
 
                 log.info("Loaded {} offline groups.", nParties);
-            } catch (Exception e) {
+            } catch (DataAccessException e) {
                 log.warn("Error while restoring offline groups. {}", e.getMessage(), e);
             }
         }
 
         // Clear all party data in one operation.
-        try (Connection con = DatabaseFactory.getConnection();
-                Statement statement = con.createStatement()) {
-            statement.executeUpdate(REMOVE_GROUP_MEMBERS);
-        } catch (Exception e) {
+        try {
+            offlinePlayRepository.deleteAllPartyMembers();
+        } catch (DataAccessException e) {
             log.warn("Error clearing offline group data. {}", e.getMessage(), e);
         }
     }
@@ -227,106 +180,65 @@ public class OfflinePlayTable {
      * @param player the player
      */
     public void storeOfflinePlay(Player player) {
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement statement1 = con.prepareStatement(REMOVE_PLAYER);
-                PreparedStatement statement2 = con.prepareStatement(SAVE_PLAYER)) {
-            // First remove existing entries.
-            final int playerObjectId = player.getObjectId();
-            statement1.setInt(1, playerObjectId);
-            statement1.execute();
+        final List<OfflinePlayEntry> entries = new ArrayList<>();
+        for (int shotId : player.getAutoSoulShot()) {
+            entries.add(entry(OfflinePlayEntryType.ACTIVE_SOULSHOT, shotId));
+        }
 
-            try {
-                // Store active soulshot items.
-                for (int shotId : player.getAutoSoulShot()) {
-                    statement2.setInt(1, playerObjectId);
-                    statement2.setInt(2, TYPE_ACTIVE_SOULSHOT);
-                    statement2.setInt(3, shotId);
-                    statement2.addBatch();
-                }
+        for (Integer itemId : player.getAutoUseSettings().getAutoSupplyItems()) {
+            entries.add(entry(OfflinePlayEntryType.AUTO_SUPPLY_ITEM, itemId));
+        }
 
-                // Store auto supply items.
-                for (Integer itemId : player.getAutoUseSettings().getAutoSupplyItems()) {
-                    statement2.setInt(1, playerObjectId);
-                    statement2.setInt(2, TYPE_AUTO_SUPPLY_ITEM);
-                    statement2.setInt(3, itemId);
-                    statement2.addBatch();
-                }
+        for (Integer buffId : player.getAutoUseSettings().getAutoBuffs()) {
+            entries.add(entry(OfflinePlayEntryType.AUTO_BUFF, buffId));
+        }
 
-                // Store auto buffs.
-                for (Integer buffId : player.getAutoUseSettings().getAutoBuffs()) {
-                    statement2.setInt(1, playerObjectId);
-                    statement2.setInt(2, TYPE_AUTO_BUFF);
-                    statement2.setInt(3, buffId);
-                    statement2.addBatch();
-                }
+        for (Integer skillId : player.getAutoUseSettings().getAutoSkills()) {
+            entries.add(entry(OfflinePlayEntryType.AUTO_SKILL, skillId));
+        }
 
-                // Store auto skills.
-                for (Integer skillId : player.getAutoUseSettings().getAutoSkills()) {
-                    statement2.setInt(1, playerObjectId);
-                    statement2.setInt(2, TYPE_AUTO_SKILL);
-                    statement2.setInt(3, skillId);
-                    statement2.addBatch();
-                }
+        for (Integer actionId : player.getAutoUseSettings().getAutoActions()) {
+            entries.add(entry(OfflinePlayEntryType.AUTO_ACTION, actionId));
+        }
 
-                // Store auto actions.
-                for (Integer actionId : player.getAutoUseSettings().getAutoActions()) {
-                    statement2.setInt(1, playerObjectId);
-                    statement2.setInt(2, TYPE_AUTO_ACTION);
-                    statement2.setInt(3, actionId);
-                    statement2.addBatch();
-                }
+        final int autoPotionItem = player.getAutoUseSettings().getAutoPotionItem();
+        if (autoPotionItem > 0) {
+            entries.add(entry(OfflinePlayEntryType.AUTO_POTION_ITEM, autoPotionItem));
+        }
 
-                // Store auto potion item.
-                final int autoPotionItem = player.getAutoUseSettings().getAutoPotionItem();
-                if (autoPotionItem > 0) {
-                    statement2.setInt(1, playerObjectId);
-                    statement2.setInt(2, TYPE_AUTO_POTION_ITEM);
-                    statement2.setInt(3, autoPotionItem);
-                    statement2.addBatch();
-                }
+        if (AutoPotionsConfig.AUTO_POTIONS_ENABLED
+                && AutoPotionTaskManager.getInstance().hasPlayer(player)) {
+            entries.add(entry(OfflinePlayEntryType.CUSTOM_AUTO_POTION_SYSTEM, 0));
+        }
 
-                // Custom auto potion system.
-                if (AutoPotionsConfig.AUTO_POTIONS_ENABLED
-                        && AutoPotionTaskManager.getInstance().hasPlayer(player)) {
-                    statement2.setInt(1, playerObjectId);
-                    statement2.setInt(2, TYPE_CUSTOM_AUTO_POTION_SYSTEM);
-                    statement2.setInt(3, 0);
-                    statement2.addBatch();
-                }
-
-                // Execute all batched statements.
-                statement2.executeBatch();
-                // No need to call con.commit() as HikariCP autocommit is true.
-            } catch (Exception e) {
-                log.warn("Error while saving offline auto player {}", player, e);
-            }
-        } catch (Exception e) {
-            log.warn("Error while saving offline auto players. {}", e.getMessage(), e);
+        try {
+            offlinePlayRepository.replaceEntries(player.getObjectId(), entries);
+        } catch (DataAccessException e) {
+            log.warn("Error while saving offline auto player {}", player, e);
         }
     }
 
     public void storeOfflineGroups() {
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement statement = con.prepareStatement(SAVE_GROUP_MEMBER)) {
-            for (Player player : World.getPlayers()) {
-                if (player.isAutoPlaying()) {
-                    final Party party = player.getParty();
-                    if ((party != null) && !party.isLeader(player)) {
-                        final Player leader = party.getLeader();
-                        if (leader.isAutoPlaying()) {
-                            statement.setInt(1, leader.getObjectId());
-                            statement.setInt(2, player.getObjectId());
-                            statement.setInt(3, party.getDistributionType().getId());
-                            statement.addBatch();
-                        }
+        final List<OfflinePlayPartyMember> members = new ArrayList<>();
+        for (Player player : World.getPlayers()) {
+            if (player.isAutoPlaying()) {
+                final Party party = player.getParty();
+                if ((party != null) && !party.isLeader(player)) {
+                    final Player leader = party.getLeader();
+                    if (leader.isAutoPlaying()) {
+                        members.add(OfflinePlayPartyMember.builder()
+                                .leaderId(leader.getObjectId())
+                                .characterId(player.getObjectId())
+                                .distributionType(party.getDistributionType())
+                                .build());
                     }
                 }
             }
+        }
 
-            // Execute all batched statements.
-            statement.executeBatch();
-            // No need to call con.commit() as HikariCP autocommit is true.
-        } catch (Exception e) {
+        try {
+            offlinePlayRepository.insertPartyMembers(members);
+        } catch (DataAccessException e) {
             log.warn("Error while storing offline parties. {}", e.getMessage(), e);
         }
     }
@@ -336,20 +248,23 @@ public class OfflinePlayTable {
      * @param player the player
      */
     public void removeOfflinePlay(Player player) {
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement statement = con.prepareStatement(REMOVE_PLAYER)) {
-            statement.setInt(1, player.getObjectId());
-            statement.execute();
-        } catch (Exception e) {
+        try {
+            offlinePlayRepository.deleteEntries(player.getObjectId());
+        } catch (DataAccessException e) {
             log.warn("Error while removing offline auto players. {}", e.getMessage(), e);
         }
     }
 
-    public static OfflinePlayTable getInstance() {
-        return SingletonHolder.INSTANCE;
+    private static OfflinePlayEntry entry(OfflinePlayEntryType type, int targetId) {
+        return OfflinePlayEntry.builder().type(type).targetId(targetId).build();
     }
 
-    private static class SingletonHolder {
-        protected static final OfflinePlayTable INSTANCE = new OfflinePlayTable();
+    // TODO: callers receive the bean through their constructor (#41).
+    public static OfflinePlayTable getInstance() {
+        final OfflinePlayTable current = instance;
+        if (current == null) {
+            throw new IllegalStateException("OfflinePlayTable is used before the Spring context created it.");
+        }
+        return current;
     }
 }

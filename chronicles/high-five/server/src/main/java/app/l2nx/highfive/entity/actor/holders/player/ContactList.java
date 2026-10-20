@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+/*
  * SPDX-FileCopyrightText: L2J Mobius contributors
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
@@ -20,17 +24,15 @@
 package app.l2nx.highfive.entity.actor.holders.player;
 
 import app.l2nx.highfive.data.sql.CharInfoTable;
-import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.managers.CharacterRelationsManager;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataAccessException;
 
 /**
  * TODO: System messages:<br>
@@ -47,10 +49,6 @@ public class ContactList {
     @Getter
     private final Set<String> allContacts = ConcurrentHashMap.newKeySet();
 
-    private static final String QUERY_ADD = "REPLACE INTO character_contacts (charId, contactId) VALUES (?, ?)";
-    private static final String QUERY_REMOVE = "DELETE FROM character_contacts WHERE charId = ? and contactId = ?";
-    private static final String QUERY_LOAD = "SELECT contactId FROM character_contacts WHERE charId = ?";
-
     public ContactList(Player player) {
         this.player = player;
         restore();
@@ -59,25 +57,18 @@ public class ContactList {
     public void restore() {
         allContacts.clear();
 
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement statement = con.prepareStatement(QUERY_LOAD)) {
-            statement.setInt(1, player.getObjectId());
-            try (ResultSet rset = statement.executeQuery()) {
-                int contactId;
-                String contactName;
-                while (rset.next()) {
-                    contactId = rset.getInt(1);
-                    contactName = CharInfoTable.getInstance().getNameById(contactId);
-                    if ((contactName == null)
-                            || contactName.equals(player.getName())
-                            || (contactId == player.getObjectId())) {
-                        continue;
-                    }
-
-                    allContacts.add(contactName);
+        try {
+            for (int contactId : CharacterRelationsManager.getInstance().findContactIds(player.getObjectId())) {
+                final String contactName = CharInfoTable.getInstance().getNameById(contactId);
+                if ((contactName == null)
+                        || contactName.equals(player.getName())
+                        || (contactId == player.getObjectId())) {
+                    continue;
                 }
+
+                allContacts.add(contactName);
             }
-        } catch (Exception e) {
+        } catch (DataAccessException e) {
             log.warn("Error found in {}'s ContactsList: {}", player.getName(), e.getMessage(), e);
         }
     }
@@ -115,18 +106,15 @@ public class ContactList {
             }
         }
 
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement statement = con.prepareStatement(QUERY_ADD)) {
-            statement.setInt(1, player.getObjectId());
-            statement.setInt(2, contactId);
-            statement.execute();
+        try {
+            CharacterRelationsManager.getInstance().addContact(player.getObjectId(), contactId);
 
             allContacts.add(name);
 
             sm = new SystemMessage(SystemMessageId.S1_WAS_SUCCESSFULLY_ADDED_TO_YOUR_CONTACT_LIST);
             sm.addString(name);
             player.sendPacket(sm);
-        } catch (Exception e) {
+        } catch (DataAccessException e) {
             log.warn("Error found in {}'s ContactsList: {}", player.getName(), e.getMessage(), e);
         }
 
@@ -147,17 +135,14 @@ public class ContactList {
 
         allContacts.remove(name);
 
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement statement = con.prepareStatement(QUERY_REMOVE)) {
-            statement.setInt(1, player.getObjectId());
-            statement.setInt(2, contactId);
-            statement.execute();
+        try {
+            CharacterRelationsManager.getInstance().removeContact(player.getObjectId(), contactId);
 
             final SystemMessage sm =
                     new SystemMessage(SystemMessageId.S1_WAS_SUCCESSFULLY_DELETED_FROM_YOUR_CONTACT_LIST);
             sm.addString(name);
             player.sendPacket(sm);
-        } catch (Exception e) {
+        } catch (DataAccessException e) {
             log.warn("Error found in {}'s ContactsList: {}", player.getName(), e.getMessage(), e);
         }
     }

@@ -14,11 +14,13 @@ configurations.configureEach {
 dependencies {
     implementation(libs.findLibrary("spring-boot-starter-actuator").get())
     implementation(libs.findLibrary("spring-boot-starter-jdbc").get())
+    implementation(libs.findLibrary("spring-boot-starter-liquibase").get())
+    implementation(libs.findLibrary("liquibase-core").get())
     implementation(libs.findLibrary("spring-boot-starter-log4j2").get())
     implementation(libs.findLibrary("spring-boot-starter-webmvc").get())
     runtimeOnly(libs.findLibrary("disruptor").get())
     runtimeOnly(libs.findLibrary("micrometer-registry-prometheus").get())
-    runtimeOnly(libs.findLibrary("mysql-connector").get())
+    runtimeOnly(libs.findLibrary("postgresql").get())
 
     testImplementation(libs.findLibrary("spring-boot-starter-test").get())
     testImplementation(testFixtures(project(":libs:boot")))

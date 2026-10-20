@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+/*
  * SPDX-FileCopyrightText: L2J Mobius contributors
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
@@ -22,29 +26,31 @@ package app.l2nx.highfive.data.sql;
 import app.l2nx.highfive.entity.clan.Clan;
 import app.l2nx.highfive.entity.clan.Crest;
 import app.l2nx.highfive.entity.clan.enums.CrestType;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import app.l2nx.highfive.repository.crest.CrestRepository;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataAccessException;
+import org.springframework.stereotype.Component;
 
 /**
  * Loads and saves crests from database.
  * @author NosBit
  */
 @Slf4j
+@Component
 public class CrestTable {
+    private static volatile CrestTable instance;
 
     private final Map<Integer, Crest> crests = new ConcurrentHashMap<>();
-    private final AtomicInteger nextId = new AtomicInteger(1);
 
-    protected CrestTable() {
-        load();
+    private final CrestRepository crestRepository;
+
+    public CrestTable(CrestRepository crestRepository) {
+        this.crestRepository = crestRepository;
+        instance = this;
     }
 
     public synchronized void load() {
@@ -64,33 +70,12 @@ public class CrestTable {
             }
         }
 
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement statement = con.prepareStatement(
-                        "SELECT `crest_id`, `data`, `type` FROM `crests` ORDER BY `crest_id` DESC");
-                ResultSet rs = statement.executeQuery()) {
-            while (rs.next()) {
-                final int id = rs.getInt("crest_id");
-                if (nextId.get() <= id) {
-                    nextId.set(id + 1);
-                }
-
-                // Delete all unused crests except the last one we do not want to reuse.
-                // a crest id because client will display wrong crest if it is reused
-                if (!crestsInUse.contains(id) && (id != (nextId.get() - 1))) {
-                    removeCrest(id);
-                    continue;
-                }
-
-                final byte[] data = rs.getBytes("data");
-                final CrestType crestType = CrestType.getById(rs.getInt("type"));
-                if (crestType != null) {
-                    crests.put(id, new Crest(id, data, crestType));
-                } else {
-                    log.warn("Unknown crest type found in database. Type:{}", rs.getInt("type"));
-                }
+        for (Crest crest : crestRepository.findAll()) {
+            if (crestsInUse.contains(crest.getId())) {
+                crests.put(crest.getId(), crest);
+            } else {
+                removeCrest(crest.getId());
             }
-        } catch (SQLException e) {
-            log.warn("There was an error while loading crests from database:", e);
         }
 
         log.info("Loaded {} Crests.", crests.size());
@@ -143,17 +128,11 @@ public class CrestTable {
      * @return {@code Crest} on success, {@code null} on failure.
      */
     public Crest createCrest(byte[] data, CrestType crestType) {
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement statement =
-                        con.prepareStatement("INSERT INTO `crests`(`crest_id`, `data`, `type`) VALUES(?, ?, ?)")) {
-            final Crest crest = new Crest(nextId.getAndIncrement(), data, crestType);
-            statement.setInt(1, crest.getId());
-            statement.setBytes(2, crest.getData());
-            statement.setInt(3, crest.getType().getId());
-            statement.executeUpdate();
+        try {
+            final Crest crest = crestRepository.create(data, crestType);
             crests.put(crest.getId(), crest);
             return crest;
-        } catch (SQLException e) {
+        } catch (DataAccessException e) {
             log.warn("There was an error while saving crest in database:", e);
         }
 
@@ -166,34 +145,19 @@ public class CrestTable {
      */
     public void removeCrest(int crestId) {
         crests.remove(crestId);
-
-        // avoid removing last crest id we do not want to lose index...
-        // Because client will display wrong crest if it is reused.
-        if (crestId == (nextId.get() - 1)) {
-            return;
-        }
-
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement statement = con.prepareStatement("DELETE FROM `crests` WHERE `crest_id`=?")) {
-            statement.setInt(1, crestId);
-            statement.executeUpdate();
-        } catch (SQLException e) {
+        try {
+            crestRepository.delete(crestId);
+        } catch (DataAccessException e) {
             log.warn("There was an error while deleting crest from database:", e);
         }
     }
 
-    /**
-     * @return The next crest id.
-     */
-    public int getNextId() {
-        return nextId.getAndIncrement();
-    }
-
+    // TODO: callers receive the bean through their constructor (#41).
     public static CrestTable getInstance() {
-        return SingletonHolder.INSTANCE;
-    }
-
-    private static class SingletonHolder {
-        protected static final CrestTable INSTANCE = new CrestTable();
+        final CrestTable current = instance;
+        if (current == null) {
+            throw new IllegalStateException("CrestTable is used before the Spring context created it.");
+        }
+        return current;
     }
 }

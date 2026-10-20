@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -24,7 +28,6 @@ package app.l2nx.highfive.mechanics.script;
 
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.data.sql.AnnouncementsTable;
-import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.data.xml.IXmlReader;
 import app.l2nx.highfive.data.xml.ItemData;
 import app.l2nx.highfive.data.xml.NpcData;
@@ -36,6 +39,7 @@ import app.l2nx.highfive.entity.actor.holders.npc.EventDropHolder;
 import app.l2nx.highfive.entity.item.enums.ItemProcessType;
 import app.l2nx.highfive.entity.spawns.Spawn;
 import app.l2nx.highfive.managers.EventDropManager;
+import app.l2nx.highfive.managers.ItemManager;
 import app.l2nx.highfive.mechanics.announce.EventAnnouncement;
 import app.l2nx.highfive.mechanics.events.Containers;
 import app.l2nx.highfive.mechanics.events.EventType;
@@ -43,9 +47,6 @@ import app.l2nx.highfive.mechanics.events.holders.OnServerStart;
 import app.l2nx.highfive.mechanics.events.listeners.ConsumerEventListener;
 import app.l2nx.highfive.threads.ThreadPool;
 import java.io.File;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -58,6 +59,7 @@ import java.util.Set;
 import java.util.function.Consumer;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataAccessException;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 
@@ -320,7 +322,8 @@ public class LongTimeEvent extends Script {
 
                                         if (minCount > maxCount) {
                                             log.warn(
-                                                    "{} event: item {} - min greater than max, item was not added in droplist",
+                                                    "{} event: item {} - min greater than max, item was not added in"
+                                                            + " droplist",
                                                     getName(),
                                                     itemId);
                                             continue;
@@ -328,7 +331,8 @@ public class LongTimeEvent extends Script {
 
                                         if ((finalChance < 0) || (finalChance > 100)) {
                                             log.warn(
-                                                    "{} event: item {} - incorrect drop chance, item was not added in droplist",
+                                                    "{} event: item {} - incorrect drop chance, item was not added in"
+                                                            + " droplist",
                                                     getName(),
                                                     itemId);
                                             continue;
@@ -558,12 +562,10 @@ public class LongTimeEvent extends Script {
                 }
 
                 // Update database.
-                try (Connection con = DatabaseFactory.getConnection();
-                        PreparedStatement statement = con.prepareStatement("DELETE FROM items WHERE item_id=?")) {
-                    statement.setInt(1, itemId);
-                    statement.execute();
-                } catch (SQLException e) {
-                    log.warn(e.toString());
+                try {
+                    ItemManager.getInstance().deleteItemsOfTemplate(itemId);
+                } catch (DataAccessException e) {
+                    log.warn("Could not delete the items {} of the ended event: {}", itemId, e.getMessage(), e);
                 }
             }
         }

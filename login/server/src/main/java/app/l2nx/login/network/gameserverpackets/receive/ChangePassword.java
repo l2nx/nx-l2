@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -24,15 +28,14 @@ package app.l2nx.login.network.gameserverpackets.receive;
 
 import app.l2nx.login.GameServerThread;
 import app.l2nx.login.controller.LoginController;
-import app.l2nx.login.data.GameServerTable;
-import app.l2nx.login.data.GameServerTable.GameServerInfo;
 import app.l2nx.network.packet.SimpleReadablePacket;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.Base64;
 import java.util.Base64.Encoder;
-import java.util.Collection;
+import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * Handles password change requests coming from game servers.<br>
@@ -62,41 +65,30 @@ public class ChangePassword extends SimpleReadablePacket {
      * Sends the result back to the owning game server thread.
      * @param decrypt
      */
-    public ChangePassword(byte[] decrypt) {
+    public ChangePassword(byte[] decrypt, GameServerThread server) {
         super(decrypt);
 
         final int packetId = readByte();
-        final String loginName = readString();
+        final UUID accountId = new UUID(readLong(), readLong());
         final String playerName = readString();
         final String currentPassword = readString();
         final String newPassword = readString();
 
-        GameServerThread ownerThread = null;
-        int ownerServerId = 0;
-
-        final Collection<GameServerInfo> registeredServers =
-                GameServerTable.getInstance().getRegisteredGameServers().values();
-        for (GameServerInfo serverInfo : registeredServers) {
-            final GameServerThread serverThread = serverInfo.getGameServerThread();
-            if ((serverThread != null) && serverThread.hasAccountOnGameServer(loginName)) {
-                ownerThread = serverThread;
-                ownerServerId = serverInfo.getId();
-                break;
-            }
-        }
+        // A game server may only change the password of an account it holds.
+        final GameServerThread ownerThread = server.hasAccountOnGameServer(accountId) ? server : null;
 
         if (ownerThread == null) {
             if (log.isTraceEnabled()) {
                 log.trace(
                         "Ignored ChangePassword packetId={} for account '{}' requested by player '{}'.",
                         packetId,
-                        loginName,
+                        accountId,
                         playerName);
             }
             return;
         }
 
-        if ((currentPassword == null) || (newPassword == null)) {
+        if (StringUtils.isEmpty(currentPassword) || StringUtils.isEmpty(newPassword)) {
             ownerThread.changePasswordResponse(playerName, MSG_INVALID_PASSWORD_DATA);
             return;
         }
@@ -110,17 +102,17 @@ public class ChangePassword extends SimpleReadablePacket {
             final String newHash = encoder.encodeToString(digest.digest(newPassword.getBytes(StandardCharsets.UTF_8)));
 
             final LoginController loginController = LoginController.getInstance();
-            if (loginController.changePassword(loginName, currentHash, newHash)) {
+            if (loginController.changePassword(accountId, currentHash, newHash)) {
                 ownerThread.changePasswordResponse(playerName, MSG_PASSWORD_CHANGED);
                 return;
             }
 
-            if (currentHash.equals(loginController.getPasswordHash(loginName))) {
+            if (currentHash.equals(loginController.getPasswordHash(accountId))) {
                 log.warn(
                         "Password change failed for account '{}' requested by player '{}' on GS {} (0 rows updated).",
-                        loginName,
+                        accountId,
                         playerName,
-                        ownerServerId);
+                        server.getServerId());
                 ownerThread.changePasswordResponse(playerName, MSG_PASSWORD_CHANGE_FAILED);
             } else {
                 ownerThread.changePasswordResponse(playerName, MSG_CURRENT_PASSWORD_MISMATCH);
@@ -128,9 +120,9 @@ public class ChangePassword extends SimpleReadablePacket {
         } catch (Exception e) {
             log.warn(
                     "Error while changing password for account '{}' requested by player '{}' on GS {} (packetId={}).",
-                    loginName,
+                    accountId,
                     playerName,
-                    ownerServerId,
+                    server.getServerId(),
                     packetId,
                     e);
         }

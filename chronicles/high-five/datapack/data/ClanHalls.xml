@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<list xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="xsd/ClanHalls.xsd">
+	<clanHall id="22" name="Moonstone Hall" description="Clan hall located in the Town of Gludio" location="Gludio" lease="500000" grade="2" auctionStartingBid="20000000" />
+	<clanHall id="23" name="Onyx Hall" description="Clan hall located in the Town of Gludio" location="Gludio" lease="500000" grade="2" auctionStartingBid="20000000" />
+	<clanHall id="24" name="Topaz Hall" description="Clan hall located in the Town of Gludio" location="Gludio" lease="500000" grade="2" auctionStartingBid="20000000" />
+	<clanHall id="25" name="Ruby Hall" description="Clan hall located in the Town of Gludio" location="Gludio" lease="500000" grade="2" auctionStartingBid="20000000" />
+	<clanHall id="26" name="Crystal Hall" description="Clan hall located in Gludin Village" location="Gludin" lease="500000" grade="2" auctionStartingBid="20000000" />
+	<clanHall id="27" name="Onyx Hall" description="Clan hall located in Gludin Village" location="Gludin" lease="500000" grade="2" auctionStartingBid="20000000" />
+	<clanHall id="28" name="Sapphire Hall" description="Clan hall located in Gludin Village" location="Gludin" lease="500000" grade="2" auctionStartingBid="20000000" />
+	<clanHall id="29" name="Moonstone Hall" description="Clan hall located in Gludin Village" location="Gludin" lease="500000" grade="2" auctionStartingBid="20000000" />
+	<clanHall id="30" name="Emerald Hall" description="Clan hall located in Gludin Village" location="Gludin" lease="500000" grade="2" auctionStartingBid="20000000" />
+	<clanHall id="31" name="The Atramental Barracks" description="Clan hall located in the Town of Dion" location="Dion" lease="200000" grade="1" auctionStartingBid="8000000" />
+	<clanHall id="32" name="The Scarlet Barracks" description="Clan hall located in the Town of Dion" location="Dion" lease="200000" grade="1" auctionStartingBid="8000000" />
+	<clanHall id="33" name="The Viridian Barracks" description="Clan hall located in the Town of Dion" location="Dion" lease="200000" grade="1" auctionStartingBid="8000000" />
+	<clanHall id="36" name="The Golden Chamber" description="Clan hall located in the Town of Aden" location="Aden" lease="1000000" grade="3" auctionStartingBid="50000000" />
+	<clanHall id="37" name="The Silver Chamber" description="Clan hall located in the Town of Aden" location="Aden" lease="1000000" grade="3" auctionStartingBid="50000000" />
+	<clanHall id="38" name="The Mithril Chamber" description="Clan hall located in the Town of Aden" location="Aden" lease="1000000" grade="3" auctionStartingBid="50000000" />
+	<clanHall id="39" name="Silver Manor" description="Clan hall located in the Town of Aden" location="Aden" lease="1000000" grade="3" auctionStartingBid="50000000" />
+	<clanHall id="40" name="Gold Manor" description="Clan hall located in the Town of Aden" location="Aden" lease="1000000" grade="3" auctionStartingBid="50000000" />
+	<clanHall id="41" name="The Bronze Chamber" description="Clan hall located in the Town of Aden" location="Aden" lease="1000000" grade="3" auctionStartingBid="50000000" />
+	<clanHall id="42" name="The Golden Chamber" description="Clan hall located in the Town of Giran" location="Giran" lease="1000000" grade="3" auctionStartingBid="50000000" />
+	<clanHall id="43" name="The Silver Chamber" description="Clan hall located in the Town of Giran" location="Giran" lease="1000000" grade="3" auctionStartingBid="50000000" />
+	<clanHall id="44" name="The Mithril Chamber" description="Clan hall located in the Town of Giran" location="Giran" lease="1000000" grade="3" auctionStartingBid="50000000" />
+	<clanHall id="45" name="The Bronze Chamber" description="Clan hall located in the Town of Giran" location="Giran" lease="1000000" grade="3" auctionStartingBid="50000000" />
+	<clanHall id="46" name="Silver Manor" description="Clan hall located in the Town of Giran" location="Giran" lease="1000000" grade="3" auctionStartingBid="50000000" />
+	<clanHall id="47" name="Moonstone Hall" description="Clan hall located in the Town of Goddard" location="Goddard" lease="1000000" grade="3" auctionStartingBid="50000000" />
+	<clanHall id="48" name="Onyx Hall" description="Clan hall located in the Town of Goddard" location="Goddard" lease="1000000" grade="3" auctionStartingBid="50000000" />
+	<clanHall id="49" name="Emerald Hall" description="Clan hall located in the Town of Goddard" location="Goddard" lease="1000000" grade="3" auctionStartingBid="50000000" />
+	<clanHall id="50" name="Sapphire Hall" description="Clan hall located in the Town of Goddard" location="Goddard" lease="1000000" grade="3" auctionStartingBid="50000000" />
+	<clanHall id="51" name="Mont Chamber" description="An upscale Clan hall located in the Rune Township" location="Rune" lease="1000000" grade="3" auctionStartingBid="50000000" />
+	<clanHall id="52" name="Astaire Chamber" description="An upscale Clan hall located in the Rune Township" location="Rune" lease="1000000" grade="3" auctionStartingBid="50000000" />
+	<clanHall id="53" name="Aria Chamber" description="An upscale Clan hall located in the Rune Township" location="Rune" lease="1000000" grade="3" auctionStartingBid="50000000" />
+	<clanHall id="54" name="Yiana Chamber" description="An upscale Clan hall located in the Rune Township" location="Rune" lease="1000000" grade="3" auctionStartingBid="50000000" />
+	<clanHall id="55" name="Roien Chamber" description="An upscale Clan hall located in the Rune Township" location="Rune" lease="1000000" grade="3" auctionStartingBid="50000000" />
+	<clanHall id="56" name="Luna Chamber" description="An upscale Clan hall located in the Rune Township" location="Rune" lease="1000000" grade="3" auctionStartingBid="50000000" />
+	<clanHall id="57" name="Traban Chamber" description="An upscale Clan hall located in the Rune Township" location="Rune" lease="1000000" grade="3" auctionStartingBid="50000000" />
+	<clanHall id="58" name="Eisen Hall" description="Clan hall located in the Town of Schuttgart" location="Schuttgart" lease="500000" grade="2" auctionStartingBid="20000000" />
+	<clanHall id="59" name="Heavy Metal Hall" description="Clan hall located in the Town of Schuttgart" location="Schuttgart" lease="500000" grade="2" auctionStartingBid="20000000" />
+	<clanHall id="60" name="Molten Ore Hall" description="Clan hall located in the Town of Schuttgart" location="Schuttgart" lease="500000" grade="2" auctionStartingBid="20000000" />
+	<clanHall id="61" name="Titan Hall" description="Clan hall located in the Town of Schuttgart" location="Schuttgart" lease="500000" grade="2" auctionStartingBid="20000000" />
+</list>

@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -23,12 +27,10 @@
 package app.l2nx.highfive.data;
 
 import app.l2nx.highfive.config.custom.SchemeBufferConfig;
-import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.entity.actor.holders.npc.BuffSkillHolder;
+import app.l2nx.highfive.repository.character.BufferSchemeRepository;
+import app.l2nx.highfive.repository.character.model.BufferScheme;
 import java.io.File;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -40,6 +42,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import javax.xml.parsers.DocumentBuilderFactory;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.dao.DataAccessException;
+import org.springframework.stereotype.Component;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 
@@ -54,20 +59,14 @@ import org.w3c.dom.Node;
  * @author Mobius, BazookaRpm
  */
 @Slf4j
+@Component
 public class SchemeBufferTable {
+    private static volatile SchemeBufferTable instance;
 
     // Constants.
     private static final String SKILLS_XML_PATH = "./data/SchemeBufferSkills.xml";
-    private static final String LOAD_SCHEMES = "SELECT * FROM buffer_schemes";
-    private static final String DELETE_SCHEMES = "TRUNCATE TABLE buffer_schemes";
-    private static final String INSERT_SCHEME =
-            "INSERT INTO buffer_schemes (object_id, scheme_name, skills) VALUES (?,?,?)";
     private static final String TYPE_MAGE_GROUP = "MAGE_GROUP";
     private static final String TYPE_FIGHTER_GROUP = "FIGHTER_GROUP";
-    private static final String DB_COLUMN_OBJECT_ID = "object_id";
-    private static final String DB_COLUMN_SCHEME_NAME = "scheme_name";
-    private static final String DB_COLUMN_SKILLS = "skills";
-    private static final String SKILL_SEPARATOR = ",";
 
     // Player schemes storage.
     private final Map<Integer, Map<String, List<Integer>>> schemesTable = new ConcurrentHashMap<>();
@@ -79,46 +78,41 @@ public class SchemeBufferTable {
             new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
     private final List<String> skillTypesOrder = new ArrayList<>();
 
+    private final BufferSchemeRepository bufferSchemeRepository;
+
+    public SchemeBufferTable(BufferSchemeRepository bufferSchemeRepository) {
+        this.bufferSchemeRepository = bufferSchemeRepository;
+        instance = this;
+    }
+
     /**
      * Initializes skills registry and loads player schemes.
      */
-    public SchemeBufferTable() {
+    public void load() {
         loadAvailableBuffs();
         loadPlayerSchemes();
         log.info("Loaded {} players and {} available skills.", schemesTable.size(), availableBuffs.size());
     }
 
     /**
-     * Saves all loaded schemes to database by truncating and inserting current in-memory data.
+     * Saves all loaded schemes to database, replacing the stored ones.
      */
     public void saveSchemes() {
-        try (Connection connection = DatabaseFactory.getConnection()) {
-            try (PreparedStatement deleteStatement = connection.prepareStatement(DELETE_SCHEMES)) {
-                deleteStatement.execute();
+        final List<BufferScheme> schemes = new ArrayList<>();
+        for (Entry<Integer, Map<String, List<Integer>>> playerEntry : schemesTable.entrySet()) {
+            for (Entry<String, List<Integer>> schemeEntry :
+                    playerEntry.getValue().entrySet()) {
+                schemes.add(BufferScheme.builder()
+                        .characterId(playerEntry.getKey())
+                        .name(schemeEntry.getKey())
+                        .skillIds(schemeEntry.getValue())
+                        .build());
             }
+        }
 
-            try (PreparedStatement insertStatement = connection.prepareStatement(INSERT_SCHEME)) {
-                for (Entry<Integer, Map<String, List<Integer>>> playerEntry : schemesTable.entrySet()) {
-                    for (Entry<String, List<Integer>> schemeEntry :
-                            playerEntry.getValue().entrySet()) {
-                        final StringBuilder skillsBuilder = new StringBuilder();
-                        for (int skillId : schemeEntry.getValue()) {
-                            skillsBuilder.append(skillId).append(SKILL_SEPARATOR);
-                        }
-
-                        if (!skillsBuilder.isEmpty()) {
-                            skillsBuilder.setLength(skillsBuilder.length() - SKILL_SEPARATOR.length());
-                        }
-
-                        insertStatement.setInt(1, playerEntry.getKey());
-                        insertStatement.setString(2, schemeEntry.getKey());
-                        insertStatement.setString(3, skillsBuilder.toString());
-                        insertStatement.addBatch();
-                    }
-                }
-                insertStatement.executeBatch();
-            }
-        } catch (Exception e) {
+        try {
+            bufferSchemeRepository.replaceAll(schemes);
+        } catch (DataAccessException e) {
             log.warn("Error while saving schemes. Players: {}.", schemesTable.size(), e);
         }
     }
@@ -130,6 +124,10 @@ public class SchemeBufferTable {
      * @param skillIds
      */
     public void setScheme(int playerId, String schemeName, List<Integer> skillIds) {
+        if (StringUtils.isBlank(schemeName)) {
+            return;
+        }
+
         final Map<String, List<Integer>> schemes = schemesTable.computeIfAbsent(
                 playerId, key -> new ConcurrentSkipListMap<>(String.CASE_INSENSITIVE_ORDER));
         if ((schemes.size() >= SchemeBufferConfig.BUFFER_MAX_SCHEMES) && !schemes.containsKey(schemeName)) {
@@ -287,12 +285,13 @@ public class SchemeBufferTable {
                 : availableBuffs.get(skillId);
     }
 
-    /**
-     * Returns the singleton instance.
-     * @return the instance.
-     */
+    // TODO: callers receive the bean through their constructor (#41).
     public static SchemeBufferTable getInstance() {
-        return SingletonHolder.INSTANCE;
+        final SchemeBufferTable current = instance;
+        if (current == null) {
+            throw new IllegalStateException("SchemeBufferTable is used before the Spring context created it.");
+        }
+        return current;
     }
 
     private void loadAvailableBuffs() {
@@ -388,51 +387,23 @@ public class SchemeBufferTable {
     }
 
     private void loadPlayerSchemes() {
-        int entryCount = 0;
-
-        try (Connection connection = DatabaseFactory.getConnection();
-                PreparedStatement statement = connection.prepareStatement(LOAD_SCHEMES);
-                ResultSet resultSet = statement.executeQuery()) {
-            while (resultSet.next()) {
-                final String schemeName = resultSet.getString(DB_COLUMN_SCHEME_NAME);
-                final String skills = resultSet.getString(DB_COLUMN_SKILLS);
-                if ((schemeName == null) || (skills == null)) {
-                    continue;
-                }
-
-                final int objectId = resultSet.getInt(DB_COLUMN_OBJECT_ID);
-                final String[] split = skills.split(SKILL_SEPARATOR);
-                final List<Integer> schemeSkillIds = new ArrayList<>(split.length);
-
-                for (String token : split) {
-                    if (token.isEmpty()) {
-                        continue;
-                    }
-
-                    final int skillId;
-                    try {
-                        skillId = Integer.parseInt(token);
-                    } catch (NumberFormatException e) {
-                        log.warn("Invalid skill id '{}' for scheme '{}' (objectId: {}).", token, schemeName, objectId);
-                        continue;
-                    }
-
+        try {
+            final List<BufferScheme> schemes = bufferSchemeRepository.findAll();
+            for (BufferScheme scheme : schemes) {
+                final List<Integer> schemeSkillIds =
+                        new ArrayList<>(scheme.skillIds().size());
+                for (int skillId : scheme.skillIds()) {
                     if (availableBuffs.containsKey(skillId)) {
                         schemeSkillIds.add(skillId);
                     }
                 }
 
-                setScheme(objectId, schemeName, schemeSkillIds);
-                entryCount++;
+                setScheme(scheme.characterId(), scheme.name(), schemeSkillIds);
             }
 
-            log.info("Loaded {} scheme entries from database.", entryCount);
-        } catch (Exception e) {
+            log.info("Loaded {} scheme entries from database.", schemes.size());
+        } catch (DataAccessException e) {
             log.warn("Failed to load buff schemes from database.", e);
         }
-    }
-
-    private static class SingletonHolder {
-        protected static final SchemeBufferTable INSTANCE = new SchemeBufferTable();
     }
 }

@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -29,9 +33,8 @@ import app.l2nx.login.data.GameServerTable.GameServerInfo;
 import app.l2nx.login.enums.LoginFailReason;
 import app.l2nx.login.enums.LoginResult;
 import app.l2nx.login.network.LoginClient;
-import app.l2nx.login.repository.AccountDataRepository;
 import app.l2nx.login.repository.AccountRepository;
-import app.l2nx.login.repository.AccountRepository.IpAuth;
+import app.l2nx.login.repository.AccountRepository.IpRule;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.KeyPairGenerator;
@@ -50,6 +53,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ThreadLocalRandom;
@@ -64,8 +68,6 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class LoginController {
 
-    private static final String TEMP_BAN_VAR = "ban_temp";
-
     /** Time before kicking the client if he didn't logged yet */
     public static final int LOGIN_TIMEOUT = 5 * 60 * 1000; // 5 minutes.
 
@@ -76,7 +78,7 @@ public class LoginController {
     protected ScrambledKeyPair[] keyPairs;
 
     /** Authed Clients on LoginServer */
-    protected Map<String, LoginClient> loginServerClients = new ConcurrentHashMap<>();
+    protected Map<UUID, LoginClient> loginServerClients = new ConcurrentHashMap<>();
 
     private final Map<String, Integer> failedLoginAttemps = new HashMap<>();
 
@@ -84,20 +86,14 @@ public class LoginController {
     private final Map<String, Long> bannedIps = new ConcurrentHashMap<>();
 
     private final AccountRepository accounts;
-    private final AccountDataRepository accountData;
     private final LoginProperties properties;
     private final TaskScheduler taskScheduler;
     private ScheduledFuture<?> purgeTask;
 
     private static LoginController INSTANCE;
 
-    public LoginController(
-            AccountRepository accounts,
-            AccountDataRepository accountData,
-            LoginProperties properties,
-            TaskScheduler taskScheduler) {
+    public LoginController(AccountRepository accounts, LoginProperties properties, TaskScheduler taskScheduler) {
         this.accounts = accounts;
-        this.accountData = accountData;
         this.properties = properties;
         this.taskScheduler = taskScheduler;
         INSTANCE = this;
@@ -164,23 +160,38 @@ public class LoginController {
         return blowfishKeys[(int) (Math.random() * BLOWFISH_KEYS)];
     }
 
-    public SessionKey assignSessionKeyToClient(String account, LoginClient client) {
+    public SessionKey assignSessionKeyToClient(UUID accountId, LoginClient client) {
         final SessionKey key = new SessionKey(
                 SECURE_RANDOM.nextInt(), SECURE_RANDOM.nextInt(), SECURE_RANDOM.nextInt(), SECURE_RANDOM.nextInt());
-        loginServerClients.put(account, client);
+        loginServerClients.put(accountId, client);
         return key;
     }
 
-    public void removeAuthedLoginClient(String account) {
-        if (account == null) {
+    public void removeAuthedLoginClient(UUID accountId) {
+        if (accountId == null) {
             return;
         }
 
-        loginServerClients.remove(account);
+        loginServerClients.remove(accountId);
     }
 
-    public LoginClient getAuthedClient(String account) {
-        return loginServerClients.get(account);
+    public LoginClient getAuthedClient(UUID accountId) {
+        return loginServerClients.get(accountId);
+    }
+
+    /**
+     * Matched by login: the game server knows only the typed login. The map holds only clients between login and game
+     * server entry, so the scan is short.
+     * @return the authed client of that account, {@code null} if none
+     */
+    public LoginClient getAuthedClientByLogin(String login) {
+        for (LoginClient client : loginServerClients.values()) {
+            if (login.equals(client.getAccount())) {
+                return client;
+            }
+        }
+
+        return null;
     }
 
     public AccountInfo retriveAccountInfo(String clientAddr, String login, String password) {
@@ -226,7 +237,7 @@ public class LoginController {
             final byte[] raw = password.getBytes(StandardCharsets.UTF_8);
             final String hashBase64 = Base64.getEncoder().encodeToString(md.digest(raw));
 
-            final Optional<AccountInfo> stored = accounts.findAccountInfo(login, System.currentTimeMillis());
+            final Optional<AccountInfo> stored = accounts.findAccountInfo(login, Instant.now());
             if (stored.isPresent()) {
                 final AccountInfo info = stored.get();
                 if (!info.checkPassHash(hashBase64)) {
@@ -245,7 +256,7 @@ public class LoginController {
             }
 
             try {
-                accounts.create(login, hashBase64, System.currentTimeMillis(), clientAddr);
+                accounts.create(login, hashBase64, Instant.now(), clientAddr);
             } catch (Exception e) {
                 log.warn("Exception while auto creating account for '{}'!", login, e);
                 return null;
@@ -270,10 +281,10 @@ public class LoginController {
         if (canCheckin(client, address, info)) {
             // Login was successful, verify presence on Gameservers.
             ret = LoginResult.ALREADY_ON_GS;
-            if (!isAccountInAnyGameServer(info.getLogin())) {
+            if (!isAccountInAnyGameServer(info.getId())) {
                 // Account is not on any GS verify LS itself.
                 ret = LoginResult.ALREADY_ON_LS;
-                if (loginServerClients.putIfAbsent(info.getLogin(), client) == null) {
+                if (loginServerClients.putIfAbsent(info.getId(), client) == null) {
                     ret = LoginResult.AUTH_SUCCESS;
                 }
             }
@@ -333,21 +344,12 @@ public class LoginController {
         return bannedIps.remove(address) != null;
     }
 
-    public SessionKey getKeyForAccount(String account) {
-        final LoginClient client = loginServerClients.get(account);
-        if (client != null) {
-            return client.getSessionKey();
-        }
-
-        return null;
-    }
-
-    public boolean isAccountInAnyGameServer(String account) {
+    public boolean isAccountInAnyGameServer(UUID accountId) {
         final Collection<GameServerInfo> serverList =
                 GameServerTable.getInstance().getRegisteredGameServers().values();
         for (GameServerInfo gsi : serverList) {
             final GameServerThread gst = gsi.getGameServerThread();
-            if ((gst != null) && gst.hasAccountOnGameServer(account)) {
+            if ((gst != null) && gst.hasAccountOnGameServer(accountId)) {
                 return true;
             }
         }
@@ -355,12 +357,12 @@ public class LoginController {
         return false;
     }
 
-    public GameServerInfo getAccountOnGameServer(String account) {
+    public GameServerInfo getAccountOnGameServer(UUID accountId) {
         final Collection<GameServerInfo> serverList =
                 GameServerTable.getInstance().getRegisteredGameServers().values();
         for (GameServerInfo gsi : serverList) {
             final GameServerThread gst = gsi.getGameServerThread();
-            if ((gst != null) && gst.hasAccountOnGameServer(account)) {
+            if ((gst != null) && gst.hasAccountOnGameServer(accountId)) {
                 return gsi;
             }
         }
@@ -368,11 +370,11 @@ public class LoginController {
         return null;
     }
 
-    public void getCharactersOnAccount(String account) {
+    public void getCharactersOnAccount(UUID accountId) {
         for (GameServerInfo gsi :
                 GameServerTable.getInstance().getRegisteredGameServers().values()) {
             if (gsi.isAuthed()) {
-                gsi.getGameServerThread().requestCharacters(account);
+                gsi.getGameServerThread().requestCharacters(accountId);
             }
         }
     }
@@ -383,7 +385,7 @@ public class LoginController {
             final boolean loginOk = gsi.canLogin(client);
             if (loginOk && (client.getLastServer() != serverId)) {
                 try {
-                    accounts.updateLastServer(client.getAccount(), serverId);
+                    accounts.updateLastServer(client.getAccountId(), serverId);
                 } catch (Exception e) {
                     log.warn("Could not set lastServer: {}", e.getMessage(), e);
                 }
@@ -395,46 +397,43 @@ public class LoginController {
         return false;
     }
 
-    public void setAccountAccessLevel(String account, int banLevel) {
+    public void setAccountAccessLevel(UUID accountId, int banLevel) {
         try {
-            accounts.updateAccessLevel(account, banLevel);
+            accounts.updateAccessLevel(accountId, banLevel);
         } catch (Exception e) {
             log.warn("Could not set accessLevel: {}", e.getMessage(), e);
         }
     }
 
-    public void setAccountLastTracert(String account, String pcIp, String hop1, String hop2, String hop3, String hop4) {
+    public void setAccountLastTracert(UUID accountId, String pcIp, String hop1, String hop2, String hop3, String hop4) {
         try {
-            accounts.updateTracert(account, pcIp, hop1, hop2, hop3, hop4);
+            accounts.updateTracert(accountId, pcIp, hop1, hop2, hop3, hop4);
         } catch (Exception e) {
             log.warn("Could not set last tracert: {}", e.getMessage(), e);
         }
     }
 
-    /**
-     * @param banTime stored as {@code ban_temp}; the account reads as banned while it lies after the current time
-     */
-    public void setAccountTempBan(String account, long banTime) {
+    public void setAccountTempBan(UUID accountId, Duration duration) {
         try {
-            accountData.save(account, TEMP_BAN_VAR, Long.toString(banTime));
+            accounts.updateBannedUntil(accountId, Instant.now().plus(duration));
         } catch (DataAccessException e) {
             log.warn("Could not set temporary ban: {}", e.getMessage());
         }
     }
 
-    public boolean changePassword(String account, String currentHash, String newHash) {
-        return accounts.updatePassword(account, currentHash, newHash);
+    public boolean changePassword(UUID accountId, String currentHash, String newHash) {
+        return accounts.updatePassword(accountId, currentHash, newHash);
     }
 
     /**
      * @return the stored password hash, {@code null} if the account does not exist
      */
-    public String getPasswordHash(String account) {
-        return accounts.findPassword(account).orElse(null);
+    public String getPasswordHash(UUID accountId) {
+        return accounts.findPassword(accountId).orElse(null);
     }
 
-    public void setCharactersOnServer(String account, int charsNum, long[] timeToDel, int serverId) {
-        final LoginClient client = loginServerClients.get(account);
+    public void setCharactersOnServer(UUID accountId, int charsNum, long[] timeToDel, int serverId) {
+        final LoginClient client = loginServerClients.get(accountId);
         if (client == null) {
             return;
         }
@@ -466,17 +465,11 @@ public class LoginController {
         try {
             final List<String> ipWhiteList = new ArrayList<>();
             final List<String> ipBlackList = new ArrayList<>();
-            for (IpAuth ipAuth : accounts.findIpAuths(info.getLogin())) {
-                final String ip = ipAuth.ip();
-                final String type = ipAuth.type();
-                if (!isValidIPAddress(ip)) {
-                    continue;
-                }
-
-                if (type.equals("allow")) {
-                    ipWhiteList.add(ip);
-                } else if (type.equals("deny")) {
-                    ipBlackList.add(ip);
+            for (IpRule rule : accounts.findIpRules(info.getId())) {
+                if (rule.allow()) {
+                    ipWhiteList.add(rule.ip());
+                } else {
+                    ipBlackList.add(rule.ip());
                 }
             }
 
@@ -501,28 +494,12 @@ public class LoginController {
 
             client.setAccessLevel(info.getAccessLevel());
             client.setLastServer(info.getLastServer());
-            accounts.updateLastActive(info.getLogin(), System.currentTimeMillis(), address);
+            accounts.updateLastActive(info.getId(), Instant.now(), address);
             return true;
         } catch (Exception e) {
             log.warn("Could not finish login process!", e);
             return false;
         }
-    }
-
-    public boolean isValidIPAddress(String ipAddress) {
-        final String[] parts = ipAddress.split("\\.");
-        if (parts.length != 4) {
-            return false;
-        }
-
-        for (String s : parts) {
-            final int i = Integer.parseInt(s);
-            if ((i < 0) || (i > 255)) {
-                return false;
-            }
-        }
-
-        return true;
     }
 
     private void purge() {
@@ -531,7 +508,7 @@ public class LoginController {
         }
 
         final long currentTime = System.currentTimeMillis();
-        final Iterator<Entry<String, LoginClient>> iterator =
+        final Iterator<Entry<UUID, LoginClient>> iterator =
                 loginServerClients.entrySet().iterator();
         while (iterator.hasNext()) {
             final LoginClient client = iterator.next().getValue();

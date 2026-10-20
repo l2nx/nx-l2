@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -24,19 +28,22 @@ package app.l2nx.login.network.gameserverpackets.receive;
 
 import app.l2nx.login.GameServerThread;
 import app.l2nx.network.packet.SimpleReadablePacket;
+import java.util.UUID;
 
 /**
  * Reads a logout notification reported by a connected game server.<br>
  * Consumes the packet payload and removes the decoded account from the login server state.
  * <ul>
  * <li>Skips the packet opcode already handled by the packet dispatcher.</li>
- * <li>Reads the account name from the packet body.</li>
- * <li>Removes the account from the target game server thread if valid.</li>
+ * <li>Reads the account id from the packet body.</li>
+ * <li>Removes the account from the target game server thread.</li>
  * <li>Performs basic packet validation before processing.</li>
  * </ul>
  * @author BazookaRpm
  */
 public class PlayerLogout extends SimpleReadablePacket {
+    private static final int PACKET_SIZE = 1 + (2 * Long.BYTES);
+
     public PlayerLogout(byte[] decrypt, GameServerThread server) {
         super(decrypt);
 
@@ -48,15 +55,12 @@ public class PlayerLogout extends SimpleReadablePacket {
             throw new IllegalArgumentException("PlayerLogout target GameServerThread cannot be null.");
         }
 
-        if (getRemainingLength() < 3) {
+        if (getRemainingLength() < PACKET_SIZE) {
             throw new IllegalArgumentException("PlayerLogout packet is too short. Length: " + getLength() + ".");
         }
 
         readByte(); // Packet id, it is already processed.
 
-        final String accountName = readString();
-        if (!accountName.isEmpty()) {
-            server.removeAccountOnGameServer(accountName);
-        }
+        server.removeAccountOnGameServer(new UUID(readLong(), readLong()));
     }
 }

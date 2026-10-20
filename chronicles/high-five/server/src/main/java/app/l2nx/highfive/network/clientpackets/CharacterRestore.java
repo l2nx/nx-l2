@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -49,7 +53,7 @@ public class CharacterRestore extends ClientPacket {
         }
 
         client.restore(charSlot);
-        final CharSelectionInfo cl = new CharSelectionInfo(client.getAccountName(), client.getSessionId().playOkID1, 0);
+        final CharSelectionInfo cl = new CharSelectionInfo(client, 0);
         client.sendPacket(cl);
         client.setCharSelection(cl.getCharInfo());
 

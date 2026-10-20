@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+/*
  * SPDX-FileCopyrightText: L2J Mobius contributors
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
@@ -21,17 +25,15 @@ package app.l2nx.highfive.entity.spawns;
 
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.data.SpawnTable;
-import app.l2nx.highfive.data.sql.DatabaseFactory;
+import app.l2nx.highfive.data.holders.AutoSpawnGroup;
+import app.l2nx.highfive.data.holders.SpawnPoint;
+import app.l2nx.highfive.data.xml.AutoSpawnData;
 import app.l2nx.highfive.data.xml.MapRegionData;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.managers.IdManager;
 import app.l2nx.highfive.threads.ThreadPool;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -111,36 +113,30 @@ public class AutoSpawnHandler {
     }
 
     private void restoreSpawnData() {
-        try (Connection con = DatabaseFactory.getConnection();
-                Statement s = con.createStatement();
-                ResultSet rs = s.executeQuery("SELECT * FROM random_spawn ORDER BY groupId ASC");
-                PreparedStatement ps = con.prepareStatement("SELECT * FROM random_spawn_loc WHERE groupId=?")) {
-            // Restore spawn group data, then the location data.
-            while (rs.next()) {
-                // Register random spawn group, set various options on the created spawn instance.
+        for (AutoSpawnGroup group : AutoSpawnData.getInstance().getGroups()) {
+            try {
                 final AutoSpawnInstance spawnInst = registerSpawn(
-                        rs.getInt("npcId"),
-                        rs.getInt("initialDelay"),
-                        rs.getInt("respawnDelay"),
-                        rs.getInt("despawnDelay"));
-                spawnInst.setSpawnCount(rs.getInt("count"));
-                spawnInst.setBroadcast(Boolean.parseBoolean(rs.getString("broadcastSpawn")));
-                spawnInst.setRandomSpawn(Boolean.parseBoolean(rs.getString("randomSpawn")));
-
-                // Restore the spawn locations for this spawn group/instance.
-                ps.setInt(1, rs.getInt("groupId"));
-                try (ResultSet rs2 = ps.executeQuery()) {
-                    ps.clearParameters();
-                    while (rs2.next()) {
-                        // Add each location to the spawn group/instance.
-                        spawnInst.addSpawnLocation(
-                                rs2.getInt("x"), rs2.getInt("y"), rs2.getInt("z"), rs2.getInt("heading"));
-                    }
+                        group.npcId(),
+                        toMillis(group.initialDelaySeconds()),
+                        toMillis(group.respawnDelaySeconds()),
+                        toMillis(group.despawnDelaySeconds()));
+                spawnInst.setSpawnCount(group.count());
+                spawnInst.setBroadcast(group.broadcastSpawn());
+                spawnInst.setRandomSpawn(group.randomSpawn());
+                for (SpawnPoint location : group.locations()) {
+                    spawnInst.addSpawnLocation(location.x(), location.y(), location.z(), location.heading());
                 }
+            } catch (Exception e) {
+                log.warn("Could not restore auto spawn of NPC {}: {}", group.npcId(), e.getMessage(), e);
             }
-        } catch (Exception e) {
-            log.warn("Could not restore spawn data: {}", e.getMessage(), e);
         }
+    }
+
+    /**
+     * Keeps a negative delay negative: it selects the handler default.
+     */
+    private static int toMillis(int seconds) {
+        return seconds < 0 ? seconds : seconds * 1000;
     }
 
     /**
@@ -402,7 +398,7 @@ public class AutoSpawnHandler {
 
                 newSpawn.setAmount(spawnInst.getSpawnCount());
                 if (spawnInst.despawnDelay == 0) {
-                    newSpawn.setRespawnDelay(spawnInst.respawnDelay);
+                    newSpawn.setRespawnDelay(spawnInst.respawnDelay / 1000);
                 }
 
                 // Add the new spawn information to the spawn table, but do not store it.

@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -24,7 +28,6 @@ package app.l2nx.highfive.managers.games;
 
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.GeneralConfig;
-import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.data.xml.NpcData;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Npc;
@@ -38,11 +41,9 @@ import app.l2nx.highfive.network.serverpackets.MonRaceInfo;
 import app.l2nx.highfive.network.serverpackets.PlaySound;
 import app.l2nx.highfive.network.serverpackets.ServerPacket;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
+import app.l2nx.highfive.repository.minigame.MonsterRaceRepository;
+import app.l2nx.highfive.repository.minigame.model.MonsterRaceResult;
 import app.l2nx.highfive.threads.ThreadPool;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -52,9 +53,17 @@ import java.util.concurrent.ConcurrentHashMap;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataAccessException;
+import org.springframework.stereotype.Component;
 
 @Slf4j
+@Component
 public class MonsterRaceManager {
+    private static final int LANES = 8;
+
+    private static volatile MonsterRaceManager instance;
+
+    private final MonsterRaceRepository monsterRaceRepository;
 
     public enum RaceState {
         ACCEPTING_BETS,
@@ -108,7 +117,12 @@ public class MonsterRaceManager {
     @Getter
     private int secondPlace; // Index going from 0-7.
 
-    protected MonsterRaceManager() {
+    public MonsterRaceManager(MonsterRaceRepository monsterRaceRepository) {
+        this.monsterRaceRepository = monsterRaceRepository;
+        instance = this;
+    }
+
+    public void load() {
         if (!GeneralConfig.ALLOW_RACE) {
             return;
         }
@@ -427,18 +441,12 @@ public class MonsterRaceManager {
      * Also sets raceNumber, based on latest HistoryInfo loaded.
      */
     protected void loadHistory() {
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement statement = con.prepareStatement("SELECT * FROM mdt_history");
-                ResultSet rset = statement.executeQuery()) {
-            while (rset.next()) {
-                history.add(new HistoryInfo(
-                        rset.getInt("race_id"),
-                        rset.getInt("first"),
-                        rset.getInt("second"),
-                        rset.getDouble("odd_rate")));
+        try {
+            for (MonsterRaceResult row : monsterRaceRepository.findResults()) {
+                history.add(new HistoryInfo(row.raceId(), row.first(), row.second(), row.oddRate()));
                 raceNumber++;
             }
-        } catch (SQLException e) {
+        } catch (DataAccessException e) {
             log.warn("MonsterRace: Can't load history: {}", e.getMessage(), e);
         }
 
@@ -450,15 +458,14 @@ public class MonsterRaceManager {
      * @param history The infos to store.
      */
     protected void saveHistory(HistoryInfo history) {
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement statement = con.prepareStatement(
-                        "REPLACE INTO mdt_history (race_id, first, second, odd_rate) VALUES (?,?,?,?)")) {
-            statement.setInt(1, history.getRaceId());
-            statement.setInt(2, history.getFirst());
-            statement.setInt(3, history.getSecond());
-            statement.setDouble(4, history.getOddRate());
-            statement.execute();
-        } catch (SQLException e) {
+        try {
+            monsterRaceRepository.saveResult(MonsterRaceResult.builder()
+                    .raceId(history.getRaceId())
+                    .first(history.getFirst())
+                    .second(history.getSecond())
+                    .oddRate(history.getOddRate())
+                    .build());
+        } catch (DataAccessException e) {
             log.warn("MonsterRace: Can't save history: {}", e.getMessage(), e);
         }
     }
@@ -467,13 +474,14 @@ public class MonsterRaceManager {
      * Load current bets per lane ; initialize the map keys.
      */
     protected void loadBets() {
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement statement = con.prepareStatement("SELECT * FROM mdt_bets");
-                ResultSet rset = statement.executeQuery()) {
-            while (rset.next()) {
-                setBetOnLane(rset.getInt("lane_id"), rset.getLong("bet"), false);
-            }
-        } catch (SQLException e) {
+        // Every lane needs a key for the odds, also one nobody has bet on yet.
+        for (int lane = 1; lane <= LANES; lane++) {
+            betsPerLane.put(lane, 0L);
+        }
+
+        try {
+            monsterRaceRepository.findBets().forEach((lane, bet) -> setBetOnLane(lane, bet, false));
+        } catch (DataAccessException e) {
             log.warn("MonsterRace: Can't load bets: {}", e.getMessage(), e);
         }
     }
@@ -484,13 +492,9 @@ public class MonsterRaceManager {
      * @param sum : The sum to set.
      */
     protected void saveBet(int lane, long sum) {
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement statement =
-                        con.prepareStatement("REPLACE INTO mdt_bets (lane_id, bet) VALUES (?,?)")) {
-            statement.setInt(1, lane);
-            statement.setLong(2, sum);
-            statement.execute();
-        } catch (SQLException e) {
+        try {
+            monsterRaceRepository.saveBet(lane, sum);
+        } catch (DataAccessException e) {
             log.warn("MonsterRace: Can't save bet: {}", e.getMessage(), e);
         }
     }
@@ -503,10 +507,9 @@ public class MonsterRaceManager {
             betsPerLane.put(key, 0L);
         }
 
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement statement = con.prepareStatement("UPDATE mdt_bets SET bet = 0")) {
-            statement.execute();
-        } catch (SQLException e) {
+        try {
+            monsterRaceRepository.clearBets();
+        } catch (DataAccessException e) {
             log.warn("MonsterRace: Can't clear bets: {}", e.getMessage(), e);
         }
     }
@@ -567,11 +570,12 @@ public class MonsterRaceManager {
         }
     }
 
+    // TODO: callers receive the bean through their constructor (#41).
     public static MonsterRaceManager getInstance() {
-        return SingletonHolder.INSTANCE;
-    }
-
-    private static class SingletonHolder {
-        protected static final MonsterRaceManager INSTANCE = new MonsterRaceManager();
+        final MonsterRaceManager current = instance;
+        if (current == null) {
+            throw new IllegalStateException("MonsterRaceManager is used before the Spring context created it.");
+        }
+        return current;
     }
 }

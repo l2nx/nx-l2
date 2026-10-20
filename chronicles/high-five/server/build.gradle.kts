@@ -5,12 +5,18 @@ plugins {
 dependencies {
     api(project(":libs:boot"))
     api(project(":libs:network"))
+    implementation(project(":libs:database"))
     api(project(":engine:core"))
     implementation(libs.classgraph)
     implementation(libs.commons.lang3)
     implementation(libs.lib.recur)
     implementation(libs.micrometer.core)
+    implementation(libs.spring.boot.starter.jdbc)
     testImplementation(testFixtures(project(":engine:core")))
+    testImplementation(testFixtures(project(":libs:database")))
+    testImplementation(libs.spring.boot.starter.test)
+    testImplementation(libs.liquibase.core)
+    testRuntimeOnly(libs.postgresql)
 }
 
 // The engine reads ./config and ./data against the working directory.

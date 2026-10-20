@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -43,6 +47,7 @@ import app.l2nx.highfive.mechanics.punishment.PunishmentType;
 import app.l2nx.highfive.network.GameClient;
 import app.l2nx.highfive.network.serverpackets.NpcHtmlMessage;
 import app.l2nx.highfive.threads.ThreadPool;
+import java.util.UUID;
 import org.apache.commons.lang3.time.DurationFormatUtils;
 
 /**
@@ -99,8 +104,7 @@ public class JailHandler implements IPunishmentHandler {
                 break;
             }
             case ACCOUNT: {
-                final String account = String.valueOf(task.getKey());
-                final GameClient client = LoginServerThread.getInstance().getClient(account);
+                final GameClient client = LoginServerThread.getInstance().findClient((UUID) task.getKey());
                 if (client != null) {
                     final Player player = client.getPlayer();
                     if (player != null) {
@@ -144,8 +148,7 @@ public class JailHandler implements IPunishmentHandler {
                 break;
             }
             case ACCOUNT: {
-                final String account = String.valueOf(task.getKey());
-                final GameClient client = LoginServerThread.getInstance().getClient(account);
+                final GameClient client = LoginServerThread.getInstance().findClient((UUID) task.getKey());
                 if (client != null) {
                     final Player player = client.getPlayer();
                     if (player != null) {

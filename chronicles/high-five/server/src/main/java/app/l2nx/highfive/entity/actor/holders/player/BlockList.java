@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -23,14 +27,11 @@
 package app.l2nx.highfive.entity.actor.holders.player;
 
 import app.l2nx.highfive.data.sql.CharInfoTable;
-import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.managers.CharacterRelationsManager;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -38,6 +39,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataAccessException;
 
 @Slf4j
 public class BlockList {
@@ -59,12 +61,20 @@ public class BlockList {
 
     private void addToBlockList(int target) {
         blockList.add(target);
-        updateInDB(target, true);
+        try {
+            CharacterRelationsManager.getInstance().block(owner.getObjectId(), target);
+        } catch (DataAccessException e) {
+            log.warn("Could not add block player: {}", e.getMessage(), e);
+        }
     }
 
     private void removeFromBlockList(int target) {
         blockList.remove(Integer.valueOf(target));
-        updateInDB(target, false);
+        try {
+            CharacterRelationsManager.getInstance().unblock(owner.getObjectId(), target);
+        } catch (DataAccessException e) {
+            log.warn("Could not remove block player: {}", e.getMessage(), e);
+        }
     }
 
     public void playerLogout() {
@@ -73,51 +83,17 @@ public class BlockList {
 
     private static Set<Integer> loadList(int objId) {
         final Set<Integer> list = new HashSet<>();
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement statement =
-                        con.prepareStatement("SELECT friendId FROM character_friends WHERE charId=? AND relation=1")) {
-            statement.setInt(1, objId);
-            try (ResultSet rset = statement.executeQuery()) {
-                int friendId;
-                while (rset.next()) {
-                    friendId = rset.getInt("friendId");
-                    if (friendId == objId) {
-                        continue;
-                    }
-
-                    list.add(friendId);
+        try {
+            for (int blockedId : CharacterRelationsManager.getInstance().findBlockedIds(objId)) {
+                if (blockedId != objId) {
+                    list.add(blockedId);
                 }
             }
-        } catch (Exception e) {
+        } catch (DataAccessException e) {
             log.warn("Error found in {} FriendList while loading BlockList: {}", objId, e.getMessage(), e);
         }
 
         return list;
-    }
-
-    private void updateInDB(int targetId, boolean state) {
-        try (Connection con = DatabaseFactory.getConnection()) {
-            if (state) // add
-            {
-                try (PreparedStatement statement = con.prepareStatement(
-                        "INSERT INTO character_friends (charId, friendId, relation) VALUES (?, ?, 1)")) {
-                    statement.setInt(1, owner.getObjectId());
-                    statement.setInt(2, targetId);
-                    statement.execute();
-                }
-            } else
-            // remove
-            {
-                try (PreparedStatement statement = con.prepareStatement(
-                        "DELETE FROM character_friends WHERE charId=? AND friendId=? AND relation=1")) {
-                    statement.setInt(1, owner.getObjectId());
-                    statement.setInt(2, targetId);
-                    statement.execute();
-                }
-            }
-        } catch (Exception e) {
-            log.warn("Could not add block player: {}", e.getMessage(), e);
-        }
     }
 
     public boolean isInBlockList(Player target) {

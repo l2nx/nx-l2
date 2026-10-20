@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -39,11 +43,7 @@ public class Premium implements IVoicedCommandHandler {
     @Override
     public boolean onCommand(String command, Player activeChar, String target) {
         if (command.startsWith("premium") && PremiumSystemConfig.PREMIUM_SYSTEM_ENABLED) {
-            final long endDate = PremiumManager.getInstance()
-                    .getPremiumExpiration(
-                            PremiumSystemConfig.ACCOUNT_WIDE_PREMIUM
-                                    ? activeChar.getAccountName()
-                                    : activeChar.getName());
+            final long endDate = PremiumManager.getInstance().getPremiumExpiration(activeChar.getObjectId());
             final NpcHtmlMessage msg = new NpcHtmlMessage(5);
             final StringBuilder html = new StringBuilder();
             final String entityType = PremiumSystemConfig.ACCOUNT_WIDE_PREMIUM ? "Account" : "Player";

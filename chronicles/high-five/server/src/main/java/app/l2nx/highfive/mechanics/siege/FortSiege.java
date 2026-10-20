@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -25,7 +29,6 @@ package app.l2nx.highfive.mechanics.siege;
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.data.sql.ClanTable;
-import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.entity.WorldObject;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
@@ -49,9 +52,6 @@ import app.l2nx.highfive.network.enums.ChatType;
 import app.l2nx.highfive.network.serverpackets.NpcSay;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
 import app.l2nx.highfive.threads.ThreadPool;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collection;
@@ -64,11 +64,6 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class FortSiege implements Siegable {
-
-    // SQL
-    private static final String DELETE_FORT_SIEGECLANS_BY_CLAN_ID =
-            "DELETE FROM fortsiege_clans WHERE fort_id = ? AND clan_id = ?";
-    private static final String DELETE_FORT_SIEGECLANS = "DELETE FROM fortsiege_clans WHERE fort_id = ?";
 
     public class ScheduleEndSiegeTask implements Runnable {
         @Override
@@ -451,32 +446,21 @@ public class FortSiege implements Siegable {
 
     /** Clear all registered siege clans from database for fort */
     public void clearSiegeClan() {
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement("DELETE FROM fortsiege_clans WHERE fort_id=?")) {
-            ps.setInt(1, fort.getResidenceId());
-            ps.execute();
+        FortSiegeManager.getInstance()
+                .deleteSiegeClans(
+                        fort.getResidenceId(),
+                        fort.getOwnerClan() != null ? fort.getOwnerClan().getId() : 0);
+        attackerClans.clear();
 
-            if (fort.getOwnerClan() != null) {
-                try (PreparedStatement delete = con.prepareStatement("DELETE FROM fortsiege_clans WHERE clan_id=?")) {
-                    delete.setInt(1, fort.getOwnerClan().getId());
-                    delete.execute();
-                }
-            }
+        // if siege is in progress, end siege
+        if (inProgress) {
+            endSiege();
+        }
 
-            attackerClans.clear();
-
-            // if siege is in progress, end siege
-            if (inProgress) {
-                endSiege();
-            }
-
-            // if siege isn't in progress (1hr waiting time till siege starts), cancel waiting time
-            if (siegeStartTask != null) {
-                siegeStartTask.cancel(true);
-                siegeStartTask = null;
-            }
-        } catch (Exception e) {
-            log.warn("Exception: clearSiegeClan(): {}", e.getMessage(), e);
+        // if siege isn't in progress (1hr waiting time till siege starts), cancel waiting time
+        if (siegeStartTask != null) {
+            siegeStartTask.cancel(true);
+            siegeStartTask = null;
         }
     }
 
@@ -611,7 +595,8 @@ public class FortSiege implements Siegable {
             }
         } else {
             log.warn(
-                    "FortSiege.killedCommander(): killed commander, but commander not registered for fortress. NpcId: {} FortId: {}",
+                    "FortSiege.killedCommander(): killed commander, but commander not registered for fortress. NpcId:"
+                            + " {} FortId: {}",
                     instance.getId(),
                     fort.getResidenceId());
         }
@@ -709,31 +694,24 @@ public class FortSiege implements Siegable {
      * @param clanId
      */
     private void removeSiegeClan(int clanId) {
-        final String query = (clanId != 0) ? DELETE_FORT_SIEGECLANS_BY_CLAN_ID : DELETE_FORT_SIEGECLANS;
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement(query)) {
-            ps.setInt(1, fort.getResidenceId());
-            if (clanId != 0) {
-                ps.setInt(2, clanId);
+        if (clanId != 0) {
+            FortSiegeManager.getInstance().deleteSiegeClan(fort.getResidenceId(), clanId);
+        } else {
+            FortSiegeManager.getInstance().deleteSiegeClans(fort.getResidenceId(), 0);
+        }
+
+        loadSiegeClan();
+        if (attackerClans.isEmpty()) {
+            if (inProgress) {
+                endSiege();
+            } else {
+                saveFortSiege(); // Clear siege time in DB.
             }
 
-            ps.execute();
-
-            loadSiegeClan();
-            if (attackerClans.isEmpty()) {
-                if (inProgress) {
-                    endSiege();
-                } else {
-                    saveFortSiege(); // Clear siege time in DB.
-                }
-
-                if (siegeStartTask != null) {
-                    siegeStartTask.cancel(true);
-                    siegeStartTask = null;
-                }
+            if (siegeStartTask != null) {
+                siegeStartTask.cancel(true);
+                siegeStartTask = null;
             }
-        } catch (Exception e) {
-            log.warn("Exception on removeSiegeClan: {}", e.getMessage(), e);
         }
     }
 
@@ -885,16 +863,8 @@ public class FortSiege implements Siegable {
     /** Load siege clans. */
     private void loadSiegeClan() {
         attackerClans.clear();
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement("SELECT clan_id FROM fortsiege_clans WHERE fort_id=?")) {
-            ps.setInt(1, fort.getResidenceId());
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    addAttacker(rs.getInt("clan_id"));
-                }
-            }
-        } catch (Exception e) {
-            log.warn("Exception: loadSiegeClan(): {}", e.getMessage(), e);
+        for (int clanId : FortSiegeManager.getInstance().findSiegeClanIds(fort.getResidenceId())) {
+            addAttacker(clanId);
         }
     }
 
@@ -934,14 +904,8 @@ public class FortSiege implements Siegable {
 
     /** Save siege date to database. */
     private void saveSiegeDate() {
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement("UPDATE fort SET siegeDate = ? WHERE id = ?")) {
-            ps.setLong(1, getFort().getSiegeDate().getTimeInMillis());
-            ps.setInt(2, fort.getResidenceId());
-            ps.execute();
-        } catch (Exception e) {
-            log.warn("Exception: saveSiegeDate(): {}", e.getMessage(), e);
-        }
+        FortManager.getInstance()
+                .saveSiegeDate(fort.getResidenceId(), getFort().getSiegeDate().getTimeInMillis());
     }
 
     /**
@@ -953,16 +917,8 @@ public class FortSiege implements Siegable {
             return;
         }
 
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps =
-                        con.prepareStatement("INSERT INTO fortsiege_clans (clan_id,fort_id) values (?,?)")) {
-            ps.setInt(1, clan.getId());
-            ps.setInt(2, fort.getResidenceId());
-            ps.execute();
-
+        if (FortSiegeManager.getInstance().saveSiegeClan(fort.getResidenceId(), clan.getId())) {
             addAttacker(clan.getId());
-        } catch (Exception e) {
-            log.warn("Exception: saveSiegeClan(Pledge clan): {}", e.getMessage(), e);
         }
     }
 

@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -22,71 +26,36 @@
  */
 package app.l2nx.highfive.managers;
 
-import app.l2nx.highfive.data.sql.DatabaseFactory;
+import static app.l2nx.highfive.repository.LegacyValues.instantOrNull;
+
+import app.l2nx.highfive.clock.ClockBridge;
+import app.l2nx.highfive.data.holders.ClanHallTemplate;
+import app.l2nx.highfive.data.xml.ClanHallData;
 import app.l2nx.highfive.entity.residences.ClanHallAuction;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.Statement;
+import app.l2nx.highfive.repository.auction.ClanHallAuctionRepository;
+import app.l2nx.highfive.repository.auction.model.ClanHallAuctionRow;
+import app.l2nx.highfive.repository.auction.model.ClanHallBid;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataAccessException;
+import org.springframework.stereotype.Component;
 
 @Slf4j
+@Component
 public class ClanHallAuctionManager {
+    private static volatile ClanHallAuctionManager instance;
+
     @Getter
     private final List<ClanHallAuction> auctions = new ArrayList<>();
 
-    private static final String[] ITEM_INIT_DATA = {
-        "(22, 0, 'NPC', 'NPC Clan', 'ClanHall', 22, 0, 'Moonstone Hall', 1, 20000000, 0, 1073037600000)",
-        "(23, 0, 'NPC', 'NPC Clan', 'ClanHall', 23, 0, 'Onyx Hall', 1, 20000000, 0, 1073037600000)",
-        "(24, 0, 'NPC', 'NPC Clan', 'ClanHall', 24, 0, 'Topaz Hall', 1, 20000000, 0, 1073037600000)",
-        "(25, 0, 'NPC', 'NPC Clan', 'ClanHall', 25, 0, 'Ruby Hall', 1, 20000000, 0, 1073037600000)",
-        "(26, 0, 'NPC', 'NPC Clan', 'ClanHall', 26, 0, 'Crystal Hall', 1, 20000000, 0, 1073037600000)",
-        "(27, 0, 'NPC', 'NPC Clan', 'ClanHall', 27, 0, 'Onyx Hall', 1, 20000000, 0, 1073037600000)",
-        "(28, 0, 'NPC', 'NPC Clan', 'ClanHall', 28, 0, 'Sapphire Hall', 1, 20000000, 0, 1073037600000)",
-        "(29, 0, 'NPC', 'NPC Clan', 'ClanHall', 29, 0, 'Moonstone Hall', 1, 20000000, 0, 1073037600000)",
-        "(30, 0, 'NPC', 'NPC Clan', 'ClanHall', 30, 0, 'Emerald Hall', 1, 20000000, 0, 1073037600000)",
-        "(31, 0, 'NPC', 'NPC Clan', 'ClanHall', 31, 0, 'The Atramental Barracks', 1, 8000000, 0, 1073037600000)",
-        "(32, 0, 'NPC', 'NPC Clan', 'ClanHall', 32, 0, 'The Scarlet Barracks', 1, 8000000, 0, 1073037600000)",
-        "(33, 0, 'NPC', 'NPC Clan', 'ClanHall', 33, 0, 'The Viridian Barracks', 1, 8000000, 0, 1073037600000)",
-        "(36, 0, 'NPC', 'NPC Clan', 'ClanHall', 36, 0, 'The Golden Chamber', 1, 50000000, 0, 1106827200000)",
-        "(37, 0, 'NPC', 'NPC Clan', 'ClanHall', 37, 0, 'The Silver Chamber', 1, 50000000, 0, 1106827200000)",
-        "(38, 0, 'NPC', 'NPC Clan', 'ClanHall', 38, 0, 'The Mithril Chamber', 1, 50000000, 0, 1106827200000)",
-        "(39, 0, 'NPC', 'NPC Clan', 'ClanHall', 39, 0, 'Silver Manor', 1, 50000000, 0, 1106827200000)",
-        "(40, 0, 'NPC', 'NPC Clan', 'ClanHall', 40, 0, 'Gold Manor', 1, 50000000, 0, 1106827200000)",
-        "(41, 0, 'NPC', 'NPC Clan', 'ClanHall', 41, 0, 'The Bronze Chamber', 1, 50000000, 0, 1106827200000)",
-        "(42, 0, 'NPC', 'NPC Clan', 'ClanHall', 42, 0, 'The Golden Chamber', 1, 50000000, 0, 1106827200000)",
-        "(43, 0, 'NPC', 'NPC Clan', 'ClanHall', 43, 0, 'The Silver Chamber', 1, 50000000, 0, 1106827200000)",
-        "(44, 0, 'NPC', 'NPC Clan', 'ClanHall', 44, 0, 'The Mithril Chamber', 1, 50000000, 0, 1106827200000)",
-        "(45, 0, 'NPC', 'NPC Clan', 'ClanHall', 45, 0, 'The Bronze Chamber', 1, 50000000, 0, 1106827200000)",
-        "(46, 0, 'NPC', 'NPC Clan', 'ClanHall', 46, 0, 'Silver Manor', 1, 50000000, 0, 1106827200000)",
-        "(47, 0, 'NPC', 'NPC Clan', 'ClanHall', 47, 0, 'Moonstone Hall', 1, 50000000, 0, 1106827200000)",
-        "(48, 0, 'NPC', 'NPC Clan', 'ClanHall', 48, 0, 'Onyx Hall', 1, 50000000, 0, 1106827200000)",
-        "(49, 0, 'NPC', 'NPC Clan', 'ClanHall', 49, 0, 'Emerald Hall', 1, 50000000, 0, 1106827200000)",
-        "(50, 0, 'NPC', 'NPC Clan', 'ClanHall', 50, 0, 'Sapphire Hall', 1, 50000000, 0, 1106827200000)",
-        "(51, 0, 'NPC', 'NPC Clan', 'ClanHall', 51, 0, 'Mont Chamber', 1, 50000000, 0, 1106827200000)",
-        "(52, 0, 'NPC', 'NPC Clan', 'ClanHall', 52, 0, 'Astaire Chamber', 1, 50000000, 0, 1106827200000)",
-        "(53, 0, 'NPC', 'NPC Clan', 'ClanHall', 53, 0, 'Aria Chamber', 1, 50000000, 0, 1106827200000)",
-        "(54, 0, 'NPC', 'NPC Clan', 'ClanHall', 54, 0, 'Yiana Chamber', 1, 50000000, 0, 1106827200000)",
-        "(55, 0, 'NPC', 'NPC Clan', 'ClanHall', 55, 0, 'Roien Chamber', 1, 50000000, 0, 1106827200000)",
-        "(56, 0, 'NPC', 'NPC Clan', 'ClanHall', 56, 0, 'Luna Chamber', 1, 50000000, 0, 1106827200000)",
-        "(57, 0, 'NPC', 'NPC Clan', 'ClanHall', 57, 0, 'Traban Chamber', 1, 50000000, 0, 1106827200000)",
-        "(58, 0, 'NPC', 'NPC Clan', 'ClanHall', 58, 0, 'Eisen Hall', 1, 20000000, 0, 1106827200000)",
-        "(59, 0, 'NPC', 'NPC Clan', 'ClanHall', 59, 0, 'Heavy Metal Hall', 1, 20000000, 0, 1106827200000)",
-        "(60, 0, 'NPC', 'NPC Clan', 'ClanHall', 60, 0, 'Molten Ore Hall', 1, 20000000, 0, 1106827200000)",
-        "(61, 0, 'NPC', 'NPC Clan', 'ClanHall', 61, 0, 'Titan Hall', 1, 20000000, 0, 1106827200000)"
-    };
+    private final ClanHallAuctionRepository auctionRepository;
 
-    // @formatter:off
-    private static final int[] ItemInitDataId = {
-        22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 36, 37, 38, 39, 40, 41, 42,
-        43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61
-    };
-    // @formatter:on
-
-    protected ClanHallAuctionManager() {
-        load();
+    public ClanHallAuctionManager(ClanHallAuctionRepository auctionRepository) {
+        this.auctionRepository = auctionRepository;
+        instance = this;
     }
 
     public void reload() {
@@ -94,16 +63,14 @@ public class ClanHallAuctionManager {
         load();
     }
 
-    private void load() {
-        try (Connection con = DatabaseFactory.getConnection();
-                Statement s = con.createStatement();
-                ResultSet rs = s.executeQuery("SELECT id FROM auction ORDER BY id")) {
-            while (rs.next()) {
-                auctions.add(new ClanHallAuction(rs.getInt("id")));
+    public void load() {
+        try {
+            for (int id : auctionRepository.findAllIds()) {
+                auctions.add(new ClanHallAuction(id));
             }
 
             log.info("Loaded {} auction(s)", auctions.size());
-        } catch (Exception e) {
+        } catch (DataAccessException e) {
             log.warn("Exception: AuctionManager.load(): {}", e.getMessage(), e);
         }
     }
@@ -129,38 +96,103 @@ public class ClanHallAuctionManager {
         return -1;
     }
 
-    /**
-     * Init Clan NPC aution
-     * @param id
-     */
     public void initNPC(int id) {
-        int i;
-        for (i = 0; i < ItemInitDataId.length; i++) {
-            if (ItemInitDataId[i] == id) {
-                break;
-            }
-        }
-
-        if ((i >= ItemInitDataId.length) || (ItemInitDataId[i] != id)) {
+        final ClanHallTemplate hall = ClanHallData.getInstance().getClanHall(id);
+        if ((hall == null) || (hall.auctionStartingBid() == null)) {
             log.warn("Clan Hall auction not found for Id :{}", id);
             return;
         }
 
-        try (Connection con = DatabaseFactory.getConnection();
-                Statement s = con.createStatement()) {
-            s.executeUpdate("INSERT INTO `auction` VALUES " + ITEM_INIT_DATA[i]);
+        try {
+            auctionRepository.create(ClanHallAuctionRow.builder()
+                    .clanHallId(id)
+                    .startingBid(hall.auctionStartingBid())
+                    .endDate(instantOrNull(ClockBridge.wallMillis() + ClanHallAuction.AUCTION_LENGTH_MS))
+                    .build());
             auctions.add(new ClanHallAuction(id));
             log.info("Created auction for ClanHall: {}", id);
-        } catch (Exception e) {
+        } catch (DataAccessException e) {
             log.error("Exception: Auction.initNPC(): {}", e.getMessage(), e);
         }
     }
 
-    public static ClanHallAuctionManager getInstance() {
-        return SingletonHolder.INSTANCE;
+    public Optional<ClanHallAuctionRow> findAuction(int clanHallId) {
+        try {
+            return auctionRepository.find(clanHallId);
+        } catch (DataAccessException e) {
+            log.warn("Exception: Auction.load(): {}", e.getMessage(), e);
+            return Optional.empty();
+        }
     }
 
-    private static class SingletonHolder {
-        protected static final ClanHallAuctionManager INSTANCE = new ClanHallAuctionManager();
+    /**
+     * @return {@code false} when the auction could not be stored
+     */
+    public boolean saveAuction(ClanHallAuctionRow auction) {
+        try {
+            auctionRepository.create(auction);
+            return true;
+        } catch (DataAccessException e) {
+            log.error("Exception: Auction.confirmAuction(): {}", e.getMessage(), e);
+            return false;
+        }
+    }
+
+    public void saveAuctionEndDate(int clanHallId, long endDate) {
+        try {
+            auctionRepository.updateEndDate(clanHallId, instantOrNull(endDate));
+        } catch (DataAccessException e) {
+            log.error("Exception: saveAuctionDate(): {}", e.getMessage(), e);
+        }
+    }
+
+    public void deleteAuction(int clanHallId) {
+        try {
+            auctionRepository.delete(clanHallId);
+        } catch (DataAccessException e) {
+            log.error("Exception: Auction.deleteFromDB(): {}", e.getMessage(), e);
+        }
+    }
+
+    /**
+     * @return the bids, the highest first
+     */
+    public List<ClanHallBid> findBids(int clanHallId) {
+        try {
+            return auctionRepository.findBids(clanHallId);
+        } catch (DataAccessException e) {
+            log.warn("Exception: Auction.loadBid(): {}", e.getMessage(), e);
+            return List.of();
+        }
+    }
+
+    /**
+     * @return {@code false} when the bid could not be stored
+     */
+    public boolean saveBid(int clanHallId, ClanHallBid bid) {
+        try {
+            auctionRepository.saveBid(clanHallId, bid);
+            return true;
+        } catch (DataAccessException e) {
+            log.error("Exception: Auction.updateInDB(Player bidder, int bid): {}", e.getMessage(), e);
+            return false;
+        }
+    }
+
+    public void deleteBid(int clanHallId, int clanId) {
+        try {
+            auctionRepository.deleteBid(clanHallId, clanId);
+        } catch (DataAccessException e) {
+            log.error("Exception: Auction.cancelBid(String bidder): {}", e.getMessage(), e);
+        }
+    }
+
+    // TODO: callers receive the bean through their constructor (#41).
+    public static ClanHallAuctionManager getInstance() {
+        final ClanHallAuctionManager current = instance;
+        if (current == null) {
+            throw new IllegalStateException("ClanHallAuctionManager is used before the Spring context created it.");
+        }
+        return current;
     }
 }

@@ -22,14 +22,22 @@ lists what is open.
 - [#20](https://github.com/l2nx/nx-l2/issues/20) Time dilation for overloaded partitions
 - [#21](https://github.com/l2nx/nx-l2/issues/21) Parallel open world if one partition exceeds its budget
 - [#22](https://github.com/l2nx/nx-l2/issues/22) Choose an XML library for the datapack loaders
-- [#23](https://github.com/l2nx/nx-l2/issues/23) Temporary login ban turns into a permanent account ban
-- [#24](https://github.com/l2nx/nx-l2/issues/24) Login fails with NPE on an accounts_ipauth row without a type
 - [#25](https://github.com/l2nx/nx-l2/issues/25) Weapon damage_range with 2 or 3 parts breaks item loading
 - [#26](https://github.com/l2nx/nx-l2/issues/26) Seed of Infinity logs the open duration as the close date
 - [#29](https://github.com/l2nx/nx-l2/issues/29) WorldObject overrides equals without hashCode
 - [#27](https://github.com/l2nx/nx-l2/issues/27) Client protocol 140 over High Five content
 - [#28](https://github.com/l2nx/nx-l2/issues/28) Client protocol 557 over High Five content
 - [#31](https://github.com/l2nx/nx-l2/issues/31) Not every effect should freeze while its owner is offline
+- [#32](https://github.com/l2nx/nx-l2/issues/32) A dissolved clan keeps its castle and clan hall in memory until restart
+- [#33](https://github.com/l2nx/nx-l2/issues/33) Creating a second academy is never reported, and the academy leader differs between memory and database
+- [#34](https://github.com/l2nx/nx-l2/issues/34) Editing a community board post by index can hit the wrong post
+- [#35](https://github.com/l2nx/nx-l2/issues/35) A long-time event deletes item rows that may still be loaded
+- [#36](https://github.com/l2nx/nx-l2/issues/36) Grand boss status lookup throws for a boss missing from the datapack
+- [#37](https://github.com/l2nx/nx-l2/issues/37) Hero processing throws when a character's clan is missing
+- [#38](https://github.com/l2nx/nx-l2/issues/38) A siegable clan hall without a loaded owner clan fails to load
+- [#39](https://github.com/l2nx/nx-l2/issues/39) A fort whose owner clan is not loaded fails to load
+- [#40](https://github.com/l2nx/nx-l2/issues/40) Dropped items lose augmentation and elemental attributes across a restart
+- [#41](https://github.com/l2nx/nx-l2/issues/41) E10: inject beans instead of the static getInstance() bridges
 
 ## Done
 
@@ -41,3 +49,7 @@ lists what is open.
   `nx-gs-adapter` API (spec 001 §2, stage 5).
 - [#14](https://github.com/l2nx/nx-l2/issues/14) Migrate logging to the SLF4J API ([spec 007](specs/007-java-conventions.md)).
 - [#15](https://github.com/l2nx/nx-l2/issues/15) Adopt Lombok for boilerplate ([spec 007](specs/007-java-conventions.md)).
+- [#23](https://github.com/l2nx/nx-l2/issues/23) Temporary login ban turns into a permanent account ban (fixed by stage 3,
+  [spec 006](specs/006-database.md)).
+- [#24](https://github.com/l2nx/nx-l2/issues/24) Login fails with NPE on an accounts_ipauth row without a type (fixed by stage 3,
+  [spec 006](specs/006-database.md)).

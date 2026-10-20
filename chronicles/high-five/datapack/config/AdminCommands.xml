@@ -99,8 +99,6 @@
 	<admin command="debug" description="Open debug menu." accessLevel="100" />
 
 	<!-- ADMIN DELETE -->
-	<admin command="delete" description="Delete target NPC." accessLevel="100" />
-	<admin command="delete_group" description="Deletes a spawn group including all NPCs from the same spawn." accessLevel="100" confirmDlg="true" />
 
 	<!-- ADMIN DESTROY ITEMS -->
 	<admin command="destroy_items" description="Destroy all unequipped items in admin's inventory." accessLevel="100" confirmDlg="true" />
@@ -486,7 +484,6 @@
 	<admin command="siege" description="Opens Siege/Castle/Clan Hall Menu." accessLevel="100" />
 	<admin command="add_attacker" description="Add Attackers." accessLevel="100" />
 	<admin command="add_defender" description="Add Defenders." accessLevel="100" />
-	<admin command="add_guard" description="Spawn castle guards." accessLevel="100" />
 	<admin command="list_siege_clans" description="List clans registered for the current siege." accessLevel="100" />
 	<admin command="clear_siege_list" description="Clear all registered siege clans." accessLevel="100" />
 	<admin command="move_defenders" description="Move defenders." accessLevel="100" />
@@ -570,7 +567,6 @@
 	<admin command="teleport_character" description="Teleports target player to specified coordinates." accessLevel="100" />
 	<admin command="recall" description="Recalls the specified player to your location." accessLevel="100" />
 	<admin command="walk" description="Makes your character walk to specified coordinates." accessLevel="100" />
-	<admin command="recall_npc" description="Recalls the specified NPC to your location." accessLevel="100" />
 	<admin command="gonorth" description="Moves your character north by specified distance." accessLevel="30" />
 	<admin command="gosouth" description="Moves your character south by specified distance." accessLevel="30" />
 	<admin command="goeast" description="Moves your character east by specified distance." accessLevel="30" />
@@ -613,7 +609,6 @@
 
 	<!-- ADMIN SCAN -->
 	<admin command="scan" description="Search nerby NPCs." accessLevel="30" />
-	<admin command="deleteNpcByObjectId" description="Delete NPC by object ID." accessLevel="100" confirmDlg="true" />
 
 	<!-- ADMIN SEARCH -->
 	<admin command="search" description="Open items search panel." accessLevel="30" />

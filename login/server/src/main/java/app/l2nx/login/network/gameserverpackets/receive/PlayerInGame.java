@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -24,6 +28,7 @@ package app.l2nx.login.network.gameserverpackets.receive;
 
 import app.l2nx.login.GameServerThread;
 import app.l2nx.network.packet.SimpleReadablePacket;
+import java.util.UUID;
 
 /**
  * Reads the account list reported by a connected game server.<br>
@@ -31,12 +36,14 @@ import app.l2nx.network.packet.SimpleReadablePacket;
  * <ul>
  * <li>Skips the packet opcode already handled by the packet dispatcher.</li>
  * <li>Reads the reported account count from the packet body.</li>
- * <li>Registers each non-empty account on the target game server thread.</li>
+ * <li>Registers each account on the target game server thread.</li>
  * <li>Performs basic packet validation before processing.</li>
  * </ul>
  * @author BazookaRpm
  */
 public class PlayerInGame extends SimpleReadablePacket {
+    private static final int ACCOUNT_ID_SIZE = 2 * Long.BYTES;
+
     public PlayerInGame(byte[] decrypt, GameServerThread server) {
         super(decrypt);
 
@@ -60,14 +67,11 @@ public class PlayerInGame extends SimpleReadablePacket {
         }
 
         for (int i = 0; i < accountCount; i++) {
-            if (getRemainingLength() < 2) {
+            if (getRemainingLength() < ACCOUNT_ID_SIZE) {
                 throw new IllegalArgumentException("PlayerInGame packet ended before account index " + i + ".");
             }
 
-            final String accountName = readString();
-            if (!accountName.isEmpty()) {
-                server.addAccountOnGameServer(accountName);
-            }
+            server.addAccountOnGameServer(new UUID(readLong(), readLong()));
         }
     }
 }

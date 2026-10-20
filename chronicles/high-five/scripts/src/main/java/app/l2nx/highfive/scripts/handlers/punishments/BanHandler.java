@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+/*
  * SPDX-FileCopyrightText: L2J Mobius contributors
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
@@ -28,6 +32,7 @@ import app.l2nx.highfive.mechanics.punishment.PunishmentType;
 import app.l2nx.highfive.network.Disconnection;
 import app.l2nx.highfive.network.GameClient;
 import app.l2nx.highfive.network.serverpackets.LeaveWorld;
+import java.util.UUID;
 
 /**
  * This class handles ban punishment.
@@ -46,8 +51,7 @@ public class BanHandler implements IPunishmentHandler {
                 break;
             }
             case ACCOUNT: {
-                final String account = String.valueOf(task.getKey());
-                final GameClient client = LoginServerThread.getInstance().getClient(account);
+                final GameClient client = LoginServerThread.getInstance().findClient((UUID) task.getKey());
                 if (client != null) {
                     final Player player = client.getPlayer();
                     if (player != null) {

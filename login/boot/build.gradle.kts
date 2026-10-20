@@ -15,10 +15,3 @@ application {
         "-Xmx256m",
     )
 }
-
-val loginSql = layout.settingsDirectory.dir("login/server/sql")
-
-tasks.withType<Test>().configureEach {
-    inputs.dir(loginSql).withPropertyName("loginSql").withPathSensitivity(PathSensitivity.RELATIVE)
-    systemProperty("l2nx.test.login-sql-dir", loginSql.asFile.absolutePath)
-}

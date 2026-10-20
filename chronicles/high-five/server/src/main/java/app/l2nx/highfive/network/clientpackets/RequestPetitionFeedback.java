@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+/*
  * SPDX-FileCopyrightText: L2J Mobius contributors
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
@@ -19,21 +23,20 @@
  */
 package app.l2nx.highfive.network.clientpackets;
 
+import static app.l2nx.highfive.repository.LegacyValues.instantOrNull;
+
 import app.l2nx.highfive.clock.ClockBridge;
-import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.entity.actor.Player;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
+import app.l2nx.highfive.managers.PetitionFeedbackManager;
+import app.l2nx.highfive.repository.world.model.PetitionFeedback;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataAccessException;
 
 /**
  * @author Plim
  */
 @Slf4j
 public class RequestPetitionFeedback extends ClientPacket {
-    private static final String INSERT_FEEDBACK = "INSERT INTO petition_feedback VALUES (?,?,?,?,?)";
-
     // cdds
     // private int _unknown;
     private int rate; // 4=VeryGood, 3=Good, 2=Fair, 1=Poor, 0=VeryPoor
@@ -49,7 +52,7 @@ public class RequestPetitionFeedback extends ClientPacket {
     @Override
     protected void runImpl() {
         final Player player = getPlayer();
-        if ((player == null) || (player.getLastPetitionGmName() == null)) {
+        if ((player == null) || (player.getLastPetitionGmId() == 0)) {
             return;
         }
 
@@ -57,15 +60,16 @@ public class RequestPetitionFeedback extends ClientPacket {
             return;
         }
 
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement statement = con.prepareStatement(INSERT_FEEDBACK)) {
-            statement.setString(1, player.getName());
-            statement.setString(2, player.getLastPetitionGmName());
-            statement.setInt(3, rate);
-            statement.setString(4, message);
-            statement.setLong(5, ClockBridge.wallMillis());
-            statement.execute();
-        } catch (SQLException e) {
+        try {
+            PetitionFeedbackManager.getInstance()
+                    .save(PetitionFeedback.builder()
+                            .objectId(player.getObjectId())
+                            .gmObjectId(player.getLastPetitionGmId())
+                            .rating(rate)
+                            .message(message)
+                            .createdAt(instantOrNull(ClockBridge.wallMillis()))
+                            .build());
+        } catch (DataAccessException e) {
             log.warn("{}: Error while saving petition feedback: {}", getClass().getSimpleName(), e.getMessage());
         }
     }

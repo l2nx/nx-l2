@@ -32,7 +32,6 @@ import app.l2nx.highfive.config.custom.ChampionMonstersConfig;
 import app.l2nx.highfive.config.custom.PremiumSystemConfig;
 import app.l2nx.highfive.config.custom.RandomSpawnsConfig;
 import app.l2nx.highfive.data.enums.CategoryType;
-import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.data.xml.DoorData;
 import app.l2nx.highfive.data.xml.ItemData;
 import app.l2nx.highfive.data.xml.NpcData;
@@ -74,6 +73,7 @@ import app.l2nx.highfive.managers.FortManager;
 import app.l2nx.highfive.managers.InstanceManager;
 import app.l2nx.highfive.managers.MailManager;
 import app.l2nx.highfive.managers.PcCafePointsManager;
+import app.l2nx.highfive.managers.PlayerPersistenceManager;
 import app.l2nx.highfive.managers.ScriptManager;
 import app.l2nx.highfive.managers.ZoneManager;
 import app.l2nx.highfive.mechanics.events.Containers;
@@ -156,6 +156,7 @@ import app.l2nx.highfive.network.serverpackets.NpcQuestHtmlMessage;
 import app.l2nx.highfive.network.serverpackets.SpecialCamera;
 import app.l2nx.highfive.network.serverpackets.StatusUpdate;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
+import app.l2nx.highfive.repository.character.model.CharacterQuestVariable;
 import app.l2nx.highfive.scripting.ScriptEngine;
 import app.l2nx.highfive.taskmanagers.GameTimeTaskManager;
 import app.l2nx.highfive.util.LocationUtil;
@@ -163,9 +164,6 @@ import app.l2nx.highfive.util.StatSet;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -189,6 +187,7 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataAccessException;
 
 /**
  * Quest main class.
@@ -198,12 +197,11 @@ import org.slf4j.LoggerFactory;
 public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String> {
 
     private static final String DEFAULT_NO_QUEST_MSG =
-            "<html><body>You are either not on a quest that involves this NPC, or you don't meet this NPC's minimum quest requirements.</body></html>";
+            "<html><body>You are either not on a quest that involves this NPC, or you don't meet this NPC's minimum"
+                    + " quest requirements.</body></html>";
     private static final String DEFAULT_ALREADY_COMPLETED_MSG =
             "<html><body>This quest has already been completed.</body></html>";
-    private static final String QUEST_DELETE_FROM_CHAR_QUERY = "DELETE FROM character_quests WHERE charId=? AND name=?";
-    private static final String QUEST_DELETE_FROM_CHAR_QUERY_NON_REPEATABLE_QUERY =
-            "DELETE FROM character_quests WHERE charId=? AND name=? AND var!=?";
+    private static final String STATE_VARIABLE = "<state>";
 
     private final Map<ListenerRegisterType, Set<Integer>> registeredIds = new ConcurrentHashMap<>();
 
@@ -330,8 +328,8 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
         } catch (NoSuchMethodException e) {
             if (scriptName == null) {
                 LoggerFactory.getLogger(getClass())
-                        .warn(
-                                "Cannot reload, the quest has no public no-argument constructor and was not created by a script.");
+                        .warn("Cannot reload, the quest has no public no-argument constructor and was not created by"
+                                + " a script.");
                 return false;
             }
         }
@@ -1079,73 +1077,48 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
      * @param player the player who is entering the world
      */
     public static void playerEnter(Player player) {
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement invalidQuestData =
-                        con.prepareStatement("DELETE FROM character_quests WHERE charId = ? AND name = ?");
-                PreparedStatement invalidQuestDataVar =
-                        con.prepareStatement("DELETE FROM character_quests WHERE charId = ? AND name = ? AND var = ?");
-                PreparedStatement ps1 =
-                        con.prepareStatement("SELECT name, value FROM character_quests WHERE charId = ? AND var = ?")) {
-            // Get list of quests owned by the player from database.
-            ps1.setInt(1, player.getObjectId());
-            ps1.setString(2, "<state>");
-            try (ResultSet rs = ps1.executeQuery()) {
-                while (rs.next()) {
-                    // Get the ID of the quest and its state.
-                    final String questId = rs.getString("name");
-                    final String statename = rs.getString("value");
+        final PlayerPersistenceManager persistence = PlayerPersistenceManager.getInstance();
+        final int objectId = player.getObjectId();
+        try {
+            for (CharacterQuestVariable state : persistence.findQuestStates(objectId)) {
+                final String questId = state.questName();
 
-                    // Search quest associated with the ID.
-                    final Quest q = ScriptManager.getInstance().getScript(questId);
-                    if (q == null) {
-                        log.trace("Unknown quest {} for {}", questId, player);
+                // Search quest associated with the ID.
+                final Quest q = ScriptManager.getInstance().getScript(questId);
+                if (q == null) {
+                    log.trace("Unknown quest {} for {}", questId, player);
+                    if (GeneralConfig.AUTODELETE_INVALID_QUEST_DATA) {
+                        persistence.deleteQuest(objectId, questId, false);
+                    }
+                    continue;
+                }
+
+                // Create a new QuestState for the player that will be added to the player's list of quests.
+                new QuestState(q, player, State.getStateId(state.content()));
+            }
+
+            for (CharacterQuestVariable variable : persistence.findQuestVariables(objectId)) {
+                final String questId = variable.questName();
+                final String var = variable.name();
+
+                // Get the QuestState saved in the loop before.
+                final Quest quest = ScriptManager.getInstance().getScript(questId);
+                if (quest != null) {
+                    final QuestState qs = quest.getQuestState(player, true);
+                    if (qs == null) {
+                        log.trace("Lost variable {} in quest {} for {}", var, questId, player);
+
                         if (GeneralConfig.AUTODELETE_INVALID_QUEST_DATA) {
-                            invalidQuestData.setInt(1, player.getObjectId());
-                            invalidQuestData.setString(2, questId);
-                            invalidQuestData.executeUpdate();
+                            persistence.deleteQuestVariable(objectId, questId, var);
                         }
                         continue;
                     }
 
-                    // Create a new QuestState for the player that will be added to the player's list of quests.
-                    new QuestState(q, player, State.getStateId(statename));
+                    // Add parameter to the quest.
+                    qs.setInternal(var, variable.content());
                 }
             }
-
-            // Get list of quests owned by the player from the DB in order to add variables used in the quest.
-            try (PreparedStatement ps2 = con.prepareStatement(
-                    "SELECT name, var, value FROM character_quests WHERE charId = ? AND var <> ?")) {
-                ps2.setInt(1, player.getObjectId());
-                ps2.setString(2, "<state>");
-                try (ResultSet rs = ps2.executeQuery()) {
-                    while (rs.next()) {
-                        final String questId = rs.getString("name");
-                        final String var = rs.getString("var");
-                        final String value = rs.getString("value");
-
-                        // Get the QuestState saved in the loop before.
-                        final Quest quest = ScriptManager.getInstance().getScript(questId);
-                        if (quest != null) {
-                            final QuestState qs = quest.getQuestState(player, true);
-                            if (qs == null) {
-                                log.trace("Lost variable {} in quest {} for {}", var, questId, player);
-
-                                if (GeneralConfig.AUTODELETE_INVALID_QUEST_DATA) {
-                                    invalidQuestDataVar.setInt(1, player.getObjectId());
-                                    invalidQuestDataVar.setString(2, questId);
-                                    invalidQuestDataVar.setString(3, var);
-                                    invalidQuestDataVar.executeUpdate();
-                                }
-                                continue;
-                            }
-
-                            // Add parameter to the quest.
-                            qs.setInternal(var, value);
-                        }
-                    }
-                }
-            }
-        } catch (Exception e) {
+        } catch (DataAccessException e) {
             log.warn("could not insert char quest:", e);
         }
 
@@ -1162,16 +1135,10 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
      * @param value the value of the variable
      */
     public static void createQuestVarInDb(QuestState qs, String var, String value) {
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement statement = con.prepareStatement(
-                        "INSERT INTO character_quests (charId,name,var,value) VALUES (?,?,?,?) ON DUPLICATE KEY UPDATE value=?")) {
-            statement.setInt(1, qs.getPlayer().getObjectId());
-            statement.setString(2, qs.getQuestName());
-            statement.setString(3, var);
-            statement.setString(4, value);
-            statement.setString(5, value);
-            statement.executeUpdate();
-        } catch (Exception e) {
+        try {
+            PlayerPersistenceManager.getInstance()
+                    .saveQuestVariable(qs.getPlayer().getObjectId(), qs.getQuestName(), var, value);
+        } catch (DataAccessException e) {
             log.warn("could not insert char quest:", e);
         }
     }
@@ -1183,15 +1150,10 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
      * @param value the value of the variable
      */
     public static void updateQuestVarInDb(QuestState qs, String var, String value) {
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement statement = con.prepareStatement(
-                        "UPDATE character_quests SET value=? WHERE charId=? AND name=? AND var = ?")) {
-            statement.setString(1, value);
-            statement.setInt(2, qs.getPlayer().getObjectId());
-            statement.setString(3, qs.getQuestName());
-            statement.setString(4, var);
-            statement.executeUpdate();
-        } catch (Exception e) {
+        try {
+            PlayerPersistenceManager.getInstance()
+                    .updateQuestVariable(qs.getPlayer().getObjectId(), qs.getQuestName(), var, value);
+        } catch (DataAccessException e) {
             log.warn("could not update char quest:", e);
         }
     }
@@ -1202,14 +1164,10 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
      * @param var the name of the variable to delete
      */
     public static void deleteQuestVarInDb(QuestState qs, String var) {
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement statement =
-                        con.prepareStatement("DELETE FROM character_quests WHERE charId=? AND name=? AND var=?")) {
-            statement.setInt(1, qs.getPlayer().getObjectId());
-            statement.setString(2, qs.getQuestName());
-            statement.setString(3, var);
-            statement.executeUpdate();
-        } catch (Exception e) {
+        try {
+            PlayerPersistenceManager.getInstance()
+                    .deleteQuestVariable(qs.getPlayer().getObjectId(), qs.getQuestName(), var);
+        } catch (DataAccessException e) {
             log.warn("Unable to delete char quest!", e);
         }
     }
@@ -1220,19 +1178,10 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
      * @param repeatable if {@code false}, the state variable will be preserved, otherwise it will be deleted as well
      */
     public static void deleteQuestInDb(QuestState qs, boolean repeatable) {
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement(
-                        repeatable
-                                ? QUEST_DELETE_FROM_CHAR_QUERY
-                                : QUEST_DELETE_FROM_CHAR_QUERY_NON_REPEATABLE_QUERY)) {
-            ps.setInt(1, qs.getPlayer().getObjectId());
-            ps.setString(2, qs.getQuestName());
-            if (!repeatable) {
-                ps.setString(3, "<state>");
-            }
-
-            ps.executeUpdate();
-        } catch (Exception e) {
+        try {
+            PlayerPersistenceManager.getInstance()
+                    .deleteQuest(qs.getPlayer().getObjectId(), qs.getQuestName(), !repeatable);
+        } catch (DataAccessException e) {
             log.warn("could not delete char quest:", e);
         }
     }
@@ -1242,7 +1191,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
      * @param qs the {@link QuestState} object whose data to write in the database
      */
     public static void createQuestInDb(QuestState qs) {
-        createQuestVarInDb(qs, "<state>", State.getStateName(qs.getState()));
+        createQuestVarInDb(qs, STATE_VARIABLE, State.getStateName(qs.getState()));
     }
 
     /**
@@ -1250,7 +1199,7 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
      * @param qs the {@link QuestState} object whose data to update in the database
      */
     public static void updateQuestInDb(QuestState qs) {
-        updateQuestVarInDb(qs, "<state>", State.getStateName(qs.getState()));
+        updateQuestVarInDb(qs, STATE_VARIABLE, State.getStateName(qs.getState()));
     }
 
     /**
@@ -2255,14 +2204,16 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
                 if (method.getParameterCount() != 1) {
                     LoggerFactory.getLogger(getClass())
                             .warn(
-                                    "Non properly defined annotation listener on method: {} expected parameter count is 1 but found: {}",
+                                    "Non properly defined annotation listener on method: {} expected parameter count"
+                                            + " is 1 but found: {}",
                                     method.getName(),
                                     method.getParameterCount());
                     continue;
                 } else if (!eventType.isEventClass(method.getParameterTypes()[0])) {
                     LoggerFactory.getLogger(getClass())
                             .warn(
-                                    "Non properly defined annotation listener on method: {} expected parameter to be type of: {} but found: {}",
+                                    "Non properly defined annotation listener on method: {} expected parameter to be"
+                                            + " type of: {} but found: {}",
                                     method.getName(),
                                     eventType.getEventClass().getSimpleName(),
                                     method.getParameterTypes()[0].getSimpleName());
@@ -2270,7 +2221,8 @@ public class Quest implements IEventTimerEvent<String>, IEventTimerCancel<String
                 } else if (!eventType.isReturnClass(method.getReturnType())) {
                     LoggerFactory.getLogger(getClass())
                             .warn(
-                                    "Non properly defined annotation listener on method: {} expected return type to be one of: {} but found: {}",
+                                    "Non properly defined annotation listener on method: {} expected return type to be"
+                                            + " one of: {} but found: {}",
                                     method.getName(),
                                     Arrays.toString(eventType.getReturnClasses()),
                                     method.getReturnType().getSimpleName());

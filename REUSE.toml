@@ -11,11 +11,20 @@ path = [
   "chronicles/high-five/datapack/**",
   "chronicles/high-five/boot/src/dist/**",
   "login/boot/src/dist/**",
-  "login/server/sql/**",
 ]
 precedence = "closest"
 SPDX-FileCopyrightText = "L2J Mobius contributors"
 SPDX-License-Identifier = "MIT"
+
+# A formatted SQL changelog must open with its Liquibase header and allows no comment outside a changeset.
+[[annotations]]
+path = [
+  "chronicles/high-five/server/src/main/resources/db/liquibase/000-baseline.sql",
+  "login/server/src/main/resources/db/liquibase/000-baseline.sql",
+]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2026 L2NX contributors"
+SPDX-License-Identifier = "Apache-2.0"
 
 [[annotations]]
 path = ["NOTICE"]

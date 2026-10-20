@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+/*
  * SPDX-FileCopyrightText: L2J Mobius contributors
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
@@ -22,6 +26,7 @@ package app.l2nx.login.network.gameserverpackets.receive;
 import app.l2nx.login.GameServerThread;
 import app.l2nx.login.controller.LoginController;
 import app.l2nx.network.packet.SimpleReadablePacket;
+import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -35,8 +40,8 @@ public class ChangeAccessLevel extends SimpleReadablePacket {
         readByte(); // Packet id, it is already processed.
 
         final int level = readInt();
-        final String account = readString();
-        LoginController.getInstance().setAccountAccessLevel(account, level);
-        log.info("Changed {} access level to {}", account, level);
+        final UUID accountId = new UUID(readLong(), readLong());
+        LoginController.getInstance().setAccountAccessLevel(accountId, level);
+        log.info("Changed account {} access level to {}", accountId, level);
     }
 }

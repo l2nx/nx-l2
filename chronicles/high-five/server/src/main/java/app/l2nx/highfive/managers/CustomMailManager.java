@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -23,7 +27,6 @@
 package app.l2nx.highfive.managers;
 
 import app.l2nx.highfive.config.custom.CustomMailManagerConfig;
-import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.item.enums.ItemProcessType;
@@ -32,106 +35,108 @@ import app.l2nx.highfive.entity.item.instance.Item;
 import app.l2nx.highfive.entity.itemcontainer.Mail;
 import app.l2nx.highfive.network.enums.MessageSenderType;
 import app.l2nx.highfive.network.holders.MailMessage;
+import app.l2nx.highfive.repository.mail.CustomMailRepository;
+import app.l2nx.highfive.repository.mail.model.CustomMail;
 import app.l2nx.highfive.threads.ThreadPool;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.dao.DataAccessException;
+import org.springframework.stereotype.Component;
 
 /**
  * @author Mobius
  */
 @Slf4j
+@Component
 public class CustomMailManager {
+    private static volatile CustomMailManager instance;
 
-    // SQL Statements
-    private static final String READ_SQL = "SELECT * FROM custom_mail";
-    private static final String DELETE_SQL = "DELETE FROM custom_mail WHERE date=? AND receiver=?";
+    private final CustomMailRepository customMailRepository;
 
-    protected CustomMailManager() {
+    public CustomMailManager(CustomMailRepository customMailRepository) {
+        this.customMailRepository = customMailRepository;
+        instance = this;
+    }
+
+    public void load() {
         ThreadPool.scheduleAtFixedRate(
-                () -> {
-                    try (Connection con = DatabaseFactory.getConnection();
-                            Statement ps = con.createStatement();
-                            ResultSet rs = ps.executeQuery(READ_SQL)) {
-                        while (rs.next()) {
-                            final int playerId = rs.getInt("receiver");
-                            final Player player = World.getPlayer(playerId);
-                            if ((player != null) && player.isOnline()) {
-                                // Create message.
-                                final String items = rs.getString("items");
-                                final MailMessage msg = new MailMessage(
-                                        playerId,
-                                        rs.getString("subject"),
-                                        rs.getString("message"),
-                                        MessageSenderType.PLAYER);
-                                final List<ItemEnchantHolder> itemHolders = new ArrayList<>();
-                                for (String str : items.split(";")) {
-                                    if (str.contains(" ")) {
-                                        final String[] split = str.split(" ");
-                                        final String itemId = split[0];
-                                        final String itemCount = split[1];
-                                        final String enchant = split.length > 2 ? split[2] : "0";
-                                        if (StringUtils.isNumeric(itemId) && StringUtils.isNumeric(itemCount)) {
-                                            itemHolders.add(new ItemEnchantHolder(
-                                                    Integer.parseInt(itemId),
-                                                    Long.parseLong(itemCount),
-                                                    Integer.parseInt(enchant)));
-                                        }
-                                    } else if (StringUtils.isNumeric(str)) {
-                                        itemHolders.add(new ItemEnchantHolder(Integer.parseInt(str), 1));
-                                    }
-                                }
-
-                                if (!itemHolders.isEmpty()) {
-                                    final Mail attachments = msg.createAttachments();
-                                    for (ItemEnchantHolder itemHolder : itemHolders) {
-                                        final Item item = attachments.addItem(
-                                                ItemProcessType.TRANSFER,
-                                                itemHolder.getId(),
-                                                itemHolder.getCount(),
-                                                null,
-                                                null);
-                                        if (itemHolder.getEnchantLevel() > 0) {
-                                            item.setEnchantLevel(itemHolder.getEnchantLevel());
-                                        }
-                                    }
-                                }
-
-                                // Delete entry from database.
-                                try (PreparedStatement stmt = con.prepareStatement(DELETE_SQL)) {
-                                    stmt.setString(1, rs.getString("date"));
-                                    stmt.setInt(2, playerId);
-                                    stmt.execute();
-                                } catch (SQLException e) {
-                                    log.warn("Error deleting entry from database: ", e);
-                                }
-
-                                // Send message.
-                                MailManager.getInstance().sendMessage(msg);
-                                log.info("Message sent to {}.", player.getName());
-                            }
-                        }
-                    } catch (SQLException e) {
-                        log.warn("Error reading from database: ", e);
-                    }
-                },
+                this::deliver,
                 CustomMailManagerConfig.CUSTOM_MAIL_MANAGER_DELAY,
                 CustomMailManagerConfig.CUSTOM_MAIL_MANAGER_DELAY);
 
         log.info("Enabled.");
     }
 
-    public static CustomMailManager getInstance() {
-        return SingletonHolder.INSTANCE;
+    private void deliver() {
+        try {
+            for (CustomMail row : customMailRepository.findAll()) {
+                final int playerId = row.receiverId();
+                final Player player = World.getPlayer(playerId);
+                if ((player != null) && player.isOnline()) {
+                    // Create message.
+                    final MailMessage msg =
+                            new MailMessage(playerId, row.subject(), row.content(), MessageSenderType.PLAYER);
+                    final List<ItemEnchantHolder> itemHolders = parseItems(row.items());
+                    if (!itemHolders.isEmpty()) {
+                        final Mail attachments = msg.createAttachments();
+                        for (ItemEnchantHolder itemHolder : itemHolders) {
+                            final Item item = attachments.addItem(
+                                    ItemProcessType.TRANSFER, itemHolder.getId(), itemHolder.getCount(), null, null);
+                            if (itemHolder.getEnchantLevel() > 0) {
+                                item.setEnchantLevel(itemHolder.getEnchantLevel());
+                            }
+                        }
+                    }
+
+                    // Delete entry from database.
+                    try {
+                        customMailRepository.delete(row.id());
+                    } catch (DataAccessException e) {
+                        log.warn("Error deleting entry from database: ", e);
+                    }
+
+                    // Send message.
+                    MailManager.getInstance().sendMessage(msg);
+                    log.info("Message sent to {}.", player.getName());
+                }
+            }
+        } catch (DataAccessException e) {
+            log.warn("Error reading from database: ", e);
+        }
     }
 
-    private static class SingletonHolder {
-        protected static final CustomMailManager INSTANCE = new CustomMailManager();
+    private static List<ItemEnchantHolder> parseItems(String items) {
+        final List<ItemEnchantHolder> itemHolders = new ArrayList<>();
+        if (items == null) {
+            return itemHolders;
+        }
+
+        for (String str : items.split(";")) {
+            if (str.contains(" ")) {
+                final String[] split = str.split(" ");
+                final String itemId = split[0];
+                final String itemCount = split[1];
+                final String enchant = split.length > 2 ? split[2] : "0";
+                if (StringUtils.isNumeric(itemId) && StringUtils.isNumeric(itemCount)) {
+                    itemHolders.add(new ItemEnchantHolder(
+                            Integer.parseInt(itemId), Long.parseLong(itemCount), Integer.parseInt(enchant)));
+                }
+            } else if (StringUtils.isNumeric(str)) {
+                itemHolders.add(new ItemEnchantHolder(Integer.parseInt(str), 1));
+            }
+        }
+
+        return itemHolders;
+    }
+
+    // TODO: callers receive the bean through their constructor (#41).
+    public static CustomMailManager getInstance() {
+        final CustomMailManager current = instance;
+        if (current == null) {
+            throw new IllegalStateException("CustomMailManager is used before the Spring context created it.");
+        }
+        return current;
     }
 }

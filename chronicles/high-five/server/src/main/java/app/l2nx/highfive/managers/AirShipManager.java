@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -22,30 +26,25 @@
  */
 package app.l2nx.highfive.managers;
 
-import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.holders.creature.VehiclePathPoint;
 import app.l2nx.highfive.entity.actor.instance.AirShip;
 import app.l2nx.highfive.entity.actor.instance.ControllableAirShip;
 import app.l2nx.highfive.entity.actor.templates.CreatureTemplate;
 import app.l2nx.highfive.network.serverpackets.ExAirShipTeleportList;
+import app.l2nx.highfive.repository.world.AirshipRepository;
 import app.l2nx.highfive.util.StatSet;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.HashMap;
 import java.util.Map;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataAccessException;
+import org.springframework.stereotype.Component;
 
 @Slf4j
+@Component
 public class AirShipManager {
-
-    private static final String LOAD_DB = "SELECT * FROM airships";
-    private static final String ADD_DB = "INSERT INTO airships (owner_id,fuel) VALUES (?,?)";
-    private static final String UPDATE_DB = "UPDATE airships SET fuel=? WHERE owner_id=?";
+    private static volatile AirShipManager instance;
 
     private static class AirShipTeleportList {
         @Getter
@@ -69,7 +68,14 @@ public class AirShipManager {
     private final Map<Integer, AirShip> airShips = new HashMap<>();
     private final Map<Integer, AirShipTeleportList> teleports = new HashMap<>();
 
-    protected AirShipManager() {
+    private final AirshipRepository airshipRepository;
+
+    public AirShipManager(AirshipRepository airshipRepository) {
+        this.airshipRepository = airshipRepository;
+        instance = this;
+    }
+
+    public void load() {
         final StatSet npcDat = new StatSet();
         npcDat.set("npcId", 9);
         npcDat.set("level", 0);
@@ -105,7 +111,7 @@ public class AirShipManager {
         npcDat.set("basePDef", 100);
         npcDat.set("baseMDef", 100);
         airShipTemplate = new CreatureTemplate(npcDat);
-        load();
+        loadLicenses();
     }
 
     public AirShip getNewAirShip(int x, int y, int z, int heading) {
@@ -148,11 +154,12 @@ public class AirShipManager {
             return;
         }
 
-        storeInDb(ship.getOwnerId());
         final StatSet info = airShipsInfo.get(ship.getOwnerId());
         if (info != null) {
             info.set("fuel", ship.getFuel());
         }
+
+        storeInDb(ship.getOwnerId());
     }
 
     public boolean hasAirShipLicense(int ownerId) {
@@ -167,15 +174,10 @@ public class AirShipManager {
         final StatSet info = new StatSet();
         info.set("fuel", 600);
         airShipsInfo.put(ownerId, info);
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement(ADD_DB)) {
-            ps.setInt(1, ownerId);
-            ps.setInt(2, info.getInt("fuel"));
-            ps.executeUpdate();
-        } catch (SQLException e) {
+        try {
+            airshipRepository.save(ownerId, info.getInt("fuel"));
+        } catch (DataAccessException e) {
             log.warn("Could not add new airship license: {}", e.getMessage(), e);
-        } catch (Exception e) {
-            log.warn("Error while initializing: {}", e.getMessage(), e);
         }
     }
 
@@ -222,20 +224,15 @@ public class AirShipManager {
         return (all == null) || (index < -1) || (index >= all.getFuel().length) ? 0 : all.getFuel()[index + 1];
     }
 
-    private void load() {
-        try (Connection con = DatabaseFactory.getConnection();
-                Statement s = con.createStatement();
-                ResultSet rs = s.executeQuery(LOAD_DB)) {
-            StatSet info;
-            while (rs.next()) {
-                info = new StatSet();
-                info.set("fuel", rs.getInt("fuel"));
-                airShipsInfo.put(rs.getInt("owner_id"), info);
-            }
-        } catch (SQLException e) {
+    private void loadLicenses() {
+        try {
+            airshipRepository.findAll().forEach((clanId, fuel) -> {
+                final StatSet info = new StatSet();
+                info.set("fuel", fuel);
+                airShipsInfo.put(clanId, info);
+            });
+        } catch (DataAccessException e) {
             log.warn("Could not load airships table: {}", e.getMessage(), e);
-        } catch (Exception e) {
-            log.warn("Error while initializing: {}", e.getMessage(), e);
         }
 
         log.info("Loaded {} private airships", airShipsInfo.size());
@@ -247,23 +244,19 @@ public class AirShipManager {
             return;
         }
 
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement(UPDATE_DB)) {
-            ps.setInt(1, info.getInt("fuel"));
-            ps.setInt(2, ownerId);
-            ps.executeUpdate();
-        } catch (SQLException e) {
+        try {
+            airshipRepository.save(ownerId, info.getInt("fuel"));
+        } catch (DataAccessException e) {
             log.warn("Could not update airships table: {}", e.getMessage(), e);
-        } catch (Exception e) {
-            log.warn("Error while save: {}", e.getMessage(), e);
         }
     }
 
+    // TODO: callers receive the bean through their constructor (#41).
     public static AirShipManager getInstance() {
-        return SingletonHolder.INSTANCE;
-    }
-
-    private static class SingletonHolder {
-        protected static final AirShipManager INSTANCE = new AirShipManager();
+        final AirShipManager current = instance;
+        if (current == null) {
+            throw new IllegalStateException("AirShipManager is used before the Spring context created it.");
+        }
+        return current;
     }
 }

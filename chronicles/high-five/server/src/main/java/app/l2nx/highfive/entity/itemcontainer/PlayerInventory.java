@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -24,13 +28,13 @@ package app.l2nx.highfive.entity.itemcontainer;
 
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.config.custom.TransmogConfig;
-import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.data.xml.ItemData;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.item.ItemTemplate;
 import app.l2nx.highfive.entity.item.enums.ItemLocation;
 import app.l2nx.highfive.entity.item.enums.ItemProcessType;
 import app.l2nx.highfive.entity.item.instance.Item;
+import app.l2nx.highfive.managers.ItemManager;
 import app.l2nx.highfive.mechanics.events.EventDispatcher;
 import app.l2nx.highfive.mechanics.events.EventType;
 import app.l2nx.highfive.mechanics.events.holders.actor.player.inventory.OnPlayerItemAdd;
@@ -43,16 +47,15 @@ import app.l2nx.highfive.network.holders.TradeItem;
 import app.l2nx.highfive.network.holders.TradeList;
 import app.l2nx.highfive.network.serverpackets.InventoryUpdate;
 import app.l2nx.highfive.network.serverpackets.StatusUpdate;
+import app.l2nx.highfive.repository.item.model.PaperdollItem;
 import app.l2nx.highfive.util.ArrayUtil;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.util.ArrayDeque;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataAccessException;
 
 @Slf4j
 public class PlayerInventory extends Inventory {
@@ -755,28 +758,22 @@ public class PlayerInventory extends Inventory {
 
     public static int[][] restoreVisibleInventory(int objectId) {
         final int[][] paperdoll = new int[31][3];
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement(
-                        "SELECT object_id,item_id,loc_data,enchant_level FROM items WHERE owner_id=? AND loc='PAPERDOLL'")) {
-            ps.setInt(1, objectId);
-            try (ResultSet invdata = ps.executeQuery()) {
-                while (invdata.next()) {
-                    final int slot = invdata.getInt("loc_data");
-                    paperdoll[slot][0] = invdata.getInt("object_id");
-                    if (TransmogConfig.ENABLE_TRANSMOG) {
-                        final ItemVariables vars = new ItemVariables(paperdoll[slot][0]);
-                        paperdoll[slot][1] = vars.getInt(ItemVariables.TRANSMOG_ID, invdata.getInt("item_id"));
-                    } else {
-                        final int itemId = invdata.getInt("item_id");
-                        final ItemTemplate template = ItemData.getInstance().getTemplate(itemId);
-                        paperdoll[slot][1] = template == null ? itemId : template.getDisplayId();
-                    }
-
-                    paperdoll[slot][2] = invdata.getInt("enchant_level");
+        try {
+            for (PaperdollItem item : ItemManager.getInstance().findPaperdoll(objectId)) {
+                final int slot = item.slot();
+                paperdoll[slot][0] = item.objectId();
+                if (TransmogConfig.ENABLE_TRANSMOG) {
+                    final ItemVariables vars = new ItemVariables(paperdoll[slot][0]);
+                    paperdoll[slot][1] = vars.getInt(ItemVariables.TRANSMOG_ID, item.itemId());
+                } else {
+                    final ItemTemplate template = ItemData.getInstance().getTemplate(item.itemId());
+                    paperdoll[slot][1] = template == null ? item.itemId() : template.getDisplayId();
                 }
+
+                paperdoll[slot][2] = item.enchantLevel();
             }
-        } catch (Exception e) {
-            log.warn("Could not restore inventory: {}", e.getMessage(), e);
+        } catch (DataAccessException e) {
+            log.warn("Could not restore inventory:", e);
         }
 
         return paperdoll;

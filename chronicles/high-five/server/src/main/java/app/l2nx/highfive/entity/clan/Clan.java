@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -22,6 +26,8 @@
  */
 package app.l2nx.highfive.entity.clan;
 
+import static app.l2nx.highfive.repository.LegacyValues.epochMillisOrZero;
+
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.communitybbs.BB.Forum;
 import app.l2nx.highfive.communitybbs.Manager.ForumsBBSManager;
@@ -31,7 +37,6 @@ import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.data.sql.CharInfoTable;
 import app.l2nx.highfive.data.sql.ClanTable;
 import app.l2nx.highfive.data.sql.CrestTable;
-import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.data.xml.SkillData;
 import app.l2nx.highfive.data.xml.SkillTreeData;
 import app.l2nx.highfive.entity.World;
@@ -70,15 +75,17 @@ import app.l2nx.highfive.network.serverpackets.PledgeSkillListAdd;
 import app.l2nx.highfive.network.serverpackets.ServerPacket;
 import app.l2nx.highfive.network.serverpackets.StatusUpdate;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import app.l2nx.highfive.repository.character.model.CharacterClanMember;
+import app.l2nx.highfive.repository.clan.model.ClanRow;
+import app.l2nx.highfive.repository.clan.model.ClanSkill;
+import app.l2nx.highfive.repository.clan.model.RankPrivilege;
+import app.l2nx.highfive.repository.clan.model.SubPledgeRow;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -90,11 +97,6 @@ import org.apache.commons.lang3.StringUtils;
 
 @Slf4j
 public class Clan {
-
-    // SQL queries
-    private static final String INSERT_CLAN_DATA =
-            "INSERT INTO clan_data (clan_id,clan_name,clan_level,hasCastle,blood_alliance_count,blood_oath_count,ally_id,ally_name,leader_id,crest_id,crest_large_id,ally_crest_id,new_leader_id) values (?,?,?,?,?,?,?,?,?,?,?,?,?)";
-    private static final String SELECT_CLAN_DATA = "SELECT * FROM clan_data where clan_id=?";
 
     // Ally Penalty Types
     /** Clan leaved ally */
@@ -226,6 +228,8 @@ public class Clan {
     private boolean noticeEnabled = false;
 
     private static final int MAX_NOTICE_LENGTH = 8192;
+    private static final int MIN_POWER_GRADE = 1;
+    private static final int MAX_POWER_GRADE = 9;
 
     @Getter
     private int newLeaderId;
@@ -304,15 +308,7 @@ public class Clan {
             exLeader.getClanPrivileges().disableAll();
             exLeader.broadcastUserInfo();
         } else {
-            try (Connection con = DatabaseFactory.getConnection();
-                    PreparedStatement ps =
-                            con.prepareStatement("UPDATE characters SET clan_privs = ? WHERE charId = ?")) {
-                ps.setInt(1, 0);
-                ps.setInt(2, getLeaderId());
-                ps.execute();
-            } catch (Exception e) {
-                log.warn("Couldn't update clan privs for old clan leader", e);
-            }
+            ClanTable.getInstance().updateMemberPrivileges(getLeaderId(), 0);
         }
 
         setLeader(member);
@@ -338,15 +334,7 @@ public class Clan {
 
             newLeader.broadcastUserInfo();
         } else {
-            try (Connection con = DatabaseFactory.getConnection();
-                    PreparedStatement ps =
-                            con.prepareStatement("UPDATE characters SET clan_privs = ? WHERE charId = ?")) {
-                ps.setInt(1, ClanPrivileges.getCompleteMask());
-                ps.setInt(2, getLeaderId());
-                ps.execute();
-            } catch (Exception e) {
-                log.warn("Couldn't update clan privs for new clan leader", e);
-            }
+            ClanTable.getInstance().updateMemberPrivileges(getLeaderId(), ClanPrivileges.getCompleteMask());
         }
 
         broadcastClanStatus();
@@ -678,17 +666,12 @@ public class Clan {
     private void setLevel(int level) {
         this.level = level;
         if ((this.level >= 2) && (this.forum == null) && GeneralConfig.ENABLE_COMMUNITY_BOARD) {
-            final Forum forum = ForumsBBSManager.getInstance().getForumByName("ClanRoot");
-            if (forum != null) {
-                this.forum = forum.getChildByName(name);
+            final Forum root = ForumsBBSManager.getInstance().getForumByName("ClanRoot");
+            if (root != null) {
+                this.forum = root.getChildByOwner(getId());
                 if (this.forum == null) {
                     this.forum = ForumsBBSManager.getInstance()
-                            .createNewForum(
-                                    name,
-                                    ForumsBBSManager.getInstance().getForumByName("ClanRoot"),
-                                    Forum.CLAN,
-                                    Forum.CLANMEMBERONLY,
-                                    getId());
+                            .createNewForum(root, Forum.CLAN, Forum.CLANMEMBERONLY, getId());
                 }
             }
         }
@@ -722,15 +705,7 @@ public class Clan {
      * Store current Bloood Alliances count in database.
      */
     public void updateBloodAllianceCountInDB() {
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps =
-                        con.prepareStatement("UPDATE clan_data SET blood_alliance_count=? WHERE clan_id=?")) {
-            ps.setInt(1, bloodAllianceCount);
-            ps.setInt(2, id);
-            ps.execute();
-        } catch (Exception e) {
-            log.warn("Exception on updateBloodAllianceCountInDB(): {}", e.getMessage(), e);
-        }
+        ClanTable.getInstance().updateBloodAllianceCount(id, bloodAllianceCount);
     }
 
     /**
@@ -753,15 +728,7 @@ public class Clan {
      * Store current Bloood Alliances count in database.
      */
     public void updateBloodOathCountInDB() {
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps =
-                        con.prepareStatement("UPDATE clan_data SET blood_oath_count=? WHERE clan_id=?")) {
-            ps.setInt(1, bloodOathCount);
-            ps.setInt(2, id);
-            ps.execute();
-        } catch (Exception e) {
-            log.warn("Exception on updateBloodAllianceCountInDB(): {}", e.getMessage(), e);
-        }
+        ClanTable.getInstance().updateBloodOathCount(id, bloodOathCount);
     }
 
     /**
@@ -779,23 +746,7 @@ public class Clan {
      * </ul>
      */
     public void updateClanInDB() {
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement(
-                        "UPDATE clan_data SET leader_id=?,ally_id=?,ally_name=?,reputation_score=?,ally_penalty_expiry_time=?,ally_penalty_type=?,char_penalty_expiry_time=?,dissolving_expiry_time=?,new_leader_id=? WHERE clan_id=?")) {
-            ps.setInt(1, getLeaderId());
-            ps.setInt(2, allyId);
-            ps.setString(3, allyName);
-            ps.setInt(4, reputationScore);
-            ps.setLong(5, allyPenaltyExpiryTime);
-            ps.setInt(6, allyPenaltyType);
-            ps.setLong(7, charPenaltyExpiryTime);
-            ps.setLong(8, dissolvingExpiryTime);
-            ps.setInt(9, newLeaderId);
-            ps.setInt(10, id);
-            ps.execute();
-        } catch (Exception e) {
-            log.error("Error saving clan: {}", e.getMessage(), e);
-        }
+        ClanTable.getInstance().updateClan(this);
     }
 
     /**
@@ -804,7 +755,6 @@ public class Clan {
      * <li>Clan Id</li>
      * <li>Clan name</li>
      * <li>Clan level</li>
-     * <li>Has castle</li>
      * <li>Alliance Id</li>
      * <li>Alliance name</li>
      * <li>Clan leader Id</li>
@@ -814,25 +764,7 @@ public class Clan {
      * </ul>
      */
     public void store() {
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement(INSERT_CLAN_DATA)) {
-            ps.setInt(1, id);
-            ps.setString(2, name);
-            ps.setInt(3, level);
-            ps.setInt(4, castleId);
-            ps.setInt(5, bloodAllianceCount);
-            ps.setInt(6, bloodOathCount);
-            ps.setInt(7, allyId);
-            ps.setString(8, allyName);
-            ps.setInt(9, getLeaderId());
-            ps.setInt(10, crestId);
-            ps.setInt(11, crestLargeId);
-            ps.setInt(12, allyCrestId);
-            ps.setInt(13, newLeaderId);
-            ps.execute();
-        } catch (Exception e) {
-            log.error("Error saving new clan: {}", e.getMessage(), e);
-        }
+        ClanTable.getInstance().insertClan(this);
     }
 
     /**
@@ -842,145 +774,73 @@ public class Clan {
      * @param clanCreateExpiryTime the time penalty for the player to create a new clan
      */
     private void removeMemberInDatabase(int playerId, long clanJoinExpiryTime, long clanCreateExpiryTime) {
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps1 = con.prepareStatement(
-                        "UPDATE characters SET clanid=0, title=?, clan_join_expiry_time=?, clan_create_expiry_time=?, clan_privs=0, wantspeace=0, subpledge=0, lvl_joined_academy=0, apprentice=0, sponsor=0 WHERE charId=?");
-                PreparedStatement ps2 = con.prepareStatement("UPDATE characters SET apprentice=0 WHERE apprentice=?");
-                PreparedStatement ps3 = con.prepareStatement("UPDATE characters SET sponsor=0 WHERE sponsor=?")) {
-            // Remove clan member.
-            ps1.setString(1, "");
-            ps1.setLong(2, clanJoinExpiryTime);
-            ps1.setLong(3, clanCreateExpiryTime);
-            ps1.setInt(4, playerId);
-            ps1.execute();
-
-            // Remove apprentice.
-            ps2.setInt(1, playerId);
-            ps2.execute();
-
-            // Remove sponsor.
-            ps3.setInt(1, playerId);
-            ps3.execute();
-        } catch (Exception e) {
-            log.error("Error removing clan member: {}", e.getMessage(), e);
-        }
+        ClanTable.getInstance().removeMember(playerId, clanJoinExpiryTime, clanCreateExpiryTime);
     }
 
     private void restore() {
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement(SELECT_CLAN_DATA)) {
-            ps.setInt(1, id);
-            try (ResultSet clanData = ps.executeQuery()) {
-                if (clanData.next()) {
-                    setName(clanData.getString("clan_name"));
-                    setLevel(clanData.getInt("clan_level"));
-                    setCastleId(clanData.getInt("hasCastle"));
-                    bloodAllianceCount = clanData.getInt("blood_alliance_count");
-                    bloodOathCount = clanData.getInt("blood_oath_count");
-                    setAllyId(clanData.getInt("ally_id"));
-                    setAllyName(clanData.getString("ally_name"));
-                    setAllyPenaltyExpiryTime(
-                            clanData.getLong("ally_penalty_expiry_time"), clanData.getInt("ally_penalty_type"));
-                    if (allyPenaltyExpiryTime < ClockBridge.wallMillis()) {
-                        setAllyPenaltyExpiryTime(0, 0);
-                    }
-
-                    setCharPenaltyExpiryTime(clanData.getLong("char_penalty_expiry_time"));
-                    if ((charPenaltyExpiryTime + (PlayerConfig.ALT_CLAN_JOIN_DAYS * 86400000))
-                            < ClockBridge.wallMillis()) // 24*60*60*1000 = 86400000
-                    {
-                        setCharPenaltyExpiryTime(0);
-                    }
-
-                    setDissolvingExpiryTime(clanData.getLong("dissolving_expiry_time"));
-
-                    setCrestId(clanData.getInt("crest_id"));
-                    setCrestLargeId(clanData.getInt("crest_large_id"));
-                    setAllyCrestId(clanData.getInt("ally_crest_id"));
-
-                    setReputationScore(clanData.getInt("reputation_score"));
-                    setAuctionBiddedAt(clanData.getInt("auction_bid_at"), false);
-                    setNewLeaderId(clanData.getInt("new_leader_id"), false);
-
-                    final int leaderId = clanData.getInt("leader_id");
-                    ps.clearParameters();
-
-                    try (PreparedStatement select = con.prepareStatement(
-                            "SELECT char_name,level,classid,charId,title,power_grade,subpledge,apprentice,sponsor,sex,race FROM characters WHERE clanid=?")) {
-                        select.setInt(1, id);
-                        try (ResultSet clanMember = select.executeQuery()) {
-                            ClanMember member = null;
-                            while (clanMember.next()) {
-                                member = new ClanMember(this, clanMember);
-                                if (member.getObjectId() == leaderId) {
-                                    setLeader(member);
-                                } else {
-                                    addClanMember(member);
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            restoreSubPledges();
-            restoreRankPrivs();
-            restoreSkills();
-            restoreNotice();
-        } catch (Exception e) {
-            log.error("Error restoring clan data: {}", e.getMessage(), e);
+        final ClanTable table = ClanTable.getInstance();
+        final Optional<ClanRow> stored = table.findClan(id);
+        if (stored.isEmpty()) {
+            log.warn("Clan {} is not stored.", id);
+            return;
         }
+
+        final ClanRow clanData = stored.get();
+        setName(clanData.name());
+        setLevel(clanData.level());
+        setCastleId(table.findCastleIdOfOwner(id));
+        bloodAllianceCount = clanData.bloodAllianceCount();
+        bloodOathCount = clanData.bloodOathCount();
+        setAllyId(clanData.allyId());
+        setAllyName(clanData.allyName());
+        setAllyPenaltyExpiryTime(epochMillisOrZero(clanData.allyPenaltyEndsAt()), clanData.allyPenaltyType());
+        if (allyPenaltyExpiryTime < ClockBridge.wallMillis()) {
+            setAllyPenaltyExpiryTime(0, 0);
+        }
+
+        setCharPenaltyExpiryTime(epochMillisOrZero(clanData.characterPenaltyEndsAt()));
+        if ((charPenaltyExpiryTime + (PlayerConfig.ALT_CLAN_JOIN_DAYS * 86400000))
+                < ClockBridge.wallMillis()) // 24*60*60*1000 = 86400000
+        {
+            setCharPenaltyExpiryTime(0);
+        }
+
+        setDissolvingExpiryTime(epochMillisOrZero(clanData.dissolvingEndsAt()));
+
+        setCrestId(clanData.crestId());
+        setCrestLargeId(clanData.crestLargeId());
+        setAllyCrestId(clanData.allyCrestId());
+
+        setReputationScore(clanData.reputationScore());
+        setAuctionBiddedAt(clanData.bidClanHallId(), false);
+        setNewLeaderId(clanData.newLeaderId(), false);
+
+        for (CharacterClanMember clanMember : table.findMembers(id)) {
+            final ClanMember member = new ClanMember(this, clanMember);
+            if (member.getObjectId() == clanData.leaderId()) {
+                setLeader(member);
+            } else {
+                addClanMember(member);
+            }
+        }
+
+        restoreSubPledges();
+        restoreRankPrivs();
+        restoreSkills();
+        restoreNotice();
     }
 
     private void restoreNotice() {
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps =
-                        con.prepareStatement("SELECT enabled,notice FROM clan_notices WHERE clan_id=?")) {
-            ps.setInt(1, id);
-            try (ResultSet noticeData = ps.executeQuery()) {
-                while (noticeData.next()) {
-                    noticeEnabled = Boolean.parseBoolean(noticeData.getString("enabled"));
-                    notice = noticeData.getString("notice");
-                }
-            }
-        } catch (Exception e) {
-            log.error("Error restoring clan notice: {}", e.getMessage(), e);
-        }
+        ClanTable.getInstance().findNotice(id).ifPresent(noticeData -> {
+            noticeEnabled = noticeData.enabled();
+            notice = noticeData.notice();
+        });
     }
 
     private void storeNotice(String noticeValue, boolean enabled) {
-        String notice = noticeValue;
-        if (notice == null) {
-            notice = "";
-        }
-
-        if (notice.length() > MAX_NOTICE_LENGTH) {
-            notice = notice.substring(0, MAX_NOTICE_LENGTH - 1);
-        }
-
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement(
-                        "INSERT INTO clan_notices (clan_id,notice,enabled) values (?,?,?) ON DUPLICATE KEY UPDATE notice=?,enabled=?")) {
-            ps.setInt(1, id);
-            ps.setString(2, notice);
-            if (enabled) {
-                ps.setString(3, "true");
-            } else {
-                ps.setString(3, "false");
-            }
-
-            ps.setString(4, notice);
-            if (enabled) {
-                ps.setString(5, "true");
-            } else {
-                ps.setString(5, "false");
-            }
-
-            ps.execute();
-        } catch (Exception e) {
-            log.warn("Error could not store clan notice: {}", e.getMessage(), e);
-        }
-
+        final String notice =
+                StringUtils.isEmpty(noticeValue) ? null : StringUtils.left(noticeValue, MAX_NOTICE_LENGTH);
+        ClanTable.getInstance().storeNotice(id, notice, enabled);
         this.notice = notice;
         noticeEnabled = enabled;
     }
@@ -1009,38 +869,28 @@ public class Clan {
     }
 
     private void restoreSkills() {
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement(
-                        "SELECT skill_id,skill_level,sub_pledge_id FROM clan_skills WHERE clan_id=?")) {
-            // Retrieve all skills of this Player from the database.
-            ps.setInt(1, this.id);
-            try (ResultSet rset = ps.executeQuery()) {
-                // Go though the recordset of this SQL query.
-                while (rset.next()) {
-                    final int id = rset.getInt("skill_id");
-                    final int level = rset.getInt("skill_level");
+        for (ClanSkill row : ClanTable.getInstance().findSkills(id)) {
+            final Skill skill = SkillData.getInstance().getSkill(row.skillId(), row.skillLevel());
+            if (skill == null) {
+                log.warn(
+                        "Missing skill {} level {} for clan {}, skill skipped.", row.skillId(), row.skillLevel(), this);
+                continue;
+            }
 
-                    // Create a Skill object for each record.
-                    final Skill skill = SkillData.getInstance().getSkill(id, level);
-
-                    // Add the Skill object to the Clan skills.
-                    final int subType = rset.getInt("sub_pledge_id");
-                    if (subType == -2) {
-                        skills.put(skill.getId(), skill);
-                    } else if (subType == 0) {
-                        subPledgeSkills.put(skill.getId(), skill);
-                    } else {
-                        final SubPledge subunit = subPledges.get(subType);
-                        if (subunit != null) {
-                            subunit.addNewSkill(skill);
-                        } else {
-                            log.info("Missing subpledge {} for clan {}, skill skipped.", subType, this);
-                        }
-                    }
+            // Add the Skill object to the Clan skills.
+            final int subType = row.pledgeType();
+            if (subType == -2) {
+                skills.put(skill.getId(), skill);
+            } else if (subType == 0) {
+                subPledgeSkills.put(skill.getId(), skill);
+            } else {
+                final SubPledge subunit = subPledges.get(subType);
+                if (subunit != null) {
+                    subunit.addNewSkill(skill);
+                } else {
+                    log.info("Missing subpledge {} for clan {}, skill skipped.", subType, this);
                 }
             }
-        } catch (Exception e) {
-            log.error("Error restoring clan skills: {}", e.getMessage(), e);
         }
     }
 
@@ -1087,29 +937,7 @@ public class Clan {
                 oldSkill = subunit.addNewSkill(newSkill);
             }
 
-            try (Connection con = DatabaseFactory.getConnection()) {
-                if (oldSkill != null) {
-                    try (PreparedStatement ps = con.prepareStatement(
-                            "UPDATE clan_skills SET skill_level=? WHERE skill_id=? AND clan_id=?")) {
-                        ps.setInt(1, newSkill.getLevel());
-                        ps.setInt(2, oldSkill.getId());
-                        ps.setInt(3, id);
-                        ps.execute();
-                    }
-                } else {
-                    try (PreparedStatement ps = con.prepareStatement(
-                            "INSERT INTO clan_skills (clan_id,skill_id,skill_level,skill_name,sub_pledge_id) VALUES (?,?,?,?,?)")) {
-                        ps.setInt(1, id);
-                        ps.setInt(2, newSkill.getId());
-                        ps.setInt(3, newSkill.getLevel());
-                        ps.setString(4, newSkill.getName());
-                        ps.setInt(5, subType);
-                        ps.execute();
-                    }
-                }
-            } catch (Exception e) {
-                log.warn("Error could not store clan skills: {}", e.getMessage(), e);
-            }
+            ClanTable.getInstance().storeSkill(id, newSkill.getId(), newSkill.getLevel(), subType);
 
             final SystemMessage sm = new SystemMessage(SystemMessageId.THE_CLAN_SKILL_S1_HAS_BEEN_ADDED);
             sm.addSkillName(newSkill.getId());
@@ -1401,24 +1229,8 @@ public class Clan {
     }
 
     private void restoreSubPledges() {
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement(
-                        "SELECT sub_pledge_id,name,leader_id FROM clan_subpledges WHERE clan_id=?")) {
-            // Retrieve all subpledges of this clan from the database.
-            ps.setInt(1, this.id);
-            try (ResultSet rset = ps.executeQuery()) {
-                while (rset.next()) {
-                    final int id = rset.getInt("sub_pledge_id");
-                    final String name = rset.getString("name");
-                    final int leaderId = rset.getInt("leader_id");
-
-                    // Create a SubPledge object for each record.
-                    final SubPledge pledge = new SubPledge(id, name, leaderId);
-                    subPledges.put(id, pledge);
-                }
-            }
-        } catch (Exception e) {
-            log.warn("Could not restore clan sub-units: {}", e.getMessage(), e);
+        for (SubPledgeRow row : ClanTable.getInstance().findSubPledges(id)) {
+            subPledges.put(row.pledgeType(), new SubPledge(row.pledgeType(), row.name(), row.leaderId()));
         }
     }
 
@@ -1455,7 +1267,6 @@ public class Clan {
     }
 
     public SubPledge createSubPledge(Player player, int pledgeTypeValue, int leaderId, String subPledgeName) {
-        SubPledge subPledge = null;
         final int pledgeType = getAvailablePledgeTypes(pledgeTypeValue);
         if (pledgeType == 0) {
             if (pledgeType == SUBUNIT_ACADEMY) {
@@ -1481,31 +1292,20 @@ public class Clan {
             return null;
         }
 
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement(
-                        "INSERT INTO clan_subpledges (clan_id,sub_pledge_id,name,leader_id) values (?,?,?,?)")) {
-            ps.setInt(1, id);
-            ps.setInt(2, pledgeType);
-            ps.setString(3, subPledgeName);
-            ps.setInt(4, pledgeType != -1 ? leaderId : 0);
-            ps.execute();
+        ClanTable.getInstance().insertSubPledge(id, pledgeType, subPledgeName, pledgeType != -1 ? leaderId : 0);
+        final SubPledge subPledge = new SubPledge(pledgeType, subPledgeName, leaderId);
+        subPledges.put(pledgeType, subPledge);
 
-            subPledge = new SubPledge(pledgeType, subPledgeName, leaderId);
-            subPledges.put(pledgeType, subPledge);
-
-            if (pledgeType != -1) {
-                // Royal Guard 5000 points per each
-                // Order of Knights 10000 points per each
-                if (pledgeType < SUBUNIT_KNIGHT1) {
-                    setReputationScore(reputationScore - FeatureConfig.ROYAL_GUARD_COST);
-                } else {
-                    setReputationScore(reputationScore - FeatureConfig.KNIGHT_UNIT_COST);
-                    // TODO: clan lvl9 or more can reinforce knights cheaper if first knight unit already created, use
-                    // Config.KNIGHT_REINFORCE_COST
-                }
+        if (pledgeType != -1) {
+            // Royal Guard 5000 points per each
+            // Order of Knights 10000 points per each
+            if (pledgeType < SUBUNIT_KNIGHT1) {
+                setReputationScore(reputationScore - FeatureConfig.ROYAL_GUARD_COST);
+            } else {
+                setReputationScore(reputationScore - FeatureConfig.KNIGHT_UNIT_COST);
+                // TODO: clan lvl9 or more can reinforce knights cheaper if first knight unit already created, use
+                // Config.KNIGHT_REINFORCE_COST
             }
-        } catch (Exception e) {
-            log.error("Error saving sub clan data: {}", e.getMessage(), e);
         }
 
         broadcastToOnlineMembers(new PledgeShowInfoUpdate(leader.getClan()));
@@ -1545,47 +1345,18 @@ public class Clan {
     }
 
     public void updateSubPledgeInDB(int pledgeType) {
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement(
-                        "UPDATE clan_subpledges SET leader_id=?, name=? WHERE clan_id=? AND sub_pledge_id=?")) {
-            ps.setInt(1, getSubPledge(pledgeType).getLeaderId());
-            ps.setString(2, getSubPledge(pledgeType).getName());
-            ps.setInt(3, id);
-            ps.setInt(4, pledgeType);
-            ps.execute();
-        } catch (Exception e) {
-            log.error("Error updating subpledge: {}", e.getMessage(), e);
-        }
+        final SubPledge subPledge = getSubPledge(pledgeType);
+        ClanTable.getInstance().updateSubPledge(id, pledgeType, subPledge.getName(), subPledge.getLeaderId());
     }
 
     private void restoreRankPrivs() {
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps =
-                        con.prepareStatement("SELECT privs,`rank`,party FROM clan_privs WHERE clan_id=?")) {
-            // Retrieve all skills of this Player from the database.
-            ps.setInt(1, id);
-            // LOGGER.warning("clanPrivs restore for ClanId : "+getClanId());
-            try (ResultSet rset = ps.executeQuery()) {
-                // Go though the recordset of this SQL query.
-                while (rset.next()) {
-                    final int rank = rset.getInt("rank");
-                    // Create a SubPledge object for each record.
-                    if (rank == -1) {
-                        continue;
-                    }
-
-                    // int party = rset.getInt("party");
-                    final int privileges = rset.getInt("privs");
-                    privs.get(rank).setPrivs(privileges);
-                }
-            }
-        } catch (Exception e) {
-            log.error("Error restoring clan privs by rank: {}", e.getMessage(), e);
+        for (RankPrivilege row : ClanTable.getInstance().findRankPrivileges(id)) {
+            privs.get(row.powerGrade()).setPrivs(row.privilegeMask());
         }
     }
 
     public void initializePrivs() {
-        for (int i = 1; i < 10; i++) {
+        for (int i = MIN_POWER_GRADE; i <= MAX_POWER_GRADE; i++) {
             privs.put(i, new RankPrivs(i, 0, new ClanPrivileges()));
         }
     }
@@ -1594,47 +1365,25 @@ public class Clan {
         return privs.get(rank) != null ? privs.get(rank).getPrivs() : new ClanPrivileges();
     }
 
+    /**
+     * @param rank the power grade from the client; any value outside 1 to 9 is ignored
+     */
     public void setRankPrivs(int rank, int privs) {
-        if (this.privs.get(rank) != null) {
-            this.privs.get(rank).setPrivs(privs);
+        if ((rank < MIN_POWER_GRADE) || (rank > MAX_POWER_GRADE)) {
+            return;
+        }
 
-            try (Connection con = DatabaseFactory.getConnection();
-                    PreparedStatement ps = con.prepareStatement(
-                            "REPLACE INTO clan_privs (clan_id,`rank`,party,privs) VALUES (?,?,?,?)")) {
-                // Retrieve all skills of this Player from the database.
-                ps.setInt(1, id);
-                ps.setInt(2, rank);
-                ps.setInt(3, 0);
-                ps.setInt(4, privs);
-                ps.execute();
-            } catch (Exception e) {
-                log.warn("Could not store clan privs for rank: {}", e.getMessage(), e);
-            }
+        this.privs.get(rank).setPrivs(privs);
+        ClanTable.getInstance().storeRankPrivileges(id, rank, privs);
 
-            for (ClanMember cm : getMembers()) {
-                if (cm.isOnline() && (cm.getPowerGrade() == rank) && (cm.getPlayer() != null)) {
-                    cm.getPlayer().getClanPrivileges().setMask(privs);
-                    cm.getPlayer().updateUserInfo();
-                }
-            }
-
-            broadcastClanStatus();
-        } else {
-            this.privs.put(rank, new RankPrivs(rank, 0, privs));
-
-            try (Connection con = DatabaseFactory.getConnection();
-                    PreparedStatement ps = con.prepareStatement(
-                            "REPLACE INTO clan_privs (clan_id,`rank`,party,privs) VALUES (?,?,?,?)")) {
-                // Retrieve all skills of this Player from the database.
-                ps.setInt(1, id);
-                ps.setInt(2, rank);
-                ps.setInt(3, 0);
-                ps.setInt(4, privs);
-                ps.execute();
-            } catch (Exception e) {
-                log.warn("Could not create new rank and store clan privs for rank: {}", e.getMessage(), e);
+        for (ClanMember cm : getMembers()) {
+            if (cm.isOnline() && (cm.getPowerGrade() == rank) && (cm.getPlayer() != null)) {
+                cm.getPlayer().getClanPrivileges().setMask(privs);
+                cm.getPlayer().updateUserInfo();
             }
         }
+
+        broadcastClanStatus();
     }
 
     /**
@@ -1708,15 +1457,7 @@ public class Clan {
     public void setAuctionBiddedAt(int id, boolean storeInDb) {
         auctionBiddedAt = id;
         if (storeInDb) {
-            try (Connection con = DatabaseFactory.getConnection();
-                    PreparedStatement ps =
-                            con.prepareStatement("UPDATE clan_data SET auction_bid_at=? WHERE clan_id=?")) {
-                ps.setInt(1, id);
-                ps.setInt(2, this.id);
-                ps.execute();
-            } catch (Exception e) {
-                log.warn("Could not store auction for clan: {}", e.getMessage(), e);
-            }
+            ClanTable.getInstance().updateBidClanHall(this.id, id);
         }
     }
 
@@ -2210,14 +1951,7 @@ public class Clan {
     }
 
     public void changeLevel(int level) {
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement("UPDATE clan_data SET clan_level = ? WHERE clan_id = ?")) {
-            ps.setInt(1, level);
-            ps.setInt(2, id);
-            ps.execute();
-        } catch (Exception e) {
-            log.warn("could not increase clan level:{}", e.getMessage(), e);
-        }
+        ClanTable.getInstance().updateLevel(id, level);
 
         setLevel(level);
         setRank(ClanTable.getInstance().getClanRank(this));
@@ -2250,14 +1984,7 @@ public class Clan {
 
         setCrestId(crestId);
 
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement("UPDATE clan_data SET crest_id = ? WHERE clan_id = ?")) {
-            ps.setInt(1, crestId);
-            ps.setInt(2, id);
-            ps.executeUpdate();
-        } catch (SQLException e) {
-            log.warn("Could not update crest for clan {} [{}] : {}", name, id, e.getMessage(), e);
-        }
+        ClanTable.getInstance().updateCrest(id, crestId);
 
         for (Player member : getOnlineMembers(0)) {
             member.broadcastUserInfo();
@@ -2270,24 +1997,14 @@ public class Clan {
      * @param onlyThisClan
      */
     public void changeAllyCrest(int crestId, boolean onlyThisClan) {
-        String sqlStatement = "UPDATE clan_data SET ally_crest_id = ? WHERE clan_id = ?";
-        int allyId = id;
-        if (!onlyThisClan) {
+        if (onlyThisClan) {
+            ClanTable.getInstance().updateAllyCrest(id, crestId);
+        } else {
             if (allyCrestId != 0) {
                 CrestTable.getInstance().removeCrest(getAllyCrestId());
             }
 
-            sqlStatement = "UPDATE clan_data SET ally_crest_id = ? WHERE ally_id = ?";
-            allyId = this.allyId;
-        }
-
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement(sqlStatement)) {
-            ps.setInt(1, crestId);
-            ps.setInt(2, allyId);
-            ps.executeUpdate();
-        } catch (SQLException e) {
-            log.warn("Could not update ally crest for ally/clan id {} : {}", allyId, e.getMessage(), e);
+            ClanTable.getInstance().updateAllyCrestOfAlliance(allyId, crestId);
         }
 
         if (onlyThisClan) {
@@ -2316,15 +2033,7 @@ public class Clan {
 
         setCrestLargeId(crestId);
 
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps =
-                        con.prepareStatement("UPDATE clan_data SET crest_large_id = ? WHERE clan_id = ?")) {
-            ps.setInt(1, crestId);
-            ps.setInt(2, id);
-            ps.executeUpdate();
-        } catch (SQLException e) {
-            log.warn("Could not update large crest for clan {} [{}] : {}", name, id, e.getMessage(), e);
-        }
+        ClanTable.getInstance().updateLargeCrest(id, crestId);
 
         for (Player member : getOnlineMembers(0)) {
             member.broadcastUserInfo();

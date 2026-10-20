@@ -87,7 +87,6 @@ public class ConfigLoader {
         GeoEngineConfig.load();
         GraciaSeedsConfig.load();
         GrandBossConfig.load();
-        IdManagerConfig.load();
         NpcConfig.load();
         OlympiadConfig.load();
         PlayerConfig.load();

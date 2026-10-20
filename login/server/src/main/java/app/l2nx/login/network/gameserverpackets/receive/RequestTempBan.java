@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+/*
  * SPDX-FileCopyrightText: L2J Mobius contributors
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
@@ -19,34 +23,51 @@
  */
 package app.l2nx.login.network.gameserverpackets.receive;
 
+import app.l2nx.login.GameServerThread;
 import app.l2nx.login.controller.LoginController;
 import app.l2nx.network.packet.SimpleReadablePacket;
+import java.time.Duration;
+import java.util.UUID;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * @author mrTJO
  */
+@Slf4j
 public class RequestTempBan extends SimpleReadablePacket {
-    private final String accountName;
+    private final UUID accountId;
     private final String ip;
-    long banTime;
+    private final Duration duration;
 
-    public RequestTempBan(byte[] decrypt) {
+    public RequestTempBan(byte[] decrypt, GameServerThread server) {
         super(decrypt);
         readByte(); // Packet id, it is already processed.
 
-        accountName = readString();
-        ip = readString();
-        banTime = readLong();
+        accountId = new UUID(readLong(), readLong());
+        ip = StringUtils.trimToNull(readString());
+        duration = Duration.ofMinutes(readLong());
         final boolean haveReason = readByte() != 0;
         if (haveReason) {
             readString(); // _banReason
         }
 
-        banUser();
+        // The login server would read a non-positive length as a permanent address ban.
+        if (!duration.isPositive()) {
+            log.warn("Ignored a temporary ban of account {} with a non-positive length of {}.", accountId, duration);
+            return;
+        }
+
+        // A game server may only ban an account it holds.
+        if (server.hasAccountOnGameServer(accountId)) {
+            banUser();
+        }
     }
 
     private void banUser() {
-        LoginController.getInstance().setAccountTempBan(accountName, banTime);
-        LoginController.getInstance().addBanForAddress(ip, banTime);
+        LoginController.getInstance().setAccountTempBan(accountId, duration);
+        if (ip != null) {
+            LoginController.getInstance().addBanForAddress(ip, duration.toMillis());
+        }
     }
 }

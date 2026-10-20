@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+/*
  * SPDX-FileCopyrightText: L2J Mobius contributors
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
@@ -24,14 +28,13 @@ import app.l2nx.highfive.LoginServerThread.SessionKey;
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.config.ServerConfig;
-import app.l2nx.highfive.config.custom.WeddingConfig;
 import app.l2nx.highfive.data.sql.CharInfoTable;
 import app.l2nx.highfive.data.sql.ClanTable;
-import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.data.xml.SecondaryAuthData;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.clan.Clan;
+import app.l2nx.highfive.managers.PlayerPersistenceManager;
 import app.l2nx.highfive.network.holders.CharacterInfoHolder;
 import app.l2nx.highfive.network.holders.ClientHardwareInfoHolder;
 import app.l2nx.highfive.network.serverpackets.LeaveWorld;
@@ -43,16 +46,15 @@ import app.l2nx.highfive.util.FloodProtectors;
 import app.l2nx.network.Client;
 import app.l2nx.network.buffer.ReadBuffer;
 import app.l2nx.network.buffer.WriteBuffer;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.locks.ReentrantLock;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataAccessException;
 
 /**
  * Represents a client connected on GameServer.
@@ -81,6 +83,10 @@ public class GameClient extends Client<app.l2nx.network.Connection<GameClient>> 
 
     @Getter
     private String accountName;
+
+    // Null until the login server accepts the session; packets to the login server name the account by it.
+    @Getter
+    private UUID accountId;
 
     @Getter
     @Setter
@@ -130,7 +136,8 @@ public class GameClient extends Client<app.l2nx.network.Connection<GameClient>> 
     @Override
     public void onDisconnection() {
         ACCOUNTING_LOG.trace("Client disconnected: {}", this);
-        LoginServerThread.getInstance().sendLogout(accountName);
+        LoginServerThread.getInstance().removeWaitingClient(this);
+        LoginServerThread.getInstance().sendLogout(accountName, accountId);
         if ((player == null) || !player.isInOfflineMode()) {
             Disconnection.of(this).onDisconnection();
         }
@@ -188,6 +195,10 @@ public class GameClient extends Client<app.l2nx.network.Connection<GameClient>> 
 
     public void setAccountName(String accountName) {
         this.accountName = accountName;
+    }
+
+    public void setAccountId(UUID accountId) {
+        this.accountId = accountId;
         if (SecondaryAuthData.getInstance().isEnabled()) {
             secondaryAuth = new SecondaryPasswordAuth(this);
         }
@@ -226,45 +237,37 @@ public class GameClient extends Client<app.l2nx.network.Connection<GameClient>> 
             return -1;
         }
 
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement statement = con.prepareStatement("SELECT clanId FROM characters WHERE charId=?")) {
-            statement.setInt(1, objectId);
+        try {
             byte answer = 0;
-            try (ResultSet rs = statement.executeQuery()) {
-                final int clanId = rs.next() ? rs.getInt(1) : 0;
-                if (clanId != 0) {
-                    final Clan clan = ClanTable.getInstance().getClan(clanId);
-                    if (clan == null) {
-                        answer = 0; // jeezes!
-                    } else if (clan.getLeaderId() == objectId) {
-                        answer = 2;
-                    } else {
-                        answer = 1;
-                    }
-                }
-
-                // Setting delete time
-                if (answer == 0) {
-                    if (PlayerConfig.DELETE_DAYS == 0) {
-                        deleteCharByObjId(objectId);
-                    } else {
-                        try (PreparedStatement ps2 =
-                                con.prepareStatement("UPDATE characters SET deletetime=? WHERE charId=?")) {
-                            ps2.setLong(
-                                    1,
-                                    ClockBridge.wallMillis()
-                                            + (PlayerConfig.DELETE_DAYS * 86400000L)); // 24*60*60*1000 = 86400000
-                            ps2.setInt(2, objectId);
-                            ps2.execute();
-                        }
-                    }
-
-                    ACCOUNTING_LOG.info("Delete, {}, {}", objectId, this);
+            final int clanId = PlayerPersistenceManager.getInstance().findClanId(objectId);
+            if (clanId != 0) {
+                final Clan clan = ClanTable.getInstance().getClan(clanId);
+                if (clan == null) {
+                    answer = 0; // jeezes!
+                } else if (clan.getLeaderId() == objectId) {
+                    answer = 2;
+                } else {
+                    answer = 1;
                 }
             }
 
+            // Setting delete time
+            if (answer == 0) {
+                if (PlayerConfig.DELETE_DAYS == 0) {
+                    deleteCharByObjId(objectId);
+                } else {
+                    PlayerPersistenceManager.getInstance()
+                            .updateDeleteTime(
+                                    objectId,
+                                    ClockBridge.wallMillis()
+                                            + (PlayerConfig.DELETE_DAYS * 86400000L)); // 24*60*60*1000 = 86400000
+                }
+
+                ACCOUNTING_LOG.info("Delete, {}, {}", objectId, this);
+            }
+
             return answer;
-        } catch (Exception e) {
+        } catch (DataAccessException e) {
             log.error("Error updating delete time of character.", e);
             return -1;
         }
@@ -276,12 +279,9 @@ public class GameClient extends Client<app.l2nx.network.Connection<GameClient>> 
             return;
         }
 
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement statement =
-                        con.prepareStatement("UPDATE characters SET deletetime=0 WHERE charId=?")) {
-            statement.setInt(1, objectId);
-            statement.execute();
-        } catch (Exception e) {
+        try {
+            PlayerPersistenceManager.getInstance().updateDeleteTime(objectId, 0);
+        } catch (DataAccessException e) {
             log.error("Error restoring character.", e);
         }
 
@@ -293,141 +293,14 @@ public class GameClient extends Client<app.l2nx.network.Connection<GameClient>> 
             return;
         }
 
-        CharInfoTable.getInstance().removeName(objectId);
-
-        try (Connection con = DatabaseFactory.getConnection()) {
-            try (PreparedStatement ps =
-                    con.prepareStatement("DELETE FROM character_contacts WHERE charId=? OR contactId=?")) {
-                ps.setInt(1, objectId);
-                ps.setInt(2, objectId);
-                ps.execute();
-            }
-
-            try (PreparedStatement ps =
-                    con.prepareStatement("DELETE FROM character_friends WHERE charId=? OR friendId=?")) {
-                ps.setInt(1, objectId);
-                ps.setInt(2, objectId);
-                ps.execute();
-            }
-
-            try (PreparedStatement ps = con.prepareStatement("DELETE FROM character_hennas WHERE charId=?")) {
-                ps.setInt(1, objectId);
-                ps.execute();
-            }
-
-            try (PreparedStatement ps = con.prepareStatement("DELETE FROM character_macroses WHERE charId=?")) {
-                ps.setInt(1, objectId);
-                ps.execute();
-            }
-
-            try (PreparedStatement ps = con.prepareStatement("DELETE FROM character_quests WHERE charId=?")) {
-                ps.setInt(1, objectId);
-                ps.execute();
-            }
-
-            try (PreparedStatement ps = con.prepareStatement("DELETE FROM character_recipebook WHERE charId=?")) {
-                ps.setInt(1, objectId);
-                ps.execute();
-            }
-
-            try (PreparedStatement ps = con.prepareStatement("DELETE FROM character_shortcuts WHERE charId=?")) {
-                ps.setInt(1, objectId);
-                ps.execute();
-            }
-
-            try (PreparedStatement ps = con.prepareStatement("DELETE FROM character_skills WHERE charId=?")) {
-                ps.setInt(1, objectId);
-                ps.execute();
-            }
-
-            try (PreparedStatement ps = con.prepareStatement("DELETE FROM character_skills_save WHERE charId=?")) {
-                ps.setInt(1, objectId);
-                ps.execute();
-            }
-
-            try (PreparedStatement ps = con.prepareStatement("DELETE FROM character_subclasses WHERE charId=?")) {
-                ps.setInt(1, objectId);
-                ps.execute();
-            }
-
-            try (PreparedStatement ps = con.prepareStatement("DELETE FROM character_summons WHERE ownerId=?")) {
-                ps.setInt(1, objectId);
-                ps.execute();
-            }
-
-            try (PreparedStatement ps = con.prepareStatement("DELETE FROM heroes WHERE charId=?")) {
-                ps.setInt(1, objectId);
-                ps.execute();
-            }
-
-            try (PreparedStatement ps = con.prepareStatement("DELETE FROM olympiad_nobles WHERE charId=?")) {
-                ps.setInt(1, objectId);
-                ps.execute();
-            }
-
-            try (PreparedStatement ps = con.prepareStatement("DELETE FROM seven_signs WHERE charId=?")) {
-                ps.setInt(1, objectId);
-                ps.execute();
-            }
-
-            try (PreparedStatement ps = con.prepareStatement(
-                    "DELETE FROM pets WHERE item_obj_id IN (SELECT object_id FROM items WHERE items.owner_id=?)")) {
-                ps.setInt(1, objectId);
-                ps.execute();
-            }
-
-            try (PreparedStatement ps = con.prepareStatement(
-                    "DELETE FROM item_attributes WHERE itemId IN (SELECT object_id FROM items WHERE items.owner_id=?)")) {
-                ps.setInt(1, objectId);
-                ps.execute();
-            }
-
-            try (PreparedStatement ps = con.prepareStatement("DELETE FROM items WHERE owner_id=?")) {
-                ps.setInt(1, objectId);
-                ps.execute();
-            }
-
-            try (PreparedStatement ps = con.prepareStatement("DELETE FROM merchant_lease WHERE player_id=?")) {
-                ps.setInt(1, objectId);
-                ps.execute();
-            }
-
-            try (PreparedStatement ps = con.prepareStatement("DELETE FROM character_raid_points WHERE charId=?")) {
-                ps.setInt(1, objectId);
-                ps.execute();
-            }
-
-            try (PreparedStatement ps = con.prepareStatement("DELETE FROM character_reco_bonus WHERE charId=?")) {
-                ps.setInt(1, objectId);
-                ps.execute();
-            }
-
-            try (PreparedStatement ps = con.prepareStatement("DELETE FROM character_instance_time WHERE charId=?")) {
-                ps.setInt(1, objectId);
-                ps.execute();
-            }
-
-            try (PreparedStatement ps = con.prepareStatement("DELETE FROM character_variables WHERE charId=?")) {
-                ps.setInt(1, objectId);
-                ps.execute();
-            }
-
-            try (PreparedStatement ps = con.prepareStatement("DELETE FROM characters WHERE charId=?")) {
-                ps.setInt(1, objectId);
-                ps.execute();
-            }
-
-            if (WeddingConfig.ALLOW_WEDDING) {
-                try (PreparedStatement ps =
-                        con.prepareStatement("DELETE FROM mods_wedding WHERE player1Id = ? OR player2Id = ?")) {
-                    ps.setInt(1, objectId);
-                    ps.setInt(2, objectId);
-                    ps.execute();
-                }
-            }
-        } catch (Exception e) {
-            log.error("Error deleting character.", e);
+        try {
+            PlayerPersistenceManager.getInstance().deleteCharacter(objectId);
+        } catch (DataAccessException e) {
+            log.error("Error deleting character {}.", objectId, e);
+            return;
         }
+
+        CharInfoTable.getInstance().removeName(objectId);
     }
 
     public Player load(int characterSlot) {

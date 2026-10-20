@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+/*
  * SPDX-FileCopyrightText: L2J Mobius contributors
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
@@ -26,44 +30,47 @@ import app.l2nx.highfive.mechanics.announce.AutoAnnouncement;
 import app.l2nx.highfive.mechanics.announce.IAnnouncement;
 import app.l2nx.highfive.network.enums.ChatType;
 import app.l2nx.highfive.network.serverpackets.CreatureSay;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.Statement;
+import app.l2nx.highfive.repository.world.AnnouncementRepository;
+import app.l2nx.highfive.repository.world.model.AnnouncementRow;
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ConcurrentSkipListMap;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataAccessException;
+import org.springframework.stereotype.Component;
 
 /**
  * Loads announcements from database.
  * @author UnAfraid
  */
 @Slf4j
+@Component
 public class AnnouncementsTable {
+    private static volatile AnnouncementsTable instance;
 
     private final Map<Integer, IAnnouncement> announcements = new ConcurrentSkipListMap<>();
 
-    protected AnnouncementsTable() {
-        load();
+    private final AnnouncementRepository announcementRepository;
+
+    public AnnouncementsTable(AnnouncementRepository announcementRepository) {
+        this.announcementRepository = announcementRepository;
+        instance = this;
     }
 
-    private void load() {
+    public void load() {
         announcements.clear();
-        try (Connection con = DatabaseFactory.getConnection();
-                Statement st = con.createStatement();
-                ResultSet rset = st.executeQuery("SELECT * FROM announcements")) {
-            while (rset.next()) {
-                final AnnouncementType type = AnnouncementType.findById(rset.getInt("type"));
+        try {
+            for (AnnouncementRow row : announcementRepository.findAll()) {
                 final Announcement announce;
-                switch (type) {
+                switch (row.type()) {
                     case NORMAL:
                     case CRITICAL: {
-                        announce = new Announcement(rset);
+                        announce = new Announcement(row);
                         break;
                     }
                     case AUTO_NORMAL:
                     case AUTO_CRITICAL: {
-                        announce = new AutoAnnouncement(rset);
+                        announce = new AutoAnnouncement(row);
                         break;
                     }
                     default: {
@@ -73,9 +80,21 @@ public class AnnouncementsTable {
 
                 announcements.put(announce.getId(), announce);
             }
-        } catch (Exception e) {
+        } catch (DataAccessException e) {
             log.warn("Failed loading announcements:", e);
         }
+    }
+
+    public int insert(AnnouncementRow announcement) {
+        return announcementRepository.insert(announcement);
+    }
+
+    public void update(AnnouncementRow announcement) {
+        announcementRepository.update(announcement);
+    }
+
+    public void delete(int id) {
+        announcementRepository.delete(id);
     }
 
     /**
@@ -140,14 +159,12 @@ public class AnnouncementsTable {
         return announcements.values();
     }
 
-    /**
-     * @return Single instance of {@link AnnouncementsTable}
-     */
+    // TODO: callers receive the bean through their constructor (#41).
     public static AnnouncementsTable getInstance() {
-        return SingletonHolder.INSTANCE;
-    }
-
-    private static class SingletonHolder {
-        protected static final AnnouncementsTable INSTANCE = new AnnouncementsTable();
+        final AnnouncementsTable current = instance;
+        if (current == null) {
+            throw new IllegalStateException("AnnouncementsTable is used before the Spring context created it.");
+        }
+        return current;
     }
 }

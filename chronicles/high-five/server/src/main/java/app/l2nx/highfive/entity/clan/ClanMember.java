@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -22,20 +26,16 @@
  */
 package app.l2nx.highfive.entity.clan;
 
-import app.l2nx.highfive.data.sql.DatabaseFactory;
+import app.l2nx.highfive.data.sql.ClanTable;
 import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.actor.enums.player.Sex;
 import app.l2nx.highfive.managers.SiegeManager;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import app.l2nx.highfive.repository.character.model.CharacterClanMember;
 import lombok.Getter;
-import lombok.extern.slf4j.Slf4j;
 
 /**
  * This class holds the clan members data.
  */
-@Slf4j
 public class ClanMember {
 
     @Getter
@@ -60,26 +60,25 @@ public class ClanMember {
     /**
      * Used to restore a clan member from the database.
      * @param clan the clan where the clan member belongs.
-     * @param clanMember the clan member result set
-     * @throws SQLException if the columnLabel is not valid or a database error occurs
+     * @param clanMember the stored clan member
      */
-    public ClanMember(Clan clan, ResultSet clanMember) throws SQLException {
+    public ClanMember(Clan clan, CharacterClanMember clanMember) {
         if (clan == null) {
             throw new IllegalArgumentException("Cannot create a Clan Member with a null clan.");
         }
 
         this.clan = clan;
-        name = clanMember.getString("char_name");
-        level = clanMember.getInt("level");
-        classId = clanMember.getInt("classid");
-        objectId = clanMember.getInt("charId");
-        pledgeType = clanMember.getInt("subpledge");
-        title = clanMember.getString("title");
-        powerGrade = clanMember.getInt("power_grade");
-        apprentice = clanMember.getInt("apprentice");
-        sponsor = clanMember.getInt("sponsor");
-        sex = clanMember.getInt("sex") != 0;
-        raceOrdinal = clanMember.getInt("race");
+        name = clanMember.name();
+        level = clanMember.level();
+        classId = clanMember.classId();
+        objectId = clanMember.objectId();
+        pledgeType = clanMember.pledgeType();
+        title = clanMember.title();
+        powerGrade = clanMember.powerGrade();
+        apprentice = clanMember.apprenticeId();
+        sponsor = clanMember.sponsorId();
+        sex = clanMember.sex() == Sex.FEMALE;
+        raceOrdinal = clanMember.race().ordinal();
     }
 
     /**
@@ -215,14 +214,7 @@ public class ClanMember {
      * Update pledge type.
      */
     public void updatePledgeType() {
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement("UPDATE characters SET subpledge=? WHERE charId=?")) {
-            ps.setLong(1, pledgeType);
-            ps.setInt(2, getObjectId());
-            ps.execute();
-        } catch (Exception e) {
-            log.warn("Could not update pledge type: {}", e.getMessage(), e);
-        }
+        ClanTable.getInstance().updateMemberPledgeType(getObjectId(), pledgeType);
     }
 
     /**
@@ -251,14 +243,7 @@ public class ClanMember {
      * Update the characters table of the database with power grade.
      */
     public void updatePowerGrade() {
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement("UPDATE characters SET power_grade=? WHERE charId=?")) {
-            ps.setLong(1, powerGrade);
-            ps.setInt(2, getObjectId());
-            ps.execute();
-        } catch (Exception e) {
-            log.warn("Could not update power _grade: {}", e.getMessage(), e);
-        }
+        ClanTable.getInstance().updateMemberPowerGrade(getObjectId(), powerGrade);
     }
 
     /**
@@ -654,15 +639,6 @@ public class ClanMember {
      * @param sponsor the sponsor
      */
     public void saveApprenticeAndSponsor(int apprentice, int sponsor) {
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps =
-                        con.prepareStatement("UPDATE characters SET apprentice=?,sponsor=? WHERE charId=?")) {
-            ps.setInt(1, apprentice);
-            ps.setInt(2, sponsor);
-            ps.setInt(3, getObjectId());
-            ps.execute();
-        } catch (SQLException e) {
-            log.warn("Could not save apprentice/sponsor: {}", e.getMessage(), e);
-        }
+        ClanTable.getInstance().updateMemberApprenticeAndSponsor(getObjectId(), apprentice, sponsor);
     }
 }

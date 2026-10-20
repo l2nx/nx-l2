@@ -5,8 +5,13 @@ spring:
   application:
     name: game-server
   datasource:
+    username: l2nx_game
     hikari:
       maximum-pool-size: 100
 
 server:
   port: 8777
+
+l2nx:
+  database:
+    schema: game

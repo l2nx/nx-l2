@@ -2,7 +2,8 @@
 
 How the servers lay out their data in PostgreSQL, how the schema evolves and how code reaches it. Why PostgreSQL:
 [spec 001 §5.1](001-project-design.md#51-database). Identity, value transactions and write-behind:
-[spec 003, persistence](003-engine-core/persistence.md). Introduced at stage 3 (spec 001 §11).
+[spec 003, persistence](003-engine-core/persistence.md). Introduced at stage 3 (spec 001 §11), which moved both
+servers from MariaDB.
 
 ## 1. One database, a schema per server
 
@@ -22,16 +23,19 @@ How the servers lay out their data in PostgreSQL, how the schema evolves and how
   UUID and login; every game→login packet that names an account (`PlayerInGame`, `PlayerLogout`, `ChangeAccessLevel`,
   `RequestTempBan`, `PlayerTracert`, ...) addresses it by UUID. The game schema stores `account_id uuid` without a
   foreign key and does not store the login: a character is created only for the account of the session. An admin
-  command that names an account by login is resolved by the login server. The protocol changes together with the game
-  server's switch (§7).
+  command acting on an account names one of its characters; the game server takes the account from
+  `characters.account_id`, so it needs no lookup on the login server. The protocol changes together with the game
+  server's switch (§7). A login server accepts an account-changing packet (password, temporary ban, tracert) only for
+  an account that is on the game server that sent it.
 - **A role per server** (`l2nx_login`, `l2nx_game_1`, ...) owns only its schema. A local development setup may use
   one role.
 - **The operator creates the roles and schemas,** not the server: creating them is a DBA operation, and a server role
   with `CREATE` on the database would hold a privilege it needs once. `compose.yaml` does it with an init script for
   local runs; the public install page gives the SQL.
-- **Session timeouts come from the server, not the role:** the JDBC URL in the shared defaults passes
-  `options=-c idle_in_transaction_session_timeout=60s`, so a connection left in a transaction cannot hold locks
-  indefinitely whatever the role is. Hikari keeps `auto-commit=true`; transactions are opened explicitly (§5).
+- **Session timeouts come from the server, not the role:** the shared defaults pass the pgjdbc property
+  `options=-c idle_in_transaction_session_timeout=60s` through `spring.datasource.hikari.data-source-properties`, so it
+  survives an operator's own JDBC URL and a connection left in a transaction cannot hold locks indefinitely whatever
+  the role is. Hikari keeps `auto-commit=true`; transactions are opened explicitly (§5).
 
 ## 2. Migrations
 
@@ -47,7 +51,8 @@ How the servers lay out their data in PostgreSQL, how the schema evolves and how
 - **Changes to a populated table** start with `SET LOCAL lock_timeout = '5s'` (a session-level `SET` would stay on the
   pooled connection after the migration) and add constraints `NOT VALID` first; indexes on populated tables are built
   `CONCURRENTLY` in a changeset with `runInTransaction:false`.
-- **Before 1.0 there is one baseline per server** (`000-baseline.sql`) and it is edited in place; there are no
+- **Before 1.0 there is one baseline per server** (`000-baseline.sql`: changeset `NNN-baseline` for the schema,
+  `NNN-seed` for the seeded rows) and it is edited in place; there are no
   migrations on top. Upgrading between pre-1.0 versions means recreating the database, and release notes say so. A
   Liquibase checksum error on an existing pre-1.0 database means exactly this.
 - **From 1.0 the baseline is frozen.** Changes are new `NNN-<name>.sql` files, applied changesets are never edited,
@@ -69,9 +74,20 @@ later, together with the module that owns them.
   - entities (accounts, characters, clans, items, mail, ...) are keyed by UUIDv7
     ([persistence §1](003-engine-core/persistence.md#1-persistent-identity));
   - the state of a datapack object (a castle, a raid boss, a territory) is keyed by its datapack `int` id (§4);
+  - a row that is not an entity of its own gets a generated identity: `integer` when the client sees the id or a
+    bypass carries it (crests, forums, topics, item auctions, lotteries, announcements, community board favourites),
+    `bigint` otherwise. A crest id is never reused: the client caches crest images by id;
   - a seeded row with a UUID key gets a literal UUID in the changeset.
 - **Stored references to an object id** (shortcuts, pet ↔ control item, mail attachments, auction items) store the
   UUID and resolve the wire handle on load.
+- **Handles at the database boundary.** Game code keeps addressing objects by their wire handle; the
+  `IdentityRegistry` (`engine/core`, package `app.l2nx.engine.core.identity`, with the UUIDv7 generator and the
+  wire-handle allocator) maps the UUID of every loaded or referenced entity to its handle, and repositories
+  translate. A new entity gets its UUID at its first insert. A reference to another entity takes that entity's
+  existing UUID and never mints one: a released handle cannot turn into a new identity.
+- **Hot tables** (`items`, `characters`, `character_variables`, `item_variables`, `character_skill_saves`) have
+  `fillfactor = 80` and `autovacuum_vacuum_scale_factor = 0.05`: room for updates in place, and vacuum keeps up with
+  the steady stream of small updates.
 - **Constraints:** foreign keys inside a schema, each with an index on the referencing column; `CHECK` on value
   ranges; a missing value is `NULL` with `CHECK (col <> '')` on text columns. Every imported `DEFAULT ''` becomes a
   nullable column or a required one; `gameservers.host` is dropped, nothing reads it.
@@ -87,7 +103,7 @@ later, together with the module that owns them.
 
 - **The database holds world state only.** Data authored by designers lives in the datapack: spawn points of raid
   bosses, grand bosses, fortresses and territories, random spawns, siege guards of castles, fortresses and clan
-  halls, herb drop groups, Dimensional Rift rooms, and the static attributes of castles, fortresses, clan halls,
+  halls, Dimensional Rift rooms, and the static attributes of castles, fortresses, clan halls,
   siegable clan halls and territories (names, locations, grades, lease) are XML files loaded at start.
 - **Tables that mixed both keep only the state,** keyed by the datapack id:
 
@@ -107,15 +123,20 @@ later, together with the module that owns them.
 - **State rows are created by an upsert on first write,** not seeded: the datapack stays the only list of castles,
   bosses and halls. Mercenaries placed by a castle owner are player state and stay in their table.
 - **Spawns are not edited at run time.** The admin commands that wrote spawns into the database or the datapack
-  files are removed: `admin_recall_npc`, `admin_delete`, `admin_delete_group`, `admin_deleteNpcByObjectId`, together
-  with the spawn-writing paths of `RaidBossSpawnManager` and `SpawnData`. A permanent spawn is a datapack change.
-- **Liquibase seeds only state that is not tied to the datapack:** the Seven Signs status row and the root forums.
-  The imported welcome row in `announcements` is not seeded.
+  files are removed: `admin_recall_npc`, `admin_delete`, `admin_delete_group`, `admin_deleteNpcByObjectId`,
+  `admin_add_guard`, together with the spawn-writing paths of `RaidBossSpawnManager`, `SiegeGuardManager` and
+  `SpawnData`. An NPC spawned by a GM lives until restart; a permanent spawn is a datapack change.
+- **Liquibase seeds only state that is not tied to the datapack:** the Seven Signs status row, the root forums and
+  the initial Hellbound level and trust (Hellbound starts open, as upstream ships it). The imported welcome row in
+  `announcements` is not seeded. The imported herb drop groups were never read and are dropped.
 - The new loaders use the datapack loader in use at the time; [#22](https://github.com/l2nx/nx-l2/issues/22) moves
   them with the others.
 
 ## 5. Access from code
 
+- **`libs/database`** holds what both servers share about the database and nothing else: the schema check that runs
+  before Liquibase, the `Instant` ↔ `timestamptz` bridge, and the PostgreSQL test fixtures. `libs/boot` stays Spring
+  Boot wiring.
 - **Repositories** are `@Repository` beans on `JdbcClient` in the server module, one per owning table or group of
   tables, as in the login server. No SQL outside a repository; `DatabaseFactory` is removed.
 - **A `getInstance()` singleton whose SQL moves into a repository becomes a bean in the same change.** Its
@@ -128,24 +149,18 @@ later, together with the module that owns them.
 - **Scripts own no SQL.** The tables used by scripts (transmogrification, birthdays, community board, conquerable
   halls, admin commands) get repositories and an owning bean in the server module; scripts call that bean through
   its bridge, and through `ScriptContext` once it exists.
-- **Writes that belong together run in one transaction** (`TransactionTemplate`): a character save, the
-  DELETE + INSERT pairs of skills and shortcuts. Item and currency transfers get their transaction, ledger and
-  outbox in E3.
+- **Writes that belong together run in one transaction:** a write inside one repository (the DELETE + INSERT pairs
+  of skills, effects and shortcuts) is a `@Transactional` repository method; a write across repositories (a
+  character save with its subclasses, a character deletion with its mail) runs in the owning bean's
+  `TransactionTemplate`. In-memory changes that follow such a write are applied after the commit, so a rollback
+  leaves memory as it was. Item and currency transfers get their transaction, ledger and outbox in E3.
 
 ## 6. Tests
 
-- Testcontainers PostgreSQL; the base class lives in the shared test fixtures of `libs/boot`.
+- Testcontainers PostgreSQL; the container and per-test schemas come from the test fixtures of `libs/database`.
 - Every repository method has an integration test.
 - Each changelog bootstraps from an empty database.
 - Two game schemas with two roles in one database migrate independently, and neither role can read the other's
   tables.
 - The boot smoke tests of both servers run on PostgreSQL.
 - The static data loaders load the whole datapack.
-
-## 7. Rollout (stage 3)
-
-The login server moves first; the game server moves in one switch, since a schema keyed by UUIDv7 cannot be loaded
-without the wire-handle allocator. The switch carries the game baseline, identity
-([persistence §1–2](003-engine-core/persistence.md); UUID generation and the handle allocator live in `engine/core`,
-package `app.l2nx.engine.core.identity`), the repositories, the static data move and the account UUID in
-the login↔game protocol.

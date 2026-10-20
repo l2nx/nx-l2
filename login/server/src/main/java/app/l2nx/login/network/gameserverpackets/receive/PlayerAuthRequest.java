@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -26,6 +30,7 @@ package app.l2nx.login.network.gameserverpackets.receive;
 import app.l2nx.login.GameServerThread;
 import app.l2nx.login.controller.LoginController;
 import app.l2nx.login.controller.SessionKey;
+import app.l2nx.login.network.LoginClient;
 import app.l2nx.login.network.gameserverpackets.send.PlayerAuthResponse;
 import app.l2nx.network.packet.SimpleReadablePacket;
 
@@ -44,20 +49,20 @@ public class PlayerAuthRequest extends SimpleReadablePacket {
         super(decrypt);
         readByte(); // Packet id, it is already processed.
 
-        final String account = readString();
+        final String login = readString();
         final int playKey1 = readInt();
         final int playKey2 = readInt();
         final int loginKey1 = readInt();
         final int loginKey2 = readInt();
 
         final SessionKey sessionKey = new SessionKey(loginKey1, loginKey2, playKey1, playKey2);
-        final SessionKey storedKey = LoginController.getInstance().getKeyForAccount(account);
+        final LoginClient client = LoginController.getInstance().getAuthedClientByLogin(login);
 
-        if ((storedKey != null) && storedKey.equals(sessionKey)) {
-            LoginController.getInstance().removeAuthedLoginClient(account);
-            server.sendPacket(new PlayerAuthResponse(account, true));
+        if ((client != null) && sessionKey.equals(client.getSessionKey())) {
+            LoginController.getInstance().removeAuthedLoginClient(client.getAccountId());
+            server.sendPacket(PlayerAuthResponse.accepted(login, client.getAccountId()));
         } else {
-            server.sendPacket(new PlayerAuthResponse(account, false));
+            server.sendPacket(PlayerAuthResponse.rejected(login));
         }
     }
 }

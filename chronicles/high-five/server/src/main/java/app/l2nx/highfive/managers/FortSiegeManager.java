@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -22,7 +26,6 @@
  */
 package app.l2nx.highfive.managers;
 
-import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.entity.WorldObject;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.clan.Clan;
@@ -34,12 +37,10 @@ import app.l2nx.highfive.mechanics.siege.FortSpawnHolder;
 import app.l2nx.highfive.mechanics.skill.CommonSkill;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
+import app.l2nx.highfive.repository.siege.FortSiegeClanRepository;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -48,9 +49,13 @@ import java.util.StringTokenizer;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataAccessException;
+import org.springframework.stereotype.Component;
 
 @Slf4j
+@Component
 public class FortSiegeManager {
+    private static volatile FortSiegeManager instance;
 
     private static final String FORTSIEGE_CONFIG_FILE = "./config/FortSiege.ini";
 
@@ -80,8 +85,11 @@ public class FortSiegeManager {
     @Getter
     private final List<FortSiege> sieges = new ArrayList<>();
 
-    protected FortSiegeManager() {
-        load();
+    private final FortSiegeClanRepository siegeClanRepository;
+
+    public FortSiegeManager(FortSiegeClanRepository siegeClanRepository) {
+        this.siegeClanRepository = siegeClanRepository;
+        instance = this;
     }
 
     public void addSiegeSkills(Player character) {
@@ -99,23 +107,12 @@ public class FortSiegeManager {
             return false;
         }
 
-        boolean register = false;
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps =
-                        con.prepareStatement("SELECT clan_id FROM fortsiege_clans where clan_id=? and fort_id=?")) {
-            ps.setInt(1, clan.getId());
-            ps.setInt(2, fortid);
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    register = true;
-                    break;
-                }
-            }
-        } catch (Exception e) {
+        try {
+            return siegeClanRepository.exists(fortid, clan.getId());
+        } catch (DataAccessException e) {
             log.warn("Exception: checkIsRegistered(): {}", e.getMessage(), e);
+            return false;
         }
-
-        return register;
     }
 
     public void removeSiegeSkills(Player character) {
@@ -123,7 +120,7 @@ public class FortSiegeManager {
         character.removeSkill(CommonSkill.BUILD_HEADQUARTERS.getSkill());
     }
 
-    private void load() {
+    public void load() {
         final Properties siegeSettings = new Properties();
         final File file = new File(FORTSIEGE_CONFIG_FILE);
         try (InputStream is = new FileInputStream(file)) {
@@ -283,11 +280,50 @@ public class FortSiegeManager {
         }
     }
 
-    public static FortSiegeManager getInstance() {
-        return SingletonHolder.INSTANCE;
+    public List<Integer> findSiegeClanIds(int fortId) {
+        try {
+            return siegeClanRepository.findClanIdsByFort(fortId);
+        } catch (DataAccessException e) {
+            log.warn("Exception: loadSiegeClan(): {}", e.getMessage(), e);
+            return List.of();
+        }
     }
 
-    private static class SingletonHolder {
-        protected static final FortSiegeManager INSTANCE = new FortSiegeManager();
+    public boolean saveSiegeClan(int fortId, int clanId) {
+        try {
+            siegeClanRepository.insert(fortId, clanId);
+            return true;
+        } catch (DataAccessException e) {
+            log.warn("Exception: saveSiegeClan(Pledge clan): {}", e.getMessage(), e);
+            return false;
+        }
+    }
+
+    public void deleteSiegeClan(int fortId, int clanId) {
+        try {
+            siegeClanRepository.delete(fortId, clanId);
+        } catch (DataAccessException e) {
+            log.warn("Exception: removeSiegeClan(): {}", e.getMessage(), e);
+        }
+    }
+
+    public void deleteSiegeClans(int fortId, int clanId) {
+        try {
+            siegeClanRepository.deleteByFort(fortId);
+            if (clanId > 0) {
+                siegeClanRepository.deleteByClan(clanId);
+            }
+        } catch (DataAccessException e) {
+            log.warn("Exception: clearSiegeClan(): {}", e.getMessage(), e);
+        }
+    }
+
+    // TODO: callers receive the bean through their constructor (#41).
+    public static FortSiegeManager getInstance() {
+        final FortSiegeManager current = instance;
+        if (current == null) {
+            throw new IllegalStateException("FortSiegeManager is used before the Spring context created it.");
+        }
+        return current;
     }
 }

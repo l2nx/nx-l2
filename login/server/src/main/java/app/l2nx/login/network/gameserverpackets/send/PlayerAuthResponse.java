@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+/*
  * SPDX-FileCopyrightText: L2J Mobius contributors
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
@@ -20,14 +24,28 @@
 package app.l2nx.login.network.gameserverpackets.send;
 
 import app.l2nx.network.packet.SimpleWritablePacket;
+import java.util.Objects;
+import java.util.UUID;
 
 /**
  * @author -Wooden-
  */
 public class PlayerAuthResponse extends SimpleWritablePacket {
-    public PlayerAuthResponse(String account, boolean response) {
+    private PlayerAuthResponse(String login, UUID accountId) {
         writeByte(0x03);
-        writeString(account);
-        writeByte(response ? 1 : 0);
+        writeString(login);
+        writeByte(accountId != null);
+        if (accountId != null) {
+            writeLong(accountId.getMostSignificantBits());
+            writeLong(accountId.getLeastSignificantBits());
+        }
+    }
+
+    public static PlayerAuthResponse accepted(String login, UUID accountId) {
+        return new PlayerAuthResponse(login, Objects.requireNonNull(accountId, "accountId"));
+    }
+
+    public static PlayerAuthResponse rejected(String login) {
+        return new PlayerAuthResponse(login, null);
     }
 }

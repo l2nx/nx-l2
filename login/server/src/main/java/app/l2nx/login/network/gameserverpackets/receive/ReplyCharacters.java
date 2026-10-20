@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+/*
  * SPDX-FileCopyrightText: L2J Mobius contributors
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
@@ -22,6 +26,7 @@ package app.l2nx.login.network.gameserverpackets.receive;
 import app.l2nx.login.GameServerThread;
 import app.l2nx.login.controller.LoginController;
 import app.l2nx.network.packet.SimpleReadablePacket;
+import java.util.UUID;
 
 /**
  * Thanks to mochitto.
@@ -32,7 +37,7 @@ public class ReplyCharacters extends SimpleReadablePacket {
         super(decrypt);
         readByte(); // Packet id, it is already processed.
 
-        final String account = readString();
+        final UUID accountId = new UUID(readLong(), readLong());
         final int chars = readByte();
         final int charsToDel = readByte();
         final long[] charsList = new long[charsToDel];
@@ -40,6 +45,6 @@ public class ReplyCharacters extends SimpleReadablePacket {
             charsList[i] = readLong();
         }
 
-        LoginController.getInstance().setCharactersOnServer(account, chars, charsList, server.getServerId());
+        LoginController.getInstance().setCharactersOnServer(accountId, chars, charsList, server.getServerId());
     }
 }

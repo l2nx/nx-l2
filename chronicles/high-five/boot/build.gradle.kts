@@ -5,6 +5,8 @@ plugins {
 dependencies {
     implementation(project(":chronicles:high-five:server"))
     runtimeOnly(project(":chronicles:high-five:scripts"))
+
+    testImplementation(testFixtures(project(":libs:database")))
 }
 
 application {
@@ -20,20 +22,11 @@ application {
 distributions {
     main {
         contents {
-            from("../datapack") {
-                exclude("sql/**")
-            }
+            from("../datapack")
         }
     }
 }
 
-val loginSql = layout.settingsDirectory.dir("login/server/sql")
-val gameSql = layout.projectDirectory.dir("../datapack/sql")
-
 tasks.withType<Test>().configureEach {
     maxHeapSize = "4g"
-    inputs.dir(loginSql).withPropertyName("loginSql").withPathSensitivity(PathSensitivity.RELATIVE)
-    inputs.dir(gameSql).withPropertyName("gameSql").withPathSensitivity(PathSensitivity.RELATIVE)
-    systemProperty("l2nx.test.login-sql-dir", loginSql.asFile.absolutePath)
-    systemProperty("l2nx.test.game-sql-dir", gameSql.asFile.absolutePath)
 }

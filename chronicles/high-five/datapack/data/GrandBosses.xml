@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<list xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="xsd/GrandBosses.xsd">
+	<boss id="29001" x="-21610" y="181594" z="-5734" heading="0" /> <!-- Queen Ant (40) -->
+	<boss id="29006" x="17726" y="108915" z="-6480" heading="0" /> <!-- Core (50) -->
+	<boss id="29014" x="55024" y="17368" z="-5412" heading="10126" /> <!-- Orfen (50) -->
+	<boss id="29020" x="116033" y="17447" z="10107" heading="-25348" /> <!-- Baium (75) -->
+	<boss id="29028" x="-105200" y="-253104" z="-15264" heading="0" /> <!-- Valakas (85) -->
+	<boss id="29068" x="185708" y="114298" z="-8221" heading="32768" /> <!-- Antharas Strong (85) -->
+	<boss id="29118" /> <!-- Beleth (83) -->
+	<boss id="25512" x="96320" y="-110912" z="-3328" heading="8191" /> <!-- Gigantic Chaos Golem (Dr. Chaos) -->
+</list>

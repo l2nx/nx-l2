@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+/*
  * SPDX-FileCopyrightText: L2J Mobius contributors
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
@@ -20,8 +24,9 @@
 package app.l2nx.highfive.managers;
 
 import app.l2nx.highfive.config.ConquerableHallSiegeConfig;
+import app.l2nx.highfive.data.holders.SiegableHallTemplate;
 import app.l2nx.highfive.data.sql.ClanHallTable;
-import app.l2nx.highfive.data.sql.DatabaseFactory;
+import app.l2nx.highfive.data.xml.SiegableHallData;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.clan.Clan;
@@ -30,56 +35,86 @@ import app.l2nx.highfive.mechanics.siege.clanhalls.ClanHallSiegeEngine;
 import app.l2nx.highfive.mechanics.siege.clanhalls.SiegableHall;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
+import app.l2nx.highfive.repository.LegacyValues;
+import app.l2nx.highfive.repository.residence.SiegableClanHallStateRepository;
+import app.l2nx.highfive.repository.residence.model.SiegableClanHallState;
+import app.l2nx.highfive.repository.siege.ClanHallSiegeAttackerRepository;
+import app.l2nx.highfive.repository.siege.FlagWarAttackerRepository;
+import app.l2nx.highfive.repository.siege.RainbowSpringsAttackerRepository;
+import app.l2nx.highfive.repository.siege.model.FlagWarAttacker;
 import app.l2nx.highfive.util.StatSet;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.Statement;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataAccessException;
+import org.springframework.stereotype.Component;
 
 /**
  * @author BiggBoss
  */
 @Slf4j
+@Component
 public class CHSiegeManager {
-    private static final String SQL_LOAD_HALLS = "SELECT * FROM siegable_clanhall";
+    private static volatile CHSiegeManager instance;
 
     @Getter
     private final Map<Integer, SiegableHall> conquerableHalls = new HashMap<>();
 
-    protected CHSiegeManager() {
-        loadClanHalls();
+    private final SiegableClanHallStateRepository stateRepository;
+    private final ClanHallSiegeAttackerRepository attackerRepository;
+    private final FlagWarAttackerRepository flagWarAttackerRepository;
+    private final RainbowSpringsAttackerRepository rainbowSpringsAttackerRepository;
+
+    public CHSiegeManager(
+            SiegableClanHallStateRepository stateRepository,
+            ClanHallSiegeAttackerRepository attackerRepository,
+            FlagWarAttackerRepository flagWarAttackerRepository,
+            RainbowSpringsAttackerRepository rainbowSpringsAttackerRepository) {
+        this.stateRepository = stateRepository;
+        this.attackerRepository = attackerRepository;
+        this.flagWarAttackerRepository = flagWarAttackerRepository;
+        this.rainbowSpringsAttackerRepository = rainbowSpringsAttackerRepository;
+        instance = this;
     }
 
-    private void loadClanHalls() {
-        try (Connection con = DatabaseFactory.getConnection();
-                Statement s = con.createStatement();
-                ResultSet rs = s.executeQuery(SQL_LOAD_HALLS)) {
-            conquerableHalls.clear();
-
-            while (rs.next()) {
-                final int id = rs.getInt("clanHallId");
-                final StatSet set = new StatSet();
-                set.set("id", id);
-                set.set("name", rs.getString("name"));
-                set.set("ownerId", rs.getInt("ownerId"));
-                set.set("desc", rs.getString("desc"));
-                set.set("location", rs.getString("location"));
-                set.set("nextSiege", rs.getLong("nextSiege"));
-                set.set("siegeLength", rs.getLong("siegeLength"));
-                set.set("scheduleConfig", rs.getString("schedule_config"));
-                final SiegableHall hall = new SiegableHall(set);
-                conquerableHalls.put(id, hall);
-                ClanHallTable.addClanHall(hall);
+    public void loadClanHalls() {
+        final Map<Integer, SiegableClanHallState> states = new HashMap<>();
+        try {
+            for (SiegableClanHallState state : stateRepository.findAll()) {
+                states.put(state.clanHallId(), state);
             }
-
-            log.info("Loaded {} conquerable clan halls.", conquerableHalls.size());
-        } catch (Exception e) {
+        } catch (DataAccessException e) {
             log.warn("Could not load siegable clan halls!:{}", e.getMessage());
+            return;
         }
+
+        conquerableHalls.clear();
+        for (SiegableHallTemplate template : SiegableHallData.getInstance().getHalls()) {
+            final int id = template.id();
+            final SiegableClanHallState state = states.get(id);
+            final StatSet set = new StatSet();
+            set.set("id", id);
+            set.set("name", template.name());
+            set.set("ownerId", state == null ? 0 : state.ownerClanId());
+            set.set("desc", template.description());
+            set.set("location", template.location());
+            set.set("nextSiege", state == null ? 0 : LegacyValues.epochMillisOrZero(state.nextSiege()));
+            set.set("siegeLength", template.siegeLength().toMillis());
+            set.set("scheduleDays", template.scheduleDays());
+            set.set("scheduleMonths", template.scheduleMonths());
+            set.set("scheduleYears", template.scheduleYears());
+            set.set("siegeHour", template.siegeHour());
+            set.set("siegeMinute", template.siegeMinute());
+            final SiegableHall hall = new SiegableHall(set);
+            conquerableHalls.put(id, hall);
+            ClanHallTable.addClanHall(hall);
+        }
+
+        log.info("Loaded {} conquerable clan halls.", conquerableHalls.size());
     }
 
     public SiegableHall getSiegableHall(int clanHall) {
@@ -165,11 +200,124 @@ public class CHSiegeManager {
         }
     }
 
-    public static CHSiegeManager getInstance() {
-        return SingletonHolder.INSTANCE;
+    public void saveState(SiegableClanHallState state) {
+        try {
+            stateRepository.save(state);
+        } catch (DataAccessException e) {
+            log.warn("Exception: SiegableHall.updateDb(): {}", e.getMessage(), e);
+        }
     }
 
-    private static class SingletonHolder {
-        protected static final CHSiegeManager INSTANCE = new CHSiegeManager();
+    public List<Integer> findSiegeAttackers(int clanHallId) {
+        try {
+            return attackerRepository.findClanIdsByHall(clanHallId);
+        } catch (DataAccessException e) {
+            log.warn("Could not load the siege attackers of clan hall {}: {}", clanHallId, e.getMessage(), e);
+            return List.of();
+        }
+    }
+
+    public void saveSiegeAttackers(int clanHallId, Collection<Integer> clanIds) {
+        try {
+            attackerRepository.replaceAll(clanHallId, clanIds);
+            log.info("Successfully saved the attackers of clan hall {}.", clanHallId);
+        } catch (DataAccessException e) {
+            log.warn("Couldn't save the attacker list of clan hall {}: {}", clanHallId, e.getMessage(), e);
+        }
+    }
+
+    public List<FlagWarAttacker> findFlagWarAttackers(int clanHallId) {
+        try {
+            return flagWarAttackerRepository.findByHall(clanHallId);
+        } catch (DataAccessException e) {
+            log.warn("loadAttackers() failed", e);
+            return List.of();
+        }
+    }
+
+    public List<Integer> findFlagWarMembers(int clanHallId, int clanId) {
+        try {
+            return flagWarAttackerRepository.findMemberIds(clanHallId, clanId);
+        } catch (DataAccessException e) {
+            log.warn("loadAttackerMembers() failed", e);
+            return List.of();
+        }
+    }
+
+    public void saveFlagWarAttacker(int clanHallId, int clanId, int flagNpcId) {
+        try {
+            flagWarAttackerRepository.insert(clanHallId, clanId, flagNpcId);
+        } catch (DataAccessException e) {
+            log.warn("saveClan() failed", e);
+        }
+    }
+
+    public void saveFlagWarAllyNpc(int clanHallId, int clanId, int allyNpcId) {
+        try {
+            flagWarAttackerRepository.updateAllyNpc(clanHallId, clanId, allyNpcId);
+        } catch (DataAccessException e) {
+            log.warn("saveNpc() failed", e);
+        }
+    }
+
+    public void saveFlagWarMember(int clanHallId, int clanId, int characterId) {
+        try {
+            flagWarAttackerRepository.insertMember(clanHallId, clanId, characterId);
+        } catch (DataAccessException e) {
+            log.warn("saveMember() failed", e);
+        }
+    }
+
+    public void deleteFlagWarAttackers(int clanHallId) {
+        try {
+            flagWarAttackerRepository.deleteByHall(clanHallId);
+        } catch (DataAccessException e) {
+            log.warn("clearTables() failed", e);
+        }
+    }
+
+    /**
+     * @return War Decree count by clan id
+     */
+    public Map<Integer, Long> findRainbowSpringsAttackers() {
+        try {
+            return rainbowSpringsAttackerRepository.findAll();
+        } catch (DataAccessException e) {
+            log.warn("loadAttackers() failed", e);
+            return Map.of();
+        }
+    }
+
+    public void saveRainbowSpringsAttacker(int clanId, long warDecreeCount) {
+        try {
+            rainbowSpringsAttackerRepository.insert(clanId, warDecreeCount);
+        } catch (DataAccessException e) {
+            log.warn("Problem with updateAttacker: {}", e.getMessage());
+        }
+    }
+
+    public void deleteRainbowSpringsAttacker(int clanId) {
+        try {
+            rainbowSpringsAttackerRepository.delete(clanId);
+        } catch (DataAccessException e) {
+            log.warn("Problem with updateAttacker: {}", e.getMessage());
+        }
+    }
+
+    public void deleteRainbowSpringsAttackers() {
+        try {
+            rainbowSpringsAttackerRepository.deleteAll();
+        } catch (DataAccessException e) {
+            log.warn("clearTables() failed", e);
+        }
+    }
+
+    // TODO: callers receive the bean through their constructor (#41).
+    public static CHSiegeManager getInstance() {
+        final CHSiegeManager current = instance;
+        if (current == null) {
+            throw new IllegalStateException("CHSiegeManager is used before the Spring context created it.");
+        }
+        return current;
     }
 }

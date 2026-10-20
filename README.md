@@ -4,8 +4,8 @@ An open-source Lineage 2 server built on [L2J Mobius](https://gitlab.com/MobiusD
 [L2NX](https://l2nx.dev) platform integration built in. One repository holds every chronicle (High Five first, then
 Essence and Interlude), the login server, the network stack and the shared libraries.
 
-> **Status: stage 2.** High Five is imported from L2J Mobius; both servers run on Spring Boot with Actuator, metrics and a
-> Docker image. The design lives in
+> **Status: stage 3 done, stage 4 in progress.** High Five is imported from L2J Mobius; both servers run on Spring Boot with Actuator, metrics and a
+> Docker image, on PostgreSQL with the schema managed by Liquibase. The design lives in
 > [docs/specs/001-project-design.md](docs/specs/001-project-design.md); the stages in its §11, the import in
 > [docs/provenance.md](docs/provenance.md). User documentation: [l2nx.dev/l2](https://l2nx.dev/l2/overview/), from
 > [docs/public](docs/public) (English source, Russian translation).
@@ -16,7 +16,7 @@ Requirements: JDK 25, Docker. On Windows, clone with `git clone -c core.longpath
 the default path limit.
 
 ```sh
-docker compose up -d                          # MariaDB `l2nx` with the upstream schema, on 127.0.0.1:3306
+docker compose up -d                          # PostgreSQL 18 `l2nx` with a schema and role per server, on 127.0.0.1:5432
 ./gradlew :login:boot:run                     # login server, client port 2106
 ./gradlew :chronicles:high-five:boot:run      # High Five game server, registers on the login server
 ```
@@ -53,11 +53,11 @@ specific to Lineage 2, and every departure from a standard is a recorded decisio
 
 ## Layout
 
-The target layout; the repository has `libs/boot`, `libs/network`, `engine/core` (so far only the game clock),
+The target layout; the repository has `libs/boot`, `libs/database`, `libs/network`, `engine/core`,
 `login/` and `chronicles/high-five/`.
 
 ```
-libs/          infrastructure with no Lineage 2 knowledge: boot, network, telemetry
+libs/          infrastructure with no Lineage 2 knowledge: boot, database, network, telemetry
 engine/        mechanics shared by every chronicle: geo, L2NX adapter host, shared core
 login/         one login server for every chronicle
 chronicles/    one self-contained directory per chronicle: server, scripts, datapack, boot

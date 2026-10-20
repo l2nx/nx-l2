@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -22,10 +26,12 @@
  */
 package app.l2nx.highfive.entity.item.auction;
 
+import static app.l2nx.highfive.repository.LegacyValues.epochMillisOrZero;
+import static app.l2nx.highfive.repository.LegacyValues.instantOrNull;
+
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.data.sql.CharInfoTable;
-import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.item.enums.ItemLocation;
@@ -34,12 +40,10 @@ import app.l2nx.highfive.entity.item.instance.Item;
 import app.l2nx.highfive.managers.ItemAuctionManager;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
+import app.l2nx.highfive.repository.auction.model.ItemAuctionBidRow;
+import app.l2nx.highfive.repository.auction.model.ItemAuctionRow;
 import app.l2nx.highfive.threads.ThreadPool;
 import app.l2nx.highfive.util.StatSet;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -51,9 +55,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataAccessException;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 
@@ -65,18 +69,8 @@ public class ItemAuctionInstance {
     private static final long FINISH_TIME_SPACE = TimeUnit.MILLISECONDS.convert(10, TimeUnit.MINUTES);
 
     // SQL queries
-    private static final String SELECT_AUCTION_ID_BY_INSTANCE_ID =
-            "SELECT auctionId FROM item_auction WHERE instanceId = ?";
-    private static final String SELECT_AUCTION_INFO =
-            "SELECT auctionItemId, startingTime, endingTime, auctionStateId FROM item_auction WHERE auctionId = ? ";
-    private static final String DELETE_AUCTION_INFO_BY_AUCTION_ID = "DELETE FROM item_auction WHERE auctionId = ?";
-    private static final String DELETE_AUCTION_BID_INFO_BY_AUCTION_ID =
-            "DELETE FROM item_auction_bid WHERE auctionId = ?";
-    private static final String SELECT_PLAYERS_ID_BY_AUCTION_ID =
-            "SELECT playerObjId, playerBid FROM item_auction_bid WHERE auctionId = ?";
 
     private final int instanceId;
-    private final AtomicInteger auctionIds;
     private final Map<Integer, ItemAuction> auctions;
     private final List<AuctionItem> items;
     private final AuctionDateGenerator dateGenerator;
@@ -89,9 +83,8 @@ public class ItemAuctionInstance {
 
     private ScheduledFuture<?> stateTask;
 
-    public ItemAuctionInstance(int instanceId, AtomicInteger auctionIds, Node node) throws Exception {
+    public ItemAuctionInstance(int instanceId, Node node) throws Exception {
         this.instanceId = instanceId;
-        this.auctionIds = auctionIds;
         auctions = new HashMap<>();
         items = new ArrayList<>();
 
@@ -162,27 +155,25 @@ public class ItemAuctionInstance {
             throw new IllegalArgumentException("No items defined");
         }
 
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement(SELECT_AUCTION_ID_BY_INSTANCE_ID)) {
-            ps.setInt(1, this.instanceId);
-            try (ResultSet rset = ps.executeQuery()) {
-                while (rset.next()) {
-                    final int auctionId = rset.getInt(1);
-                    try {
-                        final ItemAuction auction = loadAuction(auctionId);
-                        if (auction != null) {
-                            auctions.put(auctionId, auction);
-                        } else {
-                            ItemAuctionManager.deleteAuction(auctionId);
-                        }
-                    } catch (SQLException e) {
-                        log.warn("Failed loading auction: {}", auctionId, e);
-                    }
-                }
-            }
-        } catch (SQLException e) {
+        final List<Integer> auctionIds;
+        try {
+            auctionIds = ItemAuctionManager.getInstance().findAuctionIds(this.instanceId);
+        } catch (DataAccessException e) {
             log.error("Failed loading auctions.", e);
             return;
+        }
+
+        for (int auctionId : auctionIds) {
+            try {
+                final ItemAuction auction = loadAuction(auctionId);
+                if (auction != null) {
+                    auctions.put(auctionId, auction);
+                } else {
+                    ItemAuctionManager.getInstance().deleteAuction(auctionId);
+                }
+            } catch (DataAccessException e) {
+                log.warn("Failed loading auction: {}", auctionId, e);
+            }
         }
 
         log.info(
@@ -481,81 +472,53 @@ public class ItemAuctionInstance {
         final long startingTime = dateGenerator.nextDate(after);
         final long endingTime =
                 startingTime + TimeUnit.MILLISECONDS.convert(auctionItem.getAuctionLength(), TimeUnit.MINUTES);
-        final ItemAuction auction =
-                new ItemAuction(auctionIds.getAndIncrement(), instanceId, startingTime, endingTime, auctionItem);
-        auction.storeMe();
-        return auction;
+        final int auctionId = ItemAuctionManager.getInstance()
+                .createAuction(ItemAuctionRow.builder()
+                        .instanceId(instanceId)
+                        .auctionItemId(auctionItem.getAuctionItemId())
+                        .startingTime(instantOrNull(startingTime))
+                        .endingTime(instantOrNull(endingTime))
+                        .state(ItemAuctionState.CREATED)
+                        .build());
+        return new ItemAuction(auctionId, instanceId, startingTime, endingTime, auctionItem);
     }
 
-    private ItemAuction loadAuction(int auctionId) throws SQLException {
-        try (Connection con = DatabaseFactory.getConnection()) {
-            int auctionItemId = 0;
-            long startingTime = 0;
-            long endingTime = 0;
-            byte auctionStateId = 0;
-            try (PreparedStatement ps = con.prepareStatement(SELECT_AUCTION_INFO)) {
-                ps.setInt(1, auctionId);
-                try (ResultSet rset = ps.executeQuery()) {
-                    if (!rset.next()) {
-                        log.warn("Auction data not found for auction: {}", auctionId);
-                        return null;
-                    }
-
-                    auctionItemId = rset.getInt(1);
-                    startingTime = rset.getLong(2);
-                    endingTime = rset.getLong(3);
-                    auctionStateId = rset.getByte(4);
-                }
-            }
-
-            if (startingTime >= endingTime) {
-                log.warn("Invalid starting/ending paramaters for auction: {}", auctionId);
-                return null;
-            }
-
-            final AuctionItem auctionItem = getAuctionItem(auctionItemId);
-            if (auctionItem == null) {
-                log.warn("AuctionItem: {}, not found for auction: {}", auctionItemId, auctionId);
-                return null;
-            }
-
-            final ItemAuctionState auctionState = ItemAuctionState.stateForStateId(auctionStateId);
-            if (auctionState == null) {
-                log.warn("Invalid auctionStateId: {}, for auction: {}", auctionStateId, auctionId);
-                return null;
-            }
-
-            if ((auctionState == ItemAuctionState.FINISHED)
-                    && (startingTime
-                            < (ClockBridge.wallMillis()
-                                    - TimeUnit.MILLISECONDS.convert(
-                                            GeneralConfig.ALT_ITEM_AUCTION_EXPIRED_AFTER, TimeUnit.DAYS)))) {
-                log.info("Clearing expired auction: {}", auctionId);
-                try (PreparedStatement ps = con.prepareStatement(DELETE_AUCTION_INFO_BY_AUCTION_ID)) {
-                    ps.setInt(1, auctionId);
-                    ps.execute();
-                }
-
-                try (PreparedStatement ps = con.prepareStatement(DELETE_AUCTION_BID_INFO_BY_AUCTION_ID)) {
-                    ps.setInt(1, auctionId);
-                    ps.execute();
-                }
-
-                return null;
-            }
-
-            final List<ItemAuctionBid> auctionBids = new ArrayList<>();
-            try (PreparedStatement ps = con.prepareStatement(SELECT_PLAYERS_ID_BY_AUCTION_ID)) {
-                ps.setInt(1, auctionId);
-                try (ResultSet rs = ps.executeQuery()) {
-                    while (rs.next()) {
-                        auctionBids.add(new ItemAuctionBid(rs.getInt(1), rs.getLong(2)));
-                    }
-                }
-            }
-
-            return new ItemAuction(
-                    auctionId, instanceId, startingTime, endingTime, auctionItem, auctionBids, auctionState);
+    private ItemAuction loadAuction(int auctionId) {
+        final ItemAuctionRow row =
+                ItemAuctionManager.getInstance().findAuction(auctionId).orElse(null);
+        if (row == null) {
+            log.warn("Auction data not found for auction: {}", auctionId);
+            return null;
         }
+
+        final long startingTime = epochMillisOrZero(row.startingTime());
+        final long endingTime = epochMillisOrZero(row.endingTime());
+        if (startingTime >= endingTime) {
+            log.warn("Invalid starting/ending paramaters for auction: {}", auctionId);
+            return null;
+        }
+
+        final AuctionItem auctionItem = getAuctionItem(row.auctionItemId());
+        if (auctionItem == null) {
+            log.warn("AuctionItem: {}, not found for auction: {}", row.auctionItemId(), auctionId);
+            return null;
+        }
+
+        final ItemAuctionState auctionState = row.state();
+        if ((auctionState == ItemAuctionState.FINISHED)
+                && (startingTime
+                        < (ClockBridge.wallMillis()
+                                - TimeUnit.MILLISECONDS.convert(
+                                        GeneralConfig.ALT_ITEM_AUCTION_EXPIRED_AFTER, TimeUnit.DAYS)))) {
+            log.info("Clearing expired auction: {}", auctionId);
+            return null;
+        }
+
+        final List<ItemAuctionBid> auctionBids = new ArrayList<>();
+        for (ItemAuctionBidRow bid : ItemAuctionManager.getInstance().findBids(auctionId)) {
+            auctionBids.add(new ItemAuctionBid(bid.characterId(), bid.lastBid()));
+        }
+
+        return new ItemAuction(auctionId, instanceId, startingTime, endingTime, auctionItem, auctionBids, auctionState);
     }
 }

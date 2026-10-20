@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -22,13 +26,15 @@
  */
 package app.l2nx.highfive.communitybbs.BB;
 
+import static app.l2nx.highfive.repository.LegacyValues.epochMillisOrZero;
+import static app.l2nx.highfive.repository.LegacyValues.instantOrNull;
+
+import app.l2nx.highfive.communitybbs.Manager.ForumsBBSManager;
 import app.l2nx.highfive.communitybbs.Manager.TopicBBSManager;
-import app.l2nx.highfive.communitybbs.TopicConstructorType;
-import app.l2nx.highfive.data.sql.DatabaseFactory;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
+import app.l2nx.highfive.repository.forum.model.TopicRow;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataAccessException;
 
 @Slf4j
 public class Topic {
@@ -50,62 +56,37 @@ public class Topic {
     @Getter
     private final String ownerName;
 
-    private final int ownerId;
-    private final int type;
-    private final int cReply;
+    public Topic(TopicRow row) {
+        id = row.id();
+        forumID = row.forumId();
+        name = row.title();
+        date = epochMillisOrZero(row.createdAt());
+        ownerName = row.ownerName();
+        TopicBBSManager.getInstance().addTopic(this);
+    }
 
     /**
-     * @param ct
-     * @param id
      * @param fid
      * @param name
      * @param date
      * @param oname
      * @param oid
      * @param type
-     * @param cReply
      */
-    public Topic(
-            TopicConstructorType ct,
-            int id,
-            int fid,
-            String name,
-            long date,
-            String oname,
-            int oid,
-            int type,
-            int cReply) {
-        this.id = id;
+    public Topic(int fid, String name, long date, String oname, int oid, int type) {
         forumID = fid;
         this.name = name;
         this.date = date;
         ownerName = oname;
-        ownerId = oid;
-        this.type = type;
-        this.cReply = cReply;
+        id = ForumsBBSManager.getInstance()
+                .insertTopic(TopicRow.builder()
+                        .forumId(fid)
+                        .title(name)
+                        .createdAt(instantOrNull(date))
+                        .ownerId(oid)
+                        .type(type)
+                        .build());
         TopicBBSManager.getInstance().addTopic(this);
-
-        if (ct == TopicConstructorType.CREATE) {
-            insertindb();
-        }
-    }
-
-    private void insertindb() {
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement(
-                        "INSERT INTO topic (topic_id,topic_forum_id,topic_name,topic_date,topic_ownername,topic_ownerid,topic_type,topic_reply) values (?,?,?,?,?,?,?,?)")) {
-            ps.setInt(1, id);
-            ps.setInt(2, forumID);
-            ps.setString(3, name);
-            ps.setLong(4, date);
-            ps.setString(5, ownerName);
-            ps.setInt(6, ownerId);
-            ps.setInt(7, type);
-            ps.setInt(8, cReply);
-            ps.execute();
-        } catch (Exception e) {
-            log.warn("Error while saving new Topic to db {}", e.getMessage(), e);
-        }
     }
 
     /**
@@ -121,13 +102,9 @@ public class Topic {
     public void deleteme(Forum f) {
         TopicBBSManager.getInstance().delTopic(this);
         f.rmTopicByID(id);
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps =
-                        con.prepareStatement("DELETE FROM topic WHERE topic_id=? AND topic_forum_id=?")) {
-            ps.setInt(1, id);
-            ps.setInt(2, f.getID());
-            ps.execute();
-        } catch (Exception e) {
+        try {
+            ForumsBBSManager.getInstance().deleteTopic(id, f.getID());
+        } catch (DataAccessException e) {
             log.warn("Error while deleting topic: {}", e.getMessage(), e);
         }
     }

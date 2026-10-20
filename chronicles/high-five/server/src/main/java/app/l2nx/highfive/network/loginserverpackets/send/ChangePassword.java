@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -23,12 +27,14 @@
 package app.l2nx.highfive.network.loginserverpackets.send;
 
 import app.l2nx.network.packet.SimpleWritablePacket;
+import java.util.Objects;
+import java.util.UUID;
 
 /**
  * Requests an account password change at the login server.
  * <ul>
  * <li>Opcode: 0x0B.</li>
- * <li>Payload: account (String), character (String), oldPass (String), newPass (String).</li>
+ * <li>Payload: account id (2 longs: msb, lsb), character (String), oldPass (String), newPass (String).</li>
  * </ul>
  * @author BazookaRpm
  */
@@ -37,31 +43,32 @@ public class ChangePassword extends SimpleWritablePacket {
     private static final int OPCODE = 0x0B;
 
     // Data.
-    private final String accountName;
+    private final UUID accountId;
     private final String characterName;
     private final String oldPass;
     private final String newPass;
 
     /**
-     * @param accountName account
+     * @param accountId account
      * @param characterName character
      * @param oldPass old password
      * @param newPass new password
      */
-    public ChangePassword(String accountName, String characterName, String oldPass, String newPass) {
-        this.accountName = (accountName != null) ? accountName : "";
-        this.characterName = (characterName != null) ? characterName : "";
-        this.oldPass = (oldPass != null) ? oldPass : "";
-        this.newPass = (newPass != null) ? newPass : "";
+    public ChangePassword(UUID accountId, String characterName, String oldPass, String newPass) {
+        this.accountId = Objects.requireNonNull(accountId, "accountId");
+        this.characterName = characterName;
+        this.oldPass = oldPass;
+        this.newPass = newPass;
     }
 
     /**
-     * Serializes opcode and all string fields.
+     * Serializes opcode, account and all string fields.
      */
     @Override
     public void write() {
         writeByte(OPCODE);
-        writeString(accountName);
+        writeLong(accountId.getMostSignificantBits());
+        writeLong(accountId.getLeastSignificantBits());
         writeString(characterName);
         writeString(oldPass);
         writeString(newPass);

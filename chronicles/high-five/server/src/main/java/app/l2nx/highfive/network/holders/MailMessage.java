@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+/*
  * SPDX-FileCopyrightText: L2J Mobius contributors
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
@@ -19,17 +23,17 @@
  */
 package app.l2nx.highfive.network.holders;
 
+import static app.l2nx.highfive.repository.LegacyValues.epochMillisOrZero;
+import static app.l2nx.highfive.repository.LegacyValues.instantOrNull;
+
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.data.sql.CharInfoTable;
 import app.l2nx.highfive.entity.itemcontainer.Mail;
 import app.l2nx.highfive.managers.IdManager;
 import app.l2nx.highfive.managers.MailManager;
 import app.l2nx.highfive.network.enums.MessageSenderType;
+import app.l2nx.highfive.repository.mail.model.MailRow;
 import app.l2nx.highfive.threads.ThreadPool;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.concurrent.ScheduledFuture;
 import lombok.Getter;
 import lombok.Setter;
@@ -47,6 +51,8 @@ public class MailMessage {
     public static final int DELETED = 0;
     public static final int READED = 1;
     public static final int REJECTED = 2;
+
+    public static final int SYSTEM_SENDER = -1;
 
     @Getter
     private final int id;
@@ -95,20 +101,20 @@ public class MailMessage {
     /*
      * Constructor for restoring from DB.
      */
-    public MailMessage(ResultSet rset) throws SQLException {
-        id = rset.getInt("messageId");
-        senderId = rset.getInt("senderId");
-        receiverId = rset.getInt("receiverId");
-        subject = rset.getString("subject");
-        content = rset.getString("content");
-        expiration = rset.getLong("expiration");
-        reqAdena = rset.getLong("reqAdena");
-        hasAttachments = Boolean.parseBoolean(rset.getString("hasAttachments"));
-        unread = Boolean.parseBoolean(rset.getString("isUnread"));
-        deletedBySender = Boolean.parseBoolean(rset.getString("isDeletedBySender"));
-        deletedByReceiver = Boolean.parseBoolean(rset.getString("isDeletedByReceiver"));
-        sendBySystem = rset.getInt("sendBySystem");
-        returned = Boolean.parseBoolean(rset.getString("isReturned"));
+    public MailMessage(MailRow row) {
+        id = row.id();
+        senderId = row.senderId();
+        receiverId = row.receiverId();
+        subject = row.subject();
+        content = row.content();
+        expiration = epochMillisOrZero(row.expiration());
+        reqAdena = row.reqAdena();
+        hasAttachments = row.hasAttachments();
+        unread = row.unread();
+        deletedBySender = row.deletedBySender();
+        deletedByReceiver = row.deletedByReceiver();
+        sendBySystem = row.senderType().ordinal();
+        returned = row.returned();
     }
 
     /*
@@ -135,7 +141,7 @@ public class MailMessage {
      */
     public MailMessage(int receiverId, String subject, String content, MessageSenderType sendBySystem) {
         id = IdManager.getInstance().getNextId();
-        senderId = -1;
+        senderId = SYSTEM_SENDER;
         this.receiverId = receiverId;
         this.subject = subject;
         this.content = content;
@@ -156,8 +162,8 @@ public class MailMessage {
         id = IdManager.getInstance().getNextId();
         senderId = msg.getSenderId();
         receiverId = msg.getSenderId();
-        subject = "";
-        content = "";
+        subject = null;
+        content = null;
         expiration = ClockBridge.wallMillis() + (EXPIRATION * 3600000);
         unread = true;
         deletedBySender = true;
@@ -174,23 +180,22 @@ public class MailMessage {
                 UNLOAD_ATTACHMENTS_INTERVAL + ClockBridge.random().nextInt(UNLOAD_ATTACHMENTS_INTERVAL));
     }
 
-    public static PreparedStatement getStatement(MailMessage msg, Connection con) throws SQLException {
-        final PreparedStatement stmt = con.prepareStatement(
-                "INSERT INTO messages (messageId, senderId, receiverId, subject, content, expiration, reqAdena, hasAttachments, isUnread, isDeletedBySender, isDeletedByReceiver, sendBySystem, isReturned) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-        stmt.setInt(1, msg.id);
-        stmt.setInt(2, msg.senderId);
-        stmt.setInt(3, msg.receiverId);
-        stmt.setString(4, msg.subject);
-        stmt.setString(5, msg.content);
-        stmt.setLong(6, msg.expiration);
-        stmt.setLong(7, msg.reqAdena);
-        stmt.setString(8, String.valueOf(msg.hasAttachments));
-        stmt.setString(9, String.valueOf(msg.unread));
-        stmt.setString(10, String.valueOf(msg.deletedBySender));
-        stmt.setString(11, String.valueOf(msg.deletedByReceiver));
-        stmt.setString(12, String.valueOf(msg.sendBySystem));
-        stmt.setString(13, String.valueOf(msg.returned));
-        return stmt;
+    public MailRow toRow() {
+        return MailRow.builder()
+                .id(id)
+                .senderId(senderId)
+                .receiverId(receiverId)
+                .subject(subject)
+                .content(content)
+                .expiration(instantOrNull(expiration))
+                .reqAdena(reqAdena)
+                .hasAttachments(hasAttachments)
+                .unread(unread)
+                .deletedBySender(deletedBySender)
+                .deletedByReceiver(deletedByReceiver)
+                .senderType(MessageSenderType.values()[sendBySystem])
+                .returned(returned)
+                .build();
     }
 
     public String getSenderName() {
@@ -290,6 +295,21 @@ public class MailMessage {
         attachments = null;
         hasAttachments = false;
         MailManager.getInstance().removeAttachmentsInDb(id);
+        if (unloadTask != null) {
+            unloadTask.cancel(false);
+        }
+    }
+
+    /**
+     * Forgets the attachments without writing them, for a mail whose stored attachments were already moved or deleted.
+     */
+    public synchronized void discardAttachments() {
+        if (attachments != null) {
+            attachments.discard();
+            attachments = null;
+        }
+
+        hasAttachments = false;
         if (unloadTask != null) {
             unloadTask.cancel(false);
         }

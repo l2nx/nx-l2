@@ -9,12 +9,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import app.l2nx.boot.ServerExit;
 import app.l2nx.highfive.clock.ClockBridgeExtension;
-import app.l2nx.highfive.data.sql.DatabaseFactory;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
-import java.lang.reflect.Proxy;
-import java.sql.SQLException;
 import java.util.List;
-import javax.sql.DataSource;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -33,18 +29,17 @@ class GameServerTest {
     @Nested
     class Start {
         /**
-         * Most Mobius loaders log and skip a failed database read; the start fails at the first one that does not, after the thread pool is up.
+         * Without a Spring context the first manager bean the start loads is missing; that happens after the thread
+         * pool is up.
          */
         @Test
-        void start_shouldStopEngineThreads_whenDatabaseIsUnreachable() throws Exception {
-            final DatabaseFactory databaseFactory = new DatabaseFactory(unreachableDataSource());
+        void start_shouldStopEngineThreads_whenStartFails() throws Exception {
             final SimpleMeterRegistry registry = new SimpleMeterRegistry();
-            final GameServer server =
-                    new GameServer(databaseFactory, new ServerExit(new GenericApplicationContext()), registry);
+            final GameServer server = new GameServer(new ServerExit(new GenericApplicationContext()), registry);
 
             assertThatThrownBy(server::start)
-                    .hasRootCauseInstanceOf(SQLException.class)
-                    .hasRootCauseMessage("unreachable");
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining("before the Spring context created it");
 
             assertThat(server.isRunning()).isFalse();
             assertThat(registry.find("executor.pool.size")
@@ -61,12 +56,5 @@ class GameServerTest {
             }
             assertThat(engineThreads).as("engine threads").noneMatch(Thread::isAlive);
         }
-    }
-
-    private static DataSource unreachableDataSource() {
-        return (DataSource) Proxy.newProxyInstance(
-                DataSource.class.getClassLoader(), new Class<?>[] {DataSource.class}, (proxy, method, args) -> {
-                    throw new SQLException("unreachable");
-                });
     }
 }

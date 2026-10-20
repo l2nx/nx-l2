@@ -1,0 +1,13 @@
+/*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: Apache-2.0
+ */
+package app.l2nx.highfive.repository.olympiad.model;
+
+import lombok.Builder;
+
+/**
+ * @param characterName read from the character; not written
+ */
+@Builder(toBuilder = true)
+public record HeroRow(int objectId, String characterName, int classId, int count, boolean played, boolean claimed) {}

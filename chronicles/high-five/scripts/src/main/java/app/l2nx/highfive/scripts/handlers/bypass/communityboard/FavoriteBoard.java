@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+/*
  * SPDX-FileCopyrightText: L2J Mobius contributors
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
@@ -21,16 +25,13 @@ package app.l2nx.highfive.scripts.handlers.bypass.communityboard;
 
 import app.l2nx.highfive.cache.HtmCache;
 import app.l2nx.highfive.clock.ClockBridge;
-import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.handler.CommunityBoardHandler;
 import app.l2nx.highfive.handler.IParseBoardHandler;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
+import app.l2nx.highfive.managers.BbsFavoriteManager;
+import app.l2nx.highfive.repository.forum.model.BbsFavorite;
 import java.time.format.DateTimeFormatter;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 
 /**
  * Favorite board.
@@ -39,13 +40,6 @@ import org.apache.commons.lang3.StringUtils;
 @Slf4j
 public class FavoriteBoard implements IParseBoardHandler {
     private static final DateTimeFormatter FAVORITE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-
-    // SQL Queries
-    private static final String SELECT_FAVORITES =
-            "SELECT * FROM `bbs_favorites` WHERE `playerId`=? ORDER BY `favAddDate` DESC";
-    private static final String DELETE_FAVORITE = "DELETE FROM `bbs_favorites` WHERE `playerId`=? AND `favId`=?";
-    private static final String ADD_FAVORITE =
-            "REPLACE INTO `bbs_favorites`(`playerId`, `favTitle`, `favBypass`) VALUES(?, ?, ?)";
 
     private static final String[] COMMANDS = {"_bbsgetfav", "bbs_add_fav", "_bbsdelfav_"};
 
@@ -61,27 +55,22 @@ public class FavoriteBoard implements IParseBoardHandler {
             // Load Favorite links
             final String list = HtmCache.getInstance().getHtm(player, "data/html/CommunityBoard/favorite_list.html");
             final StringBuilder sb = new StringBuilder();
-            try (Connection con = DatabaseFactory.getConnection();
-                    PreparedStatement ps = con.prepareStatement(SELECT_FAVORITES)) {
-                ps.setInt(1, player.getObjectId());
-                try (ResultSet rs = ps.executeQuery()) {
-                    while (rs.next()) {
-                        String link = list.replace("%fav_bypass%", rs.getString("favBypass"));
-                        link = link.replace("%fav_title%", rs.getString("favTitle"));
-                        link = link.replace(
-                                "%fav_add_date%",
-                                FAVORITE_FORMAT.format(rs.getTimestamp("favAddDate")
-                                        .toInstant()
-                                        .atZone(ClockBridge.wallClock().getZone())));
-                        link = link.replace("%fav_id%", String.valueOf(rs.getInt("favId")));
-                        sb.append(link);
-                    }
+            try {
+                for (BbsFavorite favorite : BbsFavoriteManager.getInstance().findFavorites(player.getObjectId())) {
+                    String link = list.replace("%fav_bypass%", favorite.bypass());
+                    link = link.replace("%fav_title%", favorite.title());
+                    link = link.replace(
+                            "%fav_add_date%",
+                            FAVORITE_FORMAT.format(favorite.addedAt()
+                                    .atZone(ClockBridge.wallClock().getZone())));
+                    link = link.replace("%fav_id%", String.valueOf(favorite.id()));
+                    sb.append(link);
                 }
 
                 String html = HtmCache.getInstance().getHtm(player, "data/html/CommunityBoard/favorite.html");
                 html = html.replace("%fav_list%", sb.toString());
                 CommunityBoardHandler.separateAndSend(html, player);
-            } catch (Exception e) {
+            } catch (RuntimeException e) {
                 log.warn("Couldn't load favorite links for {}", player);
             }
         } else if (command.startsWith("bbs_add_fav")) {
@@ -93,35 +82,43 @@ public class FavoriteBoard implements IParseBoardHandler {
                     return false;
                 }
 
-                try (Connection con = DatabaseFactory.getConnection();
-                        PreparedStatement ps = con.prepareStatement(ADD_FAVORITE)) {
-                    ps.setInt(1, player.getObjectId());
-                    ps.setString(2, parts[0].trim());
-                    ps.setString(3, parts[1].trim());
-                    ps.execute();
+                final String title = parts[0].trim();
+                final String link = parts[1].trim();
+                if (title.isEmpty() || link.isEmpty()) {
+                    log.warn("Couldn't add favorite link, {} has no title or no bypass!", bypass);
+                    return false;
+                }
+
+                try {
+                    BbsFavoriteManager.getInstance()
+                            .addFavorite(
+                                    player.getObjectId(),
+                                    title,
+                                    link,
+                                    ClockBridge.wallClock().instant());
 
                     // Callback
                     onCommand("_bbsgetfav", player);
-                } catch (Exception e) {
+                } catch (RuntimeException e) {
                     log.warn("Couldn't add favorite link {} for {}", bypass, player);
                 }
             }
         } else if (command.startsWith("_bbsdelfav_")) {
             final String favId = command.replace("_bbsdelfav_", "");
-            if (!StringUtils.isNumeric(favId)) {
+            final int favoriteId;
+            try {
+                favoriteId = Integer.parseInt(favId);
+            } catch (NumberFormatException e) {
                 log.warn("Couldn't delete favorite link, {} it's not a valid ID!", favId);
                 return false;
             }
 
-            try (Connection con = DatabaseFactory.getConnection();
-                    PreparedStatement ps = con.prepareStatement(DELETE_FAVORITE)) {
-                ps.setInt(1, player.getObjectId());
-                ps.setInt(2, Integer.parseInt(favId));
-                ps.execute();
+            try {
+                BbsFavoriteManager.getInstance().deleteFavorite(player.getObjectId(), favoriteId);
 
                 // Callback
                 onCommand("_bbsgetfav", player);
-            } catch (Exception e) {
+            } catch (RuntimeException e) {
                 log.warn("Couldn't delete favorite link ID {} for {}", favId, player);
             }
         }

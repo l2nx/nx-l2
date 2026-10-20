@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+/*
  * SPDX-FileCopyrightText: L2J Mobius contributors
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
@@ -21,9 +25,10 @@ package app.l2nx.highfive.mechanics.siege.clanhalls;
 
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.ConquerableHallSiegeConfig;
+import app.l2nx.highfive.data.holders.SiegeGuardSpawn;
 import app.l2nx.highfive.data.sql.ClanTable;
-import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.data.xml.MapRegionData;
+import app.l2nx.highfive.data.xml.SiegableHallData;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Creature;
@@ -42,9 +47,6 @@ import app.l2nx.highfive.network.enums.ChatType;
 import app.l2nx.highfive.network.serverpackets.NpcSay;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
 import app.l2nx.highfive.threads.ThreadPool;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collection;
@@ -63,11 +65,6 @@ import org.slf4j.LoggerFactory;
  */
 @Slf4j
 public abstract class ClanHallSiegeEngine extends Script implements Siegable {
-    private static final String SQL_LOAD_ATTACKERS =
-            "SELECT attacker_id FROM clanhall_siege_attackers WHERE clanhall_id = ?";
-    private static final String SQL_SAVE_ATTACKERS = "INSERT INTO clanhall_siege_attackers VALUES (?,?)";
-    private static final String SQL_LOAD_GUARDS = "SELECT * FROM clanhall_siege_guards WHERE clanHallId = ?";
-
     public static final int FORTRESS_RESSISTANCE = 21;
     public static final int DEVASTATED_CASTLE = 34;
     public static final int BANDIT_STRONGHOLD = 35;
@@ -98,42 +95,18 @@ public abstract class ClanHallSiegeEngine extends Script implements Siegable {
     }
 
     public void loadAttackers() {
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement(SQL_LOAD_ATTACKERS)) {
-            ps.setInt(1, hall.getId());
-            try (ResultSet rset = ps.executeQuery()) {
-                while (rset.next()) {
-                    final int id = rset.getInt("attacker_id");
-                    attackers.put(id, new SiegeClan(id, SiegeClanType.ATTACKER));
-                }
-            }
-        } catch (Exception e) {
-            LoggerFactory.getLogger(getClass()).warn("Could not load siege attackers!");
+        for (int id : CHSiegeManager.getInstance().findSiegeAttackers(hall.getId())) {
+            attackers.put(id, new SiegeClan(id, SiegeClanType.ATTACKER));
         }
     }
 
     public void saveAttackers() {
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps =
-                        con.prepareStatement("DELETE FROM clanhall_siege_attackers WHERE clanhall_id = ?")) {
-            ps.setInt(1, hall.getId());
-            ps.execute();
-
-            if (!attackers.isEmpty()) {
-                try (PreparedStatement insert = con.prepareStatement(SQL_SAVE_ATTACKERS)) {
-                    for (SiegeClan clan : attackers.values()) {
-                        insert.setInt(1, hall.getId());
-                        insert.setInt(2, clan.getClanId());
-                        insert.execute();
-                        insert.clearParameters();
-                    }
-                }
-            }
-
-            LoggerFactory.getLogger(getClass()).info("Successfully saved attackers to database.");
-        } catch (Exception e) {
-            LoggerFactory.getLogger(getClass()).warn("Couldn't save attacker list!");
+        final List<Integer> clanIds = new ArrayList<>(attackers.size());
+        for (SiegeClan clan : attackers.values()) {
+            clanIds.add(clan.getClanId());
         }
+
+        CHSiegeManager.getInstance().saveSiegeAttackers(hall.getId(), clanIds);
     }
 
     public void loadGuards() {
@@ -143,15 +116,16 @@ public abstract class ClanHallSiegeEngine extends Script implements Siegable {
         }
 
         guards = new ArrayList<>();
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement(SQL_LOAD_GUARDS)) {
-            ps.setInt(1, hall.getId());
-            final ResultSet rset = ps.executeQuery();
-            while (rset.next()) {
-                final Spawn spawn = new Spawn(rset.getInt("npcId"));
-                spawn.setXYZ(rset.getInt("x"), rset.getInt("y"), rset.getInt("z"));
-                spawn.setHeading(rset.getInt("heading"));
-                spawn.setRespawnDelay(rset.getInt("respawnDelay"));
+        try {
+            for (SiegeGuardSpawn guard :
+                    SiegableHallData.getInstance().getHall(hall.getId()).siegeGuards()) {
+                final Spawn spawn = new Spawn(guard.npcId());
+                spawn.setXYZ(
+                        guard.spawnPoint().x(),
+                        guard.spawnPoint().y(),
+                        guard.spawnPoint().z());
+                spawn.setHeading(guard.spawnPoint().heading());
+                spawn.setRespawnDelay(guard.respawnDelay());
                 spawn.setAmount(1);
                 guards.add(spawn);
             }

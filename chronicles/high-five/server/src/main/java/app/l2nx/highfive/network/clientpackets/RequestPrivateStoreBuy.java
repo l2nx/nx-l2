@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -144,7 +148,7 @@ public class RequestPrivateStoreBuy extends ClientPacket {
         if (OfflineTradeConfig.OFFLINE_TRADE_ENABLE
                 && OfflineTradeConfig.STORE_OFFLINE_TRADE_IN_REALTIME
                 && ((storePlayer.getClient() == null) || storePlayer.getClient().isDetached())) {
-            OfflineTraderTable.getInstance().onTransaction(storePlayer, storeList.getItemCount() == 0, false);
+            OfflineTraderTable.getInstance().onTransaction(storePlayer, storeList.getItemCount() == 0);
         }
 
         if (storeList.getItemCount() == 0) {

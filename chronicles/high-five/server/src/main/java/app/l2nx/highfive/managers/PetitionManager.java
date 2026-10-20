@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+/*
  * SPDX-FileCopyrightText: L2J Mobius contributors
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
@@ -96,10 +100,9 @@ public class PetitionManager {
         sm.addString(currPetition.getPetitioner().getName());
         currPetition.sendResponderPacket(sm);
 
-        // Set responder name on petitioner instance.
         currPetition
                 .getPetitioner()
-                .setLastPetitionGmName(currPetition.getResponder().getName());
+                .setLastPetitionGmId(currPetition.getResponder().getObjectId());
         return true;
     }
 

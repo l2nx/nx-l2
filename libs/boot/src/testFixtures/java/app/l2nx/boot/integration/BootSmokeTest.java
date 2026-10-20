@@ -4,6 +4,7 @@
  */
 package app.l2nx.boot.integration;
 
+import app.l2nx.database.PostgresDatabase;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -18,24 +19,22 @@ import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.mysql.MySQLContainer;
-import org.testcontainers.utility.DockerImageName;
+import org.testcontainers.postgresql.PostgreSQLContainer;
 
 /**
  * The servers keep static state, so nothing runs concurrently and the nested classes run in their {@code @Order}.
  */
-@Testcontainers
 @Execution(ExecutionMode.SAME_THREAD)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 public abstract class BootSmokeTest {
-    // MariaDB reached through MySQL Connector/J, the driver the servers ship with; the stock MariaDB container would
-    // hand Spring the MariaDB driver.
-    @Container
     @ServiceConnection
-    private static final MySQLContainer DATABASE =
-            new MySQLContainer(DockerImageName.parse("mariadb:11.8").asCompatibleSubstituteFor("mysql"));
+    private static final PostgreSQLContainer DATABASE = PostgresDatabase.container();
+
+    static {
+        // The servers' default schemas; an operator creates them before the first start.
+        PostgresDatabase.ensureSuperuserSchema("login");
+        PostgresDatabase.ensureSuperuserSchema("game");
+    }
 
     private static final HttpClient HTTP = HttpClient.newHttpClient();
     private static final int CONNECT_TIMEOUT_MS = 5_000;

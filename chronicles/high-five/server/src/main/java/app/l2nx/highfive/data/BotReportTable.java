@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+/*
  * SPDX-FileCopyrightText: L2J Mobius contributors
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
@@ -19,9 +23,11 @@
  */
 package app.l2nx.highfive.data;
 
+import static app.l2nx.highfive.repository.LegacyValues.epochMillisOrZero;
+import static app.l2nx.highfive.repository.LegacyValues.instantOrNull;
+
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.GeneralConfig;
-import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.data.xml.SkillData;
 import app.l2nx.highfive.entity.WorldObject;
 import app.l2nx.highfive.entity.actor.Creature;
@@ -31,15 +37,15 @@ import app.l2nx.highfive.entity.zone.ZoneId;
 import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
+import app.l2nx.highfive.repository.social.BotReportRepository;
+import app.l2nx.highfive.repository.social.model.BotReport;
 import app.l2nx.highfive.threads.ThreadPool;
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
@@ -48,6 +54,8 @@ import javax.xml.parsers.SAXParserFactory;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataAccessException;
+import org.springframework.stereotype.Component;
 import org.xml.sax.Attributes;
 import org.xml.sax.helpers.DefaultHandler;
 
@@ -55,11 +63,9 @@ import org.xml.sax.helpers.DefaultHandler;
  * @author BiggBoss
  */
 @Slf4j
+@Component
 public class BotReportTable {
-
-    private static final int COLUMN_BOT_ID = 1;
-    private static final int COLUMN_REPORTER_ID = 2;
-    private static final int COLUMN_REPORT_TIME = 3;
+    private static volatile BotReportTable instance;
 
     public static final int ATTACK_ACTION_BLOCK_ID = -1;
     public static final int TRADE_ACTION_BLOCK_ID = -2;
@@ -67,16 +73,19 @@ public class BotReportTable {
     public static final int ACTION_BLOCK_ID = -4;
     public static final int CHAT_BLOCK_ID = -5;
 
-    private static final String SQL_LOAD_REPORTED_CHAR_DATA = "SELECT * FROM bot_reported_char_data";
-    private static final String SQL_INSERT_REPORTED_CHAR_DATA = "INSERT INTO bot_reported_char_data VALUES (?,?,?)";
-    private static final String SQL_CLEAR_REPORTED_CHAR_DATA = "DELETE FROM bot_reported_char_data";
-
     private Map<Integer, Long> ipRegistry;
     private Map<Integer, ReporterCharData> charRegistry;
     private Map<Integer, ReportedCharData> reports;
     private Map<Integer, PunishHolder> punishments;
 
-    protected BotReportTable() {
+    private final BotReportRepository botReportRepository;
+
+    public BotReportTable(BotReportRepository botReportRepository) {
+        this.botReportRepository = botReportRepository;
+        instance = this;
+    }
+
+    public void load() {
         if (GeneralConfig.BOTREPORT_ENABLE) {
             ipRegistry = new HashMap<>();
             charRegistry = new ConcurrentHashMap<>();
@@ -105,9 +114,7 @@ public class BotReportTable {
      * Warning: Heavy method, used only on server start up
      */
     private void loadReportedCharData() {
-        try (Connection con = DatabaseFactory.getConnection();
-                Statement st = con.createStatement();
-                ResultSet rset = st.executeQuery(SQL_LOAD_REPORTED_CHAR_DATA)) {
+        try {
             long lastResetTime = 0;
             try {
                 final int hour = Integer.parseInt(GeneralConfig.BOTREPORT_RESETPOINT_HOUR[0]);
@@ -125,17 +132,17 @@ public class BotReportTable {
                 // Ignore.
             }
 
-            while (rset.next()) {
-                final int botId = rset.getInt(COLUMN_BOT_ID);
-                final int reporter = rset.getInt(COLUMN_REPORTER_ID);
-                final long date = rset.getLong(COLUMN_REPORT_TIME);
+            for (BotReport report : botReportRepository.findAll()) {
+                final int botId = report.botId();
+                final int reporter = report.reporterId();
+                final long date = epochMillisOrZero(report.reportedAt());
                 final ReportedCharData existing = reports.get(botId);
                 if (existing != null) {
                     existing.addReporter(reporter, date);
                 } else {
                     final ReportedCharData rcd = new ReportedCharData();
                     rcd.addReporter(reporter, date);
-                    reports.put(rset.getInt(COLUMN_BOT_ID), rcd);
+                    reports.put(botId, rcd);
                 }
 
                 if (date > lastResetTime) {
@@ -151,7 +158,7 @@ public class BotReportTable {
             }
 
             log.info("Loaded {} bot reports", reports.size());
-        } catch (Exception e) {
+        } catch (DataAccessException e) {
             log.warn("Could not load reported char data!", e);
         }
     }
@@ -161,20 +168,20 @@ public class BotReportTable {
      * Warning: Heavy method, used only at server shutdown
      */
     public void saveReportedCharData() {
-        try (Connection con = DatabaseFactory.getConnection();
-                Statement st = con.createStatement();
-                PreparedStatement ps = con.prepareStatement(SQL_INSERT_REPORTED_CHAR_DATA)) {
-            st.execute(SQL_CLEAR_REPORTED_CHAR_DATA);
-
-            for (Entry<Integer, ReportedCharData> entrySet : reports.entrySet()) {
-                for (int reporterId : entrySet.getValue().reporters.keySet()) {
-                    ps.setInt(1, entrySet.getKey());
-                    ps.setInt(2, reporterId);
-                    ps.setLong(3, entrySet.getValue().reporters.get(reporterId));
-                    ps.execute();
-                }
+        final List<BotReport> rows = new ArrayList<>();
+        for (Entry<Integer, ReportedCharData> entrySet : reports.entrySet()) {
+            for (Entry<Integer, Long> reporter : entrySet.getValue().reporters.entrySet()) {
+                rows.add(BotReport.builder()
+                        .botId(entrySet.getKey())
+                        .reporterId(reporter.getKey())
+                        .reportedAt(instantOrNull(reporter.getValue()))
+                        .build());
             }
-        } catch (Exception e) {
+        }
+
+        try {
+            botReportRepository.replaceAll(rows);
+        } catch (DataAccessException e) {
             log.error("Could not update reported char data in database!", e);
         }
     }
@@ -395,8 +402,13 @@ public class BotReportTable {
         }
     }
 
+    // TODO: callers receive the bean through their constructor (#41).
     public static BotReportTable getInstance() {
-        return SingletonHolder.INSTANCE;
+        final BotReportTable current = instance;
+        if (current == null) {
+            throw new IllegalStateException("BotReportTable is used before the Spring context created it.");
+        }
+        return current;
     }
 
     /**
@@ -539,9 +551,5 @@ public class BotReportTable {
         public void run() {
             resetPointsAndSchedule();
         }
-    }
-
-    private static class SingletonHolder {
-        static final BotReportTable INSTANCE = new BotReportTable();
     }
 }

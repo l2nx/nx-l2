@@ -37,8 +37,8 @@ on a target path reach 2016 without `--follow`.
 | `dist/game/data/scripts/**/*.java`                                                 | `chronicles/high-five/scripts/src/main/java/app/l2nx/highfive/scripts/**`    |
 | `dist/game/data/**` (everything else)                                              | `chronicles/high-five/datapack/data/**`                                      |
 | `dist/game/config/`                                                                | `chronicles/high-five/datapack/config/`                                      |
-| `dist/db_installer/sql/game/`                                                      | `chronicles/high-five/datapack/sql/`                                         |
-| `dist/db_installer/sql/login/`                                                     | `login/server/sql/`                                                          |
+| `dist/db_installer/sql/game/`                                                      | removed at stage 3 (see "After the import", item 9)                          |
+| `dist/db_installer/sql/login/`                                                     | removed at stage 3 (see "After the import", item 9)                          |
 | `dist/game/*`, `dist/images/`, `dist/db_installer/*`, `dist/backup/`, `readme.txt` | `chronicles/high-five/boot/src/dist/`                                        |
 | `dist/login/*`                                                                     | `login/boot/src/dist/`                                                       |
 
@@ -94,7 +94,11 @@ Changes on top of the imported history, each its own commit:
    - the game-only code (`ThreadPool`, `ConfigReader`, `IXmlReader`, `DatabaseFactory`) is in
      `chronicles/high-five/server` (`threads`, `config`, `data/xml`, `data/sql`);
    - the helpers that duplicated the JDK or commons-lang3 are removed in favour of them.
-   The login server dropped its `.ini` files for `l2nx.login.*` in `application.yaml`.
+     The login server dropped its `.ini` files for `l2nx.login.*` in `application.yaml`.
+9. **Stage 3, PostgreSQL ([spec 006](specs/006-database.md)):** the imported MariaDB SQL (`chronicles/high-five/datapack/sql/`,
+   `login/server/sql/`) is removed. The schemas are rewritten as one Liquibase baseline per server
+   (`db/liquibase/` of `login/server` and `chronicles/high-five/server`), and the static rows that were SQL (spawns of
+   bosses, castles and halls, Dimensional Rift rooms) moved to datapack XML.
 
 ## License labels
 

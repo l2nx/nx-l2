@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -23,7 +27,6 @@
 package app.l2nx.highfive.network.clientpackets;
 
 import app.l2nx.highfive.config.GeneralConfig;
-import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.Summon;
 import app.l2nx.highfive.entity.item.enums.ItemProcessType;
@@ -34,14 +37,10 @@ import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.serverpackets.InventoryUpdate;
 import app.l2nx.highfive.network.serverpackets.StatusUpdate;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import lombok.extern.slf4j.Slf4j;
 
 /**
  * @version $Revision: 1.7.2.4.2.6 $ $Date: 2005/03/27 15:29:30 $
  */
-@Slf4j
 public class RequestDestroyItem extends ClientPacket {
     private int objectId;
     private long count;
@@ -145,14 +144,6 @@ public class RequestDestroyItem extends ClientPacket {
                     || (player.isMounted() && (player.getMountObjectID() == objectId))) {
                 player.sendPacket(SystemMessageId.AS_YOUR_PET_IS_CURRENTLY_OUT_ITS_SUMMONING_ITEM_CANNOT_BE_DESTROYED);
                 return;
-            }
-
-            try (Connection con = DatabaseFactory.getConnection();
-                    PreparedStatement statement = con.prepareStatement("DELETE FROM pets WHERE item_obj_id=?")) {
-                statement.setInt(1, objectId);
-                statement.execute();
-            } catch (Exception e) {
-                log.warn("Could not delete pet objectid: {}", e.getMessage());
             }
         }
 

@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -30,8 +34,6 @@ import app.l2nx.highfive.config.RatesConfig;
 import app.l2nx.highfive.data.holders.PetData;
 import app.l2nx.highfive.data.holders.PetLevelData;
 import app.l2nx.highfive.data.sql.CharSummonTable;
-import app.l2nx.highfive.data.sql.DatabaseFactory;
-import app.l2nx.highfive.data.sql.StoredEffectRows;
 import app.l2nx.highfive.data.sql.SummonEffectTable;
 import app.l2nx.highfive.data.xml.PetDataTable;
 import app.l2nx.highfive.data.xml.SkillData;
@@ -70,26 +72,22 @@ import app.l2nx.highfive.network.serverpackets.PetInventoryUpdate;
 import app.l2nx.highfive.network.serverpackets.StatusUpdate;
 import app.l2nx.highfive.network.serverpackets.StopMove;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
+import app.l2nx.highfive.repository.pet.model.PetRow;
+import app.l2nx.highfive.repository.pet.model.SummonEffectRow;
 import app.l2nx.highfive.taskmanagers.DecayTaskManager;
 import app.l2nx.highfive.threads.ThreadPool;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.Types;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Future;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataAccessException;
 
 @Slf4j
 public class Pet extends Summon {
-
-    private static final String ADD_SKILL_SAVE =
-            "INSERT INTO character_pet_skills_save (petObjItemId,skill_id,skill_level,remaining_ms,tick_phase_ms,buff_index) VALUES (?,?,?,?,?,?)";
-    private static final String RESTORE_SKILL_SAVE =
-            "SELECT petObjItemId,skill_id,skill_level,remaining_ms,tick_phase_ms,buff_index FROM character_pet_skills_save WHERE petObjItemId=? ORDER BY buff_index ASC";
-    private static final String DELETE_SKILL_SAVE = "DELETE FROM character_pet_skills_save WHERE petObjItemId=?";
 
     @Getter
     int currentFed;
@@ -715,15 +713,6 @@ public class Pet extends Summon {
         } catch (Exception e) {
             log.warn("Error while destroying control item: {}", e.getMessage(), e);
         }
-
-        // Pet control item no longer exists, delete the pet from the db.
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement("DELETE FROM pets WHERE item_obj_id = ?")) {
-            ps.setInt(1, controlObjectId);
-            ps.execute();
-        } catch (Exception e) {
-            log.error("Failed to delete Pet [ObjectId: {}]", getObjectId(), e);
-        }
     }
 
     public void dropAllItems() {
@@ -754,60 +743,50 @@ public class Pet extends Summon {
     }
 
     private static Pet restore(Item control, NpcTemplate template, Player owner) {
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement(
-                        "SELECT item_obj_id, name, level, curHp, curMp, exp, sp, fed FROM pets WHERE item_obj_id=?")) {
-            Pet pet;
-            ps.setInt(1, control.getObjectId());
-            try (ResultSet rs = ps.executeQuery()) {
-                if (!rs.next()) {
-                    if (template.isType("BabyPet")) {
-                        pet = new BabyPet(template, owner, control);
-                    } else {
-                        pet = new Pet(template, owner, control);
-                    }
-
-                    return pet;
-                }
-
-                if (template.isType("BabyPet")) {
-                    pet = new BabyPet(template, owner, control, rs.getByte("level"));
-                } else {
-                    pet = new Pet(template, owner, control, rs.getByte("level"));
-                }
-
-                pet.respawned = true;
-                pet.setName(rs.getString("name"));
-
-                long exp = rs.getLong("exp");
-                final PetLevelData info = PetDataTable.getInstance().getPetLevelData(pet.getId(), pet.getLevel());
-
-                // DS: update experience based by level.
-                // Avoiding pet delevels due to exp per level values changed.
-                if ((info != null) && (exp < info.getPetMaxExp())) {
-                    exp = info.getPetMaxExp();
-                }
-
-                pet.getStat().setExp(exp);
-                pet.getStat().setSp(rs.getInt("sp"));
-
-                pet.getStatus().setCurrentHp(rs.getInt("curHp"));
-                pet.getStatus().setCurrentMp(rs.getInt("curMp"));
-                pet.getStatus().setCurrentCp(pet.getMaxCp());
-                if (rs.getDouble("curHp") < 1) {
-                    pet.setDead(true);
-                    pet.stopHpMpRegeneration();
-                }
-
-                pet.setCurrentFed(rs.getInt("fed"));
-            }
-
-            return pet;
-        } catch (Exception e) {
+        final Optional<PetRow> stored;
+        try {
+            stored = CharSummonTable.getInstance().findPet(control.getObjectId());
+        } catch (DataAccessException e) {
             log.warn("Could not restore pet data for owner: {} - {}", owner, e.getMessage(), e);
+            return null;
         }
 
-        return null;
+        if (stored.isEmpty()) {
+            return template.isType("BabyPet")
+                    ? new BabyPet(template, owner, control)
+                    : new Pet(template, owner, control);
+        }
+
+        final PetRow row = stored.get();
+        final Pet pet = template.isType("BabyPet")
+                ? new BabyPet(template, owner, control, (byte) row.level())
+                : new Pet(template, owner, control, (byte) row.level());
+
+        pet.respawned = true;
+        pet.setName(row.name());
+
+        long exp = row.exp();
+        final PetLevelData info = PetDataTable.getInstance().getPetLevelData(pet.getId(), pet.getLevel());
+
+        // DS: update experience based by level.
+        // Avoiding pet delevels due to exp per level values changed.
+        if ((info != null) && (exp < info.getPetMaxExp())) {
+            exp = info.getPetMaxExp();
+        }
+
+        pet.getStat().setExp(exp);
+        pet.getStat().setSp(row.sp());
+
+        pet.getStatus().setCurrentHp(row.currentHp());
+        pet.getStatus().setCurrentMp(row.currentMp());
+        pet.getStatus().setCurrentCp(pet.getMaxCp());
+        if (row.currentHp() < 1) {
+            pet.setDead(true);
+            pet.stopHpMpRegeneration();
+        }
+
+        pet.setCurrentFed(row.fed());
+        return pet;
     }
 
     @Override
@@ -832,22 +811,20 @@ public class Pet extends Summon {
             restoreSummon = false;
         }
 
-        final String req = !respawned
-                ? "INSERT INTO pets (name,level,curHp,curMp,exp,sp,fed,ownerId,restore,item_obj_id) VALUES (?,?,?,?,?,?,?,?,?,?)"
-                : "UPDATE pets SET name=?,level=?,curHp=?,curMp=?,exp=?,sp=?,fed=?,ownerId=?,restore=? WHERE item_obj_id = ?";
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement(req)) {
-            ps.setString(1, getName());
-            ps.setInt(2, getStat().getLevel());
-            ps.setDouble(3, getStatus().getCurrentHp());
-            ps.setDouble(4, getStatus().getCurrentMp());
-            ps.setLong(5, getStat().getExp());
-            ps.setLong(6, getStat().getSp());
-            ps.setInt(7, currentFed);
-            ps.setInt(8, getOwner().getObjectId());
-            ps.setString(9, String.valueOf(restoreSummon)); // True restores pet on login.
-            ps.setInt(10, controlObjectId);
-            ps.executeUpdate();
+        try {
+            CharSummonTable.getInstance()
+                    .savePet(PetRow.builder()
+                            .controlItemId(controlObjectId)
+                            .ownerId(getOwner().getObjectId())
+                            .name(getName())
+                            .level(getStat().getLevel())
+                            .currentHp((int) Math.round(getStatus().getCurrentHp()))
+                            .currentMp((int) Math.round(getStatus().getCurrentMp()))
+                            .exp(getStat().getExp())
+                            .sp(getStat().getSp())
+                            .fed(currentFed)
+                            .restore(restoreSummon)
+                            .build());
 
             respawned = true;
             if (restoreSummon) {
@@ -855,7 +832,7 @@ public class Pet extends Summon {
             } else {
                 CharSummonTable.getInstance().getPets().remove(getOwner().getObjectId());
             }
-        } catch (Exception e) {
+        } catch (DataAccessException e) {
             log.error("Failed to store Pet [ObjectId: {}] data", getObjectId(), e);
         }
 
@@ -875,66 +852,50 @@ public class Pet extends Summon {
         // Clear list for overwrite.
         SummonEffectTable.getInstance().clearPetEffects(getControlObjectId());
 
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps1 = con.prepareStatement(DELETE_SKILL_SAVE);
-                PreparedStatement ps2 = con.prepareStatement(ADD_SKILL_SAVE)) {
-            // Delete all current stored effects for summon to avoid dupe.
-            ps1.setInt(1, controlObjectId);
-            ps1.execute();
+        // Store all effect data along with calculated remaining.
+        final List<SummonEffectRow> rows = new ArrayList<>();
+        if (storeEffects) {
+            for (Entry<Skill, StoredEffect> entry : effectsToStore().entrySet()) {
+                final Skill skill = entry.getKey();
+                final StoredEffect stored = entry.getValue();
+                rows.add(SummonEffectRow.builder()
+                        .skillId(skill.getId())
+                        .skillLevel(skill.getLevel())
+                        .remainingMillis(stored.remainingMillis())
+                        .tickPhaseMillis(stored.tickPhaseMillis())
+                        .build());
 
-            int buffIndex = 0;
-
-            // Store all effect data along with calculated remaining.
-            if (storeEffects) {
-                for (Entry<Skill, StoredEffect> entry : effectsToStore().entrySet()) {
-                    final Skill skill = entry.getKey();
-                    final StoredEffect stored = entry.getValue();
-
-                    ps2.setInt(1, controlObjectId);
-                    ps2.setInt(2, skill.getId());
-                    ps2.setInt(3, skill.getLevel());
-                    ps2.setObject(4, stored.remainingMillis(), Types.BIGINT);
-                    ps2.setLong(5, stored.tickPhaseMillis());
-                    ps2.setInt(6, ++buffIndex);
-                    ps2.addBatch();
-
-                    SummonEffectTable.getInstance().addPetEffect(getControlObjectId(), skill, stored);
-                }
-
-                ps2.executeBatch();
+                SummonEffectTable.getInstance().addPetEffect(getControlObjectId(), skill, stored);
             }
-        } catch (Exception e) {
+        }
+
+        try {
+            CharSummonTable.getInstance().savePetEffects(controlObjectId, rows);
+        } catch (DataAccessException e) {
             log.warn("Could not store pet effect data: ", e);
         }
     }
 
     @Override
     public void restoreEffects() {
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps1 = con.prepareStatement(RESTORE_SKILL_SAVE);
-                PreparedStatement ps2 = con.prepareStatement(DELETE_SKILL_SAVE)) {
+        try {
             if (!SummonEffectTable.getInstance().containsPetId(getControlObjectId())) {
-                ps1.setInt(1, controlObjectId);
-                try (ResultSet rs = ps1.executeQuery()) {
-                    while (rs.next()) {
-                        final Skill skill =
-                                SkillData.getInstance().getSkill(rs.getInt("skill_id"), rs.getInt("skill_level"));
-                        if (skill == null) {
-                            continue;
-                        }
+                for (SummonEffectRow row : CharSummonTable.getInstance().findPetEffects(controlObjectId)) {
+                    final Skill skill = SkillData.getInstance().getSkill(row.skillId(), row.skillLevel());
+                    if (skill == null) {
+                        continue;
+                    }
 
-                        if (skill.hasEffects(EffectScope.GENERAL)) {
-                            StoredEffectRows.read(rs, controlObjectId)
-                                    .ifPresent(stored -> SummonEffectTable.getInstance()
-                                            .addPetEffect(getControlObjectId(), skill, stored));
-                        }
+                    if (skill.hasEffects(EffectScope.GENERAL)) {
+                        CharSummonTable.toStoredEffect(row, controlObjectId)
+                                .ifPresent(stored -> SummonEffectTable.getInstance()
+                                        .addPetEffect(getControlObjectId(), skill, stored));
                     }
                 }
             }
 
-            ps2.setInt(1, controlObjectId);
-            ps2.executeUpdate();
-        } catch (Exception e) {
+            CharSummonTable.getInstance().deletePetEffects(controlObjectId);
+        } catch (DataAccessException e) {
             log.warn("Could not restore {} active effect data: {}", this, e.getMessage(), e);
         } finally {
             SummonEffectTable.getInstance().applyPetEffects(this, getControlObjectId());

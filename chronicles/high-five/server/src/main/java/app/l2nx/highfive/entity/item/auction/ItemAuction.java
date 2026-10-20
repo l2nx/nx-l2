@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+/*
  * SPDX-FileCopyrightText: L2J Mobius contributors
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
@@ -21,30 +25,26 @@ package app.l2nx.highfive.entity.item.auction;
 
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.GeneralConfig;
-import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.item.enums.ItemProcessType;
 import app.l2nx.highfive.entity.item.holders.ItemInfo;
 import app.l2nx.highfive.entity.item.instance.Item;
+import app.l2nx.highfive.managers.ItemAuctionManager;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.serverpackets.ServerPacket;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
+import app.l2nx.highfive.repository.auction.model.ItemAuctionBidRow;
 import app.l2nx.highfive.threads.ThreadPool;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import lombok.Getter;
 import lombok.Setter;
-import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author Forsaiken
  */
-@Slf4j
 public class ItemAuction {
 
     private static final long ENDING_TIME_EXTEND_5 = TimeUnit.MILLISECONDS.convert(5, TimeUnit.MINUTES);
@@ -82,12 +82,6 @@ public class ItemAuction {
     private ItemAuctionBid highestBid;
 
     private int lastBidPlayerObjId;
-
-    // SQL
-    private static final String DELETE_ITEM_AUCTION_BID =
-            "DELETE FROM item_auction_bid WHERE auctionId = ? AND playerObjId = ?";
-    private static final String INSERT_ITEM_AUCTION_BID =
-            "INSERT INTO item_auction_bid (auctionId, playerObjId, playerBid) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE playerBid = ?";
 
     public ItemAuction(int auctionId, int instanceId, long startingTime, long endingTime, AuctionItem auctionItem) {
         this(auctionId, instanceId, startingTime, endingTime, auctionItem, new ArrayList<>(), ItemAuctionState.CREATED);
@@ -161,21 +155,11 @@ public class ItemAuction {
         return Math.max(endingTime - ClockBridge.wallMillis(), 0);
     }
 
+    /**
+     * Stores the state; the auction itself is stored when it is created.
+     */
     public void storeMe() {
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement(
-                        "INSERT INTO item_auction (auctionId,instanceId,auctionItemId,startingTime,endingTime,auctionStateId) VALUES (?,?,?,?,?,?) ON DUPLICATE KEY UPDATE auctionStateId=?")) {
-            ps.setInt(1, auctionId);
-            ps.setInt(2, instanceId);
-            ps.setInt(3, auctionItem.getAuctionItemId());
-            ps.setLong(4, startingTime);
-            ps.setLong(5, endingTime);
-            ps.setByte(6, auctionState.getStateId());
-            ps.setByte(7, auctionState.getStateId());
-            ps.execute();
-        } catch (SQLException e) {
-            log.warn("storeMe: ", e);
-        }
+        ItemAuctionManager.getInstance().updateAuctionState(auctionId, auctionState);
     }
 
     public int getAndSetLastBidPlayerObjectId(int playerObjId) {
@@ -189,19 +173,16 @@ public class ItemAuction {
     }
 
     private void updatePlayerBidInternal(ItemAuctionBid bid, boolean delete) {
-        final String query = delete ? DELETE_ITEM_AUCTION_BID : INSERT_ITEM_AUCTION_BID;
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement(query)) {
-            ps.setInt(1, auctionId);
-            ps.setInt(2, bid.getPlayerObjId());
-            if (!delete) {
-                ps.setLong(3, bid.getLastBid());
-                ps.setLong(4, bid.getLastBid());
-            }
-
-            ps.execute();
-        } catch (SQLException e) {
-            log.warn("updatePlayerBidInternal: ", e);
+        if (delete) {
+            ItemAuctionManager.getInstance().deleteBid(auctionId, bid.getPlayerObjId());
+        } else {
+            ItemAuctionManager.getInstance()
+                    .saveBid(
+                            auctionId,
+                            ItemAuctionBidRow.builder()
+                                    .characterId(bid.getPlayerObjId())
+                                    .lastBid(bid.getLastBid())
+                                    .build());
         }
     }
 

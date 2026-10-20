@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+/*
  * SPDX-FileCopyrightText: L2J Mobius contributors
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
@@ -20,7 +24,6 @@
 package app.l2nx.highfive.scripts.handlers.chat.commands.voiced;
 
 import app.l2nx.highfive.config.custom.WeddingConfig;
-import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.data.xml.SkillData;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.World;
@@ -40,9 +43,6 @@ import app.l2nx.highfive.network.serverpackets.MagicSkillUse;
 import app.l2nx.highfive.network.serverpackets.SetupGauge;
 import app.l2nx.highfive.taskmanagers.GameTimeTaskManager;
 import app.l2nx.highfive.threads.ThreadPool;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.DurationFormatUtils;
 
@@ -77,7 +77,7 @@ public class Wedding implements IVoicedCommandHandler {
         }
 
         final int partnerId = activeChar.getPartnerId();
-        final int coupleId = activeChar.getCoupleId();
+        final long coupleId = activeChar.getCoupleId();
         long adenaAmount = 0;
         if (activeChar.isMarried()) {
             activeChar.sendMessage("You are now divorced.");
@@ -169,29 +169,10 @@ public class Wedding implements IVoicedCommandHandler {
             return false;
         }
 
-        // check if target has player on friendlist
-        boolean foundOnFriendList = false;
-        int objectId;
-        try (Connection con = DatabaseFactory.getConnection()) {
-            final PreparedStatement statement =
-                    con.prepareStatement("SELECT friendId FROM character_friends WHERE charId=?");
-            statement.setInt(1, ptarget.getObjectId());
-            final ResultSet rset = statement.executeQuery();
-            while (rset.next()) {
-                objectId = rset.getInt("friendId");
-                if (objectId == activeChar.getObjectId()) {
-                    foundOnFriendList = true;
-                }
-            }
-
-            statement.close();
-        } catch (Exception e) {
-            log.warn("could not read friend data", e);
-        }
-
-        if (!foundOnFriendList) {
+        if (!ptarget.getFriendList().contains(activeChar.getObjectId())) {
             activeChar.sendMessage(
-                    "The player you want to ask is not on your friends list, you must first be on each others friends list before you choose to engage.");
+                    "The player you want to ask is not on your friends list, you must first be on each others friends"
+                            + " list before you choose to engage.");
             return false;
         }
 

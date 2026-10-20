@@ -4,62 +4,27 @@
  */
 package app.l2nx.login.integration;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import app.l2nx.database.PostgresDatabase;
+import com.github.f4b6a3.uuid.UuidCreator;
 import java.util.UUID;
-import java.util.stream.Stream;
-import org.springframework.core.io.FileSystemResource;
 import org.springframework.jdbc.core.simple.JdbcClient;
-import org.springframework.jdbc.datasource.DriverManagerDataSource;
-import org.springframework.jdbc.datasource.init.ResourceDatabasePopulator;
-import org.testcontainers.mysql.MySQLContainer;
-import org.testcontainers.utility.DockerImageName;
 
-/**
- * One database shared by all repository test classes; tests use their own account names, so classes may run concurrently.
- */
 abstract class RepositoryTest {
-    // MariaDB reached through MySQL Connector/J, the driver the server ships with.
-    private static final MySQLContainer DATABASE =
-            new MySQLContainer(DockerImageName.parse("mariadb:11.8").asCompatibleSubstituteFor("mysql"));
-
-    protected static final JdbcClient JDBC;
-
-    static {
-        DATABASE.start();
-        final DriverManagerDataSource dataSource =
-                new DriverManagerDataSource(DATABASE.getJdbcUrl(), DATABASE.getUsername(), DATABASE.getPassword());
-        final ResourceDatabasePopulator schema = new ResourceDatabasePopulator();
-        try (Stream<Path> scripts = Files.list(Path.of(System.getProperty("l2nx.test.login-sql-dir")))) {
-            scripts.filter(script -> script.toString().endsWith(".sql"))
-                    .sorted()
-                    .forEach(script -> schema.addScript(new FileSystemResource(script)));
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
-        schema.execute(dataSource);
-        JDBC = JdbcClient.create(dataSource);
-    }
+    protected static final JdbcClient JDBC =
+            JdbcClient.create(PostgresDatabase.migratedSchema("login", "db/liquibase-changelog.yaml"));
 
     protected static String uniqueLogin() {
         return "a" + UUID.randomUUID().toString().replace("-", "").substring(0, 20);
     }
 
-    protected static void insertAccount(String login, String password, int accessLevel) {
-        JDBC.sql("INSERT INTO accounts (login, password, accessLevel) VALUES (?, ?, ?)")
+    protected static UUID insertAccount(String login, String password, int accessLevel) {
+        final UUID id = UuidCreator.getTimeOrderedEpoch();
+        JDBC.sql("INSERT INTO accounts (id, login, password, access_level) VALUES (?, ?, ?, ?)")
+                .param(id)
                 .param(login)
                 .param(password)
                 .param(accessLevel)
                 .update();
-    }
-
-    protected static void insertAccountData(String login, String var, String value) {
-        JDBC.sql("INSERT INTO account_data (account_name, var, value) VALUES (?, ?, ?)")
-                .param(login)
-                .param(var)
-                .param(value)
-                .update();
+        return id;
     }
 }

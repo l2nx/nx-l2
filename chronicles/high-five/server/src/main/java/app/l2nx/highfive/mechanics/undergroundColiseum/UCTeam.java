@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -95,7 +99,7 @@ public class UCTeam {
         consecutiveWins++;
         if ((consecutiveWins > 1) && (party != null) && (party.getLeader() != null)) {
             UndergroundColiseumManager.getInstance()
-                    .updateBestTeam(baseArena.getId(), party.getLeader().getName(), consecutiveWins);
+                    .updateBestTeam(baseArena.getId(), party.getLeader(), consecutiveWins);
         }
     }
 

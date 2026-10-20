@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  SPDX-FileCopyrightText: 2026 L2NX contributors
+  SPDX-License-Identifier: Apache-2.0
+-->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+	<xs:simpleType name="text">
+		<xs:restriction base="xs:string">
+			<xs:minLength value="1" />
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:complexType name="siegeGuard">
+		<xs:attribute name="npcId" type="xs:positiveInteger" use="required" />
+		<xs:attribute name="x" type="xs:integer" use="required" />
+		<xs:attribute name="y" type="xs:integer" use="required" />
+		<xs:attribute name="z" type="xs:integer" use="required" />
+		<xs:attribute name="heading" type="xs:integer" use="required" />
+		<!-- Seconds. -->
+		<xs:attribute name="respawnDelay" type="xs:nonNegativeInteger" use="required" />
+	</xs:complexType>
+	<xs:element name="list">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element name="clanHall" minOccurs="1" maxOccurs="unbounded">
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element name="siegeGuard" type="siegeGuard" minOccurs="0" maxOccurs="unbounded" />
+						</xs:sequence>
+						<xs:attribute name="id" type="xs:positiveInteger" use="required" />
+						<xs:attribute name="name" type="text" use="required" />
+						<xs:attribute name="description" type="text" use="required" />
+						<xs:attribute name="location" type="text" use="required" />
+						<xs:attribute name="siegeLengthMs" type="xs:positiveInteger" use="required" />
+						<!-- The next siege is the last one plus these days, months and years, at siegeHour:siegeMinute. -->
+						<xs:attribute name="scheduleDays" type="xs:nonNegativeInteger" use="required" />
+						<xs:attribute name="scheduleMonths" type="xs:nonNegativeInteger" use="required" />
+						<xs:attribute name="scheduleYears" type="xs:nonNegativeInteger" use="required" />
+						<xs:attribute name="siegeHour" use="required">
+							<xs:simpleType>
+								<xs:restriction base="xs:integer">
+									<xs:minInclusive value="0" />
+									<xs:maxInclusive value="23" />
+								</xs:restriction>
+							</xs:simpleType>
+						</xs:attribute>
+						<xs:attribute name="siegeMinute" use="required">
+							<xs:simpleType>
+								<xs:restriction base="xs:integer">
+									<xs:minInclusive value="0" />
+									<xs:maxInclusive value="59" />
+								</xs:restriction>
+							</xs:simpleType>
+						</xs:attribute>
+					</xs:complexType>
+				</xs:element>
+			</xs:sequence>
+		</xs:complexType>
+		<xs:unique name="uniqueClanHall">
+			<xs:selector xpath="clanHall" />
+			<xs:field xpath="@id" />
+		</xs:unique>
+	</xs:element>
+</xs:schema>

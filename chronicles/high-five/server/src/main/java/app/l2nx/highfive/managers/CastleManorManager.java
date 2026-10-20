@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -24,7 +28,6 @@ package app.l2nx.highfive.managers;
 
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.GeneralConfig;
-import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.data.xml.IXmlReader;
 import app.l2nx.highfive.entity.clan.Clan;
 import app.l2nx.highfive.entity.clan.ClanMember;
@@ -36,12 +39,10 @@ import app.l2nx.highfive.mechanics.siege.manor.ManorMode;
 import app.l2nx.highfive.mechanics.siege.manor.Seed;
 import app.l2nx.highfive.mechanics.siege.manor.SeedProduction;
 import app.l2nx.highfive.network.SystemMessageId;
+import app.l2nx.highfive.repository.residence.CastleManorRepository;
 import app.l2nx.highfive.threads.ThreadPool;
 import app.l2nx.highfive.util.StatSet;
 import java.io.File;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -52,9 +53,10 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataAccessException;
+import org.springframework.stereotype.Component;
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
@@ -64,13 +66,11 @@ import org.w3c.dom.Node;
  * @author malyelfik, Stayway
  */
 @Slf4j
+@Component
 public class CastleManorManager implements IXmlReader {
+    private static volatile CastleManorManager instance;
 
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("dd/MM HH:mm:ss");
-
-    // SQL queries
-    private static final String INSERT_PRODUCT = "INSERT INTO castle_manor_production VALUES (?, ?, ?, ?, ?, ?)";
-    private static final String INSERT_CROP = "INSERT INTO castle_manor_procure VALUES (?, ?, ?, ?, ?, ?, ?)";
 
     // Current manor status
     private ManorMode mode = ManorMode.APPROVED;
@@ -87,7 +87,17 @@ public class CastleManorManager implements IXmlReader {
     private final Map<Integer, List<SeedProduction>> production = new HashMap<>();
     private final Map<Integer, List<SeedProduction>> productionNext = new HashMap<>();
 
-    public CastleManorManager() {
+    private final CastleManorRepository manorRepository;
+
+    public CastleManorManager(CastleManorRepository manorRepository) {
+        this.manorRepository = manorRepository;
+        instance = this;
+    }
+
+    /**
+     * Loads the seeds and the manor of every castle and starts the manor cycle; {@link #load()} reads the seeds only.
+     */
+    public void init() {
         if (GeneralConfig.ALLOW_MANOR) {
             // Load seed data from XML and castle manor data from the database.
             load();
@@ -164,82 +174,48 @@ public class CastleManorManager implements IXmlReader {
     }
 
     private void loadDb() {
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement stProduction =
-                        con.prepareStatement("SELECT * FROM castle_manor_production WHERE castle_id=?");
-                PreparedStatement stProcure =
-                        con.prepareStatement("SELECT * FROM castle_manor_procure WHERE castle_id=?")) {
+        try {
+            final Set<Integer> knownCropIds = getCropIds();
             for (Castle castle : CastleManager.getInstance().getCastles()) {
                 final int castleId = castle.getResidenceId();
-
-                // Clear parameters for reuse.
-                stProduction.clearParameters();
-                stProcure.clearParameters();
-
-                // Load seed production data for the castle.
-                final List<SeedProduction> currentProduction = new ArrayList<>();
-                final List<SeedProduction> nextProduction = new ArrayList<>();
-                stProduction.setInt(1, castleId);
-
-                try (ResultSet rs = stProduction.executeQuery()) {
-                    while (rs.next()) {
-                        final int seedId = rs.getInt("seed_id");
-                        if (seeds.containsKey(seedId)) {
-                            final SeedProduction seedProduction = new SeedProduction(
-                                    seedId, rs.getLong("amount"), rs.getLong("price"), rs.getInt("start_amount"));
-
-                            // Separate current and next period productions.
-                            if (rs.getBoolean("next_period")) {
-                                nextProduction.add(seedProduction);
-                            } else {
-                                currentProduction.add(seedProduction);
-                            }
-                        } else {
-                            log.warn("Unknown seed ID: {}", seedId);
-                        }
-                    }
-                }
-
-                production.put(castleId, currentProduction);
-                productionNext.put(castleId, nextProduction);
-
-                // Load crop procure data for the castle.
-                final List<CropProcure> currentProcure = new ArrayList<>();
-                final List<CropProcure> nextProcure = new ArrayList<>();
-                stProcure.setInt(1, castleId);
-
-                try (ResultSet rs = stProcure.executeQuery()) {
-                    final Set<Integer> knownCropIds = getCropIds();
-                    while (rs.next()) {
-                        final int cropId = rs.getInt("crop_id");
-                        if (knownCropIds.contains(cropId)) {
-                            final CropProcure cropProcure = new CropProcure(
-                                    cropId,
-                                    rs.getLong("amount"),
-                                    rs.getInt("reward_type"),
-                                    rs.getLong("start_amount"),
-                                    rs.getLong("price"));
-
-                            // Separate current and next period procurements.
-                            if (rs.getBoolean("next_period")) {
-                                nextProcure.add(cropProcure);
-                            } else {
-                                currentProcure.add(cropProcure);
-                            }
-                        } else {
-                            log.warn("Unknown crop ID: {}", cropId);
-                        }
-                    }
-                }
-
-                procure.put(castleId, currentProcure);
-                procureNext.put(castleId, nextProcure);
+                production.put(castleId, knownProductions(manorRepository.findProductions(castleId, false)));
+                productionNext.put(castleId, knownProductions(manorRepository.findProductions(castleId, true)));
+                procure.put(
+                        castleId, knownProcurements(manorRepository.findProcurements(castleId, false), knownCropIds));
+                procureNext.put(
+                        castleId, knownProcurements(manorRepository.findProcurements(castleId, true), knownCropIds));
             }
 
             log.info("Manor data loaded.");
-        } catch (Exception e) {
+        } catch (DataAccessException e) {
             log.warn("Unable to load manor data!", e);
         }
+    }
+
+    private static List<SeedProduction> knownProductions(List<SeedProduction> stored) {
+        final List<SeedProduction> known = new ArrayList<>(stored.size());
+        for (SeedProduction seedProduction : stored) {
+            if (seeds.containsKey(seedProduction.getId())) {
+                known.add(seedProduction);
+            } else {
+                log.warn("Unknown seed ID: {}", seedProduction.getId());
+            }
+        }
+
+        return known;
+    }
+
+    private static List<CropProcure> knownProcurements(List<CropProcure> stored, Set<Integer> knownCropIds) {
+        final List<CropProcure> known = new ArrayList<>(stored.size());
+        for (CropProcure cropProcure : stored) {
+            if (knownCropIds.contains(cropProcure.getId())) {
+                known.add(cropProcure);
+            } else {
+                log.warn("Unknown crop ID: {}", cropProcure.getId());
+            }
+        }
+
+        return known;
     }
 
     private void scheduleModeChange() {
@@ -462,30 +438,9 @@ public class CastleManorManager implements IXmlReader {
 
         // Save actions to the database if configured to do so.
         if (GeneralConfig.ALT_MANOR_SAVE_ALL_ACTIONS) {
-            try (Connection con = DatabaseFactory.getConnection();
-                    PreparedStatement deleteStmt = con.prepareStatement(
-                            "DELETE FROM castle_manor_production WHERE castle_id = ? AND next_period = 1");
-                    PreparedStatement insertStmt = con.prepareStatement(INSERT_PRODUCT)) {
-                // Delete existing production data for the next period.
-                deleteStmt.setInt(1, castleId);
-                deleteStmt.executeUpdate();
-
-                // Insert new production data if list is not empty.
-                for (SeedProduction sp : list) {
-                    insertStmt.setInt(1, castleId);
-                    insertStmt.setInt(2, sp.getId());
-                    insertStmt.setLong(3, sp.getAmount());
-                    insertStmt.setLong(4, sp.getStartAmount());
-                    insertStmt.setLong(5, sp.getPrice());
-                    insertStmt.setBoolean(6, true);
-                    insertStmt.addBatch();
-                }
-
-                // Execute batch insert for new production data.
-                if (!list.isEmpty()) {
-                    insertStmt.executeBatch();
-                }
-            } catch (Exception e) {
+            try {
+                manorRepository.replaceNextProductions(castleId, list);
+            } catch (DataAccessException e) {
                 log.error("Unable to store manor data!", e);
             }
         }
@@ -496,66 +451,26 @@ public class CastleManorManager implements IXmlReader {
 
         // Save actions to the database if configured to do so.
         if (GeneralConfig.ALT_MANOR_SAVE_ALL_ACTIONS) {
-            try (Connection con = DatabaseFactory.getConnection();
-                    PreparedStatement deleteStmt = con.prepareStatement(
-                            "DELETE FROM castle_manor_procure WHERE castle_id = ? AND next_period = 1");
-                    PreparedStatement insertStmt = con.prepareStatement(INSERT_CROP)) {
-                // Delete existing procure data for the next period.
-                deleteStmt.setInt(1, castleId);
-                deleteStmt.executeUpdate();
-
-                // Insert new procure data if list is not empty.
-                for (CropProcure cp : list) {
-                    insertStmt.setInt(1, castleId);
-                    insertStmt.setInt(2, cp.getId());
-                    insertStmt.setLong(3, cp.getAmount());
-                    insertStmt.setLong(4, cp.getStartAmount());
-                    insertStmt.setLong(5, cp.getPrice());
-                    insertStmt.setInt(6, cp.getReward());
-                    insertStmt.setBoolean(7, true);
-                    insertStmt.addBatch();
-                }
-
-                // Execute batch insert for new procure data.
-                if (!list.isEmpty()) {
-                    insertStmt.executeBatch();
-                }
-            } catch (Exception e) {
+            try {
+                manorRepository.replaceNextProcurements(castleId, list);
+            } catch (DataAccessException e) {
                 log.error("Unable to store manor data!", e);
             }
         }
     }
 
     public void updateCurrentProduction(int castleId, Collection<SeedProduction> items) {
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement(
-                        "UPDATE castle_manor_production SET amount = ? WHERE castle_id = ? AND seed_id = ? AND next_period = 0")) {
-            for (SeedProduction sp : items) {
-                ps.setLong(1, sp.getAmount());
-                ps.setInt(2, castleId);
-                ps.setInt(3, sp.getId());
-                ps.addBatch();
-            }
-
-            ps.executeBatch();
-        } catch (Exception e) {
+        try {
+            manorRepository.updateCurrentProductionAmounts(castleId, items);
+        } catch (DataAccessException e) {
             log.info("Unable to update current production data!", e);
         }
     }
 
     public void updateCurrentProcure(int castleId, Collection<CropProcure> items) {
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement(
-                        "UPDATE castle_manor_procure SET amount = ? WHERE castle_id = ? AND crop_id = ? AND next_period = 0")) {
-            for (CropProcure cp : items) {
-                ps.setLong(1, cp.getAmount());
-                ps.setInt(2, castleId);
-                ps.setInt(3, cp.getId());
-                ps.addBatch();
-            }
-
-            ps.executeBatch();
-        } catch (Exception e) {
+        try {
+            manorRepository.updateCurrentProcurementAmounts(castleId, items);
+        } catch (DataAccessException e) {
             log.info("Unable to update current procure data!", e);
         }
     }
@@ -606,79 +521,10 @@ public class CastleManorManager implements IXmlReader {
     }
 
     public boolean storeMe() {
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement deleteProductionStmt = con.prepareStatement("DELETE FROM castle_manor_production");
-                PreparedStatement insertProductionStmt = con.prepareStatement(INSERT_PRODUCT);
-                PreparedStatement deleteProcureStmt = con.prepareStatement("DELETE FROM castle_manor_procure");
-                PreparedStatement insertProcureStmt = con.prepareStatement(INSERT_CROP)) {
-            // Delete old production data.
-            deleteProductionStmt.executeUpdate();
-
-            // Insert current production data.
-            for (Entry<Integer, List<SeedProduction>> entry : production.entrySet()) {
-                for (SeedProduction sp : entry.getValue()) {
-                    insertProductionStmt.setInt(1, entry.getKey());
-                    insertProductionStmt.setInt(2, sp.getId());
-                    insertProductionStmt.setLong(3, sp.getAmount());
-                    insertProductionStmt.setLong(4, sp.getStartAmount());
-                    insertProductionStmt.setLong(5, sp.getPrice());
-                    insertProductionStmt.setBoolean(6, false);
-                    insertProductionStmt.addBatch();
-                }
-            }
-
-            // Insert next period production data.
-            for (Entry<Integer, List<SeedProduction>> entry : productionNext.entrySet()) {
-                for (SeedProduction sp : entry.getValue()) {
-                    insertProductionStmt.setInt(1, entry.getKey());
-                    insertProductionStmt.setInt(2, sp.getId());
-                    insertProductionStmt.setLong(3, sp.getAmount());
-                    insertProductionStmt.setLong(4, sp.getStartAmount());
-                    insertProductionStmt.setLong(5, sp.getPrice());
-                    insertProductionStmt.setBoolean(6, true);
-                    insertProductionStmt.addBatch();
-                }
-            }
-
-            // Execute batch insert for production data.
-            insertProductionStmt.executeBatch();
-
-            // Delete old procure data.
-            deleteProcureStmt.executeUpdate();
-
-            // Insert current procure data.
-            for (Entry<Integer, List<CropProcure>> entry : procure.entrySet()) {
-                for (CropProcure cp : entry.getValue()) {
-                    insertProcureStmt.setInt(1, entry.getKey());
-                    insertProcureStmt.setInt(2, cp.getId());
-                    insertProcureStmt.setLong(3, cp.getAmount());
-                    insertProcureStmt.setLong(4, cp.getStartAmount());
-                    insertProcureStmt.setLong(5, cp.getPrice());
-                    insertProcureStmt.setInt(6, cp.getReward());
-                    insertProcureStmt.setBoolean(7, false);
-                    insertProcureStmt.addBatch();
-                }
-            }
-
-            // Insert next period procure data.
-            for (Entry<Integer, List<CropProcure>> entry : procureNext.entrySet()) {
-                for (CropProcure cp : entry.getValue()) {
-                    insertProcureStmt.setInt(1, entry.getKey());
-                    insertProcureStmt.setInt(2, cp.getId());
-                    insertProcureStmt.setLong(3, cp.getAmount());
-                    insertProcureStmt.setLong(4, cp.getStartAmount());
-                    insertProcureStmt.setLong(5, cp.getPrice());
-                    insertProcureStmt.setInt(6, cp.getReward());
-                    insertProcureStmt.setBoolean(7, true);
-                    insertProcureStmt.addBatch();
-                }
-            }
-
-            // Execute batch insert for procure data.
-            insertProcureStmt.executeBatch();
-
+        try {
+            manorRepository.replaceAll(production, productionNext, procure, procureNext);
             return true;
-        } catch (Exception e) {
+        } catch (DataAccessException e) {
             log.error("Unable to store manor data!", e);
             return false;
         }
@@ -697,19 +543,9 @@ public class CastleManorManager implements IXmlReader {
 
         // Save changes to the database if configured to do so.
         if (GeneralConfig.ALT_MANOR_SAVE_ALL_ACTIONS) {
-            try (Connection con = DatabaseFactory.getConnection();
-                    PreparedStatement deleteProductionStmt =
-                            con.prepareStatement("DELETE FROM castle_manor_production WHERE castle_id = ?");
-                    PreparedStatement deleteProcureStmt =
-                            con.prepareStatement("DELETE FROM castle_manor_procure WHERE castle_id = ?")) {
-                // Delete seed production data.
-                deleteProductionStmt.setInt(1, castleId);
-                deleteProductionStmt.executeUpdate();
-
-                // Delete procurement data.
-                deleteProcureStmt.setInt(1, castleId);
-                deleteProcureStmt.executeUpdate();
-            } catch (Exception e) {
+            try {
+                manorRepository.deleteByCastle(castleId);
+            } catch (DataAccessException e) {
                 log.error("Unable to store manor data!", e);
             }
         }
@@ -802,11 +638,12 @@ public class CastleManorManager implements IXmlReader {
         return null;
     }
 
+    // TODO: callers receive the bean through their constructor (#41).
     public static CastleManorManager getInstance() {
-        return SingletonHolder.INSTANCE;
-    }
-
-    private static class SingletonHolder {
-        protected static final CastleManorManager INSTANCE = new CastleManorManager();
+        final CastleManorManager current = instance;
+        if (current == null) {
+            throw new IllegalStateException("CastleManorManager is used before the Spring context created it.");
+        }
+        return current;
     }
 }

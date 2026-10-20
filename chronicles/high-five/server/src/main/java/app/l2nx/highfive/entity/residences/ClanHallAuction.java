@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -24,23 +28,23 @@ package app.l2nx.highfive.entity.residences;
 
 import static app.l2nx.highfive.entity.itemcontainer.Inventory.ADENA_ID;
 import static app.l2nx.highfive.entity.itemcontainer.Inventory.MAX_ADENA;
+import static app.l2nx.highfive.repository.LegacyValues.epochMillisOrZero;
+import static app.l2nx.highfive.repository.LegacyValues.instantOrNull;
 
 import app.l2nx.highfive.clock.ClockBridge;
+import app.l2nx.highfive.data.holders.ClanHallTemplate;
 import app.l2nx.highfive.data.sql.ClanHallTable;
 import app.l2nx.highfive.data.sql.ClanTable;
-import app.l2nx.highfive.data.sql.DatabaseFactory;
-import app.l2nx.highfive.entity.World;
+import app.l2nx.highfive.data.xml.ClanHallData;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.clan.Clan;
 import app.l2nx.highfive.entity.item.enums.ItemProcessType;
 import app.l2nx.highfive.entity.itemcontainer.ItemContainer;
 import app.l2nx.highfive.managers.ClanHallAuctionManager;
-import app.l2nx.highfive.managers.IdManager;
 import app.l2nx.highfive.network.SystemMessageId;
+import app.l2nx.highfive.repository.auction.model.ClanHallAuctionRow;
+import app.l2nx.highfive.repository.auction.model.ClanHallBid;
 import app.l2nx.highfive.threads.ThreadPool;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.util.Calendar;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -50,6 +54,14 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class ClanHallAuction {
+    /**
+     * The length of an NPC auction, and of the extension an auction gets when it ends without a bid.
+     */
+    public static final long AUCTION_LENGTH_MS = 7 * 24 * 3600000L;
+
+    private static final String NPC_SELLER_NAME = "NPC";
+    private static final String NPC_SELLER_CLAN_NAME = "NPC Clan";
+
     @Getter
     private int id = 0;
 
@@ -60,34 +72,16 @@ public class ClanHallAuction {
     private int highestBidderId = 0;
 
     @Getter
-    private String highestBidderName = "";
-
-    @Getter
     private long highestBidderMaxBid = 0;
 
     @Getter
-    private int itemId = 0;
+    private String itemName;
 
+    /**
+     * The selling clan, {@code 0} for the NPC auction of a free hall.
+     */
     @Getter
-    private String itemName = "";
-
-    @Getter
-    private int itemObjectId = 0;
-
-    @Getter
-    private final long itemQuantity = 0;
-
-    @Getter
-    private String itemType = "";
-
-    @Getter
-    private int sellerId = 0;
-
-    @Getter
-    private String sellerClanName = "";
-
-    @Getter
-    private String sellerName = "";
+    private int sellerClanId = 0;
 
     @Getter
     private long currentBid = 0;
@@ -98,14 +92,9 @@ public class ClanHallAuction {
     @Getter
     private final Map<Integer, Bidder> bidders = new ConcurrentHashMap<>();
 
-    private static final String[] ItemTypeName = {"ClanHall"};
-
     public static class Bidder {
         @Getter
-        private final String name; // TODO replace with objId
-
-        @Getter
-        private final String clanName;
+        private final int clanId;
 
         @Getter
         @Setter
@@ -114,9 +103,8 @@ public class ClanHallAuction {
         @Getter
         private final Calendar timeBid;
 
-        public Bidder(String name, String clanName, long bid, long timeBid) {
-            this.name = name;
-            this.clanName = clanName;
+        public Bidder(int clanId, long bid, long timeBid) {
+            this.clanId = clanId;
             this.bid = bid;
             this.timeBid = ClockBridge.calendar();
             this.timeBid.setTimeInMillis(timeBid);
@@ -124,6 +112,19 @@ public class ClanHallAuction {
 
         public void setTimeBid(long timeBid) {
             this.timeBid.setTimeInMillis(timeBid);
+        }
+
+        /**
+         * @return the leader of the bidding clan
+         */
+        public String getName() {
+            final Clan clan = ClanTable.getInstance().getClan(clanId);
+            return clan == null ? null : clan.getLeaderName();
+        }
+
+        public String getClanName() {
+            final Clan clan = ClanTable.getInstance().getClan(clanId);
+            return clan == null ? null : clan.getName();
         }
     }
 
@@ -152,70 +153,39 @@ public class ClanHallAuction {
     public ClanHallAuction(int itemId, Clan clan, long delay, long bid, String name) {
         id = itemId;
         endDate = ClockBridge.wallMillis() + delay;
-        this.itemId = itemId;
         itemName = name;
-        itemType = "ClanHall";
-        sellerId = clan.getLeaderId();
-        sellerName = clan.getLeaderName();
-        sellerClanName = clan.getName();
+        sellerClanId = clan.getId();
         startingBid = bid;
     }
 
     /** Load auctions */
     private void load() {
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement("Select * from auction where id = ?")) {
-            ps.setInt(1, id);
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    currentBid = rs.getLong("currentBid");
-                    endDate = rs.getLong("endDate");
-                    itemId = rs.getInt("itemId");
-                    itemName = rs.getString("itemName");
-                    itemObjectId = rs.getInt("itemObjectId");
-                    itemType = rs.getString("itemType");
-                    sellerId = rs.getInt("sellerId");
-                    sellerClanName = rs.getString("sellerClanName");
-                    sellerName = rs.getString("sellerName");
-                    startingBid = rs.getLong("startingBid");
-                }
-            }
+        ClanHallAuctionManager.getInstance().findAuction(id).ifPresent(auction -> {
+            currentBid = auction.currentBid();
+            endDate = epochMillisOrZero(auction.endDate());
+            sellerClanId = auction.sellerClanId();
+            startingBid = auction.startingBid();
+        });
 
-            loadBid();
-        } catch (Exception e) {
-            log.warn("Exception: Auction.load(): {}", e.getMessage(), e);
-        }
+        final ClanHallTemplate hall = ClanHallData.getInstance().getClanHall(id);
+        itemName = hall == null ? null : hall.name();
+        loadBid();
     }
 
     /** Load bidders **/
     private void loadBid() {
         highestBidderId = 0;
-        highestBidderName = "";
         highestBidderMaxBid = 0;
 
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement(
-                        "SELECT bidderId, bidderName, maxBid, clan_name, time_bid FROM auction_bid WHERE auctionId = ? ORDER BY maxBid DESC")) {
-            ps.setInt(1, id);
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    if (rs.isFirst()) {
-                        highestBidderId = rs.getInt("bidderId");
-                        highestBidderName = rs.getString("bidderName");
-                        highestBidderMaxBid = rs.getLong("maxBid");
-                    }
-
-                    bidders.put(
-                            rs.getInt("bidderId"),
-                            new Bidder(
-                                    rs.getString("bidderName"),
-                                    rs.getString("clan_name"),
-                                    rs.getLong("maxBid"),
-                                    rs.getLong("time_bid")));
-                }
+        boolean highest = true;
+        for (ClanHallBid row : ClanHallAuctionManager.getInstance().findBids(id)) {
+            if (highest) {
+                highestBidderId = row.clanId();
+                highestBidderMaxBid = row.bid();
+                highest = false;
             }
-        } catch (Exception e) {
-            log.warn("Exception: Auction.loadBid(): {}", e.getMessage(), e);
+
+            bidders.put(row.clanId(), new Bidder(row.clanId(), row.bid(), epochMillisOrZero(row.timeBid())));
         }
     }
 
@@ -224,7 +194,7 @@ public class ClanHallAuction {
         final long currentTime = ClockBridge.wallMillis();
         long taskDelay = 0;
         if (endDate <= currentTime) {
-            endDate = currentTime + (7 * 24 * 3600000);
+            endDate = currentTime + AUCTION_LENGTH_MS;
             saveAuctionDate();
         } else {
             taskDelay = endDate - currentTime;
@@ -233,20 +203,26 @@ public class ClanHallAuction {
         ThreadPool.schedule(new AutoEndTask(), taskDelay);
     }
 
-    public static String getItemTypeName(AuctionItemType value) {
-        return ItemTypeName[value.ordinal()];
-    }
-
     /** Save Auction Data End */
     private void saveAuctionDate() {
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement("Update auction set endDate = ? where id = ?")) {
-            ps.setLong(1, endDate);
-            ps.setInt(2, id);
-            ps.execute();
-        } catch (Exception e) {
-            log.error("Exception: saveAuctionDate(): {}", e.getMessage(), e);
-        }
+        ClanHallAuctionManager.getInstance().saveAuctionEndDate(id, endDate);
+    }
+
+    /**
+     * @return the item id of the auctioned clan hall, which is the clan hall id
+     */
+    public int getItemId() {
+        return id;
+    }
+
+    public String getSellerName() {
+        final Clan seller = ClanTable.getInstance().getClan(sellerClanId);
+        return seller == null ? NPC_SELLER_NAME : seller.getLeaderName();
+    }
+
+    public String getSellerClanName() {
+        final Clan seller = ClanTable.getInstance().getClan(sellerClanId);
+        return seller == null ? NPC_SELLER_CLAN_NAME : seller.getName();
     }
 
     /**
@@ -255,12 +231,14 @@ public class ClanHallAuction {
      * @param bid
      */
     public synchronized void setBid(Player bidder, long bid) {
-        final long requiredAdena =
-                highestBidderName.equals(bidder.getClan().getLeaderName()) ? bid - highestBidderMaxBid : bid;
+        final long requiredAdena = highestBidderId == bidder.getClanId() ? bid - highestBidderMaxBid : bid;
         if ((((highestBidderId > 0) && (bid > highestBidderMaxBid)) || ((highestBidderId == 0) && (bid >= startingBid)))
                 && takeItem(bidder, requiredAdena)) {
-            updateInDB(bidder, bid);
-            bidder.getClan().setAuctionBiddedAt(id, true);
+            if (updateInDB(bidder, bid)) {
+                bidder.getClan().setAuctionBiddedAt(id, true);
+            } else {
+                returnItem(bidder.getClan(), requiredAdena, false);
+            }
             return;
         }
 
@@ -271,25 +249,23 @@ public class ClanHallAuction {
 
     /**
      * Returns the item to the clan warehouse.
-     * @param clanName the clan name
      * @param quantity the Adena value
      * @param penalty if {@code true} fees are applied
      */
-    private void returnItem(String clanName, long quantity, boolean penalty) {
+    private void returnItem(Clan clan, long quantity, boolean penalty) {
         long amount = quantity;
         if (penalty) {
             amount *= 0.9; // take 10% tax fee if needed
         }
 
-        final Clan clan = ClanTable.getInstance().getClanByName(clanName);
         if (clan == null) {
-            log.warn("Clan {} doesn't exist!", clanName);
+            log.warn("Clan doesn't exist!");
             return;
         }
 
         final ItemContainer cwh = clan.getWarehouse();
         if (cwh == null) {
-            log.warn("There has been a problem with {}'s clan warehouse!", clanName);
+            log.warn("There has been a problem with {}'s clan warehouse!", clan.getName());
             return;
         }
 
@@ -321,75 +297,59 @@ public class ClanHallAuction {
      * Update auction in DB
      * @param bidder
      * @param bid
+     * @return {@code false} when the bid could not be stored, so the auction is left as it was
      */
-    private void updateInDB(Player bidder, long bid) {
-        try (Connection con = DatabaseFactory.getConnection()) {
-            if (bidders.get(bidder.getClanId()) != null) {
-                try (PreparedStatement ps = con.prepareStatement(
-                        "UPDATE auction_bid SET bidderId=?, bidderName=?, maxBid=?, time_bid=? WHERE auctionId=? AND bidderId=?")) {
-                    ps.setInt(1, bidder.getClanId());
-                    ps.setString(2, bidder.getClan().getLeaderName());
-                    ps.setLong(3, bid);
-                    ps.setLong(4, ClockBridge.wallMillis());
-                    ps.setInt(5, id);
-                    ps.setInt(6, bidder.getClanId());
-                    ps.execute();
-                }
-            } else {
-                try (PreparedStatement ps = con.prepareStatement(
-                        "INSERT INTO auction_bid (id, auctionId, bidderId, bidderName, maxBid, clan_name, time_bid) VALUES (?, ?, ?, ?, ?, ?, ?)")) {
-                    ps.setInt(1, IdManager.getInstance().getNextId());
-                    ps.setInt(2, id);
-                    ps.setInt(3, bidder.getClanId());
-                    ps.setString(4, bidder.getName());
-                    ps.setLong(5, bid);
-                    ps.setString(6, bidder.getClan().getName());
-                    ps.setLong(7, ClockBridge.wallMillis());
-                    ps.execute();
-                }
-
-                if (World.getPlayer(highestBidderName) != null) {
-                    World.getPlayer(highestBidderName).sendMessage("You have been out bidded");
-                }
-            }
-
-            final long currentTime = ClockBridge.wallMillis();
-            highestBidderId = bidder.getClanId();
-            highestBidderMaxBid = bid;
-            highestBidderName = bidder.getClan().getLeaderName();
-            if (bidders.get(highestBidderId) == null) {
-                bidders.put(
-                        highestBidderId,
-                        new Bidder(highestBidderName, bidder.getClan().getName(), bid, currentTime));
-            } else {
-                bidders.get(highestBidderId).setBid(bid);
-                bidders.get(highestBidderId).setTimeBid(currentTime);
-            }
-
-            bidder.sendPacket(SystemMessageId.YOUR_BID_HAS_BEEN_SUCCESSFULLY_PLACED);
-        } catch (Exception e) {
-            log.error("Exception: Auction.updateInDB(Player bidder, int bid): {}", e.getMessage(), e);
+    private boolean updateInDB(Player bidder, long bid) {
+        final long currentTime = ClockBridge.wallMillis();
+        final int clanId = bidder.getClanId();
+        if (!ClanHallAuctionManager.getInstance()
+                .saveBid(
+                        id,
+                        ClanHallBid.builder()
+                                .clanId(clanId)
+                                .bid(bid)
+                                .timeBid(instantOrNull(currentTime))
+                                .build())) {
+            return false;
         }
+
+        if (bidders.get(clanId) == null) {
+            final Clan outbid = ClanTable.getInstance().getClan(highestBidderId);
+            final Player outbidLeader =
+                    outbid == null ? null : outbid.getLeader().getPlayer();
+            if (outbidLeader != null) {
+                outbidLeader.sendMessage("You have been out bidded");
+            }
+        }
+
+        highestBidderId = clanId;
+        highestBidderMaxBid = bid;
+        if (bidders.get(clanId) == null) {
+            bidders.put(clanId, new Bidder(clanId, bid, currentTime));
+        } else {
+            bidders.get(clanId).setBid(bid);
+            bidders.get(clanId).setTimeBid(currentTime);
+        }
+
+        bidder.sendPacket(SystemMessageId.YOUR_BID_HAS_BEEN_SUCCESSFULLY_PLACED);
+        return true;
     }
 
     /** Remove bids */
     private void removeBids() {
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement("DELETE FROM auction_bid WHERE auctionId=?")) {
-            ps.setInt(1, id);
-            ps.execute();
-        } catch (Exception e) {
-            log.error("Exception: Auction.deleteFromDB(): {}", e.getMessage(), e);
-        }
-
         for (Bidder b : bidders.values()) {
-            if (ClanTable.getInstance().getClanByName(b.getClanName()).getHideoutId() == 0) {
-                returnItem(b.getClanName(), b.getBid(), true); // 10 % tax
-            } else if (World.getPlayer(b.getName()) != null) {
-                World.getPlayer(b.getName()).sendMessage("Congratulation you have won ClanHall!");
+            final Clan clan = ClanTable.getInstance().getClan(b.getClanId());
+            if (clan == null) {
+                continue;
             }
 
-            ClanTable.getInstance().getClanByName(b.getClanName()).setAuctionBiddedAt(0, true);
+            if (clan.getHideoutId() == 0) {
+                returnItem(clan, b.getBid(), true); // 10 % tax
+            } else if (clan.getLeader().getPlayer() != null) {
+                clan.getLeader().getPlayer().sendMessage("Congratulation you have won ClanHall!");
+            }
+
+            clan.setAuctionBiddedAt(0, true);
         }
 
         bidders.clear();
@@ -398,24 +358,18 @@ public class ClanHallAuction {
     /** Remove auctions */
     public void deleteAuctionFromDB() {
         ClanHallAuctionManager.getInstance().getAuctions().remove(this);
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement("DELETE FROM auction WHERE itemId=?")) {
-            ps.setInt(1, itemId);
-            ps.execute();
-        } catch (Exception e) {
-            log.error("Exception: Auction.deleteFromDB(): {}", e.getMessage(), e);
-        }
+        ClanHallAuctionManager.getInstance().deleteAuction(id);
     }
 
     /** End of auction */
     public void endAuction() {
         if (ClanHallTable.getInstance().loaded()) {
-            if ((highestBidderId == 0) && (sellerId == 0)) {
+            if ((highestBidderId == 0) && (sellerClanId == 0)) {
                 startAutoTask();
                 return;
             }
 
-            if ((highestBidderId == 0) && (sellerId > 0)) {
+            if ((highestBidderId == 0) && (sellerClanId > 0)) {
                 /**
                  * If seller haven't sell ClanHall, auction removed, THIS MUST BE CONFIRMED
                  */
@@ -424,23 +378,21 @@ public class ClanHallAuction {
                 return;
             }
 
-            if (sellerId > 0) {
-                returnItem(sellerClanName, highestBidderMaxBid, true);
+            if (sellerClanId > 0) {
+                final Clan seller = ClanTable.getInstance().getClan(sellerClanId);
+                returnItem(seller, highestBidderMaxBid, true);
                 returnItem(
-                        sellerClanName,
-                        ClanHallTable.getInstance()
-                                .getAuctionableHallById(itemId)
-                                .getLease(),
+                        seller,
+                        ClanHallTable.getInstance().getAuctionableHallById(id).getLease(),
                         false);
             }
 
             deleteAuctionFromDB();
-            final Clan clan = ClanTable.getInstance()
-                    .getClanByName(bidders.get(highestBidderId).getClanName());
+            final Clan clan = ClanTable.getInstance().getClan(highestBidderId);
             bidders.remove(highestBidderId);
             clan.setAuctionBiddedAt(0, true);
             removeBids();
-            ClanHallTable.getInstance().setOwner(itemId, clan);
+            ClanHallTable.getInstance().setOwner(id, clan);
         } else {
             /** Task waiting ClanHallManager is loaded every 3s */
             ThreadPool.schedule(new AutoEndTask(), 3000);
@@ -452,18 +404,14 @@ public class ClanHallAuction {
      * @param bidder
      */
     public synchronized void cancelBid(int bidder) {
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps =
-                        con.prepareStatement("DELETE FROM auction_bid WHERE auctionId=? AND bidderId=?")) {
-            ps.setInt(1, id);
-            ps.setInt(2, bidder);
-            ps.execute();
-        } catch (Exception e) {
-            log.error("Exception: Auction.cancelBid(String bidder): {}", e.getMessage(), e);
+        ClanHallAuctionManager.getInstance().deleteBid(id, bidder);
+
+        final Clan clan = ClanTable.getInstance().getClan(bidder);
+        returnItem(clan, bidders.get(bidder).getBid(), true);
+        if (clan != null) {
+            clan.setAuctionBiddedAt(0, true);
         }
 
-        returnItem(bidders.get(bidder).getClanName(), bidders.get(bidder).getBid(), true);
-        ClanTable.getInstance().getClanByName(bidders.get(bidder).getClanName()).setAuctionBiddedAt(0, true);
         bidders.clear();
         loadBid();
     }
@@ -477,25 +425,13 @@ public class ClanHallAuction {
     /** Confirm an auction */
     public void confirmAuction() {
         ClanHallAuctionManager.getInstance().getAuctions().add(this);
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement(
-                        "INSERT INTO auction (id, sellerId, sellerName, sellerClanName, itemType, itemId, itemObjectId, itemName, itemQuantity, startingBid, currentBid, endDate) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)")) {
-            ps.setInt(1, id);
-            ps.setInt(2, sellerId);
-            ps.setString(3, sellerName);
-            ps.setString(4, sellerClanName);
-            ps.setString(5, itemType);
-            ps.setInt(6, itemId);
-            ps.setInt(7, itemObjectId);
-            ps.setString(8, itemName);
-            ps.setLong(9, itemQuantity);
-            ps.setLong(10, startingBid);
-            ps.setLong(11, currentBid);
-            ps.setLong(12, endDate);
-            ps.execute();
-            ps.close();
-        } catch (Exception e) {
-            log.error("Exception: Auction.load(): {}", e.getMessage(), e);
-        }
+        ClanHallAuctionManager.getInstance()
+                .saveAuction(ClanHallAuctionRow.builder()
+                        .clanHallId(id)
+                        .sellerClanId(sellerClanId)
+                        .startingBid(startingBid)
+                        .currentBid(currentBid)
+                        .endDate(instantOrNull(endDate))
+                        .build());
     }
 }

@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -22,26 +26,22 @@
  */
 package app.l2nx.highfive.scripts.handlers.chat.commands.admin;
 
-import app.l2nx.highfive.data.sql.DatabaseFactory;
+import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.handler.IAdminCommandHandler;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import lombok.extern.slf4j.Slf4j;
+import app.l2nx.highfive.managers.AdminCharacterManager;
 
 /**
  * This class handles following admin commands: - delete = deletes target
  * @version $Revision: 1.1.2.6.2.3 $ $Date: 2005/04/11 10:05:59 $
  */
-@Slf4j
 public class AdminRepairChar implements IAdminCommandHandler {
 
     private static final String[] ADMIN_COMMANDS = {"admin_restore", "admin_repair"};
 
     @Override
     public boolean onCommand(String command, Player activeChar) {
-        handleRepair(command);
+        handleRepair(command, activeChar);
         return true;
     }
 
@@ -50,48 +50,22 @@ public class AdminRepairChar implements IAdminCommandHandler {
         return ADMIN_COMMANDS;
     }
 
-    private void handleRepair(String command) {
+    private void handleRepair(String command, Player activeChar) {
         final String[] parts = command.split(" ");
         if (parts.length != 2) {
             return;
         }
 
-        final String cmd = "UPDATE characters SET x=-84318, y=244579, z=-3730 WHERE char_name=?";
-        try (Connection con = DatabaseFactory.getConnection()) {
-            PreparedStatement statement = con.prepareStatement(cmd);
-            statement.setString(1, parts[1]);
-            statement.execute();
-            statement.close();
+        // An online character would write its position and equipment back over the repair.
+        if (World.getPlayer(parts[1]) != null) {
+            activeChar.sendSysMessage("Character " + parts[1] + " is online: only an offline character is repaired.");
+            return;
+        }
 
-            statement = con.prepareStatement("SELECT charId FROM characters where char_name=?");
-            statement.setString(1, parts[1]);
-            final ResultSet rset = statement.executeQuery();
-            int objId = 0;
-            if (rset.next()) {
-                objId = rset.getInt(1);
-            }
-
-            rset.close();
-            statement.close();
-
-            if (objId == 0) {
-                // con.close();
-                return;
-            }
-
-            // connection = DatabaseFactory.getConnection();
-            statement = con.prepareStatement("DELETE FROM character_shortcuts WHERE charId=?");
-            statement.setInt(1, objId);
-            statement.execute();
-            statement.close();
-
-            // connection = DatabaseFactory.getConnection();
-            statement = con.prepareStatement("UPDATE items SET loc=\"INVENTORY\" WHERE owner_id=?");
-            statement.setInt(1, objId);
-            statement.execute();
-            statement.close();
-        } catch (Exception e) {
-            log.warn("could not repair char:", e);
+        if (AdminCharacterManager.getInstance().repairCharacter(parts[1], -84318, 244579, -3730)) {
+            activeChar.sendSysMessage("Character " + parts[1] + " is repaired.");
+        } else {
+            activeChar.sendSysMessage("Character " + parts[1] + " does not exist.");
         }
     }
 }

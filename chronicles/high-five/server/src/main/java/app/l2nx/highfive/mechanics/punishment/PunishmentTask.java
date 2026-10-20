@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+/*
  * SPDX-FileCopyrightText: L2J Mobius contributors
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
@@ -20,19 +24,14 @@
 package app.l2nx.highfive.mechanics.punishment;
 
 import app.l2nx.highfive.clock.ClockBridge;
-import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.handler.IPunishmentHandler;
 import app.l2nx.highfive.handler.PunishmentHandler;
 import app.l2nx.highfive.managers.PunishmentManager;
 import app.l2nx.highfive.threads.ThreadPool;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.concurrent.ScheduledFuture;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataAccessException;
 
 /**
  * @author UnAfraid
@@ -40,12 +39,8 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class PunishmentTask implements Runnable {
 
-    private static final String INSERT_QUERY =
-            "INSERT INTO punishments (`key`, `affect`, `type`, `expiration`, `reason`, `punishedBy`) VALUES (?, ?, ?, ?, ?, ?)";
-    private static final String UPDATE_QUERY = "UPDATE punishments SET expiration = ? WHERE id = ?";
-
-    private int id;
-    private final String key;
+    private long id;
+    private final Object key;
 
     @Getter
     private final PunishmentAffect affect;
@@ -77,8 +72,11 @@ public class PunishmentTask implements Runnable {
         this(0, key, affect, type, expirationTime, reason, punishedBy, false);
     }
 
+    /**
+     * @param key the key in any form {@link PunishmentManager#normalizeKey} accepts for the affect
+     */
     public PunishmentTask(
-            int id,
+            long id,
             Object key,
             PunishmentAffect affect,
             PunishmentType type,
@@ -87,7 +85,7 @@ public class PunishmentTask implements Runnable {
             String punishedBy,
             boolean isStored) {
         this.id = id;
-        this.key = String.valueOf(key);
+        this.key = PunishmentManager.normalizeKey(key, affect);
         this.affect = affect;
         this.type = type;
         this.expirationTime = expirationTime;
@@ -98,7 +96,7 @@ public class PunishmentTask implements Runnable {
     }
 
     /**
-     * @return affection value charId, account, ip, etc..
+     * @return the account id, character object id, address or hardware id, by affect
      */
     public Object getKey() {
         return key;
@@ -154,23 +152,10 @@ public class PunishmentTask implements Runnable {
      */
     private void onStart() {
         if (!stored) {
-            try (Connection con = DatabaseFactory.getConnection();
-                    PreparedStatement ps = con.prepareStatement(INSERT_QUERY, Statement.RETURN_GENERATED_KEYS)) {
-                ps.setString(1, key);
-                ps.setString(2, affect.name());
-                ps.setString(3, type.name());
-                ps.setLong(4, expirationTime);
-                ps.setString(5, reason);
-                ps.setString(6, punishedBy);
-                ps.execute();
-                try (ResultSet rset = ps.getGeneratedKeys()) {
-                    if (rset.next()) {
-                        id = rset.getInt(1);
-                    }
-                }
-
+            try {
+                id = PunishmentManager.getInstance().insert(this);
                 stored = true;
-            } catch (SQLException e) {
+            } catch (DataAccessException e) {
                 log.warn("Couldn't store punishment task for: {} {}", affect, key, e);
             }
         }
@@ -186,12 +171,9 @@ public class PunishmentTask implements Runnable {
      */
     private void onEnd() {
         if (stored) {
-            try (Connection con = DatabaseFactory.getConnection();
-                    PreparedStatement ps = con.prepareStatement(UPDATE_QUERY)) {
-                ps.setLong(1, ClockBridge.wallMillis());
-                ps.setLong(2, id);
-                ps.execute();
-            } catch (SQLException e) {
+            try {
+                PunishmentManager.getInstance().updateExpiration(id, ClockBridge.wallMillis());
+            } catch (DataAccessException e) {
                 log.warn("Couldn't update punishment task for: {} {} id: {}", affect, key, id, e);
             }
         }

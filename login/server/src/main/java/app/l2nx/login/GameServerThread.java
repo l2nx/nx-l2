@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -46,6 +50,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.Getter;
 import lombok.Setter;
@@ -73,7 +78,7 @@ public class GameServerThread extends Thread {
     private static final String DEFAULT_BLOWFISH_KEY = "_;v.]05-31!|+-%xT!^[$\00";
 
     // Player Account Management.
-    private final Set<String> accountsOnGameServer = ConcurrentHashMap.newKeySet();
+    private final Set<UUID> accountsOnGameServer = ConcurrentHashMap.newKeySet();
 
     // Network Communication.
     private final Socket socket;
@@ -250,11 +255,10 @@ public class GameServerThread extends Thread {
 
     /**
      * Checks if a specific account is currently logged into this game server.
-     * @param accountName the account name to check
      * @return true if the account is logged into this game server, false otherwise
      */
-    public boolean hasAccountOnGameServer(String accountName) {
-        return accountsOnGameServer.contains(accountName);
+    public boolean hasAccountOnGameServer(UUID accountId) {
+        return accountsOnGameServer.contains(accountId);
     }
 
     /**
@@ -380,19 +384,17 @@ public class GameServerThread extends Thread {
     /**
      * Sends a kick command to the game server to disconnect a specific player.<br>
      * This is typically used when a player violates login server policies or when administrative action is required.
-     * @param accountName the account name of the player to kick
      */
-    public void kickPlayer(String accountName) {
-        sendPacket(new KickPlayer(accountName));
+    public void kickPlayer(UUID accountId) {
+        sendPacket(new KickPlayer(accountId));
     }
 
     /**
      * Requests character information for a specific account from the game server.<br>
      * This is used during the login process to retrieve character list data.
-     * @param accountName the account name to request character data for
      */
-    public void requestCharacters(String accountName) {
-        sendPacket(new RequestCharacters(accountName));
+    public void requestCharacters(UUID accountId) {
+        sendPacket(new RequestCharacters(accountId));
     }
 
     /**
@@ -470,20 +472,18 @@ public class GameServerThread extends Thread {
     /**
      * Adds an account to the set of players logged into this game server.<br>
      * Also removes the account from the login server's authenticated client list to prevent duplicate logins.
-     * @param accountName the account name to add
      */
-    public void addAccountOnGameServer(String accountName) {
-        accountsOnGameServer.add(accountName);
-        LoginController.getInstance().removeAuthedLoginClient(accountName);
+    public void addAccountOnGameServer(UUID accountId) {
+        accountsOnGameServer.add(accountId);
+        LoginController.getInstance().removeAuthedLoginClient(accountId);
     }
 
     /**
      * Removes an account from the set of players logged into this game server.<br>
      * Also cleans up the account from the login server's authenticated client list.
-     * @param accountName the account name to remove
      */
-    public void removeAccountOnGameServer(String accountName) {
-        accountsOnGameServer.remove(accountName);
-        LoginController.getInstance().removeAuthedLoginClient(accountName);
+    public void removeAccountOnGameServer(UUID accountId) {
+        accountsOnGameServer.remove(accountId);
+        LoginController.getInstance().removeAuthedLoginClient(accountId);
     }
 }

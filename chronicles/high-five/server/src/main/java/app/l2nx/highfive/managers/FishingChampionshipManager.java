@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -24,7 +28,6 @@ package app.l2nx.highfive.managers;
 
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.GeneralConfig;
-import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.data.xml.ItemData;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.instance.Folk;
@@ -32,11 +35,9 @@ import app.l2nx.highfive.entity.item.enums.ItemProcessType;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.serverpackets.NpcHtmlMessage;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
+import app.l2nx.highfive.repository.world.FishingChampionshipRepository;
+import app.l2nx.highfive.repository.world.model.FishingChampionshipEntry;
 import app.l2nx.highfive.threads.ThreadPool;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
@@ -44,24 +45,28 @@ import java.util.random.RandomGenerator;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataAccessException;
+import org.springframework.stereotype.Component;
 
 /**
  * @author n0nam3
  * @date 08/08/2010 15:11
  */
 @Slf4j
+@Component
 public class FishingChampionshipManager {
+    private static volatile FishingChampionshipManager instance;
 
-    private static final String INSERT =
-            "INSERT INTO fishing_championship(player_name,fish_length,rewarded) VALUES (?,?,?)";
-    private static final String DELETE = "DELETE FROM fishing_championship";
-    private static final String SELECT = "SELECT `player_name`, `fish_length`, `rewarded` FROM fishing_championship";
-
-    private static final FishingChampionshipManager INSTANCE = new FishingChampionshipManager();
-
+    // TODO: callers receive the bean through their constructor (#41).
     public static FishingChampionshipManager getInstance() {
-        return INSTANCE;
+        final FishingChampionshipManager current = instance;
+        if (current == null) {
+            throw new IllegalStateException("FishingChampionshipManager is used before the Spring context created it.");
+        }
+        return current;
     }
+
+    private final FishingChampionshipRepository championshipRepository;
 
     protected long enddate = 0;
     protected final List<String> playersName = new ArrayList<>();
@@ -73,7 +78,12 @@ public class FishingChampionshipManager {
     protected double minFishLength = 0;
     protected boolean needRefresh = true;
 
-    private FishingChampionshipManager() {
+    public FishingChampionshipManager(FishingChampionshipRepository championshipRepository) {
+        this.championshipRepository = championshipRepository;
+        instance = this;
+    }
+
+    public void load() {
         restoreData();
         refreshWinResult();
         recalculateMinLength();
@@ -100,21 +110,17 @@ public class FishingChampionshipManager {
     private void restoreData() {
         enddate = GlobalVariablesManager.getInstance().getLong("fishChampionshipEnd", 0);
 
-        try (Connection con = DatabaseFactory.getConnection()) {
-            final PreparedStatement statement = con.prepareStatement(SELECT);
-            final ResultSet rs = statement.executeQuery();
-            while (rs.next()) {
-                final int rewarded = rs.getInt("rewarded");
-                if (rewarded == 0) {
-                    tmpPlayers.add(new Fisher(rs.getString("player_name"), rs.getDouble("fish_length"), 0));
-                } else if (rewarded > 0) {
-                    winPlayers.add(new Fisher(rs.getString("player_name"), rs.getDouble("fish_length"), rewarded));
+        try {
+            for (FishingChampionshipEntry entry : championshipRepository.findAll()) {
+                final Fisher fisher =
+                        new Fisher(entry.objectId(), entry.characterName(), entry.fishLength(), entry.rewardType());
+                if (entry.rewardType() == 0) {
+                    tmpPlayers.add(fisher);
+                } else {
+                    winPlayers.add(fisher);
                 }
             }
-
-            rs.close();
-            statement.close();
-        } catch (SQLException e) {
+        } catch (DataAccessException e) {
             log.warn("can't restore fishing championship info: {}", e.getMessage(), e);
         }
     }
@@ -134,7 +140,7 @@ public class FishingChampionshipManager {
 
         if (tmpPlayers.size() < 5) {
             for (Fisher fisher : tmpPlayers) {
-                if (fisher.getName().equalsIgnoreCase(pl.getName())) {
+                if (fisher.getObjectId() == pl.getObjectId()) {
                     if (fisher.getLength() < len) {
                         fisher.setLength(len);
                         pl.sendPacket(
@@ -146,12 +152,12 @@ public class FishingChampionshipManager {
                 }
             }
 
-            tmpPlayers.add(new Fisher(pl.getName(), len, 0));
+            tmpPlayers.add(new Fisher(pl.getObjectId(), pl.getName(), len, 0));
             pl.sendPacket(SystemMessageId.BECAUSE_OF_THE_SIZE_OF_FISH_CAUGHT_YOU_WILL_BE_REGISTERED_IN_THE_RANKING);
             recalculateMinLength();
         } else if (minFishLength < len) {
             for (Fisher fisher : tmpPlayers) {
-                if (fisher.getName().equalsIgnoreCase(pl.getName())) {
+                if (fisher.getObjectId() == pl.getObjectId()) {
                     if (fisher.getLength() < len) {
                         fisher.setLength(len);
                         pl.sendPacket(
@@ -173,7 +179,7 @@ public class FishingChampionshipManager {
             }
 
             tmpPlayers.remove(minFisher);
-            tmpPlayers.add(new Fisher(pl.getName(), len, 0));
+            tmpPlayers.add(new Fisher(pl.getObjectId(), pl.getName(), len, 0));
             pl.sendPacket(SystemMessageId.BECAUSE_OF_THE_SIZE_OF_FISH_CAUGHT_YOU_WILL_BE_REGISTERED_IN_THE_RANKING);
             recalculateMinLength();
         }
@@ -210,9 +216,9 @@ public class FishingChampionshipManager {
         return fishLength.size() >= par ? fishLength.get(par - 1) : "0";
     }
 
-    public boolean isWinner(String playerName) {
-        for (String name : winPlayersName) {
-            if (name.equals(playerName)) {
+    public boolean isWinner(int objectId) {
+        for (Fisher fisher : winPlayers) {
+            if (fisher.getObjectId() == objectId) {
                 return true;
             }
         }
@@ -222,10 +228,10 @@ public class FishingChampionshipManager {
 
     public void getReward(Player pl) {
         for (Fisher fisher : winPlayers) {
-            if (fisher.getName().equalsIgnoreCase(pl.getName()) && (fisher.getRewardType() != 2)) {
+            if ((fisher.getObjectId() == pl.getObjectId()) && (fisher.getRewardType() != 2)) {
                 int rewardCnt = 0;
-                for (int x = 0; x < winPlayersName.size(); x++) {
-                    if (winPlayersName.get(x).equalsIgnoreCase(pl.getName())) {
+                for (int x = 0; x < winPlayers.size(); x++) {
+                    if (winPlayers.get(x).getObjectId() == pl.getObjectId()) {
                         switch (x) {
                             case 0: {
                                 rewardCnt = GeneralConfig.ALT_FISH_CHAMPIONSHIP_REWARD_1;
@@ -282,7 +288,7 @@ public class FishingChampionshipManager {
 
         html.setFile(pl, "data/html/fisherman/championship/fish_event002.htm");
 
-        String str = null;
+        String str = "";
         for (int x = 1; x <= 5; x++) {
             str += "<tr><td width=70 align=center>" + x + "</td>";
             str += "<td width=110 align=center>" + getCurrentName(x) + "</td>";
@@ -307,7 +313,7 @@ public class FishingChampionshipManager {
         final NpcHtmlMessage html = new NpcHtmlMessage();
         html.setFile(pl, "data/html/fisherman/championship/fish_event001.htm");
 
-        String str = null;
+        String str = "";
         for (int x = 1; x <= 5; x++) {
             str += "<tr><td width=70 align=center>" + x + "</td>";
             str += "<td width=110 align=center>" + getWinnerName(x) + "</td>";
@@ -333,29 +339,18 @@ public class FishingChampionshipManager {
     public void shutdown() {
         GlobalVariablesManager.getInstance().set("fishChampionshipEnd", enddate);
 
-        try (Connection con = DatabaseFactory.getConnection()) {
-            PreparedStatement statement = con.prepareStatement(DELETE);
-            statement.execute();
-            statement.close();
+        final List<FishingChampionshipEntry> entries = new ArrayList<>();
+        for (Fisher fisher : winPlayers) {
+            entries.add(fisher.toEntry());
+        }
 
-            for (Fisher fisher : winPlayers) {
-                statement = con.prepareStatement(INSERT);
-                statement.setString(1, fisher.getName());
-                statement.setDouble(2, fisher.getLength());
-                statement.setInt(3, fisher.getRewardType());
-                statement.execute();
-                statement.close();
-            }
+        for (Fisher fisher : tmpPlayers) {
+            entries.add(fisher.toEntry().toBuilder().rewardType(0).build());
+        }
 
-            for (Fisher fisher : tmpPlayers) {
-                statement = con.prepareStatement(INSERT);
-                statement.setString(1, fisher.getName());
-                statement.setDouble(2, fisher.getLength());
-                statement.setInt(3, 0);
-                statement.execute();
-                statement.close();
-            }
-        } catch (SQLException e) {
+        try {
+            championshipRepository.replaceAll(entries);
+        } catch (DataAccessException e) {
             log.warn("can't update infos: {}", e.getMessage(), e);
         }
     }
@@ -447,6 +442,9 @@ public class FishingChampionshipManager {
 
     private class Fisher {
         @Getter
+        private final int objectId;
+
+        @Getter
         @Setter
         private double length;
 
@@ -457,10 +455,19 @@ public class FishingChampionshipManager {
         @Setter
         private int rewardType;
 
-        public Fisher(String name, double length, int rewardType) {
+        public Fisher(int objectId, String name, double length, int rewardType) {
+            this.objectId = objectId;
             this.name = name;
             this.length = length;
             this.rewardType = rewardType;
+        }
+
+        FishingChampionshipEntry toEntry() {
+            return FishingChampionshipEntry.builder()
+                    .objectId(objectId)
+                    .fishLength(length)
+                    .rewardType(rewardType)
+                    .build();
         }
     }
 }

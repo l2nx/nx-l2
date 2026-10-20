@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -25,7 +29,6 @@ package app.l2nx.highfive.entity.itemcontainer;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.config.custom.TransmogConfig;
 import app.l2nx.highfive.data.holders.ArmorSet;
-import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.data.xml.ArmorSetData;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Creature;
@@ -44,9 +47,7 @@ import app.l2nx.highfive.mechanics.events.holders.actor.player.OnPlayerItemUnequ
 import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.mechanics.skill.holders.SkillHolder;
 import app.l2nx.highfive.network.serverpackets.SkillCoolTime;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
+import app.l2nx.highfive.repository.item.model.ItemRow;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -56,6 +57,7 @@ import java.util.Objects;
 import java.util.function.Predicate;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataAccessException;
 
 /**
  * This class manages inventory
@@ -1284,41 +1286,34 @@ public abstract class Inventory extends ItemContainer {
      */
     @Override
     public void restore() {
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement statement = con.prepareStatement(
-                        "SELECT object_id, item_id, count, enchant_level, loc, loc_data, custom_type1, custom_type2, mana_left, time FROM items WHERE owner_id=? AND (loc=? OR loc=?) ORDER BY loc_data")) {
-            statement.setInt(1, getOwnerId());
-            statement.setString(2, getBaseLocation().name());
-            statement.setString(3, getEquipLocation().name());
-            try (ResultSet inv = statement.executeQuery()) {
-                Item item;
-                while (inv.next()) {
-                    item = Item.restoreFromDb(getOwnerId(), inv);
-                    if (item == null) {
-                        continue;
-                    }
+        try {
+            for (ItemRow row :
+                    ItemManager.getInstance().findItems(getOwnerId(), getBaseLocation(), getEquipLocation())) {
+                final Item item = Item.restoreFromDb(getOwnerId(), row);
+                if (item == null) {
+                    continue;
+                }
 
-                    if (getOwner().isPlayer()) {
-                        final Player player = getOwner().asPlayer();
-                        if (!player.isGM() && !player.isHero() && item.isHeroItem()) {
-                            item.setItemLocation(ItemLocation.INVENTORY);
-                        }
+                if (getOwner().isPlayer()) {
+                    final Player player = getOwner().asPlayer();
+                    if (!player.isGM() && !player.isHero() && item.isHeroItem()) {
+                        item.setItemLocation(ItemLocation.INVENTORY);
                     }
+                }
 
-                    World.addObject(item);
+                World.addObject(item);
 
-                    // If stackable item is found in inventory just add to current quantity.
-                    if (item.isStackable() && (getItemByItemId(item.getId()) != null)) {
-                        addItem(ItemProcessType.RESTORE, item, getOwner().asPlayer(), null);
-                    } else {
-                        addItem(item);
-                    }
+                // If stackable item is found in inventory just add to current quantity.
+                if (item.isStackable() && (getItemByItemId(item.getId()) != null)) {
+                    addItem(ItemProcessType.RESTORE, item, getOwner().asPlayer(), null);
+                } else {
+                    addItem(item);
                 }
             }
 
             refreshWeight();
-        } catch (Exception e) {
-            log.warn("Could not restore inventory: {}", e.getMessage(), e);
+        } catch (DataAccessException e) {
+            log.warn("Could not restore inventory:", e);
         }
     }
 

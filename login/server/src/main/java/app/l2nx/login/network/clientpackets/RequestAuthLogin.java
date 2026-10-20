@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -105,9 +109,10 @@ public class RequestAuthLogin extends LoginClientPacket {
         switch (lc.tryCheckinAccount(client, clientAddr, info)) {
             case AUTH_SUCCESS: {
                 client.setAccount(info.getLogin());
+                client.setAccountId(info.getId());
                 client.setConnectionState(ConnectionState.AUTHED_LOGIN);
-                client.setSessionKey(lc.assignSessionKeyToClient(info.getLogin(), client));
-                lc.getCharactersOnAccount(info.getLogin());
+                client.setSessionKey(lc.assignSessionKeyToClient(info.getId(), client));
+                lc.getCharactersOnAccount(info.getId());
                 if (LoginServer.getInstance().getProperties().showLicence()) {
                     client.sendPacket(new LoginOk(client.getSessionKey()));
                 } else {
@@ -124,11 +129,11 @@ public class RequestAuthLogin extends LoginClientPacket {
                 return;
             }
             case ALREADY_ON_LS: {
-                final LoginClient oldClient = lc.getAuthedClient(info.getLogin());
+                final LoginClient oldClient = lc.getAuthedClient(info.getId());
                 if (oldClient != null) {
                     // Kick the other client.
                     oldClient.close(LoginFailReason.REASON_ACCOUNT_IN_USE);
-                    lc.removeAuthedLoginClient(info.getLogin());
+                    lc.removeAuthedLoginClient(info.getId());
                 }
 
                 // Also kick current client.
@@ -136,11 +141,11 @@ public class RequestAuthLogin extends LoginClientPacket {
                 break;
             }
             case ALREADY_ON_GS: {
-                final GameServerInfo gsi = lc.getAccountOnGameServer(info.getLogin());
+                final GameServerInfo gsi = lc.getAccountOnGameServer(info.getId());
                 if (gsi != null) {
                     client.close(LoginFailReason.REASON_ACCOUNT_IN_USE);
                     if (gsi.isAuthed()) {
-                        gsi.getGameServerThread().kickPlayer(info.getLogin());
+                        gsi.getGameServerThread().kickPlayer(info.getId());
                     }
                 }
                 break;

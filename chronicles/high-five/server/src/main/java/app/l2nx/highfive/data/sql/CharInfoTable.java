@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -23,32 +27,38 @@
 package app.l2nx.highfive.data.sql;
 
 import app.l2nx.highfive.entity.actor.Player;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
+import app.l2nx.highfive.repository.character.CharacterRepository;
+import app.l2nx.highfive.repository.character.model.CharacterAccess;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataAccessException;
+import org.springframework.stereotype.Component;
 
 @Slf4j
+@Component
 public class CharInfoTable {
+    private static volatile CharInfoTable instance;
 
     private final Map<Integer, String> names = new ConcurrentHashMap<>();
     private final Map<Integer, Integer> accessLevels = new ConcurrentHashMap<>();
 
-    protected CharInfoTable() {
-        try (Connection con = DatabaseFactory.getConnection();
-                Statement s = con.createStatement();
-                ResultSet rs = s.executeQuery("SELECT charId, char_name, accesslevel FROM characters")) {
-            while (rs.next()) {
-                final int id = rs.getInt("charId");
-                names.put(id, rs.getString("char_name"));
-                accessLevels.put(id, rs.getInt("accesslevel"));
+    private final CharacterRepository characterRepository;
+
+    public CharInfoTable(CharacterRepository characterRepository) {
+        this.characterRepository = characterRepository;
+        instance = this;
+    }
+
+    public void load() {
+        try {
+            for (CharacterAccess character : characterRepository.findAllAccess()) {
+                cache(character);
             }
-        } catch (SQLException e) {
+        } catch (DataAccessException e) {
             log.warn("Couldn't retrieve all char id/name/access: {}", e.getMessage(), e);
         }
 
@@ -84,32 +94,12 @@ public class CharInfoTable {
             }
         }
 
-        // Should not continue after the above?
-
-        int id = -1;
-        int accessLevel = 0;
-
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps =
-                        con.prepareStatement("SELECT charId,accesslevel FROM characters WHERE char_name=?")) {
-            ps.setString(1, name);
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    id = rs.getInt("charId");
-                    accessLevel = rs.getInt("accesslevel");
-                }
-            }
-        } catch (SQLException e) {
+        try {
+            return characterRepository.findAccessByName(name).map(this::cache).orElse(-1);
+        } catch (DataAccessException e) {
             log.warn("Could not check existing char name: {}", e.getMessage(), e);
+            return -1;
         }
-
-        if (id > 0) {
-            names.put(id, name);
-            accessLevels.put(id, accessLevel);
-            return id;
-        }
-
-        return -1; // Not found.
     }
 
     public String getNameById(int id) {
@@ -117,28 +107,19 @@ public class CharInfoTable {
             return null;
         }
 
-        String name = names.get(id);
+        final String name = names.get(id);
         if (name != null) {
             return name;
         }
 
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps =
-                        con.prepareStatement("SELECT char_name,accesslevel FROM characters WHERE charId=?")) {
-            ps.setInt(1, id);
-            try (ResultSet rset = ps.executeQuery()) {
-                if (rset.next()) {
-                    name = rset.getString("char_name");
-                    names.put(id, name);
-                    accessLevels.put(id, rset.getInt("accesslevel"));
-                    return name;
-                }
-            }
-        } catch (SQLException e) {
+        try {
+            final Optional<CharacterAccess> character = characterRepository.findAccessById(id);
+            character.ifPresent(this::cache);
+            return character.map(CharacterAccess::name).orElse(null);
+        } catch (DataAccessException e) {
             log.warn("Could not check existing char id: {}", e.getMessage(), e);
+            return null;
         }
-
-        return null; // not found
     }
 
     public int getAccessLevelById(int objectId) {
@@ -146,45 +127,35 @@ public class CharInfoTable {
     }
 
     public synchronized boolean doesCharNameExist(String name) {
-        boolean result = false;
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps =
-                        con.prepareStatement("SELECT COUNT(*) as count FROM characters WHERE char_name=?")) {
-            ps.setString(1, name);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    result = rs.getInt("count") > 0;
-                }
-            }
-        } catch (SQLException e) {
+        try {
+            return characterRepository.existsByName(name);
+        } catch (DataAccessException e) {
             log.warn("Could not check existing charname: {}", e.getMessage(), e);
+            return false;
         }
-
-        return result;
     }
 
-    public int getAccountCharacterCount(String account) {
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps =
-                        con.prepareStatement("SELECT COUNT(char_name) as count FROM characters WHERE account_name=?")) {
-            ps.setString(1, account);
-            try (ResultSet rset = ps.executeQuery()) {
-                if (rset.next()) {
-                    return rset.getInt("count");
-                }
-            }
-        } catch (SQLException e) {
+    public int getAccountCharacterCount(UUID accountId) {
+        try {
+            return characterRepository.countByAccount(accountId);
+        } catch (DataAccessException e) {
             log.warn("Couldn't retrieve account for id: {}", e.getMessage(), e);
+            return 0;
         }
-
-        return 0;
     }
 
+    private int cache(CharacterAccess character) {
+        names.put(character.objectId(), character.name());
+        accessLevels.put(character.objectId(), character.accessLevel());
+        return character.objectId();
+    }
+
+    // TODO: callers receive the bean through their constructor (#41).
     public static CharInfoTable getInstance() {
-        return SingletonHolder.INSTANCE;
-    }
-
-    private static class SingletonHolder {
-        protected static final CharInfoTable INSTANCE = new CharInfoTable();
+        final CharInfoTable current = instance;
+        if (current == null) {
+            throw new IllegalStateException("CharInfoTable is used before the Spring context created it.");
+        }
+        return current;
     }
 }

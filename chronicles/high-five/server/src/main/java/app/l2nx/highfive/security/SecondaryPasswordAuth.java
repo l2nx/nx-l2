@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+/*
  * SPDX-FileCopyrightText: L2J Mobius contributors
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
@@ -20,8 +24,8 @@
 package app.l2nx.highfive.security;
 
 import app.l2nx.highfive.LoginServerThread;
-import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.data.xml.SecondaryAuthData;
+import app.l2nx.highfive.managers.AccountVariablesManager;
 import app.l2nx.highfive.network.Disconnection;
 import app.l2nx.highfive.network.GameClient;
 import app.l2nx.highfive.network.serverpackets.Ex2ndPasswordAck;
@@ -31,13 +35,12 @@ import app.l2nx.highfive.network.serverpackets.LeaveWorld;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.util.Base64;
+import java.util.Map;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.dao.DataAccessException;
 
 /**
  * @author mrTJO
@@ -52,16 +55,9 @@ public class SecondaryPasswordAuth {
     @Getter
     private boolean authed;
 
-    private static final String VAR_PWD = "secauth_pwd";
-    private static final String VAR_WTE = "secauth_wte";
-
-    private static final String SELECT_PASSWORD =
-            "SELECT var, value FROM account_gsdata WHERE account_name=? AND var LIKE 'secauth_%'";
-    private static final String INSERT_PASSWORD = "INSERT INTO account_gsdata VALUES (?, ?, ?)";
-    private static final String UPDATE_PASSWORD = "UPDATE account_gsdata SET value=? WHERE account_name=? AND var=?";
-
-    private static final String INSERT_ATTEMPT =
-            "INSERT INTO account_gsdata VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE value=?";
+    private static final String VAR_PREFIX = "secauth_";
+    private static final String VAR_PWD = VAR_PREFIX + "pwd";
+    private static final String VAR_WTE = VAR_PREFIX + "wte";
 
     /**
      * @param activeClient
@@ -75,23 +71,15 @@ public class SecondaryPasswordAuth {
     }
 
     private void loadPassword() {
-        String var = null;
-        String value = null;
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement statement = con.prepareStatement(SELECT_PASSWORD)) {
-            statement.setString(1, activeClient.getAccountName());
-            try (ResultSet rs = statement.executeQuery()) {
-                while (rs.next()) {
-                    var = rs.getString("var");
-                    value = rs.getString("value");
-                    if (var.equals(VAR_PWD)) {
-                        password = value;
-                    } else if (var.equals(VAR_WTE)) {
-                        wrongAttempts = Integer.parseInt(value);
-                    }
-                }
+        try {
+            final Map<String, String> variables =
+                    AccountVariablesManager.getInstance().findVariables(activeClient.getAccountId(), VAR_PREFIX);
+            password = variables.get(VAR_PWD);
+            final String attempts = variables.get(VAR_WTE);
+            if (attempts != null) {
+                wrongAttempts = Integer.parseInt(attempts);
             }
-        } catch (Exception e) {
+        } catch (DataAccessException | NumberFormatException e) {
             log.error("Error while reading password.", e);
         }
     }
@@ -109,13 +97,9 @@ public class SecondaryPasswordAuth {
         }
 
         final String password = cryptPassword(value);
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement statement = con.prepareStatement(INSERT_PASSWORD)) {
-            statement.setString(1, activeClient.getAccountName());
-            statement.setString(2, VAR_PWD);
-            statement.setString(3, password);
-            statement.execute();
-        } catch (Exception e) {
+        try {
+            AccountVariablesManager.getInstance().insertVariable(activeClient.getAccountId(), VAR_PWD, password);
+        } catch (DataAccessException e) {
             log.error("Error while writing password.", e);
             return false;
         }
@@ -125,14 +109,10 @@ public class SecondaryPasswordAuth {
     }
 
     public boolean insertWrongAttempt(int attempts) {
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement statement = con.prepareStatement(INSERT_ATTEMPT)) {
-            statement.setString(1, activeClient.getAccountName());
-            statement.setString(2, VAR_WTE);
-            statement.setString(3, Integer.toString(attempts));
-            statement.setString(4, Integer.toString(attempts));
-            statement.execute();
-        } catch (Exception e) {
+        try {
+            AccountVariablesManager.getInstance()
+                    .saveVariable(activeClient.getAccountId(), VAR_WTE, Integer.toString(attempts));
+        } catch (DataAccessException e) {
             log.error("Error while writing wrong attempts.", e);
             return false;
         }
@@ -157,14 +137,10 @@ public class SecondaryPasswordAuth {
         }
 
         final String password = cryptPassword(newPassword);
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement statement = con.prepareStatement(UPDATE_PASSWORD)) {
-            statement.setString(1, password);
-            statement.setString(2, activeClient.getAccountName());
-            statement.setString(3, VAR_PWD);
-            statement.execute();
-        } catch (Exception e) {
-            log.error("Error while reading password.", e);
+        try {
+            AccountVariablesManager.getInstance().updateVariable(activeClient.getAccountId(), VAR_PWD, password);
+        } catch (DataAccessException e) {
+            log.error("Error while writing password.", e);
             return false;
         }
 
@@ -183,12 +159,12 @@ public class SecondaryPasswordAuth {
             } else {
                 LoginServerThread.getInstance()
                         .sendTempBan(
-                                activeClient.getAccountName(),
+                                activeClient.getAccountId(),
                                 activeClient.getIp(),
                                 SecondaryAuthData.getInstance().getBanTime());
                 LoginServerThread.getInstance()
                         .sendMail(
-                                activeClient.getAccountName(),
+                                activeClient.getAccountId(),
                                 "SATempBan",
                                 activeClient.getIp(),
                                 Integer.toString(SecondaryAuthData.getInstance().getMaxAttempts()),

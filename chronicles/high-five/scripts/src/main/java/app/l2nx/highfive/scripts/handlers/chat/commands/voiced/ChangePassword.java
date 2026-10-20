@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+/*
  * SPDX-FileCopyrightText: L2J Mobius contributors
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
@@ -73,7 +77,8 @@ public class ChangePassword implements IVoicedCommandHandler {
                     }
 
                     LoginServerThread.getInstance()
-                            .sendChangePassword(activeChar.getAccountName(), activeChar.getName(), curpass, newpass);
+                            .sendChangePassword(
+                                    activeChar.getClient().getAccountId(), activeChar.getName(), curpass, newpass);
                 } else {
                     activeChar.sendMessage("Invalid password data! You have to fill all boxes.");
                     return false;

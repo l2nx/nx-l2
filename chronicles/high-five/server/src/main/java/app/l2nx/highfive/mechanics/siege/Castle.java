@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -22,11 +26,14 @@
  */
 package app.l2nx.highfive.mechanics.siege;
 
+import static app.l2nx.highfive.repository.LegacyValues.epochMillisOrZero;
+import static app.l2nx.highfive.repository.LegacyValues.instantOrNull;
+
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.FeatureConfig;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.data.sql.ClanTable;
-import app.l2nx.highfive.data.sql.DatabaseFactory;
+import app.l2nx.highfive.data.xml.CastleData;
 import app.l2nx.highfive.data.xml.DoorData;
 import app.l2nx.highfive.data.xml.SkillData;
 import app.l2nx.highfive.data.xml.SkillTreeData;
@@ -56,10 +63,10 @@ import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.serverpackets.PlaySound;
 import app.l2nx.highfive.network.serverpackets.PledgeShowInfoUpdate;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
+import app.l2nx.highfive.repository.residence.model.CastleDoorUpgrade;
+import app.l2nx.highfive.repository.residence.model.CastleState;
+import app.l2nx.highfive.repository.residence.model.ResidenceFunction;
 import app.l2nx.highfive.threads.ThreadPool;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashSet;
@@ -216,22 +223,16 @@ public class Castle extends AbstractResidence {
         }
 
         public void dbSave() {
-            try (Connection con = DatabaseFactory.getConnection();
-                    PreparedStatement ps = con.prepareStatement(
-                            "REPLACE INTO castle_functions (castle_id, type, lvl, lease, rate, endTime) VALUES (?,?,?,?,?,?)")) {
-                ps.setInt(1, getResidenceId());
-                ps.setInt(2, type);
-                ps.setInt(3, lvl);
-                ps.setInt(4, lease);
-                ps.setLong(5, rate);
-                ps.setLong(6, endTime);
-                ps.execute();
-            } catch (Exception e) {
-                log.error(
-                        "Exception: Castle.updateFunctions(int type, int lvl, int lease, long rate, long time, boolean addNew): {}",
-                        e.getMessage(),
-                        e);
-            }
+            CastleManager.getInstance()
+                    .saveFunction(
+                            getResidenceId(),
+                            ResidenceFunction.builder()
+                                    .type(type)
+                                    .level(lvl)
+                                    .lease(lease)
+                                    .rate(rate)
+                                    .endTime(instantOrNull(endTime))
+                                    .build());
         }
     }
 
@@ -336,15 +337,7 @@ public class Castle extends AbstractResidence {
             treasury += amount;
         }
 
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement("UPDATE castle SET treasury = ? WHERE id = ?")) {
-            ps.setLong(1, treasury);
-            ps.setInt(2, getResidenceId());
-            ps.execute();
-        } catch (Exception e) {
-            log.warn(e.getMessage(), e);
-        }
-
+        CastleManager.getInstance().saveTreasury(getResidenceId(), treasury);
         return true;
     }
 
@@ -528,15 +521,7 @@ public class Castle extends AbstractResidence {
     public void setTaxPercent(int taxPercent) {
         this.taxPercent = taxPercent;
         taxRate = this.taxPercent / 100.0;
-
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement("UPDATE castle SET taxPercent = ? WHERE id = ?")) {
-            ps.setInt(1, taxPercent);
-            ps.setInt(2, getResidenceId());
-            ps.execute();
-        } catch (Exception e) {
-            log.warn(e.getMessage(), e);
-        }
+        CastleManager.getInstance().saveTaxPercent(getResidenceId(), taxPercent);
     }
 
     /**
@@ -566,59 +551,35 @@ public class Castle extends AbstractResidence {
     // This method loads castle.
     @Override
     protected void load() {
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps1 = con.prepareStatement("SELECT * FROM castle WHERE id = ?");
-                PreparedStatement ps2 = con.prepareStatement("SELECT clan_id FROM clan_data WHERE hasCastle = ?")) {
-            ps1.setInt(1, getResidenceId());
-            try (ResultSet rs = ps1.executeQuery()) {
-                while (rs.next()) {
-                    setName(rs.getString("name"));
-                    // _OwnerId = rs.getInt("ownerId");
-                    siegeDate = ClockBridge.calendar();
-                    siegeDate.setTimeInMillis(rs.getLong("siegeDate"));
-                    siegeTimeRegistrationEndDate = ClockBridge.calendar();
-                    siegeTimeRegistrationEndDate.setTimeInMillis(rs.getLong("regTimeEnd"));
-                    timeRegistrationOver = Boolean.parseBoolean(rs.getString("regTimeOver"));
-                    taxPercent = rs.getInt("taxPercent");
-                    treasury = rs.getLong("treasury");
-                    showNpcCrest = Boolean.parseBoolean(rs.getString("showNpcCrest"));
-                    ticketBuyCount = rs.getInt("ticketBuyCount");
-                }
-            }
-
-            taxRate = taxPercent / 100.0;
-            ps2.setInt(1, getResidenceId());
-            try (ResultSet rs = ps2.executeQuery()) {
-                while (rs.next()) {
-                    ownerId = rs.getInt("clan_id");
-                }
-            }
-        } catch (Exception e) {
-            log.warn("Exception: loadCastleData(): {}", e.getMessage(), e);
-        }
+        setName(CastleData.getInstance().getCastle(getResidenceId()).name());
+        final CastleState state = CastleManager.getInstance().findState(getResidenceId());
+        // No scheduled siege reads as a date in the past, which makes the siege schedule the next one.
+        siegeDate = ClockBridge.calendar();
+        siegeDate.setTimeInMillis(epochMillisOrZero(state.siegeDate()));
+        siegeTimeRegistrationEndDate = ClockBridge.calendar();
+        siegeTimeRegistrationEndDate.setTimeInMillis(epochMillisOrZero(state.registrationEndDate()));
+        timeRegistrationOver = state.registrationOver();
+        taxPercent = state.taxPercent();
+        treasury = state.treasury();
+        showNpcCrest = state.showNpcCrest();
+        ticketBuyCount = state.ticketBuyCount();
+        taxRate = taxPercent / 100.0;
+        ownerId = state.ownerClanId();
     }
 
     /** Load All Functions */
     private void loadFunctions() {
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement("SELECT * FROM castle_functions WHERE castle_id = ?")) {
-            ps.setInt(1, getResidenceId());
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    function.put(
-                            rs.getInt("type"),
-                            new CastleFunction(
-                                    rs.getInt("type"),
-                                    rs.getInt("lvl"),
-                                    rs.getInt("lease"),
-                                    0,
-                                    rs.getLong("rate"),
-                                    rs.getLong("endTime"),
-                                    true));
-                }
-            }
-        } catch (Exception e) {
-            log.error("Exception: Castle.loadFunctions(): {}", e.getMessage(), e);
+        for (ResidenceFunction stored : CastleManager.getInstance().findFunctions(getResidenceId())) {
+            function.put(
+                    stored.type(),
+                    new CastleFunction(
+                            stored.type(),
+                            stored.level(),
+                            stored.lease(),
+                            0,
+                            stored.rate(),
+                            epochMillisOrZero(stored.endTime()),
+                            true));
         }
     }
 
@@ -628,15 +589,7 @@ public class Castle extends AbstractResidence {
      */
     public void removeFunction(int functionType) {
         function.remove(functionType);
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps =
-                        con.prepareStatement("DELETE FROM castle_functions WHERE castle_id=? AND type=?")) {
-            ps.setInt(1, getResidenceId());
-            ps.setInt(2, functionType);
-            ps.execute();
-        } catch (Exception e) {
-            log.error("Exception: Castle.removeFunctions(int functionType): {}", e.getMessage(), e);
-        }
+        CastleManager.getInstance().deleteFunction(getResidenceId(), functionType);
     }
 
     public boolean updateFunctions(Player player, int type, int lvl, int lease, long rate, boolean addNew) {
@@ -682,16 +635,8 @@ public class Castle extends AbstractResidence {
 
     // This method loads castle door upgrade data from database.
     private void loadDoorUpgrade() {
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement("SELECT * FROM castle_doorupgrade WHERE castleId=?")) {
-            ps.setInt(1, getResidenceId());
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    setDoorUpgrade(rs.getInt("doorId"), rs.getInt("ratio"), false);
-                }
-            }
-        } catch (Exception e) {
-            log.warn("Exception: loadCastleDoorUpgrade(): {}", e.getMessage(), e);
+        for (CastleDoorUpgrade upgrade : CastleManager.getInstance().findDoorUpgrades(getResidenceId())) {
+            setDoorUpgrade(upgrade.doorId(), upgrade.hpRatio(), false);
         }
     }
 
@@ -701,13 +646,7 @@ public class Castle extends AbstractResidence {
             door.setCurrentHp(door.getCurrentHp());
         }
 
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement("DELETE FROM castle_doorupgrade WHERE castleId=?")) {
-            ps.setInt(1, getResidenceId());
-            ps.execute();
-        } catch (Exception e) {
-            log.warn("Exception: removeDoorUpgrade(): {}", e.getMessage(), e);
-        }
+        CastleManager.getInstance().deleteDoorUpgrades(getResidenceId());
     }
 
     public void setDoorUpgrade(int doorId, int ratio, boolean save) {
@@ -720,16 +659,13 @@ public class Castle extends AbstractResidence {
         door.setCurrentHp(door.getMaxHp());
 
         if (save) {
-            try (Connection con = DatabaseFactory.getConnection();
-                    PreparedStatement ps = con.prepareStatement(
-                            "REPLACE INTO castle_doorupgrade (doorId, ratio, castleId) values (?,?,?)")) {
-                ps.setInt(1, doorId);
-                ps.setInt(2, ratio);
-                ps.setInt(3, getResidenceId());
-                ps.execute();
-            } catch (Exception e) {
-                log.warn("Exception: setDoorUpgrade(int doorId, int ratio, int castleId): {}", e.getMessage(), e);
-            }
+            CastleManager.getInstance()
+                    .saveDoorUpgrade(
+                            getResidenceId(),
+                            CastleDoorUpgrade.builder()
+                                    .doorId(doorId)
+                                    .hpRatio(ratio)
+                                    .build());
         }
     }
 
@@ -741,28 +677,13 @@ public class Castle extends AbstractResidence {
             CastleManorManager.getInstance().resetManorData(getResidenceId());
         }
 
-        try (Connection con = DatabaseFactory.getConnection()) {
-            // Need to remove has castle flag from clan_data, should be checked from castle table.
-            try (PreparedStatement ps =
-                    con.prepareStatement("UPDATE clan_data SET hasCastle = 0 WHERE hasCastle = ?")) {
-                ps.setInt(1, getResidenceId());
-                ps.execute();
-            }
+        CastleManager.getInstance().saveOwner(getResidenceId(), ownerId);
 
-            try (PreparedStatement ps = con.prepareStatement("UPDATE clan_data SET hasCastle = ? WHERE clan_id = ?")) {
-                ps.setInt(1, getResidenceId());
-                ps.setInt(2, ownerId);
-                ps.execute();
-            }
-
-            // Announce to clan members.
-            if (clan != null) {
-                clan.setCastleId(getResidenceId()); // Set has castle flag for new owner.
-                clan.broadcastToOnlineMembers(new PledgeShowInfoUpdate(clan));
-                clan.broadcastToOnlineMembers(new PlaySound(1, "Siege_Victory", 0, 0, 0, 0, 0));
-            }
-        } catch (Exception e) {
-            log.warn("Exception: updateOwnerInDB(Pledge clan): {}", e.getMessage(), e);
+        // Announce to clan members.
+        if (clan != null) {
+            clan.setCastleId(getResidenceId()); // Set has castle flag for new owner.
+            clan.broadcastToOnlineMembers(new PledgeShowInfoUpdate(clan));
+            clan.broadcastToOnlineMembers(new PlaySound(1, "Siege_Victory", 0, 0, 0, 0, 0));
         }
     }
 
@@ -846,14 +767,7 @@ public class Castle extends AbstractResidence {
     }
 
     public void updateShowNpcCrest() {
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement("UPDATE castle SET showNpcCrest = ? WHERE id = ?")) {
-            ps.setString(1, String.valueOf(showNpcCrest));
-            ps.setInt(2, getResidenceId());
-            ps.execute();
-        } catch (Exception e) {
-            log.info("Error saving showNpcCrest for castle {}: {}", getName(), e.getMessage());
-        }
+        CastleManager.getInstance().saveShowNpcCrest(getResidenceId(), showNpcCrest);
     }
 
     @Override
@@ -922,15 +836,7 @@ public class Castle extends AbstractResidence {
      */
     public void setTicketBuyCount(int count) {
         ticketBuyCount = count;
-
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement("UPDATE castle SET ticketBuyCount = ? WHERE id = ?")) {
-            ps.setInt(1, ticketBuyCount);
-            ps.setInt(2, getResidenceId());
-            ps.execute();
-        } catch (Exception e) {
-            log.warn(e.getMessage(), e);
-        }
+        CastleManager.getInstance().saveTicketBuyCount(getResidenceId(), ticketBuyCount);
     }
 
     public int getTrapUpgradeLevel(int towerIndex) {
@@ -941,19 +847,7 @@ public class Castle extends AbstractResidence {
 
     public void setTrapUpgrade(int towerIndex, int level, boolean save) {
         if (save) {
-            try (Connection con = DatabaseFactory.getConnection();
-                    PreparedStatement ps = con.prepareStatement(
-                            "REPLACE INTO castle_trapupgrade (castleId, towerIndex, level) values (?,?,?)")) {
-                ps.setInt(1, getResidenceId());
-                ps.setInt(2, towerIndex);
-                ps.setInt(3, level);
-                ps.execute();
-            } catch (Exception e) {
-                log.warn(
-                        "Exception: setTrapUpgradeLevel(int towerIndex, int level, int castleId): {}",
-                        e.getMessage(),
-                        e);
-            }
+            SiegeManager.getInstance().saveTrapUpgrade(getResidenceId(), towerIndex, level);
         }
 
         final TowerSpawn spawn =
@@ -968,13 +862,7 @@ public class Castle extends AbstractResidence {
             ts.setUpgradeLevel(0);
         }
 
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement("DELETE FROM castle_trapupgrade WHERE castleId=?")) {
-            ps.setInt(1, getResidenceId());
-            ps.execute();
-        } catch (Exception e) {
-            log.warn("Exception: removeDoorUpgrade(): {}", e.getMessage(), e);
-        }
+        SiegeManager.getInstance().deleteTrapUpgrades(getResidenceId());
     }
 
     @Override

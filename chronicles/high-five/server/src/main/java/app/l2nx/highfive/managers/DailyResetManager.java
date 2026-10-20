@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -25,7 +29,6 @@ package app.l2nx.highfive.managers;
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.data.sql.ClanTable;
-import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.data.xml.SkillData;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Player;
@@ -40,27 +43,45 @@ import app.l2nx.highfive.mechanics.sevensigns.SevenSignsFestival;
 import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.network.serverpackets.ExNevitAdventTimeChange;
 import app.l2nx.highfive.network.serverpackets.ExVoteSystemInfo;
+import app.l2nx.highfive.repository.character.CharacterRecommendationRepository;
+import app.l2nx.highfive.repository.character.CharacterSkillSaveRepository;
 import app.l2nx.highfive.threads.ThreadPool;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
 import java.time.LocalTime;
 import java.time.ZonedDateTime;
 import java.util.Calendar;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.DateFormatUtils;
+import org.springframework.dao.DataAccessException;
+import org.springframework.stereotype.Component;
 
 /**
  * @author Mobius
  */
 @Slf4j
+@Component
 public class DailyResetManager {
+    private static volatile DailyResetManager instance;
 
     private static final int[] RESET_SKILLS = {
         2510, // Wondrous Cubic
         22180, // Wondrous Cubic - 1 time use
     };
 
-    protected DailyResetManager() {
+    private static final int DAILY_RECOMMENDATIONS = 20;
+    private static final long RECOMMENDATION_BONUS_TIME_MS = 3_600_000;
+
+    private final CharacterSkillSaveRepository skillSaveRepository;
+    private final CharacterRecommendationRepository recommendationRepository;
+
+    public DailyResetManager(
+            CharacterSkillSaveRepository skillSaveRepository,
+            CharacterRecommendationRepository recommendationRepository) {
+        this.skillSaveRepository = skillSaveRepository;
+        this.recommendationRepository = recommendationRepository;
+        instance = this;
+    }
+
+    public void load() {
         // Schedule reset everyday at 6:30.
         final ZonedDateTime now = ZonedDateTime.now(ClockBridge.wallClock());
         final ZonedDateTime todayResetTime = now.with(LocalTime.of(6, 30));
@@ -157,15 +178,11 @@ public class DailyResetManager {
     }
 
     private void resetDailySkills() {
-        try (Connection con = DatabaseFactory.getConnection()) {
+        try {
             for (int skillId : RESET_SKILLS) {
-                try (PreparedStatement ps = con.prepareStatement(
-                        "DELETE FROM character_skills_save WHERE skill_id=? AND charId IN (SELECT charId FROM characters WHERE online = 0)")) {
-                    ps.setInt(1, skillId);
-                    ps.execute();
-                }
+                skillSaveRepository.deleteSkillOfOfflineCharacters(skillId);
             }
-        } catch (Exception e) {
+        } catch (DataAccessException e) {
             log.error("Could not reset daily skill reuse", e);
         }
 
@@ -200,27 +217,16 @@ public class DailyResetManager {
     }
 
     private void resetRecommends() {
-        try (Connection con = DatabaseFactory.getConnection()) {
-            try (PreparedStatement ps = con.prepareStatement(
-                    "UPDATE character_reco_bonus SET rec_left=?, time_left=?, rec_have=0 WHERE rec_have <=  20")) {
-                ps.setInt(1, 20); // Rec left = 20
-                ps.setInt(2, 3600000); // Timer = 1 hour
-                ps.execute();
-            }
-
-            try (PreparedStatement ps = con.prepareStatement(
-                    "UPDATE character_reco_bonus SET rec_left=?, time_left=?, rec_have=GREATEST(rec_have-20,0) WHERE rec_have > 20")) {
-                ps.setInt(1, 20); // Rec left = 20
-                ps.setInt(2, 3600000); // Timer = 1 hour
-                ps.execute();
-            }
-        } catch (Exception e) {
+        try {
+            recommendationRepository.resetDaily(
+                    DAILY_RECOMMENDATIONS, RECOMMENDATION_BONUS_TIME_MS, DAILY_RECOMMENDATIONS);
+        } catch (DataAccessException e) {
             log.error("Could not reset Recommendations System", e);
         }
 
         for (Player player : World.getPlayers()) {
-            player.setRecomLeft(0);
-            player.setRecomHave(player.getRecomHave() - 20);
+            player.setRecomLeft(DAILY_RECOMMENDATIONS);
+            player.setRecomHave(player.getRecomHave() - DAILY_RECOMMENDATIONS);
             player.sendPacket(new ExVoteSystemInfo(player));
             player.broadcastUserInfo();
         }
@@ -236,11 +242,12 @@ public class DailyResetManager {
         }
     }
 
+    // TODO: callers receive the bean through their constructor (#41).
     public static DailyResetManager getInstance() {
-        return SingletonHolder.INSTANCE;
-    }
-
-    private static class SingletonHolder {
-        protected static final DailyResetManager INSTANCE = new DailyResetManager();
+        final DailyResetManager current = instance;
+        if (current == null) {
+            throw new IllegalStateException("DailyResetManager is used before the Spring context created it.");
+        }
+        return current;
     }
 }

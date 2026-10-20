@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -23,15 +27,16 @@
 package app.l2nx.highfive.network.loginserverpackets.send;
 
 import app.l2nx.network.packet.SimpleWritablePacket;
-import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
+import java.util.UUID;
 
 /**
  * Reports character count and pending delete timers for an account.<br>
  * Each pending delete time is serialized as epoch milliseconds.
  * <ul>
  * <li>Opcode: 0x08.</li>
- * <li>Payload: account (String), chars (byte), pendingCount (byte), times (long[]).</li>
+ * <li>Payload: account id (2 longs: msb, lsb), chars (byte), pendingCount (byte), times (long[]).</li>
  * </ul>
  * @author BazookaRpm
  */
@@ -40,19 +45,18 @@ public class ReplyCharacters extends SimpleWritablePacket {
     private static final int OPCODE = 0x08;
 
     // Data.
-    private final String account;
+    private final UUID accountId;
     private final int chars;
     private final List<Long> timeToDelete;
 
     /**
-     * @param account account name
      * @param chars number of characters
      * @param timeToDel pending delete times (epoch ms)
      */
-    public ReplyCharacters(String account, int chars, List<Long> timeToDel) {
-        this.account = (account != null) ? account : "";
+    public ReplyCharacters(UUID accountId, int chars, List<Long> timeToDel) {
+        this.accountId = Objects.requireNonNull(accountId, "accountId");
         this.chars = chars;
-        timeToDelete = (timeToDel != null) ? timeToDel : Collections.emptyList();
+        timeToDelete = List.copyOf(timeToDel);
     }
 
     /**
@@ -61,11 +65,12 @@ public class ReplyCharacters extends SimpleWritablePacket {
     @Override
     public void write() {
         writeByte(OPCODE);
-        writeString(account);
+        writeLong(accountId.getMostSignificantBits());
+        writeLong(accountId.getLeastSignificantBits());
         writeByte(chars);
         writeByte(timeToDelete.size());
-        for (Long t : timeToDelete) {
-            writeLong((t != null) ? t.longValue() : 0L);
+        for (long time : timeToDelete) {
+            writeLong(time);
         }
     }
 }

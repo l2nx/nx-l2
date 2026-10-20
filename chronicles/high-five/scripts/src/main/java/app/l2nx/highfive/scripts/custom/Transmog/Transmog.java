@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -24,7 +28,6 @@ package app.l2nx.highfive.scripts.custom.Transmog;
 
 import app.l2nx.highfive.cache.HtmCache;
 import app.l2nx.highfive.config.custom.TransmogConfig;
-import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.data.xml.ItemData;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
@@ -33,6 +36,7 @@ import app.l2nx.highfive.entity.item.ItemTemplate;
 import app.l2nx.highfive.entity.item.enums.BodyPart;
 import app.l2nx.highfive.entity.item.enums.ItemProcessType;
 import app.l2nx.highfive.entity.item.instance.Item;
+import app.l2nx.highfive.managers.TransmogManager;
 import app.l2nx.highfive.mechanics.events.Containers;
 import app.l2nx.highfive.mechanics.events.EventType;
 import app.l2nx.highfive.mechanics.events.holders.actor.player.OnPlayerLogin;
@@ -44,13 +48,11 @@ import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.enums.ChatType;
 import app.l2nx.highfive.network.serverpackets.CreatureSay;
 import app.l2nx.highfive.util.HtmlUtil;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -63,8 +65,6 @@ import lombok.extern.slf4j.Slf4j;
 public class Transmog extends Script {
     private static final int NPC = 900009;
     private static final Map<Integer, Map<Integer, Set<Integer>>> PLAYER_TRANSMOGS = new ConcurrentHashMap<>();
-    private static final String LOAD_SQL = "SELECT itemId FROM character_transmogs WHERE owner=? ORDER BY itemId ASC;";
-    private static final String SAVE_SQL = "REPLACE INTO character_transmogs (owner,itemId) VALUE (?,?)";
 
     private Transmog() {
         addStartNpc(NPC);
@@ -260,26 +260,22 @@ public class Transmog extends Script {
 
     private void onPlayerLogin(OnPlayerLogin event) {
         final Player player = event.player();
-        final String owner =
-                TransmogConfig.TRANSMOG_SHARE_ACCOUNT ? player.getAccountName() : String.valueOf(player.getObjectId());
         final Map<Integer, Set<Integer>> playerTransmogs = new HashMap<>();
 
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement statement = con.prepareStatement(LOAD_SQL)) {
-            statement.setString(1, owner);
-            try (ResultSet result = statement.executeQuery()) {
-                while (result.next()) {
-                    final int itemId = result.getInt(1);
-                    final ItemTemplate itemTemplate = ItemData.getInstance().getTemplate(itemId);
-                    if (itemTemplate != null) {
-                        final Integer bodypart = itemTemplate.getBodyPart().getMask();
-                        playerTransmogs
-                                .computeIfAbsent(bodypart, _ -> new HashSet<>())
-                                .add(itemId);
-                    }
+        try {
+            final List<Integer> itemIds = TransmogConfig.TRANSMOG_SHARE_ACCOUNT
+                    ? TransmogManager.getInstance().findByAccount(player.getAccountId())
+                    : TransmogManager.getInstance().findByCharacter(player.getObjectId());
+            for (int itemId : itemIds) {
+                final ItemTemplate itemTemplate = ItemData.getInstance().getTemplate(itemId);
+                if (itemTemplate != null) {
+                    final Integer bodypart = itemTemplate.getBodyPart().getMask();
+                    playerTransmogs
+                            .computeIfAbsent(bodypart, _ -> new HashSet<>())
+                            .add(itemId);
                 }
             }
-        } catch (SQLException e) {
+        } catch (RuntimeException e) {
             log.warn("Problem with Transmog: {}", e.getMessage());
         }
 
@@ -291,23 +287,20 @@ public class Transmog extends Script {
     private void onPlayerLogout(OnPlayerLogout event) {
         final Player player = event.player();
         final Integer playerObjectId = player.getObjectId();
-        final String owner =
-                TransmogConfig.TRANSMOG_SHARE_ACCOUNT ? player.getAccountName() : String.valueOf(player.getObjectId());
+        final List<Integer> itemIds = new ArrayList<>();
+        for (Set<Integer> bodypartItemIds : PLAYER_TRANSMOGS
+                .getOrDefault(playerObjectId, Collections.emptyMap())
+                .values()) {
+            itemIds.addAll(bodypartItemIds);
+        }
 
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement statement = con.prepareStatement(SAVE_SQL)) {
-            for (Set<Integer> itemIds : PLAYER_TRANSMOGS
-                    .getOrDefault(playerObjectId, Collections.emptyMap())
-                    .values()) {
-                for (int itemId : itemIds) {
-                    statement.setString(1, owner);
-                    statement.setInt(2, itemId);
-                    statement.addBatch();
-                }
+        try {
+            if (TransmogConfig.TRANSMOG_SHARE_ACCOUNT) {
+                TransmogManager.getInstance().addForAccount(player.getAccountId(), itemIds);
+            } else {
+                TransmogManager.getInstance().addForCharacter(playerObjectId, itemIds);
             }
-
-            statement.executeBatch();
-        } catch (SQLException e) {
+        } catch (RuntimeException e) {
             log.warn("Problem with Transmog: {}", e.getMessage());
         }
 

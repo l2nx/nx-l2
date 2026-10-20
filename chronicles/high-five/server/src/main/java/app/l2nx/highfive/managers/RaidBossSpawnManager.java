@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+/*
  * SPDX-FileCopyrightText: L2J Mobius contributors
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
@@ -19,53 +23,65 @@
  */
 package app.l2nx.highfive.managers;
 
+import static app.l2nx.highfive.repository.LegacyValues.epochMillisOrZero;
+import static app.l2nx.highfive.repository.LegacyValues.instantOrNull;
+
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.NpcConfig;
 import app.l2nx.highfive.data.SpawnTable;
-import app.l2nx.highfive.data.sql.DatabaseFactory;
+import app.l2nx.highfive.data.holders.RaidBossSpawn;
+import app.l2nx.highfive.data.xml.NpcData;
+import app.l2nx.highfive.data.xml.RaidBossSpawnData;
 import app.l2nx.highfive.entity.actor.enums.npc.RaidBossStatus;
 import app.l2nx.highfive.entity.actor.instance.RaidBoss;
+import app.l2nx.highfive.entity.actor.templates.NpcTemplate;
 import app.l2nx.highfive.entity.spawns.Spawn;
+import app.l2nx.highfive.repository.boss.RaidBossStateRepository;
+import app.l2nx.highfive.repository.boss.model.RaidBossState;
 import app.l2nx.highfive.threads.ThreadPool;
 import app.l2nx.highfive.util.StatSet;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataAccessException;
+import org.springframework.stereotype.Component;
 
 /**
  * Raid Boss spawn manager.
  * @author godson
  */
 @Slf4j
+@Component
 public class RaidBossSpawnManager {
+    private static volatile RaidBossSpawnManager instance;
 
     protected static final Map<Integer, RaidBoss> bosses = new ConcurrentHashMap<>();
     protected static final Map<Integer, Spawn> spawns = new ConcurrentHashMap<>();
     protected static final Map<Integer, StatSet> storedInfo = new ConcurrentHashMap<>();
     protected static final Map<Integer, ScheduledFuture<?>> schedules = new ConcurrentHashMap<>();
 
-    /**
-     * Instantiates a new raid boss spawn manager.
-     */
-    protected RaidBossSpawnManager() {
-        load();
+    private final RaidBossStateRepository stateRepository;
+
+    public RaidBossSpawnManager(RaidBossStateRepository stateRepository) {
+        this.stateRepository = stateRepository;
+        instance = this;
     }
 
     /**
-     * Load.
+     * Spawns the datapack raid bosses with their stored state; a boss without a stored state was never killed and
+     * spawns now at full HP/MP.
      */
     public void load() {
         if (!spawns.isEmpty()) {
             for (Spawn spawn : spawns.values()) {
-                deleteSpawn(spawn, false);
+                deleteSpawn(spawn);
             }
         }
 
@@ -74,30 +90,39 @@ public class RaidBossSpawnManager {
         storedInfo.clear();
         schedules.clear();
 
-        try (Connection con = DatabaseFactory.getConnection();
-                Statement s = con.createStatement();
-                ResultSet rs = s.executeQuery("SELECT * FROM raidboss_spawnlist ORDER BY boss_id")) {
-            while (rs.next()) {
-                final Spawn spawnDat = new Spawn(rs.getInt("boss_id"));
-                spawnDat.setXYZ(rs.getInt("loc_x"), rs.getInt("loc_y"), rs.getInt("loc_z"));
-                spawnDat.setAmount(rs.getInt("amount"));
-                spawnDat.setHeading(rs.getInt("heading"));
-                spawnDat.setRespawnDelay(rs.getInt("respawn_delay"), rs.getInt("respawn_random"));
-                addNewSpawn(
-                        spawnDat,
-                        rs.getLong("respawn_time"),
-                        rs.getDouble("currentHP"),
-                        rs.getDouble("currentMP"),
-                        false);
-            }
-
-            log.info("Loaded {} Instances", bosses.size());
-            log.info("Scheduled {} Instances", schedules.size());
-        } catch (SQLException e) {
-            log.warn("Could not load raidboss_spawnlist table");
-        } catch (Exception e) {
-            log.warn("Error while initializing RaidBossSpawnManager: {}", e.getMessage(), e);
+        final Map<Integer, RaidBossState> states;
+        try {
+            states = stateRepository.findAll().stream()
+                    .collect(Collectors.toMap(RaidBossState::npcId, Function.identity()));
+        } catch (DataAccessException e) {
+            log.warn("Could not load raid boss states: {}", e.getMessage(), e);
+            return;
         }
+
+        for (RaidBossSpawn boss : RaidBossSpawnData.getInstance().getSpawns()) {
+            try {
+                final NpcTemplate template = NpcData.getInstance().getTemplate(boss.npcId());
+                final Spawn spawnDat = new Spawn(template);
+                spawnDat.setXYZ(
+                        boss.spawnPoint().x(),
+                        boss.spawnPoint().y(),
+                        boss.spawnPoint().z());
+                spawnDat.setAmount(1);
+                spawnDat.setHeading(boss.spawnPoint().heading());
+                spawnDat.setRespawnDelay(boss.respawnDelay(), boss.respawnRandom());
+                final RaidBossState state = states.get(boss.npcId());
+                if (state == null) {
+                    addNewSpawn(spawnDat, 0, template.getBaseHpMax(), template.getBaseMpMax());
+                } else {
+                    addNewSpawn(spawnDat, epochMillisOrZero(state.respawnTime()), state.currentHp(), state.currentMp());
+                }
+            } catch (Exception e) {
+                log.warn("Could not spawn raid boss {}: {}", boss.npcId(), e.getMessage(), e);
+            }
+        }
+
+        log.info("Loaded {} Instances", bosses.size());
+        log.info("Scheduled {} Instances", schedules.size());
     }
 
     @Slf4j
@@ -182,9 +207,8 @@ public class RaidBossSpawnManager {
      * @param respawnTime the respawn time
      * @param currentHP the current hp
      * @param currentMP the current mp
-     * @param storeInDb the store in db
      */
-    public void addNewSpawn(Spawn spawnDat, long respawnTime, double currentHP, double currentMP, boolean storeInDb) {
+    public void addNewSpawn(Spawn spawnDat, long respawnTime, double currentHP, double currentMP) {
         if ((spawnDat == null) || spawns.containsKey(spawnDat.getId())) {
             return;
         }
@@ -212,34 +236,9 @@ public class RaidBossSpawnManager {
         }
 
         spawns.put(bossId, spawnDat);
-
-        if (storeInDb) {
-            try (Connection con = DatabaseFactory.getConnection();
-                    PreparedStatement ps = con.prepareStatement(
-                            "INSERT INTO raidboss_spawnlist (boss_id,amount,loc_x,loc_y,loc_z,heading,respawn_time,currentHp,currentMp) VALUES(?,?,?,?,?,?,?,?,?)")) {
-                ps.setInt(1, spawnDat.getId());
-                ps.setInt(2, spawnDat.getAmount());
-                ps.setInt(3, spawnDat.getX());
-                ps.setInt(4, spawnDat.getY());
-                ps.setInt(5, spawnDat.getZ());
-                ps.setInt(6, spawnDat.getHeading());
-                ps.setLong(7, respawnTime);
-                ps.setDouble(8, currentHP);
-                ps.setDouble(9, currentMP);
-                ps.execute();
-            } catch (Exception e) {
-                // problem with storing spawn
-                log.warn("Could not store raidboss #{} in the DB:{}", bossId, e.getMessage(), e);
-            }
-        }
     }
 
-    /**
-     * Delete spawn.
-     * @param spawnDat the spawn dat
-     * @param updateDb the update db
-     */
-    public void deleteSpawn(Spawn spawnDat, boolean updateDb) {
+    private void deleteSpawn(Spawn spawnDat) {
         if (spawnDat == null) {
             return;
         }
@@ -263,60 +262,45 @@ public class RaidBossSpawnManager {
         if (storedInfo.containsKey(bossId)) {
             storedInfo.remove(bossId);
         }
-
-        if (updateDb) {
-            try (Connection con = DatabaseFactory.getConnection();
-                    PreparedStatement ps = con.prepareStatement("DELETE FROM raidboss_spawnlist WHERE boss_id=?")) {
-                ps.setInt(1, bossId);
-                ps.execute();
-            } catch (Exception e) {
-                // problem with deleting spawn
-                log.warn("Could not remove raidboss #{} from DB: {}", bossId, e.getMessage(), e);
-            }
-        }
     }
 
     /**
-     * Update database.
+     * Saves the state of the datapack bosses only: a boss an admin spawned by hand is not kept over a restart.
      */
     private void updateDb() {
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement(
-                        "UPDATE raidboss_spawnlist SET respawn_time = ?, currentHP = ?, currentMP = ? WHERE boss_id = ?")) {
-            for (Entry<Integer, StatSet> entry : storedInfo.entrySet()) {
-                final Integer bossId = entry.getKey();
-                if (bossId == null) {
-                    continue;
-                }
-
-                final RaidBoss boss = bosses.get(bossId);
-                if (boss == null) {
-                    continue;
-                }
-
-                if (boss.getRaidStatus() == RaidBossStatus.ALIVE) {
-                    updateStatus(boss, false);
-                }
-
-                final StatSet info = entry.getValue();
-                if (info == null) {
-                    continue;
-                }
-
-                try {
-                    // TODO(Zoey76): Change this to use batch.
-                    ps.setLong(1, info.getLong("respawnTime"));
-                    ps.setDouble(2, boss.isDead() ? boss.getMaxHp() : info.getDouble("currentHP"));
-                    ps.setDouble(3, boss.isDead() ? boss.getMaxMp() : info.getDouble("currentMP"));
-                    ps.setInt(4, bossId);
-                    ps.executeUpdate();
-                    ps.clearParameters();
-                } catch (SQLException e) {
-                    log.warn("Could not update raidboss_spawnlist table {}", e.getMessage(), e);
-                }
+        final List<RaidBossState> states = new ArrayList<>();
+        for (Entry<Integer, StatSet> entry : storedInfo.entrySet()) {
+            final Integer bossId = entry.getKey();
+            if ((bossId == null) || (RaidBossSpawnData.getInstance().getSpawn(bossId) == null)) {
+                continue;
             }
-        } catch (SQLException e) {
-            log.warn("SQL error while updating RaidBoss spawn to database: {}", e.getMessage(), e);
+
+            final RaidBoss boss = bosses.get(bossId);
+            if (boss == null) {
+                continue;
+            }
+
+            if (boss.getRaidStatus() == RaidBossStatus.ALIVE) {
+                updateStatus(boss, false);
+            }
+
+            final StatSet info = entry.getValue();
+            if (info == null) {
+                continue;
+            }
+
+            states.add(RaidBossState.builder()
+                    .npcId(bossId)
+                    .respawnTime(instantOrNull(info.getLong("respawnTime")))
+                    .currentHp(boss.isDead() ? boss.getMaxHp() : info.getDouble("currentHP"))
+                    .currentMp(boss.isDead() ? boss.getMaxMp() : info.getDouble("currentMP"))
+                    .build());
+        }
+
+        try {
+            stateRepository.saveAll(states);
+        } catch (DataAccessException e) {
+            log.warn("Could not save raid boss states: {}", e.getMessage(), e);
         }
     }
 
@@ -433,15 +417,12 @@ public class RaidBossSpawnManager {
         spawns.clear();
     }
 
-    /**
-     * Gets the single instance of RaidBossSpawnManager.
-     * @return single instance of RaidBossSpawnManager
-     */
+    // TODO: callers receive the bean through their constructor (#41).
     public static RaidBossSpawnManager getInstance() {
-        return SingletonHolder.INSTANCE;
-    }
-
-    private static class SingletonHolder {
-        protected static final RaidBossSpawnManager INSTANCE = new RaidBossSpawnManager();
+        final RaidBossSpawnManager current = instance;
+        if (current == null) {
+            throw new IllegalStateException("RaidBossSpawnManager is used before the Spring context created it.");
+        }
+        return current;
     }
 }

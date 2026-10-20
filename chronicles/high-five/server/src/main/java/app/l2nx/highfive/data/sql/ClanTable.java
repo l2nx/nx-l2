@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -21,6 +25,8 @@
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package app.l2nx.highfive.data.sql;
+
+import static app.l2nx.highfive.repository.LegacyValues.instantOrNull;
 
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.communitybbs.Manager.ForumsBBSManager;
@@ -52,45 +58,82 @@ import app.l2nx.highfive.network.serverpackets.PledgeShowInfoUpdate;
 import app.l2nx.highfive.network.serverpackets.PledgeShowMemberListAll;
 import app.l2nx.highfive.network.serverpackets.PledgeShowMemberListUpdate;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
+import app.l2nx.highfive.repository.character.CharacterRepository;
+import app.l2nx.highfive.repository.character.model.CharacterClanMember;
+import app.l2nx.highfive.repository.clan.ClanNoticeRepository;
+import app.l2nx.highfive.repository.clan.ClanRankPrivilegeRepository;
+import app.l2nx.highfive.repository.clan.ClanRepository;
+import app.l2nx.highfive.repository.clan.ClanSkillRepository;
+import app.l2nx.highfive.repository.clan.ClanSubPledgeRepository;
+import app.l2nx.highfive.repository.clan.ClanWarRepository;
+import app.l2nx.highfive.repository.clan.model.ClanNotice;
+import app.l2nx.highfive.repository.clan.model.ClanRow;
+import app.l2nx.highfive.repository.clan.model.ClanSkill;
+import app.l2nx.highfive.repository.clan.model.ClanUpdate;
+import app.l2nx.highfive.repository.clan.model.ClanWar;
+import app.l2nx.highfive.repository.clan.model.RankPrivilege;
+import app.l2nx.highfive.repository.clan.model.SubPledgeRow;
+import app.l2nx.highfive.repository.clan.model.WarOpponent;
+import app.l2nx.highfive.repository.residence.CastleStateRepository;
 import app.l2nx.highfive.threads.ThreadPool;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.support.TransactionTemplate;
 
-/**
- * This class loads the clan related data.
- */
 @Slf4j
+@Component
 public class ClanTable {
+    private static volatile ClanTable instance;
+
     private final Map<Integer, Clan> clans = new ConcurrentHashMap<>();
 
-    protected ClanTable() {
+    private final ClanRepository clanRepository;
+    private final ClanNoticeRepository noticeRepository;
+    private final ClanRankPrivilegeRepository rankPrivilegeRepository;
+    private final ClanSkillRepository skillRepository;
+    private final ClanSubPledgeRepository subPledgeRepository;
+    private final ClanWarRepository warRepository;
+    private final CastleStateRepository castleStateRepository;
+    private final CharacterRepository characterRepository;
+    private final TransactionTemplate transactions;
+
+    public ClanTable(
+            ClanRepository clanRepository,
+            ClanNoticeRepository noticeRepository,
+            ClanRankPrivilegeRepository rankPrivilegeRepository,
+            ClanSkillRepository skillRepository,
+            ClanSubPledgeRepository subPledgeRepository,
+            ClanWarRepository warRepository,
+            CastleStateRepository castleStateRepository,
+            CharacterRepository characterRepository,
+            TransactionTemplate transactions) {
+        this.clanRepository = clanRepository;
+        this.noticeRepository = noticeRepository;
+        this.rankPrivilegeRepository = rankPrivilegeRepository;
+        this.skillRepository = skillRepository;
+        this.subPledgeRepository = subPledgeRepository;
+        this.warRepository = warRepository;
+        this.castleStateRepository = castleStateRepository;
+        this.characterRepository = characterRepository;
+        this.transactions = transactions;
+        instance = this;
+    }
+
+    public void load() {
         // Forums has to be loaded before clan data, because of last forum id used should have also memo included.
         if (GeneralConfig.ENABLE_COMMUNITY_BOARD) {
             ForumsBBSManager.getInstance().initRoot();
         }
 
-        // Get all clan ids.
-        final List<Integer> cids = new ArrayList<>();
-        try (Connection con = DatabaseFactory.getConnection();
-                Statement s = con.createStatement();
-                ResultSet rs = s.executeQuery("SELECT clan_id FROM clan_data")) {
-            while (rs.next()) {
-                cids.add(rs.getInt("clan_id"));
-            }
-        } catch (Exception e) {
-            log.error("Error restoring ClanTable.", e);
-        }
-
-        // Create clans.
+        clanRepository.clearAllianceLeftovers();
+        final List<Integer> cids = clanRepository.findAllClanIds();
         for (int cid : cids) {
             final Clan clan = new Clan(cid);
             clans.put(cid, clan);
@@ -259,62 +302,31 @@ public class ClanTable {
         }
 
         clans.remove(clanId);
+        // The war rows of the clan go with its row; the clans it fought forget the wars too.
+        for (Clan other : clans.values()) {
+            other.getWarList().remove(clanId);
+            other.getAttackerList().remove(clanId);
+        }
+
+        clanRepository.delete(clanId);
         IdManager.getInstance().releaseId(clanId);
 
-        try (Connection con = DatabaseFactory.getConnection()) {
-            try (PreparedStatement ps = con.prepareStatement("DELETE FROM clan_data WHERE clan_id=?")) {
-                ps.setInt(1, clanId);
-                ps.execute();
-            }
+        if (castleId != 0) {
+            castleStateRepository.updateTaxPercent(castleId, 0);
+        }
 
-            try (PreparedStatement ps = con.prepareStatement("DELETE FROM clan_privs WHERE clan_id=?")) {
-                ps.setInt(1, clanId);
-                ps.execute();
+        if (fortId != 0) {
+            final Fort fort = FortManager.getInstance().getFortById(fortId);
+            if ((fort != null) && (clan == fort.getOwnerClan())) {
+                fort.removeOwner(true);
             }
+        }
 
-            try (PreparedStatement ps = con.prepareStatement("DELETE FROM clan_skills WHERE clan_id=?")) {
-                ps.setInt(1, clanId);
-                ps.execute();
+        if (hallId != 0) {
+            final SiegableHall hall = CHSiegeManager.getInstance().getSiegableHall(hallId);
+            if ((hall != null) && (hall.getOwnerId() == clanId)) {
+                hall.free();
             }
-
-            try (PreparedStatement ps = con.prepareStatement("DELETE FROM clan_subpledges WHERE clan_id=?")) {
-                ps.setInt(1, clanId);
-                ps.execute();
-            }
-
-            try (PreparedStatement ps = con.prepareStatement("DELETE FROM clan_wars WHERE clan1=? OR clan2=?")) {
-                ps.setInt(1, clanId);
-                ps.setInt(2, clanId);
-                ps.execute();
-            }
-
-            try (PreparedStatement ps = con.prepareStatement("DELETE FROM clan_notices WHERE clan_id=?")) {
-                ps.setInt(1, clanId);
-                ps.execute();
-            }
-
-            if (castleId != 0) {
-                try (PreparedStatement ps = con.prepareStatement("UPDATE castle SET taxPercent = 0 WHERE id = ?")) {
-                    ps.setInt(1, castleId);
-                    ps.execute();
-                }
-            }
-
-            if (fortId != 0) {
-                final Fort fort = FortManager.getInstance().getFortById(fortId);
-                if ((fort != null) && (clan == fort.getOwnerClan())) {
-                    fort.removeOwner(true);
-                }
-            }
-
-            if (hallId != 0) {
-                final SiegableHall hall = CHSiegeManager.getInstance().getSiegableHall(hallId);
-                if ((hall != null) && (hall.getOwnerId() == clanId)) {
-                    hall.free();
-                }
-            }
-        } catch (Exception e) {
-            log.error("Error removing clan from DB.", e);
         }
 
         // Notify to scripts
@@ -361,17 +373,7 @@ public class ClanTable {
         clan2.setAttackerClan(clan1);
         clan1.broadcastClanStatus();
         clan2.broadcastClanStatus();
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement(
-                        "REPLACE INTO clan_wars (clan1, clan2, wantspeace1, wantspeace2) VALUES(?,?,?,?)")) {
-            ps.setInt(1, clanId1);
-            ps.setInt(2, clanId2);
-            ps.setInt(3, 0);
-            ps.setInt(4, 0);
-            ps.execute();
-        } catch (Exception e) {
-            log.error("Error storing clan wars data.", e);
-        }
+        warRepository.insert(clanId1, clanId2);
 
         // SystemMessage msg = new SystemMessage(SystemMessageId.WAR_WITH_THE_S1_CLAN_HAS_BEGUN);
         //
@@ -402,20 +404,15 @@ public class ClanTable {
 
         clan1.deleteEnemyClan(clan2);
         clan2.deleteAttackerClan(clan1);
+        clan2.deleteEnemyClan(clan1);
+        clan1.deleteAttackerClan(clan2);
         clan1.broadcastClanStatus();
         clan2.broadcastClanStatus();
 
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement(
-                        "DELETE FROM clan_wars WHERE (clan1=? AND clan2=?) OR (clan2=? AND clan1=?)")) {
-            ps.setInt(1, clanId1);
-            ps.setInt(2, clanId2);
-            ps.setInt(3, clanId1);
-            ps.setInt(4, clanId2);
-            ps.execute();
-        } catch (Exception e) {
-            log.error("Error removing clan wars data.", e);
-        }
+        transactions.executeWithoutResult(status -> {
+            warRepository.delete(clanId1, clanId2);
+            warRepository.delete(clanId2, clanId1);
+        });
 
         // SystemMessage msg = new SystemMessage(SystemMessageId.WAR_WITH_THE_S1_CLAN_HAS_ENDED);
         SystemMessage msg = new SystemMessage(SystemMessageId.THE_WAR_AGAINST_S1_CLAN_HAS_BEEN_STOPPED);
@@ -435,30 +432,20 @@ public class ClanTable {
         }
 
         if (count == (clan1.getMembers().size() - 1)) {
-            clan1.deleteEnemyClan(clan2);
-            clan2.deleteEnemyClan(clan1);
             deleteClanWars(clan1.getId(), clan2.getId());
         }
     }
 
     private void restoreClanWars() {
-        Clan clan1;
-        Clan clan2;
-        try (Connection con = DatabaseFactory.getConnection();
-                Statement statement = con.createStatement();
-                ResultSet rset = statement.executeQuery("SELECT clan1, clan2 FROM clan_wars")) {
-            while (rset.next()) {
-                clan1 = getClan(rset.getInt("clan1"));
-                clan2 = getClan(rset.getInt("clan2"));
-                if ((clan1 != null) && (clan2 != null)) {
-                    clan1.setEnemyClan(rset.getInt("clan2"));
-                    clan2.setAttackerClan(rset.getInt("clan1"));
-                } else {
-                    log.warn("Restorewars one of clans is null clan1:{} clan2:{}", clan1, clan2);
-                }
+        for (ClanWar war : warRepository.findAll()) {
+            final Clan clan1 = getClan(war.clanId());
+            final Clan clan2 = getClan(war.enemyClanId());
+            if ((clan1 != null) && (clan2 != null)) {
+                clan1.setEnemyClan(war.enemyClanId());
+                clan2.setAttackerClan(war.clanId());
+            } else {
+                log.warn("Restorewars one of clans is null clan1:{} clan2:{}", clan1, clan2);
             }
-        } catch (Exception e) {
-            log.error("Error restoring clan wars data.", e);
         }
     }
 
@@ -521,11 +508,176 @@ public class ClanTable {
         return rank;
     }
 
-    public static ClanTable getInstance() {
-        return SingletonHolder.INSTANCE;
+    public Optional<ClanRow> findClan(int clanId) {
+        return clanRepository.find(clanId);
     }
 
-    private static class SingletonHolder {
-        protected static final ClanTable INSTANCE = new ClanTable();
+    public int findCastleIdOfOwner(int clanId) {
+        return castleStateRepository.findCastleIdByOwner(clanId).orElse(0);
+    }
+
+    public List<CharacterClanMember> findMembers(int clanId) {
+        return characterRepository.findClanMembers(clanId);
+    }
+
+    public Optional<ClanNotice> findNotice(int clanId) {
+        return noticeRepository.find(clanId);
+    }
+
+    public List<ClanSkill> findSkills(int clanId) {
+        return skillRepository.findAll(clanId);
+    }
+
+    public List<SubPledgeRow> findSubPledges(int clanId) {
+        return subPledgeRepository.findAll(clanId);
+    }
+
+    public List<RankPrivilege> findRankPrivileges(int clanId) {
+        return rankPrivilegeRepository.findAll(clanId);
+    }
+
+    public List<WarOpponent> findDeclaredWarsOnly(int clanId) {
+        return warRepository.findDeclaredOnly(clanId);
+    }
+
+    public List<WarOpponent> findAttackersOnly(int clanId) {
+        return warRepository.findAttackersOnly(clanId);
+    }
+
+    public List<WarOpponent> findMutualWars(int clanId) {
+        return warRepository.findMutual(clanId);
+    }
+
+    public void insertClan(Clan clan) {
+        clanRepository.insert(ClanRow.builder()
+                .clanId(clan.getId())
+                .name(clan.getName())
+                .level(clan.getLevel())
+                .reputationScore(clan.getReputationScore())
+                .bloodAllianceCount(clan.getBloodAllianceCount())
+                .bloodOathCount(clan.getBloodOathCount())
+                .leaderId(clan.getLeaderId())
+                .newLeaderId(clan.getNewLeaderId())
+                .allyId(clan.getAllyId())
+                .allyName(clan.getAllyName())
+                .crestId(clan.getCrestId())
+                .crestLargeId(clan.getCrestLargeId())
+                .allyCrestId(clan.getAllyCrestId())
+                .bidClanHallId(clan.getAuctionBiddedAt())
+                .allyPenaltyEndsAt(instantOrNull(clan.getAllyPenaltyExpiryTime()))
+                .allyPenaltyType(clan.getAllyPenaltyType())
+                .characterPenaltyEndsAt(instantOrNull(clan.getCharPenaltyExpiryTime()))
+                .dissolvingEndsAt(instantOrNull(clan.getDissolvingExpiryTime()))
+                .build());
+    }
+
+    public void updateClan(Clan clan) {
+        clanRepository.update(ClanUpdate.builder()
+                .clanId(clan.getId())
+                .leaderId(clan.getLeaderId())
+                .newLeaderId(clan.getNewLeaderId())
+                .allyId(clan.getAllyId())
+                .allyName(clan.getAllyName())
+                .reputationScore(clan.getReputationScore())
+                .allyPenaltyEndsAt(instantOrNull(clan.getAllyPenaltyExpiryTime()))
+                .allyPenaltyType(clan.getAllyPenaltyType())
+                .characterPenaltyEndsAt(instantOrNull(clan.getCharPenaltyExpiryTime()))
+                .dissolvingEndsAt(instantOrNull(clan.getDissolvingExpiryTime()))
+                .build());
+    }
+
+    public void updateBloodAllianceCount(int clanId, int count) {
+        clanRepository.updateBloodAllianceCount(clanId, count);
+    }
+
+    public void updateBloodOathCount(int clanId, int count) {
+        clanRepository.updateBloodOathCount(clanId, count);
+    }
+
+    public void updateLevel(int clanId, int level) {
+        clanRepository.updateLevel(clanId, level);
+    }
+
+    /**
+     * @param clanHallId 0 when the clan bids nowhere; else its bid must be stored first
+     */
+    public void updateBidClanHall(int clanId, int clanHallId) {
+        clanRepository.updateBidClanHall(clanId, clanHallId);
+    }
+
+    public void updateCrest(int clanId, int crestId) {
+        clanRepository.updateCrest(clanId, crestId);
+    }
+
+    public void updateLargeCrest(int clanId, int crestId) {
+        clanRepository.updateLargeCrest(clanId, crestId);
+    }
+
+    public void updateAllyCrest(int clanId, int crestId) {
+        clanRepository.updateAllyCrest(clanId, crestId);
+    }
+
+    public void updateAllyCrestOfAlliance(int allyId, int crestId) {
+        clanRepository.updateAllyCrestOfAlliance(allyId, crestId);
+    }
+
+    /**
+     * @param notice {@code null} for none
+     */
+    public void storeNotice(int clanId, String notice, boolean enabled) {
+        noticeRepository.upsert(clanId, notice, enabled);
+    }
+
+    public void storeSkill(int clanId, int skillId, int skillLevel, int pledgeType) {
+        skillRepository.upsert(clanId, skillId, skillLevel, pledgeType);
+    }
+
+    public void insertSubPledge(int clanId, int pledgeType, String name, int leaderId) {
+        subPledgeRepository.insert(clanId, pledgeType, name, leaderId);
+    }
+
+    public void updateSubPledge(int clanId, int pledgeType, String name, int leaderId) {
+        subPledgeRepository.update(clanId, pledgeType, name, leaderId);
+    }
+
+    /**
+     * @param powerGrade 1 to 9
+     */
+    public void storeRankPrivileges(int clanId, int powerGrade, int privilegeMask) {
+        rankPrivilegeRepository.upsert(clanId, powerGrade, privilegeMask);
+    }
+
+    public void updateMemberPrivileges(int objectId, int privileges) {
+        characterRepository.updateClanPrivileges(objectId, privileges);
+    }
+
+    /**
+     * @param joinPenaltyEndsAt epoch milliseconds, 0 for no penalty
+     * @param createPenaltyEndsAt epoch milliseconds, 0 for no penalty
+     */
+    public void removeMember(int objectId, long joinPenaltyEndsAt, long createPenaltyEndsAt) {
+        characterRepository.removeFromClan(
+                objectId, instantOrNull(joinPenaltyEndsAt), instantOrNull(createPenaltyEndsAt));
+    }
+
+    public void updateMemberPledgeType(int objectId, int pledgeType) {
+        characterRepository.updatePledgeType(objectId, pledgeType);
+    }
+
+    public void updateMemberPowerGrade(int objectId, int powerGrade) {
+        characterRepository.updatePowerGrade(objectId, powerGrade);
+    }
+
+    public void updateMemberApprenticeAndSponsor(int objectId, int apprenticeId, int sponsorId) {
+        characterRepository.updateApprenticeAndSponsor(objectId, apprenticeId, sponsorId);
+    }
+
+    // TODO: callers receive the bean through their constructor (#41).
+    public static ClanTable getInstance() {
+        final ClanTable current = instance;
+        if (current == null) {
+            throw new IllegalStateException("ClanTable is used before the Spring context created it.");
+        }
+        return current;
     }
 }

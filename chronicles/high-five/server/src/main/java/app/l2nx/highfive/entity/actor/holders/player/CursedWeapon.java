@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -23,7 +27,6 @@
 package app.l2nx.highfive.entity.actor.holders.player;
 
 import app.l2nx.highfive.clock.ClockBridge;
-import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.data.xml.SkillData;
 import app.l2nx.highfive.data.xml.TransformData;
 import app.l2nx.highfive.entity.Location;
@@ -44,9 +47,6 @@ import app.l2nx.highfive.network.serverpackets.ExRedSky;
 import app.l2nx.highfive.network.serverpackets.SocialAction;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
 import app.l2nx.highfive.threads.ThreadPool;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
 import java.util.concurrent.ScheduledFuture;
 import lombok.Getter;
 import lombok.Setter;
@@ -156,28 +156,7 @@ public class CursedWeapon {
                 // Remove from Db
                 log.info("{} being removed offline.", name);
 
-                try (Connection con = DatabaseFactory.getConnection();
-                        PreparedStatement del =
-                                con.prepareStatement("DELETE FROM items WHERE owner_id=? AND item_id=?");
-                        PreparedStatement ps =
-                                con.prepareStatement("UPDATE characters SET karma=?, pkkills=? WHERE charId=?")) {
-                    // Delete the item
-                    del.setInt(1, playerId);
-                    del.setInt(2, itemId);
-                    if (del.executeUpdate() != 1) {
-                        log.warn("Error while deleting itemId {} from userId {}", itemId, playerId);
-                    }
-
-                    // Restore the karma
-                    ps.setInt(1, playerKarma);
-                    ps.setInt(2, playerPkKills);
-                    ps.setInt(3, playerId);
-                    if (ps.executeUpdate() != 1) {
-                        log.warn("Error while updating karma & pkkills for userId {}", playerId);
-                    }
-                } catch (Exception e) {
-                    log.warn("Could not delete : {}", e.getMessage(), e);
-                }
+                CursedWeaponsManager.getInstance().removeFromOfflinePlayer(this, playerId);
             }
         }
 
@@ -197,7 +176,7 @@ public class CursedWeapon {
         }
 
         // Delete infos from table if any.
-        CursedWeaponsManager.removeFromDb(itemId);
+        CursedWeaponsManager.getInstance().removeFromDb(itemId);
 
         final SystemMessage sm = new SystemMessage(SystemMessageId.S1_HAS_DISAPPEARED);
         sm.addItemName(itemId);
@@ -423,26 +402,7 @@ public class CursedWeapon {
     }
 
     public void saveData() {
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement del = con.prepareStatement("DELETE FROM cursed_weapons WHERE itemId = ?");
-                PreparedStatement ps = con.prepareStatement(
-                        "INSERT INTO cursed_weapons (itemId, charId, playerKarma, playerPkKills, nbKills, endTime) VALUES (?, ?, ?, ?, ?, ?)")) {
-            // Delete previous datas
-            del.setInt(1, itemId);
-            del.executeUpdate();
-
-            if (activated) {
-                ps.setInt(1, itemId);
-                ps.setInt(2, playerId);
-                ps.setInt(3, playerKarma);
-                ps.setInt(4, playerPkKills);
-                ps.setInt(5, nbKills);
-                ps.setLong(6, endTime);
-                ps.executeUpdate();
-            }
-        } catch (SQLException e) {
-            log.error("Failed to save data.", e);
-        }
+        CursedWeaponsManager.getInstance().saveData(this);
     }
 
     public void dropIt(Creature killer) {

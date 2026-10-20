@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -22,7 +26,10 @@
  */
 package app.l2nx.highfive.managers;
 
-import app.l2nx.highfive.data.sql.DatabaseFactory;
+import static app.l2nx.highfive.repository.LegacyValues.instantOrNull;
+
+import app.l2nx.highfive.data.holders.CastleTemplate;
+import app.l2nx.highfive.data.xml.CastleData;
 import app.l2nx.highfive.entity.WorldObject;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.clan.Clan;
@@ -31,24 +38,48 @@ import app.l2nx.highfive.entity.item.enums.ItemProcessType;
 import app.l2nx.highfive.entity.item.instance.Item;
 import app.l2nx.highfive.mechanics.sevensigns.SevenSigns;
 import app.l2nx.highfive.mechanics.siege.Castle;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.Statement;
+import app.l2nx.highfive.repository.item.ItemRepository;
+import app.l2nx.highfive.repository.residence.CastleDoorUpgradeRepository;
+import app.l2nx.highfive.repository.residence.CastleFunctionRepository;
+import app.l2nx.highfive.repository.residence.CastleStateRepository;
+import app.l2nx.highfive.repository.residence.model.CastleDoorUpgrade;
+import app.l2nx.highfive.repository.residence.model.CastleState;
+import app.l2nx.highfive.repository.residence.model.ResidenceFunction;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataAccessException;
+import org.springframework.stereotype.Component;
 
 @Slf4j
+@Component
 public class CastleManager {
+    private static volatile CastleManager instance;
 
     private static final List<Castle> castles = new CopyOnWriteArrayList<>();
 
     private static final Map<Integer, Long> castleSiegeDate = new ConcurrentHashMap<>();
 
     private static final int[] castleCirclets = {0, 6838, 6835, 6839, 6837, 6840, 6834, 6836, 8182, 8183};
+
+    private final CastleStateRepository stateRepository;
+    private final CastleFunctionRepository functionRepository;
+    private final CastleDoorUpgradeRepository doorUpgradeRepository;
+    private final ItemRepository itemRepository;
+
+    public CastleManager(
+            CastleStateRepository stateRepository,
+            CastleFunctionRepository functionRepository,
+            CastleDoorUpgradeRepository doorUpgradeRepository,
+            ItemRepository itemRepository) {
+        this.stateRepository = stateRepository;
+        this.functionRepository = functionRepository;
+        this.doorUpgradeRepository = doorUpgradeRepository;
+        this.itemRepository = itemRepository;
+        instance = this;
+    }
 
     public int findNearestCastleIndex(WorldObject obj) {
         return findNearestCastleIndex(obj, Long.MAX_VALUE);
@@ -238,13 +269,9 @@ public class CastleManager {
                 }
             }
             // Else offline-player circlet removal.
-            try (Connection con = DatabaseFactory.getConnection();
-                    PreparedStatement ps =
-                            con.prepareStatement("DELETE FROM items WHERE owner_id = ? and item_id = ?")) {
-                ps.setInt(1, member.getObjectId());
-                ps.setInt(2, circletId);
-                ps.execute();
-            } catch (Exception e) {
+            try {
+                itemRepository.deleteByOwner(member.getObjectId(), circletId);
+            } catch (DataAccessException e) {
                 log.warn(
                         "Failed to remove castle circlets offline for player {}: {}",
                         member.getName(),
@@ -255,17 +282,18 @@ public class CastleManager {
     }
 
     public void loadInstances() {
-        try (Connection con = DatabaseFactory.getConnection();
-                Statement s = con.createStatement();
-                ResultSet rs = s.executeQuery("SELECT id FROM castle ORDER BY id")) {
-            while (rs.next()) {
-                castles.add(new Castle(rs.getInt("id")));
-            }
-
-            log.info("Loaded {} castles", castles.size());
-        } catch (Exception e) {
-            log.warn("Exception: loadCastleData(): {}", e.getMessage(), e);
+        try {
+            // An owner clan deleted outside the game leaves its castle with the tax it set; the next owner starts at 0.
+            stateRepository.resetTaxOfUnownedCastles();
+        } catch (DataAccessException e) {
+            log.warn("Could not reset the tax of unowned castles: {}", e.getMessage(), e);
         }
+
+        for (CastleTemplate template : CastleData.getInstance().getCastles()) {
+            castles.add(new Castle(template.id()));
+        }
+
+        log.info("Loaded {} castles", castles.size());
     }
 
     public void activateInstances() {
@@ -289,11 +317,136 @@ public class CastleManager {
         return count;
     }
 
-    public static CastleManager getInstance() {
-        return SingletonHolder.INSTANCE;
+    /**
+     * @return the stored state, or the initial state of a castle that has none yet
+     */
+    public CastleState findState(int castleId) {
+        try {
+            return stateRepository.findById(castleId).orElseGet(() -> initialState(castleId));
+        } catch (DataAccessException e) {
+            log.warn("Could not load the state of castle {}: {}", castleId, e.getMessage(), e);
+            return initialState(castleId);
+        }
     }
 
-    private static class SingletonHolder {
-        protected static final CastleManager INSTANCE = new CastleManager();
+    private static CastleState initialState(int castleId) {
+        return CastleState.builder().castleId(castleId).registrationOver(true).build();
+    }
+
+    /**
+     * Makes the clan the owner and frees the castle it held before.
+     *
+     * @param clanId {@code 0} leaves the castle without an owner
+     */
+    public void saveOwner(int castleId, int clanId) {
+        try {
+            stateRepository.updateOwner(castleId, clanId);
+        } catch (DataAccessException e) {
+            log.warn("Could not save the owner of castle {}: {}", castleId, e.getMessage(), e);
+        }
+    }
+
+    public void saveTreasury(int castleId, long treasury) {
+        try {
+            stateRepository.updateTreasury(castleId, treasury);
+        } catch (DataAccessException e) {
+            log.warn("Could not save the treasury of castle {}: {}", castleId, e.getMessage(), e);
+        }
+    }
+
+    public void saveTaxPercent(int castleId, int taxPercent) {
+        try {
+            stateRepository.updateTaxPercent(castleId, taxPercent);
+        } catch (DataAccessException e) {
+            log.warn("Could not save the tax of castle {}: {}", castleId, e.getMessage(), e);
+        }
+    }
+
+    public void saveShowNpcCrest(int castleId, boolean showNpcCrest) {
+        try {
+            stateRepository.updateShowNpcCrest(castleId, showNpcCrest);
+        } catch (DataAccessException e) {
+            log.warn("Could not save the NPC crest flag of castle {}: {}", castleId, e.getMessage(), e);
+        }
+    }
+
+    public void saveTicketBuyCount(int castleId, int ticketBuyCount) {
+        try {
+            stateRepository.updateTicketBuyCount(castleId, ticketBuyCount);
+        } catch (DataAccessException e) {
+            log.warn("Could not save the ticket buy count of castle {}: {}", castleId, e.getMessage(), e);
+        }
+    }
+
+    /**
+     * @param siegeDate epoch milliseconds
+     * @param registrationEndDate epoch milliseconds
+     */
+    public void saveSiegeSchedule(int castleId, long siegeDate, long registrationEndDate, boolean registrationOver) {
+        try {
+            stateRepository.updateSiegeSchedule(
+                    castleId, instantOrNull(siegeDate), instantOrNull(registrationEndDate), registrationOver);
+        } catch (DataAccessException e) {
+            log.warn("Could not save the siege date of castle {}: {}", castleId, e.getMessage(), e);
+        }
+    }
+
+    public List<ResidenceFunction> findFunctions(int castleId) {
+        try {
+            return functionRepository.findByCastle(castleId);
+        } catch (DataAccessException e) {
+            log.error("Could not load the functions of castle {}: {}", castleId, e.getMessage(), e);
+            return List.of();
+        }
+    }
+
+    public void saveFunction(int castleId, ResidenceFunction function) {
+        try {
+            functionRepository.save(castleId, function);
+        } catch (DataAccessException e) {
+            log.error("Could not save function {} of castle {}: {}", function.type(), castleId, e.getMessage(), e);
+        }
+    }
+
+    public void deleteFunction(int castleId, int functionType) {
+        try {
+            functionRepository.delete(castleId, functionType);
+        } catch (DataAccessException e) {
+            log.error("Could not delete function {} of castle {}: {}", functionType, castleId, e.getMessage(), e);
+        }
+    }
+
+    public List<CastleDoorUpgrade> findDoorUpgrades(int castleId) {
+        try {
+            return doorUpgradeRepository.findByCastle(castleId);
+        } catch (DataAccessException e) {
+            log.warn("Could not load the door upgrades of castle {}: {}", castleId, e.getMessage(), e);
+            return List.of();
+        }
+    }
+
+    public void saveDoorUpgrade(int castleId, CastleDoorUpgrade upgrade) {
+        try {
+            doorUpgradeRepository.save(castleId, upgrade);
+        } catch (DataAccessException e) {
+            log.warn("Could not save door upgrade {} of castle {}: {}", upgrade.doorId(), castleId, e.getMessage(), e);
+        }
+    }
+
+    public void deleteDoorUpgrades(int castleId) {
+        try {
+            doorUpgradeRepository.deleteByCastle(castleId);
+        } catch (DataAccessException e) {
+            log.warn("Could not delete the door upgrades of castle {}: {}", castleId, e.getMessage(), e);
+        }
+    }
+
+    // TODO: callers receive the bean through their constructor (#41).
+    public static CastleManager getInstance() {
+        final CastleManager current = instance;
+        if (current == null) {
+            throw new IllegalStateException("CastleManager is used before the Spring context created it.");
+        }
+        return current;
     }
 }

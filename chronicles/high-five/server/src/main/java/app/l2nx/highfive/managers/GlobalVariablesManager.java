@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -22,40 +26,31 @@
  */
 package app.l2nx.highfive.managers;
 
-import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.mechanics.variables.AbstractVariables;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.Map.Entry;
+import app.l2nx.highfive.repository.world.GlobalVariableRepository;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataAccessException;
+import org.springframework.stereotype.Component;
 
 @Slf4j
+@Component
 public class GlobalVariablesManager extends AbstractVariables {
-
-    // SQL Queries.
-    private static final String SELECT_QUERY = "SELECT * FROM global_variables";
-    private static final String DELETE_QUERY = "DELETE FROM global_variables";
-    private static final String INSERT_QUERY = "REPLACE INTO global_variables (var, value) VALUES (?, ?)";
+    private static volatile GlobalVariablesManager instance;
 
     // Public variable names
     public static final String DAILY_TASK_RESET = "DAILY_TASK_RESET";
 
-    protected GlobalVariablesManager() {
-        restoreMe();
+    private final GlobalVariableRepository variableRepository;
+
+    public GlobalVariablesManager(GlobalVariableRepository variableRepository) {
+        this.variableRepository = variableRepository;
+        instance = this;
     }
 
     public boolean restoreMe() {
-        // Restore previous variables.
-        try (Connection con = DatabaseFactory.getConnection();
-                Statement st = con.createStatement();
-                ResultSet rset = st.executeQuery(SELECT_QUERY)) {
-            while (rset.next()) {
-                set(rset.getString("var"), rset.getString("value"));
-            }
-        } catch (SQLException e) {
+        try {
+            variableRepository.findAll().forEach(this::set);
+        } catch (DataAccessException e) {
             log.warn("Couldn't restore global variables.");
             return false;
         }
@@ -65,21 +60,9 @@ public class GlobalVariablesManager extends AbstractVariables {
     }
 
     public boolean storeMe() {
-        try (Connection con = DatabaseFactory.getConnection();
-                Statement del = con.createStatement();
-                PreparedStatement st = con.prepareStatement(INSERT_QUERY)) {
-            // Clear previous entries.
-            del.execute(DELETE_QUERY);
-
-            // Insert all variables.
-            for (Entry<String, Object> entry : getSet().entrySet()) {
-                st.setString(1, entry.getKey());
-                st.setString(2, String.valueOf(entry.getValue()));
-                st.addBatch();
-            }
-
-            st.executeBatch();
-        } catch (SQLException e) {
+        try {
+            variableRepository.replaceAll(getSet());
+        } catch (DataAccessException e) {
             log.warn("Couldn't save global variables to database.", e);
             return false;
         }
@@ -89,10 +72,9 @@ public class GlobalVariablesManager extends AbstractVariables {
     }
 
     public boolean deleteMe() {
-        try (Connection con = DatabaseFactory.getConnection();
-                Statement del = con.createStatement()) {
-            del.execute(DELETE_QUERY);
-        } catch (Exception e) {
+        try {
+            variableRepository.deleteAll();
+        } catch (DataAccessException e) {
             log.warn("Couldn't delete global variables to database.", e);
             return false;
         }
@@ -100,15 +82,12 @@ public class GlobalVariablesManager extends AbstractVariables {
         return true;
     }
 
-    /**
-     * Gets the single instance of {@code GlobalVariablesManager}.
-     * @return single instance of {@code GlobalVariablesManager}
-     */
+    // TODO: callers receive the bean through their constructor (#41).
     public static GlobalVariablesManager getInstance() {
-        return SingletonHolder.INSTANCE;
-    }
-
-    private static class SingletonHolder {
-        protected static final GlobalVariablesManager INSTANCE = new GlobalVariablesManager();
+        final GlobalVariablesManager current = instance;
+        if (current == null) {
+            throw new IllegalStateException("GlobalVariablesManager is used before the Spring context created it.");
+        }
+        return current;
     }
 }

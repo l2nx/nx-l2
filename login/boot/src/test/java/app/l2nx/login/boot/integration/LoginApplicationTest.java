@@ -27,12 +27,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 // One context for the whole class, closed after the last nested class: the server keeps static state, so neither
 // concurrent tests nor a second context in this JVM are possible.
-@SpringBootTest(
-        webEnvironment = WebEnvironment.RANDOM_PORT,
-        properties = {
-            "spring.sql.init.mode=always",
-            "spring.sql.init.schema-locations=file:${l2nx.test.login-sql-dir}/*.sql"
-        })
+@SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 class LoginApplicationTest extends BootSmokeTest {
     private static final JsonMapper JSON = JsonMapper.builder().build();
 

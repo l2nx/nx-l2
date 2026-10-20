@@ -186,6 +186,7 @@ The move is mechanical because a chronicle is one self-contained directory (§4)
 ```
 libs/                 knows no game rules; reusable by any server
   boot                app.l2nx.boot        Spring Boot auto-configuration shared by the servers
+  database            app.l2nx.database    schema check, Instant/timestamptz bridge, PostgreSQL test fixtures (spec 006)
   network             app.l2nx.network     Netty transport (framing, PacketCipher, server/client)
   telemetry           app.l2nx.telemetry   Micrometer
 engine/               Lineage 2 mechanics shared by every chronicle
@@ -193,13 +194,13 @@ engine/               Lineage 2 mechanics shared by every chronicle
   adapter             app.l2nx.engine.adapter  L2NX adapter host
   core                app.l2nx.engine.core     partition runtime (spec 003); later what HF and Essence share
 login/
-  server              app.l2nx.login       login logic, protocol variants, GS-link; sql/
+  server              app.l2nx.login       login logic, protocol variants, GS-link; Liquibase changelog
   boot                app.l2nx.login.boot  launcher; runtime files (config, data) in src/dist
 chronicles/
   high-five/
     server            app.l2nx.highfive          the chronicle's game server
     scripts           app.l2nx.highfive.scripts  quests, NPC AI, events, handlers; Java only
-    datapack                                     data/ (incl. data/scripts html/xml), config/, sql/
+    datapack                                     data/ (incl. data/scripts html/xml), config/
     boot              app.l2nx.highfive.boot     launcher; runtime files in src/dist
   essence/            app.l2nx.essence     stage 9, same four modules
   interlude/          app.l2nx.interlude   stage 10, same four modules
@@ -272,18 +273,18 @@ How the server finds scripts (`server` cannot depend on `scripts`, so discovery 
 
 ## 5. Stack
 
-| Concern  | Choice                                                                             |
-| -------- | ---------------------------------------------------------------------------------- |
-| Java     | 25 LTS (Mobius targets 27; the imported tree compiles on 25 as is)                 |
-| Build    | Gradle Kotlin DSL, version catalog, no committed jars but the Gradle wrapper       |
-| Format   | palantir-java-format via Spotless, checked by `build`; LF (spec 005)               |
-| Local DB | `compose.yaml`: database only (`l2nx-db`), servers run from Gradle                 |
-| Host     | Spring Boot 4.1 (spec 002)                                                         |
-| Network  | Netty for every connection: client↔game, client↔login, login↔game                  |
-| Database | PostgreSQL from stage 3 (§5.1, spec 006); MariaDB with the imported SQL until then |
-| Metrics  | Micrometer, Actuator, Prometheus scrape                                            |
-| Logging  | Log4j2 (async)                                                                     |
-| Docs     | English; the public pages on `l2nx.dev` also in Russian                            |
+| Concern  | Choice                                                                       |
+| -------- | ---------------------------------------------------------------------------- |
+| Java     | 25 LTS (Mobius targets 27; the imported tree compiles on 25 as is)           |
+| Build    | Gradle Kotlin DSL, version catalog, no committed jars but the Gradle wrapper |
+| Format   | palantir-java-format via Spotless, checked by `build`; LF (spec 005)         |
+| Local DB | `compose.yaml`: database only (`l2nx-db`), servers run from Gradle           |
+| Host     | Spring Boot 4.1 (spec 002)                                                   |
+| Network  | Netty for every connection: client↔game, client↔login, login↔game            |
+| Database | PostgreSQL 18+, Liquibase, schema per server (§5.1, spec 006)                |
+| Metrics  | Micrometer, Actuator, Prometheus scrape                                      |
+| Logging  | Log4j2 (async)                                                               |
+| Docs     | English; the public pages on `l2nx.dev` also in Russian                      |
 
 **Versions:** every library, image and tool takes its latest LTS line, or its latest stable release where the
 project has no LTS (PostgreSQL); Renovate keeps them current.
@@ -416,18 +417,11 @@ Stage 1 lands the Mobius tree directly in the §4 layout and the `app.l2nx.*` pa
 both historical HF paths of Mobius into the target paths, so file history runs unbroken from 2016 without
 `--follow`. Mapping and stripped files: [`docs/provenance.md`](../provenance.md).
 
-Stage 3 replaces the schema in one step: the Liquibase baseline is written for PostgreSQL rather than ported from
-the imported MySQL DDL, so the schema is written once. The port covers case-insensitive name and login checks
-(today they rely on the `_ci` collation), the stricter type handling of pgjdbc (`setBoolean` into TINYINT columns,
-`setString` into numeric ones), the MySQL-only statements (`REPLACE INTO`, `ON DUPLICATE KEY UPDATE`, `IF()`,
-backticks), the data types PostgreSQL lacks (UNSIGNED, MEDIUMINT, ENUM) and empty-string defaults that stand
-for no value (`gameservers.host`), which become NULL. Keys are UUIDv7 and object ids on the wire become handles
-allocated on load ([spec 003, identity](003-engine-core/persistence.md#1-persistent-identity)). Schemas,
-migrations, static data and repositories: [spec 006](006-database.md). The login server moves first; the game server
-moves in one switch (baseline, identity, repositories, static data to the datapack), since a schema keyed by UUIDv7
-cannot be loaded without the handle allocator. The adapter's
-change capture reads only MySQL and MariaDB today; its PostgreSQL path
-([#13](https://github.com/l2nx/nx-l2/issues/13)) is needed before stage 5.
+Stage 3 replaced the schema in one step: the Liquibase baseline was written for PostgreSQL rather than ported from
+the imported MySQL DDL, with UUIDv7 keys and wire handles allocated on load
+([spec 003, identity](003-engine-core/persistence.md#1-persistent-identity)); schemas, migrations, static data and
+repositories are in [spec 006](006-database.md). The adapter's change capture reads only MySQL and MariaDB today; its
+PostgreSQL path ([#13](https://github.com/l2nx/nx-l2/issues/13)) is needed before stage 5.
 
 A stage updates the living docs (this spec, `docs/provenance.md`, README). A new spec is created only for a
 feature with its own lifecycle.

@@ -3,13 +3,14 @@
 	<xs:element name="rift">
 		<xs:complexType>
 			<xs:sequence minOccurs="1" maxOccurs="1">
-				<xs:element name="area" minOccurs="1" maxOccurs="6">
+				<!-- Area 0 holds the waiting room (room 0) and the whole rift zone (room 1). -->
+				<xs:element name="area" minOccurs="1" maxOccurs="7">
 					<xs:complexType>
 						<xs:sequence minOccurs="1" maxOccurs="1">
-							<xs:element name="room" minOccurs="1" maxOccurs="9">
+							<xs:element name="room" minOccurs="1" maxOccurs="10">
 								<xs:complexType>
 									<xs:sequence minOccurs="1" maxOccurs="1">
-										<xs:element name="spawn" minOccurs="1" maxOccurs="3">
+										<xs:element name="spawn" minOccurs="0" maxOccurs="3">
 											<xs:complexType>
 												<xs:attribute name="count" type="xs:positiveInteger" use="required" />
 												<xs:attribute name="delay" type="xs:positiveInteger" use="required" />
@@ -20,18 +21,29 @@
 									<xs:attribute name="id" use="required">
 										<xs:simpleType>
 											<xs:restriction base="xs:integer">
-												<xs:minInclusive value="1" />
+												<xs:minInclusive value="0" />
 												<xs:maxInclusive value="9" />
 											</xs:restriction>
 										</xs:simpleType>
 									</xs:attribute>
+									<xs:attribute name="xMin" type="xs:integer" use="required" />
+									<xs:attribute name="xMax" type="xs:integer" use="required" />
+									<xs:attribute name="yMin" type="xs:integer" use="required" />
+									<xs:attribute name="yMax" type="xs:integer" use="required" />
+									<xs:attribute name="zMin" type="xs:integer" use="required" />
+									<xs:attribute name="zMax" type="xs:integer" use="required" />
+									<!-- Where a party entering the room lands; absent for the rift zone, nobody is teleported into it. -->
+									<xs:attribute name="teleportX" type="xs:integer" />
+									<xs:attribute name="teleportY" type="xs:integer" />
+									<xs:attribute name="teleportZ" type="xs:integer" />
+									<xs:attribute name="boss" type="xs:boolean" default="false" />
 								</xs:complexType>
 							</xs:element>
 						</xs:sequence>
 						<xs:attribute name="type" use="required">
 							<xs:simpleType>
 								<xs:restriction base="xs:integer">
-									<xs:minInclusive value="1" />
+									<xs:minInclusive value="0" />
 									<xs:maxInclusive value="6" />
 								</xs:restriction>
 							</xs:simpleType>

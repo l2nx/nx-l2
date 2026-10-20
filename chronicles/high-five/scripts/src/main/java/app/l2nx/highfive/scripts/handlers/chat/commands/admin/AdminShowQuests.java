@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+/*
  * SPDX-FileCopyrightText: L2J Mobius contributors
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
@@ -19,11 +23,11 @@
  */
 package app.l2nx.highfive.scripts.handlers.chat.commands.admin;
 
-import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.WorldObject;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.handler.IAdminCommandHandler;
+import app.l2nx.highfive.managers.AdminCharacterManager;
 import app.l2nx.highfive.managers.ScriptManager;
 import app.l2nx.highfive.mechanics.script.Quest;
 import app.l2nx.highfive.mechanics.script.QuestState;
@@ -32,9 +36,7 @@ import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.serverpackets.ExShowQuestMark;
 import app.l2nx.highfive.network.serverpackets.NpcHtmlMessage;
 import app.l2nx.highfive.network.serverpackets.QuestList;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
+import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -125,9 +127,12 @@ public class AdminShowQuests implements IAdminCommandHandler {
 
     private void showFirstQuestMenu(Player target, Player actor) {
         final StringBuilder replyMSG = new StringBuilder(
-                "<html><body><table width=270><tr><td width=45><button value=\"Main\" action=\"bypass admin_admin\" width=45 height=21 back=\"L2UI_ct1.button_df\" fore=\"L2UI_ct1.button_df\"></td><td width=180><center>Player: "
+                "<html><body><table width=270><tr><td width=45><button value=\"Main\" action=\"bypass admin_admin\""
+                        + " width=45 height=21 back=\"L2UI_ct1.button_df\" fore=\"L2UI_ct1.button_df\"></td><td"
+                        + " width=180><center>Player: "
                         + target.getName()
-                        + "</center></td><td width=45><button value=\"Back\" action=\"bypass admin_admin6\" width=45 height=21 back=\"L2UI_ct1.button_df\" fore=\"L2UI_ct1.button_df\"></td></tr></table>");
+                        + "</center></td><td width=45><button value=\"Back\" action=\"bypass admin_admin6\" width=45"
+                        + " height=21 back=\"L2UI_ct1.button_df\" fore=\"L2UI_ct1.button_df\"></td></tr></table>");
         final NpcHtmlMessage adminReply = new NpcHtmlMessage();
         final int id = target.getObjectId();
         replyMSG.append(
@@ -142,19 +147,19 @@ public class AdminShowQuests implements IAdminCommandHandler {
         replyMSG.append("<tr><td><br><button value=\"All\" action=\"bypass -h admin_charquestmenu " + target.getName()
                 + " 3\" width=85 height=21 back=\"L2UI_ct1.button_df\" fore=\"L2UI_ct1.button_df\"></td></tr>");
         replyMSG.append("<tr><td><br><br>Manual Edit by Quest number:<br></td></tr>");
-        replyMSG.append(
-                "<tr><td><edit var=\"qn\" width=50 height=15><br><button value=\"Edit\" action=\"bypass -h admin_charquestmenu "
-                        + target.getName()
-                        + " $qn custom\" width=50 height=21 back=\"L2UI_ct1.button_df\" fore=\"L2UI_ct1.button_df\"></td></tr>");
+        replyMSG.append("<tr><td><edit var=\"qn\" width=50 height=15><br><button value=\"Edit\" action=\"bypass -h"
+                + " admin_charquestmenu "
+                + target.getName()
+                + " $qn custom\" width=50 height=21 back=\"L2UI_ct1.button_df\""
+                + " fore=\"L2UI_ct1.button_df\"></td></tr>");
         replyMSG.append("</table></center></body></html>");
         adminReply.setHtml(replyMSG.toString());
         actor.sendPacket(adminReply);
     }
 
     private void showQuestMenu(Player target, Player actor, String[] val) {
-        try (Connection con = DatabaseFactory.getConnection()) {
-            ResultSet rs;
-            PreparedStatement req;
+        try {
+            final AdminCharacterManager characters = AdminCharacterManager.getInstance();
             final int id = target.getObjectId();
             final StringBuilder replyMSG = new StringBuilder("<html><body>");
             final NpcHtmlMessage adminReply = new NpcHtmlMessage();
@@ -163,18 +168,11 @@ public class AdminShowQuests implements IAdminCommandHandler {
                 case "full": {
                     replyMSG.append("<table width=250><tr><td>Full Quest List for <font color=\"LEVEL\">"
                             + target.getName() + "</font> (ID:" + id + ")</td></tr>");
-                    req = con.prepareStatement(
-                            "SELECT DISTINCT name FROM character_quests WHERE charId=? AND var='<state>' ORDER by name");
-                    req.setInt(1, id);
-                    req.execute();
-                    rs = req.getResultSet();
-                    while (rs.next()) {
+                    for (String questName : characters.findQuestNames(id)) {
                         replyMSG.append("<tr><td><a action=\"bypass -h admin_charquestmenu " + target.getName() + " "
-                                + rs.getString(1) + "\">" + rs.getString(1) + "</a></td></tr>");
+                                + questName + "\">" + questName + "</a></td></tr>");
                     }
                     replyMSG.append("</table></body></html>");
-                    rs.close();
-                    req.close();
                     break;
                 }
                 case "name": {
@@ -183,45 +181,40 @@ public class AdminShowQuests implements IAdminCommandHandler {
                     replyMSG.append("Character: <font color=\"LEVEL\">" + target.getName()
                             + "</font><br>Quest: <font color=\"LEVEL\">" + val[1]
                             + "</font><br>State: <font color=\"LEVEL\">" + state + "</font><br><br>");
-                    replyMSG.append(
-                            "<center><table width=250><tr><td>Var</td><td>Value</td><td>New Value</td><td>&nbsp;</td></tr>");
-                    req = con.prepareStatement("SELECT var,value FROM character_quests WHERE charId=? and name=?");
-                    req.setInt(1, id);
-                    req.setString(2, val[1]);
-                    req.execute();
-                    rs = req.getResultSet();
-                    while (rs.next()) {
-                        final String varName = rs.getString(1);
-                        if (varName.equals("<state>")) {
-                            continue;
-                        }
-
-                        replyMSG.append(
-                                "<tr><td>" + varName + "</td><td>" + rs.getString(2) + "</td><td><edit var=\"var"
-                                        + varName
-                                        + "\" width=80 height=15></td><td><button value=\"Set\" action=\"bypass -h admin_setcharquest "
-                                        + target.getName() + " " + val[1] + " " + varName + " $var" + varName
-                                        + "\" width=30 height=15 back=\"L2UI_ct1.button_df\" fore=\"L2UI_ct1.button_df\"></td><td><button value=\"Del\" action=\"bypass -h admin_setcharquest "
-                                        + target.getName() + " " + val[1] + " " + varName
-                                        + " delete\" width=30 height=15 back=\"L2UI_ct1.button_df\" fore=\"L2UI_ct1.button_df\"></td></tr>");
+                    replyMSG.append("<center><table width=250><tr><td>Var</td><td>Value</td><td>New"
+                            + " Value</td><td>&nbsp;</td></tr>");
+                    for (Map.Entry<String, String> variable :
+                            characters.findQuestVariables(id, val[1]).entrySet()) {
+                        final String varName = variable.getKey();
+                        replyMSG.append("<tr><td>" + varName + "</td><td>" + displayed(variable.getValue())
+                                + "</td><td><edit var=\"var"
+                                + varName
+                                + "\" width=80 height=15></td><td><button value=\"Set\" action=\"bypass -h"
+                                + " admin_setcharquest "
+                                + target.getName() + " " + val[1] + " " + varName + " $var" + varName
+                                + "\" width=30 height=15 back=\"L2UI_ct1.button_df\""
+                                + " fore=\"L2UI_ct1.button_df\"></td><td><button value=\"Del\" action=\"bypass"
+                                + " -h admin_setcharquest "
+                                + target.getName() + " " + val[1] + " " + varName
+                                + " delete\" width=30 height=15 back=\"L2UI_ct1.button_df\""
+                                + " fore=\"L2UI_ct1.button_df\"></td></tr>");
                     }
 
-                    rs.close();
-                    req.close();
-                    replyMSG.append(
-                            "</table><br><br><table width=250><tr><td>Repeatable quest:</td><td>Unrepeatable quest:</td></tr>");
-                    replyMSG.append(
-                            "<tr><td><button value=\"Quest Complete\" action=\"bypass -h admin_setcharquest "
-                                    + target.getName() + " " + val[1]
-                                    + " state COMPLETED 1\" width=120 height=21 back=\"L2UI_ct1.button_df\" fore=\"L2UI_ct1.button_df\"></td>");
-                    replyMSG.append(
-                            "<td><button value=\"Quest Complete\" action=\"bypass -h admin_setcharquest "
-                                    + target.getName() + " " + val[1]
-                                    + " state COMPLETED 0\" width=120 height=21 back=\"L2UI_ct1.button_df\" fore=\"L2UI_ct1.button_df\"></td></tr>");
-                    replyMSG.append(
-                            "</table><br><br><font color=\"ff0000\">Delete Quest from DB:</font><br><button value=\"Quest Delete\" action=\"bypass -h admin_setcharquest "
-                                    + target.getName() + " " + val[1]
-                                    + " state DELETE\" width=120 height=21 back=\"L2UI_ct1.button_df\" fore=\"L2UI_ct1.button_df\">");
+                    replyMSG.append("</table><br><br><table width=250><tr><td>Repeatable quest:</td><td>Unrepeatable"
+                            + " quest:</td></tr>");
+                    replyMSG.append("<tr><td><button value=\"Quest Complete\" action=\"bypass -h admin_setcharquest "
+                            + target.getName() + " " + val[1]
+                            + " state COMPLETED 1\" width=120 height=21 back=\"L2UI_ct1.button_df\""
+                            + " fore=\"L2UI_ct1.button_df\"></td>");
+                    replyMSG.append("<td><button value=\"Quest Complete\" action=\"bypass -h admin_setcharquest "
+                            + target.getName() + " " + val[1]
+                            + " state COMPLETED 0\" width=120 height=21 back=\"L2UI_ct1.button_df\""
+                            + " fore=\"L2UI_ct1.button_df\"></td></tr>");
+                    replyMSG.append("</table><br><br><font color=\"ff0000\">Delete Quest from DB:</font><br><button"
+                            + " value=\"Quest Delete\" action=\"bypass -h admin_setcharquest "
+                            + target.getName() + " " + val[1]
+                            + " state DELETE\" width=120 height=21 back=\"L2UI_ct1.button_df\""
+                            + " fore=\"L2UI_ct1.button_df\">");
                     replyMSG.append("</center></body></html>");
                     break;
                 }
@@ -229,19 +222,11 @@ public class AdminShowQuests implements IAdminCommandHandler {
                     replyMSG.append("Character: <font color=\"LEVEL\">" + target.getName()
                             + "</font><br>Quests with state: <font color=\"LEVEL\">" + val[1] + "</font><br>");
                     replyMSG.append("<table width=250>");
-                    req = con.prepareStatement(
-                            "SELECT DISTINCT name FROM character_quests WHERE charId=? and var='<state>' and value=?");
-                    req.setInt(1, id);
-                    req.setString(2, val[1]);
-                    req.execute();
-                    rs = req.getResultSet();
-                    while (rs.next()) {
+                    for (String questName : characters.findQuestNames(id, val[1])) {
                         replyMSG.append("<tr><td><a action=\"bypass -h admin_charquestmenu " + target.getName() + " "
-                                + rs.getString(1) + "\">" + rs.getString(1) + "</a></td></tr>");
+                                + questName + "\">" + questName + "</a></td></tr>");
                     }
 
-                    rs.close();
-                    req.close();
                     replyMSG.append("</table></body></html>");
                     break;
                 }
@@ -273,58 +258,57 @@ public class AdminShowQuests implements IAdminCommandHandler {
                             replyMSG.append("Character: <font color=\"LEVEL\">" + target.getName()
                                     + "</font><br>Quest: <font color=\"LEVEL\">" + qname
                                     + "</font><br>State: <font color=\"LEVEL\">" + state + "</font><br><br>");
-                            replyMSG.append(
-                                    "<center><table width=250><tr><td>Var</td><td>Value</td><td>New Value</td><td>&nbsp;</td></tr>");
-                            req = con.prepareStatement(
-                                    "SELECT var,value FROM character_quests WHERE charId=? and name=?");
-                            req.setInt(1, id);
-                            req.setString(2, qname);
-                            req.execute();
-                            rs = req.getResultSet();
-                            while (rs.next()) {
-                                final String var_name = rs.getString(1);
-                                if (var_name.equals("<state>")) {
-                                    continue;
-                                }
-
-                                replyMSG.append(
-                                        "<tr><td>" + var_name + "</td><td>" + rs.getString(2)
-                                                + "</td><td><edit var=\"var" + var_name
-                                                + "\" width=80 height=15></td><td><button value=\"Set\" action=\"bypass -h admin_setcharquest "
-                                                + target.getName() + " " + qname + " " + var_name + " $var" + var_name
-                                                + "\" width=30 height=15 back=\"L2UI_ct1.button_df\" fore=\"L2UI_ct1.button_df\"></td><td><button value=\"Del\" action=\"bypass -h admin_setcharquest "
-                                                + target.getName() + " " + qname + " " + var_name
-                                                + " delete\" width=30 height=15 back=\"L2UI_ct1.button_df\" fore=\"L2UI_ct1.button_df\"></td></tr>");
+                            replyMSG.append("<center><table width=250><tr><td>Var</td><td>Value</td><td>New"
+                                    + " Value</td><td>&nbsp;</td></tr>");
+                            for (Map.Entry<String, String> variable :
+                                    characters.findQuestVariables(id, qname).entrySet()) {
+                                final String var_name = variable.getKey();
+                                replyMSG.append("<tr><td>" + var_name + "</td><td>" + displayed(variable.getValue())
+                                        + "</td><td><edit var=\"var" + var_name
+                                        + "\" width=80 height=15></td><td><button value=\"Set\""
+                                        + " action=\"bypass -h admin_setcharquest "
+                                        + target.getName() + " " + qname + " " + var_name + " $var" + var_name
+                                        + "\" width=30 height=15 back=\"L2UI_ct1.button_df\""
+                                        + " fore=\"L2UI_ct1.button_df\"></td><td><button value=\"Del\""
+                                        + " action=\"bypass -h admin_setcharquest "
+                                        + target.getName() + " " + qname + " " + var_name
+                                        + " delete\" width=30 height=15 back=\"L2UI_ct1.button_df\""
+                                        + " fore=\"L2UI_ct1.button_df\"></td></tr>");
                             }
                             replyMSG.append(
-                                    "</table><br><br><table width=250><tr><td>Repeatable quest:</td><td>Unrepeatable quest:</td></tr>");
+                                    "</table><br><br><table width=250><tr><td>Repeatable quest:</td><td>Unrepeatable"
+                                            + " quest:</td></tr>");
                             replyMSG.append(
                                     "<tr><td><button value=\"Quest Complete\" action=\"bypass -h admin_setcharquest "
                                             + target.getName() + " " + qname
-                                            + " state COMPLETED 1\" width=100 height=21 back=\"L2UI_ct1.button_df\" fore=\"L2UI_ct1.button_df\"></td>");
+                                            + " state COMPLETED 1\" width=100 height=21 back=\"L2UI_ct1.button_df\""
+                                            + " fore=\"L2UI_ct1.button_df\"></td>");
                             replyMSG.append(
                                     "<td><button value=\"Quest Complete\" action=\"bypass -h admin_setcharquest "
                                             + target.getName() + " " + qname
-                                            + " state COMPLETED 0\" width=100 height=21 back=\"L2UI_ct1.button_df\" fore=\"L2UI_ct1.button_df\"></td></tr>");
+                                            + " state COMPLETED 0\" width=100 height=21 back=\"L2UI_ct1.button_df\""
+                                            + " fore=\"L2UI_ct1.button_df\"></td></tr>");
                             replyMSG.append(
-                                    "</table><br><br><font color=\"ff0000\">Delete Quest from DB:</font><br><button value=\"Quest Delete\" action=\"bypass -h admin_setcharquest "
+                                    "</table><br><br><font color=\"ff0000\">Delete Quest from DB:</font><br><button"
+                                            + " value=\"Quest Delete\" action=\"bypass -h admin_setcharquest "
                                             + target.getName() + " " + qname
-                                            + " state DELETE\" width=100 height=21 back=\"L2UI_ct1.button_df\" fore=\"L2UI_ct1.button_df\">");
+                                            + " state DELETE\" width=100 height=21 back=\"L2UI_ct1.button_df\""
+                                            + " fore=\"L2UI_ct1.button_df\">");
                             replyMSG.append("</center></body></html>");
                         } else {
                             replyMSG.append("Character: <font color=\"LEVEL\">" + target.getName()
                                     + "</font><br>Quest: <font color=\"LEVEL\">" + qname
                                     + "</font><br>State: <font color=\"LEVEL\">" + state + "</font><br><br>");
                             replyMSG.append("<center>Start this Quest for player:<br>");
-                            replyMSG.append(
-                                    "<button value=\"Create Quest\" action=\"bypass -h admin_setcharquest "
-                                            + target.getName() + " " + qnumber
-                                            + " state CREATE\" width=100 height=21 back=\"L2UI_ct1.button_df\" fore=\"L2UI_ct1.button_df\"><br><br>");
+                            replyMSG.append("<button value=\"Create Quest\" action=\"bypass -h admin_setcharquest "
+                                    + target.getName() + " " + qnumber
+                                    + " state CREATE\" width=100 height=21 back=\"L2UI_ct1.button_df\""
+                                    + " fore=\"L2UI_ct1.button_df\"><br><br>");
                             replyMSG.append("<font color=\"ee0000\">Only for Unrepeateble quests:</font><br>");
-                            replyMSG.append(
-                                    "<button value=\"Create & Complete\" action=\"bypass -h admin_setcharquest "
-                                            + target.getName() + " " + qnumber
-                                            + " state CC\" width=130 height=21 back=\"L2UI_ct1.button_df\" fore=\"L2UI_ct1.button_df\"><br><br>");
+                            replyMSG.append("<button value=\"Create & Complete\" action=\"bypass -h admin_setcharquest "
+                                    + target.getName() + " " + qnumber
+                                    + " state CC\" width=130 height=21 back=\"L2UI_ct1.button_df\""
+                                    + " fore=\"L2UI_ct1.button_df\"><br><br>");
                             replyMSG.append("</center></body></html>");
                         }
                     } else {
@@ -342,6 +326,10 @@ public class AdminShowQuests implements IAdminCommandHandler {
             actor.sendMessage("There was an error.");
             log.warn("{}", e.getMessage());
         }
+    }
+
+    private static String displayed(String value) {
+        return value == null ? "" : value;
     }
 
     private void setQuestVar(Player target, Player actor, String[] val) {

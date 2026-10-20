@@ -5,6 +5,7 @@ spring:
   application:
     name: login-server
   datasource:
+    username: l2nx_login
     hikari:
       maximum-pool-size: 5
 
@@ -12,6 +13,8 @@ server:
   port: 8106
 
 l2nx:
+  database:
+    schema: login
   login:
     client:
       host: 0.0.0.0

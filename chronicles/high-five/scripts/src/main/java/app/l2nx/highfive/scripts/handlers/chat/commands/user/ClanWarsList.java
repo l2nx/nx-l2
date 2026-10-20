@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+/*
  * SPDX-FileCopyrightText: L2J Mobius contributors
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
@@ -19,32 +23,21 @@
  */
 package app.l2nx.highfive.scripts.handlers.chat.commands.user;
 
-import app.l2nx.highfive.data.sql.DatabaseFactory;
+import app.l2nx.highfive.data.sql.ClanTable;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.clan.Clan;
 import app.l2nx.highfive.handler.IUserCommandHandler;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import lombok.extern.slf4j.Slf4j;
+import app.l2nx.highfive.repository.clan.model.WarOpponent;
+import java.util.List;
 
 /**
  * Clan War Start, Under Attack List, War List user commands.
  * @author Tempy
  */
-@Slf4j
 public class ClanWarsList implements IUserCommandHandler {
     private static final int[] COMMAND_IDS = {88, 89, 90};
-
-    // SQL queries
-    private static final String ATTACK_LIST =
-            "SELECT clan_name,clan_id,ally_id,ally_name FROM clan_data,clan_wars WHERE clan1=? AND clan_id=clan2 AND clan2 NOT IN (SELECT clan1 FROM clan_wars WHERE clan2=?)";
-    private static final String UNDER_ATTACK_LIST =
-            "SELECT clan_name,clan_id,ally_id,ally_name FROM clan_data,clan_wars WHERE clan2=? AND clan_id=clan1 AND clan1 NOT IN (SELECT clan2 FROM clan_wars WHERE clan1=?)";
-    private static final String WAR_LIST =
-            "SELECT clan_name,clan_id,ally_id,ally_name FROM clan_data,clan_wars WHERE clan1=? AND clan_id=clan2 AND clan2 IN (SELECT clan1 FROM clan_wars WHERE clan2=?)";
 
     @Override
     public boolean onCommand(int id, Player player) {
@@ -58,56 +51,41 @@ public class ClanWarsList implements IUserCommandHandler {
             return false;
         }
 
-        try (Connection con = DatabaseFactory.getConnection()) {
-            String query;
+        final List<WarOpponent> opponents;
 
-            // Attack List
-            if (id == 88) {
-                player.sendPacket(SystemMessageId.CLANS_YOU_VE_DECLARED_WAR_ON);
-                query = ATTACK_LIST;
-            }
-            // Under Attack List
-            else if (id == 89) {
-                player.sendPacket(SystemMessageId.CLANS_THAT_HAVE_DECLARED_WAR_ON_YOU);
-                query = UNDER_ATTACK_LIST;
-            }
-            // War List
-            else {
-                player.sendPacket(SystemMessageId.WAR_LIST);
-                query = WAR_LIST;
-            }
-
-            try (PreparedStatement ps = con.prepareStatement(query)) {
-                ps.setInt(1, clan.getId());
-                ps.setInt(2, clan.getId());
-                SystemMessage sm;
-                try (ResultSet rs = ps.executeQuery()) {
-                    String clanName;
-                    int allyId;
-                    while (rs.next()) {
-                        clanName = rs.getString("clan_name");
-                        allyId = rs.getInt("ally_id");
-                        if (allyId > 0) {
-                            // Target With Ally
-                            sm = new SystemMessage(SystemMessageId.S1_S2_ALLIANCE);
-                            sm.addString(clanName);
-                            sm.addString(rs.getString("ally_name"));
-                        } else {
-                            // Target Without Ally
-                            sm = new SystemMessage(SystemMessageId.S1_NO_ALLIANCE_EXISTS);
-                            sm.addString(clanName);
-                        }
-
-                        player.sendPacket(sm);
-                    }
-                }
-            }
-
-            player.sendPacket(SystemMessageId.EMPTY_3);
-        } catch (Exception e) {
-            log.warn("", e);
+        // Attack List
+        if (id == 88) {
+            player.sendPacket(SystemMessageId.CLANS_YOU_VE_DECLARED_WAR_ON);
+            opponents = ClanTable.getInstance().findDeclaredWarsOnly(clan.getId());
+        }
+        // Under Attack List
+        else if (id == 89) {
+            player.sendPacket(SystemMessageId.CLANS_THAT_HAVE_DECLARED_WAR_ON_YOU);
+            opponents = ClanTable.getInstance().findAttackersOnly(clan.getId());
+        }
+        // War List
+        else {
+            player.sendPacket(SystemMessageId.WAR_LIST);
+            opponents = ClanTable.getInstance().findMutualWars(clan.getId());
         }
 
+        for (WarOpponent opponent : opponents) {
+            final SystemMessage sm;
+            if (opponent.allyId() > 0) {
+                // Target With Ally
+                sm = new SystemMessage(SystemMessageId.S1_S2_ALLIANCE);
+                sm.addString(opponent.name());
+                sm.addString(opponent.allyName());
+            } else {
+                // Target Without Ally
+                sm = new SystemMessage(SystemMessageId.S1_NO_ALLIANCE_EXISTS);
+                sm.addString(opponent.name());
+            }
+
+            player.sendPacket(sm);
+        }
+
+        player.sendPacket(SystemMessageId.EMPTY_3);
         return true;
     }
 

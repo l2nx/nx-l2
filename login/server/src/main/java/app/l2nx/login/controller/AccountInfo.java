@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -23,6 +27,7 @@
 package app.l2nx.login.controller;
 
 import java.util.Objects;
+import java.util.UUID;
 import lombok.Getter;
 
 /**
@@ -35,6 +40,9 @@ import lombok.Getter;
  * @author BazookaRpm
  */
 public class AccountInfo {
+    @Getter
+    private final UUID id;
+
     // Account login name (normalized to lower case).
     @Getter
     private final String login;
@@ -59,7 +67,8 @@ public class AccountInfo {
      * @throws NullPointerException if {@code login} or {@code passwordHash} is {@code null}
      * @throws IllegalArgumentException if {@code login} or {@code passwordHash} is empty
      */
-    public AccountInfo(String login, String passwordHash, int accessLevel, int lastServer) {
+    public AccountInfo(UUID id, String login, String passwordHash, int accessLevel, int lastServer) {
+        this.id = Objects.requireNonNull(id, "id");
         Objects.requireNonNull(login, "login");
         Objects.requireNonNull(passwordHash, "passwordHash");
 

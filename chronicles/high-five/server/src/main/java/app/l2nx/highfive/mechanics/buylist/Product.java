@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+/*
  * SPDX-FileCopyrightText: L2J Mobius contributors
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
@@ -19,15 +23,17 @@
  */
 package app.l2nx.highfive.mechanics.buylist;
 
+import static app.l2nx.highfive.repository.LegacyValues.instantOrNull;
+
 import app.l2nx.highfive.clock.ClockBridge;
-import app.l2nx.highfive.data.sql.DatabaseFactory;
+import app.l2nx.highfive.data.xml.BuyListData;
 import app.l2nx.highfive.entity.item.ItemTemplate;
+import app.l2nx.highfive.repository.item.model.BuylistStock;
 import app.l2nx.highfive.taskmanagers.BuyListTaskManager;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
 import java.util.concurrent.atomic.AtomicLong;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataAccessException;
 
 /**
  * @author NosBit
@@ -117,26 +123,16 @@ public class Product {
     }
 
     private void save() {
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement statement = con.prepareStatement(
-                        "INSERT INTO `buylists`(`buylist_id`, `item_id`, `count`, `next_restock_time`) VALUES(?, ?, ?,"
-                                + " ?) ON DUPLICATE KEY UPDATE `count` = ?, `next_restock_time` = ?")) {
-            statement.setInt(1, buyListId);
-            statement.setInt(2, item.getId());
-            statement.setLong(3, getCount());
-            statement.setLong(5, getCount());
-
-            final long nextRestockTime = BuyListTaskManager.getInstance().getRestockDelay(this);
-            if (nextRestockTime > 0) {
-                statement.setLong(4, nextRestockTime);
-                statement.setLong(6, nextRestockTime);
-            } else {
-                statement.setLong(4, 0);
-                statement.setLong(6, 0);
-            }
-
-            statement.executeUpdate();
-        } catch (Exception e) {
+        try {
+            BuyListData.getInstance()
+                    .saveStock(BuylistStock.builder()
+                            .buyListId(buyListId)
+                            .itemId(item.getId())
+                            .count(getCount())
+                            .nextRestockTime(instantOrNull(
+                                    BuyListTaskManager.getInstance().getRestockDelay(this)))
+                            .build());
+        } catch (DataAccessException e) {
             log.warn("Failed to save Product buylist_id:{} item_id:{}", buyListId, item.getId(), e);
         }
     }

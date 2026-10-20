@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -54,7 +58,8 @@ public class RequestShortcutReg extends ClientPacket {
             return;
         }
 
-        if ((page > 10) || (page < 0)) {
+        // A negative slot would pass as page 0 with a negative slot index.
+        if ((slot < 0) || (page > 10) || (page < 0)) {
             return;
         }
 

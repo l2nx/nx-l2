@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -23,13 +27,14 @@
 package app.l2nx.highfive.network.loginserverpackets.send;
 
 import app.l2nx.network.packet.SimpleWritablePacket;
+import java.util.Objects;
+import java.util.UUID;
 
 /**
- * Sends the player's PC IP and up to four routing hops (tracert) to the login server.<br>
- * Empty strings are allowed.
+ * Sends the player's PC IP and up to four routing hops (tracert) to the login server.
  * <ul>
  * <li>Opcode: 0x07.</li>
- * <li>Payload: account, pcIp, hop1..hop4 (Strings).</li>
+ * <li>Payload: account id (2 longs: msb, lsb), pcIp, hop1..hop4 (Strings).</li>
  * </ul>
  * @author BazookaRpm
  */
@@ -38,7 +43,7 @@ public class PlayerTracert extends SimpleWritablePacket {
     private static final int OPCODE = 0x07;
 
     // Data.
-    private final String account;
+    private final UUID accountId;
     private final String pcIp;
     private final String hop1;
     private final String hop2;
@@ -46,20 +51,20 @@ public class PlayerTracert extends SimpleWritablePacket {
     private final String hop4;
 
     /**
-     * @param account account name
+     * @param accountId the account
      * @param pcIp player IP
      * @param hop1 first hop
      * @param hop2 second hop
      * @param hop3 third hop
      * @param hop4 fourth hop
      */
-    public PlayerTracert(String account, String pcIp, String hop1, String hop2, String hop3, String hop4) {
-        this.account = (account != null) ? account : "";
-        this.pcIp = (pcIp != null) ? pcIp : "";
-        this.hop1 = (hop1 != null) ? hop1 : "";
-        this.hop2 = (hop2 != null) ? hop2 : "";
-        this.hop3 = (hop3 != null) ? hop3 : "";
-        this.hop4 = (hop4 != null) ? hop4 : "";
+    public PlayerTracert(UUID accountId, String pcIp, String hop1, String hop2, String hop3, String hop4) {
+        this.accountId = Objects.requireNonNull(accountId, "accountId");
+        this.pcIp = pcIp;
+        this.hop1 = hop1;
+        this.hop2 = hop2;
+        this.hop3 = hop3;
+        this.hop4 = hop4;
     }
 
     /**
@@ -68,7 +73,8 @@ public class PlayerTracert extends SimpleWritablePacket {
     @Override
     public void write() {
         writeByte(OPCODE);
-        writeString(account);
+        writeLong(accountId.getMostSignificantBits());
+        writeLong(accountId.getLeastSignificantBits());
         writeString(pcIp);
         writeString(hop1);
         writeString(hop2);

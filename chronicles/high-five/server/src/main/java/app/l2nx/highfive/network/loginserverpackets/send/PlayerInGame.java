@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -23,16 +27,15 @@
 package app.l2nx.highfive.network.loginserverpackets.send;
 
 import app.l2nx.network.packet.SimpleWritablePacket;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 
 /**
- * Announces to the login server the players currently connected on this game server.<br>
- * Supports a single player or a list of players.
+ * Announces to the login server the accounts currently connected on this game server.<br>
+ * Supports a single account or a list of accounts.
  * <ul>
  * <li>Opcode: 0x02.</li>
- * <li>Payload: count (short) + N * name (String).</li>
+ * <li>Payload: count (short) + N * account id (2 longs: msb, lsb).</li>
  * <li>Depends on {@code SimpleWritablePacket.write*} methods.</li>
  * </ul>
  * @author BazookaRpm
@@ -42,33 +45,34 @@ public class PlayerInGame extends SimpleWritablePacket {
     private static final int OPCODE = 0x02;
 
     // Data.
-    private final List<String> players;
+    private final List<UUID> accountIds;
 
     /**
-     * Single-player constructor.
-     * @param player player name
+     * Single-account constructor.
+     * @param accountId the account
      */
-    public PlayerInGame(String player) {
-        this(Arrays.asList((player != null) ? player : ""));
+    public PlayerInGame(UUID accountId) {
+        this(List.of(accountId));
     }
 
     /**
-     * Multi-player constructor.
-     * @param players list of player names
+     * Multi-account constructor.
+     * @param accountIds the accounts
      */
-    public PlayerInGame(List<String> players) {
-        this.players = (players != null) ? players : Collections.emptyList();
+    public PlayerInGame(List<UUID> accountIds) {
+        this.accountIds = List.copyOf(accountIds);
     }
 
     /**
-     * Serializes opcode, count and all player names.
+     * Serializes opcode, count and all accounts.
      */
     @Override
     public void write() {
         writeByte(OPCODE);
-        writeShort(players.size());
-        for (String p : players) {
-            writeString((p != null) ? p : "");
+        writeShort(accountIds.size());
+        for (UUID accountId : accountIds) {
+            writeLong(accountId.getMostSignificantBits());
+            writeLong(accountId.getLeastSignificantBits());
         }
     }
 }

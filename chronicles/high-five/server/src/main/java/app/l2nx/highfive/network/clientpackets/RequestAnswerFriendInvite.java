@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -22,14 +26,13 @@
  */
 package app.l2nx.highfive.network.clientpackets;
 
-import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.managers.CharacterRelationsManager;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.serverpackets.FriendPacket;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataAccessException;
 
 @Slf4j
 public class RequestAnswerFriendInvite extends ClientPacket {
@@ -59,14 +62,8 @@ public class RequestAnswerFriendInvite extends ClientPacket {
         }
 
         if (response == 1) {
-            try (Connection con = DatabaseFactory.getConnection();
-                    PreparedStatement statement = con.prepareStatement(
-                            "INSERT INTO character_friends (charId, friendId) VALUES (?, ?), (?, ?)")) {
-                statement.setInt(1, requestor.getObjectId());
-                statement.setInt(2, player.getObjectId());
-                statement.setInt(3, player.getObjectId());
-                statement.setInt(4, requestor.getObjectId());
-                statement.execute();
+            try {
+                CharacterRelationsManager.getInstance().addFriendship(requestor.getObjectId(), player.getObjectId());
                 SystemMessage msg =
                         new SystemMessage(SystemMessageId.THAT_PERSON_HAS_BEEN_SUCCESSFULLY_ADDED_TO_YOUR_FRIEND_LIST);
                 requestor.sendPacket(msg);
@@ -86,7 +83,7 @@ public class RequestAnswerFriendInvite extends ClientPacket {
                 // Send notifications for both player in order to show them online
                 player.sendPacket(new FriendPacket(true, requestor.getObjectId()));
                 requestor.sendPacket(new FriendPacket(true, player.getObjectId()));
-            } catch (Exception e) {
+            } catch (DataAccessException e) {
                 log.warn("Could not add friend objectid: {}", e.getMessage());
             }
         } else {

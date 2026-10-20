@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+/*
  * SPDX-FileCopyrightText: L2J Mobius contributors
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
@@ -463,7 +467,7 @@ public class OlympiadManager {
             statDat = new StatSet();
             statDat.set(Olympiad.CLASS_ID, noble.getBaseClass());
             statDat.set(Olympiad.CHAR_NAME, noble.getName());
-            statDat.set(Olympiad.POINTS, Olympiad.DEFAULT_POINTS);
+            statDat.set(Olympiad.POINTS, OlympiadConfig.OLYMPIAD_START_POINTS);
             statDat.set(Olympiad.COMP_DONE, 0);
             statDat.set(Olympiad.COMP_WON, 0);
             statDat.set(Olympiad.COMP_LOST, 0);
@@ -472,7 +476,6 @@ public class OlympiadManager {
             statDat.set(Olympiad.COMP_DONE_WEEK_CLASSED, 0);
             statDat.set(Olympiad.COMP_DONE_WEEK_NON_CLASSED, 0);
             statDat.set(Olympiad.COMP_DONE_WEEK_TEAM, 0);
-            statDat.set("to_save", true);
             Olympiad.addNobleStats(charId, statDat);
         }
 

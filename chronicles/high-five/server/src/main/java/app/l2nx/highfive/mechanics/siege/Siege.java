@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -25,7 +29,6 @@ package app.l2nx.highfive.mechanics.siege;
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.data.sql.ClanTable;
-import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.data.xml.SiegeScheduleData;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.WorldObject;
@@ -51,10 +54,8 @@ import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.serverpackets.RelationChanged;
 import app.l2nx.highfive.network.serverpackets.SiegeInfo;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
+import app.l2nx.highfive.repository.siege.model.CastleSiegeClan;
 import app.l2nx.highfive.threads.ThreadPool;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collection;
@@ -668,37 +669,17 @@ public class Siege implements Siegable {
 
     /** Clear all registered siege clans from database for castle */
     public void clearSiegeClan() {
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement("DELETE FROM siege_clans WHERE castle_id=?")) {
-            ps.setInt(1, getCastle().getResidenceId());
-            ps.execute();
-
-            if (getCastle().getOwnerId() > 0) {
-                try (PreparedStatement delete = con.prepareStatement("DELETE FROM siege_clans WHERE clan_id=?")) {
-                    delete.setInt(1, getCastle().getOwnerId());
-                    delete.execute();
-                }
-            }
-
-            getAttackerClans().clear();
-            getDefenderClans().clear();
-            defenderWaitingClans.clear();
-        } catch (Exception e) {
-            log.warn("Exception: clearSiegeClan(): {}", e.getMessage(), e);
-        }
+        SiegeManager.getInstance()
+                .deleteSiegeClans(getCastle().getResidenceId(), getCastle().getOwnerId());
+        getAttackerClans().clear();
+        getDefenderClans().clear();
+        defenderWaitingClans.clear();
     }
 
     /** Clear all siege clans waiting for approval from database for castle */
     public void clearSiegeWaitingClan() {
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement("DELETE FROM siege_clans WHERE castle_id=? and type = 2")) {
-            ps.setInt(1, getCastle().getResidenceId());
-            ps.execute();
-
-            defenderWaitingClans.clear();
-        } catch (Exception e) {
-            log.warn("Exception: clearSiegeWaitingClan(): {}", e.getMessage(), e);
-        }
+        SiegeManager.getInstance().deleteSiegeClans(getCastle().getResidenceId(), SiegeClanType.DEFENDER_PENDING);
+        defenderWaitingClans.clear();
     }
 
     /** Return list of Player registered as attacker in the zone. */
@@ -876,17 +857,8 @@ public class Siege implements Siegable {
             return;
         }
 
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps =
-                        con.prepareStatement("DELETE FROM siege_clans WHERE castle_id=? and clan_id=?")) {
-            ps.setInt(1, getCastle().getResidenceId());
-            ps.setInt(2, clanId);
-            ps.execute();
-
-            loadSiegeClan();
-        } catch (Exception e) {
-            log.warn("Exception: removeSiegeClan(): {}", e.getMessage(), e);
-        }
+        SiegeManager.getInstance().deleteSiegeClan(getCastle().getResidenceId(), clanId);
+        loadSiegeClan();
     }
 
     /**
@@ -1109,33 +1081,25 @@ public class Siege implements Siegable {
 
     /** Load siege clans. */
     private void loadSiegeClan() {
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement("SELECT clan_id,type FROM siege_clans where castle_id=?")) {
-            getAttackerClans().clear();
-            getDefenderClans().clear();
-            defenderWaitingClans.clear();
+        getAttackerClans().clear();
+        getDefenderClans().clear();
+        defenderWaitingClans.clear();
 
-            // Add castle owner as defender (add owner first so that they are on the top of the defender list).
-            if (getCastle().getOwnerId() > 0) {
-                addDefender(getCastle().getOwnerId(), SiegeClanType.OWNER);
-            }
+        // Add castle owner as defender (add owner first so that they are on the top of the defender list).
+        if (getCastle().getOwnerId() > 0) {
+            addDefender(getCastle().getOwnerId(), SiegeClanType.OWNER);
+        }
 
-            ps.setInt(1, getCastle().getResidenceId());
-            try (ResultSet rs = ps.executeQuery()) {
-                int typeId;
-                while (rs.next()) {
-                    typeId = rs.getInt("type");
-                    if (typeId == DEFENDER) {
-                        addDefender(rs.getInt("clan_id"));
-                    } else if (typeId == ATTACKER) {
-                        addAttacker(rs.getInt("clan_id"));
-                    } else if (typeId == DEFENDER_NOT_APPROVED) {
-                        addDefenderWaiting(rs.getInt("clan_id"));
-                    }
+        for (CastleSiegeClan siegeClan :
+                SiegeManager.getInstance().findSiegeClans(getCastle().getResidenceId())) {
+            switch (siegeClan.side()) {
+                case DEFENDER -> addDefender(siegeClan.clanId());
+                case ATTACKER -> addAttacker(siegeClan.clanId());
+                case DEFENDER_PENDING -> addDefenderWaiting(siegeClan.clanId());
+                case OWNER -> {
+                    // The owner is added above from the castle itself.
                 }
             }
-        } catch (Exception e) {
-            log.warn("Exception: loadSiegeClan(): {}", e.getMessage(), e);
         }
     }
 
@@ -1197,17 +1161,12 @@ public class Siege implements Siegable {
             scheduledStartSiegeTask = ThreadPool.schedule(new ScheduleStartSiegeTask(getCastle()), 1000);
         }
 
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement(
-                        "UPDATE castle SET siegeDate = ?, regTimeEnd = ?, regTimeOver = ?  WHERE id = ?")) {
-            ps.setLong(1, getSiegeDate().getTimeInMillis());
-            ps.setLong(2, getTimeRegistrationOverDate().getTimeInMillis());
-            ps.setString(3, String.valueOf(isTimeRegistrationOver()));
-            ps.setInt(4, getCastle().getResidenceId());
-            ps.execute();
-        } catch (Exception e) {
-            log.warn("Exception: saveSiegeDate(): {}", e.getMessage(), e);
-        }
+        CastleManager.getInstance()
+                .saveSiegeSchedule(
+                        getCastle().getResidenceId(),
+                        getSiegeDate().getTimeInMillis(),
+                        getTimeRegistrationOverDate().getTimeInMillis(),
+                        isTimeRegistrationOver());
     }
 
     /**
@@ -1221,47 +1180,40 @@ public class Siege implements Siegable {
             return;
         }
 
-        try (Connection con = DatabaseFactory.getConnection()) {
-            if ((typeId == DEFENDER) || (typeId == DEFENDER_NOT_APPROVED) || (typeId == OWNER)) {
-                if ((getDefenderClans().size() + getDefenderWaitingClans().size())
-                        >= SiegeManager.getInstance().getDefenderMaxClans()) {
-                    return;
-                }
-            } else if (getAttackerClans().size() >= SiegeManager.getInstance().getAttackerMaxClans()) {
+        if ((typeId == DEFENDER) || (typeId == DEFENDER_NOT_APPROVED) || (typeId == OWNER)) {
+            if ((getDefenderClans().size() + getDefenderWaitingClans().size())
+                    >= SiegeManager.getInstance().getDefenderMaxClans()) {
                 return;
             }
-
-            if (!isUpdateRegistration) {
-                try (PreparedStatement ps = con.prepareStatement(
-                        "INSERT INTO siege_clans (clan_id,castle_id,type,castle_owner) values (?,?,?,0)")) {
-                    ps.setInt(1, clan.getId());
-                    ps.setInt(2, getCastle().getResidenceId());
-                    ps.setInt(3, typeId);
-                    ps.execute();
-                }
-            } else {
-                try (PreparedStatement ps =
-                        con.prepareStatement("UPDATE siege_clans SET type = ? WHERE castle_id = ? AND clan_id = ?")) {
-                    ps.setInt(1, typeId);
-                    ps.setInt(2, getCastle().getResidenceId());
-                    ps.setInt(3, clan.getId());
-                    ps.execute();
-                }
-            }
-
-            if ((typeId == DEFENDER) || (typeId == OWNER)) {
-                addDefender(clan.getId());
-            } else if (typeId == ATTACKER) {
-                addAttacker(clan.getId());
-            } else if (typeId == DEFENDER_NOT_APPROVED) {
-                addDefenderWaiting(clan.getId());
-            }
-        } catch (Exception e) {
-            log.warn(
-                    "Exception: saveSiegeClan(Pledge clan, int typeId, boolean isUpdateRegistration): {}",
-                    e.getMessage(),
-                    e);
+        } else if (getAttackerClans().size() >= SiegeManager.getInstance().getAttackerMaxClans()) {
+            return;
         }
+
+        final SiegeClanType side = sideOf(typeId);
+        final boolean saved = isUpdateRegistration
+                ? SiegeManager.getInstance().updateSiegeClanSide(getCastle().getResidenceId(), clan.getId(), side)
+                : SiegeManager.getInstance().saveSiegeClan(getCastle().getResidenceId(), clan.getId(), side);
+        if (!saved) {
+            return;
+        }
+
+        if ((typeId == DEFENDER) || (typeId == OWNER)) {
+            addDefender(clan.getId());
+        } else if (typeId == ATTACKER) {
+            addAttacker(clan.getId());
+        } else if (typeId == DEFENDER_NOT_APPROVED) {
+            addDefenderWaiting(clan.getId());
+        }
+    }
+
+    private static SiegeClanType sideOf(byte typeId) {
+        return switch (typeId) {
+            case OWNER -> SiegeClanType.OWNER;
+            case DEFENDER -> SiegeClanType.DEFENDER;
+            case ATTACKER -> SiegeClanType.ATTACKER;
+            case DEFENDER_NOT_APPROVED -> SiegeClanType.DEFENDER_PENDING;
+            default -> throw new IllegalArgumentException("Unknown siege clan type " + typeId);
+        };
     }
 
     /** Set the date for the next siege. */

@@ -5,20 +5,16 @@ plugins {
 dependencies {
     api(project(":libs:boot"))
     api(project(":libs:network"))
+    implementation(project(":libs:database"))
     implementation(libs.commons.lang3)
     implementation(libs.micrometer.core)
     implementation(libs.spring.boot.starter.jdbc)
     implementation(libs.spring.boot.starter.validation)
+    implementation(libs.uuid.creator)
 
     testImplementation(libs.spring.boot.starter.test)
-    testImplementation(libs.testcontainers.junit.jupiter)
-    testImplementation(libs.testcontainers.mysql)
-    testRuntimeOnly(libs.mysql.connector)
+    testImplementation(testFixtures(project(":libs:database")))
+    testImplementation(libs.liquibase.core)
+    testRuntimeOnly(libs.postgresql)
 }
 
-val loginSql = layout.projectDirectory.dir("sql")
-
-tasks.withType<Test>().configureEach {
-    inputs.dir(loginSql).withPropertyName("loginSql").withPathSensitivity(PathSensitivity.RELATIVE)
-    systemProperty("l2nx.test.login-sql-dir", loginSql.asFile.absolutePath)
-}

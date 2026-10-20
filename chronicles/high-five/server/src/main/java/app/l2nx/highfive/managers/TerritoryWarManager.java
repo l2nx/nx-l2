@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -25,10 +29,12 @@ package app.l2nx.highfive.managers;
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.ConfigReader;
 import app.l2nx.highfive.config.PlayerConfig;
+import app.l2nx.highfive.data.holders.TerritorySpawn;
+import app.l2nx.highfive.data.holders.TerritoryTemplate;
 import app.l2nx.highfive.data.sql.ClanTable;
-import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.data.xml.SkillData;
 import app.l2nx.highfive.data.xml.SkillTreeData;
+import app.l2nx.highfive.data.xml.TerritoryData;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Npc;
@@ -48,12 +54,12 @@ import app.l2nx.highfive.mechanics.skill.holders.SkillLearn;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.serverpackets.ServerPacket;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
+import app.l2nx.highfive.repository.territory.TerritoryRegistrationRepository;
+import app.l2nx.highfive.repository.territory.TerritoryStateRepository;
+import app.l2nx.highfive.repository.territory.model.TerritoryRegistrantType;
+import app.l2nx.highfive.repository.territory.model.TerritoryRegistration;
 import app.l2nx.highfive.threads.ThreadPool;
 import app.l2nx.highfive.util.LocationUtil;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collection;
@@ -67,15 +73,16 @@ import java.util.concurrent.ScheduledFuture;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataAccessException;
+import org.springframework.stereotype.Component;
 
 @Slf4j
+@Component
 public class TerritoryWarManager implements Siegable {
+    private static volatile TerritoryWarManager instance;
 
     private static final String TW_CONFIG_FILE = "./config/TerritoryWar.ini";
 
-    // SQL
-    private static final String DELETE = "DELETE FROM territory_registrations WHERE castleId = ? and registeredId = ?";
-    private static final String INSERT = "INSERT INTO territory_registrations (castleId, registeredId) values (?, ?)";
     public static final Map<Integer, Integer> TERRITORY_ITEM_IDS = new HashMap<>();
 
     static {
@@ -126,8 +133,14 @@ public class TerritoryWarManager implements Siegable {
     protected ScheduledFuture<?> scheduledEndTWTask = null;
     protected ScheduledFuture<?> scheduledRewardOnlineTask = null;
 
-    protected TerritoryWarManager() {
-        load();
+    private final TerritoryRegistrationRepository registrationRepository;
+    private final TerritoryStateRepository stateRepository;
+
+    public TerritoryWarManager(
+            TerritoryRegistrationRepository registrationRepository, TerritoryStateRepository stateRepository) {
+        this.registrationRepository = registrationRepository;
+        this.stateRepository = stateRepository;
+        instance = this;
     }
 
     public int getRegisteredTerritoryId(Player player) {
@@ -286,7 +299,7 @@ public class TerritoryWarManager implements Siegable {
 
         registeredClans.putIfAbsent(castleId, new CopyOnWriteArrayList<>());
         registeredClans.get(castleId).add(clan);
-        changeRegistration(castleId, clan.getId(), false);
+        addRegistration(castleId, clan.getId(), TerritoryRegistrantType.CLAN);
     }
 
     public void registerMerc(int castleId, Player player) {
@@ -299,14 +312,14 @@ public class TerritoryWarManager implements Siegable {
 
         registeredMercenaries.putIfAbsent(castleId, new CopyOnWriteArrayList<>());
         registeredMercenaries.get(castleId).add(player.getObjectId());
-        changeRegistration(castleId, player.getObjectId(), false);
+        addRegistration(castleId, player.getObjectId(), TerritoryRegistrantType.MERCENARY);
     }
 
     public void removeClan(int castleId, Clan clan) {
         if ((clan != null)
                 && (registeredClans.get(castleId) != null)
                 && registeredClans.get(castleId).remove(clan)) {
-            changeRegistration(castleId, clan.getId(), true);
+            removeRegistration(castleId, clan.getId());
         }
     }
 
@@ -317,7 +330,7 @@ public class TerritoryWarManager implements Siegable {
             registeredMercenaries
                     .get(castleId)
                     .remove(registeredMercenaries.get(castleId).indexOf(player.getObjectId()));
-            changeRegistration(castleId, player.getObjectId(), true);
+            removeRegistration(castleId, player.getObjectId());
         }
     }
 
@@ -633,36 +646,31 @@ public class TerritoryWarManager implements Siegable {
         return null;
     }
 
-    private void changeRegistration(int castleId, int objId, boolean delete) {
-        final String query = delete ? DELETE : INSERT;
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement(query)) {
-            ps.setInt(1, castleId);
-            ps.setInt(2, objId);
-            ps.execute();
-        } catch (Exception e) {
+    private void addRegistration(int castleId, int registrantId, TerritoryRegistrantType registrantType) {
+        try {
+            registrationRepository.insert(castleId, registrantId, registrantType);
+        } catch (DataAccessException e) {
+            log.warn("Exception: Territory War registration: {}", e.getMessage(), e);
+        }
+    }
+
+    private void removeRegistration(int castleId, int registrantId) {
+        try {
+            registrationRepository.delete(castleId, registrantId);
+        } catch (DataAccessException e) {
             log.warn("Exception: Territory War registration: {}", e.getMessage(), e);
         }
     }
 
     private void updateTerritoryData(Territory ter) {
-        final StringBuilder wardList = new StringBuilder();
-        for (int i : ter.getOwnedWardIds()) {
-            wardList.append(i + ";");
-        }
-
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps =
-                        con.prepareStatement("UPDATE territories SET ownedWardIds=? WHERE territoryId=?")) {
-            ps.setString(1, wardList.toString());
-            ps.setInt(2, ter.getTerritoryId());
-            ps.execute();
-        } catch (Exception e) {
+        try {
+            stateRepository.save(ter.getTerritoryId(), ter.getOwnedWardIds());
+        } catch (DataAccessException e) {
             log.warn("Exception: Territory Data update: {}", e.getMessage(), e);
         }
     }
 
-    private void load() {
+    public void load() {
         final ConfigReader territoryWarConfig = new ConfigReader(TW_CONFIG_FILE);
 
         // Siege configurations.
@@ -680,94 +688,83 @@ public class TerritoryWarManager implements Siegable {
         MINTWBADGEFORSTRIDERS = territoryWarConfig.getInt("MinTerritoryBadgeForStriders", 50);
         MINTWBADGEFORBIGSTRIDER = territoryWarConfig.getInt("MinTerritoryBadgeForBigStrider", 80);
 
-        try (Connection con = DatabaseFactory.getConnection();
-                Statement s = con.createStatement();
-                ResultSet rs = s.executeQuery("SELECT * FROM territory_spawnlist")) {
-            while (rs.next()) {
-                final int castleId = rs.getInt("castleId");
-                final int npcId = rs.getInt("npcId");
-                final Location loc = new Location(rs.getInt("x"), rs.getInt("y"), rs.getInt("z"), rs.getInt("heading"));
-                final int spawnType = rs.getInt("spawnType");
-                territoryList.computeIfAbsent(castleId, k -> new Territory(castleId));
-
-                switch (spawnType) {
+        for (TerritoryTemplate template : TerritoryData.getInstance().getTerritories()) {
+            final int castleId = template.castleId();
+            final Territory territory = territoryList.computeIfAbsent(castleId, k -> new Territory(castleId));
+            territory.fortId = template.fortId();
+            for (TerritorySpawn spawn : template.spawns()) {
+                final Location loc = spawn.spawnPoint().toLocation();
+                switch (spawn.type()) {
                     case 0: // town npcs
                     case 1: // fortress npcs
                     case 2: // castle npcs
                     {
-                        territoryList
-                                .get(castleId)
+                        territory
                                 .getSpawnList()
-                                .add(new TerritoryNPCSpawn(castleId, loc, npcId, spawnType, null));
+                                .add(new TerritoryNPCSpawn(castleId, loc, spawn.npcId(), spawn.type(), null));
                         break;
                     }
                     case 3: // ward spawns
                     {
-                        territoryList.get(castleId).addWardSpawnPlace(loc);
+                        territory.addWardSpawnPlace(loc);
                         break;
                     }
                     default: {
-                        log.warn("Unknown npc type for {}", rs.getInt("id"));
+                        log.warn("Unknown npc type {} in territory {}", spawn.type(), template.id());
                     }
                 }
             }
-        } catch (Exception e) {
-            log.warn("SpawnList error: {}", e.getMessage(), e);
         }
 
-        try (Connection con = DatabaseFactory.getConnection();
-                Statement s = con.createStatement();
-                ResultSet rs = s.executeQuery("SELECT * FROM territories")) {
-            while (rs.next()) {
-                final int castleId = rs.getInt("castleId");
-                final int fortId = rs.getInt("fortId");
-                final String ownedWardIds = rs.getString("OwnedWardIds");
-                final Territory t = territoryList.get(castleId);
-                if (t != null) {
-                    t.fortId = fortId;
-                    if (CastleManager.getInstance().getCastleById(castleId).getOwnerId() > 0) {
-                        t.setOwnerClan(ClanTable.getInstance()
-                                .getClan(CastleManager.getInstance()
-                                        .getCastleById(castleId)
-                                        .getOwnerId()));
-                        t.changeNPCsSpawn(0, true);
-                    }
-
-                    if (!ownedWardIds.isEmpty()) {
-                        for (String wardId : ownedWardIds.split(";")) {
-                            if (Integer.parseInt(wardId) > 0) {
-                                addTerritoryWard(Integer.parseInt(wardId), castleId, 0, false);
-                            }
-                        }
-                    }
-                }
-            }
-        } catch (Exception e) {
+        Map<Integer, List<Integer>> storedWards;
+        try {
+            storedWards = stateRepository.findAll();
+        } catch (DataAccessException e) {
             log.warn("Territory list error(): {}", e.getMessage(), e);
+            storedWards = Map.of();
         }
 
-        try (Connection con = DatabaseFactory.getConnection();
-                Statement s = con.createStatement();
-                ResultSet rs = s.executeQuery("SELECT * FROM territory_registrations")) {
-            while (rs.next()) {
-                final int castleId = rs.getInt("castleId");
-                final int registeredId = rs.getInt("registeredId");
-                if (ClanTable.getInstance().getClan(registeredId) != null) {
-                    if (registeredClans.get(castleId) == null) {
-                        registeredClans.putIfAbsent(castleId, new CopyOnWriteArrayList<>());
-                    }
+        for (Territory t : territoryList.values()) {
+            final int castleId = t.getCastleId();
+            if (CastleManager.getInstance().getCastleById(castleId).getOwnerId() > 0) {
+                t.setOwnerClan(ClanTable.getInstance()
+                        .getClan(CastleManager.getInstance()
+                                .getCastleById(castleId)
+                                .getOwnerId()));
+                t.changeNPCsSpawn(0, true);
+            }
 
-                    registeredClans.get(castleId).add(ClanTable.getInstance().getClan(registeredId));
-                } else {
-                    if (registeredMercenaries.get(castleId) == null) {
-                        registeredMercenaries.put(castleId, new CopyOnWriteArrayList<>());
-                    }
-
-                    registeredMercenaries.get(castleId).add(registeredId);
+            // A territory without a stored state still holds its own ward.
+            for (int wardId : storedWards.getOrDefault(t.getTerritoryId(), List.of(t.getTerritoryId()))) {
+                if (wardId > 0) {
+                    addTerritoryWard(wardId, castleId, 0, false);
                 }
             }
-        } catch (Exception e) {
+        }
+
+        final List<TerritoryRegistration> registrations;
+        try {
+            registrations = registrationRepository.findAll();
+        } catch (DataAccessException e) {
             log.warn("Registration list error: {}", e.getMessage(), e);
+            return;
+        }
+
+        for (TerritoryRegistration registration : registrations) {
+            final int castleId = registration.castleId();
+            final int registeredId = registration.registrantId();
+            if (registration.registrantType() == TerritoryRegistrantType.CLAN) {
+                final Clan clan = ClanTable.getInstance().getClan(registeredId);
+                if (clan != null) {
+                    registeredClans
+                            .computeIfAbsent(castleId, k -> new CopyOnWriteArrayList<>())
+                            .add(clan);
+                }
+            } else {
+                registeredMercenaries
+                        .computeIfAbsent(castleId, k -> new CopyOnWriteArrayList<>())
+                        .add(registeredId);
+            }
         }
     }
 
@@ -937,13 +934,13 @@ public class TerritoryWarManager implements Siegable {
 
         for (Integer castleId : registeredClans.keySet()) {
             for (Clan clan : registeredClans.get(castleId)) {
-                changeRegistration(castleId, clan.getId(), true);
+                removeRegistration(castleId, clan.getId());
             }
         }
 
         for (Integer castleId : registeredMercenaries.keySet()) {
             for (Integer plObjId : registeredMercenaries.get(castleId)) {
-                changeRegistration(castleId, plObjId, true);
+                removeRegistration(castleId, plObjId);
             }
         }
 
@@ -1496,11 +1493,12 @@ public class TerritoryWarManager implements Siegable {
     @Override
     public void updateSiege() {}
 
+    // TODO: callers receive the bean through their constructor (#41).
     public static TerritoryWarManager getInstance() {
-        return SingletonHolder.INSTANCE;
-    }
-
-    private static class SingletonHolder {
-        protected static final TerritoryWarManager INSTANCE = new TerritoryWarManager();
+        final TerritoryWarManager current = instance;
+        if (current == null) {
+            throw new IllegalStateException("TerritoryWarManager is used before the Spring context created it.");
+        }
+        return current;
     }
 }

@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -22,40 +26,41 @@
  */
 package app.l2nx.highfive.managers.games;
 
+import static app.l2nx.highfive.repository.LegacyValues.epochMillisOrZero;
+import static app.l2nx.highfive.repository.LegacyValues.instantOrNull;
+
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.GeneralConfig;
-import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.item.instance.Item;
+import app.l2nx.highfive.managers.ItemManager;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
+import app.l2nx.highfive.repository.item.model.LotteryTicket;
+import app.l2nx.highfive.repository.minigame.LotteryRepository;
+import app.l2nx.highfive.repository.minigame.model.Lottery;
+import app.l2nx.highfive.repository.minigame.model.LotteryResult;
 import app.l2nx.highfive.threads.ThreadPool;
 import app.l2nx.highfive.util.MathUtil;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.Calendar;
+import java.util.Optional;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataAccessException;
+import org.springframework.stereotype.Component;
 
 @Slf4j
+@Component
 public class LotteryManager {
     public static final long SECOND = 1000;
     public static final long MINUTE = 60000;
 
-    private static final String INSERT_LOTTERY =
-            "INSERT INTO lottery(id, idnr, enddate, prize, newprize) VALUES (?, ?, ?, ?, ?)";
-    private static final String UPDATE_PRICE = "UPDATE lottery SET prize=?, newprize=? WHERE id = 1 AND idnr = ?";
-    private static final String UPDATE_LOTTERY =
-            "UPDATE lottery SET finished=1, prize=?, newprize=?, number1=?, number2=?, prize1=?, prize2=?, prize3=? WHERE id=1 AND idnr=?";
-    private static final String SELECT_LAST_LOTTERY =
-            "SELECT idnr, prize, newprize, enddate, finished FROM lottery WHERE id = 1 ORDER BY idnr DESC LIMIT 1";
-    private static final String SELECT_LOTTERY_ITEM =
-            "SELECT enchant_level, custom_type2 FROM items WHERE item_id = 4442 AND custom_type1 = ?";
-    private static final String SELECT_LOTTERY_TICKET =
-            "SELECT number1, number2, prize1, prize2, prize3 FROM lottery WHERE id = 1 and idnr = ?";
+    private static final int TICKET_ITEM_ID = 4442;
+
+    private static volatile LotteryManager instance;
+
+    private final LotteryRepository lotteryRepository;
+    private final ItemManager itemManager;
 
     @Getter
     protected int id;
@@ -72,7 +77,13 @@ public class LotteryManager {
     @Getter
     protected long endDate;
 
-    protected LotteryManager() {
+    public LotteryManager(LotteryRepository lotteryRepository, ItemManager itemManager) {
+        this.lotteryRepository = lotteryRepository;
+        this.itemManager = itemManager;
+        instance = this;
+    }
+
+    public void load() {
         id = 1;
         prize = GeneralConfig.ALT_LOTTERY_PRIZE;
         sellableTickets = false;
@@ -85,13 +96,9 @@ public class LotteryManager {
 
     public void increasePrize(long count) {
         prize += count;
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement(UPDATE_PRICE)) {
-            ps.setLong(1, prize);
-            ps.setLong(2, prize);
-            ps.setInt(3, id);
-            ps.execute();
-        } catch (SQLException e) {
+        try {
+            lotteryRepository.updatePrize(id, prize, prize);
+        } catch (DataAccessException e) {
             log.warn("Lottery: Could not increase current lottery prize: {}", e.getMessage(), e);
         }
     }
@@ -103,17 +110,16 @@ public class LotteryManager {
 
         @Override
         public void run() {
-            try (Connection con = DatabaseFactory.getConnection();
-                    Statement statement = con.createStatement();
-                    ResultSet rset = statement.executeQuery(SELECT_LAST_LOTTERY)) {
-                if (rset.next()) {
-                    id = rset.getInt("idnr");
-                    if (rset.getInt("finished") == 1) {
-                        id++;
-                        prize = rset.getLong("newprize");
+            try {
+                final Optional<Lottery> last = lotteryRepository.findLast();
+                if (last.isPresent()) {
+                    final Lottery row = last.get();
+                    if (row.finished()) {
+                        prize = row.newPrize();
                     } else {
-                        prize = rset.getLong("prize");
-                        LotteryManager.this.endDate = rset.getLong("enddate");
+                        id = row.id();
+                        prize = row.prize();
+                        LotteryManager.this.endDate = epochMillisOrZero(row.endDate());
                         if (LotteryManager.this.endDate <= (ClockBridge.wallMillis() + (2 * MINUTE))) {
                             (new finishLottery()).run();
                             return;
@@ -133,13 +139,10 @@ public class LotteryManager {
                         }
                     }
                 }
-            } catch (SQLException e) {
+            } catch (DataAccessException e) {
                 log.warn("Lottery: Could not restore lottery data: {}", e.getMessage(), e);
             }
 
-            sellableTickets = true;
-            started = true;
-            World.broadcastToAllOnlinePlayers("Lottery tickets are now available for Lucky Lottery #" + id + ".");
             final Calendar finishtime = ClockBridge.calendar();
             finishtime.setTimeInMillis(LotteryManager.this.endDate);
             finishtime.set(Calendar.MINUTE, 0);
@@ -154,21 +157,20 @@ public class LotteryManager {
                 LotteryManager.this.endDate = finishtime.getTimeInMillis();
             }
 
+            // The database numbers the round; the number is announced and stored on its tickets.
+            try {
+                id = lotteryRepository.create(instantOrNull(LotteryManager.this.endDate), prize, prize);
+            } catch (DataAccessException e) {
+                log.warn("Lottery: Could not store new lottery data: {}", e.getMessage(), e);
+            }
+
+            sellableTickets = true;
+            started = true;
+            World.broadcastToAllOnlinePlayers("Lottery tickets are now available for Lucky Lottery #" + id + ".");
+
             final long endDate = LotteryManager.this.endDate - ClockBridge.wallMillis();
             ThreadPool.schedule(new stopSellingTickets(), Math.max(endDate - (10 * MINUTE), 0));
             ThreadPool.schedule(new finishLottery(), Math.max(endDate, 0));
-
-            try (Connection con = DatabaseFactory.getConnection();
-                    PreparedStatement ps = con.prepareStatement(INSERT_LOTTERY)) {
-                ps.setInt(1, 1);
-                ps.setInt(2, id);
-                ps.setLong(3, LotteryManager.this.endDate);
-                ps.setLong(4, prize);
-                ps.setLong(5, prize);
-                ps.execute();
-            } catch (SQLException e) {
-                log.warn("Lottery: Could not store new lottery data: {}", e.getMessage(), e);
-            }
         }
     }
 
@@ -225,45 +227,41 @@ public class LotteryManager {
             int count3 = 0;
             int count4 = 0;
 
-            try (Connection con = DatabaseFactory.getConnection();
-                    PreparedStatement ps = con.prepareStatement(SELECT_LOTTERY_ITEM)) {
-                ps.setInt(1, id);
-                try (ResultSet rset = ps.executeQuery()) {
-                    while (rset.next()) {
-                        int curenchant = rset.getInt("enchant_level") & enchant;
-                        int curtype2 = rset.getInt("custom_type2") & type2;
-                        if ((curenchant == 0) && (curtype2 == 0)) {
-                            continue;
+            try {
+                for (LotteryTicket ticket : itemManager.findLotteryTickets(TICKET_ITEM_ID, id)) {
+                    int curenchant = ticket.enchantLevel() & enchant;
+                    int curtype2 = ticket.customType2() & type2;
+                    if ((curenchant == 0) && (curtype2 == 0)) {
+                        continue;
+                    }
+
+                    int count = 0;
+                    for (int i = 1; i <= 16; i++) {
+                        final int val = curenchant / 2;
+                        if (val != Math.round((double) curenchant / 2)) {
+                            count++;
                         }
 
-                        int count = 0;
-                        for (int i = 1; i <= 16; i++) {
-                            final int val = curenchant / 2;
-                            if (val != Math.round((double) curenchant / 2)) {
-                                count++;
-                            }
-
-                            final int val2 = curtype2 / 2;
-                            if (val2 != ((double) curtype2 / 2)) {
-                                count++;
-                            }
-
-                            curenchant = val;
-                            curtype2 = val2;
+                        final int val2 = curtype2 / 2;
+                        if (val2 != ((double) curtype2 / 2)) {
+                            count++;
                         }
 
-                        if (count == 5) {
-                            count1++;
-                        } else if (count == 4) {
-                            count2++;
-                        } else if (count == 3) {
-                            count3++;
-                        } else if (count > 0) {
-                            count4++;
-                        }
+                        curenchant = val;
+                        curtype2 = val2;
+                    }
+
+                    if (count == 5) {
+                        count1++;
+                    } else if (count == 4) {
+                        count2++;
+                    } else if (count == 3) {
+                        count3++;
+                    } else if (count > 0) {
+                        count4++;
                     }
                 }
-            } catch (SQLException e) {
+            } catch (DataAccessException e) {
                 log.warn("Lottery: Could restore lottery data: {}", e.getMessage(), e);
             }
 
@@ -304,23 +302,23 @@ public class LotteryManager {
 
             World.broadcastToAllOnlinePlayers(sm);
 
-            try (Connection con = DatabaseFactory.getConnection();
-                    PreparedStatement ps = con.prepareStatement(UPDATE_LOTTERY)) {
-                ps.setLong(1, prize);
-                ps.setLong(2, newprize);
-                ps.setInt(3, enchant);
-                ps.setInt(4, type2);
-                ps.setLong(5, prize1);
-                ps.setLong(6, prize2);
-                ps.setLong(7, prize3);
-                ps.setInt(8, id);
-                ps.execute();
-            } catch (SQLException e) {
+            try {
+                lotteryRepository.finish(
+                        id,
+                        prize,
+                        newprize,
+                        LotteryResult.builder()
+                                .number1(enchant)
+                                .number2(type2)
+                                .prize1(prize1)
+                                .prize2(prize2)
+                                .prize3(prize3)
+                                .build());
+            } catch (DataAccessException e) {
                 log.warn("Lottery: Could not store finished lottery data: {}", e.getMessage(), e);
             }
 
             ThreadPool.schedule(new startLottery(), MINUTE);
-            id++;
 
             started = false;
         }
@@ -366,71 +364,70 @@ public class LotteryManager {
 
     public long[] checkTicket(int id, int enchant, int type2) {
         final long[] res = {0, 0};
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement(SELECT_LOTTERY_TICKET)) {
-            ps.setInt(1, id);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    int curenchant = rs.getInt("number1") & enchant;
-                    int curtype2 = rs.getInt("number2") & type2;
-                    if ((curenchant == 0) && (curtype2 == 0)) {
-                        return res;
+        try {
+            final Optional<LotteryResult> result = lotteryRepository.findResult(id);
+            if (result.isPresent()) {
+                final LotteryResult draw = result.get();
+                int curenchant = draw.number1() & enchant;
+                int curtype2 = draw.number2() & type2;
+                if ((curenchant == 0) && (curtype2 == 0)) {
+                    return res;
+                }
+
+                int count = 0;
+                for (int i = 1; i <= 16; i++) {
+                    final int val = curenchant / 2;
+                    if (val != Math.round((double) curenchant / 2)) {
+                        count++;
                     }
 
-                    int count = 0;
-                    for (int i = 1; i <= 16; i++) {
-                        final int val = curenchant / 2;
-                        if (val != Math.round((double) curenchant / 2)) {
-                            count++;
-                        }
-
-                        final int val2 = curtype2 / 2;
-                        if (val2 != ((double) curtype2 / 2)) {
-                            count++;
-                        }
-
-                        curenchant = val;
-                        curtype2 = val2;
+                    final int val2 = curtype2 / 2;
+                    if (val2 != ((double) curtype2 / 2)) {
+                        count++;
                     }
 
-                    switch (count) {
-                        case 0: {
-                            break;
-                        }
-                        case 5: {
-                            res[0] = 1;
-                            res[1] = rs.getLong("prize1");
-                            break;
-                        }
-                        case 4: {
-                            res[0] = 2;
-                            res[1] = rs.getLong("prize2");
-                            break;
-                        }
-                        case 3: {
-                            res[0] = 3;
-                            res[1] = rs.getLong("prize3");
-                            break;
-                        }
-                        default: {
-                            res[0] = 4;
-                            res[1] = GeneralConfig.ALT_LOTTERY_2_AND_1_NUMBER_PRIZE;
-                        }
+                    curenchant = val;
+                    curtype2 = val2;
+                }
+
+                switch (count) {
+                    case 0: {
+                        break;
+                    }
+                    case 5: {
+                        res[0] = 1;
+                        res[1] = draw.prize1();
+                        break;
+                    }
+                    case 4: {
+                        res[0] = 2;
+                        res[1] = draw.prize2();
+                        break;
+                    }
+                    case 3: {
+                        res[0] = 3;
+                        res[1] = draw.prize3();
+                        break;
+                    }
+                    default: {
+                        res[0] = 4;
+                        res[1] = GeneralConfig.ALT_LOTTERY_2_AND_1_NUMBER_PRIZE;
                     }
                 }
             }
-        } catch (SQLException e) {
+        } catch (DataAccessException e) {
             log.warn("Lottery: Could not check lottery ticket #{}: {}", id, e.getMessage(), e);
         }
 
         return res;
     }
 
+    // TODO: callers receive the bean through their constructor (#41).
     public static LotteryManager getInstance() {
-        return SingletonHolder.INSTANCE;
-    }
-
-    private static class SingletonHolder {
-        protected static final LotteryManager INSTANCE = new LotteryManager();
+        final LotteryManager current = instance;
+        if (current == null) {
+            throw new IllegalStateException("LotteryManager is used before the Spring context created it.");
+        }
+        return current;
     }
 }

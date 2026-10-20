@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+/*
  * SPDX-FileCopyrightText: L2J Mobius contributors
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
@@ -19,24 +23,29 @@
  */
 package app.l2nx.login.network.gameserverpackets.receive;
 
+import app.l2nx.login.GameServerThread;
 import app.l2nx.login.controller.LoginController;
 import app.l2nx.network.packet.SimpleReadablePacket;
+import java.util.UUID;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * @author mrTJO
  */
 public class PlayerTracert extends SimpleReadablePacket {
 
-    public PlayerTracert(byte[] decrypt) {
+    public PlayerTracert(byte[] decrypt, GameServerThread server) {
         super(decrypt);
         readByte(); // Packet id, it is already processed.
 
-        final String account = readString();
-        final String pcIp = readString();
-        final String hop1 = readString();
-        final String hop2 = readString();
-        final String hop3 = readString();
-        final String hop4 = readString();
-        LoginController.getInstance().setAccountLastTracert(account, pcIp, hop1, hop2, hop3, hop4);
+        final UUID accountId = new UUID(readLong(), readLong());
+        final String pcIp = StringUtils.trimToNull(readString());
+        final String hop1 = StringUtils.trimToNull(readString());
+        final String hop2 = StringUtils.trimToNull(readString());
+        final String hop3 = StringUtils.trimToNull(readString());
+        final String hop4 = StringUtils.trimToNull(readString());
+        if (server.hasAccountOnGameServer(accountId)) {
+            LoginController.getInstance().setAccountLastTracert(accountId, pcIp, hop1, hop2, hop3, hop4);
+        }
     }
 }

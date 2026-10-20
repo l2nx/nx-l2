@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+/*
  * SPDX-FileCopyrightText: L2J Mobius contributors
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
@@ -33,6 +37,6 @@ public class RequestGotoLobby extends ClientPacket {
     @Override
     protected void runImpl() {
         final GameClient client = getClient();
-        client.sendPacket(new CharSelectionInfo(client.getAccountName(), client.getSessionId().playOkID1));
+        client.sendPacket(new CharSelectionInfo(client));
     }
 }

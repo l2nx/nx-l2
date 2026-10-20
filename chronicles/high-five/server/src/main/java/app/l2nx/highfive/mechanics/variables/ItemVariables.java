@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -22,31 +26,20 @@
  */
 package app.l2nx.highfive.mechanics.variables;
 
-import app.l2nx.highfive.data.sql.DatabaseFactory;
+import app.l2nx.highfive.managers.ItemManager;
 import app.l2nx.highfive.threads.ThreadPool;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.TreeSet;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataAccessException;
 
 /**
  * @author UnAfraid, Mobius
  */
 @Slf4j
 public class ItemVariables extends AbstractVariables {
-
-    // SQL Queries.
-    private static final String SELECT_QUERY = "SELECT * FROM item_variables WHERE id = ?";
-    private static final String SELECT_COUNT = "SELECT COUNT(*) FROM item_variables WHERE id = ?";
-    private static final String DELETE_QUERY = "DELETE FROM item_variables WHERE id = ? AND var = ?";
-    private static final String DELETE_ALL_QUERY = "DELETE FROM item_variables WHERE id = ?";
-    private static final String UPSERT_QUERY =
-            "INSERT INTO item_variables (id, var, val) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE val = VALUES(val)";
 
     // Asynchronous persistence.
     private static final long SAVE_INTERVAL = 60000; // 1 minute.
@@ -65,36 +58,21 @@ public class ItemVariables extends AbstractVariables {
     }
 
     public static boolean hasVariables(int objectId) {
-        // Restore previous variables.
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement st = con.prepareStatement(SELECT_COUNT)) {
-            st.setInt(1, objectId);
-            try (ResultSet rset = st.executeQuery()) {
-                if (rset.next()) {
-                    return rset.getInt(1) > 0;
-                }
-            }
-        } catch (SQLException e) {
+        try {
+            return ItemManager.getInstance().hasVariables(objectId);
+        } catch (DataAccessException e) {
             log.warn("Could not select variables count for: {}", objectId, e);
             return false;
         }
-
-        return true;
     }
 
     public boolean restoreMe() {
         clearChangeTracking();
 
         // Restore previous variables.
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement st = con.prepareStatement(SELECT_QUERY)) {
-            st.setInt(1, objectId);
-            try (ResultSet rset = st.executeQuery()) {
-                while (rset.next()) {
-                    set(rset.getString("var"), rset.getString("val"), false);
-                }
-            }
-        } catch (SQLException e) {
+        try {
+            ItemManager.getInstance().findVariables(objectId).forEach((name, value) -> set(name, value, false));
+        } catch (DataAccessException e) {
             log.warn("Could not restore variables for: {}", objectId, e);
             return false;
         } finally {
@@ -154,61 +132,42 @@ public class ItemVariables extends AbstractVariables {
         saveLock.lock();
 
         try {
-            try (Connection con = DatabaseFactory.getConnection()) {
-                if (!deleted.isEmpty()) {
-                    try (PreparedStatement st = con.prepareStatement(DELETE_QUERY)) {
-                        final List<String> sortedDeleted = new ArrayList<>(deleted);
-                        sortedDeleted.sort(null);
-                        for (String name : sortedDeleted) {
-                            st.setInt(1, objectId);
-                            st.setString(2, name);
-                            st.addBatch();
-                        }
-
-                        st.executeBatch();
-                    }
-                }
-
-                if (!added.isEmpty() || !modified.isEmpty()) {
-                    final TreeSet<String> allChanges = new TreeSet<>();
-                    allChanges.addAll(added);
-                    allChanges.addAll(modified);
-                    try (PreparedStatement st = con.prepareStatement(UPSERT_QUERY)) {
-                        for (String name : allChanges) {
-                            final Object value = getSet().get(name);
-                            if (value != null) {
-                                st.setInt(1, objectId);
-                                st.setString(2, name);
-                                st.setString(3, String.valueOf(value));
-                                st.addBatch();
-                            }
-                        }
-
-                        st.executeBatch();
-                    }
-                }
-
-                // Clear tracking after successful save.
-                clearChangeTracking();
-                compareAndSetChanges(true, false);
-                return true;
-            } catch (SQLException e) {
-                log.warn("Could not update variables for: {}", objectId, e);
-                return false;
+            final Map<String, String> changed = new HashMap<>();
+            for (String name : added) {
+                putValue(changed, name);
             }
+
+            for (String name : modified) {
+                putValue(changed, name);
+            }
+
+            ItemManager.getInstance().saveVariables(objectId, new HashSet<>(deleted), changed);
+
+            // Clear tracking after successful save.
+            clearChangeTracking();
+            compareAndSetChanges(true, false);
+            return true;
+        } catch (DataAccessException e) {
+            log.warn("Could not update variables for: {}", objectId, e);
+            return false;
         } finally {
             saveLock.unlock();
+        }
+    }
+
+    private void putValue(Map<String, String> changed, String name) {
+        final Object value = getSet().get(name);
+        if (value != null) {
+            changed.put(name, String.valueOf(value));
         }
     }
 
     public boolean deleteMe() {
         saveLock.lock();
 
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement st = con.prepareStatement(DELETE_ALL_QUERY)) {
-            st.setInt(1, objectId);
-            st.execute();
-        } catch (Exception e) {
+        try {
+            ItemManager.getInstance().deleteVariables(objectId);
+        } catch (DataAccessException e) {
             log.warn("Could not delete variables for: {}", objectId, e);
             saveLock.unlock();
             return false;

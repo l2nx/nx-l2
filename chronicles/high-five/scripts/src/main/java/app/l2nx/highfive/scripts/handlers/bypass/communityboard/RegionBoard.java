@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -24,24 +28,20 @@ package app.l2nx.highfive.scripts.handlers.bypass.communityboard;
 
 import app.l2nx.highfive.cache.HtmCache;
 import app.l2nx.highfive.clock.ClockBridge;
+import app.l2nx.highfive.data.sql.ClanHallTable;
 import app.l2nx.highfive.data.sql.ClanTable;
-import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.clan.Clan;
+import app.l2nx.highfive.entity.residences.AuctionableHall;
 import app.l2nx.highfive.handler.CommunityBoardHandler;
 import app.l2nx.highfive.handler.IWriteBoardHandler;
 import app.l2nx.highfive.managers.CastleManager;
 import app.l2nx.highfive.mechanics.siege.Castle;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
-import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 
@@ -53,26 +53,11 @@ import org.apache.commons.lang3.StringUtils;
 public class RegionBoard implements IWriteBoardHandler {
     private static final DateTimeFormatter SIEGE_FORMAT = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm");
 
-    private static final String CLAN_HALL_QUERY = "SELECT id, name, ownerId, location FROM clanhall WHERE location = ?";
-
     // Region data
     // @formatter:off
     private static final int[] REGIONS = {1049, 1052, 1053, 1057, 1060, 1059, 1248, 1247, 1056};
     // @formatter:on
     private static final String[] COMMANDS = {"_bbsloc"};
-
-    private static class ClanHall {
-        @Getter
-        private final String name;
-
-        @Getter
-        private final int ownerId;
-
-        public ClanHall(String name, int ownerId) {
-            this.name = name;
-            this.ownerId = ownerId;
-        }
-    }
 
     @Override
     public String[] getCommandList() {
@@ -149,13 +134,15 @@ public class RegionBoard implements IWriteBoardHandler {
 
             final StringBuilder hallsList = new StringBuilder();
             hallsList.append(
-                    "<br><br><table width=610 bgcolor=A7A19A><tr><td width=5></td><td width=200>Clan Hall Name</td><td width=200>Owning Clan</td><td width=200>Clan Leader Name</td><td width=5></td></tr></table><br1>");
-            final Map<Integer, ClanHall> clanHalls = getClanHallsByLocation(castle.getName());
+                    "<br><br><table width=610 bgcolor=A7A19A><tr><td width=5></td><td width=200>Clan Hall Name</td><td"
+                            + " width=200>Owning Clan</td><td width=200>Clan Leader Name</td><td"
+                            + " width=5></td></tr></table><br1>");
+            final List<AuctionableHall> clanHalls = getClanHallsByLocation(castle.getName());
             if (clanHalls.isEmpty()) {
-                hallsList.append(
-                        "<table width=610><tr><td align=\"left\">There are no clan halls in this region.</td></tr></table>");
+                hallsList.append("<table width=610><tr><td align=\"left\">There are no clan halls in this"
+                        + " region.</td></tr></table>");
             } else {
-                for (ClanHall hall : clanHalls.values()) {
+                for (AuctionableHall hall : clanHalls) {
                     Clan hallOwner = ClanTable.getInstance().getClan(hall.getOwnerId());
                     hallsList
                             .append("<table><tr><td width=5></td><td width=200>")
@@ -168,8 +155,8 @@ public class RegionBoard implements IWriteBoardHandler {
                                             : "None")
                             .append("</td><td width=200>")
                             .append(hallOwner != null ? hallOwner.getLeaderName() : "None")
-                            .append(
-                                    "</td><td width=5></td></tr></table><br1><img src=\"L2UI.Squaregray\" width=605 height=1><br1>");
+                            .append("</td><td width=5></td></tr></table><br1><img src=\"L2UI.Squaregray\" width=605"
+                                    + " height=1><br1>");
                 }
             }
 
@@ -180,24 +167,16 @@ public class RegionBoard implements IWriteBoardHandler {
         return true;
     }
 
-    private Map<Integer, ClanHall> getClanHallsByLocation(String location) {
-        final Map<Integer, ClanHall> clanHalls = new HashMap<>();
-
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement(CLAN_HALL_QUERY)) {
-            ps.setString(1, location);
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    String name = rs.getString("name");
-                    int ownerId = rs.getInt("ownerId");
-                    ClanHall hall = new ClanHall(name, ownerId);
-                    clanHalls.put(rs.getInt("id"), hall);
-                }
+    private static List<AuctionableHall> getClanHallsByLocation(String location) {
+        final List<AuctionableHall> clanHalls = new ArrayList<>();
+        for (AuctionableHall hall :
+                ClanHallTable.getInstance().getAllAuctionableClanHalls().values()) {
+            if (hall.getLocation().equalsIgnoreCase(location)) {
+                clanHalls.add(hall);
             }
-        } catch (SQLException e) {
-            log.warn("Could not fetch clan halls data. {}", e.getMessage());
         }
 
+        clanHalls.sort(Comparator.comparingInt(AuctionableHall::getId));
         return clanHalls;
     }
 

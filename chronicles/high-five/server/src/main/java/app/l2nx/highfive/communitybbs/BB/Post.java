@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+/*
  * SPDX-FileCopyrightText: L2J Mobius contributors
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
@@ -19,16 +23,18 @@
  */
 package app.l2nx.highfive.communitybbs.BB;
 
+import static app.l2nx.highfive.repository.LegacyValues.epochMillisOrZero;
+import static app.l2nx.highfive.repository.LegacyValues.instantOrNull;
+
+import app.l2nx.highfive.communitybbs.Manager.ForumsBBSManager;
 import app.l2nx.highfive.communitybbs.Manager.PostBBSManager;
-import app.l2nx.highfive.data.sql.DatabaseFactory;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
+import app.l2nx.highfive.repository.forum.model.PostRow;
 import java.util.Collection;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataAccessException;
 
 /**
  * @author Maktakien
@@ -39,7 +45,7 @@ public class Post {
     public static class CPost {
         @Getter
         @Setter
-        private int postId;
+        private long postId;
 
         @Getter
         @Setter
@@ -93,32 +99,20 @@ public class Post {
     public Post(String postOwner, int postOwnerId, long date, int tid, int postForumId, String txt) {
         post = ConcurrentHashMap.newKeySet();
         final CPost cp = new CPost();
-        cp.setPostId(0);
         cp.setPostOwner(postOwner);
         cp.setPostOwnerId(postOwnerId);
         cp.setPostDate(date);
         cp.setPostTopicId(tid);
         cp.setPostForumId(postForumId);
         cp.setPostText(txt);
+        cp.setPostId(ForumsBBSManager.getInstance()
+                .insertPost(PostRow.builder()
+                        .topicId(tid)
+                        .ownerId(postOwnerId)
+                        .createdAt(instantOrNull(date))
+                        .content(cp.getPostText())
+                        .build()));
         post.add(cp);
-        insertindb(cp);
-    }
-
-    private void insertindb(CPost cp) {
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement(
-                        "INSERT INTO posts (post_id,post_owner_name,post_ownerid,post_date,post_topic_id,post_forum_id,post_txt) values (?,?,?,?,?,?,?)")) {
-            ps.setInt(1, cp.getPostId());
-            ps.setString(2, cp.getPostOwner());
-            ps.setInt(3, cp.getPostOwnerId());
-            ps.setLong(4, cp.getPostDate());
-            ps.setInt(5, cp.getPostTopicId());
-            ps.setInt(6, cp.getPostForumId());
-            ps.setString(7, cp.getPostText());
-            ps.execute();
-        } catch (Exception e) {
-            log.warn("Error while saving new Post to db {}", e.getMessage(), e);
-        }
     }
 
     public Post(Topic t) {
@@ -139,52 +133,36 @@ public class Post {
 
     public void deleteMe(Topic t) {
         PostBBSManager.getInstance().delPostByTopic(t);
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps =
-                        con.prepareStatement("DELETE FROM posts WHERE post_forum_id=? AND post_topic_id=?")) {
-            ps.setInt(1, t.getForumID());
-            ps.setInt(2, t.getID());
-            ps.execute();
-        } catch (Exception e) {
+        try {
+            ForumsBBSManager.getInstance().deletePosts(t.getID());
+        } catch (DataAccessException e) {
             log.warn("Error while deleting post: {}", e.getMessage(), e);
         }
     }
 
     private void load(Topic t) {
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement(
-                        "SELECT * FROM posts WHERE post_forum_id=? AND post_topic_id=? ORDER BY post_id ASC")) {
-            ps.setInt(1, t.getForumID());
-            ps.setInt(2, t.getID());
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    final CPost cp = new CPost();
-                    cp.setPostId(rs.getInt("post_id"));
-                    cp.setPostOwner(rs.getString("post_owner_name"));
-                    cp.setPostOwnerId(rs.getInt("post_ownerid"));
-                    cp.setPostDate(rs.getLong("post_date"));
-                    cp.setPostTopicId(rs.getInt("post_topic_id"));
-                    cp.setPostForumId(rs.getInt("post_forum_id"));
-                    cp.setPostText(rs.getString("post_txt"));
-                    post.add(cp);
-                }
+        try {
+            for (PostRow row : ForumsBBSManager.getInstance().findPosts(t.getID())) {
+                final CPost cp = new CPost();
+                cp.setPostId(row.id());
+                cp.setPostOwner(row.ownerName());
+                cp.setPostOwnerId(row.ownerId());
+                cp.setPostDate(epochMillisOrZero(row.createdAt()));
+                cp.setPostTopicId(row.topicId());
+                cp.setPostForumId(t.getForumID());
+                cp.setPostText(row.content());
+                post.add(cp);
             }
-        } catch (Exception e) {
+        } catch (DataAccessException e) {
             log.warn("Data error on Post {}/{} : {}", t.getForumID(), t.getID(), e.getMessage(), e);
         }
     }
 
     public void updateText(int i) {
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement(
-                        "UPDATE posts SET post_txt=? WHERE post_id=? AND post_topic_id=? AND post_forum_id=?")) {
-            final CPost cp = getCPost(i);
-            ps.setString(1, cp.getPostText());
-            ps.setInt(2, cp.getPostId());
-            ps.setInt(3, cp.getPostTopicId());
-            ps.setInt(4, cp.getPostForumId());
-            ps.execute();
-        } catch (Exception e) {
+        final CPost cp = getCPost(i);
+        try {
+            ForumsBBSManager.getInstance().updatePostContent(cp.getPostId(), cp.getPostText());
+        } catch (DataAccessException e) {
             log.warn("Error while saving new Post to db {}", e.getMessage(), e);
         }
     }

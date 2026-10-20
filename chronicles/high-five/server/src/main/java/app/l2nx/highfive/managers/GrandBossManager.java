@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+/*
  * SPDX-FileCopyrightText: L2J Mobius contributors
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
@@ -19,21 +23,25 @@
  */
 package app.l2nx.highfive.managers;
 
-import app.l2nx.highfive.data.sql.DatabaseFactory;
+import static app.l2nx.highfive.repository.LegacyValues.epochMillisOrZero;
+import static app.l2nx.highfive.repository.LegacyValues.instantOrNull;
+
+import app.l2nx.highfive.data.holders.GrandBossSpawn;
+import app.l2nx.highfive.data.holders.SpawnPoint;
+import app.l2nx.highfive.data.xml.GrandBossData;
 import app.l2nx.highfive.data.xml.NpcData;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.WorldObject;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.instance.GrandBoss;
+import app.l2nx.highfive.entity.actor.templates.NpcTemplate;
 import app.l2nx.highfive.entity.zone.type.BossZone;
+import app.l2nx.highfive.repository.boss.GrandBossStateRepository;
+import app.l2nx.highfive.repository.boss.GrandBossZoneCharacterRepository;
+import app.l2nx.highfive.repository.boss.model.GrandBossState;
 import app.l2nx.highfive.threads.ThreadPool;
 import app.l2nx.highfive.util.StatSet;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -41,21 +49,21 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataAccessException;
+import org.springframework.stereotype.Component;
 
 /**
  * Grand Boss manager.
  * @author DaRkRaGe, Emperorc
  */
 @Slf4j
+@Component
 public class GrandBossManager {
-    // SQL queries
-    private static final String DELETE_GRAND_BOSS_LIST = "DELETE FROM grandboss_list";
-    private static final String INSERT_GRAND_BOSS_LIST = "INSERT INTO grandboss_list (player_id,zone) VALUES (?,?)";
-    private static final String UPDATE_GRAND_BOSS_DATA =
-            "UPDATE grandboss_data set loc_x = ?, loc_y = ?, loc_z = ?, heading = ?, respawn_time = ?, currentHP = ?, currentMP = ?, status = ? where boss_id = ?";
-    private static final String UPDATE_GRAND_BOSS_DATA2 = "UPDATE grandboss_data set status = ? where boss_id = ?";
+    private static volatile GrandBossManager instance;
 
     protected static final Map<Integer, GrandBoss> BOSSES = new ConcurrentHashMap<>();
 
@@ -66,80 +74,84 @@ public class GrandBossManager {
     @Getter
     private final Map<Integer, BossZone> zones = new ConcurrentHashMap<>();
 
-    protected GrandBossManager() {
-        init();
+    private final GrandBossStateRepository stateRepository;
+    private final GrandBossZoneCharacterRepository zoneCharacterRepository;
+
+    public GrandBossManager(
+            GrandBossStateRepository stateRepository, GrandBossZoneCharacterRepository zoneCharacterRepository) {
+        this.stateRepository = stateRepository;
+        this.zoneCharacterRepository = zoneCharacterRepository;
+        instance = this;
     }
 
-    private void init() {
-        try (Connection con = DatabaseFactory.getConnection();
-                Statement s = con.createStatement();
-                ResultSet rs = s.executeQuery("SELECT * from grandboss_data ORDER BY boss_id")) {
-            while (rs.next()) {
-                // Read all info from DB, and store it for AI to read and decide what to do.
-                // faster than accessing DB in real time
-                final StatSet info = new StatSet();
-                final int bossId = rs.getInt("boss_id");
-                info.set("loc_x", rs.getInt("loc_x"));
-                info.set("loc_y", rs.getInt("loc_y"));
-                info.set("loc_z", rs.getInt("loc_z"));
-                info.set("heading", rs.getInt("heading"));
-                info.set("respawn_time", rs.getLong("respawn_time"));
-                info.set("currentHP", rs.getDouble("currentHP"));
-                info.set("currentMP", rs.getDouble("currentMP"));
-                final int status = rs.getInt("status");
+    public void load() {
+        try {
+            final Map<Integer, GrandBossState> states = stateRepository.findAll().stream()
+                    .collect(Collectors.toMap(GrandBossState::npcId, Function.identity()));
+            for (GrandBossSpawn boss : GrandBossData.getInstance().getBosses()) {
+                final int bossId = boss.npcId();
+                final NpcTemplate template = NpcData.getInstance().getTemplate(bossId);
+                final GrandBossState state = states.get(bossId);
+                final int status = state == null ? 0 : state.status();
+                final StatSet info = toStatSet(boss, template, state);
                 bossStatus.put(bossId, status);
                 storedInfo.put(bossId, info);
-                log.info(
-                        "{}({}) status is {}.",
-                        NpcData.getInstance().getTemplate(bossId).getName(),
-                        bossId,
-                        status);
+                log.info("{}({}) status is {}.", template.getName(), bossId, status);
                 if (status > 0) {
                     log.info(
-                            "Next spawn date of {} is {}.",
-                            NpcData.getInstance().getTemplate(bossId).getName(),
-                            new Date(info.getLong("respawn_time")));
+                            "Next spawn date of {} is {}.", template.getName(), new Date(info.getLong("respawn_time")));
                 }
             }
 
             log.info("Loaded {} Instances", storedInfo.size());
-        } catch (SQLException e) {
-            log.warn("Could not load grandboss_data table: {}", e.getMessage(), e);
-        } catch (Exception e) {
-            log.warn("Error while initializing GrandBossManager: {}", e.getMessage(), e);
+        } catch (DataAccessException e) {
+            log.warn("Could not load grand boss states: {}", e.getMessage(), e);
         }
 
         ThreadPool.scheduleAtFixedRate(this::storeMe, 5 * 60 * 1000, 5 * 60 * 1000);
     }
 
     /**
+     * A boss without a row was never saved: it stands at its datapack point (none when its script places it) with
+     * its template HP/MP. A row without HP/MP or position was saved by status only.
+     */
+    private static StatSet toStatSet(GrandBossSpawn boss, NpcTemplate template, GrandBossState state) {
+        final StatSet info = new StatSet();
+        final SpawnPoint datapackPoint =
+                boss.spawnPoint() == null ? SpawnPoint.builder().build() : boss.spawnPoint();
+        final boolean positionStored = (state != null) && (state.x() != null);
+        info.set("loc_x", positionStored ? state.x() : datapackPoint.x());
+        info.set("loc_y", positionStored ? state.y() : datapackPoint.y());
+        info.set("loc_z", positionStored ? state.z() : datapackPoint.z());
+        info.set("heading", positionStored ? state.heading() : datapackPoint.heading());
+        info.set("respawn_time", state == null ? 0 : epochMillisOrZero(state.respawnTime()));
+        final boolean hpMpStored = (state != null) && (state.currentHp() != null);
+        info.set("currentHP", hpMpStored ? state.currentHp() : template.getBaseHpMax());
+        info.set("currentMP", hpMpStored ? state.currentMp() : template.getBaseMpMax());
+        return info;
+    }
+
+    /**
      * Zone Functions
      */
     public void initZones() {
-        final Map<Integer, List<Integer>> zones = new HashMap<>();
-        for (Integer zoneId : this.zones.keySet()) {
-            zones.put(zoneId, new ArrayList<>());
+        final Map<Integer, List<Integer>> allowedByZone;
+        try {
+            allowedByZone = zoneCharacterRepository.findAll();
+        } catch (DataAccessException e) {
+            log.warn("Could not load grand boss zone entrants: {}", e.getMessage(), e);
+            return;
         }
 
-        try (Connection con = DatabaseFactory.getConnection();
-                Statement s = con.createStatement();
-                ResultSet rs = s.executeQuery("SELECT * from grandboss_list ORDER BY player_id")) {
-            while (rs.next()) {
-                zones.get(rs.getInt("zone")).add(rs.getInt("player_id"));
-            }
-
-            log.info("Initialized {} Grand Boss Zones", this.zones.size());
-        } catch (SQLException e) {
-            log.warn("Could not load grandboss_list table: {}", e.getMessage(), e);
-        } catch (Exception e) {
-            log.warn("Error while initializing GrandBoss zones: {}", e.getMessage(), e);
+        allowedByZone.keySet().stream()
+                .filter(zoneId -> !zones.containsKey(zoneId))
+                .forEach(zoneId ->
+                        log.warn("Grand boss zone {} is not in the datapack, its entrants are dropped.", zoneId));
+        for (Entry<Integer, BossZone> e : zones.entrySet()) {
+            e.getValue().setAllowedPlayers(allowedByZone.getOrDefault(e.getKey(), new ArrayList<>()));
         }
 
-        for (Entry<Integer, BossZone> e : this.zones.entrySet()) {
-            e.getValue().setAllowedPlayers(zones.get(e.getKey()));
-        }
-
-        zones.clear();
+        log.info("Initialized {} Grand Boss Zones", zones.size());
     }
 
     public void addZone(BossZone zone) {
@@ -221,60 +233,20 @@ public class GrandBossManager {
     }
 
     public boolean storeMe() {
-        try (Connection con = DatabaseFactory.getConnection();
-                Statement s = con.createStatement()) {
-            s.executeUpdate(DELETE_GRAND_BOSS_LIST);
-
-            try (PreparedStatement insert = con.prepareStatement(INSERT_GRAND_BOSS_LIST)) {
-                for (Entry<Integer, BossZone> e : zones.entrySet()) {
-                    final List<Integer> list = e.getValue().getAllowedPlayers();
-                    if ((list == null) || list.isEmpty()) {
-                        continue;
-                    }
-
-                    for (Integer player : list) {
-                        insert.setInt(1, player);
-                        insert.setInt(2, e.getKey());
-                        insert.executeUpdate();
-                        insert.clearParameters();
-                    }
+        try {
+            final Map<Integer, List<Integer>> allowedByZone = new HashMap<>();
+            for (Entry<Integer, BossZone> e : zones.entrySet()) {
+                final List<Integer> list = e.getValue().getAllowedPlayers();
+                if ((list != null) && !list.isEmpty()) {
+                    allowedByZone.put(e.getKey(), list);
                 }
             }
 
-            for (Entry<Integer, StatSet> e : storedInfo.entrySet()) {
-                final GrandBoss boss = BOSSES.get(e.getKey());
-                final StatSet info = e.getValue();
-                if ((boss == null) || (info == null)) {
-                    try (PreparedStatement update = con.prepareStatement(UPDATE_GRAND_BOSS_DATA2)) {
-                        update.setInt(1, bossStatus.get(e.getKey()));
-                        update.setInt(2, e.getKey());
-                        update.executeUpdate();
-                        update.clearParameters();
-                    }
-                } else {
-                    try (PreparedStatement update = con.prepareStatement(UPDATE_GRAND_BOSS_DATA)) {
-                        update.setInt(1, boss.getX());
-                        update.setInt(2, boss.getY());
-                        update.setInt(3, boss.getZ());
-                        update.setInt(4, boss.getHeading());
-                        update.setLong(5, info.getLong("respawn_time"));
-                        double hp = boss.getCurrentHp();
-                        double mp = boss.getCurrentMp();
-                        if (boss.isDead()) {
-                            hp = boss.getMaxHp();
-                            mp = boss.getMaxMp();
-                        }
-
-                        update.setDouble(6, hp);
-                        update.setDouble(7, mp);
-                        update.setInt(8, bossStatus.get(e.getKey()));
-                        update.setInt(9, e.getKey());
-                        update.executeUpdate();
-                        update.clearParameters();
-                    }
-                }
+            zoneCharacterRepository.replaceAll(allowedByZone);
+            for (Integer bossId : storedInfo.keySet()) {
+                saveState(bossId, false);
             }
-        } catch (SQLException e) {
+        } catch (DataAccessException e) {
             log.warn("Couldn't store grandbosses to database:{}", e.getMessage(), e);
             return false;
         }
@@ -283,39 +255,39 @@ public class GrandBossManager {
     }
 
     private void updateDb(int bossId, boolean statusOnly) {
-        try (Connection con = DatabaseFactory.getConnection()) {
-            final GrandBoss boss = BOSSES.get(bossId);
-            final StatSet info = storedInfo.get(bossId);
-            if (statusOnly || (boss == null) || (info == null)) {
-                try (PreparedStatement ps = con.prepareStatement(UPDATE_GRAND_BOSS_DATA2)) {
-                    ps.setInt(1, bossStatus.get(bossId));
-                    ps.setInt(2, bossId);
-                    ps.executeUpdate();
-                }
-            } else {
-                try (PreparedStatement ps = con.prepareStatement(UPDATE_GRAND_BOSS_DATA)) {
-                    ps.setInt(1, boss.getX());
-                    ps.setInt(2, boss.getY());
-                    ps.setInt(3, boss.getZ());
-                    ps.setInt(4, boss.getHeading());
-                    ps.setLong(5, info.getLong("respawn_time"));
-                    double hp = boss.getCurrentHp();
-                    double mp = boss.getCurrentMp();
-                    if (boss.isDead()) {
-                        hp = boss.getMaxHp();
-                        mp = boss.getMaxMp();
-                    }
-
-                    ps.setDouble(6, hp);
-                    ps.setDouble(7, mp);
-                    ps.setInt(8, bossStatus.get(bossId));
-                    ps.setInt(9, bossId);
-                    ps.executeUpdate();
-                }
-            }
-        } catch (SQLException e) {
+        try {
+            saveState(bossId, statusOnly);
+        } catch (DataAccessException e) {
             log.warn("Couldn't update grandbosses to database:{}", e.getMessage(), e);
         }
+    }
+
+    private void saveState(int bossId, boolean statusOnly) {
+        final GrandBoss boss = BOSSES.get(bossId);
+        final StatSet info = storedInfo.get(bossId);
+        if (statusOnly || (boss == null) || (info == null)) {
+            stateRepository.saveStatus(bossId, bossStatus.get(bossId));
+            return;
+        }
+
+        double hp = boss.getCurrentHp();
+        double mp = boss.getCurrentMp();
+        if (boss.isDead()) {
+            hp = boss.getMaxHp();
+            mp = boss.getMaxMp();
+        }
+
+        stateRepository.save(GrandBossState.builder()
+                .npcId(bossId)
+                .status(bossStatus.get(bossId))
+                .respawnTime(instantOrNull(info.getLong("respawn_time")))
+                .currentHp(hp)
+                .currentMp(mp)
+                .x(boss.getX())
+                .y(boss.getY())
+                .z(boss.getZ())
+                .heading(boss.getHeading())
+                .build());
     }
 
     /**
@@ -330,15 +302,12 @@ public class GrandBossManager {
         zones.clear();
     }
 
-    /**
-     * Gets the single instance of {@code GrandBossManager}.
-     * @return single instance of {@code GrandBossManager}
-     */
+    // TODO: callers receive the bean through their constructor (#41).
     public static GrandBossManager getInstance() {
-        return SingletonHolder.INSTANCE;
-    }
-
-    private static class SingletonHolder {
-        protected static final GrandBossManager INSTANCE = new GrandBossManager();
+        final GrandBossManager current = instance;
+        if (current == null) {
+            throw new IllegalStateException("GrandBossManager is used before the Spring context created it.");
+        }
+        return current;
     }
 }

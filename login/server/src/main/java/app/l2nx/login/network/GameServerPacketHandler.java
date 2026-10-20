@@ -103,7 +103,7 @@ public class GameServerPacketHandler {
                         return new ServerStatus(data, server);
                     }
                     case 0x07: {
-                        return new PlayerTracert(data);
+                        return new PlayerTracert(data, server);
                     }
                     case 0x08: {
                         return new ReplyCharacters(data, server);
@@ -113,10 +113,10 @@ public class GameServerPacketHandler {
                         return null;
                     }
                     case 0x0A: {
-                        return new RequestTempBan(data);
+                        return new RequestTempBan(data, server);
                     }
                     case 0x0B: {
-                        new ChangePassword(data);
+                        new ChangePassword(data, server);
                         return null;
                     }
                     default: {

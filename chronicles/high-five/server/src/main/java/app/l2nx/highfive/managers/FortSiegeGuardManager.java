@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -22,12 +26,10 @@
  */
 package app.l2nx.highfive.managers;
 
-import app.l2nx.highfive.data.sql.DatabaseFactory;
+import app.l2nx.highfive.data.holders.SiegeGuardSpawn;
+import app.l2nx.highfive.data.xml.FortData;
 import app.l2nx.highfive.entity.spawns.Spawn;
 import app.l2nx.highfive.mechanics.siege.Fort;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -93,26 +95,24 @@ public class FortSiegeGuardManager {
      */
     void loadSiegeGuard() {
         siegeGuardSpawn.clear();
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement(
-                        "SELECT npcId, x, y, z, heading, respawnDelay FROM fort_siege_guards WHERE fortId = ?")) {
+        try {
             final int fortId = fort.getResidenceId();
-            ps.setInt(1, fortId);
-            try (ResultSet rs = ps.executeQuery()) {
-                final List<Spawn> siegeGuardSpawns = new ArrayList<>();
-                while (rs.next()) {
-                    final Spawn spawn = new Spawn(rs.getInt("npcId"));
-                    spawn.setAmount(1);
-                    spawn.setXYZ(rs.getInt("x"), rs.getInt("y"), rs.getInt("z"));
-                    spawn.setHeading(rs.getInt("heading"));
-                    spawn.setRespawnDelay(rs.getInt("respawnDelay"));
-                    spawn.setLocationId(0);
+            final List<Spawn> siegeGuardSpawns = new ArrayList<>();
+            for (SiegeGuardSpawn guard : FortData.getInstance().getFort(fortId).siegeGuards()) {
+                final Spawn spawn = new Spawn(guard.npcId());
+                spawn.setAmount(1);
+                spawn.setXYZ(
+                        guard.spawnPoint().x(),
+                        guard.spawnPoint().y(),
+                        guard.spawnPoint().z());
+                spawn.setHeading(guard.spawnPoint().heading());
+                spawn.setRespawnDelay(guard.respawnDelay());
+                spawn.setLocationId(0);
 
-                    siegeGuardSpawns.add(spawn);
-                }
-
-                siegeGuardSpawn.put(fortId, siegeGuardSpawns);
+                siegeGuardSpawns.add(spawn);
             }
+
+            siegeGuardSpawn.put(fortId, siegeGuardSpawns);
         } catch (Exception e) {
             log.warn("Error loading siege guard for fort {}: {}", fort.getName(), e.getMessage(), e);
         }

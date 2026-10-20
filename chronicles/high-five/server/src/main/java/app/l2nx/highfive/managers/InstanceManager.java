@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -22,18 +26,17 @@
  */
 package app.l2nx.highfive.managers;
 
+import static app.l2nx.highfive.repository.LegacyValues.instantOrNull;
+
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.data.holders.StringStringHolder;
-import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.data.xml.IXmlReader;
 import app.l2nx.highfive.entity.WorldObject;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.instancezone.Instance;
 import app.l2nx.highfive.entity.instancezone.InstanceWorld;
+import app.l2nx.highfive.repository.character.CharacterInstanceTimeRepository;
 import java.io.File;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -41,6 +44,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataAccessException;
+import org.springframework.stereotype.Component;
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
@@ -50,7 +55,10 @@ import org.w3c.dom.Node;
  * @author evill33t, GodKratos, Mobius
  */
 @Slf4j
+@Component
 public class InstanceManager implements IXmlReader {
+    private static volatile InstanceManager instance;
+
     private static final Map<Integer, Instance> INSTANCES = new ConcurrentHashMap<>();
     private final Map<Integer, InstanceWorld> instanceWorlds = new ConcurrentHashMap<>();
     private int dynamic = 300000;
@@ -63,27 +71,24 @@ public class InstanceManager implements IXmlReader {
     private final Map<Integer, String> instanceTemplates = new ConcurrentHashMap<>();
     private final Map<Integer, Map<Integer, Long>> playerTimes = new ConcurrentHashMap<>();
 
-    // SQL Queries
-    private static final String ADD_INSTANCE_TIME =
-            "INSERT INTO character_instance_time (charId,instanceId,time) values (?,?,?) ON DUPLICATE KEY UPDATE time=?";
-    private static final String RESTORE_INSTANCE_TIMES =
-            "SELECT instanceId,time FROM character_instance_time WHERE charId=?";
-    private static final String DELETE_INSTANCE_TIME =
-            "DELETE FROM character_instance_time WHERE charId=? AND instanceId=?";
+    private final CharacterInstanceTimeRepository instanceTimeRepository;
 
-    protected InstanceManager() {
-        // Creates the multiverse.
-        INSTANCES.put(-1, new Instance(-1));
-        log.info("Multiverse Instance created.");
-
-        // Creates the universe.
-        INSTANCES.put(0, new Instance(0));
-        log.info("Universe Instance created.");
-        load();
+    public InstanceManager(CharacterInstanceTimeRepository instanceTimeRepository) {
+        this.instanceTimeRepository = instanceTimeRepository;
+        instance = this;
     }
 
     @Override
     public void load() {
+        // A reload keeps the running universes and their objects.
+        if (!INSTANCES.containsKey(0)) {
+            INSTANCES.put(-1, new Instance(-1));
+            log.info("Multiverse Instance created.");
+
+            INSTANCES.put(0, new Instance(0));
+            log.info("Universe Instance created.");
+        }
+
         instanceIdNames.clear();
         parseDatapackFile("data/InstanceNames.xml");
         log.info("Loaded {} instance names.", instanceIdNames.size());
@@ -133,15 +138,10 @@ public class InstanceManager implements IXmlReader {
             restoreInstanceTimes(playerObjId);
         }
 
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement(ADD_INSTANCE_TIME)) {
-            ps.setInt(1, playerObjId);
-            ps.setInt(2, id);
-            ps.setLong(3, time);
-            ps.setLong(4, time);
-            ps.execute();
+        try {
+            instanceTimeRepository.save(playerObjId, id, instantOrNull(time));
             playerTimes.get(playerObjId).put(id, time);
-        } catch (Exception e) {
+        } catch (DataAccessException e) {
             log.warn("Could not insert character instance time data: {}", e.getMessage());
         }
     }
@@ -151,13 +151,10 @@ public class InstanceManager implements IXmlReader {
      * @param id
      */
     public void deleteInstanceTime(int playerObjId, int id) {
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement(DELETE_INSTANCE_TIME)) {
-            ps.setInt(1, playerObjId);
-            ps.setInt(2, id);
-            ps.execute();
+        try {
+            instanceTimeRepository.delete(playerObjId, id);
             playerTimes.get(playerObjId).remove(id);
-        } catch (Exception e) {
+        } catch (DataAccessException e) {
             log.warn("Could not delete character instance time data: {}", e.getMessage());
         }
     }
@@ -171,22 +168,18 @@ public class InstanceManager implements IXmlReader {
         }
 
         playerTimes.put(playerObjId, new ConcurrentHashMap<>());
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement(RESTORE_INSTANCE_TIMES)) {
-            ps.setInt(1, playerObjId);
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    final int id = rs.getInt("instanceId");
-                    final long time = rs.getLong("time");
-                    if (time < ClockBridge.wallMillis()) {
-                        deleteInstanceTime(playerObjId, id);
-                    } else {
-                        playerTimes.get(playerObjId).put(id, time);
-                    }
+        try {
+            final long now = ClockBridge.wallMillis();
+            instanceTimeRepository.findAll(playerObjId).forEach((id, reenterAt) -> {
+                final long time = reenterAt.toEpochMilli();
+                if (time < now) {
+                    deleteInstanceTime(playerObjId, id);
+                } else {
+                    playerTimes.get(playerObjId).put(id, time);
                 }
-            }
-        } catch (Exception e) {
-            log.warn("Could not delete character instance time data: {}", e.getMessage());
+            });
+        } catch (DataAccessException e) {
+            log.warn("Could not restore character instance time data: {}", e.getMessage());
         }
     }
 
@@ -383,15 +376,12 @@ public class InstanceManager implements IXmlReader {
         return instanceTemplates.get(id);
     }
 
-    /**
-     * Gets the single instance of {@code InstanceManager}.
-     * @return single instance of {@code InstanceManager}
-     */
+    // TODO: callers receive the bean through their constructor (#41).
     public static InstanceManager getInstance() {
-        return SingletonHolder.INSTANCE;
-    }
-
-    private static class SingletonHolder {
-        protected static final InstanceManager INSTANCE = new InstanceManager();
+        final InstanceManager current = instance;
+        if (current == null) {
+            throw new IllegalStateException("InstanceManager is used before the Spring context created it.");
+        }
+        return current;
     }
 }

@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -22,12 +26,17 @@
  */
 package app.l2nx.highfive.mechanics.siege;
 
+import static app.l2nx.highfive.repository.LegacyValues.epochMillisOrZero;
+import static app.l2nx.highfive.repository.LegacyValues.instantOrNull;
+
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.FeatureConfig;
 import app.l2nx.highfive.data.SpawnTable;
+import app.l2nx.highfive.data.holders.FortSpawn;
+import app.l2nx.highfive.data.holders.FortTemplate;
 import app.l2nx.highfive.data.sql.ClanTable;
-import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.data.xml.DoorData;
+import app.l2nx.highfive.data.xml.FortData;
 import app.l2nx.highfive.data.xml.StaticObjectData;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.WorldObject;
@@ -49,10 +58,10 @@ import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.serverpackets.PlaySound;
 import app.l2nx.highfive.network.serverpackets.PledgeShowInfoUpdate;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
+import app.l2nx.highfive.repository.residence.model.FortDoorUpgrade;
+import app.l2nx.highfive.repository.residence.model.FortState;
+import app.l2nx.highfive.repository.residence.model.ResidenceFunction;
 import app.l2nx.highfive.threads.ThreadPool;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collection;
@@ -201,22 +210,16 @@ public class Fort extends AbstractResidence {
         }
 
         public void dbSave() {
-            try (Connection con = DatabaseFactory.getConnection();
-                    PreparedStatement ps = con.prepareStatement(
-                            "REPLACE INTO fort_functions (fort_id, type, lvl, lease, rate, endTime) VALUES (?,?,?,?,?,?)")) {
-                ps.setInt(1, getResidenceId());
-                ps.setInt(2, type);
-                ps.setInt(3, level);
-                ps.setInt(4, lease);
-                ps.setLong(5, rate);
-                ps.setLong(6, endTime);
-                ps.execute();
-            } catch (Exception e) {
-                log.error(
-                        "Exception: Fort.updateFunctions(int type, int lvl, int lease, long rate, long time, boolean addNew): {}",
-                        e.getMessage(),
-                        e);
-            }
+            FortManager.getInstance()
+                    .saveFunction(
+                            getResidenceId(),
+                            ResidenceFunction.builder()
+                                    .type(type)
+                                    .level(level)
+                                    .lease(lease)
+                                    .rate(rate)
+                                    .endTime(instantOrNull(endTime))
+                                    .build());
         }
     }
 
@@ -442,14 +445,7 @@ public class Fort extends AbstractResidence {
     }
 
     public void saveFortVariables() {
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement("UPDATE fort SET supplyLvL=? WHERE id = ?")) {
-            ps.setInt(1, supplyLeveL);
-            ps.setInt(2, getResidenceId());
-            ps.execute();
-        } catch (Exception e) {
-            log.warn("Exception: saveFortVariables(): {}", e.getMessage(), e);
-        }
+        FortManager.getInstance().saveSupplyLevel(getResidenceId(), supplyLeveL);
     }
 
     /**
@@ -496,82 +492,65 @@ public class Fort extends AbstractResidence {
     // This method loads fort.
     @Override
     protected void load() {
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement("SELECT * FROM fort WHERE id = ?")) {
-            ps.setInt(1, getResidenceId());
-            int ownerId = 0;
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    setName(rs.getString("name"));
+        final FortTemplate template = FortData.getInstance().getFort(getResidenceId());
+        setName(template.name());
+        fortType = template.type();
 
-                    siegeDate = ClockBridge.calendar();
-                    lastOwnedTime = ClockBridge.calendar();
-                    siegeDate.setTimeInMillis(rs.getLong("siegeDate"));
-                    lastOwnedTime.setTimeInMillis(rs.getLong("lastOwnedTime"));
-                    ownerId = rs.getInt("owner");
-                    fortType = rs.getInt("fortType");
-                    fortState = rs.getInt("state");
-                    contractedCastleId = rs.getInt("castleId");
-                    supplyLeveL = rs.getInt("supplyLvL");
-                }
+        final FortState state = FortManager.getInstance().findState(getResidenceId());
+        siegeDate = ClockBridge.calendar();
+        lastOwnedTime = ClockBridge.calendar();
+        siegeDate.setTimeInMillis(epochMillisOrZero(state.siegeDate()));
+        lastOwnedTime.setTimeInMillis(epochMillisOrZero(state.lastOwnedTime()));
+        final int ownerId = state.ownerClanId();
+        fortState = state.contractState();
+        contractedCastleId = state.contractedCastleId();
+        supplyLeveL = state.supplyLevel();
+
+        if (ownerId > 0) {
+            final Clan clan = ClanTable.getInstance().getClan(ownerId); // Try to find clan instance.
+            clan.setFortId(getResidenceId());
+            setOwnerClan(clan);
+            final int runCount = getOwnedTime() / (FeatureConfig.FS_UPDATE_FRQ * 60);
+            long initial = ClockBridge.wallMillis() - lastOwnedTime.getTimeInMillis();
+            while (initial > (FeatureConfig.FS_UPDATE_FRQ * 60000)) {
+                initial -= FeatureConfig.FS_UPDATE_FRQ * 60000;
             }
 
-            if (ownerId > 0) {
-                final Clan clan = ClanTable.getInstance().getClan(ownerId); // Try to find clan instance.
-                clan.setFortId(getResidenceId());
-                setOwnerClan(clan);
-                final int runCount = getOwnedTime() / (FeatureConfig.FS_UPDATE_FRQ * 60);
-                long initial = ClockBridge.wallMillis() - lastOwnedTime.getTimeInMillis();
-                while (initial > (FeatureConfig.FS_UPDATE_FRQ * 60000)) {
-                    initial -= FeatureConfig.FS_UPDATE_FRQ * 60000;
-                }
-
-                initial = (FeatureConfig.FS_UPDATE_FRQ * 60000) - initial;
-                if ((FeatureConfig.FS_MAX_OWN_TIME <= 0) || (getOwnedTime() < (FeatureConfig.FS_MAX_OWN_TIME * 3600))) {
-                    fortUpdater[0] = ThreadPool.scheduleAtFixedRate(
-                            new FortUpdater(this, clan, runCount, FortUpdaterType.PERIODIC_UPDATE),
-                            initial,
-                            FeatureConfig.FS_UPDATE_FRQ * 60000); // Schedule owner tasks to start running.
-                    if (FeatureConfig.FS_MAX_OWN_TIME > 0) {
-                        fortUpdater[1] = ThreadPool.scheduleAtFixedRate(
-                                new FortUpdater(this, clan, runCount, FortUpdaterType.MAX_OWN_TIME),
-                                3600000,
-                                3600000); // Schedule owner tasks to remove owener.
-                    }
-                } else {
-                    fortUpdater[1] = ThreadPool.schedule(
-                            new FortUpdater(this, clan, 0, FortUpdaterType.MAX_OWN_TIME),
-                            60000); // Schedule owner tasks to remove owner.
+            initial = (FeatureConfig.FS_UPDATE_FRQ * 60000) - initial;
+            if ((FeatureConfig.FS_MAX_OWN_TIME <= 0) || (getOwnedTime() < (FeatureConfig.FS_MAX_OWN_TIME * 3600))) {
+                fortUpdater[0] = ThreadPool.scheduleAtFixedRate(
+                        new FortUpdater(this, clan, runCount, FortUpdaterType.PERIODIC_UPDATE),
+                        initial,
+                        FeatureConfig.FS_UPDATE_FRQ * 60000); // Schedule owner tasks to start running.
+                if (FeatureConfig.FS_MAX_OWN_TIME > 0) {
+                    fortUpdater[1] = ThreadPool.scheduleAtFixedRate(
+                            new FortUpdater(this, clan, runCount, FortUpdaterType.MAX_OWN_TIME),
+                            3600000,
+                            3600000); // Schedule owner tasks to remove owener.
                 }
             } else {
-                setOwnerClan(null);
+                fortUpdater[1] = ThreadPool.schedule(
+                        new FortUpdater(this, clan, 0, FortUpdaterType.MAX_OWN_TIME),
+                        60000); // Schedule owner tasks to remove owner.
             }
-        } catch (Exception e) {
-            log.warn("Exception: loadFortData(): {}", e.getMessage(), e);
+        } else {
+            setOwnerClan(null);
         }
     }
 
     /** Load All Functions */
     private void loadFunctions() {
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement("SELECT * FROM fort_functions WHERE fort_id = ?")) {
-            ps.setInt(1, getResidenceId());
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    function.put(
-                            rs.getInt("type"),
-                            new FortFunction(
-                                    rs.getInt("type"),
-                                    rs.getInt("lvl"),
-                                    rs.getInt("lease"),
-                                    0,
-                                    rs.getLong("rate"),
-                                    rs.getLong("endTime"),
-                                    true));
-                }
-            }
-        } catch (Exception e) {
-            log.error("Exception: Fort.loadFunctions(): {}", e.getMessage(), e);
+        for (ResidenceFunction stored : FortManager.getInstance().findFunctions(getResidenceId())) {
+            function.put(
+                    stored.type(),
+                    new FortFunction(
+                            stored.type(),
+                            stored.level(),
+                            stored.lease(),
+                            0,
+                            stored.rate(),
+                            epochMillisOrZero(stored.endTime()),
+                            true));
         }
     }
 
@@ -581,14 +560,7 @@ public class Fort extends AbstractResidence {
      */
     public void removeFunction(int functionType) {
         function.remove(functionType);
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement("DELETE FROM fort_functions WHERE fort_id=? AND type=?")) {
-            ps.setInt(1, getResidenceId());
-            ps.setInt(2, functionType);
-            ps.execute();
-        } catch (Exception e) {
-            log.error("Exception: Fort.removeFunctions(int functionType): {}", e.getMessage(), e);
-        }
+        FortManager.getInstance().deleteFunction(getResidenceId(), functionType);
     }
 
     /**
@@ -653,41 +625,25 @@ public class Fort extends AbstractResidence {
 
     // This method loads fort door upgrade data from database.
     private void loadDoorUpgrade() {
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement("SELECT * FROM fort_doorupgrade WHERE fortId = ?")) {
-            ps.setInt(1, getResidenceId());
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    upgradeDoor(rs.getInt("id"), rs.getInt("hp"), rs.getInt("pDef"), rs.getInt("mDef"));
-                }
-            }
-        } catch (Exception e) {
-            log.warn("Exception: loadFortDoorUpgrade(): {}", e.getMessage(), e);
+        for (FortDoorUpgrade upgrade : FortManager.getInstance().findDoorUpgrades(getResidenceId())) {
+            upgradeDoor(upgrade.doorId(), upgrade.hp(), upgrade.pDef(), upgrade.mDef());
         }
     }
 
     private void removeDoorUpgrade() {
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement("DELETE FROM fort_doorupgrade WHERE fortId = ?")) {
-            ps.setInt(1, getResidenceId());
-            ps.execute();
-        } catch (Exception e) {
-            log.warn("Exception: removeDoorUpgrade(): {}", e.getMessage(), e);
-        }
+        FortManager.getInstance().deleteDoorUpgrades(getResidenceId());
     }
 
     private void saveDoorUpgrade(int doorId, int hp, int pDef, int mDef) {
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement(
-                        "INSERT INTO fort_doorupgrade (doorId, hp, pDef, mDef) VALUES (?,?,?,?)")) {
-            ps.setInt(1, doorId);
-            ps.setInt(2, hp);
-            ps.setInt(3, pDef);
-            ps.setInt(4, mDef);
-            ps.execute();
-        } catch (Exception e) {
-            log.warn("Exception: saveDoorUpgrade(int doorId, int hp, int pDef, int mDef): {}", e.getMessage(), e);
-        }
+        FortManager.getInstance()
+                .saveDoorUpgrade(
+                        getResidenceId(),
+                        FortDoorUpgrade.builder()
+                                .doorId(doorId)
+                                .hp(hp)
+                                .pDef(pDef)
+                                .mDef(mDef)
+                                .build());
     }
 
     private void updateOwnerInDB() {
@@ -700,58 +656,46 @@ public class Fort extends AbstractResidence {
             lastOwnedTime.setTimeInMillis(0);
         }
 
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement(
-                        "UPDATE fort SET owner=?,lastOwnedTime=?,state=?,castleId=? WHERE id = ?")) {
-            ps.setInt(1, clanId);
-            ps.setLong(2, lastOwnedTime.getTimeInMillis());
-            ps.setInt(3, 0);
-            ps.setInt(4, 0);
-            ps.setInt(5, getResidenceId());
-            ps.execute();
+        FortManager.getInstance().saveOwner(getResidenceId(), clanId, lastOwnedTime.getTimeInMillis());
 
-            // Announce to clan members.
-            if (clan != null) {
-                clan.setFortId(getResidenceId()); // Set has fort flag for new owner.
-                final SystemMessage sm =
-                        new SystemMessage(SystemMessageId.S1_IS_VICTORIOUS_IN_THE_FORTRESS_BATTLE_OF_S2);
-                sm.addString(clan.getName());
-                sm.addCastleId(getResidenceId());
-                World.getPlayers().forEach(p -> p.sendPacket(sm));
-                clan.broadcastToOnlineMembers(new PledgeShowInfoUpdate(clan));
-                clan.broadcastToOnlineMembers(new PlaySound(1, "Siege_Victory", 0, 0, 0, 0, 0));
-                if (fortUpdater[0] != null) {
-                    fortUpdater[0].cancel(false);
-                }
-
-                if (fortUpdater[1] != null) {
-                    fortUpdater[1].cancel(false);
-                }
-
-                fortUpdater[0] = ThreadPool.scheduleAtFixedRate(
-                        new FortUpdater(this, clan, 0, FortUpdaterType.PERIODIC_UPDATE),
-                        FeatureConfig.FS_UPDATE_FRQ * 60000,
-                        FeatureConfig.FS_UPDATE_FRQ * 60000); // Schedule owner tasks to start running.
-                if (FeatureConfig.FS_MAX_OWN_TIME > 0) {
-                    fortUpdater[1] = ThreadPool.scheduleAtFixedRate(
-                            new FortUpdater(this, clan, 0, FortUpdaterType.MAX_OWN_TIME),
-                            3600000,
-                            3600000); // Schedule owner tasks to remove owener.
-                }
-            } else {
-                if (fortUpdater[0] != null) {
-                    fortUpdater[0].cancel(false);
-                }
-
-                fortUpdater[0] = null;
-                if (fortUpdater[1] != null) {
-                    fortUpdater[1].cancel(false);
-                }
-
-                fortUpdater[1] = null;
+        // Announce to clan members.
+        if (clan != null) {
+            clan.setFortId(getResidenceId()); // Set has fort flag for new owner.
+            final SystemMessage sm = new SystemMessage(SystemMessageId.S1_IS_VICTORIOUS_IN_THE_FORTRESS_BATTLE_OF_S2);
+            sm.addString(clan.getName());
+            sm.addCastleId(getResidenceId());
+            World.getPlayers().forEach(p -> p.sendPacket(sm));
+            clan.broadcastToOnlineMembers(new PledgeShowInfoUpdate(clan));
+            clan.broadcastToOnlineMembers(new PlaySound(1, "Siege_Victory", 0, 0, 0, 0, 0));
+            if (fortUpdater[0] != null) {
+                fortUpdater[0].cancel(false);
             }
-        } catch (Exception e) {
-            log.warn("Exception: updateOwnerInDB(Pledge clan): {}", e.getMessage(), e);
+
+            if (fortUpdater[1] != null) {
+                fortUpdater[1].cancel(false);
+            }
+
+            fortUpdater[0] = ThreadPool.scheduleAtFixedRate(
+                    new FortUpdater(this, clan, 0, FortUpdaterType.PERIODIC_UPDATE),
+                    FeatureConfig.FS_UPDATE_FRQ * 60000,
+                    FeatureConfig.FS_UPDATE_FRQ * 60000); // Schedule owner tasks to start running.
+            if (FeatureConfig.FS_MAX_OWN_TIME > 0) {
+                fortUpdater[1] = ThreadPool.scheduleAtFixedRate(
+                        new FortUpdater(this, clan, 0, FortUpdaterType.MAX_OWN_TIME),
+                        3600000,
+                        3600000); // Schedule owner tasks to remove owener.
+            }
+        } else {
+            if (fortUpdater[0] != null) {
+                fortUpdater[0].cancel(false);
+            }
+
+            fortUpdater[0] = null;
+            if (fortUpdater[1] != null) {
+                fortUpdater[1].cancel(false);
+            }
+
+            fortUpdater[1] = null;
         }
     }
 
@@ -846,15 +790,7 @@ public class Fort extends AbstractResidence {
     public void setFortState(int state, int castleId) {
         fortState = state;
         contractedCastleId = castleId;
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement("UPDATE fort SET state=?,castleId=? WHERE id = ?")) {
-            ps.setInt(1, fortState);
-            ps.setInt(2, contractedCastleId);
-            ps.setInt(3, getResidenceId());
-            ps.execute();
-        } catch (Exception e) {
-            log.warn("Exception: setFortState(int state, int castleId): {}", e.getMessage(), e);
-        }
+        FortManager.getInstance().saveContract(getResidenceId(), fortState, contractedCastleId);
     }
 
     /**
@@ -945,22 +881,12 @@ public class Fort extends AbstractResidence {
     }
 
     private void initNpcs() {
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps =
-                        con.prepareStatement("SELECT * FROM fort_spawnlist WHERE fortId = ? AND spawnType = ?")) {
-            ps.setInt(1, getResidenceId());
-            ps.setInt(2, 0);
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    final Spawn spawnDat = new Spawn(rs.getInt("npcId"));
-                    spawnDat.setAmount(1);
-                    spawnDat.setXYZ(rs.getInt("x"), rs.getInt("y"), rs.getInt("z"));
-                    spawnDat.setHeading(rs.getInt("heading"));
-                    spawnDat.setRespawnDelay(60);
-                    SpawnTable.getInstance().addSpawn(spawnDat);
-                    spawnDat.doSpawn(false);
-                    spawnDat.startRespawn();
-                }
+        try {
+            for (FortSpawn fortSpawn : spawnsOfType(0)) {
+                final Spawn spawnDat = newSpawn(fortSpawn);
+                SpawnTable.getInstance().addSpawn(spawnDat);
+                spawnDat.doSpawn(false);
+                spawnDat.startRespawn();
             }
         } catch (Exception e) {
             log.warn("Fort {} initNpcs: Spawn could not be initialized: {}", getResidenceId(), e.getMessage(), e);
@@ -969,20 +895,9 @@ public class Fort extends AbstractResidence {
 
     private void initSiegeNpcs() {
         siegeNpcs.clear();
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement(
-                        "SELECT id, npcId, x, y, z, heading FROM fort_spawnlist WHERE fortId = ? AND spawnType = ? ORDER BY id")) {
-            ps.setInt(1, getResidenceId());
-            ps.setInt(2, 2);
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    final Spawn spawnDat = new Spawn(rs.getInt("npcId"));
-                    spawnDat.setAmount(1);
-                    spawnDat.setXYZ(rs.getInt("x"), rs.getInt("y"), rs.getInt("z"));
-                    spawnDat.setHeading(rs.getInt("heading"));
-                    spawnDat.setRespawnDelay(60);
-                    siegeNpcs.add(spawnDat);
-                }
+        try {
+            for (FortSpawn fortSpawn : spawnsOfType(2)) {
+                siegeNpcs.add(newSpawn(fortSpawn));
             }
         } catch (Exception e) {
             log.warn("Fort {} initSiegeNpcs: Spawn could not be initialized: {}", getResidenceId(), e.getMessage(), e);
@@ -991,20 +906,9 @@ public class Fort extends AbstractResidence {
 
     private void initNpcCommanders() {
         npcCommanders.clear();
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement(
-                        "SELECT id, npcId, x, y, z, heading FROM fort_spawnlist WHERE fortId = ? AND spawnType = ? ORDER BY id")) {
-            ps.setInt(1, getResidenceId());
-            ps.setInt(2, 1);
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    final Spawn spawnDat = new Spawn(rs.getInt("npcId"));
-                    spawnDat.setAmount(1);
-                    spawnDat.setXYZ(rs.getInt("x"), rs.getInt("y"), rs.getInt("z"));
-                    spawnDat.setHeading(rs.getInt("heading"));
-                    spawnDat.setRespawnDelay(60);
-                    npcCommanders.add(spawnDat);
-                }
+        try {
+            for (FortSpawn fortSpawn : spawnsOfType(1)) {
+                npcCommanders.add(newSpawn(fortSpawn));
             }
         } catch (Exception e) {
             // Problem with initializing spawn, go to next one.
@@ -1020,23 +924,12 @@ public class Fort extends AbstractResidence {
         specialEnvoys.clear();
         envoyCastles.clear();
         availableCastles.clear();
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement(
-                        "SELECT id, npcId, x, y, z, heading, castleId FROM fort_spawnlist WHERE fortId = ? AND spawnType = ? ORDER BY id")) {
-            ps.setInt(1, getResidenceId());
-            ps.setInt(2, 3);
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    final int castleId = rs.getInt("castleId");
-                    final Spawn spawnDat = new Spawn(rs.getInt("npcId"));
-                    spawnDat.setAmount(1);
-                    spawnDat.setXYZ(rs.getInt("x"), rs.getInt("y"), rs.getInt("z"));
-                    spawnDat.setHeading(rs.getInt("heading"));
-                    spawnDat.setRespawnDelay(60);
-                    specialEnvoys.add(spawnDat);
-                    envoyCastles.put(spawnDat.getId(), castleId);
-                    availableCastles.add(castleId);
-                }
+        try {
+            for (FortSpawn fortSpawn : spawnsOfType(3)) {
+                final Spawn spawnDat = newSpawn(fortSpawn);
+                specialEnvoys.add(spawnDat);
+                envoyCastles.put(spawnDat.getId(), fortSpawn.castleId());
+                availableCastles.add(fortSpawn.castleId());
             }
         } catch (Exception e) {
             // Problem with initializing spawn, go to next one.
@@ -1046,6 +939,24 @@ public class Fort extends AbstractResidence {
                     e.getMessage(),
                     e);
         }
+    }
+
+    private List<FortSpawn> spawnsOfType(int type) {
+        return FortData.getInstance().getFort(getResidenceId()).spawns().stream()
+                .filter(fortSpawn -> fortSpawn.type() == type)
+                .toList();
+    }
+
+    private static Spawn newSpawn(FortSpawn fortSpawn) throws ClassNotFoundException, NoSuchMethodException {
+        final Spawn spawnDat = new Spawn(fortSpawn.npcId());
+        spawnDat.setAmount(1);
+        spawnDat.setXYZ(
+                fortSpawn.spawnPoint().x(),
+                fortSpawn.spawnPoint().y(),
+                fortSpawn.spawnPoint().z());
+        spawnDat.setHeading(fortSpawn.spawnPoint().heading());
+        spawnDat.setRespawnDelay(60);
+        return spawnDat;
     }
 
     @Override

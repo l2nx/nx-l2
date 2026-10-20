@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  SPDX-FileCopyrightText: 2026 L2NX contributors
+  SPDX-License-Identifier: Apache-2.0
+-->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+	<xs:simpleType name="text">
+		<xs:restriction base="xs:string">
+			<xs:minLength value="1" />
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:element name="list">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element name="clanHall" minOccurs="1" maxOccurs="unbounded">
+					<xs:complexType>
+						<xs:attribute name="id" type="xs:positiveInteger" use="required" />
+						<xs:attribute name="name" type="text" use="required" />
+						<xs:attribute name="description" type="text" use="required" />
+						<!-- Town name, matched by the community board region list. -->
+						<xs:attribute name="location" type="text" use="required" />
+						<!-- Adena per lease period. -->
+						<xs:attribute name="lease" type="xs:nonNegativeInteger" use="required" />
+						<xs:attribute name="grade" use="required">
+							<xs:simpleType>
+								<xs:restriction base="xs:integer">
+									<xs:minInclusive value="0" />
+									<xs:maxInclusive value="3" />
+								</xs:restriction>
+							</xs:simpleType>
+						</xs:attribute>
+						<!-- Adena, the starting bid of the NPC auction of a free hall. Absent: no NPC auction. -->
+						<xs:attribute name="auctionStartingBid" type="xs:positiveInteger" />
+					</xs:complexType>
+				</xs:element>
+			</xs:sequence>
+		</xs:complexType>
+		<xs:unique name="uniqueClanHall">
+			<xs:selector xpath="clanHall" />
+			<xs:field xpath="@id" />
+		</xs:unique>
+	</xs:element>
+</xs:schema>

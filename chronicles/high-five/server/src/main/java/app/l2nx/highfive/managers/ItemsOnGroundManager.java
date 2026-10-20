@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+/*
  * SPDX-FileCopyrightText: L2J Mobius contributors
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
@@ -19,41 +23,48 @@
  */
 package app.l2nx.highfive.managers;
 
+import static app.l2nx.highfive.repository.LegacyValues.epochMillisOrZero;
+import static app.l2nx.highfive.repository.LegacyValues.instantOrNull;
+
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.GeneralConfig;
-import app.l2nx.highfive.data.sql.DatabaseFactory;
+import app.l2nx.highfive.data.xml.ItemData;
 import app.l2nx.highfive.entity.World;
+import app.l2nx.highfive.entity.item.ItemTemplate;
 import app.l2nx.highfive.entity.item.instance.Item;
+import app.l2nx.highfive.repository.item.GroundItemRepository;
+import app.l2nx.highfive.repository.item.model.GroundItem;
 import app.l2nx.highfive.taskmanagers.ItemsAutoDestroyTaskManager;
 import app.l2nx.highfive.threads.ThreadPool;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataAccessException;
+import org.springframework.stereotype.Component;
 
 /**
  * This class manage all items on ground.
  * @author Enforcer
  */
 @Slf4j
+@Component
 public class ItemsOnGroundManager implements Runnable {
+    private static final long PROTECTED = -1;
+
+    private static volatile ItemsOnGroundManager instance;
 
     private final Collection<Item> items = ConcurrentHashMap.newKeySet();
 
-    protected ItemsOnGroundManager() {
-        if (GeneralConfig.SAVE_DROPPED_ITEM_INTERVAL > 0) {
-            ThreadPool.scheduleAtFixedRate(
-                    this, GeneralConfig.SAVE_DROPPED_ITEM_INTERVAL, GeneralConfig.SAVE_DROPPED_ITEM_INTERVAL);
-        }
+    private final GroundItemRepository groundItemRepository;
 
-        load();
+    public ItemsOnGroundManager(GroundItemRepository groundItemRepository) {
+        this.groundItemRepository = groundItemRepository;
+        instance = this;
     }
 
-    private void load() {
+    public void load() {
         // If SaveDroppedItem is false, may want to delete all items previously stored to avoid add old items on
         // reactivate.
         if (!GeneralConfig.SAVE_DROPPED_ITEM && GeneralConfig.CLEAR_DROPPED_ITEM_TABLE) {
@@ -64,79 +75,74 @@ public class ItemsOnGroundManager implements Runnable {
             return;
         }
 
-        // If DestroyPlayerDroppedItem was previously false, items currently protected will be added to
-        // ItemsAutoDestroy.
-        if (GeneralConfig.DESTROY_DROPPED_PLAYER_ITEM) {
-            String str = null;
-            if (!GeneralConfig.DESTROY_EQUIPABLE_PLAYER_ITEM) {
-                // Recycle misc. items only.
-                str = "UPDATE itemsonground SET drop_time = ? WHERE drop_time = -1 AND equipable = 0";
-            } else if (GeneralConfig.DESTROY_EQUIPABLE_PLAYER_ITEM) {
-                // Recycle all items including equip-able.
-                str = "UPDATE itemsonground SET drop_time = ? WHERE drop_time = -1";
-            }
-
-            try (Connection con = DatabaseFactory.getConnection();
-                    PreparedStatement ps = con.prepareStatement(str)) {
-                ps.setLong(1, ClockBridge.wallMillis());
-                ps.execute();
-            } catch (Exception e) {
-                log.error("Error while updating table ItemsOnGround {}", e.getMessage(), e);
-            }
+        if (GeneralConfig.SAVE_DROPPED_ITEM_INTERVAL > 0) {
+            ThreadPool.scheduleAtFixedRate(
+                    this, GeneralConfig.SAVE_DROPPED_ITEM_INTERVAL, GeneralConfig.SAVE_DROPPED_ITEM_INTERVAL);
         }
 
         // Add items to world.
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement(
-                        "SELECT object_id,item_id,count,enchant_level,x,y,z,drop_time,equipable FROM itemsonground")) {
+        try {
             int count = 0;
-            try (ResultSet rs = ps.executeQuery()) {
-                Item item;
-                while (rs.next()) {
-                    item = new Item(rs.getInt(1), rs.getInt(2));
-                    World.addObject(item);
+            for (GroundItem row : groundItemRepository.findAll()) {
+                final ItemTemplate template = ItemData.getInstance().getTemplate(row.itemId());
+                if (template == null) {
+                    log.warn("Skipped ground item {} of unknown template {}.", row.objectId(), row.itemId());
+                    continue;
+                }
 
-                    // this check and..
-                    if (item.isStackable() && (rs.getInt(3) > 1)) {
-                        item.setCount(rs.getInt(3));
-                    }
+                final long dropTime = unprotected(row, template)
+                        ? ClockBridge.wallMillis()
+                        : row.protectedItem() ? PROTECTED : epochMillisOrZero(row.dropTime());
+                final Item item = new Item(row.objectId(), template);
+                World.addObject(item);
 
-                    // This, are really necessary?
-                    if (rs.getInt(4) > 0) {
-                        item.setEnchantLevel(rs.getInt(4));
-                    }
+                // this check and..
+                if (item.isStackable() && (row.count() > 1)) {
+                    item.setCount(row.count());
+                }
 
-                    item.setXYZ(rs.getInt(5), rs.getInt(6), rs.getInt(7));
-                    item.setWorldRegion(World.getRegion(item));
-                    item.getWorldRegion().addVisibleObject(item);
-                    final long dropTime = rs.getLong(8);
-                    item.setDropTime(dropTime);
-                    item.setProtected(dropTime == -1);
-                    item.setSpawned(true);
-                    World.addVisibleObject(item, item.getWorldRegion());
-                    items.add(item);
-                    count++;
+                // This, are really necessary?
+                if (row.enchantLevel() > 0) {
+                    item.setEnchantLevel(row.enchantLevel());
+                }
 
-                    // Add to ItemsAutoDestroy only items not protected.
-                    if (!GeneralConfig.LIST_PROTECTED_ITEMS.contains(item.getId())
-                            && (dropTime > -1)
-                            && (((GeneralConfig.AUTODESTROY_ITEM_AFTER > 0)
-                                            && !item.getTemplate().hasExImmediateEffect())
-                                    || ((GeneralConfig.HERB_AUTO_DESTROY_TIME > 0)
-                                            && item.getTemplate().hasExImmediateEffect()))) {
-                        ItemsAutoDestroyTaskManager.getInstance().addItem(item);
-                    }
+                item.setXYZ(row.x(), row.y(), row.z());
+                item.setWorldRegion(World.getRegion(item));
+                item.getWorldRegion().addVisibleObject(item);
+                item.setDropTime(dropTime);
+                item.setProtected(dropTime == PROTECTED);
+                item.setSpawned(true);
+                World.addVisibleObject(item, item.getWorldRegion());
+                items.add(item);
+                count++;
+
+                // Add to ItemsAutoDestroy only items not protected.
+                if (!GeneralConfig.LIST_PROTECTED_ITEMS.contains(item.getId())
+                        && (dropTime > PROTECTED)
+                        && (((GeneralConfig.AUTODESTROY_ITEM_AFTER > 0) && !template.hasExImmediateEffect())
+                                || ((GeneralConfig.HERB_AUTO_DESTROY_TIME > 0) && template.hasExImmediateEffect()))) {
+                    ItemsAutoDestroyTaskManager.getInstance().addItem(item);
                 }
             }
 
             log.info("Loaded {} items.", count);
-        } catch (Exception e) {
+        } catch (DataAccessException e) {
             log.error("Error while loading ItemsOnGround {}", e.getMessage(), e);
         }
 
         if (GeneralConfig.EMPTY_DROPPED_ITEM_TABLE_AFTER_LOAD) {
             emptyTable();
         }
+    }
+
+    /**
+     * If DestroyPlayerDroppedItem was previously false, items currently protected are added to ItemsAutoDestroy; the
+     * next save stores them unprotected.
+     */
+    private static boolean unprotected(GroundItem row, ItemTemplate template) {
+        return GeneralConfig.DESTROY_DROPPED_PLAYER_ITEM
+                && row.protectedItem()
+                && (GeneralConfig.DESTROY_EQUIPABLE_PLAYER_ITEM || !template.isEquipable());
     }
 
     public void save(Item item) {
@@ -162,11 +168,10 @@ public class ItemsOnGroundManager implements Runnable {
     }
 
     public void emptyTable() {
-        try (Connection con = DatabaseFactory.getConnection();
-                Statement s = con.createStatement()) {
-            s.executeUpdate("DELETE FROM itemsonground");
-        } catch (Exception e1) {
-            log.error("Error while cleaning table ItemsOnGround {}", e1.getMessage(), e1);
+        try {
+            groundItemRepository.deleteAll();
+        } catch (DataAccessException e) {
+            log.error("Error while cleaning table ItemsOnGround {}", e.getMessage(), e);
         }
     }
 
@@ -176,50 +181,38 @@ public class ItemsOnGroundManager implements Runnable {
             return;
         }
 
-        emptyTable();
+        final List<GroundItem> rows = new ArrayList<>();
+        for (Item item : items) {
+            if ((item == null) || CursedWeaponsManager.getInstance().isCursed(item.getId())) {
+                continue; // Cursed Items not saved to ground, prevent double save.
+            }
 
-        if (items.isEmpty()) {
-            return;
+            rows.add(GroundItem.builder()
+                    .objectId(item.getObjectId())
+                    .itemId(item.getId())
+                    .count(item.getCount())
+                    .enchantLevel(item.getEnchantLevel())
+                    .x(item.getX())
+                    .y(item.getY())
+                    .z(item.getZ())
+                    .dropTime(item.isProtected() ? null : instantOrNull(item.getDropTime()))
+                    .protectedItem(item.isProtected())
+                    .build());
         }
 
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement(
-                        "INSERT INTO itemsonground(object_id,item_id,count,enchant_level,x,y,z,drop_time,equipable) VALUES(?,?,?,?,?,?,?,?,?)")) {
-            for (Item item : items) {
-                if ((item == null) || CursedWeaponsManager.getInstance().isCursed(item.getId())) {
-                    continue; // Cursed Items not saved to ground, prevent double save.
-                }
-
-                try {
-                    ps.setInt(1, item.getObjectId());
-                    ps.setInt(2, item.getId());
-                    ps.setLong(3, item.getCount());
-                    ps.setInt(4, item.getEnchantLevel());
-                    ps.setInt(5, item.getX());
-                    ps.setInt(6, item.getY());
-                    ps.setInt(7, item.getZ());
-                    ps.setLong(8, item.isProtected() ? -1 : item.getDropTime()); // Item is protected or AutoDestroyed.
-                    ps.setLong(9, item.isEquipable() ? 1 : 0); // set equip-able
-                    ps.execute();
-                    ps.clearParameters();
-                } catch (Exception e) {
-                    log.error("Error while inserting into table ItemsOnGround: {}", e.getMessage(), e);
-                }
-            }
-        } catch (SQLException e) {
+        try {
+            groundItemRepository.replaceAll(rows);
+        } catch (DataAccessException e) {
             log.error("SQL error while storing items on ground: {}", e.getMessage(), e);
         }
     }
 
-    /**
-     * Gets the single instance of {@code ItemsOnGroundManager}.
-     * @return single instance of {@code ItemsOnGroundManager}
-     */
+    // TODO: callers receive the bean through their constructor (#41).
     public static ItemsOnGroundManager getInstance() {
-        return SingletonHolder.INSTANCE;
-    }
-
-    private static class SingletonHolder {
-        protected static final ItemsOnGroundManager INSTANCE = new ItemsOnGroundManager();
+        final ItemsOnGroundManager current = instance;
+        if (current == null) {
+            throw new IllegalStateException("ItemsOnGroundManager is used before the Spring context created it.");
+        }
+        return current;
     }
 }

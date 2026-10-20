@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -75,20 +79,10 @@ public class MessageDeletionTaskManager implements Runnable {
                     if (message.hasAttachments()) {
                         final Player sender = World.getPlayer(message.getSenderId());
                         final Player receiver = World.getPlayer(message.getReceiverId());
+                        MailManager.getInstance().returnAttachments(message);
                         if (sender != null) {
-                            message.getAttachments().returnToWh(sender.getWarehouse());
                             sender.sendPacket(SystemMessageId.THE_MAIL_WAS_RETURNED_DUE_TO_THE_EXCEEDED_WAITING_TIME);
-                        } else if (message.getSenderId() == -1) // Action House / Custom Mail
-                        {
-                            if (receiver != null) {
-                                message.getAttachments().returnToWh(receiver.getWarehouse());
-                            }
-                        } else {
-                            message.getAttachments().returnToWh(null);
                         }
-
-                        message.getAttachments().deleteMe();
-                        message.removeAttachments();
 
                         if (receiver != null) {
                             receiver.sendPacket(new SystemMessage(

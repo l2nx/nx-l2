@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  SPDX-FileCopyrightText: 2026 L2NX contributors
+  SPDX-License-Identifier: Apache-2.0
+-->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+	<xs:element name="list">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element name="group" minOccurs="1" maxOccurs="unbounded">
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element name="location" minOccurs="1" maxOccurs="unbounded">
+								<xs:complexType>
+									<xs:attribute name="x" type="xs:integer" use="required" />
+									<xs:attribute name="y" type="xs:integer" use="required" />
+									<xs:attribute name="z" type="xs:integer" use="required" />
+									<!-- -1 is a random heading. -->
+									<xs:attribute name="heading" type="xs:integer" use="required" />
+								</xs:complexType>
+							</xs:element>
+						</xs:sequence>
+						<xs:attribute name="npcId" type="xs:positiveInteger" use="required" />
+						<xs:attribute name="count" type="xs:positiveInteger" use="required" />
+						<!-- A negative delay is the AutoSpawnHandler default; a despawnDelaySeconds of 0 disables the despawn and makes
+							respawnDelaySeconds the respawn of a killed NPC. -->
+						<xs:attribute name="initialDelaySeconds" type="xs:integer" use="required" />
+						<xs:attribute name="respawnDelaySeconds" type="xs:integer" use="required" />
+						<xs:attribute name="despawnDelaySeconds" type="xs:integer" use="required" />
+						<xs:attribute name="broadcastSpawn" type="xs:boolean" use="required" />
+						<xs:attribute name="randomSpawn" type="xs:boolean" use="required" />
+					</xs:complexType>
+				</xs:element>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+</xs:schema>

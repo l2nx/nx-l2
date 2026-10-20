@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -171,7 +175,7 @@ public class EnterWorld extends ClientPacket {
             adress[i] = tracert[i][0] + "." + tracert[i][1] + "." + tracert[i][2] + "." + tracert[i][3];
         }
 
-        LoginServerThread.getInstance().sendClientTracert(player.getAccountName(), adress);
+        LoginServerThread.getInstance().sendClientTracert(client.getAccountId(), adress);
         client.setClientTracert(tracert);
 
         player.sendPacket(new UserInfo(player));
@@ -612,7 +616,7 @@ public class EnterWorld extends ClientPacket {
 
         if ((OfflineTradeConfig.OFFLINE_TRADE_ENABLE || OfflineTradeConfig.OFFLINE_CRAFT_ENABLE)
                 && OfflineTradeConfig.STORE_OFFLINE_TRADE_IN_REALTIME) {
-            OfflineTraderTable.getInstance().onTransaction(player, true, false);
+            OfflineTraderTable.getInstance().onTransaction(player, true);
         }
 
         // Check if expoff is enabled.

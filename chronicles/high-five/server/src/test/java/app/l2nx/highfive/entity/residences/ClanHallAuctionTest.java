@@ -1,0 +1,88 @@
+/*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: Apache-2.0
+ */
+package app.l2nx.highfive.entity.residences;
+
+import static app.l2nx.highfive.entity.itemcontainer.Inventory.ADENA_ID;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import app.l2nx.highfive.clock.ClockBridgeExtension;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.entity.clan.Clan;
+import app.l2nx.highfive.entity.item.enums.ItemProcessType;
+import app.l2nx.highfive.entity.itemcontainer.ItemContainer;
+import app.l2nx.highfive.managers.ClanHallAuctionManager;
+import app.l2nx.highfive.repository.auction.ClanHallAuctionRepository;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
+import org.junit.jupiter.api.parallel.ResourceLock;
+import org.springframework.dao.DataAccessResourceFailureException;
+
+@ExtendWith(ClockBridgeExtension.class)
+@Execution(ExecutionMode.SAME_THREAD)
+@ResourceLock(ClockBridgeExtension.LOCK)
+class ClanHallAuctionTest {
+    private static final int HALL = 22;
+    private static final int BIDDER_CLAN = 7;
+    private static final long STARTING_BID = 100;
+    private static final long BID = 500;
+
+    private final ClanHallAuctionRepository repository = mock(ClanHallAuctionRepository.class);
+    private final Player bidder = mock(Player.class);
+    private final Clan bidderClan = mock(Clan.class);
+    private final ItemContainer warehouse = mock(ItemContainer.class);
+
+    private ClanHallAuction auction;
+
+    @BeforeEach
+    void createAuction() {
+        new ClanHallAuctionManager(repository);
+        when(bidder.getClan()).thenReturn(bidderClan);
+        when(bidder.getClanId()).thenReturn(BIDDER_CLAN);
+        when(bidderClan.getWarehouse()).thenReturn(warehouse);
+        when(warehouse.getAdena()).thenReturn(1_000L);
+        auction = new ClanHallAuction(HALL, mock(Clan.class), ClanHallAuction.AUCTION_LENGTH_MS, STARTING_BID, "Hall");
+    }
+
+    @Nested
+    class SetBid {
+        @Test
+        void setBid_shouldTakeAdenaAndFlagClan_whenBidIsStored() {
+            auction.setBid(bidder, BID);
+
+            verify(warehouse).destroyItemByItemId(ItemProcessType.BUY, ADENA_ID, BID, bidder, bidder);
+            verify(warehouse, never()).addItem(any(), anyInt(), anyLong(), any(), any());
+            verify(bidderClan).setAuctionBiddedAt(HALL, true);
+            assertThat(auction.getHighestBidderId()).isEqualTo(BIDDER_CLAN);
+        }
+
+        @Test
+        void setBid_shouldRefundAdenaAndKeepClanFree_whenBidIsNotStored() {
+            doThrow(new DataAccessResourceFailureException("database down"))
+                    .when(repository)
+                    .saveBid(eq(HALL), any());
+
+            auction.setBid(bidder, BID);
+
+            verify(warehouse).addItem(ItemProcessType.REFUND, ADENA_ID, BID, null, null);
+            verify(bidderClan, never()).setAuctionBiddedAt(anyInt(), anyBoolean());
+            assertThat(auction.getHighestBidderId()).isZero();
+            assertThat(auction.getBidders()).isEmpty();
+        }
+    }
+}

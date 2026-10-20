@@ -13,6 +13,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import app.l2nx.boot.ServerExit;
 import app.l2nx.boot.ServerExitCode;
 import app.l2nx.boot.integration.BootSmokeTest;
+import app.l2nx.database.PostgresDatabase;
 import app.l2nx.highfive.GameServer;
 import app.l2nx.highfive.Shutdown;
 import app.l2nx.highfive.config.ServerConfig;
@@ -28,19 +29,19 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
 /** The engine keeps static state, so the nested classes share one context and run in a fixed order, the engine stop last. */
-@SpringBootTest(
-        webEnvironment = WebEnvironment.RANDOM_PORT,
-        properties = {
-            "spring.sql.init.mode=always",
-            "spring.sql.init.schema-locations=file:${l2nx.test.login-sql-dir}/*.sql,file:${l2nx.test.game-sql-dir}/*.sql"
-        })
+@SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 class HighFiveApplicationTest extends BootSmokeTest {
     private static final JsonMapper JSON = JsonMapper.builder().build();
+
+    static {
+        storeWorldState();
+    }
 
     @MockitoBean
     ServerExit serverExit;
@@ -142,5 +143,33 @@ class HighFiveApplicationTest extends BootSmokeTest {
                             .noneMatch(thread -> thread.getName().startsWith("l2nx ScheduledThread")));
             verifyNoInteractions(serverExit);
         }
+    }
+
+    /**
+     * The state a running server leaves behind, so the start loads stored rows (times, owners, positions) and not only
+     * the defaults of an empty database.
+     */
+    private static void storeWorldState() {
+        final JdbcClient jdbc =
+                JdbcClient.create(PostgresDatabase.migratedSuperuserSchema("game", "db/liquibase-changelog.yaml"));
+        jdbc.sql("""
+                        INSERT INTO castle_states (castle_id, tax_percent, treasury, siege_at, registration_ends_at)
+                        VALUES (1, 10, 1000, now() + interval '7 days', now() + interval '6 days')""").update();
+        jdbc.sql("INSERT INTO fort_states (fort_id, siege_at) VALUES (101, now() + interval '1 day')")
+                .update();
+        jdbc.sql(
+                        "INSERT INTO clan_hall_states (clan_hall_id, paid_until, paid) VALUES (22, now() + interval '7 days', true)")
+                .update();
+        jdbc.sql("""
+                        INSERT INTO siegable_clan_hall_states (clan_hall_id, next_siege_at)
+                        VALUES (21, now() + interval '7 days')""").update();
+        jdbc.sql("""
+                        INSERT INTO grand_boss_states (npc_id, status, respawn_at, current_hp, current_mp)
+                        VALUES (29001, 3, now() + interval '1 day', 1, 1)""").update();
+        jdbc.sql("""
+                        INSERT INTO raid_boss_states (npc_id, respawn_at, current_hp, current_mp)
+                        VALUES (25001, now() + interval '1 day', 1, 1)""").update();
+        jdbc.sql("INSERT INTO territory_states (territory_id, owned_ward_territory_ids) VALUES (81, '{81}')")
+                .update();
     }
 }

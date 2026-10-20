@@ -5,8 +5,6 @@
 package app.l2nx.highfive.data.sql;
 
 import app.l2nx.highfive.mechanics.skill.StoredEffect;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 
@@ -15,18 +13,19 @@ public final class StoredEffectRows {
     private StoredEffectRows() {}
 
     /**
-     * Skips with a warning a row that breaks the {@link StoredEffect} invariants, so one corrupt row does not abort
-     * the restore of the owner's other effects.
+     * Skips with a warning a stored row that breaks the {@link StoredEffect} invariants, so one corrupt row does not
+     * abort the restore of the owner's other effects.
+     * @param remainingMillis {@code null} for an effect without a time limit
      * @param ownerId the character id, or the control item id of a pet
      */
-    public static Optional<StoredEffect> read(ResultSet rs, int ownerId) throws SQLException {
+    public static Optional<StoredEffect> read(Long remainingMillis, long tickPhaseMillis, int ownerId, int skillId) {
         try {
             return Optional.of(StoredEffect.builder()
-                    .remainingMillis(rs.getObject("remaining_ms", Long.class))
-                    .tickPhaseMillis(rs.getLong("tick_phase_ms"))
+                    .remainingMillis(remainingMillis)
+                    .tickPhaseMillis(tickPhaseMillis)
                     .build());
         } catch (IllegalArgumentException e) {
-            log.warn("Skipped stored effect of owner {} skill {}: {}", ownerId, rs.getInt("skill_id"), e.getMessage());
+            log.warn("Skipped stored effect of owner {} skill {}: {}", ownerId, skillId, e.getMessage());
             return Optional.empty();
         }
     }

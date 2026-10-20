@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+/*
  * SPDX-FileCopyrightText: L2J Mobius contributors
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
@@ -49,7 +53,6 @@ public class AdminSiege implements IAdminCommandHandler {
         "admin_siege",
         "admin_add_attacker",
         "admin_add_defender",
-        "admin_add_guard",
         "admin_list_siege_clans",
         "admin_clear_siege_list",
         "admin_move_defenders",
@@ -183,21 +186,6 @@ public class AdminSiege implements IAdminCommandHandler {
                         } else {
                             castle.getSiege().registerDefender(player, true);
                         }
-                        break;
-                    }
-                    case "admin_add_guard": {
-                        if (st.hasMoreTokens()) {
-                            val = st.nextToken();
-                            if (StringUtils.isNumeric(val)) {
-                                castle.getSiege()
-                                        .getSiegeGuardManager()
-                                        .addSiegeGuard(activeChar, Integer.parseInt(val));
-                                break;
-                            }
-                        }
-
-                        // If doesn't have more tokens or token is not a number.
-                        activeChar.sendSysMessage("Usage: //add_guard castle npcId");
                         break;
                     }
                     case "admin_clear_siege_list": {

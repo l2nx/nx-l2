@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -22,30 +26,34 @@
  */
 package app.l2nx.highfive.network.serverpackets;
 
+import static app.l2nx.highfive.repository.LegacyValues.epochMillisOrZero;
+
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.ServerConfig;
 import app.l2nx.highfive.config.custom.MultilingualSupportConfig;
 import app.l2nx.highfive.config.custom.OfflinePlayConfig;
 import app.l2nx.highfive.config.custom.OfflineTradeConfig;
 import app.l2nx.highfive.data.sql.ClanTable;
-import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.data.xml.ExperienceData;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.clan.Clan;
 import app.l2nx.highfive.entity.itemcontainer.Inventory;
+import app.l2nx.highfive.managers.ItemManager;
+import app.l2nx.highfive.managers.PlayerPersistenceManager;
 import app.l2nx.highfive.network.Disconnection;
 import app.l2nx.highfive.network.GameClient;
 import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.highfive.network.holders.CharacterInfoHolder;
+import app.l2nx.highfive.repository.character.model.CharacterRow;
+import app.l2nx.highfive.repository.character.model.Faction;
 import app.l2nx.network.buffer.WriteBuffer;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataAccessException;
 
 @Slf4j
 public class CharSelectionInfo extends ServerPacket {
@@ -56,22 +64,17 @@ public class CharSelectionInfo extends ServerPacket {
     @Getter
     private final List<CharacterInfoHolder> charInfo;
 
-    /**
-     * Constructor for CharSelectionInfo.
-     * @param loginName
-     * @param sessionId
-     */
-    public CharSelectionInfo(String loginName, int sessionId) {
-        this.sessionId = sessionId;
-        this.loginName = loginName;
-        charInfo = loadCharacterSelectInfo(this.loginName);
-        activeId = -1;
+    public CharSelectionInfo(GameClient client) {
+        this(client, -1);
     }
 
-    public CharSelectionInfo(String loginName, int sessionId, int activeId) {
-        this.sessionId = sessionId;
-        this.loginName = loginName;
-        charInfo = loadCharacterSelectInfo(this.loginName);
+    /**
+     * @param activeId the slot to mark as selected, {@code -1} for the character accessed last
+     */
+    public CharSelectionInfo(GameClient client, int activeId) {
+        sessionId = client.getSessionId().playOkID1;
+        loginName = client.getAccountName();
+        charInfo = loadCharacterSelectInfo(client.getAccountId());
         this.activeId = activeId;
     }
 
@@ -172,40 +175,35 @@ public class CharSelectionInfo extends ServerPacket {
         }
     }
 
-    private static List<CharacterInfoHolder> loadCharacterSelectInfo(String loginName) {
-        CharacterInfoHolder charInfopackage;
+    private static List<CharacterInfoHolder> loadCharacterSelectInfo(UUID accountId) {
         final List<CharacterInfoHolder> characterList = new ArrayList<>();
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement statement =
-                        con.prepareStatement("SELECT * FROM characters WHERE account_name=? ORDER BY createDate")) {
-            statement.setString(1, loginName);
-            try (ResultSet charList = statement.executeQuery()) {
-                while (charList.next()) // fills the package
-                {
-                    charInfopackage = restoreChar(charList);
-                    if (charInfopackage != null) {
-                        characterList.add(charInfopackage);
+        try {
+            for (CharacterRow character : PlayerPersistenceManager.getInstance().findCharacters(accountId)) {
+                final CharacterInfoHolder charInfopackage = restoreChar(character);
+                if (charInfopackage == null) {
+                    continue;
+                }
 
-                        // Disconnect offline trader.
-                        if (OfflineTradeConfig.OFFLINE_DISCONNECT_SAME_ACCOUNT) {
-                            final Player player = World.getPlayer(charInfopackage.getObjectId());
-                            if ((player != null) && player.isInStoreMode()) {
-                                Disconnection.of(player).storeAndDelete();
-                                continue;
-                            }
-                        }
+                characterList.add(charInfopackage);
 
-                        // Disconnect offline play.
-                        if (OfflinePlayConfig.OFFLINE_PLAY_DISCONNECT_SAME_ACCOUNT) {
-                            final Player player = World.getPlayer(charInfopackage.getObjectId());
-                            if ((player != null) && player.isOfflinePlay()) {
-                                Disconnection.of(player).storeAndDelete();
-                            }
-                        }
+                // Disconnect offline trader.
+                if (OfflineTradeConfig.OFFLINE_DISCONNECT_SAME_ACCOUNT) {
+                    final Player player = World.getPlayer(charInfopackage.getObjectId());
+                    if ((player != null) && player.isInStoreMode()) {
+                        Disconnection.of(player).storeAndDelete();
+                        continue;
+                    }
+                }
+
+                // Disconnect offline play.
+                if (OfflinePlayConfig.OFFLINE_PLAY_DISCONNECT_SAME_ACCOUNT) {
+                    final Player player = World.getPlayer(charInfopackage.getObjectId());
+                    if ((player != null) && player.isOfflinePlay()) {
+                        Disconnection.of(player).storeAndDelete();
                     }
                 }
             }
-        } catch (Exception e) {
+        } catch (DataAccessException e) {
             log.warn("Could not restore char info: {}", e.getMessage(), e);
         }
 
@@ -214,31 +212,23 @@ public class CharSelectionInfo extends ServerPacket {
 
     private static void loadCharacterSubclassInfo(
             CharacterInfoHolder charInfopackage, int objectId, int activeClassId) {
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement statement = con.prepareStatement(
-                        "SELECT exp, sp, level FROM character_subclasses WHERE charId=? AND class_id=? ORDER BY charId")) {
-            statement.setInt(1, objectId);
-            statement.setInt(2, activeClassId);
-            try (ResultSet charList = statement.executeQuery()) {
-                if (charList.next()) {
-                    charInfopackage.setExp(charList.getLong("exp"));
-                    charInfopackage.setSp(charList.getInt("sp"));
-                    charInfopackage.setLevel(charList.getInt("level"));
-                }
-            }
-        } catch (Exception e) {
-            log.warn("Could not restore char subclass info: {}", e.getMessage(), e);
-        }
+        PlayerPersistenceManager.getInstance()
+                .findSubclass(objectId, activeClassId)
+                .ifPresent(subclass -> {
+                    charInfopackage.setExp(subclass.exp());
+                    charInfopackage.setSp(subclass.sp());
+                    charInfopackage.setLevel(subclass.level());
+                });
     }
 
-    private static CharacterInfoHolder restoreChar(ResultSet chardata) throws Exception {
-        final int objectId = chardata.getInt("charId");
-        final String name = chardata.getString("char_name");
+    private static CharacterInfoHolder restoreChar(CharacterRow character) {
+        final int objectId = character.objectId();
+        final String name = character.name();
 
         // See if the char must be deleted.
-        final long deletetime = chardata.getLong("deletetime");
+        final long deletetime = epochMillisOrZero(character.deleteAt());
         if ((deletetime > 0) && (ClockBridge.wallMillis() > deletetime)) {
-            final Clan clan = ClanTable.getInstance().getClan(chardata.getInt("clanid"));
+            final Clan clan = ClanTable.getInstance().getClan(character.clanId());
             if (clan != null) {
                 clan.removeClanMember(objectId, 0);
             }
@@ -248,40 +238,37 @@ public class CharSelectionInfo extends ServerPacket {
         }
 
         final CharacterInfoHolder charInfopackage = new CharacterInfoHolder(objectId, name);
-        charInfopackage.setAccessLevel(chardata.getInt("accesslevel"));
-        charInfopackage.setLevel(chardata.getInt("level"));
-        charInfopackage.setMaxHp(chardata.getInt("maxhp"));
-        charInfopackage.setCurrentHp(chardata.getDouble("curhp"));
-        charInfopackage.setMaxMp(chardata.getInt("maxmp"));
-        charInfopackage.setCurrentMp(chardata.getDouble("curmp"));
-        charInfopackage.setKarma(chardata.getInt("karma"));
-        charInfopackage.setPkKills(chardata.getInt("pkkills"));
-        charInfopackage.setPvPKills(chardata.getInt("pvpkills"));
-        charInfopackage.setFace(chardata.getInt("face"));
-        charInfopackage.setHairStyle(chardata.getInt("hairstyle"));
-        charInfopackage.setHairColor(chardata.getInt("haircolor"));
-        charInfopackage.setSex(chardata.getInt("sex"));
-        charInfopackage.setExp(chardata.getLong("exp"));
-        charInfopackage.setSp(chardata.getLong("sp"));
-        charInfopackage.setVitalityPoints(chardata.getInt("vitality_points"));
-        charInfopackage.setClanId(chardata.getInt("clanid"));
-        charInfopackage.setRace(chardata.getInt("race"));
-        final int baseClassId = chardata.getInt("base_class");
-        final int activeClassId = chardata.getInt("classid");
-        charInfopackage.setX(chardata.getInt("x"));
-        charInfopackage.setY(chardata.getInt("y"));
-        charInfopackage.setZ(chardata.getInt("z"));
-        final int faction = chardata.getInt("faction");
-        if (faction == 1) {
+        charInfopackage.setAccessLevel(character.accessLevel());
+        charInfopackage.setLevel(character.level());
+        charInfopackage.setMaxHp(character.maxHp());
+        charInfopackage.setCurrentHp(character.currentHp());
+        charInfopackage.setMaxMp(character.maxMp());
+        charInfopackage.setCurrentMp(character.currentMp());
+        charInfopackage.setKarma(character.karma());
+        charInfopackage.setPkKills(character.pkKills());
+        charInfopackage.setPvPKills(character.pvpKills());
+        charInfopackage.setFace(character.face());
+        charInfopackage.setHairStyle(character.hairStyle());
+        charInfopackage.setHairColor(character.hairColor());
+        charInfopackage.setSex(character.sex().ordinal());
+        charInfopackage.setExp(character.exp());
+        charInfopackage.setSp(character.sp());
+        charInfopackage.setVitalityPoints(character.vitalityPoints());
+        charInfopackage.setClanId(character.clanId());
+        charInfopackage.setRace(character.race().ordinal());
+        final int baseClassId = character.baseClassId();
+        final int activeClassId = character.classId();
+        charInfopackage.setX(character.x());
+        charInfopackage.setY(character.y());
+        charInfopackage.setZ(character.z());
+        if (character.faction() == Faction.GOOD) {
             charInfopackage.setGood();
-        }
-
-        if (faction == 2) {
+        } else if (character.faction() == Faction.EVIL) {
             charInfopackage.setEvil();
         }
 
         if (MultilingualSupportConfig.MULTILANG_ENABLE) {
-            String lang = chardata.getString("language");
+            String lang = character.language();
             if (!MultilingualSupportConfig.MULTILANG_ALLOWED.contains(lang)) {
                 lang = MultilingualSupportConfig.MULTILANG_DEFAULT;
             }
@@ -297,25 +284,9 @@ public class CharSelectionInfo extends ServerPacket {
         charInfopackage.setClassId(activeClassId);
 
         // Get the augmentation id for equipped weapon.
-        int weaponObjId = charInfopackage.getPaperdollObjectId(Inventory.PAPERDOLL_RHAND);
-        if (weaponObjId < 1) {
-            weaponObjId = charInfopackage.getPaperdollObjectId(Inventory.PAPERDOLL_RHAND);
-        }
-
+        final int weaponObjId = charInfopackage.getPaperdollObjectId(Inventory.PAPERDOLL_RHAND);
         if (weaponObjId > 0) {
-            try (Connection con = DatabaseFactory.getConnection();
-                    PreparedStatement statement =
-                            con.prepareStatement("SELECT augAttributes FROM item_attributes WHERE itemId=?")) {
-                statement.setInt(1, weaponObjId);
-                try (ResultSet result = statement.executeQuery()) {
-                    if (result.next()) {
-                        final int augment = result.getInt("augAttributes");
-                        charInfopackage.setAugmentationId(augment == -1 ? 0 : augment);
-                    }
-                }
-            } catch (Exception e) {
-                log.warn("Could not restore augmentation info: {}", e.getMessage(), e);
-            }
+            ItemManager.getInstance().findAugmentation(weaponObjId).ifPresent(charInfopackage::setAugmentationId);
         }
 
         // Check if the base class is set to zero and also doesn't match with the current active class, otherwise send
@@ -328,7 +299,7 @@ public class CharSelectionInfo extends ServerPacket {
         }
 
         charInfopackage.setDeleteTimer(deletetime);
-        charInfopackage.setLastAccess(chardata.getLong("lastAccess"));
+        charInfopackage.setLastAccess(epochMillisOrZero(character.lastAccessAt()));
         return charInfopackage;
     }
 }

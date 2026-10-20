@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -22,9 +26,12 @@
  */
 package app.l2nx.highfive.entity.residences;
 
+import static app.l2nx.highfive.repository.LegacyValues.epochMillisOrZero;
+import static app.l2nx.highfive.repository.LegacyValues.instantOrNull;
+
 import app.l2nx.highfive.clock.ClockBridge;
+import app.l2nx.highfive.data.sql.ClanHallTable;
 import app.l2nx.highfive.data.sql.ClanTable;
-import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.instance.Door;
 import app.l2nx.highfive.entity.clan.Clan;
@@ -32,11 +39,9 @@ import app.l2nx.highfive.entity.item.enums.ItemProcessType;
 import app.l2nx.highfive.entity.itemcontainer.Inventory;
 import app.l2nx.highfive.entity.zone.type.ClanHallZone;
 import app.l2nx.highfive.network.serverpackets.PledgeShowInfoUpdate;
+import app.l2nx.highfive.repository.residence.model.ResidenceFunction;
 import app.l2nx.highfive.threads.ThreadPool;
 import app.l2nx.highfive.util.StatSet;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -173,22 +178,16 @@ public abstract class ClanHall {
         }
 
         public void dbSave() {
-            try (Connection con = DatabaseFactory.getConnection();
-                    PreparedStatement ps = con.prepareStatement(
-                            "REPLACE INTO clanhall_functions (hall_id, type, lvl, lease, rate, endTime) VALUES (?,?,?,?,?,?)")) {
-                ps.setInt(1, id);
-                ps.setInt(2, type);
-                ps.setInt(3, level);
-                ps.setInt(4, lease);
-                ps.setLong(5, rate);
-                ps.setLong(6, endTime);
-                ps.execute();
-            } catch (Exception e) {
-                log.error(
-                        "Exception: ClanHall.updateFunctions(int type, int lvl, int lease, long rate, long time, boolean addNew): {}",
-                        e.getMessage(),
-                        e);
-            }
+            ClanHallTable.getInstance()
+                    .saveFunction(
+                            id,
+                            ResidenceFunction.builder()
+                                    .type(type)
+                                    .level(level)
+                                    .lease(lease)
+                                    .rate(rate)
+                                    .endTime(instantOrNull(endTime))
+                                    .build());
         }
     }
 
@@ -344,25 +343,17 @@ public abstract class ClanHall {
 
     /** Load All Functions */
     protected void loadFunctions() {
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement("SELECT * FROM clanhall_functions WHERE hall_id = ?")) {
-            ps.setInt(1, id);
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    functions.put(
-                            rs.getInt("type"),
-                            new ClanHallFunction(
-                                    rs.getInt("type"),
-                                    rs.getInt("lvl"),
-                                    rs.getInt("lease"),
-                                    0,
-                                    rs.getLong("rate"),
-                                    rs.getLong("endTime"),
-                                    true));
-                }
-            }
-        } catch (Exception e) {
-            log.error("Exception: ClanHall.loadFunctions(): {}", e.getMessage(), e);
+        for (ResidenceFunction stored : ClanHallTable.getInstance().findFunctions(id)) {
+            functions.put(
+                    stored.type(),
+                    new ClanHallFunction(
+                            stored.type(),
+                            stored.level(),
+                            stored.lease(),
+                            0,
+                            stored.rate(),
+                            epochMillisOrZero(stored.endTime()),
+                            true));
         }
     }
 
@@ -372,15 +363,7 @@ public abstract class ClanHall {
      */
     public void removeFunction(int functionType) {
         functions.remove(functionType);
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps =
-                        con.prepareStatement("DELETE FROM clanhall_functions WHERE hall_id=? AND type=?")) {
-            ps.setInt(1, id);
-            ps.setInt(2, functionType);
-            ps.execute();
-        } catch (Exception e) {
-            log.error("Exception: ClanHall.removeFunctions(int functionType): {}", e.getMessage(), e);
-        }
+        ClanHallTable.getInstance().deleteFunction(id, functionType);
     }
 
     public boolean updateFunctions(Player player, int type, int level, int lease, long rate, boolean addNew) {

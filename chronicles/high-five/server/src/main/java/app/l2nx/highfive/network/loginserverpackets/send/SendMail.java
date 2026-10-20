@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -23,13 +27,15 @@
 package app.l2nx.highfive.network.loginserverpackets.send;
 
 import app.l2nx.network.packet.SimpleWritablePacket;
+import java.util.Objects;
+import java.util.UUID;
 
 /**
  * Requests the login server to send a templated mail to a given account.<br>
  * Includes a variable-length list of string arguments.
  * <ul>
  * <li>Opcode: 0x09.</li>
- * <li>Payload: account (String), templateId (String), argsCount (byte), args (String[]).</li>
+ * <li>Payload: account id (2 longs: msb, lsb), templateId (String), argsCount (byte), args (String[]).</li>
  * </ul>
  * @author BazookaRpm
  */
@@ -38,18 +44,13 @@ public class SendMail extends SimpleWritablePacket {
     private static final int OPCODE = 0x09;
 
     // Data.
-    private final String accountName;
+    private final UUID accountId;
     private final String mailId;
     private final String[] args;
 
-    /**
-     * @param accountName target account
-     * @param mailId template identifier
-     * @param args template parameters
-     */
-    public SendMail(String accountName, String mailId, String... args) {
-        this.accountName = (accountName != null) ? accountName : "";
-        this.mailId = (mailId != null) ? mailId : "";
+    public SendMail(UUID accountId, String mailId, String... args) {
+        this.accountId = Objects.requireNonNull(accountId, "accountId");
+        this.mailId = mailId;
         this.args = (args != null) ? args : new String[0];
     }
 
@@ -59,11 +60,12 @@ public class SendMail extends SimpleWritablePacket {
     @Override
     public void write() {
         writeByte(OPCODE);
-        writeString(accountName);
+        writeLong(accountId.getMostSignificantBits());
+        writeLong(accountId.getLeastSignificantBits());
         writeString(mailId);
         writeByte(args.length);
         for (String a : args) {
-            writeString((a != null) ? a : "");
+            writeString(a);
         }
     }
 }

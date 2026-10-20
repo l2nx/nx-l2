@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -24,7 +28,6 @@ package app.l2nx.highfive.managers;
 
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.config.PlayerConfig;
-import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.WorldObject;
 import app.l2nx.highfive.entity.actor.Attackable;
@@ -38,25 +41,65 @@ import app.l2nx.highfive.entity.itemcontainer.Inventory;
 import app.l2nx.highfive.mechanics.events.EventDispatcher;
 import app.l2nx.highfive.mechanics.events.EventType;
 import app.l2nx.highfive.mechanics.events.holders.item.OnItemCreate;
+import app.l2nx.highfive.repository.item.ItemAugmentationRepository;
+import app.l2nx.highfive.repository.item.ItemElementalRepository;
+import app.l2nx.highfive.repository.item.ItemRepository;
+import app.l2nx.highfive.repository.item.ItemVariableRepository;
+import app.l2nx.highfive.repository.item.model.ItemElemental;
+import app.l2nx.highfive.repository.item.model.ItemRow;
+import app.l2nx.highfive.repository.item.model.LotteryTicket;
+import app.l2nx.highfive.repository.item.model.PaperdollItem;
 import app.l2nx.highfive.threads.ThreadPool;
 import app.l2nx.highfive.util.GMAudit;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ScheduledFuture;
-import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.support.TransactionTemplate;
 
 /**
  * Manages the creation and destruction of items within the game.
  * @author Mobius
  */
-@Slf4j
+@Component
 public class ItemManager {
 
     private static final Logger ITEM_LOG = LoggerFactory.getLogger("item");
 
-    private ItemManager() {}
+    private static volatile ItemManager instance;
+
+    private final ItemRepository itemRepository;
+    private final ItemAugmentationRepository augmentationRepository;
+    private final ItemElementalRepository elementalRepository;
+    private final ItemVariableRepository variableRepository;
+    private final TransactionTemplate transactionTemplate;
+
+    public ItemManager(
+            ItemRepository itemRepository,
+            ItemAugmentationRepository augmentationRepository,
+            ItemElementalRepository elementalRepository,
+            ItemVariableRepository variableRepository,
+            TransactionTemplate transactionTemplate) {
+        this.itemRepository = itemRepository;
+        this.augmentationRepository = augmentationRepository;
+        this.elementalRepository = elementalRepository;
+        this.variableRepository = variableRepository;
+        this.transactionTemplate = transactionTemplate;
+        instance = this;
+    }
+
+    // TODO: callers receive the bean through their constructor (#41).
+    public static ItemManager getInstance() {
+        final ItemManager current = instance;
+        if (current == null) {
+            throw new IllegalStateException("ItemManager is used before the Spring context created it.");
+        }
+        return current;
+    }
 
     /**
      * Creates a new item based on the specified parameters and logs the creation process.<br>
@@ -188,6 +231,8 @@ public class ItemManager {
             item.setLastChange(Item.REMOVED);
 
             World.removeObject(item);
+            // The rows are deleted while the handle still resolves to the item's id.
+            item.updateDatabase(true);
             IdManager.getInstance().releaseId(item.getObjectId());
 
             if ((process != null) && (process != ItemProcessType.NONE)) {
@@ -241,19 +286,125 @@ public class ItemManager {
                             "Object referencing this action is: " + referenceName);
                 }
             }
-
-            // If it's a pet control item, delete the pet as well.
-            if (item.getTemplate().isPetItem()) {
-                try (Connection con = DatabaseFactory.getConnection();
-                        PreparedStatement statement = con.prepareStatement("DELETE FROM pets WHERE item_obj_id=?")) {
-                    // Delete the pet in database.
-                    statement.setInt(1, item.getObjectId());
-                    statement.execute();
-                } catch (Exception e) {
-                    log.warn("Could not delete pet objectid:", e);
-                }
-            }
         }
+    }
+
+    /**
+     * @return the items of both locations, in slot order
+     */
+    public List<ItemRow> findItems(int ownerId, ItemLocation baseLocation, ItemLocation equipLocation) {
+        return itemRepository.findByOwner(ownerId, baseLocation, equipLocation);
+    }
+
+    public List<ItemRow> findItems(int ownerId, ItemLocation location) {
+        return itemRepository.findByOwner(ownerId, location);
+    }
+
+    public List<ItemRow> findAttachments(int messageId) {
+        return itemRepository.findByMail(messageId);
+    }
+
+    public List<PaperdollItem> findPaperdoll(int characterId) {
+        return itemRepository.findPaperdoll(characterId);
+    }
+
+    public boolean hasPetItems(int characterId) {
+        return itemRepository.hasPetItems(characterId);
+    }
+
+    /**
+     * @return the owner of any stored item of the template; an item attached to a mail has none
+     */
+    public Optional<Integer> findAnyOwner(int itemId) {
+        return itemRepository.findAnyOwner(itemId);
+    }
+
+    public List<LotteryTicket> findLotteryTickets(int ticketItemId, int lotteryId) {
+        return itemRepository.findLotteryTickets(ticketItemId, lotteryId);
+    }
+
+    /**
+     * Stores a new item together with the augmentation and elementals it got before its first save.
+     *
+     * @param augmentationId {@code null} for an item without augmentation
+     */
+    public void insertItem(int ownerId, ItemRow item, Integer augmentationId, Collection<ItemElemental> elementals) {
+        transactionTemplate.executeWithoutResult(status -> {
+            itemRepository.insert(ownerId, item);
+            if (augmentationId != null) {
+                augmentationRepository.save(item.objectId(), augmentationId);
+            }
+
+            if (!elementals.isEmpty()) {
+                elementalRepository.replaceAll(item.objectId(), elementals);
+            }
+        });
+    }
+
+    public void updateItem(int ownerId, ItemRow item) {
+        itemRepository.update(ownerId, item);
+    }
+
+    /**
+     * Deletes the item with its augmentation, elementals, variables and, for a pet control item, the pet.
+     */
+    public void deleteItem(int objectId) {
+        itemRepository.delete(objectId);
+    }
+
+    public int deleteItems(int ownerId, int itemId) {
+        return itemRepository.deleteByOwner(ownerId, itemId);
+    }
+
+    /**
+     * Deletes every stored item of the template, whoever owns it.
+     */
+    public void deleteItemsOfTemplate(int itemId) {
+        itemRepository.deleteByItemId(itemId);
+    }
+
+    public Optional<Integer> findAugmentation(int objectId) {
+        return augmentationRepository.find(objectId);
+    }
+
+    public void saveAugmentation(int objectId, int augmentationId) {
+        augmentationRepository.save(objectId, augmentationId);
+    }
+
+    public void deleteAugmentation(int objectId) {
+        augmentationRepository.delete(objectId);
+    }
+
+    public List<ItemElemental> findElementals(int objectId) {
+        return elementalRepository.findAll(objectId);
+    }
+
+    public void saveElementals(int objectId, Collection<ItemElemental> elementals) {
+        elementalRepository.replaceAll(objectId, elementals);
+    }
+
+    public void deleteElemental(int objectId, byte element) {
+        elementalRepository.delete(objectId, element);
+    }
+
+    public void deleteElementals(int objectId) {
+        elementalRepository.deleteAll(objectId);
+    }
+
+    public Map<String, String> findVariables(int objectId) {
+        return variableRepository.findAll(objectId);
+    }
+
+    public boolean hasVariables(int objectId) {
+        return variableRepository.exists(objectId);
+    }
+
+    public void saveVariables(int objectId, Collection<String> deleted, Map<String, String> changed) {
+        variableRepository.save(objectId, deleted, changed);
+    }
+
+    public void deleteVariables(int objectId) {
+        variableRepository.deleteAll(objectId);
     }
 
     /**

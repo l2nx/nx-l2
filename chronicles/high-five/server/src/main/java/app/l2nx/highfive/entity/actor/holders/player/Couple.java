@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+/*
  * SPDX-FileCopyrightText: L2J Mobius contributors
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
@@ -19,16 +23,16 @@
  */
 package app.l2nx.highfive.entity.actor.holders.player;
 
+import static app.l2nx.highfive.repository.LegacyValues.epochMillisOrZero;
+
 import app.l2nx.highfive.clock.ClockBridge;
-import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.entity.actor.Player;
-import app.l2nx.highfive.managers.IdManager;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
+import app.l2nx.highfive.managers.CoupleManager;
+import app.l2nx.highfive.repository.world.model.CoupleRow;
 import java.util.Calendar;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataAccessException;
 
 /**
  * @author evill33t
@@ -37,43 +41,34 @@ import lombok.extern.slf4j.Slf4j;
 public class Couple {
 
     @Getter
-    private int id = 0;
+    private final long id;
 
     @Getter
-    private int player1Id = 0;
+    private final int player1Id;
 
     @Getter
-    private int player2Id = 0;
+    private final int player2Id;
 
-    private boolean maried = false;
+    private boolean maried;
 
     @Getter
-    private Calendar affiancedDate;
+    private final Calendar affiancedDate;
 
+    /**
+     * The engagement date until the couple marries.
+     */
     @Getter
     private Calendar weddingDate;
 
-    public Couple(int coupleId) {
-        id = coupleId;
-
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement("SELECT * FROM mods_wedding WHERE id = ?")) {
-            ps.setInt(1, id);
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    player1Id = rs.getInt("player1Id");
-                    player2Id = rs.getInt("player2Id");
-                    maried = Boolean.parseBoolean(rs.getString("married"));
-                    affiancedDate = ClockBridge.calendar();
-                    affiancedDate.setTimeInMillis(rs.getLong("affianceDate"));
-
-                    weddingDate = ClockBridge.calendar();
-                    weddingDate.setTimeInMillis(rs.getLong("weddingDate"));
-                }
-            }
-        } catch (Exception e) {
-            log.error("Exception: Couple.load(): {}", e.getMessage(), e);
-        }
+    public Couple(CoupleRow row) {
+        id = row.id();
+        player1Id = row.firstObjectId();
+        player2Id = row.secondObjectId();
+        maried = row.marriedAt() != null;
+        affiancedDate = ClockBridge.calendar();
+        affiancedDate.setTimeInMillis(epochMillisOrZero(row.engagedAt()));
+        weddingDate = ClockBridge.calendar();
+        weddingDate.setTimeInMillis(epochMillisOrZero(maried ? row.marriedAt() : row.engagedAt()));
     }
 
     public Couple(Player player1, Player player2) {
@@ -87,43 +82,24 @@ public class Couple {
         weddingDate = ClockBridge.calendar();
         weddingDate.setTimeInMillis(currentTime);
 
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement(
-                        "INSERT INTO mods_wedding (id, player1Id, player2Id, married, affianceDate, weddingDate) VALUES (?, ?, ?, ?, ?, ?)")) {
-            id = IdManager.getInstance().getNextId();
-            ps.setInt(1, id);
-            ps.setInt(2, player1Id);
-            ps.setInt(3, player2Id);
-            ps.setBoolean(4, false);
-            ps.setLong(5, affiancedDate.getTimeInMillis());
-            ps.setLong(6, weddingDate.getTimeInMillis());
-            ps.execute();
-        } catch (Exception e) {
-            log.error("Could not create couple: {}", e.getMessage(), e);
-        }
+        id = CoupleManager.getInstance().insert(player1Id, player2Id, currentTime);
     }
 
     public void marry() {
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps =
-                        con.prepareStatement("UPDATE mods_wedding set married = ?, weddingDate = ? where id = ?")) {
-            ps.setBoolean(1, true);
-            weddingDate = ClockBridge.calendar();
-            ps.setLong(2, weddingDate.getTimeInMillis());
-            ps.setInt(3, id);
-            ps.execute();
+        final Calendar marriedAt = ClockBridge.calendar();
+        try {
+            CoupleManager.getInstance().updateMarried(id, marriedAt.getTimeInMillis());
+            weddingDate = marriedAt;
             maried = true;
-        } catch (Exception e) {
+        } catch (DataAccessException e) {
             log.error("Could not marry: {}", e.getMessage(), e);
         }
     }
 
     public void divorce() {
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement("DELETE FROM mods_wedding WHERE id=?")) {
-            ps.setInt(1, id);
-            ps.execute();
-        } catch (Exception e) {
+        try {
+            CoupleManager.getInstance().delete(id);
+        } catch (DataAccessException e) {
             log.error("Exception: Couple.divorce(): {}", e.getMessage(), e);
         }
     }

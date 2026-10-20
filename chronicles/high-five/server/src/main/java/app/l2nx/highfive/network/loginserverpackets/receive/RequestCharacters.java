@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+/*
  * SPDX-FileCopyrightText: L2J Mobius contributors
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
@@ -20,6 +24,7 @@
 package app.l2nx.highfive.network.loginserverpackets.receive;
 
 import app.l2nx.network.packet.SimpleReadablePacket;
+import java.util.UUID;
 import lombok.Getter;
 
 /**
@@ -27,12 +32,12 @@ import lombok.Getter;
  */
 public class RequestCharacters extends SimpleReadablePacket {
     @Getter
-    private final String account;
+    private final UUID accountId;
 
     public RequestCharacters(byte[] decrypt) {
         super(decrypt);
         readByte(); // Packet id, it is already processed.
 
-        account = readString();
+        accountId = new UUID(readLong(), readLong());
     }
 }

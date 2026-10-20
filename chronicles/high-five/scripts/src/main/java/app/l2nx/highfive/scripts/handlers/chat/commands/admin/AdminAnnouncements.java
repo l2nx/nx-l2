@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+/*
  * SPDX-FileCopyrightText: L2J Mobius contributors
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
@@ -247,6 +251,10 @@ public class AdminAnnouncements implements IAdminCommandHandler {
                                 }
                                 break;
                             }
+                            case EVENT: {
+                                activeChar.sendSysMessage("An event announcement cannot be edited!");
+                                return false;
+                            }
                         }
 
                         // ************************************
@@ -458,35 +466,41 @@ public class AdminAnnouncements implements IAdminCommandHandler {
                                     sb.append("<td width=100>" + announcement.getAuthor() + "</td>");
                                     if ((announcement.getType() == AnnouncementType.AUTO_NORMAL)
                                             || (announcement.getType() == AnnouncementType.AUTO_CRITICAL)) {
-                                        sb.append(
-                                                "<td width=60><button action=\"bypass -h admin_announces restart "
-                                                        + announcement.getId()
-                                                        + "\" value=\"Restart\" width=\"60\" height=\"21\" back=\"L2UI_CT1.Button_DF_Down\" fore=\"L2UI_CT1.Button_DF\"></td>");
+                                        sb.append("<td width=60><button action=\"bypass -h admin_announces restart "
+                                                + announcement.getId()
+                                                + "\" value=\"Restart\" width=\"60\" height=\"21\""
+                                                + " back=\"L2UI_CT1.Button_DF_Down\""
+                                                + " fore=\"L2UI_CT1.Button_DF\"></td>");
                                     } else {
-                                        sb.append(
-                                                "<td width=60><button action=\"\" value=\"\" width=\"60\" height=\"21\" back=\"L2UI_CT1.Button_DF_Down\" fore=\"L2UI_CT1.Button_DF\"></td>");
+                                        sb.append("<td width=60><button action=\"\" value=\"\" width=\"60\""
+                                                + " height=\"21\" back=\"L2UI_CT1.Button_DF_Down\""
+                                                + " fore=\"L2UI_CT1.Button_DF\"></td>");
                                     }
 
                                     if (announcement.getType() == AnnouncementType.EVENT) {
-                                        sb.append(
-                                                "<td width=60><button action=\"bypass -h admin_announces show "
-                                                        + announcement.getId()
-                                                        + "\" value=\"Show\" width=\"60\" height=\"21\" back=\"L2UI_CT1.Button_DF_Down\" fore=\"L2UI_CT1.Button_DF\"></td>");
+                                        sb.append("<td width=60><button action=\"bypass -h admin_announces show "
+                                                + announcement.getId()
+                                                + "\" value=\"Show\" width=\"60\" height=\"21\""
+                                                + " back=\"L2UI_CT1.Button_DF_Down\""
+                                                + " fore=\"L2UI_CT1.Button_DF\"></td>");
                                         sb.append("<td width=60></td>");
                                     } else {
-                                        sb.append(
-                                                "<td width=60><button action=\"bypass -h admin_announces show "
-                                                        + announcement.getId()
-                                                        + "\" value=\"Show\" width=\"60\" height=\"21\" back=\"L2UI_CT1.Button_DF_Down\" fore=\"L2UI_CT1.Button_DF\"></td>");
-                                        sb.append(
-                                                "<td width=60><button action=\"bypass -h admin_announces edit "
-                                                        + announcement.getId()
-                                                        + "\" value=\"Edit\" width=\"60\" height=\"21\" back=\"L2UI_CT1.Button_DF_Down\" fore=\"L2UI_CT1.Button_DF\"></td>");
+                                        sb.append("<td width=60><button action=\"bypass -h admin_announces show "
+                                                + announcement.getId()
+                                                + "\" value=\"Show\" width=\"60\" height=\"21\""
+                                                + " back=\"L2UI_CT1.Button_DF_Down\""
+                                                + " fore=\"L2UI_CT1.Button_DF\"></td>");
+                                        sb.append("<td width=60><button action=\"bypass -h admin_announces edit "
+                                                + announcement.getId()
+                                                + "\" value=\"Edit\" width=\"60\" height=\"21\""
+                                                + " back=\"L2UI_CT1.Button_DF_Down\""
+                                                + " fore=\"L2UI_CT1.Button_DF\"></td>");
                                     }
-                                    sb.append(
-                                            "<td width=60><button action=\"bypass -h admin_announces remove "
-                                                    + announcement.getId()
-                                                    + "\" value=\"Remove\" width=\"60\" height=\"21\" back=\"L2UI_CT1.Button_DF_Down\" fore=\"L2UI_CT1.Button_DF\"></td>");
+                                    sb.append("<td width=60><button action=\"bypass -h admin_announces remove "
+                                            + announcement.getId()
+                                            + "\" value=\"Remove\" width=\"60\" height=\"21\""
+                                            + " back=\"L2UI_CT1.Button_DF_Down\""
+                                            + " fore=\"L2UI_CT1.Button_DF\"></td>");
                                     sb.append("<td width=5></td>");
                                     sb.append("</tr>");
                                 })

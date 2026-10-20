@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -23,15 +27,14 @@
 package app.l2nx.highfive.network.clientpackets;
 
 import app.l2nx.highfive.data.sql.CharInfoTable;
-import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.managers.CharacterRelationsManager;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.serverpackets.FriendPacket;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataAccessException;
 
 /**
  * @version $Revision: 1.3.4.2 $ $Date: 2005/03/27 15:29:30 $
@@ -69,14 +72,8 @@ public class RequestFriendDel extends ClientPacket {
             return;
         }
 
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement statement = con.prepareStatement(
-                        "DELETE FROM character_friends WHERE (charId=? AND friendId=?) OR (charId=? AND friendId=?)")) {
-            statement.setInt(1, player.getObjectId());
-            statement.setInt(2, id);
-            statement.setInt(3, id);
-            statement.setInt(4, player.getObjectId());
-            statement.execute();
+        try {
+            CharacterRelationsManager.getInstance().removeFriendship(player.getObjectId(), id);
 
             // Player deleted from your friend list.
             sm = new SystemMessage(SystemMessageId.S1_HAS_BEEN_DELETED_FROM_YOUR_FRIENDS_LIST);
@@ -91,8 +88,8 @@ public class RequestFriendDel extends ClientPacket {
                 target.getFriendList().remove(Integer.valueOf(player.getObjectId()));
                 target.sendPacket(new FriendPacket(false, player.getObjectId()));
             }
-        } catch (Exception e) {
-            log.warn("{}: Could not delele friend objectId: {}", getClass().getSimpleName(), e.getMessage());
+        } catch (DataAccessException e) {
+            log.warn("Could not delete friend objectId: {}", e.getMessage());
         }
     }
 }

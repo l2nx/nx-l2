@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -23,42 +27,53 @@
 package app.l2nx.highfive.communitybbs.Manager;
 
 import app.l2nx.highfive.communitybbs.BB.Forum;
-import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.entity.actor.Player;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.Statement;
+import app.l2nx.highfive.repository.forum.ForumRepository;
+import app.l2nx.highfive.repository.forum.PostRepository;
+import app.l2nx.highfive.repository.forum.TopicRepository;
+import app.l2nx.highfive.repository.forum.model.ForumRow;
+import app.l2nx.highfive.repository.forum.model.PostRow;
+import app.l2nx.highfive.repository.forum.model.TopicRow;
 import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataAccessException;
+import org.springframework.stereotype.Component;
 
 @Slf4j
+@Component
 public class ForumsBBSManager extends BaseBBSManager {
-    private final Collection<Forum> table;
-    private int lastid = 1;
+    private static volatile ForumsBBSManager instance;
 
-    /**
-     * Instantiates a new forums bbs manager.
-     */
-    protected ForumsBBSManager() {
-        table = ConcurrentHashMap.newKeySet();
-        try (Connection con = DatabaseFactory.getConnection();
-                Statement s = con.createStatement();
-                ResultSet rs = s.executeQuery("SELECT forum_id FROM forums WHERE forum_type = 0")) {
-            while (rs.next()) {
-                addForum(new Forum(rs.getInt("forum_id"), null));
-            }
-        } catch (Exception e) {
-            log.warn("Data error on Forum (root): {}", e.getMessage(), e);
-        }
+    private final Collection<Forum> table = ConcurrentHashMap.newKeySet();
+
+    private final ForumRepository forumRepository;
+    private final TopicRepository topicRepository;
+    private final PostRepository postRepository;
+
+    public ForumsBBSManager(
+            ForumRepository forumRepository, TopicRepository topicRepository, PostRepository postRepository) {
+        this.forumRepository = forumRepository;
+        this.topicRepository = topicRepository;
+        this.postRepository = postRepository;
+        instance = this;
     }
 
-    /**
-     * Inits the root.
-     */
     public void initRoot() {
+        table.clear();
+        try {
+            for (int rootId : forumRepository.findRootIds()) {
+                addForum(new Forum(rootId, null));
+            }
+        } catch (DataAccessException e) {
+            log.warn("Data error on Forum (root): {}", e.getMessage(), e);
+        }
+
         table.forEach(Forum::vload);
-        log.info("Loaded {} forums. Last forum id used: {}", table.size(), lastid);
+        log.info("Loaded {} forums.", table.size());
     }
 
     /**
@@ -71,23 +86,17 @@ public class ForumsBBSManager extends BaseBBSManager {
         }
 
         table.add(ff);
-
-        if (ff.getID() > lastid) {
-            lastid = ff.getID();
-        }
     }
 
     @Override
     public void parsecmd(String command, Player player) {}
 
     /**
-     * Gets the forum by name.
-     * @param name the forum name
      * @return the forum by name
      */
     public Forum getForumByName(String name) {
         for (Forum forum : table) {
-            if (forum.getName().equals(name)) {
+            if (name.equals(forum.getName())) {
                 return forum;
             }
         }
@@ -96,26 +105,34 @@ public class ForumsBBSManager extends BaseBBSManager {
     }
 
     /**
-     * Creates the new forum.
-     * @param name the forum name
-     * @param parent the parent forum
-     * @param type the forum type
-     * @param perm the perm
-     * @param oid the oid
-     * @return the new forum
+     * Stores a forum owned by a clan (type {@link Forum#CLAN}) or a character (type {@link Forum#MAIL}).
+     * @param ownerId the clan id or the character object id
      */
-    public Forum createNewForum(String name, Forum parent, int type, int perm, int oid) {
-        final Forum forum = new Forum(name, parent, type, perm, oid);
-        forum.insertIntoDb();
-        return forum;
+    public Forum createNewForum(Forum parent, int type, int perm, int ownerId) {
+        return create(
+                ForumRow.builder()
+                        .parentId(parent.getID())
+                        .type(type)
+                        .permission(perm)
+                        .ownerId(ownerId)
+                        .build(),
+                parent);
     }
 
-    /**
-     * Gets the a new Id.
-     * @return the a new Id
-     */
-    public int getANewID() {
-        return ++lastid;
+    public Forum createMemoForum(Forum parent, UUID accountId) {
+        return create(
+                ForumRow.builder()
+                        .parentId(parent.getID())
+                        .type(Forum.MEMO)
+                        .permission(Forum.OWNERONLY)
+                        .accountId(accountId)
+                        .build(),
+                parent);
+    }
+
+    private Forum create(ForumRow row, Forum parent) {
+        final int id = forumRepository.insert(row);
+        return new Forum(row.toBuilder().id(id).build(), parent);
     }
 
     /**
@@ -133,18 +150,60 @@ public class ForumsBBSManager extends BaseBBSManager {
         return null;
     }
 
+    public Optional<ForumRow> findForum(int forumId) {
+        return forumRepository.findById(forumId);
+    }
+
+    public List<Integer> findChildForumIds(int forumId) {
+        return forumRepository.findChildIds(forumId);
+    }
+
+    /**
+     * @return the forum's topics, newest first
+     */
+    public List<TopicRow> findTopics(int forumId) {
+        return topicRepository.findByForum(forumId);
+    }
+
+    public int insertTopic(TopicRow topic) {
+        return topicRepository.insert(topic);
+    }
+
+    /**
+     * Deletes the topic with its posts.
+     */
+    public void deleteTopic(int topicId, int forumId) {
+        topicRepository.delete(topicId, forumId);
+    }
+
+    /**
+     * @return the topic's posts, oldest first
+     */
+    public List<PostRow> findPosts(int topicId) {
+        return postRepository.findByTopic(topicId);
+    }
+
+    public long insertPost(PostRow post) {
+        return postRepository.insert(post);
+    }
+
+    public void deletePosts(int topicId) {
+        postRepository.deleteByTopic(topicId);
+    }
+
+    public void updatePostContent(long postId, String content) {
+        postRepository.updateContent(postId, content);
+    }
+
     @Override
     public void parsewrite(String ar1, String ar2, String ar3, String ar4, String ar5, Player player) {}
 
-    /**
-     * Gets the single instance of ForumsBBSManager.
-     * @return single instance of ForumsBBSManager
-     */
+    // TODO: callers receive the bean through their constructor (#41).
     public static ForumsBBSManager getInstance() {
-        return SingletonHolder.INSTANCE;
-    }
-
-    private static class SingletonHolder {
-        protected static final ForumsBBSManager INSTANCE = new ForumsBBSManager();
+        final ForumsBBSManager current = instance;
+        if (current == null) {
+            throw new IllegalStateException("ForumsBBSManager is used before the Spring context created it.");
+        }
+        return current;
     }
 }

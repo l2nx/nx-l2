@@ -17,13 +17,12 @@ class GameServerRepositoryTest extends RepositoryTest {
     class Create {
         @Test
         void create_shouldStoreServer() {
-            repository.create(77, "-1f2e3d", "10.0.0.1");
+            repository.create(77, "-1f2e3d");
 
-            assertThat(JDBC.sql("SELECT hexid, host FROM gameservers WHERE server_id = 77")
-                            .query()
-                            .singleRow())
-                    .containsEntry("hexid", "-1f2e3d")
-                    .containsEntry("host", "10.0.0.1");
+            assertThat(JDBC.sql("SELECT hex_id FROM game_servers WHERE server_id = 77")
+                            .query(String.class)
+                            .single())
+                    .isEqualTo("-1f2e3d");
         }
     }
 
@@ -31,12 +30,10 @@ class GameServerRepositoryTest extends RepositoryTest {
     class FindHexIds {
         @Test
         void findHexIds_shouldReturnHexIdByServerId() {
-            JDBC.sql("INSERT INTO gameservers (server_id, hexid, host) VALUES (78, 'abc', '')")
+            JDBC.sql("INSERT INTO game_servers (server_id, hex_id) VALUES (78, 'abc')")
                     .update();
 
-            assertThat(repository.findHexIds())
-                    .containsEntry(78, "abc")
-                    .containsEntry(2, "-2ad66b3f483c22be097019f55c8abdf0");
+            assertThat(repository.findHexIds()).containsEntry(78, "abc");
         }
     }
 }

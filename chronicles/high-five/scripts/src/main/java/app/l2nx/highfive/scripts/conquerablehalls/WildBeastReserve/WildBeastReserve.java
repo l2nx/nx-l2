@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -26,7 +30,6 @@ import app.l2nx.highfive.ai.SpecialSiegeGuardAI;
 import app.l2nx.highfive.cache.HtmCache;
 import app.l2nx.highfive.data.sql.ClanHallTable;
 import app.l2nx.highfive.data.sql.ClanTable;
-import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.data.xml.NpcData;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.World;
@@ -38,6 +41,7 @@ import app.l2nx.highfive.entity.clan.Clan;
 import app.l2nx.highfive.entity.clan.ClanMember;
 import app.l2nx.highfive.entity.item.enums.ItemProcessType;
 import app.l2nx.highfive.entity.zone.type.ResidenceHallTeleportZone;
+import app.l2nx.highfive.managers.CHSiegeManager;
 import app.l2nx.highfive.managers.ZoneManager;
 import app.l2nx.highfive.mechanics.siege.SiegeClan;
 import app.l2nx.highfive.mechanics.siege.SiegeClanType;
@@ -46,10 +50,8 @@ import app.l2nx.highfive.mechanics.siege.clanhalls.SiegeStatus;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.serverpackets.NpcHtmlMessage;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
+import app.l2nx.highfive.repository.siege.model.FlagWarAttacker;
 import app.l2nx.highfive.threads.ThreadPool;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -64,16 +66,6 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 public class WildBeastReserve extends ClanHallSiegeEngine {
-    private static final String SQL_LOAD_ATTACKERS = "SELECT * FROM siegable_hall_flagwar_attackers WHERE hall_id = ?";
-    private static final String SQL_SAVE_ATTACKER =
-            "INSERT INTO siegable_hall_flagwar_attackers_members VALUES (?,?,?)";
-    private static final String SQL_LOAD_MEMEBERS =
-            "SELECT object_id FROM siegable_hall_flagwar_attackers_members WHERE clan_id = ?";
-    private static final String SQL_SAVE_CLAN = "INSERT INTO siegable_hall_flagwar_attackers VALUES(?,?,?,?)";
-    private static final String SQL_SAVE_NPC = "UPDATE siegable_hall_flagwar_attackers SET npc = ? WHERE clan_id = ?";
-    private static final String SQL_CLEAR_CLAN = "DELETE FROM siegable_hall_flagwar_attackers WHERE hall_id = ?";
-    private static final String SQL_CLEAR_CLAN_ATTACKERS =
-            "DELETE FROM siegable_hall_flagwar_attackers_members WHERE hall_id = ?";
 
     private static final int ROYAL_FLAG = 35606;
     private static final int FLAG_RED = 35607;
@@ -246,8 +238,11 @@ public class WildBeastReserve extends ClanHallSiegeEngine {
                 htmltext = "35627-12.htm";
             } else {
                 final ClanData data = WildBeastReserve.data.get(clan.getId());
-                data.players.add(player.getObjectId());
-                saveMember(clan.getId(), player.getObjectId());
+                if (!data.players.contains(player.getObjectId())) {
+                    data.players.add(player.getObjectId());
+                    saveMember(clan.getId(), player.getObjectId());
+                }
+
                 if (data.npc == 0) {
                     htmltext = "35627-11.htm";
                 } else {
@@ -691,112 +686,39 @@ public class WildBeastReserve extends ClanHallSiegeEngine {
 
     @Override
     public void loadAttackers() {
-        try (Connection con = DatabaseFactory.getConnection()) {
-            final PreparedStatement statement = con.prepareStatement(SQL_LOAD_ATTACKERS);
-            statement.setInt(1, hall.getId());
-            final ResultSet rset = statement.executeQuery();
-            while (rset.next()) {
-                final int clanId = rset.getInt("clan_id");
-                if (ClanTable.getInstance().getClan(clanId) == null) {
-                    log.warn("Loaded an unexistent clan as attacker! Clan Id: {}", clanId);
-                    continue;
-                }
-
-                final int flag = rset.getInt("flag");
-                final int npc = rset.getInt("npc");
-                final SiegeClan sc = new SiegeClan(clanId, SiegeClanType.ATTACKER);
-                getAttackers().put(clanId, sc);
-
-                final ClanData data = new ClanData();
-                data.flag = flag;
-                data.npc = npc;
-                WildBeastReserve.data.put(clanId, data);
-
-                loadAttackerMembers(clanId);
+        for (FlagWarAttacker attacker : CHSiegeManager.getInstance().findFlagWarAttackers(hall.getId())) {
+            final int clanId = attacker.clanId();
+            if (ClanTable.getInstance().getClan(clanId) == null) {
+                log.warn("Loaded an unexistent clan as attacker! Clan Id: {}", clanId);
+                continue;
             }
 
-            rset.close();
-            statement.close();
-        } catch (Exception e) {
-            log.warn("loadAttackers() failed", e);
-        }
-    }
+            final SiegeClan sc = new SiegeClan(clanId, SiegeClanType.ATTACKER);
+            getAttackers().put(clanId, sc);
 
-    private void loadAttackerMembers(int clanId) {
-        try (Connection con = DatabaseFactory.getConnection()) {
-            final ArrayList<Integer> listInstance = data.get(clanId).players;
-            if (listInstance == null) {
-                log.warn("Tried to load unregistered clan: {}[clan Id]", clanId);
-                return;
-            }
+            final ClanData data = new ClanData();
+            data.flag = attacker.flagNpcId();
+            data.npc = attacker.allyNpcId();
+            WildBeastReserve.data.put(clanId, data);
 
-            final PreparedStatement statement = con.prepareStatement(SQL_LOAD_MEMEBERS);
-            statement.setInt(1, clanId);
-            final ResultSet rset = statement.executeQuery();
-            while (rset.next()) {
-                listInstance.add(rset.getInt("object_id"));
-            }
-
-            rset.close();
-            statement.close();
-        } catch (Exception e) {
-            log.warn("loadAttackerMembers() failed", e);
+            data.players.addAll(CHSiegeManager.getInstance().findFlagWarMembers(hall.getId(), clanId));
         }
     }
 
     private void saveClan(int clanId, int flag) {
-        try (Connection con = DatabaseFactory.getConnection()) {
-            final PreparedStatement statement = con.prepareStatement(SQL_SAVE_CLAN);
-            statement.setInt(1, hall.getId());
-            statement.setInt(2, flag);
-            statement.setInt(3, 0);
-            statement.setInt(4, clanId);
-            statement.execute();
-            statement.close();
-        } catch (Exception e) {
-            log.warn("saveClan() failed", e);
-        }
+        CHSiegeManager.getInstance().saveFlagWarAttacker(hall.getId(), clanId, flag);
     }
 
     private void saveNpc(int npc, int clanId) {
-        try (Connection con = DatabaseFactory.getConnection()) {
-            final PreparedStatement statement = con.prepareStatement(SQL_SAVE_NPC);
-            statement.setInt(1, npc);
-            statement.setInt(2, clanId);
-            statement.execute();
-            statement.close();
-        } catch (Exception e) {
-            log.warn("saveNpc() failed", e);
-        }
+        CHSiegeManager.getInstance().saveFlagWarAllyNpc(hall.getId(), clanId, npc);
     }
 
     private void saveMember(int clanId, int objectId) {
-        try (Connection con = DatabaseFactory.getConnection()) {
-            final PreparedStatement statement = con.prepareStatement(SQL_SAVE_ATTACKER);
-            statement.setInt(1, hall.getId());
-            statement.setInt(2, clanId);
-            statement.setInt(3, objectId);
-            statement.execute();
-            statement.close();
-        } catch (Exception e) {
-            log.warn("saveMember() failed", e);
-        }
+        CHSiegeManager.getInstance().saveFlagWarMember(hall.getId(), clanId, objectId);
     }
 
     private void clearTables() {
-        try (Connection con = DatabaseFactory.getConnection()) {
-            final PreparedStatement stat1 = con.prepareStatement(SQL_CLEAR_CLAN);
-            stat1.setInt(1, hall.getId());
-            stat1.execute();
-            stat1.close();
-
-            final PreparedStatement stat2 = con.prepareStatement(SQL_CLEAR_CLAN_ATTACKERS);
-            stat2.setInt(1, hall.getId());
-            stat2.execute();
-            stat2.close();
-        } catch (Exception e) {
-            log.warn("clearTables() failed", e);
-        }
+        CHSiegeManager.getInstance().deleteFlagWarAttackers(hall.getId());
     }
 
     protected class ClanData {

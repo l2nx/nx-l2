@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -157,7 +161,7 @@ public class CharacterCreate extends ClientPacket {
          * DrHouse: Since checks for duplicate names are done using SQL, lock must be held until data is written to DB as well.
          */
         synchronized (CharInfoTable.getInstance()) {
-            if ((CharInfoTable.getInstance().getAccountCharacterCount(client.getAccountName())
+            if ((CharInfoTable.getInstance().getAccountCharacterCount(client.getAccountId())
                             >= ServerConfig.MAX_CHARACTERS_NUMBER_PER_ACCOUNT)
                     && (ServerConfig.MAX_CHARACTERS_NUMBER_PER_ACCOUNT != 0)) {
                 client.sendPacket(new CharCreateFail(CharCreateFail.REASON_TOO_MANY_CHARACTERS));
@@ -221,7 +225,7 @@ public class CharacterCreate extends ClientPacket {
             }
 
             newChar = Player.create(
-                    template, client.getAccountName(), name, new PlayerAppearance(face, hairColor, hairStyle, female));
+                    template, client.getAccountId(), name, new PlayerAppearance(face, hairColor, hairStyle, female));
         }
 
         // HP and MP are at maximum and CP is zero by default.
@@ -264,7 +268,7 @@ public class CharacterCreate extends ClientPacket {
         }
 
         newChar.setTitle(
-                StartingTitleConfig.ENABLE_CUSTOM_STARTING_TITLE ? StartingTitleConfig.CUSTOM_STARTING_TITLE : "");
+                StartingTitleConfig.ENABLE_CUSTOM_STARTING_TITLE ? StartingTitleConfig.CUSTOM_STARTING_TITLE : null);
 
         if (PlayerConfig.ENABLE_VITALITY) {
             newChar.setVitalityPoints(
@@ -322,7 +326,7 @@ public class CharacterCreate extends ClientPacket {
         newChar.setOnlineStatus(true, false);
         Disconnection.of(client, newChar).storeAndDelete();
 
-        final CharSelectionInfo cl = new CharSelectionInfo(client.getAccountName(), client.getSessionId().playOkID1);
+        final CharSelectionInfo cl = new CharSelectionInfo(client);
         client.setCharSelection(cl.getCharInfo());
     }
 }

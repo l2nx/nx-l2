@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -23,7 +27,6 @@
 package app.l2nx.highfive.managers;
 
 import app.l2nx.highfive.config.custom.RebirthConfig;
-import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.data.xml.ExperienceData;
 import app.l2nx.highfive.data.xml.SkillData;
 import app.l2nx.highfive.data.xml.SkillTreeData;
@@ -37,10 +40,8 @@ import app.l2nx.highfive.network.serverpackets.ExShowScreenMessage;
 import app.l2nx.highfive.network.serverpackets.MagicSkillUse;
 import app.l2nx.highfive.network.serverpackets.NpcHtmlMessage;
 import app.l2nx.highfive.network.serverpackets.SocialAction;
+import app.l2nx.highfive.repository.character.CharacterRebirthRepository;
 import java.io.File;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -51,6 +52,8 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.xml.parsers.DocumentBuilderFactory;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataAccessException;
+import org.springframework.stereotype.Component;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
@@ -66,18 +69,15 @@ import org.w3c.dom.NodeList;
  * @author BazookaRpm
  */
 @Slf4j
+@Component
 public final class RebirthManager {
+    private static volatile RebirthManager instance;
 
     // Constants.
     private static final int SKILLS_PER_ROW = 3;
     private static final int SKILL_ICON_PADDING_THRESHOLD = 1000;
 
     private static final String REBIRTH_BUSY_MESSAGE = "A rebirth operation is already in progress.";
-    private static final String SELECT_REBIRTH_COUNT = "SELECT rebirthCount FROM rebirth_system WHERE charId=?";
-    private static final String INSERT_FIRST_REBIRTH = "INSERT INTO rebirth_system (charId, rebirthCount) VALUES (?,1)";
-    private static final String UPDATE_REBIRTH_COUNT = "UPDATE rebirth_system SET rebirthCount=? WHERE charId=?";
-    private static final String SELECT_SELECTED_SKILLS = "SELECT selectedSkills FROM rebirth_system WHERE charId=?";
-    private static final String UPDATE_SELECTED_SKILLS = "UPDATE rebirth_system SET selectedSkills=? WHERE charId=?";
 
     private static final String CLASS_LIST_FILE = "data/stats/players/classList.xml";
 
@@ -87,6 +87,13 @@ public final class RebirthManager {
     // Operation guards.
     private static final Set<Integer> REBIRTH_OPERATIONS_IN_PROGRESS = ConcurrentHashMap.newKeySet();
     private static final Set<Integer> REBIRTH_SKILL_OPERATIONS_IN_PROGRESS = ConcurrentHashMap.newKeySet();
+
+    private final CharacterRebirthRepository rebirthRepository;
+
+    public RebirthManager(CharacterRebirthRepository rebirthRepository) {
+        this.rebirthRepository = rebirthRepository;
+        instance = this;
+    }
 
     /**
      * Checks whether the skill belongs to the root starting class skill tree of the player.
@@ -340,7 +347,8 @@ public final class RebirthManager {
             final String definition = getSkillDefinition(skillDefinitionMap, skillId);
             if (definition == null) {
                 log.warn(
-                        "Selected rebirth skill definition was not found while building acquired skills HTML: playerId={} playerName={} skillId={}",
+                        "Selected rebirth skill definition was not found while building acquired skills HTML:"
+                                + " playerId={} playerName={} skillId={}",
                         player.getObjectId(),
                         player.getName(),
                         skillId);
@@ -351,7 +359,8 @@ public final class RebirthManager {
             final Skill skill = SkillData.getInstance().getSkill(skillId, skillLevel);
             if (skill == null) {
                 log.warn(
-                        "Selected rebirth skill was not found while building acquired skills HTML: playerId={} playerName={} skillId={} skillLevel={} definition={}",
+                        "Selected rebirth skill was not found while building acquired skills HTML: playerId={}"
+                                + " playerName={} skillId={} skillLevel={} definition={}",
                         player.getObjectId(),
                         player.getName(),
                         skillId,
@@ -383,8 +392,8 @@ public final class RebirthManager {
                 htmlBuilder
                         .append("<button value=\"Reset\" action=\"bypass -h rebirth_resetSkill ")
                         .append(skillId)
-                        .append(
-                                "\" width=65 height=18 back=\"L2UI_CT1.Button_DF_Down\" fore=\"L2UI_CT1.Button_DF\"><br1>");
+                        .append("\" width=65 height=18 back=\"L2UI_CT1.Button_DF_Down\""
+                                + " fore=\"L2UI_CT1.Button_DF\"><br1>");
             }
 
             htmlBuilder.append("</td>");
@@ -418,7 +427,8 @@ public final class RebirthManager {
             final int skillId = getSkillId(definition);
             if (skillId <= 0) {
                 log.warn(
-                        "Skipping invalid rebirth skill definition while building index: playerId={} playerName={} definition={}",
+                        "Skipping invalid rebirth skill definition while building index: playerId={} playerName={}"
+                                + " definition={}",
                         player.getObjectId(),
                         player.getName(),
                         definition);
@@ -428,7 +438,8 @@ public final class RebirthManager {
             final String previous = skillDefinitionMap.put(Integer.valueOf(skillId), definition);
             if (previous != null) {
                 log.warn(
-                        "Duplicate rebirth skill definition detected while building index: playerId={} playerName={} skillId={} previousDefinition={} newDefinition={}",
+                        "Duplicate rebirth skill definition detected while building index: playerId={} playerName={}"
+                                + " skillId={} previousDefinition={} newDefinition={}",
                         player.getObjectId(),
                         player.getName(),
                         skillId,
@@ -619,7 +630,8 @@ public final class RebirthManager {
             final int skillLevel = getSkillLevel(definition);
             if (skillLevel <= 0) {
                 log.warn(
-                        "Skipping invalid rebirth skill definition in selection window: playerId={} playerName={} definition={}",
+                        "Skipping invalid rebirth skill definition in selection window: playerId={} playerName={}"
+                                + " definition={}",
                         player.getObjectId(),
                         player.getName(),
                         definition);
@@ -630,7 +642,8 @@ public final class RebirthManager {
             final Skill skill = SkillData.getInstance().getSkill(skillId, skillLevel);
             if (skill == null) {
                 log.warn(
-                        "Configured rebirth skill was not found in selection window: playerId={} playerName={} skillId={} skillLevel={} definition={}",
+                        "Configured rebirth skill was not found in selection window: playerId={} playerName={}"
+                                + " skillId={} skillLevel={} definition={}",
                         player.getObjectId(),
                         player.getName(),
                         skillId,
@@ -674,8 +687,8 @@ public final class RebirthManager {
         }
 
         htmlBuilder.append("</tr></table><br>");
-        htmlBuilder.append(
-                "<button value=\"Return\" action=\"bypass -h rebirth_openmenu\" width=95 height=20 back=\"L2UI_CT1.Button_DF_Down\" fore=\"L2UI_CT1.Button_DF\">");
+        htmlBuilder.append("<button value=\"Return\" action=\"bypass -h rebirth_openmenu\" width=95 height=20"
+                + " back=\"L2UI_CT1.Button_DF_Down\" fore=\"L2UI_CT1.Button_DF\">");
         htmlBuilder.append("</center></body></html>");
 
         html.setHtml(htmlBuilder.toString());
@@ -816,7 +829,8 @@ public final class RebirthManager {
                 player.removeSkill(skill, true);
             } else {
                 log.warn(
-                        "Configured rebirth skill could not be removed because it was not found: playerId={} playerName={} skillId={} skillLevel={} definition={}",
+                        "Configured rebirth skill could not be removed because it was not found: playerId={}"
+                                + " playerName={} skillId={} skillLevel={} definition={}",
                         playerId,
                         player.getName(),
                         skillId,
@@ -881,7 +895,7 @@ public final class RebirthManager {
                 return;
             }
 
-            grantRebirth(player, currentRebirthCount + 1, currentRebirthCount == 0);
+            grantRebirth(player, currentRebirthCount + 1);
         } finally {
             REBIRTH_OPERATIONS_IN_PROGRESS.remove(Integer.valueOf(playerId));
         }
@@ -891,26 +905,25 @@ public final class RebirthManager {
      * Applies the rebirth state change and updates the character.
      * @param player
      * @param newCount
-     * @param firstBirth
      */
-    private void grantRebirth(Player player, int newCount, boolean firstBirth) {
+    private void grantRebirth(Player player, int newCount) {
         final int playerId = player.getObjectId();
         final String playerName = player.getName();
 
         try {
-            // Critical persistence step.
-            final boolean updated = firstBirth ? insertFirst(playerId) : updateCount(playerId, newCount);
-            if (!updated) {
-                player.sendMessage("Rebirth could not be completed due to a database error.");
-                log.error(
-                        "Aborting rebirth because rebirth count persistence failed: playerId={} playerName={} newCount={} firstBirth={}",
-                        playerId,
-                        playerName,
-                        newCount,
-                        firstBirth);
-                return;
-            }
+            rebirthRepository.saveRebirthCount(playerId, newCount);
+        } catch (DataAccessException e) {
+            player.sendMessage("Rebirth could not be completed due to a database error.");
+            log.error(
+                    "Aborting rebirth because rebirth count persistence failed: playerId={} playerName={} newCount={}",
+                    playerId,
+                    playerName,
+                    newCount,
+                    e);
+            return;
+        }
 
+        try {
             // Critical player mutation step.
             final long currentExp = player.getExp();
             final long targetExp = ExperienceData.getInstance().getExpForLevel(1);
@@ -944,11 +957,10 @@ public final class RebirthManager {
             player.storeMe();
         } catch (Exception e) {
             log.error(
-                    "Failed during critical rebirth section: playerId={} playerName={} newCount={} firstBirth={}",
+                    "Failed during critical rebirth section: playerId={} playerName={} newCount={}",
                     playerId,
                     playerName,
                     newCount,
-                    firstBirth,
                     e);
             player.sendMessage("Rebirth could not be completed due to an internal error.");
             return;
@@ -1261,7 +1273,8 @@ public final class RebirthManager {
             final String definition = getSkillDefinition(skillDefinitionMap, skillId);
             if (definition == null) {
                 log.warn(
-                        "Skipping selected rebirth skill because definition was not found: playerId={} playerName={} skillId={}",
+                        "Skipping selected rebirth skill because definition was not found: playerId={} playerName={}"
+                                + " skillId={}",
                         player.getObjectId(),
                         player.getName(),
                         skillId);
@@ -1273,7 +1286,8 @@ public final class RebirthManager {
                 player.addSkill(skill, true);
             } else {
                 log.warn(
-                        "Skipping selected rebirth skill because skill data was not found: playerId={} playerName={} skillId={} definition={}",
+                        "Skipping selected rebirth skill because skill data was not found: playerId={} playerName={}"
+                                + " skillId={} definition={}",
                         player.getObjectId(),
                         player.getName(),
                         skillId,
@@ -1298,88 +1312,15 @@ public final class RebirthManager {
      * @return The stored rebirth count.
      */
     public int getCount(int charId) {
-        int count = 0;
-        try (Connection connection = DatabaseFactory.getConnection();
-                PreparedStatement statement = connection.prepareStatement(SELECT_REBIRTH_COUNT)) {
-            statement.setInt(1, charId);
-            try (ResultSet resultSet = statement.executeQuery()) {
-                if (resultSet.next()) {
-                    count = resultSet.getInt(1);
-                }
-            }
-        } catch (Exception e) {
-            log.error("Failed to load rebirth count: charId={}", charId, e);
-        }
-        return count;
-    }
-
-    /**
-     * Inserts the first rebirth record for a character.
-     * @param charId
-     * @return {@code true} if the insert succeeded, {@code false} otherwise.
-     */
-    public boolean insertFirst(int charId) {
-        try (Connection connection = DatabaseFactory.getConnection();
-                PreparedStatement statement = connection.prepareStatement(INSERT_FIRST_REBIRTH)) {
-            statement.setInt(1, charId);
-            return statement.executeUpdate() > 0;
-        } catch (Exception e) {
-            log.error("Failed to insert first rebirth record: charId={}", charId, e);
-        }
-        return false;
-    }
-
-    /**
-     * Updates the stored rebirth count for a character.
-     * @param charId
-     * @param newCount
-     * @return {@code true} if the update succeeded, {@code false} otherwise.
-     */
-    public boolean updateCount(int charId, int newCount) {
-        try (Connection connection = DatabaseFactory.getConnection();
-                PreparedStatement statement = connection.prepareStatement(UPDATE_REBIRTH_COUNT)) {
-            statement.setInt(1, newCount);
-            statement.setInt(2, charId);
-            return statement.executeUpdate() > 0;
-        } catch (Exception e) {
-            log.error("Failed to update rebirth count: charId={} newCount={}", charId, newCount, e);
-        }
-        return false;
+        return rebirthRepository.findRebirthCount(charId);
     }
 
     /**
      * Loads the persisted selected rebirth skills for a character.
      * @param charId
-     * @return The stored selected skill ids.
      */
     public List<Integer> getSelectedSkills(int charId) {
-        final List<Integer> skills = new ArrayList<>();
-        try (Connection connection = DatabaseFactory.getConnection();
-                PreparedStatement statement = connection.prepareStatement(SELECT_SELECTED_SKILLS)) {
-            statement.setInt(1, charId);
-            try (ResultSet resultSet = statement.executeQuery()) {
-                if (resultSet.next()) {
-                    final String data = resultSet.getString(1);
-                    if ((data != null) && !data.isEmpty()) {
-                        for (String skillValue : data.split(",")) {
-                            try {
-                                skills.add(Integer.valueOf(Integer.parseInt(skillValue.trim())));
-                            } catch (NumberFormatException e) {
-                                log.warn(
-                                        "Failed to parse persisted rebirth skill id: charId={} rawValue={} data={}",
-                                        charId,
-                                        skillValue,
-                                        data,
-                                        e);
-                            }
-                        }
-                    }
-                }
-            }
-        } catch (Exception e) {
-            log.error("Failed to load selected rebirth skills: charId={}", charId, e);
-        }
-        return skills;
+        return new ArrayList<>(rebirthRepository.findSelectedSkillIds(charId));
     }
 
     /**
@@ -1388,22 +1329,7 @@ public final class RebirthManager {
      * @param skills
      */
     public void saveSelectedSkills(int charId, List<Integer> skills) {
-        try (Connection connection = DatabaseFactory.getConnection();
-                PreparedStatement statement = connection.prepareStatement(UPDATE_SELECTED_SKILLS)) {
-            final StringBuilder skillBuilder = new StringBuilder();
-            for (int i = 0; i < skills.size(); i++) {
-                if (i > 0) {
-                    skillBuilder.append(',');
-                }
-                skillBuilder.append(skills.get(i));
-            }
-
-            statement.setString(1, skillBuilder.toString());
-            statement.setInt(2, charId);
-            statement.executeUpdate();
-        } catch (Exception e) {
-            log.error("Failed to save selected rebirth skills: charId={} skills={}", charId, skills, e);
-        }
+        rebirthRepository.saveSelectedSkillIds(charId, skills);
     }
 
     /**
@@ -1434,7 +1360,8 @@ public final class RebirthManager {
         final Skill skill = SkillData.getInstance().getSkill(skillId, targetLevel);
         if (skill == null) {
             log.warn(
-                    "Configured rebirth skill preview was not found: playerId={} playerName={} skillId={} targetLevel={} definition={}",
+                    "Configured rebirth skill preview was not found: playerId={} playerName={} skillId={}"
+                            + " targetLevel={} definition={}",
                     player.getObjectId(),
                     player.getName(),
                     skillId,
@@ -1509,8 +1436,8 @@ public final class RebirthManager {
             }
         }
 
-        htmlBuilder.append(
-                "<button value=\"Return\" action=\"bypass -h rebirth_selectskills\" width=95 height=20 back=\"L2UI_CT1.Button_DF_Down\" fore=\"L2UI_CT1.Button_DF\">");
+        htmlBuilder.append("<button value=\"Return\" action=\"bypass -h rebirth_selectskills\" width=95 height=20"
+                + " back=\"L2UI_CT1.Button_DF_Down\" fore=\"L2UI_CT1.Button_DF\">");
         htmlBuilder.append("</center></body></html>");
 
         html.setHtml(htmlBuilder.toString());
@@ -1545,7 +1472,8 @@ public final class RebirthManager {
         if (rebirthCount < RebirthConfig.REBIRTH_MAX_COUNT) {
             html.replace(
                     "%rebirth_button%",
-                    "<button value=\"Request Rebirth\" action=\"bypass -h rebirth_confirmrequest\" width=130 height=20 back=\"L2UI_CT1.Button_DF_Down\" fore=\"L2UI_CT1.Button_DF\">");
+                    "<button value=\"Request Rebirth\" action=\"bypass -h rebirth_confirmrequest\" width=130 height=20"
+                            + " back=\"L2UI_CT1.Button_DF_Down\" fore=\"L2UI_CT1.Button_DF\">");
         } else {
             html.replace("%rebirth_button%", "<font color=AAAAAA>Max Rebirth reached.</font>");
         }
@@ -1553,18 +1481,12 @@ public final class RebirthManager {
         player.sendPacket(html);
     }
 
-    /**
-     * Returns the singleton rebirth manager instance.
-     * @return The rebirth manager instance.
-     */
+    // TODO: callers receive the bean through their constructor (#41).
     public static RebirthManager getInstance() {
-        return SingletonHolder.INSTANCE;
-    }
-
-    /**
-     * Holds the singleton rebirth manager instance.
-     */
-    private static class SingletonHolder {
-        protected static final RebirthManager INSTANCE = new RebirthManager();
+        final RebirthManager current = instance;
+        if (current == null) {
+            throw new IllegalStateException("RebirthManager is used before the Spring context created it.");
+        }
+        return current;
     }
 }

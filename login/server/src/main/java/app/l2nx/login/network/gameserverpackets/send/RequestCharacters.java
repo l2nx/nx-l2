@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+/*
  * SPDX-FileCopyrightText: L2J Mobius contributors
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
@@ -20,13 +24,15 @@
 package app.l2nx.login.network.gameserverpackets.send;
 
 import app.l2nx.network.packet.SimpleWritablePacket;
+import java.util.UUID;
 
 /**
  * @author mrTJO
  */
 public class RequestCharacters extends SimpleWritablePacket {
-    public RequestCharacters(String account) {
+    public RequestCharacters(UUID accountId) {
         writeByte(0x05);
-        writeString(account);
+        writeLong(accountId.getMostSignificantBits());
+        writeLong(accountId.getLeastSignificantBits());
     }
 }

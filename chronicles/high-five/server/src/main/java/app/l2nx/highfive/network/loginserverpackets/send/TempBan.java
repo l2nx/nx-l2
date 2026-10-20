@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -22,48 +26,41 @@
  */
 package app.l2nx.highfive.network.loginserverpackets.send;
 
-import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.network.packet.SimpleWritablePacket;
+import java.util.Objects;
+import java.util.UUID;
 
 /**
  * Issues a temporary ban for an account and/or IP at the login server.<br>
- * The ban expires at {@code now + minutes * 60000}.
  * <ul>
  * <li>Opcode: 0x0A.</li>
- * <li>Payload: account (String), ip (String), expireMillis (long), reserved (byte).</li>
+ * <li>Payload: account id (2 longs: msb, lsb), ip (String), minutes (long), reserved (byte).</li>
  * </ul>
  * @author BazookaRpm
  */
 public class TempBan extends SimpleWritablePacket {
     // Opcode.
     private static final int OPCODE = 0x0A;
-    private static final long MINUTE_MILLIS = 60000L;
 
     // Data.
-    private final String accountName;
+    private final UUID accountId;
     private final String ip;
     private final long minutes;
 
-    /**
-     * @param accountName account name
-     * @param ip ip address
-     * @param time minutes duration
-     */
-    public TempBan(String accountName, String ip, long time) {
-        this.accountName = (accountName != null) ? accountName : "";
-        this.ip = (ip != null) ? ip : "";
-        minutes = (time > 0L) ? time : 0L;
+    /** @param ip {@code null} bans the account only */
+    public TempBan(UUID accountId, String ip, long minutes) {
+        this.accountId = Objects.requireNonNull(accountId, "accountId");
+        this.ip = ip;
+        this.minutes = Math.max(minutes, 0L);
     }
 
-    /**
-     * Serializes opcode, identifiers and expiration time.
-     */
     @Override
     public void write() {
         writeByte(OPCODE);
-        writeString(accountName);
+        writeLong(accountId.getMostSignificantBits());
+        writeLong(accountId.getLeastSignificantBits());
         writeString(ip);
-        writeLong(ClockBridge.wallMillis() + (minutes * MINUTE_MILLIS));
+        writeLong(minutes);
         writeByte(0x00);
     }
 }

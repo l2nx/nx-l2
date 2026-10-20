@@ -11,7 +11,7 @@ dependencyResolutionManagement {
 
 rootProject.name = "nx-l2"
 
-include(":libs:boot", ":libs:network")
+include(":libs:boot", ":libs:database", ":libs:network")
 include(":engine:core")
 include(":login:server", ":login:boot")
 

@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -22,20 +26,20 @@
  */
 package app.l2nx.highfive.entity.residences;
 
+import static app.l2nx.highfive.repository.LegacyValues.instantOrNull;
+
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.data.sql.ClanHallTable;
 import app.l2nx.highfive.data.sql.ClanTable;
-import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.entity.clan.Clan;
 import app.l2nx.highfive.entity.item.enums.ItemProcessType;
 import app.l2nx.highfive.entity.itemcontainer.Inventory;
 import app.l2nx.highfive.managers.ClanHallAuctionManager;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
+import app.l2nx.highfive.repository.residence.model.ClanHallState;
 import app.l2nx.highfive.threads.ThreadPool;
 import app.l2nx.highfive.util.StatSet;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -161,7 +165,7 @@ public class AuctionableHall extends ClanHall {
                         sm.addInt(lease);
                         clan.broadcastToOnlineMembers(sm);
                         if ((time + (3600000 * 24)) <= (paidUntil + CH_RATE)) {
-                            ThreadPool.schedule(new FeeTask(), time + (3600000 * 24));
+                            ThreadPool.schedule(new FeeTask(), 3600000 * 24);
                         } else {
                             ThreadPool.schedule(new FeeTask(), (paidUntil + CH_RATE) - time);
                         }
@@ -175,16 +179,12 @@ public class AuctionableHall extends ClanHall {
 
     @Override
     public void updateDb() {
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps =
-                        con.prepareStatement("UPDATE clanhall SET ownerId=?, paidUntil=?, paid=? WHERE id=?")) {
-            ps.setInt(1, getOwnerId());
-            ps.setLong(2, paidUntil);
-            ps.setInt(3, paid ? 1 : 0);
-            ps.setInt(4, getId());
-            ps.execute();
-        } catch (Exception e) {
-            log.warn("Exception: updateOwnerInDB(Pledge clan): {}", e.getMessage(), e);
-        }
+        ClanHallTable.getInstance()
+                .saveState(ClanHallState.builder()
+                        .clanHallId(getId())
+                        .ownerClanId(getOwnerId())
+                        .paidUntil(instantOrNull(paidUntil))
+                        .paid(paid)
+                        .build());
     }
 }

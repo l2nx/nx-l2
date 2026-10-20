@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -23,12 +27,14 @@
 package app.l2nx.highfive.network.loginserverpackets.send;
 
 import app.l2nx.network.packet.SimpleWritablePacket;
+import java.util.Objects;
+import java.util.UUID;
 
 /**
- * Notifies the login server that a player has logged out.
+ * Notifies the login server that an account has logged out.
  * <ul>
  * <li>Opcode: 0x03.</li>
- * <li>Payload: player name (String).</li>
+ * <li>Payload: account id (2 longs: msb, lsb).</li>
  * </ul>
  * @author BazookaRpm
  */
@@ -37,21 +43,22 @@ public class PlayerLogout extends SimpleWritablePacket {
     private static final int OPCODE = 0x03;
 
     // Data.
-    private final String player;
+    private final UUID accountId;
 
     /**
-     * @param player player name
+     * @param accountId the account
      */
-    public PlayerLogout(String player) {
-        this.player = (player != null) ? player : "";
+    public PlayerLogout(UUID accountId) {
+        this.accountId = Objects.requireNonNull(accountId, "accountId");
     }
 
     /**
-     * Serializes opcode and player name.
+     * Serializes opcode and account.
      */
     @Override
     public void write() {
         writeByte(OPCODE);
-        writeString(player);
+        writeLong(accountId.getMostSignificantBits());
+        writeLong(accountId.getLeastSignificantBits());
     }
 }

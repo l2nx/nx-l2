@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -22,24 +26,15 @@
  */
 package app.l2nx.highfive.scripts.handlers.chat.commands.admin;
 
-import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.data.xml.MapRegionData;
-import app.l2nx.highfive.data.xml.SpawnData;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.WorldObject;
-import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
-import app.l2nx.highfive.entity.actor.instance.GrandBoss;
-import app.l2nx.highfive.entity.actor.instance.RaidBoss;
-import app.l2nx.highfive.entity.spawns.Spawn;
 import app.l2nx.highfive.handler.IAdminCommandHandler;
-import app.l2nx.highfive.managers.RaidBossSpawnManager;
+import app.l2nx.highfive.managers.AdminCharacterManager;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.serverpackets.NpcHtmlMessage;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
 import java.util.NoSuchElementException;
 import java.util.StringTokenizer;
 import lombok.extern.slf4j.Slf4j;
@@ -63,7 +58,6 @@ public class AdminTeleport implements IAdminCommandHandler {
         "admin_walk",
         "teleportto",
         "recall",
-        "admin_recall_npc",
         "admin_gonorth",
         "admin_gosouth",
         "admin_goeast",
@@ -104,8 +98,6 @@ public class AdminTeleport implements IAdminCommandHandler {
             AdminHtml.showAdminHtml(activeChar, "teleports/OtherLocations.htm");
         } else if (command.equals("admin_show_teleport")) {
             showTeleportCharWindow(activeChar);
-        } else if (command.equals("admin_recall_npc")) {
-            recallNPC(activeChar);
         } else if (command.equals("admin_teleport_to_character")) {
             teleportToCharacter(activeChar, activeChar.getTarget());
         } else if (command.startsWith("admin_walk")) {
@@ -303,9 +295,17 @@ public class AdminTeleport implements IAdminCommandHandler {
         final NpcHtmlMessage adminReply = new NpcHtmlMessage();
         final String replyMSG =
                 "<html><title>Teleport Character</title><body>The character you will teleport is " + player.getName()
-                        + ".<br>Co-ordinate x<edit var=\"char_cord_x\" width=110>Co-ordinate y<edit var=\"char_cord_y\" width=110>Co-ordinate z<edit var=\"char_cord_z\" width=110><button value=\"Teleport\" action=\"bypass -h admin_teleport_character $char_cord_x $char_cord_y $char_cord_z\" width=60 height=15 back=\"L2UI_ct1.button_df\" fore=\"L2UI_ct1.button_df\"><button value=\"Teleport near you\" action=\"bypass -h admin_teleport_character "
+                        + ".<br>Co-ordinate x<edit var=\"char_cord_x\" width=110>Co-ordinate y<edit"
+                        + " var=\"char_cord_y\" width=110>Co-ordinate z<edit var=\"char_cord_z\" width=110><button"
+                        + " value=\"Teleport\" action=\"bypass -h admin_teleport_character $char_cord_x $char_cord_y"
+                        + " $char_cord_z\" width=60 height=15 back=\"L2UI_ct1.button_df\""
+                        + " fore=\"L2UI_ct1.button_df\"><button value=\"Teleport near you\" action=\"bypass -h"
+                        + " admin_teleport_character "
                         + activeChar.getX() + " " + activeChar.getY() + " " + activeChar.getZ()
-                        + "\" width=115 height=15 back=\"L2UI_ct1.button_df\" fore=\"L2UI_ct1.button_df\"><center><button value=\"Back\" action=\"bypass -h admin_current_player\" width=40 height=15 back=\"L2UI_ct1.button_df\" fore=\"L2UI_ct1.button_df\"></center></body></html>";
+                        + "\" width=115 height=15 back=\"L2UI_ct1.button_df\""
+                        + " fore=\"L2UI_ct1.button_df\"><center><button value=\"Back\" action=\"bypass -h"
+                        + " admin_current_player\" width=40 height=15 back=\"L2UI_ct1.button_df\""
+                        + " fore=\"L2UI_ct1.button_df\"></center></body></html>";
         adminReply.setHtml(replyMSG);
         activeChar.sendPacket(adminReply);
     }
@@ -397,91 +397,11 @@ public class AdminTeleport implements IAdminCommandHandler {
         final int x = activeChar.getX();
         final int y = activeChar.getY();
         final int z = activeChar.getZ();
-        try (Connection con = DatabaseFactory.getConnection()) {
-            final PreparedStatement statement =
-                    con.prepareStatement("UPDATE characters SET x=?, y=?, z=? WHERE char_name=?");
-            statement.setInt(1, x);
-            statement.setInt(2, y);
-            statement.setInt(3, z);
-            statement.setString(4, name);
-            statement.execute();
-            final int count = statement.getUpdateCount();
-            statement.close();
-            if (count == 0) {
-                activeChar.sendSysMessage("Character not found or position unaltered.");
-            } else {
-                activeChar.sendSysMessage(
-                        "Player's [" + name + "] position is now set to (" + x + "," + y + "," + z + ").");
-            }
-        } catch (SQLException se) {
-            activeChar.sendSysMessage("SQLException while changing offline character's position");
-        }
-    }
-
-    private void recallNPC(Player activeChar) {
-        final WorldObject obj = activeChar.getTarget();
-        if ((obj instanceof Npc)
-                && !obj.asNpc().isMinion()
-                && !(obj instanceof RaidBoss)
-                && !(obj instanceof GrandBoss)) {
-            final Npc target = obj.asNpc();
-            Spawn spawn = target.getSpawn();
-            if (spawn == null) {
-                activeChar.sendSysMessage("Incorrect monster spawn.");
-                log.warn("ERROR: NPC {} has a 'null' spawn.", target.getObjectId());
-                return;
-            }
-
-            final int respawnTime = spawn.getRespawnDelay() / 1000;
-            target.deleteMe();
-            spawn.stopRespawn();
-            SpawnData.getInstance().deleteSpawn(spawn);
-
-            try {
-                spawn = new Spawn(target.getTemplate().getId());
-                spawn.setXYZ(activeChar);
-                spawn.setAmount(1);
-                spawn.setHeading(activeChar.getHeading());
-                spawn.setRespawnDelay(respawnTime);
-                spawn.setInstanceId(activeChar.getInstanceId());
-
-                SpawnData.getInstance().addNewSpawn(spawn);
-                spawn.init();
-                if (respawnTime <= 0) {
-                    spawn.stopRespawn();
-                }
-
-                activeChar.sendSysMessage(
-                        "Created " + target.getTemplate().getName() + " on " + target.getObjectId() + ".");
-            } catch (Exception e) {
-                activeChar.sendSysMessage("Target is not in game.");
-            }
-        } else if (obj instanceof RaidBoss) {
-            final RaidBoss target = (RaidBoss) obj;
-            final Spawn spawn = target.getSpawn();
-            final double curHP = target.getCurrentHp();
-            final double curMP = target.getCurrentMp();
-            if (spawn == null) {
-                activeChar.sendSysMessage("Incorrect raid spawn.");
-                log.warn("ERROR: NPC Id{} has a 'null' spawn.", target.getId());
-                return;
-            }
-
-            RaidBossSpawnManager.getInstance().deleteSpawn(spawn, true);
-            try {
-                final Spawn spawnDat = new Spawn(target.getId());
-                spawnDat.setXYZ(activeChar);
-                spawnDat.setAmount(1);
-                spawnDat.setHeading(activeChar.getHeading());
-                spawnDat.setRespawnMinDelay(43200);
-                spawnDat.setRespawnMaxDelay(129600);
-
-                RaidBossSpawnManager.getInstance().addNewSpawn(spawnDat, 0, curHP, curMP, true);
-            } catch (Exception e) {
-                activeChar.sendPacket(SystemMessageId.YOUR_TARGET_CANNOT_BE_FOUND);
-            }
+        if (AdminCharacterManager.getInstance().moveCharacter(name, x, y, z)) {
+            activeChar.sendSysMessage(
+                    "Player's [" + name + "] position is now set to (" + x + "," + y + "," + z + ").");
         } else {
-            activeChar.sendPacket(SystemMessageId.INVALID_TARGET);
+            activeChar.sendSysMessage("Character not found or position unaltered.");
         }
     }
 }

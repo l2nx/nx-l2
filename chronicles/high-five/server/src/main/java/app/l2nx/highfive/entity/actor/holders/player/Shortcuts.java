@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -22,21 +26,20 @@
  */
 package app.l2nx.highfive.entity.actor.holders.player;
 
-import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.enums.player.ShortcutType;
 import app.l2nx.highfive.entity.item.instance.Item;
 import app.l2nx.highfive.entity.item.type.EtcItemType;
+import app.l2nx.highfive.managers.PlayerPersistenceManager;
 import app.l2nx.highfive.network.serverpackets.ExAutoSoulShot;
 import app.l2nx.highfive.network.serverpackets.ShortcutInit;
 import app.l2nx.highfive.network.serverpackets.ShortcutRegister;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
+import app.l2nx.highfive.repository.character.model.CharacterShortcut;
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataAccessException;
 
 @Slf4j
 public class Shortcuts {
@@ -75,29 +78,28 @@ public class Shortcuts {
             }
 
             shortcut.setSharedReuseGroup(item.getSharedReuseGroup());
+            // A new item reaches the database lazily; the stored shortcut references its row.
+            item.updateDatabase(true);
         }
 
-        registerShortcutInDb(
-                shortcut, shortcuts.put(shortcut.getSlot() + (shortcut.getPage() * MAX_SHORTCUTS_PER_BAR), shortcut));
+        shortcuts.put(shortcut.getSlot() + (shortcut.getPage() * MAX_SHORTCUTS_PER_BAR), shortcut);
+        registerShortcutInDb(shortcut);
     }
 
-    private void registerShortcutInDb(Shortcut shortcut, Shortcut oldShortcut) {
-        if (oldShortcut != null) {
-            deleteShortcutFromDb(oldShortcut);
-        }
-
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement statement = con.prepareStatement(
-                        "REPLACE INTO character_shortcuts (charId,slot,page,type,shortcut_id,level,class_index) values(?,?,?,?,?,?,?)")) {
-            statement.setInt(1, owner.getObjectId());
-            statement.setInt(2, shortcut.getSlot());
-            statement.setInt(3, shortcut.getPage());
-            statement.setInt(4, shortcut.getType().ordinal());
-            statement.setInt(5, shortcut.getId());
-            statement.setInt(6, shortcut.getLevel());
-            statement.setInt(7, owner.getClassIndex());
-            statement.execute();
-        } catch (Exception e) {
+    private void registerShortcutInDb(Shortcut shortcut) {
+        try {
+            PlayerPersistenceManager.getInstance()
+                    .saveShortcut(
+                            owner.getObjectId(),
+                            owner.getClassIndex(),
+                            CharacterShortcut.builder()
+                                    .slot(shortcut.getSlot())
+                                    .page(shortcut.getPage())
+                                    .type(shortcut.getType())
+                                    .id(shortcut.getId())
+                                    .level(shortcut.getLevel())
+                                    .build());
+        } catch (DataAccessException e) {
             log.warn("Could not store character shortcut: {}", e.getMessage(), e);
         }
     }
@@ -133,43 +135,24 @@ public class Shortcuts {
     }
 
     private void deleteShortcutFromDb(Shortcut shortcut) {
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement statement = con.prepareStatement(
-                        "DELETE FROM character_shortcuts WHERE charId=? AND slot=? AND page=? AND class_index=?")) {
-            statement.setInt(1, owner.getObjectId());
-            statement.setInt(2, shortcut.getSlot());
-            statement.setInt(3, shortcut.getPage());
-            statement.setInt(4, owner.getClassIndex());
-            statement.execute();
-        } catch (Exception e) {
+        try {
+            PlayerPersistenceManager.getInstance()
+                    .deleteShortcut(owner.getObjectId(), owner.getClassIndex(), shortcut.getSlot(), shortcut.getPage());
+        } catch (DataAccessException e) {
             log.warn("Could not delete character shortcut: {}", e.getMessage(), e);
         }
     }
 
     public boolean restoreMe() {
         shortcuts.clear();
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement statement = con.prepareStatement(
-                        "SELECT charId, slot, page, type, shortcut_id, level FROM character_shortcuts WHERE charId=? AND class_index=?")) {
-            statement.setInt(1, owner.getObjectId());
-            statement.setInt(2, owner.getClassIndex());
-
-            try (ResultSet rset = statement.executeQuery()) {
-                while (rset.next()) {
-                    final int slot = rset.getInt("slot");
-                    final int page = rset.getInt("page");
-                    shortcuts.put(
-                            slot + (page * MAX_SHORTCUTS_PER_BAR),
-                            new Shortcut(
-                                    slot,
-                                    page,
-                                    ShortcutType.values()[rset.getInt("type")],
-                                    rset.getInt("shortcut_id"),
-                                    rset.getInt("level"),
-                                    1));
-                }
+        try {
+            for (CharacterShortcut stored :
+                    PlayerPersistenceManager.getInstance().findShortcuts(owner.getObjectId(), owner.getClassIndex())) {
+                shortcuts.put(
+                        stored.slot() + (stored.page() * MAX_SHORTCUTS_PER_BAR),
+                        new Shortcut(stored.slot(), stored.page(), stored.type(), stored.id(), stored.level(), 1));
             }
-        } catch (Exception e) {
+        } catch (DataAccessException e) {
             log.warn("Could not restore character shortcuts: {}", e.getMessage(), e);
             return false;
         }

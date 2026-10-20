@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+/*
  * SPDX-FileCopyrightText: L2J Mobius contributors
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
@@ -19,7 +23,6 @@
  */
 package app.l2nx.highfive.managers;
 
-import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.data.xml.NpcData;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Player;
@@ -28,12 +31,14 @@ import app.l2nx.highfive.entity.actor.templates.NpcTemplate;
 import app.l2nx.highfive.entity.item.enums.ItemLocation;
 import app.l2nx.highfive.entity.item.instance.Item;
 import app.l2nx.highfive.mechanics.siege.Castle;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.Statement;
+import app.l2nx.highfive.repository.residence.CastleMercenaryRepository;
+import app.l2nx.highfive.repository.residence.model.CastleMercenary;
 import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataAccessException;
+import org.springframework.stereotype.Component;
 
 /**
  * This class is similar to the SiegeGuardManager, except it handles the loading of the mercenary tickets that are dropped on castle floors by the castle lords.<br>
@@ -43,7 +48,9 @@ import lombok.extern.slf4j.Slf4j;
  * @author yellowperil, Fulminus
  */
 @Slf4j
+@Component
 public class MercTicketManager {
+    private static volatile MercTicketManager instance;
 
     private static final Collection<Item> DROPPED_TICKETS = ConcurrentHashMap.newKeySet();
 
@@ -170,8 +177,11 @@ public class MercTicketManager {
 
     private static final int GUARDIAN_TYPES_COUNT = 52;
 
-    protected MercTicketManager() {
-        load();
+    private final CastleMercenaryRepository mercenaryRepository;
+
+    public MercTicketManager(CastleMercenaryRepository mercenaryRepository) {
+        this.mercenaryRepository = mercenaryRepository;
+        instance = this;
     }
 
     // returns the castleId for the passed ticket item id
@@ -202,66 +212,92 @@ public class MercTicketManager {
     /**
      * Load merc tickets into the world.
      */
-    private void load() {
-        try (Connection con = DatabaseFactory.getConnection();
-                Statement s = con.createStatement();
-                ResultSet rs = s.executeQuery("SELECT * FROM castle_siege_guards Where isHired = 1")) {
-            int npcId;
-            int itemId;
-            int x;
-            int y;
-            int z;
-            final int[] mercPlaced = new int[20];
+    public void load() {
+        final List<CastleMercenary> mercenaries;
+        try {
+            mercenaries = mercenaryRepository.findAll();
+        } catch (DataAccessException e) {
+            log.warn("Exception: loadMercenaryData(): {}", e.getMessage(), e);
+            return;
+        }
 
-            // start index to begin the search for the itemId corresponding to this NPC
-            // this will help with:
-            // a) skip unnecessary iterations in the search loop
-            // b) avoid finding the wrong itemId whenever tickets of different spawn the same npc!
-            int startindex = 0;
+        int itemId;
+        final int[] mercPlaced = new int[20];
 
-            while (rs.next()) {
-                npcId = rs.getInt("npcId");
-                x = rs.getInt("x");
-                y = rs.getInt("y");
-                z = rs.getInt("z");
-                final Castle castle = CastleManager.getInstance().getCastle(x, y, z);
-                if (castle != null) {
-                    if (mercPlaced[castle.getResidenceId() - 1] >= MERCS_MAX_PER_CASTLE[castle.getResidenceId() - 1]) {
-                        continue;
-                    }
+        // start index to begin the search for the itemId corresponding to this NPC
+        // this will help with:
+        // a) skip unnecessary iterations in the search loop
+        // b) avoid finding the wrong itemId whenever tickets of different spawn the same npc!
+        int startindex = 0;
 
-                    startindex = GUARDIAN_TYPES_COUNT * (castle.getResidenceId() - 1);
-                    mercPlaced[castle.getResidenceId() - 1] += 1;
+        for (CastleMercenary mercenary : mercenaries) {
+            final int x = mercenary.x();
+            final int y = mercenary.y();
+            final int z = mercenary.z();
+            final Castle castle = CastleManager.getInstance().getCastle(x, y, z);
+            if (castle != null) {
+                if (mercPlaced[castle.getResidenceId() - 1] >= MERCS_MAX_PER_CASTLE[castle.getResidenceId() - 1]) {
+                    continue;
                 }
 
-                // Find the FIRST ticket itemId with spawns the saved NPC in the saved location.
-                for (int i = startindex; i < (startindex + GUARDIAN_TYPES_COUNT); i++) {
-                    if (NPC_IDS[i] == npcId) // Find the index of the item used.
-                    {
-                        // only handle tickets if a siege is not ongoing in this npc's castle
-                        if ((castle != null) && !castle.getSiege().isInProgress()) {
-                            itemId = ITEM_IDS[i];
-
-                            // Create the ticket in the gameworld.
-                            final Item dropticket =
-                                    new Item(IdManager.getInstance().getNextId(), itemId);
-                            dropticket.setItemLocation(ItemLocation.VOID);
-                            dropticket.dropMe(null, x, y, z);
-                            dropticket.setDropTime(0); // avoids it from being removed by the auto item destroyer
-                            World.addObject(dropticket);
-                            DROPPED_TICKETS.add(dropticket);
-                        }
-                        break;
-                    }
-                }
+                startindex = GUARDIAN_TYPES_COUNT * (castle.getResidenceId() - 1);
+                mercPlaced[castle.getResidenceId() - 1] += 1;
             }
 
-            rs.close();
-            s.close();
+            // Find the FIRST ticket itemId with spawns the saved NPC in the saved location.
+            for (int i = startindex; i < (startindex + GUARDIAN_TYPES_COUNT); i++) {
+                if (NPC_IDS[i] == mercenary.npcId()) // Find the index of the item used.
+                {
+                    // only handle tickets if a siege is not ongoing in this npc's castle
+                    if ((castle != null) && !castle.getSiege().isInProgress()) {
+                        itemId = ITEM_IDS[i];
 
-            log.info("Loaded {} Mercenary Tickets", DROPPED_TICKETS.size());
-        } catch (Exception e) {
-            log.warn("Exception: loadMercenaryData(): {}", e.getMessage(), e);
+                        // Create the ticket in the gameworld.
+                        final Item dropticket = new Item(IdManager.getInstance().getNextId(), itemId);
+                        dropticket.setItemLocation(ItemLocation.VOID);
+                        dropticket.dropMe(null, x, y, z);
+                        dropticket.setDropTime(0); // avoids it from being removed by the auto item destroyer
+                        World.addObject(dropticket);
+                        DROPPED_TICKETS.add(dropticket);
+                    }
+                    break;
+                }
+            }
+        }
+
+        log.info("Loaded {} Mercenary Tickets", DROPPED_TICKETS.size());
+    }
+
+    public List<CastleMercenary> findMercenaries(int castleId) {
+        try {
+            return mercenaryRepository.findByCastle(castleId);
+        } catch (DataAccessException e) {
+            log.warn("Error loading the mercenaries of castle {}: {}", castleId, e.getMessage(), e);
+            return List.of();
+        }
+    }
+
+    public void saveMercenary(CastleMercenary mercenary) {
+        try {
+            mercenaryRepository.insert(mercenary);
+        } catch (DataAccessException e) {
+            log.warn("Error adding a mercenary for castle {}: {}", mercenary.castleId(), e.getMessage(), e);
+        }
+    }
+
+    public void deleteMercenary(int npcId, int x, int y, int z) {
+        try {
+            mercenaryRepository.delete(npcId, x, y, z);
+        } catch (DataAccessException e) {
+            log.warn("Error deleting hired siege guard at {},{},{}: {}", x, y, z, e.getMessage(), e);
+        }
+    }
+
+    public void deleteMercenaries(int castleId) {
+        try {
+            mercenaryRepository.deleteByCastle(castleId);
+        } catch (DataAccessException e) {
+            log.warn("Error deleting hired siege guards for castle {}: {}", castleId, e.getMessage(), e);
         }
     }
 
@@ -430,7 +466,7 @@ public class MercTicketManager {
         // find the castle where this item is
         final Castle castle = CastleManager.getInstance().getCastleById(getTicketCastleId(itemId));
         if ((npcId > 0) && (castle != null)) {
-            (new SiegeGuardManager(castle)).removeMerc(npcId, item.getX(), item.getY(), item.getZ());
+            deleteMercenary(npcId, item.getX(), item.getY(), item.getZ());
         }
 
         DROPPED_TICKETS.remove(item);
@@ -448,11 +484,12 @@ public class MercTicketManager {
      * Gets the single instance of {@code MercTicketManager}.
      * @return single instance of {@code MercTicketManager}
      */
+    // TODO: callers receive the bean through their constructor (#41).
     public static MercTicketManager getInstance() {
-        return SingletonHolder.INSTANCE;
-    }
-
-    private static class SingletonHolder {
-        protected static final MercTicketManager INSTANCE = new MercTicketManager();
+        final MercTicketManager current = instance;
+        if (current == null) {
+            throw new IllegalStateException("MercTicketManager is used before the Spring context created it.");
+        }
+        return current;
     }
 }

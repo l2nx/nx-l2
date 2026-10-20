@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -22,14 +26,10 @@
  */
 package app.l2nx.highfive.scripts.handlers.chat.commands.admin;
 
-import app.l2nx.highfive.data.xml.SpawnData;
 import app.l2nx.highfive.entity.World;
-import app.l2nx.highfive.entity.WorldObject;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
-import app.l2nx.highfive.entity.spawns.Spawn;
 import app.l2nx.highfive.handler.IAdminCommandHandler;
-import app.l2nx.highfive.managers.RaidBossSpawnManager;
 import app.l2nx.highfive.mechanics.html.PageBuilder;
 import app.l2nx.highfive.mechanics.html.PageResult;
 import app.l2nx.highfive.mechanics.html.formatters.BypassParserFormatter;
@@ -37,7 +37,6 @@ import app.l2nx.highfive.mechanics.html.pagehandlers.NextPrevPageHandler;
 import app.l2nx.highfive.mechanics.html.styles.ButtonsStyle;
 import app.l2nx.highfive.network.serverpackets.NpcHtmlMessage;
 import app.l2nx.highfive.util.FormatUtil;
-import java.util.StringTokenizer;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -47,56 +46,13 @@ import java.util.regex.Pattern;
  */
 public class AdminScan implements IAdminCommandHandler {
     private static final String SPACE = " ";
-    private static final String[] ADMIN_COMMANDS = {"admin_scan", "admin_deleteNpcByObjectId"};
+    private static final String[] ADMIN_COMMANDS = {"admin_scan"};
 
     private static final int DEFAULT_RADIUS = 1000;
 
     @Override
     public boolean onCommand(String command, Player activeChar) {
-        final StringTokenizer st = new StringTokenizer(command, " ");
-        final String actualCommand = st.nextToken();
-
-        switch (actualCommand.toLowerCase()) {
-            case "admin_scan": {
-                processBypass(activeChar, command);
-                break;
-            }
-            case "admin_deletenpcbyobjectid": {
-                if (!st.hasMoreElements()) {
-                    activeChar.sendSysMessage("Usage: //deletenpcbyobjectid objectId=<object_id>");
-                    return false;
-                }
-
-                final int objectId = parseInt(command, "objectId", 0);
-                if (objectId == 0) {
-                    activeChar.sendSysMessage("objectId is not set or invalid!");
-                    return false;
-                }
-
-                final WorldObject target = World.findObject(objectId);
-                final Npc npc = target instanceof Npc ? target.asNpc() : null;
-                if (npc == null) {
-                    activeChar.sendSysMessage("NPC does not exist or object_id does not belong to an NPC");
-                    return false;
-                }
-
-                npc.deleteMe();
-
-                final Spawn spawn = npc.getSpawn();
-                if (spawn != null) {
-                    spawn.stopRespawn();
-                    if (RaidBossSpawnManager.getInstance().isDefined(spawn.getId())) {
-                        RaidBossSpawnManager.getInstance().deleteSpawn(spawn, true);
-                    } else {
-                        SpawnData.getInstance().deleteSpawn(spawn);
-                    }
-                }
-
-                activeChar.sendMessage(npc.getName() + " has been deleted.");
-                break;
-            }
-        }
-
+        processBypass(activeChar, command);
         return true;
     }
 
@@ -147,9 +103,6 @@ public class AdminScan implements IAdminCommandHandler {
                     sb.append("<td width=\"60\">")
                             .append(FormatUtil.formatAdena(Math.round(activeChar.calculateDistance2D(character))))
                             .append("</td>");
-                    sb.append("<td width=\"54\"><a action=\"bypass -h admin_deleteNpcByObjectId objectId=")
-                            .append(character.getObjectId())
-                            .append("\"><font color=\"LEVEL\">Delete</font></a></td>");
                     sb.append("</tr>");
                 })
                 .build();

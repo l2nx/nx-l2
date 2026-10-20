@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -42,7 +46,9 @@ import java.net.UnknownHostException;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
+import java.util.Optional;
 import java.util.StringTokenizer;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -130,6 +136,11 @@ public class AdminPunishment implements IAdminCommandHandler {
                                 }
 
                                 key = findCharId(key); // Swap the name of the character with it's id.
+                            } else if (affect == PunishmentAffect.ACCOUNT) {
+                                key = findAccountKey(activeChar, name);
+                                if (key == null) {
+                                    break;
+                                }
                             }
 
                             String content = HtmCache.getInstance().getHtm(activeChar, PUNISHMENT_INFO);
@@ -198,7 +209,7 @@ public class AdminPunishment implements IAdminCommandHandler {
                                         Arrays.stream(PunishmentType.values())
                                                 .map(Object::toString)
                                                 .collect(Collectors.joining(";")));
-                                content = content.replace("%acc%", target.getAccountName());
+                                content = content.replace("%acc%", target.getName());
                                 content = content.replace("%char%", target.getName());
                                 content = content.replace("%ip%", target.getIPAddress());
                                 content = content.replace(
@@ -274,6 +285,11 @@ public class AdminPunishment implements IAdminCommandHandler {
                     }
 
                     key = findCharId(key); // Swap the name of the character with it's id.
+                } else if (affect == PunishmentAffect.ACCOUNT) {
+                    key = findAccountKey(activeChar, name);
+                    if (key == null) {
+                        break;
+                    }
                 } else if (affect == PunishmentAffect.IP) {
                     try {
                         final InetAddress addr = InetAddress.getByName(key);
@@ -333,6 +349,11 @@ public class AdminPunishment implements IAdminCommandHandler {
                     }
 
                     key = findCharId(key); // Swap the name of the character with it's id.
+                } else if (affect == PunishmentAffect.ACCOUNT) {
+                    key = findAccountKey(activeChar, name);
+                    if (key == null) {
+                        break;
+                    }
                 }
 
                 if (!PunishmentManager.getInstance().hasPunishment(key, affect, type)) {
@@ -462,6 +483,25 @@ public class AdminPunishment implements IAdminCommandHandler {
         }
 
         return true;
+    }
+
+    /**
+     * @return the account id as the punishment key, {@code null} after telling the admin the character does not exist
+     */
+    private static String findAccountKey(Player admin, String characterName) {
+        final Player online = World.getPlayer(characterName);
+        final Optional<UUID> accountId = online != null
+                ? Optional.of(online.getAccountId())
+                : PunishmentManager.getInstance()
+                        .findAccountId(CharInfoTable.getInstance().getIdByName(characterName));
+        if (accountId.isEmpty()) {
+            final SystemMessage sm = new SystemMessage(SystemMessageId.S1_DOES_NOT_EXIST);
+            sm.addString(characterName);
+            admin.sendPacket(sm);
+            return null;
+        }
+
+        return accountId.get().toString();
     }
 
     private static String findCharId(String key) {

@@ -29,7 +29,7 @@ the database pool, logging, the HTTP management surface, packaging and tests. In
   - `spring-boot-starter-logging` excluded from every configuration; `spring-boot-starter-log4j2` and
     `com.lmax:disruptor` instead (§6);
   - starters `actuator`, `webmvc` (Tomcat), `jdbc`, plus `micrometer-registry-prometheus`;
-  - tests: `spring-boot-starter-test`, `spring-boot-testcontainers`, Testcontainers (`testcontainers-mysql`, see §9).
+  - tests: `spring-boot-starter-test`, `spring-boot-testcontainers`, Testcontainers (`testcontainers-postgresql`, see §9).
 - **Main classes:** `app.l2nx.login.boot.LoginApplication` and `app.l2nx.highfive.boot.HighFiveApplication`
   (`@SpringBootApplication(scanBasePackages = "app.l2nx.login")` and `"app.l2nx.highfive"`, so the beans of `server`
   are found; the beans of `libs/boot` come through auto-configuration, not scanning). `boot` stays the assembly module: it is the only one that sees `server` and `scripts` together.
@@ -116,10 +116,9 @@ and `systemctl stop` are not restarted.
 - `spring-boot-starter-jdbc` creates the `HikariDataSource` from `spring.datasource.*`. Only
   `maximum-pool-size` and `pool-name` are set; the Mobius timeouts (connection 60 s, idle 5 min, lifetime
   10 min, minimum idle of a tenth of the pool) give way to the Hikari defaults.
-- The login server reads and writes through repositories on `JdbcClient`. The game server's `DatabaseFactory` is a
-  bean that receives the `DataSource`; its static `getConnection()` stays for the existing callers until stage 3
-  moves them to repositories.
-- The driver stays `mysql-connector-j` against MariaDB; the database changes at stage 3.
+- Both servers read and write through repositories on `JdbcClient`; `DatabaseFactory` is removed
+  ([spec 006 §5](006-database.md#5-access-from-code)).
+- The driver is pgjdbc (PostgreSQL); the schema, its role and the Liquibase wiring are in [spec 006](006-database.md).
 
 ## 6. Logging
 
@@ -194,9 +193,9 @@ Left out on purpose: `heapdump` (gigabytes of memory with credentials in it; `jc
 ## 9. Tests
 
 - **Boot smoke test per server:** `@SpringBootTest(webEnvironment = RANDOM_PORT)` with a Testcontainers database:
-  `MySQLContainer` on the `mariadb` image, so `@ServiceConnection` hands Spring the MySQL Connector/J driver and URL
-  the servers ship with (the stock MariaDB container would hand it the MariaDB driver). The schema comes from the
-  `sql/` directories through `spring.sql.init` and the real datapack. It checks that the engine
+  a PostgreSQL Testcontainers container from the test fixtures of `libs/database`, wired with `@ServiceConnection`. The
+  fixture creates the servers' default schemas (`login`, `game`) as an operator would, and the server's own Liquibase
+  changelog migrates its schema at start; the datapack is the real one. It checks that the engine
   starts, readiness turns `UP`, the client port accepts TCP, `health`, `info` and `prometheus` answer, and closing
   the context runs the shutdown actions without `System.exit`. Missing geodata is not an error (regions without a
   file are empty), so the test runs in CI as is. A login and game pair cannot run in one JVM (both use the static
@@ -208,7 +207,6 @@ Left out on purpose: `heapdump` (gigabytes of memory with credentials in it; `jc
   gives the engine a `DataSource` that always fails; both check that `start()` rethrows and leaves no pool threads.
   `ServerExit` has no unit test: it is one call into Spring Boot followed by `System.exit`.
 - CI runs them in `./gradlew build`; the GitHub-hosted runner provides Docker.
-- At stage 3 the container becomes PostgreSQL and the same tests guard the move.
 
 ## 10. Documentation
 

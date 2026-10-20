@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+/*
  * SPDX-FileCopyrightText: L2J Mobius contributors
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
@@ -19,39 +23,37 @@
  */
 package app.l2nx.highfive.mechanics.siege.clanhalls;
 
+import static app.l2nx.highfive.repository.LegacyValues.instantOrNull;
+
 import app.l2nx.highfive.clock.ClockBridge;
-import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.instance.Door;
 import app.l2nx.highfive.entity.clan.Clan;
 import app.l2nx.highfive.entity.residences.ClanHall;
 import app.l2nx.highfive.entity.zone.type.SiegableHallZone;
 import app.l2nx.highfive.entity.zone.type.SiegeZone;
+import app.l2nx.highfive.managers.CHSiegeManager;
 import app.l2nx.highfive.mechanics.siege.SiegeClan;
 import app.l2nx.highfive.mechanics.siege.SiegeClanType;
 import app.l2nx.highfive.network.serverpackets.SiegeInfo;
+import app.l2nx.highfive.repository.residence.model.SiegableClanHallState;
 import app.l2nx.highfive.util.StatSet;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
 import java.util.Calendar;
 import lombok.Getter;
 import lombok.Setter;
-import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author BiggBoss
  */
-@Slf4j
 public class SiegableHall extends ClanHall {
-    private static final String SQL_SAVE = "UPDATE siegable_clanhall SET ownerId=?, nextSiege=? WHERE clanHallId=?";
-
     @Getter
     private Calendar siegeDate;
 
     @Getter
     private final long siegeLength;
 
-    private final int[] scheduleConfig = {7, 0, 0, 12, 0};
+    // Days, months and years to the next siege, then its hour and minute.
+    private final int[] scheduleConfig;
 
     @Getter
     private SiegeStatus siegeStatus = SiegeStatus.REGISTERING;
@@ -66,18 +68,13 @@ public class SiegableHall extends ClanHall {
     public SiegableHall(StatSet set) {
         super(set);
         siegeLength = set.getLong("siegeLength");
-        final String[] rawSchConfig = set.getString("scheduleConfig").split(";");
-        if (rawSchConfig.length == 5) {
-            for (int i = 0; i < 5; i++) {
-                try {
-                    scheduleConfig[i] = Integer.parseInt(rawSchConfig[i]);
-                } catch (Exception e) {
-                    log.warn("{}: Wrong schedule_config parameters!", getName());
-                }
-            }
-        } else {
-            log.warn("{}: Wrong schedule_config value in siegable_halls table, using default (7 days)", getName());
-        }
+        scheduleConfig = new int[] {
+            set.getInt("scheduleDays"),
+            set.getInt("scheduleMonths"),
+            set.getInt("scheduleYears"),
+            set.getInt("siegeHour"),
+            set.getInt("siegeMinute")
+        };
 
         siegeDate = ClockBridge.calendar();
         final long nextSiege = set.getLong("nextSiege");
@@ -116,15 +113,12 @@ public class SiegableHall extends ClanHall {
 
     @Override
     public void updateDb() {
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement(SQL_SAVE)) {
-            ps.setInt(1, getOwnerId());
-            ps.setLong(2, getNextSiegeTime());
-            ps.setInt(3, getId());
-            ps.execute();
-        } catch (Exception e) {
-            log.warn("Exception: SiegableHall.updateDb(): {}", e.getMessage(), e);
-        }
+        CHSiegeManager.getInstance()
+                .saveState(SiegableClanHallState.builder()
+                        .clanHallId(getId())
+                        .ownerClanId(getOwnerId())
+                        .nextSiege(instantOrNull(getNextSiegeTime()))
+                        .build());
     }
 
     public void setSiege(ClanHallSiegeEngine siegable) {

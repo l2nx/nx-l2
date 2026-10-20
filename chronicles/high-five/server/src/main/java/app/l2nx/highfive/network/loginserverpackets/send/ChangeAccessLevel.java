@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -24,12 +28,14 @@
 package app.l2nx.highfive.network.loginserverpackets.send;
 
 import app.l2nx.network.packet.SimpleWritablePacket;
+import java.util.Objects;
+import java.util.UUID;
 
 /**
- * Changes the access level of a player at the login server.
+ * Changes the access level of an account at the login server.
  * <ul>
  * <li>Opcode: 0x04.</li>
- * <li>Payload: access (int), player (String).</li>
+ * <li>Payload: access (int), account id (2 longs: msb, lsb).</li>
  * </ul>
  * @author BazookaRpm
  */
@@ -38,25 +44,22 @@ public class ChangeAccessLevel extends SimpleWritablePacket {
     private static final int OPCODE = 0x04;
 
     // Data.
-    private final String player;
+    private final UUID accountId;
     private final int access;
 
     /**
-     * @param player player name
      * @param access new access level
      */
-    public ChangeAccessLevel(String player, int access) {
-        this.player = (player != null) ? player : "";
+    public ChangeAccessLevel(UUID accountId, int access) {
+        this.accountId = Objects.requireNonNull(accountId, "accountId");
         this.access = access;
     }
 
-    /**
-     * Serializes opcode, access and player.
-     */
     @Override
     public void write() {
         writeByte(OPCODE);
         writeInt(access);
-        writeString(player);
+        writeLong(accountId.getMostSignificantBits());
+        writeLong(accountId.getLeastSignificantBits());
     }
 }

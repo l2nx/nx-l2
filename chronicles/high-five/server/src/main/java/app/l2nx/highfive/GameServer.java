@@ -48,7 +48,6 @@ import app.l2nx.highfive.data.sql.CharSummonTable;
 import app.l2nx.highfive.data.sql.ClanHallTable;
 import app.l2nx.highfive.data.sql.ClanTable;
 import app.l2nx.highfive.data.sql.CrestTable;
-import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.data.sql.OfflinePlayTable;
 import app.l2nx.highfive.data.sql.OfflineTraderTable;
 import app.l2nx.highfive.data.xml.AdminData;
@@ -133,6 +132,7 @@ import app.l2nx.highfive.managers.MailManager;
 import app.l2nx.highfive.managers.MercTicketManager;
 import app.l2nx.highfive.managers.PcCafePointsManager;
 import app.l2nx.highfive.managers.PetitionManager;
+import app.l2nx.highfive.managers.PlayerPersistenceManager;
 import app.l2nx.highfive.managers.PrecautionaryRestartManager;
 import app.l2nx.highfive.managers.PremiumManager;
 import app.l2nx.highfive.managers.PunishmentManager;
@@ -175,6 +175,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.InetSocketAddress;
 import java.time.Duration;
+import java.time.Instant;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.SmartLifecycle;
@@ -196,10 +197,7 @@ public class GameServer implements SmartLifecycle {
     @Getter
     private volatile boolean running;
 
-    /**
-     * @param databaseFactory not used directly: the dependency makes the static database access available before {@link #start()}
-     */
-    public GameServer(DatabaseFactory databaseFactory, ServerExit serverExit, MeterRegistry meterRegistry) {
+    public GameServer(ServerExit serverExit, MeterRegistry meterRegistry) {
         this.serverExit = serverExit;
         this.meterRegistry = meterRegistry;
     }
@@ -254,22 +252,19 @@ public class GameServer implements SmartLifecycle {
 
         gameTimeTaskManager = GameTimeTaskManager.getInstance();
 
-        printSection("IdManager");
-        IdManager.getInstance();
-
         printSection("Scripting Engine");
         EventDispatcher.getInstance();
         ScriptEngine.getInstance();
 
         printSection("World");
-        InstanceManager.getInstance();
+        InstanceManager.getInstance().load();
         World.init();
         Gauge.builder("l2nx.players.online", () -> World.getPlayers().size())
                 .description("Players in the world, offline traders included")
                 .register(meterRegistry);
         MapRegionData.getInstance();
-        AnnouncementsTable.getInstance();
-        GlobalVariablesManager.getInstance();
+        AnnouncementsTable.getInstance().load();
+        GlobalVariablesManager.getInstance().restoreMe();
 
         printSection("Data");
         CategoryData.getInstance();
@@ -293,7 +288,7 @@ public class GameServer implements SmartLifecycle {
         OptionData.getInstance();
         EnchantItemHPBonusData.getInstance();
         MerchantPriceConfigTable.getInstance().loadInstances();
-        BuyListData.getInstance();
+        BuyListData.getInstance().load();
         MultisellData.getInstance();
         RecipeData.getInstance();
         ArmorSetData.getInstance();
@@ -314,23 +309,24 @@ public class GameServer implements SmartLifecycle {
         KarmaLossData.getInstance();
         HitConditionBonusData.getInstance();
         PlayerTemplateData.getInstance();
-        CharInfoTable.getInstance();
+        PlayerPersistenceManager.getInstance().cleanUpAtStart(Instant.ofEpochMilli(ClockBridge.wallMillis()));
+        CharInfoTable.getInstance().load();
         AdminData.getInstance();
-        RaidBossPointsManager.getInstance();
+        RaidBossPointsManager.getInstance().load();
         PetDataTable.getInstance();
         CharSummonTable.getInstance().init();
         CaptchaManager.getInstance();
 
         if (PremiumSystemConfig.PREMIUM_SYSTEM_ENABLED) {
             log.info("PremiumManager: Premium system is enabled.");
-            PremiumManager.getInstance();
+            PremiumManager.getInstance().load();
         }
 
         printSection("Clans");
-        ClanTable.getInstance();
-        CHSiegeManager.getInstance();
-        ClanHallTable.getInstance();
-        ClanHallAuctionManager.getInstance();
+        ClanTable.getInstance().load();
+        ClanHallAuctionManager.getInstance().load();
+        ClanHallTable.getInstance().load();
+        CHSiegeManager.getInstance().loadClanHalls();
 
         printSection("Geodata");
         GeoEngine.getInstance();
@@ -344,31 +340,33 @@ public class GameServer implements SmartLifecycle {
         FakePlayerChatManager.getInstance();
         WalkingManager.getInstance();
         StaticObjectData.getInstance();
-        ItemAuctionManager.getInstance();
+        ItemAuctionManager.getInstance().load();
         CastleManager.getInstance().loadInstances();
-        SchemeBufferTable.getInstance();
+        SiegeManager.getInstance().load();
+        SchemeBufferTable.getInstance().load();
         ZoneManager.getInstance();
+        GrandBossManager.getInstance().load();
         GrandBossManager.getInstance().initZones();
         EventDropManager.getInstance();
 
         printSection("Olympiad");
-        Olympiad.getInstance();
-        Hero.getInstance();
+        Hero.getInstance().load();
+        Olympiad.getInstance().load();
 
         printSection("Seven Signs");
-        SevenSigns.getInstance();
+        SevenSigns.getInstance().load();
 
         printSection("Cache");
         HtmCache.getInstance();
-        CrestTable.getInstance();
+        CrestTable.getInstance().load();
         TeleporterData.getInstance();
         PartyMatchWaitingList.getInstance();
         PartyMatchRoomList.getInstance();
         PetitionManager.getInstance();
         AugmentationData.getInstance();
-        CursedWeaponsManager.getInstance();
+        CursedWeaponsManager.getInstance().init();
         TransformData.getInstance();
-        BotReportTable.getInstance();
+        BotReportTable.getInstance().load();
 
         if (SellBuffsConfig.SELLBUFF_ENABLED) {
             SellBuffsManager.getInstance();
@@ -384,9 +382,10 @@ public class GameServer implements SmartLifecycle {
         printSection("Scripts");
         ScriptManager.getInstance();
         BoatManager.getInstance();
-        AirShipManager.getInstance();
+        AirShipManager.getInstance().load();
         SeedOfDestructionManager.getInstance();
         SeedOfInfinityManager.getInstance();
+        TerritoryWarManager.getInstance().load();
 
         try {
             log.info("Loading server scripts...");
@@ -399,49 +398,46 @@ public class GameServer implements SmartLifecycle {
         SpawnData.getInstance();
         DayNightSpawnManager.getInstance().trim().notifyChangeMode();
         DimensionalRiftManager.getInstance();
-        RaidBossSpawnManager.getInstance();
+        RaidBossSpawnManager.getInstance().load();
 
         printSection("Siege");
         SiegeManager.getInstance().getSieges();
         CastleManager.getInstance().activateInstances();
         FortManager.getInstance().loadInstances();
+        FortSiegeManager.getInstance().load();
         FortManager.getInstance().activateInstances();
-        FortSiegeManager.getInstance();
         SiegeScheduleData.getInstance();
         MerchantPriceConfigTable.getInstance().updateReferences();
-        TerritoryWarManager.getInstance();
-        CastleManorManager.getInstance();
-        MercTicketManager.getInstance();
+        CastleManorManager.getInstance().init();
+        MercTicketManager.getInstance().load();
         ScriptManager.getInstance().report();
 
-        if (GeneralConfig.SAVE_DROPPED_ITEM) {
-            ItemsOnGroundManager.getInstance();
-        }
+        ItemsOnGroundManager.getInstance().load();
 
         if ((GeneralConfig.AUTODESTROY_ITEM_AFTER > 0) || (GeneralConfig.HERB_AUTO_DESTROY_TIME > 0)) {
             ItemsAutoDestroyTaskManager.getInstance();
         }
 
-        MonsterRaceManager.getInstance();
-        LotteryManager.getInstance();
+        MonsterRaceManager.getInstance().load();
+        LotteryManager.getInstance().load();
         SevenSigns.getInstance().spawnSevenSignsNPC();
-        SevenSignsFestival.getInstance();
+        SevenSignsFestival.getInstance().load();
         AutoSpawnHandler.getInstance();
         log.info(
                 "AutoSpawnHandler: Loaded {} handlers in total.",
                 AutoSpawnHandler.getInstance().size());
 
         if (WeddingConfig.ALLOW_WEDDING) {
-            CoupleManager.getInstance();
+            CoupleManager.getInstance().load();
         }
 
         if (GeneralConfig.ALT_FISH_CHAMPIONSHIP_ENABLED) {
-            FishingChampionshipManager.getInstance();
+            FishingChampionshipManager.getInstance().load();
         }
 
         KrateisCubeManager.getInstance();
-        UndergroundColiseumManager.getInstance();
-        DailyResetManager.getInstance();
+        UndergroundColiseumManager.getInstance().load();
+        DailyResetManager.getInstance().load();
         AntiFeedManager.getInstance().registerEvent(AntiFeedManager.GAME_ID);
 
         if (OfflinePlayConfig.ENABLE_OFFLINE_PLAY_COMMAND) {
@@ -449,22 +445,20 @@ public class GameServer implements SmartLifecycle {
         }
 
         if (GeneralConfig.ALLOW_MAIL) {
-            MailManager.getInstance();
+            MailManager.getInstance().load();
         }
 
         if (CustomMailManagerConfig.CUSTOM_MAIL_MANAGER_ENABLED) {
-            CustomMailManager.getInstance();
+            CustomMailManager.getInstance().load();
         }
 
         if (EventDispatcher.getInstance().hasListener(EventType.ON_SERVER_START)) {
             EventDispatcher.getInstance().notifyEventAsync(new OnServerStart());
         }
 
-        PunishmentManager.getInstance();
+        PunishmentManager.getInstance().load();
 
-        log.info(
-                "IdManager: Free ObjectID's remaining: {}",
-                IdManager.getInstance().getAvailableIdCount());
+        log.info("Object ids in use: {}", IdManager.getInstance().getAllocatedIdCount());
 
         if ((OfflineTradeConfig.OFFLINE_TRADE_ENABLE || OfflineTradeConfig.OFFLINE_CRAFT_ENABLE)
                 && OfflineTradeConfig.RESTORE_OFFLINERS) {
@@ -512,6 +506,7 @@ public class GameServer implements SmartLifecycle {
         }
         connectionManager.bindMetrics(meterRegistry, "l2nx-game");
 
+        LoginServerThread.getInstance().load();
         LoginServerThread.getInstance().start();
     }
 

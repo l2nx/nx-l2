@@ -9,11 +9,13 @@ jctools = "4.0.7"
 jmh-plugin = "0.7.3"
 junit = "6.1.3"
 lib-recur = "0.17.1"
+liquibase = "5.0.4"
 lombok = "1.18.48"
-mysql-connector = "26.7.0"
 palantir = "2.102.0"
+postgresql = "42.7.14"
 spotless = "8.10.4"
 spring-boot = "4.1.1"
+uuid-creator = "6.1.1"
 
 [libraries]
 archunit-junit5 = { module = "com.tngtech.archunit:archunit-junit5", version.ref = "archunit" }
@@ -27,16 +29,17 @@ junit-bom = { module = "org.junit:junit-bom", version.ref = "junit" }
 junit-jupiter = { module = "org.junit.jupiter:junit-jupiter" }
 junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
 lib-recur = { module = "org.dmfs:lib-recur", version.ref = "lib-recur" }
+liquibase-core = { module = "org.liquibase:liquibase-core", version.ref = "liquibase" }
 lombok = { module = "org.projectlombok:lombok", version.ref = "lombok" }
 micrometer-core = { module = "io.micrometer:micrometer-core" }
 micrometer-registry-prometheus = { module = "io.micrometer:micrometer-registry-prometheus" }
-mysql-connector = { module = "com.mysql:mysql-connector-j", version.ref = "mysql-connector" }
 netty-codec-base = { module = "io.netty:netty-codec-base" }
 netty-handler = { module = "io.netty:netty-handler" }
 netty-transport-classes-epoll = { module = "io.netty:netty-transport-classes-epoll" }
 netty-transport-classes-io-uring = { module = "io.netty:netty-transport-classes-io_uring" }
 netty-transport-native-epoll = { module = "io.netty:netty-transport-native-epoll" }
 netty-transport-native-io-uring = { module = "io.netty:netty-transport-native-io_uring" }
+postgresql = { module = "org.postgresql:postgresql", version.ref = "postgresql" }
 slf4j-api = { module = "org.slf4j:slf4j-api" }
 spring-boot = { module = "org.springframework.boot:spring-boot" }
 spring-boot-autoconfigure = { module = "org.springframework.boot:spring-boot-autoconfigure" }
@@ -44,13 +47,15 @@ spring-boot-configuration-processor = { module = "org.springframework.boot:sprin
 spring-boot-dependencies = { module = "org.springframework.boot:spring-boot-dependencies", version.ref = "spring-boot" }
 spring-boot-starter-actuator = { module = "org.springframework.boot:spring-boot-starter-actuator" }
 spring-boot-starter-jdbc = { module = "org.springframework.boot:spring-boot-starter-jdbc" }
+spring-boot-starter-liquibase = { module = "org.springframework.boot:spring-boot-starter-liquibase" }
 spring-boot-starter-log4j2 = { module = "org.springframework.boot:spring-boot-starter-log4j2" }
 spring-boot-starter-test = { module = "org.springframework.boot:spring-boot-starter-test" }
 spring-boot-starter-validation = { module = "org.springframework.boot:spring-boot-starter-validation" }
 spring-boot-starter-webmvc = { module = "org.springframework.boot:spring-boot-starter-webmvc" }
 spring-boot-testcontainers = { module = "org.springframework.boot:spring-boot-testcontainers" }
 testcontainers-junit-jupiter = { module = "org.testcontainers:testcontainers-junit-jupiter" }
-testcontainers-mysql = { module = "org.testcontainers:testcontainers-mysql" }
+testcontainers-postgresql = { module = "org.testcontainers:testcontainers-postgresql" }
+uuid-creator = { module = "com.github.f4b6a3:uuid-creator", version.ref = "uuid-creator" }
 gradle-git-properties-plugin = { module = "com.gorylenko.gradle-git-properties:gradle-git-properties", version.ref = "gradle-git-properties" }
 spotless-gradle-plugin = { module = "com.diffplug.spotless:spotless-plugin-gradle", version.ref = "spotless" }
 spring-boot-gradle-plugin = { module = "org.springframework.boot:spring-boot-gradle-plugin", version.ref = "spring-boot" }

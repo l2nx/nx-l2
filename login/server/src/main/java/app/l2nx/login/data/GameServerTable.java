@@ -217,21 +217,20 @@ public class GameServerTable {
      * @param gsi the game server info DTO.
      */
     public void registerServerOnDB(GameServerInfo gsi) {
-        registerServerOnDB(gsi.getHexId(), gsi.getId(), gsi.getExternalHost());
+        registerServerOnDB(gsi.getHexId(), gsi.getId());
     }
 
     /**
      * Register server on db.
      * @param hexId the hex id
      * @param id the id
-     * @param externalHost the external host
      */
-    public void registerServerOnDB(byte[] hexId, int id, String externalHost) {
+    public void registerServerOnDB(byte[] hexId, int id) {
         register(id, new GameServerInfo(id, hexId));
         try {
-            gameServers.create(id, hexToString(hexId), externalHost);
+            gameServers.create(id, hexToString(hexId));
         } catch (Exception e) {
-            log.error("Error while saving gameserver!");
+            log.error("Error while saving gameserver!", e);
         }
     }
 

@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+/*
  * SPDX-FileCopyrightText: L2J Mobius contributors
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
@@ -19,27 +23,18 @@
  */
 package app.l2nx.highfive.mechanics.announce;
 
-import app.l2nx.highfive.data.sql.DatabaseFactory;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
+import app.l2nx.highfive.data.sql.AnnouncementsTable;
+import app.l2nx.highfive.repository.world.model.AnnouncementRow;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataAccessException;
 
 /**
  * @author UnAfraid
  */
 @Slf4j
 public class Announcement implements IAnnouncement {
-
-    private static final String INSERT_QUERY = "INSERT INTO announcements (type, content, author) VALUES (?, ?, ?)";
-    private static final String UPDATE_QUERY =
-            "UPDATE announcements SET type = ?, content = ?, author = ? WHERE id = ?";
-    private static final String DELETE_QUERY = "DELETE FROM announcements WHERE id = ?";
 
     @Getter
     protected int id;
@@ -62,11 +57,33 @@ public class Announcement implements IAnnouncement {
         this.author = author;
     }
 
-    public Announcement(ResultSet rset) throws SQLException {
-        id = rset.getInt("id");
-        type = AnnouncementType.findById(rset.getInt("type"));
-        content = rset.getString("content");
-        author = rset.getString("author");
+    public Announcement(AnnouncementRow row) {
+        id = row.id();
+        type = row.type();
+        content = row.content();
+        author = row.author();
+    }
+
+    protected AnnouncementRow toRow() {
+        return AnnouncementRow.builder()
+                .id(id)
+                .type(type)
+                .content(content)
+                .author(author)
+                .repeat(-1)
+                .build();
+    }
+
+    /**
+     * A plain announcement has no schedule, so it cannot be stored with an {@code AUTO_*} type.
+     */
+    protected boolean isStorable() {
+        if ((type == AnnouncementType.AUTO_NORMAL) || (type == AnnouncementType.AUTO_CRITICAL)) {
+            log.warn("Announcement {} has the type {} but no schedule; it is not stored.", id, type);
+            return false;
+        }
+
+        return true;
     }
 
     @Override
@@ -76,19 +93,14 @@ public class Announcement implements IAnnouncement {
 
     @Override
     public boolean storeMe() {
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement(INSERT_QUERY, Statement.RETURN_GENERATED_KEYS)) {
-            ps.setInt(1, type.ordinal());
-            ps.setString(2, content);
-            ps.setString(3, author);
-            ps.execute();
-            try (ResultSet rset = ps.getGeneratedKeys()) {
-                if (rset.next()) {
-                    id = rset.getInt(1);
-                }
-            }
-        } catch (Exception e) {
-            LoggerFactory.getLogger(getClass()).warn("Couldn't store announcement: ", e);
+        if (!isStorable()) {
+            return false;
+        }
+
+        try {
+            id = AnnouncementsTable.getInstance().insert(toRow());
+        } catch (DataAccessException e) {
+            log.warn("Couldn't store announcement: ", e);
             return false;
         }
 
@@ -97,15 +109,14 @@ public class Announcement implements IAnnouncement {
 
     @Override
     public boolean updateMe() {
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement(UPDATE_QUERY)) {
-            ps.setInt(1, type.ordinal());
-            ps.setString(2, content);
-            ps.setString(3, author);
-            ps.setInt(4, id);
-            ps.execute();
-        } catch (Exception e) {
-            LoggerFactory.getLogger(getClass()).warn("Couldn't store announcement: ", e);
+        if (!isStorable()) {
+            return false;
+        }
+
+        try {
+            AnnouncementsTable.getInstance().update(toRow());
+        } catch (DataAccessException e) {
+            log.warn("Couldn't store announcement: ", e);
             return false;
         }
 
@@ -114,12 +125,10 @@ public class Announcement implements IAnnouncement {
 
     @Override
     public boolean deleteMe() {
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement(DELETE_QUERY)) {
-            ps.setInt(1, id);
-            ps.execute();
-        } catch (Exception e) {
-            LoggerFactory.getLogger(getClass()).warn("Couldn't remove announcement: ", e);
+        try {
+            AnnouncementsTable.getInstance().delete(id);
+        } catch (DataAccessException e) {
+            log.warn("Couldn't remove announcement: ", e);
             return false;
         }
 

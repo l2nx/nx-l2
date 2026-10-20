@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -22,6 +26,9 @@
  */
 package app.l2nx.highfive.data.sql;
 
+import static app.l2nx.highfive.repository.LegacyValues.epochMillisOrZero;
+import static app.l2nx.highfive.repository.LegacyValues.instantOrNull;
+
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.custom.DualboxCheckConfig;
 import app.l2nx.highfive.config.custom.OfflineTradeConfig;
@@ -39,132 +46,49 @@ import app.l2nx.highfive.network.GameClient;
 import app.l2nx.highfive.network.holders.TradeItem;
 import app.l2nx.highfive.network.serverpackets.LeaveWorld;
 import app.l2nx.highfive.network.serverpackets.ServerClose;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.Statement;
+import app.l2nx.highfive.repository.offline.OfflineTradeRepository;
+import app.l2nx.highfive.repository.offline.model.OfflineTrade;
+import app.l2nx.highfive.repository.offline.model.OfflineTradeItem;
+import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataAccessException;
+import org.springframework.stereotype.Component;
 
 @Slf4j
+@Component
 public class OfflineTraderTable {
+    private static volatile OfflineTraderTable instance;
 
     private static final Logger ACCOUNTING_LOG = LoggerFactory.getLogger("accounting");
 
-    // SQL DEFINITIONS
-    private static final String SAVE_OFFLINE_STATUS =
-            "INSERT INTO character_offline_trade (`charId`,`time`,`type`,`title`) VALUES (?,?,?,?)";
-    private static final String SAVE_ITEMS =
-            "INSERT INTO character_offline_trade_items (`charId`,`item`,`count`,`price`) VALUES (?,?,?,?)";
-    private static final String CLEAR_OFFLINE_TABLE = "DELETE FROM character_offline_trade";
-    private static final String CLEAR_OFFLINE_TABLE_PLAYER = "DELETE FROM character_offline_trade WHERE `charId`=?";
-    private static final String CLEAR_OFFLINE_TABLE_ITEMS = "DELETE FROM character_offline_trade_items";
-    private static final String CLEAR_OFFLINE_TABLE_ITEMS_PLAYER =
-            "DELETE FROM character_offline_trade_items WHERE `charId`=?";
-    private static final String LOAD_OFFLINE_STATUS = "SELECT * FROM character_offline_trade";
-    private static final String LOAD_OFFLINE_ITEMS = "SELECT * FROM character_offline_trade_items WHERE `charId`=?";
+    private final OfflineTradeRepository offlineTradeRepository;
 
-    protected OfflineTraderTable() {}
+    public OfflineTraderTable(OfflineTradeRepository offlineTradeRepository) {
+        this.offlineTradeRepository = offlineTradeRepository;
+        instance = this;
+    }
 
     public void storeOffliners() {
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement stm1 = con.prepareStatement(CLEAR_OFFLINE_TABLE);
-                PreparedStatement stm2 = con.prepareStatement(CLEAR_OFFLINE_TABLE_ITEMS);
-                PreparedStatement stm3 = con.prepareStatement(SAVE_OFFLINE_STATUS);
-                PreparedStatement stmItems = con.prepareStatement(SAVE_ITEMS)) {
-            stm1.execute();
-            stm2.execute();
+        try {
+            offlineTradeRepository.deleteAll();
             for (Player pc : World.getPlayers()) {
                 try {
                     if (pc.isInStoreMode()
-                            && ((pc.getClient() == null) || pc.getClient().isDetached())) {
-                        stm3.setInt(1, pc.getObjectId()); // Char Id
-                        stm3.setLong(2, pc.getOfflineStartTime());
-                        stm3.setInt(
-                                3,
-                                pc.isSellingBuffs()
-                                        ? PrivateStoreType.SELL_BUFFS.getId()
-                                        : pc.getPrivateStoreType().getId()); // store type
-                        String title = null;
-
-                        switch (pc.getPrivateStoreType()) {
-                            case BUY: {
-                                if (!OfflineTradeConfig.OFFLINE_TRADE_ENABLE) {
-                                    continue;
-                                }
-
-                                title = pc.getBuyList().getTitle();
-                                for (TradeItem i : pc.getBuyList().getItems()) {
-                                    stmItems.setInt(1, pc.getObjectId());
-                                    stmItems.setInt(2, i.getItem().getId());
-                                    stmItems.setLong(3, i.getCount());
-                                    stmItems.setLong(4, i.getPrice());
-                                    stmItems.executeUpdate();
-                                    stmItems.clearParameters();
-                                }
-                                break;
-                            }
-                            case SELL:
-                            case PACKAGE_SELL: {
-                                if (!OfflineTradeConfig.OFFLINE_TRADE_ENABLE) {
-                                    continue;
-                                }
-
-                                title = pc.getSellList().getTitle();
-                                if (pc.isSellingBuffs()) {
-                                    for (SellBuffHolder holder : pc.getSellingBuffs()) {
-                                        stmItems.setInt(1, pc.getObjectId());
-                                        stmItems.setInt(2, holder.getSkillId());
-                                        stmItems.setLong(3, 0);
-                                        stmItems.setLong(4, holder.getPrice());
-                                        stmItems.executeUpdate();
-                                        stmItems.clearParameters();
-                                    }
-                                } else {
-                                    for (TradeItem i : pc.getSellList().getItems()) {
-                                        stmItems.setInt(1, pc.getObjectId());
-                                        stmItems.setInt(2, i.getObjectId());
-                                        stmItems.setLong(3, i.getCount());
-                                        stmItems.setLong(4, i.getPrice());
-                                        stmItems.executeUpdate();
-                                        stmItems.clearParameters();
-                                    }
-                                }
-                                break;
-                            }
-                            case MANUFACTURE: {
-                                if (!OfflineTradeConfig.OFFLINE_CRAFT_ENABLE) {
-                                    continue;
-                                }
-
-                                title = pc.getStoreName();
-                                for (ManufactureItem i :
-                                        pc.getManufactureItems().values()) {
-                                    stmItems.setInt(1, pc.getObjectId());
-                                    stmItems.setInt(2, i.getRecipeId());
-                                    stmItems.setLong(3, 0);
-                                    stmItems.setLong(4, i.getCost());
-                                    stmItems.executeUpdate();
-                                    stmItems.clearParameters();
-                                }
-                                break;
-                            }
-                        }
-
-                        stm3.setString(4, title);
-                        stm3.executeUpdate();
-                        stm3.clearParameters();
-                        // No need to call con.commit() as HikariCP autocommit is true.
+                            && ((pc.getClient() == null) || pc.getClient().isDetached())
+                            && isStoreKept(pc.getPrivateStoreType())) {
+                        saveStore(pc);
                     }
-                } catch (Exception e) {
+                } catch (DataAccessException e) {
                     log.warn("Error while saving offline trader {}", pc.getObjectId(), e);
                 }
             }
 
             log.info("Offline traders stored.");
-        } catch (Exception e) {
+        } catch (DataAccessException e) {
             log.warn("Error while saving offline traders", e);
         }
     }
@@ -172,11 +96,9 @@ public class OfflineTraderTable {
     public void restoreOfflineTraders() {
         log.info("Loading offline traders...");
         int nTraders = 0;
-        try (Connection con = DatabaseFactory.getConnection();
-                Statement stm = con.createStatement();
-                ResultSet rs = stm.executeQuery(LOAD_OFFLINE_STATUS)) {
-            while (rs.next()) {
-                final long time = rs.getLong("time");
+        try {
+            for (OfflineTrade trade : offlineTradeRepository.findAll()) {
+                final long time = epochMillisOrZero(trade.startedAt());
                 if (OfflineTradeConfig.OFFLINE_MAX_DAYS > 0) {
                     final Calendar cal = ClockBridge.calendar();
                     cal.setTimeInMillis(time);
@@ -186,27 +108,12 @@ public class OfflineTraderTable {
                     }
                 }
 
-                final int typeId = rs.getInt("type");
-                boolean isSellBuff = false;
-                if (typeId == PrivateStoreType.SELL_BUFFS.getId()) {
-                    isSellBuff = true;
-                }
-
-                final PrivateStoreType type =
-                        isSellBuff ? PrivateStoreType.PACKAGE_SELL : PrivateStoreType.findById(typeId);
-                if (type == null) {
-                    log.warn("PrivateStoreType with id {} could not be found.", rs.getInt("type"));
-                    continue;
-                }
-
-                if (type == PrivateStoreType.NONE) {
-                    continue;
-                }
-
+                final boolean isSellBuff = trade.storeType() == PrivateStoreType.SELL_BUFFS;
+                final PrivateStoreType type = isSellBuff ? PrivateStoreType.PACKAGE_SELL : trade.storeType();
                 Player player = null;
 
                 try {
-                    player = Player.load(rs.getInt("charId"));
+                    player = Player.load(trade.characterId());
                     player.setOnlineStatus(true, false);
                     player.setOfflineStartTime(time);
 
@@ -215,60 +122,43 @@ public class OfflineTraderTable {
                     }
 
                     player.spawnMe(player.getX(), player.getY(), player.getZ());
-                    try (PreparedStatement stmItems = con.prepareStatement(LOAD_OFFLINE_ITEMS)) {
-                        stmItems.setInt(1, player.getObjectId());
-                        try (ResultSet items = stmItems.executeQuery()) {
-                            switch (type) {
-                                case BUY: {
-                                    while (items.next()) {
-                                        if (player.getBuyList()
-                                                        .addItemByItemId(
-                                                                items.getInt(2), items.getLong(3), items.getLong(4))
-                                                == null) {
-                                            continue;
-                                            // throw new NullPointerException();
-                                        }
-                                    }
+                    final List<OfflineTradeItem> items = offlineTradeRepository.findItems(player.getObjectId());
+                    switch (type) {
+                        case BUY: {
+                            for (OfflineTradeItem item : items) {
+                                player.getBuyList().addItemByItemId(item.itemId(), item.count(), item.price());
+                            }
 
-                                    player.getBuyList().setTitle(rs.getString("title"));
-                                    break;
+                            player.getBuyList().setTitle(trade.title());
+                            break;
+                        }
+                        case SELL:
+                        case PACKAGE_SELL: {
+                            if (player.isSellingBuffs()) {
+                                for (OfflineTradeItem item : items) {
+                                    player.getSellingBuffs().add(new SellBuffHolder(item.itemId(), item.price()));
                                 }
-                                case SELL:
-                                case PACKAGE_SELL: {
-                                    if (player.isSellingBuffs()) {
-                                        while (items.next()) {
-                                            player.getSellingBuffs()
-                                                    .add(new SellBuffHolder(
-                                                            items.getInt("item"), items.getLong("price")));
-                                        }
-                                    } else {
-                                        while (items.next()) {
-                                            if (player.getSellList()
-                                                            .addItem(
-                                                                    items.getInt(2), items.getLong(3), items.getLong(4))
-                                                    == null) {
-                                                continue;
-                                                // throw new NullPointerException();
-                                            }
-                                        }
-                                    }
-
-                                    player.getSellList().setTitle(rs.getString("title"));
-                                    player.getSellList().setPackaged(type == PrivateStoreType.PACKAGE_SELL);
-                                    break;
-                                }
-                                case MANUFACTURE: {
-                                    while (items.next()) {
-                                        player.getManufactureItems()
-                                                .put(
-                                                        items.getInt(2),
-                                                        new ManufactureItem(items.getInt(2), items.getLong(4)));
-                                    }
-
-                                    player.setStoreName(rs.getString("title"));
-                                    break;
+                            } else {
+                                for (OfflineTradeItem item : items) {
+                                    player.getSellList().addItem(item.itemId(), item.count(), item.price());
                                 }
                             }
+
+                            player.getSellList().setTitle(trade.title());
+                            player.getSellList().setPackaged(type == PrivateStoreType.PACKAGE_SELL);
+                            break;
+                        }
+                        case MANUFACTURE: {
+                            for (OfflineTradeItem item : items) {
+                                player.getManufactureItems()
+                                        .put(item.itemId(), new ManufactureItem(item.itemId(), item.price()));
+                            }
+
+                            player.setStoreName(trade.title());
+                            break;
+                        }
+                        default: {
+                            break;
                         }
                     }
 
@@ -301,130 +191,97 @@ public class OfflineTraderTable {
             log.info("Loaded {} offline traders.", nTraders);
 
             if (!OfflineTradeConfig.STORE_OFFLINE_TRADE_IN_REALTIME) {
-                try (Statement stm1 = con.createStatement()) {
-                    stm1.execute(CLEAR_OFFLINE_TABLE);
-                    stm1.execute(CLEAR_OFFLINE_TABLE_ITEMS);
-                }
+                offlineTradeRepository.deleteAll();
             }
-        } catch (Exception e) {
+        } catch (DataAccessException e) {
             log.warn("Error while loading offline traders: ", e);
         }
     }
 
-    public synchronized void onTransaction(Player trader, boolean finished, boolean firstCall) {
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement stm1 = con.prepareStatement(CLEAR_OFFLINE_TABLE_ITEMS_PLAYER);
-                PreparedStatement stm2 = con.prepareStatement(CLEAR_OFFLINE_TABLE_PLAYER);
-                PreparedStatement stm3 = con.prepareStatement(SAVE_ITEMS);
-                PreparedStatement stm4 = con.prepareStatement(SAVE_OFFLINE_STATUS)) {
-            String title = null;
-            stm1.setInt(1, trader.getObjectId()); // Char Id
-            stm1.execute();
-
-            // Trade is done - clear info.
+    public synchronized void onTransaction(Player trader, boolean finished) {
+        try {
             if (finished) {
-                stm2.setInt(1, trader.getObjectId()); // Char Id
-                stm2.execute();
+                offlineTradeRepository.delete(trader.getObjectId());
+            } else if ((trader.getClient() == null) || trader.getClient().isDetached()) {
+                saveStore(trader);
             } else {
-                try {
-                    if ((trader.getClient() == null) || trader.getClient().isDetached()) {
-                        switch (trader.getPrivateStoreType()) {
-                            case BUY: {
-                                if (firstCall) {
-                                    title = trader.getBuyList().getTitle();
-                                }
-
-                                for (TradeItem i : trader.getBuyList().getItems()) {
-                                    stm3.setInt(1, trader.getObjectId());
-                                    stm3.setInt(2, i.getItem().getId());
-                                    stm3.setLong(3, i.getCount());
-                                    stm3.setLong(4, i.getPrice());
-                                    stm3.executeUpdate();
-                                    stm3.clearParameters();
-                                }
-                                break;
-                            }
-                            case SELL:
-                            case PACKAGE_SELL: {
-                                if (firstCall) {
-                                    title = trader.getSellList().getTitle();
-                                }
-
-                                if (trader.isSellingBuffs()) {
-                                    for (SellBuffHolder holder : trader.getSellingBuffs()) {
-                                        stm3.setInt(1, trader.getObjectId());
-                                        stm3.setInt(2, holder.getSkillId());
-                                        stm3.setLong(3, 0);
-                                        stm3.setLong(4, holder.getPrice());
-                                        stm3.executeUpdate();
-                                        stm3.clearParameters();
-                                    }
-                                } else {
-                                    for (TradeItem i : trader.getSellList().getItems()) {
-                                        stm3.setInt(1, trader.getObjectId());
-                                        stm3.setInt(2, i.getObjectId());
-                                        stm3.setLong(3, i.getCount());
-                                        stm3.setLong(4, i.getPrice());
-                                        stm3.executeUpdate();
-                                        stm3.clearParameters();
-                                    }
-                                }
-                                break;
-                            }
-                            case MANUFACTURE: {
-                                if (firstCall) {
-                                    title = trader.getStoreName();
-                                }
-
-                                for (ManufactureItem i :
-                                        trader.getManufactureItems().values()) {
-                                    stm3.setInt(1, trader.getObjectId());
-                                    stm3.setInt(2, i.getRecipeId());
-                                    stm3.setLong(3, 0);
-                                    stm3.setLong(4, i.getCost());
-                                    stm3.executeUpdate();
-                                    stm3.clearParameters();
-                                }
-                                break;
-                            }
-                        }
-
-                        if (firstCall) {
-                            stm4.setInt(1, trader.getObjectId()); // Char Id
-                            stm4.setLong(2, trader.getOfflineStartTime());
-                            stm4.setInt(
-                                    3,
-                                    trader.isSellingBuffs()
-                                            ? PrivateStoreType.SELL_BUFFS.getId()
-                                            : trader.getPrivateStoreType().getId()); // store type
-                            stm4.setString(4, title);
-                            stm4.executeUpdate();
-                            stm4.clearParameters();
-                        }
-                    }
-                } catch (Exception e) {
-                    log.warn("Error while saving offline trader {}", trader.getObjectId(), e);
-                }
+                offlineTradeRepository.deleteItems(trader.getObjectId());
             }
-        } catch (Exception e) {
-            log.warn("Error while saving offline traders", e);
+        } catch (DataAccessException e) {
+            log.warn("Error while saving offline trader {}", trader.getObjectId(), e);
         }
     }
 
     public synchronized void removeTrader(int traderObjId) {
         World.OFFLINE_TRADE_COUNT--;
 
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement stm1 = con.prepareStatement(CLEAR_OFFLINE_TABLE_ITEMS_PLAYER);
-                PreparedStatement stm2 = con.prepareStatement(CLEAR_OFFLINE_TABLE_PLAYER)) {
-            stm1.setInt(1, traderObjId);
-            stm1.execute();
-
-            stm2.setInt(1, traderObjId);
-            stm2.execute();
-        } catch (Exception e) {
+        try {
+            offlineTradeRepository.delete(traderObjId);
+        } catch (DataAccessException e) {
             log.warn("Error while removing offline trader {}", traderObjId, e);
         }
+    }
+
+    private static boolean isStoreKept(PrivateStoreType type) {
+        return switch (type) {
+            case BUY, SELL, PACKAGE_SELL -> OfflineTradeConfig.OFFLINE_TRADE_ENABLE;
+            case MANUFACTURE -> OfflineTradeConfig.OFFLINE_CRAFT_ENABLE;
+            default -> false;
+        };
+    }
+
+    /**
+     * Writes the store of an offline trader with its current item list; a store being set up is not kept.
+     */
+    private void saveStore(Player trader) {
+        final List<OfflineTradeItem> items = new ArrayList<>();
+        final String title;
+        switch (trader.getPrivateStoreType()) {
+            case BUY -> {
+                title = trader.getBuyList().getTitle();
+                for (TradeItem i : trader.getBuyList().getItems()) {
+                    items.add(item(i.getItem().getId(), i.getCount(), i.getPrice()));
+                }
+            }
+            case SELL, PACKAGE_SELL -> {
+                title = trader.getSellList().getTitle();
+                if (trader.isSellingBuffs()) {
+                    for (SellBuffHolder holder : trader.getSellingBuffs()) {
+                        items.add(item(holder.getSkillId(), 0, holder.getPrice()));
+                    }
+                } else {
+                    for (TradeItem i : trader.getSellList().getItems()) {
+                        items.add(item(i.getObjectId(), i.getCount(), i.getPrice()));
+                    }
+                }
+            }
+            case MANUFACTURE -> {
+                title = trader.getStoreName();
+                for (ManufactureItem i : trader.getManufactureItems().values()) {
+                    items.add(item(i.getRecipeId(), 0, i.getCost()));
+                }
+            }
+            default -> {
+                offlineTradeRepository.deleteItems(trader.getObjectId());
+                return;
+            }
+        }
+
+        final OfflineTrade trade = OfflineTrade.builder()
+                .characterId(trader.getObjectId())
+                .startedAt(instantOrNull(trader.getOfflineStartTime()))
+                .storeType(trader.isSellingBuffs() ? PrivateStoreType.SELL_BUFFS : trader.getPrivateStoreType())
+                .title(title)
+                .build();
+        offlineTradeRepository.save(trade, items);
+    }
+
+    private static OfflineTradeItem item(int itemId, long count, long price) {
+        return OfflineTradeItem.builder()
+                .itemId(itemId)
+                .count(count)
+                .price(price)
+                .build();
     }
 
     /**
@@ -520,7 +377,7 @@ public class OfflineTraderTable {
 
         // Store trade on exit, if realtime saving is enabled.
         if (OfflineTradeConfig.STORE_OFFLINE_TRADE_IN_REALTIME) {
-            onTransaction(player, false, true);
+            onTransaction(player, false);
         }
 
         player.storeMe();
@@ -536,15 +393,12 @@ public class OfflineTraderTable {
         return true;
     }
 
-    /**
-     * Gets the single instance of OfflineTradersTable.
-     * @return single instance of OfflineTradersTable
-     */
+    // TODO: callers receive the bean through their constructor (#41).
     public static OfflineTraderTable getInstance() {
-        return SingletonHolder.INSTANCE;
-    }
-
-    private static class SingletonHolder {
-        protected static final OfflineTraderTable INSTANCE = new OfflineTraderTable();
+        final OfflineTraderTable current = instance;
+        if (current == null) {
+            throw new IllegalStateException("OfflineTraderTable is used before the Spring context created it.");
+        }
+        return current;
     }
 }

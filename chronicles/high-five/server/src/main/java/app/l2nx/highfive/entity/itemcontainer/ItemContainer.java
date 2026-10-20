@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+/*
  * SPDX-FileCopyrightText: L2J Mobius contributors
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
@@ -20,7 +24,6 @@
 package app.l2nx.highfive.entity.itemcontainer;
 
 import app.l2nx.highfive.config.GeneralConfig;
-import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.data.xml.ItemData;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Creature;
@@ -32,14 +35,13 @@ import app.l2nx.highfive.entity.item.instance.Item;
 import app.l2nx.highfive.managers.ItemManager;
 import app.l2nx.highfive.mechanics.variables.ItemVariables;
 import app.l2nx.highfive.network.serverpackets.InventoryUpdate;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
+import app.l2nx.highfive.repository.item.model.ItemRow;
 import java.util.ArrayDeque;
 import java.util.Collection;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataAccessException;
 
 /**
  * @author Advi
@@ -523,34 +525,27 @@ public abstract class ItemContainer {
      * Get back items in container from database
      */
     public void restore() {
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement(
-                        "SELECT object_id, item_id, count, enchant_level, loc, loc_data, custom_type1, custom_type2, mana_left, time FROM items WHERE owner_id=? AND (loc=?)")) {
-            ps.setInt(1, getOwnerId());
-            ps.setString(2, getBaseLocation().name());
-            try (ResultSet rs = ps.executeQuery()) {
-                Item item;
-                while (rs.next()) {
-                    item = Item.restoreFromDb(getOwnerId(), rs);
-                    if (item == null) {
-                        continue;
-                    }
+        try {
+            for (ItemRow row : ItemManager.getInstance().findItems(getOwnerId(), getBaseLocation())) {
+                final Item item = Item.restoreFromDb(getOwnerId(), row);
+                if (item == null) {
+                    continue;
+                }
 
-                    World.addObject(item);
+                World.addObject(item);
 
-                    final Player owner = getOwner() != null ? getOwner().asPlayer() : null;
+                final Player owner = getOwner() != null ? getOwner().asPlayer() : null;
 
-                    // If stackable item is found in inventory just add to current quantity.
-                    if (item.isStackable() && (getItemByItemId(item.getId()) != null)) {
-                        addItem(ItemProcessType.RESTORE, item, owner, null);
-                    } else {
-                        addItem(item);
-                    }
+                // If stackable item is found in inventory just add to current quantity.
+                if (item.isStackable() && (getItemByItemId(item.getId()) != null)) {
+                    addItem(ItemProcessType.RESTORE, item, owner, null);
+                } else {
+                    addItem(item);
                 }
             }
 
             refreshWeight();
-        } catch (Exception e) {
+        } catch (DataAccessException e) {
             log.warn("Could not restore container:", e);
         }
     }

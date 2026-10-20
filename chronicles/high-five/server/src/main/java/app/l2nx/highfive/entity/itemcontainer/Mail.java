@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+/*
  * SPDX-FileCopyrightText: L2J Mobius contributors
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
@@ -19,17 +23,16 @@
  */
 package app.l2nx.highfive.entity.itemcontainer;
 
-import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.item.enums.ItemLocation;
 import app.l2nx.highfive.entity.item.enums.ItemProcessType;
 import app.l2nx.highfive.entity.item.instance.Item;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
+import app.l2nx.highfive.managers.ItemManager;
+import app.l2nx.highfive.repository.item.model.ItemRow;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataAccessException;
 
 /**
  * @author DS
@@ -75,7 +78,11 @@ public class Mail extends ItemContainer {
         updateDatabase();
     }
 
-    public void returnToWh(ItemContainer wh) {
+    /**
+     * Moves the attachments into a warehouse: the given one when its owner is online, else straight into the stored
+     * warehouse of {@code ownerId}.
+     */
+    public void returnToWh(ItemContainer wh, int ownerId) {
         for (Item item : items) {
             if (item == null) {
                 continue;
@@ -84,6 +91,7 @@ public class Mail extends ItemContainer {
             if (wh != null) {
                 transferItem(ItemProcessType.TRANSFER, item.getObjectId(), item.getCount(), wh, null, null);
             } else {
+                item.setOwnerId(ownerId);
                 item.setItemLocation(ItemLocation.WAREHOUSE);
             }
         }
@@ -103,33 +111,36 @@ public class Mail extends ItemContainer {
 
     @Override
     public void restore() {
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement(
-                        "SELECT object_id, item_id, count, enchant_level, loc, loc_data, custom_type1, custom_type2, mana_left, time FROM items WHERE owner_id=? AND loc=? AND loc_data=?")) {
-            ps.setInt(1, ownerId);
-            ps.setString(2, getBaseLocation().name());
-            ps.setInt(3, messageId);
-            try (ResultSet inv = ps.executeQuery()) {
-                Item item;
-                while (inv.next()) {
-                    item = Item.restoreFromDb(ownerId, inv);
-                    if (item == null) {
-                        continue;
-                    }
+        try {
+            for (ItemRow row : ItemManager.getInstance().findAttachments(messageId)) {
+                final Item item = Item.restoreFromDb(ownerId, row);
+                if (item == null) {
+                    continue;
+                }
 
-                    World.addObject(item);
+                World.addObject(item);
 
-                    // If stackable item is found just add to current quantity.
-                    if (item.isStackable() && (getItemByItemId(item.getId()) != null)) {
-                        addItem(ItemProcessType.RESTORE, item, null, null);
-                    } else {
-                        addItem(item);
-                    }
+                // If stackable item is found just add to current quantity.
+                if (item.isStackable() && (getItemByItemId(item.getId()) != null)) {
+                    addItem(ItemProcessType.RESTORE, item, null, null);
+                } else {
+                    addItem(item);
                 }
             }
-        } catch (Exception e) {
+        } catch (DataAccessException e) {
             log.warn("could not restore container:", e);
         }
+    }
+
+    /**
+     * Removes the attachments from the world without writing them: their rows were already moved or deleted.
+     */
+    public void discard() {
+        items.forEach(item -> {
+            item.stopAllTasks();
+            World.removeObject(item);
+        });
+        items.clear();
     }
 
     @Override

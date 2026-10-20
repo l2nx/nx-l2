@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+/*
  * SPDX-FileCopyrightText: L2J Mobius contributors
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
@@ -22,15 +26,10 @@ package app.l2nx.highfive.managers;
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.FeatureConfig;
 import app.l2nx.highfive.data.sql.ClanTable;
-import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.clan.Clan;
+import app.l2nx.highfive.repository.character.CharacterRaidPointRepository;
 import app.l2nx.highfive.threads.ThreadPool;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
 import java.time.LocalTime;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
@@ -42,17 +41,28 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataAccessException;
+import org.springframework.stereotype.Component;
 
 /**
  * @author Kerberos, JIV
  * @version 8/24/10
  */
 @Slf4j
+@Component
 public class RaidBossPointsManager {
+    private static volatile RaidBossPointsManager instance;
 
     private final Map<Integer, Map<Integer, Integer>> list = new ConcurrentHashMap<>();
 
-    public RaidBossPointsManager() {
+    private final CharacterRaidPointRepository raidPointRepository;
+
+    public RaidBossPointsManager(CharacterRaidPointRepository raidPointRepository) {
+        this.raidPointRepository = raidPointRepository;
+        instance = this;
+    }
+
+    public void load() {
         init();
 
         // Start reset task at 00:10 and repeat every 24 hours.
@@ -64,24 +74,10 @@ public class RaidBossPointsManager {
     }
 
     private void init() {
-        try (Connection con = DatabaseFactory.getConnection();
-                Statement s = con.createStatement();
-                ResultSet rs = s.executeQuery("SELECT `charId`,`boss_id`,`points` FROM `character_raid_points`")) {
-            while (rs.next()) {
-                final int charId = rs.getInt("charId");
-                final int bossId = rs.getInt("boss_id");
-                final int points = rs.getInt("points");
-                Map<Integer, Integer> values = list.get(charId);
-                if (values == null) {
-                    values = new HashMap<>();
-                }
-
-                values.put(bossId, points);
-                list.put(charId, values);
-            }
-
+        try {
+            list.putAll(raidPointRepository.findAll());
             log.info("Loaded {} Characters Raid Points.", list.size());
-        } catch (SQLException e) {
+        } catch (DataAccessException e) {
             log.warn("Could not load raid points ", e);
         }
     }
@@ -160,14 +156,9 @@ public class RaidBossPointsManager {
     }
 
     public void updatePointsInDB(Player player, int raidId, int points) {
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement(
-                        "REPLACE INTO character_raid_points (`charId`,`boss_id`,`points`) VALUES (?,?,?)")) {
-            ps.setInt(1, player.getObjectId());
-            ps.setInt(2, raidId);
-            ps.setInt(3, points);
-            ps.executeUpdate();
-        } catch (Exception e) {
+        try {
+            raidPointRepository.save(player.getObjectId(), raidId, points);
+        } catch (DataAccessException e) {
             log.warn("Couldn't update char raid points for player: {}", player, e);
         }
     }
@@ -196,12 +187,10 @@ public class RaidBossPointsManager {
     }
 
     public void cleanUp() {
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement statement =
-                        con.prepareStatement("DELETE from character_raid_points WHERE charId > 0")) {
-            statement.executeUpdate();
+        try {
+            raidPointRepository.deleteAll();
             list.clear();
-        } catch (Exception e) {
+        } catch (DataAccessException e) {
             log.warn("Couldn't clean raid points", e);
         }
     }
@@ -230,11 +219,12 @@ public class RaidBossPointsManager {
         return tmpRanking;
     }
 
+    // TODO: callers receive the bean through their constructor (#41).
     public static RaidBossPointsManager getInstance() {
-        return SingletonHolder.INSTANCE;
-    }
-
-    private static class SingletonHolder {
-        protected static final RaidBossPointsManager INSTANCE = new RaidBossPointsManager();
+        final RaidBossPointsManager current = instance;
+        if (current == null) {
+            throw new IllegalStateException("RaidBossPointsManager is used before the Spring context created it.");
+        }
+        return current;
     }
 }

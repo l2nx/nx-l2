@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+/*
  * SPDX-FileCopyrightText: L2J Mobius contributors
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
@@ -19,13 +23,15 @@
  */
 package app.l2nx.highfive.mechanics.sevensigns;
 
+import static app.l2nx.highfive.repository.LegacyValues.epochMillisOrZero;
+import static app.l2nx.highfive.repository.LegacyValues.instantOrNull;
+
 import app.l2nx.highfive.ai.Intention;
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.FeatureConfig;
 import app.l2nx.highfive.data.SpawnTable;
 import app.l2nx.highfive.data.sql.CharInfoTable;
 import app.l2nx.highfive.data.sql.ClanTable;
-import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.data.xml.ExperienceData;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.World;
@@ -45,12 +51,12 @@ import app.l2nx.highfive.network.enums.ChatType;
 import app.l2nx.highfive.network.serverpackets.CreatureSay;
 import app.l2nx.highfive.network.serverpackets.MagicSkillUse;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
+import app.l2nx.highfive.repository.sevensigns.SevenSignsFestivalScoreRepository;
+import app.l2nx.highfive.repository.sevensigns.SevenSignsStatusRepository;
+import app.l2nx.highfive.repository.sevensigns.model.SevenSignsFestivalScore;
+import app.l2nx.highfive.repository.sevensigns.model.SevenSignsStatus;
 import app.l2nx.highfive.threads.ThreadPool;
 import app.l2nx.highfive.util.StatSet;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -60,6 +66,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataAccessException;
+import org.springframework.stereotype.Component;
 
 /**
  * Seven Signs Festival of Darkness Engine.<br>
@@ -71,10 +79,9 @@ import lombok.extern.slf4j.Slf4j;
  * @author Tempy
  */
 @Slf4j
+@Component
 public class SevenSignsFestival {
-
-    private static final String GET_CLAN_NAME =
-            "SELECT clan_name FROM clan_data WHERE clan_id = (SELECT clanid FROM characters WHERE char_name = ?)";
+    private static volatile SevenSignsFestival instance;
 
     /**
      * These length settings are important! :)<br>
@@ -700,9 +707,20 @@ public class SevenSignsFestival {
      */
     private final Map<Integer, Map<Integer, StatSet>> festivalData = new HashMap<>();
 
-    protected SevenSignsFestival() {
-        restoreFestivalData();
+    private final SevenSignsFestivalScoreRepository scoreRepository;
+    private final SevenSignsStatusRepository statusRepository;
 
+    public SevenSignsFestival(
+            SevenSignsFestivalScoreRepository scoreRepository, SevenSignsStatusRepository statusRepository) {
+        this.scoreRepository = scoreRepository;
+        this.statusRepository = statusRepository;
+        instance = this;
+    }
+
+    /**
+     * Starts the festival manager; {@link SevenSigns#load()} restored the festival data before.
+     */
+    public void load() {
         if (SevenSigns.getInstance().isSealValidationPeriod()) {
             log.info("Initialization bypassed due to Seal Validation in effect.");
             return;
@@ -712,8 +730,13 @@ public class SevenSignsFestival {
         startFestivalManager();
     }
 
+    // TODO: callers receive the bean through their constructor (#41).
     public static SevenSignsFestival getInstance() {
-        return SingletonHolder.INSTANCE;
+        final SevenSignsFestival current = instance;
+        if (current == null) {
+            throw new IllegalStateException("SevenSignsFestival is used before the Spring context created it.");
+        }
+        return current;
     }
 
     /**
@@ -835,58 +858,53 @@ public class SevenSignsFestival {
      * Restores saved festival data, basic settings from the properties file and past high score data from the database.
      */
     protected void restoreFestivalData() {
-        try (Connection con = DatabaseFactory.getConnection();
-                Statement s = con.createStatement();
-                ResultSet rs = s.executeQuery(
-                        "SELECT festivalId, cabal, cycle, date, score, members FROM seven_signs_festival")) {
-            while (rs.next()) {
-                final int festivalCycle = rs.getInt("cycle");
-                int festivalId = rs.getInt("festivalId");
-                final String cabal = rs.getString("cabal");
+        festivalData.clear();
+        accumulatedBonuses.clear();
+        try {
+            for (SevenSignsFestivalScore score : scoreRepository.findAll()) {
+                int festivalId = score.festivalId();
                 final StatSet festivalDat = new StatSet();
                 festivalDat.set("festivalId", festivalId);
-                festivalDat.set("cabal", cabal);
-                festivalDat.set("cycle", festivalCycle);
-                festivalDat.set("date", rs.getString("date"));
-                festivalDat.set("score", rs.getInt("score"));
-                festivalDat.set("members", rs.getString("members"));
-                if (cabal.equals("dawn")) {
+                festivalDat.set("cabal", score.cabal());
+                festivalDat.set("cycle", score.cycle());
+                festivalDat.set("date", String.valueOf(epochMillisOrZero(score.scoredAt())));
+                festivalDat.set("score", score.score());
+                setMembers(festivalDat, score.memberIds());
+                if (score.cabal().equals("dawn")) {
                     festivalId += FESTIVAL_COUNT;
                 }
 
                 final Map<Integer, StatSet> tempData =
-                        festivalData.computeIfAbsent(festivalCycle, _ -> new HashMap<>());
+                        festivalData.computeIfAbsent(score.cycle(), _ -> new HashMap<>());
                 tempData.put(festivalId, festivalDat);
             }
-        } catch (Exception e) {
+
+            final SevenSignsStatus status = statusRepository.find();
+            currentFestivalCycle = status.festivalCycle();
+            accumulatedBonuses.addAll(status.accumulatedBonuses());
+        } catch (DataAccessException e) {
             log.error("Failed to load configuration: {}", e.getMessage(), e);
         }
+    }
 
-        final StringBuilder query = new StringBuilder();
-        query.append("SELECT festival_cycle, ");
-        for (int i = 0; i < (FESTIVAL_COUNT - 1); i++) {
-            query.append("accumulated_bonus");
-            query.append(String.valueOf(i));
-            query.append(", ");
-        }
-
-        query.append("accumulated_bonus");
-        query.append(String.valueOf(FESTIVAL_COUNT - 1));
-        query.append(' ');
-        query.append("FROM seven_signs_status WHERE id=0");
-
-        try (Connection con = DatabaseFactory.getConnection();
-                Statement s = con.createStatement();
-                ResultSet rs = s.executeQuery(query.toString())) {
-            while (rs.next()) {
-                currentFestivalCycle = rs.getInt("festival_cycle");
-                for (int i = 0; i < FESTIVAL_COUNT; i++) {
-                    accumulatedBonuses.add(i, rs.getInt("accumulated_bonus" + i));
-                }
+    /**
+     * Keeps the member object ids for the score and their names, joined by commas, for display.
+     */
+    private static void setMembers(StatSet festivalDat, List<Integer> memberIds) {
+        final StringJoiner names = new StringJoiner(",");
+        for (int memberId : memberIds) {
+            final String name = CharInfoTable.getInstance().getNameById(memberId);
+            if (name != null) {
+                names.add(name);
             }
-        } catch (Exception e) {
-            log.error("Failed to load configuration: {}", e.getMessage(), e);
         }
+
+        festivalDat.set("memberIds", List.copyOf(memberIds));
+        festivalDat.set("members", names.toString());
+    }
+
+    private static List<Integer> getMemberIds(StatSet festivalDat) {
+        return festivalDat.getList("memberIds", Integer.class, List.of());
     }
 
     /**
@@ -894,23 +912,23 @@ public class SevenSignsFestival {
      * @param updateSettings
      */
     public void saveFestivalData(boolean updateSettings) {
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement psInsert = con.prepareStatement(
-                        "REPLACE INTO seven_signs_festival (festivalId, cabal, cycle, date, score, members) VALUES (?,?,?,?,?,?)")) {
-            for (Map<Integer, StatSet> currCycleData : festivalData.values()) {
-                for (StatSet festivalDat : currCycleData.values()) {
-                    psInsert.setInt(1, festivalDat.getInt("festivalId"));
-                    psInsert.setString(2, festivalDat.getString("cabal"));
-                    psInsert.setInt(3, festivalDat.getInt("cycle"));
-                    psInsert.setLong(4, Long.parseLong(festivalDat.getString("date")));
-                    psInsert.setInt(5, festivalDat.getInt("score"));
-                    psInsert.setString(6, festivalDat.getString("members"));
-                    psInsert.addBatch();
-                }
+        final List<SevenSignsFestivalScore> scores = new ArrayList<>();
+        for (Map<Integer, StatSet> currCycleData : festivalData.values()) {
+            for (StatSet festivalDat : currCycleData.values()) {
+                scores.add(SevenSignsFestivalScore.builder()
+                        .cycle(festivalDat.getInt("cycle"))
+                        .festivalId(festivalDat.getInt("festivalId"))
+                        .cabal(festivalDat.getString("cabal"))
+                        .scoredAt(instantOrNull(Long.parseLong(festivalDat.getString("date"))))
+                        .score(festivalDat.getInt("score"))
+                        .memberIds(getMemberIds(festivalDat))
+                        .build());
             }
+        }
 
-            psInsert.executeBatch();
-        } catch (Exception e) {
+        try {
+            scoreRepository.saveAll(scores);
+        } catch (DataAccessException e) {
             log.error("Failed to save configuration: {}", e.getMessage(), e);
         }
 
@@ -924,86 +942,47 @@ public class SevenSignsFestival {
      * If a clan member is a member of the highest-ranked party in the Festival of Darkness, 100 points are added per member
      */
     protected void rewardHighestRanked() {
-        String[] partyMembers;
-        StatSet overallData = getOverallHighestScoreData(FESTIVAL_LEVEL_MAX_31);
-        if (overallData != null) {
-            partyMembers = overallData.getString("members").split(",");
-            for (String partyMemberName : partyMembers) {
-                addReputationPointsForPartyMemberClan(partyMemberName);
-            }
-        }
-
-        overallData = getOverallHighestScoreData(FESTIVAL_LEVEL_MAX_42);
-        if (overallData != null) {
-            partyMembers = overallData.getString("members").split(",");
-            for (String partyMemberName : partyMembers) {
-                addReputationPointsForPartyMemberClan(partyMemberName);
-            }
-        }
-
-        overallData = getOverallHighestScoreData(FESTIVAL_LEVEL_MAX_53);
-        if (overallData != null) {
-            partyMembers = overallData.getString("members").split(",");
-            for (String partyMemberName : partyMembers) {
-                addReputationPointsForPartyMemberClan(partyMemberName);
-            }
-        }
-
-        overallData = getOverallHighestScoreData(FESTIVAL_LEVEL_MAX_64);
-        if (overallData != null) {
-            partyMembers = overallData.getString("members").split(",");
-            for (String partyMemberName : partyMembers) {
-                addReputationPointsForPartyMemberClan(partyMemberName);
-            }
-        }
-
-        overallData = getOverallHighestScoreData(FESTIVAL_LEVEL_MAX_NONE);
-        if (overallData != null) {
-            partyMembers = overallData.getString("members").split(",");
-            for (String partyMemberName : partyMembers) {
-                addReputationPointsForPartyMemberClan(partyMemberName);
+        for (int festivalId : new int[] {
+            FESTIVAL_LEVEL_MAX_31,
+            FESTIVAL_LEVEL_MAX_42,
+            FESTIVAL_LEVEL_MAX_53,
+            FESTIVAL_LEVEL_MAX_64,
+            FESTIVAL_LEVEL_MAX_NONE
+        }) {
+            final StatSet overallData = getOverallHighestScoreData(festivalId);
+            if (overallData != null) {
+                for (int memberId : getMemberIds(overallData)) {
+                    addReputationPointsForPartyMemberClan(memberId);
+                }
             }
         }
     }
 
-    private void addReputationPointsForPartyMemberClan(String partyMemberName) {
-        final Player player = World.getPlayer(partyMemberName);
-        if (player != null) {
-            final Clan clan = player.getClan();
-            if (clan != null) {
-                clan.addReputationScore(FeatureConfig.FESTIVAL_WIN_POINTS);
-                final SystemMessage sm = new SystemMessage(
-                        SystemMessageId
-                                .CLAN_MEMBER_C1_WAS_AN_ACTIVE_MEMBER_OF_THE_HIGHEST_RANKED_PARTY_IN_THE_FESTIVAL_OF_DARKNESS_S2_POINTS_HAVE_BEEN_ADDED_TO_YOUR_CLAN_S_REPUTATION_SCORE);
-                sm.addString(partyMemberName);
-                sm.addInt(FeatureConfig.FESTIVAL_WIN_POINTS);
-                clan.broadcastToOnlineMembers(sm);
-            }
-        } else {
-            try (Connection con = DatabaseFactory.getConnection();
-                    PreparedStatement ps = con.prepareStatement(GET_CLAN_NAME)) {
-                ps.setString(1, partyMemberName);
-                try (ResultSet rs = ps.executeQuery()) {
-                    if (rs.next()) {
-                        final String clanName = rs.getString("clan_name");
-                        if (clanName != null) {
-                            final Clan clan = ClanTable.getInstance().getClanByName(clanName);
-                            if (clan != null) {
-                                clan.addReputationScore(FeatureConfig.FESTIVAL_WIN_POINTS);
-                                final SystemMessage sm = new SystemMessage(
-                                        SystemMessageId
-                                                .CLAN_MEMBER_C1_WAS_AN_ACTIVE_MEMBER_OF_THE_HIGHEST_RANKED_PARTY_IN_THE_FESTIVAL_OF_DARKNESS_S2_POINTS_HAVE_BEEN_ADDED_TO_YOUR_CLAN_S_REPUTATION_SCORE);
-                                sm.addString(partyMemberName);
-                                sm.addInt(FeatureConfig.FESTIVAL_WIN_POINTS);
-                                clan.broadcastToOnlineMembers(sm);
-                            }
-                        }
-                    }
-                }
-            } catch (Exception e) {
-                log.warn("Could not get clan name of {}: {}", partyMemberName, e.getMessage(), e);
+    private void addReputationPointsForPartyMemberClan(int memberId) {
+        final Player player = World.getPlayer(memberId);
+        final Clan clan = player != null ? player.getClan() : findClanOf(memberId);
+        if (clan != null) {
+            clan.addReputationScore(FeatureConfig.FESTIVAL_WIN_POINTS);
+            final SystemMessage sm = new SystemMessage(
+                    SystemMessageId
+                            .CLAN_MEMBER_C1_WAS_AN_ACTIVE_MEMBER_OF_THE_HIGHEST_RANKED_PARTY_IN_THE_FESTIVAL_OF_DARKNESS_S2_POINTS_HAVE_BEEN_ADDED_TO_YOUR_CLAN_S_REPUTATION_SCORE);
+            sm.addString(
+                    player != null
+                            ? player.getName()
+                            : CharInfoTable.getInstance().getNameById(memberId));
+            sm.addInt(FeatureConfig.FESTIVAL_WIN_POINTS);
+            clan.broadcastToOnlineMembers(sm);
+        }
+    }
+
+    private static Clan findClanOf(int memberId) {
+        for (Clan clan : ClanTable.getInstance().getClans()) {
+            if (clan.isMember(memberId)) {
+                return clan;
             }
         }
+
+        return null;
     }
 
     /**
@@ -1041,7 +1020,7 @@ public class SevenSignsFestival {
             tempStats.set("cycle", signsCycle);
             tempStats.set("date", "0");
             tempStats.set("score", 0);
-            tempStats.set("members", "");
+            setMembers(tempStats, List.of());
             if (i >= FESTIVAL_COUNT) {
                 tempStats.set("cabal", SevenSigns.getCabalShortName(SevenSigns.CABAL_DAWN));
             } else {
@@ -1262,7 +1241,7 @@ public class SevenSignsFestival {
         } catch (Exception e) {
             currData = new StatSet();
             currData.set("score", 0);
-            currData.set("members", "");
+            setMembers(currData, List.of());
         }
 
         return currData;
@@ -1329,16 +1308,10 @@ public class SevenSignsFestival {
 
             final List<Integer> prevParticipants = getPreviousParticipants(oracle, festivalId);
 
-            // Record a string list of the party members involved.
-            final StringJoiner sj = new StringJoiner(",");
-            for (Integer partyMember : prevParticipants) {
-                sj.add(CharInfoTable.getInstance().getNameById(partyMember));
-            }
-
             // Update the highest scores and party list.
             currFestData.set("date", String.valueOf(ClockBridge.wallMillis()));
             currFestData.set("score", offeringScore);
-            currFestData.set("members", sj.toString());
+            setMembers(currFestData, prevParticipants);
 
             // Only add the score to the cabal's overall if it's higher than the other cabal's score.
             if (offeringScore > otherCabalHighScore) {
@@ -1403,15 +1376,14 @@ public class SevenSignsFestival {
         }
 
         int playerBonus = 0;
-        final String playerName = player.getName();
 
         final Map<Integer, StatSet> festivalDataMap = this.festivalData.get(signsCycle);
         if (festivalDataMap != null) {
             for (StatSet festivalData : festivalDataMap.values()) {
-                if (festivalData.getString("members").contains(playerName)) {
+                final List<Integer> memberIds = getMemberIds(festivalData);
+                if (memberIds.contains(player.getObjectId())) {
                     final int festivalId = festivalData.getInt("festivalId");
-                    final int numPartyMembers =
-                            festivalData.getString("members").split(",").length;
+                    final int numPartyMembers = memberIds.size();
                     final int totalAccumBonus = accumulatedBonuses.get(festivalId);
                     playerBonus = totalAccumBonus / numPartyMembers;
                     accumulatedBonuses.set(festivalId, totalAccumBonus - playerBonus);
@@ -1973,7 +1945,8 @@ public class SevenSignsFestival {
 
                         relocatePlayer(participant, false);
                         participant.sendMessage(
-                                "The festival has ended. Your party leader must now register your score before the next festival takes place.");
+                                "The festival has ended. Your party leader must now register your score before the"
+                                        + " next festival takes place.");
                     } catch (Exception e) {
                         // Ignore.
                     }
@@ -2057,9 +2030,5 @@ public class SevenSignsFestival {
                 npcId = -1;
             }
         }
-    }
-
-    private static class SingletonHolder {
-        protected static final SevenSignsFestival INSTANCE = new SevenSignsFestival();
     }
 }

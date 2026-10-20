@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -40,6 +44,7 @@ import app.l2nx.network.buffer.WriteBuffer;
 import java.security.interfaces.RSAPrivateKey;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -75,6 +80,10 @@ public class LoginClient extends Client<Connection<LoginClient>> {
     @Getter
     @Setter
     private String account;
+
+    @Getter
+    @Setter
+    private UUID accountId;
 
     @Getter
     @Setter
@@ -141,7 +150,7 @@ public class LoginClient extends Client<Connection<LoginClient>> {
     @Override
     public void onDisconnection() {
         if (!joinedGS) {
-            LoginController.getInstance().removeAuthedLoginClient(account);
+            LoginController.getInstance().removeAuthedLoginClient(accountId);
             try {
                 Thread.sleep(DISCONNECT_GRACE_MS);
             } catch (InterruptedException e) {

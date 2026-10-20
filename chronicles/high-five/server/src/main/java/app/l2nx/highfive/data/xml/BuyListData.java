@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+/*
  * SPDX-FileCopyrightText: L2J Mobius contributors
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
@@ -19,19 +23,21 @@
  */
 package app.l2nx.highfive.data.xml;
 
+import static app.l2nx.highfive.repository.LegacyValues.epochMillisOrZero;
+
 import app.l2nx.highfive.config.GeneralConfig;
-import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.entity.item.ItemTemplate;
 import app.l2nx.highfive.mechanics.buylist.BuyListHolder;
 import app.l2nx.highfive.mechanics.buylist.Product;
+import app.l2nx.highfive.repository.item.BuylistStockRepository;
+import app.l2nx.highfive.repository.item.model.BuylistStock;
 import java.io.File;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.Statement;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataAccessException;
+import org.springframework.stereotype.Component;
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
@@ -41,14 +47,20 @@ import org.w3c.dom.Node;
  * @author NosBit
  */
 @Slf4j
+@Component
 public class BuyListData implements IXmlReader {
 
     private static final Pattern XML_FILE_PATTERN = Pattern.compile("\\d+\\.xml");
 
+    private static volatile BuyListData instance;
+
     private final Map<Integer, BuyListHolder> buyLists = new ConcurrentHashMap<>();
 
-    protected BuyListData() {
-        load();
+    private final BuylistStockRepository buylistStockRepository;
+
+    public BuyListData(BuylistStockRepository buylistStockRepository) {
+        this.buylistStockRepository = buylistStockRepository;
+        instance = this;
     }
 
     @Override
@@ -61,18 +73,16 @@ public class BuyListData implements IXmlReader {
 
         log.info("Loaded {} buyLists.", buyLists.size());
 
-        try (Connection con = DatabaseFactory.getConnection();
-                Statement statement = con.createStatement();
-                ResultSet rs = statement.executeQuery("SELECT * FROM `buylists`")) {
-            while (rs.next()) {
-                final int buyListId = rs.getInt("buylist_id");
+        try {
+            for (BuylistStock stock : buylistStockRepository.findAll()) {
+                final int buyListId = stock.buyListId();
                 final BuyListHolder buyList = getBuyList(buyListId);
                 if (buyList == null) {
                     log.warn("BuyList found in database but not loaded from xml! BuyListId: {}", buyListId);
                     continue;
                 }
 
-                final int itemId = rs.getInt("item_id");
+                final int itemId = stock.itemId();
                 final Product product = buyList.getProductByItemId(itemId);
                 if (product == null) {
                     log.warn(
@@ -82,15 +92,19 @@ public class BuyListData implements IXmlReader {
                     continue;
                 }
 
-                final long count = rs.getLong("count");
+                final long count = stock.count();
                 if (count < product.getMaxCount()) {
                     product.setCount(count);
-                    product.restartRestockTask(rs.getLong("next_restock_time"));
+                    product.restartRestockTask(epochMillisOrZero(stock.nextRestockTime()));
                 }
             }
-        } catch (Exception e) {
+        } catch (DataAccessException e) {
             log.warn("Failed to load buyList data from database.", e);
         }
+    }
+
+    public void saveStock(BuylistStock stock) {
+        buylistStockRepository.save(stock);
     }
 
     @Override
@@ -182,11 +196,12 @@ public class BuyListData implements IXmlReader {
         return buyLists.get(listId);
     }
 
+    // TODO: callers receive the bean through their constructor (#41).
     public static BuyListData getInstance() {
-        return SingletonHolder.INSTANCE;
-    }
-
-    private static class SingletonHolder {
-        protected static final BuyListData INSTANCE = new BuyListData();
+        final BuyListData current = instance;
+        if (current == null) {
+            throw new IllegalStateException("BuyListData is used before the Spring context created it.");
+        }
+        return current;
     }
 }

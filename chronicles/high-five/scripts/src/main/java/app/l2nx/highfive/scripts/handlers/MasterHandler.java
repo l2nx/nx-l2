@@ -123,7 +123,6 @@ import app.l2nx.highfive.scripts.handlers.chat.commands.admin.AdminClan;
 import app.l2nx.highfive.scripts.handlers.chat.commands.admin.AdminCreateItem;
 import app.l2nx.highfive.scripts.handlers.chat.commands.admin.AdminCursedWeapons;
 import app.l2nx.highfive.scripts.handlers.chat.commands.admin.AdminDebug;
-import app.l2nx.highfive.scripts.handlers.chat.commands.admin.AdminDelete;
 import app.l2nx.highfive.scripts.handlers.chat.commands.admin.AdminDestroyItems;
 import app.l2nx.highfive.scripts.handlers.chat.commands.admin.AdminDisconnect;
 import app.l2nx.highfive.scripts.handlers.chat.commands.admin.AdminDoorControl;
@@ -352,7 +351,6 @@ public class MasterHandler {
             AdminCreateItem.class,
             AdminCursedWeapons.class,
             AdminDebug.class,
-            AdminDelete.class,
             AdminDestroyItems.class,
             AdminDisconnect.class,
             AdminDoorControl.class,

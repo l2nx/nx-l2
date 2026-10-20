@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -25,6 +29,7 @@ package app.l2nx.highfive.scripts.handlers.chat.commands.admin;
 import app.l2nx.highfive.cache.HtmCache;
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.custom.PremiumSystemConfig;
+import app.l2nx.highfive.data.sql.CharInfoTable;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.handler.IAdminCommandHandler;
@@ -58,31 +63,31 @@ public class AdminPremium implements IAdminCommandHandler {
             try {
                 addPremiumStatus(activeChar, 1, command.substring(19));
             } catch (StringIndexOutOfBoundsException e) {
-                activeChar.sendSysMessage("Please enter a valid account name.");
+                activeChar.sendSysMessage("Please enter a valid character name.");
             }
         } else if (command.startsWith("admin_premium_add2")) {
             try {
                 addPremiumStatus(activeChar, 2, command.substring(19));
             } catch (StringIndexOutOfBoundsException e) {
-                activeChar.sendSysMessage("Please enter a valid account name.");
+                activeChar.sendSysMessage("Please enter a valid character name.");
             }
         } else if (command.startsWith("admin_premium_add3")) {
             try {
                 addPremiumStatus(activeChar, 3, command.substring(19));
             } catch (StringIndexOutOfBoundsException e) {
-                activeChar.sendSysMessage("Please enter a valid account name.");
+                activeChar.sendSysMessage("Please enter a valid character name.");
             }
         } else if (command.startsWith("admin_premium_info")) {
             try {
                 viewPremiumInfo(activeChar, command.substring(19));
             } catch (StringIndexOutOfBoundsException e) {
-                activeChar.sendSysMessage("Please enter a valid account name.");
+                activeChar.sendSysMessage("Please enter a valid character name.");
             }
         } else if (command.startsWith("admin_premium_remove")) {
             try {
                 removePremium(activeChar, command.substring(21));
             } catch (StringIndexOutOfBoundsException e) {
-                activeChar.sendSysMessage("Please enter a valid account name.");
+                activeChar.sendSysMessage("Please enter a valid character name.");
             }
         }
 
@@ -92,61 +97,75 @@ public class AdminPremium implements IAdminCommandHandler {
         return true;
     }
 
-    private void addPremiumStatus(Player admin, int months, String accountName) {
-        if (!PremiumSystemConfig.PREMIUM_SYSTEM_ENABLED) {
-            admin.sendMessage("Premium system is disabled.");
+    private void addPremiumStatus(Player admin, int months, String characterName) {
+        final int objectId = findCharacter(admin, characterName);
+        if (objectId <= 0) {
             return;
         }
 
-        final String entityType = PremiumSystemConfig.ACCOUNT_WIDE_PREMIUM ? "Account " : "Player ";
-        // TODO: Add check if account exists XD
-        PremiumManager.getInstance().addPremiumTime(accountName, months * 30, TimeUnit.DAYS);
-        admin.sendMessage(entityType + accountName + " will now have premium status until "
-                + PREMIUM_FORMAT.format(
-                        Instant.ofEpochMilli(PremiumManager.getInstance().getPremiumExpiration(accountName))
-                                .atZone(ClockBridge.wallClock().getZone()))
-                + ".");
+        PremiumManager.getInstance().addPremiumTime(objectId, months * 30, TimeUnit.DAYS);
+        admin.sendMessage(holder(characterName) + " will now have premium status until "
+                + format(PremiumManager.getInstance().getPremiumExpiration(objectId)) + ".");
         if (PremiumSystemConfig.PC_CAFE_RETAIL_LIKE) {
-            for (Player player : World.getPlayers()) {
-                if (player.getAccountName().matches(accountName)) {
-                    PcCafePointsManager.getInstance().run(player);
-                    break;
-                }
+            final Player player = World.getPlayer(objectId);
+            if (player != null) {
+                PcCafePointsManager.getInstance().run(player);
             }
         }
     }
 
-    private void viewPremiumInfo(Player admin, String accountName) {
-        if (!PremiumSystemConfig.PREMIUM_SYSTEM_ENABLED) {
-            admin.sendMessage("Premium system is disabled.");
+    private void viewPremiumInfo(Player admin, String characterName) {
+        final int objectId = findCharacter(admin, characterName);
+        if (objectId <= 0) {
             return;
         }
 
-        final String entityType = PremiumSystemConfig.ACCOUNT_WIDE_PREMIUM ? "Account " : "Player ";
-        if (PremiumManager.getInstance().getPremiumExpiration(accountName) > 0) {
-            admin.sendMessage(entityType + accountName + " has premium status until "
-                    + PREMIUM_FORMAT.format(
-                            Instant.ofEpochMilli(PremiumManager.getInstance().getPremiumExpiration(accountName))
-                                    .atZone(ClockBridge.wallClock().getZone()))
-                    + ".");
+        final long premiumExpiration = PremiumManager.getInstance().getPremiumExpiration(objectId);
+        if (premiumExpiration > 0) {
+            admin.sendMessage(holder(characterName) + " has premium status until " + format(premiumExpiration) + ".");
         } else {
-            admin.sendMessage(entityType + accountName + " has no premium status.");
+            admin.sendMessage(holder(characterName) + " has no premium status.");
         }
     }
 
-    private void removePremium(Player admin, String accountName) {
-        if (!PremiumSystemConfig.PREMIUM_SYSTEM_ENABLED) {
-            admin.sendMessage("Premium system is disabled.");
+    private void removePremium(Player admin, String characterName) {
+        final int objectId = findCharacter(admin, characterName);
+        if (objectId <= 0) {
             return;
         }
 
-        final String entityType = PremiumSystemConfig.ACCOUNT_WIDE_PREMIUM ? "Account " : "Player ";
-        if (PremiumManager.getInstance().getPremiumExpiration(accountName) > 0) {
-            PremiumManager.getInstance().removePremiumStatus(accountName, true);
-            admin.sendMessage(entityType + accountName + " has no longer premium status.");
+        if (PremiumManager.getInstance().getPremiumExpiration(objectId) > 0) {
+            PremiumManager.getInstance().removePremiumStatus(objectId);
+            admin.sendMessage(holder(characterName) + " has no longer premium status.");
         } else {
-            admin.sendMessage(entityType + accountName + " has no premium status.");
+            admin.sendMessage(holder(characterName) + " has no premium status.");
         }
+    }
+
+    /**
+     * @return the object id of the character, {@code 0} or less after telling the admin why there is none
+     */
+    private static int findCharacter(Player admin, String characterName) {
+        if (!PremiumSystemConfig.PREMIUM_SYSTEM_ENABLED) {
+            admin.sendMessage("Premium system is disabled.");
+            return 0;
+        }
+
+        final int objectId = CharInfoTable.getInstance().getIdByName(characterName.strip());
+        if (objectId <= 0) {
+            admin.sendMessage("Character " + characterName + " does not exist.");
+        }
+
+        return objectId;
+    }
+
+    private static String holder(String characterName) {
+        return (PremiumSystemConfig.ACCOUNT_WIDE_PREMIUM ? "The account of " : "Player ") + characterName;
+    }
+
+    private static String format(long epochMillis) {
+        return PREMIUM_FORMAT.format(
+                Instant.ofEpochMilli(epochMillis).atZone(ClockBridge.wallClock().getZone()));
     }
 
     @Override

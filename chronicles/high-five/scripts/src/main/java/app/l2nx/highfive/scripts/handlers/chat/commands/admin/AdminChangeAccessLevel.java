@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -23,7 +27,7 @@
 package app.l2nx.highfive.scripts.handlers.chat.commands.admin;
 
 import app.l2nx.highfive.data.holders.AccessLevel;
-import app.l2nx.highfive.data.sql.DatabaseFactory;
+import app.l2nx.highfive.data.sql.CharacterAccessTable;
 import app.l2nx.highfive.data.xml.AdminData;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.WorldObject;
@@ -32,9 +36,6 @@ import app.l2nx.highfive.handler.IAdminCommandHandler;
 import app.l2nx.highfive.network.Disconnection;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.serverpackets.LeaveWorld;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
 
 /**
  * Change access level command handler.
@@ -59,27 +60,19 @@ public class AdminChangeAccessLevel implements IAdminCommandHandler {
             }
         } else if (parts.length == 3) {
             final String name = parts[1];
-            final int lvl = Integer.parseInt(parts[2]);
+            final int lvl;
+            try {
+                lvl = Integer.parseInt(parts[2]);
+            } catch (NumberFormatException e) {
+                activeChar.sendSysMessage("Usage: //changelvl <target_new_level> | <player_name> <new_level>");
+                return true;
+            }
+
             final Player player = World.getPlayer(name);
             if (player != null) {
                 onlineChange(activeChar, player, lvl);
             } else {
-                try (Connection con = DatabaseFactory.getConnection()) {
-                    final PreparedStatement statement =
-                            con.prepareStatement("UPDATE characters SET accesslevel=? WHERE char_name=?");
-                    statement.setInt(1, lvl);
-                    statement.setString(2, name);
-                    statement.execute();
-                    final int count = statement.getUpdateCount();
-                    statement.close();
-                    if (count == 0) {
-                        activeChar.sendSysMessage("Character not found or access level unaltered.");
-                    } else {
-                        activeChar.sendSysMessage("Character's access level is now set to " + lvl);
-                    }
-                } catch (SQLException se) {
-                    activeChar.sendSysMessage("SQLException while changing character's access level");
-                }
+                offlineChange(activeChar, name, lvl);
             }
         }
 
@@ -89,6 +82,23 @@ public class AdminChangeAccessLevel implements IAdminCommandHandler {
     @Override
     public String[] getCommandList() {
         return ADMIN_COMMANDS;
+    }
+
+    /**
+     * @param name the name of a character that is not in the world
+     */
+    private void offlineChange(Player activeChar, String name, int lvl) {
+        if ((lvl >= 0) && !AdminData.getInstance().hasAccessLevel(lvl)) {
+            activeChar.sendSysMessage(
+                    "You are trying to set unexisting access level: " + lvl + " please try again with a valid one!");
+            return;
+        }
+
+        if (CharacterAccessTable.getInstance().setAccessLevel(name, lvl)) {
+            activeChar.sendSysMessage("Character's access level is now set to " + lvl);
+        } else {
+            activeChar.sendSysMessage("Character not found or access level unaltered.");
+        }
     }
 
     /**

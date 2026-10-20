@@ -67,7 +67,7 @@ public class LoginServer implements SmartLifecycle {
     private static final String BANNED_IPS_CONFIGURATION_PATH = "./banned_ip.cfg";
 
     // Protocol.
-    public static final int PROTOCOL_REV = 0x0106;
+    public static final int PROTOCOL_REV = 0x0107;
 
     // Singleton instance.
     @Getter

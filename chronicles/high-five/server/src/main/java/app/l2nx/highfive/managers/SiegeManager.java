@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -23,7 +27,6 @@
 package app.l2nx.highfive.managers;
 
 import app.l2nx.highfive.config.ConfigReader;
-import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.data.xml.SkillData;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.WorldObject;
@@ -32,11 +35,13 @@ import app.l2nx.highfive.entity.clan.Clan;
 import app.l2nx.highfive.interfaces.ILocational;
 import app.l2nx.highfive.mechanics.siege.Castle;
 import app.l2nx.highfive.mechanics.siege.Siege;
+import app.l2nx.highfive.mechanics.siege.SiegeClanType;
 import app.l2nx.highfive.mechanics.siege.TowerSpawn;
 import app.l2nx.highfive.mechanics.skill.Skill;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
+import app.l2nx.highfive.repository.residence.CastleTrapUpgradeRepository;
+import app.l2nx.highfive.repository.residence.model.CastleTrapUpgrade;
+import app.l2nx.highfive.repository.siege.CastleSiegeClanRepository;
+import app.l2nx.highfive.repository.siege.model.CastleSiegeClan;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -44,9 +49,13 @@ import java.util.Map;
 import java.util.StringTokenizer;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataAccessException;
+import org.springframework.stereotype.Component;
 
 @Slf4j
+@Component
 public class SiegeManager {
+    private static volatile SiegeManager instance;
 
     private static final String SIEGE_CONFIG_FILE = "./config/Siege.ini";
 
@@ -77,8 +86,14 @@ public class SiegeManager {
     @Getter
     private int bloodAllianceReward = 0; // Number of Blood Alliance items reward for successful castle defending.
 
-    protected SiegeManager() {
-        load();
+    private final CastleSiegeClanRepository siegeClanRepository;
+    private final CastleTrapUpgradeRepository trapUpgradeRepository;
+
+    public SiegeManager(
+            CastleSiegeClanRepository siegeClanRepository, CastleTrapUpgradeRepository trapUpgradeRepository) {
+        this.siegeClanRepository = siegeClanRepository;
+        this.trapUpgradeRepository = trapUpgradeRepository;
+        instance = this;
     }
 
     public void addSiegeSkills(Player character) {
@@ -102,23 +117,12 @@ public class SiegeManager {
             return true;
         }
 
-        boolean register = false;
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps =
-                        con.prepareStatement("SELECT clan_id FROM siege_clans where clan_id=? and castle_id=?")) {
-            ps.setInt(1, clan.getId());
-            ps.setInt(2, castleid);
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    register = true;
-                    break;
-                }
-            }
-        } catch (Exception e) {
+        try {
+            return siegeClanRepository.exists(castleid, clan.getId());
+        } catch (DataAccessException e) {
             log.warn("Exception: checkIsRegistered(): {}", e.getMessage(), e);
+            return false;
         }
-
-        return register;
     }
 
     public void removeSiegeSkills(Player character) {
@@ -128,7 +132,7 @@ public class SiegeManager {
         }
     }
 
-    private void load() {
+    public void load() {
         final ConfigReader siegeConfig = new ConfigReader(SIEGE_CONFIG_FILE);
 
         // Siege configurations.
@@ -235,24 +239,98 @@ public class SiegeManager {
     }
 
     private void loadTrapUpgrade(int castleId) {
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement("SELECT * FROM castle_trapupgrade WHERE castleId=?")) {
-            ps.setInt(1, castleId);
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    flameTowers.get(castleId).get(rs.getInt("towerIndex")).setUpgradeLevel(rs.getInt("level"));
-                }
+        try {
+            for (CastleTrapUpgrade upgrade : trapUpgradeRepository.findByCastle(castleId)) {
+                flameTowers.get(castleId).get(upgrade.towerIndex()).setUpgradeLevel(upgrade.trapLevel());
             }
-        } catch (Exception e) {
+        } catch (DataAccessException e) {
             log.warn("Exception: loadTrapUpgrade(): {}", e.getMessage(), e);
         }
     }
 
-    public static SiegeManager getInstance() {
-        return SingletonHolder.INSTANCE;
+    public void saveTrapUpgrade(int castleId, int towerIndex, int level) {
+        try {
+            trapUpgradeRepository.save(
+                    castleId,
+                    CastleTrapUpgrade.builder()
+                            .towerIndex(towerIndex)
+                            .trapLevel(level)
+                            .build());
+        } catch (DataAccessException e) {
+            log.warn("Could not save trap upgrade {} of castle {}: {}", towerIndex, castleId, e.getMessage(), e);
+        }
     }
 
-    private static class SingletonHolder {
-        protected static final SiegeManager INSTANCE = new SiegeManager();
+    public void deleteTrapUpgrades(int castleId) {
+        try {
+            trapUpgradeRepository.deleteByCastle(castleId);
+        } catch (DataAccessException e) {
+            log.warn("Could not delete the trap upgrades of castle {}: {}", castleId, e.getMessage(), e);
+        }
+    }
+
+    public List<CastleSiegeClan> findSiegeClans(int castleId) {
+        try {
+            return siegeClanRepository.findByCastle(castleId);
+        } catch (DataAccessException e) {
+            log.warn("Could not load the siege clans of castle {}: {}", castleId, e.getMessage(), e);
+            return List.of();
+        }
+    }
+
+    public boolean saveSiegeClan(int castleId, int clanId, SiegeClanType side) {
+        try {
+            siegeClanRepository.insert(castleId, clanId, side);
+            return true;
+        } catch (DataAccessException e) {
+            log.warn("Could not register clan {} for the siege of castle {}: {}", clanId, castleId, e.getMessage(), e);
+            return false;
+        }
+    }
+
+    public boolean updateSiegeClanSide(int castleId, int clanId, SiegeClanType side) {
+        try {
+            siegeClanRepository.updateSide(castleId, clanId, side);
+            return true;
+        } catch (DataAccessException e) {
+            log.warn("Could not move clan {} in the siege of castle {}: {}", clanId, castleId, e.getMessage(), e);
+            return false;
+        }
+    }
+
+    public void deleteSiegeClan(int castleId, int clanId) {
+        try {
+            siegeClanRepository.delete(castleId, clanId);
+        } catch (DataAccessException e) {
+            log.warn("Could not remove clan {} from the siege of castle {}: {}", clanId, castleId, e.getMessage(), e);
+        }
+    }
+
+    public void deleteSiegeClans(int castleId, int clanId) {
+        try {
+            siegeClanRepository.deleteByCastle(castleId);
+            if (clanId > 0) {
+                siegeClanRepository.deleteByClan(clanId);
+            }
+        } catch (DataAccessException e) {
+            log.warn("Could not clear the siege clans of castle {}: {}", castleId, e.getMessage(), e);
+        }
+    }
+
+    public void deleteSiegeClans(int castleId, SiegeClanType side) {
+        try {
+            siegeClanRepository.deleteByCastleAndSide(castleId, side);
+        } catch (DataAccessException e) {
+            log.warn("Could not clear the {} clans of castle {}: {}", side, castleId, e.getMessage(), e);
+        }
+    }
+
+    // TODO: callers receive the bean through their constructor (#41).
+    public static SiegeManager getInstance() {
+        final SiegeManager current = instance;
+        if (current == null) {
+            throw new IllegalStateException("SiegeManager is used before the Spring context created it.");
+        }
+        return current;
     }
 }

@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -30,19 +34,24 @@ public class UCBestTeam {
     private final int arenaId;
 
     @Getter
+    private int leaderId;
+
+    @Getter
     private String leaderName;
 
     @Getter
     @Setter
     private int wins;
 
-    public UCBestTeam(int arenaId, String leaderName, int wins) {
+    public UCBestTeam(int arenaId, int leaderId, String leaderName, int wins) {
         this.arenaId = arenaId;
+        this.leaderId = leaderId;
         this.leaderName = leaderName;
         this.wins = wins;
     }
 
-    public void setLeader(String leader) {
-        leaderName = leader;
+    public void setLeader(int leaderId, String leaderName) {
+        this.leaderId = leaderId;
+        this.leaderName = leaderName;
     }
 }

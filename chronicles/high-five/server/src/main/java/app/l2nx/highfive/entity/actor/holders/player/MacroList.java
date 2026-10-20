@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -22,14 +26,12 @@
  */
 package app.l2nx.highfive.entity.actor.holders.player;
 
-import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.enums.player.MacroType;
 import app.l2nx.highfive.entity.actor.enums.player.ShortcutType;
+import app.l2nx.highfive.managers.PlayerPersistenceManager;
 import app.l2nx.highfive.network.serverpackets.SendMacroList;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
+import app.l2nx.highfive.repository.character.model.CharacterMacro;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -39,6 +41,7 @@ import java.util.Map;
 import java.util.StringTokenizer;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataAccessException;
 
 @Slf4j
 public class MacroList {
@@ -69,11 +72,7 @@ public class MacroList {
             allMacroses.put(macro.getId(), macro);
             registerMacroInDb(macro);
         } else {
-            final Macro old = allMacroses.put(macro.getId(), macro);
-            if (old != null) {
-                deleteMacroFromDb(old);
-            }
-
+            allMacroses.put(macro.getId(), macro);
             registerMacroInDb(macro);
         }
 
@@ -110,83 +109,80 @@ public class MacroList {
     }
 
     private void registerMacroInDb(Macro macro) {
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement(
-                        "INSERT INTO character_macroses (charId,id,icon,name,descr,acronym,commands) values(?,?,?,?,?,?,?)")) {
-            ps.setInt(1, owner.getObjectId());
-            ps.setInt(2, macro.getId());
-            ps.setInt(3, macro.getIcon());
-            ps.setString(4, macro.getName());
-            ps.setString(5, macro.getDescr());
-            ps.setString(6, macro.getAcronym());
-            final StringBuilder sb = new StringBuilder(300);
-            for (MacroCmd cmd : macro.getCommands()) {
-                sb.append(cmd.getType().ordinal() + "," + cmd.getD1() + "," + cmd.getD2());
-                if ((cmd.getCmd() != null) && !cmd.getCmd().isEmpty()) {
-                    sb.append("," + cmd.getCmd());
-                }
-                sb.append(';');
+        final StringBuilder sb = new StringBuilder(300);
+        for (MacroCmd cmd : macro.getCommands()) {
+            sb.append(cmd.getType().ordinal() + "," + cmd.getD1() + "," + cmd.getD2());
+            if ((cmd.getCmd() != null) && !cmd.getCmd().isEmpty()) {
+                sb.append("," + cmd.getCmd());
             }
+            sb.append(';');
+        }
 
-            if (sb.length() > 255) {
-                sb.setLength(255);
-            }
+        if (sb.length() > 255) {
+            sb.setLength(255);
+        }
 
-            ps.setString(7, sb.toString());
-            ps.execute();
-        } catch (Exception e) {
+        try {
+            PlayerPersistenceManager.getInstance()
+                    .saveMacro(
+                            owner.getObjectId(),
+                            CharacterMacro.builder()
+                                    .macroId(macro.getId())
+                                    .icon(macro.getIcon())
+                                    .name(macro.getName())
+                                    .description(macro.getDescr())
+                                    .acronym(macro.getAcronym())
+                                    .commands(sb.toString())
+                                    .build());
+        } catch (DataAccessException e) {
             log.warn("could not store macro:", e);
         }
     }
 
     private void deleteMacroFromDb(Macro macro) {
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement("DELETE FROM character_macroses WHERE charId=? AND id=?")) {
-            ps.setInt(1, owner.getObjectId());
-            ps.setInt(2, macro.getId());
-            ps.execute();
-        } catch (Exception e) {
+        try {
+            PlayerPersistenceManager.getInstance().deleteMacro(owner.getObjectId(), macro.getId());
+        } catch (DataAccessException e) {
             log.warn("could not delete macro:", e);
         }
     }
 
     public boolean restoreMe() {
         allMacroses.clear();
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement(
-                        "SELECT charId, id, icon, name, descr, acronym, commands FROM character_macroses WHERE charId=?")) {
-            ps.setInt(1, owner.getObjectId());
-            try (ResultSet rset = ps.executeQuery()) {
-                while (rset.next()) {
-                    final int id = rset.getInt("id");
-                    final int icon = rset.getInt("icon");
-                    final String name = rset.getString("name");
-                    final String descr = rset.getString("descr");
-                    final String acronym = rset.getString("acronym");
-                    final List<MacroCmd> commands = new ArrayList<>();
-                    final StringTokenizer st1 = new StringTokenizer(rset.getString("commands"), ";");
-                    while (st1.hasMoreTokens()) {
-                        final StringTokenizer st = new StringTokenizer(st1.nextToken(), ",");
-                        if (st.countTokens() < 3) {
-                            continue;
-                        }
-
-                        final MacroType type = MacroType.values()[Integer.parseInt(st.nextToken())];
-                        final int d1 = Integer.parseInt(st.nextToken());
-                        final int d2 = Integer.parseInt(st.nextToken());
-                        String cmd = "";
-                        if (st.hasMoreTokens()) {
-                            cmd = st.nextToken();
-                        }
-
-                        commands.add(new MacroCmd(commands.size(), type, d1, d2, cmd));
+        try {
+            for (CharacterMacro stored : PlayerPersistenceManager.getInstance().findMacros(owner.getObjectId())) {
+                final List<MacroCmd> commands = new ArrayList<>();
+                final StringTokenizer st1 =
+                        new StringTokenizer(stored.commands() == null ? "" : stored.commands(), ";");
+                while (st1.hasMoreTokens()) {
+                    final StringTokenizer st = new StringTokenizer(st1.nextToken(), ",");
+                    if (st.countTokens() < 3) {
+                        continue;
                     }
 
-                    allMacroses.put(id, new Macro(id, icon, name, descr, acronym, commands));
+                    final MacroType type = MacroType.values()[Integer.parseInt(st.nextToken())];
+                    final int d1 = Integer.parseInt(st.nextToken());
+                    final int d2 = Integer.parseInt(st.nextToken());
+                    String cmd = "";
+                    if (st.hasMoreTokens()) {
+                        cmd = st.nextToken();
+                    }
+
+                    commands.add(new MacroCmd(commands.size(), type, d1, d2, cmd));
                 }
+
+                allMacroses.put(
+                        stored.macroId(),
+                        new Macro(
+                                stored.macroId(),
+                                stored.icon(),
+                                stored.name(),
+                                stored.description(),
+                                stored.acronym(),
+                                commands));
             }
-        } catch (Exception e) {
-            log.warn("could not store shortcuts:", e);
+        } catch (DataAccessException e) {
+            log.warn("could not restore macros:", e);
             return false;
         }
 

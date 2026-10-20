@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -24,37 +28,32 @@ package app.l2nx.highfive.data.sql;
 
 import app.l2nx.highfive.config.ServerConfig;
 import app.l2nx.highfive.data.xml.PetDataTable;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import app.l2nx.highfive.repository.pet.PetRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.dao.DataAccessException;
+import org.springframework.stereotype.Component;
 
 @Slf4j
+@Component
 public class PetNameTable {
+    private static volatile PetNameTable instance;
 
-    // SQL
-    private static final String CHECK_PET_NAME =
-            "SELECT p.name FROM pets p JOIN items i ON p.item_obj_id = i.object_id WHERE p.name=? AND i.item_id=?";
+    private final PetRepository petRepository;
+
+    public PetNameTable(PetRepository petRepository) {
+        this.petRepository = petRepository;
+        instance = this;
+    }
 
     public boolean doesPetNameExist(String name, int petNpcId) {
-        boolean result = false;
         final int petItemId = PetDataTable.getInstance().getPetItemsByNpc(petNpcId);
-
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement(CHECK_PET_NAME)) {
-            ps.setString(1, name);
-            ps.setInt(2, petItemId);
-
-            try (ResultSet rs = ps.executeQuery()) {
-                result = rs.next();
-            }
-        } catch (SQLException e) {
+        try {
+            return petRepository.nameExists(name, petItemId);
+        } catch (DataAccessException e) {
             log.warn("Could not check existing pet name: {}", e.getMessage(), e);
+            return false;
         }
-
-        return result;
     }
 
     public boolean isValidPetName(String name) {
@@ -66,11 +65,12 @@ public class PetNameTable {
         return ServerConfig.PET_NAME_TEMPLATE_PATTERN.matcher(name).matches();
     }
 
-    private static class SingletonHolder {
-        protected static final PetNameTable INSTANCE = new PetNameTable();
-    }
-
+    // TODO: callers receive the bean through their constructor (#41).
     public static PetNameTable getInstance() {
-        return SingletonHolder.INSTANCE;
+        final PetNameTable current = instance;
+        if (current == null) {
+            throw new IllegalStateException("PetNameTable is used before the Spring context created it.");
+        }
+        return current;
     }
 }

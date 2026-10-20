@@ -8,6 +8,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.context.ConfigurableApplicationContext;
@@ -17,6 +19,8 @@ import org.springframework.core.env.Environment;
 /**
  * Runs the real environment preparation, so the defaults meet the application's own config data (test application.yaml).
  */
+// Starting two Spring contexts at once races the logging system initialisation.
+@Execution(ExecutionMode.SAME_THREAD)
 class DefaultsEnvironmentPostProcessorTest {
     @Nested
     class PostProcessEnvironment {

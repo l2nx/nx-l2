@@ -3,11 +3,18 @@
 
 spring:
   datasource:
-    url: jdbc:mysql://localhost:3306/l2nx?allowPublicKeyRetrieval=true&useSSL=false
-    username: l2nx
+    url: jdbc:postgresql://localhost:5432/l2nx
     password: l2nx
     hikari:
       pool-name: l2nx-db
+      schema: ${l2nx.database.schema}
+      data-source-properties:
+        # A connection left inside a transaction would hold its locks until the pool closed it.
+        options: -c idle_in_transaction_session_timeout=60s
+  liquibase:
+    change-log: classpath:db/liquibase-changelog.yaml
+    default-schema: ${l2nx.database.schema}
+    liquibase-schema: ${l2nx.database.schema}
 
 server:
   address: 127.0.0.1

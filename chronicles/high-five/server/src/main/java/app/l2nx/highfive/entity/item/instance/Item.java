@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -24,13 +28,13 @@ package app.l2nx.highfive.entity.item.instance;
 
 import static app.l2nx.highfive.entity.itemcontainer.Inventory.ADENA_ID;
 import static app.l2nx.highfive.entity.itemcontainer.Inventory.MAX_ADENA;
+import static app.l2nx.highfive.repository.LegacyValues.instantOrNull;
 
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.config.OlympiadConfig;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.config.custom.TransmogConfig;
-import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.data.xml.EnchantItemOptionsData;
 import app.l2nx.highfive.data.xml.ItemData;
 import app.l2nx.highfive.data.xml.OptionData;
@@ -55,7 +59,9 @@ import app.l2nx.highfive.entity.item.type.EtcItemType;
 import app.l2nx.highfive.entity.item.type.ItemType;
 import app.l2nx.highfive.geoengine.GeoEngine;
 import app.l2nx.highfive.managers.IdManager;
+import app.l2nx.highfive.managers.ItemManager;
 import app.l2nx.highfive.managers.ItemsOnGroundManager;
+import app.l2nx.highfive.managers.MailManager;
 import app.l2nx.highfive.managers.MercTicketManager;
 import app.l2nx.highfive.mechanics.events.EventDispatcher;
 import app.l2nx.highfive.mechanics.events.EventType;
@@ -78,13 +84,11 @@ import app.l2nx.highfive.network.serverpackets.InventoryUpdate;
 import app.l2nx.highfive.network.serverpackets.SpawnItem;
 import app.l2nx.highfive.network.serverpackets.StatusUpdate;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
+import app.l2nx.highfive.repository.item.model.ItemElemental;
+import app.l2nx.highfive.repository.item.model.ItemRow;
 import app.l2nx.highfive.taskmanagers.ItemLifeTimeTaskManager;
 import app.l2nx.highfive.taskmanagers.ItemManaTaskManager;
 import app.l2nx.highfive.util.GMAudit;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ScheduledFuture;
@@ -94,6 +98,7 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataAccessException;
 
 /**
  * This class manages items.
@@ -866,10 +871,12 @@ public class Item extends WorldObject {
         }
 
         this.augmentation = augmentation;
-        try (Connection con = DatabaseFactory.getConnection()) {
-            updateItemAttributes(con);
-        } catch (SQLException e) {
-            log.error("Could not update atributes for item: {} from DB:", this, e);
+        if (existsInDb) {
+            try {
+                ItemManager.getInstance().saveAugmentation(getObjectId(), augmentation.getAugmentationId());
+            } catch (DataAccessException e) {
+                log.error("Could not update atributes for item: {} from DB:", this, e);
+            }
         }
 
         // Notify to scripts.
@@ -893,12 +900,12 @@ public class Item extends WorldObject {
         final Augmentation augment = augmentation;
         augmentation = null;
 
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement("DELETE FROM item_attributes WHERE itemId = ?")) {
-            ps.setInt(1, getObjectId());
-            ps.executeUpdate();
-        } catch (Exception e) {
-            log.error("Could not remove augmentation for item: {} from DB:", this, e);
+        if (existsInDb) {
+            try {
+                ItemManager.getInstance().deleteAugmentation(getObjectId());
+            } catch (DataAccessException e) {
+                log.error("Could not remove augmentation for item: {} from DB:", this, e);
+            }
         }
 
         // Notify to scripts.
@@ -909,73 +916,30 @@ public class Item extends WorldObject {
     }
 
     public void restoreAttributes() {
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps1 =
-                        con.prepareStatement("SELECT augAttributes FROM item_attributes WHERE itemId=?");
-                PreparedStatement ps2 =
-                        con.prepareStatement("SELECT elemType,elemValue FROM item_elementals WHERE itemId=?")) {
-            ps1.setInt(1, getObjectId());
-            try (ResultSet rs = ps1.executeQuery()) {
-                if (rs.next()) {
-                    final int augAttributes = rs.getInt(1);
-                    if (augAttributes != -1) {
-                        augmentation = new Augmentation(rs.getInt("augAttributes"));
-                    }
-                }
+        try {
+            ItemManager.getInstance()
+                    .findAugmentation(getObjectId())
+                    .ifPresent(augmentationId -> augmentation = new Augmentation(augmentationId));
+            for (ItemElemental elemental : ItemManager.getInstance().findElementals(getObjectId())) {
+                applyAttribute(elemental.element(), elemental.value());
             }
-
-            ps2.setInt(1, getObjectId());
-            try (ResultSet rs = ps2.executeQuery()) {
-                while (rs.next()) {
-                    final byte elemType = rs.getByte(1);
-                    final int elemValue = rs.getInt(2);
-                    if ((elemType != -1) && (elemValue != -1)) {
-                        applyAttribute(elemType, elemValue);
-                    }
-                }
-            }
-        } catch (Exception e) {
-            log.error(
-                    "Could not restore augmentation and elemental data for item {} from DB: {}",
-                    this,
-                    e.getMessage(),
-                    e);
+        } catch (DataAccessException e) {
+            log.error("Could not restore augmentation and elemental data for item {} from DB:", this, e);
         }
     }
 
-    private void updateItemAttributes(Connection con) {
-        try (PreparedStatement ps = con.prepareStatement("REPLACE INTO item_attributes VALUES(?,?)")) {
-            ps.setInt(1, getObjectId());
-            ps.setInt(2, augmentation != null ? augmentation.getAugmentationId() : -1);
-            ps.executeUpdate();
-        } catch (SQLException e) {
-            log.error("Could not update atributes for item: {} from DB:", this, e);
-        }
-    }
-
-    private void updateItemElements(Connection con) {
-        try (PreparedStatement ps = con.prepareStatement("DELETE FROM item_elementals WHERE itemId = ?")) {
-            ps.setInt(1, getObjectId());
-            ps.executeUpdate();
-        } catch (SQLException e) {
-            log.error("Could not update elementals for item: {} from DB:", this, e);
-        }
-
-        if (elementals == null) {
-            return;
-        }
-
-        try (PreparedStatement ps = con.prepareStatement("INSERT INTO item_elementals VALUES(?,?,?)")) {
-            for (Elementals elm : elementals) {
-                ps.setInt(1, getObjectId());
-                ps.setByte(2, elm.getElement());
-                ps.setInt(3, elm.getValue());
-                ps.executeUpdate();
-                ps.clearParameters();
+    private List<ItemElemental> elementalRows() {
+        final List<ItemElemental> rows = new ArrayList<>();
+        if (elementals != null) {
+            for (Elementals elemental : elementals) {
+                rows.add(ItemElemental.builder()
+                        .element(elemental.getElement())
+                        .value(elemental.getValue())
+                        .build());
             }
-        } catch (SQLException e) {
-            log.error("Could not update elementals for item: {} from DB:", this, e);
         }
+
+        return rows;
     }
 
     public Elementals getElemental(byte attribute) {
@@ -1059,10 +1023,12 @@ public class Item extends WorldObject {
      */
     public void setElementAttr(byte element, int value) {
         applyAttribute(element, value);
-        try (Connection con = DatabaseFactory.getConnection()) {
-            updateItemElements(con);
-        } catch (SQLException e) {
-            log.error("Could not update elementals for item: {} from DB:", this, e);
+        if (existsInDb) {
+            try {
+                ItemManager.getInstance().saveElementals(getObjectId(), elementalRows());
+            } catch (DataAccessException e) {
+                log.error("Could not update elementals for item: {} from DB:", this, e);
+            }
         }
     }
 
@@ -1088,19 +1054,17 @@ public class Item extends WorldObject {
 
         elementals = array;
 
-        final String query = (element != -1)
-                ? "DELETE FROM item_elementals WHERE itemId = ? AND elemType = ?"
-                : "DELETE FROM item_elementals WHERE itemId = ?";
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement(query)) {
-            if (element != -1) {
-                // Item can have still others
-                ps.setInt(2, element);
-            }
+        if (!existsInDb) {
+            return;
+        }
 
-            ps.setInt(1, getObjectId());
-            ps.executeUpdate();
-        } catch (Exception e) {
+        try {
+            if (element != -1) {
+                ItemManager.getInstance().deleteElemental(getObjectId(), element);
+            } else {
+                ItemManager.getInstance().deleteElementals(getObjectId());
+            }
+        } catch (DataAccessException e) {
             log.error("Could not remove elemental enchant for item: {} from DB:", this, e);
         }
     }
@@ -1261,6 +1225,11 @@ public class Item extends WorldObject {
      * @param force if the update should necessarily be done.
      */
     public void updateDatabase(boolean force) {
+        // An attachment is written with its mail, in the transaction that sends it.
+        if ((itemLocation == ItemLocation.MAIL) && !MailManager.getInstance().isSent(locationSlot)) {
+            return;
+        }
+
         dbLock.lock();
 
         try {
@@ -1289,59 +1258,29 @@ public class Item extends WorldObject {
     }
 
     /**
-     * Returns a Item stored in database from its objectID
-     * @param ownerId
-     * @param rs
-     * @return Item
+     * @return the stored item, or {@code null} when its template is unknown
      */
-    public static Item restoreFromDb(int ownerId, ResultSet rs) {
-        Item inst = null;
-        int objectId;
-        int itemId;
-        int locData;
-        int enchantLevel;
-        int customType1;
-        int customType2;
-        int manaLeft;
-        long time;
-        long count;
-        ItemLocation loc;
-        try {
-            objectId = rs.getInt(1);
-            itemId = rs.getInt("item_id");
-            count = rs.getLong("count");
-            loc = ItemLocation.valueOf(rs.getString("loc"));
-            locData = rs.getInt("loc_data");
-            enchantLevel = rs.getInt("enchant_level");
-            customType1 = rs.getInt("custom_type1");
-            customType2 = rs.getInt("custom_type2");
-            manaLeft = rs.getInt("mana_left");
-            time = rs.getLong("time");
-        } catch (Exception e) {
-            log.error("Could not restore an item owned by {} from DB:", ownerId, e);
-            return null;
-        }
-
-        final ItemTemplate item = ItemData.getInstance().getTemplate(itemId);
+    public static Item restoreFromDb(int ownerId, ItemRow row) {
+        final ItemTemplate item = ItemData.getInstance().getTemplate(row.itemId());
         if (item == null) {
-            log.error("Item item_id={} not known, object_id={}", itemId, objectId);
+            log.error("Item item_id={} not known, object_id={}", row.itemId(), row.objectId());
             return null;
         }
 
-        inst = new Item(objectId, item);
+        final Item inst = new Item(row.objectId(), item);
         inst.ownerId = ownerId;
-        inst.setCount(count);
-        inst.enchantLevel = enchantLevel;
-        inst.customType1 = customType1;
-        inst.customType2 = customType2;
-        inst.itemLocation = loc;
-        inst.locationSlot = locData;
+        inst.setCount(row.count());
+        inst.enchantLevel = row.enchantLevel();
+        inst.customType1 = row.customType1();
+        inst.customType2 = row.customType2();
+        inst.itemLocation = row.location();
+        inst.locationSlot = row.locationSlot();
         inst.existsInDb = true;
         inst.storedInDb = true;
 
         // Setup life time for shadow weapons.
-        inst.mana = manaLeft;
-        inst.time = time;
+        inst.mana = row.mana();
+        inst.time = row.expiresAt() == null ? -1 : row.expiresAt().toEpochMilli();
 
         // load augmentation and elemental enchant
         if (inst.isEquipable()) {
@@ -1424,6 +1363,21 @@ public class Item extends WorldObject {
         }
     }
 
+    private ItemRow toRow() {
+        return ItemRow.builder()
+                .objectId(getObjectId())
+                .itemId(id)
+                .count(count)
+                .location(itemLocation)
+                .locationSlot(locationSlot)
+                .enchantLevel(enchantLevel)
+                .customType1(customType1)
+                .customType2(customType2)
+                .mana(mana)
+                .expiresAt(instantOrNull(time))
+                .build();
+    }
+
     /**
      * Update the database with values of the item
      */
@@ -1432,24 +1386,12 @@ public class Item extends WorldObject {
             return;
         }
 
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement(
-                        "UPDATE items SET owner_id=?,count=?,loc=?,loc_data=?,enchant_level=?,custom_type1=?,custom_type2=?,mana_left=?,time=? WHERE object_id = ?")) {
-            ps.setInt(1, ownerId);
-            ps.setLong(2, count);
-            ps.setString(3, itemLocation.name());
-            ps.setInt(4, locationSlot);
-            ps.setInt(5, enchantLevel);
-            ps.setInt(6, customType1);
-            ps.setInt(7, customType2);
-            ps.setInt(8, mana);
-            ps.setLong(9, time);
-            ps.setInt(10, getObjectId());
-            ps.executeUpdate();
+        try {
+            ItemManager.getInstance().updateItem(ownerId, toRow());
             existsInDb = true;
             storedInDb = true;
-        } catch (Exception e) {
-            log.error("Could not update item {} in DB: Reason: {}", this, e.getMessage(), e);
+        } catch (DataAccessException e) {
+            log.error("Could not update item {} in DB:", this, e);
         }
     }
 
@@ -1461,34 +1403,17 @@ public class Item extends WorldObject {
             return;
         }
 
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement(
-                        "INSERT INTO items (owner_id,item_id,count,loc,loc_data,enchant_level,object_id,custom_type1,custom_type2,mana_left,time) VALUES (?,?,?,?,?,?,?,?,?,?,?)")) {
-            ps.setInt(1, ownerId);
-            ps.setInt(2, id);
-            ps.setLong(3, count);
-            ps.setString(4, itemLocation.name());
-            ps.setInt(5, locationSlot);
-            ps.setInt(6, enchantLevel);
-            ps.setInt(7, getObjectId());
-            ps.setInt(8, customType1);
-            ps.setInt(9, customType2);
-            ps.setInt(10, mana);
-            ps.setLong(11, time);
-
-            ps.executeUpdate();
+        try {
+            ItemManager.getInstance()
+                    .insertItem(
+                            ownerId,
+                            toRow(),
+                            augmentation != null ? augmentation.getAugmentationId() : null,
+                            elementalRows());
             existsInDb = true;
             storedInDb = true;
-
-            if (augmentation != null) {
-                updateItemAttributes(con);
-            }
-
-            if (elementals != null) {
-                updateItemElements(con);
-            }
-        } catch (Exception e) {
-            log.error("Could not insert item {} into DB: Reason: {}", this, e.getMessage(), e);
+        } catch (DataAccessException e) {
+            log.error("Could not insert item {} into DB:", this, e);
         }
     }
 
@@ -1500,30 +1425,12 @@ public class Item extends WorldObject {
             return;
         }
 
-        try (Connection con = DatabaseFactory.getConnection()) {
-            try (PreparedStatement ps = con.prepareStatement("DELETE FROM items WHERE object_id = ?")) {
-                ps.setInt(1, getObjectId());
-                ps.executeUpdate();
-                existsInDb = false;
-                storedInDb = false;
-            }
-
-            try (PreparedStatement ps = con.prepareStatement("DELETE FROM item_attributes WHERE itemId = ?")) {
-                ps.setInt(1, getObjectId());
-                ps.executeUpdate();
-            }
-
-            try (PreparedStatement ps = con.prepareStatement("DELETE FROM item_elementals WHERE itemId = ?")) {
-                ps.setInt(1, getObjectId());
-                ps.executeUpdate();
-            }
-
-            try (PreparedStatement ps = con.prepareStatement("DELETE FROM item_variables WHERE id = ?")) {
-                ps.setInt(1, getObjectId());
-                ps.executeUpdate();
-            }
-        } catch (Exception e) {
-            log.error("Could not delete item {} in DB: {}", this, e.getMessage(), e);
+        try {
+            ItemManager.getInstance().deleteItem(getObjectId());
+            existsInDb = false;
+            storedInDb = false;
+        } catch (DataAccessException e) {
+            log.error("Could not delete item {} in DB:", this, e);
         }
     }
 

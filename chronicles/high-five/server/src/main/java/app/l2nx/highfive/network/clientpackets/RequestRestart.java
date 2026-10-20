@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -155,8 +159,8 @@ public class RequestRestart extends ClientPacket {
         client.sendPacket(RestartResponse.valueOf(true));
 
         // Send character list.
-        final CharSelectionInfo cl = new CharSelectionInfo(client.getAccountName(), client.getSessionId().playOkID1);
-        client.sendPacket(new CharSelectionInfo(client.getAccountName(), client.getSessionId().playOkID1));
+        final CharSelectionInfo cl = new CharSelectionInfo(client);
+        client.sendPacket(cl);
         client.setCharSelection(cl.getCharInfo());
     }
 }

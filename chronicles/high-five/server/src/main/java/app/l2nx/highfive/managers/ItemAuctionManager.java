@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+/*
  * SPDX-FileCopyrightText: L2J Mobius contributors
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
@@ -21,19 +25,20 @@ package app.l2nx.highfive.managers;
 
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.config.ServerConfig;
-import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.entity.item.auction.ItemAuctionInstance;
+import app.l2nx.highfive.entity.item.auction.ItemAuctionState;
+import app.l2nx.highfive.repository.auction.ItemAuctionRepository;
+import app.l2nx.highfive.repository.auction.model.ItemAuctionBidRow;
+import app.l2nx.highfive.repository.auction.model.ItemAuctionRow;
 import java.io.File;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.Optional;
 import javax.xml.parsers.DocumentBuilderFactory;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataAccessException;
+import org.springframework.stereotype.Component;
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
@@ -42,28 +47,23 @@ import org.w3c.dom.Node;
  * @author Forsaiken
  */
 @Slf4j
+@Component
 public class ItemAuctionManager {
+    private static volatile ItemAuctionManager instance;
 
     private final Map<Integer, ItemAuctionInstance> managerInstances = new HashMap<>();
-    private final AtomicInteger auctionIds;
 
-    protected ItemAuctionManager() {
-        auctionIds = new AtomicInteger(1);
+    private final ItemAuctionRepository itemAuctionRepository;
 
+    public ItemAuctionManager(ItemAuctionRepository itemAuctionRepository) {
+        this.itemAuctionRepository = itemAuctionRepository;
+        instance = this;
+    }
+
+    public void load() {
         if (!GeneralConfig.ALT_ITEM_AUCTION_ENABLED) {
             log.info("Disabled.");
             return;
-        }
-
-        try (Connection con = DatabaseFactory.getConnection();
-                Statement s = con.createStatement();
-                ResultSet rs =
-                        s.executeQuery("SELECT auctionId FROM item_auction ORDER BY auctionId DESC LIMIT 0, 1")) {
-            if (rs.next()) {
-                auctionIds.set(rs.getInt(1) + 1);
-            }
-        } catch (SQLException e) {
-            log.error("Failed loading auctions.", e);
         }
 
         final File file = new File(ServerConfig.DATAPACK_ROOT, "data/ItemAuctions.xml");
@@ -90,7 +90,7 @@ public class ItemAuctionManager {
                                 throw new Exception("Dublicated instanceId " + instanceId);
                             }
 
-                            managerInstances.put(instanceId, new ItemAuctionInstance(instanceId, auctionIds, nb));
+                            managerInstances.put(instanceId, new ItemAuctionInstance(instanceId, nb));
                         }
                     }
                 }
@@ -112,35 +112,60 @@ public class ItemAuctionManager {
         return managerInstances.get(instanceId);
     }
 
-    public int getNextAuctionId() {
-        return auctionIds.getAndIncrement();
+    public List<Integer> findAuctionIds(int instanceId) {
+        return itemAuctionRepository.findIdsByInstance(instanceId);
     }
 
-    public static void deleteAuction(int auctionId) {
-        try (Connection con = DatabaseFactory.getConnection()) {
-            try (PreparedStatement ps = con.prepareStatement("DELETE FROM item_auction WHERE auctionId=?")) {
-                ps.setInt(1, auctionId);
-                ps.execute();
-            }
+    public Optional<ItemAuctionRow> findAuction(int auctionId) {
+        return itemAuctionRepository.find(auctionId);
+    }
 
-            try (PreparedStatement ps = con.prepareStatement("DELETE FROM item_auction_bid WHERE auctionId=?")) {
-                ps.setInt(1, auctionId);
-                ps.execute();
-            }
-        } catch (SQLException e) {
+    public List<ItemAuctionBidRow> findBids(int auctionId) {
+        return itemAuctionRepository.findBids(auctionId);
+    }
+
+    public int createAuction(ItemAuctionRow auction) {
+        return itemAuctionRepository.create(auction);
+    }
+
+    public void updateAuctionState(int auctionId, ItemAuctionState state) {
+        try {
+            itemAuctionRepository.updateState(auctionId, state);
+        } catch (DataAccessException e) {
+            log.warn("Failed storing the state of auction {}:", auctionId, e);
+        }
+    }
+
+    public void saveBid(int auctionId, ItemAuctionBidRow bid) {
+        try {
+            itemAuctionRepository.saveBid(auctionId, bid);
+        } catch (DataAccessException e) {
+            log.warn("Failed storing a bid of auction {}:", auctionId, e);
+        }
+    }
+
+    public void deleteBid(int auctionId, int characterId) {
+        try {
+            itemAuctionRepository.deleteBid(auctionId, characterId);
+        } catch (DataAccessException e) {
+            log.warn("Failed deleting a bid of auction {}:", auctionId, e);
+        }
+    }
+
+    public void deleteAuction(int auctionId) {
+        try {
+            itemAuctionRepository.delete(auctionId);
+        } catch (DataAccessException e) {
             log.error("ItemAuctionManagerInstance: Failed deleting auction: {}", auctionId, e);
         }
     }
 
-    /**
-     * Gets the single instance of {@code ItemAuctionManager}.
-     * @return single instance of {@code ItemAuctionManager}
-     */
+    // TODO: callers receive the bean through their constructor (#41).
     public static ItemAuctionManager getInstance() {
-        return SingletonHolder.INSTANCE;
-    }
-
-    private static class SingletonHolder {
-        protected static final ItemAuctionManager INSTANCE = new ItemAuctionManager();
+        final ItemAuctionManager current = instance;
+        if (current == null) {
+            throw new IllegalStateException("ItemAuctionManager is used before the Spring context created it.");
+        }
+        return current;
     }
 }

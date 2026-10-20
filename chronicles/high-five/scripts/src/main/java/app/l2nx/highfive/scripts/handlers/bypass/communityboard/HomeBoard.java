@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -27,7 +31,6 @@ import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.custom.CommunityBoardConfig;
 import app.l2nx.highfive.config.custom.PremiumSystemConfig;
 import app.l2nx.highfive.data.sql.ClanTable;
-import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.data.xml.BuyListData;
 import app.l2nx.highfive.data.xml.ExperienceData;
 import app.l2nx.highfive.data.xml.MultisellData;
@@ -39,6 +42,7 @@ import app.l2nx.highfive.entity.item.enums.ItemProcessType;
 import app.l2nx.highfive.entity.zone.ZoneId;
 import app.l2nx.highfive.handler.CommunityBoardHandler;
 import app.l2nx.highfive.handler.IParseBoardHandler;
+import app.l2nx.highfive.managers.BbsFavoriteManager;
 import app.l2nx.highfive.managers.PcCafePointsManager;
 import app.l2nx.highfive.managers.PremiumManager;
 import app.l2nx.highfive.mechanics.skill.Skill;
@@ -47,9 +51,6 @@ import app.l2nx.highfive.network.serverpackets.ExBuySellList;
 import app.l2nx.highfive.network.serverpackets.MagicSkillUse;
 import app.l2nx.highfive.network.serverpackets.ShowBoard;
 import app.l2nx.highfive.threads.ThreadPool;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -69,9 +70,6 @@ import lombok.extern.slf4j.Slf4j;
 public class HomeBoard implements IParseBoardHandler {
     private static final DateTimeFormatter PREMIUM_FORMAT = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm");
 
-    // SQL Queries
-    private static final String COUNT_FAVORITES =
-            "SELECT COUNT(*) AS favorites FROM `bbs_favorites` WHERE `playerId`=?";
     private static final String NAVIGATION_PATH = "data/html/CommunityBoard/Custom/navigation.html";
 
     private static final String[] COMMANDS = {
@@ -320,18 +318,16 @@ public class HomeBoard implements IParseBoardHandler {
                             < (CommunityBoardConfig.COMMUNITY_PREMIUM_PRICE_PER_DAY * premiumDays))) {
                 player.sendMessage("Not enough currency!");
             } else {
-                final String premiumKey =
-                        PremiumSystemConfig.ACCOUNT_WIDE_PREMIUM ? player.getAccountName() : player.getName();
                 player.destroyItemByItemId(
                         ItemProcessType.FEE,
                         CommunityBoardConfig.COMMUNITY_PREMIUM_COIN_ID,
                         CommunityBoardConfig.COMMUNITY_PREMIUM_PRICE_PER_DAY * premiumDays,
                         player,
                         true);
-                PremiumManager.getInstance().addPremiumTime(premiumKey, premiumDays, TimeUnit.DAYS);
+                PremiumManager.getInstance().addPremiumTime(player.getObjectId(), premiumDays, TimeUnit.DAYS);
                 player.sendMessage("You will now have premium status until "
                         + PREMIUM_FORMAT.format(Instant.ofEpochMilli(
-                                        PremiumManager.getInstance().getPremiumExpiration(premiumKey))
+                                        PremiumManager.getInstance().getPremiumExpiration(player.getObjectId()))
                                 .atZone(ClockBridge.wallClock().getZone()))
                         + ".");
                 if (PremiumSystemConfig.PC_CAFE_RETAIL_LIKE) {
@@ -360,20 +356,12 @@ public class HomeBoard implements IParseBoardHandler {
      * @return the favorite links count
      */
     private static int getFavoriteCount(Player player) {
-        int count = 0;
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement(COUNT_FAVORITES)) {
-            ps.setInt(1, player.getObjectId());
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    count = rs.getInt("favorites");
-                }
-            }
-        } catch (Exception e) {
+        try {
+            return BbsFavoriteManager.getInstance().countFavorites(player.getObjectId());
+        } catch (RuntimeException e) {
             log.warn("Coudn't load favorites count for {}", player);
+            return 0;
         }
-
-        return count;
     }
 
     /**

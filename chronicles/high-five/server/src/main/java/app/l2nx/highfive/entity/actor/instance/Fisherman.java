@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -73,7 +77,7 @@ public class Fisherman extends Merchant {
             }
         } else if (command.startsWith("FishingReward")) {
             if (GeneralConfig.ALT_FISH_CHAMPIONSHIP_ENABLED) {
-                if (FishingChampionshipManager.getInstance().isWinner(player.getName())) {
+                if (FishingChampionshipManager.getInstance().isWinner(player.getObjectId())) {
                     FishingChampionshipManager.getInstance().getReward(player);
                 } else {
                     sendHtml(player, this, "no_fish_event_reward001.htm");

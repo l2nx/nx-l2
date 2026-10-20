@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+/*
  * SPDX-FileCopyrightText: L2J Mobius contributors
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
@@ -19,29 +23,36 @@
  */
 package app.l2nx.highfive.managers;
 
-import app.l2nx.highfive.data.sql.DatabaseFactory;
+import static app.l2nx.highfive.repository.LegacyValues.instantOrNull;
+
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.holders.player.Couple;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.Statement;
+import app.l2nx.highfive.repository.world.CoupleRepository;
+import app.l2nx.highfive.repository.world.model.CoupleRow;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataAccessException;
+import org.springframework.stereotype.Component;
 
 /**
  * @author evill33t
  */
 @Slf4j
+@Component
 public class CoupleManager {
+    private static volatile CoupleManager instance;
 
     @Getter
     private final List<Couple> couples = new CopyOnWriteArrayList<>();
 
-    protected CoupleManager() {
-        load();
+    private final CoupleRepository coupleRepository;
+
+    public CoupleManager(CoupleRepository coupleRepository) {
+        this.coupleRepository = coupleRepository;
+        instance = this;
     }
 
     public void reload() {
@@ -49,21 +60,37 @@ public class CoupleManager {
         load();
     }
 
-    private void load() {
-        try (Connection con = DatabaseFactory.getConnection();
-                Statement ps = con.createStatement();
-                ResultSet rs = ps.executeQuery("SELECT id FROM mods_wedding ORDER BY id")) {
-            while (rs.next()) {
-                couples.add(new Couple(rs.getInt("id")));
+    public void load() {
+        try {
+            for (CoupleRow row : coupleRepository.findAll()) {
+                couples.add(new Couple(row));
             }
 
             log.info("Loaded {} couples(s)", couples.size());
-        } catch (Exception e) {
+        } catch (DataAccessException e) {
             log.error("Exception: CoupleManager.load(): {}", e.getMessage(), e);
         }
     }
 
-    public Couple getCouple(int coupleId) {
+    /**
+     * @param engagedAt epoch milliseconds
+     */
+    public long insert(int player1Id, int player2Id, long engagedAt) {
+        return coupleRepository.insert(player1Id, player2Id, instantOrNull(engagedAt));
+    }
+
+    /**
+     * @param marriedAt epoch milliseconds
+     */
+    public void updateMarried(long coupleId, long marriedAt) {
+        coupleRepository.updateMarried(coupleId, instantOrNull(marriedAt));
+    }
+
+    public void delete(long coupleId) {
+        coupleRepository.delete(coupleId);
+    }
+
+    public Couple getCouple(long coupleId) {
         final int index = getCoupleIndex(coupleId);
         return index >= 0 ? couples.get(index) : null;
     }
@@ -75,7 +102,14 @@ public class CoupleManager {
 
         final int player1id = player1.getObjectId();
         final int player2id = player2.getObjectId();
-        final Couple couple = new Couple(player1, player2);
+        final Couple couple;
+        try {
+            couple = new Couple(player1, player2);
+        } catch (DataAccessException e) {
+            log.error("Could not create couple: {}", e.getMessage(), e);
+            return;
+        }
+
         couples.add(couple);
         player1.setPartnerId(player2id);
         player2.setPartnerId(player1id);
@@ -83,13 +117,13 @@ public class CoupleManager {
         player2.setCoupleId(couple.getId());
     }
 
-    public void deleteCouple(int coupleId) {
+    public void deleteCouple(long coupleId) {
         final int index = getCoupleIndex(coupleId);
-        final Couple couple = couples.get(index);
-        if (couple == null) {
+        if (index < 0) {
             return;
         }
 
+        final Couple couple = couples.get(index);
         final Player player1 = World.getPlayer(couple.getPlayer1Id());
         final Player player2 = World.getPlayer(couple.getPlayer2Id());
         if (player1 != null) {
@@ -108,7 +142,7 @@ public class CoupleManager {
         couples.remove(index);
     }
 
-    public int getCoupleIndex(int coupleId) {
+    public int getCoupleIndex(long coupleId) {
         int i = 0;
         for (Couple temp : couples) {
             if ((temp != null) && (temp.getId() == coupleId)) {
@@ -121,11 +155,12 @@ public class CoupleManager {
         return -1;
     }
 
+    // TODO: callers receive the bean through their constructor (#41).
     public static CoupleManager getInstance() {
-        return SingletonHolder.INSTANCE;
-    }
-
-    private static class SingletonHolder {
-        protected static final CoupleManager INSTANCE = new CoupleManager();
+        final CoupleManager current = instance;
+        if (current == null) {
+            throw new IllegalStateException("CoupleManager is used before the Spring context created it.");
+        }
+        return current;
     }
 }

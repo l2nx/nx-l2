@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+/*
  * SPDX-FileCopyrightText: L2J Mobius contributors
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
@@ -20,15 +24,13 @@
 package app.l2nx.highfive.network.serverpackets;
 
 import app.l2nx.highfive.data.sql.CharInfoTable;
-import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.managers.CharacterRelationsManager;
 import app.l2nx.highfive.network.GameClient;
 import app.l2nx.highfive.network.ServerPackets;
+import app.l2nx.highfive.repository.character.model.OnlineStatus;
 import app.l2nx.network.buffer.WriteBuffer;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -65,19 +67,14 @@ public class FriendListExtended extends ServerPacket {
             int classid = 0;
             int level = 0;
             if (player1 == null) {
-                try (Connection con = DatabaseFactory.getConnection();
-                        PreparedStatement statement = con.prepareStatement(
-                                "SELECT char_name, online, classid, level FROM characters WHERE charId = ?")) {
-                    statement.setInt(1, objId);
-                    try (ResultSet rset = statement.executeQuery()) {
-                        if (rset.next()) {
-                            info.add(new FriendInfo(
-                                    objId, rset.getString(1), rset.getInt(2) == 1, rset.getInt(3), rset.getInt(4)));
-                        }
-                    }
-                } catch (Exception e) {
-                    // Who cares?
-                }
+                CharacterRelationsManager.getInstance()
+                        .findFriendSummary(objId)
+                        .ifPresent(friend -> info.add(new FriendInfo(
+                                objId,
+                                friend.name(),
+                                friend.onlineStatus() == OnlineStatus.ONLINE,
+                                friend.classId(),
+                                friend.level())));
                 continue;
             }
 

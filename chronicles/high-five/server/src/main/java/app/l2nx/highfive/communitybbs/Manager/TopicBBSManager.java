@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -26,20 +30,20 @@ import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.communitybbs.BB.Forum;
 import app.l2nx.highfive.communitybbs.BB.Post;
 import app.l2nx.highfive.communitybbs.BB.Topic;
-import app.l2nx.highfive.communitybbs.TopicConstructorType;
-import app.l2nx.highfive.data.sql.ClanTable;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.handler.CommunityBoardHandler;
 import java.text.DateFormat;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.Date;
-import java.util.Map;
+import java.util.List;
 import java.util.StringTokenizer;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class TopicBBSManager extends BaseBBSManager {
+    private static final int TOPICS_PER_PAGE = 12;
+
     private final Collection<Topic> table = ConcurrentHashMap.newKeySet();
-    private final Map<Forum, Integer> maxId = new ConcurrentHashMap<>();
 
     protected TopicBBSManager() {
         // Prevent external initialization.
@@ -51,15 +55,6 @@ public class TopicBBSManager extends BaseBBSManager {
 
     public void delTopic(Topic topic) {
         table.remove(topic);
-    }
-
-    public void setMaxID(int id, Forum f) {
-        maxId.put(f, id);
-    }
-
-    public int getMaxID(Forum f) {
-        final Integer i = maxId.get(f);
-        return i == null ? 0 : i;
     }
 
     public Topic getTopicByID(int idf) {
@@ -81,21 +76,20 @@ public class TopicBBSManager extends BaseBBSManager {
                         "<html><body><br><br><center>the forum: " + ar2
                                 + " is not implemented yet</center><br><br></body></html>",
                         player);
+            } else if ((ar5 == null) || ar5.isBlank()) {
+                CommunityBoardHandler.separateAndSend(
+                        "<html><body><br><br><center>the topic needs a title</center><br><br></body></html>", player);
             } else {
                 final long currentTime = ClockBridge.wallMillis();
                 f.vload();
                 final Topic t = new Topic(
-                        TopicConstructorType.CREATE,
-                        getInstance().getMaxID(f) + 1,
                         Integer.parseInt(ar2),
-                        ar5,
+                        ar5.strip(),
                         currentTime,
                         player.getName(),
                         player.getObjectId(),
-                        Topic.MEMO,
-                        0);
+                        Topic.MEMO);
                 f.addTopic(t);
-                getInstance().setMaxID(t.getID(), f);
                 final Post p = new Post(player.getName(), player.getObjectId(), currentTime, t.getID(), f.getID(), ar4);
                 PostBBSManager.getInstance().addPostByTopic(p, t);
                 parsecmd("_bbsmemo", player);
@@ -236,20 +230,18 @@ public class TopicBBSManager extends BaseBBSManager {
         html.append(
                 "<html><body><br><br><table border=0 width=610><tr><td width=10></td><td width=600 align=left><a action=\"bypass _bbshome\">HOME</a>&nbsp;>&nbsp;<a action=\"bypass _bbsmemo\">Memo Form</a></td></tr></table><img src=\"L2UI.squareblank\" width=\"1\" height=\"10\"><center><table border=0 cellspacing=0 cellpadding=2 bgcolor=888888 width=610><tr><td FIXWIDTH=5></td><td FIXWIDTH=415 align=center>&$413;</td><td FIXWIDTH=120 align=center></td><td FIXWIDTH=70 align=center>&$418;</td></tr></table>");
         final DateFormat dateFormat = DateFormat.getInstance();
-        for (int i = 0, j = getMaxID(forum) + 1; i < (12 * index); j--) {
-            if (j < 0) {
-                break;
-            }
-
-            final Topic t = forum.getTopic(j);
-            if ((t != null) && (i++ >= (12 * (index - 1)))) {
-                html.append(
-                        "<table border=0 cellspacing=0 cellpadding=5 WIDTH=610><tr><td FIXWIDTH=5></td><td FIXWIDTH=415><a action=\"bypass _bbsposts;read;"
-                                + forum.getID() + ";" + t.getID() + "\">" + t.getName()
-                                + "</a></td><td FIXWIDTH=120 align=center></td><td FIXWIDTH=70 align=center>"
-                                + dateFormat.format(new Date(t.getDate()))
-                                + "</td></tr></table><img src=\"L2UI.Squaregray\" width=\"610\" height=\"1\">");
-            }
+        final List<Topic> page = forum.getTopics().stream()
+                .sorted(Comparator.comparingInt(Topic::getID).reversed())
+                .skip((long) TOPICS_PER_PAGE * (index - 1))
+                .limit(TOPICS_PER_PAGE)
+                .toList();
+        for (Topic t : page) {
+            html.append(
+                    "<table border=0 cellspacing=0 cellpadding=5 WIDTH=610><tr><td FIXWIDTH=5></td><td FIXWIDTH=415><a action=\"bypass _bbsposts;read;"
+                            + forum.getID() + ";" + t.getID() + "\">" + t.getName()
+                            + "</a></td><td FIXWIDTH=120 align=center></td><td FIXWIDTH=70 align=center>"
+                            + dateFormat.format(new Date(t.getDate()))
+                            + "</td></tr></table><img src=\"L2UI.Squaregray\" width=\"610\" height=\"1\">");
         }
 
         html.append(
@@ -262,10 +254,7 @@ public class TopicBBSManager extends BaseBBSManager {
                     + "\" back=\"l2ui_ch3.prev1_down\" fore=\"l2ui_ch3.prev1\" width=16 height=16 ></td>");
         }
 
-        int nbp = forum.getTopicSize() / 8;
-        if ((nbp * 8) != ClanTable.getInstance().getClanCount()) {
-            nbp++;
-        }
+        final int nbp = Math.max(1, (forum.getTopicSize() + TOPICS_PER_PAGE - 1) / TOPICS_PER_PAGE);
 
         for (int i = 1; i <= nbp; i++) {
             if (i == index) {

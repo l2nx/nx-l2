@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -25,7 +29,6 @@ package app.l2nx.highfive.entity.actor.instance;
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.config.NpcConfig;
 import app.l2nx.highfive.data.holders.PetData;
-import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.data.xml.NpcData;
 import app.l2nx.highfive.data.xml.PetDataTable;
 import app.l2nx.highfive.entity.World;
@@ -44,8 +47,6 @@ import app.l2nx.highfive.network.serverpackets.NpcHtmlMessage;
 import app.l2nx.highfive.network.serverpackets.StatusUpdate;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
 import app.l2nx.highfive.threads.ThreadPool;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
 import lombok.extern.slf4j.Slf4j;
 
 public class PetManager extends Merchant {
@@ -361,15 +362,6 @@ public class PetManager extends Merchant {
             ThreadPool.schedule(new EvolveFeedWait(player, petSummon), 60000);
         } else {
             petSummon.startFeed();
-        }
-
-        // Pet control item no longer exists, delete the pet from the db.
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement("DELETE FROM pets WHERE item_obj_id=?")) {
-            ps.setInt(1, removedItem.getObjectId());
-            ps.execute();
-        } catch (Exception e) {
-            // Ignore.
         }
 
         return true;

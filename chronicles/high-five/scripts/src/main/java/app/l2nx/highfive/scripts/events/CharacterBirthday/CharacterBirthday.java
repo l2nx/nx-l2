@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -24,10 +28,10 @@ package app.l2nx.highfive.scripts.events.CharacterBirthday;
 
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.GeneralConfig;
-import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.item.enums.ItemProcessType;
+import app.l2nx.highfive.managers.CharacterBirthdayManager;
 import app.l2nx.highfive.managers.MailManager;
 import app.l2nx.highfive.mechanics.events.EventType;
 import app.l2nx.highfive.mechanics.events.ListenerRegisterType;
@@ -37,10 +41,10 @@ import app.l2nx.highfive.mechanics.events.holders.OnDailyReset;
 import app.l2nx.highfive.mechanics.script.Script;
 import app.l2nx.highfive.network.enums.MessageSenderType;
 import app.l2nx.highfive.network.holders.MailMessage;
+import app.l2nx.highfive.repository.character.model.BirthdayCharacter;
 import app.l2nx.highfive.util.LocationUtil;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
+import java.time.Duration;
+import java.time.Instant;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -54,10 +58,6 @@ public class CharacterBirthday extends Script {
         30006, 30059, 30080, 30134, 30146, 30177, 30233, 30256, 30320, 30540, 30576, 30836, 30848, 30878, 30899, 31275,
         31320, 31964, 32163
     };
-
-    // Query: Get all players that have had a birthday the last 24 hours.
-    private static final String SELECT_PENDING_BIRTHDAY_GIFTS =
-            "SELECT charId, char_name, createDate, (YEAR(NOW()) - YEAR(createDate)) AS age FROM characters WHERE (YEAR(NOW()) - YEAR(createDate) > 0) AND ((DATE_ADD(createDate, INTERVAL (YEAR(NOW()) - YEAR(createDate)) YEAR)) BETWEEN FROM_UNIXTIME(?) AND NOW())";
 
     // Misc
     private static int SPAWNS = 0;
@@ -117,26 +117,21 @@ public class CharacterBirthday extends Script {
     @RegisterType(ListenerRegisterType.GLOBAL)
     public void onDailyReset(OnDailyReset event) {
         int birthdayGiftCount = 0;
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement statement = con.prepareStatement(SELECT_PENDING_BIRTHDAY_GIFTS)) {
-            statement.setLong(1, ClockBridge.wallMillis() - (24 * 60 * 60 * 1000)); // Last 24 hours.
-            try (ResultSet rs = statement.executeQuery()) {
-                while (rs.next()) {
-                    final String text = GeneralConfig.ALT_BIRTHDAY_MAIL_TEXT
-                            .replaceAll("$c1", rs.getString("char_name"))
-                            .replaceAll("$s1", Integer.toString(rs.getInt("age")));
-                    final MailMessage message = new MailMessage(
-                            rs.getInt("charId"),
-                            GeneralConfig.ALT_BIRTHDAY_MAIL_SUBJECT,
-                            text,
-                            MessageSenderType.ALEGRIA);
-                    message.createAttachments()
-                            .addItem(ItemProcessType.REWARD, GeneralConfig.ALT_BIRTHDAY_GIFT, 1, null, null);
-                    MailManager.getInstance().sendMessage(message);
-                    birthdayGiftCount++;
-                }
+        try {
+            final Instant now = ClockBridge.wallClock().instant();
+            for (BirthdayCharacter character :
+                    CharacterBirthdayManager.getInstance().findBirthdays(now.minus(Duration.ofDays(1)), now)) {
+                final String text = GeneralConfig.ALT_BIRTHDAY_MAIL_TEXT
+                        .replace("$c1", character.name())
+                        .replace("$s1", Integer.toString(character.age()));
+                final MailMessage message = new MailMessage(
+                        character.objectId(), GeneralConfig.ALT_BIRTHDAY_MAIL_SUBJECT, text, MessageSenderType.ALEGRIA);
+                message.createAttachments()
+                        .addItem(ItemProcessType.REWARD, GeneralConfig.ALT_BIRTHDAY_GIFT, 1, null, null);
+                MailManager.getInstance().sendMessage(message);
+                birthdayGiftCount++;
             }
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             log.warn("Error checking birthdays. {}", e.getMessage());
         }
 

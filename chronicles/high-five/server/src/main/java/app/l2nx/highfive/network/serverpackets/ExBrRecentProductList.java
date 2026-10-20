@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -23,18 +27,16 @@
 package app.l2nx.highfive.network.serverpackets;
 
 import app.l2nx.highfive.data.holders.PrimeShopProductHolder;
-import app.l2nx.highfive.data.sql.DatabaseFactory;
 import app.l2nx.highfive.data.xml.PrimeShopData;
 import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.managers.PrimeShopManager;
 import app.l2nx.highfive.network.GameClient;
 import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.network.buffer.WriteBuffer;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataAccessException;
 
 /**
  * @author Mobius
@@ -44,21 +46,15 @@ public class ExBrRecentProductList extends ServerPacket {
     private final List<PrimeShopProductHolder> itemList = new ArrayList<>();
 
     public ExBrRecentProductList(Player player) {
-        final int playerObj = player.getObjectId();
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement statement = con.prepareStatement(
-                        "SELECT productId FROM prime_shop_transactions WHERE charId=? ORDER BY transactionTime DESC")) {
-            statement.setInt(1, playerObj);
-            try (ResultSet rset = statement.executeQuery()) {
-                while (rset.next()) {
-                    final PrimeShopProductHolder product =
-                            PrimeShopData.getInstance().getProduct(rset.getInt("productId"));
-                    if ((product != null) && !itemList.contains(product)) {
-                        itemList.add(product);
-                    }
+        try {
+            for (int productId : PrimeShopManager.getInstance().findPurchasedProductIds(player.getObjectId())) {
+                final PrimeShopProductHolder product =
+                        PrimeShopData.getInstance().getProduct(productId);
+                if ((product != null) && !itemList.contains(product)) {
+                    itemList.add(product);
                 }
             }
-        } catch (Exception e) {
+        } catch (DataAccessException e) {
             log.warn("Could not restore Item Mall transaction: {}", e.getMessage());
         }
     }

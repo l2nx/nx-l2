@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+/*
  * SPDX-FileCopyrightText: L2J Mobius contributors
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
@@ -30,32 +34,50 @@ import app.l2nx.highfive.entity.actor.instance.Servitor;
 import app.l2nx.highfive.entity.actor.templates.NpcTemplate;
 import app.l2nx.highfive.entity.item.instance.Item;
 import app.l2nx.highfive.mechanics.skill.Skill;
+import app.l2nx.highfive.mechanics.skill.StoredEffect;
 import app.l2nx.highfive.network.serverpackets.PetItemList;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
+import app.l2nx.highfive.repository.pet.CharacterSummonRepository;
+import app.l2nx.highfive.repository.pet.PetRepository;
+import app.l2nx.highfive.repository.pet.PetSkillSaveRepository;
+import app.l2nx.highfive.repository.pet.SummonSkillSaveRepository;
+import app.l2nx.highfive.repository.pet.model.CharacterSummon;
+import app.l2nx.highfive.repository.pet.model.PetRow;
+import app.l2nx.highfive.repository.pet.model.SummonEffectRow;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataAccessException;
+import org.springframework.stereotype.Component;
 
 /**
  * @author Nyaran
  */
 @Slf4j
+@Component
 public class CharSummonTable {
-    private static final Map<Integer, Integer> pets = new ConcurrentHashMap<>();
-    private static final Map<Integer, Integer> servitors = new ConcurrentHashMap<>();
+    private static volatile CharSummonTable instance;
 
-    // SQL
-    private static final String INIT_PET = "SELECT ownerId, item_obj_id FROM pets WHERE restore = 'true'";
-    private static final String INIT_SUMMONS = "SELECT ownerId, summonSkillId FROM character_summons";
-    private static final String LOAD_SUMMON =
-            "SELECT curHp, curMp, time FROM character_summons WHERE ownerId = ? AND summonSkillId = ?";
-    private static final String REMOVE_SUMMON = "DELETE FROM character_summons WHERE ownerId = ?";
-    private static final String SAVE_SUMMON =
-            "REPLACE INTO character_summons (ownerId,summonSkillId,curHp,curMp,time) VALUES (?,?,?,?,?)";
+    private final Map<Integer, Integer> pets = new ConcurrentHashMap<>();
+    private final Map<Integer, Integer> servitors = new ConcurrentHashMap<>();
+
+    private final PetRepository petRepository;
+    private final PetSkillSaveRepository petSkillSaveRepository;
+    private final CharacterSummonRepository summonRepository;
+    private final SummonSkillSaveRepository summonSkillSaveRepository;
+
+    public CharSummonTable(
+            PetRepository petRepository,
+            PetSkillSaveRepository petSkillSaveRepository,
+            CharacterSummonRepository summonRepository,
+            SummonSkillSaveRepository summonSkillSaveRepository) {
+        this.petRepository = petRepository;
+        this.petSkillSaveRepository = petSkillSaveRepository;
+        this.summonRepository = summonRepository;
+        this.summonSkillSaveRepository = summonSkillSaveRepository;
+        instance = this;
+    }
 
     public Map<Integer, Integer> getPets() {
         return pets;
@@ -67,37 +89,19 @@ public class CharSummonTable {
 
     public void init() {
         if (PlayerConfig.RESTORE_SERVITOR_ON_RECONNECT) {
-            try (Connection con = DatabaseFactory.getConnection();
-                    Statement s = con.createStatement();
-                    ResultSet rs = s.executeQuery(INIT_SUMMONS)) {
-                while (rs.next()) {
-                    servitors.put(rs.getInt("ownerId"), rs.getInt("summonSkillId"));
-                }
-            } catch (Exception e) {
-                log.warn("Error while loading saved servitor", e);
-            }
+            servitors.putAll(summonRepository.findSummonSkills());
         }
 
         if (PlayerConfig.RESTORE_PET_ON_RECONNECT) {
-            try (Connection con = DatabaseFactory.getConnection();
-                    Statement s = con.createStatement();
-                    ResultSet rs = s.executeQuery(INIT_PET)) {
-                while (rs.next()) {
-                    pets.put(rs.getInt("ownerId"), rs.getInt("item_obj_id"));
-                }
-            } catch (Exception e) {
-                log.warn("Error while loading saved pet", e);
-            }
+            pets.putAll(petRepository.findRestorable());
         }
     }
 
     public void removeServitor(Player player) {
         servitors.remove(player.getObjectId());
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement(REMOVE_SUMMON)) {
-            ps.setInt(1, player.getObjectId());
-            ps.execute();
-        } catch (SQLException e) {
+        try {
+            summonRepository.deleteByOwner(player.getObjectId());
+        } catch (DataAccessException e) {
             log.warn("Summon cannot be removed", e);
         }
     }
@@ -154,34 +158,32 @@ public class CharSummonTable {
 
     public void restoreServitor(Player player) {
         final int skillId = servitors.get(player.getObjectId());
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement(LOAD_SUMMON)) {
-            ps.setInt(1, player.getObjectId());
-            ps.setInt(2, skillId);
-            try (ResultSet rs = ps.executeQuery()) {
-                Skill skill;
-                while (rs.next()) {
-                    skill = SkillData.getInstance().getSkill(skillId, player.getSkillLevel(skillId));
-                    if (skill == null) {
-                        removeServitor(player);
-                        return;
-                    }
-
-                    skill.applyEffects(player, player);
-
-                    if (player.hasServitor()) {
-                        final int curHp = rs.getInt("curHp");
-                        final int curMp = rs.getInt("curMp");
-                        final int time = rs.getInt("time");
-                        final Servitor summon = player.getSummon().asServitor();
-                        summon.setCurrentHp(curHp);
-                        summon.setCurrentMp(curMp);
-                        summon.setLifeTimeRemaining(time);
-                    }
-                }
-            }
-        } catch (SQLException e) {
+        final Optional<CharacterSummon> stored;
+        try {
+            stored = summonRepository.find(player.getObjectId(), skillId);
+        } catch (DataAccessException e) {
             log.warn("Servitor cannot be restored", e);
+            return;
+        }
+
+        if (stored.isEmpty()) {
+            return;
+        }
+
+        final Skill skill = SkillData.getInstance().getSkill(skillId, player.getSkillLevel(skillId));
+        if (skill == null) {
+            removeServitor(player);
+            return;
+        }
+
+        skill.applyEffects(player, player);
+
+        if (player.hasServitor()) {
+            final CharacterSummon row = stored.get();
+            final Servitor summon = player.getSummon().asServitor();
+            summon.setCurrentHp(row.currentHp());
+            summon.setCurrentMp(row.currentMp());
+            summon.setLifeTimeRemaining((int) row.lifeRemainingMs());
         }
     }
 
@@ -192,24 +194,77 @@ public class CharSummonTable {
 
         servitors.put(summon.getOwner().getObjectId(), summon.getReferenceSkill());
 
-        try (Connection con = DatabaseFactory.getConnection();
-                PreparedStatement ps = con.prepareStatement(SAVE_SUMMON)) {
-            ps.setInt(1, summon.getOwner().getObjectId());
-            ps.setInt(2, summon.getReferenceSkill());
-            ps.setInt(3, (int) Math.round(summon.getCurrentHp()));
-            ps.setInt(4, (int) Math.round(summon.getCurrentMp()));
-            ps.setInt(5, summon.getLifeTimeRemaining());
-            ps.execute();
-        } catch (Exception e) {
+        try {
+            summonRepository.save(CharacterSummon.builder()
+                    .ownerId(summon.getOwner().getObjectId())
+                    .summonSkillId(summon.getReferenceSkill())
+                    .currentHp((int) Math.round(summon.getCurrentHp()))
+                    .currentMp((int) Math.round(summon.getCurrentMp()))
+                    .lifeRemainingMs(summon.getLifeTimeRemaining())
+                    .build());
+        } catch (DataAccessException e) {
             log.warn("Failed to store summon: {} from {}, error", summon, summon.getOwner(), e);
         }
     }
 
-    public static CharSummonTable getInstance() {
-        return SingletonHolder.INSTANCE;
+    public Optional<PetRow> findPet(int controlItemId) {
+        return petRepository.find(controlItemId);
     }
 
-    private static class SingletonHolder {
-        protected static final CharSummonTable INSTANCE = new CharSummonTable();
+    /**
+     * Inserts a new pet or updates a stored one; its control item must already be stored.
+     */
+    public void savePet(PetRow pet) {
+        petRepository.save(pet);
+    }
+
+    public void updatePetFed(int controlItemId, int fed) {
+        petRepository.updateFed(controlItemId, fed);
+    }
+
+    public List<SummonEffectRow> findPetEffects(int controlItemId) {
+        return petSkillSaveRepository.findAll(controlItemId);
+    }
+
+    /**
+     * Replaces the stored effects of a pet; the list order is the order they are applied in.
+     */
+    public void savePetEffects(int controlItemId, List<SummonEffectRow> effects) {
+        petSkillSaveRepository.replaceAll(controlItemId, effects);
+    }
+
+    public void deletePetEffects(int controlItemId) {
+        petSkillSaveRepository.deleteAll(controlItemId);
+    }
+
+    public List<SummonEffectRow> findServitorEffects(int ownerId, int classIndex, int summonSkillId) {
+        return summonSkillSaveRepository.findAll(ownerId, classIndex, summonSkillId);
+    }
+
+    public void saveServitorEffects(int ownerId, int classIndex, int summonSkillId, List<SummonEffectRow> effects) {
+        summonSkillSaveRepository.replaceAll(ownerId, classIndex, summonSkillId, effects);
+    }
+
+    public void deleteServitorEffects(int ownerId, int classIndex, int summonSkillId) {
+        summonSkillSaveRepository.deleteAll(ownerId, classIndex, summonSkillId);
+    }
+
+    /**
+     * Skips with a warning a row that breaks the {@link StoredEffect} invariants, so one corrupt row does not abort
+     * the restore of the other effects.
+     *
+     * @param ownerId the character, or the control item of a pet
+     */
+    public static Optional<StoredEffect> toStoredEffect(SummonEffectRow row, int ownerId) {
+        return StoredEffectRows.read(row.remainingMillis(), row.tickPhaseMillis(), ownerId, row.skillId());
+    }
+
+    // TODO: callers receive the bean through their constructor (#41).
+    public static CharSummonTable getInstance() {
+        final CharSummonTable current = instance;
+        if (current == null) {
+            throw new IllegalStateException("CharSummonTable is used before the Spring context created it.");
+        }
+        return current;
     }
 }

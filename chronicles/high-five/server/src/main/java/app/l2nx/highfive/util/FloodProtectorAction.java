@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -121,13 +125,15 @@ public class FloodProtectorAction {
                                 case PUNISHMENT_BAN: {
                                     final long punishmentTime = settings.getPunishmentTime();
 
+                                    // Before the login server accepts the session there is no account to ban yet.
+                                    final boolean accountKnown = client.getAccountId() != null;
                                     PunishmentManager.getInstance()
                                             .startPunishment(new PunishmentTask(
-                                                    client.getAccountName(),
-                                                    PunishmentAffect.ACCOUNT,
+                                                    accountKnown ? client.getAccountId() : client.getIp(),
+                                                    accountKnown ? PunishmentAffect.ACCOUNT : PunishmentAffect.IP,
                                                     PunishmentType.BAN,
-                                                    ClockBridge.wallMillis() + punishmentTime,
-                                                    "",
+                                                    punishmentExpiration(punishmentTime),
+                                                    null,
                                                     getClass().getSimpleName()));
 
                                     if (log.isWarnEnabled()) {
@@ -149,8 +155,8 @@ public class FloodProtectorAction {
                                                             characterId,
                                                             PunishmentAffect.CHARACTER,
                                                             PunishmentType.JAIL,
-                                                            ClockBridge.wallMillis() + punishmentTime,
-                                                            "",
+                                                            punishmentExpiration(punishmentTime),
+                                                            null,
                                                             getClass().getSimpleName()));
                                         }
                                     }
@@ -197,6 +203,14 @@ public class FloodProtectorAction {
         logged = false;
         requestCount.set(0);
         return true;
+    }
+
+    /**
+     * @return when a punishment of {@code punishmentTime} milliseconds expires, {@code 0} (never) for a non-positive
+     *     time, as {@link PunishmentTask} reads it
+     */
+    static long punishmentExpiration(long punishmentTime) {
+        return punishmentTime > 0 ? ClockBridge.wallMillis() + punishmentTime : 0;
     }
 
     /**
