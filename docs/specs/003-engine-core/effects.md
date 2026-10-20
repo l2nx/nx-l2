@@ -68,7 +68,8 @@ the target clock, and the entries are registered on the target wheel.
 
 On save, an effect is stored with its remaining duration (`endsAt − now` in game time) and its tick phase; on load,
 deadlines are rebuilt from them, so an effect does not run down while the player is offline. Effects that do not
-survive logout are not stored.
+survive logout are not stored. Effects that must keep running in real time while their owner is offline:
+[#31](https://github.com/l2nx/nx-l2/issues/31).
 
 ## 10. Global effects
 

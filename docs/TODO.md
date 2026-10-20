@@ -29,6 +29,7 @@ lists what is open.
 - [#29](https://github.com/l2nx/nx-l2/issues/29) WorldObject overrides equals without hashCode
 - [#27](https://github.com/l2nx/nx-l2/issues/27) Client protocol 140 over High Five content
 - [#28](https://github.com/l2nx/nx-l2/issues/28) Client protocol 557 over High Five content
+- [#31](https://github.com/l2nx/nx-l2/issues/31) Not every effect should freeze while its owner is offline
 
 ## Done
 
