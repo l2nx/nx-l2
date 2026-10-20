@@ -19,8 +19,6 @@
  */
 package app.l2nx.highfive.network.clientpackets;
 
-import static app.l2nx.highfive.entity.itemcontainer.Inventory.MAX_ADENA;
-
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.data.xml.ItemData;
@@ -119,18 +117,18 @@ public class RequestBuySeed extends ClientPacket {
             if ((sp == null)
                     || (sp.getPrice() <= 0)
                     || (sp.getAmount() < ih.getCount())
-                    || ((MAX_ADENA / ih.getCount()) < sp.getPrice())) {
+                    || ((PlayerConfig.MAX_ADENA / ih.getCount()) < sp.getPrice())) {
                 player.sendPacket(ActionFailed.STATIC_PACKET);
                 return;
             }
 
             // Calculate price
             totalPrice += (sp.getPrice() * ih.getCount());
-            if (totalPrice > MAX_ADENA) {
+            if (totalPrice > PlayerConfig.MAX_ADENA) {
                 PunishmentManager.handleIllegalPlayerAction(
                         player,
                         "Warning!! Character " + player.getName() + " of account " + player.getAccountName()
-                                + " tried to purchase over " + MAX_ADENA + " adena worth of goods.",
+                                + " tried to purchase over " + PlayerConfig.MAX_ADENA + " adena worth of goods.",
                         GeneralConfig.DEFAULT_PUNISH);
                 player.sendPacket(ActionFailed.STATIC_PACKET);
                 return;

@@ -22,8 +22,6 @@
  */
 package app.l2nx.highfive.network.clientpackets;
 
-import static app.l2nx.highfive.entity.itemcontainer.Inventory.MAX_ADENA;
-
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.data.xml.RecipeData;
@@ -112,11 +110,12 @@ public class RequestRecipeShopListSet extends ClientPacket {
                 return;
             }
 
-            if (i.getCost() > MAX_ADENA) {
+            if (i.getCost() > PlayerConfig.MAX_ADENA) {
                 PunishmentManager.handleIllegalPlayerAction(
                         player,
                         "Warning!! " + player + " of account " + player.getAccountName()
-                                + " tried to set price more than " + MAX_ADENA + " adena in Private Manufacture.",
+                                + " tried to set price more than " + PlayerConfig.MAX_ADENA
+                                + " adena in Private Manufacture.",
                         GeneralConfig.DEFAULT_PUNISH);
                 return;
             }

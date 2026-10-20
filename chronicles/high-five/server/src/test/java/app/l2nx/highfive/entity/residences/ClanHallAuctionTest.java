@@ -13,17 +13,23 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import app.l2nx.highfive.clock.ClockBridgeExtension;
+import app.l2nx.highfive.config.PlayerConfig;
+import app.l2nx.highfive.data.sql.ClanTable;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.clan.Clan;
 import app.l2nx.highfive.entity.item.enums.ItemProcessType;
+import app.l2nx.highfive.entity.itemcontainer.Inventory;
 import app.l2nx.highfive.entity.itemcontainer.ItemContainer;
 import app.l2nx.highfive.managers.ClanHallAuctionManager;
 import app.l2nx.highfive.repository.auction.ClanHallAuctionRepository;
+import java.lang.invoke.MethodHandles;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -31,6 +37,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.junit.jupiter.api.parallel.ResourceLock;
+import org.mockito.MockedStatic;
 import org.springframework.dao.DataAccessResourceFailureException;
 
 @ExtendWith(ClockBridgeExtension.class)
@@ -47,10 +54,15 @@ class ClanHallAuctionTest {
     private final Clan bidderClan = mock(Clan.class);
     private final ItemContainer warehouse = mock(ItemContainer.class);
 
+    private long maxAdena;
     private ClanHallAuction auction;
 
     @BeforeEach
-    void createAuction() {
+    void createAuction() throws IllegalAccessException {
+        // Class init before the config is set: the order that froze the adena cap at 0 in production.
+        MethodHandles.lookup().ensureInitialized(Inventory.class);
+        maxAdena = PlayerConfig.MAX_ADENA;
+        PlayerConfig.MAX_ADENA = 99_900_000_000L;
         new ClanHallAuctionManager(repository);
         when(bidder.getClan()).thenReturn(bidderClan);
         when(bidder.getClanId()).thenReturn(BIDDER_CLAN);
@@ -59,8 +71,26 @@ class ClanHallAuctionTest {
         auction = new ClanHallAuction(HALL, mock(Clan.class), ClanHallAuction.AUCTION_LENGTH_MS, STARTING_BID, "Hall");
     }
 
+    @AfterEach
+    void restoreConfig() {
+        PlayerConfig.MAX_ADENA = maxAdena;
+    }
+
     @Nested
     class SetBid {
+        private MockedStatic<ClanTable> clanTable;
+
+        @BeforeEach
+        void bindClanTable() {
+            clanTable = mockStatic(ClanTable.class);
+            clanTable.when(ClanTable::getInstance).thenReturn(mock(ClanTable.class));
+        }
+
+        @AfterEach
+        void releaseClanTable() {
+            clanTable.close();
+        }
+
         @Test
         void setBid_shouldTakeAdenaAndFlagClan_whenBidIsStored() {
             auction.setBid(bidder, BID);

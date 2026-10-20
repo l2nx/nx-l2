@@ -22,8 +22,6 @@
  */
 package app.l2nx.highfive.network.clientpackets;
 
-import static app.l2nx.highfive.entity.itemcontainer.Inventory.MAX_ADENA;
-
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.entity.actor.Player;
@@ -129,17 +127,19 @@ public class SetPrivateStoreListBuy extends ClientPacket {
                 PunishmentManager.handleIllegalPlayerAction(
                         player,
                         "Warning!! Character " + player.getName() + " of account " + player.getAccountName()
-                                + " tried to set price more than " + MAX_ADENA + " adena in Private Store - Buy.",
+                                + " tried to set price more than " + PlayerConfig.MAX_ADENA
+                                + " adena in Private Store - Buy.",
                         GeneralConfig.DEFAULT_PUNISH);
                 return;
             }
 
             totalCost += i.getCost();
-            if (totalCost > MAX_ADENA) {
+            if (totalCost > PlayerConfig.MAX_ADENA) {
                 PunishmentManager.handleIllegalPlayerAction(
                         player,
                         "Warning!! Character " + player.getName() + " of account " + player.getAccountName()
-                                + " tried to set total price more than " + MAX_ADENA + " adena in Private Store - Buy.",
+                                + " tried to set total price more than " + PlayerConfig.MAX_ADENA
+                                + " adena in Private Store - Buy.",
                         GeneralConfig.DEFAULT_PUNISH);
                 return;
             }
@@ -172,7 +172,7 @@ public class SetPrivateStoreListBuy extends ClientPacket {
         }
 
         public boolean addToTradeList(TradeList list) {
-            if ((MAX_ADENA / count) < price) {
+            if ((PlayerConfig.MAX_ADENA / count) < price) {
                 return false;
             }
 

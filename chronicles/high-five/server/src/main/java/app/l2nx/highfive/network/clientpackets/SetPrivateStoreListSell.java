@@ -22,8 +22,6 @@
  */
 package app.l2nx.highfive.network.clientpackets;
 
-import static app.l2nx.highfive.entity.itemcontainer.Inventory.MAX_ADENA;
-
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.enums.player.PrivateStoreType;
@@ -127,7 +125,7 @@ public class SetPrivateStoreListSell extends ClientPacket {
             }
 
             totalCost += i.getPrice();
-            if (totalCost > MAX_ADENA) {
+            if (totalCost > PlayerConfig.MAX_ADENA) {
                 player.sendPacket(SystemMessageId.YOU_HAVE_EXCEEDED_YOUR_OUT_OF_POCKET_ADENA_LIMIT);
                 return;
             }
@@ -161,7 +159,7 @@ public class SetPrivateStoreListSell extends ClientPacket {
         }
 
         public boolean addToTradeList(TradeList list) {
-            if ((MAX_ADENA / count) < price) {
+            if ((PlayerConfig.MAX_ADENA / count) < price) {
                 return false;
             }
 

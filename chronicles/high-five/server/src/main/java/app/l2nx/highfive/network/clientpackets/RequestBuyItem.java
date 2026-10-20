@@ -23,7 +23,6 @@
 package app.l2nx.highfive.network.clientpackets;
 
 import static app.l2nx.highfive.entity.actor.Npc.INTERACTION_DISTANCE;
-import static app.l2nx.highfive.entity.itemcontainer.Inventory.MAX_ADENA;
 
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.config.PlayerConfig;
@@ -197,11 +196,11 @@ public class RequestBuyItem extends ClientPacket {
                 return;
             }
 
-            if ((MAX_ADENA / i.getCount()) < price) {
+            if ((PlayerConfig.MAX_ADENA / i.getCount()) < price) {
                 PunishmentManager.handleIllegalPlayerAction(
                         player,
                         "Warning!! Character " + player.getName() + " of account " + player.getAccountName()
-                                + " tried to purchase over " + MAX_ADENA + " adena worth of goods.",
+                                + " tried to purchase over " + PlayerConfig.MAX_ADENA + " adena worth of goods.",
                         GeneralConfig.DEFAULT_PUNISH);
                 return;
             }
@@ -209,11 +208,11 @@ public class RequestBuyItem extends ClientPacket {
             // First calculate price per item with tax, then multiply by count.
             price = (long) (price * (1 + castleTaxRate + baseTaxRate));
             subTotal += i.getCount() * price;
-            if (subTotal > MAX_ADENA) {
+            if (subTotal > PlayerConfig.MAX_ADENA) {
                 PunishmentManager.handleIllegalPlayerAction(
                         player,
                         "Warning!! Character " + player.getName() + " of account " + player.getAccountName()
-                                + " tried to purchase over " + MAX_ADENA + " adena worth of goods.",
+                                + " tried to purchase over " + PlayerConfig.MAX_ADENA + " adena worth of goods.",
                         GeneralConfig.DEFAULT_PUNISH);
                 return;
             }

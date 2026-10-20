@@ -19,10 +19,10 @@
  */
 package app.l2nx.highfive.network.clientpackets;
 
+import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.item.auction.ItemAuction;
 import app.l2nx.highfive.entity.item.auction.ItemAuctionInstance;
-import app.l2nx.highfive.entity.itemcontainer.Inventory;
 import app.l2nx.highfive.managers.ItemAuctionManager;
 
 /**
@@ -51,7 +51,7 @@ public class RequestBidItemAuction extends ClientPacket {
             return;
         }
 
-        if ((bid < 0) || (bid > Inventory.MAX_ADENA)) {
+        if ((bid < 0) || (bid > PlayerConfig.MAX_ADENA)) {
             return;
         }
 

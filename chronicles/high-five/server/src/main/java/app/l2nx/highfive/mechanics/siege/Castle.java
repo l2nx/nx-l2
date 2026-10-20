@@ -331,8 +331,8 @@ public class Castle extends AbstractResidence {
             }
 
             treasury -= amount;
-        } else if ((treasury + amount) > Inventory.MAX_ADENA) {
-            treasury = Inventory.MAX_ADENA;
+        } else if ((treasury + amount) > PlayerConfig.MAX_ADENA) {
+            treasury = PlayerConfig.MAX_ADENA;
         } else {
             treasury += amount;
         }

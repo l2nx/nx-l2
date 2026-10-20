@@ -20,7 +20,6 @@
 package app.l2nx.highfive.network.clientpackets;
 
 import static app.l2nx.highfive.entity.itemcontainer.Inventory.ADENA_ID;
-import static app.l2nx.highfive.entity.itemcontainer.Inventory.MAX_ADENA;
 
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.config.PlayerConfig;
@@ -169,7 +168,7 @@ public class RequestSendPost extends ClientPacket {
             return;
         }
 
-        if ((reqAdena < 0) || (reqAdena > MAX_ADENA)) {
+        if ((reqAdena < 0) || (reqAdena > PlayerConfig.MAX_ADENA)) {
             return;
         }
 

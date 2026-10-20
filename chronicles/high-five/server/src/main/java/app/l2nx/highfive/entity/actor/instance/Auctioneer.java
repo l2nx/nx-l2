@@ -22,9 +22,8 @@
  */
 package app.l2nx.highfive.entity.actor.instance;
 
-import static app.l2nx.highfive.entity.itemcontainer.Inventory.MAX_ADENA;
-
 import app.l2nx.highfive.clock.ClockBridge;
+import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.data.sql.ClanHallTable;
 import app.l2nx.highfive.data.xml.MapRegionData;
 import app.l2nx.highfive.entity.actor.Npc;
@@ -96,7 +95,7 @@ public class Auctioneer extends Npc {
                     try {
                         long bid = 0;
                         if (st.countTokens() >= 1) {
-                            bid = Math.min(Long.parseLong(st.nextToken()), MAX_ADENA);
+                            bid = Math.min(Long.parseLong(st.nextToken()), PlayerConfig.MAX_ADENA);
                         }
 
                         final ClanHallAuction a = new ClanHallAuction(
@@ -222,7 +221,7 @@ public class Auctioneer extends Npc {
                     try {
                         long bid = 0;
                         if (st.countTokens() >= 1) {
-                            bid = Math.min(Long.parseLong(st.nextToken()), MAX_ADENA);
+                            bid = Math.min(Long.parseLong(st.nextToken()), PlayerConfig.MAX_ADENA);
                         }
 
                         ClanHallAuctionManager.getInstance()

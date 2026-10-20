@@ -23,7 +23,6 @@
 package app.l2nx.highfive.network.clientpackets;
 
 import static app.l2nx.highfive.entity.actor.Npc.INTERACTION_DISTANCE;
-import static app.l2nx.highfive.entity.itemcontainer.Inventory.MAX_ADENA;
 
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.config.PlayerConfig;
@@ -149,7 +148,7 @@ public class RequestSellItem extends ClientPacket {
 
             final long price = item.getReferencePrice() / 2;
             totalPrice += price * i.getCount();
-            if (((MAX_ADENA / i.getCount()) < price) || (totalPrice > MAX_ADENA)) {
+            if (((PlayerConfig.MAX_ADENA / i.getCount()) < price) || (totalPrice > PlayerConfig.MAX_ADENA)) {
                 player.sendPacket(SystemMessageId.YOU_HAVE_EXCEEDED_YOUR_OUT_OF_POCKET_ADENA_LIMIT);
                 return;
             }

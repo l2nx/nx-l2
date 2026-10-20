@@ -27,7 +27,6 @@
 package app.l2nx.highfive.entity.item.instance;
 
 import static app.l2nx.highfive.entity.itemcontainer.Inventory.ADENA_ID;
-import static app.l2nx.highfive.entity.itemcontainer.Inventory.MAX_ADENA;
 import static app.l2nx.highfive.repository.LegacyValues.instantOrNull;
 
 import app.l2nx.highfive.clock.ClockBridge;
@@ -466,7 +465,7 @@ public class Item extends WorldObject {
         }
 
         final long old = this.count;
-        final long max = id == ADENA_ID ? MAX_ADENA : Long.MAX_VALUE;
+        final long max = id == ADENA_ID ? PlayerConfig.MAX_ADENA : Long.MAX_VALUE;
         if ((count > 0) && (this.count > (max - count))) {
             setCount(max);
         } else {

@@ -207,11 +207,11 @@ public class RequestPreviewItem extends ClientPacket {
 
             itemList.put(slot, itemId);
             totalPrice += GeneralConfig.WEAR_PRICE;
-            if (totalPrice > Inventory.MAX_ADENA) {
+            if (totalPrice > PlayerConfig.MAX_ADENA) {
                 PunishmentManager.handleIllegalPlayerAction(
                         player,
                         "Warning!! Character " + player.getName() + " of account " + player.getAccountName()
-                                + " tried to purchase over " + Inventory.MAX_ADENA + " adena worth of goods.",
+                                + " tried to purchase over " + PlayerConfig.MAX_ADENA + " adena worth of goods.",
                         GeneralConfig.DEFAULT_PUNISH);
                 return;
             }

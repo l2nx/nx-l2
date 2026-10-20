@@ -65,3 +65,5 @@ lists what is open.
 - [#38](https://github.com/l2nx/nx-l2/issues/38) A siegable clan hall without a loaded owner clan fails to load
 - [#39](https://github.com/l2nx/nx-l2/issues/39) A fort whose owner clan is not loaded fails to load
 - [#35](https://github.com/l2nx/nx-l2/issues/35) A long-time event deletes item rows that may still be loaded
+- [#65](https://github.com/l2nx/nx-l2/issues/65) Inventory.MAX_ADENA freezes the config value at class initialisation
+- [#63](https://github.com/l2nx/nx-l2/issues/63) ClanHallAuctionTest passes only after other tests initialise shared state

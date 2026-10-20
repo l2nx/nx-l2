@@ -19,9 +19,8 @@
  */
 package app.l2nx.highfive.network.holders;
 
-import static app.l2nx.highfive.entity.itemcontainer.Inventory.MAX_ADENA;
-
 import app.l2nx.highfive.config.GeneralConfig;
+import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.data.xml.ItemData;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.WorldObject;
@@ -170,7 +169,7 @@ public class TradeList {
             return null;
         }
 
-        if ((MAX_ADENA / count) < price) {
+        if ((PlayerConfig.MAX_ADENA / count) < price) {
             return null;
         }
 
@@ -216,7 +215,7 @@ public class TradeList {
             return null;
         }
 
-        if ((MAX_ADENA / count) < price) {
+        if ((PlayerConfig.MAX_ADENA / count) < price) {
             log.warn("{}: Attempt to overflow adena !", owner.getName());
             return null;
         }
@@ -582,7 +581,7 @@ public class TradeList {
             }
 
             // Check for overflow in the single item.
-            if ((MAX_ADENA / item.getCount()) < item.getPrice()) {
+            if ((PlayerConfig.MAX_ADENA / item.getCount()) < item.getPrice()) {
                 // private store attempting to overflow - disable it
                 lock();
                 return 1;
@@ -591,7 +590,7 @@ public class TradeList {
             totalPrice += item.getCount() * item.getPrice();
 
             // Check for overflow of the total price.
-            if ((MAX_ADENA < totalPrice) || (totalPrice < 0)) {
+            if ((PlayerConfig.MAX_ADENA < totalPrice) || (totalPrice < 0)) {
                 // private store attempting to overflow - disable it
                 lock();
                 return 1;
@@ -762,7 +761,7 @@ public class TradeList {
             }
 
             // Check for overflow in the single item.
-            if ((MAX_ADENA / item.getCount()) < item.getPrice()) {
+            if ((PlayerConfig.MAX_ADENA / item.getCount()) < item.getPrice()) {
                 lock();
                 break;
             }
@@ -770,7 +769,7 @@ public class TradeList {
             final long newTotalPrice = totalPrice + (item.getCount() * item.getPrice());
 
             // Check for overflow of the total price.
-            if ((MAX_ADENA < newTotalPrice) || (newTotalPrice < 0)) {
+            if ((PlayerConfig.MAX_ADENA < newTotalPrice) || (newTotalPrice < 0)) {
                 lock();
                 break;
             }

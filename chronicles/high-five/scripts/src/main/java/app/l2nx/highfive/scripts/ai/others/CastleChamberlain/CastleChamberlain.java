@@ -22,6 +22,7 @@ package app.l2nx.highfive.scripts.ai.others.CastleChamberlain;
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.FeatureConfig;
 import app.l2nx.highfive.config.GeneralConfig;
+import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.data.sql.ClanTable;
 import app.l2nx.highfive.data.xml.TeleporterData;
 import app.l2nx.highfive.entity.actor.Npc;
@@ -727,7 +728,7 @@ public class CastleChamberlain extends Script {
             case "deposit": {
                 if (isOwner(player, npc) && player.hasAccess(ClanAccess.CASTLE_VAULT)) {
                     final long amount = (st.hasMoreTokens()) ? Long.parseLong(st.nextToken()) : 0;
-                    if ((amount > 0) && (amount < Inventory.MAX_ADENA)) {
+                    if ((amount > 0) && (amount < PlayerConfig.MAX_ADENA)) {
                         if (player.getAdena() >= amount) {
                             takeItems(player, Inventory.ADENA_ID, amount);
                             castle.addToTreasuryNoTax(amount);

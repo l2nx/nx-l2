@@ -26,7 +26,6 @@
  */
 package app.l2nx.highfive.entity.itemcontainer;
 
-import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.config.custom.TransmogConfig;
 import app.l2nx.highfive.data.holders.ArmorSet;
 import app.l2nx.highfive.data.xml.ArmorSetData;
@@ -75,8 +74,6 @@ public abstract class Inventory extends ItemContainer {
     // Common Items
     public static final int ADENA_ID = 57;
     public static final int ANCIENT_ADENA_ID = 5575;
-
-    public static final long MAX_ADENA = PlayerConfig.MAX_ADENA;
 
     public static final int PAPERDOLL_UNDER = 0;
     public static final int PAPERDOLL_HEAD = 1;

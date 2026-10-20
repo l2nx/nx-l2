@@ -27,11 +27,11 @@
 package app.l2nx.highfive.entity.residences;
 
 import static app.l2nx.highfive.entity.itemcontainer.Inventory.ADENA_ID;
-import static app.l2nx.highfive.entity.itemcontainer.Inventory.MAX_ADENA;
 import static app.l2nx.highfive.repository.LegacyValues.epochMillisOrZero;
 import static app.l2nx.highfive.repository.LegacyValues.instantOrNull;
 
 import app.l2nx.highfive.clock.ClockBridge;
+import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.data.holders.ClanHallTemplate;
 import app.l2nx.highfive.data.sql.ClanHallTable;
 import app.l2nx.highfive.data.sql.ClanTable;
@@ -270,7 +270,7 @@ public class ClanHallAuction {
         }
 
         // avoid overflow on return
-        final long limit = MAX_ADENA - cwh.getAdena();
+        final long limit = PlayerConfig.MAX_ADENA - cwh.getAdena();
         amount = Math.min(amount, limit);
         cwh.addItem(ItemProcessType.REFUND, ADENA_ID, amount, null, null);
     }
