@@ -64,8 +64,7 @@ public class AuctionableHall extends ClanHall {
         grade = set.getInt("grade");
         paid = set.getBoolean("paid");
         lease = set.getInt("lease");
-        if (getOwnerId() != 0) {
-            free = false;
+        if (!isFree()) {
             initialyzeTask(false);
             loadFunctions();
         }
@@ -80,9 +79,10 @@ public class AuctionableHall extends ClanHall {
 
     @Override
     public void free() {
-        super.free();
+        // Reset before the base persists the hall through updateDb.
         paidUntil = 0;
         paid = false;
+        super.free();
     }
 
     @Override

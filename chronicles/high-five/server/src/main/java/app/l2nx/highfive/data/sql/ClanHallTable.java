@@ -115,6 +115,7 @@ public class ClanHallTable {
             set.set("grade", template.grade());
             set.set("paid", (state != null) && state.paid());
             final AuctionableHall ch = new AuctionableHall(set);
+            ch.releaseUnloadedOwner();
             allAuctionableClanHalls.put(id, ch);
             addClanHall(ch);
 

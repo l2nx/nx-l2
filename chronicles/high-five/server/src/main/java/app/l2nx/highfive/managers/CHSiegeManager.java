@@ -110,6 +110,7 @@ public class CHSiegeManager {
             set.set("siegeHour", template.siegeHour());
             set.set("siegeMinute", template.siegeMinute());
             final SiegableHall hall = new SiegableHall(set);
+            hall.releaseUnloadedOwner();
             conquerableHalls.put(id, hall);
             ClanHallTable.addClanHall(hall);
         }

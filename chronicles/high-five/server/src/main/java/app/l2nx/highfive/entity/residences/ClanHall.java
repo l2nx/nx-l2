@@ -205,9 +205,25 @@ public abstract class ClanHall {
         final Clan clan = ClanTable.getInstance().getClan(ownerId);
         if (clan != null) {
             clan.setHideoutId(id);
-        } else {
-            free();
+            free = false;
         }
+    }
+
+    /**
+     * Frees a hall whose stored owner clan is not loaded. Called by the loader after construction, because freeing
+     * persists through the subclass {@link #updateDb()}, which needs state the subclass constructor sets.
+     */
+    public final void releaseUnloadedOwner() {
+        if (!free || (ownerId <= 0)) {
+            return;
+        }
+
+        log.warn("Clan hall {}: owner clan {} is not loaded, the hall is freed.", id, ownerId);
+        for (ResidenceFunction stored : ClanHallTable.getInstance().findFunctions(id)) {
+            removeFunction(stored.type());
+        }
+
+        free();
     }
 
     /**

@@ -84,8 +84,7 @@ public class SiegableHall extends ClanHall {
             siegeDate.setTimeInMillis(nextSiege);
         }
 
-        if (getOwnerId() != 0) {
-            free = false;
+        if (!isFree()) {
             loadFunctions();
         }
     }
