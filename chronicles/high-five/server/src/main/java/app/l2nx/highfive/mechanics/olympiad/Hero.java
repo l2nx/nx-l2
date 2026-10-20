@@ -183,7 +183,7 @@ public class Hero {
                 .build();
     }
 
-    private void processHeros(int charId, StatSet hero) {
+    void processHeros(int charId, StatSet hero) {
         final CharacterClanAlly clanAlly =
                 characterRepository.findClanAndAlly(charId).orElse(null);
         if (clanAlly == null) {
@@ -191,24 +191,20 @@ public class Hero {
         }
 
         final int clanId = clanAlly.clanId();
-        String clanName = "";
-        String allyName = "";
-        int clanCrest = 0;
-        int allyCrest = 0;
-        if (clanId > 0) {
-            final Clan clan = ClanTable.getInstance().getClan(clanId);
-            clanName = clan.getName();
-            clanCrest = clan.getCrestId();
-            if (clanAlly.allyId() > 0) {
-                allyName = clan.getAllyName();
-                allyCrest = clan.getAllyCrestId();
-            }
+        final Clan clan = clanId > 0 ? ClanTable.getInstance().getClan(clanId) : null;
+        final boolean inAlly = (clan != null) && (clanAlly.allyId() > 0);
+        hero.set(CLAN_CREST, clan == null ? 0 : clan.getCrestId());
+        hero.set(ALLY_CREST, inAlly ? clan.getAllyCrestId() : 0);
+        // Without a clan or ally the name stays absent; ExHeroList writes the empty string the protocol expects.
+        hero.remove(CLAN_NAME);
+        hero.remove(ALLY_NAME);
+        if (clan != null) {
+            hero.set(CLAN_NAME, clan.getName());
         }
 
-        hero.set(CLAN_CREST, clanCrest);
-        hero.set(CLAN_NAME, clanName);
-        hero.set(ALLY_CREST, allyCrest);
-        hero.set(ALLY_NAME, allyName);
+        if (inAlly) {
+            hero.set(ALLY_NAME, clan.getAllyName());
+        }
     }
 
     private String calcFightTime(long fightTimeValue) {
