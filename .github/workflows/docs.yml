@@ -1,6 +1,6 @@
 name: Publish docs
 
-# Publishes docs/public/{en,ru}/ as the `l2` section of l2nx.dev; sync-docs.sh skips a source older than the last synced one.
+# Publishes docs/public/{en,ru}/ as the `core` section (L2NX Core) of l2nx.dev; sync-docs.sh skips a source older than the last synced one.
 on:
   push:
     branches: [main]
@@ -33,4 +33,4 @@ jobs:
           VERSION: main@${{ github.sha }}
           DOCS_DENYLIST: ${{ secrets.DOCS_DENYLIST }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: bash scripts/sync-docs.sh l2 "$GITHUB_WORKSPACE/source" "$VERSION"
+        run: bash scripts/sync-docs.sh core "$GITHUB_WORKSPACE/source" "$VERSION"

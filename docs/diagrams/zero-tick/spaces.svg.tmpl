@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 {{height}}" width="100%" role="img" aria-labelledby="zt-title zt-desc">
+<title id="zt-title">{{s:title}}</title>
+<desc id="zt-desc">{{s:desc}}</desc>
+<style>/*STYLE*/
+.card{fill:var(--bg);stroke:var(--border)}
+.map{fill:var(--card);stroke:var(--border)}
+.grid{fill:var(--fg);opacity:.07}
+.space{fill:var(--surface);stroke:var(--border-strong);stroke-width:1.5}
+.glow{fill:none;stroke:var(--accent);stroke-width:6}
+.lit{fill:var(--accent-low);stroke:var(--accent);stroke-width:2}
+.litglow{fill:var(--accent);opacity:.4}
+.throb{fill:none;stroke:var(--accent-high);stroke-width:10}
+.sname{fill:var(--fg)}
+.zzz{fill:var(--faint)}
+.woke{fill:var(--accent-high)}
+.thread{stroke:var(--fg);stroke-opacity:.25;stroke-width:2;stroke-linecap:round}
+.tdot{fill:var(--accent)}
+.swords{fill:none;stroke:var(--accent-high);stroke-width:3;stroke-linecap:round}
+.caption{fill:var(--muted)}
+.note{fill:var(--faint)}
+</style>
+<defs>
+<filter id="blur" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="8"/></filter>
+<radialGradient id="sky" cx="50%" cy="0%" r="75%"><stop offset="0" style="stop-color:var(--accent);stop-opacity:.1"/><stop offset="1" style="stop-color:var(--accent);stop-opacity:0"/></radialGradient>
+<pattern id="dots" width="20" height="20" patternUnits="userSpaceOnUse"><circle class="grid" cx="10" cy="10" r="1.2"/></pattern>
+</defs>
+<rect class="card" x=".5" y=".5" width="639" height="{{card_h}}" rx="16"/>
+<rect x=".5" y=".5" width="639" height="{{card_h}}" rx="16" fill="url(#sky)"/>
+<rect class="map" x="16" y="16" width="608" height="330" rx="14"/>
+<rect x="16" y="16" width="608" height="330" rx="14" fill="url(#dots)"/>
+{{spaces}}
+{{legend}}
+{{caption}}
+<text class="t note" x="32" y="{{note_y}}" font-size="22">{{t:note}}</text>
+</svg>

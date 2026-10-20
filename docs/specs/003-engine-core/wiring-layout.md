@@ -34,7 +34,11 @@ code on other threads are not used in partition code:
 - **The partition runtime is a `SmartLifecycle`** with its own phase: it starts after the data registries are
   loaded and before the game port opens; on stop it stops accepting input, drains the inboxes, saves players
   ([persistence.md §4](persistence.md#4-write-behind)) and stops the loops. This is the "engine stop" step of the
-  spec 002 stop order.
+  spec 002 stop order; the stop is bounded by `spring.lifecycle.timeout-per-shutdown-phase`
+  ([spec 002 §3](../002-spring-boot-runtime.md#stop)).
+  - TODO: today the partition runtime starts before the data registries load, since `GameServer.start()` both
+    loads them and opens the game port in one phase; the split into a loading step and a port step comes with E6
+    part 2.
 - **Engine settings are `@ConfigurationProperties`:** pass budget and minimum, cadences, packets per pass, byte
   budgets, handle quarantine, write-behind interval, loop thread count. They move together with the game settings
   ([#17](https://github.com/l2nx/nx-l2/issues/17)).
@@ -43,20 +47,22 @@ code on other threads are not used in partition code:
 
 ### Engine
 
-`engine/core` (`app.l2nx.engine.core`) is created by its first package, not at stage 9. Each package lands with its
-first consumer, never ahead of it: `clock` with E5, `identity` with stage 3, `session` with stage 4, `loop` and
-`partition` with E6, `replication` with E8, `persistence` with E3 and E4. It holds the chronicle-agnostic
-mechanisms:
+`engine/core` (`app.l2nx.engine.core`) is created by its first package, not at stage 9. A package lands on `main` as
+soon as it is complete and tested (unit tests, its ArchUnit rule if any, no stubs or half-built API), ahead of its
+first consumer when needed: the earlier the new architecture is in the tree, the earlier legacy code is refactored
+onto it and the longer it is exercised. The order follows the stages: `clock` (E5), `identity` (stage 3),
+`loop` and `partition` (E6 part 1, before stage 4: `session` implements `InputSource` of `loop.inbox`), `session`
+(stage 4), `replication` (E8), `persistence` (E3, E4). It holds the chronicle-agnostic mechanisms:
 
-| Package       | Contents                                                                       |
-| ------------- | ------------------------------------------------------------------------------ |
-| `loop`        | partition and service loops, inbox, pass phases, timer wheel                   |
-| `clock`       | `GameClock`, RNG                                                               |
-| `partition`   | partitions, entity transfer, global service base                               |
-| `identity`    | UUIDv7 generation, wire-handle allocator                                       |
-| `session`     | session queues and their drain, session states, command dispatch, `ClientPort` |
-| `replication` | client view, visibility grid, event classes, budgets                           |
-| `persistence` | write-behind, value transaction runner, outbox                                 |
+| Package       | Contents                                                                                                    |
+| ------------- | ----------------------------------------------------------------------------------------------------------- |
+| `loop`        | partition and service loops, pass phases, loop threads; sub-packages `inbox`, `timer`, `periodic`, `replay` |
+| `clock`       | `GameClock`, RNG                                                                                            |
+| `partition`   | partitions, entity transfer, global service base                                                            |
+| `identity`    | UUIDv7 generation, wire-handle allocator                                                                    |
+| `session`     | session queues and their drain, session states, command dispatch, `ClientPort`                              |
+| `replication` | client view, visibility grid, event classes, budgets                                                        |
+| `persistence` | write-behind, value transaction runner, outbox                                                              |
 
 Game mechanics shared by chronicles still join `engine/` only by proven overlap when Essence arrives
 ([spec 001 §4](../001-project-design.md#4-module-layout)).

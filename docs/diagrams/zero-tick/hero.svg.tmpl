@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 574" width="100%" role="img" aria-labelledby="zt-title zt-desc">
+<title id="zt-title">{{s:title}}</title>
+<desc id="zt-desc">{{s:desc}}</desc>
+<style>/*STYLE*/
+.card{fill:var(--bg);stroke:var(--border)}
+.panel{fill:var(--card);stroke:var(--border)}
+.title{fill:var(--fg)}
+.accent{fill:var(--accent)}
+.faint{fill:var(--faint)}
+.base{fill:none;stroke:var(--fg);stroke-opacity:.06;stroke-width:1}
+.ecg{fill:none;stroke-width:2.5;stroke-linejoin:round;stroke-linecap:round}
+.ecg.classic{stroke:var(--warning)}
+.ecg.zero{stroke:var(--accent)}
+.ecg.glow{stroke-width:7;opacity:.35}
+.idle-trace{opacity:.4}
+.wait{fill:var(--faint);opacity:.8}
+.evdot{fill:var(--faint)}
+.bracket{fill:none;stroke:var(--warning);stroke-opacity:.45;stroke-width:1.5}
+.idle{fill:var(--warning);opacity:.7}
+.head.classic{fill:var(--warning)}
+.head.zero{fill:var(--accent-high)}
+.evicon{fill:none;stroke:var(--accent-high);stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+.evicon.solid{fill:var(--accent-high);stroke:none}
+.evlabel{fill:var(--muted)}
+</style>
+<defs>
+<filter id="blur" x="-20%" y="-50%" width="140%" height="200%"><feGaussianBlur stdDeviation="3"/></filter>
+<filter id="dotglow" x="-300%" y="-300%" width="700%" height="700%"><feGaussianBlur stdDeviation="4"/></filter>
+<radialGradient id="sky" cx="50%" cy="0%" r="75%"><stop offset="0" style="stop-color:var(--accent);stop-opacity:.1"/><stop offset="1" style="stop-color:var(--accent);stop-opacity:0"/></radialGradient>
+<linearGradient id="fadeL" x1="36" x2="604" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#000"/><stop offset=".14" stop-color="#fff"/></linearGradient>
+<mask id="trace" maskUnits="userSpaceOnUse"><rect x="36" y="0" width="{{clip_w}}" height="574" fill="url(#fadeL)"/></mask>
+<mask id="marks" maskUnits="userSpaceOnUse"><rect x="36" y="0" width="568" height="574" fill="url(#fadeL)"/></mask>
+</defs>
+<rect class="card" x=".5" y=".5" width="639" height="573" rx="16"/>
+<rect x=".5" y=".5" width="639" height="573" rx="16" fill="url(#sky)"/>
+<text class="h title" x="32" y="58" font-size="30">{{h:line1}}</text>
+<text class="h accent" x="32" y="96" font-size="30">{{h:line2}}</text>
+<rect class="panel" x="16.5" y="118.5" width="607" height="221" rx="14"/>
+<text class="h title" x="36" y="152" font-size="24">{{h:classic_title}}</text>
+<text class="t faint" x="36" y="182" font-size="22">{{t:classic_sub}}</text>
+<line class="base" x1="36" y1="{{classic_y}}" x2="604" y2="{{classic_y}}"/>
+<g mask="url(#trace)"><g class="{{scroll}}"><path class="ecg classic idle-trace" d="{{classic_trace}}"/>{{classic_waits}}<path class="ecg classic glow" d="{{classic_useful}}" filter="url(#blur)"/><path class="ecg classic" d="{{classic_useful}}"/></g></g>
+<g mask="url(#marks)"><g class="{{scroll}}">{{classic_marks}}</g></g>
+<g class="{{classic_head}}"><circle class="head classic" cx="{{head_x}}" cy="{{classic_y}}" r="7" filter="url(#dotglow)"/><circle class="head classic" cx="{{head_x}}" cy="{{classic_y}}" r="4.5"/></g>
+<rect class="panel" x="16.5" y="354.5" width="607" height="203" rx="14"/>
+<text class="h title" x="36" y="388" font-size="24">{{h:zero_title}}</text>
+<text class="t faint" x="36" y="418" font-size="22">{{t:zero_sub}}</text>
+<line class="base" x1="36" y1="{{zero_y}}" x2="604" y2="{{zero_y}}"/>
+<g mask="url(#trace)"><g class="{{scroll}}"><path class="ecg zero glow" d="{{zero_trace}}" filter="url(#blur)"/><path class="ecg zero" d="{{zero_trace}}"/></g></g>
+<g mask="url(#marks)"><g class="{{scroll}}">{{zero_marks}}</g></g>
+<g class="{{zero_head}}"><circle class="head zero" cx="{{head_x}}" cy="{{zero_y}}" r="7" filter="url(#dotglow)"/><circle class="head zero" cx="{{head_x}}" cy="{{zero_y}}" r="4.5"/></g>
+</svg>

@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 612" width="100%" role="img" aria-labelledby="zt-title zt-desc">
+<title id="zt-title">{{s:title}}</title>
+<desc id="zt-desc">{{s:desc}}</desc>
+<style>/*STYLE*/
+.card{fill:var(--card);stroke:var(--border)}
+.inv{fill:var(--surface);stroke:var(--border-strong);stroke-width:1.5}
+.lane{fill:none;stroke:var(--border-strong);stroke-width:2}
+.sword{fill:var(--accent-high)}
+.sword.dupe{fill:var(--warning)}
+.rare{fill:var(--accent);opacity:.5}
+.coins{fill:var(--surface);stroke:var(--warning);stroke-width:2}
+.chip{fill:var(--surface);stroke-width:2}
+.chip.sell{stroke:var(--accent)}
+.chip.trade{stroke:var(--violet)}
+.num.sell{fill:var(--accent)}
+.num.trade{fill:var(--violet)}
+.numtext{fill:var(--bg)}
+.chiptext{fill:var(--fg)}
+.reject{fill:var(--card)}
+.check{fill:none;stroke:var(--success);stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
+.tick{fill:none;stroke:var(--bg);stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+.badge-ok{fill:var(--success)}
+.dupe{fill:var(--warning)}
+.dupetext{fill:var(--bg)}
+.title{fill:var(--fg)}
+.label{fill:var(--faint)}
+.text{fill:var(--fg)}
+.ok{fill:var(--success)}
+.caption{fill:var(--muted)}
+</style>
+<defs><filter id="glow" x="-200%" y="-100%" width="500%" height="300%"><feGaussianBlur stdDeviation="5"/></filter></defs>
+<rect class="card" x="16.5" y="16.5" width="607" height="275" rx="14"/>
+<text class="h title" x="36" y="52" font-size="24">{{h:left_title}}</text>
+<text class="t label" x="36" y="100" font-size="22">{{t:inventory}}</text>
+<rect class="inv" x="36.5" y="116.5" width="83" height="79" rx="12"/>
+<g class="{{inv_sword_l}}"><ellipse class="rare" cx="78" cy="{{sword_y_l}}" rx="10" ry="18" filter="url(#glow)"/><path class="sword" transform="translate(78 {{sword_y_l}})" d="{{sword_d}}"/></g>
+<path class="lane" d="M124 120H380M124 192H380"/>
+{{left_chips}}
+{{left_result}}
+{{dupe}}
+<text class="t caption" x="36" y="272" font-size="22">{{t:left_caption}}</text>
+<rect class="card" x="16.5" y="308.5" width="607" height="287" rx="14"/>
+<text class="h title" x="36" y="344" font-size="24">{{h:right_title}}</text>
+<text class="t label" x="36" y="392" font-size="22">{{t:inventory}}</text>
+<rect class="inv" x="36.5" y="408.5" width="83" height="79" rx="12"/>
+<g class="{{inv_sword_r}}"><ellipse class="rare" cx="78" cy="{{sword_y_r}}" rx="10" ry="18" filter="url(#glow)"/><path class="sword" transform="translate(78 {{sword_y_r}})" d="{{sword_d}}"/></g>
+<path class="lane" d="M124 448H604"/>
+<text class="t label" x="140" y="488" font-size="22">{{t:owner}}</text>
+{{right_chips}}
+{{no_item}}
+{{right_result}}
+<text class="t caption" x="36" y="574" font-size="22">{{t:right_caption}}</text>
+</svg>

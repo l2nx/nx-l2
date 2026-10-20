@@ -9,7 +9,6 @@ import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import org.jctools.maps.NonBlockingHashMapLong;
 
 /**
  * Maps the persistent UUID of a stored entity to the wire handle game code works with; an entity keeps its
@@ -18,7 +17,7 @@ import org.jctools.maps.NonBlockingHashMapLong;
 public final class IdentityRegistry {
     private final WireHandleAllocator allocator;
     private final Map<UUID, Integer> handles = new ConcurrentHashMap<>();
-    private final NonBlockingHashMapLong<UUID> ids = new NonBlockingHashMapLong<>();
+    private final Map<Integer, UUID> ids = new ConcurrentHashMap<>();
 
     public IdentityRegistry(WireHandleAllocator allocator) {
         this.allocator = allocator;

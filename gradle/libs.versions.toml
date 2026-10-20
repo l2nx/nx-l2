@@ -1,9 +1,11 @@
 [versions]
+agrona = "2.7.0"
 archunit = "1.5.1"
 assertj = "3.27.7"
 bucket4j = "8.21.0"
 classgraph = "6.0.0"
 disruptor = "4.0.0"
+fastutil = "8.5.19"
 gradle-git-properties = "4.0.1"
 jctools = "4.0.7"
 jmh-plugin = "0.7.3"
@@ -18,12 +20,14 @@ spring-boot = "4.1.1"
 uuid-creator = "6.1.1"
 
 [libraries]
+agrona = { module = "org.agrona:agrona", version.ref = "agrona" }
 archunit-junit5 = { module = "com.tngtech.archunit:archunit-junit5", version.ref = "archunit" }
 assertj-core = { module = "org.assertj:assertj-core", version.ref = "assertj" }
 bucket4j-core = { module = "com.bucket4j:bucket4j_jdk17-core", version.ref = "bucket4j" }
 classgraph = { module = "io.github.classgraph:classgraph", version.ref = "classgraph" }
 commons-lang3 = { module = "org.apache.commons:commons-lang3" }
 disruptor = { module = "com.lmax:disruptor", version.ref = "disruptor" }
+fastutil = { module = "it.unimi.dsi:fastutil", version.ref = "fastutil" }
 jctools-core = { module = "org.jctools:jctools-core", version.ref = "jctools" }
 junit-bom = { module = "org.junit:junit-bom", version.ref = "junit" }
 junit-jupiter = { module = "org.junit.jupiter:junit-jupiter" }

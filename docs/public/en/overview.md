@@ -3,9 +3,11 @@ title: Overview
 description: What nx-l2 is, what it contains today and where it is heading.
 ---
 
-nx-l2 is an open-source Lineage 2 server built on [L2J Mobius](https://gitlab.com/MobiusDevelopment/L2J_Mobius), with
+L2NX Core is the open-source Lineage 2 server (repository `nx-l2`) built on [L2J Mobius](https://gitlab.com/MobiusDevelopment/L2J_Mobius), with
 the L2NX platform integration built in. One repository holds every chronicle, the login server, the network stack and
 the shared libraries.
+
+Its game loop is the [Zero-Tick Engine](/core/zero-tick-engine/): the world reacts to events instead of ticking.
 
 It serves three purposes:
 
@@ -21,8 +23,8 @@ Like Mobius, nx-l2 is a reference implementation for education and research.
 
 High Five is imported from L2J Mobius with its full history. Both servers run on Spring Boot (stage 2): metrics, health
 checks, graceful shutdown and a Docker image. They store data in PostgreSQL, one schema per server, with the schema
-managed by Liquibase (stage 3). See the [quick start](/l2/quick-start/) and
-[operations](/l2/operations/).
+managed by Liquibase (stage 3). See the [quick start](/core/quick-start/) and
+[operations](/core/operations/).
 
 | Stage | What it brings                                                               |
 | ----- | ---------------------------------------------------------------------------- |
@@ -58,4 +60,4 @@ handlers are a compiled module of their own, `scripts`, built against the chroni
 ## What the repository does not contain
 
 No game client, no client assets, no geodata and no decompiled or leaked code. Operators prepare data from their own
-client. See [licensing](/l2/licensing/) for where the code comes from.
+client. See [licensing](/core/licensing/) for where the code comes from.

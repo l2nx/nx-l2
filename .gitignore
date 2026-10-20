@@ -7,3 +7,7 @@ build/
 
 # Local geodata, not shipped (see docs/public/en/quick-start.md#geodata)
 /geodata/
+
+# Python venv for docs/diagrams generators
+/.venv/
+__pycache__/

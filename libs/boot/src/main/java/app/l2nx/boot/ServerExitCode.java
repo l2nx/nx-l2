@@ -11,6 +11,8 @@ import org.springframework.boot.ExitCodeGenerator;
  */
 public enum ServerExitCode implements ExitCodeGenerator {
     SHUTDOWN(0),
+    // An engine loop thread died; Boot sets 1 by itself only on a failed start.
+    CRASH(1),
     RESTART(2);
 
     private final int code;

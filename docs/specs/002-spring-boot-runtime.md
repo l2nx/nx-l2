@@ -65,6 +65,12 @@ the database pool, logging, the HTTP management surface, packaging and tests. In
 - `stop()` is synchronous, so `spring.lifecycle.timeout-per-shutdown-phase` neither bounds nor extends it: the save
   runs to the end. Container and service definitions give the process a stop timeout well above the save time
   (Docker's default of 10 s is not enough).
+- The engine's partition runtime ([spec 003](003-engine-core/wiring-layout.md#3-lifecycle-and-configuration)) is
+  the exception: its stop is asynchronous, so Spring waits for it at most
+  `spring.lifecycle.timeout-per-shutdown-phase` (Boot's default 30 s) and the runtime stops waiting for its loop
+  threads after the same time, logging those still running. A shutdown hook of a loop that never returns cannot
+  hold the process; the work of those hooks (the player save once players live in the world partition) has to fit
+  in that timeout, which is raised with the save time.
 
 ### Countdown shutdown and restart
 
@@ -76,8 +82,9 @@ the database pool, logging, the HTTP management surface, packaging and tests. In
   `System.exit(SpringApplication.exit(context, code))` on a thread of its own (`server-exit`). A caller running on
   a pool thread (the scheduled restart) would otherwise close the context from inside the pool that
   the close waits for. **`ServerExitCode`** is an enum next to it,
-  `SHUTDOWN(0)` and `RESTART(2)`, implementing Spring's `ExitCodeGenerator`; the codes below live in this one
-  place. Code 1 has no constant: Boot sets it on a failed start.
+  `SHUTDOWN(0)`, `CRASH(1)` and `RESTART(2)`, implementing Spring's `ExitCodeGenerator`; the codes below live in
+  this one place. `CRASH` ends the process when an engine loop thread dies
+  ([spec 003](003-engine-core/execution.md#7-threads)); Boot sets 1 by itself on a failed start.
 
 ### Exit codes
 

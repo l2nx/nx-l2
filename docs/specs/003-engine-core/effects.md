@@ -37,8 +37,9 @@ then the effect ends. Across effects, `(deadline, sequence)` order applies.
 ## 5. Periodic ticks
 
 - **The next tick is `nextTickAt + period`,** so ticks do not drift with pass timing.
-- **A late pass runs the owed ticks in order,** up to 10 per effect per pass; the rest continues in the next pass. Damage
-  and healing owed are applied, not lost.
+- **A late pass runs the owed ticks in order,** up to `owed-ticks-per-pass` (default 10) per effect per pass; the
+  rest continues in the next pass, and the effect's `END` waits for the ticks it still owes. Damage and healing
+  owed are applied, not lost.
 - **Toggles and dances** consume MP per tick through the same mechanism; a tick that cannot pay ends the effect.
 
 ## 6. Stats once per pass

@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 440" width="100%" role="img" aria-labelledby="zt-title zt-desc">
+<title id="zt-title">{{s:title}}</title>
+<desc id="zt-desc">{{s:desc}}</desc>
+<style>/*STYLE*/
+.card{fill:var(--card);stroke:var(--border)}
+.lane{fill:none;stroke:var(--border-strong);stroke-width:2;stroke-linejoin:round}
+.char{fill:var(--surface);stroke:var(--border-strong);stroke-width:2}
+.mob{fill:var(--muted)}
+.mob.angry{fill:var(--warning)}
+.eye{fill:var(--bg)}
+.lid{fill:none;stroke:var(--bg);stroke-width:2.2;stroke-linecap:round}
+.zz{fill:var(--violet)}
+.chip{fill:var(--surface);stroke-width:2}
+.chip.hit{stroke:var(--accent)}
+.chip.sleep{stroke:var(--violet)}
+.num.hit{fill:var(--accent)}
+.num.sleep{fill:var(--violet)}
+.numtext{fill:var(--bg)}
+.chiptext{fill:var(--fg)}
+.clash{fill:none;stroke:var(--warning);stroke-width:2.5}
+.badge-bad{fill:var(--warning)}
+.badge-ok{fill:var(--success)}
+.badge-text{fill:var(--bg)}
+.tick{fill:none;stroke:var(--bg);stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+.pulse-hit{fill:none;stroke:var(--accent);stroke-width:3}
+.pulse-sleep{fill:none;stroke:var(--violet);stroke-width:3}
+.moon{fill:var(--violet)}
+.alarm{fill:var(--warning)}
+.alarm-mark{stroke:var(--bg);stroke-width:2.6;stroke-linecap:round}
+.title{fill:var(--fg)}
+.label{fill:var(--faint)}
+.text{fill:var(--fg)}
+.ok{fill:var(--success)}
+</style>
+<rect class="card" x="16.5" y="16.5" width="279" height="407" rx="14"/>
+<rect class="card" x="304.5" y="16.5" width="319" height="407" rx="14"/>
+<text class="h title" x="36" y="54" font-size="24">{{h:left_title}}</text>
+<text class="h title" x="324" y="54" font-size="24">{{h:right_title}}</text>
+<text class="t label" x="36" y="90" font-size="22">{{t:thread1}}</text>
+<text class="t label" x="36" y="246" font-size="22">{{t:thread2}}</text>
+<path class="lane" d="M36 116H180L240 166M36 216H180L240 166"/>
+<circle class="clash {{clash}}" cx="240" cy="166" r="37"/>
+{{left_mob}}
+{{left_chips}}
+<g class="{{clash_badge}}"><circle class="badge-bad" cx="264" cy="140" r="14"/><text class="h badge-text" x="264" y="148" font-size="22" text-anchor="middle">{{h:question}}</text></g>
+<g class="{{left_result}}">
+<text class="t label" x="36" y="300" font-size="22">{{t:result}}</text>
+<g class="{{row_a}}">{{moon_a}}<text class="t text" x="66" y="338" font-size="22">{{t:asleep}}</text></g>
+<g class="{{row_b}}">{{alarm_b}}<text class="t text" x="66" y="374" font-size="22">{{t:awake1}}</text><text class="t label" x="66" y="402" font-size="22">{{t:awake2}}</text></g>
+</g>
+<text class="t label" x="324" y="132" font-size="22">{{t:owner}}</text>
+<path class="lane" d="M324 166H554"/>
+<circle class="pulse-hit {{apply_hit}}" cx="584" cy="166" r="34"/>
+<circle class="pulse-sleep {{apply_sleep}}" cx="584" cy="166" r="34"/>
+{{right_mob}}
+{{right_chips}}
+<g class="{{ok_badge}}"><circle class="badge-ok" cx="606" cy="140" r="14"/><path class="tick" d="M599 140l5 5l9-10"/></g>
+<g class="{{right_result}}">
+<text class="t label" x="324" y="300" font-size="22">{{t:result}}</text>
+{{moon_r}}<text class="t ok" x="354" y="338" font-size="22">{{t:asleep}}</text>
+<text class="t label" x="324" y="374" font-size="22">{{t:same}}</text>
+</g>
+</svg>

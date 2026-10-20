@@ -38,6 +38,12 @@ lists what is open.
 - [#39](https://github.com/l2nx/nx-l2/issues/39) A fort whose owner clan is not loaded fails to load
 - [#40](https://github.com/l2nx/nx-l2/issues/40) Dropped items lose augmentation and elemental attributes across a restart
 - [#41](https://github.com/l2nx/nx-l2/issues/41) E10: inject beans instead of the static getInstance() bridges
+- [#42](https://github.com/l2nx/nx-l2/issues/42) E7/E8: cadence settings for periodic systems (`l2nx.engine.cadence.*`)
+- [#43](https://github.com/l2nx/nx-l2/issues/43) E6 part 2: split `GameServer.start()` so the partition runtime starts
+  between data load and port open
+- [#44](https://github.com/l2nx/nx-l2/issues/44) E6 part 2: record world passes for replay in production
+- [#45](https://github.com/l2nx/nx-l2/issues/45) E6 part 2: order input against due timers by arrival time (sub-tick)
+- [#46](https://github.com/l2nx/nx-l2/issues/46) Timer wheel: a handler re-arming an overdue timer at its own deadline starves later timers
 - [#47](https://github.com/l2nx/nx-l2/issues/47) Game server's fixed pool of 100 takes every PostgreSQL connection, so the login server cannot start after it
 - [#48](https://github.com/l2nx/nx-l2/issues/48) Real-client checks left open after moving the login connection to Netty
 

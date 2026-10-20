@@ -9,8 +9,14 @@ A partition is an event loop, not a fixed-rate tick.
 
 - **It sleeps until the earliest of:** a message in its inbox, the next timer deadline, the next due periodic
   system.
-- **A pass has a minimum granularity** (`pass-min`, default 5 ms, configurable). Work that arrives inside that
-  window is processed in the same pass; this batches bursts without adding a fixed tick of latency.
+- **Input has a minimum granularity** (`pass-min`, default 5 ms, configurable). Messages, session input and
+  deferred work queued within `pass-min` of the previous pass wait for its end and are processed in one pass; this
+  batches bursts, so a client flood never turns into hundreds of passes per second, without adding a fixed tick of
+  latency. A due timer or periodic system does not wait for `pass-min`: its pass runs when due, but at most one per
+  millisecond, and processes the queued input too. The next pass is the earlier of the next deadline, no sooner than
+  1 ms after the previous pass started, and, when input is queued, the end of `pass-min`. One millisecond is the
+  timer wheels' resolution, so the spacing makes no deadline fire later; it bounds the pass rate at 1000 per second, so a
+  timer re-armed at the pass time or a backlog of overdue timers cannot run passes back to back.
 - **Input latency is close to zero.** A packet is processed in the pass after it is decoded, not at the next tick
   boundary. A fixed tick of 100 ms or 50 ms would add up to that much to every action.
 - **No catch-up.** A pass that overruns is followed by the next pass as soon as possible; missed periodic runs are
@@ -28,17 +34,29 @@ One pass runs, in this order:
 5. **Replication:** visibility diffs, outgoing events, coalesced state ([replication.md](replication.md)).
 6. **Flush:** per-connection buffers handed to Netty, one flush per connection.
 
+TODO: the inbox runs before the deadlines, so input is evaluated against timers that fell due up to one pass
+earlier; ordering input against due timers by arrival time removes this window ([#45](https://github.com/l2nx/nx-l2/issues/45)).
+
 Phases 1–4 may enqueue further work for the same pass (a triggered skill, a death caused by a damage tick); the
-loop drains it before phase 5, with a depth limit per pass (`trigger-depth`, default 8) so a trigger chain cannot
-loop forever.
+loop drains it before phase 5, with a depth limit per pass (`trigger-depth`, default 8 generations) so a trigger
+chain cannot loop forever. The stat recalculation of phase 4 runs after the drain, and again only after a drain of
+work it enqueued itself, so it sees what that work changed. Work still queued once the limit is reached is counted
+and logged as an overflow and runs first in the next pass; a chain that ends exactly at the limit is no overflow.
 
 ## 3. Inbox and session queues
 
 - **One FIFO per client session.** Netty binds a channel to one IO thread, so a session has exactly one producer:
   decoded commands (and legacy packets during the migration) go into the session's bounded single-producer queue
   (JCTools `SpscArrayQueue`, capacity `inbound-queue-limit`; overflow closes the connection,
-  [spec 008 §5](../008-network.md#5-inbound-pipeline)). The partition inbox (JCTools `MpscUnboundedArrayQueue`)
-  receives only "this session has input".
+  [spec 008 §5](../008-network.md#5-inbound-pipeline)). The partition inbox (JCTools
+  `MpscUnboundedAtomicArrayQueue`: the `MpscUnboundedArrayQueue` algorithm on field updaters, since the
+  `sun.misc.Unsafe` variant warns on JDK 24 and later) receives only "this session has input".
+- **A ready session is signalled once.** The producer enqueues, issues a full fence (`VarHandle.fullFence()`) and
+  sets the session's signal flag, posting "has input" only when the flag was clear; the partition clears the flag
+  once the queue is empty, issues a full fence and checks the queue again. A JCTools offer is only a release store,
+  so without the two fences an item offered while the flag is cleared could stay in the queue unsignalled; with
+  them either the producer sees the cleared flag or the partition sees the item. A session whose queue throws is
+  reported and leaves the ready set until its producer signals again; the pass goes on.
 - **Before the world partition exists (E6)** the queue is drained by the legacy packet pool, one drain per session
   at a time, so the order below already holds from stage 4.
 - **Packets of one client are processed strictly in arrival order.** Mobius ran them on a shared executor where two
@@ -47,6 +65,11 @@ loop forever.
 - **Fairness and flood control:** the partition walks ready sessions round-robin and takes at most
   `packets-per-pass` (configurable, default 16) from each; the rest waits for the next pass. A flooding client delays only
   itself, and order is kept.
+- **One failure costs one item.** A session queue only hands out its next item; the partition takes the item off the
+  queue, records it and then runs it, so a handler that throws is reported with that item and the rest of the batch
+  runs in the same pass. A taken item is gone whether it ran or failed, so it is never retried and a failing packet
+  cannot keep the partition busy. Disconnecting a client whose packets keep failing is the session's decision, not
+  the loop's.
 - **Packets outside the world** (login key exchange, ping, character selection) are handled by the session state
   machine outside the partition, in order. A packet that arrives in the wrong state is dropped.
 - **Entity transfer between partitions:** while a session is transferring, its queue keeps filling; after the
@@ -59,9 +82,17 @@ loop forever.
 
 ## 4. Timers
 
-- **One timer wheel per partition:** Agrona `DeadlineTimerWheel` with a 1 ms tick, polled by the loop; no timer
-  threads. The wheel does not order timers inside one tick, so the loop collects the due timers of a pass and sorts
-  them by `(deadline, sequence)` before running them.
+- **Two timer wheels per partition,** one for game-time and one for wall-clock deadlines (§6): Agrona
+  `DeadlineTimerWheel` with a 1 ms tick, polled by the loop; no timer threads. The deadlines phase runs the game
+  wheel, then the wall wheel. The wheel does not order timers inside one tick, so the loop collects the due timers
+  of a pass and sorts them by `(deadline, sequence)` before running them; inside one sequence `TICK` runs before
+  `END` ([effects.md §4](effects.md#4-order-on-equal-deadlines)). A timer scheduled during a pass fires in a later
+  pass. A wall clock set back never fires a deadline early.
+- **The wheel holds one turn** (1024 ticks, about a second). A deadline in a later turn waits in that turn's
+  bucket, which keeps its earliest deadline, and the bucket enters the wheel whole when the cursor enters the turn;
+  the occupied turns are ordered by a fastutil `LongHeapPriorityQueue`.
+  The earliest deadline the loop sleeps until is always a real one: an idle partition with timers minutes ahead
+  runs no pass before the first of them.
 - **Deadlines are absolute** in the partition's game time or wall-clock time (§6). Due timers run in
   `(deadline, sequence)` order; the sequence keeps registration order for equal deadlines.
 - **Periodic actions carry the remainder.** The next occurrence is `previous deadline + period`, not `now + period`.
@@ -69,8 +100,9 @@ loop forever.
 - **Cancellation is lazy.** A timer entry carries the target handle and a generation; when it fires, it is ignored
   if the target is gone or its generation changed. Mass cancellation (cleanse, death, logout) costs nothing on the
   wheel.
-- **Overdue timers** (a pass that ran late) execute in deadline order in the next pass, up to a per-pass cap (`overdue-per-pass`, default 4096); the
-  remainder continues in the following pass.
+- **Overdue timers** (a pass that ran late) execute in deadline order in the next pass, up to a per-pass cap of
+  overdue timers per wheel (`overdue-per-pass`, default 4096), checked between ticks so the order holds across
+  passes; the remainder continues in the following pass, which is due 1 ms later rather than after `pass-min`.
 - **No `ThreadPool.schedule` in game code** once a subsystem is migrated (E7). During migration the rule is: a task
   that touches world state is executed through the owning partition's inbox (E6).
 
@@ -136,6 +168,10 @@ not a scan.
 - **The world partition has a loop thread of its own;** instances, olympiad matches and global services share the
   others, assigned to the least loaded thread. A heavy partition therefore delays only partitions on its thread.
 
+A loop thread that dies (an `Error`, a defect in the loop) stops its partitions, draining them and running their
+shutdown hooks, and the server exits with code 1 so that its supervisor restarts it
+([spec 002](../002-spring-boot-runtime.md)).
+
 A thread that is not the owner of a partition never reads or writes its mutable state. Debug builds assert
 ownership on entry to partition code.
 
@@ -157,9 +193,12 @@ ownership on entry to partition code.
 
 ## 9. Replay
 
-A partition records its inputs: inbox messages with their pass number and order, the RNG seed and the clock
-readings per pass. Replaying the record against the same build reproduces the partition's behaviour, which turns
-an incident into a test. The record is written with bounded retention.
+A partition records its inputs: inbox messages and the items taken from session queues with their pass number and
+order, the RNG seed and the clock readings per pass. An item is recorded when it is taken, before it runs, so one
+that fails stays in the record in its place. A recorder failure is reported and the work still runs; the replay of that
+pass is incomplete. Replaying the record against the same build reproduces the partition's behaviour, which turns
+an incident into a test. The record is written with bounded retention. The passes of the shutdown drain run no
+deadlines and no periodic systems, so the record marks them as drain passes.
 
 ## 10. Movement engine (`nx-physics`)
 

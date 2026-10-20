@@ -72,6 +72,14 @@ class HighFiveApplicationTest extends BootSmokeTest {
                 assertThat(socket.isConnected()).isTrue();
             }
         }
+
+        @Test
+        void worldLoop_shouldRunOnItsOwnThread_whenStarted() {
+            final boolean actual = Thread.getAllStackTraces().keySet().stream()
+                    .anyMatch(thread -> thread.isAlive() && thread.getName().equals("l2nx-loop-world"));
+
+            assertThat(actual).isTrue();
+        }
     }
 
     @Nested
@@ -114,6 +122,23 @@ class HighFiveApplicationTest extends BootSmokeTest {
             assertThat(actual.statusCode()).isEqualTo(200);
             assertThat(actual.body()).contains("l2nx_players_online");
         }
+
+        @Test
+        void prometheus_shouldExposeEmptyWorldInbox() throws Exception {
+            final HttpResponse<String> actual = get("/actuator/prometheus");
+
+            assertThat(actual.statusCode()).isEqualTo(200);
+            assertThat(actual.body()).containsPattern("l2nx_engine_inbox_depth\\{[^}]*loop=\"world\"[^}]*\\} 0\\.0");
+        }
+
+        @Test
+        void prometheus_shouldExposeNoWorldPasses_whenIdle() throws Exception {
+            final HttpResponse<String> actual = get("/actuator/prometheus");
+
+            assertThat(actual.statusCode()).isEqualTo(200);
+            assertThat(actual.body())
+                    .containsPattern("(?m)^l2nx_engine_pass_seconds_count\\{[^}]*loop=\"world\"[^}]*\\} 0(\\.0)?$");
+        }
     }
 
     @Nested
@@ -130,9 +155,6 @@ class HighFiveApplicationTest extends BootSmokeTest {
     @Nested
     @Order(4)
     class Stop {
-        /**
-         * Stops the lifecycle beans as a context close does; the cached test context itself must stay open.
-         */
         @Test
         void stop_shouldRunShutdownActionsWithoutExit() {
             context.stop();

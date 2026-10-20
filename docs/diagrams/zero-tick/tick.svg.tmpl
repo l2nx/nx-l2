@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 408" width="100%" role="img" aria-labelledby="zt-title zt-desc">
+<title id="zt-title">{{s:title}}</title>
+<desc id="zt-desc">{{s:desc}}</desc>
+<style>/*STYLE*/
+.card{fill:var(--card);stroke:var(--border)}
+.sep{stroke:var(--border);stroke-width:1.5}
+.axis{stroke:var(--border-strong);stroke-width:2}
+.mark{stroke:var(--border-strong);stroke-width:2;stroke-linecap:round}
+.head{stroke:var(--fg);stroke-width:1.5;stroke-dasharray:3 4;opacity:.5}
+.ev{fill:var(--accent-high)}
+.done{fill:var(--accent)}
+.ring{fill:none;stroke:var(--accent);stroke-width:2}
+.wait{fill:var(--warning)}
+.blip.idle{fill:var(--faint)}
+.blip.busy{fill:var(--accent)}
+.lane{fill:var(--fg)}
+.label{fill:var(--faint)}
+.value{fill:var(--fg)}
+.bad{fill:var(--warning)}
+.good{fill:var(--success)}
+</style>
+<rect class="card" x="16.5" y="16.5" width="607" height="179" rx="14"/>
+<rect class="card" x="16.5" y="212.5" width="607" height="179" rx="14"/>
+<line class="sep" x1="424" y1="32" x2="424" y2="180"/>
+<line class="sep" x1="424" y1="228" x2="424" y2="376"/>
+<text class="h lane" x="40" y="58" font-size="24">{{h:top_title}}</text>
+<text class="h lane" x="40" y="254" font-size="24">{{h:bottom_title}}</text>
+{{top_lane}}
+{{bottom_lane}}
+<text class="t label" x="444" y="64" font-size="22">{{t:idle_label}}</text>
+<text class="h bad" x="444" y="98" font-size="30">{{h:top_idle}}</text>
+<text class="t label" x="444" y="136" font-size="22">{{t:delay_label}}</text>
+<text class="h bad" x="444" y="168" font-size="24">{{h:top_delay}}</text>
+<text class="t label" x="444" y="260" font-size="22">{{t:idle_label}}</text>
+<text class="h good" x="444" y="294" font-size="30">{{h:bottom_idle}}</text>
+<text class="t label" x="444" y="332" font-size="22">{{t:delay_label}}</text>
+<text class="h good" x="444" y="364" font-size="24">{{h:bottom_delay}}</text>
+</svg>

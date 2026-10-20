@@ -84,10 +84,10 @@ class ManualGameClockTest {
             clock.advance(Duration.ofSeconds(10));
             final long deadline = clock.gameMillis() + 120_000;
 
-            final long wallEnd = clock.wallMillisAt(deadline);
+            final long actual = clock.wallMillisAt(deadline);
 
-            assertThat(wallEnd).isEqualTo(WALL_START.toEpochMilli() + 130_000);
-            assertThat(clock.gameMillisAtWall(wallEnd)).isEqualTo(deadline);
+            assertThat(actual).isEqualTo(WALL_START.toEpochMilli() + 130_000);
+            assertThat(clock.gameMillisAtWall(actual)).isEqualTo(deadline);
         }
 
         @Test
@@ -96,9 +96,9 @@ class ManualGameClockTest {
             final long wallEnd = before.wallMillisAt(before.gameMillis() + 300_000);
 
             final ManualGameClock after = new ManualGameClock(WALL_START.plusSeconds(120), ZoneOffset.UTC);
-            final long deadline = after.gameMillisAtWall(wallEnd);
+            final long actual = after.gameMillisAtWall(wallEnd);
 
-            assertThat(deadline - after.gameMillis()).isEqualTo(180_000);
+            assertThat(actual - after.gameMillis()).isEqualTo(180_000);
         }
     }
 }
