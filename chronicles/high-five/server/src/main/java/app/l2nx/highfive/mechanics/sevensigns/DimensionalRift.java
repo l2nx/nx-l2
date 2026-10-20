@@ -37,12 +37,9 @@ import app.l2nx.highfive.threads.ThreadPool;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Timer;
-import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
 import lombok.Getter;
-import lombok.Setter;
 
 /**
  * @author kombat, BazookaRpm
@@ -56,17 +53,8 @@ public class DimensionalRift {
     private static final long FIVE_SECONDS = 5000;
     protected byte currentJump = 1; // Initialize to 1 to count the initial room.
 
-    private Timer teleporterTimer;
-    private TimerTask teleporterTimerTask;
-
-    @Getter
-    @Setter
-    private Timer spawnTimer;
-
-    @Getter
-    @Setter
-    private TimerTask spawnTimerTask;
-
+    private Future<?> teleporterTask;
+    private Future<?> spawnTask;
     private Future<?> earthQuakeTask;
 
     @Getter
@@ -114,63 +102,46 @@ public class DimensionalRift {
             return;
         }
 
-        if (teleporterTimerTask != null) {
-            teleporterTimerTask.cancel();
-            teleporterTimerTask = null;
-        }
+        cancel(teleporterTask);
+        cancel(earthQuakeTask);
 
-        if (teleporterTimer != null) {
-            teleporterTimer.cancel();
-            teleporterTimer = null;
-        }
+        final Runnable teleport = () -> {
+            if (currentRoom > -1) {
+                DimensionalRiftManager.getInstance()
+                        .getRoom(type, currentRoom)
+                        .unspawn()
+                        .setPartyInside(false);
+            }
 
-        if (earthQuakeTask != null) {
-            earthQuakeTask.cancel(false);
-            earthQuakeTask = null;
-        }
+            // Check if there are still available jumps.
+            if (reasonTP && (currentJump < getMaxJumps()) && (party.getMemberCount() > deadMemberList.size())) {
+                currentJump++;
 
-        teleporterTimer = new Timer();
-        teleporterTimerTask = new TimerTask() {
-            @Override
-            public void run() {
-                if (currentRoom > -1) {
-                    DimensionalRiftManager.getInstance()
-                            .getRoom(type, currentRoom)
-                            .unspawn()
-                            .setPartyInside(false);
+                completedRooms.add(currentRoom);
+                currentRoom = -1;
+
+                for (Player p : party.getMembers()) {
+                    if (!revivedAtWaitingRoom.contains(p)) {
+                        teleportToNextRoom(p);
+                    }
                 }
 
-                // Check if there are still available jumps.
-                if (reasonTP && (currentJump < getMaxJumps()) && (party.getMemberCount() > deadMemberList.size())) {
-                    currentJump++;
-
-                    completedRooms.add(currentRoom);
-                    currentRoom = -1;
-
-                    for (Player p : party.getMembers()) {
-                        if (!revivedAtWaitingRoom.contains(p)) {
-                            teleportToNextRoom(p);
-                        }
+                createTeleporterTimer(true);
+                createSpawnTimer(currentRoom);
+            } else {
+                for (Player p : party.getMembers()) {
+                    if (!revivedAtWaitingRoom.contains(p)) {
+                        teleportToWaitingRoom(p);
                     }
-
-                    createTeleporterTimer(true);
-                    createSpawnTimer(currentRoom);
-                } else {
-                    for (Player p : party.getMembers()) {
-                        if (!revivedAtWaitingRoom.contains(p)) {
-                            teleportToWaitingRoom(p);
-                        }
-                    }
-
-                    killRift();
-                    cancel();
                 }
+
+                killRift();
             }
         };
 
         if (reasonTP) {
             final long jumpTime = calcTimeToNextJump();
-            teleporterTimer.schedule(teleporterTimerTask, jumpTime); // Teleporter task, 8-10 minutes
+            teleporterTask = ThreadPool.schedule(teleport, jumpTime); // Teleporter task, 8-10 minutes
 
             earthQuakeTask = ThreadPool.schedule(
                     () -> {
@@ -182,30 +153,27 @@ public class DimensionalRift {
                     },
                     jumpTime - 7000);
         } else {
-            teleporterTimer.schedule(teleporterTimerTask, FIVE_SECONDS); // incorrect party member invited.
+            teleporterTask = ThreadPool.schedule(teleport, FIVE_SECONDS); // incorrect party member invited.
         }
     }
 
     public void createSpawnTimer(byte room) {
-        if (spawnTimerTask != null) {
-            spawnTimerTask.cancel();
-            spawnTimerTask = null;
+        cancel(spawnTask);
+        spawnTask = ThreadPool.schedule(
+                () -> DimensionalRiftManager.getInstance().getRoom(type, room).spawn(), GeneralConfig.RIFT_SPAWN_DELAY);
+    }
+
+    /** A task already running is left to finish. */
+    private void cancelScheduledWork() {
+        cancel(teleporterTask);
+        cancel(spawnTask);
+        cancel(earthQuakeTask);
+    }
+
+    private static void cancel(Future<?> task) {
+        if (task != null) {
+            task.cancel(false);
         }
-
-        if (spawnTimer != null) {
-            spawnTimer.cancel();
-            spawnTimer = null;
-        }
-
-        spawnTimer = new Timer();
-        spawnTimerTask = new TimerTask() {
-            @Override
-            public void run() {
-                DimensionalRiftManager.getInstance().getRoom(type, room).spawn();
-            }
-        };
-
-        spawnTimer.schedule(spawnTimerTask, GeneralConfig.RIFT_SPAWN_DELAY);
     }
 
     public void partyMemberInvited() {
@@ -331,32 +299,12 @@ public class DimensionalRift {
         revivedAtWaitingRoom = null;
         deadMemberList = null;
 
-        if (earthQuakeTask != null) {
-            earthQuakeTask.cancel(false);
-            earthQuakeTask = null;
-        }
+        cancelScheduledWork();
 
         DimensionalRiftManager.getInstance()
                 .getRoom(type, currentRoom)
                 .unspawn()
                 .setPartyInside(false);
-        DimensionalRiftManager.getInstance().killRift(this);
-    }
-
-    public Timer getTeleportTimer() {
-        return teleporterTimer;
-    }
-
-    public TimerTask getTeleportTimerTask() {
-        return teleporterTimerTask;
-    }
-
-    public void setTeleportTimer(Timer t) {
-        teleporterTimer = t;
-    }
-
-    public void setTeleportTimerTask(TimerTask tt) {
-        teleporterTimerTask = tt;
     }
 
     private long calcTimeToNextJump() {

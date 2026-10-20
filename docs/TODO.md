@@ -46,7 +46,6 @@ lists what is open.
 - [#47](https://github.com/l2nx/nx-l2/issues/47) Game server's fixed pool of 100 takes every PostgreSQL connection, so the login server cannot start after it
 - [#48](https://github.com/l2nx/nx-l2/issues/48) Real-client checks left open after moving the login connection to Netty
 - [#49](https://github.com/l2nx/nx-l2/issues/49) Move the stage 3 repositories into their feature slices
-- [#50](https://github.com/l2nx/nx-l2/issues/50) Dimensional Rift runs world changes on its own java.util.Timer threads
 
 ## Done
 
@@ -64,3 +63,4 @@ lists what is open.
   [spec 006](specs/006-database.md)).
 - [#24](https://github.com/l2nx/nx-l2/issues/24) Login fails with NPE on an accounts_ipauth row without a type (fixed by stage 3,
   [spec 006](specs/006-database.md)).
+- [#50](https://github.com/l2nx/nx-l2/issues/50) Dimensional Rift runs world changes on its own java.util.Timer threads

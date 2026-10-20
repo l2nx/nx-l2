@@ -110,7 +110,9 @@ and logged as an overflow and runs first in the next pass; a chain that ends exa
   catch up with it. A wall clock set back lowers that time to just before the new clock at the start of the next
   pass, and timers scheduled late under the old clock become due at the new one.
 - **No `ThreadPool.schedule` in game code** once a subsystem is migrated (E7). During migration the rule is: a task
-  that touches world state is executed through the owning partition's inbox (E6).
+  that touches world state is executed through the owning partition's inbox (E6). `java.util.Timer` and `TimerTask`
+  are already forbidden in game code by an ArchUnit rule (`ScheduledWorkRules`): a timer thread dies silently on the
+  first exception, so delayed work goes through `ThreadPool`.
 
 ## 5. Periodic systems
 

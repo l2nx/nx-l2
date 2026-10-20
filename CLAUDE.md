@@ -15,6 +15,8 @@ recorded in the spec with its reason, not a silent choice.
 - **Game code never reads the system clock or a global random generator.** Legacy code uses
   `app.l2nx.highfive.clock.ClockBridge` (game time vs wall-clock time per mechanic); an ArchUnit test in
   `chronicles/high-five/boot` enforces it. Design: [spec 003, execution](docs/specs/003-engine-core/execution.md).
+- **Game code never uses `java.util.Timer` / `TimerTask`:** delayed work goes through `ThreadPool`, because a timer
+  thread dies silently on the first exception (ArchUnit `ScheduledWorkRules`, same module).
 
 ## Found bugs
 
