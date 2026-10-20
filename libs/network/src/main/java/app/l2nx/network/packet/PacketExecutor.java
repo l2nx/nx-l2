@@ -26,8 +26,11 @@ package app.l2nx.network.packet;
 import app.l2nx.network.Client;
 import app.l2nx.network.Connection;
 import app.l2nx.network.config.ConnectionConfig;
+import io.micrometer.core.instrument.Clock;
+import io.micrometer.core.instrument.Meter.MeterProvider;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tags;
+import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.binder.jvm.ExecutorServiceMetrics;
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -43,13 +46,19 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 public class PacketExecutor<T extends Client<Connection<T>>> {
+    static final String RUN_TIME = "l2nx.legacy.packet";
+    static final String TYPE_TAG = "type";
+    static final String OUTCOME_TAG = "outcome";
+    static final String EXCEPTION_TAG = "exception";
+    static final String SUCCESS = "SUCCESS";
+    static final String ERROR = "ERROR";
+    static final String NO_EXCEPTION = "none";
 
     private final ThreadPoolExecutor executor;
 
-    /**
-     * Creates an executor sized according to {@link ConnectionConfig#threadPoolSize}.
-     * @param config the connection configuration supplying pool size and thread priority
-     */
+    // Bound after the port opens; a packet submitted before runs untimed.
+    private volatile PacketTimers packetTimers = PacketTimers.UNTIMED;
+
     public PacketExecutor(ConnectionConfig config) {
         executor = new ThreadPoolExecutor(
                 config.threadPoolSize,
@@ -62,6 +71,7 @@ public class PacketExecutor<T extends Client<Connection<T>>> {
 
     public void bindMetrics(MeterRegistry registry, String name) {
         new ExecutorServiceMetrics(executor, name, Tags.empty()).bindTo(registry);
+        packetTimers = new MeteredPacketTimers(registry);
     }
 
     public void shutdown(long waitMillis) {
@@ -76,30 +86,82 @@ public class PacketExecutor<T extends Client<Connection<T>>> {
         }
     }
 
-    /**
-     * Submits a packet for execution on a worker thread.
-     * @param packet the packet to execute
-     */
     public void execute(ReadablePacket<T> packet) {
         try {
-            executor.execute(new PacketRunnable<>(packet));
+            executor.execute(new PacketRunnable<>(packet, packetTimers));
         } catch (Exception e) {
             log.warn("Failed to submit {}", packet.getClass().getSimpleName(), e);
         }
     }
 
-    @Slf4j
+    private interface PacketTimers {
+        PacketTimers UNTIMED = Runnable::run;
+
+        /** Runs the packet; a failure is rethrown. */
+        void run(Runnable packet);
+    }
+
+    private static final class MeteredPacketTimers implements PacketTimers {
+        private final Clock clock;
+        private final MeterProvider<Timer> runTime;
+        private final ClassValue<Timer> successTimers;
+
+        MeteredPacketTimers(MeterRegistry registry) {
+            clock = registry.config().clock();
+            runTime = Timer.builder(RUN_TIME)
+                    .description("Run time of client packets")
+                    .withRegistry(registry);
+            successTimers = new ClassValue<>() {
+                @Override
+                protected Timer computeValue(Class<?> type) {
+                    return runTime.withTags(
+                            TYPE_TAG, type.getName(), OUTCOME_TAG, SUCCESS, EXCEPTION_TAG, NO_EXCEPTION);
+                }
+            };
+        }
+
+        @Override
+        public void run(Runnable packet) {
+            final Timer success = successTimers.get(packet.getClass());
+            final long start = clock.monotonicTime();
+            try {
+                packet.run();
+            } catch (Throwable t) {
+                // The duration is taken before the error timer is looked up, which may register it.
+                final long duration = clock.monotonicTime() - start;
+                runTime.withTags(
+                                TYPE_TAG,
+                                packet.getClass().getName(),
+                                OUTCOME_TAG,
+                                ERROR,
+                                EXCEPTION_TAG,
+                                exceptionName(t))
+                        .record(duration, TimeUnit.NANOSECONDS);
+                throw t;
+            }
+            success.record(clock.monotonicTime() - start, TimeUnit.NANOSECONDS);
+        }
+
+        // As Spring's DefaultServerRequestObservationConvention: the binary name stands in for an anonymous class.
+        private static String exceptionName(Throwable failure) {
+            final String simpleName = failure.getClass().getSimpleName();
+            return simpleName.isEmpty() ? failure.getClass().getName() : simpleName;
+        }
+    }
+
     private static class PacketRunnable<T extends Client<Connection<T>>> implements Runnable {
         private final ReadablePacket<T> packet;
+        private final PacketTimers timers;
 
-        public PacketRunnable(ReadablePacket<T> packet) {
+        PacketRunnable(ReadablePacket<T> packet, PacketTimers timers) {
             this.packet = packet;
+            this.timers = timers;
         }
 
         @Override
         public void run() {
             try {
-                packet.run();
+                timers.run(packet);
             } catch (Throwable t) {
                 final Thread currentThread = Thread.currentThread();
                 final UncaughtExceptionHandler handler = currentThread.getUncaughtExceptionHandler();

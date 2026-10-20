@@ -335,7 +335,8 @@ the timers `executor.execution` and `executor.idle` (run time and wait for a slo
 The GS-link has the standard gRPC observations of Spring Boot (`grpc.server`, `grpc.client`) and the gRPC health
 service.
 
-Run time of commands is `l2nx.session.command` ([execution.md §8](003-engine-core/execution.md#8-budget-and-metrics)).
+Run time of commands is `l2nx.session.command`, of legacy packets `l2nx.legacy.packet` (tags `type`, `outcome`,
+`exception`), timed by the packet executor once its metrics are bound ([execution.md §8](003-engine-core/execution.md#8-budget-and-metrics)).
 
 ## 12. Shutdown
 

@@ -187,7 +187,10 @@ Left out on purpose: `heapdump` (gigabytes of memory with credentials in it; `jc
   which a wrapper would hide, so the task timers `executor.execution` and `executor.idle` are not published.
 - The login's blocking executor of virtual threads publishes `executor.*` with tag `name=l2nx-login-tasks`, timers
   included ([spec 008 §11](008-network.md#11-metrics)).
-- Game meters: `l2nx.players.online` (gauge). New meters arrive with the dashboard or alert that needs them.
+- Game meters: `l2nx.players.online` (gauge); the engine loop meters `l2nx.engine.*`; the baseline of the legacy
+  execution `l2nx.legacy.task`, `l2nx.legacy.task.all`, `l2nx.legacy.task.lag`, `l2nx.legacy.packet`
+  ([spec 003 execution.md §8](003-engine-core/execution.md#8-budget-and-metrics)). New meters arrive with the
+  dashboard or alert that needs them.
 
 ## 8. Packaging
 

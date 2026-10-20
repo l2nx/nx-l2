@@ -27,6 +27,7 @@ and review findings left out of scope. The issue holds the failure scenario with
 
 - Design, module layout, stack, stages: [docs/specs/001-project-design.md](docs/specs/001-project-design.md).
 - Specs index: [docs/CLAUDE.md](docs/CLAUDE.md); deferred work: [docs/TODO.md](docs/TODO.md).
+- Developer runbooks (metrics queries, baselines): `docs/runbooks/`.
 - Database (schema per server, Liquibase baseline edited in place before 1.0, UUIDv7 keys): [docs/specs/006-database.md](docs/specs/006-database.md).
 - Import mapping from Mobius: [docs/provenance.md](docs/provenance.md).
 - Code style (palantir, LF): [docs/specs/005-code-formatting.md](docs/specs/005-code-formatting.md).

@@ -42,10 +42,23 @@ class GameServerTest {
                     .hasMessageContaining("before the Spring context created it");
 
             assertThat(server.isRunning()).isFalse();
+            assertThat(registry.find("l2nx.legacy.task.all").timer())
+                    .as("thread pool started")
+                    .isNotNull();
             assertThat(registry.find("executor.pool.size")
                             .tag("name", "l2nx-scheduled")
                             .gauge())
-                    .as("thread pool started")
+                    .as("thread pool meters unbound on abort")
+                    .isNull();
+            assertThat(registry.find("l2nx.legacy.task.lag")
+                            .tag("pool", "l2nx-scheduled")
+                            .timer())
+                    .as("legacy task lag")
+                    .isNotNull();
+            assertThat(registry.find("l2nx.legacy.task")
+                            .tag("code.namespace", "app.l2nx.highfive.threads.ThreadPool")
+                            .timer())
+                    .as("purge task measured")
                     .isNotNull();
             final List<Thread> engineThreads = Thread.getAllStackTraces().keySet().stream()
                     .filter(thread -> thread.getName().startsWith("l2nx ")

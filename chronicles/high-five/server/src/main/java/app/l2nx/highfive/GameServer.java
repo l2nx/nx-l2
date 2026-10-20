@@ -247,8 +247,7 @@ public class GameServer implements SmartLifecycle {
 
     private void startEngine() {
         printSection("ThreadPool");
-        ThreadPool.init();
-        ThreadPool.bindMetrics(meterRegistry);
+        ThreadPool.init(meterRegistry);
 
         gameTimeTaskManager = GameTimeTaskManager.getInstance();
 

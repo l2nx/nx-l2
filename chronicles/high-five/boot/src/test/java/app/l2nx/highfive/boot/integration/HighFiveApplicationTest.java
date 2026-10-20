@@ -139,6 +139,30 @@ class HighFiveApplicationTest extends BootSmokeTest {
             assertThat(actual.body())
                     .containsPattern("(?m)^l2nx_engine_pass_seconds_count\\{[^}]*loop=\"world\"[^}]*\\} 0(\\.0)?$");
         }
+
+        @Test
+        void prometheus_shouldExposeLegacyTaskMetrics() throws Exception {
+            await().atMost(Duration.ofSeconds(30))
+                    .untilAsserted(() -> assertThat(get("/actuator/prometheus").body())
+                            .containsPattern("l2nx_legacy_task_seconds_count\\{[^}]*code_namespace=\""
+                                    + "app\\.l2nx\\.highfive\\.taskmanagers\\.ItemLifeTimeTaskManager\""
+                                    + "[^}]*exception=\"none\"[^}]*outcome=\"SUCCESS\"[^}]*pool=\"l2nx-scheduled\""
+                                    + "[^}]*\\} [1-9]"));
+
+            final String body = get("/actuator/prometheus").body();
+            assertThat(body)
+                    .containsPattern("l2nx_legacy_task_all_seconds_bucket\\{")
+                    .doesNotContainPattern("l2nx_legacy_task_all_seconds_bucket\\{[^}]*pool=")
+                    .containsPattern("l2nx_legacy_task_lag_seconds_bucket\\{[^}]*pool=\"l2nx-scheduled\"")
+                    .doesNotContainPattern("l2nx_legacy_task_seconds_bucket\\{")
+                    .doesNotContain("$$Lambda")
+                    .doesNotContainPattern("code_namespace=\"[^\"]*\\$");
+            assertThat(body.lines()
+                            .filter(line -> line.startsWith("l2nx_legacy_task_all_seconds_bucket{"))
+                            .count())
+                    .as("buckets of the all-tasks histogram")
+                    .isBetween(2L, 120L);
+        }
     }
 
     @Nested
@@ -175,22 +199,26 @@ class HighFiveApplicationTest extends BootSmokeTest {
         final JdbcClient jdbc =
                 JdbcClient.create(PostgresDatabase.migratedSuperuserSchema("game", "db/liquibase-changelog.yaml"));
         jdbc.sql("""
-                        INSERT INTO castle_states (castle_id, tax_percent, treasury, siege_at, registration_ends_at)
-                        VALUES (1, 10, 1000, now() + interval '7 days', now() + interval '6 days')""").update();
+            INSERT INTO castle_states (castle_id, tax_percent, treasury, siege_at, registration_ends_at)
+            VALUES (1, 10, 1000, now() + interval '7 days', now() + interval '6 days')\
+            """).update();
         jdbc.sql("INSERT INTO fort_states (fort_id, siege_at) VALUES (101, now() + interval '1 day')")
                 .update();
-        jdbc.sql(
-                        "INSERT INTO clan_hall_states (clan_hall_id, paid_until, paid) VALUES (22, now() + interval '7 days', true)")
+        jdbc.sql("INSERT INTO clan_hall_states (clan_hall_id, paid_until, paid) VALUES (22, now() + interval '7"
+                        + " days', true)")
                 .update();
         jdbc.sql("""
-                        INSERT INTO siegable_clan_hall_states (clan_hall_id, next_siege_at)
-                        VALUES (21, now() + interval '7 days')""").update();
+            INSERT INTO siegable_clan_hall_states (clan_hall_id, next_siege_at)
+            VALUES (21, now() + interval '7 days')\
+            """).update();
         jdbc.sql("""
-                        INSERT INTO grand_boss_states (npc_id, status, respawn_at, current_hp, current_mp)
-                        VALUES (29001, 3, now() + interval '1 day', 1, 1)""").update();
+            INSERT INTO grand_boss_states (npc_id, status, respawn_at, current_hp, current_mp)
+            VALUES (29001, 3, now() + interval '1 day', 1, 1)\
+            """).update();
         jdbc.sql("""
-                        INSERT INTO raid_boss_states (npc_id, respawn_at, current_hp, current_mp)
-                        VALUES (25001, now() + interval '1 day', 1, 1)""").update();
+            INSERT INTO raid_boss_states (npc_id, respawn_at, current_hp, current_mp)
+            VALUES (25001, now() + interval '1 day', 1, 1)\
+            """).update();
         jdbc.sql("INSERT INTO territory_states (territory_id, owned_ward_territory_ids) VALUES (81, '{81}')")
                 .update();
     }

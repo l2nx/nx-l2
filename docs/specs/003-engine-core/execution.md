@@ -187,13 +187,24 @@ ownership on entry to partition code.
   inbox depth, session queue depth, overdue timers, packets per pass.
 - **A pass over budget** (`pass-budget`, configurable, default 50 ms) is counted and logged with the phase breakdown.
 - **Baseline of the legacy execution (E1),** before partitions exist:
-  - `l2nx.legacy.task`: run time of every `ThreadPool` task, tagged with the pool and the class that declares the
-    task (a lambda counts as its enclosing class); count, sum and max per class, one histogram with p95 and p99
-    across all tasks, so the series stay bounded;
-  - `l2nx.legacy.task.lag`: start delay of scheduled tasks against their planned time, per pool;
-  - `l2nx.legacy.packet`: run time of every client packet, tagged with the packet class; from stage 4 measured by
-    the session drain under the same name, next to `l2nx.session.command` for commands (tagged with the command
-    type).
+  - `l2nx.legacy.task`: run time of every `ThreadPool` task, tagged with `pool` and the tag keys of Spring's
+    `tasks.scheduled.execution`: `code.namespace` (the class that declares the task; a lambda, an anonymous or a
+    local class counts as its declaring class, a JDK dynamic proxy is `proxy`, so labels stay stable across runs and builds), `outcome`
+    (`SUCCESS`, `ERROR`), `exception` (simple class name, the binary name for an anonymous class, `none`); count, sum and max, no histogram;
+  - `l2nx.legacy.task.all`: one histogram (p95, p99 via `histogram_quantile`) across all tasks, so the series stay
+    bounded; a separate name, since a sentinel tag on `l2nx.legacy.task` would double every sum;
+  - `l2nx.legacy.task.lag`: start delay of scheduled tasks against their planned time (fixed-rate: the previous
+    plan plus the period), histogram per pool, read from the executor's own trigger time in
+    `ScheduledThreadPoolExecutor.beforeExecute`. Neither Micrometer nor Spring has such a meter; `executor.idle`
+    includes the planned delay and needs the `ExecutorServiceMetrics.monitor` wrapper that spec 002 rules out;
+  - `l2nx.legacy.packet`: run time of every client packet, tagged with `type`, the packet's fully qualified class
+    name as in [spec 008 §11](../008-network.md#11-metrics), and `outcome` and `exception` as `l2nx.legacy.task`;
+    timed by the packet executor of `libs/network`, which knows only the class. From stage 4 measured by the
+    session drain under the same name, next to `l2nx.session.command` for commands (tagged with the command type).
+  - Histograms are enabled on the meters with a 1 µs minimum expected value (legacy tasks and lags take
+    microseconds; the default 1 ms floor would put them all into the first bucket) and the default 30 s maximum;
+    overridable by `management.metrics.distribution.*`. Queries and the recorded baselines:
+    [runbook](../../runbooks/legacy-execution-baseline.md).
 - **Bot load tests** with a siege scenario on the full local stack are the acceptance criterion for every migration
   step ([spec.md §6](spec.md#6-migration)).
 

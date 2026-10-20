@@ -138,7 +138,9 @@ curl -s -X POST -H 'Content-Type: application/json' -d '{"configuredLevel":"DEBU
 Metrics are the standard Spring Boot ones (JVM, process, system, log events, `hikaricp.*`, `tomcat.*`, `executor.*`
 for the thread pools), tagged with `application`, plus `l2nx.network.*` (connections, bytes, drops, closes by reason),
 `l2nx.players.online` and, on the game server, the `l2nx.engine.*` loop metrics (pass time and phases, passes over
-budget, inbox depth, timers, failures).
+budget, inbox depth, timers, failures) and the legacy execution timers `l2nx.legacy.task` (run time per thread pool
+task class), `l2nx.legacy.task.all` (histogram across all tasks), `l2nx.legacy.task.lag` (start delay of scheduled tasks) and `l2nx.legacy.packet` (run time per client
+packet).
 
 ## Logs
 
