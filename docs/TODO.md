@@ -43,7 +43,6 @@ lists what is open.
   between data load and port open
 - [#44](https://github.com/l2nx/nx-l2/issues/44) E6 part 2: record world passes for replay in production
 - [#45](https://github.com/l2nx/nx-l2/issues/45) E6 part 2: order input against due timers by arrival time (sub-tick)
-- [#46](https://github.com/l2nx/nx-l2/issues/46) Timer wheel: a handler re-arming an overdue timer at its own deadline starves later timers
 - [#47](https://github.com/l2nx/nx-l2/issues/47) Game server's fixed pool of 100 takes every PostgreSQL connection, so the login server cannot start after it
 - [#48](https://github.com/l2nx/nx-l2/issues/48) Real-client checks left open after moving the login connection to Netty
 - [#49](https://github.com/l2nx/nx-l2/issues/49) Move the stage 3 repositories into their feature slices
@@ -52,6 +51,8 @@ lists what is open.
 
 - [#18](https://github.com/l2nx/nx-l2/issues/18) Target architecture of the game code: package layout, tick model, ECS
   ([spec 003](specs/003-engine-core/spec.md)).
+- [#46](https://github.com/l2nx/nx-l2/issues/46) Timer wheel: a handler re-arming an overdue timer at its own deadline
+  starves later timers ([execution.md §4](specs/003-engine-core/execution.md#4-timers)).
 - [#8](https://github.com/l2nx/nx-l2/issues/8) Publish project docs on l2nx.dev: the `/l2/` section, from
   `docs/public/{en,ru}/` (spec 001 §1).
 - Ownership of the reference L2NX host layer: not ours; the adapter host is written from scratch against the

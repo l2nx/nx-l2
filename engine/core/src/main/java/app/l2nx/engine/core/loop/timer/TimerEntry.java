@@ -25,14 +25,20 @@ public final class TimerEntry {
     @ToString.Include
     long deadline;
 
+    // When the wheel fires the entry: the deadline, unless it was scheduled at or before the last run.
+    @Getter(AccessLevel.PACKAGE)
+    @ToString.Include
+    long dueAt;
+
     // Ticks this periodic entry has run in the current pass.
     int owed;
 
-    TimerEntry(TimerSpec spec, long sequence, long insertion, long deadline) {
+    TimerEntry(TimerSpec spec, long sequence, long insertion, long deadline, long dueAt) {
         this.spec = spec;
         this.sequence = sequence;
         this.insertion = insertion;
         this.deadline = deadline;
+        this.dueAt = dueAt;
     }
 
     boolean isPeriodic() {

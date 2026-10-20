@@ -72,7 +72,7 @@ class TimerWheelPeriodicTest {
             assertThat(run(200)).isEqualTo(10);
             assertThat(handler.fired).first().isEqualTo("1:TICK@10");
             assertThat(handler.fired).last().isEqualTo("1:TICK@100");
-            assertThat(wheel.nextDeadline()).isEqualTo(201);
+            assertThat(wheel.nextDueAt()).isEqualTo(201);
 
             assertThat(run(205)).isEqualTo(10);
             assertThat(handler.fired).last().isEqualTo("1:TICK@200");

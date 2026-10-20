@@ -92,6 +92,21 @@ class LoopDeadlinesTest {
             loop.runPass(T0 + 21);
             assertThat(handler.fired).containsExactly("1:ACTION@" + wallDeadline);
         }
+
+        @Test
+        void wallClockSetBack_shouldNotDelayADeadlineScheduledInTheNextPassInbox() {
+            loop.runPass(T0);
+            clock.advanceWall(Duration.ofMinutes(-10));
+            clock.advance(Duration.ofMillis(1));
+            final long wallDeadline = clock.wallMillis() + 20;
+            loop.offer(l -> l.timers(TimeBase.WALL).schedule(wallDeadline, handler.spec(1, TimerKind.ACTION)));
+
+            loop.runPass(T0 + 1);
+            clock.advance(Duration.ofMillis(20));
+            loop.runPass(T0 + 21);
+
+            assertThat(handler.fired).containsExactly("1:ACTION@" + wallDeadline);
+        }
     }
 
     @Nested

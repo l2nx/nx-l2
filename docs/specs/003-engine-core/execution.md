@@ -85,24 +85,30 @@ and logged as an overflow and runs first in the next pass; a chain that ends exa
 - **Two timer wheels per partition,** one for game-time and one for wall-clock deadlines (§6): Agrona
   `DeadlineTimerWheel` with a 1 ms tick, polled by the loop; no timer threads. The deadlines phase runs the game
   wheel, then the wall wheel. The wheel does not order timers inside one tick, so the loop collects the due timers
-  of a pass and sorts them by `(deadline, sequence)` before running them; inside one sequence `TICK` runs before
-  `END` ([effects.md §4](effects.md#4-order-on-equal-deadlines)). A timer scheduled during a pass fires in a later
-  pass. A wall clock set back never fires a deadline early.
+  of a pass and sorts them by `(due time, deadline, sequence)` before running them; the due time is the deadline,
+  except for a timer scheduled at or before the last run (overdue timers below); inside one sequence `TICK` runs
+  before `END` ([effects.md §4](effects.md#4-order-on-equal-deadlines)). A timer scheduled during a pass fires in a
+  later pass. A wall clock set back never fires a deadline early.
 - **The wheel holds one turn** (1024 ticks, about a second). A deadline in a later turn waits in that turn's
-  bucket, which keeps its earliest deadline, and the bucket enters the wheel whole when the cursor enters the turn;
+  bucket, which keeps its earliest due time, and the bucket enters the wheel whole when the cursor enters the turn;
   the occupied turns are ordered by a fastutil `LongHeapPriorityQueue`.
-  The earliest deadline the loop sleeps until is always a real one: an idle partition with timers minutes ahead
+  The earliest due time the loop sleeps until is always a real one: an idle partition with timers minutes ahead
   runs no pass before the first of them.
 - **Deadlines are absolute** in the partition's game time or wall-clock time (§6). Due timers run in
-  `(deadline, sequence)` order; the sequence keeps registration order for equal deadlines.
+  `(due time, deadline, sequence)` order; the sequence keeps registration order for equal deadlines.
 - **Periodic actions carry the remainder.** The next occurrence is `previous deadline + period`, not `now + period`.
   An attack every 333 ms stays 333 ms on average instead of drifting to the next pass boundary.
 - **Cancellation is lazy.** A timer entry carries the target handle and a generation; when it fires, it is ignored
   if the target is gone or its generation changed. Mass cancellation (cleanse, death, logout) costs nothing on the
-  wheel.
-- **Overdue timers** (a pass that ran late) execute in deadline order in the next pass, up to a per-pass cap of
-  overdue timers per wheel (`overdue-per-pass`, default 4096), checked between ticks so the order holds across
-  passes; the remainder continues in the following pass, which is due 1 ms later rather than after `pass-min`.
+  wheel and does not use up the overdue cap.
+- **Overdue timers** (deadline older than `pass-min` before the pass) execute in that order, up to a cap of overdue
+  timers fired per pass and wheel (`overdue-per-pass`, default 4096); the rest keeps its order for the following pass,
+  which is due 1 ms later rather than after `pass-min`. A timer scheduled at or before the time of the last deadline
+  run keeps its deadline, so it counts as overdue when that deadline is older than `pass-min` before the pass, but its
+  due time is 1 ms after that run, after every entry already due, so a handler re-arming at its own overdue deadline
+  cannot starve later timers under the cap; the owed ticks of such a periodic timer keep that due time until they
+  catch up with it. A wall clock set back lowers that time to just before the new clock at the start of the next
+  pass, and timers scheduled late under the old clock become due at the new one.
 - **No `ThreadPool.schedule` in game code** once a subsystem is migrated (E7). During migration the rule is: a task
   that touches world state is executed through the owning partition's inbox (E6).
 

@@ -193,9 +193,9 @@ public class Loop {
     }
 
     /**
-     * Queued work waits for the pass-min gate; a deadline runs when due and takes it along, but no sooner than one wheel
-     * tick after the last pass started, or a re-armed timer or overdue backlog would run passes back to back within a
-     * millisecond. A time at or before {@code now} only means a pass is due.
+     * Queued work waits for the pass-min gate; a deadline runs when due and takes it along, but no sooner than one tick
+     * after the last pass started, so re-armed timers cannot run passes back to back. A time at or before
+     * {@code now} only means a pass is due.
      */
     long nextPassAt(long now) {
         assertOwner();
@@ -269,9 +269,9 @@ public class Loop {
     }
 
     private long nextDeadlineAt() {
-        final long at = Math.min(gameTimers.nextDeadline(), systems.nextDue());
-        final long wallDeadline = wallTimers.nextDeadline();
-        return wallDeadline == Long.MAX_VALUE ? at : Math.min(at, clock.gameMillisAtWall(wallDeadline));
+        final long at = Math.min(gameTimers.nextDueAt(), systems.nextDue());
+        final long wallDueAt = wallTimers.nextDueAt();
+        return wallDueAt == Long.MAX_VALUE ? at : Math.min(at, clock.gameMillisAtWall(wallDueAt));
     }
 
     private void runCurrent(long now, boolean simulate) {
@@ -307,6 +307,8 @@ public class Loop {
         passInput = 0;
         Arrays.fill(phaseNanos, 0);
         recorder.passStarted(pass, now, wallNow, !simulate);
+        // Game time never goes back; only the wall clock can be set back.
+        wallTimers.passStarted(wallNow);
         final long start = metrics.monotonicTime();
         long mark = start;
         runInbox();
