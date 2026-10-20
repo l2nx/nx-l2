@@ -6,12 +6,18 @@ package app.l2nx.highfive.entity.clan;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 
 import app.l2nx.highfive.data.sql.ClanTable;
+import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.repository.character.CharacterRepository;
 import app.l2nx.highfive.repository.clan.ClanNoticeRepository;
 import app.l2nx.highfive.repository.clan.ClanRankPrivilegeRepository;
@@ -39,6 +45,7 @@ class ClanTest {
 
     private final ClanNoticeRepository notices = mock(ClanNoticeRepository.class);
     private final ClanRankPrivilegeRepository rankPrivileges = mock(ClanRankPrivilegeRepository.class);
+    private final ClanSubPledgeRepository subPledges = mock(ClanSubPledgeRepository.class);
 
     private Clan clan;
 
@@ -49,7 +56,7 @@ class ClanTest {
                 notices,
                 rankPrivileges,
                 mock(ClanSkillRepository.class),
-                mock(ClanSubPledgeRepository.class),
+                subPledges,
                 mock(ClanWarRepository.class),
                 mock(CastleStateRepository.class),
                 mock(CharacterRepository.class),
@@ -115,6 +122,44 @@ class ClanTest {
 
             verify(notices).upsert(CLAN_ID, "Siege at eight", true);
             assertThat(clan.isNoticeEnabled()).isTrue();
+        }
+    }
+
+    @Nested
+    class CreateSubPledge {
+        private static final int CLAN_LEADER_ID = 268_435_457;
+        private static final int REQUESTED_LEADER_ID = 268_435_458;
+
+        private final Player player = mock(Player.class);
+
+        @BeforeEach
+        void setClanLeader() {
+            final ClanMember clanLeader = mock(ClanMember.class);
+            when(clanLeader.getObjectId()).thenReturn(CLAN_LEADER_ID);
+            when(clanLeader.getClan()).thenReturn(clan);
+            clan.setLeader(clanLeader);
+        }
+
+        @Test
+        void createSubPledge_shouldSendAcademyMessage_whenAcademyAlreadyExists() {
+            clan.createSubPledge(player, Clan.SUBUNIT_ACADEMY, 0, "Academy");
+
+            final Clan.SubPledge actual = clan.createSubPledge(player, Clan.SUBUNIT_ACADEMY, 0, "Second");
+
+            assertThat(actual).isNull();
+            verify(player).sendPacket(SystemMessageId.YOUR_CLAN_HAS_ALREADY_ESTABLISHED_A_CLAN_ACADEMY);
+            verify(player, never()).sendMessage(anyString());
+            verify(subPledges).insert(anyInt(), anyInt(), anyString(), anyInt());
+        }
+
+        @Test
+        void createSubPledge_shouldKeepAcademyLeaderless_whenLeaderIsRequested() {
+            final Clan.SubPledge actual =
+                    clan.createSubPledge(player, Clan.SUBUNIT_ACADEMY, REQUESTED_LEADER_ID, "Academy");
+
+            verify(subPledges).insert(CLAN_ID, Clan.SUBUNIT_ACADEMY, "Academy", 0);
+            assertThat(actual.getLeaderId()).isZero();
+            assertThat(clan.getSubPledge(Clan.SUBUNIT_ACADEMY).getLeaderId()).isZero();
         }
     }
 }

@@ -1269,7 +1269,7 @@ public class Clan {
     public SubPledge createSubPledge(Player player, int pledgeTypeValue, int leaderId, String subPledgeName) {
         final int pledgeType = getAvailablePledgeTypes(pledgeTypeValue);
         if (pledgeType == 0) {
-            if (pledgeType == SUBUNIT_ACADEMY) {
+            if (pledgeTypeValue == SUBUNIT_ACADEMY) {
                 player.sendPacket(SystemMessageId.YOUR_CLAN_HAS_ALREADY_ESTABLISHED_A_CLAN_ACADEMY);
             } else {
                 player.sendMessage("You can't create any more sub-units of this type");
@@ -1285,18 +1285,20 @@ public class Clan {
 
         // Royal Guard 5000 points per each
         // Order of Knights 10000 points per each
-        if ((pledgeType != -1)
+        if ((pledgeType != SUBUNIT_ACADEMY)
                 && (((reputationScore < FeatureConfig.ROYAL_GUARD_COST) && (pledgeType < SUBUNIT_KNIGHT1))
                         || ((reputationScore < FeatureConfig.KNIGHT_UNIT_COST) && (pledgeType > SUBUNIT_ROYAL2)))) {
             player.sendPacket(SystemMessageId.THE_CLAN_REPUTATION_SCORE_IS_TOO_LOW);
             return null;
         }
 
-        ClanTable.getInstance().insertSubPledge(id, pledgeType, subPledgeName, pledgeType != -1 ? leaderId : 0);
-        final SubPledge subPledge = new SubPledge(pledgeType, subPledgeName, leaderId);
+        // The academy has no captain; 0 means leaderless.
+        final int subPledgeLeaderId = pledgeType != SUBUNIT_ACADEMY ? leaderId : 0;
+        ClanTable.getInstance().insertSubPledge(id, pledgeType, subPledgeName, subPledgeLeaderId);
+        final SubPledge subPledge = new SubPledge(pledgeType, subPledgeName, subPledgeLeaderId);
         subPledges.put(pledgeType, subPledge);
 
-        if (pledgeType != -1) {
+        if (pledgeType != SUBUNIT_ACADEMY) {
             // Royal Guard 5000 points per each
             // Order of Knights 10000 points per each
             if (pledgeType < SUBUNIT_KNIGHT1) {

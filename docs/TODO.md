@@ -26,7 +26,6 @@ lists what is open.
 - [#28](https://github.com/l2nx/nx-l2/issues/28) Client protocol 557 over High Five content
 - [#31](https://github.com/l2nx/nx-l2/issues/31) Not every effect should freeze while its owner is offline
 - [#32](https://github.com/l2nx/nx-l2/issues/32) A dissolved clan keeps its castle and clan hall in memory until restart
-- [#33](https://github.com/l2nx/nx-l2/issues/33) Creating a second academy is never reported, and the academy leader differs between memory and database
 - [#34](https://github.com/l2nx/nx-l2/issues/34) Editing a community board post by index can hit the wrong post
 - [#35](https://github.com/l2nx/nx-l2/issues/35) A long-time event deletes item rows that may still be loaded
 - [#38](https://github.com/l2nx/nx-l2/issues/38) A siegable clan hall without a loaded owner clan fails to load
@@ -65,3 +64,4 @@ lists what is open.
 - [#37](https://github.com/l2nx/nx-l2/issues/37) Hero processing throws when a character's clan is missing
 - [#29](https://github.com/l2nx/nx-l2/issues/29) WorldObject overrides equals without hashCode
 - [#52](https://github.com/l2nx/nx-l2/issues/52) AbstractResidence overrides equals without hashCode
+- [#33](https://github.com/l2nx/nx-l2/issues/33) Creating a second academy is never reported, and the academy leader differs between memory and database
