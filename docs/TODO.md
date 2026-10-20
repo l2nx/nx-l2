@@ -64,3 +64,4 @@ lists what is open.
 - [#36](https://github.com/l2nx/nx-l2/issues/36) Grand boss status lookup throws for a boss missing from the datapack
 - [#37](https://github.com/l2nx/nx-l2/issues/37) Hero processing throws when a character's clan is missing
 - [#29](https://github.com/l2nx/nx-l2/issues/29) WorldObject overrides equals without hashCode
+- [#52](https://github.com/l2nx/nx-l2/issues/52) AbstractResidence overrides equals without hashCode

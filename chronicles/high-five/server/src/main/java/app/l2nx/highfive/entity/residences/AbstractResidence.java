@@ -86,6 +86,11 @@ public abstract class AbstractResidence extends ListenersContainer {
     }
 
     @Override
+    public int hashCode() {
+        return Integer.hashCode(residenceId);
+    }
+
+    @Override
     public String toString() {
         return name + "(" + residenceId + ")";
     }
