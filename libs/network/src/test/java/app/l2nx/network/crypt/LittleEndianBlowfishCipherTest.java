@@ -7,6 +7,7 @@ package app.l2nx.network.crypt;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.netty.buffer.ByteBuf;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -20,8 +21,11 @@ import java.util.concurrent.Future;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvFileSource;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 class LittleEndianBlowfishCipherTest {
@@ -122,6 +126,31 @@ class LittleEndianBlowfishCipherTest {
                     .filter(line -> !line.startsWith("#"))
                     .map(line -> line.split(","))
                     .toList();
+        }
+    }
+
+    @Nested
+    @ParameterizedClass(name = "{0}")
+    @EnumSource(BufferKind.class)
+    class ByteBufOverloads {
+        @Parameter
+        BufferKind kind;
+
+        @ParameterizedTest(name = "{index}: key {0}")
+        @CsvFileSource(resources = VECTORS)
+        void encrypt_shouldMatchGoldenVectorAndDecryptBackInPlace(String key, String plain, String cipher) {
+            final LittleEndianBlowfishCipher bf = new LittleEndianBlowfishCipher(HEX.parseHex(key));
+            final ByteBuf buf = kind.wrap(HEX.parseHex(plain));
+            try {
+                bf.encrypt(buf, BufferKind.PREFIX, BufferKind.size(buf));
+                assertThat(BufferKind.region(buf)).isEqualTo(HEX.parseHex(cipher));
+
+                bf.decrypt(buf, BufferKind.PREFIX, BufferKind.size(buf));
+                assertThat(BufferKind.region(buf)).isEqualTo(HEX.parseHex(plain));
+                assertThat(buf.readerIndex()).isZero();
+            } finally {
+                buf.release();
+            }
         }
     }
 }

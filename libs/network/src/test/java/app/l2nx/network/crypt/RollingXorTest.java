@@ -7,12 +7,16 @@ package app.l2nx.network.crypt;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.netty.buffer.ByteBuf;
 import java.util.Arrays;
 import java.util.HexFormat;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvFileSource;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 class RollingXorTest {
@@ -48,6 +52,27 @@ class RollingXorTest {
         void encrypt_shouldReject_whenSizeIsNotMultipleOfWordOfThreeWords(int size) {
             assertThatThrownBy(() -> RollingXor.encrypt(new byte[16], 0, size, 1))
                     .isInstanceOf(IllegalArgumentException.class);
+        }
+    }
+
+    @Nested
+    @ParameterizedClass(name = "{0}")
+    @EnumSource(BufferKind.class)
+    class ByteBufOverloads {
+        @Parameter
+        BufferKind kind;
+
+        @ParameterizedTest(name = "{index}: offset {0}, key {1}")
+        @CsvFileSource(resources = "/app/l2nx/network/crypt/rolling-xor.csv")
+        void encrypt_shouldMatchGoldenVectorInPlace(int offset, int key, String input, String output) {
+            final ByteBuf buf = kind.wrap(HEX.parseHex(input));
+            try {
+                RollingXor.encrypt(buf, BufferKind.PREFIX + offset, BufferKind.size(buf) - offset, key);
+
+                assertThat(BufferKind.region(buf)).isEqualTo(HEX.parseHex(output));
+            } finally {
+                buf.release();
+            }
         }
     }
 }

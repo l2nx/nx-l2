@@ -4,9 +4,10 @@
  */
 package app.l2nx.network.crypt;
 
-import java.lang.invoke.MethodHandles;
-import java.lang.invoke.VarHandle;
-import java.nio.ByteOrder;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufUtil;
+import io.netty.buffer.Unpooled;
+import java.nio.ByteBuffer;
 import java.security.GeneralSecurityException;
 import java.security.InvalidKeyException;
 import java.util.Objects;
@@ -14,7 +15,7 @@ import javax.crypto.Cipher;
 import javax.crypto.spec.SecretKeySpec;
 
 /**
- * Blowfish/ECB over little-endian 32-bit words: JCE reads block halves big-endian, so every word is byte-swapped around the JCE pass.<br>
+ * Blowfish/ECB over little-endian 32-bit words: JCE reads block halves big-endian, so every word is byte-swapped around the JCE pass.
  * Thread-safe: each direction serializes on its own {@link Cipher}.
  */
 public final class LittleEndianBlowfishCipher implements PacketCipher {
@@ -22,14 +23,12 @@ public final class LittleEndianBlowfishCipher implements PacketCipher {
     private static final String TRANSFORMATION = "Blowfish/ECB/NoPadding";
     private static final int BLOCK_SIZE = 8;
     private static final int WORD_SIZE = 4;
-    private static final VarHandle WORD = MethodHandles.byteArrayViewVarHandle(int[].class, ByteOrder.LITTLE_ENDIAN);
 
     private final Cipher encryptCipher;
     private final Cipher decryptCipher;
 
     /**
-     * @param key the Blowfish key, 1 to 56 bytes (the JCE limit; Blowfish itself would take up to 72)
-     * @throws IllegalArgumentException if the key length is outside that range
+     * @param key 1 to 56 bytes: the JCE limit, though Blowfish itself takes up to 72
      */
     public LittleEndianBlowfishCipher(byte[] key) {
         final SecretKeySpec keySpec = new SecretKeySpec(key, ALGORITHM);
@@ -39,12 +38,20 @@ public final class LittleEndianBlowfishCipher implements PacketCipher {
 
     @Override
     public void encrypt(byte[] data, int offset, int size) {
-        process(encryptCipher, data, offset, size);
+        process(encryptCipher, Unpooled.wrappedBuffer(data), offset, size);
     }
 
     @Override
     public void decrypt(byte[] data, int offset, int size) {
-        process(decryptCipher, data, offset, size);
+        process(decryptCipher, Unpooled.wrappedBuffer(data), offset, size);
+    }
+
+    public void encrypt(ByteBuf buf, int index, int size) {
+        process(encryptCipher, buf, index, size);
+    }
+
+    public void decrypt(ByteBuf buf, int index, int size) {
+        process(decryptCipher, buf, index, size);
     }
 
     private static Cipher newCipher(int mode, SecretKeySpec keySpec) {
@@ -64,30 +71,44 @@ public final class LittleEndianBlowfishCipher implements PacketCipher {
         return cipher;
     }
 
-    private static void process(Cipher cipher, byte[] data, int offset, int size) {
-        Objects.checkFromIndexSize(offset, size, data.length);
+    private static void process(Cipher cipher, ByteBuf buf, int index, int size) {
+        Objects.checkFromIndexSize(index, size, buf.capacity());
         if ((size % BLOCK_SIZE) != 0) {
             throw new IllegalArgumentException(
                     "Size " + size + " is not a multiple of the Blowfish block size " + BLOCK_SIZE);
         }
 
-        swapWords(data, offset, size);
+        if (!buf.hasArray() && (buf.nioBufferCount() != 1)) {
+            // A composite buffer has no single memory region to encrypt in place.
+            final byte[] copy = ByteBufUtil.getBytes(buf, index, size);
+            process(cipher, Unpooled.wrappedBuffer(copy), 0, size);
+            buf.setBytes(index, copy);
+            return;
+        }
+
+        swapWords(buf, index, size);
         synchronized (cipher) {
             try {
-                cipher.doFinal(data, offset, size, data, offset);
+                if (buf.hasArray()) {
+                    final int offset = buf.arrayOffset() + index;
+                    cipher.doFinal(buf.array(), offset, size, buf.array(), offset);
+                } else {
+                    final ByteBuffer region = buf.nioBuffer(index, size);
+                    // JCE ByteBuffer operations are copy-safe, so input and output may share the memory.
+                    cipher.doFinal(region, region.duplicate());
+                }
             } catch (GeneralSecurityException e) {
-                // Unreachable: the region is block-aligned, NoPadding never fails on padding, and the output is the
-                // input region.
+                // Unreachable: the region is block-aligned and NoPadding cannot fail on padding.
                 throw new IllegalStateException(e);
             }
         }
-        swapWords(data, offset, size);
+        swapWords(buf, index, size);
     }
 
-    private static void swapWords(byte[] data, int offset, int size) {
-        final int end = offset + size;
-        for (int i = offset; i < end; i += WORD_SIZE) {
-            WORD.set(data, i, Integer.reverseBytes((int) WORD.get(data, i)));
+    private static void swapWords(ByteBuf buf, int index, int size) {
+        final int end = index + size;
+        for (int i = index; i < end; i += WORD_SIZE) {
+            buf.setInt(i, buf.getIntLE(i));
         }
     }
 }

@@ -37,31 +37,31 @@ New settings are Spring Boot properties under `l2nx.network`, shared by both ser
 GS-link address stay where the server reads them today (login: `l2nx.login.*`; game: `.ini` until
 [#17](https://github.com/l2nx/nx-l2/issues/17)).
 
-| Property                             | Default               | Meaning                                                                    |
-| ------------------------------------ | --------------------- | -------------------------------------------------------------------------- |
-| `transport`                          | `auto`                | `auto`, `epoll`, `nio`, `io-uring` (§4)                                    |
-| `worker-threads`                     | Netty default         | IO threads per process                                                     |
-| `max-frame`                          | 16 KB                 | largest inbound frame; larger closes the connection                        |
-| `read-timeout`                       | 120 s                 | a connection that sends nothing before `IN_GAME` is closed                 |
-| `ping-interval`                      | 30 s                  | in game, read idle this long sends `NetPing`                               |
-| `ping-misses`                        | 3                     | unanswered pings in a row that close an in-game connection                 |
-| `handshake-timeout`                  | 10 s                  | time from accept to the protocol version (game) or `AuthGameGuard` (login) |
-| `auth-timeout`                       | 60 s                  | time from accept to a completed login or game authentication               |
-| `inbound-queue-limit`                | 256                   | session queue capacity (§5)                                                |
-| `packets-per-drain`                  | 16                    | items one session drain run executes before E6 (§5)                        |
-| `packets-per-second`                 | 200                   | sustained inbound packets per session; burst = `inbound-queue-limit`       |
-| `decode-error-limit`                 | 10 per 60 s           | decode errors tolerated in game before the connection is closed            |
-| `write-buffer-low` / `-high`         | 32 KB / 128 KB        | Netty write watermarks                                                     |
-| `outbound-limit`                     | 1 MB                  | pending outbound bytes per connection (queue plus channel buffer)          |
-| `slow-client-timeout`                | 10 s                  | longest time a connection may stay unwritable                              |
-| `connections-per-ip`                 | 10                    | concurrent connections from one address                                    |
-| `accept-per-ip-per-second`           | 5                     | new connections from one address                                           |
-| `max-connections`                    | 10000                 | concurrent connections per server                                          |
-| `gslink.secret`                      | none (required)       | shared secret of the GS-link challenge (§10)                               |
-| `gslink.tls`                         | `false`               | TLS on the GS-link                                                         |
-| `gslink.ping-interval`               | 15 s                  | ping on write idle; no read for 3 intervals closes the link                |
-| `gslink.reconnect-delay`             | 1 s, doubling to 30 s | reconnect backoff of the game server                                       |
-| `shutdown-quiet-period` / `-timeout` | 2 s / 15 s            | `shutdownGracefully` of the event loop groups                              |
+| Property                                  | Default         | Meaning                                                                    |
+| ----------------------------------------- | --------------- | -------------------------------------------------------------------------- |
+| `transport`                               | `auto`          | `auto`, `epoll`, `nio`, `io-uring` (§4)                                    |
+| `worker-threads`                          | Netty default   | IO threads per process                                                     |
+| `max-frame`                               | 16 KB           | largest inbound frame; larger closes the connection                        |
+| `read-timeout`                            | 120 s           | a connection that sends nothing before `IN_GAME` is closed                 |
+| `ping-interval`                           | 30 s            | in game, read idle this long sends `NetPing`                               |
+| `ping-misses`                             | 3               | unanswered pings in a row that close an in-game connection                 |
+| `handshake-timeout`                       | 10 s            | time from accept to the protocol version (game) or `AuthGameGuard` (login) |
+| `auth-timeout`                            | 60 s            | time from accept to a completed login or game authentication               |
+| `inbound-queue-limit`                     | 256             | session queue capacity (§5)                                                |
+| `packets-per-drain`                       | 16              | items one session drain run executes before E6 (§5)                        |
+| `packets-per-second`                      | 200             | sustained inbound packets per session; burst = `inbound-queue-limit`       |
+| `decode-error-limit.count` / `.window`    | 10 / 60 s       | decode errors tolerated in game before the connection is closed            |
+| `write-buffer-low` / `-high`              | 32 KB / 128 KB  | Netty write watermarks                                                     |
+| `outbound-limit`                          | 1 MB            | pending outbound bytes per connection (queue plus channel buffer)          |
+| `slow-client-timeout`                     | 10 s            | longest time a connection may stay unwritable                              |
+| `connections-per-ip`                      | 10              | concurrent connections from one address                                    |
+| `accept-per-ip-per-second`                | 5               | new connections from one address                                           |
+| `max-connections`                         | 10000           | concurrent connections per server                                          |
+| `gslink.secret`                           | none (required) | shared secret of the GS-link challenge (§10)                               |
+| `gslink.tls`                              | `false`         | TLS on the GS-link                                                         |
+| `gslink.ping-interval`                    | 15 s            | ping on write idle; no read for 3 intervals closes the link                |
+| `gslink.reconnect-delay.initial` / `.max` | 1 s / 30 s      | reconnect backoff of the game server, doubling from `initial` to `max`     |
+| `shutdown-quiet-period` / `-timeout`      | 2 s / 15 s      | `shutdownGracefully` of the event loop groups                              |
 
 ## 4. Event loops and transports
 
@@ -120,6 +120,8 @@ stays.
 - **Buffer ownership:** the emitter holds one reference and releases it after the fan-out; each queued duplicate is
   released by the encoder after writing, or by the outbound drain or the close path when the channel closes, the write fails or
   the event loop rejects the task during shutdown.
+- **A frame never outgrows its length field:** a frame longer than 65535 bytes after padding and checksum fails its
+  write and closes the connection with `error`; the length is never truncated.
 - **One ordered outbound queue per connection** (MPSC), drained on its event loop:
   - an atomic `scheduled` flag guards one outbound drain task; the drain clears it and re-checks the queue, so no
     wake-up is lost; outside passes it writes at most a batch per run with `voidPromise()`, flushes once and
@@ -246,7 +248,9 @@ Packets not yet moved to ports pass through the `highfive` adapter as they are:
   - inbound: Blowfish decrypt, then checksum verification; a bad checksum closes the connection.
 - **Blocking and heavy work** (RSA decrypt of the credentials, account lookup, password check) runs on a bounded
   executor of virtual threads, ordered per channel; results return through the channel's event loop. Never on an
-  IO thread.
+  IO thread. A channel holds an executor slot for at most a batch of its tasks and then queues again behind the
+  others (a fair semaphore), so a busy channel cannot starve logins; tasks the executor can no longer run after
+  close go to the channel's rejection handler instead of running against a closing context.
 
 ## 10. GS-link
 
@@ -268,17 +272,20 @@ Packets not yet moved to ports pass through the `highfive` adapter as they are:
 
 Micrometer, per server:
 
-| Meter                            | Type    | Tags                                                                     |
-| -------------------------------- | ------- | ------------------------------------------------------------------------ |
-| `l2nx.network.connections`       | gauge   |                                                                          |
-| `l2nx.network.bytes`             | counter | `direction` (`in`, `out`)                                                |
-| `l2nx.network.commands`          | counter | `type`                                                                   |
-| `l2nx.network.legacy.packets`    | counter | `type`, `direction`                                                      |
-| `l2nx.network.decode.errors`     | counter | `state`                                                                  |
-| `l2nx.network.dropped`           | counter | `reason`                                                                 |
-| `l2nx.network.closed`            | counter | `reason` (`idle`, `timeout`, `flood`, `slow`, `outbound-limit`, `error`) |
-| `l2nx.network.unwritable`        | counter |                                                                          |
-| `l2nx.network.eventloop.pending` | gauge   | `loop`                                                                   |
+| Meter                         | Type    | Tags                                                                     |
+| ----------------------------- | ------- | ------------------------------------------------------------------------ |
+| `l2nx.network.connections`    | gauge   |                                                                          |
+| `l2nx.network.bytes`          | counter | `direction` (`in`, `out`)                                                |
+| `l2nx.network.commands`       | counter | `type`                                                                   |
+| `l2nx.network.legacy.packets` | counter | `type`, `direction`                                                      |
+| `l2nx.network.decode.errors`  | counter | `state`                                                                  |
+| `l2nx.network.dropped`        | counter | `reason`                                                                 |
+| `l2nx.network.closed`         | counter | `reason` (`idle`, `timeout`, `flood`, `slow`, `outbound-limit`, `error`) |
+| `l2nx.network.unwritable`     | counter |                                                                          |
+
+A `type` tag is the fully qualified class name, so anonymous classes never yield a blank tag and two protocol
+adapters never share a series. Event-loop and allocator meters come from Micrometer's Netty binders (`netty.eventexecutor.tasks.pending`,
+`netty.allocator.*`).
 
 Run time of commands is `l2nx.session.command` ([execution.md §8](003-engine-core/execution.md#8-budget-and-metrics)).
 

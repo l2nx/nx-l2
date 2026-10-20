@@ -48,4 +48,6 @@ tasks.withType<Test>().configureEach {
     useJUnitPlatform()
     systemProperty("junit.jupiter.execution.parallel.enabled", "true")
     systemProperty("junit.jupiter.execution.parallel.mode.default", "concurrent")
+    systemProperty("junit.jupiter.extensions.autodetection.enabled", "true")
+    systemProperty("io.netty.leakDetection.level", "paranoid")
 }

@@ -12,4 +12,4 @@ Finished one-time specs are kept in [archive/](archive/).
 | 005 | code formatting     | 2026-10-19 | [005-code-formatting.md](specs/005-code-formatting.md)         |
 | 006 | database            | 2026-10-19 | [006-database.md](specs/006-database.md)                       |
 | 007 | java conventions    | 2026-10-19 | [007-java-conventions.md](specs/007-java-conventions.md)       |
-| 008 | network             | 2026-10-19 | [008-network.md](specs/008-network.md)                         |
+| 008 | network             | 2026-10-20 | [008-network.md](specs/008-network.md)                         |
