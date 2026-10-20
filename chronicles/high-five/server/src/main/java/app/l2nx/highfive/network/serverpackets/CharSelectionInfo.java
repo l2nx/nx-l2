@@ -72,7 +72,7 @@ public class CharSelectionInfo extends ServerPacket {
      * @param activeId the slot to mark as selected, {@code -1} for the character accessed last
      */
     public CharSelectionInfo(GameClient client, int activeId) {
-        sessionId = client.getSessionId().playOkID1;
+        sessionId = client.getSessionId().playOk1();
         loginName = client.getAccountName();
         charInfo = loadCharacterSelectInfo(client.getAccountId());
         this.activeId = activeId;

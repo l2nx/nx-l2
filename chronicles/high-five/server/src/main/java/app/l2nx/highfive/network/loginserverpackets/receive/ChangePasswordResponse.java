@@ -22,21 +22,20 @@
  */
 package app.l2nx.highfive.network.loginserverpackets.receive;
 
-import app.l2nx.highfive.entity.World;
-import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.network.packet.SimpleReadablePacket;
+import lombok.Getter;
 
 public class ChangePasswordResponse extends SimpleReadablePacket {
+    @Getter
+    private final String characterName;
+
+    @Getter
+    private final String message;
+
     public ChangePasswordResponse(byte[] decrypt) {
         super(decrypt);
         readByte(); // Packet id, it is already processed.
-
-        // boolean isSuccessful = readByte() > 0;
-        final String character = readString();
-        final String msgToSend = readString();
-        final Player player = World.getPlayer(character);
-        if (player != null) {
-            player.sendMessage(msgToSend);
-        }
+        characterName = readString();
+        message = readString();
     }
 }

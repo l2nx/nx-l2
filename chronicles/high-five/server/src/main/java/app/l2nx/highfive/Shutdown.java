@@ -38,6 +38,8 @@ import app.l2nx.highfive.data.sql.OfflinePlayTable;
 import app.l2nx.highfive.data.sql.OfflineTraderTable;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.highfive.login.ListingStatus;
+import app.l2nx.highfive.login.LoginService;
 import app.l2nx.highfive.managers.CHSiegeManager;
 import app.l2nx.highfive.managers.CastleManorManager;
 import app.l2nx.highfive.managers.CursedWeaponsManager;
@@ -56,7 +58,6 @@ import app.l2nx.highfive.mechanics.sevensigns.SevenSignsFestival;
 import app.l2nx.highfive.network.Disconnection;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.gslink.LoginServerLink;
-import app.l2nx.highfive.network.loginserverpackets.send.ServerStatus;
 import app.l2nx.highfive.network.serverpackets.ServerClose;
 import app.l2nx.highfive.network.serverpackets.SystemMessage;
 import app.l2nx.highfive.taskmanagers.GameTimeTaskManager;
@@ -148,7 +149,7 @@ public class Shutdown extends Thread {
                 break;
             }
             case ABORT: {
-                LoginServerLink.getInstance().setServerStatus(ServerStatus.STATUS_AUTO);
+                LoginService.getInstance().setStatus(ListingStatus.AUTO);
                 break;
             }
         }
@@ -267,12 +268,9 @@ public class Shutdown extends Thread {
             while (secondsShut > 0) {
                 // Rehabilitate previous server status if shutdown is aborted.
                 if (shutdownMode == ABORT) {
-                    if (LoginServerLink.getInstance().getServerStatus() == ServerStatus.STATUS_DOWN) {
-                        LoginServerLink.getInstance()
-                                .setServerStatus(
-                                        (GeneralConfig.SERVER_GMONLY)
-                                                ? ServerStatus.STATUS_GM_ONLY
-                                                : ServerStatus.STATUS_AUTO);
+                    if (LoginService.getInstance().getStatus() == ListingStatus.DOWN) {
+                        LoginService.getInstance()
+                                .setStatus((GeneralConfig.SERVER_GMONLY) ? ListingStatus.GM_ONLY : ListingStatus.AUTO);
                     }
                     break;
                 }
@@ -299,9 +297,8 @@ public class Shutdown extends Thread {
                 }
 
                 // Prevent players from logging in.
-                if ((secondsShut <= 60)
-                        && (LoginServerLink.getInstance().getServerStatus() != ServerStatus.STATUS_DOWN)) {
-                    LoginServerLink.getInstance().setServerStatus(ServerStatus.STATUS_DOWN);
+                if ((secondsShut <= 60) && (LoginService.getInstance().getStatus() != ListingStatus.DOWN)) {
+                    LoginService.getInstance().setStatus(ListingStatus.DOWN);
                 }
 
                 secondsShut--;

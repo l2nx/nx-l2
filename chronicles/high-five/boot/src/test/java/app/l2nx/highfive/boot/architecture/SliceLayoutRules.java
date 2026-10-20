@@ -4,11 +4,20 @@
  */
 package app.l2nx.highfive.boot.architecture;
 
+import static com.tngtech.archunit.base.DescribedPredicate.not;
+import static com.tngtech.archunit.core.domain.JavaClass.Predicates.resideInAPackage;
 import static com.tngtech.archunit.core.domain.JavaClass.Predicates.resideInAnyPackage;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.constructors;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 
+import app.l2nx.highfive.network.ConnectionState;
+import app.l2nx.highfive.network.Disconnection;
+import app.l2nx.highfive.network.GameClient;
+import app.l2nx.highfive.network.SystemMessageId;
+import app.l2nx.highfive.network.serverpackets.CharSelectionInfo;
+import app.l2nx.highfive.network.serverpackets.LoginFail;
+import app.l2nx.highfive.network.serverpackets.SystemMessage;
 import com.tngtech.archunit.base.DescribedPredicate;
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.lang.ArchCondition;
@@ -30,6 +39,19 @@ final class SliceLayoutRules {
     // Only grows: 04c adds character, movement, chat, message and action.
     static final List<String> MIGRATED = List.of("login");
     static final SliceLayoutRules CHRONICLE = new SliceLayoutRules(CHRONICLE_ROOT, MIGRATED);
+
+    /**
+     * Legacy connection classes the migrated slices may still use until E10 (decision P1). The list may only shrink:
+     * 04c leaves GameClient and Disconnection.
+     */
+    static final DescribedPredicate<JavaClass> LEGACY_NETWORK_FACADES = JavaClass.Predicates.belongToAnyOf(
+            GameClient.class,
+            ConnectionState.class,
+            Disconnection.class,
+            SystemMessageId.class,
+            CharSelectionInfo.class,
+            LoginFail.class,
+            SystemMessage.class);
 
     private static final List<String> SUBPACKAGES =
             List.of("command", "view", "event", "system", "model", "template", "repository");
@@ -146,8 +168,7 @@ final class SliceLayoutRules {
                 .that()
                 .resideInAnyPackage(sliceTrees())
                 .should()
-                .dependOnClassesThat()
-                .resideInAPackage(root + ".network..")
+                .dependOnClassesThat(resideInAPackage(root + ".network..").and(not(LEGACY_NETWORK_FACADES)))
                 .as("slices do not depend on network")
                 .allowEmptyShould(true);
     }

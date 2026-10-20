@@ -45,9 +45,6 @@ public class SecondaryAuthData implements IXmlReader {
     @Getter
     private int banTime = 480;
 
-    @Getter
-    private String recoveryLink = "";
-
     protected SecondaryAuthData() {
         load();
     }
@@ -73,8 +70,6 @@ public class SecondaryAuthData implements IXmlReader {
                             maxAttempts = Integer.parseInt(list_node.getTextContent());
                         } else if ("banTime".equalsIgnoreCase(list_node.getNodeName())) {
                             banTime = Integer.parseInt(list_node.getTextContent());
-                        } else if ("recoveryLink".equalsIgnoreCase(list_node.getNodeName())) {
-                            recoveryLink = list_node.getTextContent();
                         } else if ("forbiddenPasswords".equalsIgnoreCase(list_node.getNodeName())) {
                             for (Node forbiddenPasswords_node = list_node.getFirstChild();
                                     forbiddenPasswords_node != null;

@@ -26,7 +26,7 @@ package app.l2nx.highfive.scripts.handlers.chat.commands.voiced;
 import app.l2nx.highfive.cache.HtmCache;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.handler.IVoicedCommandHandler;
-import app.l2nx.highfive.network.gslink.LoginServerLink;
+import app.l2nx.highfive.login.LoginService;
 import app.l2nx.highfive.network.serverpackets.NpcHtmlMessage;
 import java.util.StringTokenizer;
 import lombok.extern.slf4j.Slf4j;
@@ -76,8 +76,8 @@ public class ChangePassword implements IVoicedCommandHandler {
                         return false;
                     }
 
-                    LoginServerLink.getInstance()
-                            .sendChangePassword(
+                    LoginService.getInstance()
+                            .changePassword(
                                     activeChar.getClient().getAccountId(), activeChar.getName(), curpass, newpass);
                 } else {
                     activeChar.sendMessage("Invalid password data! You have to fill all boxes.");

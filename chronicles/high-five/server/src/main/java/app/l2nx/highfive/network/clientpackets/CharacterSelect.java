@@ -253,7 +253,8 @@ public class CharacterSelect extends ClientPacket {
 
                     client.sendPacket(new SSQInfo());
                     client.setConnectionState(ConnectionState.ENTERING);
-                    client.sendPacket(new CharSelected(cha, client.getSessionId().playOkID1));
+                    client.sendPacket(
+                            new CharSelected(cha, client.getSessionId().playOk1()));
                 }
             } finally {
                 client.getPlayerLock().unlock();

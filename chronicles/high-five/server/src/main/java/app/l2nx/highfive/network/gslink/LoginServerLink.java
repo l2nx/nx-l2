@@ -26,13 +26,15 @@
  */
 package app.l2nx.highfive.network.gslink;
 
-import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.config.ServerConfig;
-import app.l2nx.highfive.entity.actor.Player;
-import app.l2nx.highfive.network.ConnectionState;
-import app.l2nx.highfive.network.Disconnection;
-import app.l2nx.highfive.network.GameClient;
-import app.l2nx.highfive.network.SystemMessageId;
+import app.l2nx.highfive.login.ListingAttribute;
+import app.l2nx.highfive.login.LoginPort;
+import app.l2nx.highfive.login.SessionKey;
+import app.l2nx.highfive.login.command.AuthenticationResult;
+import app.l2nx.highfive.login.command.KickAccount;
+import app.l2nx.highfive.login.command.PasswordChangeResult;
+import app.l2nx.highfive.login.command.RegistrationResult;
+import app.l2nx.highfive.login.command.ReportCharacters;
 import app.l2nx.highfive.network.loginserverpackets.receive.AuthResponse;
 import app.l2nx.highfive.network.loginserverpackets.receive.ChangePasswordResponse;
 import app.l2nx.highfive.network.loginserverpackets.receive.InitLS;
@@ -49,14 +51,9 @@ import app.l2nx.highfive.network.loginserverpackets.send.PlayerInGame;
 import app.l2nx.highfive.network.loginserverpackets.send.PlayerLogout;
 import app.l2nx.highfive.network.loginserverpackets.send.PlayerTracert;
 import app.l2nx.highfive.network.loginserverpackets.send.ReplyCharacters;
-import app.l2nx.highfive.network.loginserverpackets.send.SendMail;
 import app.l2nx.highfive.network.loginserverpackets.send.ServerStatus;
 import app.l2nx.highfive.network.loginserverpackets.send.TempBan;
-import app.l2nx.highfive.network.serverpackets.CharSelectionInfo;
-import app.l2nx.highfive.network.serverpackets.LoginFail;
-import app.l2nx.highfive.network.serverpackets.SystemMessage;
 import app.l2nx.highfive.repository.LegacyValues;
-import app.l2nx.highfive.repository.character.CharacterRepository;
 import app.l2nx.network.crypt.LittleEndianBlowfishCipher;
 import app.l2nx.network.crypt.PacketCipher;
 import app.l2nx.network.crypt.XorChecksum;
@@ -76,28 +73,23 @@ import java.security.SecureRandom;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.RSAKeyGenParameterSpec;
 import java.security.spec.RSAPublicKeySpec;
-import java.util.ArrayList;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import lombok.Getter;
+import java.util.function.Consumer;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.dao.DataAccessException;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
 /**
- * Handles communication between the game server and login server.<br>
- * Manages player authentication, server status updates and various administrative functions.
+ * The game server's end of the link to the login server: carries the {@link LoginPort} calls out and hands what the
+ * login server sends to the commands of the login slice.
  */
 @Slf4j
 @Component
-public class LoginServerLink extends Thread {
-
-    private static final Logger ACCOUNTING_LOG = LoggerFactory.getLogger("accounting");
+public class LoginServerLink extends Thread implements LoginPort {
 
     // Protocol constants.
     private static final int REVISION = 0x0107; // @see app.l2nx.login.LoginServer#PROTOCOL_REV
@@ -109,7 +101,11 @@ public class LoginServerLink extends Thread {
 
     private static volatile LoginServerLink instance;
 
-    private final CharacterRepository characters;
+    private final Consumer<RegistrationResult> registrationResults;
+    private final Consumer<AuthenticationResult> authenticationResults;
+    private final Consumer<KickAccount> kicks;
+    private final Consumer<ReportCharacters> characterReports;
+    private final Consumer<PasswordChangeResult> passwordChangeResults;
 
     // Connection configuration.
     private String hostname;
@@ -119,6 +115,7 @@ public class LoginServerLink extends Thread {
     private boolean reserveHost;
     private List<String> subnets;
     private List<String> hosts;
+    private int maxPlayers;
 
     // Connection state.
     private Socket socket;
@@ -127,22 +124,19 @@ public class LoginServerLink extends Thread {
     private byte[] hexID;
     private int requestID;
 
-    // Server state.
-    @Getter
-    private int maxPlayer;
-
-    private final Set<WaitingClient> waitingClients = ConcurrentHashMap.newKeySet();
-    private final Map<String, GameClient> accountsInGameServer = new ConcurrentHashMap<>();
-
-    @Getter
-    private int serverStatus;
-
-    @Getter
-    private String serverName;
-
-    public LoginServerLink(CharacterRepository characters) {
+    // The handlers answer through this link, so Spring creates the link first and resolves a handler on first use.
+    public LoginServerLink(
+            @Lazy Consumer<RegistrationResult> registrationResults,
+            @Lazy Consumer<AuthenticationResult> authenticationResults,
+            @Lazy Consumer<KickAccount> kicks,
+            @Lazy Consumer<ReportCharacters> characterReports,
+            @Lazy Consumer<PasswordChangeResult> passwordChangeResults) {
         super("LoginServerLink");
-        this.characters = characters;
+        this.registrationResults = registrationResults;
+        this.authenticationResults = authenticationResults;
+        this.kicks = kicks;
+        this.characterReports = characterReports;
+        this.passwordChangeResults = passwordChangeResults;
         instance = this;
     }
 
@@ -158,7 +152,7 @@ public class LoginServerLink extends Thread {
         reserveHost = ServerConfig.RESERVE_HOST_ON_LOGIN;
         subnets = ServerConfig.GAME_SERVER_SUBNETS;
         hosts = ServerConfig.GAME_SERVER_HOSTS;
-        maxPlayer = ServerConfig.MAXIMUM_ONLINE_USERS;
+        maxPlayers = ServerConfig.MAXIMUM_ONLINE_USERS;
 
         // Initialize server identification.
         hexID = ServerConfig.HEX_ID;
@@ -261,7 +255,7 @@ public class LoginServerLink extends Thread {
                                     hexID,
                                     gamePort,
                                     reserveHost,
-                                    maxPlayer,
+                                    maxPlayers,
                                     subnets,
                                     hosts));
                             break;
@@ -274,103 +268,42 @@ public class LoginServerLink extends Thread {
                         }
                         case 0x02: // AuthResponse - Server registration successful.
                         {
-                            final AuthResponse aresp = new AuthResponse(incoming);
-                            final int serverID = aresp.getServerId();
-                            serverName = aresp.getServerName();
-                            ServerConfig.saveHexid(serverID, hexToString(hexID));
-                            log.info("Registered on login as Server {}: {}", serverID, serverName);
-
-                            // Configure and send server status.
-                            final ServerStatus st = new ServerStatus();
-                            if (ServerConfig.SERVER_LIST_BRACKET) {
-                                st.addAttribute(ServerStatus.SERVER_LIST_SQUARE_BRACKET, ServerStatus.ON);
-                            } else {
-                                st.addAttribute(ServerStatus.SERVER_LIST_SQUARE_BRACKET, ServerStatus.OFF);
-                            }
-
-                            st.addAttribute(ServerStatus.SERVER_TYPE, ServerConfig.SERVER_LIST_TYPE);
-                            if (GeneralConfig.SERVER_GMONLY) {
-                                st.addAttribute(ServerStatus.SERVER_LIST_STATUS, ServerStatus.STATUS_GM_ONLY);
-                            } else {
-                                st.addAttribute(ServerStatus.SERVER_LIST_STATUS, ServerStatus.STATUS_AUTO);
-                            }
-
-                            if (ServerConfig.SERVER_LIST_AGE == 15) {
-                                st.addAttribute(ServerStatus.SERVER_AGE, ServerStatus.SERVER_AGE_15);
-                            } else if (ServerConfig.SERVER_LIST_AGE == 18) {
-                                st.addAttribute(ServerStatus.SERVER_AGE, ServerStatus.SERVER_AGE_18);
-                            } else {
-                                st.addAttribute(ServerStatus.SERVER_AGE, ServerStatus.SERVER_AGE_ALL);
-                            }
-
-                            sendPacket(st);
-
-                            final List<UUID> accountIds = new ArrayList<>();
-                            for (GameClient client : accountsInGameServer.values()) {
-                                if (client.getAccountId() != null) {
-                                    accountIds.add(client.getAccountId());
-                                }
-                            }
-
-                            if (!accountIds.isEmpty()) {
-                                sendPacket(new PlayerInGame(accountIds));
-                            }
+                            final AuthResponse response = new AuthResponse(incoming);
+                            registrationResults.accept(RegistrationResult.builder()
+                                    .serverId(response.getServerId())
+                                    .serverName(response.getServerName())
+                                    .hexId(hexToString(hexID))
+                                    .build());
                             break;
                         }
                         case 0x03: // PlayerAuthResponse - Player authentication result.
                         {
-                            final PlayerAuthResponse par = new PlayerAuthResponse(incoming);
-                            final String login = par.getLogin();
-                            WaitingClient wcToRemove = null;
-
-                            // Find the waiting client for this account.
-                            synchronized (waitingClients) {
-                                for (WaitingClient wc : waitingClients) {
-                                    if (wc.account.equals(login)) {
-                                        wcToRemove = wc;
-                                        break;
-                                    }
-                                }
-                            }
-
-                            if (wcToRemove != null) {
-                                if (par.isAuthed()) {
-                                    // Authentication successful - setup client.
-                                    wcToRemove.gameClient.setAccountId(par.getAccountId());
-                                    sendPacket(new PlayerInGame(par.getAccountId()));
-                                    wcToRemove.gameClient.setConnectionState(ConnectionState.AUTHENTICATED);
-                                    wcToRemove.gameClient.setSessionId(wcToRemove.sessionKey);
-                                    final CharSelectionInfo cl = new CharSelectionInfo(wcToRemove.gameClient);
-                                    wcToRemove.gameClient.sendPacket(cl);
-                                    wcToRemove.gameClient.setCharSelection(cl.getCharInfo());
-                                } else {
-                                    // Authentication failed - close connection.
-                                    log.warn(
-                                            "Session key incorrect. Closing connection for account {}",
-                                            wcToRemove.account);
-                                    wcToRemove.gameClient.close(new LoginFail(LoginFail.SYSTEM_ERROR_LOGIN_LATER));
-                                    sendLogout(wcToRemove.account, null);
-                                }
-
-                                waitingClients.remove(wcToRemove);
-                            }
+                            final PlayerAuthResponse response = new PlayerAuthResponse(incoming);
+                            authenticationResults.accept(AuthenticationResult.builder()
+                                    .login(response.getLogin())
+                                    .accountId(response.getAccountId())
+                                    .accepted(response.isAuthed())
+                                    .build());
                             break;
                         }
                         case 0x04: // KickPlayer - Force disconnect player.
                         {
-                            final KickPlayer kp = new KickPlayer(incoming);
-                            doKickPlayer(kp.getAccountId());
+                            kicks.accept(new KickAccount(new KickPlayer(incoming).getAccountId()));
                             break;
                         }
                         case 0x05: // RequestCharacters - Get character info for account.
                         {
-                            final RequestCharacters rc = new RequestCharacters(incoming);
-                            getCharsOnServer(rc.getAccountId());
+                            characterReports.accept(
+                                    new ReportCharacters(new RequestCharacters(incoming).getAccountId()));
                             break;
                         }
                         case 0x06: // ChangePasswordResponse - Password change result.
                         {
-                            new ChangePasswordResponse(incoming);
+                            final ChangePasswordResponse response = new ChangePasswordResponse(incoming);
+                            passwordChangeResults.accept(PasswordChangeResult.builder()
+                                    .characterName(response.getCharacterName())
+                                    .message(response.getMessage())
+                                    .build());
                             break;
                         }
                     }
@@ -403,108 +336,64 @@ public class LoginServerLink extends Thread {
         }
     }
 
-    /**
-     * Adds waiting client and sends authentication request to login server.
-     * @param accountName the account name
-     * @param client the game client
-     * @param key the session key
-     */
-    public void addWaitingClientAndSendRequest(String accountName, GameClient client, SessionKey key) {
-        synchronized (waitingClients) {
-            waitingClients.add(new WaitingClient(accountName, client, key));
-        }
-
-        sendPacket(new PlayerAuthRequest(accountName, key));
+    @Override
+    public void authenticate(String login, SessionKey key) {
+        sendPacket(new PlayerAuthRequest(login, key));
     }
 
-    /**
-     * Removes waiting client from authentication queue.
-     * @param client the game client to remove
-     */
-    public void removeWaitingClient(GameClient client) {
-        WaitingClient toRemove = null;
-        synchronized (waitingClients) {
-            for (WaitingClient c : waitingClients) {
-                if (c.gameClient == client) {
-                    toRemove = c;
-                    break;
-                }
-            }
-
-            if (toRemove != null) {
-                waitingClients.remove(toRemove);
-            }
-        }
+    @Override
+    public void accountsEntered(List<UUID> accountIds) {
+        sendPacket(new PlayerInGame(accountIds));
     }
 
-    /**
-     * Ends the session of an account on this game server and tells the login server when it had accepted the session.
-     * @param accountName the login of the session, {@code null} if none
-     * @param accountId the account, {@code null} while the login server has not accepted the session
-     */
-    public void sendLogout(String accountName, UUID accountId) {
-        if (accountName != null) {
-            final GameClient removed = accountsInGameServer.remove(accountName);
-            if (removed != null) {
-                removed.disconnect();
-            }
-        }
-
-        if (accountId != null) {
-            sendPacket(new PlayerLogout(accountId));
-        }
+    @Override
+    public void accountLeft(UUID accountId) {
+        sendPacket(new PlayerLogout(accountId));
     }
 
-    /**
-     * Adds game server login entry for account tracking.
-     * @param account the account name
-     * @param client the game client
-     * @return true if account was not already logged in, false otherwise
-     */
-    public boolean addGameServerLogin(String account, GameClient client) {
-        return accountsInGameServer.putIfAbsent(account, client) == null;
-    }
-
-    /**
-     * Sends access level change notification to login server.
-     * @param accountId the account
-     * @param level the new access level
-     */
-    public void sendAccessLevel(UUID accountId, int level) {
+    @Override
+    public void changeAccessLevel(UUID accountId, int level) {
         sendPacket(new ChangeAccessLevel(accountId, level));
     }
 
-    public void sendAccountAccessLevel(Player player, int level) {
-        sendAccessLevel(player.getAccountId(), level);
+    @Override
+    public void reportRoute(UUID accountId, List<String> route) {
+        sendPacket(new PlayerTracert(accountId, route.get(0), route.get(1), route.get(2), route.get(3), route.get(4)));
     }
 
-    /**
-     * Sends client trace route information to login server.
-     * @param accountId the account
-     * @param address the trace route addresses (5 hops)
-     */
-    public void sendClientTracert(UUID accountId, String[] address) {
-        sendPacket(new PlayerTracert(accountId, address[0], address[1], address[2], address[3], address[4]));
+    @Override
+    public void requestTempBan(UUID accountId, String ip, Duration duration) {
+        sendPacket(new TempBan(accountId, ip, duration.toMinutes()));
     }
 
-    /**
-     * Sends mail notification to login server.
-     * @param accountId the account
-     * @param mailId the mail identifier
-     * @param args additional mail arguments
-     */
-    public void sendMail(UUID accountId, String mailId, String... args) {
-        sendPacket(new SendMail(accountId, mailId, args));
+    @Override
+    public void changePassword(UUID accountId, String characterName, String oldPassword, String newPassword) {
+        sendPacket(new ChangePassword(accountId, characterName, oldPassword, newPassword));
     }
 
-    /**
-     * Sends temporary ban notification to login server.
-     * @param accountId the account
-     * @param ip the IP address to ban, {@code null} to ban the account only
-     * @param minutes the ban duration in minutes
-     */
-    public void sendTempBan(UUID accountId, String ip, long minutes) {
-        sendPacket(new TempBan(accountId, ip, minutes));
+    @Override
+    public void reportCharacters(UUID accountId, int count, List<Instant> deleteTimes) {
+        sendPacket(new ReplyCharacters(
+                accountId,
+                count,
+                deleteTimes.stream().map(LegacyValues::epochMillisOrZero).toList()));
+    }
+
+    @Override
+    public void publishListing(Map<ListingAttribute, Integer> attributes) {
+        final ServerStatus status = new ServerStatus();
+        attributes.forEach((attribute, value) -> status.addAttribute(attributeId(attribute), value));
+        sendPacket(status);
+    }
+
+    private static int attributeId(ListingAttribute attribute) {
+        return switch (attribute) {
+            case STATUS -> ServerStatus.SERVER_LIST_STATUS;
+            case TYPE -> ServerStatus.SERVER_TYPE;
+            case SQUARE_BRACKET -> ServerStatus.SERVER_LIST_SQUARE_BRACKET;
+            case MAX_PLAYERS -> ServerStatus.MAX_PLAYERS;
+            case AGE -> ServerStatus.SERVER_AGE;
+        };
     }
 
     /**
@@ -526,67 +415,6 @@ public class LoginServerLink extends Thread {
         }
 
         return array;
-    }
-
-    /**
-     * Forcibly kicks player from the game server.
-     * @param accountId the account to kick
-     */
-    private void doKickPlayer(UUID accountId) {
-        final GameClient client = findClient(accountId);
-        if (client != null) {
-            final SystemMessage msg =
-                    new SystemMessage(SystemMessageId.ANOTHER_PERSON_HAS_LOGGED_IN_WITH_THE_SAME_ACCOUNT);
-
-            if (client.isDetached()) {
-                final Player player = client.getPlayer();
-                if (player != null) {
-                    player.storeMe();
-                    player.deleteMe();
-                }
-
-                client.close(msg);
-            } else {
-                Disconnection.of(client).storeAndDeleteWith(msg);
-                ACCOUNTING_LOG.info("Kicked by login, {}", client);
-            }
-        }
-
-        sendLogout((client != null) ? client.getAccountName() : null, accountId);
-    }
-
-    /**
-     * @return the session of the account in this server, {@code null} for none; a session has its account id only once
-     *     the login server accepted it
-     */
-    public GameClient findClient(UUID accountId) {
-        for (GameClient client : accountsInGameServer.values()) {
-            if (accountId.equals(client.getAccountId())) {
-                return client;
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * Retrieves character count and deletion times for specified account.
-     * @param accountId the account
-     */
-    private void getCharsOnServer(UUID accountId) {
-        final int chars;
-        final List<Long> deleteTimes;
-        try {
-            chars = characters.countByAccount(accountId);
-            deleteTimes = characters.findDeleteTimes(accountId).stream()
-                    .map(LegacyValues::epochMillisOrZero)
-                    .toList();
-        } catch (DataAccessException e) {
-            log.warn("Could not read the characters of account {}.", accountId, e);
-            return;
-        }
-
-        sendPacket(new ReplyCharacters(accountId, chars, deleteTimes));
     }
 
     /**
@@ -628,113 +456,6 @@ public class LoginServerLink extends Thread {
             }
         } catch (Exception e) {
             log.error("IOException while sending packet {}", packet.getClass().getSimpleName(), e);
-        }
-    }
-
-    /**
-     * Sets maximum player count and notifies login server.
-     * @param maxPlayer the maximum player count
-     */
-    public void setMaxPlayer(int maxPlayer) {
-        sendServerStatus(ServerStatus.MAX_PLAYERS, maxPlayer);
-        this.maxPlayer = maxPlayer;
-    }
-
-    /**
-     * Sends server status update to login server.
-     * @param id the status attribute identifier
-     * @param value the status value
-     */
-    public void sendServerStatus(int id, int value) {
-        final ServerStatus serverStatus = new ServerStatus();
-        serverStatus.addAttribute(id, value);
-        sendPacket(serverStatus);
-    }
-
-    /**
-     * Sends server type configuration to login server.
-     */
-    public void sendServerType() {
-        final ServerStatus serverStatus = new ServerStatus();
-        serverStatus.addAttribute(ServerStatus.SERVER_TYPE, ServerConfig.SERVER_LIST_TYPE);
-        sendPacket(serverStatus);
-    }
-
-    /**
-     * Sends password change request to login server.
-     * @param accountId the account
-     * @param charName the character name
-     * @param oldpass the current password
-     * @param newpass the new password
-     */
-    public void sendChangePassword(UUID accountId, String charName, String oldpass, String newpass) {
-        sendPacket(new ChangePassword(accountId, charName, oldpass, newpass));
-    }
-
-    /**
-     * Gets server status as human-readable string.
-     * @return the status string representation
-     */
-    public String getStatusString() {
-        return ServerStatus.STATUS_STRING[serverStatus];
-    }
-
-    /**
-     * Sets server status and notifies login server.
-     * @param status the new server status
-     */
-    public void setServerStatus(int status) {
-        switch (status) {
-            case ServerStatus.STATUS_AUTO:
-            case ServerStatus.STATUS_DOWN:
-            case ServerStatus.STATUS_FULL:
-            case ServerStatus.STATUS_GM_ONLY:
-            case ServerStatus.STATUS_GOOD:
-            case ServerStatus.STATUS_NORMAL: {
-                sendServerStatus(ServerStatus.SERVER_LIST_STATUS, status);
-                serverStatus = status;
-                break;
-            }
-            default: {
-                throw new IllegalArgumentException("Invalid server status: " + status);
-            }
-        }
-    }
-
-    /**
-     * Session key container for player authentication between login and game servers.
-     */
-    public static class SessionKey {
-        public int playOkID1;
-        public int playOkID2;
-        public int loginOkID1;
-        public int loginOkID2;
-
-        public SessionKey(int loginOK1, int loginOK2, int playOK1, int playOK2) {
-            playOkID1 = playOK1;
-            playOkID2 = playOK2;
-            loginOkID1 = loginOK1;
-            loginOkID2 = loginOK2;
-        }
-
-        @Override
-        public String toString() {
-            return "PlayOk: " + playOkID1 + " " + playOkID2 + " LoginOk:" + loginOkID1 + " " + loginOkID2;
-        }
-    }
-
-    /**
-     * Represents a client waiting for authentication response from login server.
-     */
-    private static class WaitingClient {
-        public String account;
-        public GameClient gameClient;
-        public SessionKey sessionKey;
-
-        public WaitingClient(String acc, GameClient client, SessionKey key) {
-            account = acc;
-            gameClient = client;
-            sessionKey = key;
         }
     }
 

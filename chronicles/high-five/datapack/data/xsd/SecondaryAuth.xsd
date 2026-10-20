@@ -6,7 +6,6 @@
 				<xs:element name="enabled" type="xs:boolean" minOccurs="1" maxOccurs="1" />
 				<xs:element name="maxAttempts" type="xs:nonNegativeInteger" minOccurs="1" maxOccurs="1" />
 				<xs:element name="banTime" type="xs:nonNegativeInteger" minOccurs="1" maxOccurs="1" />
-				<xs:element name="recoveryLink" type="xs:string" minOccurs="1" maxOccurs="1" />
 				<xs:element name="forbiddenPasswords" minOccurs="0" maxOccurs="1">
 					<xs:complexType>
 						<xs:sequence minOccurs="1" maxOccurs="1">

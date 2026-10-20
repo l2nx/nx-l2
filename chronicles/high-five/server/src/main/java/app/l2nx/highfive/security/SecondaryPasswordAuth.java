@@ -24,10 +24,10 @@
 package app.l2nx.highfive.security;
 
 import app.l2nx.highfive.data.xml.SecondaryAuthData;
+import app.l2nx.highfive.login.LoginService;
 import app.l2nx.highfive.managers.AccountVariablesManager;
 import app.l2nx.highfive.network.Disconnection;
 import app.l2nx.highfive.network.GameClient;
-import app.l2nx.highfive.network.gslink.LoginServerLink;
 import app.l2nx.highfive.network.serverpackets.Ex2ndPasswordAck;
 import app.l2nx.highfive.network.serverpackets.Ex2ndPasswordCheck;
 import app.l2nx.highfive.network.serverpackets.Ex2ndPasswordVerify;
@@ -35,6 +35,7 @@ import app.l2nx.highfive.network.serverpackets.LeaveWorld;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.time.Duration;
 import java.util.Base64;
 import java.util.Map;
 import lombok.Getter;
@@ -157,19 +158,12 @@ public class SecondaryPasswordAuth {
                 activeClient.sendPacket(new Ex2ndPasswordVerify(Ex2ndPasswordVerify.PASSWORD_WRONG, wrongAttempts));
                 insertWrongAttempt(wrongAttempts);
             } else {
-                LoginServerLink.getInstance()
-                        .sendTempBan(
+                LoginService.getInstance()
+                        .requestTempBan(
                                 activeClient.getAccountId(),
                                 activeClient.getIp(),
-                                SecondaryAuthData.getInstance().getBanTime());
-                LoginServerLink.getInstance()
-                        .sendMail(
-                                activeClient.getAccountId(),
-                                "SATempBan",
-                                activeClient.getIp(),
-                                Integer.toString(SecondaryAuthData.getInstance().getMaxAttempts()),
-                                Long.toString(SecondaryAuthData.getInstance().getBanTime()),
-                                SecondaryAuthData.getInstance().getRecoveryLink());
+                                Duration.ofMinutes(
+                                        SecondaryAuthData.getInstance().getBanTime()));
                 log.warn(
                         "{} - ({}) has inputted the wrong password {} times in row.",
                         activeClient.getAccountName(),

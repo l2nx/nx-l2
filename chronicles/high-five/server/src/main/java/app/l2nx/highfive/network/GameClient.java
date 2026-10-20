@@ -32,9 +32,9 @@ import app.l2nx.highfive.data.xml.SecondaryAuthData;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.clan.Clan;
+import app.l2nx.highfive.login.LoginService;
+import app.l2nx.highfive.login.SessionKey;
 import app.l2nx.highfive.managers.PlayerPersistenceManager;
-import app.l2nx.highfive.network.gslink.LoginServerLink;
-import app.l2nx.highfive.network.gslink.LoginServerLink.SessionKey;
 import app.l2nx.highfive.network.holders.CharacterInfoHolder;
 import app.l2nx.highfive.network.holders.ClientHardwareInfoHolder;
 import app.l2nx.highfive.network.serverpackets.LeaveWorld;
@@ -136,8 +136,8 @@ public class GameClient extends Client<app.l2nx.network.Connection<GameClient>> 
     @Override
     public void onDisconnection() {
         ACCOUNTING_LOG.trace("Client disconnected: {}", this);
-        LoginServerLink.getInstance().removeWaitingClient(this);
-        LoginServerLink.getInstance().sendLogout(accountName, accountId);
+        LoginService.getInstance().cancelAuthentication(this);
+        LoginService.getInstance().logout(accountName, accountId);
         if ((player == null) || !player.isInOfflineMode()) {
             Disconnection.of(this).onDisconnection();
         }

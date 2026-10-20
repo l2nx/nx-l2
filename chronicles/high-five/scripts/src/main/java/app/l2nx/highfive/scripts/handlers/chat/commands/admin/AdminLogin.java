@@ -26,8 +26,8 @@ import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.config.ServerConfig;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.handler.IAdminCommandHandler;
-import app.l2nx.highfive.network.gslink.LoginServerLink;
-import app.l2nx.highfive.network.loginserverpackets.send.ServerStatus;
+import app.l2nx.highfive.login.ListingStatus;
+import app.l2nx.highfive.login.LoginService;
 import app.l2nx.highfive.network.serverpackets.NpcHtmlMessage;
 import app.l2nx.highfive.util.MathUtil;
 import java.util.StringTokenizer;
@@ -62,7 +62,7 @@ public class AdminLogin implements IAdminCommandHandler {
                 st.nextToken();
                 final String number = st.nextToken();
                 try {
-                    LoginServerLink.getInstance().setMaxPlayer(Integer.parseInt(number));
+                    LoginService.getInstance().setMaxPlayers(Integer.parseInt(number));
                     activeChar.sendSysMessage("maxPlayer set to " + number);
                     showMainPage(activeChar);
                 } catch (NumberFormatException e) {
@@ -89,8 +89,7 @@ public class AdminLogin implements IAdminCommandHandler {
                 }
 
                 if (ServerConfig.SERVER_LIST_TYPE != newType) {
-                    ServerConfig.SERVER_LIST_TYPE = newType;
-                    LoginServerLink.getInstance().sendServerType();
+                    LoginService.getInstance().setType(newType);
                     activeChar.sendSysMessage("Server Type changed to " + getServerTypeName(newType));
                     showMainPage(activeChar);
                 } else {
@@ -110,8 +109,7 @@ public class AdminLogin implements IAdminCommandHandler {
                 try {
                     age = Integer.parseInt(mode);
                     if (ServerConfig.SERVER_LIST_AGE != age) {
-                        ServerConfig.SERVER_LIST_TYPE = age;
-                        LoginServerLink.getInstance().sendServerStatus(ServerStatus.SERVER_AGE, age);
+                        LoginService.getInstance().setAge(age);
                         activeChar.sendSysMessage("Server Age changed to " + age);
                         showMainPage(activeChar);
                     } else {
@@ -137,12 +135,11 @@ public class AdminLogin implements IAdminCommandHandler {
     private void showMainPage(Player activeChar) {
         final NpcHtmlMessage html = new NpcHtmlMessage();
         html.setFile(activeChar, "data/html/admin/login.htm");
-        html.replace("%server_name%", LoginServerLink.getInstance().getServerName());
-        html.replace("%status%", LoginServerLink.getInstance().getStatusString());
+        html.replace("%server_name%", LoginService.getInstance().getServerName());
+        html.replace("%status%", LoginService.getInstance().getStatus().label());
         html.replace("%clock%", getServerTypeName(ServerConfig.SERVER_LIST_TYPE));
         html.replace("%brackets%", String.valueOf(ServerConfig.SERVER_LIST_BRACKET));
-        html.replace(
-                "%max_players%", String.valueOf(LoginServerLink.getInstance().getMaxPlayer()));
+        html.replace("%max_players%", String.valueOf(LoginService.getInstance().getMaxPlayers()));
         activeChar.sendPacket(html);
     }
 
@@ -192,12 +189,12 @@ public class AdminLogin implements IAdminCommandHandler {
     }
 
     private void allowToAll() {
-        LoginServerLink.getInstance().setServerStatus(ServerStatus.STATUS_AUTO);
+        LoginService.getInstance().setStatus(ListingStatus.AUTO);
         GeneralConfig.SERVER_GMONLY = false;
     }
 
     private void gmOnly() {
-        LoginServerLink.getInstance().setServerStatus(ServerStatus.STATUS_GM_ONLY);
+        LoginService.getInstance().setStatus(ListingStatus.GM_ONLY);
         GeneralConfig.SERVER_GMONLY = true;
     }
 

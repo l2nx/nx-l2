@@ -34,10 +34,10 @@ import app.l2nx.highfive.data.holders.PunishmentHolder;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.enums.player.IllegalActionPunishmentType;
 import app.l2nx.highfive.entity.actor.tasks.player.IllegalPlayerActionTask;
+import app.l2nx.highfive.login.LoginService;
 import app.l2nx.highfive.mechanics.punishment.PunishmentAffect;
 import app.l2nx.highfive.mechanics.punishment.PunishmentTask;
 import app.l2nx.highfive.mechanics.punishment.PunishmentType;
-import app.l2nx.highfive.network.gslink.LoginServerLink;
 import app.l2nx.highfive.repository.character.CharacterRepository;
 import app.l2nx.highfive.repository.world.PunishmentRepository;
 import app.l2nx.highfive.repository.world.model.Punishment;
@@ -162,7 +162,7 @@ public class PunishmentManager {
         if (task.getType() == PunishmentType.BAN) {
             switch (affect) {
                 case ACCOUNT: {
-                    LoginServerLink.getInstance().sendAccessLevel((UUID) task.getKey(), -1);
+                    LoginService.getInstance().changeAccessLevel((UUID) task.getKey(), -1);
                     break;
                 }
                 case CHARACTER: {
@@ -184,7 +184,7 @@ public class PunishmentManager {
         if (type == PunishmentType.BAN) {
             switch (affect) {
                 case ACCOUNT: {
-                    LoginServerLink.getInstance().sendAccessLevel((UUID) task.getKey(), 0);
+                    LoginService.getInstance().changeAccessLevel((UUID) task.getKey(), 0);
                     break;
                 }
                 case CHARACTER: {

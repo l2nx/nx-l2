@@ -58,6 +58,7 @@ import app.l2nx.highfive.entity.item.enums.ItemProcessType;
 import app.l2nx.highfive.entity.item.instance.Item;
 import app.l2nx.highfive.entity.residences.AuctionableHall;
 import app.l2nx.highfive.entity.zone.ZoneId;
+import app.l2nx.highfive.login.LoginService;
 import app.l2nx.highfive.managers.AntiFeedManager;
 import app.l2nx.highfive.managers.CHSiegeManager;
 import app.l2nx.highfive.managers.CastleManager;
@@ -91,7 +92,6 @@ import app.l2nx.highfive.network.Disconnection;
 import app.l2nx.highfive.network.GameClient;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.enums.ChatType;
-import app.l2nx.highfive.network.gslink.LoginServerLink;
 import app.l2nx.highfive.network.holders.ClientHardwareInfoHolder;
 import app.l2nx.highfive.network.serverpackets.ActionFailed;
 import app.l2nx.highfive.network.serverpackets.CreatureSay;
@@ -123,6 +123,7 @@ import app.l2nx.highfive.network.serverpackets.UserInfo;
 import app.l2nx.highfive.network.serverpackets.ValidateLocation;
 import app.l2nx.highfive.taskmanagers.GameTimeTaskManager;
 import app.l2nx.highfive.threads.ThreadPool;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.extern.slf4j.Slf4j;
@@ -175,7 +176,7 @@ public class EnterWorld extends ClientPacket {
             adress[i] = tracert[i][0] + "." + tracert[i][1] + "." + tracert[i][2] + "." + tracert[i][3];
         }
 
-        LoginServerLink.getInstance().sendClientTracert(client.getAccountId(), adress);
+        LoginService.getInstance().reportRoute(client.getAccountId(), List.of(adress));
         client.setClientTracert(tracert);
 
         player.sendPacket(new UserInfo(player));

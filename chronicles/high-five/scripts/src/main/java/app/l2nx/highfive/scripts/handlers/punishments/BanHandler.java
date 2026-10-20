@@ -26,11 +26,11 @@ package app.l2nx.highfive.scripts.handlers.punishments;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.handler.IPunishmentHandler;
+import app.l2nx.highfive.login.LoginService;
 import app.l2nx.highfive.mechanics.punishment.PunishmentTask;
 import app.l2nx.highfive.mechanics.punishment.PunishmentType;
 import app.l2nx.highfive.network.Disconnection;
 import app.l2nx.highfive.network.GameClient;
-import app.l2nx.highfive.network.gslink.LoginServerLink;
 import app.l2nx.highfive.network.serverpackets.LeaveWorld;
 import java.util.UUID;
 
@@ -51,7 +51,7 @@ public class BanHandler implements IPunishmentHandler {
                 break;
             }
             case ACCOUNT: {
-                final GameClient client = LoginServerLink.getInstance().findClient((UUID) task.getKey());
+                final GameClient client = LoginService.getInstance().findClient((UUID) task.getKey());
                 if (client != null) {
                     final Player player = client.getPlayer();
                     if (player != null) {
