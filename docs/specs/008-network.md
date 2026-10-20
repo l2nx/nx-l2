@@ -42,7 +42,7 @@ GS-link address stay where the server reads them today (login: `l2nx.login.*`; g
 | `transport`                               | `auto`          | `auto`, `epoll`, `nio`, `io-uring` (§4)                                    |
 | `worker-threads`                          | Netty default   | IO threads per process                                                     |
 | `max-frame`                               | 16 KB           | largest inbound frame; larger closes the connection                        |
-| `read-timeout`                            | 120 s           | a connection that sends nothing before `IN_GAME` is closed                 |
+| `read-timeout`                            | 120 s           | a connection silent before `IN_GAME` (login: before auth, §9) is closed    |
 | `ping-interval`                           | 30 s            | in game, read idle this long sends `NetPing`                               |
 | `ping-misses`                             | 3               | unanswered pings in a row that close an in-game connection                 |
 | `handshake-timeout`                       | 10 s            | time from accept to the protocol version (game) or `AuthGameGuard` (login) |
@@ -245,12 +245,23 @@ Packets not yet moved to ports pass through the `highfive` adapter as they are:
 - **Cipher:**
   - outbound: the encoder pads the payload to 8 bytes, appends the XOR checksum, encrypts with Blowfish and fills
     in the length after padding; `Init` instead gets the XOR pass with a random key and the static Blowfish key;
-  - inbound: Blowfish decrypt, then checksum verification; a bad checksum closes the connection.
+  - inbound: Blowfish decrypt, then checksum verification; a bad checksum closes the connection with `error` and a
+    rate-limited warning;
+  - session key bytes are 1..255: the client reads the key from `Init` up to its first zero byte, so a zero inside
+    the key would leave the two sides with different keys.
 - **Blocking and heavy work** (RSA decrypt of the credentials, account lookup, password check) runs on a bounded
   executor of virtual threads, ordered per channel; results return through the channel's event loop. Never on an
   IO thread. A channel holds an executor slot for at most a batch of its tasks and then queues again behind the
   others (a fair semaphore), so a busy channel cannot starve logins; tasks the executor can no longer run after
   close go to the channel's rejection handler instead of running against a closing context.
+- **Idle:** `read-timeout` applies until the account is authenticated. The client sends nothing on the licence and
+  server list screens, so authentication re-arms the read-idle close with the login session lifetime (5 minutes):
+  every login connection stays bounded on its own channel, including sessions the login server no longer tracks.
+  On top of that the purge closes an authenticated session that has not moved on to a game server within 5 minutes,
+  checking every 5 minutes.
+- **Server list:** the High Five client asks for the list once, so it is sent after every online game server
+  reported the characters of the account or after 500 ms, whichever comes first; the wait is a timer on the channel's
+  event loop, cancelled on close, and the list is built on the channel's executor lane.
 
 ## 10. GS-link
 
@@ -272,20 +283,25 @@ Packets not yet moved to ports pass through the `highfive` adapter as they are:
 
 Micrometer, per server:
 
-| Meter                         | Type    | Tags                                                                     |
-| ----------------------------- | ------- | ------------------------------------------------------------------------ |
-| `l2nx.network.connections`    | gauge   |                                                                          |
-| `l2nx.network.bytes`          | counter | `direction` (`in`, `out`)                                                |
-| `l2nx.network.commands`       | counter | `type`                                                                   |
-| `l2nx.network.legacy.packets` | counter | `type`, `direction`                                                      |
-| `l2nx.network.decode.errors`  | counter | `state`                                                                  |
-| `l2nx.network.dropped`        | counter | `reason`                                                                 |
-| `l2nx.network.closed`         | counter | `reason` (`idle`, `timeout`, `flood`, `slow`, `outbound-limit`, `error`) |
-| `l2nx.network.unwritable`     | counter |                                                                          |
+| Meter                         | Type    | Tags                                                                                                                                           |
+| ----------------------------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `l2nx.network.connections`    | gauge   |                                                                                                                                                |
+| `l2nx.network.bytes`          | counter | `direction` (`in`, `out`)                                                                                                                      |
+| `l2nx.network.commands`       | counter | `type`                                                                                                                                         |
+| `l2nx.network.legacy.packets` | counter | `type`, `direction`                                                                                                                            |
+| `l2nx.network.decode.errors`  | counter | `state`                                                                                                                                        |
+| `l2nx.network.dropped`        | counter | `reason` (`banned`, `connections-per-ip`, `accept-rate`, `max-connections`, `unknown-opcode`, `wrong-state`, `ignored`, `closed`, `unhandled`) |
+| `l2nx.network.closed`         | counter | `reason` (`idle`, `timeout`, `flood`, `slow`, `outbound-limit`, `error`)                                                                       |
+| `l2nx.network.unwritable`     | counter |                                                                                                                                                |
 
 A `type` tag is the fully qualified class name, so anonymous classes never yield a blank tag and two protocol
 adapters never share a series. Event-loop and allocator meters come from Micrometer's Netty binders (`netty.eventexecutor.tasks.pending`,
 `netty.allocator.*`).
+
+The blocking executor of the login (§9) publishes the standard `executor.*` meters with tag `name=l2nx-login-tasks`:
+the timers `executor.execution` and `executor.idle` (run time and wait for a slot) and the gauges `executor.active`,
+`executor.queued` and `executor.pool.max`. The gauges read the semaphore, since Micrometer cannot read a
+`ThreadPerTaskExecutor` without `--add-opens`; closing the executor removes all five.
 
 Run time of commands is `l2nx.session.command` ([execution.md §8](003-engine-core/execution.md#8-budget-and-metrics)).
 

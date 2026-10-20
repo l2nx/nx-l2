@@ -4,6 +4,8 @@ plugins {
 
 dependencies {
     implementation(project(":login:server"))
+
+    testImplementation(testFixtures(project(":libs:network")))
 }
 
 application {

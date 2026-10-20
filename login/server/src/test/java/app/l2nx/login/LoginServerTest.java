@@ -19,14 +19,19 @@ import app.l2nx.login.config.LoginProperties;
 import app.l2nx.login.config.TestLoginProperties;
 import app.l2nx.login.controller.LoginController;
 import app.l2nx.login.data.GameServerTable;
+import app.l2nx.network.config.NetworkProperties;
+import app.l2nx.network.config.Transport;
+import app.l2nx.network.metrics.NetworkMetrics;
+import app.l2nx.network.transport.NetworkEventLoops;
+import app.l2nx.network.transport.TransportResolver;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.ScheduledFuture;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Execution;
@@ -42,6 +47,18 @@ class LoginServerTest {
     private final LoginController loginController = mock(LoginController.class);
     private final TaskScheduler taskScheduler = mock(TaskScheduler.class);
     private final ServerExit serverExit = mock(ServerExit.class);
+    private final NetworkEventLoops eventLoops = new NetworkEventLoops(
+            NetworkProperties.defaults().toBuilder()
+                    .transport(Transport.NIO)
+                    .workerThreads(1)
+                    .shutdownQuietPeriod(Duration.ZERO)
+                    .build(),
+            TransportResolver.nativeAvailability());
+
+    @AfterEach
+    void closeEventLoops() {
+        eventLoops.close();
+    }
 
     @Nested
     class Start {
@@ -53,7 +70,7 @@ class LoginServerTest {
                         blocker.getLocalPort(), gameServerPort, TestLoginProperties.noRestart()));
 
                 assertThatThrownBy(server::start)
-                        .isInstanceOf(UncheckedIOException.class)
+                        .isInstanceOf(IllegalStateException.class)
                         .hasMessageContaining(String.valueOf(blocker.getLocalPort()));
 
                 assertThat(server.isRunning()).isFalse();
@@ -114,7 +131,10 @@ class LoginServerTest {
                 mock(GameServerTable.class),
                 taskScheduler,
                 serverExit,
-                new SimpleMeterRegistry());
+                new SimpleMeterRegistry(),
+                eventLoops,
+                NetworkProperties.defaults(),
+                NetworkMetrics.noop());
     }
 
     private static int freePort() throws IOException {

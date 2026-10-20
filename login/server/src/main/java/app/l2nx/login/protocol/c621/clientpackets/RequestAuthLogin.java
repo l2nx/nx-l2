@@ -36,13 +36,13 @@ import app.l2nx.login.network.LoginClient;
 import app.l2nx.login.protocol.c621.ConnectionState;
 import app.l2nx.login.protocol.c621.serverpackets.AccountKicked;
 import app.l2nx.login.protocol.c621.serverpackets.LoginOk;
-import app.l2nx.login.protocol.c621.serverpackets.ServerList;
 import java.security.GeneralSecurityException;
 import javax.crypto.Cipher;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Format: x 0 (a leading null) x: the rsa encrypted block with the login an password.
+ * One 128-byte RSA block with the login and password, or two blocks (256 bytes) from clients that send the login in
+ * the first and the password in the second.
  */
 @Slf4j
 public class RequestAuthLogin extends LoginClientPacket {
@@ -70,15 +70,25 @@ public class RequestAuthLogin extends LoginClientPacket {
     public void run() {
         final LoginClient client = getClient();
         final byte[] decrypted = new byte[newAuthMethod ? 256 : 128];
+        final Cipher rsaCipher;
         try {
-            final Cipher rsaCipher = Cipher.getInstance("RSA/ECB/nopadding");
+            rsaCipher = Cipher.getInstance("RSA/ECB/nopadding");
             rsaCipher.init(Cipher.DECRYPT_MODE, client.getRSAPrivateKey());
+        } catch (GeneralSecurityException e) {
+            log.error("RSA cipher is unavailable, closing {}", client.getIp(), e);
+            client.close(LoginFailReason.REASON_SYSTEM_ERROR);
+            return;
+        }
+
+        try {
             rsaCipher.doFinal(raw1, 0, 128, decrypted, 0);
             if (newAuthMethod) {
                 rsaCipher.doFinal(raw2, 0, 128, decrypted, 128);
             }
         } catch (GeneralSecurityException e) {
-            log.info("", e);
+            // A block the key cannot decrypt (for example one larger than the modulus) is never sent by a real client.
+            log.debug("Credentials block from {} cannot be decrypted: {}", client.getIp(), e.toString());
+            client.close(LoginFailReason.REASON_ACCESS_FAILED);
             return;
         }
 
@@ -93,7 +103,8 @@ public class RequestAuthLogin extends LoginClientPacket {
                 password = new String(decrypted, 0x6C, 16).trim();
             }
         } catch (Exception e) {
-            log.warn("run: ", e);
+            log.warn("Credentials of {} cannot be read from the decrypted block", client.getIp(), e);
+            client.close(LoginFailReason.REASON_SYSTEM_ERROR);
             return;
         }
 
@@ -101,7 +112,6 @@ public class RequestAuthLogin extends LoginClientPacket {
         final LoginController lc = LoginController.getInstance();
         final AccountInfo info = lc.retriveAccountInfo(clientAddr, user, password);
         if (info == null) {
-            // Account or password was wrong.
             client.close(LoginFailReason.REASON_USER_OR_PASS_WRONG);
             return;
         }
@@ -109,14 +119,14 @@ public class RequestAuthLogin extends LoginClientPacket {
         switch (lc.tryCheckinAccount(client, clientAddr, info)) {
             case AUTH_SUCCESS: {
                 client.setAccount(info.getLogin());
-                client.setAccountId(info.getId());
                 client.setConnectionState(ConnectionState.AUTHED_LOGIN);
-                client.setSessionKey(lc.assignSessionKeyToClient(info.getId(), client));
-                lc.getCharactersOnAccount(info.getId());
+                client.authDone();
+                client.setSessionKey(lc.newSessionKey());
+                lc.requestCharacters(client);
                 if (LoginServer.getInstance().getProperties().showLicence()) {
                     client.sendPacket(new LoginOk(client.getSessionKey()));
                 } else {
-                    client.sendPacket(new ServerList(client));
+                    client.sendServerList();
                 }
                 break;
             }
@@ -131,12 +141,10 @@ public class RequestAuthLogin extends LoginClientPacket {
             case ALREADY_ON_LS: {
                 final LoginClient oldClient = lc.getAuthedClient(info.getId());
                 if (oldClient != null) {
-                    // Kick the other client.
                     oldClient.close(LoginFailReason.REASON_ACCOUNT_IN_USE);
-                    lc.removeAuthedLoginClient(info.getId());
+                    lc.removeAuthedLoginClientIfCurrent(oldClient);
                 }
 
-                // Also kick current client.
                 client.close(LoginFailReason.REASON_ACCOUNT_IN_USE);
                 break;
             }

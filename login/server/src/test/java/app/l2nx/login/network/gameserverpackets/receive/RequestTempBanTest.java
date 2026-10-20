@@ -17,6 +17,7 @@ import app.l2nx.login.config.TestLoginProperties;
 import app.l2nx.login.controller.LoginController;
 import app.l2nx.login.repository.AccountRepository;
 import java.io.File;
+import java.net.InetAddress;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.UUID;
@@ -49,20 +50,22 @@ class RequestTempBanTest {
     @Nested
     class Receive {
         @Test
-        void requestTempBan_shouldBanAccountAndAddress_whenLengthIsPositive() {
+        void requestTempBan_shouldBanAccountAndAddress_whenLengthIsPositive() throws Exception {
             new RequestTempBan(packet(30), server);
 
             verify(accounts).updateBannedUntil(eq(ACCOUNT_ID), any());
-            assertThat(controller.isBannedAddress(ADDRESS)).isTrue();
+            assertThat(controller.isBannedAddress(InetAddress.getByName(ADDRESS)))
+                    .isTrue();
         }
 
         @ParameterizedTest(name = "{0} minutes")
         @ValueSource(longs = {0, -1})
-        void requestTempBan_shouldBanNothing_whenLengthIsNotPositive(long minutes) {
+        void requestTempBan_shouldBanNothing_whenLengthIsNotPositive(long minutes) throws Exception {
             new RequestTempBan(packet(minutes), server);
 
             verify(accounts, never()).updateBannedUntil(any(), any());
-            assertThat(controller.isBannedAddress(ADDRESS)).isFalse();
+            assertThat(controller.isBannedAddress(InetAddress.getByName(ADDRESS)))
+                    .isFalse();
         }
     }
 

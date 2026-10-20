@@ -4,9 +4,10 @@
  */
 package app.l2nx.login.config;
 
-import app.l2nx.network.config.NetworkSettings;
+import app.l2nx.login.protocol.LoginVariant;
 import java.io.File;
 import java.time.Duration;
+import java.util.List;
 
 public final class TestLoginProperties {
     private static final String LOOPBACK = "127.0.0.1";
@@ -18,7 +19,8 @@ public final class TestLoginProperties {
         return LoginProperties.builder()
                 .client(LoginProperties.Client.builder()
                         .host(LOOPBACK)
-                        .port(clientPort)
+                        .ports(List.of(new LoginProperties.ClientPort(clientPort, LoginVariant.C621)))
+                        .maxConcurrentTasks(4)
                         .build())
                 .gameServer(LoginProperties.GameServer.builder()
                         .host(LOOPBACK)
@@ -40,7 +42,6 @@ public final class TestLoginProperties {
                 .showLicence(true)
                 .autoCreateAccounts(true)
                 .datapackRoot(datapackRoot)
-                .network(NetworkSettings.defaults())
                 .build();
     }
 

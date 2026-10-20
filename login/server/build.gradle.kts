@@ -14,6 +14,7 @@ dependencies {
 
     testImplementation(libs.spring.boot.starter.test)
     testImplementation(testFixtures(project(":libs:database")))
+    testImplementation(testFixtures(project(":libs:network")))
     testImplementation(libs.liquibase.core)
     testRuntimeOnly(libs.postgresql)
 }

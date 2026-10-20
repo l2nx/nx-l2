@@ -18,14 +18,16 @@ l2nx:
   login:
     client:
       host: 0.0.0.0
-      port: 2106
+      ports:
+        - port: 2106
+          variant: c621
     game-server:
       host: 127.0.0.1
       port: 9014
       accept-new: true
     ban:
       failed-logins: 5
-      # A number without a unit is seconds; 0 bans permanently.
+      # A number without a unit is seconds.
       duration: 15m
     flood-protection:
       enabled: true
@@ -40,29 +42,3 @@ l2nx:
     show-licence: true
     auto-create-accounts: true
     datapack-root: .
-    network:
-      # The time packets in flight get to be sent and received on shutdown.
-      shutdown-wait-time: 5s
-      # Below 1: four threads per processor.
-      thread-pool-size: 4
-      thread-priority: 5
-      drop-packets: false
-      # Queued packets above which disposable packets are dropped.
-      drop-packet-threshold: 250
-      buffer-segment-size: 64
-      auto-expand-pool-capacity: true
-      # Multiplier for pre-allocating the buffer pools; 0 allocates on demand.
-      init-buffer-pool-factor: 0
-      buffer-pools:
-        - { size: 100, buffer-size: 2 }
-        - { size: 100, buffer-size: 64 }
-        - { size: 75, buffer-size: 128 }
-        - { size: 75, buffer-size: 256 }
-        - { size: 75, buffer-size: 512 }
-        - { size: 50, buffer-size: 1024 }
-        - { size: 50, buffer-size: 2048 }
-        - { size: 50, buffer-size: 4096 }
-        - { size: 25, buffer-size: 8192 }
-        - { size: 25, buffer-size: 16384 }
-        - { size: 25, buffer-size: 24576 }
-        - { size: 10, buffer-size: 32768 }

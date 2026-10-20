@@ -28,10 +28,15 @@ import app.l2nx.boot.ServerExitCode;
 import app.l2nx.login.config.LoginProperties;
 import app.l2nx.login.controller.LoginController;
 import app.l2nx.login.data.GameServerTable;
-import app.l2nx.login.network.LoginClient;
-import app.l2nx.login.network.LoginPacketHandler;
+import app.l2nx.login.network.LoginChannelInitializer;
+import app.l2nx.login.network.LoginKeys;
 import app.l2nx.login.network.gameserverpackets.receive.ServerStatus;
-import app.l2nx.network.ConnectionManager;
+import app.l2nx.network.bootstrap.NetworkServer;
+import app.l2nx.network.channel.guard.ConnectionLimiter;
+import app.l2nx.network.config.NetworkProperties;
+import app.l2nx.network.exec.BlockingTaskExecutor;
+import app.l2nx.network.metrics.NetworkMetrics;
+import app.l2nx.network.transport.NetworkEventLoops;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.File;
 import java.io.FileInputStream;
@@ -43,6 +48,8 @@ import java.net.InetSocketAddress;
 import java.security.GeneralSecurityException;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ScheduledFuture;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -77,8 +84,6 @@ public class LoginServer implements SmartLifecycle {
     @Getter
     private GameServerListener gameServerListener;
 
-    private ConnectionManager<LoginClient> clientConnectionManager;
-
     // Login server status.
     private static volatile int status = ServerStatus.STATUS_NORMAL;
 
@@ -90,6 +95,11 @@ public class LoginServer implements SmartLifecycle {
     private final TaskScheduler taskScheduler;
     private final ServerExit serverExit;
     private final MeterRegistry meterRegistry;
+    private final NetworkEventLoops eventLoops;
+    private final NetworkProperties networkProperties;
+    private final NetworkMetrics networkMetrics;
+    private final List<NetworkServer> clientServers = new ArrayList<>();
+    private BlockingTaskExecutor blockingTasks;
     private ScheduledFuture<?> restartTask;
 
     @Getter
@@ -101,13 +111,19 @@ public class LoginServer implements SmartLifecycle {
             GameServerTable gameServerTable,
             TaskScheduler taskScheduler,
             ServerExit serverExit,
-            MeterRegistry meterRegistry) {
+            MeterRegistry meterRegistry,
+            NetworkEventLoops eventLoops,
+            NetworkProperties networkProperties,
+            NetworkMetrics networkMetrics) {
         this.properties = properties;
         this.loginController = loginController;
         this.gameServerTable = gameServerTable;
         this.taskScheduler = taskScheduler;
         this.serverExit = serverExit;
         this.meterRegistry = meterRegistry;
+        this.eventLoops = eventLoops;
+        this.networkProperties = networkProperties;
+        this.networkMetrics = networkMetrics;
         instance = this;
     }
 
@@ -136,9 +152,14 @@ public class LoginServer implements SmartLifecycle {
     }
 
     private void shutdownServices() {
-        if (clientConnectionManager != null) {
-            clientConnectionManager.shutdown();
-            clientConnectionManager = null;
+        // The event loops shut down after this, when the context destroys their bean.
+        clientServers.forEach(NetworkServer::stopAccepting);
+        clientServers.forEach(NetworkServer::stopReading);
+        clientServers.forEach(NetworkServer::close);
+        clientServers.clear();
+        if (blockingTasks != null) {
+            blockingTasks.close();
+            blockingTasks = null;
         }
 
         if (gameServerListener != null) {
@@ -209,22 +230,26 @@ public class LoginServer implements SmartLifecycle {
         }
     }
 
-    /**
-     * Starts the login client listener using the generic connection manager.
-     */
     private void startLoginClientListener() {
         final LoginProperties.Client client = properties.client();
-        try {
-            clientConnectionManager = new ConnectionManager<>(
-                    new InetSocketAddress(client.host(), client.port()),
-                    LoginClient::new,
-                    new LoginPacketHandler(),
-                    properties.network());
-            clientConnectionManager.bindMetrics(meterRegistry, "l2nx-login");
-            log.info("Login client listener started on {}:{}.", client.host(), client.port());
-        } catch (IOException e) {
-            throw new UncheckedIOException(
-                    "Login client listener could not be started on " + client.host() + ":" + client.port() + ".", e);
+        blockingTasks = new BlockingTaskExecutor("l2nx-login-tasks", client.maxConcurrentTasks(), meterRegistry);
+        final ConnectionLimiter limiter = new ConnectionLimiter(networkProperties, loginController::isBannedAddress);
+        for (LoginProperties.ClientPort port : client.ports()) {
+            clientServers.add(NetworkServer.bind(
+                    "login-" + port.variant().id(),
+                    new InetSocketAddress(client.host(), port.port()),
+                    eventLoops,
+                    networkProperties,
+                    networkMetrics,
+                    limiter,
+                    new LoginChannelInitializer(
+                            port.variant(),
+                            networkProperties,
+                            blockingTasks,
+                            () -> new LoginKeys(
+                                    loginController.getScrambledRSAKeyPair(), loginController.getBlowfishKey()),
+                            LoginController.SECURE_RANDOM,
+                            loginController::removeAuthedLoginClientIfCurrent)));
         }
     }
 
@@ -235,7 +260,8 @@ public class LoginServer implements SmartLifecycle {
         final File bannedIpConfigurationFile = new File(BANNED_IPS_CONFIGURATION_PATH);
         if (!bannedIpConfigurationFile.exists() || !bannedIpConfigurationFile.isFile()) {
             log.warn(
-                    "IP bans configuration file ({}) does not exist or is not a regular file. No IP bans have been loaded.",
+                    "IP bans configuration file ({}) does not exist or is not a regular file. No IP bans have been"
+                            + " loaded.",
                     bannedIpConfigurationFile.getAbsolutePath());
             return;
         }

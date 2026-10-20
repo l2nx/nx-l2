@@ -176,7 +176,9 @@ Left out on purpose: `heapdump` (gigabytes of memory with credentials in it; `jc
 - The game `ThreadPool` executors and the network executors (I/O and packets) are bound with Micrometer's
   `ExecutorServiceMetrics` (`executor.*` gauges, tag `name`). They are bound, not wrapped with
   `ExecutorServiceMetrics.monitor`: the code uses them through the `ThreadPoolExecutor` API (`purge`, the queue),
-  which a wrapper would hide, so the task timers `executor` and `executor.idle` are not published.
+  which a wrapper would hide, so the task timers `executor.execution` and `executor.idle` are not published.
+- The login's blocking executor of virtual threads publishes `executor.*` with tag `name=l2nx-login-tasks`, timers
+  included ([spec 008 §11](008-network.md#11-metrics)).
 - Game meters: `l2nx.players.online` (gauge). New meters arrive with the dashboard or alert that needs them.
 
 ## 8. Packaging

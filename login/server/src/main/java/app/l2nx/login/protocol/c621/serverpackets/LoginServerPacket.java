@@ -20,25 +20,27 @@
 package app.l2nx.login.protocol.c621.serverpackets;
 
 import app.l2nx.login.network.LoginClient;
-import app.l2nx.network.buffer.WriteBuffer;
-import app.l2nx.network.packet.WritablePacket;
+import app.l2nx.network.codec.OutgoingPacket;
+import app.l2nx.network.codec.PacketWriter;
 
 /**
  * @author KenM
  */
-public abstract class LoginServerPacket extends WritablePacket<LoginClient> {
+public abstract class LoginServerPacket extends OutgoingPacket<LoginClient> {
+    // LoginFrameCipher.encryptedLength: header (8 for the static Init, 4 after it), 1..8 bytes of padding and the
+    // 8-byte trailer, so at most 24 bytes past the payload.
+    private static final int CIPHER_TAILROOM = 24;
 
     @Override
-    protected boolean write(LoginClient client, WriteBuffer buffer) {
-        try {
-            writeImpl(client, buffer);
-            return true;
-        } catch (Exception e) {
-            // LOGGER.error(e.getMessage(), e);
-        }
-
-        return false;
+    protected int tailroom() {
+        return CIPHER_TAILROOM;
     }
 
-    protected abstract void writeImpl(LoginClient client, WriteBuffer buffer);
+    @Override
+    protected final boolean write(LoginClient client, PacketWriter writer) {
+        writeImpl(client, writer);
+        return true;
+    }
+
+    protected abstract void writeImpl(LoginClient client, PacketWriter buffer);
 }

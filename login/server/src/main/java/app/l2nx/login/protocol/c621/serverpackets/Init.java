@@ -23,22 +23,8 @@
 package app.l2nx.login.protocol.c621.serverpackets;
 
 import app.l2nx.login.network.LoginClient;
-import app.l2nx.network.buffer.WriteBuffer;
+import app.l2nx.network.codec.PacketWriter;
 
-/**
- * <pre>
- * Format: dd b dddd s
- * d: session id
- * d: protocol revision
- * b: 0x90 bytes : 0x80 bytes for the scrambled RSA public key
- *                 0x10 bytes at 0x00
- * d: unknow
- * d: unknow
- * d: unknow
- * d: unknow
- * s: blowfish key
- * </pre>
- */
 public class Init extends LoginServerPacket {
     private final int sessionId;
 
@@ -56,13 +42,13 @@ public class Init extends LoginServerPacket {
     }
 
     @Override
-    protected void writeImpl(LoginClient client, WriteBuffer buffer) {
-        buffer.writeByte(0x00); // Init packet id.
+    protected void writeImpl(LoginClient client, PacketWriter buffer) {
+        buffer.writeByte(0x00);
 
-        buffer.writeInt(sessionId); // Session id.
-        buffer.writeInt(0x0000c621); // Protocol revision.
+        buffer.writeInt(sessionId);
+        buffer.writeInt(0x0000c621);
 
-        buffer.writeBytes(publicKey); // RSA Public Key.
+        buffer.writeBytes(publicKey);
 
         // GG related.
         buffer.writeInt(0x29DD954E);
@@ -70,7 +56,7 @@ public class Init extends LoginServerPacket {
         buffer.writeInt(0x97ADB620);
         buffer.writeInt(0x07BDE0F7);
 
-        buffer.writeBytes(blowfishKey); // BlowFish key.
-        buffer.writeByte(0); // Null termination.
+        buffer.writeBytes(blowfishKey);
+        buffer.writeByte(0);
     }
 }

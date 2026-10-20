@@ -61,7 +61,7 @@ public class RequestServerLogin extends LoginClientPacket {
         final LoginClient client = getClient();
         final SessionKey sk = client.getSessionKey();
 
-        // If we didn't showed the license we can't check these values.
+        // The login pair is checked only when the license screen was shown.
         if (!LoginServer.getInstance().getProperties().showLicence() || sk.checkLoginPair(skey1, skey2)) {
             if ((LoginServer.getInstance().getStatus() == ServerStatus.STATUS_DOWN)
                     || ((LoginServer.getInstance().getStatus() == ServerStatus.STATUS_GM_ONLY)

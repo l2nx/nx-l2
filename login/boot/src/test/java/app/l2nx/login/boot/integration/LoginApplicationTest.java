@@ -47,14 +47,26 @@ class LoginApplicationTest extends BootSmokeTest {
 
         @Test
         void clientPort_shouldAcceptTcp_whenStarted() throws Exception {
-            try (Socket socket = connect(properties().client().port())) {
+            try (Socket socket =
+                    connect(properties().client().ports().getFirst().port())) {
                 assertThat(socket.isConnected()).isTrue();
+            }
+        }
+
+        @Test
+        void clientPort_shouldSendInit_whenConnected() throws Exception {
+            try (Socket socket =
+                    connect(properties().client().ports().getFirst().port())) {
+                final int low = socket.getInputStream().read();
+                final int high = socket.getInputStream().read();
+
+                // Init is the first frame: 192 bytes after the 2-byte length that counts itself.
+                assertThat(low | (high << 8)).isEqualTo(194);
             }
         }
     }
 
-    // The last nested class: closing its context afterwards is the shutdown that stopsCleanly() checks; the surviving
-    // process shows it does not call System.exit.
+    // Last nested class: closing the context afterwards is the shutdown stopsCleanly() checks.
     @Nested
     @Order(2)
     @DirtiesContext
@@ -79,7 +91,7 @@ class LoginApplicationTest extends BootSmokeTest {
         }
 
         @ParameterizedTest(name = "{0}")
-        @ValueSource(strings = {"taskScheduler", "l2nx-login-io", "l2nx-login-packets"})
+        @ValueSource(strings = {"taskScheduler"})
         void prometheus_shouldExposeExecutorMetrics(String executor) throws Exception {
             final HttpResponse<String> actual = get("/actuator/prometheus");
 
@@ -88,16 +100,41 @@ class LoginApplicationTest extends BootSmokeTest {
                     .as("executor %s", executor)
                     .containsPattern("executor_pool_size_threads\\{[^}]*name=\"" + executor + "\"");
         }
+
+        // A virtual-thread executor has no pool: its gauges report the semaphore, its tasks are timed.
+        @ParameterizedTest(name = "{0}")
+        @ValueSource(
+                strings = {
+                    "executor_execution_seconds_count",
+                    "executor_active_threads",
+                    "executor_queued_tasks",
+                    "executor_pool_max_threads"
+                })
+        void prometheus_shouldExposeBlockingTaskMeters(String meter) throws Exception {
+            final HttpResponse<String> actual = get("/actuator/prometheus");
+
+            assertThat(actual.statusCode()).isEqualTo(200);
+            assertThat(actual.body()).containsPattern(meter + "\\{[^}]*name=\"l2nx-login-tasks\"");
+        }
+
+        @ParameterizedTest(name = "{0}")
+        @ValueSource(strings = {"l2nx_network_connections", "l2nx_network_bytes_total", "l2nx_network_closed_total"})
+        void prometheus_shouldExposeNetworkMeters(String meter) throws Exception {
+            final HttpResponse<String> actual = get("/actuator/prometheus");
+
+            assertThat(actual.statusCode()).isEqualTo(200);
+            assertThat(actual.body()).contains(meter);
+        }
     }
 
     /**
-     * Runs after the context is closed. A check inside a test method is not possible: the Spring test framework still uses
-     * the context after each test method.
+     * Runs after the context is closed; inside a test method the Spring test framework still uses the context.
      */
     @AfterAll
     static void stopsCleanly() {
         assertThat(LoginServer.getInstance().isRunning()).isFalse();
-        assertThatThrownBy(() -> connect(properties().client().port()).close())
+        assertThatThrownBy(() ->
+                        connect(properties().client().ports().getFirst().port()).close())
                 .as("client port")
                 .isInstanceOf(ConnectException.class);
         assertThatThrownBy(() -> connect(properties().gameServer().port()).close())

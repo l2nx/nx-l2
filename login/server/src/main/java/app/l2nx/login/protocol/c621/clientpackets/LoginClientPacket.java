@@ -24,49 +24,25 @@
 package app.l2nx.login.protocol.c621.clientpackets;
 
 import app.l2nx.login.network.LoginClient;
-import app.l2nx.network.packet.ReadablePacket;
-import lombok.extern.slf4j.Slf4j;
+import app.l2nx.network.codec.IncomingPacket;
+import app.l2nx.network.codec.PacketDecodeException;
 
 /**
- * Base implementation for all incoming login client packets.<br>
- * Provides a common, exception safe wrapper around the packet body parsing.
- * <ul>
- * <li>Delegates packet parsing to subclasses via {@link #readImpl()}.</li>
- * <li>Catches and logs unexpected exceptions during packet read.</li>
- * <li>Associates each packet with a {@link LoginClient} instance.</li>
- * </ul>
+ * Login never reaches the game, so a frame too short for its packet is a decode error and closes the connection, as
+ * do the exceptions of a read.
  * @author BazookaRpm
  */
-@Slf4j
-public abstract class LoginClientPacket extends ReadablePacket<LoginClient> {
-
-    /**
-     * Executes the packet read logic with centralized exception handling.<br>
-     * Subclasses implement their parsing in {@link #readImpl()}.
-     * @return {@code true} if the packet was read successfully, {@code false} otherwise.
-     */
+public abstract class LoginClientPacket extends IncomingPacket<LoginClient> {
     @Override
-    public boolean read() {
-        try {
-            return readImpl();
-        } catch (Exception e) {
-            if (log.isErrorEnabled()) {
-                final LoginClient client = getClient();
-                final String clientDescription = client != null ? client.toString() : "unknown client";
-                log.error(
-                        "Error while reading login packet {} from {}.",
-                        getClass().getSimpleName(),
-                        clientDescription,
-                        e);
-            }
-
-            return false;
+    protected final boolean read() {
+        if (!readImpl()) {
+            throw new PacketDecodeException(getClass().getSimpleName() + " is too short");
         }
+        return true;
     }
 
     /**
-     * Reads and parses the body of a specific login client packet type.
-     * @return {@code true} if the packet body was read successfully, {@code false} otherwise.
+     * @return {@code false} when the frame is too short for the packet
      */
     protected abstract boolean readImpl();
 }

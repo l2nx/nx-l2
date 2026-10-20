@@ -35,6 +35,8 @@ import app.l2nx.login.enums.LoginResult;
 import app.l2nx.login.network.LoginClient;
 import app.l2nx.login.repository.AccountRepository;
 import app.l2nx.login.repository.AccountRepository.IpRule;
+import java.net.Inet4Address;
+import java.net.InetAddress;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.KeyPairGenerator;
@@ -57,6 +59,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.random.RandomGenerator;
 import javax.crypto.Cipher;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -68,10 +71,11 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class LoginController {
 
-    /** Time before kicking the client if he didn't logged yet */
-    public static final int LOGIN_TIMEOUT = 5 * 60 * 1000; // 5 minutes.
+    /** The lifetime of a login session: the purge kicks a client that has not moved on to a game server by then. */
+    public static final Duration LOGIN_TIMEOUT = Duration.ofMinutes(5);
 
     private static final int BLOWFISH_KEYS = 20;
+    private static final int BLOWFISH_KEY_SIZE = 16;
 
     public static final SecureRandom SECURE_RANDOM = new SecureRandom();
     protected byte[][] blowfishKeys;
@@ -120,8 +124,7 @@ public class LoginController {
         generateBlowFishKeys();
 
         // Start the client purge task.
-        purgeTask = taskScheduler.scheduleAtFixedRate(
-                this::purge, Instant.now().plusMillis(LOGIN_TIMEOUT), Duration.ofMillis(LOGIN_TIMEOUT));
+        purgeTask = taskScheduler.scheduleAtFixedRate(this::purge, Instant.now().plus(LOGIN_TIMEOUT), LOGIN_TIMEOUT);
     }
 
     public void shutdown() {
@@ -144,13 +147,25 @@ public class LoginController {
     }
 
     private void generateBlowFishKeys() {
-        blowfishKeys = new byte[BLOWFISH_KEYS][16];
+        blowfishKeys = new byte[BLOWFISH_KEYS][];
 
         for (int i = 0; i < BLOWFISH_KEYS; i++) {
-            SECURE_RANDOM.nextBytes(blowfishKeys[i]);
+            blowfishKeys[i] = newBlowfishKey(SECURE_RANDOM);
         }
 
         log.info("Stored {} keys for Blowfish communication.", blowfishKeys.length);
+    }
+
+    /**
+     * The client takes the key of {@code Init} as a zero-terminated string: a zero byte inside would leave the client
+     * a shorter key than the server's, every frame it sends would fail the checksum and the login would hang.
+     */
+    static byte[] newBlowfishKey(RandomGenerator random) {
+        final byte[] key = new byte[BLOWFISH_KEY_SIZE];
+        for (int i = 0; i < key.length; i++) {
+            key[i] = (byte) random.nextInt(1, 256);
+        }
+        return key;
     }
 
     /**
@@ -160,19 +175,32 @@ public class LoginController {
         return blowfishKeys[(int) (Math.random() * BLOWFISH_KEYS)];
     }
 
-    public SessionKey assignSessionKeyToClient(UUID accountId, LoginClient client) {
-        final SessionKey key = new SessionKey(
+    public SessionKey newSessionKey() {
+        return new SessionKey(
                 SECURE_RANDOM.nextInt(), SECURE_RANDOM.nextInt(), SECURE_RANDOM.nextInt(), SECURE_RANDOM.nextInt());
-        loginServerClients.put(accountId, client);
-        return key;
     }
 
+    /**
+     * Drops whatever client holds the account, for the game server taking the account over.
+     */
     public void removeAuthedLoginClient(UUID accountId) {
         if (accountId == null) {
             return;
         }
 
         loginServerClients.remove(accountId);
+    }
+
+    /**
+     * Drops only this client: the account may already be held by a newer connection, which must stay.
+     */
+    public void removeAuthedLoginClientIfCurrent(LoginClient client) {
+        final UUID accountId = client.getAccountId();
+        if (accountId == null) {
+            return;
+        }
+
+        loginServerClients.remove(accountId, client);
     }
 
     public LoginClient getAuthedClient(UUID accountId) {
@@ -284,7 +312,13 @@ public class LoginController {
             if (!isAccountInAnyGameServer(info.getId())) {
                 // Account is not on any GS verify LS itself.
                 ret = LoginResult.ALREADY_ON_LS;
+                // Set before the entry exists, so a close from now on finds the entry it has to remove.
+                client.setAccountId(info.getId());
                 if (loginServerClients.putIfAbsent(info.getId(), client) == null) {
+                    // A close before the entry existed had nothing to remove.
+                    if (!client.isConnected()) {
+                        loginServerClients.remove(info.getId(), client);
+                    }
                     ret = LoginResult.AUTH_SUCCESS;
                 }
             }
@@ -295,43 +329,60 @@ public class LoginController {
 
     /**
      * Adds the address to the ban list of the login server, with the given duration.
-     * @param address The Address to be banned.
+     * @param address an IP literal; a host name is refused, not resolved
      * @param duration is milliseconds
+     * @return {@code false} when the address is not an IP literal
      */
-    public void addBanForAddress(String address, long duration) {
+    public boolean addBanForAddress(String address, long duration) {
+        final String key = banKey(address);
+        if (key == null) {
+            log.warn("Ignored a ban of '{}': not an IP address.", address);
+            return false;
+        }
         if (duration > 0) {
-            bannedIps.putIfAbsent(address, System.currentTimeMillis() + duration);
+            bannedIps.putIfAbsent(key, System.currentTimeMillis() + duration);
         } else // Permanent ban.
         {
-            bannedIps.putIfAbsent(address, Long.MAX_VALUE);
+            bannedIps.putIfAbsent(key, Long.MAX_VALUE);
+        }
+        return true;
+    }
+
+    /** The {@link InetAddress#getHostAddress()} form that {@link #isBannedAddress} looks up, e.g. IPv6 uncompressed. */
+    private static String banKey(String address) {
+        if (address == null) {
+            return null;
+        }
+        try {
+            return InetAddress.ofLiteral(address).getHostAddress();
+        } catch (IllegalArgumentException e) {
+            return null;
         }
     }
 
-    public boolean isBannedAddress(String address) {
-        final String[] parts = address.split("\\.");
-        Long bi = bannedIps.get(address);
-        if (bi == null) {
-            bi = bannedIps.get(parts[0] + "." + parts[1] + "." + parts[2] + ".0");
+    public boolean isBannedAddress(InetAddress address) {
+        final String host = address.getHostAddress();
+        final List<String> keys = new ArrayList<>(4);
+        keys.add(host);
+        // Zeroed-octet subnet bans exist only for IPv4; IPv6 addresses are banned exactly.
+        if (address instanceof Inet4Address) {
+            final String[] parts = host.split("\\.");
+            keys.add(parts[0] + "." + parts[1] + "." + parts[2] + ".0");
+            keys.add(parts[0] + "." + parts[1] + ".0.0");
+            keys.add(parts[0] + ".0.0.0");
         }
-
-        if (bi == null) {
-            bi = bannedIps.get(parts[0] + "." + parts[1] + ".0.0");
-        }
-
-        if (bi == null) {
-            bi = bannedIps.get(parts[0] + ".0.0.0");
-        }
-
-        if (bi != null) {
-            if ((bi > 0) && (bi < System.currentTimeMillis())) {
-                bannedIps.remove(address);
-                log.info("Removed expired ip address ban {}.", address);
-                return false;
+        for (String key : keys) {
+            final Long expiry = bannedIps.get(key);
+            if (expiry == null) {
+                continue;
             }
-
+            if ((expiry > 0) && (expiry < System.currentTimeMillis())) {
+                bannedIps.remove(key, expiry);
+                log.info("Removed expired ip address ban {}.", key);
+                continue;
+            }
             return true;
         }
-
         return false;
     }
 
@@ -341,7 +392,8 @@ public class LoginController {
      * @return true if the ban was removed, false if there was no ban for this ip
      */
     public boolean removeBanForAddress(String address) {
-        return bannedIps.remove(address) != null;
+        final String key = banKey(address);
+        return (key != null) && (bannedIps.remove(key) != null);
     }
 
     public boolean isAccountInAnyGameServer(UUID accountId) {
@@ -370,13 +422,22 @@ public class LoginController {
         return null;
     }
 
-    public void getCharactersOnAccount(UUID accountId) {
-        for (GameServerInfo gsi :
-                GameServerTable.getInstance().getRegisteredGameServers().values()) {
-            if (gsi.isAuthed()) {
-                gsi.getGameServerThread().requestCharacters(accountId);
+    public void requestCharacters(LoginClient client) {
+        requestCharacters(
+                client, GameServerTable.getInstance().getRegisteredGameServers().values());
+    }
+
+    void requestCharacters(LoginClient client, Collection<GameServerInfo> servers) {
+        final Map<Integer, GameServerThread> online = new HashMap<>();
+        for (GameServerInfo gsi : servers) {
+            // The link may drop concurrently; a server without one cannot answer, so it is not awaited.
+            final GameServerThread link = gsi.getGameServerThread();
+            if (gsi.isAuthed() && (link != null)) {
+                online.put(gsi.getId(), link);
             }
         }
+        client.awaitCharacters(online.keySet());
+        online.values().forEach(link -> link.requestCharacters(client.getAccountId()));
     }
 
     public boolean isLoginPossible(LoginClient client, int serverId) {
@@ -445,6 +506,7 @@ public class LoginController {
         if (timeToDel.length > 0) {
             client.serCharsWaitingDelOnServ(serverId, timeToDel);
         }
+        client.charactersArrived(serverId);
     }
 
     /**
@@ -512,7 +574,7 @@ public class LoginController {
                 loginServerClients.entrySet().iterator();
         while (iterator.hasNext()) {
             final LoginClient client = iterator.next().getValue();
-            if ((!client.hasJoinedGS() && ((client.getConnectionStartTime() + LOGIN_TIMEOUT) <= currentTime))
+            if ((!client.hasJoinedGS() && ((client.getConnectionStartTime() + LOGIN_TIMEOUT.toMillis()) <= currentTime))
                     || !client.isConnected()) {
                 client.close(LoginFailReason.REASON_ACCESS_FAILED);
                 iterator.remove();

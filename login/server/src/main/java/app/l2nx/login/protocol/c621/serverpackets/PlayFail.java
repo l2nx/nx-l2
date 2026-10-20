@@ -24,11 +24,8 @@ package app.l2nx.login.protocol.c621.serverpackets;
 
 import app.l2nx.login.enums.PlayFailReason;
 import app.l2nx.login.network.LoginClient;
-import app.l2nx.network.buffer.WriteBuffer;
+import app.l2nx.network.codec.PacketWriter;
 
-/**
- * @version $Revision: 1.2.4.1 $ $Date: 2005/03/27 15:30:11 $
- */
 public class PlayFail extends LoginServerPacket {
     private final PlayFailReason reason;
 
@@ -37,7 +34,7 @@ public class PlayFail extends LoginServerPacket {
     }
 
     @Override
-    protected void writeImpl(LoginClient client, WriteBuffer buffer) {
+    protected void writeImpl(LoginClient client, PacketWriter buffer) {
         buffer.writeByte(0x06);
         buffer.writeByte(reason.getCode());
     }

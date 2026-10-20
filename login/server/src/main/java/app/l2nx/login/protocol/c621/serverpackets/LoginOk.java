@@ -24,46 +24,28 @@ package app.l2nx.login.protocol.c621.serverpackets;
 
 import app.l2nx.login.controller.SessionKey;
 import app.l2nx.login.network.LoginClient;
-import app.l2nx.network.buffer.WriteBuffer;
+import app.l2nx.network.codec.PacketWriter;
 
 /**
- * LoginOk packet sent after successful authentication.<br>
- * Serializes the LoginOk pair along with protocol-reserved values.
- * <ul>
- * <li>Opcode 0x03.</li>
- * <li>Writes two LoginOk integers.</li>
- * <li>Fills reserved fields and a 16-byte block.</li>
- * </ul>
- * author Mobius, BazookaRpm
+ * @author Mobius, BazookaRpm
  */
 public class LoginOk extends LoginServerPacket {
-    // Constants.
     private static final int OPCODE_LOGIN_OK = 0x03;
     private static final int RESERVED_ZERO = 0x00;
     private static final int RESERVED_VALUE_3EA = 0x000003ea;
     private static final int RESERVED_BYTES_LEN = 16;
     private static final byte[] RESERVED_BYTES_16 = new byte[RESERVED_BYTES_LEN];
 
-    // Session key parts.
     private final int loginOkPart1;
     private final int loginOkPart2;
 
-    /**
-     * Constructs the packet with the LoginOk pair.
-     * @param sessionKey
-     */
     public LoginOk(SessionKey sessionKey) {
         loginOkPart1 = sessionKey.getLoginOkID1();
         loginOkPart2 = sessionKey.getLoginOkID2();
     }
 
-    /**
-     * Writes the LoginOk packet to the client buffer.
-     * @param client
-     * @param buffer
-     */
     @Override
-    protected void writeImpl(LoginClient client, WriteBuffer buffer) {
+    protected void writeImpl(LoginClient client, PacketWriter buffer) {
         buffer.writeByte(OPCODE_LOGIN_OK);
         buffer.writeInt(loginOkPart1);
         buffer.writeInt(loginOkPart2);

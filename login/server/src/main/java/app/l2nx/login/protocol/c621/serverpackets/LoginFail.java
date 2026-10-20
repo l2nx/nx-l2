@@ -24,11 +24,8 @@ package app.l2nx.login.protocol.c621.serverpackets;
 
 import app.l2nx.login.enums.LoginFailReason;
 import app.l2nx.login.network.LoginClient;
-import app.l2nx.network.buffer.WriteBuffer;
+import app.l2nx.network.codec.PacketWriter;
 
-/**
- * Format: d d: the failure reason
- */
 public class LoginFail extends LoginServerPacket {
     private final LoginFailReason reason;
 
@@ -37,7 +34,7 @@ public class LoginFail extends LoginServerPacket {
     }
 
     @Override
-    protected void writeImpl(LoginClient client, WriteBuffer buffer) {
+    protected void writeImpl(LoginClient client, PacketWriter buffer) {
         buffer.writeByte(0x01);
         buffer.writeByte(reason.getCode());
     }

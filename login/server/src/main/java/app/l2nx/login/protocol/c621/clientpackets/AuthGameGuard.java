@@ -29,15 +29,6 @@ import app.l2nx.login.protocol.c621.serverpackets.GGAuth;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Handles the client GameGuard authentication packet.<br>
- * Validates the received session identifier and advances the connection state when successful.
- * <ul>
- * <li>Reads and discards the GameGuard payload integers.</li>
- * <li>Verifies that the received session id matches the client session id.</li>
- * <li>Sets {@link ConnectionState#AUTHED_GG} and replies with {@link GGAuth} on success.</li>
- * <li>Closes the connection with {@link LoginFailReason#REASON_ACCESS_FAILED} on mismatch.</li>
- * </ul>
- * Format: ddddd.
  * @author BazookaRpm
  */
 @Slf4j
@@ -48,11 +39,6 @@ public class AuthGameGuard extends LoginClientPacket {
 
     private int receivedSessionId;
 
-    /**
-     * Reads and validates the GameGuard authentication payload.<br>
-     * Expects one session id followed by four reserved integers.
-     * @return {@code true} if the payload was fully read, {@code false} otherwise.
-     */
     @Override
     protected boolean readImpl() {
         final int remainingBytes = remaining();
@@ -66,15 +52,12 @@ public class AuthGameGuard extends LoginClientPacket {
         receivedSessionId = readInt();
 
         for (int i = 0; i < GAME_GUARD_RESERVED_DWORD_COUNT; i++) {
-            readInt(); // Reserved GameGuard data.
+            readInt();
         }
 
         return true;
     }
 
-    /**
-     * Validates the GameGuard session and updates the client connection state.
-     */
     @Override
     public void run() {
         final int clientSessionId = getClient().getSessionId();
@@ -88,6 +71,7 @@ public class AuthGameGuard extends LoginClientPacket {
         }
 
         getClient().setConnectionState(ConnectionState.AUTHED_GG);
+        getClient().handshakeDone();
         getClient().sendPacket(new GGAuth(clientSessionId));
     }
 }

@@ -24,41 +24,24 @@ package app.l2nx.login.protocol.c621.serverpackets;
 
 import app.l2nx.login.controller.SessionKey;
 import app.l2nx.login.network.LoginClient;
-import app.l2nx.network.buffer.WriteBuffer;
+import app.l2nx.network.codec.PacketWriter;
 
 /**
- * PlayOk packet that authorizes the client to enter the gameserver.<br>
- * Serializes the PlayOk pair required by the protocol.
- * <ul>
- * <li>Opcode 0x07.</li>
- * <li>Writes two PlayOk integers.</li>
- * </ul>
- * author Mobius, BazookaRpm
+ * @author Mobius, BazookaRpm
  */
 public class PlayOk extends LoginServerPacket {
-    // Constants.
     private static final int OPCODE_PLAY_OK = 0x07;
 
-    // Session key parts.
     private final int playOkPart1;
     private final int playOkPart2;
 
-    /**
-     * Constructs the packet with the PlayOk pair.
-     * @param sessionKey
-     */
     public PlayOk(SessionKey sessionKey) {
         playOkPart1 = sessionKey.getPlayOkID1();
         playOkPart2 = sessionKey.getPlayOkID2();
     }
 
-    /**
-     * Writes the PlayOk packet to the client buffer.
-     * @param client
-     * @param buffer
-     */
     @Override
-    protected void writeImpl(LoginClient client, WriteBuffer buffer) {
+    protected void writeImpl(LoginClient client, PacketWriter buffer) {
         buffer.writeByte(OPCODE_PLAY_OK);
         buffer.writeInt(playOkPart1);
         buffer.writeInt(playOkPart2);

@@ -20,13 +20,9 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package app.l2nx.login.protocol.c621;
+package app.l2nx.login.protocol.c621.clientpackets;
 
-import app.l2nx.login.protocol.c621.clientpackets.AuthGameGuard;
-import app.l2nx.login.protocol.c621.clientpackets.LoginClientPacket;
-import app.l2nx.login.protocol.c621.clientpackets.RequestAuthLogin;
-import app.l2nx.login.protocol.c621.clientpackets.RequestServerList;
-import app.l2nx.login.protocol.c621.clientpackets.RequestServerLogin;
+import app.l2nx.login.protocol.c621.ConnectionState;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -42,6 +38,7 @@ public enum LoginClientPackets {
     REQUEST_AUTH_LOGIN(0x00, RequestAuthLogin::new, ConnectionState.AUTHED_GG),
     REQUEST_SERVER_LOGIN(0x02, RequestServerLogin::new, ConnectionState.AUTHED_LOGIN),
     REQUEST_SERVER_LIST(0x05, RequestServerList::new, ConnectionState.AUTHED_LOGIN),
+    // Sent by some High Five clients; the server never offers the agreement screen, so there is nothing to answer.
     REQUEST_PI_AGREEMENT_CHECK(0x0E, null, ConnectionState.AUTHED_LOGIN),
     REQUEST_PI_AGREEMENT(0x0F, null, ConnectionState.AUTHED_LOGIN);
 
@@ -65,13 +62,12 @@ public enum LoginClientPackets {
     private final Set<ConnectionState> connectionStates;
 
     LoginClientPackets(int packetId, Supplier<LoginClientPacket> packetSupplier, ConnectionState... connectionStates) {
-        // Packet id is an unsigned byte.
         if (packetId > 0xFF) {
             throw new IllegalArgumentException("Packet id must not be bigger than 0xFF");
         }
 
         this.packetId = (short) packetId;
-        this.packetSupplier = packetSupplier != null ? packetSupplier : () -> null;
+        this.packetSupplier = packetSupplier;
 
         final EnumSet<ConnectionState> states = EnumSet.noneOf(ConnectionState.class);
         Collections.addAll(states, connectionStates);
@@ -82,7 +78,15 @@ public enum LoginClientPackets {
         return packetId;
     }
 
+    /** A known opcode without a handler: the packet is dropped under its own reason, not counted as unknown. */
+    public boolean isIgnored() {
+        return packetSupplier == null;
+    }
+
     public LoginClientPacket newPacket() {
+        if (packetSupplier == null) {
+            throw new IllegalStateException(name() + " has no handler");
+        }
         return packetSupplier.get();
     }
 }

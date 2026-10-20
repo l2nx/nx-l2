@@ -23,11 +23,8 @@
 package app.l2nx.login.protocol.c621.serverpackets;
 
 import app.l2nx.login.network.LoginClient;
-import app.l2nx.network.buffer.WriteBuffer;
+import app.l2nx.network.codec.PacketWriter;
 
-/**
- * Format: d d: response
- */
 public class GGAuth extends LoginServerPacket {
     private final int response;
 
@@ -36,7 +33,7 @@ public class GGAuth extends LoginServerPacket {
     }
 
     @Override
-    protected void writeImpl(LoginClient client, WriteBuffer buffer) {
+    protected void writeImpl(LoginClient client, PacketWriter buffer) {
         buffer.writeByte(0x0b);
         buffer.writeInt(response);
         buffer.writeInt(0);

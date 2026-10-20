@@ -24,12 +24,11 @@ package app.l2nx.login.protocol.c621.clientpackets;
 
 import app.l2nx.login.enums.LoginFailReason;
 import app.l2nx.login.network.LoginClient;
-import app.l2nx.login.protocol.c621.serverpackets.ServerList;
 
 /**
  * <pre>
  * Format: ddc
- * d: fist part of session id
+ * d: first part of session id
  * d: second part of session id
  * c: ?
  * </pre>
@@ -44,8 +43,8 @@ public class RequestServerList extends LoginClientPacket {
     @Override
     protected boolean readImpl() {
         if (remaining() >= 8) {
-            skey1 = readInt(); // loginOk 1
-            skey2 = readInt(); // loginOk 2
+            skey1 = readInt();
+            skey2 = readInt();
             return true;
         }
 
@@ -56,7 +55,7 @@ public class RequestServerList extends LoginClientPacket {
     public void run() {
         final LoginClient client = getClient();
         if (client.getSessionKey().checkLoginPair(skey1, skey2)) {
-            client.sendPacket(new ServerList(client));
+            client.sendServerList();
         } else {
             client.close(LoginFailReason.REASON_ACCESS_FAILED);
         }

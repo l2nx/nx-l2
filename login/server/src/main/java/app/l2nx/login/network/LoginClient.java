@@ -27,170 +27,152 @@
 package app.l2nx.login.network;
 
 import app.l2nx.login.controller.LoginController;
-import app.l2nx.login.controller.ScrambledKeyPair;
 import app.l2nx.login.controller.SessionKey;
 import app.l2nx.login.enums.AccountKickedReason;
 import app.l2nx.login.enums.LoginFailReason;
 import app.l2nx.login.enums.PlayFailReason;
+import app.l2nx.login.protocol.LoginVariant;
 import app.l2nx.login.protocol.c621.ConnectionState;
 import app.l2nx.login.protocol.c621.serverpackets.AccountKicked;
-import app.l2nx.login.protocol.c621.serverpackets.Init;
 import app.l2nx.login.protocol.c621.serverpackets.LoginFail;
 import app.l2nx.login.protocol.c621.serverpackets.LoginServerPacket;
 import app.l2nx.login.protocol.c621.serverpackets.PlayFail;
-import app.l2nx.network.Client;
-import app.l2nx.network.Connection;
-import app.l2nx.network.buffer.ReadBuffer;
-import app.l2nx.network.buffer.WriteBuffer;
+import app.l2nx.login.protocol.c621.serverpackets.ServerList;
+import app.l2nx.network.channel.CloseReason;
+import app.l2nx.network.channel.Connections;
+import app.l2nx.network.channel.OutboundQueue;
+import app.l2nx.network.channel.guard.ConnectionDeadlines;
+import app.l2nx.network.channel.guard.IdlePolicy;
+import app.l2nx.network.exec.SerialExecutor;
+import io.netty.buffer.ByteBuf;
+import io.netty.channel.Channel;
+import io.netty.util.AttributeKey;
+import java.net.InetSocketAddress;
 import java.security.interfaces.RSAPrivateKey;
-import java.util.HashMap;
+import java.time.Duration;
+import java.util.Collection;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import lombok.Getter;
 import lombok.Setter;
 
 /**
- * Represents a client connected to the LoginServer.<br>
- * Holds session state, cryptographic context, account metadata and server lists.
- * <ul>
- * <li>RSA/Blowfish handshake and per-client encryption.</li>
- * <li>Session id generation and access level tracking.</li>
- * <li>Lifecycle hooks for connection/disconnection.</li>
- * </ul>
+ * One login connection. Packets run on the connection's lane while game-server replies and the purge arrive on other
+ * threads, so the fields they share are volatile or concurrent.
  * @author KenM, BazookaRpm
  */
-public class LoginClient extends Client<Connection<LoginClient>> {
-    private static final String DEFAULT_IP = "N/A";
-    private static final int DISCONNECT_GRACE_MS = 1000;
+public class LoginClient {
+    public static final AttributeKey<LoginClient> KEY = AttributeKey.valueOf("l2nx.login.client");
 
-    private final LoginEncryption encryption;
-    private final ScrambledKeyPair scrambledPair;
+    static final Duration CHARACTERS_WAIT = Duration.ofMillis(500);
 
-    @Getter
-    private final byte[] blowfishKey;
+    private final Channel channel;
 
     @Getter
-    private String ip = DEFAULT_IP;
+    private final LoginVariant variant;
+
+    private final LoginKeys keys;
 
     @Getter
     private final int sessionId;
 
+    private final SerialExecutor tasks;
+
+    /** {@code null} only for a peer without an address. */
+    @Getter
+    private final String ip;
+
     @Getter
     private final long connectionStartTime;
 
-    @Getter
-    @Setter
-    private String account;
+    private final Map<Integer, Integer> charsOnServers = new ConcurrentHashMap<>();
+    private final Map<Integer, long[]> charsToDelete = new ConcurrentHashMap<>();
+    private final Set<Integer> charactersPending = ConcurrentHashMap.newKeySet();
+    private volatile long charactersDeadline;
+
+    // Event loop only.
+    private ScheduledFuture<?> serverListWait;
 
     @Getter
     @Setter
-    private UUID accountId;
+    private volatile String account;
 
     @Getter
     @Setter
-    private int accessLevel;
+    private volatile UUID accountId;
 
     @Getter
     @Setter
-    private int lastServer;
+    private volatile int accessLevel;
 
     @Getter
     @Setter
-    private SessionKey sessionKey;
-
-    @Setter
-    private boolean joinedGS;
+    private volatile int lastServer;
 
     @Getter
     @Setter
-    private ConnectionState connectionState = ConnectionState.CONNECTED;
+    private volatile SessionKey sessionKey;
+
+    @Setter
+    private volatile boolean joinedGS;
 
     @Getter
-    private Map<Integer, Integer> charsOnServ;
+    @Setter
+    private volatile ConnectionState connectionState = ConnectionState.CONNECTED;
 
-    @Getter
-    private Map<Integer, long[]> charsWaitingDelOnServ;
-
-    public LoginClient(Connection<LoginClient> connection) {
-        super(connection);
-
-        scrambledPair = LoginController.getInstance().getScrambledRSAKeyPair();
-        blowfishKey = LoginController.getInstance().getBlowfishKey();
-        ip = connection.getRemoteAddress();
-        sessionId = LoginController.SECURE_RANDOM.nextInt();
+    public LoginClient(Channel channel, LoginVariant variant, LoginKeys keys, int sessionId, SerialExecutor tasks) {
+        this.channel = channel;
+        this.variant = variant;
+        this.keys = keys;
+        this.sessionId = sessionId;
+        this.tasks = tasks;
+        ip = channel.remoteAddress() instanceof InetSocketAddress inet
+                ? inet.getAddress().getHostAddress()
+                : Objects.toString(channel.remoteAddress(), null);
         connectionStartTime = System.currentTimeMillis();
+        channel.closeFuture().addListener(future -> cancelServerListWait());
+    }
 
-        encryption = new LoginEncryption();
-        encryption.setKey(blowfishKey);
+    public static LoginClient of(Channel channel) {
+        return channel.attr(KEY).get();
+    }
 
-        if (LoginController.getInstance().isBannedAddress(ip)) {
-            close(LoginFailReason.REASON_NOT_AUTHED);
+    public void execute(Runnable task) {
+        if (tasks.execute(task)) {
+            return;
         }
-    }
-
-    @Override
-    public boolean encrypt(WriteBuffer data, int offset, int size) {
-        return encryption.encrypt(data, offset, size);
-    }
-
-    @Override
-    public boolean decrypt(ReadBuffer data, int offset, int size) {
-        final boolean decrypted = encryption.decrypt(data, offset, size);
-        if (!decrypted) {
-            close();
+        if (tasks.isClosed()) {
+            // The server is stopping, the client did nothing wrong.
+            closeNow();
+        } else {
+            Connections.close(channel, CloseReason.FLOOD);
         }
-
-        return decrypted;
-    }
-
-    @Override
-    public void onConnected() {
-        sendPacket(new Init(this));
-    }
-
-    @Override
-    public void onDisconnection() {
-        if (!joinedGS) {
-            LoginController.getInstance().removeAuthedLoginClient(accountId);
-            try {
-                Thread.sleep(DISCONNECT_GRACE_MS);
-            } catch (InterruptedException e) {
-            }
-        }
-    }
-
-    public byte[] getScrambledModulus() {
-        return scrambledPair.getScrambledModulus();
-    }
-
-    public RSAPrivateKey getRSAPrivateKey() {
-        return (RSAPrivateKey) scrambledPair.getPrivateKey();
-    }
-
-    public boolean hasJoinedGS() {
-        return joinedGS;
-    }
-
-    public void setCharsOnServ(int servId, int chars) {
-        if (charsOnServ == null) {
-            charsOnServ = new HashMap<>();
-        }
-        charsOnServ.put(servId, chars);
-    }
-
-    public void serCharsWaitingDelOnServ(int servId, long[] charsToDel) {
-        if (charsWaitingDelOnServ == null) {
-            charsWaitingDelOnServ = new HashMap<>();
-        }
-        charsWaitingDelOnServ.put(servId, charsToDel);
     }
 
     public void sendPacket(LoginServerPacket packet) {
-        writePacket(packet);
+        final ByteBuf frame = packet.serialize(this, channel.alloc());
+        if (frame != null) {
+            OutboundQueue.of(channel).send(frame);
+        }
+    }
+
+    public void close(LoginServerPacket packet) {
+        final ByteBuf frame = packet.serialize(this, channel.alloc());
+        if (frame == null) {
+            closeNow();
+            return;
+        }
+        OutboundQueue.of(channel).sendAndClose(frame);
     }
 
     public void close(LoginFailReason reason) {
-        sendPacket(new LoginFail(reason));
+        close(new LoginFail(reason));
     }
 
     public void close(PlayFailReason reason) {
@@ -201,22 +183,137 @@ public class LoginClient extends Client<Connection<LoginClient>> {
         close(new AccountKicked(reason));
     }
 
+    public void closeNow() {
+        channel.close();
+    }
+
+    public boolean isConnected() {
+        return channel.isActive();
+    }
+
+    public void handshakeDone() {
+        // The pipeline is gone once the channel is closed.
+        final ConnectionDeadlines deadlines = ConnectionDeadlines.of(channel);
+        if (deadlines != null) {
+            deadlines.handshakeReached();
+        }
+    }
+
+    public void authDone() {
+        final ConnectionDeadlines deadlines = ConnectionDeadlines.of(channel);
+        if (deadlines != null) {
+            deadlines.authReached();
+        }
+        // The client sends nothing on the licence and server list screens; the session lifetime bounds them.
+        final IdlePolicy idle = IdlePolicy.of(channel);
+        if (idle != null) {
+            idle.extendReadTimeout(LoginController.LOGIN_TIMEOUT);
+        }
+    }
+
+    public byte[] getBlowfishKey() {
+        return keys.blowfishKey();
+    }
+
+    public byte[] getScrambledModulus() {
+        return keys.rsa().getScrambledModulus();
+    }
+
+    public RSAPrivateKey getRSAPrivateKey() {
+        return (RSAPrivateKey) keys.rsa().getPrivateKey();
+    }
+
+    public boolean hasJoinedGS() {
+        return joinedGS;
+    }
+
+    public void setCharsOnServ(int serverId, int chars) {
+        charsOnServers.put(serverId, chars);
+    }
+
+    public Map<Integer, Integer> getCharsOnServ() {
+        return charsOnServers;
+    }
+
+    public void serCharsWaitingDelOnServ(int serverId, long[] charsToDel) {
+        charsToDelete.put(serverId, charsToDel);
+    }
+
+    public Map<Integer, long[]> getCharsWaitingDelOnServ() {
+        return charsToDelete;
+    }
+
+    /** Called before the requests go out, so no answer can arrive ahead of its server. */
+    public void awaitCharacters(Collection<Integer> serverIds) {
+        charactersDeadline = channel.eventLoop().ticker().nanoTime() + CHARACTERS_WAIT.toNanos();
+        charactersPending.addAll(serverIds);
+    }
+
+    /** Called after the counts of that server are stored. */
+    public void charactersArrived(int serverId) {
+        if (charactersPending.remove(serverId) && charactersPending.isEmpty()) {
+            onEventLoop(this::serverListWaitOver);
+        }
+    }
+
+    /**
+     * Waits for the game servers' character counts, up to {@link #CHARACTERS_WAIT}, before sending the list: the High
+     * Five client never asks again, so an early list would show no characters for good.
+     */
+    public void sendServerList() {
+        onEventLoop(this::scheduleServerList);
+    }
+
+    private void onEventLoop(Runnable task) {
+        try {
+            channel.eventLoop().execute(task);
+        } catch (RejectedExecutionException e) {
+            // The loop is shutting down and closes this connection with it; there is no list left to send.
+        }
+    }
+
+    private void scheduleServerList() {
+        if (!channel.isActive() || (serverListWait != null)) {
+            return;
+        }
+        final long wait = charactersDeadline - channel.eventLoop().ticker().nanoTime();
+        if (charactersPending.isEmpty() || (wait <= 0)) {
+            buildServerList();
+            return;
+        }
+        serverListWait = channel.eventLoop().schedule(this::serverListWaitOver, wait, TimeUnit.NANOSECONDS);
+    }
+
+    private void serverListWaitOver() {
+        if (serverListWait == null) {
+            return;
+        }
+        cancelServerListWait();
+        if (channel.isActive()) {
+            buildServerList();
+        }
+    }
+
+    private void cancelServerListWait() {
+        if (serverListWait != null) {
+            serverListWait.cancel(false);
+            serverListWait = null;
+        }
+    }
+
+    private void buildServerList() {
+        // On the lane: resolving a game server's address may block.
+        execute(() -> sendPacket(new ServerList(this)));
+    }
+
+    boolean isServerListWaiting() {
+        return serverListWait != null;
+    }
+
     @Override
     public String toString() {
-        final String ip = getHostAddress();
-        final StringBuilder sb = new StringBuilder();
-        sb.append(getClass().getSimpleName());
-        sb.append(" [");
-        if (account != null) {
-            sb.append("Account: ");
-            sb.append(account);
-        }
-        if (account != null) {
-            sb.append(" - ");
-        }
-        sb.append("IP: ");
-        sb.append(ip);
-        sb.append(']');
-        return sb.toString();
+        return account == null
+                ? "LoginClient [IP: " + ip + "]"
+                : "LoginClient [Account: " + account + " - IP: " + ip + "]";
     }
 }

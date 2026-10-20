@@ -47,8 +47,7 @@ import app.l2nx.network.packet.SimpleReadablePacket;
 public class PlayerAuthRequest extends SimpleReadablePacket {
     public PlayerAuthRequest(byte[] decrypt, GameServerThread server) {
         super(decrypt);
-        readByte(); // Packet id, it is already processed.
-
+        readByte();
         final String login = readString();
         final int playKey1 = readInt();
         final int playKey2 = readInt();
@@ -59,7 +58,7 @@ public class PlayerAuthRequest extends SimpleReadablePacket {
         final LoginClient client = LoginController.getInstance().getAuthedClientByLogin(login);
 
         if ((client != null) && sessionKey.equals(client.getSessionKey())) {
-            LoginController.getInstance().removeAuthedLoginClient(client.getAccountId());
+            LoginController.getInstance().removeAuthedLoginClientIfCurrent(client);
             server.sendPacket(PlayerAuthResponse.accepted(login, client.getAccountId()));
         } else {
             server.sendPacket(PlayerAuthResponse.rejected(login));
