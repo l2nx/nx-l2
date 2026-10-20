@@ -29,8 +29,8 @@ import static app.l2nx.highfive.repository.LegacyValues.instantOrNull;
 import app.l2nx.highfive.communitybbs.Manager.ForumsBBSManager;
 import app.l2nx.highfive.communitybbs.Manager.PostBBSManager;
 import app.l2nx.highfive.repository.forum.model.PostRow;
-import java.util.Collection;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -86,7 +86,8 @@ public class Post {
         }
     }
 
-    private final Collection<CPost> post;
+    // Oldest first; immutable, so safe to share between threads.
+    private final List<CPost> post;
 
     /**
      * @param postOwner
@@ -97,7 +98,6 @@ public class Post {
      * @param txt
      */
     public Post(String postOwner, int postOwnerId, long date, int tid, int postForumId, String txt) {
-        post = ConcurrentHashMap.newKeySet();
         final CPost cp = new CPost();
         cp.setPostOwner(postOwner);
         cp.setPostOwnerId(postOwnerId);
@@ -112,23 +112,15 @@ public class Post {
                         .createdAt(instantOrNull(date))
                         .content(cp.getPostText())
                         .build()));
-        post.add(cp);
+        post = List.of(cp);
     }
 
     public Post(Topic t) {
-        post = ConcurrentHashMap.newKeySet();
-        load(t);
+        post = load(t);
     }
 
-    public CPost getCPost(int id) {
-        int i = 0;
-        for (CPost cp : post) {
-            if (i++ == id) {
-                return cp;
-            }
-        }
-
-        return null;
+    public CPost getCPost(int index) {
+        return (index >= 0) && (index < post.size()) ? post.get(index) : null;
     }
 
     public void deleteMe(Topic t) {
@@ -140,8 +132,10 @@ public class Post {
         }
     }
 
-    private void load(Topic t) {
+    private static List<CPost> load(Topic t) {
+        final List<CPost> posts = new ArrayList<>();
         try {
+            // findPosts returns the posts by ascending identity id, which is their creation order.
             for (PostRow row : ForumsBBSManager.getInstance().findPosts(t.getID())) {
                 final CPost cp = new CPost();
                 cp.setPostId(row.id());
@@ -151,11 +145,12 @@ public class Post {
                 cp.setPostTopicId(row.topicId());
                 cp.setPostForumId(t.getForumID());
                 cp.setPostText(row.content());
-                post.add(cp);
+                posts.add(cp);
             }
         } catch (DataAccessException e) {
             log.warn("Data error on Post {}/{} : {}", t.getForumID(), t.getID(), e.getMessage(), e);
         }
+        return List.copyOf(posts);
     }
 
     public void updateText(int i) {
