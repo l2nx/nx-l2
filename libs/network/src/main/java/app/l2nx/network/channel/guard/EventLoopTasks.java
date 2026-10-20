@@ -5,6 +5,7 @@
 package app.l2nx.network.channel.guard;
 
 import io.netty.util.concurrent.EventExecutor;
+import java.util.concurrent.RejectedExecutionException;
 
 final class EventLoopTasks {
     private EventLoopTasks() {}
@@ -14,7 +15,14 @@ final class EventLoopTasks {
         if (executor.inEventLoop()) {
             action.run();
         } else {
-            executor.execute(action);
+            try {
+                executor.execute(action);
+            } catch (RejectedExecutionException e) {
+                // The loop is shutting down and its channels close with it, so the action has nothing left to guard.
+                if (!executor.isShuttingDown()) {
+                    throw e;
+                }
+            }
         }
     }
 }

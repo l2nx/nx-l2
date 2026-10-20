@@ -53,6 +53,14 @@ public final class IdlePolicy extends ChannelInboundHandlerAdapter {
         EventLoopTasks.run(ctx.executor(), () -> switchTo(null, readTimeout));
     }
 
+    /**
+     * For a phase in which the client legitimately stays silent longer than {@code read-timeout}; read-idle still
+     * closes, at the given bound.
+     */
+    public void extendReadTimeout(Duration readTimeout) {
+        EventLoopTasks.run(ctx.executor(), () -> switchTo(null, readTimeout));
+    }
+
     private void switchTo(Runnable newPing, Duration readerIdle) {
         ping = newPing;
         misses = 0;

@@ -73,6 +73,7 @@ class SerialExecutorTest {
             assertThat(lane.execute(() -> {})).isTrue();
             assertThat(lane.execute(() -> {})).isTrue();
             assertThat(lane.execute(() -> {})).isFalse();
+            assertThat(lane.isClosed()).isFalse();
             release.countDown();
         }
     }
@@ -114,6 +115,7 @@ class SerialExecutorTest {
         executor.close();
 
         assertThat(lane.execute(() -> {})).isFalse();
+        assertThat(lane.isClosed()).isTrue();
     }
 
     @Test

@@ -47,6 +47,11 @@ public final class SerialExecutor {
         return true;
     }
 
+    /** Tells a refused task of a stopping executor from one of a full lane. */
+    public boolean isClosed() {
+        return closed.getAsBoolean();
+    }
+
     private void schedule() {
         // The start fails only once the executor is shut down, so no later start can succeed either.
         if (running.compareAndSet(false, true) && !start.test(this::drain)) {

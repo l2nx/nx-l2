@@ -13,6 +13,7 @@ import app.l2nx.network.config.NetworkProperties;
 import app.l2nx.network.test.TestChannels;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.embedded.EmbeddedChannel;
+import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Nested;
@@ -86,6 +87,23 @@ class IdlePolicyTest {
             assertThat(channel.isOpen()).isTrue();
             idle(1);
             assertThat(channel.isOpen()).isFalse();
+        }
+    }
+
+    @Nested
+    class ExtendReadTimeout {
+        @Test
+        void extendReadTimeout_shouldCloseWithIdle_afterTheNewBound() {
+            IdlePolicy.of(channel).extendReadTimeout(Duration.ofMinutes(5));
+            channel.runPendingTasks();
+
+            idle(299);
+            assertThat(channel.isOpen()).isTrue();
+
+            idle(1);
+
+            assertThat(channel.isOpen()).isFalse();
+            assertThat(Connections.closeReason(channel)).isEqualTo(CloseReason.IDLE);
         }
     }
 

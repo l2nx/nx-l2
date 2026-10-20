@@ -6,12 +6,17 @@ package app.l2nx.network.codec;
 
 import app.l2nx.network.channel.CloseReason;
 import app.l2nx.network.channel.Connections;
+import app.l2nx.network.channel.RateLimitedLog;
 import app.l2nx.network.metrics.model.Direction;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public final class CipherDecoder extends ChannelInboundHandlerAdapter {
+    private static final RateLimitedLog RATE = RateLimitedLog.everyTenSeconds();
+
     private final FrameCipher cipher;
 
     public CipherDecoder(FrameCipher cipher) {
@@ -47,6 +52,13 @@ public final class CipherDecoder extends ChannelInboundHandlerAdapter {
         }
 
         if (!accepted) {
+            if (RATE.tryAcquire("cipher-rejected")) {
+                log.warn(
+                        "Connection {} closed: a frame of {} bytes failed the {} check",
+                        ctx.channel().remoteAddress(),
+                        writable.readableBytes(),
+                        cipher.getClass().getSimpleName());
+            }
             writable.release();
             Connections.close(ctx.channel(), CloseReason.ERROR);
             return;

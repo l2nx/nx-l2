@@ -30,6 +30,7 @@ public final class TailExceptionHandler extends ChannelInboundHandlerAdapter {
         final String type = cause.getClass().getSimpleName();
         if (RATE.tryAcquire(type)) {
             if (cause instanceof IOException) {
+                // A peer resetting the connection is routine (a client closed the game).
                 log.debug("Connection {} failed: {}", ctx.channel().remoteAddress(), cause.toString());
             } else if (isExpected(cause)) {
                 log.warn("Connection {} closed on {}: {}", ctx.channel().remoteAddress(), type, cause.getMessage());
@@ -44,7 +45,7 @@ public final class TailExceptionHandler extends ChannelInboundHandlerAdapter {
      * A peer's I/O failure or malformed input says nothing about our code, so its message is enough; anything else
      * is a bug whose stack trace is needed.
      */
-    static boolean isExpected(Throwable cause) {
+    public static boolean isExpected(Throwable cause) {
         return (cause instanceof IOException) || (cause instanceof DecoderException);
     }
 
