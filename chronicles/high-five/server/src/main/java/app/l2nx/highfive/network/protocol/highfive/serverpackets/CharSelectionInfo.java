@@ -24,7 +24,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package app.l2nx.highfive.network.serverpackets;
+package app.l2nx.highfive.network.protocol.highfive.serverpackets;
 
 import static app.l2nx.highfive.repository.LegacyValues.epochMillisOrZero;
 
@@ -43,11 +43,10 @@ import app.l2nx.highfive.managers.ItemManager;
 import app.l2nx.highfive.managers.PlayerPersistenceManager;
 import app.l2nx.highfive.network.Disconnection;
 import app.l2nx.highfive.network.GameClient;
-import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.highfive.network.holders.CharacterInfoHolder;
 import app.l2nx.highfive.repository.character.model.CharacterRow;
 import app.l2nx.highfive.repository.character.model.Faction;
-import app.l2nx.network.buffer.WriteBuffer;
+import app.l2nx.network.codec.PacketWriter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -79,7 +78,7 @@ public class CharSelectionInfo extends ServerPacket {
     }
 
     @Override
-    public void writeImpl(GameClient client, WriteBuffer buffer) {
+    public void writeImpl(GameClient client, PacketWriter buffer) {
         ServerPackets.CHARACTER_SELECTION_INFO.writeId(this, buffer);
         final int size = charInfo.size();
         buffer.writeInt(size); // Created character count

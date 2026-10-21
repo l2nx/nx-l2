@@ -20,15 +20,14 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package app.l2nx.highfive.network.serverpackets;
+package app.l2nx.highfive.network.protocol.highfive.serverpackets;
 
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.clan.Clan;
 import app.l2nx.highfive.entity.clan.Clan.SubPledge;
 import app.l2nx.highfive.entity.clan.ClanMember;
 import app.l2nx.highfive.network.GameClient;
-import app.l2nx.highfive.network.ServerPackets;
-import app.l2nx.network.buffer.WriteBuffer;
+import app.l2nx.network.codec.PacketWriter;
 import java.util.Collection;
 
 public class PledgeShowMemberListAll extends ServerPacket {
@@ -44,7 +43,7 @@ public class PledgeShowMemberListAll extends ServerPacket {
     }
 
     @Override
-    public void writeImpl(GameClient client, WriteBuffer buffer) {
+    public void writeImpl(GameClient client, PacketWriter buffer) {
         pledgeType = 0;
 
         // FIXME: That's wrong on retail sends this whole packet few times (depending how much sub pledges it has)
@@ -65,7 +64,7 @@ public class PledgeShowMemberListAll extends ServerPacket {
         player.updateUserInfo();
     }
 
-    private void writePledge(int mainOrSubpledge, WriteBuffer buffer) {
+    private void writePledge(int mainOrSubpledge, PacketWriter buffer) {
         ServerPackets.PLEDGE_SHOW_MEMBER_LIST_ALL.writeId(this, buffer);
         buffer.writeInt(mainOrSubpledge);
         buffer.writeInt(clan.getId());

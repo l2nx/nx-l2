@@ -25,7 +25,7 @@ package app.l2nx.highfive.entity.actor.status;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.instance.Pet;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.serverpackets.SystemMessage;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.SystemMessage;
 import lombok.Getter;
 import lombok.Setter;
 

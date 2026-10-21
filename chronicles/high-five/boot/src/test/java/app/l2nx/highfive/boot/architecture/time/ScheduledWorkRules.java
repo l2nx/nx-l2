@@ -2,7 +2,7 @@
  * SPDX-FileCopyrightText: 2026 L2NX contributors
  * SPDX-License-Identifier: Apache-2.0
  */
-package app.l2nx.highfive.boot.architecture;
+package app.l2nx.highfive.boot.architecture.time;
 
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 

@@ -32,7 +32,7 @@ import app.l2nx.highfive.mechanics.punishment.PunishmentAffect;
 import app.l2nx.highfive.mechanics.punishment.PunishmentTask;
 import app.l2nx.highfive.mechanics.punishment.PunishmentType;
 import app.l2nx.highfive.network.Disconnection;
-import app.l2nx.highfive.network.serverpackets.LeaveWorld;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.LeaveWorld;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

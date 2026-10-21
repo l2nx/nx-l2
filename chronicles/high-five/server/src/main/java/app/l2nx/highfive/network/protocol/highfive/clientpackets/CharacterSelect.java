@@ -24,7 +24,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package app.l2nx.highfive.network.clientpackets;
+package app.l2nx.highfive.network.protocol.highfive.clientpackets;
 
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.config.custom.DualboxCheckConfig;
@@ -46,15 +46,14 @@ import app.l2nx.highfive.mechanics.events.returns.TerminateReturn;
 import app.l2nx.highfive.mechanics.punishment.PunishmentAffect;
 import app.l2nx.highfive.mechanics.punishment.PunishmentType;
 import app.l2nx.highfive.mechanics.variables.PlayerVariables;
-import app.l2nx.highfive.network.ConnectionState;
 import app.l2nx.highfive.network.Disconnection;
 import app.l2nx.highfive.network.GameClient;
 import app.l2nx.highfive.network.holders.CharacterInfoHolder;
-import app.l2nx.highfive.network.serverpackets.CharSelected;
-import app.l2nx.highfive.network.serverpackets.LeaveWorld;
-import app.l2nx.highfive.network.serverpackets.NpcHtmlMessage;
-import app.l2nx.highfive.network.serverpackets.SSQInfo;
-import app.l2nx.highfive.network.serverpackets.ServerClose;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.CharSelected;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.LeaveWorld;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.NpcHtmlMessage;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.SSQInfo;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ServerClose;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -252,7 +251,6 @@ public class CharacterSelect extends ClientPacket {
                     }
 
                     client.sendPacket(new SSQInfo());
-                    client.setConnectionState(ConnectionState.ENTERING);
                     client.sendPacket(
                             new CharSelected(cha, client.getSessionId().playOk1()));
                 }

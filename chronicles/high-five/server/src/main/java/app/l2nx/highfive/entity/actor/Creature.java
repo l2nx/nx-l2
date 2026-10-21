@@ -137,28 +137,28 @@ import app.l2nx.highfive.mechanics.stats.functions.AbstractFunction;
 import app.l2nx.highfive.network.Disconnection;
 import app.l2nx.highfive.network.GameClient;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.serverpackets.AbstractNpcInfo;
-import app.l2nx.highfive.network.serverpackets.ActionFailed;
-import app.l2nx.highfive.network.serverpackets.Attack;
-import app.l2nx.highfive.network.serverpackets.ChangeMoveType;
-import app.l2nx.highfive.network.serverpackets.ChangeWaitType;
-import app.l2nx.highfive.network.serverpackets.ExRotation;
-import app.l2nx.highfive.network.serverpackets.FakePlayerInfo;
-import app.l2nx.highfive.network.serverpackets.FlyToLocation;
-import app.l2nx.highfive.network.serverpackets.MagicSkillCanceled;
-import app.l2nx.highfive.network.serverpackets.MagicSkillLaunched;
-import app.l2nx.highfive.network.serverpackets.MagicSkillUse;
-import app.l2nx.highfive.network.serverpackets.MoveToLocation;
-import app.l2nx.highfive.network.serverpackets.MoveToPawn;
-import app.l2nx.highfive.network.serverpackets.Revive;
-import app.l2nx.highfive.network.serverpackets.ServerObjectInfo;
-import app.l2nx.highfive.network.serverpackets.ServerPacket;
-import app.l2nx.highfive.network.serverpackets.SetupGauge;
-import app.l2nx.highfive.network.serverpackets.SocialAction;
-import app.l2nx.highfive.network.serverpackets.StatusUpdate;
-import app.l2nx.highfive.network.serverpackets.StopMove;
-import app.l2nx.highfive.network.serverpackets.SystemMessage;
-import app.l2nx.highfive.network.serverpackets.TeleportToLocation;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.AbstractNpcInfo;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ActionFailed;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.Attack;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ChangeMoveType;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ChangeWaitType;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ExRotation;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.FakePlayerInfo;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.FlyToLocation;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.MagicSkillCanceled;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.MagicSkillLaunched;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.MagicSkillUse;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.MoveToLocation;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.MoveToPawn;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.Revive;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ServerObjectInfo;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ServerPacket;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.SetupGauge;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.SocialAction;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.StatusUpdate;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.StopMove;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.SystemMessage;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.TeleportToLocation;
 import app.l2nx.highfive.taskmanagers.AttackStanceTaskManager;
 import app.l2nx.highfive.taskmanagers.CreatureSeeTaskManager;
 import app.l2nx.highfive.taskmanagers.GameTimeTaskManager;
@@ -500,11 +500,10 @@ public abstract class Creature extends WorldObject {
             final Player player = asPlayer();
             if (player.isOnline()) {
                 Disconnection.of(player)
-                        .storeAndDeleteWith(
-                                new SystemMessage(
-                                        SendMessageLocalisationData.getLocalisation(
-                                                player,
-                                                "60 min. have passed after the death of your character, so you were disconnected from the game.")));
+                        .storeAndDeleteWith(new SystemMessage(SendMessageLocalisationData.getLocalisation(
+                                player,
+                                "60 min. have passed after the death of your character, so you were"
+                                        + " disconnected from the game.")));
             }
         } else {
             decayMe();
@@ -566,12 +565,15 @@ public abstract class Creature extends WorldObject {
 
     public void broadcastPacket(ServerPacket packet) {
         packet.sendInBroadcast();
-
-        World.forEachVisibleObject(this, Player.class, player -> {
-            if (isVisibleFor(player)) {
-                player.sendPacket(packet);
-            }
-        });
+        try {
+            World.forEachVisibleObject(this, Player.class, player -> {
+                if (isVisibleFor(player)) {
+                    player.sendPacket(packet);
+                }
+            });
+        } finally {
+            packet.releaseBroadcast();
+        }
     }
 
     // TODO: Add target logic.

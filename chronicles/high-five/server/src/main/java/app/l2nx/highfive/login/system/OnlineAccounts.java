@@ -26,10 +26,9 @@
  */
 package app.l2nx.highfive.login.system;
 
+import app.l2nx.engine.core.identity.EntityIds;
 import app.l2nx.highfive.login.SessionKey;
 import app.l2nx.highfive.network.GameClient;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -38,70 +37,74 @@ import lombok.Builder;
 import org.springframework.stereotype.Component;
 
 /**
- * The sessions this game server holds for the login server, written from the GS-link lane and from client threads.
- * Logins guard a second session before the login server names the account; UUIDs key everything after it.
+ * Sessions held for the login server, written from the GS-link lane and client threads. Logins guard a second session
+ * before the account is named; UUIDs key everything after.
  */
 @Component
 public class OnlineAccounts {
     private final Map<String, GameClient> logins = new ConcurrentHashMap<>();
     private final Map<UUID, GameClient> accounts = new ConcurrentHashMap<>();
-    private final Map<String, PendingAuthentication> pending = new ConcurrentHashMap<>();
-    // Requests in flight per character: a character may send a second change before the first is answered.
-    private final Map<String, Integer> passwordChanges = new ConcurrentHashMap<>();
+    private final Map<UUID, PendingAuthentication> pending = new ConcurrentHashMap<>();
+    private final Map<UUID, GameClient> passwordChanges = new ConcurrentHashMap<>();
 
     public boolean reserve(String login, GameClient client) {
         return logins.putIfAbsent(login, client) == null;
     }
 
-    /** @return the session that held the login, {@code null} for none */
     public GameClient release(String login) {
         return logins.remove(login);
     }
 
-    public void awaitAuthentication(String login, GameClient client, SessionKey key) {
+    public boolean release(String login, GameClient client) {
+        return logins.remove(login, client);
+    }
+
+    public UUID awaitAuthentication(String login, GameClient client, SessionKey key) {
+        final UUID requestId = EntityIds.next();
         pending.put(
-                login,
-                PendingAuthentication.builder().client(client).sessionKey(key).build());
+                requestId,
+                PendingAuthentication.builder()
+                        .login(login)
+                        .client(client)
+                        .sessionKey(key)
+                        .build());
+        return requestId;
     }
 
-    /** @return the session waiting for the login server's answer about this login, {@code null} for none */
-    public PendingAuthentication takePending(String login) {
-        return pending.remove(login);
+    /** @return the client's entry for this request, taken out; {@code null} when it is gone or another client's */
+    public PendingAuthentication takePending(UUID requestId, GameClient client) {
+        final PendingAuthentication waiting = pending.get(requestId);
+        return ((waiting != null) && (waiting.client() == client) && pending.remove(requestId, waiting))
+                ? waiting
+                : null;
     }
 
-    /** @return every session waiting for the login server's answer, by login; none is left waiting */
-    public Map<String, PendingAuthentication> takeAllPending() {
-        final Map<String, PendingAuthentication> taken = new HashMap<>();
-        for (String login : pending.keySet()) {
-            final PendingAuthentication waiting = pending.remove(login);
-            if (waiting != null) {
-                taken.put(login, waiting);
-            }
-        }
-        return taken;
+    public List<UUID> pendingAuthentications() {
+        return List.copyOf(pending.keySet());
     }
 
-    public void cancelAuthentication(GameClient client) {
+    public UUID awaitPasswordChange(GameClient client) {
+        final UUID requestId = EntityIds.next();
+        passwordChanges.put(requestId, client);
+        return requestId;
+    }
+
+    public boolean takePasswordChange(UUID requestId, GameClient client) {
+        return passwordChanges.remove(requestId, client);
+    }
+
+    public List<UUID> pendingPasswordChanges() {
+        return List.copyOf(passwordChanges.keySet());
+    }
+
+    public void cancelRequests(GameClient client) {
         pending.values().removeIf(waiting -> waiting.client() == client);
+        passwordChanges.values().removeIf(waiting -> waiting == client);
     }
 
-    public void awaitPasswordChange(String characterName) {
-        passwordChanges.merge(characterName, 1, Integer::sum);
-    }
-
-    public void takePasswordChange(String characterName) {
-        passwordChanges.computeIfPresent(characterName, (name, count) -> (count > 1) ? count - 1 : null);
-    }
-
-    /** @return the characters waiting for the login server's answer to a password change; none waits afterwards */
-    public List<String> takeAllPasswordChanges() {
-        final List<String> taken = new ArrayList<>();
-        for (String characterName : passwordChanges.keySet()) {
-            if (passwordChanges.remove(characterName) != null) {
-                taken.add(characterName);
-            }
-        }
-        return taken;
+    public GameClient requester(UUID requestId) {
+        final PendingAuthentication waiting = pending.get(requestId);
+        return (waiting != null) ? waiting.client() : passwordChanges.get(requestId);
     }
 
     public void enter(UUID accountId, GameClient client) {
@@ -110,6 +113,10 @@ public class OnlineAccounts {
 
     public void leave(UUID accountId) {
         accounts.remove(accountId);
+    }
+
+    public boolean leave(UUID accountId, GameClient client) {
+        return accounts.remove(accountId, client);
     }
 
     public GameClient find(UUID accountId) {
@@ -127,5 +134,5 @@ public class OnlineAccounts {
     }
 
     @Builder(toBuilder = true)
-    public record PendingAuthentication(GameClient client, SessionKey sessionKey) {}
+    public record PendingAuthentication(String login, GameClient client, SessionKey sessionKey) {}
 }

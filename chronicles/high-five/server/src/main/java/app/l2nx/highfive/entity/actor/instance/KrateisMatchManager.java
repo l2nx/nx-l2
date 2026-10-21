@@ -29,7 +29,7 @@ import app.l2nx.highfive.entity.actor.templates.NpcTemplate;
 import app.l2nx.highfive.managers.games.KrateisCubeManager;
 import app.l2nx.highfive.mechanics.krateisCube.KrateiArena;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.serverpackets.ExPVPMatchCCRetire;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ExPVPMatchCCRetire;
 import lombok.Getter;
 import lombok.Setter;
 

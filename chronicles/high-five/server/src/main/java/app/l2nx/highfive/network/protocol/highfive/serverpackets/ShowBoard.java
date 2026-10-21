@@ -20,11 +20,10 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package app.l2nx.highfive.network.serverpackets;
+package app.l2nx.highfive.network.protocol.highfive.serverpackets;
 
 import app.l2nx.highfive.network.GameClient;
-import app.l2nx.highfive.network.ServerPackets;
-import app.l2nx.network.buffer.WriteBuffer;
+import app.l2nx.network.codec.PacketWriter;
 import java.util.List;
 
 public class ShowBoard extends ServerPacket {
@@ -53,7 +52,7 @@ public class ShowBoard extends ServerPacket {
     }
 
     @Override
-    public void writeImpl(GameClient client, WriteBuffer buffer) {
+    public void writeImpl(GameClient client, PacketWriter buffer) {
         ServerPackets.SHOW_BOARD.writeId(this, buffer);
         buffer.writeByte(showBoard); // c4 1 to show community 00 to hide
         buffer.writeString("bypass _bbshome"); // top

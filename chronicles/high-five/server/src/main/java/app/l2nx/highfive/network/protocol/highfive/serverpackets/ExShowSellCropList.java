@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package app.l2nx.highfive.network.serverpackets;
+package app.l2nx.highfive.network.protocol.highfive.serverpackets;
 
 import app.l2nx.highfive.entity.item.instance.Item;
 import app.l2nx.highfive.entity.itemcontainer.PlayerInventory;
@@ -25,8 +25,7 @@ import app.l2nx.highfive.managers.CastleManorManager;
 import app.l2nx.highfive.mechanics.siege.manor.CropProcure;
 import app.l2nx.highfive.mechanics.siege.manor.Seed;
 import app.l2nx.highfive.network.GameClient;
-import app.l2nx.highfive.network.ServerPackets;
-import app.l2nx.network.buffer.WriteBuffer;
+import app.l2nx.network.codec.PacketWriter;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -55,7 +54,7 @@ public class ExShowSellCropList extends ServerPacket {
     }
 
     @Override
-    public void writeImpl(GameClient client, WriteBuffer buffer) {
+    public void writeImpl(GameClient client, PacketWriter buffer) {
         ServerPackets.EX_SHOW_SELL_CROP_LIST.writeId(this, buffer);
         buffer.writeInt(manorId); // manor id
         buffer.writeInt(cropsItems.size()); // size

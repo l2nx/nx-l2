@@ -26,14 +26,13 @@
  */
 package app.l2nx.highfive.login.command;
 
-import app.l2nx.highfive.entity.actor.Player;
+import app.l2nx.engine.core.session.Session;
+import app.l2nx.engine.core.session.command.SessionCommandHandler;
 import app.l2nx.highfive.login.LoginService;
-import app.l2nx.highfive.login.system.OnlineAccounts;
 import app.l2nx.highfive.network.Disconnection;
 import app.l2nx.highfive.network.GameClient;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.serverpackets.SystemMessage;
-import java.util.function.Consumer;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.SystemMessage;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -42,30 +41,40 @@ import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor(access = AccessLevel.PACKAGE)
-class KickAccountHandler implements Consumer<KickAccount> {
+class KickAccountHandler implements SessionCommandHandler<KickAccount> {
     private static final Logger ACCOUNTING_LOG = LoggerFactory.getLogger("accounting");
 
     private final LoginService loginService;
-    private final OnlineAccounts accounts;
 
     @Override
-    public void accept(KickAccount command) {
-        final GameClient client = accounts.find(command.accountId());
-        if (client != null) {
-            final SystemMessage message =
-                    new SystemMessage(SystemMessageId.ANOTHER_PERSON_HAS_LOGGED_IN_WITH_THE_SAME_ACCOUNT);
-            if (client.isDetached()) {
-                final Player player = client.getPlayer();
-                if (player != null) {
-                    player.storeMe();
-                    player.deleteMe();
-                }
-                client.close(message);
-            } else {
-                Disconnection.of(client).storeAndDeleteWith(message);
+    public void handle(Session session, KickAccount command) {
+        final GameClient client = GameClient.of(session);
+        try {
+            Disconnection.of(client)
+                    .storeAndDeleteWith(
+                            new SystemMessage(SystemMessageId.ANOTHER_PERSON_HAS_LOGGED_IN_WITH_THE_SAME_ACCOUNT));
+            ACCOUNTING_LOG.info("Kicked by login, {}", client);
+        } finally {
+            loginService.logout(client.getAccountName(), command.accountId());
+        }
+    }
+
+    /**
+     * A detached client (offline trade or play) has no session but still holds the account; it is saved and removed
+     * here, and the account is freed even when that fails.
+     */
+    @Override
+    public void handleWithoutSession(KickAccount command) {
+        final GameClient client = loginService.findClient(command.accountId());
+        try {
+            if ((client != null) && client.isDetached()) {
+                Disconnection.of(client)
+                        .storeAndDeleteWith(
+                                new SystemMessage(SystemMessageId.ANOTHER_PERSON_HAS_LOGGED_IN_WITH_THE_SAME_ACCOUNT));
                 ACCOUNTING_LOG.info("Kicked by login, {}", client);
             }
+        } finally {
+            loginService.logout((client != null) ? client.getAccountName() : null, command.accountId());
         }
-        loginService.logout((client != null) ? client.getAccountName() : null, command.accountId());
     }
 }

@@ -40,12 +40,12 @@ import app.l2nx.highfive.entity.item.enums.ItemProcessType;
 import app.l2nx.highfive.entity.item.instance.Item;
 import app.l2nx.highfive.managers.PunishmentManager;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.serverpackets.InventoryUpdate;
-import app.l2nx.highfive.network.serverpackets.MagicSkillLaunched;
-import app.l2nx.highfive.network.serverpackets.MagicSkillUse;
-import app.l2nx.highfive.network.serverpackets.NpcHtmlMessage;
-import app.l2nx.highfive.network.serverpackets.StatusUpdate;
-import app.l2nx.highfive.network.serverpackets.SystemMessage;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.InventoryUpdate;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.MagicSkillLaunched;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.MagicSkillUse;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.NpcHtmlMessage;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.StatusUpdate;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.SystemMessage;
 import app.l2nx.highfive.threads.ThreadPool;
 import lombok.extern.slf4j.Slf4j;
 

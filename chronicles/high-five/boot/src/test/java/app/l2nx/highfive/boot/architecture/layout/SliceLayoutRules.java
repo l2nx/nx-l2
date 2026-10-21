@@ -2,7 +2,7 @@
  * SPDX-FileCopyrightText: 2026 L2NX contributors
  * SPDX-License-Identifier: Apache-2.0
  */
-package app.l2nx.highfive.boot.architecture;
+package app.l2nx.highfive.boot.architecture.layout;
 
 import static com.tngtech.archunit.base.DescribedPredicate.not;
 import static com.tngtech.archunit.core.domain.JavaClass.Predicates.resideInAPackage;
@@ -11,21 +11,27 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.constructors;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 
-import app.l2nx.highfive.network.ConnectionState;
+import app.l2nx.engine.core.partition.DomainEvent;
+import app.l2nx.engine.core.session.command.Command;
+import app.l2nx.engine.core.session.command.CommandHandler;
+import app.l2nx.engine.core.session.outbound.ViewEvent;
 import app.l2nx.highfive.network.Disconnection;
 import app.l2nx.highfive.network.GameClient;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.serverpackets.CharSelectionInfo;
-import app.l2nx.highfive.network.serverpackets.LoginFail;
-import app.l2nx.highfive.network.serverpackets.SystemMessage;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.CharSelectionInfo;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.LoginFail;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.SystemMessage;
 import com.tngtech.archunit.base.DescribedPredicate;
 import com.tngtech.archunit.core.domain.JavaClass;
+import com.tngtech.archunit.core.domain.JavaParameterizedType;
+import com.tngtech.archunit.core.domain.JavaType;
 import com.tngtech.archunit.lang.ArchCondition;
 import com.tngtech.archunit.lang.ArchRule;
 import com.tngtech.archunit.lang.ConditionEvent;
 import com.tngtech.archunit.lang.ConditionEvents;
 import com.tngtech.archunit.lang.SimpleConditionEvent;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Stream;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -33,19 +39,17 @@ import org.springframework.modulith.core.ApplicationModules;
 import org.springframework.stereotype.Repository;
 
 @RequiredArgsConstructor(access = AccessLevel.PACKAGE)
-final class SliceLayoutRules {
-    static final String CHRONICLE_ROOT = "app.l2nx.highfive";
-    // Only grows: a slice moved to the layout never falls back to the legacy shape.
+public final class SliceLayoutRules {
+    public static final String CHRONICLE_ROOT = "app.l2nx.highfive";
     static final List<String> MIGRATED = List.of("login");
     static final SliceLayoutRules CHRONICLE = new SliceLayoutRules(CHRONICLE_ROOT, MIGRATED);
 
     /**
-     * Legacy connection classes the migrated slices may still use: the network layer has no ports for the client
-     * connection yet. The list may only shrink, a class leaves it once the slices reach the client through a port.
+     * Legacy connection classes migrated slices may still use until the network layer has client-connection ports;
+     * the list may only shrink.
      */
     static final DescribedPredicate<JavaClass> LEGACY_NETWORK_FACADES = JavaClass.Predicates.belongToAnyOf(
             GameClient.class,
-            ConnectionState.class,
             Disconnection.class,
             SystemMessageId.class,
             CharSelectionInfo.class,
@@ -80,13 +84,13 @@ final class SliceLayoutRules {
                 .that()
                 .resideInAnyPackage(sliceTrees())
                 .and()
-                .haveSimpleNameEndingWith(HANDLER)
+                .implement(CommandHandler.class)
                 .should()
                 .resideInAnyPackage(packages("command"))
                 .andShould()
                 .notBePublic()
-                .andShould(beNamedAfterACommandRecord())
-                .as("a handler is package-private in command/, named after its command")
+                .andShould(beNamedAfterTheCommandItHandles())
+                .as("a command handler is package-private in command/, named after the command it handles")
                 .allowEmptyShould(true);
     }
 
@@ -94,17 +98,33 @@ final class SliceLayoutRules {
         return constructors()
                 .that()
                 .areDeclaredInClassesThat()
-                .resideInAnyPackage(packages("command"))
+                .resideInAnyPackage(sliceTrees())
                 .and()
                 .areDeclaredInClassesThat()
-                .haveSimpleNameEndingWith(HANDLER)
+                .implement(CommandHandler.class)
                 .should()
                 .notBePublic()
-                .as("only Spring creates a handler")
+                .as("only Spring creates a command handler")
                 .allowEmptyShould(true);
     }
 
     ArchRule commands() {
+        return classes()
+                .that()
+                .resideInAnyPackage(sliceTrees())
+                .and()
+                .implement(Command.class)
+                .should()
+                .beRecords()
+                .andShould()
+                .bePublic()
+                .andShould()
+                .resideInAnyPackage(packages("command"))
+                .as("a command is a public record in command/")
+                .allowEmptyShould(true);
+    }
+
+    ArchRule commandPackages() {
         return classes()
                 .that()
                 .resideInAnyPackage(packages("command"))
@@ -112,13 +132,35 @@ final class SliceLayoutRules {
                 .areTopLevelClasses()
                 .and()
                 .doNotHaveSimpleName("package-info")
-                .and()
-                .haveSimpleNameNotEndingWith(HANDLER)
                 .should()
-                .beRecords()
-                .andShould()
-                .bePublic()
-                .as("a command is a public record in command/")
+                .implement(Command.class)
+                .orShould()
+                .implement(CommandHandler.class)
+                .as("command/ holds only commands and their handlers")
+                .allowEmptyShould(true);
+    }
+
+    ArchRule viewEvents() {
+        return classes()
+                .that()
+                .resideInAPackage(root + "..")
+                .and()
+                .areAssignableTo(ViewEvent.class)
+                .should()
+                .resideInAnyPackage(packages("view"))
+                .as("a view event lives in the view package of a slice")
+                .allowEmptyShould(true);
+    }
+
+    ArchRule domainEvents() {
+        return classes()
+                .that()
+                .resideInAPackage(root + "..")
+                .and()
+                .areAssignableTo(DomainEvent.class)
+                .should()
+                .resideInAnyPackage(packages("event"))
+                .as("a domain event lives in the event package of a slice")
                 .allowEmptyShould(true);
     }
 
@@ -136,8 +178,7 @@ final class SliceLayoutRules {
                 .allowEmptyShould(true);
     }
 
-    // The frozen rules carry a fixed description and fixed violation texts: the description keys the freeze store and
-    // the texts match its lines, while the package lists grow with MIGRATED.
+    // Frozen rules keep a fixed description and violation texts: they key the freeze store.
 
     ArchRule repositories() {
         return classes()
@@ -243,17 +284,31 @@ final class SliceLayoutRules {
         };
     }
 
-    private static ArchCondition<JavaClass> beNamedAfterACommandRecord() {
-        return new ArchCondition<>("be named after a command record of its package") {
+    private static ArchCondition<JavaClass> beNamedAfterTheCommandItHandles() {
+        return new ArchCondition<>("be named after the command it handles") {
             @Override
             public void check(JavaClass handler, ConditionEvents events) {
-                final String command =
-                        handler.getName().substring(0, handler.getName().length() - HANDLER.length());
-                final boolean named = handler.getPackage().getClasses().stream()
-                        .anyMatch(type -> type.getName().equals(command) && type.isRecord());
+                final Optional<JavaClass> command = handledCommand(handler);
+                final boolean named = command.map(
+                                type -> handler.getSimpleName().equals(type.getSimpleName() + HANDLER))
+                        .orElse(false);
                 events.add(new SimpleConditionEvent(
-                        handler, named, handler.getName() + (named ? " handles " : " handles no record ") + command));
+                        handler,
+                        named,
+                        handler.getName()
+                                + (named ? " is named after " : " is not named after ")
+                                + command.map(JavaClass::getName).orElse("a command type it declares")));
             }
         };
+    }
+
+    private static Optional<JavaClass> handledCommand(JavaClass handler) {
+        return handler.getInterfaces().stream()
+                .filter(JavaParameterizedType.class::isInstance)
+                .map(JavaParameterizedType.class::cast)
+                .filter(type -> type.toErasure().isAssignableTo(CommandHandler.class))
+                .flatMap(type -> type.getActualTypeArguments().stream())
+                .map(JavaType::toErasure)
+                .findFirst();
     }
 }

@@ -35,7 +35,7 @@ import app.l2nx.highfive.managers.AntiFeedManager;
 import app.l2nx.highfive.managers.ZoneManager;
 import app.l2nx.highfive.mechanics.events.ListenersContainer;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.serverpackets.SystemMessage;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.SystemMessage;
 import app.l2nx.highfive.repository.character.CharacterVariableRepository;
 import app.l2nx.highfive.repository.olympiad.OlympiadFightRepository;
 import app.l2nx.highfive.repository.olympiad.OlympiadNobleRepository;

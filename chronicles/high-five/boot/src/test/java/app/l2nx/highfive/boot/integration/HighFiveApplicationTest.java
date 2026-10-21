@@ -17,9 +17,15 @@ import app.l2nx.database.PostgresDatabase;
 import app.l2nx.highfive.GameServer;
 import app.l2nx.highfive.Shutdown;
 import app.l2nx.highfive.config.ServerConfig;
+import app.l2nx.highfive.network.protocol.GameProtocolAdapter;
+import app.l2nx.highfive.network.protocol.GameProtocolProperties;
+import app.l2nx.highfive.network.protocol.GameProtocolRegistry;
+import app.l2nx.highfive.network.protocol.highfive.HighFiveAdapter;
+import java.io.DataInputStream;
 import java.net.Socket;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.util.List;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
@@ -61,6 +67,9 @@ class HighFiveApplicationTest extends BootSmokeTest {
     @Nested
     @Order(1)
     class Start {
+        @Autowired
+        GameProtocolRegistry protocolRegistry;
+
         @Test
         void readiness_shouldBeUp_whenStarted() throws Exception {
             final HttpResponse<String> actual = get("/actuator/health/readiness");
@@ -80,11 +89,40 @@ class HighFiveApplicationTest extends BootSmokeTest {
         }
 
         @Test
+        void clientPort_shouldAnswerTheProtocolVersionWithTheKeyPacket() throws Exception {
+            try (Socket socket = connect(ServerConfig.PORT_GAME)) {
+                socket.getOutputStream().write(new byte[] {7, 0, 0x0E, 0x11, 0x01, 0, 0});
+                final DataInputStream in = new DataInputStream(socket.getInputStream());
+                final int length = in.readUnsignedByte() | (in.readUnsignedByte() << 8);
+                final byte[] key = new byte[length - 2];
+                in.readFully(key);
+
+                assertThat(key[0]).isEqualTo((byte) 0x2E);
+                assertThat(key[1]).as("protocol accepted").isEqualTo((byte) 1);
+            }
+        }
+
+        @Test
         void worldLoop_shouldRunOnItsOwnThread_whenStarted() {
             final boolean actual = Thread.getAllStackTraces().keySet().stream()
                     .anyMatch(thread -> thread.isAlive() && thread.getName().equals("l2nx-loop-world"));
 
             assertThat(actual).isTrue();
+        }
+
+        @Test
+        void protocolRegistry_shouldHoldOnlyTheHighFiveAdapter_whileLegacyRoutesRemain() {
+            final List<GameProtocolAdapter> adapters = protocolRegistry.adapters();
+            final int legacyRoutes = adapters.stream()
+                    .filter(adapter -> HighFiveAdapter.ID.equals(adapter.id()))
+                    .mapToInt(GameProtocolAdapter::legacyInboundCount)
+                    .sum();
+
+            assertThat(legacyRoutes).isPositive();
+            assertThat(adapters).extracting(GameProtocolAdapter::id).containsExactly(HighFiveAdapter.ID);
+            assertThat(context.getBean(GameProtocolProperties.class).allowLegacyWithMultipleAdapters())
+                    .as("the production configuration never allows a second adapter beside legacy routes")
+                    .isFalse();
         }
     }
 
@@ -111,7 +149,7 @@ class HighFiveApplicationTest extends BootSmokeTest {
         }
 
         @ParameterizedTest(name = "{0}")
-        @ValueSource(strings = {"l2nx-scheduled", "l2nx-instant", "l2nx-game-io", "l2nx-game-packets", "taskScheduler"})
+        @ValueSource(strings = {"l2nx-scheduled", "l2nx-instant", "taskScheduler"})
         void prometheus_shouldExposeExecutorMetrics(String executor) throws Exception {
             final HttpResponse<String> actual = get("/actuator/prometheus");
 
@@ -119,6 +157,14 @@ class HighFiveApplicationTest extends BootSmokeTest {
             assertThat(actual.body())
                     .as("executor %s", executor)
                     .containsPattern("executor_pool_size_threads\\{[^}]*name=\"" + executor + "\"");
+        }
+
+        @Test
+        void prometheus_shouldExposeTheSessionDrainExecutor() throws Exception {
+            final HttpResponse<String> actual = get("/actuator/prometheus");
+
+            assertThat(actual.statusCode()).isEqualTo(200);
+            assertThat(actual.body()).containsPattern("executor_pool_max_threads\\{[^}]*name=\"l2nx-game-packets\"");
         }
 
         @Test
@@ -197,7 +243,6 @@ class HighFiveApplicationTest extends BootSmokeTest {
         }
     }
 
-    // Seeds what a running server leaves behind, so the start loads stored rows, not just empty-database defaults.
     private static void storeWorldState() {
         final JdbcClient jdbc =
                 JdbcClient.create(PostgresDatabase.migratedSuperuserSchema("game", "db/liquibase-changelog.yaml"));

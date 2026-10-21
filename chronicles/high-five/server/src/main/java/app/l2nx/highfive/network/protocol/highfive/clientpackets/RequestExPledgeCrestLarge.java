@@ -17,10 +17,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package app.l2nx.highfive.network.clientpackets;
+package app.l2nx.highfive.network.protocol.highfive.clientpackets;
 
 import app.l2nx.highfive.entity.actor.Player;
-import app.l2nx.highfive.network.serverpackets.ExPledgeEmblem;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ExPledgeEmblem;
 
 /**
  * Fomat : chd c: (id) 0xD0 h: (subid) 0x10 d: the crest id This is a trigger

@@ -35,13 +35,13 @@ class RegistrationResultHandlerTest {
     private final RegistrationResultHandler handler = new RegistrationResultHandler(port, accounts, listing);
 
     @Test
-    void accept_shouldSaveTheHexId_publishTheListing_andReportEveryHeldAccount() {
+    void handle_shouldSaveTheHexId_publishTheListing_andReportEveryHeldAccount() {
         final UUID accountId = UUID.randomUUID();
         accounts.enter(accountId, mock(GameClient.class));
 
         // saveHexid writes config/hexid.txt into the working directory, the datapack.
         try (MockedStatic<ServerConfig> config = mockStatic(ServerConfig.class)) {
-            handler.accept(RESULT);
+            handler.handle(RESULT);
 
             config.verify(() -> ServerConfig.saveHexid(3, "1f"));
         }
@@ -53,9 +53,9 @@ class RegistrationResultHandlerTest {
     }
 
     @Test
-    void accept_shouldOnlyPublishTheListing_whenNoAccountIsHeld() {
+    void handle_shouldOnlyPublishTheListing_whenNoAccountIsHeld() {
         try (MockedStatic<ServerConfig> config = mockStatic(ServerConfig.class)) {
-            handler.accept(RESULT);
+            handler.handle(RESULT);
         }
 
         assertThat(port.getCalls()).containsExactly(Call.of("publishListing", listing.full()));

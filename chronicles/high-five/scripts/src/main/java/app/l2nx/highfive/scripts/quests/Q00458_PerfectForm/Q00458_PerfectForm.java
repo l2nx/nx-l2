@@ -27,7 +27,7 @@ import app.l2nx.highfive.mechanics.script.QuestSound;
 import app.l2nx.highfive.mechanics.script.QuestState;
 import app.l2nx.highfive.mechanics.script.QuestType;
 import app.l2nx.highfive.mechanics.script.State;
-import app.l2nx.highfive.network.serverpackets.ExQuestNpcLogList;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ExQuestNpcLogList;
 
 /**
  * Perfect Form (458)

@@ -83,7 +83,7 @@ import app.l2nx.highfive.managers.WalkingManager;
 import app.l2nx.highfive.managers.ZoneManager;
 import app.l2nx.highfive.network.NpcStringId;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.serverpackets.NpcHtmlMessage;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.NpcHtmlMessage;
 import app.l2nx.highfive.scripting.ScriptEngine;
 import java.io.File;
 import java.util.Arrays;

@@ -36,7 +36,7 @@ import app.l2nx.highfive.entity.item.enums.ItemProcessType;
 import app.l2nx.highfive.entity.itemcontainer.Inventory;
 import app.l2nx.highfive.managers.ClanHallAuctionManager;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.serverpackets.SystemMessage;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.SystemMessage;
 import app.l2nx.highfive.repository.residence.model.ClanHallState;
 import app.l2nx.highfive.threads.ThreadPool;
 import app.l2nx.highfive.util.StatSet;

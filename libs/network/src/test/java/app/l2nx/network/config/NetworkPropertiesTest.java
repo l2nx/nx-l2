@@ -36,6 +36,7 @@ class NetworkPropertiesTest {
             assertThat(actual.inboundQueueLimit()).isEqualTo(256);
             assertThat(actual.packetsPerDrain()).isEqualTo(16);
             assertThat(actual.packetsPerSecond()).isEqualTo(200);
+            assertThat(actual.maxConcurrentDrains()).isEqualTo(32);
             assertThat(actual.decodeErrorLimit())
                     .isEqualTo(NetworkProperties.DecodeErrorLimit.builder()
                             .count(10)
@@ -61,6 +62,8 @@ class NetworkPropertiesTest {
                 "l2nx.network.inbound-queue-limit=0",
                 "l2nx.network.packets-per-drain=0",
                 "l2nx.network.packets-per-second=0",
+                "l2nx.network.packets-per-second=1000000001",
+                "l2nx.network.max-concurrent-drains=0",
                 "l2nx.network.connections-per-ip=0",
                 "l2nx.network.max-connections=0",
                 "l2nx.network.worker-threads=-1",

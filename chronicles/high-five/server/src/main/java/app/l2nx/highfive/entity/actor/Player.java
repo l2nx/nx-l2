@@ -281,70 +281,70 @@ import app.l2nx.highfive.network.enums.ChatType;
 import app.l2nx.highfive.network.enums.HtmlActionScope;
 import app.l2nx.highfive.network.holders.RequestPartner;
 import app.l2nx.highfive.network.holders.TradeList;
-import app.l2nx.highfive.network.serverpackets.AbstractHtmlPacket;
-import app.l2nx.highfive.network.serverpackets.ActionFailed;
-import app.l2nx.highfive.network.serverpackets.ChangeWaitType;
-import app.l2nx.highfive.network.serverpackets.CharInfo;
-import app.l2nx.highfive.network.serverpackets.ConfirmDlg;
-import app.l2nx.highfive.network.serverpackets.CreatureSay;
-import app.l2nx.highfive.network.serverpackets.EtcStatusUpdate;
-import app.l2nx.highfive.network.serverpackets.ExAutoSoulShot;
-import app.l2nx.highfive.network.serverpackets.ExBrExtraUserInfo;
-import app.l2nx.highfive.network.serverpackets.ExDuelUpdateUserInfo;
-import app.l2nx.highfive.network.serverpackets.ExFishingEnd;
-import app.l2nx.highfive.network.serverpackets.ExFishingStart;
-import app.l2nx.highfive.network.serverpackets.ExGetBookMarkInfoPacket;
-import app.l2nx.highfive.network.serverpackets.ExGetOnAirShip;
-import app.l2nx.highfive.network.serverpackets.ExOlympiadMode;
-import app.l2nx.highfive.network.serverpackets.ExPrivateStoreSetWholeMsg;
-import app.l2nx.highfive.network.serverpackets.ExSetCompassZoneCode;
-import app.l2nx.highfive.network.serverpackets.ExStartScenePlayer;
-import app.l2nx.highfive.network.serverpackets.ExStorageMaxCount;
-import app.l2nx.highfive.network.serverpackets.ExUseSharedGroupItem;
-import app.l2nx.highfive.network.serverpackets.ExVoteSystemInfo;
-import app.l2nx.highfive.network.serverpackets.FriendStatusPacket;
-import app.l2nx.highfive.network.serverpackets.GetOnVehicle;
-import app.l2nx.highfive.network.serverpackets.HennaInfo;
-import app.l2nx.highfive.network.serverpackets.InventoryUpdate;
-import app.l2nx.highfive.network.serverpackets.ItemList;
-import app.l2nx.highfive.network.serverpackets.LeaveWorld;
-import app.l2nx.highfive.network.serverpackets.MagicSkillUse;
-import app.l2nx.highfive.network.serverpackets.MyTargetSelected;
-import app.l2nx.highfive.network.serverpackets.NicknameChanged;
-import app.l2nx.highfive.network.serverpackets.ObservationMode;
-import app.l2nx.highfive.network.serverpackets.ObservationReturn;
-import app.l2nx.highfive.network.serverpackets.PartySmallWindowUpdate;
-import app.l2nx.highfive.network.serverpackets.PetInventoryUpdate;
-import app.l2nx.highfive.network.serverpackets.PlaySound;
-import app.l2nx.highfive.network.serverpackets.PledgeShowMemberListDelete;
-import app.l2nx.highfive.network.serverpackets.PledgeShowMemberListUpdate;
-import app.l2nx.highfive.network.serverpackets.PrivateStoreListBuy;
-import app.l2nx.highfive.network.serverpackets.PrivateStoreListSell;
-import app.l2nx.highfive.network.serverpackets.PrivateStoreManageListBuy;
-import app.l2nx.highfive.network.serverpackets.PrivateStoreManageListSell;
-import app.l2nx.highfive.network.serverpackets.PrivateStoreMsgBuy;
-import app.l2nx.highfive.network.serverpackets.PrivateStoreMsgSell;
-import app.l2nx.highfive.network.serverpackets.RecipeShopMsg;
-import app.l2nx.highfive.network.serverpackets.RecipeShopSellList;
-import app.l2nx.highfive.network.serverpackets.RelationChanged;
-import app.l2nx.highfive.network.serverpackets.Ride;
-import app.l2nx.highfive.network.serverpackets.ServerPacket;
-import app.l2nx.highfive.network.serverpackets.SetupGauge;
-import app.l2nx.highfive.network.serverpackets.ShortcutInit;
-import app.l2nx.highfive.network.serverpackets.SkillCoolTime;
-import app.l2nx.highfive.network.serverpackets.SkillList;
-import app.l2nx.highfive.network.serverpackets.Snoop;
-import app.l2nx.highfive.network.serverpackets.SocialAction;
-import app.l2nx.highfive.network.serverpackets.StatusUpdate;
-import app.l2nx.highfive.network.serverpackets.StopMove;
-import app.l2nx.highfive.network.serverpackets.SystemMessage;
-import app.l2nx.highfive.network.serverpackets.TargetSelected;
-import app.l2nx.highfive.network.serverpackets.TargetUnselected;
-import app.l2nx.highfive.network.serverpackets.TradeDone;
-import app.l2nx.highfive.network.serverpackets.TradeOtherDone;
-import app.l2nx.highfive.network.serverpackets.TradeStart;
-import app.l2nx.highfive.network.serverpackets.UserInfo;
-import app.l2nx.highfive.network.serverpackets.ValidateLocation;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.AbstractHtmlPacket;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ActionFailed;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ChangeWaitType;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.CharInfo;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ConfirmDlg;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.CreatureSay;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.EtcStatusUpdate;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ExAutoSoulShot;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ExBrExtraUserInfo;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ExDuelUpdateUserInfo;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ExFishingEnd;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ExFishingStart;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ExGetBookMarkInfoPacket;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ExGetOnAirShip;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ExOlympiadMode;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ExPrivateStoreSetWholeMsg;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ExSetCompassZoneCode;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ExStartScenePlayer;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ExStorageMaxCount;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ExUseSharedGroupItem;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ExVoteSystemInfo;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.FriendStatusPacket;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.GetOnVehicle;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.HennaInfo;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.InventoryUpdate;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ItemList;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.LeaveWorld;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.MagicSkillUse;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.MyTargetSelected;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.NicknameChanged;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ObservationMode;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ObservationReturn;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.PartySmallWindowUpdate;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.PetInventoryUpdate;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.PlaySound;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.PledgeShowMemberListDelete;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.PledgeShowMemberListUpdate;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.PrivateStoreListBuy;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.PrivateStoreListSell;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.PrivateStoreManageListBuy;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.PrivateStoreManageListSell;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.PrivateStoreMsgBuy;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.PrivateStoreMsgSell;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.RecipeShopMsg;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.RecipeShopSellList;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.RelationChanged;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.Ride;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ServerPacket;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.SetupGauge;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ShortcutInit;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.SkillCoolTime;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.SkillList;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.Snoop;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.SocialAction;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.StatusUpdate;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.StopMove;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.SystemMessage;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.TargetSelected;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.TargetUnselected;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.TradeDone;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.TradeOtherDone;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.TradeStart;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.UserInfo;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ValidateLocation;
 import app.l2nx.highfive.repository.character.model.CharacterHenna;
 import app.l2nx.highfive.repository.character.model.CharacterItemReuse;
 import app.l2nx.highfive.repository.character.model.CharacterPremiumItem;
@@ -3833,34 +3833,40 @@ public class Player extends Playable {
                     () -> {
                         final CharInfo charInfo = new CharInfo(this, false);
                         charInfo.sendInBroadcast();
-                        World.forEachVisibleObject(this, Player.class, player -> {
-                            if (isVisibleFor(player)) {
-                                if (isInvisible() && isGM()) {
-                                    player.sendPacket(new CharInfo(this, true));
-                                } else {
-                                    player.sendPacket(charInfo);
-                                }
-
-                                player.sendPacket(new ExBrExtraUserInfo(this));
-
-                                // Update relation.
-                                final int relation = getRelation(player);
-                                final boolean isAutoAttackable = isAutoAttackable(player);
-                                final RelationCache oldrelation =
-                                        getKnownRelations().get(player.getObjectId());
-                                if ((oldrelation == null)
-                                        || (oldrelation.relation() != relation)
-                                        || (oldrelation.autoAttackable() != isAutoAttackable)) {
-                                    player.sendPacket(new RelationChanged(this, relation, isAutoAttackable));
-                                    if (hasSummon()) {
-                                        player.sendPacket(new RelationChanged(summon, relation, isAutoAttackable));
+                        try {
+                            World.forEachVisibleObject(this, Player.class, player -> {
+                                if (isVisibleFor(player)) {
+                                    if (isInvisible() && isGM()) {
+                                        player.sendPacket(new CharInfo(this, true));
+                                    } else {
+                                        player.sendPacket(charInfo);
                                     }
 
-                                    getKnownRelations()
-                                            .put(player.getObjectId(), new RelationCache(relation, isAutoAttackable));
+                                    player.sendPacket(new ExBrExtraUserInfo(this));
+
+                                    // Update relation.
+                                    final int relation = getRelation(player);
+                                    final boolean isAutoAttackable = isAutoAttackable(player);
+                                    final RelationCache oldrelation =
+                                            getKnownRelations().get(player.getObjectId());
+                                    if ((oldrelation == null)
+                                            || (oldrelation.relation() != relation)
+                                            || (oldrelation.autoAttackable() != isAutoAttackable)) {
+                                        player.sendPacket(new RelationChanged(this, relation, isAutoAttackable));
+                                        if (hasSummon()) {
+                                            player.sendPacket(new RelationChanged(summon, relation, isAutoAttackable));
+                                        }
+
+                                        getKnownRelations()
+                                                .put(
+                                                        player.getObjectId(),
+                                                        new RelationCache(relation, isAutoAttackable));
+                                    }
                                 }
-                            }
-                        });
+                            });
+                        } finally {
+                            charInfo.releaseBroadcast();
+                        }
                         broadcastCharInfoTask = null;
                     },
                     100);
@@ -3878,33 +3884,38 @@ public class Player extends Playable {
     @Override
     public void broadcastPacket(ServerPacket packet) {
         packet.sendInBroadcast();
-
-        final boolean isCharInfo = packet instanceof CharInfo;
-        if (!isCharInfo) {
-            sendPacket(packet);
-        }
-
-        World.forEachVisibleObject(this, Player.class, player -> {
-            if (!isVisibleFor(player)) {
-                return;
+        try {
+            final boolean isCharInfo = packet instanceof CharInfo;
+            if (!isCharInfo) {
+                sendPacket(packet);
             }
 
-            player.sendPacket(packet);
-
-            if (isCharInfo) {
-                final int relation = getRelation(player);
-                final boolean isAutoAttackable = isAutoAttackable(player);
-                final RelationCache cache = getKnownRelations().get(player.getObjectId());
-                if ((cache == null) || (cache.relation() != relation) || (cache.autoAttackable() != isAutoAttackable)) {
-                    player.sendPacket(new RelationChanged(this, relation, isAutoAttackable));
-                    if (hasSummon()) {
-                        player.sendPacket(new RelationChanged(summon, relation, isAutoAttackable));
-                    }
-
-                    getKnownRelations().put(player.getObjectId(), new RelationCache(relation, isAutoAttackable));
+            World.forEachVisibleObject(this, Player.class, player -> {
+                if (!isVisibleFor(player)) {
+                    return;
                 }
-            }
-        });
+
+                player.sendPacket(packet);
+
+                if (isCharInfo) {
+                    final int relation = getRelation(player);
+                    final boolean isAutoAttackable = isAutoAttackable(player);
+                    final RelationCache cache = getKnownRelations().get(player.getObjectId());
+                    if ((cache == null)
+                            || (cache.relation() != relation)
+                            || (cache.autoAttackable() != isAutoAttackable)) {
+                        player.sendPacket(new RelationChanged(this, relation, isAutoAttackable));
+                        if (hasSummon()) {
+                            player.sendPacket(new RelationChanged(summon, relation, isAutoAttackable));
+                        }
+
+                        getKnownRelations().put(player.getObjectId(), new RelationCache(relation, isAutoAttackable));
+                    }
+                }
+            });
+        } finally {
+            packet.releaseBroadcast();
+        }
     }
 
     /**

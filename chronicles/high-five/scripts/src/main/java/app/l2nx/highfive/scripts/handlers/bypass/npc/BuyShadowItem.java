@@ -26,7 +26,7 @@ import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.instance.Merchant;
 import app.l2nx.highfive.handler.IBypassHandler;
-import app.l2nx.highfive.network.serverpackets.NpcHtmlMessage;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.NpcHtmlMessage;
 
 public class BuyShadowItem implements IBypassHandler {
     private static final String[] COMMANDS = {"BuyShadowItem"};

@@ -20,7 +20,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package app.l2nx.highfive.network.serverpackets;
+package app.l2nx.highfive.network.protocol.highfive.serverpackets;
 
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.data.xml.ExperienceData;
@@ -33,8 +33,7 @@ import app.l2nx.highfive.managers.CursedWeaponsManager;
 import app.l2nx.highfive.managers.TerritoryWarManager;
 import app.l2nx.highfive.mechanics.skill.AbnormalVisualEffect;
 import app.l2nx.highfive.network.GameClient;
-import app.l2nx.highfive.network.ServerPackets;
-import app.l2nx.network.buffer.WriteBuffer;
+import app.l2nx.network.codec.PacketWriter;
 import java.util.Map;
 
 public class UserInfo extends ServerPacket {
@@ -81,7 +80,7 @@ public class UserInfo extends ServerPacket {
     }
 
     @Override
-    public void writeImpl(GameClient client, WriteBuffer buffer) {
+    public void writeImpl(GameClient client, PacketWriter buffer) {
         ServerPackets.USER_INFO.writeId(this, buffer);
         buffer.writeInt(player.getX());
         buffer.writeInt(player.getY());

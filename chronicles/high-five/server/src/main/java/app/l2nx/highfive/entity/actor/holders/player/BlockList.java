@@ -31,7 +31,7 @@ import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.managers.CharacterRelationsManager;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.serverpackets.SystemMessage;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.SystemMessage;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;

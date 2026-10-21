@@ -121,7 +121,7 @@ class SerialExecutorTest {
     @Test
     void execute_shouldHandEveryAcceptedTaskToTheRejectionHandler_whenTheLaneCannotStart() {
         final List<Runnable> rejected = new ArrayList<>();
-        final SerialExecutor lane = new SerialExecutor(drain -> false, () -> false, 2, rejected::add);
+        final SerialExecutor lane = new SerialExecutor((drain, abandoned) -> false, () -> false, 2, rejected::add);
         final Runnable first = () -> {};
         final Runnable second = () -> {};
 
@@ -130,6 +130,29 @@ class SerialExecutorTest {
 
         assertThat(rejected).containsExactly(first, second);
         assertThat(lane.execute(() -> {})).as("pending count returned to zero").isTrue();
+    }
+
+    @Test
+    void execute_shouldHandEveryStartTheSameDrainAndAbandonTasks() {
+        final List<Runnable> drains = new ArrayList<>();
+        final List<Runnable> abandons = new ArrayList<>();
+        final SerialExecutor lane = new SerialExecutor(
+                (drain, abandoned) -> {
+                    drains.add(drain);
+                    abandons.add(abandoned);
+                    return true;
+                },
+                () -> false,
+                2,
+                SerialExecutorTest::unexpected);
+
+        lane.execute(() -> {});
+        drains.getFirst().run();
+        lane.execute(() -> {});
+
+        assertThat(drains).hasSize(2);
+        assertThat(drains.get(1)).isSameAs(drains.getFirst());
+        assertThat(abandons.get(1)).isSameAs(abandons.getFirst());
     }
 
     @Test

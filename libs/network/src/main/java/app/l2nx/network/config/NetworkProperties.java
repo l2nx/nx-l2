@@ -6,6 +6,7 @@ package app.l2nx.network.config;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.AssertTrue;
+import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;
@@ -21,6 +22,7 @@ import org.springframework.validation.annotation.Validated;
 
 /**
  * @param workerThreads 0 takes Netty's default (twice the available processors)
+ * @param packetsPerSecond at most one per nanosecond, the fastest refill Bucket4j accepts
  */
 @Validated
 @Builder(toBuilder = true)
@@ -46,7 +48,8 @@ public record NetworkProperties(
 
         @Positive @DefaultValue("256") int inboundQueueLimit,
         @Positive @DefaultValue("16") int packetsPerDrain,
-        @Positive @DefaultValue("200") int packetsPerSecond,
+        @Positive @DefaultValue("32") int maxConcurrentDrains,
+        @Positive @Max(1_000_000_000) @DefaultValue("200") int packetsPerSecond,
         @NotNull @Valid @DefaultValue DecodeErrorLimit decodeErrorLimit,
         @NotNull @DefaultValue("32KB") DataSize writeBufferLow,
         @NotNull @DefaultValue("128KB") DataSize writeBufferHigh,

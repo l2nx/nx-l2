@@ -25,22 +25,25 @@ class OnlineAccountsTest {
     @Nested
     class PasswordChanges {
         @Test
-        void takePasswordChange_shouldKeepTheCharacterWaiting_whileASecondChangeIsUnanswered() {
-            accounts.awaitPasswordChange("Hero");
-            accounts.awaitPasswordChange("Hero");
+        void takePasswordChange_shouldTakeTheRequestOnce() {
+            final UUID requestId = accounts.awaitPasswordChange(client);
 
-            accounts.takePasswordChange("Hero");
-
-            assertThat(accounts.takeAllPasswordChanges()).containsExactly("Hero");
+            assertThat(accounts.takePasswordChange(requestId, client)).isTrue();
+            assertThat(accounts.takePasswordChange(requestId, client)).isFalse();
         }
 
         @Test
-        void takePasswordChange_shouldEndTheWait_whenTheOnlyChangeIsAnswered() {
-            accounts.awaitPasswordChange("Hero");
+        void takePasswordChange_shouldKeepTheRequest_whenAnotherClientAsks() {
+            final UUID requestId = accounts.awaitPasswordChange(client);
 
-            accounts.takePasswordChange("Hero");
+            assertThat(accounts.takePasswordChange(requestId, mock(GameClient.class)))
+                    .isFalse();
+            assertThat(accounts.pendingPasswordChanges()).containsExactly(requestId);
+        }
 
-            assertThat(accounts.takeAllPasswordChanges()).isEmpty();
+        @Test
+        void awaitPasswordChange_shouldGiveEachRequestItsOwnId() {
+            assertThat(accounts.awaitPasswordChange(client)).isNotEqualTo(accounts.awaitPasswordChange(client));
         }
     }
 
@@ -69,27 +72,27 @@ class OnlineAccountsTest {
     @Nested
     class TakePending {
         @Test
-        void takePending_shouldReturnTheWaitingSessionOnce() {
-            accounts.awaitAuthentication("alice", client, KEY);
+        void takePending_shouldReturnTheWaitingEntryOnce() {
+            final UUID requestId = accounts.awaitAuthentication("alice", client, KEY);
 
-            final PendingAuthentication actual = accounts.takePending("alice");
+            final PendingAuthentication actual = accounts.takePending(requestId, client);
 
             assertThat(actual)
                     .isEqualTo(PendingAuthentication.builder()
+                            .login("alice")
                             .client(client)
                             .sessionKey(KEY)
                             .build());
-            assertThat(accounts.takePending("alice")).isNull();
+            assertThat(accounts.takePending(requestId, client)).isNull();
         }
 
         @Test
         void takePending_shouldReturnNull_whenTheClientCancelled() {
-            accounts.awaitAuthentication("alice", client, KEY);
-            accounts.cancelAuthentication(client);
+            final UUID requestId = accounts.awaitAuthentication("alice", client, KEY);
+            accounts.cancelRequests(client);
 
-            final PendingAuthentication actual = accounts.takePending("alice");
-
-            assertThat(actual).isNull();
+            assertThat(accounts.takePending(requestId, client)).isNull();
+            assertThat(accounts.requester(requestId)).isNull();
         }
     }
 

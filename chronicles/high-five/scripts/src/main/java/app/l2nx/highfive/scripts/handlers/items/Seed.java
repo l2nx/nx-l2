@@ -31,7 +31,7 @@ import app.l2nx.highfive.handler.IItemHandler;
 import app.l2nx.highfive.managers.CastleManorManager;
 import app.l2nx.highfive.mechanics.skill.holders.SkillHolder;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.serverpackets.ActionFailed;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ActionFailed;
 
 /**
  * @author l3x

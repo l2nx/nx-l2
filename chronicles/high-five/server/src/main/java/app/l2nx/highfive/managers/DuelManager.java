@@ -25,7 +25,7 @@ package app.l2nx.highfive.managers;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.holders.player.Duel;
 import app.l2nx.highfive.mechanics.skill.Skill;
-import app.l2nx.highfive.network.serverpackets.ServerPacket;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ServerPacket;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;

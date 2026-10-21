@@ -91,6 +91,10 @@ Changes on top of the imported history, each its own commit:
      (`app.l2nx.boot`);
    - the transport and cryptography (`commons/network`, the crypt classes) are in `libs/network`
      (`app.l2nx.network`);
+   - stage 4 ([spec 008](specs/008-network.md)) replaced the Mobius NIO2 transport (`Client`, `Connection`,
+     `ConnectionManager`, `ReadHandler`, `WriteHandler`, the buffers and pools, `PacketExecutor`, `PacketHandler`,
+     `NetworkSettings`) with the Netty transport; the game cipher moved from the chronicle's `Encryption` to
+     `GameXorCipher`;
    - the game-only code (`ThreadPool`, `ConfigReader`, `IXmlReader`, `DatabaseFactory`) is in
      `chronicles/high-five/server` (`threads`, `config`, `data/xml`, `data/sql`);
    - the helpers that duplicated the JDK or commons-lang3 are removed in favour of them.

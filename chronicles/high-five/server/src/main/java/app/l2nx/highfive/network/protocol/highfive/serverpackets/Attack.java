@@ -20,14 +20,13 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package app.l2nx.highfive.network.serverpackets;
+package app.l2nx.highfive.network.protocol.highfive.serverpackets;
 
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.holders.creature.Hit;
 import app.l2nx.highfive.network.GameClient;
-import app.l2nx.highfive.network.ServerPackets;
-import app.l2nx.network.buffer.WriteBuffer;
+import app.l2nx.network.codec.PacketWriter;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -85,14 +84,14 @@ public class Attack extends ServerPacket {
      * @param hit
      * @param buffer
      */
-    private void writeHit(Hit hit, WriteBuffer buffer) {
+    private void writeHit(Hit hit, PacketWriter buffer) {
         buffer.writeInt(hit.getTargetId());
         buffer.writeInt(hit.getDamage());
         buffer.writeByte(hit.getFlags());
     }
 
     @Override
-    public void writeImpl(GameClient client, WriteBuffer buffer) {
+    public void writeImpl(GameClient client, PacketWriter buffer) {
         final Iterator<Hit> it = hits.iterator();
         ServerPackets.ATTACK.writeId(this, buffer);
         buffer.writeInt(attackerObjId);

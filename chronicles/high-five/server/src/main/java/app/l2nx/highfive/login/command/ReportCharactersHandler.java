@@ -26,12 +26,12 @@
  */
 package app.l2nx.highfive.login.command;
 
+import app.l2nx.engine.core.session.command.ServiceCommandHandler;
 import app.l2nx.highfive.login.LoginPort;
 import app.l2nx.highfive.repository.character.CharacterRepository;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
-import java.util.function.Consumer;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -41,12 +41,12 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 @RequiredArgsConstructor(access = AccessLevel.PACKAGE)
-class ReportCharactersHandler implements Consumer<ReportCharacters> {
+class ReportCharactersHandler implements ServiceCommandHandler<ReportCharacters> {
     private final LoginPort port;
     private final CharacterRepository characters;
 
     @Override
-    public void accept(ReportCharacters command) {
+    public void handle(ReportCharacters command) {
         final UUID accountId = command.accountId();
         final int count;
         final List<Instant> deleteTimes;

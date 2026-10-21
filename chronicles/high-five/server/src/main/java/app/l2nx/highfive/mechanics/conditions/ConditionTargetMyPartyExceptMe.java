@@ -24,7 +24,7 @@ import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.item.ItemTemplate;
 import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.serverpackets.SystemMessage;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.SystemMessage;
 
 /**
  * Target My Party Except Me condition implementation.

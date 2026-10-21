@@ -28,7 +28,7 @@ import app.l2nx.highfive.managers.SiegeManager;
 import app.l2nx.highfive.mechanics.siege.Siege;
 import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.serverpackets.SystemMessage;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.SystemMessage;
 
 /**
  * Player Can Resurrect condition implementation.

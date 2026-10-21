@@ -5,6 +5,7 @@
 package app.l2nx.login.gslink;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -42,18 +43,20 @@ import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.junit.jupiter.api.parallel.ResourceLock;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.springframework.dao.QueryTimeoutException;
 
 @ResourceLock("GameServerTable")
 @Execution(ExecutionMode.SAME_THREAD)
 class GameServerLinkTest {
     static final byte[] HEX_ID = {0x11, 0x22, 0x33, 0x44};
     static final String SERVER_NAMES = """
-            <servers_list>
-            \t<server id="1" name="Bartz" />
-            \t<server id="2" name="Sieghardt" />
-            </servers_list>
-            """;
+        <servers_list>
+        \t<server id="1" name="Bartz" />
+        \t<server id="2" name="Sieghardt" />
+        </servers_list>
+        """;
     private static final UUID ACCOUNT = UUID.fromString("0192f0a0-0000-7000-8000-000000000001");
+    private static final UUID REQUEST = UUID.fromString("0192f0a0-0000-7000-8000-0000000000aa");
 
     @TempDir
     Path datapackRoot;
@@ -321,6 +324,25 @@ class GameServerLinkTest {
     }
 
     @Nested
+    class Authentication {
+        @Test
+        void authenticate_shouldEchoTheRequestId_whenRefusing() throws Exception {
+            final GameServerLink link = registered();
+
+            link.onNext(GameServerMessage.newBuilder()
+                    .setAuthenticate(GsLinkProto.Authenticate.newBuilder()
+                            .setLogin("nobody")
+                            .setKey(GsLinkProto.SessionKey.getDefaultInstance())
+                            .setRequestId(REQUEST.toString()))
+                    .build());
+
+            final GsLinkProto.AuthenticationResult actual = responses.next().getAuthenticationResult();
+            assertThat(actual.getAccepted()).isFalse();
+            assertThat(actual.getRequestId()).isEqualTo(REQUEST.toString());
+        }
+    }
+
+    @Nested
     class Password {
         @Test
         void changePassword_shouldAnswerChanged_whenTheStoreAcceptsTheNewHash() throws Exception {
@@ -334,6 +356,7 @@ class GameServerLinkTest {
             final GsLinkProto.PasswordChangeResult actual = responses.next().getPasswordChangeResult();
             assertThat(actual.getCharacterName()).isEqualTo("Hero");
             assertThat(actual.getMessage()).isEqualTo("You have successfully changed your password!");
+            assertThat(actual.getRequestId()).isEqualTo(REQUEST.toString());
         }
 
         @Test
@@ -355,6 +378,33 @@ class GameServerLinkTest {
 
             assertThat(responses.next().getPasswordChangeResult().getMessage())
                     .isEqualTo("Invalid password data! Try again.");
+        }
+
+        @Test
+        void changePassword_shouldAnswerFailed_whenTheStoreFails() throws Exception {
+            final GameServerLink link = registered();
+            link.onNext(accountsEntered(ACCOUNT));
+            when(loginController.changePassword(eq(ACCOUNT), anyString(), anyString()))
+                    .thenThrow(new QueryTimeoutException("statement timeout"));
+
+            link.onNext(changePassword("old-pass", "new-pass"));
+
+            final GsLinkProto.PasswordChangeResult actual = responses.next().getPasswordChangeResult();
+            assertThat(actual.getMessage()).isEqualTo("The password change was unsuccessful!");
+            assertThat(actual.getRequestId()).isEqualTo(REQUEST.toString());
+        }
+
+        @Test
+        void changePassword_shouldAnswerFailed_whenTheAccountIsNotOnThisServer() throws Exception {
+            final GameServerLink link = registered();
+
+            link.onNext(changePassword("old-pass", "new-pass"));
+
+            final GsLinkProto.PasswordChangeResult actual = responses.next().getPasswordChangeResult();
+            assertThat(actual.getCharacterName()).isEqualTo("Hero");
+            assertThat(actual.getMessage()).isEqualTo("The password change was unsuccessful!");
+            assertThat(actual.getRequestId()).isEqualTo(REQUEST.toString());
+            verify(loginController, never()).changePassword(any(), anyString(), anyString());
         }
     }
 
@@ -459,6 +509,7 @@ class GameServerLinkTest {
     private static GameServerMessage changePassword(String oldPassword, String newPassword) {
         return GameServerMessage.newBuilder()
                 .setChangePassword(GsLinkProto.ChangePassword.newBuilder()
+                        .setRequestId(REQUEST.toString())
                         .setAccountId(ACCOUNT.toString())
                         .setCharacterName("Hero")
                         .setOldPassword(oldPassword)

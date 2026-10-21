@@ -17,11 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package app.l2nx.highfive.network.clientpackets;
+package app.l2nx.highfive.network.protocol.highfive.clientpackets;
 
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.entity.actor.Player;
-import app.l2nx.highfive.network.serverpackets.ExShowSentPostList;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ExShowSentPostList;
 
 /**
  * @author Migi, DS

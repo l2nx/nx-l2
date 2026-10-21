@@ -26,8 +26,9 @@
  */
 package app.l2nx.highfive.login.command;
 
+import app.l2nx.engine.core.session.command.Command;
 import lombok.Builder;
 
 /** @param hexId the hex id this server registered with, lowercase hex with two characters per byte as hexid.txt stores it */
 @Builder(toBuilder = true)
-public record RegistrationResult(int serverId, String serverName, String hexId) {}
+public record RegistrationResult(int serverId, String serverName, String hexId) implements Command {}

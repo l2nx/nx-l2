@@ -17,11 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package app.l2nx.highfive.network.clientpackets;
+package app.l2nx.highfive.network.protocol.highfive.clientpackets;
 
 import app.l2nx.highfive.data.xml.SecondaryAuthData;
 import app.l2nx.highfive.network.GameClient;
-import app.l2nx.highfive.network.serverpackets.Ex2ndPasswordCheck;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.Ex2ndPasswordCheck;
 
 /**
  * Format: (ch)

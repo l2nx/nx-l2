@@ -35,11 +35,11 @@ import app.l2nx.highfive.entity.actor.instance.Pet;
 import app.l2nx.highfive.entity.spawns.Spawn;
 import app.l2nx.highfive.network.Disconnection;
 import app.l2nx.highfive.network.enums.ChatType;
-import app.l2nx.highfive.network.serverpackets.CreatureSay;
-import app.l2nx.highfive.network.serverpackets.DeleteObject;
-import app.l2nx.highfive.network.serverpackets.ExShowScreenMessage;
-import app.l2nx.highfive.network.serverpackets.LeaveWorld;
-import app.l2nx.highfive.network.serverpackets.ServerPacket;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.CreatureSay;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.DeleteObject;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ExShowScreenMessage;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.LeaveWorld;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ServerPacket;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -2008,25 +2008,28 @@ public class World {
         }
 
         packet.sendInBroadcast();
-
-        final WorldRegion[] regions = worldRegion.getSurroundingRegions();
-        if (regions != null) {
-            for (int i = 0; i < regions.length; i++) {
-                final Collection<WorldObject> objects = regions[i].getVisibleObjects();
-                if (objects.isEmpty()) {
-                    continue;
-                }
-
-                for (WorldObject nearby : objects) {
-                    if ((nearby == object)
-                            || !nearby.isPlayer()
-                            || (nearby.getInstanceId() != object.getInstanceId())) {
+        try {
+            final WorldRegion[] regions = worldRegion.getSurroundingRegions();
+            if (regions != null) {
+                for (int i = 0; i < regions.length; i++) {
+                    final Collection<WorldObject> objects = regions[i].getVisibleObjects();
+                    if (objects.isEmpty()) {
                         continue;
                     }
 
-                    nearby.asPlayer().sendPacket(packet);
+                    for (WorldObject nearby : objects) {
+                        if ((nearby == object)
+                                || !nearby.isPlayer()
+                                || (nearby.getInstanceId() != object.getInstanceId())) {
+                            continue;
+                        }
+
+                        nearby.asPlayer().sendPacket(packet);
+                    }
                 }
             }
+        } finally {
+            packet.releaseBroadcast();
         }
     }
 
@@ -2048,26 +2051,29 @@ public class World {
         }
 
         packet.sendInBroadcast();
-
-        final WorldRegion[] regions = worldRegion.getSurroundingRegions();
-        if (regions != null) {
-            for (int i = 0; i < regions.length; i++) {
-                final Collection<WorldObject> objects = regions[i].getVisibleObjects();
-                if (objects.isEmpty()) {
-                    continue;
-                }
-
-                for (WorldObject nearby : objects) {
-                    if ((nearby == object)
-                            || !nearby.isPlayer()
-                            || (nearby.getInstanceId() != object.getInstanceId())
-                            || (nearby.calculateDistance3D(object) > range)) {
+        try {
+            final WorldRegion[] regions = worldRegion.getSurroundingRegions();
+            if (regions != null) {
+                for (int i = 0; i < regions.length; i++) {
+                    final Collection<WorldObject> objects = regions[i].getVisibleObjects();
+                    if (objects.isEmpty()) {
                         continue;
                     }
 
-                    nearby.asPlayer().sendPacket(packet);
+                    for (WorldObject nearby : objects) {
+                        if ((nearby == object)
+                                || !nearby.isPlayer()
+                                || (nearby.getInstanceId() != object.getInstanceId())
+                                || (nearby.calculateDistance3D(object) > range)) {
+                            continue;
+                        }
+
+                        nearby.asPlayer().sendPacket(packet);
+                    }
                 }
             }
+        } finally {
+            packet.releaseBroadcast();
         }
     }
 
@@ -2087,23 +2093,26 @@ public class World {
         }
 
         packet.sendInBroadcast();
-
-        final WorldRegion[] regions = worldRegion.getSurroundingRegions();
-        if (regions != null) {
-            for (int i = 0; i < regions.length; i++) {
-                final Collection<WorldObject> objects = regions[i].getVisibleObjects();
-                if (objects.isEmpty()) {
-                    continue;
-                }
-
-                for (WorldObject nearby : objects) {
-                    if (!nearby.isPlayer() || (nearby.getInstanceId() != object.getInstanceId())) {
+        try {
+            final WorldRegion[] regions = worldRegion.getSurroundingRegions();
+            if (regions != null) {
+                for (int i = 0; i < regions.length; i++) {
+                    final Collection<WorldObject> objects = regions[i].getVisibleObjects();
+                    if (objects.isEmpty()) {
                         continue;
                     }
 
-                    nearby.asPlayer().sendPacket(packet);
+                    for (WorldObject nearby : objects) {
+                        if (!nearby.isPlayer() || (nearby.getInstanceId() != object.getInstanceId())) {
+                            continue;
+                        }
+
+                        nearby.asPlayer().sendPacket(packet);
+                    }
                 }
             }
+        } finally {
+            packet.releaseBroadcast();
         }
     }
 
@@ -2124,25 +2133,28 @@ public class World {
         }
 
         packet.sendInBroadcast();
-
-        final WorldRegion[] regions = worldRegion.getSurroundingRegions();
-        if (regions != null) {
-            for (int i = 0; i < regions.length; i++) {
-                final Collection<WorldObject> objects = regions[i].getVisibleObjects();
-                if (objects.isEmpty()) {
-                    continue;
-                }
-
-                for (WorldObject nearby : objects) {
-                    if (!nearby.isPlayer()
-                            || (nearby.getInstanceId() != object.getInstanceId())
-                            || (nearby.calculateDistance3D(object) > range)) {
+        try {
+            final WorldRegion[] regions = worldRegion.getSurroundingRegions();
+            if (regions != null) {
+                for (int i = 0; i < regions.length; i++) {
+                    final Collection<WorldObject> objects = regions[i].getVisibleObjects();
+                    if (objects.isEmpty()) {
                         continue;
                     }
 
-                    nearby.asPlayer().sendPacket(packet);
+                    for (WorldObject nearby : objects) {
+                        if (!nearby.isPlayer()
+                                || (nearby.getInstanceId() != object.getInstanceId())
+                                || (nearby.calculateDistance3D(object) > range)) {
+                            continue;
+                        }
+
+                        nearby.asPlayer().sendPacket(packet);
+                    }
                 }
             }
+        } finally {
+            packet.releaseBroadcast();
         }
     }
 
@@ -2152,11 +2164,14 @@ public class World {
      */
     public static void broadcastToAllOnlinePlayers(ServerPacket packet) {
         packet.sendInBroadcast();
-
-        for (Player player : allPlayers.values()) {
-            if (player.isOnline()) {
-                player.sendPacket(packet);
+        try {
+            for (Player player : allPlayers.values()) {
+                if (player.isOnline()) {
+                    player.sendPacket(packet);
+                }
             }
+        } finally {
+            packet.releaseBroadcast();
         }
     }
 

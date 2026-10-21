@@ -29,7 +29,7 @@ import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.handler.IAdminCommandHandler;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.enums.ChatType;
-import app.l2nx.highfive.network.serverpackets.CreatureSay;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.CreatureSay;
 
 /**
  * This class handles following admin commands: - gmchat text = sends text to all online GM's - gmchat_menu text = same as gmchat, displays the admin panel after chat

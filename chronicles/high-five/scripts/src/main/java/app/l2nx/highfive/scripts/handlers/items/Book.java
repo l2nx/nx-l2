@@ -28,8 +28,8 @@ import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.item.instance.Item;
 import app.l2nx.highfive.handler.IItemHandler;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.serverpackets.ActionFailed;
-import app.l2nx.highfive.network.serverpackets.NpcHtmlMessage;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ActionFailed;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.NpcHtmlMessage;
 
 public class Book implements IItemHandler {
     @Override

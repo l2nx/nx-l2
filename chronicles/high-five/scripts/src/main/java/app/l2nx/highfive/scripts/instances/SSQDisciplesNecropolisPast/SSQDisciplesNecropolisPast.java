@@ -31,7 +31,7 @@ import app.l2nx.highfive.network.NpcStringId;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.enums.ChatType;
 import app.l2nx.highfive.network.enums.Movie;
-import app.l2nx.highfive.network.serverpackets.NpcSay;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.NpcSay;
 import app.l2nx.highfive.scripts.quests.Q00196_SevenSignsSealOfTheEmperor.Q00196_SevenSignsSealOfTheEmperor;
 import app.l2nx.highfive.util.LocationUtil;
 import java.util.ArrayList;

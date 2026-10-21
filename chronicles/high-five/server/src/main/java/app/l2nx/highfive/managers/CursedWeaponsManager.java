@@ -43,7 +43,7 @@ import app.l2nx.highfive.entity.actor.instance.Guard;
 import app.l2nx.highfive.entity.actor.instance.RiftInvader;
 import app.l2nx.highfive.entity.item.instance.Item;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.serverpackets.SystemMessage;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.SystemMessage;
 import app.l2nx.highfive.repository.character.CharacterRepository;
 import app.l2nx.highfive.repository.item.CursedWeaponRepository;
 import app.l2nx.highfive.repository.item.model.CursedWeaponRow;

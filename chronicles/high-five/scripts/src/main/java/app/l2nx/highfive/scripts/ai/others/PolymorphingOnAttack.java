@@ -26,7 +26,7 @@ import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.mechanics.script.Script;
 import app.l2nx.highfive.network.NpcStringId;
 import app.l2nx.highfive.network.enums.ChatType;
-import app.l2nx.highfive.network.serverpackets.CreatureSay;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.CreatureSay;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;

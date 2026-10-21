@@ -27,8 +27,8 @@ import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.enums.creature.InstanceType;
 import app.l2nx.highfive.entity.actor.instance.StaticObject;
 import app.l2nx.highfive.handler.IActionShiftHandler;
-import app.l2nx.highfive.network.serverpackets.NpcHtmlMessage;
-import app.l2nx.highfive.network.serverpackets.StaticObjectInfo;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.NpcHtmlMessage;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.StaticObjectInfo;
 
 public class StaticObjectShiftClick implements IActionShiftHandler {
     @Override

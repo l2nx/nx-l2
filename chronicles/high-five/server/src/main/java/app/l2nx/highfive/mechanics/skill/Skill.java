@@ -49,7 +49,7 @@ import app.l2nx.highfive.mechanics.stats.TraitType;
 import app.l2nx.highfive.mechanics.stats.functions.AbstractFunction;
 import app.l2nx.highfive.mechanics.stats.functions.FuncTemplate;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.serverpackets.SystemMessage;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.SystemMessage;
 import app.l2nx.highfive.util.LocationUtil;
 import app.l2nx.highfive.util.StatSet;
 import java.util.ArrayList;

@@ -26,7 +26,7 @@ import app.l2nx.highfive.managers.FortManager;
 import app.l2nx.highfive.mechanics.siege.Fort;
 import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.serverpackets.SystemMessage;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.SystemMessage;
 import app.l2nx.highfive.util.LocationUtil;
 
 /**

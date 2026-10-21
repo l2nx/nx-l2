@@ -26,7 +26,7 @@ import app.l2nx.highfive.entity.WorldObject;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.handler.IAdminCommandHandler;
 import app.l2nx.highfive.network.Disconnection;
-import app.l2nx.highfive.network.serverpackets.LeaveWorld;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.LeaveWorld;
 
 /**
  * This class handles following admin commands: - character_disconnect = disconnects target player

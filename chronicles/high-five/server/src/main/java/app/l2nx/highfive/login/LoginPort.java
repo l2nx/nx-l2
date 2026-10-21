@@ -38,7 +38,7 @@ import java.util.UUID;
  */
 public interface LoginPort {
     /** The answer arrives as an {@code AuthenticationResult}. */
-    boolean authenticate(String login, SessionKey key);
+    boolean authenticate(UUID requestId, String login, SessionKey key);
 
     void accountsEntered(List<UUID> accountIds);
 
@@ -53,7 +53,8 @@ public interface LoginPort {
     void requestTempBan(UUID accountId, String ip, Duration duration);
 
     /** The answer arrives as a {@code PasswordChangeResult}. */
-    boolean changePassword(UUID accountId, String characterName, String oldPassword, String newPassword);
+    boolean changePassword(
+            UUID requestId, UUID accountId, String characterName, String oldPassword, String newPassword);
 
     /** @param deleteTimes one per character marked for deletion, so its size is not {@code count} */
     void reportCharacters(UUID accountId, int count, List<Instant> deleteTimes);

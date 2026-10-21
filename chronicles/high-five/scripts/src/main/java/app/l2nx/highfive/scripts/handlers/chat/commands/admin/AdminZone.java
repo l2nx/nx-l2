@@ -32,7 +32,7 @@ import app.l2nx.highfive.entity.zone.ZoneType;
 import app.l2nx.highfive.entity.zone.type.NpcSpawnTerritory;
 import app.l2nx.highfive.handler.IAdminCommandHandler;
 import app.l2nx.highfive.managers.ZoneManager;
-import app.l2nx.highfive.network.serverpackets.NpcHtmlMessage;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.NpcHtmlMessage;
 import java.util.StringTokenizer;
 
 /**

@@ -24,7 +24,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package app.l2nx.highfive.network.clientpackets;
+package app.l2nx.highfive.network.protocol.highfive.clientpackets;
 
 import app.l2nx.highfive.cache.HtmCache;
 import app.l2nx.highfive.clock.ClockBridge;
@@ -87,40 +87,39 @@ import app.l2nx.highfive.mechanics.siege.clanhalls.SiegableHall;
 import app.l2nx.highfive.mechanics.skill.CommonSkill;
 import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.mechanics.variables.AccountVariables;
-import app.l2nx.highfive.network.ConnectionState;
 import app.l2nx.highfive.network.Disconnection;
 import app.l2nx.highfive.network.GameClient;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.enums.ChatType;
 import app.l2nx.highfive.network.holders.ClientHardwareInfoHolder;
-import app.l2nx.highfive.network.serverpackets.ActionFailed;
-import app.l2nx.highfive.network.serverpackets.CreatureSay;
-import app.l2nx.highfive.network.serverpackets.Die;
-import app.l2nx.highfive.network.serverpackets.EtcStatusUpdate;
-import app.l2nx.highfive.network.serverpackets.ExBasicActionList;
-import app.l2nx.highfive.network.serverpackets.ExGetBookMarkInfoPacket;
-import app.l2nx.highfive.network.serverpackets.ExNoticePostArrived;
-import app.l2nx.highfive.network.serverpackets.ExNotifyPremiumItem;
-import app.l2nx.highfive.network.serverpackets.ExRotation;
-import app.l2nx.highfive.network.serverpackets.ExShowContactList;
-import app.l2nx.highfive.network.serverpackets.ExShowScreenMessage;
-import app.l2nx.highfive.network.serverpackets.ExStorageMaxCount;
-import app.l2nx.highfive.network.serverpackets.ExVoteSystemInfo;
-import app.l2nx.highfive.network.serverpackets.FriendList;
-import app.l2nx.highfive.network.serverpackets.HennaInfo;
-import app.l2nx.highfive.network.serverpackets.ItemList;
-import app.l2nx.highfive.network.serverpackets.LeaveWorld;
-import app.l2nx.highfive.network.serverpackets.NpcHtmlMessage;
-import app.l2nx.highfive.network.serverpackets.PledgeShowMemberListAll;
-import app.l2nx.highfive.network.serverpackets.PledgeShowMemberListUpdate;
-import app.l2nx.highfive.network.serverpackets.PledgeSkillList;
-import app.l2nx.highfive.network.serverpackets.PledgeStatusChanged;
-import app.l2nx.highfive.network.serverpackets.QuestList;
-import app.l2nx.highfive.network.serverpackets.ShortcutInit;
-import app.l2nx.highfive.network.serverpackets.SkillCoolTime;
-import app.l2nx.highfive.network.serverpackets.SystemMessage;
-import app.l2nx.highfive.network.serverpackets.UserInfo;
-import app.l2nx.highfive.network.serverpackets.ValidateLocation;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ActionFailed;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.CreatureSay;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.Die;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.EtcStatusUpdate;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ExBasicActionList;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ExGetBookMarkInfoPacket;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ExNoticePostArrived;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ExNotifyPremiumItem;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ExRotation;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ExShowContactList;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ExShowScreenMessage;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ExStorageMaxCount;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ExVoteSystemInfo;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.FriendList;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.HennaInfo;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ItemList;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.LeaveWorld;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.NpcHtmlMessage;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.PledgeShowMemberListAll;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.PledgeShowMemberListUpdate;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.PledgeSkillList;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.PledgeStatusChanged;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.QuestList;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ShortcutInit;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.SkillCoolTime;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.SystemMessage;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.UserInfo;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ValidateLocation;
 import app.l2nx.highfive.taskmanagers.GameTimeTaskManager;
 import app.l2nx.highfive.threads.ThreadPool;
 import java.util.List;
@@ -168,8 +167,9 @@ public class EnterWorld extends ClientPacket {
             Disconnection.of(client).storeAndDeleteWith(LeaveWorld.STATIC_PACKET);
             return;
         }
-
-        client.setConnectionState(ConnectionState.IN_GAME);
+        if (player.hasEnteredWorld()) {
+            return;
+        }
 
         final String[] adress = new String[5];
         for (int i = 0; i < 5; i++) {

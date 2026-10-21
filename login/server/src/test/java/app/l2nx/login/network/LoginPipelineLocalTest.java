@@ -8,7 +8,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.after;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import app.l2nx.boot.ServerExit;
@@ -30,12 +32,15 @@ import app.l2nx.network.crypt.LittleEndianBlowfishCipher;
 import app.l2nx.network.crypt.XorChecksum;
 import app.l2nx.network.exec.BlockingTaskExecutor;
 import app.l2nx.network.metrics.NetworkMetrics;
+import app.l2nx.network.metrics.model.DropReason;
 import app.l2nx.network.transport.NetworkEventLoops;
+import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
@@ -124,6 +129,26 @@ class LoginPipelineLocalTest {
     }
 
     @Nested
+    class States {
+        @Test
+        void packet_shouldBeCountedAsWrongState_whenTheStateItRunsInDoesNotAcceptIt() throws Exception {
+            connect();
+            assertThat(received.poll(5, TimeUnit.SECONDS)).as("Init").isNotNull();
+
+            client.writeAndFlush(clientFrame(new byte[] {0x05, 0, 0, 0, 0, 0, 0, 0, 0}))
+                    .sync();
+            client.writeAndFlush(clientFrame(authGameGuard())).sync();
+
+            // The lane is serial: once GGAuth is out, the server list request queued before it has been judged.
+            assertThat(decrypt(received.poll(5, TimeUnit.SECONDS))[0])
+                    .as("GGAuth")
+                    .isEqualTo((byte) 0x0b);
+            assertThat(wrongState()).isEqualTo(1.0);
+            assertThat(client.isActive()).isTrue();
+        }
+    }
+
+    @Nested
     class Authentication {
         private static final String LOGIN = "test1";
         private static final String PASSWORD = "test1";
@@ -132,6 +157,29 @@ class LoginPipelineLocalTest {
 
         @TempDir
         private Path datapackRoot;
+
+        @Test
+        void requestAuthLogin_shouldBeDiscardedUncounted_whenPipelinedBehindAFailedOne() throws Exception {
+            install(true);
+            when(accounts.findAccountInfo(eq(LOGIN), any())).thenReturn(Optional.of(account()));
+            connect();
+            assertThat(received.poll(5, TimeUnit.SECONDS)).as("Init").isNotNull();
+            client.writeAndFlush(clientFrame(authGameGuard())).sync();
+            assertThat(decrypt(received.poll(5, TimeUnit.SECONDS))[0])
+                    .as("GGAuth")
+                    .isEqualTo((byte) 0x0b);
+
+            client.writeAndFlush(Unpooled.wrappedBuffer(
+                            clientFrame(requestAuthLogin(LOGIN, "wrongpass")),
+                            clientFrame(requestAuthLogin(LOGIN, "wrongpass"))))
+                    .sync();
+
+            assertThat(decrypt(received.poll(5, TimeUnit.SECONDS)))
+                    .startsWith(0x01, LoginFailReason.REASON_USER_OR_PASS_WRONG.getCode());
+            assertClosedWithoutError();
+            verify(accounts, after(500).times(1)).findAccountInfo(eq(LOGIN), any());
+            assertThat(wrongState()).isZero();
+        }
 
         @Test
         void requestAuthLogin_shouldSendLoginFail_andClose_whenThePasswordIsWrong() throws Exception {
@@ -152,6 +200,26 @@ class LoginPipelineLocalTest {
 
             assertThat(answer).startsWith(0x01, LoginFailReason.REASON_USER_OR_PASS_WRONG.getCode());
             assertClosedWithoutError();
+        }
+
+        @Test
+        void requestAuthLogin_shouldRun_whenReadInTheSameFlushRightBehindTheAuthGameGuard() throws Exception {
+            install(true);
+            when(accounts.findAccountInfo(eq(LOGIN), any())).thenReturn(Optional.of(account()));
+            connect();
+            assertThat(received.poll(5, TimeUnit.SECONDS)).as("Init").isNotNull();
+
+            client.writeAndFlush(Unpooled.wrappedBuffer(
+                            clientFrame(authGameGuard()), clientFrame(requestAuthLogin(LOGIN, PASSWORD))))
+                    .sync();
+
+            assertThat(decrypt(received.poll(5, TimeUnit.SECONDS))[0])
+                    .as("GGAuth")
+                    .isEqualTo((byte) 0x0b);
+            assertThat(decrypt(received.poll(5, TimeUnit.SECONDS))[0])
+                    .as("LoginOk")
+                    .isEqualTo((byte) 0x03);
+            assertThat(wrongState()).isZero();
         }
 
         @Test
@@ -196,11 +264,15 @@ class LoginPipelineLocalTest {
                     .as("GGAuth")
                     .isEqualTo((byte) 0x0b);
 
+            client.writeAndFlush(clientFrame(requestAuthLogin(login, password))).sync();
+            return decrypt(received.poll(5, TimeUnit.SECONDS));
+        }
+
+        private byte[] requestAuthLogin(String login, String password) throws Exception {
             final byte[] payload = new byte[1 + 128 + 4 + 16];
             payload[0] = 0x00;
             System.arraycopy(credentials(login, password), 0, payload, 1, 128);
-            client.writeAndFlush(clientFrame(payload)).sync();
-            return decrypt(received.poll(5, TimeUnit.SECONDS));
+            return payload;
         }
 
         /** The 128-byte RSA block of the High Five client: login at 0x5E, password at 0x6C. */
@@ -351,6 +423,13 @@ class LoginPipelineLocalTest {
                 .sync()
                 .channel();
         return sessions.poll(5, TimeUnit.SECONDS);
+    }
+
+    private double wrongState() {
+        final Counter counter = registry.find("l2nx.network.dropped")
+                .tag("reason", DropReason.WRONG_STATE.tag())
+                .counter();
+        return counter == null ? 0 : counter.count();
     }
 
     private <T> T onEventLoop(Callable<T> read) throws Exception {

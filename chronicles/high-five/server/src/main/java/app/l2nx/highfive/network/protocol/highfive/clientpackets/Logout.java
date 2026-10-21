@@ -20,7 +20,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package app.l2nx.highfive.network.clientpackets;
+package app.l2nx.highfive.network.protocol.highfive.clientpackets;
 
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.data.sql.OfflineTraderTable;
@@ -34,8 +34,8 @@ import app.l2nx.highfive.mechanics.olympiad.OlympiadManager;
 import app.l2nx.highfive.mechanics.variables.PlayerVariables;
 import app.l2nx.highfive.network.Disconnection;
 import app.l2nx.highfive.network.GameClient;
-import app.l2nx.highfive.network.serverpackets.ActionFailed;
-import app.l2nx.highfive.network.serverpackets.LeaveWorld;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ActionFailed;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.LeaveWorld;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,6 +55,10 @@ public class Logout extends ClientPacket {
         final Player player = client.getPlayer();
         if (player == null) {
             client.disconnect();
+            return;
+        }
+        // A half-loaded character must not run the logout.
+        if (!player.hasEnteredWorld()) {
             return;
         }
 

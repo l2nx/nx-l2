@@ -26,7 +26,7 @@ import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.handler.IAdminCommandHandler;
 import app.l2nx.highfive.network.Disconnection;
-import app.l2nx.highfive.network.serverpackets.LeaveWorld;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.LeaveWorld;
 import java.util.StringTokenizer;
 
 public class AdminKick implements IAdminCommandHandler {

@@ -27,7 +27,7 @@ import app.l2nx.highfive.geoengine.GeoEngine;
 import app.l2nx.highfive.geoengine.geodata.Cell;
 import app.l2nx.highfive.geoengine.util.GridLineIterator2D;
 import app.l2nx.highfive.geoengine.util.GridLineIterator3D;
-import app.l2nx.highfive.network.serverpackets.ExServerPrimitive;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ExServerPrimitive;
 import java.awt.Color;
 
 /**

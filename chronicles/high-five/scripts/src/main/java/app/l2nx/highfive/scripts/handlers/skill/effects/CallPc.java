@@ -33,8 +33,8 @@ import app.l2nx.highfive.mechanics.olympiad.OlympiadManager;
 import app.l2nx.highfive.mechanics.sevensigns.SevenSigns;
 import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.serverpackets.ConfirmDlg;
-import app.l2nx.highfive.network.serverpackets.SystemMessage;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ConfirmDlg;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.SystemMessage;
 import app.l2nx.highfive.util.StatSet;
 
 /**

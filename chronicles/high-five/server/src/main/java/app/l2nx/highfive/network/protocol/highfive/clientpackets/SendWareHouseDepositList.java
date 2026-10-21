@@ -20,7 +20,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package app.l2nx.highfive.network.clientpackets;
+package app.l2nx.highfive.network.protocol.highfive.clientpackets;
 
 import static app.l2nx.highfive.entity.itemcontainer.Inventory.ADENA_ID;
 
@@ -33,9 +33,9 @@ import app.l2nx.highfive.entity.item.instance.Item;
 import app.l2nx.highfive.entity.itemcontainer.ItemContainer;
 import app.l2nx.highfive.entity.itemcontainer.PlayerWarehouse;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.serverpackets.EnchantResult;
-import app.l2nx.highfive.network.serverpackets.InventoryUpdate;
-import app.l2nx.highfive.network.serverpackets.StatusUpdate;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.EnchantResult;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.InventoryUpdate;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.StatusUpdate;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;

@@ -27,7 +27,7 @@ import app.l2nx.highfive.handler.IAdminCommandHandler;
 import app.l2nx.highfive.managers.ScriptManager;
 import app.l2nx.highfive.mechanics.script.Event;
 import app.l2nx.highfive.mechanics.script.Quest;
-import app.l2nx.highfive.network.serverpackets.NpcHtmlMessage;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.NpcHtmlMessage;
 import java.util.StringTokenizer;
 
 public class AdminEvents implements IAdminCommandHandler {

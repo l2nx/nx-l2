@@ -17,11 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package app.l2nx.highfive.network.serverpackets;
+package app.l2nx.highfive.network.protocol.highfive.serverpackets;
 
 import app.l2nx.highfive.entity.item.holders.ItemInfo;
 import app.l2nx.highfive.entity.item.instance.Item;
-import app.l2nx.network.buffer.WriteBuffer;
+import app.l2nx.network.codec.PacketWriter;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -91,7 +91,7 @@ public abstract class AbstractInventoryUpdate extends AbstractItemPacket {
         return itemEntries.values();
     }
 
-    protected void writeItems(WriteBuffer buffer) {
+    protected void writeItems(PacketWriter buffer) {
         synchronized (itemEntries) {
             buffer.writeShort(itemEntries.size());
             for (ItemInfo item : itemEntries.values()) {

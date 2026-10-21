@@ -26,16 +26,16 @@
  */
 package app.l2nx.highfive.login.command;
 
+import app.l2nx.engine.core.session.Session;
+import app.l2nx.engine.core.session.command.SessionCommandHandler;
 import app.l2nx.highfive.login.LoginPort;
 import app.l2nx.highfive.login.LoginService;
 import app.l2nx.highfive.login.system.OnlineAccounts;
 import app.l2nx.highfive.login.system.OnlineAccounts.PendingAuthentication;
-import app.l2nx.highfive.network.ConnectionState;
 import app.l2nx.highfive.network.GameClient;
-import app.l2nx.highfive.network.serverpackets.CharSelectionInfo;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.CharSelectionInfo;
 import java.util.List;
 import java.util.UUID;
-import java.util.function.Consumer;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -44,28 +44,29 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 @RequiredArgsConstructor(access = AccessLevel.PACKAGE)
-class AuthenticationResultHandler implements Consumer<AuthenticationResult> {
+class AuthenticationResultHandler implements SessionCommandHandler<AuthenticationResult> {
     private final LoginPort port;
     private final LoginService loginService;
     private final OnlineAccounts accounts;
 
     @Override
-    public void accept(AuthenticationResult result) {
-        final PendingAuthentication pending = accounts.takePending(result.login());
+    public void handle(Session session, AuthenticationResult result) {
+        final GameClient client = GameClient.of(session);
+        // Gone when the link loss already failed it; another client's entry never matches.
+        final PendingAuthentication pending = accounts.takePending(result.requestId(), client);
         if (pending == null) {
             return;
         }
-        final GameClient client = pending.client();
-        if (!result.accepted()) {
-            log.warn("Session key incorrect, closing the connection of login {}", result.login());
-            loginService.failAuthentication(result.login(), client);
+        if (!result.accepted() || (result.accountId() == null)) {
+            log.warn("Authentication of login {} failed, closing its connection", pending.login());
+            loginService.failAuthentication(pending.login(), client);
             return;
         }
         final UUID accountId = result.accountId();
         client.setAccountId(accountId);
         accounts.enter(accountId, client);
         port.accountsEntered(List.of(accountId));
-        client.setConnectionState(ConnectionState.AUTHENTICATED);
+        client.authenticated();
         client.setSessionId(pending.sessionKey());
         final CharSelectionInfo selection = new CharSelectionInfo(client);
         client.sendPacket(selection);

@@ -32,7 +32,7 @@ import app.l2nx.highfive.mechanics.punishment.PunishmentTask;
 import app.l2nx.highfive.mechanics.punishment.PunishmentType;
 import app.l2nx.highfive.network.GameClient;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.serverpackets.EtcStatusUpdate;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.EtcStatusUpdate;
 import java.util.UUID;
 
 /**

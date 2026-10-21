@@ -4,4 +4,6 @@
  */
 package app.l2nx.architecture.fixture.wellformed.login.command;
 
-public record Kick(String login) {}
+import app.l2nx.engine.core.session.command.Command;
+
+public record Kick(String login) implements Command {}

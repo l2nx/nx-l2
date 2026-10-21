@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package app.l2nx.highfive.network.clientpackets;
+package app.l2nx.highfive.network.protocol.highfive.clientpackets;
 
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.config.PlayerConfig;
@@ -31,8 +31,8 @@ import app.l2nx.highfive.entity.itemcontainer.ItemContainer;
 import app.l2nx.highfive.entity.itemcontainer.PlayerFreight;
 import app.l2nx.highfive.managers.PunishmentManager;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.serverpackets.InventoryUpdate;
-import app.l2nx.highfive.network.serverpackets.StatusUpdate;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.InventoryUpdate;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.StatusUpdate;
 import lombok.extern.slf4j.Slf4j;
 
 /**

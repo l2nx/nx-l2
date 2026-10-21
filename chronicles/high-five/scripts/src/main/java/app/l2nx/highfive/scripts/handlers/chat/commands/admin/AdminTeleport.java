@@ -34,7 +34,7 @@ import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.handler.IAdminCommandHandler;
 import app.l2nx.highfive.managers.AdminCharacterManager;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.serverpackets.NpcHtmlMessage;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.NpcHtmlMessage;
 import java.util.NoSuchElementException;
 import java.util.StringTokenizer;
 import lombok.extern.slf4j.Slf4j;

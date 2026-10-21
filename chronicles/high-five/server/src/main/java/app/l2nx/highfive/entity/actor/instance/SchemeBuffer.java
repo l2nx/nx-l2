@@ -34,7 +34,7 @@ import app.l2nx.highfive.entity.actor.holders.npc.BuffSkillHolder;
 import app.l2nx.highfive.entity.actor.templates.NpcTemplate;
 import app.l2nx.highfive.entity.item.enums.ItemProcessType;
 import app.l2nx.highfive.mechanics.skill.Skill;
-import app.l2nx.highfive.network.serverpackets.NpcHtmlMessage;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.NpcHtmlMessage;
 import app.l2nx.highfive.util.HtmlUtil;
 import java.text.NumberFormat;
 import java.util.ArrayList;

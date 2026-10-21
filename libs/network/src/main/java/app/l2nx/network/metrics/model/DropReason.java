@@ -11,11 +11,13 @@ public enum DropReason {
     MAX_CONNECTIONS("max-connections"),
     UNKNOWN_OPCODE("unknown-opcode"),
     WRONG_STATE("wrong-state"),
+    UNAUTHENTICATED("unauthenticated"),
     /** A known opcode the server deliberately does not handle. */
     IGNORED("ignored"),
     /** A frame sent to a connection that is closing. */
     CLOSED("closed"),
-    UNHANDLED("unhandled");
+    UNHANDLED("unhandled"),
+    NO_SESSION("no-session");
 
     private final String tag;
 

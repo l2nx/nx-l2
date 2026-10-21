@@ -34,7 +34,7 @@ import app.l2nx.highfive.entity.item.enums.ItemProcessType;
 import app.l2nx.highfive.entity.item.instance.Item;
 import app.l2nx.highfive.managers.ItemManager;
 import app.l2nx.highfive.mechanics.variables.ItemVariables;
-import app.l2nx.highfive.network.serverpackets.InventoryUpdate;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.InventoryUpdate;
 import app.l2nx.highfive.repository.item.model.ItemRow;
 import java.util.ArrayDeque;
 import java.util.Collection;

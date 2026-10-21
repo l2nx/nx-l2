@@ -36,7 +36,7 @@ import app.l2nx.highfive.mechanics.siege.FortSiege;
 import app.l2nx.highfive.mechanics.siege.FortSpawnHolder;
 import app.l2nx.highfive.mechanics.skill.CommonSkill;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.serverpackets.SystemMessage;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.SystemMessage;
 import app.l2nx.highfive.repository.siege.FortSiegeClanRepository;
 import java.io.File;
 import java.io.FileInputStream;

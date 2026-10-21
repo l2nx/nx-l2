@@ -27,7 +27,7 @@ import app.l2nx.highfive.data.sql.CharInfoTable;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.managers.CharacterRelationsManager;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.serverpackets.SystemMessage;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.SystemMessage;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.Getter;

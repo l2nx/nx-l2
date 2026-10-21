@@ -28,8 +28,8 @@ import app.l2nx.highfive.mechanics.script.Script;
 import app.l2nx.highfive.mechanics.siege.Castle;
 import app.l2nx.highfive.mechanics.siege.Fort;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.serverpackets.NpcHtmlMessage;
-import app.l2nx.highfive.network.serverpackets.SystemMessage;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.NpcHtmlMessage;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.SystemMessage;
 
 /**
  * Fortress Siege Manager AI.

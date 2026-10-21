@@ -44,6 +44,7 @@ import app.l2nx.network.channel.OutboundQueue;
 import app.l2nx.network.channel.guard.ConnectionDeadlines;
 import app.l2nx.network.channel.guard.IdlePolicy;
 import app.l2nx.network.exec.SerialExecutor;
+import app.l2nx.network.metrics.model.DropReason;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.util.AttributeKey;
@@ -63,8 +64,6 @@ import lombok.Getter;
 import lombok.Setter;
 
 /**
- * One login connection. Packets run on the connection's lane while game-server replies and the purge arrive on other
- * threads, so the fields they share are volatile or concurrent.
  * @author KenM, BazookaRpm
  */
 public class LoginClient {
@@ -84,7 +83,6 @@ public class LoginClient {
 
     private final SerialExecutor tasks;
 
-    /** {@code null} only for a peer without an address. */
     @Getter
     private final String ip;
 
@@ -96,7 +94,6 @@ public class LoginClient {
     private final Set<Integer> charactersPending = ConcurrentHashMap.newKeySet();
     private volatile long charactersDeadline;
 
-    // Event loop only.
     private ScheduledFuture<?> serverListWait;
 
     @Getter
@@ -148,11 +145,21 @@ public class LoginClient {
             return;
         }
         if (tasks.isClosed()) {
-            // The server is stopping, the client did nothing wrong.
             closeNow();
         } else {
             Connections.close(channel, CloseReason.FLOOD);
         }
+    }
+
+    /** Any thread. */
+    public void dropped(DropReason reason) {
+        Connections.metrics(channel).dropped(reason);
+    }
+
+    /** Any thread: the connection is closed or has its last frame queued. */
+    public boolean isClosing() {
+        final OutboundQueue queue = OutboundQueue.of(channel);
+        return !channel.isActive() || ((queue != null) && queue.isClosing());
     }
 
     public void sendPacket(LoginServerPacket packet) {
@@ -183,6 +190,10 @@ public class LoginClient {
         close(new AccountKicked(reason));
     }
 
+    public void closeForShutdown() {
+        close(LoginFailReason.REASON_SERVER_MAINTENANCE);
+    }
+
     public void closeNow() {
         channel.close();
     }
@@ -192,7 +203,6 @@ public class LoginClient {
     }
 
     public void handshakeDone() {
-        // The pipeline is gone once the channel is closed.
         final ConnectionDeadlines deadlines = ConnectionDeadlines.of(channel);
         if (deadlines != null) {
             deadlines.handshakeReached();
@@ -249,7 +259,6 @@ public class LoginClient {
         charactersPending.addAll(serverIds);
     }
 
-    /** Called after the counts of that server are stored. */
     public void charactersArrived(int serverId) {
         if (charactersPending.remove(serverId) && charactersPending.isEmpty()) {
             onEventLoop(this::serverListWaitOver);
@@ -302,7 +311,6 @@ public class LoginClient {
     }
 
     private void buildServerList() {
-        // On the lane: resolving a game server's address may block.
         execute(() -> sendPacket(new ServerList(this)));
     }
 

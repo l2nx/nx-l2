@@ -17,14 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package app.l2nx.highfive.network.serverpackets;
+package app.l2nx.highfive.network.protocol.highfive.serverpackets;
 
 import app.l2nx.highfive.entity.residences.AuctionableHall;
 import app.l2nx.highfive.entity.residences.ClanHall;
 import app.l2nx.highfive.entity.residences.ClanHall.ClanHallFunction;
 import app.l2nx.highfive.network.GameClient;
-import app.l2nx.highfive.network.ServerPackets;
-import app.l2nx.network.buffer.WriteBuffer;
+import app.l2nx.network.codec.PacketWriter;
 
 /**
  * @author Steuf
@@ -37,7 +36,7 @@ public class AgitDecoInfo extends ServerPacket {
     }
 
     @Override
-    public void writeImpl(GameClient client, WriteBuffer buffer) {
+    public void writeImpl(GameClient client, PacketWriter buffer) {
         ServerPackets.AGIT_DECO_INFO.writeId(this, buffer);
         buffer.writeInt(clanHall.getId());
 

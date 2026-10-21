@@ -71,7 +71,7 @@ public enum LoginClientPackets {
 
         final EnumSet<ConnectionState> states = EnumSet.noneOf(ConnectionState.class);
         Collections.addAll(states, connectionStates);
-        this.connectionStates = states;
+        this.connectionStates = Collections.unmodifiableSet(states);
     }
 
     public int getPacketId() {

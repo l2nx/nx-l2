@@ -20,14 +20,13 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package app.l2nx.highfive.network.serverpackets;
+package app.l2nx.highfive.network.protocol.highfive.serverpackets;
 
 import app.l2nx.highfive.data.xml.RecipeData;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.item.recipe.RecipeList;
 import app.l2nx.highfive.network.GameClient;
-import app.l2nx.highfive.network.ServerPackets;
-import app.l2nx.network.buffer.WriteBuffer;
+import app.l2nx.network.codec.PacketWriter;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -49,7 +48,7 @@ public class RecipeItemMakeInfo extends ServerPacket {
     }
 
     @Override
-    public void writeImpl(GameClient client, WriteBuffer buffer) {
+    public void writeImpl(GameClient client, PacketWriter buffer) {
         final RecipeList recipe = RecipeData.getInstance().getRecipeList(id);
         if (recipe == null) {
             log.info("Character: {}: Requested unexisting recipe with id = {}", player, id);

@@ -18,7 +18,8 @@ thread ([spec 003 execution.md §8](../specs/003-engine-core/execution.md#8-budg
 as Spring's `tasks.scheduled.execution` writes it); lambdas, anonymous and local classes count as their declaring
 class, a JDK dynamic proxy as `proxy`. `outcome` is `SUCCESS` or `ERROR`, `exception` the simple name of the exception class (the binary name for an anonymous class) or
 `none` (the keys of Spring's `tasks.scheduled.execution`). `type` is the fully qualified packet class name; packets
-carry `outcome` and `exception` as tasks do. `_max` decays over a two-minute window. The two histograms span 1 µs
+carry `outcome` and `exception` as tasks do. The packet meter is timed by the session drain (the `l2nx-game-packets`
+executor), one drain per client at a time. `_max` decays over a two-minute window. The two histograms span 1 µs
 to 30 s; `management.metrics.distribution.*` overrides their range.
 
 The engine loop meters `l2nx_engine_*{loop="world"}` exist already, but until E6 routes game work into the world

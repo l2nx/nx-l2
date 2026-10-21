@@ -95,14 +95,14 @@ class LoginPacketDecoderTest {
         }
 
         @Test
-        void channelRead_shouldReleaseTheFrameOnce_whenThePacketIsRefused() {
-            final ByteBuf frame = payload(REQUEST_SERVER_LIST, 0);
+        void channelRead_shouldHandThePacketToTheLane_whateverTheState() {
+            final ByteBuf frame = payload(REQUEST_SERVER_LIST, 8);
 
             channel.writeInbound(frame);
 
             assertThat(frame.refCnt()).isZero();
-            assertThat(dropped()).isEqualTo(1.0);
-            verify(client, never()).execute(any(Runnable.class));
+            assertThat(dropped()).isZero();
+            verify(client).execute(any(Runnable.class));
         }
 
         @Test
@@ -143,12 +143,18 @@ class LoginPacketDecoderTest {
         @EnumSource(
                 value = ConnectionState.class,
                 names = {"CONNECTED", "AUTHED_GG"})
-        void channelRead_shouldCountWrongState_whenThePiAgreementOpcodeArrivesBeforeLogin(ConnectionState state) {
+        void channelRead_shouldCountAsIgnored_whenThePiAgreementOpcodeArrivesBeforeLogin(ConnectionState state) {
             when(client.getConnectionState()).thenReturn(state);
 
             channel.writeInbound(payload(0x0E, 0));
 
-            assertThat(dropped()).isEqualTo(1.0);
+            assertThat(TestChannels.registry(channel)
+                            .get("l2nx.network.dropped")
+                            .tag("reason", DropReason.IGNORED.tag())
+                            .counter()
+                            .count())
+                    .isEqualTo(1.0);
+            verify(client, never()).execute(any(Runnable.class));
         }
     }
 

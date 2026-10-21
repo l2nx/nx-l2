@@ -145,11 +145,11 @@ Ports exist only at the outer edges that are a network or another process. Game 
 
 - **Spring Modulith** `ApplicationModules.verify()` over the migrated slices: no cycles, no access to another slice's
   internals. Legacy packages are excluded, and the list of verified slices only grows as slices migrate.
-- **ArchUnit:** the fixed subpackage names; commands are records in `command/` and handlers are package-private
-  there; `ViewEvent` types only in `view/`, `DomainEvent` types only in `event/`; `*Port` only as interfaces in a
-  slice root or `engine/core`; `@Repository` only in `<slice>/repository/`; no `*Impl` or `*Gateway` types; no slice
-  depends on `network`. The marker rules (`ViewEvent`, `DomainEvent`, commands and handlers by type) start with the
-  marker types in `engine/core`; until then commands and handlers are checked by package and name.
+- **ArchUnit:** the fixed subpackage names; by marker type, a `Command` is a public record in `command/`, a
+  `CommandHandler` is package-private there with a non-public constructor and is named `<Command>Handler` after the
+  command it handles, and `command/` holds nothing else; `ViewEvent` types only in `view/`, `DomainEvent` types only
+  in `event/`; `*Port` only as interfaces in a slice root or `engine/core`; `@Repository` only in
+  `<slice>/repository/`; no `*Impl` or `*Gateway` types; no slice depends on `network`.
 - **Legacy classes a slice still needs are named, not tolerated by pattern:** a slice migrated before the port
   framework covers its whole path may use a few legacy `network` classes (the game client, its disconnection, the
   server packets it still sends). They are listed in one constant of the rules (`LEGACY_NETWORK_FACADES`), every

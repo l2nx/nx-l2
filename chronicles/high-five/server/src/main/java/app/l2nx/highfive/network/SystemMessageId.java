@@ -24,7 +24,7 @@ package app.l2nx.highfive.network;
 
 import app.l2nx.highfive.config.custom.MultilingualSupportConfig;
 import app.l2nx.highfive.mechanics.clientstrings.Builder;
-import app.l2nx.highfive.network.serverpackets.SystemMessage;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.SystemMessage;
 import java.io.File;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;

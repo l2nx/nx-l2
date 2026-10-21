@@ -23,7 +23,7 @@ import app.l2nx.highfive.config.RatesConfig;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.stat.PlayerStat;
 import app.l2nx.highfive.entity.zone.ZoneId;
-import app.l2nx.highfive.network.serverpackets.ExVitalityPointInfo;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ExVitalityPointInfo;
 
 /**
  * Task dedicated to reward player with vitality.

@@ -20,7 +20,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package app.l2nx.highfive.network.serverpackets;
+package app.l2nx.highfive.network.protocol.highfive.serverpackets;
 
 import static app.l2nx.highfive.data.xml.MultisellData.PAGE_SIZE;
 
@@ -28,8 +28,7 @@ import app.l2nx.highfive.mechanics.multisell.Entry;
 import app.l2nx.highfive.mechanics.multisell.Ingredient;
 import app.l2nx.highfive.mechanics.multisell.ListContainer;
 import app.l2nx.highfive.network.GameClient;
-import app.l2nx.highfive.network.ServerPackets;
-import app.l2nx.network.buffer.WriteBuffer;
+import app.l2nx.network.codec.PacketWriter;
 
 public class MultiSellList extends ServerPacket {
     private int size;
@@ -50,7 +49,7 @@ public class MultiSellList extends ServerPacket {
     }
 
     @Override
-    public void writeImpl(GameClient client, WriteBuffer buffer) {
+    public void writeImpl(GameClient client, PacketWriter buffer) {
         ServerPackets.MULTI_SELL_LIST.writeId(this, buffer);
         buffer.writeInt(list.getListId()); // list id
         buffer.writeInt(1 + (index / PAGE_SIZE)); // page started from 1

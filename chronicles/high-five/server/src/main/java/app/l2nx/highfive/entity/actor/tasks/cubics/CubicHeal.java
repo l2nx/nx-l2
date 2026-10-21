@@ -26,7 +26,7 @@ import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.instance.Cubic;
 import app.l2nx.highfive.entity.cubic.CubicSkill;
 import app.l2nx.highfive.mechanics.skill.Skill;
-import app.l2nx.highfive.network.serverpackets.MagicSkillUse;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.MagicSkillUse;
 import java.util.Collections;
 import java.util.concurrent.atomic.AtomicInteger;
 import lombok.extern.slf4j.Slf4j;

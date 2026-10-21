@@ -20,14 +20,13 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package app.l2nx.highfive.network.serverpackets;
+package app.l2nx.highfive.network.protocol.highfive.serverpackets;
 
 import app.l2nx.highfive.data.xml.SkillData;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.network.GameClient;
-import app.l2nx.highfive.network.ServerPackets;
-import app.l2nx.network.buffer.WriteBuffer;
+import app.l2nx.network.codec.PacketWriter;
 import java.util.Collection;
 
 public class GMViewSkillInfo extends ServerPacket {
@@ -40,7 +39,7 @@ public class GMViewSkillInfo extends ServerPacket {
     }
 
     @Override
-    public void writeImpl(GameClient client, WriteBuffer buffer) {
+    public void writeImpl(GameClient client, PacketWriter buffer) {
         ServerPackets.GM_VIEW_SKILL_INFO.writeId(this, buffer);
         buffer.writeString(player.getName());
         buffer.writeInt(skills.size());

@@ -25,7 +25,7 @@ import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.enums.player.TeleportWhereType;
 import app.l2nx.highfive.entity.actor.instance.Door;
-import app.l2nx.highfive.network.serverpackets.ServerPacket;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ServerPacket;
 import app.l2nx.highfive.util.ArrayUtil;
 import app.l2nx.highfive.util.StatSet;
 import java.util.ArrayList;

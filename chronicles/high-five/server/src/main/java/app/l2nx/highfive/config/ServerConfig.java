@@ -68,7 +68,6 @@ public class ServerConfig {
 
     public static String GAMESERVER_HOSTNAME;
     public static int PORT_GAME;
-    public static boolean PACKET_ENCRYPTION;
     public static int REQUEST_ID;
     public static boolean ACCEPT_ALTERNATE_ID;
     public static File DATAPACK_ROOT;
@@ -83,7 +82,6 @@ public class ServerConfig {
     public static int MAX_PLAYERS_PER_HWID;
     public static boolean REQUIRE_FRESH_HWID;
     public static int HWID_CHECK_DELAY;
-    public static List<Integer> PROTOCOL_LIST;
     public static int SERVER_LIST_TYPE;
     public static int SERVER_LIST_AGE;
     public static boolean SERVER_LIST_BRACKET;
@@ -112,7 +110,6 @@ public class ServerConfig {
         final ConfigReader config = new ConfigReader(SERVER_CONFIG_FILE);
         GAMESERVER_HOSTNAME = config.getString("GameserverHostname", "0.0.0.0");
         PORT_GAME = config.getInt("GameserverPort", 7777);
-        PACKET_ENCRYPTION = config.getBoolean("PacketEncryption", false);
         REQUEST_ID = config.getInt("RequestServerID", 0);
         ACCEPT_ALTERNATE_ID = config.getBoolean("AcceptAlternateID", true);
 
@@ -168,17 +165,6 @@ public class ServerConfig {
         }
         REQUIRE_FRESH_HWID = config.getBoolean("RequireFreshHWID", false);
         HWID_CHECK_DELAY = config.getInt("HwidCheckDelay", 5000);
-
-        final String[] protocols =
-                config.getString("AllowedProtocolRevisions", "267;268;271;273").split(";");
-        PROTOCOL_LIST = new ArrayList<>(protocols.length);
-        for (String protocol : protocols) {
-            try {
-                PROTOCOL_LIST.add(Integer.parseInt(protocol.trim()));
-            } catch (NumberFormatException e) {
-                log.warn("Wrong config protocol version: {}. Skipped.", protocol);
-            }
-        }
 
         SERVER_LIST_TYPE =
                 getServerTypeId(config.getString("ServerListType", "Free").split(","));

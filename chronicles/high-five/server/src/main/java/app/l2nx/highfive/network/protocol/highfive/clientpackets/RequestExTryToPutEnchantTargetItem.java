@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package app.l2nx.highfive.network.clientpackets;
+package app.l2nx.highfive.network.protocol.highfive.clientpackets;
 
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.GeneralConfig;
@@ -27,7 +27,7 @@ import app.l2nx.highfive.entity.item.enchant.EnchantScroll;
 import app.l2nx.highfive.entity.item.instance.Item;
 import app.l2nx.highfive.managers.PunishmentManager;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.serverpackets.ExPutEnchantTargetItemResult;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ExPutEnchantTargetItemResult;
 import lombok.extern.slf4j.Slf4j;
 
 /**

@@ -29,7 +29,7 @@ import app.l2nx.highfive.mechanics.siege.Castle;
 import app.l2nx.highfive.mechanics.siege.Fort;
 import app.l2nx.highfive.network.NpcStringId;
 import app.l2nx.highfive.network.enums.ChatType;
-import app.l2nx.highfive.network.serverpackets.NpcSay;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.NpcSay;
 import app.l2nx.highfive.scripts.quests.Q00114_ResurrectionOfAnOldManager.Q00114_ResurrectionOfAnOldManager;
 import app.l2nx.highfive.scripts.quests.Q00120_PavelsLastResearch.Q00120_PavelsLastResearch;
 import app.l2nx.highfive.scripts.quests.Q00121_PavelTheGiant.Q00121_PavelTheGiant;

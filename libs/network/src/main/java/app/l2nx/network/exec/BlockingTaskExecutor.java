@@ -8,8 +8,8 @@ import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tags;
+import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.binder.BaseUnits;
-import io.micrometer.core.instrument.binder.jvm.ExecutorServiceMetrics;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.Executor;
@@ -30,15 +30,17 @@ public final class BlockingTaskExecutor implements AutoCloseable {
     private static final Duration CLOSE_WAIT = Duration.ofSeconds(10);
 
     private final ExecutorService threads;
-    private final Executor gated;
     private final Semaphore permits;
     private final int maxConcurrency;
     private final MeterRegistry registry;
+    private final Timer execution;
+    private final Timer idle;
     private final List<Meter> meters;
 
     /**
-     * The {@code executor.active} and {@code executor.queued} gauges report the semaphore: Micrometer cannot read the
-     * thread count of a thread-per-task executor without {@code --add-opens}.
+     * The active/queued gauges report the semaphore: Micrometer cannot read a thread-per-task executor's thread count.
+     * The timers are recorded here, not by {@code ExecutorServiceMetrics.monitor}: {@code idle} must cover the permit
+     * wait, and the monitor's wrapper would hide a task that a closing interrupt must route to its rejection path.
      */
     public BlockingTaskExecutor(String name, int maxConcurrency, MeterRegistry registry) {
         final Tags tags = Tags.of("name", name);
@@ -51,11 +53,11 @@ public final class BlockingTaskExecutor implements AutoCloseable {
         permits = new Semaphore(maxConcurrency, true);
         this.maxConcurrency = maxConcurrency;
         this.registry = registry;
-        // The permit is taken inside the timed task, so the idle timer covers the permit wait.
-        gated = ExecutorServiceMetrics.monitor(registry, (Executor) this::runWithPermit, name);
+        execution = registry.timer("executor.execution", tags);
+        idle = registry.timer("executor.idle", tags);
         meters = List.of(
-                registry.timer("executor.execution", tags),
-                registry.timer("executor.idle", tags),
+                execution,
+                idle,
                 Gauge.builder("executor.active", this, BlockingTaskExecutor::activeLanes)
                         .tags(tags)
                         .description("The number of lanes holding a permit")
@@ -80,31 +82,41 @@ public final class BlockingTaskExecutor implements AutoCloseable {
         return new SerialExecutor(this::start, this::isClosed, maxPending, rejected);
     }
 
-    boolean start(Runnable lane) {
-        try {
-            gated.execute(lane);
-            return true;
-        } catch (RejectedExecutionException e) {
-            return false;
-        }
-    }
-
-    private void runWithPermit(Runnable lane) {
+    /**
+     * Not an {@link Executor}: an {@code Executor} bean makes Spring Boot drop its application task executor.
+     *
+     * @param abandoned runs instead of the task, with the interrupt flag set, when the close gives up waiting while the
+     *     task still waits for its permit
+     * @throws RejectedExecutionException once the executor is closed
+     */
+    public void execute(Runnable task, Runnable abandoned) {
+        // Started before the permit wait, so the idle timer covers it, as Micrometer's timed executor does.
+        final Timer.Sample waiting = Timer.start(registry);
         threads.execute(() -> {
             try {
                 permits.acquire();
             } catch (InterruptedException e) {
-                // Only shutdownNow interrupts: the lane sees the executor closed and rejects instead of running.
+                // Only shutdownNow interrupts.
                 Thread.currentThread().interrupt();
-                lane.run();
+                abandoned.run();
                 return;
             }
             try {
-                lane.run();
+                waiting.stop(idle);
+                execution.record(task);
             } finally {
                 permits.release();
             }
         });
+    }
+
+    boolean start(Runnable lane, Runnable abandoned) {
+        try {
+            execute(lane, abandoned);
+            return true;
+        } catch (RejectedExecutionException e) {
+            return false;
+        }
     }
 
     boolean isClosed() {

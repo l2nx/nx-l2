@@ -21,8 +21,8 @@ package app.l2nx.highfive.network.holders;
 
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.clientpackets.ClientPacket;
-import app.l2nx.highfive.network.serverpackets.SystemMessage;
+import app.l2nx.highfive.network.protocol.highfive.clientpackets.ClientPacket;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.SystemMessage;
 import app.l2nx.highfive.threads.ThreadPool;
 import lombok.Getter;
 

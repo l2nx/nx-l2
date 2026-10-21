@@ -46,7 +46,7 @@ import app.l2nx.highfive.mechanics.events.listeners.ConsumerEventListener;
 import app.l2nx.highfive.mechanics.script.Script;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.enums.ChatType;
-import app.l2nx.highfive.network.serverpackets.CreatureSay;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.CreatureSay;
 import app.l2nx.highfive.util.HtmlUtil;
 import java.util.ArrayList;
 import java.util.Collections;

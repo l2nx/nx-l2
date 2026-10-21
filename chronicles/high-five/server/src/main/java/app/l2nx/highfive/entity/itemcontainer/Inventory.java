@@ -45,7 +45,7 @@ import app.l2nx.highfive.mechanics.events.EventType;
 import app.l2nx.highfive.mechanics.events.holders.actor.player.OnPlayerItemUnequip;
 import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.mechanics.skill.holders.SkillHolder;
-import app.l2nx.highfive.network.serverpackets.SkillCoolTime;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.SkillCoolTime;
 import app.l2nx.highfive.repository.item.model.ItemRow;
 import java.util.ArrayDeque;
 import java.util.ArrayList;

@@ -27,7 +27,7 @@ import app.l2nx.highfive.entity.zone.ZoneId;
 import app.l2nx.highfive.entity.zone.ZoneType;
 import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.mechanics.skill.enums.SkillFinishType;
-import app.l2nx.highfive.network.serverpackets.EtcStatusUpdate;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.EtcStatusUpdate;
 import app.l2nx.highfive.threads.ThreadPool;
 import java.util.Map;
 import java.util.Map.Entry;

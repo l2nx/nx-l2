@@ -38,9 +38,9 @@ import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.mechanics.skill.enums.AcquireSkillType;
 import app.l2nx.highfive.mechanics.skill.holders.SkillLearn;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.serverpackets.AcquireSkillList;
-import app.l2nx.highfive.network.serverpackets.NpcHtmlMessage;
-import app.l2nx.highfive.network.serverpackets.SystemMessage;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.AcquireSkillList;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.NpcHtmlMessage;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.SystemMessage;
 import java.util.List;
 
 public class Fisherman extends Merchant {

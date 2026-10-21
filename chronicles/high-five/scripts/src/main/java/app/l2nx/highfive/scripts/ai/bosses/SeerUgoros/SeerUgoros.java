@@ -34,7 +34,7 @@ import app.l2nx.highfive.mechanics.script.Script;
 import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.network.NpcStringId;
 import app.l2nx.highfive.network.enums.ChatType;
-import app.l2nx.highfive.network.serverpackets.NpcSay;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.NpcSay;
 import app.l2nx.highfive.scripts.quests.Q00288_HandleWithCare.Q00288_HandleWithCare;
 import app.l2nx.highfive.scripts.quests.Q00423_TakeYourBestShot.Q00423_TakeYourBestShot;
 import app.l2nx.highfive.threads.ThreadPool;

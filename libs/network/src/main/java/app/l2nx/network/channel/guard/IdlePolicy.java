@@ -19,8 +19,9 @@ import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Pre-game, read-idle after {@code read-timeout} closes; in game, each {@code ping-interval} idle sends a ping. Netty
- * idle times are fixed, so switching replaces the {@code idle} handler.
+ * Read-idle past {@code read-timeout} closes; after {@link #startPinging}, each {@code ping-interval} idle pings and
+ * {@code ping-misses} unanswered pings close. Netty idle times are fixed, so switching replaces the {@code idle}
+ * handler.
  */
 public final class IdlePolicy extends ChannelInboundHandlerAdapter {
     private final Duration readTimeout;

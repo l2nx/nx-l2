@@ -7,11 +7,11 @@ package app.l2nx.network.channel.guard;
 import io.netty.util.concurrent.EventExecutor;
 import java.util.concurrent.RejectedExecutionException;
 
-final class EventLoopTasks {
+public final class EventLoopTasks {
     private EventLoopTasks() {}
 
     /** Runs inline on the event loop, otherwise hops to it; handler state stays confined to its loop. */
-    static void run(EventExecutor executor, Runnable action) {
+    public static void run(EventExecutor executor, Runnable action) {
         if (executor.inEventLoop()) {
             action.run();
         } else {

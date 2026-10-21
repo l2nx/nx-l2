@@ -26,7 +26,15 @@
  */
 package app.l2nx.highfive.login.command;
 
+import app.l2nx.engine.core.session.command.SessionAddress;
+import app.l2nx.engine.core.session.command.SessionAddressed;
+import java.util.UUID;
 import lombok.Builder;
 
 @Builder(toBuilder = true)
-public record PasswordChangeResult(String characterName, String message) {}
+public record PasswordChangeResult(UUID requestId, String message) implements SessionAddressed {
+    @Override
+    public SessionAddress address() {
+        return new SessionAddress.Request(requestId);
+    }
+}

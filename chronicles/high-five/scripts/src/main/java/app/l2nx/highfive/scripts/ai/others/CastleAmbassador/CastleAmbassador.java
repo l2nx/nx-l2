@@ -25,7 +25,7 @@ import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.mechanics.script.Script;
 import app.l2nx.highfive.mechanics.siege.Castle;
 import app.l2nx.highfive.mechanics.siege.Fort;
-import app.l2nx.highfive.network.serverpackets.NpcHtmlMessage;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.NpcHtmlMessage;
 
 /**
  * Castle Ambassador AI.

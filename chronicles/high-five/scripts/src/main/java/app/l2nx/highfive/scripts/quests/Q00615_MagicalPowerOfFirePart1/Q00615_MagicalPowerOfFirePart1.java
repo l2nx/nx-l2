@@ -27,7 +27,7 @@ import app.l2nx.highfive.mechanics.script.State;
 import app.l2nx.highfive.mechanics.skill.holders.SkillHolder;
 import app.l2nx.highfive.network.NpcStringId;
 import app.l2nx.highfive.network.enums.ChatType;
-import app.l2nx.highfive.network.serverpackets.NpcSay;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.NpcSay;
 
 /**
  * Magical Power of Fire - Part 1 (615)

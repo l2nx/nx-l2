@@ -28,7 +28,7 @@ import app.l2nx.highfive.mechanics.olympiad.Olympiad;
 import app.l2nx.highfive.mechanics.olympiad.OlympiadGameManager;
 import app.l2nx.highfive.mechanics.olympiad.OlympiadGameTask;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.serverpackets.ExOlympiadMatchList;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ExOlympiadMatchList;
 import lombok.extern.slf4j.Slf4j;
 
 /**

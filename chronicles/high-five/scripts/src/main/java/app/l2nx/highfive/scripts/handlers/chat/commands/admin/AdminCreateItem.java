@@ -34,7 +34,7 @@ import app.l2nx.highfive.entity.item.instance.Item;
 import app.l2nx.highfive.handler.IAdminCommandHandler;
 import app.l2nx.highfive.handler.IItemHandler;
 import app.l2nx.highfive.handler.ItemHandler;
-import app.l2nx.highfive.network.serverpackets.GMViewItemList;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.GMViewItemList;
 import java.util.StringTokenizer;
 
 /**

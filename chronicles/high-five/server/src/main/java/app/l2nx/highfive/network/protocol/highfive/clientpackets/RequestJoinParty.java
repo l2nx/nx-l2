@@ -20,7 +20,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package app.l2nx.highfive.network.clientpackets;
+package app.l2nx.highfive.network.protocol.highfive.clientpackets;
 
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.entity.World;
@@ -29,9 +29,9 @@ import app.l2nx.highfive.entity.actor.holders.player.BlockList;
 import app.l2nx.highfive.entity.groups.Party;
 import app.l2nx.highfive.entity.groups.PartyDistributionType;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.serverpackets.ActionFailed;
-import app.l2nx.highfive.network.serverpackets.AskJoinParty;
-import app.l2nx.highfive.network.serverpackets.SystemMessage;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ActionFailed;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.AskJoinParty;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.SystemMessage;
 
 /**
  * sample 29 42 00 00 10 01 00 00 00 format cdd

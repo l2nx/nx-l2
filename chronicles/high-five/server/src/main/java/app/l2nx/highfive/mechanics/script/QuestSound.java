@@ -19,7 +19,7 @@
  */
 package app.l2nx.highfive.mechanics.script;
 
-import app.l2nx.highfive.network.serverpackets.PlaySound;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.PlaySound;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.Getter;

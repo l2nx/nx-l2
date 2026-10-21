@@ -26,8 +26,17 @@ public final class NettyLeakCheck implements AfterAllCallback {
      * A collected buffer is reported only by a later tracked allocation, so the check allocates after the GC.
      */
     public static List<String> collectLeaks() {
+        return collectLeaks(System::gc);
+    }
+
+    // The extension runs after every test container; a full GC per container stalls a parallel JVM, so GC only while
+    // a tracked buffer is unreleased.
+    static List<String> collectLeaks(Runnable gc) {
+        if (LeakRecorder.openTrackers() == 0) {
+            return LeakRecorder.drain();
+        }
         for (int round = 0; round < 3; round++) {
-            System.gc();
+            gc.run();
             for (int i = 0; i < TRIGGER_ALLOCATIONS; i++) {
                 PooledByteBufAllocator.DEFAULT.buffer(1).release();
                 UnpooledByteBufAllocator.DEFAULT.buffer(1).release();

@@ -20,13 +20,12 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package app.l2nx.highfive.network.serverpackets;
+package app.l2nx.highfive.network.protocol.highfive.serverpackets;
 
 import app.l2nx.highfive.entity.actor.holders.player.Macro;
 import app.l2nx.highfive.entity.actor.holders.player.MacroCmd;
 import app.l2nx.highfive.network.GameClient;
-import app.l2nx.highfive.network.ServerPackets;
-import app.l2nx.network.buffer.WriteBuffer;
+import app.l2nx.network.codec.PacketWriter;
 
 public class SendMacroList extends ServerPacket {
     private final int rev;
@@ -40,7 +39,7 @@ public class SendMacroList extends ServerPacket {
     }
 
     @Override
-    public void writeImpl(GameClient client, WriteBuffer buffer) {
+    public void writeImpl(GameClient client, PacketWriter buffer) {
         ServerPackets.MACRO_LIST.writeId(this, buffer);
         buffer.writeInt(rev); // macro change revision (changes after each macro edition)
         buffer.writeByte(0); // unknown

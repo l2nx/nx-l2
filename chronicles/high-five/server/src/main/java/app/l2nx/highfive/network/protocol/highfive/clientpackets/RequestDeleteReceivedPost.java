@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package app.l2nx.highfive.network.clientpackets;
+package app.l2nx.highfive.network.protocol.highfive.clientpackets;
 
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.config.PlayerConfig;
@@ -27,7 +27,7 @@ import app.l2nx.highfive.managers.MailManager;
 import app.l2nx.highfive.managers.PunishmentManager;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.holders.MailMessage;
-import app.l2nx.highfive.network.serverpackets.ExChangePostState;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ExChangePostState;
 
 /**
  * @author Migi, DS

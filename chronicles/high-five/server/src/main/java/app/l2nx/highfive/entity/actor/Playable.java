@@ -38,7 +38,7 @@ import app.l2nx.highfive.mechanics.events.holders.actor.creature.OnCreatureDeath
 import app.l2nx.highfive.mechanics.events.returns.TerminateReturn;
 import app.l2nx.highfive.mechanics.script.QuestState;
 import app.l2nx.highfive.mechanics.skill.Skill;
-import app.l2nx.highfive.network.serverpackets.EtcStatusUpdate;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.EtcStatusUpdate;
 import lombok.Setter;
 
 /**

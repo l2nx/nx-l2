@@ -29,8 +29,8 @@ import app.l2nx.highfive.entity.actor.enums.creature.InstanceType;
 import app.l2nx.highfive.entity.actor.templates.NpcTemplate;
 import app.l2nx.highfive.entity.clan.Clan;
 import app.l2nx.highfive.entity.residences.ClanHall;
-import app.l2nx.highfive.network.serverpackets.ActionFailed;
-import app.l2nx.highfive.network.serverpackets.NpcHtmlMessage;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ActionFailed;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.NpcHtmlMessage;
 import java.util.Arrays;
 import java.util.StringTokenizer;
 

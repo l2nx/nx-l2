@@ -26,6 +26,13 @@
  */
 package app.l2nx.highfive.login.command;
 
+import app.l2nx.engine.core.session.command.SessionAddress;
+import app.l2nx.engine.core.session.command.SessionAddressed;
 import java.util.UUID;
 
-public record KickAccount(UUID accountId) {}
+public record KickAccount(UUID accountId) implements SessionAddressed {
+    @Override
+    public SessionAddress address() {
+        return new SessionAddress.Account(accountId);
+    }
+}

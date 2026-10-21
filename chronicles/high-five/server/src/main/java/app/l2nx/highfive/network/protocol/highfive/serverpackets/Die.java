@@ -20,7 +20,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package app.l2nx.highfive.network.serverpackets;
+package app.l2nx.highfive.network.protocol.highfive.serverpackets;
 
 import app.l2nx.highfive.data.holders.AccessLevel;
 import app.l2nx.highfive.data.xml.AdminData;
@@ -37,8 +37,7 @@ import app.l2nx.highfive.mechanics.siege.Fort;
 import app.l2nx.highfive.mechanics.siege.SiegeClan;
 import app.l2nx.highfive.mechanics.siege.clanhalls.SiegableHall;
 import app.l2nx.highfive.network.GameClient;
-import app.l2nx.highfive.network.ServerPackets;
-import app.l2nx.network.buffer.WriteBuffer;
+import app.l2nx.network.codec.PacketWriter;
 
 public class Die extends ServerPacket {
     private final int objectId;
@@ -65,7 +64,7 @@ public class Die extends ServerPacket {
     }
 
     @Override
-    public void writeImpl(GameClient client, WriteBuffer buffer) {
+    public void writeImpl(GameClient client, PacketWriter buffer) {
         ServerPackets.DIE.writeId(this, buffer);
         buffer.writeInt(objectId);
         buffer.writeInt(canTeleport);

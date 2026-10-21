@@ -24,8 +24,8 @@ import app.l2nx.highfive.entity.WorldObject;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.instance.Boat;
 import app.l2nx.highfive.handler.IAdminCommandHandler;
-import app.l2nx.highfive.network.serverpackets.AdminForgePacket;
-import app.l2nx.highfive.network.serverpackets.NpcHtmlMessage;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.AdminForgePacket;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.NpcHtmlMessage;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -448,19 +448,8 @@ public class AdminPForge implements IAdminCommandHandler {
                 } else if (method.equals("sb")) {
                     activeChar.broadcastPacket(afp);
                 } else if (bb != null) {
-                    // TODO: Implement me!
-                    // @formatter:off
-                    /*bb.flip();
-                    GameClientPacket p = (GameClientPacket) GameServer.gameServer.getGamePacketHandler().handle(bb, activeChar.getClient());
-                    if (p != null)
-                    {
-                    	p.setBuffers(bb, activeChar.getClient(), new NioNetStringBuffer(2000));
-                    	if (p.read())
-                    	{
-                    		ThreadPoolManager.getInstance().executePacket(p);
-                    	}
-                    }*/
-                    // @formatter:on
+                    // TODO (#70): decode the bytes as a client packet of the player's adapter and offer it to the
+                    // session.
                     throw new UnsupportedOperationException("Not implemented yet!");
                 }
 

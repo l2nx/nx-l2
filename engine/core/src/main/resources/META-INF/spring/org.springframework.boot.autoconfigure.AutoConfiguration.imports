@@ -1,3 +1,4 @@
 # SPDX-FileCopyrightText: 2026 L2NX contributors
 # SPDX-License-Identifier: Apache-2.0
 app.l2nx.engine.core.partition.EngineAutoConfiguration
+app.l2nx.engine.core.session.SessionAutoConfiguration

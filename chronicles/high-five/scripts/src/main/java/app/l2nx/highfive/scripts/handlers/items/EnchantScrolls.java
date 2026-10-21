@@ -27,7 +27,7 @@ import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.item.instance.Item;
 import app.l2nx.highfive.handler.IItemHandler;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.serverpackets.ChooseInventoryItem;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ChooseInventoryItem;
 
 public class EnchantScrolls implements IItemHandler {
     @Override

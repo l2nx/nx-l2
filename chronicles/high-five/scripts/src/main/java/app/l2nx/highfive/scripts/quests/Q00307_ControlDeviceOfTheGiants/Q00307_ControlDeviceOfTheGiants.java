@@ -27,7 +27,7 @@ import app.l2nx.highfive.mechanics.script.Quest;
 import app.l2nx.highfive.mechanics.script.QuestSound;
 import app.l2nx.highfive.mechanics.script.QuestState;
 import app.l2nx.highfive.mechanics.script.State;
-import app.l2nx.highfive.network.serverpackets.RadarControl;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.RadarControl;
 
 /**
  * Control Device of the Giants (307)

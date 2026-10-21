@@ -2,7 +2,7 @@
  * SPDX-FileCopyrightText: 2026 L2NX contributors
  * SPDX-License-Identifier: Apache-2.0
  */
-package app.l2nx.highfive.boot.architecture;
+package app.l2nx.highfive.boot.architecture.time;
 
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 
@@ -100,7 +100,6 @@ final class TimeAndRandomnessRules {
                         && parameterNames(access).equals(expected));
     }
 
-    /** {@code now()} and {@code now(ZoneId)} read the system clock; only {@code now(Clock)} is allowed. */
     private static DescribedPredicate<JavaAccess<?>> nowWithoutClock() {
         final List<String> withClock = List.of(Clock.class.getName());
         return DescribedPredicate.describe(

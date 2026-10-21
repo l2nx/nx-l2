@@ -20,12 +20,11 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package app.l2nx.highfive.network.serverpackets;
+package app.l2nx.highfive.network.protocol.highfive.serverpackets;
 
 import app.l2nx.highfive.entity.WorldObject;
 import app.l2nx.highfive.network.GameClient;
-import app.l2nx.highfive.network.ServerPackets;
-import app.l2nx.network.buffer.WriteBuffer;
+import app.l2nx.network.codec.PacketWriter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -101,7 +100,7 @@ public class StatusUpdate extends ServerPacket {
     }
 
     @Override
-    public void writeImpl(GameClient client, WriteBuffer buffer) {
+    public void writeImpl(GameClient client, PacketWriter buffer) {
         ServerPackets.STATUS_UPDATE.writeId(this, buffer);
         buffer.writeInt(objectId);
         buffer.writeInt(attributes.size());
@@ -109,10 +108,5 @@ public class StatusUpdate extends ServerPacket {
             buffer.writeInt(temp.id);
             buffer.writeInt(temp.value);
         }
-    }
-
-    @Override
-    public boolean canBeDropped(GameClient client) {
-        return true;
     }
 }

@@ -29,7 +29,7 @@ import app.l2nx.highfive.handler.IVoicedCommandHandler;
 import app.l2nx.highfive.handler.VoicedCommandHandler;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.enums.ChatType;
-import app.l2nx.highfive.network.serverpackets.CreatureSay;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.CreatureSay;
 import java.util.StringTokenizer;
 
 /**

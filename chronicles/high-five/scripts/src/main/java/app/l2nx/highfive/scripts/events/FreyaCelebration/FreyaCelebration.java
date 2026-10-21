@@ -30,8 +30,8 @@ import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.network.NpcStringId;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.enums.ChatType;
-import app.l2nx.highfive.network.serverpackets.CreatureSay;
-import app.l2nx.highfive.network.serverpackets.SystemMessage;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.CreatureSay;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.SystemMessage;
 import app.l2nx.highfive.util.ArrayUtil;
 import java.util.List;
 

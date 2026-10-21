@@ -24,22 +24,22 @@ class ReportCharactersHandlerTest {
     private final ReportCharactersHandler handler = new ReportCharactersHandler(port, characters);
 
     @Test
-    void accept_shouldReportTheCountAndTheDeleteTimes() {
+    void handle_shouldReportTheCountAndTheDeleteTimes() {
         final UUID accountId = UUID.randomUUID();
         final Instant deletion = Instant.parse("2026-11-01T10:00:00Z");
         when(characters.countByAccount(accountId)).thenReturn(3);
         when(characters.findDeleteTimes(accountId)).thenReturn(List.of(deletion));
 
-        handler.accept(new ReportCharacters(accountId));
+        handler.handle(new ReportCharacters(accountId));
 
         assertThat(port.getCalls()).containsExactly(Call.of("reportCharacters", accountId, 3, List.of(deletion)));
     }
 
     @Test
-    void accept_shouldReportNothing_whenTheDatabaseFails() {
+    void handle_shouldReportNothing_whenTheDatabaseFails() {
         when(characters.countByAccount(any())).thenThrow(new DataAccessResourceFailureException("down"));
 
-        handler.accept(new ReportCharacters(UUID.randomUUID()));
+        handler.handle(new ReportCharacters(UUID.randomUUID()));
 
         assertThat(port.getCalls()).isEmpty();
     }

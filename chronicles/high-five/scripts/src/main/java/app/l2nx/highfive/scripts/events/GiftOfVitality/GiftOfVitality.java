@@ -25,7 +25,7 @@ import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.mechanics.script.LongTimeEvent;
 import app.l2nx.highfive.mechanics.skill.holders.SkillHolder;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.serverpackets.SystemMessage;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.SystemMessage;
 
 /**
  * Gift of Vitality event AI.

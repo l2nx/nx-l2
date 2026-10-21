@@ -30,8 +30,8 @@ import app.l2nx.highfive.entity.item.enums.ItemProcessType;
 import app.l2nx.highfive.managers.TerritoryWarManager;
 import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.serverpackets.ActionFailed;
-import app.l2nx.highfive.network.serverpackets.SystemMessage;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ActionFailed;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.SystemMessage;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j

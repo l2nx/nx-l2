@@ -20,22 +20,25 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package app.l2nx.highfive.network.serverpackets;
+package app.l2nx.highfive.network.protocol.highfive.serverpackets;
 
+import app.l2nx.engine.core.session.SessionState;
+import app.l2nx.engine.core.session.outbound.LegacyPacket;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.itemcontainer.Inventory;
-import app.l2nx.highfive.network.ConnectionState;
 import app.l2nx.highfive.network.GameClient;
-import app.l2nx.network.buffer.WriteBuffer;
-import app.l2nx.network.packet.WritablePacket;
+import app.l2nx.network.codec.Frames;
+import app.l2nx.network.codec.OutgoingPacket;
+import app.l2nx.network.codec.PacketWriter;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.exception.ExceptionUtils;
 
 /**
  * @author Mobius
  */
 @Slf4j
-public abstract class ServerPacket extends WritablePacket<GameClient> {
+public abstract class ServerPacket extends OutgoingPacket<GameClient> implements LegacyPacket {
     private static final int[] PAPERDOLL_ORDER = {
         Inventory.PAPERDOLL_UNDER,
         Inventory.PAPERDOLL_REAR,
@@ -69,25 +72,60 @@ public abstract class ServerPacket extends WritablePacket<GameClient> {
         return PAPERDOLL_ORDER;
     }
 
-    @Override
-    protected boolean write(GameClient client, WriteBuffer buffer) {
-        final GameClient c = client;
-        if ((c == null) || c.isDetached() || (c.getConnectionState() == ConnectionState.DISCONNECTED)) {
-            return true; // Disconnected client.
-        }
+    private volatile boolean broadcast;
+    private ByteBuf broadcastFrame;
 
+    /**
+     * A broadcast serializes for its first recipient and hands every recipient {@link Frames#share}; the broadcaster
+     * releases the shared frame with {@link #releaseBroadcast()} after the fan-out.
+     */
+    @Override
+    public ByteBuf serialize(GameClient client, ByteBufAllocator alloc) {
+        if (!broadcast) {
+            return super.serialize(client, alloc);
+        }
+        synchronized (this) {
+            // A sender that read the flag just before the broadcaster released must not cache a frame nobody frees.
+            if (!broadcast) {
+                return super.serialize(client, alloc);
+            }
+            if (broadcastFrame == null) {
+                broadcastFrame = super.serialize(client, alloc);
+                if (broadcastFrame == null) {
+                    return null;
+                }
+            }
+            return Frames.share(broadcastFrame);
+        }
+    }
+
+    public void sendInBroadcast() {
+        broadcast = true;
+    }
+
+    public synchronized void releaseBroadcast() {
+        broadcast = false;
+        if (broadcastFrame != null) {
+            broadcastFrame.release();
+            broadcastFrame = null;
+        }
+    }
+
+    @Override
+    protected boolean write(GameClient client, PacketWriter writer) {
+        if ((client == null) || client.isDetached() || (client.getConnectionState() == SessionState.DISCONNECTED)) {
+            return false;
+        }
         try {
-            writeImpl(c, buffer);
+            writeImpl(client, writer);
             return true;
         } catch (Exception e) {
-            log.warn("Error writing packet {} to client ({}) {}]]", this, e.getMessage(), c);
-            log.warn(ExceptionUtils.getStackTrace(e));
+            log.warn("Error writing packet {} to client {}: {}", this, client, e.getMessage(), e);
+            return false;
         }
-
-        return false;
     }
 
     public void runImpl(Player player) {}
 
-    protected abstract void writeImpl(GameClient client, WriteBuffer buffer) throws Exception;
+    protected abstract void writeImpl(GameClient client, PacketWriter buffer) throws Exception;
 }

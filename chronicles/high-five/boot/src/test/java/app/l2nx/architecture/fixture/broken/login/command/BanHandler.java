@@ -4,6 +4,11 @@
  */
 package app.l2nx.architecture.fixture.broken.login.command;
 
-public class BanHandler {
+import app.l2nx.engine.core.session.command.ServiceCommandHandler;
+
+public class BanHandler implements ServiceCommandHandler<Kick> {
     public BanHandler() {}
+
+    @Override
+    public void handle(Kick command) {}
 }

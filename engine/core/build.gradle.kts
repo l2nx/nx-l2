@@ -9,8 +9,10 @@ dependencies {
     api(libs.spring.boot)
     api(libs.micrometer.core)
     api(libs.uuid.creator)
+    api(project(":libs:network"))
     implementation(libs.spring.boot.autoconfigure)
     implementation(libs.agrona)
+    implementation(libs.bucket4j.core)
     implementation(libs.fastutil)
     implementation(libs.jctools.core)
 
@@ -24,4 +26,8 @@ dependencies {
 tasks.test {
     // The inbox must never fall back to sun.misc.Unsafe (JEP 471/498): any use fails the tests here.
     jvmArgs("--sun-misc-unsafe-memory-access=deny")
+}
+
+jmh {
+    includes.set(providers.gradleProperty("jmh.includes").map { listOf(it) }.orElse(listOf(".*")))
 }

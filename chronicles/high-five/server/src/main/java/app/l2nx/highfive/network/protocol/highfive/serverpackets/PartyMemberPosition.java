@@ -17,14 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package app.l2nx.highfive.network.serverpackets;
+package app.l2nx.highfive.network.protocol.highfive.serverpackets;
 
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.groups.Party;
 import app.l2nx.highfive.network.GameClient;
-import app.l2nx.highfive.network.ServerPackets;
-import app.l2nx.network.buffer.WriteBuffer;
+import app.l2nx.network.codec.PacketWriter;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -51,7 +50,7 @@ public class PartyMemberPosition extends ServerPacket {
     }
 
     @Override
-    public void writeImpl(GameClient client, WriteBuffer buffer) {
+    public void writeImpl(GameClient client, PacketWriter buffer) {
         ServerPackets.PARTY_MEMBER_POSITION.writeId(this, buffer);
         buffer.writeInt(locations.size());
         for (Entry<Integer, Location> entry : locations.entrySet()) {

@@ -57,9 +57,8 @@ import app.l2nx.highfive.mechanics.sevensigns.SevenSigns;
 import app.l2nx.highfive.mechanics.sevensigns.SevenSignsFestival;
 import app.l2nx.highfive.network.Disconnection;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.gslink.LoginServerLink;
-import app.l2nx.highfive.network.serverpackets.ServerClose;
-import app.l2nx.highfive.network.serverpackets.SystemMessage;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ServerClose;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.SystemMessage;
 import app.l2nx.highfive.taskmanagers.GameTimeTaskManager;
 import app.l2nx.highfive.threads.ThreadPool;
 import lombok.extern.slf4j.Slf4j;
@@ -317,21 +316,6 @@ public class Shutdown extends Thread {
             ThreadPool.shutdown();
             log.info("Thread Pool Manager: Manager has been shut down({}ms).", tc.getEstimatedTimeAndRestartCounter());
         } catch (Throwable t) {
-        }
-
-        // The accounts leave first: the link sends nothing once it is closed.
-        try {
-            LoginService.getInstance().logoutAll();
-            log.info("Login server: all accounts left({}ms).", tc.getEstimatedTimeAndRestartCounter());
-        } catch (Throwable t) {
-            log.warn("Error freeing the accounts on the login server.", t);
-        }
-
-        try {
-            LoginServerLink.getInstance().shutdown();
-            log.info("Login server link closed({}ms).", tc.getEstimatedTimeAndRestartCounter());
-        } catch (Throwable t) {
-            log.warn("Error closing the login server link.", t);
         }
 
         saveData();

@@ -4,10 +4,12 @@
  */
 package app.l2nx.network.codec;
 
+import app.l2nx.network.crypt.GameFrameCipher;
 import app.l2nx.network.crypt.LittleEndianBlowfishCipher;
 import app.l2nx.network.crypt.XorChecksum;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
+import io.netty.buffer.Unpooled;
 import java.util.concurrent.TimeUnit;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -39,7 +41,7 @@ public class FrameEncoderBenchmark {
     @Param({"64", "512", "4096"})
     private int payload;
 
-    @Param({"none", "blowfish"})
+    @Param({"none", "blowfish", "game"})
     private String cipher;
 
     private FrameEncoder encoder;
@@ -111,6 +113,15 @@ public class FrameEncoderBenchmark {
         return switch (name) {
             case "none" -> FrameCipher.NONE;
             case "blowfish" -> new BlowfishChecksumCipher();
+            case "game" -> {
+                final GameFrameCipher game = new GameFrameCipher();
+                game.setKey(new byte[16]);
+                // Encoding the key packet turns the XOR on, as on a real connection.
+                final ByteBuf keyFrame = Unpooled.buffer(1).writeByte(0);
+                game.encrypt(keyFrame, 0, 1);
+                keyFrame.release();
+                yield game;
+            }
             default -> throw new IllegalArgumentException(name);
         };
     }

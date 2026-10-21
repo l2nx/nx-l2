@@ -26,7 +26,7 @@ import app.l2nx.highfive.data.xml.ItemData;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.item.ItemTemplate;
 import app.l2nx.highfive.handler.IAdminCommandHandler;
-import app.l2nx.highfive.network.serverpackets.NpcHtmlMessage;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.NpcHtmlMessage;
 import app.l2nx.highfive.util.HtmlUtil;
 import java.util.ArrayList;
 import java.util.List;

@@ -26,8 +26,8 @@ import app.l2nx.highfive.mechanics.effects.AbstractEffect;
 import app.l2nx.highfive.mechanics.effects.EffectType;
 import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.serverpackets.ChangeWaitType;
-import app.l2nx.highfive.network.serverpackets.Revive;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ChangeWaitType;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.Revive;
 import app.l2nx.highfive.util.StatSet;
 
 /**

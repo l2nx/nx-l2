@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package app.l2nx.highfive.network.serverpackets;
+package app.l2nx.highfive.network.protocol.highfive.serverpackets;
 
 import app.l2nx.highfive.config.custom.MultilingualSupportConfig;
 import app.l2nx.highfive.data.xml.ItemData;
@@ -29,10 +29,9 @@ import app.l2nx.highfive.entity.item.ItemTemplate;
 import app.l2nx.highfive.entity.item.instance.Item;
 import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.network.GameClient;
-import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.SystemMessageId.SMLocalisation;
-import app.l2nx.network.buffer.WriteBuffer;
+import app.l2nx.network.codec.PacketWriter;
 import java.util.Arrays;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -285,7 +284,7 @@ public class SystemMessage extends ServerPacket {
     }
 
     @Override
-    public void writeImpl(GameClient client, WriteBuffer buffer) {
+    public void writeImpl(GameClient client, PacketWriter buffer) {
         ServerPackets.SYSTEM_MESSAGE.writeId(this, buffer);
 
         // Localisation related.

@@ -20,7 +20,7 @@
 package app.l2nx.highfive.entity.actor.tasks.player;
 
 import app.l2nx.highfive.entity.actor.Player;
-import app.l2nx.highfive.network.serverpackets.ExVoteSystemInfo;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ExVoteSystemInfo;
 
 /**
  * Task dedicated to end player's recommendation bonus.

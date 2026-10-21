@@ -25,7 +25,7 @@ import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.item.enums.ShotType;
 import app.l2nx.highfive.geoengine.GeoEngine;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.serverpackets.MagicSkillLaunched;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.MagicSkillLaunched;
 import app.l2nx.highfive.threads.ThreadPool;
 import app.l2nx.highfive.util.LocationUtil;
 import java.util.ArrayList;

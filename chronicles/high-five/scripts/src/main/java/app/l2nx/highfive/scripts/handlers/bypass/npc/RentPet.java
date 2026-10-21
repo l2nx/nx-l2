@@ -29,8 +29,8 @@ import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.instance.Merchant;
 import app.l2nx.highfive.entity.item.enums.ItemProcessType;
 import app.l2nx.highfive.handler.IBypassHandler;
-import app.l2nx.highfive.network.serverpackets.NpcHtmlMessage;
-import app.l2nx.highfive.network.serverpackets.SetupGauge;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.NpcHtmlMessage;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.SetupGauge;
 import java.util.StringTokenizer;
 import lombok.extern.slf4j.Slf4j;
 

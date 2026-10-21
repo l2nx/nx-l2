@@ -29,8 +29,8 @@ import app.l2nx.highfive.entity.actor.enums.creature.InstanceType;
 import app.l2nx.highfive.entity.actor.enums.player.TeleportType;
 import app.l2nx.highfive.entity.actor.templates.NpcTemplate;
 import app.l2nx.highfive.entity.teleporter.TeleportHolder;
-import app.l2nx.highfive.network.serverpackets.ActionFailed;
-import app.l2nx.highfive.network.serverpackets.NpcHtmlMessage;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ActionFailed;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.NpcHtmlMessage;
 import java.util.StringTokenizer;
 
 public class Doorman extends Folk {

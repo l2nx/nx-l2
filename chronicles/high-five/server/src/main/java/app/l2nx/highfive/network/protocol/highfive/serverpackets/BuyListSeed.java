@@ -17,13 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package app.l2nx.highfive.network.serverpackets;
+package app.l2nx.highfive.network.protocol.highfive.serverpackets;
 
 import app.l2nx.highfive.managers.CastleManorManager;
 import app.l2nx.highfive.mechanics.siege.manor.SeedProduction;
 import app.l2nx.highfive.network.GameClient;
-import app.l2nx.highfive.network.ServerPackets;
-import app.l2nx.network.buffer.WriteBuffer;
+import app.l2nx.network.codec.PacketWriter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -46,7 +45,7 @@ public class BuyListSeed extends ServerPacket {
     }
 
     @Override
-    public void writeImpl(GameClient client, WriteBuffer buffer) {
+    public void writeImpl(GameClient client, PacketWriter buffer) {
         ServerPackets.BUY_LIST_SEED.writeId(this, buffer);
         buffer.writeLong(money); // current money
         buffer.writeInt(manorId); // manor id

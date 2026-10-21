@@ -45,7 +45,7 @@ import app.l2nx.highfive.mechanics.punishment.PunishmentAffect;
 import app.l2nx.highfive.mechanics.punishment.PunishmentTask;
 import app.l2nx.highfive.mechanics.punishment.PunishmentType;
 import app.l2nx.highfive.network.GameClient;
-import app.l2nx.highfive.network.serverpackets.NpcHtmlMessage;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.NpcHtmlMessage;
 import app.l2nx.highfive.threads.ThreadPool;
 import java.util.UUID;
 import org.apache.commons.lang3.time.DurationFormatUtils;

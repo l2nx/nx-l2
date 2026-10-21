@@ -26,7 +26,7 @@ import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.handler.IBypassHandler;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.serverpackets.ExGetPremiumItemList;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ExGetPremiumItemList;
 
 public class ReceivePremium implements IBypassHandler {
     private static final String[] COMMANDS = {"ReceivePremium"};

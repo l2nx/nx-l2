@@ -7,7 +7,6 @@ package app.l2nx.network.exec;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
-import java.util.function.Predicate;
 import lombok.extern.slf4j.Slf4j;
 import org.jctools.queues.MpscArrayQueue;
 
@@ -19,15 +18,26 @@ import org.jctools.queues.MpscArrayQueue;
 public final class SerialExecutor {
     static final int DRAIN_BATCH = 16;
 
-    private final Predicate<Runnable> start;
+    private final Starter start;
     private final BooleanSupplier closed;
     private final int maxPending;
     private final Consumer<Runnable> rejected;
     // The capacity rounds up to a power of two; offerIfBelowThreshold keeps the limit exact.
     private final MpscArrayQueue<Runnable> tasks;
     private final AtomicBoolean running = new AtomicBoolean();
+    private final Runnable drain = this::drain;
+    private final Runnable rejectQueued = this::rejectQueued;
 
-    SerialExecutor(Predicate<Runnable> start, BooleanSupplier closed, int maxPending, Consumer<Runnable> rejected) {
+    @FunctionalInterface
+    interface Starter {
+        /**
+         * @param abandoned runs instead of {@code drain} when the executor closes before the drain gets a permit
+         * @return {@code false} once the executor is shut down
+         */
+        boolean start(Runnable drain, Runnable abandoned);
+    }
+
+    SerialExecutor(Starter start, BooleanSupplier closed, int maxPending, Consumer<Runnable> rejected) {
         this.start = start;
         this.closed = closed;
         this.maxPending = maxPending;
@@ -54,7 +64,7 @@ public final class SerialExecutor {
 
     private void schedule() {
         // The start fails only once the executor is shut down, so no later start can succeed either.
-        if (running.compareAndSet(false, true) && !start.test(this::drain)) {
+        if (running.compareAndSet(false, true) && !start.start(drain, rejectQueued)) {
             rejectQueued();
         }
     }
@@ -75,8 +85,8 @@ public final class SerialExecutor {
     }
 
     /**
-     * Runs one batch, then hands the lane to a fresh start rather than holding the permit until the queue is empty. An
-     * {@link Error} from a task propagates after the hand-on, so the tasks behind it keep their lane.
+     * Runs one batch, then hands the lane to a fresh start instead of holding the permit. An {@link Error} propagates
+     * after the hand-on, so the tasks behind it keep their lane.
      */
     private void drain() {
         int ran = 0;
@@ -108,7 +118,7 @@ public final class SerialExecutor {
 
     /** Only for the holder of {@code running}. */
     private void handOn() {
-        if (!start.test(this::drain)) {
+        if (!start.start(drain, rejectQueued)) {
             rejectQueued();
         }
     }

@@ -25,7 +25,7 @@ import app.l2nx.highfive.entity.instancezone.InstanceWorld;
 import app.l2nx.highfive.handler.IUserCommandHandler;
 import app.l2nx.highfive.managers.InstanceManager;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.serverpackets.SystemMessage;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.SystemMessage;
 import java.util.Map;
 import java.util.Map.Entry;
 

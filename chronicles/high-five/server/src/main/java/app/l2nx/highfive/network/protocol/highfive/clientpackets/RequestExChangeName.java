@@ -17,9 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package app.l2nx.highfive.network.clientpackets;
+package app.l2nx.highfive.network.protocol.highfive.clientpackets;
 
-import app.l2nx.highfive.network.serverpackets.ExNeedToChangeName;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ExNeedToChangeName;
 import lombok.extern.slf4j.Slf4j;
 
 /**

@@ -27,7 +27,7 @@ import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.handler.IAdminCommandHandler;
 import app.l2nx.highfive.managers.SeedOfDestructionManager;
 import app.l2nx.highfive.managers.SeedOfInfinityManager;
-import app.l2nx.highfive.network.serverpackets.NpcHtmlMessage;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.NpcHtmlMessage;
 import java.util.Calendar;
 import java.util.StringTokenizer;
 

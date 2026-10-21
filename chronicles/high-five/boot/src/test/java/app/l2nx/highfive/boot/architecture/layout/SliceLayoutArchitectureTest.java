@@ -2,7 +2,7 @@
  * SPDX-FileCopyrightText: 2026 L2NX contributors
  * SPDX-License-Identifier: Apache-2.0
  */
-package app.l2nx.highfive.boot.architecture;
+package app.l2nx.highfive.boot.architecture.layout;
 
 import static com.tngtech.archunit.library.freeze.FreezingArchRule.freeze;
 
@@ -29,6 +29,15 @@ class SliceLayoutArchitectureTest {
 
     @ArchTest
     static final ArchRule commands = RULES.commands();
+
+    @ArchTest
+    static final ArchRule commandPackages = RULES.commandPackages();
+
+    @ArchTest
+    static final ArchRule viewEvents = RULES.viewEvents();
+
+    @ArchTest
+    static final ArchRule domainEvents = RULES.domainEvents();
 
     @ArchTest
     static final ArchRule ports = RULES.ports();

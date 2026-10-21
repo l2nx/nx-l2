@@ -29,7 +29,7 @@ package app.l2nx.highfive.login;
 import app.l2nx.highfive.login.system.OnlineAccounts;
 import app.l2nx.highfive.login.system.ServerListing;
 import app.l2nx.highfive.network.GameClient;
-import app.l2nx.highfive.network.serverpackets.LoginFail;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.LoginFail;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -55,7 +55,7 @@ public class LoginService {
         instance = this;
     }
 
-    // TODO: callers receive the bean through their constructor (#41).
+    // TODO (#41): callers receive the bean through their constructor (#41).
     public static LoginService getInstance() {
         final LoginService bound = instance;
         if (bound == null) {
@@ -70,10 +70,10 @@ public class LoginService {
     }
 
     public void authenticate(String login, GameClient client, SessionKey key) {
-        accounts.awaitAuthentication(login, client, key);
-        if (!port.authenticate(login, key)) {
+        final UUID requestId = accounts.awaitAuthentication(login, client, key);
+        if (!port.authenticate(requestId, login, key)) {
             log.warn("The login server is unreachable, closing the connection of login {}", login);
-            accounts.takePending(login);
+            accounts.takePending(requestId, client);
             failAuthentication(login, client);
         }
     }
@@ -83,8 +83,8 @@ public class LoginService {
         logout(login, null);
     }
 
-    public void cancelAuthentication(GameClient client) {
-        accounts.cancelAuthentication(client);
+    public void cancelRequests(GameClient client) {
+        accounts.cancelRequests(client);
     }
 
     /** @param accountId {@code null} while the login server has not accepted the session */
@@ -101,16 +101,34 @@ public class LoginService {
         }
     }
 
-    /** Frees every account still held here, offline traders included. */
+    /**
+     * Frees only what this client still holds: a kick or a newer session of the same account may have taken it,
+     * so AccountLeft goes out at most once per session.
+     */
+    public void logout(GameClient client) {
+        final String login = client.getAccountName();
+        if (login != null) {
+            accounts.release(login, client);
+        }
+        final UUID accountId = client.getAccountId();
+        if ((accountId != null) && accounts.leave(accountId, client)) {
+            port.accountLeft(accountId);
+        }
+    }
+
     public void logoutAll() {
         for (UUID accountId : accounts.leaveAll()) {
             port.accountLeft(accountId);
         }
     }
 
-    /** A session has its account id only once the login server accepted it. */
     public GameClient findClient(UUID accountId) {
         return accountId != null ? accounts.find(accountId) : null;
+    }
+
+    /** @return the client waiting for the answer to this request, {@code null} for none */
+    public GameClient findRequester(UUID requestId) {
+        return accounts.requester(requestId);
     }
 
     public void changeAccessLevel(UUID accountId, int level) {
@@ -125,11 +143,11 @@ public class LoginService {
         port.requestTempBan(accountId, ip, duration);
     }
 
-    public boolean changePassword(UUID accountId, String characterName, String oldPassword, String newPassword) {
+    public boolean changePassword(GameClient client, String characterName, String oldPassword, String newPassword) {
         // Awaited before the request goes out: the answer may arrive before the port call returns.
-        accounts.awaitPasswordChange(characterName);
-        if (!port.changePassword(accountId, characterName, oldPassword, newPassword)) {
-            accounts.takePasswordChange(characterName);
+        final UUID requestId = accounts.awaitPasswordChange(client);
+        if (!port.changePassword(requestId, client.getAccountId(), characterName, oldPassword, newPassword)) {
+            accounts.takePasswordChange(requestId, client);
             return false;
         }
         return true;

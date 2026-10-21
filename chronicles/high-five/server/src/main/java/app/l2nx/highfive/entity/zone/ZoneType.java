@@ -32,7 +32,7 @@ import app.l2nx.highfive.mechanics.events.EventType;
 import app.l2nx.highfive.mechanics.events.ListenersContainer;
 import app.l2nx.highfive.mechanics.events.holders.actor.creature.OnCreatureZoneEnter;
 import app.l2nx.highfive.mechanics.events.holders.actor.creature.OnCreatureZoneExit;
-import app.l2nx.highfive.network.serverpackets.ServerPacket;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ServerPacket;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;

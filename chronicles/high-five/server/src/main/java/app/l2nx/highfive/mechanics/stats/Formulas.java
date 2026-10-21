@@ -82,7 +82,7 @@ import app.l2nx.highfive.mechanics.stats.functions.formulas.FuncPAtkMod;
 import app.l2nx.highfive.mechanics.stats.functions.formulas.FuncPAtkSpeed;
 import app.l2nx.highfive.mechanics.stats.functions.formulas.FuncPDefMod;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.serverpackets.SystemMessage;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.SystemMessage;
 import app.l2nx.highfive.util.LocationUtil;
 import app.l2nx.highfive.util.MathUtil;
 import java.util.ArrayList;

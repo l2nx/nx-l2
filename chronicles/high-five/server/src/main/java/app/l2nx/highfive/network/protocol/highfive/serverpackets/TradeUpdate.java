@@ -17,13 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package app.l2nx.highfive.network.serverpackets;
+package app.l2nx.highfive.network.protocol.highfive.serverpackets;
 
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.network.GameClient;
-import app.l2nx.highfive.network.ServerPackets;
 import app.l2nx.highfive.network.holders.TradeItem;
-import app.l2nx.network.buffer.WriteBuffer;
+import app.l2nx.network.codec.PacketWriter;
 
 /**
  * @author daemon
@@ -38,7 +37,7 @@ public class TradeUpdate extends AbstractItemPacket {
     }
 
     @Override
-    public void writeImpl(GameClient client, WriteBuffer buffer) {
+    public void writeImpl(GameClient client, PacketWriter buffer) {
         ServerPackets.TRADE_UPDATE.writeId(this, buffer);
         buffer.writeShort(1);
         buffer.writeShort((newCount > 0) && item.getItem().isStackable() ? 3 : 2);

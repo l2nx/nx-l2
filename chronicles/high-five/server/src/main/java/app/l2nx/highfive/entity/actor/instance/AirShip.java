@@ -26,11 +26,11 @@ import app.l2nx.highfive.entity.actor.Vehicle;
 import app.l2nx.highfive.entity.actor.enums.creature.InstanceType;
 import app.l2nx.highfive.entity.actor.templates.CreatureTemplate;
 import app.l2nx.highfive.managers.AirShipManager;
-import app.l2nx.highfive.network.serverpackets.ExAirShipInfo;
-import app.l2nx.highfive.network.serverpackets.ExGetOffAirShip;
-import app.l2nx.highfive.network.serverpackets.ExGetOnAirShip;
-import app.l2nx.highfive.network.serverpackets.ExMoveToLocationAirShip;
-import app.l2nx.highfive.network.serverpackets.ExStopMoveAirShip;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ExAirShipInfo;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ExGetOffAirShip;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ExGetOnAirShip;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ExMoveToLocationAirShip;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ExStopMoveAirShip;
 
 /**
  * Flying airships. Very similar to Maktakien boats (see Boat) but these do fly :P

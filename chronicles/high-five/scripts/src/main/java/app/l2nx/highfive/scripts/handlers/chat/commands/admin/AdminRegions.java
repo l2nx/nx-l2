@@ -26,7 +26,7 @@ import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.WorldRegion;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.handler.IAdminCommandHandler;
-import app.l2nx.highfive.network.serverpackets.ExServerPrimitive;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ExServerPrimitive;
 import java.awt.Color;
 
 /**

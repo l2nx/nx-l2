@@ -26,9 +26,16 @@
  */
 package app.l2nx.highfive.login.command;
 
+import app.l2nx.engine.core.session.command.SessionAddress;
+import app.l2nx.engine.core.session.command.SessionAddressed;
 import java.util.UUID;
 import lombok.Builder;
 
-/** @param accountId the account the login server accepted, {@code null} when it refused the key */
+/** @param accountId {@code null} when the login server refused the key */
 @Builder(toBuilder = true)
-public record AuthenticationResult(String login, UUID accountId, boolean accepted) {}
+public record AuthenticationResult(UUID requestId, UUID accountId, boolean accepted) implements SessionAddressed {
+    @Override
+    public SessionAddress address() {
+        return new SessionAddress.Request(requestId);
+    }
+}

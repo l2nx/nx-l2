@@ -24,7 +24,7 @@ import app.l2nx.highfive.entity.itemcontainer.Inventory;
 import app.l2nx.highfive.mechanics.skill.holders.SkillHolder;
 import app.l2nx.highfive.mechanics.stats.MoveType;
 import app.l2nx.highfive.mechanics.stats.Stat;
-import app.l2nx.highfive.network.serverpackets.ExBasicActionList;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ExBasicActionList;
 import app.l2nx.highfive.util.StatSet;
 import java.util.ArrayList;
 import java.util.Collections;

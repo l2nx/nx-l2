@@ -6,10 +6,16 @@ package app.l2nx.highfive.network.gslink;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
 
+import app.l2nx.engine.core.session.command.Command;
+import app.l2nx.engine.core.session.command.CommandDispatcher;
 import app.l2nx.gslink.GsLinkProperties;
 import app.l2nx.gslink.v1.GsLinkProto;
 import app.l2nx.gslink.v1.GsLinkProto.LoginServerMessage;
+import app.l2nx.gslink.v1.GsLinkProto.LoginServerMessage.MessageCase;
 import app.l2nx.highfive.config.ServerConfig;
 import app.l2nx.highfive.login.ListingAttribute;
 import app.l2nx.highfive.login.SessionKey;
@@ -20,6 +26,10 @@ import app.l2nx.highfive.login.command.PasswordChangeResult;
 import app.l2nx.highfive.login.command.RegistrationResult;
 import app.l2nx.highfive.login.command.ReportCharacters;
 import app.l2nx.network.config.NetworkProperties;
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import com.google.protobuf.ByteString;
 import io.grpc.CallOptions;
 import io.grpc.Channel;
@@ -45,8 +55,13 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Isolated;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 
 // ServerConfig is static and read by other tests of the module.
@@ -56,13 +71,17 @@ class LoginServerLinkTest {
     private static final UUID FIRST = UUID.fromString("0192f0a0-0000-7000-8000-000000000011");
     private static final UUID SECOND = UUID.fromString("0192f0a0-0000-7000-8000-000000000012");
     private static final UUID FAILING = UUID.fromString("0192f0a0-0000-7000-8000-000000000013");
+    private static final UUID REQUEST = UUID.fromString("0192f0a0-0000-7000-8000-0000000000aa");
     private static final Duration SHUTDOWN_TIMEOUT = Duration.ofSeconds(5);
     private static final SessionKey KEY =
             SessionKey.builder().loginOk1(1).loginOk2(2).playOk1(3).playOk2(4).build();
 
     private final FakeLoginServer loginServer = new FakeLoginServer();
     private final List<Object> commands = new CopyOnWriteArrayList<>();
+    private final CommandDispatcher dispatcher = mock(CommandDispatcher.class);
     private final ThreadPoolTaskScheduler scheduler = new ThreadPoolTaskScheduler();
+    private final Logger linkLog = (Logger) LoggerFactory.getLogger(LoginServerLink.class);
+    private final ListAppender<ILoggingEvent> logs = new ListAppender<>();
     private Server server;
     private ManagedChannel channel;
     private LoginServerLink link;
@@ -94,6 +113,8 @@ class LoginServerLinkTest {
         ServerConfig.MAXIMUM_ONLINE_USERS = 100;
         ServerConfig.HEX_ID = HEX_ID;
         ServerConfig.SERVER_ID = 1;
+        logs.start();
+        linkLog.addAppender(logs);
 
         final String name = InProcessServerBuilder.generateName();
         server = InProcessServerBuilder.forName(name)
@@ -111,6 +132,17 @@ class LoginServerLinkTest {
                 })
                 .build();
         scheduler.initialize();
+        doAnswer(invocation -> {
+                    final Command command = invocation.getArgument(0);
+                    if ((command instanceof KickAccount kick)
+                            && kick.accountId().equals(FAILING)) {
+                        throw new IllegalStateException("The kick handler failed.");
+                    }
+                    commands.add(command);
+                    return null;
+                })
+                .when(dispatcher)
+                .submit(any());
         link = new LoginServerLink(
                 channel,
                 GsLinkProperties.builder()
@@ -124,22 +156,19 @@ class LoginServerLinkTest {
                         .shutdownTimeout(SHUTDOWN_TIMEOUT)
                         .build(),
                 scheduler,
-                commands::add,
-                commands::add,
-                kick -> {
-                    if (kick.accountId().equals(FAILING)) {
-                        throw new IllegalStateException("The kick handler failed.");
+                new ObjectProvider<>() {
+                    @Override
+                    public CommandDispatcher getObject() {
+                        return dispatcher;
                     }
-                    commands.add(kick);
-                },
-                commands::add,
-                commands::add,
-                commands::add);
+                });
     }
 
     @AfterEach
     void stop() throws Exception {
         link.shutdown();
+        linkLog.detachAppender(logs);
+        logs.stop();
         scheduler.shutdown();
         server.shutdownNow().awaitTermination(5, TimeUnit.SECONDS);
         ServerConfig.PORT_GAME = savedPort;
@@ -172,104 +201,177 @@ class LoginServerLinkTest {
                         .build());
     }
 
-    @Test
-    void onNext_shouldTurnEveryLoginMessageIntoItsCommand() throws Exception {
-        link.start();
-        final FakeLoginServer.Connection connection = loginServer.nextConnection();
-        connection.received().next();
+    @Nested
+    class OnNext {
+        @Test
+        void onNext_shouldTurnEveryLoginMessageIntoItsCommand() throws Exception {
+            link.start();
+            final FakeLoginServer.Connection connection = loginServer.nextConnection();
+            connection.received().next();
 
-        connection
-                .responses()
-                .send(LoginServerMessage.newBuilder()
-                        .setRegistrationResult(GsLinkProto.RegistrationResult.newBuilder()
-                                .setServerId(1)
-                                .setServerName("Bartz"))
-                        .build());
-        connection
-                .responses()
-                .send(LoginServerMessage.newBuilder()
-                        .setAuthenticationResult(GsLinkProto.AuthenticationResult.newBuilder()
-                                .setLogin("player")
-                                .setAccepted(true)
-                                .setAccountId(FIRST.toString()))
-                        .build());
-        connection
-                .responses()
-                .send(LoginServerMessage.newBuilder()
-                        .setAuthenticationResult(
-                                GsLinkProto.AuthenticationResult.newBuilder().setLogin("intruder"))
-                        .build());
-        connection
-                .responses()
-                .send(LoginServerMessage.newBuilder()
-                        .setKickAccount(GsLinkProto.KickAccount.newBuilder().setAccountId(FIRST.toString()))
-                        .build());
-        connection
-                .responses()
-                .send(LoginServerMessage.newBuilder()
-                        .setReportCharacters(
-                                GsLinkProto.ReportCharacters.newBuilder().setAccountId(SECOND.toString()))
-                        .build());
-        connection
-                .responses()
-                .send(LoginServerMessage.newBuilder()
-                        .setPasswordChangeResult(GsLinkProto.PasswordChangeResult.newBuilder()
-                                .setCharacterName("Hero")
-                                .setMessage("You have successfully changed your password!"))
-                        .build());
+            connection
+                    .responses()
+                    .send(LoginServerMessage.newBuilder()
+                            .setRegistrationResult(GsLinkProto.RegistrationResult.newBuilder()
+                                    .setServerId(1)
+                                    .setServerName("Bartz"))
+                            .build());
+            connection
+                    .responses()
+                    .send(LoginServerMessage.newBuilder()
+                            .setAuthenticationResult(GsLinkProto.AuthenticationResult.newBuilder()
+                                    .setLogin("player")
+                                    .setAccepted(true)
+                                    .setAccountId(FIRST.toString())
+                                    .setRequestId(REQUEST.toString()))
+                            .build());
+            connection
+                    .responses()
+                    .send(LoginServerMessage.newBuilder()
+                            .setAuthenticationResult(GsLinkProto.AuthenticationResult.newBuilder()
+                                    .setLogin("intruder")
+                                    .setRequestId(REQUEST.toString()))
+                            .build());
+            connection
+                    .responses()
+                    .send(LoginServerMessage.newBuilder()
+                            .setKickAccount(GsLinkProto.KickAccount.newBuilder().setAccountId(FIRST.toString()))
+                            .build());
+            connection
+                    .responses()
+                    .send(LoginServerMessage.newBuilder()
+                            .setReportCharacters(
+                                    GsLinkProto.ReportCharacters.newBuilder().setAccountId(SECOND.toString()))
+                            .build());
+            connection
+                    .responses()
+                    .send(LoginServerMessage.newBuilder()
+                            .setPasswordChangeResult(GsLinkProto.PasswordChangeResult.newBuilder()
+                                    .setCharacterName("Hero")
+                                    .setMessage("You have successfully changed your password!")
+                                    .setRequestId(SECOND.toString()))
+                            .build());
 
-        awaitCommands(6);
-        assertThat(commands)
-                .containsExactly(
-                        RegistrationResult.builder()
-                                .serverId(1)
-                                .serverName("Bartz")
-                                .hexId("010203")
-                                .build(),
-                        AuthenticationResult.builder()
-                                .login("player")
-                                .accountId(FIRST)
-                                .accepted(true)
-                                .build(),
-                        AuthenticationResult.builder()
-                                .login("intruder")
-                                .accepted(false)
-                                .build(),
-                        new KickAccount(FIRST),
-                        new ReportCharacters(SECOND),
-                        PasswordChangeResult.builder()
-                                .characterName("Hero")
-                                .message("You have successfully changed your password!")
-                                .build());
-    }
+            awaitCommands(6);
+            assertThat(commands)
+                    .containsExactly(
+                            RegistrationResult.builder()
+                                    .serverId(1)
+                                    .serverName("Bartz")
+                                    .hexId("010203")
+                                    .build(),
+                            AuthenticationResult.builder()
+                                    .requestId(REQUEST)
+                                    .accountId(FIRST)
+                                    .accepted(true)
+                                    .build(),
+                            AuthenticationResult.builder()
+                                    .requestId(REQUEST)
+                                    .accepted(false)
+                                    .build(),
+                            new KickAccount(FIRST),
+                            new ReportCharacters(SECOND),
+                            PasswordChangeResult.builder()
+                                    .requestId(SECOND)
+                                    .message("You have successfully changed your password!")
+                                    .build());
+        }
 
-    @Test
-    void onNext_shouldKeepTheStream_whenACommandHandlerFails() throws Exception {
-        link.start();
-        final FakeLoginServer.Connection connection = loginServer.nextConnection();
-        connection.received().next();
+        @Test
+        void onNext_shouldKeepTheStream_whenACommandHandlerFails() throws Exception {
+            link.start();
+            final FakeLoginServer.Connection connection = loginServer.nextConnection();
+            connection.received().next();
 
-        connection
-                .responses()
-                .send(LoginServerMessage.newBuilder()
-                        .setKickAccount(GsLinkProto.KickAccount.newBuilder().setAccountId(FAILING.toString()))
-                        .build());
-        connection
-                .responses()
-                .send(LoginServerMessage.newBuilder()
-                        .setKickAccount(GsLinkProto.KickAccount.newBuilder().setAccountId(FIRST.toString()))
-                        .build());
+            connection
+                    .responses()
+                    .send(LoginServerMessage.newBuilder()
+                            .setKickAccount(GsLinkProto.KickAccount.newBuilder().setAccountId(FAILING.toString()))
+                            .build());
+            connection
+                    .responses()
+                    .send(LoginServerMessage.newBuilder()
+                            .setKickAccount(GsLinkProto.KickAccount.newBuilder().setAccountId(FIRST.toString()))
+                            .build());
 
-        awaitCommands(1);
-        assertThat(commands).containsExactly(new KickAccount(FIRST));
-        assertThat(connection.received().isEnded()).isFalse();
-        assertThat(loginServer.hasNoMoreConnections()).isTrue();
+            awaitCommands(1);
+            assertThat(commands).containsExactly(new KickAccount(FIRST));
+            assertThat(connection.received().isEnded()).isFalse();
+            assertThat(loginServer.hasNoMoreConnections()).isTrue();
+        }
+
+        @ParameterizedTest(name = "{0}, {1} ''{2}''")
+        @CsvSource({
+            "AUTHENTICATION_RESULT, requestId, ''",
+            "AUTHENTICATION_RESULT, requestId, not-a-uuid",
+            "AUTHENTICATION_RESULT, accountId, not-a-uuid",
+            "PASSWORD_CHANGE_RESULT, requestId, ''",
+            "PASSWORD_CHANGE_RESULT, requestId, not-a-uuid",
+            "KICK_ACCOUNT, accountId, ''",
+            "KICK_ACCOUNT, accountId, not-a-uuid",
+            "REPORT_CHARACTERS, accountId, not-a-uuid"
+        })
+        void onNext_shouldDropTheMessageWithOneWarn_whenAnIdIsNotAUuid(MessageCase type, String field, String value)
+                throws Exception {
+            link.start();
+            final FakeLoginServer.Connection connection = loginServer.nextConnection();
+            connection.received().next();
+            final LoginServerMessage message = message(type, field, value);
+
+            connection.responses().send(message);
+            connection.responses().send(message);
+            connection
+                    .responses()
+                    .send(LoginServerMessage.newBuilder()
+                            .setKickAccount(GsLinkProto.KickAccount.newBuilder().setAccountId(FIRST.toString()))
+                            .build());
+
+            awaitCommands(1);
+            assertThat(commands).containsExactly(new KickAccount(FIRST));
+            assertThat(connection.received().isEnded()).isFalse();
+            assertThat(logs.list)
+                    .filteredOn(event -> event.getLevel() == Level.WARN)
+                    .singleElement()
+                    .satisfies(event -> assertThat(event.getFormattedMessage()).contains(type.name()));
+        }
+
+        private static LoginServerMessage message(MessageCase type, String field, String value) {
+            final String requestId = "requestId".equals(field) ? value : REQUEST.toString();
+            final String accountId = "accountId".equals(field) ? value : FIRST.toString();
+            return switch (type) {
+                case AUTHENTICATION_RESULT ->
+                    LoginServerMessage.newBuilder()
+                            .setAuthenticationResult(GsLinkProto.AuthenticationResult.newBuilder()
+                                    .setLogin("player")
+                                    .setAccepted(true)
+                                    .setAccountId(accountId)
+                                    .setRequestId(requestId))
+                            .build();
+                case PASSWORD_CHANGE_RESULT ->
+                    LoginServerMessage.newBuilder()
+                            .setPasswordChangeResult(GsLinkProto.PasswordChangeResult.newBuilder()
+                                    .setCharacterName("Hero")
+                                    .setMessage("You have successfully changed your password!")
+                                    .setRequestId(requestId))
+                            .build();
+                case KICK_ACCOUNT ->
+                    LoginServerMessage.newBuilder()
+                            .setKickAccount(GsLinkProto.KickAccount.newBuilder().setAccountId(accountId))
+                            .build();
+                case REPORT_CHARACTERS ->
+                    LoginServerMessage.newBuilder()
+                            .setReportCharacters(
+                                    GsLinkProto.ReportCharacters.newBuilder().setAccountId(accountId))
+                            .build();
+                default -> throw new IllegalArgumentException(type.name());
+            };
+        }
     }
 
     @Test
     void authenticate_shouldReportTheLinkDown_whenNoStreamIsOpen() {
-        assertThat(link.authenticate("player", KEY)).isFalse();
-        assertThat(link.changePassword(FIRST, "Hero", "old", "new")).isFalse();
+        assertThat(link.authenticate(REQUEST, "player", KEY)).isFalse();
+        assertThat(link.changePassword(REQUEST, FIRST, "Hero", "old", "new")).isFalse();
     }
 
     @Test
@@ -279,15 +381,18 @@ class LoginServerLinkTest {
         final Thread starting = Thread.ofPlatform().start(link::start);
         assertThat(connectEntered.await(5, TimeUnit.SECONDS)).isTrue();
 
-        final boolean actual = link.authenticate("player", KEY);
+        final boolean actual = link.authenticate(REQUEST, "player", KEY);
 
         connectReleased.countDown();
         starting.join(TimeUnit.SECONDS.toMillis(5));
         assertThat(actual).isFalse();
         final FakeLoginServer.Connection connection = loginServer.nextConnection();
         assertThat(connection.received().next().hasRegister()).isTrue();
-        assertThat(link.authenticate("player", KEY)).isTrue();
-        assertThat(connection.received().next().getAuthenticate().getLogin()).isEqualTo("player");
+        assertThat(link.authenticate(REQUEST, "player", KEY)).isTrue();
+        final GsLinkProto.Authenticate authenticate =
+                connection.received().next().getAuthenticate();
+        assertThat(authenticate.getLogin()).isEqualTo("player");
+        assertThat(authenticate.getRequestId()).isEqualTo(REQUEST.toString());
     }
 
     @Test
@@ -295,7 +400,7 @@ class LoginServerLinkTest {
         link.start();
         final FakeLoginServer.Connection connection = loginServer.nextConnection();
         connection.received().next();
-        assertThat(link.authenticate("player", KEY)).isTrue();
+        assertThat(link.authenticate(REQUEST, "player", KEY)).isTrue();
         connection.received().next();
 
         connection.responses().fail(Status.UNAVAILABLE.withDescription("The login server is shutting down."));

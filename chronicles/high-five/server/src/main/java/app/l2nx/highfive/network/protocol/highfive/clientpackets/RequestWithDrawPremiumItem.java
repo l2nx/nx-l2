@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package app.l2nx.highfive.network.clientpackets;
+package app.l2nx.highfive.network.protocol.highfive.clientpackets;
 
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.entity.actor.Player;
@@ -25,7 +25,7 @@ import app.l2nx.highfive.entity.item.enums.ItemProcessType;
 import app.l2nx.highfive.entity.item.holders.PremiumItem;
 import app.l2nx.highfive.managers.PunishmentManager;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.serverpackets.ExGetPremiumItemList;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ExGetPremiumItemList;
 
 /**
  * @author Gnacik

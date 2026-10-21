@@ -36,7 +36,7 @@ import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.holders.player.AutoUseSettingsHolder;
 import app.l2nx.highfive.entity.groups.Party;
 import app.l2nx.highfive.network.Disconnection;
-import app.l2nx.highfive.network.serverpackets.LeaveWorld;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.LeaveWorld;
 import app.l2nx.highfive.repository.offline.OfflinePlayRepository;
 import app.l2nx.highfive.repository.offline.model.OfflinePlayEntry;
 import app.l2nx.highfive.repository.offline.model.OfflinePlayEntryType;

@@ -17,17 +17,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package app.l2nx.highfive.network.clientpackets;
+package app.l2nx.highfive.network.protocol.highfive.clientpackets;
 
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.groups.matching.PartyMatchRoom;
 import app.l2nx.highfive.entity.groups.matching.PartyMatchRoomList;
 import app.l2nx.highfive.entity.groups.matching.PartyMatchWaitingList;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.serverpackets.ExManagePartyRoomMember;
-import app.l2nx.highfive.network.serverpackets.ExPartyRoomMember;
-import app.l2nx.highfive.network.serverpackets.PartyMatchDetail;
-import app.l2nx.highfive.network.serverpackets.SystemMessage;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ExManagePartyRoomMember;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ExPartyRoomMember;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.PartyMatchDetail;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.SystemMessage;
 
 /**
  * @author Gnacik

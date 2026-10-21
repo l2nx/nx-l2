@@ -27,7 +27,7 @@ import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.clan.Clan;
 import app.l2nx.highfive.entity.spawns.Spawn;
 import app.l2nx.highfive.mechanics.siege.clanhalls.ClanHallSiegeEngine;
-import app.l2nx.highfive.network.serverpackets.NpcHtmlMessage;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.NpcHtmlMessage;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;

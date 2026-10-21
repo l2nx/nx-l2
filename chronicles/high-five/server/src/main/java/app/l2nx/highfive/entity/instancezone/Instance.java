@@ -35,8 +35,8 @@ import app.l2nx.highfive.entity.spawns.Spawn;
 import app.l2nx.highfive.managers.InstanceManager;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.enums.ChatType;
-import app.l2nx.highfive.network.serverpackets.CreatureSay;
-import app.l2nx.highfive.network.serverpackets.SystemMessage;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.CreatureSay;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.SystemMessage;
 import app.l2nx.highfive.threads.ThreadPool;
 import app.l2nx.highfive.util.StatSet;
 import java.io.File;
@@ -650,12 +650,15 @@ public class Instance {
                             .THIS_DUNGEON_WILL_EXPIRE_IN_S1_MINUTE_S_YOU_WILL_BE_FORCED_OUT_OF_THE_DUNGEON_WHEN_THE_TIME_EXPIRES);
             sm.addString(Integer.toString(timeLeft));
             sm.sendInBroadcast();
-
-            for (Integer playerId : players) {
-                final Player player = World.getPlayer(playerId);
-                if ((player != null) && player.isOnline() && (player.getInstanceId() == id)) {
-                    player.sendPacket(sm);
+            try {
+                for (Integer playerId : players) {
+                    final Player player = World.getPlayer(playerId);
+                    if ((player != null) && player.isOnline() && (player.getInstanceId() == id)) {
+                        player.sendPacket(sm);
+                    }
                 }
+            } finally {
+                sm.releaseBroadcast();
             }
 
             remaining -= 300000;
@@ -668,12 +671,15 @@ public class Instance {
                             .THIS_DUNGEON_WILL_EXPIRE_IN_S1_MINUTE_S_YOU_WILL_BE_FORCED_OUT_OF_THE_DUNGEON_WHEN_THE_TIME_EXPIRES);
             sm.addString(Integer.toString(timeLeft));
             sm.sendInBroadcast();
-
-            for (Integer playerId : players) {
-                final Player player = World.getPlayer(playerId);
-                if ((player != null) && player.isOnline() && (player.getInstanceId() == id)) {
-                    player.sendPacket(sm);
+            try {
+                for (Integer playerId : players) {
+                    final Player player = World.getPlayer(playerId);
+                    if ((player != null) && player.isOnline() && (player.getInstanceId() == id)) {
+                        player.sendPacket(sm);
+                    }
                 }
+            } finally {
+                sm.releaseBroadcast();
             }
 
             remaining -= 60000;

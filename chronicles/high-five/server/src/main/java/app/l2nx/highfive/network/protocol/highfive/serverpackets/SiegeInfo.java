@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package app.l2nx.highfive.network.serverpackets;
+package app.l2nx.highfive.network.protocol.highfive.serverpackets;
 
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.FeatureConfig;
@@ -28,8 +28,7 @@ import app.l2nx.highfive.entity.residences.ClanHall;
 import app.l2nx.highfive.managers.CHSiegeManager;
 import app.l2nx.highfive.mechanics.siege.Castle;
 import app.l2nx.highfive.network.GameClient;
-import app.l2nx.highfive.network.ServerPackets;
-import app.l2nx.network.buffer.WriteBuffer;
+import app.l2nx.network.codec.PacketWriter;
 import java.util.Calendar;
 import lombok.extern.slf4j.Slf4j;
 
@@ -66,7 +65,7 @@ public class SiegeInfo extends ServerPacket {
     }
 
     @Override
-    public void writeImpl(GameClient client, WriteBuffer buffer) {
+    public void writeImpl(GameClient client, PacketWriter buffer) {
         ServerPackets.CASTLE_SIEGE_INFO.writeId(this, buffer);
         if (castle != null) {
             buffer.writeInt(castle.getResidenceId());

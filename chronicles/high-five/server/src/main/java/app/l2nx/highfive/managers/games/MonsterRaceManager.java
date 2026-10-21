@@ -36,11 +36,11 @@ import app.l2nx.highfive.entity.zone.ZoneType;
 import app.l2nx.highfive.entity.zone.type.DerbyTrackZone;
 import app.l2nx.highfive.managers.ZoneManager;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.serverpackets.DeleteObject;
-import app.l2nx.highfive.network.serverpackets.MonRaceInfo;
-import app.l2nx.highfive.network.serverpackets.PlaySound;
-import app.l2nx.highfive.network.serverpackets.ServerPacket;
-import app.l2nx.highfive.network.serverpackets.SystemMessage;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.DeleteObject;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.MonRaceInfo;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.PlaySound;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ServerPacket;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.SystemMessage;
 import app.l2nx.highfive.repository.minigame.MonsterRaceRepository;
 import app.l2nx.highfive.repository.minigame.model.MonsterRaceResult;
 import app.l2nx.highfive.threads.ThreadPool;
@@ -557,15 +557,21 @@ public class MonsterRaceManager {
             packet.sendInBroadcast();
         }
 
-        for (ZoneType zone : ZoneManager.getInstance().getAllZones(DerbyTrackZone.class)) {
-            for (Creature creature : zone.getCharactersInside()) {
-                if (creature == null) {
-                    continue;
-                }
+        try {
+            for (ZoneType zone : ZoneManager.getInstance().getAllZones(DerbyTrackZone.class)) {
+                for (Creature creature : zone.getCharactersInside()) {
+                    if (creature == null) {
+                        continue;
+                    }
 
-                for (ServerPacket packet : packets) {
-                    creature.sendPacket(packet);
+                    for (ServerPacket packet : packets) {
+                        creature.sendPacket(packet);
+                    }
                 }
+            }
+        } finally {
+            for (ServerPacket packet : packets) {
+                packet.releaseBroadcast();
             }
         }
     }

@@ -31,6 +31,7 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.time.Duration;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 class NetworkServerTest {
@@ -86,6 +87,49 @@ class NetworkServerTest {
                             .count())
                     .isEqualTo(1.0);
             assertThat(first.isClosed()).isFalse();
+        }
+    }
+
+    @Nested
+    class Close {
+        @Test
+        void close_shouldDeliverEachFarewell_beforeTheConnectionCloses() throws Exception {
+            server = bind();
+
+            try (Socket socket = new Socket(
+                    InetAddress.getLoopbackAddress(), server.localAddress().getPort())) {
+                awaitClients(1);
+
+                server.close(channel -> OutboundQueue.of(channel)
+                        .sendAndClose(Frames.allocate(channel.alloc(), 1).writeByte(0x20)));
+
+                final DataInputStream in = new DataInputStream(socket.getInputStream());
+                final byte[] actual = new byte[3];
+                in.readFully(actual);
+                assertThat(actual).containsExactly(3, 0, 0x20);
+                assertThat(in.read()).as("closed after the farewell").isEqualTo(-1);
+            }
+        }
+
+        @Test
+        void close_shouldCloseTheRest_whenAFarewellNeverCloses() throws Exception {
+            server = bind();
+
+            try (Socket socket = new Socket(
+                    InetAddress.getLoopbackAddress(), server.localAddress().getPort())) {
+                awaitClients(1);
+
+                server.close(channel -> {});
+
+                assertThat(socket.getInputStream().read()).isEqualTo(-1);
+            }
+            assertThat(server.clients().size()).isZero();
+        }
+
+        private void awaitClients(int count) throws InterruptedException {
+            for (int i = 0; (i < 50) && (server.clients().size() < count); i++) {
+                Thread.sleep(20);
+            }
         }
     }
 

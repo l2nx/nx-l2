@@ -29,8 +29,8 @@ import app.l2nx.highfive.mechanics.conditions.Condition;
 import app.l2nx.highfive.mechanics.effects.AbstractEffect;
 import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.mechanics.skill.enums.FlyType;
-import app.l2nx.highfive.network.serverpackets.FlyToLocation;
-import app.l2nx.highfive.network.serverpackets.ValidateLocation;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.FlyToLocation;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ValidateLocation;
 import app.l2nx.highfive.util.StatSet;
 import lombok.extern.slf4j.Slf4j;
 

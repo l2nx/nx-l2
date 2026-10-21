@@ -91,7 +91,6 @@ public class GameServerLink implements StreamObserver<GameServerMessage> {
 
     private volatile ScheduledFuture<?> registrationDeadline;
 
-    /** @param remoteAddress the game server's address, {@code null} when the transport reports none */
     GameServerLink(
             StreamObserver<LoginServerMessage> responses,
             SocketAddress remoteAddress,
@@ -107,7 +106,6 @@ public class GameServerLink implements StreamObserver<GameServerMessage> {
         this.ended = ended;
     }
 
-    /** Ends the stream when no Register arrives within {@code timeout}. */
     void awaitRegistration(TaskScheduler scheduler, Duration timeout) {
         registrationDeadline = scheduler.schedule(
                 () -> registrationTimedOut(timeout), Instant.now().plus(timeout));
@@ -119,9 +117,7 @@ public class GameServerLink implements StreamObserver<GameServerMessage> {
             switch (state.get()) {
                 case AWAITING_REGISTRATION -> onFirstMessage(message);
                 case REGISTERED -> onMessage(message);
-                case ENDED -> {
-                    // Already in flight when the link ended.
-                }
+                case ENDED -> {}
             }
         } catch (IllegalArgumentException e) {
             close(Status.INVALID_ARGUMENT.withDescription(e.getMessage()));
@@ -140,13 +136,11 @@ public class GameServerLink implements StreamObserver<GameServerMessage> {
 
     @Override
     public void onCompleted() {
-        // The game server ends its side after its last status; the login server ends its own.
         if (end()) {
             writer.complete();
         }
     }
 
-    /** Ends the stream with {@code status}; the game server opens a new one after its reconnect delay. */
     void close(Status status) {
         if (end()) {
             writer.fail(status);
@@ -272,7 +266,6 @@ public class GameServerLink implements StreamObserver<GameServerMessage> {
                 return;
             }
             if (!state.compareAndSet(State.AWAITING_REGISTRATION, State.REGISTERED)) {
-                // The registration deadline ended the link meanwhile.
                 return;
             }
             previousChronicle = info.getChronicle();
@@ -326,7 +319,6 @@ public class GameServerLink implements StreamObserver<GameServerMessage> {
         }
     }
 
-    // True for the one caller that ends the link.
     private boolean end() {
         if (state.getAndSet(State.ENDED) == State.ENDED) {
             return false;
@@ -361,18 +353,20 @@ public class GameServerLink implements StreamObserver<GameServerMessage> {
     }
 
     private void authenticate(GsLinkProto.Authenticate request) {
-        final GsLinkProto.SessionKey key = request.getKey();
-        final SessionKey sessionKey =
-                new SessionKey(key.getLoginOk1(), key.getLoginOk2(), key.getPlayOk1(), key.getPlayOk2());
         final LoginClient client = loginController.getAuthedClientByLogin(request.getLogin());
-        final GsLinkProto.AuthenticationResult.Builder result =
-                GsLinkProto.AuthenticationResult.newBuilder().setLogin(request.getLogin());
-        if ((client != null) && sessionKey.equals(client.getSessionKey())) {
+        final GsLinkProto.AuthenticationResult.Builder result = GsLinkProto.AuthenticationResult.newBuilder()
+                .setLogin(request.getLogin())
+                .setRequestId(request.getRequestId());
+        if ((client != null) && sessionKey(request.getKey()).equals(client.getSessionKey())) {
             loginController.removeAuthedLoginClientIfCurrent(client);
             result.setAccepted(true).setAccountId(client.getAccountId().toString());
         }
         writer.send(
                 LoginServerMessage.newBuilder().setAuthenticationResult(result).build());
+    }
+
+    private static SessionKey sessionKey(GsLinkProto.SessionKey key) {
+        return new SessionKey(key.getLoginOk1(), key.getLoginOk2(), key.getPlayOk1(), key.getPlayOk2());
     }
 
     private void changeAccessLevel(GsLinkProto.ChangeAccessLevel change) {
@@ -420,27 +414,28 @@ public class GameServerLink implements StreamObserver<GameServerMessage> {
         final UUID accountId = UUID.fromString(request.getAccountId());
         final String characterName = request.getCharacterName();
         if (!hasAccountOnGameServer(accountId)) {
-            log.trace("Ignored a password change of account {} requested by player {}.", accountId, characterName);
+            log.trace("Refused a password change of account {} requested by player {}.", accountId, characterName);
+            passwordChangeResult(request.getRequestId(), characterName, MSG_PASSWORD_CHANGE_FAILED);
             return;
         }
         if (request.getOldPassword().isEmpty() || request.getNewPassword().isEmpty()) {
-            passwordChangeResult(characterName, MSG_INVALID_PASSWORD_DATA);
+            passwordChangeResult(request.getRequestId(), characterName, MSG_INVALID_PASSWORD_DATA);
             return;
         }
         try {
             final String currentHash = PasswordHash.of(request.getOldPassword());
             final String newHash = PasswordHash.of(request.getNewPassword());
             if (loginController.changePassword(accountId, currentHash, newHash)) {
-                passwordChangeResult(characterName, MSG_PASSWORD_CHANGED);
+                passwordChangeResult(request.getRequestId(), characterName, MSG_PASSWORD_CHANGED);
             } else if (currentHash.equals(loginController.getPasswordHash(accountId))) {
                 log.warn(
                         "Password change failed for account {} requested by player {} on GS {} (0 rows updated).",
                         accountId,
                         characterName,
                         getServerId());
-                passwordChangeResult(characterName, MSG_PASSWORD_CHANGE_FAILED);
+                passwordChangeResult(request.getRequestId(), characterName, MSG_PASSWORD_CHANGE_FAILED);
             } else {
-                passwordChangeResult(characterName, MSG_CURRENT_PASSWORD_MISMATCH);
+                passwordChangeResult(request.getRequestId(), characterName, MSG_CURRENT_PASSWORD_MISMATCH);
             }
         } catch (DataAccessException e) {
             log.warn(
@@ -449,12 +444,14 @@ public class GameServerLink implements StreamObserver<GameServerMessage> {
                     characterName,
                     getServerId(),
                     e);
+            passwordChangeResult(request.getRequestId(), characterName, MSG_PASSWORD_CHANGE_FAILED);
         }
     }
 
-    private void passwordChangeResult(String characterName, String message) {
+    private void passwordChangeResult(String requestId, String characterName, String message) {
         writer.send(LoginServerMessage.newBuilder()
                 .setPasswordChangeResult(GsLinkProto.PasswordChangeResult.newBuilder()
+                        .setRequestId(requestId)
                         .setCharacterName(characterName)
                         .setMessage(message))
                 .build());
@@ -497,7 +494,6 @@ public class GameServerLink implements StreamObserver<GameServerMessage> {
             try {
                 info.addServerAddress(address.getSubnet(), address.getAddress());
             } catch (UnknownHostException | IllegalArgumentException e) {
-                // Skipped, not refused: clients of the other subnets can still reach the server.
                 log.warn("Skipped the game server address of subnet \"{}\" - {}", address.getSubnet(), e.getMessage());
             }
         }

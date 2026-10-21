@@ -17,13 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package app.l2nx.highfive.network.serverpackets;
+package app.l2nx.highfive.network.protocol.highfive.serverpackets;
 
 import app.l2nx.highfive.data.sql.ClanTable;
 import app.l2nx.highfive.entity.clan.Clan;
 import app.l2nx.highfive.network.GameClient;
-import app.l2nx.highfive.network.ServerPackets;
-import app.l2nx.network.buffer.WriteBuffer;
+import app.l2nx.network.codec.PacketWriter;
 
 /**
  * @author -Wooden-
@@ -38,7 +37,7 @@ public class PledgeReceiveWarList extends ServerPacket {
     }
 
     @Override
-    public void writeImpl(GameClient client, WriteBuffer buffer) {
+    public void writeImpl(GameClient client, PacketWriter buffer) {
         ServerPackets.PLEDGE_RECEIVE_WAR_LIST.writeId(this, buffer);
         buffer.writeInt(tab); // type : 0 = Declared, 1 = Under Attack
         buffer.writeInt(0); // page

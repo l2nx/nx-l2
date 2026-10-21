@@ -31,7 +31,7 @@ import app.l2nx.highfive.mechanics.skill.holders.SkillHolder;
 import app.l2nx.highfive.network.NpcStringId;
 import app.l2nx.highfive.network.enums.ChatType;
 import app.l2nx.highfive.network.enums.Movie;
-import app.l2nx.highfive.network.serverpackets.NpcSay;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.NpcSay;
 import app.l2nx.highfive.scripts.quests.Q00192_SevenSignsSeriesOfDoubt.Q00192_SevenSignsSeriesOfDoubt;
 
 /**

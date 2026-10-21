@@ -17,27 +17,27 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package app.l2nx.highfive.network.serverpackets;
+package app.l2nx.highfive.network.protocol.highfive.serverpackets;
 
 import app.l2nx.highfive.entity.item.holders.ItemInfo;
 import app.l2nx.highfive.entity.item.instance.Item;
 import app.l2nx.highfive.entity.itemcontainer.PlayerInventory;
 import app.l2nx.highfive.network.holders.TradeItem;
-import app.l2nx.network.buffer.WriteBuffer;
+import app.l2nx.network.codec.PacketWriter;
 
 /**
  * @author UnAfraid
  */
 public abstract class AbstractItemPacket extends ServerPacket {
-    protected void writeItem(TradeItem item, WriteBuffer buffer) {
+    protected void writeItem(TradeItem item, PacketWriter buffer) {
         writeItem(new ItemInfo(item), buffer);
     }
 
-    protected void writeItem(Item item, WriteBuffer buffer) {
+    protected void writeItem(Item item, PacketWriter buffer) {
         writeItem(new ItemInfo(item), buffer);
     }
 
-    protected void writeTradeItem(TradeItem item, WriteBuffer buffer) {
+    protected void writeTradeItem(TradeItem item, PacketWriter buffer) {
         buffer.writeShort(item.getItem().getType1());
         buffer.writeInt(item.getObjectId()); // ObjectId
         buffer.writeInt(item.getItem().getDisplayId()); // ItemId
@@ -56,7 +56,7 @@ public abstract class AbstractItemPacket extends ServerPacket {
         writeItemElementalAndEnchant(new ItemInfo(item), buffer);
     }
 
-    protected void writeItem(ItemInfo item, WriteBuffer buffer) {
+    protected void writeItem(ItemInfo item, PacketWriter buffer) {
         buffer.writeInt(item.getObjectId()); // ObjectId
         buffer.writeInt(item.getItem().getDisplayId()); // ItemId
         buffer.writeInt(item.getLocation()); // T1
@@ -78,7 +78,7 @@ public abstract class AbstractItemPacket extends ServerPacket {
         writeItemElementalAndEnchant(item, buffer);
     }
 
-    protected void writeItemElementalAndEnchant(ItemInfo item, WriteBuffer buffer) {
+    protected void writeItemElementalAndEnchant(ItemInfo item, PacketWriter buffer) {
         buffer.writeShort(item.getAttackElementType());
         buffer.writeShort(item.getAttackElementPower());
         for (byte i = 0; i < 6; i++) {
@@ -91,7 +91,7 @@ public abstract class AbstractItemPacket extends ServerPacket {
         }
     }
 
-    protected void writeInventoryBlock(PlayerInventory inventory, WriteBuffer buffer) {
+    protected void writeInventoryBlock(PlayerInventory inventory, PacketWriter buffer) {
         if (inventory.hasInventoryBlock()) {
             buffer.writeShort(inventory.getBlockItems().length);
             buffer.writeByte(inventory.getBlockMode());

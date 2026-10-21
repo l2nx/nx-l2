@@ -17,11 +17,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package app.l2nx.highfive.network.serverpackets;
+package app.l2nx.highfive.network.protocol.highfive.serverpackets;
 
 import app.l2nx.highfive.network.GameClient;
-import app.l2nx.highfive.network.ServerPackets;
-import app.l2nx.network.buffer.WriteBuffer;
+import app.l2nx.network.codec.PacketWriter;
 
 /**
  * Lets drink to code!
@@ -33,7 +32,7 @@ public class GameGuardQuery extends ServerPacket {
     private GameGuardQuery() {}
 
     @Override
-    public void writeImpl(GameClient client, WriteBuffer buffer) {
+    public void writeImpl(GameClient client, PacketWriter buffer) {
         ServerPackets.GAME_GUARD_QUERY.writeId(this, buffer);
         buffer.writeInt(0x27533DD9);
         buffer.writeInt(0x2E72A51D);

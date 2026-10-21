@@ -27,8 +27,8 @@ import app.l2nx.highfive.entity.WorldObject;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.instance.AirShip;
 import app.l2nx.highfive.mechanics.skill.Skill;
-import app.l2nx.highfive.network.serverpackets.ExMoveToLocationAirShip;
-import app.l2nx.highfive.network.serverpackets.ExStopMoveAirShip;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ExMoveToLocationAirShip;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ExStopMoveAirShip;
 
 /**
  * @author DS, Mobius

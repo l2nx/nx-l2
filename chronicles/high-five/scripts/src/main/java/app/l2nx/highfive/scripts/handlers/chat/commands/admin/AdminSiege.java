@@ -38,7 +38,7 @@ import app.l2nx.highfive.mechanics.sevensigns.SevenSigns;
 import app.l2nx.highfive.mechanics.siege.Castle;
 import app.l2nx.highfive.mechanics.siege.clanhalls.SiegableHall;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.serverpackets.NpcHtmlMessage;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.NpcHtmlMessage;
 import java.util.Calendar;
 import java.util.StringTokenizer;
 import org.apache.commons.lang3.StringUtils;

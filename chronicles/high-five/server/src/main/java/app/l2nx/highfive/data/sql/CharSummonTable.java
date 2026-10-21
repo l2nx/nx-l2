@@ -35,7 +35,7 @@ import app.l2nx.highfive.entity.actor.templates.NpcTemplate;
 import app.l2nx.highfive.entity.item.instance.Item;
 import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.mechanics.skill.StoredEffect;
-import app.l2nx.highfive.network.serverpackets.PetItemList;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.PetItemList;
 import app.l2nx.highfive.repository.pet.CharacterSummonRepository;
 import app.l2nx.highfive.repository.pet.PetRepository;
 import app.l2nx.highfive.repository.pet.PetSkillSaveRepository;

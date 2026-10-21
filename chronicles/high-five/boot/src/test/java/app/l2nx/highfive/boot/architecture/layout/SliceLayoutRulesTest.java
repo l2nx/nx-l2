@@ -2,7 +2,7 @@
  * SPDX-FileCopyrightText: 2026 L2NX contributors
  * SPDX-License-Identifier: Apache-2.0
  */
-package app.l2nx.highfive.boot.architecture;
+package app.l2nx.highfive.boot.architecture.layout;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -22,17 +22,20 @@ class SliceLayoutRulesTest {
     private static final String WELLFORMED = FIXTURE + "wellformed";
     private static final String BROKEN = FIXTURE + "broken";
 
-    private static final Map<String, Function<SliceLayoutRules, ArchRule>> RULES = Map.of(
-            "subpackages", SliceLayoutRules::subpackages,
-            "handlers", SliceLayoutRules::handlers,
-            "handlerConstructors", SliceLayoutRules::handlerConstructors,
-            "commands", SliceLayoutRules::commands,
-            "ports", SliceLayoutRules::ports,
-            "repositories", SliceLayoutRules::repositories,
-            "noImplOrGateway", SliceLayoutRules::noImplOrGateway,
-            "slicesWithoutNetwork", SliceLayoutRules::slicesWithoutNetwork,
-            "networkUsesSliceApi", SliceLayoutRules::networkUsesSliceApi,
-            "legacyUsesSliceApi", SliceLayoutRules::legacyUsesSliceApi);
+    private static final Map<String, Function<SliceLayoutRules, ArchRule>> RULES = Map.ofEntries(
+            Map.entry("subpackages", SliceLayoutRules::subpackages),
+            Map.entry("handlers", SliceLayoutRules::handlers),
+            Map.entry("handlerConstructors", SliceLayoutRules::handlerConstructors),
+            Map.entry("commands", SliceLayoutRules::commands),
+            Map.entry("commandPackages", SliceLayoutRules::commandPackages),
+            Map.entry("viewEvents", SliceLayoutRules::viewEvents),
+            Map.entry("domainEvents", SliceLayoutRules::domainEvents),
+            Map.entry("ports", SliceLayoutRules::ports),
+            Map.entry("repositories", SliceLayoutRules::repositories),
+            Map.entry("noImplOrGateway", SliceLayoutRules::noImplOrGateway),
+            Map.entry("slicesWithoutNetwork", SliceLayoutRules::slicesWithoutNetwork),
+            Map.entry("networkUsesSliceApi", SliceLayoutRules::networkUsesSliceApi),
+            Map.entry("legacyUsesSliceApi", SliceLayoutRules::legacyUsesSliceApi));
 
     static Set<String> rules() {
         return RULES.keySet();

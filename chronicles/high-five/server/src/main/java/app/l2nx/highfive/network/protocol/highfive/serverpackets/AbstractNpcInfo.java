@@ -20,7 +20,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package app.l2nx.highfive.network.serverpackets;
+package app.l2nx.highfive.network.protocol.highfive.serverpackets;
 
 import app.l2nx.highfive.config.NpcConfig;
 import app.l2nx.highfive.config.custom.ChampionMonstersConfig;
@@ -39,8 +39,7 @@ import app.l2nx.highfive.entity.zone.type.TownZone;
 import app.l2nx.highfive.managers.TownManager;
 import app.l2nx.highfive.mechanics.skill.AbnormalVisualEffect;
 import app.l2nx.highfive.network.GameClient;
-import app.l2nx.highfive.network.ServerPackets;
-import app.l2nx.network.buffer.WriteBuffer;
+import app.l2nx.network.codec.PacketWriter;
 
 public abstract class AbstractNpcInfo extends ServerPacket {
     protected int x;
@@ -135,7 +134,7 @@ public abstract class AbstractNpcInfo extends ServerPacket {
         }
 
         @Override
-        public void writeImpl(GameClient client, WriteBuffer buffer) {
+        public void writeImpl(GameClient client, PacketWriter buffer) {
             if (npc.isDecayed()) {
                 return;
             }
@@ -288,7 +287,7 @@ public abstract class AbstractNpcInfo extends ServerPacket {
         }
 
         @Override
-        public void writeImpl(GameClient client, WriteBuffer buffer) {
+        public void writeImpl(GameClient client, PacketWriter buffer) {
             ServerPackets.NPC_INFO.writeId(this, buffer);
             buffer.writeInt(trap.getObjectId());
             buffer.writeInt(displayId + 1000000); // npctype id
@@ -380,7 +379,7 @@ public abstract class AbstractNpcInfo extends ServerPacket {
         }
 
         @Override
-        public void writeImpl(GameClient client, WriteBuffer buffer) {
+        public void writeImpl(GameClient client, PacketWriter buffer) {
             ServerPackets.NPC_INFO.writeId(this, buffer);
             buffer.writeInt(summon.getObjectId());
             buffer.writeInt(displayId + 1000000); // npctype id

@@ -8,6 +8,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import app.l2nx.login.controller.LoginController;
 import app.l2nx.login.controller.ScrambledKeyPair;
+import app.l2nx.login.enums.LoginFailReason;
 import app.l2nx.login.protocol.LoginVariant;
 import app.l2nx.login.protocol.c621.LoginHandshakeHandler;
 import app.l2nx.network.channel.CloseReason;
@@ -135,16 +136,6 @@ class LoginPipelineTest {
         }
 
         @Test
-        void wrongState_shouldDropPacket() {
-            drop(channel.readOutbound());
-
-            channel.writeInbound(clientFrame(new byte[] {0x05, 0, 0, 0, 0, 0, 0, 0, 0}));
-
-            assertThat(channel.isOpen()).isTrue();
-            assertThat(dropped("wrong-state")).isEqualTo(1.0);
-        }
-
-        @Test
         void decodeError_shouldClose_whenTheFrameIsTooShortForItsPacket() {
             drop(channel.readOutbound());
 
@@ -269,6 +260,26 @@ class LoginPipelineTest {
         }
     }
 
+    @Nested
+    class Shutdown {
+        @Test
+        void closeForShutdown_shouldSendLoginFailWithTheMaintenanceReason_thenClose() {
+            drop(channel.readOutbound());
+
+            LoginClient.of(channel).closeForShutdown();
+            channel.runPendingTasks();
+
+            final ByteBuf frame = channel.readOutbound();
+            final byte[] payload = new byte[frame.readableBytes() - 2];
+            frame.getBytes(frame.readerIndex() + 2, payload);
+            frame.release();
+            new LittleEndianBlowfishCipher(SESSION_KEY).decrypt(payload, 0, payload.length);
+            assertThat(payload[0]).as("LoginFail").isEqualTo((byte) 0x01);
+            assertThat(payload[1]).as("reason").isEqualTo((byte) LoginFailReason.REASON_SERVER_MAINTENANCE.getCode());
+            assertThat(channel.isOpen()).isFalse();
+        }
+    }
+
     private static byte[] authGameGuard() {
         final byte[] payload = new byte[21];
         payload[0] = 0x07;
@@ -279,7 +290,6 @@ class LoginPipelineTest {
         return payload;
     }
 
-    /** Client side of the session phase: zero padding to 8 after a 4-byte checksum word, checksum, session key. */
     private static ByteBuf clientFrame(byte[] payload) {
         int length = payload.length + 4;
         length += (8 - (length % 8)) % 8;

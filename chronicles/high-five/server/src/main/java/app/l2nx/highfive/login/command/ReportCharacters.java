@@ -26,6 +26,7 @@
  */
 package app.l2nx.highfive.login.command;
 
+import app.l2nx.engine.core.session.command.Command;
 import java.util.UUID;
 
-public record ReportCharacters(UUID accountId) {}
+public record ReportCharacters(UUID accountId) implements Command {}

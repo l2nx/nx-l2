@@ -26,7 +26,7 @@ import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.instance.Adventurer;
 import app.l2nx.highfive.handler.IBypassHandler;
-import app.l2nx.highfive.network.serverpackets.ExShowQuestInfo;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ExShowQuestInfo;
 
 public class QuestList implements IBypassHandler {
     private static final String[] COMMANDS = {"questlist"};

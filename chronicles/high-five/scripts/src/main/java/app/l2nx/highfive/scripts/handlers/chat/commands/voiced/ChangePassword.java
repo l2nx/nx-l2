@@ -27,7 +27,7 @@ import app.l2nx.highfive.cache.HtmCache;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.handler.IVoicedCommandHandler;
 import app.l2nx.highfive.login.LoginService;
-import app.l2nx.highfive.network.serverpackets.NpcHtmlMessage;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.NpcHtmlMessage;
 import java.util.StringTokenizer;
 import lombok.extern.slf4j.Slf4j;
 
@@ -77,8 +77,7 @@ public class ChangePassword implements IVoicedCommandHandler {
                     }
 
                     if (!LoginService.getInstance()
-                            .changePassword(
-                                    activeChar.getClient().getAccountId(), activeChar.getName(), curpass, newpass)) {
+                            .changePassword(activeChar.getClient(), activeChar.getName(), curpass, newpass)) {
                         activeChar.sendMessage(LoginService.PASSWORD_CHANGE_FAILED);
                         return false;
                     }
@@ -88,7 +87,7 @@ public class ChangePassword implements IVoicedCommandHandler {
                 }
             } catch (Exception e) {
                 activeChar.sendMessage(LoginService.PASSWORD_CHANGE_FAILED);
-                log.warn("", e);
+                log.warn("Changing the password of {} failed", activeChar.getName(), e);
             }
         } else {
             String html = HtmCache.getInstance().getHtm(null, "data/html/mods/ChangePassword.htm");

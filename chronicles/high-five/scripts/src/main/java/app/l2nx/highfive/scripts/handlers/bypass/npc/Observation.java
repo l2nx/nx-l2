@@ -31,7 +31,7 @@ import app.l2nx.highfive.entity.item.enums.ItemProcessType;
 import app.l2nx.highfive.handler.IBypassHandler;
 import app.l2nx.highfive.managers.SiegeManager;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.serverpackets.ActionFailed;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ActionFailed;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j

@@ -68,8 +68,9 @@ public final class NetworkServer implements AutoCloseable {
                             channel.close();
                             return;
                         }
-                        clients.add(channel);
                         initializer.accept(channel);
+                        // After the pipeline is built: a shutdown farewell relies on it.
+                        clients.add(channel);
                     }
                 });
 
@@ -111,9 +112,20 @@ public final class NetworkServer implements AutoCloseable {
 
     @Override
     public void close() {
+        close(Channel::close);
+    }
+
+    /**
+     * {@code farewell} sends the last frame with a close-on-write promise, or closes the channel itself; clients still
+     * open after {@code shutdown-timeout} are closed.
+     */
+    public void close(Consumer<Channel> farewell) {
         stopAccepting();
-        if (!clients.close().awaitUninterruptibly(shutdownTimeout.toMillis())) {
-            log.warn("{}: clients did not close within {}", name, shutdownTimeout);
+        clients.forEach(farewell);
+        if (clients.newCloseFuture().awaitUninterruptibly(shutdownTimeout.toMillis())) {
+            return;
         }
+        log.warn("{}: clients did not take their last frame within {}", name, shutdownTimeout);
+        clients.close().awaitUninterruptibly(shutdownTimeout.toMillis());
     }
 }

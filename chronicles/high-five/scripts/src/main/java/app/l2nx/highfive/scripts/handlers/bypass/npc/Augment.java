@@ -25,8 +25,8 @@ package app.l2nx.highfive.scripts.handlers.bypass.npc;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.handler.IBypassHandler;
-import app.l2nx.highfive.network.serverpackets.ExShowVariationCancelWindow;
-import app.l2nx.highfive.network.serverpackets.ExShowVariationMakeWindow;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ExShowVariationCancelWindow;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ExShowVariationMakeWindow;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j

@@ -29,7 +29,7 @@ import app.l2nx.highfive.entity.item.enums.ItemProcessType;
 import app.l2nx.highfive.entity.item.instance.Item;
 import app.l2nx.highfive.entity.itemcontainer.Mail;
 import app.l2nx.highfive.network.holders.MailMessage;
-import app.l2nx.highfive.network.serverpackets.ExNoticePostArrived;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ExNoticePostArrived;
 import app.l2nx.highfive.repository.item.ItemRepository;
 import app.l2nx.highfive.repository.item.model.ItemRow;
 import app.l2nx.highfive.repository.mail.MailRepository;

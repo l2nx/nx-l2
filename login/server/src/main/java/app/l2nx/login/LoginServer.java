@@ -30,6 +30,7 @@ import app.l2nx.login.config.LoginProperties;
 import app.l2nx.login.controller.LoginController;
 import app.l2nx.login.data.GameServerTable;
 import app.l2nx.login.network.LoginChannelInitializer;
+import app.l2nx.login.network.LoginClient;
 import app.l2nx.login.network.LoginKeys;
 import app.l2nx.network.bootstrap.NetworkServer;
 import app.l2nx.network.channel.guard.ConnectionLimiter;
@@ -38,6 +39,7 @@ import app.l2nx.network.exec.BlockingTaskExecutor;
 import app.l2nx.network.metrics.NetworkMetrics;
 import app.l2nx.network.transport.NetworkEventLoops;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.netty.channel.Channel;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -142,10 +144,9 @@ public class LoginServer implements SmartLifecycle {
     }
 
     private void shutdownServices() {
-        // The event loops shut down after this, when the context destroys their bean.
         clientServers.forEach(NetworkServer::stopAccepting);
         clientServers.forEach(NetworkServer::stopReading);
-        clientServers.forEach(NetworkServer::close);
+        clientServers.forEach(server -> server.close(LoginServer::closeForShutdown));
         clientServers.clear();
         if (blockingTasks != null) {
             blockingTasks.close();
@@ -158,6 +159,15 @@ public class LoginServer implements SmartLifecycle {
         }
 
         loginController.shutdown();
+    }
+
+    private static void closeForShutdown(Channel channel) {
+        final LoginClient client = LoginClient.of(channel);
+        if (client == null) {
+            channel.close();
+        } else {
+            client.closeForShutdown();
+        }
     }
 
     private void initializeCoreServices() {

@@ -38,7 +38,7 @@ import app.l2nx.highfive.mechanics.skill.BuffInfo;
 import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.mechanics.skill.enums.SkillFinishType;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.serverpackets.SystemMessage;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.SystemMessage;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;

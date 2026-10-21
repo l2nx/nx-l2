@@ -20,11 +20,10 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package app.l2nx.highfive.network.serverpackets;
+package app.l2nx.highfive.network.protocol.highfive.serverpackets;
 
 import app.l2nx.highfive.network.GameClient;
-import app.l2nx.highfive.network.ServerPackets;
-import app.l2nx.network.buffer.WriteBuffer;
+import app.l2nx.network.codec.PacketWriter;
 
 public class CharCreateOk extends ServerPacket {
     public static final CharCreateOk STATIC_PACKET = new CharCreateOk();
@@ -32,7 +31,7 @@ public class CharCreateOk extends ServerPacket {
     private CharCreateOk() {}
 
     @Override
-    public void writeImpl(GameClient client, WriteBuffer buffer) {
+    public void writeImpl(GameClient client, PacketWriter buffer) {
         ServerPackets.CHARACTER_CREATE_SUCCESS.writeId(this, buffer);
         buffer.writeInt(1);
     }

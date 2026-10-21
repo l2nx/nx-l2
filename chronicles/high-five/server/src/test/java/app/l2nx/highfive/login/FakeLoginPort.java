@@ -24,8 +24,8 @@ public final class FakeLoginPort implements LoginPort {
     private volatile boolean linkUp = true;
 
     @Override
-    public boolean authenticate(String login, SessionKey key) {
-        calls.add(Call.of("authenticate", login, key));
+    public boolean authenticate(UUID requestId, String login, SessionKey key) {
+        calls.add(Call.of("authenticate", requestId, login, key));
         return linkUp;
     }
 
@@ -55,8 +55,9 @@ public final class FakeLoginPort implements LoginPort {
     }
 
     @Override
-    public boolean changePassword(UUID accountId, String characterName, String oldPassword, String newPassword) {
-        calls.add(Call.of("changePassword", accountId, characterName, oldPassword, newPassword));
+    public boolean changePassword(
+            UUID requestId, UUID accountId, String characterName, String oldPassword, String newPassword) {
+        calls.add(Call.of("changePassword", requestId, accountId, characterName, oldPassword, newPassword));
         return linkUp;
     }
 

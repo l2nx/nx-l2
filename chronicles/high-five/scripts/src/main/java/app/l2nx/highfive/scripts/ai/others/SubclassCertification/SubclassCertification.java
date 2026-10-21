@@ -30,7 +30,7 @@ import app.l2nx.highfive.mechanics.script.QuestState;
 import app.l2nx.highfive.mechanics.script.Script;
 import app.l2nx.highfive.mechanics.script.State;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.serverpackets.SystemMessage;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.SystemMessage;
 import java.util.HashMap;
 import java.util.Map;
 

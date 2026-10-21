@@ -20,7 +20,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package app.l2nx.highfive.network.clientpackets;
+package app.l2nx.highfive.network.protocol.highfive.clientpackets;
 
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.PlayerConfig;
@@ -29,8 +29,8 @@ import app.l2nx.highfive.entity.clan.Clan;
 import app.l2nx.highfive.entity.clan.ClanAccess;
 import app.l2nx.highfive.entity.clan.ClanMember;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.serverpackets.PledgeShowMemberListDelete;
-import app.l2nx.highfive.network.serverpackets.SystemMessage;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.PledgeShowMemberListDelete;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.SystemMessage;
 import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 

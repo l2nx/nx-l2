@@ -20,7 +20,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package app.l2nx.highfive.network.clientpackets;
+package app.l2nx.highfive.network.protocol.highfive.clientpackets;
 
 import app.l2nx.highfive.ai.Action;
 import app.l2nx.highfive.ai.CreatureAI;
@@ -51,10 +51,10 @@ import app.l2nx.highfive.mechanics.effects.EffectType;
 import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.mechanics.skill.holders.SkillHolder;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.serverpackets.ActionFailed;
-import app.l2nx.highfive.network.serverpackets.ExShowScreenMessage;
-import app.l2nx.highfive.network.serverpackets.ExUseSharedGroupItem;
-import app.l2nx.highfive.network.serverpackets.SystemMessage;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ActionFailed;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ExShowScreenMessage;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ExUseSharedGroupItem;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.SystemMessage;
 import app.l2nx.highfive.threads.ThreadPool;
 import lombok.extern.slf4j.Slf4j;
 

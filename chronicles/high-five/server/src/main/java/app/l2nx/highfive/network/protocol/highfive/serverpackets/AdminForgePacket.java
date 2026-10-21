@@ -17,10 +17,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package app.l2nx.highfive.network.serverpackets;
+package app.l2nx.highfive.network.protocol.highfive.serverpackets;
 
 import app.l2nx.highfive.network.GameClient;
-import app.l2nx.network.buffer.WriteBuffer;
+import app.l2nx.network.codec.PacketWriter;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
@@ -43,7 +43,7 @@ public class AdminForgePacket extends ServerPacket {
     }
 
     @Override
-    public void writeImpl(GameClient client, WriteBuffer buffer) {
+    public void writeImpl(GameClient client, PacketWriter buffer) {
         for (Part p : parts) {
             generate(p.b, p.str, buffer);
         }
@@ -55,7 +55,7 @@ public class AdminForgePacket extends ServerPacket {
      * @param buffer
      * @return
      */
-    public boolean generate(byte type, String value, WriteBuffer buffer) {
+    public boolean generate(byte type, String value, PacketWriter buffer) {
         if ((type == 'C') || (type == 'c')) {
             buffer.writeByte(Integer.decode(value));
             return true;

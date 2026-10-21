@@ -31,7 +31,7 @@ import app.l2nx.highfive.entity.item.enums.ItemProcessType;
 import app.l2nx.highfive.mechanics.script.Script;
 import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.mechanics.skill.holders.SkillHolder;
-import app.l2nx.highfive.network.serverpackets.MagicSkillUse;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.MagicSkillUse;
 import app.l2nx.highfive.util.LocationUtil;
 import java.util.HashSet;
 import java.util.List;

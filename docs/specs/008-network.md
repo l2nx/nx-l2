@@ -44,27 +44,28 @@ The GS-link is configured by Spring Boot's gRPC properties (`spring.grpc.server.
 `spring.grpc.client.channel.login.*` on the game server: address, TLS through an SSL bundle, keepalive) plus
 `l2nx.gslink` (§10).
 
-| Property                               | Default        | Meaning                                                                    |
-| -------------------------------------- | -------------- | -------------------------------------------------------------------------- |
-| `transport`                            | `auto`         | `auto`, `epoll`, `nio`, `io-uring` (§4)                                    |
-| `worker-threads`                       | Netty default  | IO threads per process                                                     |
-| `max-frame`                            | 16 KB          | largest inbound frame; larger closes the connection                        |
-| `read-timeout`                         | 120 s          | a connection silent before `IN_GAME` (login: before auth, §9) is closed    |
-| `ping-interval`                        | 30 s           | in game, read idle this long sends `NetPing`                               |
-| `ping-misses`                          | 3              | unanswered pings in a row that close an in-game connection                 |
-| `handshake-timeout`                    | 10 s           | time from accept to the protocol version (game) or `AuthGameGuard` (login) |
-| `auth-timeout`                         | 60 s           | time from accept to a completed login or game authentication               |
-| `inbound-queue-limit`                  | 256            | session queue capacity (§5)                                                |
-| `packets-per-drain`                    | 16             | items one session drain run executes before E6 (§5)                        |
-| `packets-per-second`                   | 200            | sustained inbound packets per session; burst = `inbound-queue-limit`       |
-| `decode-error-limit.count` / `.window` | 10 / 60 s      | decode errors tolerated in game before the connection is closed            |
-| `write-buffer-low` / `-high`           | 32 KB / 128 KB | Netty write watermarks                                                     |
-| `outbound-limit`                       | 1 MB           | pending outbound bytes per connection (queue plus channel buffer)          |
-| `slow-client-timeout`                  | 10 s           | longest time a connection may stay unwritable                              |
-| `connections-per-ip`                   | 10             | concurrent connections from one address                                    |
-| `accept-per-ip-per-second`             | 5              | new connections from one address                                           |
-| `max-connections`                      | 10000          | concurrent connections per server                                          |
-| `shutdown-quiet-period` / `-timeout`   | 2 s / 15 s     | `shutdownGracefully` of the event loop groups                              |
+| Property                               | Default        | Meaning                                                                                                                   |
+| -------------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `transport`                            | `auto`         | `auto`, `epoll`, `nio`, `io-uring` (§4)                                                                                   |
+| `worker-threads`                       | Netty default  | IO threads per process                                                                                                    |
+| `max-frame`                            | 16 KB          | largest inbound frame; larger closes the connection                                                                       |
+| `read-timeout`                         | 120 s          | a connection silent before `AUTHED` (login: before auth, §9) is closed                                                    |
+| `ping-interval`                        | 30 s           | from `AUTHED`, read idle this long sends `NetPing`                                                                        |
+| `ping-misses`                          | 3              | unanswered pings in a row that close an authenticated connection                                                          |
+| `handshake-timeout`                    | 10 s           | time from accept to the protocol version (game) or `AuthGameGuard` (login)                                                |
+| `auth-timeout`                         | 60 s           | time from accept to a completed login or game authentication                                                              |
+| `inbound-queue-limit`                  | 256            | session queue capacity (§5)                                                                                               |
+| `packets-per-drain`                    | 16             | items one session drain run executes before E6 (§5)                                                                       |
+| `max-concurrent-drains`                | 32             | session drains running at once before E6 (§5)                                                                             |
+| `packets-per-second`                   | 200            | sustained inbound packets per session, at most 10^9 (Bucket4j's fastest refill); burst = `inbound-queue-limit`            |
+| `decode-error-limit.count` / `.window` | 10 / 60 s      | decode errors after authentication, and failed commands or packets, tolerated per session before the connection is closed |
+| `write-buffer-low` / `-high`           | 32 KB / 128 KB | Netty write watermarks                                                                                                    |
+| `outbound-limit`                       | 1 MB           | pending outbound bytes per connection (queue plus channel buffer)                                                         |
+| `slow-client-timeout`                  | 10 s           | longest time a connection may stay unwritable                                                                             |
+| `connections-per-ip`                   | 10             | concurrent connections from one address                                                                                   |
+| `accept-per-ip-per-second`             | 5              | new connections from one address                                                                                          |
+| `max-connections`                      | 10000          | concurrent connections per server                                                                                         |
+| `shutdown-quiet-period` / `-timeout`   | 2 s / 15 s     | `shutdownGracefully` of the event loop groups                                                                             |
 
 ## 4. Event loops and transports
 
@@ -82,32 +83,46 @@ Game connection, in order:
 
 1. **Accept filter:** bans and `connections-per-ip`, `accept-per-ip-per-second`, `max-connections`, checked in
    `initChannel` before any byte is read.
-2. **Timeouts:** `IdleStateHandler`: until `IN_GAME` read idle for `read-timeout` closes the connection; in game
-   read idle for `ping-interval` sends `NetPing`, and `ping-misses` unanswered pings close it; `handshake-timeout` and `auth-timeout` timers on the event
-   loop, cancelled when the session reaches the state.
+2. **Timeouts:** `IdleStateHandler`: until `AUTHED` read idle for `read-timeout` closes the connection; from
+   `AUTHED` read idle for `ping-interval` sends `NetPing`, and `ping-misses` unanswered pings close it. The client
+   sends nothing on the character selection screen, so the ping starts there, not in game. `handshake-timeout` and
+   `auth-timeout` are timers on the event loop, cancelled when the session reaches the state.
 3. **Framing:** `LengthFieldBasedFrameDecoder`, little-endian, 2-byte length that counts itself
    (`lengthAdjustment = -2`, `initialBytesToStrip = 2`), `max-frame`.
 4. **Cipher:** decrypts the frame in place; the frame is a retained slice of the decoder's cumulation and is
    writable.
 5. **Packet decoder:** one decoder per channel that delegates to the channel's current adapter (§8). It reads the
-   opcode (one byte, and for extended packets of High Five `0xD0` plus a 2-byte sub-opcode) and looks up
-   `(session state, opcode)` in the adapter's immutable table. It only parses: strings are read with a length
-   bound, values it keeps are copied, and the frame is released before the command is enqueued; commands never
-   hold a `ByteBuf`.
+   opcode (one byte, and for extended packets of High Five `0xD0` plus a 2-byte sub-opcode) and looks it up in the
+   adapter's immutable table, one route per opcode. The decoder wraps the decoded command or legacy packet in the
+   session's queue item itself, and the session handler offers that item as is: one allocation per packet. What an
+   item needs from the game (a selected character, a character in the world) is checked when it runs (§8 Session
+   states), never here. It only parses: strings are read with a length bound, values it keeps are copied, and the
+   frame is released before the command is enqueued; commands never hold a `ByteBuf`.
    - An unknown opcode is counted and dropped, logged rate-limited, never with a stack trace.
-   - A decode error before `IN_GAME` closes the connection; in game, errors are counted and more than
-     `decode-error-limit` closes it.
+   - A known opcode without a handler is counted as `ignored` and dropped.
+   - The client's `NetPing` answer is consumed on the IO thread (it only proves the connection alive); it never
+     reaches the session.
+   - Before authentication (`CONNECTED`) only the routes marked pre-auth are read: the login packet. Any other
+     packet is counted as `unauthenticated` and dropped undecoded, before the rate limit and the queue, so an
+     unauthenticated client never reaches game code. The client sends nothing else before the server has answered
+     its authentication, and the server moves the session on before it answers. This is the only filter the
+     transport applies by route.
+   - A decode error closes the connection before authentication; after it such errors are counted and more than
+     `decode-error-limit` closes it. A decoder returning neither a command nor a legacy packet
+     is a server bug: it reaches the tail handler, which logs its stack and closes with `error`.
 6. **Session handler:** rate-limits the session (`packets-per-second`, a Bucket4j local bucket) and offers the
    command to the session queue, a bounded SPSC queue of `inbound-queue-limit`
    ([execution.md §3](003-engine-core/execution.md#3-inbox-and-session-queues)). A full queue or an empty bucket is
    a flood and closes the connection.
 
-**Who drains the session queue.** One drain per session runs at a time, so a session's commands execute strictly
-in order. Before the world partition exists (E6), the drain runs on the legacy packet pool: a session with input is
-scheduled once, executes up to `packets-per-drain` items and reschedules itself if more are queued. From E6 the
-owning partition drains the queue in its inbox phase with the engine's `packets-per-pass`; outside the world
-(session states, §8; [execution.md §3](003-engine-core/execution.md#3-inbox-and-session-queues)) the session drain
-stays.
+**Who drains the session queue.** One drain per session runs at a time, so a session's commands execute strictly in
+order. Before the world partition exists (E6), the drain runs on the bounded virtual-thread executor of `libs/network`
+(the one the login uses, §9), named `l2nx-game-packets` and bounded by `max-concurrent-drains`: a session with input is
+scheduled once, executes up to `packets-per-drain` items and reschedules itself if more are queued. From E6 the session drain
+keeps only the key exchange and the authentication (`CONNECTED`); once the session is `AUTHED` it is attached to the
+world partition, which drains the queue in its inbox phase with the engine's `packets-per-pass`, character selection
+included, since selecting, creating and entering load and create world objects
+([execution.md §3](003-engine-core/execution.md#3-inbox-and-session-queues)).
 
 ## 6. Outbound path
 
@@ -177,8 +192,33 @@ flowchart LR
   handles ([persistence.md §2](003-engine-core/persistence.md#2-wire-handles)), which are protocol-independent.
   Messages are domain message keys with typed parameters (player, NPC, item, skill, number, text); each adapter
   maps a key to its client's string id and decides what to show when its client has no such message.
-- **Each command has exactly one handler**, which declares where it runs: the session (outside the world), the
-  owning partition, or a global service. A Spring bean holds the registry `command type → handler`.
+- **Each command has exactly one handler, and the handler's type declares where it runs.** A Spring bean holds the
+  registry `command type → handler`, built from the handler beans; it refuses a second handler for a type.
+  - **Session** (`SessionCommandHandler<C>`, `handle(Session, C)`): runs in the drain of the session's queue, in
+    order with that client's packets, wherever the queue is drained (§5): on the session drain before E6; from E6
+    on the session drain until `AUTHED` and on the world partition after it. The handler does not change when the
+    drain moves. A client's own commands land in its session. A command from another edge that targets a
+    session carries its address (`SessionAddressed`): the account (`SessionAddress.Account`) for a push such as a
+    kick, or the correlation id of the request it answers (`SessionAddress.Request`, a UUIDv7 the game generated
+    when it sent the request, since an answer may concern a client that has no account yet). The dispatcher finds
+    the session and offers the command to its queue on the connection's event loop, so the queue keeps its single
+    producer and internal input skips the rate limit. With no session for the address the command is counted as
+    dropped (`no-session`) and logged at debug.
+    Then the handler's `handleWithoutSession` runs on the sender's lane, so a push such as a kick still frees the
+    login-side state of an account that has no live session.
+    A client command that needs a game context (a selected character, a character in the world) gets it the way
+    Spring MVC gets a handler argument from an argument resolver: its handler declares the context in its signature
+    and the dispatcher resolves it from the session just before the call. A missing context rejects the command as
+    for a legacy packet (§8 Session states); finer conditions stay the handler's own checks. The resolver comes with
+    the first handler that takes a context.
+  - **Global service** (`ServiceCommandHandler<C>`, `handle(C)`): runs on the serial lane of the service that owns
+    the state (the GS-link stream for the `login` slice, §10; a service inbox from E9). No session is involved.
+  - **Partition:** a world command not bound to a session, introduced with the world partition (E6).
+
+  Routing by an address in the command is the pattern of Axon's target aggregate identifier and Pekko's sharded
+  entity id; the registry stays ours because Spring has no command bus and its application events are neither
+  typed per handler nor ordered per session.
+
 - **Requests and dialogs** (trade, party invite, confirmation dialogs) are game state with a domain request id.
   The view event carries the id, the adapter maps it to its packet, the answering command carries it back, and the
   timeout is a deadline of the owner.
@@ -188,9 +228,26 @@ flowchart LR
 
 ### Session states
 
-`CONNECTED → AUTHED → ENTERING → IN_GAME → CLOSING → DISCONNECTED`, plus `IN_GAME → AUTHED` on restart. States
-are domain states in `engine/core`; each adapter maps them to its decoder tables. A command that arrives in a
-state whose table does not contain it is dropped.
+`CONNECTED → AUTHED → CLOSING → DISCONNECTED`: the lifecycle of the connection, in `engine/core`. The transport
+uses it for one rule only: before authentication it reads nothing but the login (§5).
+
+Whether a character is selected or in the world is game state, not a session state, and the transport never
+filters by it. An item that needs it says so: it is a `ContextBound` and answers, just before it runs, whether its
+context is present. The check runs in the session item's execution path, shared by the pre-E6 session drain and the
+partition inbox, so it sees every change made by the items queued before it (a packet read right behind
+`CharacterSelect` sees the selected character). An item without its context is rejected, not run: counted as
+`l2nx.session.rejected` (tags `type`, `context`) and logged rate-limited at debug; an item that races the session's
+close is discarded uncounted like the rest of the queue. Commands the server addresses to a session itself carry no
+context and always run.
+
+Legacy packets declare their context in the High Five opcode enums (`LegacyContext`), read from the client's game
+state: `LOGIN` (the login, read before authentication and run only until an account is authenticated), `ACCOUNT` (an authenticated account), `LOBBY` (the selection
+screen: no character selected), `CHARACTER` (a selected character, while the world loads or in it) and `WORLD`
+(after `EnterWorld`), the default. The list of packets that run before the world follows what the real client
+sends, not Mobius: the High Five client asks for skill reuse times, the key mapping, the manor list and the fortress list while the
+world loads. A condition finer than the context (a repeated `EnterWorld`, a character that cannot log out now) is the
+handler's own check. A ported command resolves the context its handler needs itself (§8 Commands and view events)
+and is rejected the same way when it is missing; the legacy list shrinks as packets are ported.
 
 ### Selection
 
@@ -210,7 +267,7 @@ state whose table does not contain it is dropped.
   serialization. What its client cannot express is decided in its mapper.
 - **Completeness is tested:** every command a client can send has a handler, and every view event has a mapper or
   an explicit drop, in each adapter.
-- **The first adapter is `highfive`,** accepting protocol versions 267–273.
+- **The first adapter is `highfive`,** accepting protocol versions 267, 268, 271 and 273.
 - **Further protocols** take their packet layouts from the Mobius builds of other chronicles and from a private
   reference server consulted for packet layouts and behaviour only, under the originality policy of
   [spec 001 §2](001-project-design.md#originality-policy).
@@ -229,11 +286,11 @@ Packets not yet moved to ports pass through the `highfive` adapter as they are:
 - **Scripts** send packets directly (`NpcSay`, `SystemMessage`, `NpcHtmlMessage` and others in about 460 files);
   they move to domain calls on the facades (`say`, `showHtml`, `message`) with their slice in E10, and
   `sendPacket` leaves the facades at the end of E10.
-- **The gate:** an ArchUnit test counts legacy routes: inbound legacy opcodes in the `highfive` table, and
-  references to server packet classes outside `network/protocol/highfive/`, scripts included. The count is pinned
-  and may only fall; a migrated slice may not reference server packets. A test fails if the production
+- **The gate:** legacy routes are inbound legacy opcodes in the `highfive` table (a pinned count) and references to
+  server packet classes outside `network/protocol/highfive/`, scripts included (a `FreezingArchRule` whose store
+  lists them, §13). Both may only fall; a migrated slice may not reference server packets. A test fails if the production
   configuration registers a second adapter while the count is above zero, and at start the server refuses a second
-  adapter while the `highfive` table has legacy inbound entries; tests may register one through a test profile.
+  adapter while any adapter has legacy inbound entries; tests may register one through a test profile.
 - **Order of migration:** inbound packets and the outbound packets of a slice (inventory, warehouse, skills,
   dialogs, clan windows) move with the slice in E10; the replicated world state (spawn, despawn, movement, status,
   appearance, cosmetic events) moves with the replication phase in E8. Each packet moves once.
@@ -258,6 +315,13 @@ Packets not yet moved to ports pass through the `highfive` adapter as they are:
   IO thread. A channel holds an executor slot for at most a batch of its tasks and then queues again behind the
   others (a fair semaphore), so a busy channel cannot starve logins; tasks the executor can no longer run after
   close go to the channel's rejection handler instead of running against a closing context.
+- **Login states:** the packet decoder looks the opcode up whatever the state and hands the packet to the channel's
+  lane; the packet checks the connection state there, just before it runs, and is dropped as
+  `l2nx.network.dropped{reason=wrong-state}` when the state does not accept it. A packet read right behind a
+  state-changing one (`AuthGameGuard`, then `RequestAuthLogin` in the same read) is judged by the state the first
+  one leaves. A packet that reaches the lane after the connection started closing (a pipelined second
+  `RequestAuthLogin` behind a failed one) is discarded uncounted. Unknown and ignored opcodes are dropped on the IO
+  thread in any state.
 - **Idle:** `read-timeout` applies until the account is authenticated. The client sends nothing on the licence and
   server list screens, so authentication re-arms the read-idle close with the login session lifetime (5 minutes):
   every login connection stays bounded on its own channel, including sessions the login server no longer tracks.
@@ -314,48 +378,70 @@ service GsLink {
   while no stream is open fails the same way.
 - **The game side is a port and an adapter:** game code talks to the login server only through the `login` slice
   (`LoginService`), which sends through the `LoginPort` interface; `network/gslink/LoginServerLink` implements it and
-  turns every inbound message into a command of the slice (`KickAccount`, `ReportCharacters`, `AuthenticationResult`,
-  [wiring-layout §4](003-engine-core/wiring-layout.md#ports)).
+  turns every inbound message into a command of the slice, dispatched through the registry (§8,
+  [wiring-layout §4](003-engine-core/wiring-layout.md#ports)):
+  - session commands: `AuthenticationResult` and `PasswordChangeResult`, addressed by the request id the game sent
+    with the request and the login server echoes; `KickAccount`, addressed by account (the kick runs in order with
+    the player's packets, never on the gRPC thread; for an account with no live session the stream's lane frees the
+    account, and first saves and removes the player of a client that went offline (trade or play) whose connection
+    has not closed yet). A session frees its account when its connection closes, an offline trader's or player's
+    included, so the login server lets the owner log in again; the character stays in the world until the owner
+    selects it, which saves and removes it first. A session frees only what it still holds: after a kick freed its
+    account the login server hears no second AccountLeft, and a newer session of the account keeps it. Game and login servers of one
+    release only work together, so a message whose request or account id is not a UUID is dropped and logged (a warn
+    per message type at most every ten seconds), and the stream stays open;
+  - service commands on the stream's lane: `RegistrationResult`, `ReportCharacters`, `LinkLost` (which fails each
+    pending request by addressing a rejection to its request id).
 
 ## 11. Metrics
 
 Micrometer, per server:
 
-| Meter                         | Type    | Tags                                                                                                                                           |
-| ----------------------------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| `l2nx.network.connections`    | gauge   |                                                                                                                                                |
-| `l2nx.network.bytes`          | counter | `direction` (`in`, `out`)                                                                                                                      |
-| `l2nx.network.commands`       | counter | `type`                                                                                                                                         |
-| `l2nx.network.legacy.packets` | counter | `type`, `direction`                                                                                                                            |
-| `l2nx.network.decode.errors`  | counter | `state`                                                                                                                                        |
-| `l2nx.network.dropped`        | counter | `reason` (`banned`, `connections-per-ip`, `accept-rate`, `max-connections`, `unknown-opcode`, `wrong-state`, `ignored`, `closed`, `unhandled`) |
-| `l2nx.network.closed`         | counter | `reason` (`idle`, `timeout`, `flood`, `slow`, `outbound-limit`, `error`)                                                                       |
-| `l2nx.network.unwritable`     | counter |                                                                                                                                                |
+| Meter                         | Type    | Tags                                                                                                                                                                            |
+| ----------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `l2nx.network.connections`    | gauge   |                                                                                                                                                                                 |
+| `l2nx.network.bytes`          | counter | `direction` (`in`, `out`)                                                                                                                                                       |
+| `l2nx.network.commands`       | counter | `type`                                                                                                                                                                          |
+| `l2nx.network.legacy.packets` | counter | `type`, `direction`                                                                                                                                                             |
+| `l2nx.network.decode.errors`  | counter | `state`                                                                                                                                                                         |
+| `l2nx.network.dropped`        | counter | `reason` (`banned`, `connections-per-ip`, `accept-rate`, `max-connections`, `unknown-opcode`, `unauthenticated`, `wrong-state`, `ignored`, `closed`, `unhandled`, `no-session`) |
+| `l2nx.network.closed`         | counter | `reason` (`idle`, `timeout`, `flood`, `slow`, `outbound-limit`, `error`)                                                                                                        |
+| `l2nx.network.unwritable`     | counter |                                                                                                                                                                                 |
 
 A `type` tag is the fully qualified class name, so anonymous classes never yield a blank tag and two protocol
 adapters never share a series. Event-loop and allocator meters come from Micrometer's Netty binders (`netty.eventexecutor.tasks.pending`,
 `netty.allocator.*`).
 
-The blocking executor of the login (§9) publishes the standard `executor.*` meters with tag `name=l2nx-login-tasks`:
-the timers `executor.execution` and `executor.idle` (run time and wait for a slot) and the gauges `executor.active`,
-`executor.queued` and `executor.pool.max`. The gauges read the semaphore, since Micrometer cannot read a
-`ThreadPerTaskExecutor` without `--add-opens`; closing the executor removes all five.
+The blocking executors of the login (§9) and of the session drain (§5) publish the standard `executor.*` meters with tag
+`name=l2nx-login-tasks` and `name=l2nx-game-packets`: the timers `executor.execution` and `executor.idle` (run time and
+wait for a slot) and the gauges `executor.active`, `executor.queued` and `executor.pool.max`. The gauges read the
+semaphore, since Micrometer cannot read a `ThreadPerTaskExecutor` without `--add-opens`; closing the executor removes
+all five.
 
 The GS-link has the standard gRPC observations of Spring Boot (`grpc.server`, `grpc.client`) and the gRPC health
 service.
 
 Run time of commands is `l2nx.session.command`, of legacy packets `l2nx.legacy.packet` (tags `type`, `outcome`,
-`exception`), timed by the packet executor once its metrics are bound ([execution.md §8](003-engine-core/execution.md#8-budget-and-metrics)).
+`exception`), timed by the session drain (`SessionMetrics`, [execution.md §8](003-engine-core/execution.md#8-budget-and-metrics)).
+Items rejected for a missing game context are `l2nx.session.rejected` (tags `type`, `context`). `unauthenticated` is
+a game connection's packet read before authentication; `wrong-state` is the login protocol's packet out of its
+handshake step (§9).
 
 ## 12. Shutdown
 
 The network steps of the stop order of [spec 002](002-spring-boot-runtime.md#stop):
 
 1. Close the server channels and stop reading on client channels (`autoRead = false`).
-2. After the engine has saved the players, send the server close packet to each client with a close-on-write
-   promise and wait for the writes up to `shutdown-timeout`.
-3. The game server sends its last status (down) and completes the GS-link stream after the logouts, then shuts the
-   channel down, bounded by `shutdown-timeout`; the login server stops its gRPC server gracefully.
+2. After the engine has saved the players, send the server close packet to every client connection in every
+   session state (character selection included, not only connections with a player) with a close-on-write promise
+   and wait for the writes up to `shutdown-timeout`. The login server does the same with a login failure packet
+   whose reason the client shows, so a client on the login or server list screen learns the server went down
+   instead of seeing nothing.
+3. The game server waits until every client session has closed and logged out (`SessionFactory.awaitClosed`, bounded
+   by `shutdown-timeout`; an offline trader's session closed with its connection and freed its account then), logs
+   out the accounts of the sessions that did not close in time, and only then sends its last status
+   (down) and completes the GS-link stream, then shuts the channel down, bounded by `shutdown-timeout`; a failed step
+   does not skip the next. The login server stops its gRPC server gracefully.
 4. `shutdownGracefully` with `shutdown-quiet-period` and `shutdown-timeout`.
 
 ## 13. Tests
@@ -369,7 +455,10 @@ The network steps of the stop order of [spec 002](002-spring-boot-runtime.md#sto
 - **Leak detection** at `paranoid` in every test JVM.
 - **Golden tests** of the ciphers, of each adapter's decoders (bytes in, command out) and mappers (event in, bytes
   out).
-- **Adapter completeness** (§8) and the legacy-route gate.
+- **Adapter completeness** (§8) and the legacy-route gate: references to server packet classes outside the
+  adapter are an ArchUnit `FreezingArchRule` with its violation store in the repository (it only shrinks, like the
+  slice layout store of [wiring-layout §4](003-engine-core/wiring-layout.md#verification)); inbound legacy opcodes
+  of the `highfive` table are a pinned count that may only fall.
 - **JMH:** encode, broadcast fan-out, decode.
 - **End to end:** a real client logs in and plays at the end of the stage.
 

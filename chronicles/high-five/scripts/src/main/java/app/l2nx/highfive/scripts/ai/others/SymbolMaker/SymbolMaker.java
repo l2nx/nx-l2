@@ -22,8 +22,8 @@ package app.l2nx.highfive.scripts.ai.others.SymbolMaker;
 import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.mechanics.script.Script;
-import app.l2nx.highfive.network.serverpackets.HennaEquipList;
-import app.l2nx.highfive.network.serverpackets.HennaRemoveList;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.HennaEquipList;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.HennaRemoveList;
 
 /**
  * Symbol Maker AI.

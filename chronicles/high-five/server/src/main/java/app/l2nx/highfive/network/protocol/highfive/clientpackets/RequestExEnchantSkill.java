@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package app.l2nx.highfive.network.clientpackets;
+package app.l2nx.highfive.network.protocol.highfive.clientpackets;
 
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.GeneralConfig;
@@ -32,10 +32,10 @@ import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.mechanics.skill.holders.EnchantSkillGroup.EnchantSkillHolder;
 import app.l2nx.highfive.mechanics.skill.holders.EnchantSkillLearn;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.serverpackets.ExEnchantSkillInfo;
-import app.l2nx.highfive.network.serverpackets.ExEnchantSkillInfoDetail;
-import app.l2nx.highfive.network.serverpackets.ExEnchantSkillResult;
-import app.l2nx.highfive.network.serverpackets.SystemMessage;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ExEnchantSkillInfo;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ExEnchantSkillInfoDetail;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ExEnchantSkillResult;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.SystemMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -30,7 +30,7 @@ import app.l2nx.highfive.mechanics.events.EventDispatcher;
 import app.l2nx.highfive.mechanics.events.EventType;
 import app.l2nx.highfive.mechanics.events.holders.actor.player.OnPlayerSummonTalk;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.serverpackets.PetStatusShow;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.PetStatusShow;
 
 public class PetClick implements IActionClickHandler {
     @Override

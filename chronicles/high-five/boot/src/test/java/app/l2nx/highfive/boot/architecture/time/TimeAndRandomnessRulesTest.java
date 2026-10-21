@@ -2,12 +2,12 @@
  * SPDX-FileCopyrightText: 2026 L2NX contributors
  * SPDX-License-Identifier: Apache-2.0
  */
-package app.l2nx.highfive.boot.architecture;
+package app.l2nx.highfive.boot.architecture.time;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import app.l2nx.highfive.boot.architecture.fixture.AllowedTimeAndRandomness;
-import app.l2nx.highfive.boot.architecture.fixture.ForbiddenTimeAndRandomness;
+import app.l2nx.highfive.boot.architecture.time.fixture.AllowedTimeAndRandomness;
+import app.l2nx.highfive.boot.architecture.time.fixture.ForbiddenTimeAndRandomness;
 import com.tngtech.archunit.core.domain.JavaClasses;
 import com.tngtech.archunit.core.importer.ClassFileImporter;
 import java.util.Arrays;

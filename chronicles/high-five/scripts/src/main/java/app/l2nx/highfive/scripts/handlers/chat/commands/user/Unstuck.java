@@ -30,9 +30,9 @@ import app.l2nx.highfive.entity.actor.enums.player.TeleportWhereType;
 import app.l2nx.highfive.handler.IUserCommandHandler;
 import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.serverpackets.ActionFailed;
-import app.l2nx.highfive.network.serverpackets.MagicSkillUse;
-import app.l2nx.highfive.network.serverpackets.SetupGauge;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ActionFailed;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.MagicSkillUse;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.SetupGauge;
 import app.l2nx.highfive.taskmanagers.GameTimeTaskManager;
 import app.l2nx.highfive.threads.ThreadPool;
 

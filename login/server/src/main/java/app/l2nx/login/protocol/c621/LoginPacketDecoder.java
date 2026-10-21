@@ -19,8 +19,9 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Parses on the IO thread and hands the packet to the connection's lane, where it may block (RSA, database). Login
- * never reaches the game, so every error decoding a packet or handing it on closes the connection.
+ * Parses on the IO thread by opcode alone and hands the packet to the connection's lane, where it may block (RSA,
+ * database) and where its state is checked just before it runs ({@link LanePacket}). Login never reaches the game, so
+ * every error decoding a packet or handing it on closes the connection.
  */
 @Slf4j
 public final class LoginPacketDecoder extends ChannelInboundHandlerAdapter {
@@ -35,12 +36,11 @@ public final class LoginPacketDecoder extends ChannelInboundHandlerAdapter {
 
         final LoginClient client = LoginClient.of(ctx.channel());
         final NetworkMetrics metrics = Connections.metrics(ctx.channel());
-        final ConnectionState state = client.getConnectionState();
         try {
-            final LoginClientPacket packet;
+            final LanePacket packet;
             try {
                 // The frame decoder may still emit frames of the same read after a close.
-                packet = ctx.channel().isActive() ? decode(client, metrics, state, frame) : null;
+                packet = ctx.channel().isActive() ? decode(client, metrics, frame) : null;
             } finally {
                 frame.release();
             }
@@ -48,7 +48,7 @@ public final class LoginPacketDecoder extends ChannelInboundHandlerAdapter {
                 client.execute(packet);
             }
         } catch (RuntimeException e) {
-            metrics.decodeError(state.name());
+            metrics.decodeError(client.getConnectionState().name());
             if (RATE.tryAcquire("login-decode")) {
                 if (TailExceptionHandler.isExpected(e)) {
                     log.warn("Login decode error from {}: {}", client, e.toString());
@@ -63,8 +63,7 @@ public final class LoginPacketDecoder extends ChannelInboundHandlerAdapter {
     /**
      * @return the decoded packet, {@code null} when it was dropped
      */
-    private static LoginClientPacket decode(
-            LoginClient client, NetworkMetrics metrics, ConnectionState state, ByteBuf frame) {
+    private static LanePacket decode(LoginClient client, NetworkMetrics metrics, ByteBuf frame) {
         final int opcode = frame.readUnsignedByte();
         final LoginClientPackets entry =
                 opcode < LoginClientPackets.PACKET_ARRAY.length ? LoginClientPackets.PACKET_ARRAY[opcode] : null;
@@ -75,15 +74,11 @@ public final class LoginPacketDecoder extends ChannelInboundHandlerAdapter {
             }
             return null;
         }
-        if (!entry.getConnectionStates().contains(state)) {
-            metrics.dropped(DropReason.WRONG_STATE);
-            return null;
-        }
         if (entry.isIgnored()) {
             metrics.dropped(DropReason.IGNORED);
             return null;
         }
         final LoginClientPacket packet = entry.newPacket();
-        return packet.decode(client, frame) ? packet : null;
+        return packet.decode(client, frame) ? new LanePacket(packet, entry.getConnectionStates()) : null;
     }
 }

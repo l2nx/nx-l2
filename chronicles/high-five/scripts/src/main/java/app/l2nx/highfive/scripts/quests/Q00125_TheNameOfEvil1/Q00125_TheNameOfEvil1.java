@@ -25,7 +25,7 @@ import app.l2nx.highfive.mechanics.script.Quest;
 import app.l2nx.highfive.mechanics.script.QuestSound;
 import app.l2nx.highfive.mechanics.script.QuestState;
 import app.l2nx.highfive.mechanics.script.State;
-import app.l2nx.highfive.network.serverpackets.MagicSkillUse;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.MagicSkillUse;
 import app.l2nx.highfive.scripts.quests.Q00124_MeetingTheElroki.Q00124_MeetingTheElroki;
 import java.util.HashMap;
 import java.util.Map;

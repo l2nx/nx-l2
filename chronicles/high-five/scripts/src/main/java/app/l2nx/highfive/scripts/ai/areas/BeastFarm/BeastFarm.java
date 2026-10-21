@@ -28,7 +28,7 @@ import app.l2nx.highfive.entity.actor.instance.TamedBeast;
 import app.l2nx.highfive.mechanics.script.Script;
 import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.mechanics.skill.holders.SkillHolder;
-import app.l2nx.highfive.network.serverpackets.AbstractNpcInfo;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.AbstractNpcInfo;
 import app.l2nx.highfive.scripts.quests.Q00020_BringUpWithLove.Q00020_BringUpWithLove;
 import app.l2nx.highfive.scripts.quests.Q00655_AGrandPlanForTamingWildBeasts.Q00655_AGrandPlanForTamingWildBeasts;
 import app.l2nx.highfive.util.ArrayUtil;

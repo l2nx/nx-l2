@@ -51,9 +51,9 @@ import app.l2nx.highfive.mechanics.events.holders.sieges.castle.OnCastleSiegeOwn
 import app.l2nx.highfive.mechanics.events.holders.sieges.castle.OnCastleSiegeStart;
 import app.l2nx.highfive.mechanics.olympiad.Hero;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.serverpackets.RelationChanged;
-import app.l2nx.highfive.network.serverpackets.SiegeInfo;
-import app.l2nx.highfive.network.serverpackets.SystemMessage;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.RelationChanged;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.SiegeInfo;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.SystemMessage;
 import app.l2nx.highfive.repository.siege.model.CastleSiegeClan;
 import app.l2nx.highfive.threads.ThreadPool;
 import java.util.ArrayList;

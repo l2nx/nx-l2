@@ -31,7 +31,7 @@ import app.l2nx.highfive.network.NpcStringId;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.enums.ChatType;
 import app.l2nx.highfive.network.enums.Movie;
-import app.l2nx.highfive.network.serverpackets.MagicSkillUse;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.MagicSkillUse;
 import app.l2nx.highfive.scripts.quests.Q00195_SevenSignsSecretRitualOfThePriests.Q00195_SevenSignsSecretRitualOfThePriests;
 
 /**

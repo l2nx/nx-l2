@@ -26,8 +26,8 @@ import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.enums.creature.FenceState;
 import app.l2nx.highfive.managers.IdManager;
-import app.l2nx.highfive.network.serverpackets.DeleteObject;
-import app.l2nx.highfive.network.serverpackets.ExColosseumFenceInfo;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.DeleteObject;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ExColosseumFenceInfo;
 import lombok.Getter;
 
 /**

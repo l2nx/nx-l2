@@ -23,9 +23,11 @@
  */
 package app.l2nx.highfive.network;
 
+import app.l2nx.engine.core.session.Session;
+import app.l2nx.engine.core.session.SessionState;
+import app.l2nx.engine.core.session.outbound.ClientPort;
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.PlayerConfig;
-import app.l2nx.highfive.config.ServerConfig;
 import app.l2nx.highfive.data.sql.CharInfoTable;
 import app.l2nx.highfive.data.sql.ClanTable;
 import app.l2nx.highfive.data.xml.SecondaryAuthData;
@@ -37,15 +39,13 @@ import app.l2nx.highfive.login.SessionKey;
 import app.l2nx.highfive.managers.PlayerPersistenceManager;
 import app.l2nx.highfive.network.holders.CharacterInfoHolder;
 import app.l2nx.highfive.network.holders.ClientHardwareInfoHolder;
-import app.l2nx.highfive.network.serverpackets.LeaveWorld;
-import app.l2nx.highfive.network.serverpackets.ServerPacket;
-import app.l2nx.highfive.network.serverpackets.SystemMessage;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.LeaveWorld;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ServerPacket;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.SystemMessage;
 import app.l2nx.highfive.security.SecondaryPasswordAuth;
-import app.l2nx.highfive.threads.ThreadPool;
 import app.l2nx.highfive.util.FloodProtectors;
-import app.l2nx.network.Client;
-import app.l2nx.network.buffer.ReadBuffer;
-import app.l2nx.network.buffer.WriteBuffer;
+import app.l2nx.network.channel.OutboundQueue;
+import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.locks.ReentrantLock;
@@ -57,12 +57,17 @@ import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataAccessException;
 
 /**
+ * Legacy facade of one game connection. The session drain, the login link and every sending thread reach it, so the
+ * fields they share are volatile.
+ *
  * @author KenM
  */
 @Slf4j
-public class GameClient extends Client<app.l2nx.network.Connection<GameClient>> {
+public class GameClient {
 
     private static final Logger ACCOUNTING_LOG = LoggerFactory.getLogger("accounting");
+
+    private final GameConnection connection;
 
     @Getter
     private final FloodProtectors floodProtectors = new FloodProtectors(this);
@@ -71,119 +76,115 @@ public class GameClient extends Client<app.l2nx.network.Connection<GameClient>> 
     private final ReentrantLock playerLock = new ReentrantLock();
 
     @Getter
-    @Setter
-    private ConnectionState connectionState = ConnectionState.CONNECTED;
+    private final String ip;
 
     @Getter
-    private Encryption encryption = null;
+    private volatile String accountName;
 
+    // Null until the login server accepts the session.
     @Getter
-    private String ip = "N/A";
-
-    @Getter
-    private String accountName;
-
-    // Null until the login server accepts the session; packets to the login server name the account by it.
-    @Getter
-    private UUID accountId;
+    private volatile UUID accountId;
 
     @Getter
     @Setter
-    private SessionKey sessionId;
+    private volatile SessionKey sessionId;
 
     @Getter
     @Setter
-    private Player player;
+    private volatile Player player;
 
     @Getter
-    private SecondaryPasswordAuth secondaryAuth;
+    private volatile SecondaryPasswordAuth secondaryAuth;
 
     @Getter
     @Setter
     private volatile ClientHardwareInfoHolder hardwareInfo;
 
-    private List<CharacterInfoHolder> charSlotMapping = null;
+    private volatile List<CharacterInfoHolder> charSlotMapping;
 
     @Getter
     @Setter
     private volatile boolean detached = false;
 
     @Getter
-    private boolean authedGG;
+    private volatile boolean authedGG;
 
     @Getter
-    @Setter
-    private boolean protocolOk;
+    private volatile int[][] trace;
 
-    @Getter
-    @Setter
-    private int protocolVersion;
-
-    @Getter
-    private int[][] trace;
-
-    public GameClient(app.l2nx.network.Connection<GameClient> connection) {
-        super(connection);
-        ip = connection.getRemoteAddress();
-    }
-
-    @Override
-    public void onConnected() {
+    public GameClient(GameConnection connection) {
+        this.connection = connection;
+        ip = connection.channel().remoteAddress() instanceof InetSocketAddress inet
+                ? inet.getAddress().getHostAddress()
+                : String.valueOf(connection.channel().remoteAddress());
         ACCOUNTING_LOG.trace("Client connected: {}", ip);
     }
 
-    @Override
+    public static GameClient of(Session session) {
+        return session.attachment(GameClient.class);
+    }
+
+    public GameConnection connection() {
+        return connection;
+    }
+
+    public Session session() {
+        return connection.session();
+    }
+
+    public ClientPort port() {
+        return connection.session().port();
+    }
+
+    /**
+     * Runs once, from the session drain, after the connection closed. A detached client frees its account here too; its
+     * character stays in the world until the owner's next selection ({@link #load}) saves and removes it.
+     */
     public void onDisconnection() {
         ACCOUNTING_LOG.trace("Client disconnected: {}", this);
-        LoginService.getInstance().cancelAuthentication(this);
-        LoginService.getInstance().logout(accountName, accountId);
+        LoginService.getInstance().cancelRequests(this);
+        LoginService.getInstance().logout(this);
         if ((player == null) || !player.isInOfflineMode()) {
             Disconnection.of(this).onDisconnection();
         }
-
-        connectionState = ConnectionState.DISCONNECTED;
-    }
-
-    @Override
-    public boolean encrypt(WriteBuffer data, int offset, int size) {
-        if (ServerConfig.PACKET_ENCRYPTION && (encryption != null)) {
-            encryption.encrypt(data, offset, size);
-        }
-
-        return true;
-    }
-
-    @Override
-    public boolean decrypt(ReadBuffer data, int offset, int size) {
-        if (ServerConfig.PACKET_ENCRYPTION && (encryption != null)) {
-            encryption.decrypt(data, offset, size);
-        }
-
-        return true;
     }
 
     public void closeNow() {
-        disconnect();
+        final OutboundQueue outbound = connection.outbound();
+        // A pending close-on-write ends the connection once its last frame is out: a kick or a refused login sends
+        // its message that way and then frees the login, whose disconnect would otherwise drop the message.
+        if ((outbound != null) && outbound.isClosing()) {
+            return;
+        }
+        connection.channel().close();
+    }
+
+    public void disconnect() {
+        closeNow();
     }
 
     public void close(ServerPacket packet) {
         if (packet == null) {
             closeNow();
-        } else {
-            sendPacket(packet);
-
-            ThreadPool.schedule(this::closeNow, 1000);
+            return;
         }
+        port().legacyAndClose(packet);
     }
 
-    public byte[] enableCrypt() {
-        final byte[] key = BlowFishKeygen.getRandomKey();
-        if (ServerConfig.PACKET_ENCRYPTION) {
-            encryption = new Encryption();
-            encryption.setKey(key);
-        }
+    public SessionState getConnectionState() {
+        return connection.session().state();
+    }
 
-        return key;
+    public void authenticated() {
+        connection.session().setState(SessionState.AUTHED);
+    }
+
+    public int getProtocolVersion() {
+        return connection.protocolVersion();
+    }
+
+    public boolean isProtocolOk() {
+        return connection.adapter() != null;
     }
 
     public void setGameGuardOk(boolean value) {
@@ -203,12 +204,11 @@ public class GameClient extends Client<app.l2nx.network.Connection<GameClient>> 
 
     public void sendPacket(ServerPacket packet) {
         if (packet == null) {
-            log.warn("Null packet sent", new Exception());
+            log.warn("Null packet sent to {}", this, new IllegalArgumentException("packet"));
             return;
         }
-
-        writePacket(packet);
-
+        port().legacy(packet);
+        // TODO (#73): move the send-time side effects of a legacy packet into the slice's handlers when it is ported.
         packet.runImpl(player);
     }
 
@@ -300,7 +300,6 @@ public class GameClient extends Client<app.l2nx.network.Connection<GameClient>> 
 
         Player player = World.getPlayer(objectId);
         if (player != null) {
-            // a character still in the world means a double login
             if (player.isOnlineInt() == 1) {
                 log.error("Attempt of double login: {}({}) {}", player.getName(), objectId, accountName);
             }
@@ -332,12 +331,9 @@ public class GameClient extends Client<app.l2nx.network.Connection<GameClient>> 
         charSlotMapping = characters;
     }
 
-    public CharacterInfoHolder getCharSelection(int charslot) {
-        if ((charSlotMapping == null) || (charslot < 0) || (charslot >= charSlotMapping.size())) {
-            return null;
-        }
-
-        return charSlotMapping.get(charslot);
+    public CharacterInfoHolder getCharSelection(int slot) {
+        final List<CharacterInfoHolder> slots = charSlotMapping;
+        return ((slots == null) || (slot < 0) || (slot >= slots.size())) ? null : slots.get(slot);
     }
 
     private int getObjectIdForSlot(int characterSlot) {
@@ -361,8 +357,9 @@ public class GameClient extends Client<app.l2nx.network.Connection<GameClient>> 
     public String toString() {
         try {
             final String ip = getIp();
-            final ConnectionState state = getConnectionState();
+            final SessionState state = getConnectionState();
             switch (state) {
+                case CLOSING:
                 case DISCONNECTED: {
                     if (accountName != null) {
                         return "[Account: " + accountName + " - IP: " + (ip == null ? "disconnected" : ip) + "]";
@@ -373,14 +370,12 @@ public class GameClient extends Client<app.l2nx.network.Connection<GameClient>> 
                 case CONNECTED: {
                     return "[IP: " + (ip == null ? "disconnected" : ip) + "]";
                 }
-                case AUTHENTICATED: {
+                case AUTHED: {
+                    if (player != null) {
+                        return "[Character: " + player.getName() + "[" + player.getObjectId() + "]" + " - Account: "
+                                + accountName + " - IP: " + (ip == null ? "disconnected" : ip) + "]";
+                    }
                     return "[Account: " + accountName + " - IP: " + (ip == null ? "disconnected" : ip) + "]";
-                }
-                case ENTERING:
-                case IN_GAME: {
-                    return "[Character: "
-                            + (player == null ? "disconnected" : player.getName() + "[" + player.getObjectId() + "]")
-                            + " - Account: " + accountName + " - IP: " + (ip == null ? "disconnected" : ip) + "]";
                 }
                 default: {
                     throw new IllegalStateException("Missing state on switch.");

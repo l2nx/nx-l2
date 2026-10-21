@@ -5,15 +5,18 @@
 package app.l2nx.architecture.fixture.wellformed.login.command;
 
 import app.l2nx.architecture.fixture.wellformed.login.AccountPort;
+import app.l2nx.engine.core.session.Session;
+import app.l2nx.engine.core.session.command.SessionCommandHandler;
 
-class KickHandler {
+class KickHandler implements SessionCommandHandler<Kick> {
     private final AccountPort port;
 
     KickHandler(AccountPort port) {
         this.port = port;
     }
 
-    void handle(Kick kick) {
+    @Override
+    public void handle(Session session, Kick kick) {
         port.left(kick.login());
     }
 }

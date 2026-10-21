@@ -26,9 +26,9 @@ import app.l2nx.highfive.entity.actor.holders.player.ArenaParticipantsHolder;
 import app.l2nx.highfive.managers.HandysBlockCheckerManager;
 import app.l2nx.highfive.mechanics.script.Script;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.serverpackets.ExCubeGameChangeTimeToStart;
-import app.l2nx.highfive.network.serverpackets.ExCubeGameRequestReady;
-import app.l2nx.highfive.network.serverpackets.ExCubeGameTeamList;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ExCubeGameChangeTimeToStart;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ExCubeGameRequestReady;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ExCubeGameTeamList;
 import lombok.extern.slf4j.Slf4j;
 
 /**

@@ -31,7 +31,7 @@ import app.l2nx.highfive.handler.IChatHandler;
 import app.l2nx.highfive.managers.FakePlayerChatManager;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.enums.ChatType;
-import app.l2nx.highfive.network.serverpackets.CreatureSay;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.CreatureSay;
 
 /**
  * Tell Chat Handler.

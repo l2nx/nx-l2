@@ -34,7 +34,7 @@ import app.l2nx.highfive.geoengine.geodata.regions.NullRegion;
 import app.l2nx.highfive.handler.AdminCommandHandler;
 import app.l2nx.highfive.handler.IAdminCommandHandler;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.serverpackets.SystemMessage;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.SystemMessage;
 import app.l2nx.highfive.util.GeoUtils;
 import app.l2nx.highfive.util.HtmlUtil;
 import java.io.IOException;

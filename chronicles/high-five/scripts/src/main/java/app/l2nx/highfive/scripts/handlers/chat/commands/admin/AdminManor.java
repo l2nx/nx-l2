@@ -27,7 +27,7 @@ import app.l2nx.highfive.handler.IAdminCommandHandler;
 import app.l2nx.highfive.managers.CastleManager;
 import app.l2nx.highfive.managers.CastleManorManager;
 import app.l2nx.highfive.mechanics.siege.Castle;
-import app.l2nx.highfive.network.serverpackets.NpcHtmlMessage;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.NpcHtmlMessage;
 import app.l2nx.highfive.util.FormatUtil;
 
 /**

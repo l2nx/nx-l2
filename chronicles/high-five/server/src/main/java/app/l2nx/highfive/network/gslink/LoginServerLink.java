@@ -26,6 +26,7 @@
  */
 package app.l2nx.highfive.network.gslink;
 
+import app.l2nx.engine.core.session.command.CommandDispatcher;
 import app.l2nx.gslink.GsLinkProperties;
 import app.l2nx.gslink.GsLinkStreamWriter;
 import app.l2nx.gslink.v1.GsLinkGrpc;
@@ -42,6 +43,7 @@ import app.l2nx.highfive.login.command.LinkLost;
 import app.l2nx.highfive.login.command.PasswordChangeResult;
 import app.l2nx.highfive.login.command.RegistrationResult;
 import app.l2nx.highfive.login.command.ReportCharacters;
+import app.l2nx.network.channel.RateLimitedLog;
 import app.l2nx.network.config.NetworkProperties;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Timestamp;
@@ -61,10 +63,9 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.function.Consumer;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.DisposableBean;
-import org.springframework.context.annotation.Lazy;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.core.task.TaskRejectedException;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.stereotype.Component;
@@ -83,19 +84,13 @@ public class LoginServerLink implements LoginPort, DisposableBean {
     private static final int HEX_ID_SIZE = 16;
     private static final SecureRandom KEY_RANDOM = new SecureRandom();
 
-    private static volatile LoginServerLink instance;
-
     private final ManagedChannel channel;
     private final GsLinkGrpc.GsLinkStub stub;
     private final BackOff reconnectDelay;
     private final Duration shutdownTimeout;
     private final TaskScheduler scheduler;
-    private final Consumer<RegistrationResult> registrationResults;
-    private final Consumer<AuthenticationResult> authenticationResults;
-    private final Consumer<KickAccount> kicks;
-    private final Consumer<ReportCharacters> characterReports;
-    private final Consumer<PasswordChangeResult> passwordChangeResults;
-    private final Consumer<LinkLost> linkLosses;
+    private final ObjectProvider<CommandDispatcher> commands;
+    private final RateLimitedLog rate = RateLimitedLog.everyTenSeconds();
 
     // Published only once Register is queued on it, so every other message follows Register.
     private volatile Stream current;
@@ -114,39 +109,19 @@ public class LoginServerLink implements LoginPort, DisposableBean {
     private List<String> subnets;
     private List<String> hosts;
 
-    // The handlers answer through this link, so Spring creates the link first and resolves a handler on first use.
+    // The handlers answer through this link, so Spring creates the link first and resolves the dispatcher on first use.
     public LoginServerLink(
             ManagedChannel gsLinkChannel,
             GsLinkProperties properties,
             NetworkProperties network,
             TaskScheduler taskScheduler,
-            @Lazy Consumer<RegistrationResult> registrationResults,
-            @Lazy Consumer<AuthenticationResult> authenticationResults,
-            @Lazy Consumer<KickAccount> kicks,
-            @Lazy Consumer<ReportCharacters> characterReports,
-            @Lazy Consumer<PasswordChangeResult> passwordChangeResults,
-            @Lazy Consumer<LinkLost> linkLosses) {
+            ObjectProvider<CommandDispatcher> commands) {
         channel = gsLinkChannel;
         stub = GsLinkGrpc.newStub(gsLinkChannel);
         reconnectDelay = properties.reconnectDelay().backOff();
         shutdownTimeout = network.shutdownTimeout();
         scheduler = taskScheduler;
-        this.registrationResults = registrationResults;
-        this.authenticationResults = authenticationResults;
-        this.kicks = kicks;
-        this.characterReports = characterReports;
-        this.passwordChangeResults = passwordChangeResults;
-        this.linkLosses = linkLosses;
-        instance = this;
-    }
-
-    // TODO: Shutdown receives the bean through its constructor (#41).
-    public static LoginServerLink getInstance() {
-        final LoginServerLink bound = instance;
-        if (bound == null) {
-            throw new IllegalStateException("LoginServerLink is used before the Spring context created it.");
-        }
-        return bound;
+        this.commands = commands;
     }
 
     public void start() {
@@ -189,9 +164,10 @@ public class LoginServerLink implements LoginPort, DisposableBean {
     }
 
     @Override
-    public boolean authenticate(String login, SessionKey key) {
+    public boolean authenticate(UUID requestId, String login, SessionKey key) {
         return send(GameServerMessage.newBuilder()
                 .setAuthenticate(GsLinkProto.Authenticate.newBuilder()
+                        .setRequestId(requestId.toString())
                         .setLogin(login)
                         .setKey(GsLinkProto.SessionKey.newBuilder()
                                 .setLoginOk1(key.loginOk1())
@@ -250,9 +226,11 @@ public class LoginServerLink implements LoginPort, DisposableBean {
     }
 
     @Override
-    public boolean changePassword(UUID accountId, String characterName, String oldPassword, String newPassword) {
+    public boolean changePassword(
+            UUID requestId, UUID accountId, String characterName, String oldPassword, String newPassword) {
         return send(GameServerMessage.newBuilder()
                 .setChangePassword(GsLinkProto.ChangePassword.newBuilder()
+                        .setRequestId(requestId.toString())
                         .setAccountId(accountId.toString())
                         .setCharacterName(characterName)
                         .setOldPassword(oldPassword)
@@ -335,7 +313,7 @@ public class LoginServerLink implements LoginPort, DisposableBean {
 
     private void lost() {
         try {
-            linkLosses.accept(new LinkLost());
+            commands.getObject().submit(new LinkLost());
         } catch (RuntimeException e) {
             log.warn("Failing the requests left on the ended GS-link failed.", e);
         }
@@ -347,11 +325,12 @@ public class LoginServerLink implements LoginPort, DisposableBean {
             // With an alternative id accepted, asking for the configured id again would take yet another id.
             requestId = result.getServerId();
         }
-        registrationResults.accept(RegistrationResult.builder()
-                .serverId(result.getServerId())
-                .serverName(result.hasServerName() ? result.getServerName() : null)
-                .hexId(HexFormat.of().formatHex(hexId))
-                .build());
+        commands.getObject()
+                .submit(RegistrationResult.builder()
+                        .serverId(result.getServerId())
+                        .serverName(result.hasServerName() ? result.getServerName() : null)
+                        .hexId(HexFormat.of().formatHex(hexId))
+                        .build());
     }
 
     private boolean endStream(Stream stream, Instant deadline) {
@@ -446,11 +425,14 @@ public class LoginServerLink implements LoginPort, DisposableBean {
                 dispatch(message);
             } catch (RuntimeException e) {
                 // Escaping onNext, the exception would make gRPC cancel the call and drop every session on the link.
-                log.warn(
-                        "The login server's {} for account {} failed.",
-                        message.getMessageCase(),
-                        accountOf(message),
-                        e);
+                // Both ends ship in one release, so a malformed id is a login server bug and may repeat per message.
+                if (rate.tryAcquire(message.getMessageCase().name())) {
+                    log.warn(
+                            "Dropped the login server's {} for account {}.",
+                            message.getMessageCase(),
+                            accountOf(message),
+                            e);
+                }
             }
         }
 
@@ -459,23 +441,29 @@ public class LoginServerLink implements LoginPort, DisposableBean {
                 case REGISTRATION_RESULT -> registered(message.getRegistrationResult());
                 case AUTHENTICATION_RESULT -> {
                     final GsLinkProto.AuthenticationResult result = message.getAuthenticationResult();
-                    authenticationResults.accept(AuthenticationResult.builder()
-                            .login(result.getLogin())
-                            .accountId(result.hasAccountId() ? UUID.fromString(result.getAccountId()) : null)
-                            .accepted(result.getAccepted())
-                            .build());
+                    commands.getObject()
+                            .submit(AuthenticationResult.builder()
+                                    .requestId(UUID.fromString(result.getRequestId()))
+                                    .accountId(result.hasAccountId() ? UUID.fromString(result.getAccountId()) : null)
+                                    .accepted(result.getAccepted())
+                                    .build());
                 }
                 case KICK_ACCOUNT ->
-                    kicks.accept(new KickAccount(
-                            UUID.fromString(message.getKickAccount().getAccountId())));
+                    commands.getObject()
+                            .submit(new KickAccount(
+                                    UUID.fromString(message.getKickAccount().getAccountId())));
                 case REPORT_CHARACTERS ->
-                    characterReports.accept(new ReportCharacters(
-                            UUID.fromString(message.getReportCharacters().getAccountId())));
-                case PASSWORD_CHANGE_RESULT ->
-                    passwordChangeResults.accept(PasswordChangeResult.builder()
-                            .characterName(message.getPasswordChangeResult().getCharacterName())
-                            .message(message.getPasswordChangeResult().getMessage())
-                            .build());
+                    commands.getObject()
+                            .submit(new ReportCharacters(UUID.fromString(
+                                    message.getReportCharacters().getAccountId())));
+                case PASSWORD_CHANGE_RESULT -> {
+                    final GsLinkProto.PasswordChangeResult result = message.getPasswordChangeResult();
+                    commands.getObject()
+                            .submit(PasswordChangeResult.builder()
+                                    .requestId(UUID.fromString(result.getRequestId()))
+                                    .message(result.getMessage())
+                                    .build());
+                }
                 case MESSAGE_NOT_SET -> log.warn("Ignored an empty message from the login server.");
             }
         }

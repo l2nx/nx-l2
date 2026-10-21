@@ -29,7 +29,7 @@ import app.l2nx.highfive.mechanics.announce.AnnouncementType;
 import app.l2nx.highfive.mechanics.announce.AutoAnnouncement;
 import app.l2nx.highfive.mechanics.announce.IAnnouncement;
 import app.l2nx.highfive.network.enums.ChatType;
-import app.l2nx.highfive.network.serverpackets.CreatureSay;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.CreatureSay;
 import app.l2nx.highfive.repository.world.AnnouncementRepository;
 import app.l2nx.highfive.repository.world.model.AnnouncementRow;
 import java.util.Collection;

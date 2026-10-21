@@ -26,16 +26,16 @@
  */
 package app.l2nx.highfive.util;
 
+import app.l2nx.engine.core.session.SessionState;
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.managers.PunishmentManager;
 import app.l2nx.highfive.mechanics.punishment.PunishmentAffect;
 import app.l2nx.highfive.mechanics.punishment.PunishmentTask;
 import app.l2nx.highfive.mechanics.punishment.PunishmentType;
-import app.l2nx.highfive.network.ConnectionState;
 import app.l2nx.highfive.network.Disconnection;
 import app.l2nx.highfive.network.GameClient;
-import app.l2nx.highfive.network.serverpackets.LeaveWorld;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.LeaveWorld;
 import app.l2nx.highfive.taskmanagers.GameTimeTaskManager;
 import java.util.concurrent.atomic.AtomicInteger;
 import lombok.extern.slf4j.Slf4j;
@@ -245,20 +245,17 @@ public class FloodProtectorAction {
         final StringBuilder sb = new StringBuilder(LOG_BUILDER_INITIAL_CAPACITY);
         sb.append(settings.getFloodProtectorType()).append(": ");
 
-        final ConnectionState connectionState = client.getConnectionState();
+        final SessionState connectionState = client.getConnectionState();
         switch (connectionState) {
-            case ENTERING:
-            case IN_GAME: {
+            case AUTHED: {
                 final Player player = client.getPlayer();
                 if (player != null) {
                     sb.append(player.getName())
                             .append('(')
                             .append(player.getObjectId())
                             .append(") ");
+                    break;
                 }
-                break;
-            }
-            case AUTHENTICATED: {
                 final String accountName = client.getAccountName();
                 if (accountName != null) {
                     sb.append(accountName).append(' ');

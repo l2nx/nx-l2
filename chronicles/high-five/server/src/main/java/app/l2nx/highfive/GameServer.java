@@ -24,12 +24,12 @@
 package app.l2nx.highfive;
 
 import app.l2nx.boot.ServerExit;
+import app.l2nx.engine.core.session.SessionFactory;
 import app.l2nx.highfive.cache.HtmCache;
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.ConfigLoader;
 import app.l2nx.highfive.config.DevelopmentConfig;
 import app.l2nx.highfive.config.GeneralConfig;
-import app.l2nx.highfive.config.NetworkConfig;
 import app.l2nx.highfive.config.ServerConfig;
 import app.l2nx.highfive.config.custom.CustomMailManagerConfig;
 import app.l2nx.highfive.config.custom.MultilingualSupportConfig;
@@ -103,6 +103,7 @@ import app.l2nx.highfive.entity.groups.matching.PartyMatchWaitingList;
 import app.l2nx.highfive.entity.spawns.AutoSpawnHandler;
 import app.l2nx.highfive.geoengine.GeoEngine;
 import app.l2nx.highfive.handler.EffectHandler;
+import app.l2nx.highfive.login.LoginService;
 import app.l2nx.highfive.managers.AirShipManager;
 import app.l2nx.highfive.managers.AntiFeedManager;
 import app.l2nx.highfive.managers.BoatManager;
@@ -156,24 +157,32 @@ import app.l2nx.highfive.mechanics.events.EventType;
 import app.l2nx.highfive.mechanics.events.holders.OnServerStart;
 import app.l2nx.highfive.mechanics.olympiad.Hero;
 import app.l2nx.highfive.mechanics.olympiad.Olympiad;
+import app.l2nx.highfive.mechanics.punishment.PunishmentAffect;
+import app.l2nx.highfive.mechanics.punishment.PunishmentType;
 import app.l2nx.highfive.mechanics.sevensigns.SevenSigns;
 import app.l2nx.highfive.mechanics.sevensigns.SevenSignsFestival;
 import app.l2nx.highfive.network.GameClient;
-import app.l2nx.highfive.network.GamePacketHandler;
+import app.l2nx.highfive.network.GameConnection;
 import app.l2nx.highfive.network.NpcStringId;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.gslink.LoginServerLink;
+import app.l2nx.highfive.network.pipeline.GameChannelInitializer;
+import app.l2nx.highfive.network.protocol.GameProtocolRegistry;
 import app.l2nx.highfive.scripting.ScriptEngine;
 import app.l2nx.highfive.taskmanagers.GameTimeTaskManager;
 import app.l2nx.highfive.taskmanagers.ItemLifeTimeTaskManager;
 import app.l2nx.highfive.taskmanagers.ItemsAutoDestroyTaskManager;
 import app.l2nx.highfive.threads.ThreadPool;
 import app.l2nx.highfive.util.DeadlockWatcher;
-import app.l2nx.network.ConnectionManager;
+import app.l2nx.network.bootstrap.NetworkServer;
+import app.l2nx.network.channel.guard.ConnectionLimiter;
+import app.l2nx.network.config.NetworkProperties;
+import app.l2nx.network.crypt.GameXorKeys;
+import app.l2nx.network.metrics.NetworkMetrics;
+import app.l2nx.network.transport.NetworkEventLoops;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
-import java.io.IOException;
-import java.io.UncheckedIOException;
+import io.netty.channel.Channel;
 import java.net.InetSocketAddress;
 import java.time.Duration;
 import java.time.Instant;
@@ -193,16 +202,37 @@ public class GameServer implements SmartLifecycle {
     private final ServerExit serverExit;
     private final MeterRegistry meterRegistry;
     private final LoginServerLink loginServerLink;
-    private ConnectionManager<GameClient> connectionManager;
+    private final LoginService loginService;
+    private final NetworkEventLoops eventLoops;
+    private final NetworkProperties networkProperties;
+    private final NetworkMetrics networkMetrics;
+    private final SessionFactory sessionFactory;
+    private final GameProtocolRegistry protocolRegistry;
+    private NetworkServer gameServer;
     private GameTimeTaskManager gameTimeTaskManager;
 
     @Getter
     private volatile boolean running;
 
-    public GameServer(ServerExit serverExit, MeterRegistry meterRegistry, LoginServerLink loginServerLink) {
+    public GameServer(
+            ServerExit serverExit,
+            MeterRegistry meterRegistry,
+            LoginServerLink loginServerLink,
+            LoginService loginService,
+            NetworkEventLoops eventLoops,
+            NetworkProperties networkProperties,
+            NetworkMetrics networkMetrics,
+            SessionFactory sessionFactory,
+            GameProtocolRegistry protocolRegistry) {
         this.serverExit = serverExit;
         this.meterRegistry = meterRegistry;
         this.loginServerLink = loginServerLink;
+        this.loginService = loginService;
+        this.eventLoops = eventLoops;
+        this.networkProperties = networkProperties;
+        this.networkMetrics = networkMetrics;
+        this.sessionFactory = sessionFactory;
+        this.protocolRegistry = protocolRegistry;
     }
 
     @Override
@@ -211,7 +241,6 @@ public class GameServer implements SmartLifecycle {
         sectionStartTime = startTime;
         Shutdown.bind(serverExit);
 
-        // Outside the try: nothing to shut down yet if config fails.
         ConfigLoader.init();
 
         try {
@@ -227,18 +256,60 @@ public class GameServer implements SmartLifecycle {
 
     @Override
     public void stop() {
-        connectionManager.stopAccepting();
+        gameServer.stopAccepting();
+        gameServer.stopReading();
         try {
             Shutdown.getInstance().startShutdownActions();
         } finally {
-            connectionManager.shutdown();
-            running = false;
+            try {
+                runStep("close the client connections", () -> gameServer.close(GameServer::closeForShutdown));
+                leaveLoginServer();
+            } finally {
+                running = false;
+            }
+        }
+    }
+
+    /**
+     * Sessions log out from their drain after the channel closes, so the link stays open until all have: each
+     * AccountLeft precedes the last status. {@code logoutAll} frees the rest; every step runs even if one failed.
+     */
+    void leaveLoginServer() {
+        runStep("wait for the sessions to close", this::awaitSessionsClosed);
+        runStep("log out the remaining accounts", loginService::logoutAll);
+        runStep("shut the GS-link down", loginServerLink::shutdown);
+    }
+
+    private void awaitSessionsClosed() {
+        final Duration timeout = networkProperties.shutdownTimeout();
+        if (!sessionFactory.awaitClosed(timeout)) {
+            log.warn(
+                    "{} sessions had not closed within {}; their accounts are logged out without them.",
+                    sessionFactory.openSessions(),
+                    timeout);
+        }
+    }
+
+    private static void runStep(String step, Runnable action) {
+        try {
+            action.run();
+        } catch (RuntimeException e) {
+            log.error("Shutdown failed to {}.", step, e);
+        }
+    }
+
+    private static void closeForShutdown(Channel channel) {
+        final GameConnection connection = GameConnection.of(channel);
+        if (connection == null) {
+            channel.close();
+        } else {
+            connection.closeForShutdown();
         }
     }
 
     private void abortStart() {
-        if (connectionManager != null) {
-            connectionManager.shutdown();
+        if (gameServer != null) {
+            gameServer.close();
         }
 
         if (gameTimeTaskManager != null) {
@@ -497,16 +568,22 @@ public class GameServer implements SmartLifecycle {
         log.info("Maximum number of connected players is {}.", ServerConfig.MAXIMUM_ONLINE_USERS);
         log.info("Server loaded in {} seconds.", ((ClockBridge.gameMillis() - startTime) / 1000));
 
-        try {
-            connectionManager = new ConnectionManager<>(
-                    new InetSocketAddress(ServerConfig.PORT_GAME),
-                    GameClient::new,
-                    new GamePacketHandler(),
-                    NetworkConfig.SETTINGS);
-        } catch (IOException e) {
-            throw new UncheckedIOException("Unable to open the client port " + ServerConfig.PORT_GAME + ".", e);
-        }
-        connectionManager.bindMetrics(meterRegistry, "l2nx-game");
+        gameServer = NetworkServer.bind(
+                "game",
+                new InetSocketAddress(ServerConfig.PORT_GAME),
+                eventLoops,
+                networkProperties,
+                networkMetrics,
+                new ConnectionLimiter(
+                        networkProperties,
+                        address -> PunishmentManager.getInstance()
+                                .hasPunishment(address.getHostAddress(), PunishmentAffect.IP, PunishmentType.BAN)),
+                new GameChannelInitializer(
+                        networkProperties,
+                        protocolRegistry,
+                        sessionFactory,
+                        GameClient::new,
+                        GameXorKeys::getRandomKey));
 
         loginServerLink.start();
     }

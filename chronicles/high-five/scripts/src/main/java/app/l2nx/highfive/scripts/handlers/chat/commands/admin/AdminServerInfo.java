@@ -28,7 +28,7 @@ import app.l2nx.highfive.data.xml.AdminData;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.handler.IAdminCommandHandler;
-import app.l2nx.highfive.network.serverpackets.NpcHtmlMessage;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.NpcHtmlMessage;
 import app.l2nx.highfive.taskmanagers.GameTimeTaskManager;
 import java.lang.management.GarbageCollectorMXBean;
 import java.lang.management.ManagementFactory;

@@ -29,7 +29,7 @@ import app.l2nx.highfive.entity.actor.instance.StaticObject;
 import app.l2nx.highfive.handler.IAdminCommandHandler;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.enums.ChatType;
-import app.l2nx.highfive.network.serverpackets.CreatureSay;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.CreatureSay;
 
 /**
  * This class handles following admin commands: - targetsay <message> = makes talk a Creature

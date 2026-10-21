@@ -21,7 +21,7 @@ package app.l2nx.highfive.entity.actor;
 
 import app.l2nx.highfive.entity.actor.templates.NpcTemplate;
 import app.l2nx.highfive.geoengine.GeoEngine;
-import app.l2nx.highfive.network.serverpackets.ActionFailed;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ActionFailed;
 
 /**
  * This class is a super-class for ControlTower and FlameTower.

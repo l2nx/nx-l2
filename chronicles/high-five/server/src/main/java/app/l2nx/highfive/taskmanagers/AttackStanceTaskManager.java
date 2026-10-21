@@ -23,7 +23,7 @@ import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.instance.Cubic;
-import app.l2nx.highfive.network.serverpackets.AutoAttackStop;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.AutoAttackStop;
 import app.l2nx.highfive.threads.ThreadPool;
 import java.util.Iterator;
 import java.util.Map;

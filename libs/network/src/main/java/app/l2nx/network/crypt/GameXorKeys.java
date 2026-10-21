@@ -20,16 +20,15 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package app.l2nx.highfive.network;
+package app.l2nx.network.crypt;
 
 import java.security.SecureRandom;
 
 /**
- * Blowfish key generator for GameServer sessions.<br>
- * Returns a new array of 16 bytes: 8 random + 8 fixed suffix.
+ * Session key generator for {@link GameXorCipher}.
  * @author BazookaRpm
  */
-public class BlowFishKeygen {
+public class GameXorKeys {
     private static final int KEY_LENGTH_BYTES = 16;
     private static final int RANDOM_PREFIX_LENGTH = 8;
 
@@ -39,12 +38,9 @@ public class BlowFishKeygen {
 
     private static final SecureRandom KEY_RANDOM = new SecureRandom();
 
-    private BlowFishKeygen() {}
+    private GameXorKeys() {}
 
-    /**
-     * Generate a key Blowfish of 16 bytes.
-     * @return new array with 8 random bytes followed by the fixed suffix
-     */
+    /** Returns 8 random bytes followed by the fixed 8-byte tail. */
     public static byte[] getRandomKey() {
         final byte[] key = new byte[KEY_LENGTH_BYTES];
         KEY_RANDOM.nextBytes(key);

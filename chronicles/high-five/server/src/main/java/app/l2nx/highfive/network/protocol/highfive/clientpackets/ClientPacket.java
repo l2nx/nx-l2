@@ -20,34 +20,24 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package app.l2nx.highfive.network.clientpackets;
+package app.l2nx.highfive.network.protocol.highfive.clientpackets;
 
+import app.l2nx.engine.core.session.ContextBound;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.network.GameClient;
-import app.l2nx.network.packet.ReadablePacket;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.exception.ExceptionUtils;
+import app.l2nx.highfive.network.protocol.highfive.LegacyContext;
+import app.l2nx.network.codec.IncomingPacket;
 
 /**
- * @author Mobius
+ * A legacy route: read on the IO thread, run from the session queue in order with the commands.
  */
-@Slf4j
-public abstract class ClientPacket extends ReadablePacket<GameClient> {
-    @Override
-    public boolean read() {
-        try {
-            readImpl();
-            return true;
-        } catch (Exception e) {
-            log.warn(
-                    "Client: {} - Failed reading: {} ; {}",
-                    getClient(),
-                    getClass().getSimpleName(),
-                    e.getMessage());
-            log.warn(ExceptionUtils.getStackTrace(e));
-        }
+public abstract class ClientPacket extends IncomingPacket<GameClient> implements ContextBound {
+    private LegacyContext context = LegacyContext.WORLD;
 
-        return false;
+    @Override
+    protected final boolean read() {
+        readImpl();
+        return true;
     }
 
     protected abstract void readImpl();
@@ -56,26 +46,31 @@ public abstract class ClientPacket extends ReadablePacket<GameClient> {
     public void run() {
         try {
             runImpl();
-        } catch (Exception e) {
-            log.warn(
-                    "Client: {} - Failed running: {} ; {}",
-                    getClient(),
-                    getClass().getSimpleName(),
-                    e.getMessage());
-            log.warn(ExceptionUtils.getStackTrace(e));
-
-            // In case of EnterWorld error kick player from game.
+        } catch (RuntimeException e) {
+            // A player left half-entered cannot play on; the session drain still reports the failure.
             if (this instanceof EnterWorld) {
                 getClient().closeNow();
             }
+            throw e;
         }
     }
 
     protected abstract void runImpl();
 
-    /**
-     * @return the active player if exist, otherwise null.
-     */
+    final void requireContext(LegacyContext context) {
+        this.context = context;
+    }
+
+    @Override
+    public boolean hasContext() {
+        return context.presentFor(getClient());
+    }
+
+    @Override
+    public String requiredContext() {
+        return context.name();
+    }
+
     protected Player getPlayer() {
         return getClient().getPlayer();
     }

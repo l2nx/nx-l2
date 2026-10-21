@@ -28,10 +28,10 @@ import app.l2nx.highfive.entity.item.enums.ItemProcessType;
 import app.l2nx.highfive.entity.item.instance.Item;
 import app.l2nx.highfive.managers.ItemManager;
 import app.l2nx.highfive.managers.games.BlockCheckerManager;
-import app.l2nx.highfive.network.serverpackets.AbstractNpcInfo;
-import app.l2nx.highfive.network.serverpackets.ActionFailed;
-import app.l2nx.highfive.network.serverpackets.ExCubeGameChangePoints;
-import app.l2nx.highfive.network.serverpackets.ExCubeGameExtendedChangePoints;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.AbstractNpcInfo;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ActionFailed;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ExCubeGameChangePoints;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ExCubeGameExtendedChangePoints;
 import lombok.Getter;
 
 /**

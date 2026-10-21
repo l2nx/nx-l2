@@ -32,13 +32,13 @@ import app.l2nx.highfive.mechanics.events.annotations.RegisterType;
 import app.l2nx.highfive.mechanics.events.holders.actor.npc.OnNpcManorBypass;
 import app.l2nx.highfive.mechanics.script.Script;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.serverpackets.BuyListSeed;
-import app.l2nx.highfive.network.serverpackets.ExShowCropInfo;
-import app.l2nx.highfive.network.serverpackets.ExShowManorDefaultInfo;
-import app.l2nx.highfive.network.serverpackets.ExShowProcureCropDetail;
-import app.l2nx.highfive.network.serverpackets.ExShowSeedInfo;
-import app.l2nx.highfive.network.serverpackets.ExShowSellCropList;
-import app.l2nx.highfive.network.serverpackets.SystemMessage;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.BuyListSeed;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ExShowCropInfo;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ExShowManorDefaultInfo;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ExShowProcureCropDetail;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ExShowSeedInfo;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ExShowSellCropList;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.SystemMessage;
 import lombok.extern.slf4j.Slf4j;
 
 /**

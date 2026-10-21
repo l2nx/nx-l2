@@ -33,9 +33,9 @@ import app.l2nx.highfive.mechanics.script.Quest;
 import app.l2nx.highfive.mechanics.script.QuestState;
 import app.l2nx.highfive.mechanics.script.State;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.serverpackets.ExShowQuestMark;
-import app.l2nx.highfive.network.serverpackets.NpcHtmlMessage;
-import app.l2nx.highfive.network.serverpackets.QuestList;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ExShowQuestMark;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.NpcHtmlMessage;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.QuestList;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 

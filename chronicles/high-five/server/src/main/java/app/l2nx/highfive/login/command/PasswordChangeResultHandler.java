@@ -26,23 +26,27 @@
  */
 package app.l2nx.highfive.login.command;
 
-import app.l2nx.highfive.entity.World;
+import app.l2nx.engine.core.session.Session;
+import app.l2nx.engine.core.session.command.SessionCommandHandler;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.login.system.OnlineAccounts;
-import java.util.function.Consumer;
+import app.l2nx.highfive.network.GameClient;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor(access = AccessLevel.PACKAGE)
-class PasswordChangeResultHandler implements Consumer<PasswordChangeResult> {
+class PasswordChangeResultHandler implements SessionCommandHandler<PasswordChangeResult> {
     private final OnlineAccounts accounts;
 
     @Override
-    public void accept(PasswordChangeResult result) {
-        accounts.takePasswordChange(result.characterName());
-        final Player player = World.getPlayer(result.characterName());
+    public void handle(Session session, PasswordChangeResult result) {
+        final GameClient client = GameClient.of(session);
+        if (!accounts.takePasswordChange(result.requestId(), client)) {
+            return;
+        }
+        final Player player = client.getPlayer();
         if (player != null) {
             player.sendMessage(result.message());
         }

@@ -4,6 +4,7 @@
  */
 package app.l2nx.highfive.threads.metrics;
 
+import app.l2nx.network.metrics.RunTimers;
 import io.micrometer.core.instrument.Clock;
 import io.micrometer.core.instrument.Meter.MeterProvider;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -92,7 +93,13 @@ public final class LegacyTaskMetrics {
                 // The duration is taken before the error timer is looked up, which may register it.
                 final long duration = clock.monotonicTime() - start;
                 record(
-                        runTime.withTags(NAMESPACE_TAG, namespace, OUTCOME_TAG, ERROR, EXCEPTION_TAG, exceptionName(t)),
+                        runTime.withTags(
+                                NAMESPACE_TAG,
+                                namespace,
+                                OUTCOME_TAG,
+                                ERROR,
+                                EXCEPTION_TAG,
+                                RunTimers.exceptionName(t)),
                         duration);
                 throw t;
             }
@@ -102,12 +109,6 @@ public final class LegacyTaskMetrics {
         private void record(Timer timer, long duration) {
             timer.record(duration, TimeUnit.NANOSECONDS);
             all.record(duration, TimeUnit.NANOSECONDS);
-        }
-
-        // As Spring's DefaultServerRequestObservationConvention: the binary name stands in for an anonymous class.
-        private static String exceptionName(Throwable failure) {
-            final String simpleName = failure.getClass().getSimpleName();
-            return simpleName.isEmpty() ? failure.getClass().getName() : simpleName;
         }
     }
 

@@ -20,7 +20,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package app.l2nx.highfive.network.clientpackets;
+package app.l2nx.highfive.network.protocol.highfive.clientpackets;
 
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.instance.Pet;
@@ -28,8 +28,8 @@ import app.l2nx.highfive.entity.item.instance.Item;
 import app.l2nx.highfive.handler.IItemHandler;
 import app.l2nx.highfive.handler.ItemHandler;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.serverpackets.PetItemList;
-import app.l2nx.highfive.network.serverpackets.SystemMessage;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.PetItemList;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.SystemMessage;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j

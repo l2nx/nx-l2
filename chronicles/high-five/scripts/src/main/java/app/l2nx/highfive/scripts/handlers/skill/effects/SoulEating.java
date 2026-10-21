@@ -31,7 +31,7 @@ import app.l2nx.highfive.mechanics.events.listeners.ConsumerEventListener;
 import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.mechanics.stats.Stat;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.serverpackets.ExSpawnEmitter;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.ExSpawnEmitter;
 import app.l2nx.highfive.util.StatSet;
 
 /**

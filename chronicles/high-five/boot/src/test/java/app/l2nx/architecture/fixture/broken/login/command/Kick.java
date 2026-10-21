@@ -4,4 +4,6 @@
  */
 package app.l2nx.architecture.fixture.broken.login.command;
 
-public class Kick {}
+import app.l2nx.engine.core.session.command.Command;
+
+public class Kick implements Command {}

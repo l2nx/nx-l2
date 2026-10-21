@@ -26,13 +26,13 @@
  */
 package app.l2nx.highfive.login.command;
 
+import app.l2nx.engine.core.session.command.ServiceCommandHandler;
 import app.l2nx.highfive.config.ServerConfig;
 import app.l2nx.highfive.login.LoginPort;
 import app.l2nx.highfive.login.system.OnlineAccounts;
 import app.l2nx.highfive.login.system.ServerListing;
 import java.util.List;
 import java.util.UUID;
-import java.util.function.Consumer;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -41,13 +41,13 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 @RequiredArgsConstructor(access = AccessLevel.PACKAGE)
-class RegistrationResultHandler implements Consumer<RegistrationResult> {
+class RegistrationResultHandler implements ServiceCommandHandler<RegistrationResult> {
     private final LoginPort port;
     private final OnlineAccounts accounts;
     private final ServerListing listing;
 
     @Override
-    public void accept(RegistrationResult result) {
+    public void handle(RegistrationResult result) {
         ServerConfig.saveHexid(result.serverId(), result.hexId());
         listing.setServerName(result.serverName());
         log.info("Registered on login as Server {}: {}", result.serverId(), result.serverName());

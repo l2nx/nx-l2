@@ -78,6 +78,8 @@ message SessionKey {
 message Authenticate {
   string login = 1;
   SessionKey key = 2;
+  // Echoed in the AuthenticationResult; the game server finds the waiting client by it.
+  string request_id = 3;
 }
 
 message AuthenticationResult {
@@ -85,6 +87,8 @@ message AuthenticationResult {
   bool accepted = 2;
   // Set only when accepted.
   optional string account_id = 3;
+  // The request_id of the Authenticate this answers.
+  string request_id = 4;
 }
 
 message AccountsEntered {
@@ -119,6 +123,8 @@ message ChangePassword {
   string character_name = 2;
   string old_password = 3;
   string new_password = 4;
+  // Echoed in the PasswordChangeResult.
+  string request_id = 5;
 }
 
 // The answer to ReportCharacters; ReportCharacters itself is the login server's request.
@@ -160,4 +166,6 @@ message ReportCharacters {
 message PasswordChangeResult {
   string character_name = 1;
   string message = 2;
+  // The request_id of the ChangePassword this answers.
+  string request_id = 3;
 }

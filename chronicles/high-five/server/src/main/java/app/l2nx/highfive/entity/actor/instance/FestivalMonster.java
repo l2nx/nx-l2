@@ -27,7 +27,7 @@ import app.l2nx.highfive.entity.groups.Party;
 import app.l2nx.highfive.entity.item.enums.ItemProcessType;
 import app.l2nx.highfive.entity.item.instance.Item;
 import app.l2nx.highfive.mechanics.sevensigns.SevenSignsFestival;
-import app.l2nx.highfive.network.serverpackets.InventoryUpdate;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.InventoryUpdate;
 
 /**
  * This class manages all attackable festival NPCs, spawned during the Festival of Darkness.

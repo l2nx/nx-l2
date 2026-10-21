@@ -30,7 +30,7 @@ import app.l2nx.highfive.mechanics.conditions.Condition;
 import app.l2nx.highfive.mechanics.effects.AbstractEffect;
 import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.serverpackets.PetItemList;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.PetItemList;
 import app.l2nx.highfive.util.StatSet;
 import lombok.extern.slf4j.Slf4j;
 

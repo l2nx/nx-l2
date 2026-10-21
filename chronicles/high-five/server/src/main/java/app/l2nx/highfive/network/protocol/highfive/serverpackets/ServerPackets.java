@@ -20,11 +20,10 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package app.l2nx.highfive.network;
+package app.l2nx.highfive.network.protocol.highfive.serverpackets;
 
 import app.l2nx.highfive.config.DevelopmentConfig;
-import app.l2nx.highfive.network.serverpackets.ServerPacket;
-import app.l2nx.network.buffer.WriteBuffer;
+import app.l2nx.network.codec.PacketWriter;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -531,7 +530,7 @@ public enum ServerPackets {
         this.id2 = id2;
     }
 
-    public void writeId(ServerPacket packet, WriteBuffer buffer) {
+    public void writeId(ServerPacket packet, PacketWriter buffer) {
         if (DevelopmentConfig.DEBUG_SERVER_PACKETS) {
             final String name = packet.getClass().getSimpleName();
             if (!DevelopmentConfig.EXCLUDED_DEBUG_PACKETS.contains(name)) {
@@ -539,6 +538,10 @@ public enum ServerPackets {
             }
         }
 
+        writeId(buffer);
+    }
+
+    public void writeId(PacketWriter buffer) {
         buffer.writeByte(id1);
         if (id2 > 0) {
             buffer.writeShort(id2);

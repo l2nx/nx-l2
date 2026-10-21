@@ -8,14 +8,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import app.l2nx.highfive.config.ServerConfig;
 import app.l2nx.highfive.login.FakeLoginPort.Call;
 import app.l2nx.highfive.login.system.OnlineAccounts;
-import app.l2nx.highfive.login.system.OnlineAccounts.PendingAuthentication;
 import app.l2nx.highfive.login.system.ServerListing;
 import app.l2nx.highfive.network.GameClient;
-import app.l2nx.highfive.network.serverpackets.LoginFail;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.LoginFail;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Nested;
@@ -40,12 +40,9 @@ class LoginServiceTest {
         void authenticate_shouldAskTheLoginServer_andKeepTheClientWaiting() {
             service.authenticate("alice", client, KEY);
 
-            assertThat(port.getCalls()).containsExactly(Call.of("authenticate", "alice", KEY));
-            assertThat(accounts.takePending("alice"))
-                    .isEqualTo(PendingAuthentication.builder()
-                            .client(client)
-                            .sessionKey(KEY)
-                            .build());
+            final UUID requestId = accounts.pendingAuthentications().getFirst();
+            assertThat(port.getCalls()).containsExactly(Call.of("authenticate", requestId, "alice", KEY));
+            assertThat(service.findRequester(requestId)).isSameAs(client);
         }
 
         @Test
@@ -57,7 +54,7 @@ class LoginServiceTest {
 
             verify(client).close(any(LoginFail.class));
             verify(client).disconnect();
-            assertThat(accounts.takePending("alice")).isNull();
+            assertThat(accounts.pendingAuthentications()).isEmpty();
             assertThat(service.reserveLogin("alice", client)).isTrue();
         }
     }
@@ -68,21 +65,25 @@ class LoginServiceTest {
 
         @Test
         void changePassword_shouldAwaitTheAnswer_whenTheRequestWentOut() {
-            final boolean actual = service.changePassword(accountId, "Hero", "old", "new");
+            when(client.getAccountId()).thenReturn(accountId);
 
+            final boolean actual = service.changePassword(client, "Hero", "old", "new");
+
+            final UUID requestId = accounts.pendingPasswordChanges().getFirst();
             assertThat(actual).isTrue();
-            assertThat(port.getCalls()).containsExactly(Call.of("changePassword", accountId, "Hero", "old", "new"));
-            assertThat(accounts.takeAllPasswordChanges()).containsExactly("Hero");
+            assertThat(port.getCalls())
+                    .containsExactly(Call.of("changePassword", requestId, accountId, "Hero", "old", "new"));
         }
 
         @Test
         void changePassword_shouldAwaitNothing_whenTheLoginServerIsUnreachable() {
+            when(client.getAccountId()).thenReturn(accountId);
             port.setLinkUp(false);
 
-            final boolean actual = service.changePassword(accountId, "Hero", "old", "new");
+            final boolean actual = service.changePassword(client, "Hero", "old", "new");
 
             assertThat(actual).isFalse();
-            assertThat(accounts.takeAllPasswordChanges()).isEmpty();
+            assertThat(accounts.pendingPasswordChanges()).isEmpty();
         }
     }
 
@@ -108,6 +109,56 @@ class LoginServiceTest {
 
             assertThat(port.getCalls()).containsExactly(Call.of("accountLeft", accountId));
             assertThat(service.findClient(accountId)).isNull();
+        }
+    }
+
+    @Nested
+    class LogoutClient {
+        @Test
+        void logout_shouldFreeTheClientsLoginAndAccount_andTellTheLoginServer() {
+            final UUID accountId = holdAlice();
+
+            service.logout(client);
+
+            assertThat(port.getCalls()).containsExactly(Call.of("accountLeft", accountId));
+            assertThat(service.findClient(accountId)).isNull();
+            assertThat(service.reserveLogin("alice", mock(GameClient.class))).isTrue();
+        }
+
+        @Test
+        void logout_shouldTellTheLoginServerNothing_whenAKickFreedTheAccountAlready() {
+            final UUID accountId = holdAlice();
+            service.logout("alice", accountId);
+            port.getCalls().clear();
+
+            service.logout(client);
+
+            assertThat(port.getCalls()).isEmpty();
+        }
+
+        @Test
+        void logout_shouldKeepTheLoginAndAccount_whenANewerSessionHoldsThem() {
+            final UUID accountId = holdAlice();
+            service.logout("alice", accountId);
+            final GameClient newer = mock(GameClient.class);
+            accounts.reserve("alice", newer);
+            accounts.enter(accountId, newer);
+            port.getCalls().clear();
+
+            service.logout(client);
+
+            assertThat(port.getCalls()).isEmpty();
+            assertThat(service.findClient(accountId)).isSameAs(newer);
+            assertThat(service.reserveLogin("alice", client)).isFalse();
+        }
+
+        private UUID holdAlice() {
+            final UUID accountId = UUID.randomUUID();
+            when(client.getAccountName()).thenReturn("alice");
+            when(client.getAccountId()).thenReturn(accountId);
+            accounts.reserve("alice", client);
+            accounts.enter(accountId, client);
+            return accountId;
         }
     }
 

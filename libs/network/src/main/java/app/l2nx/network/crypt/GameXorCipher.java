@@ -20,25 +20,15 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package app.l2nx.highfive.network;
+package app.l2nx.network.crypt;
 
-import app.l2nx.network.buffer.ReadBuffer;
-import app.l2nx.network.buffer.WriteBuffer;
+import io.netty.buffer.ByteBuf;
 
 /**
- * Stateful XOR cipher used by the game protocol.<br>
- * Uses a 16-byte session key and advances a rolling offset stored in key bytes [8..11].
- * <ul>
- * <li>{@link #setKey(byte[])} seeds inbound and outbound keys.</li>
- * <li>First {@link #encrypt(WriteBuffer, int, int)} call only enables the cipher.</li>
- * <li>{@link #decrypt(ReadBuffer, int, int)} mirrors encryption with running XOR.</li>
- * </ul>
- * <br>
- * The key bytes are mirrored in {@code inKeyMasked} / {@code outKeyMasked} as pre-zero-extended {@code int}s so the hot encrypt / decrypt loops avoid the byte->int sign-extend per byte. The masked mirror of bytes [8..11] is refreshed by {@link #advanceOffset} after every call.
- * @author BazookaRpm, Mobius
+ * Stateful XOR cipher of the game protocol: a 16-byte session key per direction whose bytes 8..11 hold a rolling
+ * offset advanced by every frame.
  */
-public class Encryption {
-    // Constants.
+public class GameXorCipher {
     private static final int KEY_LENGTH = 16;
     private static final int BYTE_MASK = 0xFF;
     private static final int NIBBLE_MASK = 0x0F;
@@ -49,7 +39,6 @@ public class Encryption {
     // Rolling offset is stored at key[8..11] (little-endian).
     private static final int OFFSET_INDEX = 8;
 
-    // Session keys (references are immutable; contents are intentionally mutable).
     private final byte[] inKey = new byte[KEY_LENGTH];
     private final byte[] outKey = new byte[KEY_LENGTH];
 
@@ -57,18 +46,9 @@ public class Encryption {
     private final int[] inKeyMasked = new int[KEY_LENGTH];
     private final int[] outKeyMasked = new int[KEY_LENGTH];
 
-    // Enabled state.
-    private boolean enabled;
-
-    /**
-     * Copies the provided 16-byte key into inbound and outbound key buffers.<br>
-     * Fails fast if the input is null or shorter than 16 bytes.
-     * @param key
-     * @throws IllegalArgumentException if key is null or key.length &lt; 16.
-     */
     public void setKey(byte[] key) {
         if ((key == null) || (key.length < KEY_LENGTH)) {
-            throw new IllegalArgumentException("Encryption key must be at least 16 bytes.");
+            throw new IllegalArgumentException("GameXorCipher key must be at least 16 bytes.");
         }
 
         System.arraycopy(key, 0, inKey, 0, KEY_LENGTH);
@@ -80,62 +60,28 @@ public class Encryption {
         }
     }
 
-    /**
-     * Encrypts in place using running XOR and advances the outbound key offset.<br>
-     * The first call only enables the cipher.
-     * @param data
-     * @param offset
-     * @param size
-     */
-    public void encrypt(WriteBuffer data, int offset, int size) {
-        if (!enabled) {
-            enabled = true;
-            return;
-        }
-
-        if (size <= 0) {
-            return;
-        }
-
+    public void encrypt(ByteBuf buf, int index, int size) {
         final int[] key = outKeyMasked;
         int prev = 0;
         for (int i = 0; i < size; i++) {
-            final int raw = data.readByte(offset + i) & BYTE_MASK;
-            prev = raw ^ key[i & NIBBLE_MASK] ^ prev;
-            data.writeByte(offset + i, (byte) prev);
+            prev = buf.getUnsignedByte(index + i) ^ key[i & NIBBLE_MASK] ^ prev;
+            buf.setByte(index + i, prev);
         }
-
         advanceOffset(outKey, outKeyMasked, size);
     }
 
-    /**
-     * Decrypts in place using running XOR and advances the inbound key offset.
-     * @param data
-     * @param offset
-     * @param size
-     */
-    public void decrypt(ReadBuffer data, int offset, int size) {
-        if (!enabled) {
-            return;
-        }
-
-        if (size <= 0) {
-            return;
-        }
-
+    public void decrypt(ByteBuf buf, int index, int size) {
         final int[] key = inKeyMasked;
         int last = 0;
         for (int i = 0; i < size; i++) {
-            final int enc = data.readByte(offset + i) & BYTE_MASK;
-            data.writeByte(offset + i, (byte) (enc ^ key[i & NIBBLE_MASK] ^ last));
+            final int enc = buf.getUnsignedByte(index + i);
+            buf.setByte(index + i, enc ^ key[i & NIBBLE_MASK] ^ last);
             last = enc;
         }
-
         advanceOffset(inKey, inKeyMasked, size);
     }
 
     private static void advanceOffset(byte[] key, int[] keyMasked, int size) {
-        // Advance rolling offset at key[8..11] by size (little-endian int).
         int old = (key[OFFSET_INDEX] & BYTE_MASK);
         old |= (key[OFFSET_INDEX + 1] & BYTE_MASK) << SHIFT_8;
         old |= (key[OFFSET_INDEX + 2] & BYTE_MASK) << SHIFT_16;
@@ -153,7 +99,6 @@ public class Encryption {
         key[OFFSET_INDEX + 2] = b2;
         key[OFFSET_INDEX + 3] = b3;
 
-        // Keep the masked mirror in sync - only [8..11] change.
         keyMasked[OFFSET_INDEX] = b0 & BYTE_MASK;
         keyMasked[OFFSET_INDEX + 1] = b1 & BYTE_MASK;
         keyMasked[OFFSET_INDEX + 2] = b2 & BYTE_MASK;

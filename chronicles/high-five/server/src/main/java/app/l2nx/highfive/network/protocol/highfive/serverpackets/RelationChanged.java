@@ -17,12 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package app.l2nx.highfive.network.serverpackets;
+package app.l2nx.highfive.network.protocol.highfive.serverpackets;
 
 import app.l2nx.highfive.entity.actor.Playable;
 import app.l2nx.highfive.network.GameClient;
-import app.l2nx.highfive.network.ServerPackets;
-import app.l2nx.network.buffer.WriteBuffer;
+import app.l2nx.network.codec.PacketWriter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -87,7 +86,7 @@ public class RelationChanged extends ServerPacket {
     }
 
     @Override
-    public void writeImpl(GameClient client, WriteBuffer buffer) {
+    public void writeImpl(GameClient client, PacketWriter buffer) {
         ServerPackets.RELATION_CHANGED.writeId(this, buffer);
         if (multi == null) {
             buffer.writeInt(1);
@@ -100,7 +99,7 @@ public class RelationChanged extends ServerPacket {
         }
     }
 
-    private void writeRelation(Relation relation, WriteBuffer buffer) {
+    private void writeRelation(Relation relation, PacketWriter buffer) {
         buffer.writeInt(relation.objId);
         buffer.writeInt(relation.relation);
         buffer.writeInt(relation.autoAttackable);

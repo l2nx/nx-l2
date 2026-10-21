@@ -47,8 +47,9 @@ and logged as an overflow and runs first in the next pass; a chain that ends exa
 
 - **One FIFO per client session.** Netty binds a channel to one IO thread, so a session has exactly one producer:
   decoded commands (and legacy packets during the migration) go into the session's bounded single-producer queue
-  (JCTools `SpscArrayQueue`, capacity `inbound-queue-limit`; overflow closes the connection,
-  [spec 008 §5](../008-network.md#5-inbound-pipeline)). The partition inbox (JCTools
+  (JCTools `SpscAtomicArrayQueue`, the field-updater variant like the partition inbox, capacity
+  `inbound-queue-limit`; overflow closes the connection, [spec 008 §5](../008-network.md#5-inbound-pipeline)). The
+  partition inbox (JCTools
   `MpscUnboundedAtomicArrayQueue`: the `MpscUnboundedArrayQueue` algorithm on field updaters, since the
   `sun.misc.Unsafe` variant warns on JDK 24 and later) receives only "this session has input".
 - **A ready session is signalled once.** The producer enqueues, issues a full fence (`VarHandle.fullFence()`) and
@@ -57,8 +58,8 @@ and logged as an overflow and runs first in the next pass; a chain that ends exa
   so without the two fences an item offered while the flag is cleared could stay in the queue unsignalled; with
   them either the producer sees the cleared flag or the partition sees the item. A session whose queue throws is
   reported and leaves the ready set until its producer signals again; the pass goes on.
-- **Before the world partition exists (E6)** the queue is drained by the legacy packet pool, one drain per session
-  at a time, so the order below already holds from stage 4.
+- **Before the world partition exists (E6)** the queue is drained by the session drain on the `l2nx-game-packets`
+  executor, one drain per session at a time, so the order below already holds from stage 4.
 - **Packets of one client are processed strictly in arrival order.** Mobius ran them on a shared executor where two
   packets of one client could execute concurrently or reorder (trade confirm against an item move, target change
   against attack); that class of race and duplication disappears.
@@ -70,8 +71,11 @@ and logged as an overflow and runs first in the next pass; a chain that ends exa
   runs in the same pass. A taken item is gone whether it ran or failed, so it is never retried and a failing packet
   cannot keep the partition busy. Disconnecting a client whose packets keep failing is the session's decision, not
   the loop's.
-- **Packets outside the world** (login key exchange, ping, character selection) are handled by the session state
-  machine outside the partition, in order. A packet that arrives in the wrong state is dropped.
+- **Packets outside the world** (login key exchange, ping, character selection) are handled by the session
+  outside the partition, in order. What a packet needs from the game (a selected character, a character in the
+  world) is checked when it executes, not when it is read, and the packet is rejected when it is missing, so a
+  packet queued right behind the one that selects a character sees that character
+  ([spec 008 §8](../008-network.md#session-states)).
 - **Entity transfer between partitions:** while a session is transferring, its queue keeps filling; after the
   target partition attaches the entity, the queue is drained there in the same order. Nothing is lost or reordered.
 - **Coalescing is opt-in.** Only command types explicitly marked as intent, where only the latest matters (movement

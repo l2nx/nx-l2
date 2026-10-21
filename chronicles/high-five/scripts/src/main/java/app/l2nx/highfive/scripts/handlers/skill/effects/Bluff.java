@@ -24,8 +24,8 @@ import app.l2nx.highfive.mechanics.conditions.Condition;
 import app.l2nx.highfive.mechanics.effects.AbstractEffect;
 import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.mechanics.stats.Formulas;
-import app.l2nx.highfive.network.serverpackets.StartRotation;
-import app.l2nx.highfive.network.serverpackets.StopRotation;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.StartRotation;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.StopRotation;
 import app.l2nx.highfive.util.StatSet;
 
 /**

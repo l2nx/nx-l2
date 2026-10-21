@@ -34,7 +34,7 @@ import app.l2nx.highfive.managers.RaidBossPointsManager;
 import app.l2nx.highfive.managers.RaidBossSpawnManager;
 import app.l2nx.highfive.mechanics.olympiad.Hero;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.serverpackets.SystemMessage;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.SystemMessage;
 import lombok.Getter;
 import lombok.Setter;
 

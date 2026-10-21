@@ -76,7 +76,6 @@ import app.l2nx.highfive.config.custom.WeddingConfig;
 public class ConfigLoader {
     public static void init() {
         ServerConfig.load();
-        NetworkConfig.load();
 
         // Main configurations.
         ConquerableHallSiegeConfig.load();

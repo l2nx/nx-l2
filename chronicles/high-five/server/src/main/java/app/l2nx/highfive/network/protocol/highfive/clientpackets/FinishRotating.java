@@ -20,11 +20,11 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package app.l2nx.highfive.network.clientpackets;
+package app.l2nx.highfive.network.protocol.highfive.clientpackets;
 
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.entity.actor.Player;
-import app.l2nx.highfive.network.serverpackets.StopRotation;
+import app.l2nx.highfive.network.protocol.highfive.serverpackets.StopRotation;
 
 public class FinishRotating extends ClientPacket {
     private int degree;
