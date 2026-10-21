@@ -32,7 +32,6 @@ lists what is open.
   between data load and port open
 - [#44](https://github.com/l2nx/nx-l2/issues/44) Replay production incidents of the world loop
 - [#45](https://github.com/l2nx/nx-l2/issues/45) Input runs against timers due up to one pass earlier (sub-tick order)
-- [#48](https://github.com/l2nx/nx-l2/issues/48) Real-client checks left open after moving the login connection to Netty
 - [#49](https://github.com/l2nx/nx-l2/issues/49) Move the stage 3 repositories into their feature slices
 - [#51](https://github.com/l2nx/nx-l2/issues/51) Replace key-value variable stores with typed owner state
 - [#53](https://github.com/l2nx/nx-l2/issues/53) Community board post cache loads a topic twice under a race
@@ -57,6 +56,7 @@ lists what is open.
 
 ## Done
 
+- [#48](https://github.com/l2nx/nx-l2/issues/48) Real-client checks left open after moving the login connection to Netty
 - [#75](https://github.com/l2nx/nx-l2/issues/75) REUSE licences check fails on main: ten files without SPDX information
 - [#47](https://github.com/l2nx/nx-l2/issues/47) Game server's connection pool sized to fit `max_connections` ([spec 006](specs/006-database.md)).
 - [#18](https://github.com/l2nx/nx-l2/issues/18) Target architecture of the game code: package layout, tick model, ECS
