@@ -25,11 +25,15 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import java.io.DataInputStream;
+import java.io.IOException;
 import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.time.Duration;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -96,8 +100,7 @@ class NetworkServerTest {
         void close_shouldDeliverEachFarewell_beforeTheConnectionCloses() throws Exception {
             server = bind();
 
-            try (Socket socket = new Socket(
-                    InetAddress.getLoopbackAddress(), server.localAddress().getPort())) {
+            try (Socket socket = connect()) {
                 awaitClients(1);
 
                 server.close(channel -> OutboundQueue.of(channel)
@@ -115,8 +118,7 @@ class NetworkServerTest {
         void close_shouldCloseTheRest_whenAFarewellNeverCloses() throws Exception {
             server = bind();
 
-            try (Socket socket = new Socket(
-                    InetAddress.getLoopbackAddress(), server.localAddress().getPort())) {
+            try (Socket socket = connect()) {
                 awaitClients(1);
 
                 server.close(channel -> {});
@@ -126,14 +128,55 @@ class NetworkServerTest {
             assertThat(server.clients().size()).isZero();
         }
 
+        @Test
+        void close_shouldCloseAConnection_whoseInitializationFinishesAfterTheClose() throws Exception {
+            final CountDownLatch initializing = new CountDownLatch(1);
+            final CountDownLatch release = new CountDownLatch(1);
+            server = bind(channel -> {
+                initializing.countDown();
+                await(release);
+                echoPipeline(channel);
+            });
+
+            try (Socket socket = connect()) {
+                assertThat(initializing.await(5, TimeUnit.SECONDS)).isTrue();
+
+                server.close(channel -> {});
+                release.countDown();
+
+                assertThat(socket.getInputStream().read()).isEqualTo(-1);
+            }
+        }
+
         private void awaitClients(int count) throws InterruptedException {
-            for (int i = 0; (i < 50) && (server.clients().size() < count); i++) {
+            for (int i = 0; (i < 250) && (server.clients().size() < count); i++) {
                 Thread.sleep(20);
+            }
+            assertThat(server.clients().size()).as("registered clients").isEqualTo(count);
+        }
+
+        private Socket connect() throws IOException {
+            final Socket socket = new Socket(
+                    InetAddress.getLoopbackAddress(), server.localAddress().getPort());
+            // A missing farewell or close fails the test instead of hanging the build.
+            socket.setSoTimeout(5_000);
+            return socket;
+        }
+
+        private static void await(CountDownLatch latch) {
+            try {
+                latch.await(5, TimeUnit.SECONDS);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
             }
         }
     }
 
     private NetworkServer bind() {
+        return bind(NetworkServerTest::echoPipeline);
+    }
+
+    private NetworkServer bind(Consumer<Channel> initializer) {
         return NetworkServer.bind(
                 "echo",
                 new InetSocketAddress(InetAddress.getLoopbackAddress(), 0),
@@ -141,7 +184,7 @@ class NetworkServerTest {
                 properties,
                 metrics,
                 new ConnectionLimiter(properties, address -> false),
-                NetworkServerTest::echoPipeline);
+                initializer);
     }
 
     private static void echoPipeline(Channel channel) {

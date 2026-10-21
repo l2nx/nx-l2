@@ -21,6 +21,7 @@ import java.net.InetSocketAddress;
 import java.time.Duration;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import lombok.extern.slf4j.Slf4j;
 
@@ -33,14 +34,21 @@ public final class NetworkServer implements AutoCloseable {
     private final ChannelGroup clients;
     private final ScheduledFuture<?> sweep;
     private final Duration shutdownTimeout;
+    private final AtomicBoolean closing;
 
     private NetworkServer(
-            String name, Channel serverChannel, ChannelGroup clients, ScheduledFuture<?> sweep, Duration timeout) {
+            String name,
+            Channel serverChannel,
+            ChannelGroup clients,
+            ScheduledFuture<?> sweep,
+            Duration timeout,
+            AtomicBoolean closing) {
         this.name = name;
         this.serverChannel = serverChannel;
         this.clients = clients;
         this.sweep = sweep;
         shutdownTimeout = timeout;
+        this.closing = closing;
     }
 
     public static NetworkServer bind(
@@ -52,6 +60,7 @@ public final class NetworkServer implements AutoCloseable {
             ConnectionLimiter limiter,
             Consumer<Channel> initializer) {
         final ChannelGroup clients = new DefaultChannelGroup(name, GlobalEventExecutor.INSTANCE);
+        final AtomicBoolean closing = new AtomicBoolean();
         final ServerBootstrap bootstrap = new ServerBootstrap()
                 .group(loops.boss(), loops.workers())
                 .channel(loops.transport().serverChannelClass())
@@ -71,6 +80,10 @@ public final class NetworkServer implements AutoCloseable {
                         initializer.accept(channel);
                         // After the pipeline is built: a shutdown farewell relies on it.
                         clients.add(channel);
+                        // Accepted before the close but initialized after it: the close no longer sees this channel.
+                        if (closing.get()) {
+                            channel.close();
+                        }
                     }
                 });
 
@@ -83,7 +96,7 @@ public final class NetworkServer implements AutoCloseable {
                 ? null
                 : loops.boss().scheduleAtFixedRate(limiter::sweep, SWEEP_MINUTES, SWEEP_MINUTES, TimeUnit.MINUTES);
         log.info("{} listening on {}", name, bound.channel().localAddress());
-        return new NetworkServer(name, bound.channel(), clients, sweep, properties.shutdownTimeout());
+        return new NetworkServer(name, bound.channel(), clients, sweep, properties.shutdownTimeout(), closing);
     }
 
     static WriteBufferWaterMark watermark(NetworkProperties properties) {
@@ -121,6 +134,7 @@ public final class NetworkServer implements AutoCloseable {
      */
     public void close(Consumer<Channel> farewell) {
         stopAccepting();
+        closing.set(true);
         clients.forEach(farewell);
         if (clients.newCloseFuture().awaitUninterruptibly(shutdownTimeout.toMillis())) {
             return;
