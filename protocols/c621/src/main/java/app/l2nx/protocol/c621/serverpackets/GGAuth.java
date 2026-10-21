@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -20,25 +24,30 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package app.l2nx.login.protocol.c621.serverpackets;
+package app.l2nx.protocol.c621.serverpackets;
 
-import app.l2nx.login.network.LoginClient;
-import app.l2nx.network.codec.PacketWriter;
+import app.l2nx.network.codec.PacketDecodeException;
+import io.netty.buffer.ByteBuf;
 
-public class GGAuth extends LoginServerPacket {
-    private final int response;
+/** The answer to {@code AuthGameGuard}: the session id, then four reserved words of zero. */
+public record GGAuth(int response) implements LoginServerPacket {
+    private static final int RESERVED = 16;
+    private static final int BODY = 4 + RESERVED;
 
-    public GGAuth(int response) {
-        this.response = response;
+    public static GGAuth read(ByteBuf body) {
+        if (body.readableBytes() < BODY) {
+            throw new PacketDecodeException(
+                    "GGAuth needs " + BODY + " bytes, " + body.readableBytes() + " in the frame");
+        }
+        final GGAuth packet = new GGAuth(body.readIntLE());
+        body.skipBytes(RESERVED);
+        return packet;
     }
 
     @Override
-    protected void writeImpl(LoginClient client, PacketWriter buffer) {
-        buffer.writeByte(0x0b);
-        buffer.writeInt(response);
-        buffer.writeInt(0);
-        buffer.writeInt(0);
-        buffer.writeInt(0);
-        buffer.writeInt(0);
+    public void write(ByteBuf out) {
+        out.writeByte(LoginServerOpcode.GG_AUTH.opcode());
+        out.writeIntLE(response);
+        out.writeZero(RESERVED);
     }
 }

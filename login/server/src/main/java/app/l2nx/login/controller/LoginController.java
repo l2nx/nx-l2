@@ -29,8 +29,6 @@ package app.l2nx.login.controller;
 import app.l2nx.login.config.LoginProperties;
 import app.l2nx.login.data.GameServerTable;
 import app.l2nx.login.data.GameServerTable.GameServerInfo;
-import app.l2nx.login.enums.LoginFailReason;
-import app.l2nx.login.enums.LoginResult;
 import app.l2nx.login.gslink.GameServerLink;
 import app.l2nx.login.network.LoginClient;
 import app.l2nx.login.repository.AccountRepository;
@@ -40,7 +38,6 @@ import java.net.InetAddress;
 import java.security.GeneralSecurityException;
 import java.security.KeyPairGenerator;
 import java.security.SecureRandom;
-import java.security.interfaces.RSAPrivateKey;
 import java.security.spec.RSAKeyGenParameterSpec;
 import java.time.Duration;
 import java.time.Instant;
@@ -57,7 +54,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.random.RandomGenerator;
-import javax.crypto.Cipher;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;
@@ -113,8 +109,6 @@ public class LoginController {
 
         log.info("Cached 10 KeyPairs for RSA communication.");
 
-        testCipher((RSAPrivateKey) keyPairs[0].getPrivateKey());
-
         generateBlowFishKeys();
 
         purgeTask = taskScheduler.scheduleAtFixedRate(this::purge, Instant.now().plus(LOGIN_TIMEOUT), LOGIN_TIMEOUT);
@@ -125,12 +119,6 @@ public class LoginController {
             purgeTask.cancel(false);
             purgeTask = null;
         }
-    }
-
-    /** Forces the RSA provider to initialize at load, so the first login does not pay for it. */
-    private void testCipher(RSAPrivateKey key) throws GeneralSecurityException {
-        final Cipher rsaCipher = Cipher.getInstance("RSA/ECB/nopadding");
-        rsaCipher.init(Cipher.DECRYPT_MODE, key);
     }
 
     private void generateBlowFishKeys() {
@@ -164,9 +152,6 @@ public class LoginController {
                 SECURE_RANDOM.nextInt(), SECURE_RANDOM.nextInt(), SECURE_RANDOM.nextInt(), SECURE_RANDOM.nextInt());
     }
 
-    /**
-     * Drops whatever client holds the account, for the game server taking the account over.
-     */
     public void removeAuthedLoginClient(UUID accountId) {
         if (accountId == null) {
             return;
@@ -532,7 +517,7 @@ public class LoginController {
             final LoginClient client = iterator.next().getValue();
             if ((!client.hasJoinedGS() && ((client.getConnectionStartTime() + LOGIN_TIMEOUT.toMillis()) <= currentTime))
                     || !client.isConnected()) {
-                client.close(LoginFailReason.REASON_ACCESS_FAILED);
+                client.closeForExpiry();
                 iterator.remove();
             }
         }

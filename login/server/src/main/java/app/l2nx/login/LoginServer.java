@@ -32,6 +32,8 @@ import app.l2nx.login.data.GameServerTable;
 import app.l2nx.login.network.LoginChannelInitializer;
 import app.l2nx.login.network.LoginClient;
 import app.l2nx.login.network.LoginKeys;
+import app.l2nx.login.protocol.LoginVariant;
+import app.l2nx.login.protocol.c621.handler.RequestAuthLoginHandler;
 import app.l2nx.network.bootstrap.NetworkServer;
 import app.l2nx.network.channel.guard.ConnectionLimiter;
 import app.l2nx.network.config.NetworkProperties;
@@ -199,6 +201,10 @@ public class LoginServer implements SmartLifecycle {
         final LoginProperties.Client client = properties.client();
         blockingTasks = new BlockingTaskExecutor("l2nx-login-tasks", client.maxConcurrentTasks(), meterRegistry);
         final ConnectionLimiter limiter = new ConnectionLimiter(networkProperties, loginController::isBannedAddress);
+        client.ports().stream()
+                .map(LoginProperties.ClientPort::variant)
+                .distinct()
+                .forEach(this::warmUp);
         for (LoginProperties.ClientPort port : client.ports()) {
             clientServers.add(NetworkServer.bind(
                     "login-" + port.variant().id(),
@@ -215,6 +221,18 @@ public class LoginServer implements SmartLifecycle {
                                     loginController.getScrambledRSAKeyPair(), loginController.getBlowfishKey()),
                             LoginController.SECURE_RANDOM,
                             loginController::removeAuthedLoginClientIfCurrent)));
+        }
+    }
+
+    private void warmUp(LoginVariant variant) {
+        try {
+            switch (variant) {
+                case C621 ->
+                    RequestAuthLoginHandler.warmUp(
+                            loginController.getScrambledRSAKeyPair().getPrivateKey());
+            }
+        } catch (GeneralSecurityException e) {
+            throw new IllegalStateException("RSA is unavailable for the login variant " + variant.id() + ".", e);
         }
     }
 

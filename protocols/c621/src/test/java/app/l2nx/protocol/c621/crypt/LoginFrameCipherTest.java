@@ -2,9 +2,10 @@
  * SPDX-FileCopyrightText: 2026 L2NX contributors
  * SPDX-License-Identifier: Apache-2.0
  */
-package app.l2nx.login.protocol.c621;
+package app.l2nx.protocol.c621.crypt;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
 
 import app.l2nx.network.codec.FrameEncoder;
 import app.l2nx.network.codec.Frames;
@@ -23,12 +24,13 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class LoginFrameCipherTest {
     private static final byte[] SESSION_KEY = HexFormat.of().parseHex("0102030405060708090a0b0c0d0e0f10");
     private static final int XOR_KEY = 0x1234ABCD;
 
-    private final LoginFrameCipher cipher = new LoginFrameCipher(SESSION_KEY, () -> XOR_KEY);
+    private final LoginFrameCipher cipher = LoginFrameCipher.server(SESSION_KEY, () -> XOR_KEY);
     private final EmbeddedChannel channel = TestChannels.embedded(new FrameEncoder(cipher));
 
     @AfterEach
@@ -50,6 +52,17 @@ class LoginFrameCipherTest {
             encode(payload(170));
 
             assertThat(cipher.encryptedLength(payload)).isEqualTo(expected);
+        }
+
+        @ParameterizedTest(name = "payload {0}")
+        @ValueSource(ints = {0, 1, 7, 8, 9, 15, 16, 170})
+        void encryptedLength_shouldStayWithinTheMaximumOverhead_inEitherPhase(int payload) {
+            final int first = cipher.encryptedLength(payload);
+            encode(payload(170));
+            final int later = cipher.encryptedLength(payload);
+
+            assertThat(first - payload).as("Init").isLessThanOrEqualTo(LoginFrameCipher.MAX_OVERHEAD);
+            assertThat(later - payload).as("session").isLessThanOrEqualTo(LoginFrameCipher.MAX_OVERHEAD);
         }
     }
 
@@ -130,6 +143,80 @@ class LoginFrameCipherTest {
         }
     }
 
+    @Nested
+    class ClientSide {
+        private final LoginFrameCipher client = LoginFrameCipher.client();
+
+        @ParameterizedTest(name = "payload {0} -> {1}")
+        @CsvSource({"1, 8", "4, 8", "5, 16", "12, 16", "21, 32", "257, 264"})
+        void encryptedLength_shouldPadPayloadAndChecksumToTheBlock(int payload, int expected) {
+            assertThat(client.encryptedLength(payload)).isEqualTo(expected);
+        }
+
+        @Test
+        void decrypt_shouldUndoTheStaticKeyAndTheXorPass_ofInit() {
+            final byte[] init = payload(170);
+            final ByteBuf wire = Unpooled.wrappedBuffer(Arrays.copyOfRange(encode(init), 2, 194));
+
+            assertThat(client.decrypt(wire, 0, wire.capacity())).isTrue();
+
+            assertThat(ByteBufUtil.getBytes(wire, 0, 170)).isEqualTo(init);
+            wire.release();
+        }
+
+        @Test
+        void decrypt_shouldVerifyTheChecksum_afterInit() {
+            encode(payload(170));
+            final byte[] packet = payload(10);
+            final ByteBuf wire = Unpooled.wrappedBuffer(Arrays.copyOfRange(encode(packet), 2, 26));
+            client.decrypt(Unpooled.wrappedBuffer(staticFrame()), 0, 192);
+            client.sessionKey(SESSION_KEY);
+
+            assertThat(client.decrypt(wire, 0, wire.capacity())).isTrue();
+
+            assertThat(ByteBufUtil.getBytes(wire, 0, 10)).isEqualTo(packet);
+            wire.release();
+        }
+
+        @Test
+        void encrypt_shouldProduceWhatTheServerAccepts() {
+            client.decrypt(Unpooled.wrappedBuffer(staticFrame()), 0, 192);
+            client.sessionKey(SESSION_KEY);
+            final byte[] packet = payload(21);
+            final ByteBuf wire = Unpooled.buffer(32).writeBytes(packet).writeZero(32 - packet.length);
+
+            client.encrypt(wire, 0, packet.length);
+
+            assertThat(Arrays.copyOf(ByteBufUtil.getBytes(wire), 32)).isEqualTo(clientFrame(packet, 32));
+            assertThat(cipher.decrypt(wire, 0, 32)).isTrue();
+            assertThat(ByteBufUtil.getBytes(wire, 0, packet.length)).isEqualTo(packet);
+            wire.release();
+        }
+
+        @Test
+        void encrypt_shouldRefuse_whenInitHasNotBeenRead() {
+            final ByteBuf wire = Unpooled.buffer(16).writeZero(16);
+
+            assertThatIllegalStateException().isThrownBy(() -> client.encrypt(wire, 0, 4));
+            wire.release();
+        }
+
+        @Test
+        void decrypt_shouldReject_whenInitIsTooShortForTheXorPass() {
+            final ByteBuf wire = Unpooled.wrappedBuffer(new byte[8]);
+
+            assertThat(client.decrypt(wire, 0, 8)).isFalse();
+            wire.release();
+        }
+
+        private byte[] staticFrame() {
+            final byte[] frame = Arrays.copyOf(payload(170), 192);
+            RollingXor.encrypt(frame, 0, frame.length, XOR_KEY);
+            new LittleEndianBlowfishCipher(LoginFrameCipher.STATIC_KEY).encrypt(frame, 0, frame.length);
+            return frame;
+        }
+    }
+
     private byte[] encode(byte[] payload) {
         return encode(Frames.allocate(channel.alloc(), payload.length).writeBytes(payload));
     }
@@ -142,9 +229,12 @@ class LoginFrameCipherTest {
         return bytes;
     }
 
-    /** What the client sends: payload, zero padding, checksum, session Blowfish. */
     private static byte[] clientFrame(byte[] payload) {
-        final byte[] wire = Arrays.copyOf(payload, 24);
+        return clientFrame(payload, 24);
+    }
+
+    private static byte[] clientFrame(byte[] payload, int length) {
+        final byte[] wire = Arrays.copyOf(payload, length);
         XorChecksum.append(wire, 0, wire.length);
         new LittleEndianBlowfishCipher(SESSION_KEY).encrypt(wire, 0, wire.length);
         return wire;

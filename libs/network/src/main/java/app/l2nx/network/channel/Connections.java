@@ -14,14 +14,19 @@ public final class Connections {
 
     private Connections() {}
 
-    /**
-     * Thread-safe: the attribute is set atomically, so concurrent closes count one reason.
-     */
     public static void close(Channel channel, CloseReason reason) {
+        closing(channel, reason);
+        channel.close();
+    }
+
+    /**
+     * Counts the reason of a close that the caller performs itself, after a last packet; the first reason recorded on
+     * the channel wins, as in {@link #close}.
+     */
+    public static void closing(Channel channel, CloseReason reason) {
         if (channel.attr(CLOSE_REASON).setIfAbsent(reason) == null) {
             metrics(channel).closed(reason);
         }
-        channel.close();
     }
 
     public static CloseReason closeReason(Channel channel) {

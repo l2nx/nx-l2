@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -20,9 +24,9 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package app.l2nx.login.enums;
+package app.l2nx.protocol.c621.serverpackets.reason;
 
-import lombok.Getter;
+import app.l2nx.protocol.c621.CodeTable;
 
 public enum PlayFailReason {
     REASON_NO_MESSAGE(0x00),
@@ -65,10 +69,22 @@ public enum PlayFailReason {
     REASON_CERTIFICATION_DAILY_USE_EXCEEDED(0x37),
     REASON_CERTIFICATION_UNDERWAY_TRY_AGAIN_LATER(0x38);
 
-    @Getter
+    private static final CodeTable<PlayFailReason> BY_CODE = new CodeTable<>(values(), PlayFailReason::code);
+
     private final int code;
 
     PlayFailReason(int code) {
         this.code = code;
+    }
+
+    public int code() {
+        return code;
+    }
+
+    /**
+     * @return {@code null} when the code is unknown
+     */
+    public static PlayFailReason of(int code) {
+        return BY_CODE.of(code);
     }
 }

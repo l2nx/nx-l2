@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -20,9 +24,9 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package app.l2nx.login.enums;
+package app.l2nx.protocol.c621.serverpackets.reason;
 
-import lombok.Getter;
+import app.l2nx.protocol.c621.CodeTable;
 
 public enum AccountKickedReason {
     REASON_DATA_STEALER(0x01),
@@ -30,10 +34,22 @@ public enum AccountKickedReason {
     REASON_7_DAYS_SUSPENDED(0x10),
     REASON_PERMANENTLY_BANNED(0x20);
 
-    @Getter
+    private static final CodeTable<AccountKickedReason> BY_CODE = new CodeTable<>(values(), AccountKickedReason::code);
+
     private final int code;
 
     AccountKickedReason(int code) {
         this.code = code;
+    }
+
+    public int code() {
+        return code;
+    }
+
+    /**
+     * @return {@code null} when the code is unknown
+     */
+    public static AccountKickedReason of(int code) {
+        return BY_CODE.of(code);
     }
 }

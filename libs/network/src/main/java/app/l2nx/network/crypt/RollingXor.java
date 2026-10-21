@@ -10,7 +10,7 @@ import java.util.Objects;
 
 /**
  * XOR over little-endian 32-bit words with a rolling key that grows by each plain word. The first and last words stay
- * plain; the final key replaces the second-to-last word.
+ * plain; the final key replaces the second-to-last word, which is how the decrypting side recovers it.
  */
 public final class RollingXor {
     private static final int WORD_SIZE = 4;
@@ -24,10 +24,7 @@ public final class RollingXor {
 
     public static void encrypt(ByteBuf buf, int index, int size, int key) {
         Objects.checkFromIndexSize(index, size, buf.capacity());
-        if (((size % WORD_SIZE) != 0) || (size < MIN_SIZE)) {
-            throw new IllegalArgumentException(
-                    "Size " + size + " is not a multiple of " + WORD_SIZE + " of at least " + MIN_SIZE);
-        }
+        checkSize(size);
 
         final int keyIndex = (index + size) - (2 * WORD_SIZE);
         int rollingKey = key;
@@ -37,5 +34,30 @@ public final class RollingXor {
             buf.setIntLE(i, word ^ rollingKey);
         }
         buf.setIntLE(keyIndex, rollingKey);
+    }
+
+    public static void decrypt(byte[] data, int offset, int size) {
+        decrypt(Unpooled.wrappedBuffer(data), offset, size);
+    }
+
+    /** Walks back from the final key; the word that carried it keeps it, since the original word is lost. */
+    public static void decrypt(ByteBuf buf, int index, int size) {
+        Objects.checkFromIndexSize(index, size, buf.capacity());
+        checkSize(size);
+
+        final int keyIndex = (index + size) - (2 * WORD_SIZE);
+        int rollingKey = buf.getIntLE(keyIndex);
+        for (int i = keyIndex - WORD_SIZE; i > index; i -= WORD_SIZE) {
+            final int word = buf.getIntLE(i) ^ rollingKey;
+            buf.setIntLE(i, word);
+            rollingKey -= word;
+        }
+    }
+
+    private static void checkSize(int size) {
+        if (((size % WORD_SIZE) != 0) || (size < MIN_SIZE)) {
+            throw new IllegalArgumentException(
+                    "Size " + size + " is not a multiple of " + WORD_SIZE + " of at least " + MIN_SIZE);
+        }
     }
 }

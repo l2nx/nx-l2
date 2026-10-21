@@ -187,13 +187,15 @@ The move is mechanical because a chronicle is one self-contained directory (§4)
 libs/                 knows no game rules; reusable by any server
   boot                app.l2nx.boot        Spring Boot auto-configuration shared by the servers
   database            app.l2nx.database    schema check, Instant/timestamptz bridge, PostgreSQL test fixtures (spec 006)
-  network             app.l2nx.network     Netty transport (framing, PacketCipher, server/client)
+  network             app.l2nx.network     Netty transport (framing, cipher primitives, server/client)
   gslink              app.l2nx.gslink      GS-link gRPC contract (proto, stubs, secret interceptors)
   telemetry           app.l2nx.telemetry   Micrometer
 engine/               Lineage 2 mechanics shared by every chronicle
   geo                 app.l2nx.engine.geo      movement / pathfinding / line-of-sight SPI + classic geodata
   adapter             app.l2nx.engine.adapter  L2NX adapter host
   core                app.l2nx.engine.core     partition runtime (spec 003); later what HF and Essence share
+protocols/            one wire protocol each: opcodes, wire records with their codecs, keys and framing (spec 008 §8)
+  c621                app.l2nx.protocol.c621   login protocol
 login/
   server              app.l2nx.login       login logic, protocol variants, GS-link; Liquibase changelog
   boot                app.l2nx.login.boot  launcher; runtime files (config, data) in src/dist
@@ -360,8 +362,8 @@ constraints).
   key and Blowfish), so the client version is unknown at that point. Each listening port is bound to one variant
   and its codec; the client or launcher points at its port. There is no detection heuristic, and the server-list
   filter follows from the port.
-- **Layout inside `login/server`:** `protocol/<variant>/` (codec, packets) next to the shared domain: accounts,
-  bans, sessions, GS-link.
+- **Layout inside `login/server`:** `protocol/<variant>/` (handshake, decoder, a handler per client packet) next to
+  the shared domain: accounts, bans, sessions, GS-link. The variant's wire records and cipher are `protocols/<variant>`.
 - **GS-link login↔game** runs on gRPC ([spec 008 §10](008-network.md#10-gs-link)) and is the same for every
   chronicle. A game server reports its chronicle when it registers.
 

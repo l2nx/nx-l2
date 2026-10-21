@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -20,41 +24,17 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package app.l2nx.login.protocol.c621.clientpackets;
+package app.l2nx.login.protocol.c621.handler;
 
-import app.l2nx.login.enums.LoginFailReason;
 import app.l2nx.login.network.LoginClient;
+import app.l2nx.protocol.c621.clientpackets.RequestServerList;
+import app.l2nx.protocol.c621.serverpackets.reason.LoginFailReason;
 
-/**
- * <pre>
- * Format: ddc
- * d: first part of session id
- * d: second part of session id
- * c: ?
- * </pre>
- */
-public class RequestServerList extends LoginClientPacket {
-    private int skey1;
-    private int skey2;
+public final class RequestServerListHandler {
+    private RequestServerListHandler() {}
 
-    @SuppressWarnings("unused")
-    private int data3;
-
-    @Override
-    protected boolean readImpl() {
-        if (remaining() >= 8) {
-            skey1 = readInt();
-            skey2 = readInt();
-            return true;
-        }
-
-        return false;
-    }
-
-    @Override
-    public void run() {
-        final LoginClient client = getClient();
-        if (client.getSessionKey().checkLoginPair(skey1, skey2)) {
+    public static void handle(LoginClient client, RequestServerList packet) {
+        if (client.getSessionKey().checkLoginPair(packet.loginOk1(), packet.loginOk2())) {
             client.sendServerList();
         } else {
             client.close(LoginFailReason.REASON_ACCESS_FAILED);

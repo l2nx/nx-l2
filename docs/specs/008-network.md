@@ -23,17 +23,20 @@ client protocol becomes an adapter in front of a game that knows no packets. Sta
 
 | Module / package                                 | Holds                                                                                                                         |
 | ------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------- |
-| `libs/network` (`app.l2nx.network`)              | bootstraps, transport selection, framing, cipher contract and handler, frame encoder, limits, metrics, the ciphers            |
+| `libs/network` (`app.l2nx.network`)              | bootstraps, transport selection, framing, cipher contract and handler, frame encoder, limits, metrics, the cipher primitives  |
+| `protocols/<id>` (`app.l2nx.protocol.<id>`)      | one wire protocol: opcodes, wire records with their codecs, the protocol's keys and frame cipher (§8 Wire codecs)             |
 | `engine/core` `session`                          | session queue, session states, command dispatch, `ClientPort` ([wiring-layout §4](003-engine-core/wiring-layout.md#4-layout)) |
-| `login/server` `protocol/<variant>/`             | login protocol variants (decoders, packets)                                                                                   |
+| `login/server` `protocol/<variant>/`             | the login server's side of one login protocol: handshake, decoder, a handler per client packet, accepted states               |
 | `libs/gslink` (`app.l2nx.gslink`)                | the GS-link contract: `.proto` (`l2nx.gslink.v1`), generated stubs, the shared-secret interceptors, `l2nx.gslink` settings    |
 | `login/server` `gslink`                          | login side of the GS-link: the gRPC service                                                                                   |
 | `chronicles/<c>/server` `login`                  | the game server's side of the login server as a slice: online accounts, server listing, `LoginPort`, the login commands       |
 | `chronicles/<c>/server` `network`                | game pipeline, version handshake, protocol registry, `gslink/` (the gRPC client of the GS-link, adapter of `LoginPort`)       |
-| `chronicles/<c>/server` `network/protocol/<id>/` | one client protocol adapter: inbound decoders, outbound mappers, serialization                                                |
+| `chronicles/<c>/server` `network/protocol/<id>/` | one client protocol adapter: wire records to commands, view events to wire records                                            |
 
-`libs/network` knows no game rules; it knows bytes, frames and the Lineage 2 ciphers (LE Blowfish, rolling XOR,
-XOR checksum).
+`libs/network` knows no game rules and no protocol; it knows bytes, frames and the Lineage 2 cipher primitives
+(LE Blowfish, rolling XOR, XOR checksum). The keys, opcodes and layouts of a protocol live in its `protocols/<id>`
+module, which depends on `libs/network` and Netty buffers only, so the load harness uses it as the server does
+([spec 009](009-load-harness.md)).
 
 ## 3. Configuration
 
@@ -263,14 +266,36 @@ and is rejected the same way when it is missing; the legacy list shrinks as pack
 
 ### Adapters
 
-- **An adapter** (`network/protocol/<id>/`) holds the inbound decoders, the outbound mappers and their
-  serialization. What its client cannot express is decided in its mapper.
+- **An adapter** (`network/protocol/<id>/`) is thin: an inbound decoder is the record's `decode` plus mapping the
+  record to a command, an outbound mapper maps a view event to a record and writes it. Layouts are never written in
+  the adapter. What its client cannot express is decided in its mapper.
 - **Completeness is tested:** every command a client can send has a handler, and every view event has a mapper or
   an explicit drop, in each adapter.
 - **The first adapter is `highfive`,** accepting protocol versions 267, 268, 271 and 273.
 - **Further protocols** take their packet layouts from the Mobius builds of other chronicles and from a private
   reference server consulted for packet layouts and behaviour only, under the originality policy of
   [spec 001 §2](001-project-design.md#originality-policy).
+
+### Wire codecs
+
+Each packet layout exists once, in `protocols/<id>`, and serves both sides: the servers and the load bots of
+[spec 009](009-load-harness.md). Packet libraries shared by servers and bots are built the same way elsewhere
+(MCProtocolLib, Velocity); a schema with generated codecs (Kaitai Struct, a DSL) does not fit Lineage 2's
+conditional fields and nested loops and has no Java writer.
+
+- **The record is its own codec.** A wire record holds the layout only: fields in wire order, strings with their
+  bound, wire enums (reason codes) as values of the protocol, no game types. A client packet has
+  `static decode(ByteBuf)` (server) and `encode(ByteBuf)` (load bot); a server packet has `write(ByteBuf)`
+  (server) and `static read(ByteBuf)` (load bot). Codecs are pure: no state, no clock, no I/O; decoding follows
+  §5 (bounded strings, values copied, a short frame is a `PacketDecodeException`).
+- **Opcodes** are constants of the protocol module; which packet a side accepts in which state is that side's
+  decision, not the codec's.
+- **Keys and framing of a protocol** (static keys, the `Init` XOR pass, the credentials block and the scrambled RSA
+  modulus of the login protocol, the XOR keys of a game protocol) live in its module, over the primitives of
+  `libs/network`. Each has both directions where both sides need them.
+- **Golden tests** per codec (bytes to record and back) live in the protocol module and serve both sides.
+- **Modules:** `protocols/c621` (login) and `protocols/highfive` (game 267 to 273). `highfive` codecs come with the
+  first migrated slices; until then its XOR keys and frame cipher stay in `libs/network`.
 
 ### Legacy routes during the migration
 
@@ -315,8 +340,12 @@ Packets not yet moved to ports pass through the `highfive` adapter as they are:
   IO thread. A channel holds an executor slot for at most a batch of its tasks and then queues again behind the
   others (a fair semaphore), so a busy channel cannot starve logins; tasks the executor can no longer run after
   close go to the channel's rejection handler instead of running against a closing context.
-- **Login states:** the packet decoder looks the opcode up whatever the state and hands the packet to the channel's
-  lane; the packet checks the connection state there, just before it runs, and is dropped as
+- **Codecs and handlers:** the records, the frame cipher and the credentials block are `protocols/c621`
+  (§8 Wire codecs); `login/server` holds a handler per client record, which does what the packet means (RSA
+  decrypt and account check for `RequestAuthLogin`), and sends server records. The login server has no ports or
+  commands: it is one small process without slices, so the Netty idiom of a handler per message type suffices.
+- **Login states:** the packet decoder decodes the record whatever the state and hands it with its handler to the
+  channel's lane; the connection state is checked there, just before the handler runs, and is dropped as
   `l2nx.network.dropped{reason=wrong-state}` when the state does not accept it. A packet read right behind a
   state-changing one (`AuthGameGuard`, then `RequestAuthLogin` in the same read) is judged by the state the first
   one leaves. A packet that reaches the lane after the connection started closing (a pipelined second
@@ -325,7 +354,8 @@ Packets not yet moved to ports pass through the `highfive` adapter as they are:
 - **Idle:** `read-timeout` applies until the account is authenticated. The client sends nothing on the licence and
   server list screens, so authentication re-arms the read-idle close with the login session lifetime (5 minutes):
   every login connection stays bounded on its own channel, including sessions the login server no longer tracks.
-  On top of that the purge closes an authenticated session that has not moved on to a game server within 5 minutes,
+  That close sends `LoginFail` `REASON_ACCESS_FAILED` first and counts as `idle`, because the High Five client
+  ignores a bare close on the server list screen and Confirm then does nothing. On top of that the purge closes an authenticated session that has not moved on to a game server within 5 minutes,
   checking every 5 minutes.
 - **Server list:** the High Five client asks for the list once, so it is sent after every online game server
   reported the characters of the account or after 500 ms, whichever comes first; the wait is a timer on the channel's

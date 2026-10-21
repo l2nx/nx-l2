@@ -17,6 +17,7 @@ import app.l2nx.boot.ServerExitCode;
 import app.l2nx.login.config.LoginProperties;
 import app.l2nx.login.config.TestLoginProperties;
 import app.l2nx.login.controller.LoginController;
+import app.l2nx.login.controller.ScrambledKeyPair;
 import app.l2nx.login.data.GameServerTable;
 import app.l2nx.network.config.NetworkProperties;
 import app.l2nx.network.config.Transport;
@@ -27,10 +28,14 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
+import java.security.GeneralSecurityException;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.ScheduledFuture;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Execution;
@@ -46,6 +51,7 @@ import org.springframework.scheduling.TaskScheduler;
 @Execution(ExecutionMode.SAME_THREAD)
 class LoginServerTest {
     private static final Duration RESTART_DELAY = Duration.ofHours(6);
+    private static final ScrambledKeyPair RSA_KEYS = new ScrambledKeyPair(keyPair("RSA"));
 
     private final LoginController loginController = mock(LoginController.class);
     private final TaskScheduler taskScheduler = mock(TaskScheduler.class);
@@ -57,6 +63,11 @@ class LoginServerTest {
                     .shutdownQuietPeriod(Duration.ZERO)
                     .build(),
             TransportResolver.nativeAvailability());
+
+    @BeforeEach
+    void stubKeys() {
+        when(loginController.getScrambledRSAKeyPair()).thenReturn(RSA_KEYS);
+    }
 
     @AfterEach
     void closeEventLoops() {
@@ -108,6 +119,21 @@ class LoginServerTest {
         }
 
         @Test
+        void start_shouldFail_whenRsaCannotUseTheKey() throws Exception {
+            final ScrambledKeyPair notRsa = mock(ScrambledKeyPair.class);
+            when(notRsa.getPrivateKey()).thenReturn(keyPair("EC").getPrivate());
+            when(loginController.getScrambledRSAKeyPair()).thenReturn(notRsa);
+            final LoginServer server = server(TestLoginProperties.create(freePort(), TestLoginProperties.noRestart()));
+
+            assertThatThrownBy(server::start)
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining("c621");
+
+            assertThat(server.isRunning()).isFalse();
+            verify(loginController).shutdown();
+        }
+
+        @Test
         void start_shouldNotScheduleRestart_whenScheduledRestartDisabled() throws Exception {
             final LoginServer server = server(TestLoginProperties.create(freePort(), TestLoginProperties.noRestart()));
 
@@ -142,6 +168,14 @@ class LoginServerTest {
                 eventLoops,
                 NetworkProperties.defaults(),
                 NetworkMetrics.noop());
+    }
+
+    private static KeyPair keyPair(String algorithm) {
+        try {
+            return KeyPairGenerator.getInstance(algorithm).generateKeyPair();
+        } catch (GeneralSecurityException e) {
+            throw new IllegalStateException(e);
+        }
     }
 
     private static int freePort() throws IOException {

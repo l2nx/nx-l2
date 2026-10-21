@@ -28,16 +28,10 @@ package app.l2nx.login.network;
 
 import app.l2nx.login.controller.LoginController;
 import app.l2nx.login.controller.SessionKey;
-import app.l2nx.login.enums.AccountKickedReason;
-import app.l2nx.login.enums.LoginFailReason;
-import app.l2nx.login.enums.PlayFailReason;
 import app.l2nx.login.protocol.LoginVariant;
 import app.l2nx.login.protocol.c621.ConnectionState;
-import app.l2nx.login.protocol.c621.serverpackets.AccountKicked;
-import app.l2nx.login.protocol.c621.serverpackets.LoginFail;
-import app.l2nx.login.protocol.c621.serverpackets.LoginServerPacket;
-import app.l2nx.login.protocol.c621.serverpackets.PlayFail;
-import app.l2nx.login.protocol.c621.serverpackets.ServerList;
+import app.l2nx.login.protocol.c621.OutgoingLoginPacket;
+import app.l2nx.login.protocol.c621.ServerListMapper;
 import app.l2nx.network.channel.CloseReason;
 import app.l2nx.network.channel.Connections;
 import app.l2nx.network.channel.OutboundQueue;
@@ -45,6 +39,13 @@ import app.l2nx.network.channel.guard.ConnectionDeadlines;
 import app.l2nx.network.channel.guard.IdlePolicy;
 import app.l2nx.network.exec.SerialExecutor;
 import app.l2nx.network.metrics.model.DropReason;
+import app.l2nx.protocol.c621.serverpackets.AccountKicked;
+import app.l2nx.protocol.c621.serverpackets.LoginFail;
+import app.l2nx.protocol.c621.serverpackets.LoginServerPacket;
+import app.l2nx.protocol.c621.serverpackets.PlayFail;
+import app.l2nx.protocol.c621.serverpackets.reason.AccountKickedReason;
+import app.l2nx.protocol.c621.serverpackets.reason.LoginFailReason;
+import app.l2nx.protocol.c621.serverpackets.reason.PlayFailReason;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.util.AttributeKey;
@@ -77,6 +78,7 @@ public class LoginClient {
     private final LoginVariant variant;
 
     private final LoginKeys keys;
+    private final byte[] blowfishKey;
 
     @Getter
     private final int sessionId;
@@ -127,6 +129,7 @@ public class LoginClient {
         this.channel = channel;
         this.variant = variant;
         this.keys = keys;
+        blowfishKey = keys.blowfishKey();
         this.sessionId = sessionId;
         this.tasks = tasks;
         ip = channel.remoteAddress() instanceof InetSocketAddress inet
@@ -163,19 +166,15 @@ public class LoginClient {
     }
 
     public void sendPacket(LoginServerPacket packet) {
-        final ByteBuf frame = packet.serialize(this, channel.alloc());
-        if (frame != null) {
-            OutboundQueue.of(channel).send(frame);
-        }
+        OutboundQueue.of(channel).send(serialize(packet));
     }
 
     public void close(LoginServerPacket packet) {
-        final ByteBuf frame = packet.serialize(this, channel.alloc());
-        if (frame == null) {
-            closeNow();
-            return;
-        }
-        OutboundQueue.of(channel).sendAndClose(frame);
+        OutboundQueue.of(channel).sendAndClose(serialize(packet));
+    }
+
+    private ByteBuf serialize(LoginServerPacket packet) {
+        return new OutgoingLoginPacket(packet).serialize(this, channel.alloc());
     }
 
     public void close(LoginFailReason reason) {
@@ -192,6 +191,10 @@ public class LoginClient {
 
     public void closeForShutdown() {
         close(LoginFailReason.REASON_SERVER_MAINTENANCE);
+    }
+
+    public void closeForExpiry() {
+        close(LoginFailReason.REASON_ACCESS_FAILED);
     }
 
     public void closeNow() {
@@ -214,15 +217,16 @@ public class LoginClient {
         if (deadlines != null) {
             deadlines.authReached();
         }
-        // The client sends nothing on the licence and server list screens; the session lifetime bounds them.
+        // The client ignores a bare close on the licence and server list screens, so the expiry LoginFail goes first.
         final IdlePolicy idle = IdlePolicy.of(channel);
         if (idle != null) {
-            idle.extendReadTimeout(LoginController.LOGIN_TIMEOUT);
+            idle.extendReadTimeout(LoginController.LOGIN_TIMEOUT, this::closeForExpiry);
         }
     }
 
+    /** The connection's one copy of the session key, shared by its frame cipher and {@code Init}: never changed. */
     public byte[] getBlowfishKey() {
-        return keys.blowfishKey();
+        return blowfishKey;
     }
 
     public byte[] getScrambledModulus() {
@@ -266,8 +270,8 @@ public class LoginClient {
     }
 
     /**
-     * Waits for the game servers' character counts, up to {@link #CHARACTERS_WAIT}, before sending the list: the High
-     * Five client never asks again, so an early list would show no characters for good.
+     * Waits up to {@link #CHARACTERS_WAIT} for character counts: the client never re-requests the list, so an early
+     * one shows no characters for good.
      */
     public void sendServerList() {
         onEventLoop(this::scheduleServerList);
@@ -311,7 +315,7 @@ public class LoginClient {
     }
 
     private void buildServerList() {
-        execute(() -> sendPacket(new ServerList(this)));
+        execute(() -> sendPacket(ServerListMapper.map(this)));
     }
 
     boolean isServerListWaiting() {

@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -20,56 +24,36 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package app.l2nx.login.protocol.c621.clientpackets;
+package app.l2nx.login.protocol.c621.handler;
 
 import app.l2nx.gslink.v1.GsLinkProto.ListingStatus;
 import app.l2nx.login.LoginServer;
 import app.l2nx.login.controller.LoginController;
 import app.l2nx.login.controller.SessionKey;
-import app.l2nx.login.enums.LoginFailReason;
-import app.l2nx.login.enums.PlayFailReason;
 import app.l2nx.login.network.LoginClient;
-import app.l2nx.login.protocol.c621.serverpackets.PlayOk;
+import app.l2nx.protocol.c621.clientpackets.RequestServerLogin;
+import app.l2nx.protocol.c621.serverpackets.PlayOk;
+import app.l2nx.protocol.c621.serverpackets.reason.LoginFailReason;
+import app.l2nx.protocol.c621.serverpackets.reason.PlayFailReason;
 
-/**
- * <pre>
- * Format is ddc
- * d: first part of session id
- * d: second part of session id
- * c: server ID
- * </pre>
- */
-public class RequestServerLogin extends LoginClientPacket {
-    private int skey1;
-    private int skey2;
-    private int serverId;
+public final class RequestServerLoginHandler {
+    private RequestServerLoginHandler() {}
 
-    @Override
-    protected boolean readImpl() {
-        if (remaining() >= 9) {
-            skey1 = readInt();
-            skey2 = readInt();
-            serverId = readByte();
-            return true;
-        }
-
-        return false;
-    }
-
-    @Override
-    public void run() {
-        final LoginClient client = getClient();
+    public static void handle(LoginClient client, RequestServerLogin packet) {
         final SessionKey sk = client.getSessionKey();
 
-        // The login pair is checked only when the license screen was shown.
-        if (!LoginServer.getInstance().getProperties().showLicence() || sk.checkLoginPair(skey1, skey2)) {
+        if (!LoginServer.getInstance().getProperties().showLicence()
+                || sk.checkLoginPair(packet.loginOk1(), packet.loginOk2())) {
             if ((LoginServer.getInstance().getStatus() == ListingStatus.LISTING_STATUS_DOWN_VALUE)
                     || ((LoginServer.getInstance().getStatus() == ListingStatus.LISTING_STATUS_GM_ONLY_VALUE)
                             && (client.getAccessLevel() < 1))) {
                 client.close(LoginFailReason.REASON_ACCESS_FAILED);
-            } else if (LoginController.getInstance().isLoginPossible(client, serverId)) {
+            } else if (LoginController.getInstance().isLoginPossible(client, packet.serverId())) {
                 client.setJoinedGS(true);
-                client.sendPacket(new PlayOk(sk));
+                client.sendPacket(PlayOk.builder()
+                        .playOk1(sk.getPlayOkID1())
+                        .playOk2(sk.getPlayOkID2())
+                        .build());
             } else {
                 client.close(PlayFailReason.REASON_SERVER_OVERLOADED);
             }

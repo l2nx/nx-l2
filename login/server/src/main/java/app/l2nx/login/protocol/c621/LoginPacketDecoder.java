@@ -5,23 +5,21 @@
 package app.l2nx.login.protocol.c621;
 
 import app.l2nx.login.network.LoginClient;
-import app.l2nx.login.protocol.c621.clientpackets.LoginClientPacket;
-import app.l2nx.login.protocol.c621.clientpackets.LoginClientPackets;
 import app.l2nx.network.channel.CloseReason;
 import app.l2nx.network.channel.Connections;
 import app.l2nx.network.channel.RateLimitedLog;
 import app.l2nx.network.channel.TailExceptionHandler;
 import app.l2nx.network.metrics.NetworkMetrics;
 import app.l2nx.network.metrics.model.DropReason;
+import app.l2nx.protocol.c621.clientpackets.LoginClientOpcode;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Parses on the IO thread by opcode alone and hands the packet to the connection's lane, where it may block (RSA,
- * database) and where its state is checked just before it runs ({@link LanePacket}). Login never reaches the game, so
- * every error decoding a packet or handing it on closes the connection.
+ * Decodes by opcode alone on the IO thread; the handler runs on the connection's lane because it may block (RSA,
+ * database). Any decode or hand-off error closes the connection.
  */
 @Slf4j
 public final class LoginPacketDecoder extends ChannelInboundHandlerAdapter {
@@ -65,20 +63,23 @@ public final class LoginPacketDecoder extends ChannelInboundHandlerAdapter {
      */
     private static LanePacket decode(LoginClient client, NetworkMetrics metrics, ByteBuf frame) {
         final int opcode = frame.readUnsignedByte();
-        final LoginClientPackets entry =
-                opcode < LoginClientPackets.PACKET_ARRAY.length ? LoginClientPackets.PACKET_ARRAY[opcode] : null;
-        if (entry == null) {
+        final LoginClientOpcode known = LoginClientOpcode.of(opcode);
+        final LoginRoute route = known == null ? null : LoginRoute.of(known);
+        if (route == null) {
             metrics.dropped(DropReason.UNKNOWN_OPCODE);
             if (RATE.tryAcquire("login-unknown")) {
                 log.debug("Unknown login opcode 0x{} from {}", Integer.toHexString(opcode), client);
             }
             return null;
         }
-        if (entry.isIgnored()) {
+        if (route.isIgnored()) {
             metrics.dropped(DropReason.IGNORED);
             return null;
         }
-        final LoginClientPacket packet = entry.newPacket();
-        return packet.decode(client, frame) ? new LanePacket(packet, entry.getConnectionStates()) : null;
+        return LanePacket.builder()
+                .client(client)
+                .handler(route.decode(frame))
+                .accepted(route.accepted())
+                .build();
     }
 }

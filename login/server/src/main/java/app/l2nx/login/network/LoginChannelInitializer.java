@@ -5,7 +5,6 @@
 package app.l2nx.login.network;
 
 import app.l2nx.login.protocol.LoginVariant;
-import app.l2nx.login.protocol.c621.LoginFrameCipher;
 import app.l2nx.login.protocol.c621.LoginHandshakeHandler;
 import app.l2nx.login.protocol.c621.LoginPacketDecoder;
 import app.l2nx.network.channel.OutboundQueue;
@@ -18,6 +17,7 @@ import app.l2nx.network.codec.FrameEncoder;
 import app.l2nx.network.codec.Frames;
 import app.l2nx.network.config.NetworkProperties;
 import app.l2nx.network.exec.BlockingTaskExecutor;
+import app.l2nx.protocol.c621.crypt.LoginFrameCipher;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelPipeline;
 import java.util.function.Consumer;
@@ -78,7 +78,7 @@ public final class LoginChannelInitializer implements Consumer<Channel> {
     }
 
     private void installC621(ChannelPipeline pipeline, LoginClient client) {
-        final LoginFrameCipher cipher = new LoginFrameCipher(client.getBlowfishKey(), random::nextInt);
+        final LoginFrameCipher cipher = LoginFrameCipher.server(client.getBlowfishKey(), random::nextInt);
         pipeline.addLast(PipelineNames.FRAME_DECODER, Frames.decoder((int)
                 properties.maxFrame().toBytes()));
         pipeline.addLast(PipelineNames.CIPHER_DECODER, new CipherDecoder(cipher));

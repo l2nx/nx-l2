@@ -2,7 +2,7 @@
  * SPDX-FileCopyrightText: 2026 L2NX contributors
  * SPDX-License-Identifier: Apache-2.0
  */
-package app.l2nx.login.protocol.c621;
+package app.l2nx.protocol.c621.crypt;
 
 import app.l2nx.network.codec.FrameCipher;
 import app.l2nx.network.crypt.LittleEndianBlowfishCipher;
@@ -12,9 +12,8 @@ import io.netty.buffer.ByteBuf;
 import java.util.function.IntSupplier;
 
 /**
- * The first frame the server sends ({@code Init}, which carries the session key) can only use the key every client
- * knows; every later frame uses the session key and a checksum. Padding always adds at least one block plus eight
- * bytes.
+ * {@code Init} is the only frame under the static key every client knows; later frames use the session key and a
+ * checksum. The server pads by at least one block plus eight bytes; the client pads to the block.
  */
 public final class LoginFrameCipher implements FrameCipher {
     static final byte[] STATIC_KEY = {
@@ -28,18 +27,49 @@ public final class LoginFrameCipher implements FrameCipher {
     private static final int STATIC_HEADER = 8;
     private static final int SESSION_HEADER = 4;
     private static final int TRAILER = 8;
+    private static final int CHECKSUM = 4;
+    // The XOR pass needs a plain first word, at least one XORed word, the key word and a last word.
+    private static final int MIN_INIT = 2 * BLOCK;
 
-    private final LittleEndianBlowfishCipher session;
+    public static final int MAX_OVERHEAD = STATIC_HEADER + BLOCK + TRAILER;
+
+    private final boolean server;
     private final IntSupplier xorKeys;
+    private LittleEndianBlowfishCipher session;
     private boolean staticPhase = true;
 
-    public LoginFrameCipher(byte[] sessionKey, IntSupplier xorKeys) {
-        session = new LittleEndianBlowfishCipher(sessionKey);
+    private LoginFrameCipher(boolean server, byte[] sessionKey, IntSupplier xorKeys) {
+        this.server = server;
         this.xorKeys = xorKeys;
+        session = sessionKey == null ? null : new LittleEndianBlowfishCipher(sessionKey);
+    }
+
+    /**
+     * @param xorKeys draws the key of the XOR pass over {@code Init}
+     */
+    public static LoginFrameCipher server(byte[] sessionKey, IntSupplier xorKeys) {
+        return new LoginFrameCipher(true, sessionKey, xorKeys);
+    }
+
+    /** Decrypts {@code Init} with the static key; the session key from it is set with {@link #sessionKey}. */
+    public static LoginFrameCipher client() {
+        return new LoginFrameCipher(false, null, null);
+    }
+
+    /** Client side: the key {@code Init} carried, set before the next frame in either direction. */
+    public void sessionKey(byte[] key) {
+        if (server) {
+            throw new IllegalStateException("The server side gets its session key at construction");
+        }
+        session = new LittleEndianBlowfishCipher(key);
     }
 
     @Override
     public int encryptedLength(int payloadLength) {
+        if (!server) {
+            final int withChecksum = payloadLength + CHECKSUM;
+            return withChecksum + ((BLOCK - (withChecksum % BLOCK)) % BLOCK);
+        }
         final int withHeader = payloadLength + (staticPhase ? STATIC_HEADER : SESSION_HEADER);
         return withHeader + (BLOCK - (withHeader % BLOCK)) + TRAILER;
     }
@@ -48,14 +78,14 @@ public final class LoginFrameCipher implements FrameCipher {
     public void encrypt(ByteBuf buf, int index, int payloadLength) {
         final int length = encryptedLength(payloadLength);
         buf.setZero(index + payloadLength, length - payloadLength);
-        if (staticPhase) {
+        if (server && staticPhase) {
             RollingXor.encrypt(buf, index, length, xorKeys.getAsInt());
             STATIC_CIPHER.encrypt(buf, index, length);
             staticPhase = false;
             return;
         }
         XorChecksum.append(buf, index, length);
-        session.encrypt(buf, index, length);
+        session().encrypt(buf, index, length);
     }
 
     @Override
@@ -63,7 +93,23 @@ public final class LoginFrameCipher implements FrameCipher {
         if ((length % BLOCK) != 0) {
             return false;
         }
-        session.decrypt(buf, index, length);
+        if (!server && staticPhase) {
+            if (length < MIN_INIT) {
+                return false;
+            }
+            STATIC_CIPHER.decrypt(buf, index, length);
+            RollingXor.decrypt(buf, index, length);
+            staticPhase = false;
+            return true;
+        }
+        session().decrypt(buf, index, length);
         return XorChecksum.verify(buf, index, length);
+    }
+
+    private LittleEndianBlowfishCipher session() {
+        if (session == null) {
+            throw new IllegalStateException("No session key: Init has not been read");
+        }
+        return session;
     }
 }

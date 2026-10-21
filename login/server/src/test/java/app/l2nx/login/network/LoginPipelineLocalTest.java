@@ -21,7 +21,6 @@ import app.l2nx.login.controller.AccountInfo;
 import app.l2nx.login.controller.LoginController;
 import app.l2nx.login.controller.ScrambledKeyPair;
 import app.l2nx.login.data.GameServerTable;
-import app.l2nx.login.enums.LoginFailReason;
 import app.l2nx.login.protocol.LoginVariant;
 import app.l2nx.login.repository.AccountRepository;
 import app.l2nx.login.repository.GameServerRepository;
@@ -34,6 +33,7 @@ import app.l2nx.network.exec.BlockingTaskExecutor;
 import app.l2nx.network.metrics.NetworkMetrics;
 import app.l2nx.network.metrics.model.DropReason;
 import app.l2nx.network.transport.NetworkEventLoops;
+import app.l2nx.protocol.c621.serverpackets.reason.LoginFailReason;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.netty.bootstrap.Bootstrap;
@@ -175,7 +175,7 @@ class LoginPipelineLocalTest {
                     .sync();
 
             assertThat(decrypt(received.poll(5, TimeUnit.SECONDS)))
-                    .startsWith(0x01, LoginFailReason.REASON_USER_OR_PASS_WRONG.getCode());
+                    .startsWith(0x01, LoginFailReason.REASON_USER_OR_PASS_WRONG.code());
             assertClosedWithoutError();
             verify(accounts, after(500).times(1)).findAccountInfo(eq(LOGIN), any());
             assertThat(wrongState()).isZero();
@@ -188,7 +188,7 @@ class LoginPipelineLocalTest {
 
             final byte[] answer = authenticate(LOGIN, "wrongpass");
 
-            assertThat(answer).startsWith(0x01, LoginFailReason.REASON_USER_OR_PASS_WRONG.getCode());
+            assertThat(answer).startsWith(0x01, LoginFailReason.REASON_USER_OR_PASS_WRONG.code());
             assertClosedWithoutError();
         }
 
@@ -198,7 +198,7 @@ class LoginPipelineLocalTest {
 
             final byte[] answer = authenticate("nobody", PASSWORD);
 
-            assertThat(answer).startsWith(0x01, LoginFailReason.REASON_USER_OR_PASS_WRONG.getCode());
+            assertThat(answer).startsWith(0x01, LoginFailReason.REASON_USER_OR_PASS_WRONG.code());
             assertClosedWithoutError();
         }
 
@@ -314,8 +314,7 @@ class LoginPipelineLocalTest {
 
         @BeforeEach
         void setUp() {
-            // The constructor registers itself as GameServerTable.getInstance(); load() drops the servers other tests
-            // registered in the static table, and the database has none.
+            // Registers itself as GameServerTable.getInstance(); load() drops other tests' servers.
             new GameServerTable(mock(GameServerRepository.class), TestLoginProperties.create(datapackRoot.toFile()))
                     .load();
         }

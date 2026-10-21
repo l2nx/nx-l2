@@ -18,17 +18,14 @@ import io.netty.handler.timeout.IdleStateHandler;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
-/**
- * Read-idle past {@code read-timeout} closes; after {@link #startPinging}, each {@code ping-interval} idle pings and
- * {@code ping-misses} unanswered pings close. Netty idle times are fixed, so switching replaces the {@code idle}
- * handler.
- */
+/** Netty idle times are fixed, so every switch of mode replaces the {@code idle} handler. */
 public final class IdlePolicy extends ChannelInboundHandlerAdapter {
     private final Duration readTimeout;
     private final Duration pingInterval;
     private final int pingMisses;
     private ChannelHandlerContext ctx;
     private Runnable ping;
+    private Runnable farewell;
     private int misses;
 
     private IdlePolicy(NetworkProperties properties) {
@@ -47,23 +44,24 @@ public final class IdlePolicy extends ChannelInboundHandlerAdapter {
     }
 
     public void startPinging(Runnable ping) {
-        EventLoopTasks.run(ctx.executor(), () -> switchTo(ping, pingInterval));
+        EventLoopTasks.run(ctx.executor(), () -> switchTo(ping, null, pingInterval));
     }
 
     public void stopPinging() {
-        EventLoopTasks.run(ctx.executor(), () -> switchTo(null, readTimeout));
+        EventLoopTasks.run(ctx.executor(), () -> switchTo(null, null, readTimeout));
     }
 
     /**
-     * For a phase in which the client legitimately stays silent longer than {@code read-timeout}; read-idle still
-     * closes, at the given bound.
+     * {@code farewell} sends the protocol's last packet and closes, because a client may not notice a bare close; if
+     * the connection is still open at the next read-idle, it is closed bare.
      */
-    public void extendReadTimeout(Duration readTimeout) {
-        EventLoopTasks.run(ctx.executor(), () -> switchTo(null, readTimeout));
+    public void extendReadTimeout(Duration readTimeout, Runnable farewell) {
+        EventLoopTasks.run(ctx.executor(), () -> switchTo(null, farewell, readTimeout));
     }
 
-    private void switchTo(Runnable newPing, Duration readerIdle) {
+    private void switchTo(Runnable newPing, Runnable newFarewell, Duration readerIdle) {
         ping = newPing;
+        farewell = newFarewell;
         misses = 0;
         if (ctx.channel().isOpen()) {
             ctx.pipeline().replace(PipelineNames.IDLE, PipelineNames.IDLE, readIdle(readerIdle));
@@ -85,6 +83,13 @@ public final class IdlePolicy extends ChannelInboundHandlerAdapter {
     public void userEventTriggered(ChannelHandlerContext ctx, Object evt) {
         if (!(evt instanceof IdleStateEvent idle) || (idle.state() != IdleState.READER_IDLE)) {
             ctx.fireUserEventTriggered(evt);
+            return;
+        }
+        if (farewell != null) {
+            final Runnable last = farewell;
+            farewell = null;
+            Connections.closing(ctx.channel(), CloseReason.IDLE);
+            last.run();
             return;
         }
         if ((ping == null) || (misses >= pingMisses)) {

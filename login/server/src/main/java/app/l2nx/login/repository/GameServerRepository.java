@@ -5,7 +5,6 @@
 package app.l2nx.login.repository;
 
 import java.util.Arrays;
-import java.util.HexFormat;
 import java.util.List;
 import java.util.Objects;
 import lombok.Builder;
@@ -44,6 +43,15 @@ public class GameServerRepository {
     /** @param chronicle {@code null} until the game server first registered */
     @Builder(toBuilder = true)
     public record StoredGameServer(int serverId, byte[] hexId, String chronicle) {
+        public StoredGameServer {
+            hexId = Objects.requireNonNull(hexId, "hexId").clone();
+        }
+
+        @Override
+        public byte[] hexId() {
+            return hexId.clone();
+        }
+
         // A record compares an array component by reference; the hex id is a value.
         @Override
         public boolean equals(Object other) {
@@ -58,10 +66,10 @@ public class GameServerRepository {
             return (31 * Objects.hash(serverId, chronicle)) + Arrays.hashCode(hexId);
         }
 
+        /** Never prints the hex id: it proves the game server's claim to its id. */
         @Override
         public String toString() {
-            return "StoredGameServer[serverId=" + serverId + ", hexId="
-                    + (hexId == null ? null : HexFormat.of().formatHex(hexId)) + ", chronicle=" + chronicle + "]";
+            return "StoredGameServer[serverId=" + serverId + ", chronicle=" + chronicle + "]";
         }
     }
 }

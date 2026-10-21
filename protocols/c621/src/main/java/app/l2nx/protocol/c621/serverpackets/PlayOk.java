@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -20,30 +24,35 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package app.l2nx.login.protocol.c621.serverpackets;
+package app.l2nx.protocol.c621.serverpackets;
 
-import app.l2nx.login.controller.SessionKey;
-import app.l2nx.login.network.LoginClient;
-import app.l2nx.network.codec.PacketWriter;
+import app.l2nx.network.codec.PacketDecodeException;
+import io.netty.buffer.ByteBuf;
+import lombok.Builder;
 
-/**
- * @author Mobius, BazookaRpm
- */
-public class PlayOk extends LoginServerPacket {
-    private static final int OPCODE_PLAY_OK = 0x07;
+/** The PlayOk pair of the session key, which the client presents to the game server. */
+@Builder(toBuilder = true)
+public record PlayOk(int playOk1, int playOk2) implements LoginServerPacket {
+    private static final int BODY = 8;
 
-    private final int playOkPart1;
-    private final int playOkPart2;
-
-    public PlayOk(SessionKey sessionKey) {
-        playOkPart1 = sessionKey.getPlayOkID1();
-        playOkPart2 = sessionKey.getPlayOkID2();
+    /**
+     * @param body the packet after its opcode
+     */
+    public static PlayOk read(ByteBuf body) {
+        if (body.readableBytes() < BODY) {
+            throw new PacketDecodeException(
+                    "PlayOk needs " + BODY + " bytes, " + body.readableBytes() + " in the frame");
+        }
+        return PlayOk.builder()
+                .playOk1(body.readIntLE())
+                .playOk2(body.readIntLE())
+                .build();
     }
 
     @Override
-    protected void writeImpl(LoginClient client, PacketWriter buffer) {
-        buffer.writeByte(OPCODE_PLAY_OK);
-        buffer.writeInt(playOkPart1);
-        buffer.writeInt(playOkPart2);
+    public void write(ByteBuf out) {
+        out.writeByte(LoginServerOpcode.PLAY_OK.opcode());
+        out.writeIntLE(playOk1);
+        out.writeIntLE(playOk2);
     }
 }

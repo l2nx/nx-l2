@@ -12,40 +12,35 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import app.l2nx.login.network.LoginClient;
-import app.l2nx.login.protocol.c621.clientpackets.LoginClientPacket;
 import app.l2nx.network.metrics.model.DropReason;
-import io.netty.buffer.Unpooled;
 import java.util.EnumSet;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 class LanePacketTest {
     private final LoginClient client = mock(LoginClient.class);
-    private final Probe packet = new Probe();
-
-    LanePacketTest() {
-        packet.decode(client, Unpooled.EMPTY_BUFFER);
-    }
+    private final AtomicBoolean ran = new AtomicBoolean();
 
     @Nested
     class Run {
         @Test
-        void run_shouldRunThePacket_whenTheStateAtRunTimeAcceptsIt() {
+        void run_shouldRunTheHandler_whenTheStateAtRunTimeAcceptsIt() {
             when(client.getConnectionState()).thenReturn(ConnectionState.AUTHED_GG);
 
             lane().run();
 
-            assertThat(packet.ran).isTrue();
+            assertThat(ran).isTrue();
             verify(client, never()).dropped(any());
         }
 
         @Test
-        void run_shouldCountWrongStateAndSkipThePacket_whenTheStateAtRunTimeDoesNotAcceptIt() {
+        void run_shouldCountWrongStateAndSkipTheHandler_whenTheStateAtRunTimeDoesNotAcceptIt() {
             when(client.getConnectionState()).thenReturn(ConnectionState.CONNECTED);
 
             lane().run();
 
-            assertThat(packet.ran).isFalse();
+            assertThat(ran).isFalse();
             verify(client).dropped(DropReason.WRONG_STATE);
         }
 
@@ -56,26 +51,16 @@ class LanePacketTest {
 
             lane().run();
 
-            assertThat(packet.ran).isFalse();
+            assertThat(ran).isFalse();
             verify(client, never()).dropped(any());
         }
 
         private LanePacket lane() {
-            return new LanePacket(packet, EnumSet.of(ConnectionState.AUTHED_GG));
-        }
-    }
-
-    private static final class Probe extends LoginClientPacket {
-        private boolean ran;
-
-        @Override
-        protected boolean readImpl() {
-            return true;
-        }
-
-        @Override
-        public void run() {
-            ran = true;
+            return LanePacket.builder()
+                    .client(client)
+                    .handler(handled -> ran.set(handled == client))
+                    .accepted(EnumSet.of(ConnectionState.AUTHED_GG))
+                    .build();
         }
     }
 }

@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -21,57 +25,35 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  * DEALINGS IN THE SOFTWARE.
  */
-package app.l2nx.login.protocol.c621.clientpackets;
+package app.l2nx.login.protocol.c621.handler;
 
-import app.l2nx.login.enums.LoginFailReason;
+import app.l2nx.login.network.LoginClient;
 import app.l2nx.login.protocol.c621.ConnectionState;
-import app.l2nx.login.protocol.c621.serverpackets.GGAuth;
+import app.l2nx.protocol.c621.clientpackets.AuthGameGuard;
+import app.l2nx.protocol.c621.serverpackets.GGAuth;
+import app.l2nx.protocol.c621.serverpackets.reason.LoginFailReason;
 import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author BazookaRpm
  */
 @Slf4j
-public class AuthGameGuard extends LoginClientPacket {
+public final class AuthGameGuardHandler {
+    private AuthGameGuardHandler() {}
 
-    private static final int GAME_GUARD_PAYLOAD_SIZE = 20;
-    private static final int GAME_GUARD_RESERVED_DWORD_COUNT = 4;
-
-    private int receivedSessionId;
-
-    @Override
-    protected boolean readImpl() {
-        final int remainingBytes = remaining();
-        if (remainingBytes < GAME_GUARD_PAYLOAD_SIZE) {
+    public static void handle(LoginClient client, AuthGameGuard packet) {
+        final int clientSessionId = client.getSessionId();
+        if (packet.sessionId() != clientSessionId) {
             if (log.isDebugEnabled()) {
-                log.debug("Invalid payload length {} (expected {}).", remainingBytes, GAME_GUARD_PAYLOAD_SIZE);
-            }
-            return false;
-        }
-
-        receivedSessionId = readInt();
-
-        for (int i = 0; i < GAME_GUARD_RESERVED_DWORD_COUNT; i++) {
-            readInt();
-        }
-
-        return true;
-    }
-
-    @Override
-    public void run() {
-        final int clientSessionId = getClient().getSessionId();
-        if (receivedSessionId != clientSessionId) {
-            if (log.isDebugEnabled()) {
-                log.debug("Session mismatch. Received={}, expected={}.", receivedSessionId, clientSessionId);
+                log.debug("Session mismatch. Received={}, expected={}.", packet.sessionId(), clientSessionId);
             }
 
-            getClient().close(LoginFailReason.REASON_ACCESS_FAILED);
+            client.close(LoginFailReason.REASON_ACCESS_FAILED);
             return;
         }
 
-        getClient().setConnectionState(ConnectionState.AUTHED_GG);
-        getClient().handshakeDone();
-        getClient().sendPacket(new GGAuth(clientSessionId));
+        client.setConnectionState(ConnectionState.AUTHED_GG);
+        client.handshakeDone();
+        client.sendPacket(new GGAuth(clientSessionId));
     }
 }

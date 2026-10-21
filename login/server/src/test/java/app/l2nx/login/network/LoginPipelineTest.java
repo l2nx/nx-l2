@@ -8,7 +8,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import app.l2nx.login.controller.LoginController;
 import app.l2nx.login.controller.ScrambledKeyPair;
-import app.l2nx.login.enums.LoginFailReason;
 import app.l2nx.login.protocol.LoginVariant;
 import app.l2nx.login.protocol.c621.LoginHandshakeHandler;
 import app.l2nx.network.channel.CloseReason;
@@ -19,6 +18,8 @@ import app.l2nx.network.crypt.LittleEndianBlowfishCipher;
 import app.l2nx.network.crypt.XorChecksum;
 import app.l2nx.network.exec.BlockingTaskExecutor;
 import app.l2nx.network.test.TestChannels;
+import app.l2nx.protocol.c621.serverpackets.reason.LoginFailReason;
+import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -29,6 +30,7 @@ import java.security.KeyPairGenerator;
 import java.security.spec.RSAKeyGenParameterSpec;
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.UUID;
@@ -190,7 +192,7 @@ class LoginPipelineTest {
         }
 
         @Test
-        void authDone_shouldCloseASilentSessionWithIdle_afterTheLoginTimeout() {
+        void authDone_shouldSendLoginFailAndCloseASilentSessionWithIdle_afterTheLoginTimeout() {
             drop(channel.readOutbound());
 
             LoginClient.of(channel).authDone();
@@ -201,8 +203,17 @@ class LoginPipelineTest {
 
             idle(Duration.ofSeconds(1));
 
-            assertThat(channel.isOpen()).isFalse();
+            assertClosedWith(LoginFailReason.REASON_ACCESS_FAILED);
             assertThat(Connections.closeReason(channel)).isEqualTo(CloseReason.IDLE);
+            final Collection<Counter> closed =
+                    TestChannels.registry(channel).get("l2nx.network.closed").counters();
+            assertThat(closed.stream().mapToDouble(Counter::count).sum()).isEqualTo(1.0);
+            assertThat(TestChannels.registry(channel)
+                            .get("l2nx.network.closed")
+                            .tag("reason", CloseReason.IDLE.tag())
+                            .counter()
+                            .count())
+                    .isEqualTo(1.0);
         }
 
         private Duration readerIdle() {
@@ -267,17 +278,30 @@ class LoginPipelineTest {
             drop(channel.readOutbound());
 
             LoginClient.of(channel).closeForShutdown();
-            channel.runPendingTasks();
 
-            final ByteBuf frame = channel.readOutbound();
-            final byte[] payload = new byte[frame.readableBytes() - 2];
-            frame.getBytes(frame.readerIndex() + 2, payload);
-            frame.release();
-            new LittleEndianBlowfishCipher(SESSION_KEY).decrypt(payload, 0, payload.length);
-            assertThat(payload[0]).as("LoginFail").isEqualTo((byte) 0x01);
-            assertThat(payload[1]).as("reason").isEqualTo((byte) LoginFailReason.REASON_SERVER_MAINTENANCE.getCode());
-            assertThat(channel.isOpen()).isFalse();
+            assertClosedWith(LoginFailReason.REASON_SERVER_MAINTENANCE);
         }
+
+        @Test
+        void closeForExpiry_shouldSendLoginFailWithTheAccessFailedReason_thenClose() {
+            drop(channel.readOutbound());
+
+            LoginClient.of(channel).closeForExpiry();
+
+            assertClosedWith(LoginFailReason.REASON_ACCESS_FAILED);
+        }
+    }
+
+    private void assertClosedWith(LoginFailReason reason) {
+        channel.runPendingTasks();
+        final ByteBuf frame = channel.readOutbound();
+        final byte[] payload = new byte[frame.readableBytes() - 2];
+        frame.getBytes(frame.readerIndex() + 2, payload);
+        frame.release();
+        new LittleEndianBlowfishCipher(SESSION_KEY).decrypt(payload, 0, payload.length);
+        assertThat(payload[0]).as("LoginFail").isEqualTo((byte) 0x01);
+        assertThat(payload[1]).as("reason").isEqualTo((byte) reason.code());
+        assertThat(channel.isOpen()).isFalse();
     }
 
     private static byte[] authGameGuard() {

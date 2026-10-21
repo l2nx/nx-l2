@@ -53,6 +53,7 @@ lists what is open.
 - [#72](https://github.com/l2nx/nx-l2/issues/72) Castle siege as a load scenario
 - [#73](https://github.com/l2nx/nx-l2/issues/73) E10: move send-time side effects of legacy server packets into slice handlers
 - [#74](https://github.com/l2nx/nx-l2/issues/74) GrandBossDataTest fails depending on test order
+- [#76](https://github.com/l2nx/nx-l2/issues/76) Server list shows no character count for the account
 
 ## Done
 

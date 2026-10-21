@@ -11,7 +11,8 @@ E6 (world partition as single writer). Issue: [#68](https://github.com/l2nx/nx-l
   Gatling has no TCP support and a custom protocol goes through its Scala internals; Locust and k6 would need the
   codecs and ciphers again in Python or JavaScript; JMeter and Tsung model request and response. Studios with such
   protocols write their own bot harness (CCP thin clients, Riot's mock clients, MY.GAMES). The harness reuses the
-  Netty client and ciphers of `libs/network` and the packet codecs of `protocols/*` (§3).
+  Netty client and cipher primitives of `libs/network` and the packet codecs, keys and framing of `protocols/*`
+  (§3).
 - **Protocol-agnostic core.** Load scenarios speak in load bot intents and observations, never in packets; a client
   adapter per protocol maps them, the client-side mirror of the server's ports and adapters
   ([spec 008 §8](008-network.md#8-ports-and-protocol-adapters)). A new protocol or chronicle adds a client adapter
@@ -39,14 +40,14 @@ PostgreSQL run as separate processes.
 
 ## 3. Wire codecs
 
-- **A wire record per packet** holds the layout only: fields in wire order, strings with their bound, no game types.
-- **A codec per packet** is pure and works in both directions: for a client packet `decode` (server) and `encode`
-  (load bot), for a server packet `write` (server) and `read` (load bot). Codecs depend on Netty buffers only.
-- **The server adapter is thin:** a decoder is `codec.decode` plus mapping the record to a command; a mapper is a view
-  event mapped to a record plus `codec.write`. A legacy packet still used by legacy code calls the codec.
+The rule is [spec 008 §8 Wire codecs](008-network.md#wire-codecs); what the load harness relies on:
+
+- **The record is its own codec:** a client packet's `encode` and a server packet's `read` are what a load bot
+  uses, next to the `decode` and `write` the server uses. A legacy packet still used by legacy code calls them too.
+- **Keys and framing come with the protocol:** `protocols/c621` gives the load bot the client side of the login
+  frame cipher and the credentials block encrypted with the scrambled RSA modulus from `Init`.
 - **Golden tests per codec** (bytes ↔ record) serve both sides.
-- **Who writes them:** `protocols/c621` comes with its move out of `login/server` once the game transport lands; the
-  first `highfive` codecs come with the first migrated slices (character, movement, chat, message). Combat packets
+- **Who writes them:** `protocols/c621` holds the whole login protocol; the first `highfive` codecs come with the first migrated slices (character, movement, chat, message). Combat packets
   stay legacy routes there, so E0 extracts their layouts into `protocols/highfive` codecs and points the legacy
   packets at them, without migrating a slice (§10, P3).
 

@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -20,22 +24,28 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package app.l2nx.login.protocol.c621.serverpackets;
+package app.l2nx.protocol.c621.serverpackets;
 
-import app.l2nx.login.enums.PlayFailReason;
-import app.l2nx.login.network.LoginClient;
-import app.l2nx.network.codec.PacketWriter;
+import app.l2nx.network.codec.PacketDecodeException;
+import app.l2nx.protocol.c621.serverpackets.reason.PlayFailReason;
+import io.netty.buffer.ByteBuf;
 
-public class PlayFail extends LoginServerPacket {
-    private final PlayFailReason reason;
-
-    public PlayFail(PlayFailReason reason) {
-        this.reason = reason;
+public record PlayFail(PlayFailReason reason) implements LoginServerPacket {
+    public static PlayFail read(ByteBuf body) {
+        if (!body.isReadable()) {
+            throw new PacketDecodeException("PlayFail without its reason");
+        }
+        final int code = body.readUnsignedByte();
+        final PlayFailReason reason = PlayFailReason.of(code);
+        if (reason == null) {
+            throw new PacketDecodeException("Unknown PlayFail reason 0x" + Integer.toHexString(code));
+        }
+        return new PlayFail(reason);
     }
 
     @Override
-    protected void writeImpl(LoginClient client, PacketWriter buffer) {
-        buffer.writeByte(0x06);
-        buffer.writeByte(reason.getCode());
+    public void write(ByteBuf out) {
+        out.writeByte(LoginServerOpcode.PLAY_FAIL.opcode());
+        out.writeByte(reason.code());
     }
 }

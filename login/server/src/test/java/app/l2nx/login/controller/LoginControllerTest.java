@@ -18,10 +18,9 @@ import static org.mockito.Mockito.when;
 import app.l2nx.login.config.TestLoginProperties;
 import app.l2nx.login.data.GameServerTable;
 import app.l2nx.login.data.GameServerTable.GameServerInfo;
-import app.l2nx.login.enums.LoginFailReason;
-import app.l2nx.login.enums.LoginResult;
 import app.l2nx.login.gslink.GameServerLink;
 import app.l2nx.login.network.LoginClient;
+import app.l2nx.login.network.LoginKeys;
 import app.l2nx.login.protocol.LoginVariant;
 import app.l2nx.login.repository.AccountRepository;
 import app.l2nx.login.repository.GameServerRepository;
@@ -97,7 +96,7 @@ class LoginControllerTest {
 
             runPurge();
 
-            verify(client).close(LoginFailReason.REASON_ACCESS_FAILED);
+            verify(client).closeForExpiry();
             assertThat(controller.getAuthedClient(ACCOUNT_ID)).isNull();
         }
 
@@ -107,7 +106,7 @@ class LoginControllerTest {
 
             runPurge();
 
-            verify(client).close(LoginFailReason.REASON_ACCESS_FAILED);
+            verify(client).closeForExpiry();
             assertThat(controller.getAuthedClient(ACCOUNT_ID)).isNull();
         }
 
@@ -117,7 +116,7 @@ class LoginControllerTest {
 
             runPurge();
 
-            verify(client, never()).close(any(LoginFailReason.class));
+            verify(client, never()).closeForExpiry();
             assertThat(controller.getAuthedClient(ACCOUNT_ID)).isSameAs(client);
         }
 
@@ -267,7 +266,12 @@ class LoginControllerTest {
         }
 
         private LoginClient loginClient() {
-            return new LoginClient(new EmbeddedChannel(), LoginVariant.C621, null, 1, null);
+            return new LoginClient(
+                    new EmbeddedChannel(),
+                    LoginVariant.C621,
+                    LoginKeys.builder().blowfishKey(new byte[16]).build(),
+                    1,
+                    null);
         }
 
         private void closeAndRelease(LoginClient client) {

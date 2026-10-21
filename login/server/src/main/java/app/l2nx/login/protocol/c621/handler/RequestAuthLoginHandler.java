@@ -24,100 +24,79 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package app.l2nx.login.protocol.c621.clientpackets;
+package app.l2nx.login.protocol.c621.handler;
 
 import app.l2nx.login.LoginServer;
 import app.l2nx.login.controller.AccountInfo;
 import app.l2nx.login.controller.LoginController;
+import app.l2nx.login.controller.LoginResult;
 import app.l2nx.login.data.GameServerTable.GameServerInfo;
-import app.l2nx.login.enums.AccountKickedReason;
-import app.l2nx.login.enums.LoginFailReason;
 import app.l2nx.login.gslink.GameServerLink;
 import app.l2nx.login.network.LoginClient;
 import app.l2nx.login.protocol.c621.ConnectionState;
-import app.l2nx.login.protocol.c621.serverpackets.AccountKicked;
-import app.l2nx.login.protocol.c621.serverpackets.LoginOk;
+import app.l2nx.protocol.c621.clientpackets.RequestAuthLogin;
+import app.l2nx.protocol.c621.crypt.Credentials;
+import app.l2nx.protocol.c621.serverpackets.AccountKicked;
+import app.l2nx.protocol.c621.serverpackets.LoginOk;
+import app.l2nx.protocol.c621.serverpackets.reason.AccountKickedReason;
+import app.l2nx.protocol.c621.serverpackets.reason.LoginFailReason;
 import java.security.GeneralSecurityException;
+import java.security.Key;
+import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
+import javax.crypto.IllegalBlockSizeException;
 import lombok.extern.slf4j.Slf4j;
 
-/**
- * One 128-byte RSA block with the login and password, or two blocks (256 bytes) from clients that send the login in
- * the first and the password in the second.
- */
 @Slf4j
-public class RequestAuthLogin extends LoginClientPacket {
+public final class RequestAuthLoginHandler {
+    private RequestAuthLoginHandler() {}
 
-    private final byte[] raw1 = new byte[128];
-    private final byte[] raw2 = new byte[128];
-    private boolean newAuthMethod = false;
-
-    @Override
-    protected boolean readImpl() {
-        if (remaining() >= 256) {
-            newAuthMethod = true;
-            readBytes(raw1);
-            readBytes(raw2);
-            return true;
-        } else if (remaining() >= 128) {
-            readBytes(raw1);
-            return true;
-        }
-
-        return false;
+    public static void warmUp(Key privateKey) throws GeneralSecurityException {
+        Cipher.getInstance(Credentials.TRANSFORMATION).init(Cipher.DECRYPT_MODE, privateKey);
     }
 
-    @Override
-    public void run() {
-        final LoginClient client = getClient();
-        final byte[] decrypted = new byte[newAuthMethod ? 256 : 128];
-        final Cipher rsaCipher;
+    public static void handle(LoginClient client, RequestAuthLogin packet) {
+        final Credentials credentials;
         try {
-            rsaCipher = Cipher.getInstance("RSA/ECB/nopadding");
-            rsaCipher.init(Cipher.DECRYPT_MODE, client.getRSAPrivateKey());
+            credentials = Credentials.decrypt(client.getRSAPrivateKey(), packet);
+        } catch (IllegalBlockSizeException | BadPaddingException e) {
+            // A block the key cannot decrypt (for example one larger than the modulus) is never sent by a real client.
+            log.debug("Credentials block from {} cannot be decrypted: {}", client.getIp(), e.toString());
+            client.close(LoginFailReason.REASON_ACCESS_FAILED);
+            return;
         } catch (GeneralSecurityException e) {
             log.error("RSA cipher is unavailable, closing {}", client.getIp(), e);
             client.close(LoginFailReason.REASON_SYSTEM_ERROR);
             return;
         }
 
-        try {
-            rsaCipher.doFinal(raw1, 0, 128, decrypted, 0);
-            if (newAuthMethod) {
-                rsaCipher.doFinal(raw2, 0, 128, decrypted, 128);
-            }
-        } catch (GeneralSecurityException e) {
-            // A block the key cannot decrypt (for example one larger than the modulus) is never sent by a real client.
-            log.debug("Credentials block from {} cannot be decrypted: {}", client.getIp(), e.toString());
-            client.close(LoginFailReason.REASON_ACCESS_FAILED);
-            return;
-        }
-
-        final String user;
-        final String password;
-        try {
-            if (newAuthMethod) {
-                user = new String(decrypted, 0x4E, 50).trim() + new String(decrypted, 0xCE, 14).trim();
-                password = new String(decrypted, 0xDC, 16).trim();
-            } else {
-                user = new String(decrypted, 0x5E, 14).trim();
-                password = new String(decrypted, 0x6C, 16).trim();
-            }
-        } catch (Exception e) {
-            log.warn("Credentials of {} cannot be read from the decrypted block", client.getIp(), e);
-            client.close(LoginFailReason.REASON_SYSTEM_ERROR);
+        if ((credentials.user() == null) || (credentials.password() == null)) {
+            client.close(LoginFailReason.REASON_USER_OR_PASS_WRONG);
             return;
         }
 
         final String clientAddr = client.getIp();
         final LoginController lc = LoginController.getInstance();
-        final AccountInfo info = lc.retriveAccountInfo(clientAddr, user, password);
+        final AccountInfo info = lc.retriveAccountInfo(clientAddr, credentials.user(), credentials.password());
         if (info == null) {
             client.close(LoginFailReason.REASON_USER_OR_PASS_WRONG);
             return;
         }
 
-        switch (lc.tryCheckinAccount(client, clientAddr, info)) {
+        LoginResult result = lc.tryCheckinAccount(client, clientAddr, info);
+        GameServerInfo gameServer = null;
+        if (result == LoginResult.ALREADY_ON_GS) {
+            gameServer = lc.getAccountOnGameServer(info.getId());
+            if (gameServer == null) {
+                // The account left its game server between the two checks: the check-in may pass now.
+                result = lc.tryCheckinAccount(client, clientAddr, info);
+                if (result == LoginResult.ALREADY_ON_GS) {
+                    gameServer = lc.getAccountOnGameServer(info.getId());
+                }
+            }
+        }
+
+        switch (result) {
             case AUTH_SUCCESS: {
                 client.setAccount(info.getLogin());
                 client.setConnectionState(ConnectionState.AUTHED_LOGIN);
@@ -125,7 +104,10 @@ public class RequestAuthLogin extends LoginClientPacket {
                 client.setSessionKey(lc.newSessionKey());
                 lc.requestCharacters(client);
                 if (LoginServer.getInstance().getProperties().showLicence()) {
-                    client.sendPacket(new LoginOk(client.getSessionKey()));
+                    client.sendPacket(LoginOk.builder()
+                            .loginOk1(client.getSessionKey().getLoginOkID1())
+                            .loginOk2(client.getSessionKey().getLoginOkID2())
+                            .build());
                 } else {
                     client.sendServerList();
                 }
@@ -150,13 +132,10 @@ public class RequestAuthLogin extends LoginClientPacket {
                 break;
             }
             case ALREADY_ON_GS: {
-                final GameServerInfo gsi = lc.getAccountOnGameServer(info.getId());
-                if (gsi != null) {
-                    client.close(LoginFailReason.REASON_ACCOUNT_IN_USE);
-                    final GameServerLink link = gsi.getGameServerLink();
-                    if (link != null) {
-                        link.kickPlayer(info.getId());
-                    }
+                client.close(LoginFailReason.REASON_ACCOUNT_IN_USE);
+                final GameServerLink link = gameServer == null ? null : gameServer.getGameServerLink();
+                if (link != null) {
+                    link.kickPlayer(info.getId());
                 }
                 break;
             }

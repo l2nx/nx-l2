@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -20,41 +24,43 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package app.l2nx.login.protocol.c621.serverpackets;
+package app.l2nx.protocol.c621.serverpackets;
 
-import app.l2nx.login.controller.SessionKey;
-import app.l2nx.login.network.LoginClient;
-import app.l2nx.network.codec.PacketWriter;
+import app.l2nx.network.codec.PacketDecodeException;
+import io.netty.buffer.ByteBuf;
+import lombok.Builder;
 
-/**
- * @author Mobius, BazookaRpm
- */
-public class LoginOk extends LoginServerPacket {
-    private static final int OPCODE_LOGIN_OK = 0x03;
-    private static final int RESERVED_ZERO = 0x00;
-    private static final int RESERVED_VALUE_3EA = 0x000003ea;
-    private static final int RESERVED_BYTES_LEN = 16;
-    private static final byte[] RESERVED_BYTES_16 = new byte[RESERVED_BYTES_LEN];
+/** The LoginOk pair of the session key, followed by reserved fields the client does not use. */
+@Builder(toBuilder = true)
+public record LoginOk(int loginOk1, int loginOk2) implements LoginServerPacket {
+    private static final int RESERVED_WORD = 0x000003EA;
+    private static final int RESERVED_BYTES = 16;
+    private static final int BODY = 8 + (6 * 4) + RESERVED_BYTES;
 
-    private final int loginOkPart1;
-    private final int loginOkPart2;
-
-    public LoginOk(SessionKey sessionKey) {
-        loginOkPart1 = sessionKey.getLoginOkID1();
-        loginOkPart2 = sessionKey.getLoginOkID2();
+    public static LoginOk read(ByteBuf body) {
+        if (body.readableBytes() < BODY) {
+            throw new PacketDecodeException(
+                    "LoginOk needs " + BODY + " bytes, " + body.readableBytes() + " in the frame");
+        }
+        final LoginOk packet = LoginOk.builder()
+                .loginOk1(body.readIntLE())
+                .loginOk2(body.readIntLE())
+                .build();
+        body.skipBytes(BODY - 8);
+        return packet;
     }
 
     @Override
-    protected void writeImpl(LoginClient client, PacketWriter buffer) {
-        buffer.writeByte(OPCODE_LOGIN_OK);
-        buffer.writeInt(loginOkPart1);
-        buffer.writeInt(loginOkPart2);
-        buffer.writeInt(RESERVED_ZERO);
-        buffer.writeInt(RESERVED_ZERO);
-        buffer.writeInt(RESERVED_VALUE_3EA);
-        buffer.writeInt(RESERVED_ZERO);
-        buffer.writeInt(RESERVED_ZERO);
-        buffer.writeInt(RESERVED_ZERO);
-        buffer.writeBytes(RESERVED_BYTES_16);
+    public void write(ByteBuf out) {
+        out.writeByte(LoginServerOpcode.LOGIN_OK.opcode());
+        out.writeIntLE(loginOk1);
+        out.writeIntLE(loginOk2);
+        out.writeIntLE(0);
+        out.writeIntLE(0);
+        out.writeIntLE(RESERVED_WORD);
+        out.writeIntLE(0);
+        out.writeIntLE(0);
+        out.writeIntLE(0);
+        out.writeZero(RESERVED_BYTES);
     }
 }

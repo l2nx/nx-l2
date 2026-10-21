@@ -22,6 +22,7 @@ import org.junit.jupiter.api.Test;
 class IdlePolicyTest {
     private final EmbeddedChannel channel = TestChannels.embedded();
     private final AtomicInteger pings = new AtomicInteger();
+    private final AtomicInteger farewells = new AtomicInteger();
 
     @Nested
     class Install {
@@ -93,17 +94,63 @@ class IdlePolicyTest {
     @Nested
     class ExtendReadTimeout {
         @Test
-        void extendReadTimeout_shouldCloseWithIdle_afterTheNewBound() {
-            IdlePolicy.of(channel).extendReadTimeout(Duration.ofMinutes(5));
+        void extendReadTimeout_shouldRunTheFarewellOnceAndCountIdle_afterTheNewBound() {
+            IdlePolicy.of(channel).extendReadTimeout(Duration.ofMinutes(5), this::farewell);
             channel.runPendingTasks();
 
             idle(299);
-            assertThat(channel.isOpen()).isTrue();
+            assertThat(farewells.get()).isZero();
 
             idle(1);
 
+            assertThat(farewells.get()).isEqualTo(1);
             assertThat(channel.isOpen()).isFalse();
             assertThat(Connections.closeReason(channel)).isEqualTo(CloseReason.IDLE);
+            assertThat(closed(CloseReason.IDLE)).isEqualTo(1.0);
+            assertThat(closed(CloseReason.TIMEOUT)).isZero();
+        }
+
+        @Test
+        void extendReadTimeout_shouldLeaveTheConnectionToTheFarewell_untilTheNextReadIdle() {
+            IdlePolicy.of(channel).extendReadTimeout(Duration.ofMinutes(5), farewells::incrementAndGet);
+            channel.runPendingTasks();
+
+            idle(300);
+            assertThat(farewells.get()).isEqualTo(1);
+            assertThat(channel.isOpen()).isTrue();
+
+            idle(300);
+
+            assertThat(farewells.get()).isEqualTo(1);
+            assertThat(channel.isOpen()).isFalse();
+            assertThat(closed(CloseReason.IDLE)).isEqualTo(1.0);
+        }
+
+        @Test
+        void stopPinging_shouldDropTheFarewell() {
+            IdlePolicy.of(channel).extendReadTimeout(Duration.ofMinutes(5), farewells::incrementAndGet);
+            channel.runPendingTasks();
+            IdlePolicy.of(channel).stopPinging();
+            channel.runPendingTasks();
+
+            idle(120);
+
+            assertThat(farewells.get()).isZero();
+            assertThat(channel.isOpen()).isFalse();
+            assertThat(Connections.closeReason(channel)).isEqualTo(CloseReason.IDLE);
+        }
+
+        private void farewell() {
+            farewells.incrementAndGet();
+            Connections.close(channel, CloseReason.TIMEOUT);
+        }
+
+        private double closed(CloseReason reason) {
+            return TestChannels.registry(channel)
+                    .get("l2nx.network.closed")
+                    .tag("reason", reason.tag())
+                    .counter()
+                    .count();
         }
     }
 

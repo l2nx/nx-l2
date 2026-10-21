@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -20,22 +24,28 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package app.l2nx.login.protocol.c621.serverpackets;
+package app.l2nx.protocol.c621.serverpackets;
 
-import app.l2nx.login.enums.LoginFailReason;
-import app.l2nx.login.network.LoginClient;
-import app.l2nx.network.codec.PacketWriter;
+import app.l2nx.network.codec.PacketDecodeException;
+import app.l2nx.protocol.c621.serverpackets.reason.LoginFailReason;
+import io.netty.buffer.ByteBuf;
 
-public class LoginFail extends LoginServerPacket {
-    private final LoginFailReason reason;
-
-    public LoginFail(LoginFailReason reason) {
-        this.reason = reason;
+public record LoginFail(LoginFailReason reason) implements LoginServerPacket {
+    public static LoginFail read(ByteBuf body) {
+        if (!body.isReadable()) {
+            throw new PacketDecodeException("LoginFail without its reason");
+        }
+        final int code = body.readUnsignedByte();
+        final LoginFailReason reason = LoginFailReason.of(code);
+        if (reason == null) {
+            throw new PacketDecodeException("Unknown LoginFail reason 0x" + Integer.toHexString(code));
+        }
+        return new LoginFail(reason);
     }
 
     @Override
-    protected void writeImpl(LoginClient client, PacketWriter buffer) {
-        buffer.writeByte(0x01);
-        buffer.writeByte(reason.getCode());
+    public void write(ByteBuf out) {
+        out.writeByte(LoginServerOpcode.LOGIN_FAIL.opcode());
+        out.writeByte(reason.code());
     }
 }

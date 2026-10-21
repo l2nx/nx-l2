@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: MIT
+ */
+/*
  * SPDX-License-Identifier: MIT
  *
  * Copyright (c) 2013 L2jMobius
@@ -20,73 +24,111 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package app.l2nx.login.protocol.c621.clientpackets;
+package app.l2nx.login.protocol.c621;
 
-import app.l2nx.login.protocol.c621.ConnectionState;
-import java.util.Arrays;
+import app.l2nx.login.network.LoginClient;
+import app.l2nx.login.protocol.c621.handler.AuthGameGuardHandler;
+import app.l2nx.login.protocol.c621.handler.RequestAuthLoginHandler;
+import app.l2nx.login.protocol.c621.handler.RequestServerListHandler;
+import app.l2nx.login.protocol.c621.handler.RequestServerLoginHandler;
+import app.l2nx.network.codec.PacketDecodeException;
+import app.l2nx.protocol.c621.clientpackets.AuthGameGuard;
+import app.l2nx.protocol.c621.clientpackets.LoginClientOpcode;
+import app.l2nx.protocol.c621.clientpackets.RequestAuthLogin;
+import app.l2nx.protocol.c621.clientpackets.RequestServerList;
+import app.l2nx.protocol.c621.clientpackets.RequestServerLogin;
+import io.netty.buffer.ByteBuf;
 import java.util.Collections;
+import java.util.EnumMap;
 import java.util.EnumSet;
+import java.util.Map;
 import java.util.Set;
-import java.util.function.Supplier;
-import lombok.Getter;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 /**
  * @author Mobius
  */
-public enum LoginClientPackets {
-    AUTH_GAME_GUARD(0x07, AuthGameGuard::new, ConnectionState.CONNECTED),
-    REQUEST_AUTH_LOGIN(0x00, RequestAuthLogin::new, ConnectionState.AUTHED_GG),
-    REQUEST_SERVER_LOGIN(0x02, RequestServerLogin::new, ConnectionState.AUTHED_LOGIN),
-    REQUEST_SERVER_LIST(0x05, RequestServerList::new, ConnectionState.AUTHED_LOGIN),
+public enum LoginRoute {
+    AUTH_GAME_GUARD(
+            LoginClientOpcode.AUTH_GAME_GUARD,
+            route(AuthGameGuard::decode, AuthGameGuardHandler::handle),
+            ConnectionState.CONNECTED),
+    REQUEST_AUTH_LOGIN(
+            LoginClientOpcode.REQUEST_AUTH_LOGIN,
+            route(RequestAuthLogin::decode, RequestAuthLoginHandler::handle),
+            ConnectionState.AUTHED_GG),
+    REQUEST_SERVER_LOGIN(
+            LoginClientOpcode.REQUEST_SERVER_LOGIN,
+            route(RequestServerLogin::decode, RequestServerLoginHandler::handle),
+            ConnectionState.AUTHED_LOGIN),
+    REQUEST_SERVER_LIST(
+            LoginClientOpcode.REQUEST_SERVER_LIST,
+            route(RequestServerList::decode, RequestServerListHandler::handle),
+            ConnectionState.AUTHED_LOGIN),
     // Sent by some High Five clients; the server never offers the agreement screen, so there is nothing to answer.
-    REQUEST_PI_AGREEMENT_CHECK(0x0E, null, ConnectionState.AUTHED_LOGIN),
-    REQUEST_PI_AGREEMENT(0x0F, null, ConnectionState.AUTHED_LOGIN);
+    REQUEST_PI_AGREEMENT_CHECK(LoginClientOpcode.REQUEST_PI_AGREEMENT_CHECK, null),
+    REQUEST_PI_AGREEMENT(LoginClientOpcode.REQUEST_PI_AGREEMENT, null);
 
-    public static final LoginClientPackets[] PACKET_ARRAY;
+    private static final Map<LoginClientOpcode, LoginRoute> BY_OPCODE = new EnumMap<>(LoginClientOpcode.class);
 
     static {
-        final short maxPacketId = (short) Arrays.stream(values())
-                .mapToInt(LoginClientPackets::getPacketId)
-                .max()
-                .orElse(0);
-        PACKET_ARRAY = new LoginClientPackets[maxPacketId + 1];
-        for (LoginClientPackets packet : values()) {
-            PACKET_ARRAY[packet.getPacketId()] = packet;
+        for (LoginRoute route : values()) {
+            BY_OPCODE.put(route.opcode, route);
         }
     }
 
-    private final short packetId;
-    private final Supplier<LoginClientPacket> packetSupplier;
+    private final LoginClientOpcode opcode;
+    private final Function<ByteBuf, Consumer<LoginClient>> decoder;
+    private final Set<ConnectionState> accepted;
 
-    @Getter
-    private final Set<ConnectionState> connectionStates;
-
-    LoginClientPackets(int packetId, Supplier<LoginClientPacket> packetSupplier, ConnectionState... connectionStates) {
-        if (packetId > 0xFF) {
-            throw new IllegalArgumentException("Packet id must not be bigger than 0xFF");
-        }
-
-        this.packetId = (short) packetId;
-        this.packetSupplier = packetSupplier;
-
+    LoginRoute(
+            LoginClientOpcode opcode, Function<ByteBuf, Consumer<LoginClient>> decoder, ConnectionState... accepted) {
+        this.opcode = opcode;
+        this.decoder = decoder;
         final EnumSet<ConnectionState> states = EnumSet.noneOf(ConnectionState.class);
-        Collections.addAll(states, connectionStates);
-        this.connectionStates = Collections.unmodifiableSet(states);
+        Collections.addAll(states, accepted);
+        this.accepted = Collections.unmodifiableSet(states);
     }
 
-    public int getPacketId() {
-        return packetId;
+    /**
+     * @return {@code null} when the login server has no route for the opcode
+     */
+    public static LoginRoute of(LoginClientOpcode opcode) {
+        return BY_OPCODE.get(opcode);
+    }
+
+    public LoginClientOpcode opcode() {
+        return opcode;
+    }
+
+    public Set<ConnectionState> accepted() {
+        return accepted;
     }
 
     /** A known opcode without a handler: the packet is dropped under its own reason, not counted as unknown. */
     public boolean isIgnored() {
-        return packetSupplier == null;
+        return decoder == null;
     }
 
-    public LoginClientPacket newPacket() {
-        if (packetSupplier == null) {
+    /**
+     * Decodes whatever the connection state; the state is checked on the lane ({@link LanePacket}).
+     *
+     * @throws PacketDecodeException when the body is too short for the record
+     */
+    public Consumer<LoginClient> decode(ByteBuf body) {
+        if (decoder == null) {
             throw new IllegalStateException(name() + " has no handler");
         }
-        return packetSupplier.get();
+        return decoder.apply(body);
+    }
+
+    private static <T> Function<ByteBuf, Consumer<LoginClient>> route(
+            Function<ByteBuf, T> decode, BiConsumer<LoginClient, T> handler) {
+        return body -> {
+            final T packet = decode.apply(body);
+            return client -> handler.accept(client, packet);
+        };
     }
 }

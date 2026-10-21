@@ -56,6 +56,26 @@ class RollingXorTest {
     }
 
     @Nested
+    class Decrypt {
+        @ParameterizedTest(name = "{index}: offset {0}, key {1}")
+        @CsvFileSource(resources = "/app/l2nx/network/crypt/rolling-xor.csv")
+        void decrypt_shouldRestoreThePlainWords_ofTheGoldenVector(int offset, int key, String input, String output) {
+            final byte[] actual = HEX.parseHex(output);
+
+            RollingXor.decrypt(actual, offset, actual.length - offset);
+
+            assertThat(actual).isEqualTo(withKeyWord(HEX.parseHex(input), HEX.parseHex(output)));
+        }
+
+        @ParameterizedTest(name = "{0} bytes")
+        @ValueSource(ints = {0, 8, 14})
+        void decrypt_shouldReject_whenSizeIsNotMultipleOfWordOfThreeWords(int size) {
+            assertThatThrownBy(() -> RollingXor.decrypt(new byte[16], 0, size))
+                    .isInstanceOf(IllegalArgumentException.class);
+        }
+    }
+
+    @Nested
     @ParameterizedClass(name = "{0}")
     @EnumSource(BufferKind.class)
     class ByteBufOverloads {
@@ -74,5 +94,24 @@ class RollingXorTest {
                 buf.release();
             }
         }
+
+        @ParameterizedTest(name = "{index}: offset {0}, key {1}")
+        @CsvFileSource(resources = "/app/l2nx/network/crypt/rolling-xor.csv")
+        void decrypt_shouldRestoreThePlainWordsInPlace(int offset, int key, String input, String output) {
+            final ByteBuf buf = kind.wrap(HEX.parseHex(output));
+            try {
+                RollingXor.decrypt(buf, BufferKind.PREFIX + offset, BufferKind.size(buf) - offset);
+
+                assertThat(BufferKind.region(buf)).isEqualTo(withKeyWord(HEX.parseHex(input), HEX.parseHex(output)));
+            } finally {
+                buf.release();
+            }
+        }
+    }
+
+    private static byte[] withKeyWord(byte[] plain, byte[] encrypted) {
+        final int keyIndex = plain.length - 8;
+        System.arraycopy(encrypted, keyIndex, plain, keyIndex, 4);
+        return plain;
     }
 }
