@@ -26,15 +26,15 @@ E6 (world partition as single writer). Issue: [#68](https://github.com/l2nx/nx-l
 
 ## 2. Layout
 
-| Module                     | Holds                                                                                                                         |
-| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| `protocols/c621`           | login protocol: wire records and codecs (moved out of `login/server` `protocol/c621`)                                         |
-| `protocols/highfive`       | game protocol 267–273: wire records and codecs                                                                                |
-| `tools/load/core`          | load bot model, the `ClientProtocol` port, action scheduler, injection profiles, latency recording, Prometheus window reading |
-| `tools/load/protocol-<id>` | client adapter of one protocol: wire records to intents and observations; `protocol-highfive` pairs `c621` with `highfive`    |
-| `tools/load/app`           | Spring Boot command-line application: load scenarios, seeding, report, gate                                                   |
+| Module                     | Holds                                                                                                                                       |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `protocols/c621`           | login protocol: wire records and codecs (moved out of `login/server` `protocol/c621`)                                                       |
+| `protocols/highfive`       | game protocol 267–273: wire records and codecs                                                                                              |
+| `tools/load/core`          | load bot model, the `ClientProtocol` port, action scheduler, injection profiles, latency recording, Prometheus window reading, report, gate |
+| `tools/load/protocol-<id>` | client adapter of one protocol: wire records to intents and observations; `protocol-highfive` pairs `c621` with `highfive`                  |
+| `tools/load/app`           | Spring Boot command-line application: settings, load scenarios, seeding, the `run` and `gate` commands                                      |
 
-`tools/load/core` depends on neither Spring nor a chronicle nor `protocols/*`. Server, login server, load bots and
+`tools/load/core` depends on neither Spring nor a chronicle nor `protocols/*`; the report and the gate are pure code there, so the command-line application only wires them. Server, login server, load bots and
 PostgreSQL run as separate processes.
 
 ## 3. Wire codecs
@@ -47,19 +47,19 @@ PostgreSQL run as separate processes.
 - **Golden tests per codec** (bytes ↔ record) serve both sides.
 - **Who writes them:** `protocols/c621` comes with its move out of `login/server` once the game transport lands; the
   first `highfive` codecs come with the first migrated slices (character, movement, chat, message). Combat packets
-  stay legacy routes there, so E0 extracts their
-  layouts into `protocols/highfive` codecs and points the legacy packets at them, without migrating a slice (§9, P3).
+  stay legacy routes there, so E0 extracts their layouts into `protocols/highfive` codecs and points the legacy
+  packets at them, without migrating a slice (§10, P3).
 
 ## 4. Load bot
 
 - **Threads:** a Netty `EventLoopGroup` sized to the cores given to the harness. A load bot lives on the event loop of
   its connection and all its logic runs there, so it holds no locks. Timers are the event loop's `schedule`.
 - **Lifecycle:** `LOGIN_CONNECT → LOGIN_AUTH → SERVER_LIST → GAME_CONNECT → CHARACTER_SELECT → ENTERING → IN_GAME →
-CLOSING`, the same for every protocol.
+CLOSING → STOPPED`, the same for every protocol; `STOPPED` without a logout is a dropped connection.
 - **Intents** (sent): `Login`, `SelectServer`, `SelectCharacter`, `EnterWorld`, `MoveTo`, `Attack`, `UseSkill`,
-  `Say`, `Restart`, `Logout`.
+  `Say`, `ResurrectAtRestartPoint`, `Logout`.
 - **Observations** (kept): its own object id, position, HP and MP, alive or dead; the visible objects as
-  `object id → kind, position, HP, team`. Only what scenarios need.
+  `object id → kind, position, team, dead`. Only what scenarios need.
 - **Acknowledgement:** the client adapter names the observation that confirms each intent (`MoveTo` the echo of its
   own movement, `Attack` the attack packet, `UseSkill` the start of the cast, `Say` the chat echo). An intent without
   it within its timeout is recorded as a timeout.
@@ -72,8 +72,10 @@ CLOSING`, the same for every protocol.
 
 ## 5. Load scenarios
 
-Load scenarios are Java code on a small DSL: a scenario, an injection profile and assertions, the model of Gatling.
-Ids carry the `load-` prefix, classes are `<Name>LoadScenario`.
+Load scenarios are Java code on a small DSL, the model of Gatling split by owner: a scenario defines the behaviour of
+a load bot and the intents it needs, the injection profile comes from the run settings and the assertions from the
+gate settings, so one scenario runs at any size and against any baseline. Ids carry the `load-` prefix, classes are
+`<Name>LoadScenario`.
 
 - **Injection profile:** ramp (N load bots over T), warm-up (not reported), steady (the measurement window),
   ramp-down.
@@ -96,19 +98,21 @@ through the protocol.
 
 ## 7. Measurement and report
 
-**Server meters:** the harness scrapes `/actuator/prometheus` every second, parses it with the Prometheus Java
-client's text-format parser and computes values over the steady window from the deltas between its first and last
-scrape.
+**Server meters:** the harness scrapes `/actuator/prometheus` every second in the Prometheus protobuf exposition
+format, which Actuator serves on request, and parses it with classes generated from the Prometheus `metrics.proto`
+(client_model), vendored unchanged: the Prometheus Java client has no parser of its text format. Values are computed
+over the steady window from the deltas between its first and last scrape; the text format is fetched verbatim at the
+window's start and end for the report.
 
-| Meter                                                            | Taken as                                    |
-| ---------------------------------------------------------------- | ------------------------------------------- |
-| `l2nx.engine.pass` (percentile histogram)                        | p50, p99, max per `loop` from bucket deltas |
-| `l2nx.engine.pass.phase`                                         | mean per phase from sum and count deltas    |
-| `l2nx.engine.pass.over.budget`, `failures`, `timers.overdue`     | deltas                                      |
-| `l2nx.engine.inbox.depth`                                        | max and p99 of the per-second samples       |
-| `l2nx.session.queue.depth` (percentile histogram, added by E6)   | p99 from bucket deltas, max                 |
-| `l2nx.legacy.task`, `l2nx.legacy.task.lag`, `l2nx.legacy.packet` | p99 per type, for the baseline before E6    |
-| `jvm.gc.pause`, `process.cpu.usage`, `jvm.threads.live`          | p99, mean, max                              |
+| Meter                                                            | Taken as                                                             |
+| ---------------------------------------------------------------- | -------------------------------------------------------------------- |
+| `l2nx.engine.pass` (percentile histogram)                        | p50, p99, max per `loop` from bucket deltas                          |
+| `l2nx.engine.pass.phase`                                         | mean per phase from sum and count deltas                             |
+| `l2nx.engine.pass.over.budget`, `failures`, `timers.overdue`     | deltas                                                               |
+| `l2nx.engine.inbox.depth`                                        | max and p99 of the per-second samples                                |
+| `l2nx.session.queue.depth` (percentile histogram, added by E6)   | p99 from bucket deltas, max                                          |
+| `l2nx.legacy.task`, `l2nx.legacy.task.lag`, `l2nx.legacy.packet` | mean per type; p99 and max where a histogram is published; before E6 |
+| `jvm.gc.pause`, `process.cpu.usage`, `jvm.threads.live`          | p99, mean, max                                                       |
 
 **Generator self-check:** the harness measures its own event loop lag (scheduled against actual action time). A p99
 lag above 10 ms marks the run invalid: the generator, not the server, was saturated.
@@ -117,10 +121,12 @@ lag above 10 ms marks the run invalid: the generator, not the server, was satura
 kept with the run; async-profiler in wall-clock mode when installed.
 
 **Report** in `build/load/<run>/`: `summary.json` (scenario, seed, N, windows, server commit, CPU affinity, client
-p50, p99, p99.9 and max per intent, timeout and error shares, the server values above), an `.hgrm` per intent,
-`server-metrics.prom` with the raw window scrapes, and a table on the console.
+p50, p99, p99.9 and max per intent, timeout, rejection and stopped shares, the server values above), an `.hgrm` per
+intent, `server-metrics-start.prom` and `server-metrics-end.prom` with the raw window scrapes, and a table on the
+console. A boundary scrape that fails after its retries leaves the server values out; the gate then fails criteria 1
+and 2 for missing meters instead of the run losing its client results.
 
-**Start:** `./gradlew :tools:load:app:bootRun --args='--scenario=load-crowd-pvp --bots=500 --seed=42'` or the jar;
+**Start:** `./gradlew :tools:load:app:bootRun --args='run --l2nx.load.scenario=load-crowd-pvp --l2nx.load.bots=500 --l2nx.load.seed=42'` or the jar;
 settings are `@ConfigurationProperties`. A compose profile `load` adds Prometheus and Grafana with a committed
 dashboard for watching a run live; the report never depends on it.
 
@@ -128,15 +134,15 @@ dashboard for watching a run live; the report never depends on it.
 
 The `gate` command compares the reports of a scenario with its baseline:
 
-| #   | Criterion                                      | Threshold         |
-| --- | ---------------------------------------------- | ----------------- |
-| 1   | `l2nx.engine.pass` p99 over steady, every loop | ≤ `pass-budget`   |
-| 2   | Share of passes over budget                    | ≤ 0.1%            |
-| 3   | Client action latency p99, every intent        | ≤ baseline × 1.10 |
-| 4   | Timeouts and errors                            | ≤ 0.5%            |
+| #   | Criterion                                                                   | Threshold         |
+| --- | --------------------------------------------------------------------------- | ----------------- |
+| 1   | `l2nx.engine.pass` p99 over steady, every loop                              | ≤ `pass-budget`   |
+| 2   | Share of passes over budget                                                 | ≤ 0.1%            |
+| 3   | Client action latency p99, every intent                                     | ≤ baseline × 1.10 |
+| 4   | Timed-out intents; intents the server rejected; load bots stopped on errors | ≤ 0.5% each       |
 
-- A scenario runs three times and the gate takes the median of the p99 values. An invalid run does not count; with
-  fewer than three valid runs the gate fails with that reason.
+- A scenario runs three times and the gate takes the median of each criterion's per-run values. An invalid run does
+  not count; with fewer than three valid runs the gate fails with that reason.
 - Thresholds live in the gate settings. The baseline numbers and the method behind them are kept in
   `docs/runbooks/load-baseline.md`.
 - **Where it runs:** one machine, separate processes with CPU affinity set by the start script (server, load bots,

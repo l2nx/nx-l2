@@ -1,0 +1,253 @@
+/*
+ * SPDX-FileCopyrightText: 2026 L2NX contributors
+ * SPDX-License-Identifier: Apache-2.0
+ */
+package app.l2nx.load.report;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import app.l2nx.load.bot.intent.IntentKind;
+import app.l2nx.load.gate.model.CriterionResult;
+import app.l2nx.load.gate.model.GateCriterion;
+import app.l2nx.load.gate.model.GateVerdict;
+import app.l2nx.load.injection.InjectionProfile;
+import app.l2nx.load.report.model.IntentStats;
+import app.l2nx.load.report.model.InvalidReason;
+import app.l2nx.load.report.model.LoopStats;
+import app.l2nx.load.report.model.RunSummary;
+import app.l2nx.load.report.model.RunValidity;
+import app.l2nx.load.report.model.ServerStats;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.List;
+import java.util.Map;
+import org.HdrHistogram.Histogram;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+
+class ReportWriterTest {
+
+    private static final Instant STARTED_AT = Instant.parse("2026-10-21T08:15:30Z");
+
+    private final ReportWriter writer = new ReportWriter();
+
+    @TempDir
+    Path root;
+
+    @Nested
+    class RunId {
+
+        @Test
+        void runId_shouldJoinScenarioUtcStartAndSeed() {
+            var actual = ReportWriter.runId("load-roam", STARTED_AT, 42);
+
+            assertThat(actual).isEqualTo("load-roam-20261021-081530-42");
+        }
+    }
+
+    @Nested
+    class Write {
+
+        @Test
+        void write_shouldWriteSummaryWithIsoTimesAndWithoutNulls() throws IOException {
+            var directory = writer.write(root, summary(), Map.of(), null, null);
+
+            var actual = Files.readString(directory.resolve(ReportWriter.SUMMARY_FILE));
+
+            assertThat(directory).isEqualTo(root.resolve("load-roam-20261021-081530-42"));
+            assertThat(actual)
+                    .contains("\"startedAt\" : \"2026-10-21T08:15:30Z\"")
+                    .contains("\"steady\" : \"PT5M\"")
+                    .contains("\"MOVE_TO\" : {")
+                    .doesNotContain("serverCommit")
+                    .doesNotContain("passMaxMillis")
+                    .doesNotContain("null");
+        }
+
+        @Test
+        void write_shouldWriteHistogramPerIntentInMilliseconds() throws IOException {
+            var histogram = new Histogram(3);
+            histogram.recordValue(Duration.ofMillis(12).toNanos());
+
+            var directory = writer.write(root, summary(), Map.of(IntentKind.MOVE_TO, histogram), null, null);
+
+            var actual = Files.readString(directory.resolve("move_to.hgrm"));
+            assertThat(actual).contains("Value     Percentile").contains("12.0").contains("#[Max     =       12.0");
+        }
+
+        @Test
+        void write_shouldWriteScrapesVerbatim_whenTaken() throws IOException {
+            var start = "# TYPE l2nx_engine_pass_seconds histogram\nl2nx_engine_pass_seconds_count 1\n";
+            var end = "l2nx_engine_pass_seconds_count 2\n";
+
+            var directory = writer.write(root, summary(), Map.of(), start, end);
+
+            assertThat(directory.resolve(ReportWriter.METRICS_START_FILE)).hasContent(start);
+            assertThat(directory.resolve(ReportWriter.METRICS_END_FILE)).hasContent(end);
+        }
+
+        @Test
+        void write_shouldSkipScrapeFiles_whenNotTaken() throws IOException {
+            var directory = writer.write(root, summary(), Map.of(), null, null);
+
+            assertThat(directory.resolve(ReportWriter.METRICS_START_FILE)).doesNotExist();
+            assertThat(directory.resolve(ReportWriter.METRICS_END_FILE)).doesNotExist();
+        }
+    }
+
+    @Nested
+    class ReadSummary {
+
+        @Test
+        void readSummary_shouldReturnWrittenSummary() throws IOException {
+            var expected = summary();
+            var directory = writer.write(root, expected, Map.of(), null, null);
+
+            var actual = writer.readSummary(directory.resolve(ReportWriter.SUMMARY_FILE));
+
+            assertThat(actual).isEqualTo(expected);
+        }
+
+        @Test
+        void readSummary_shouldKeepNullServer_whenRunReadNoServerMeters() throws IOException {
+            var expected = summary().toBuilder().server(null).build();
+            var directory = writer.write(root, expected, Map.of(), null, null);
+
+            var actual = writer.readSummary(directory.resolve(ReportWriter.SUMMARY_FILE));
+
+            assertThat(actual).isEqualTo(expected);
+        }
+    }
+
+    @Nested
+    class ConsoleTable {
+
+        @Test
+        void consoleTable_shouldListIntentsAndLoops() {
+            var actual = writer.consoleTable(summary());
+
+            assertThat(actual)
+                    .contains("Run load-roam-20261021-081530-42: VALID")
+                    .contains("server commit -")
+                    .contains("timeouts 0.200%, rejected 0.100%, stopped load bots 0.000%")
+                    .containsPattern("MOVE_TO\\s+1000\\s+997\\s+2\\s+1\\s+4\\.00\\s+11\\.50\\s+20\\.00\\s+25\\.00")
+                    .containsPattern("world-0\\s+6000\\s+5\\.000\\s+20\\.000\\s+-\\s+3")
+                    .contains("GC pause p99 3.000 ms mean 1.200 ms max - ms")
+                    .contains("l2nx_legacy_task_seconds{type=\"ai\"} mean 0.500 ms p99 5.000 ms max 7.000 ms")
+                    .contains("l2nx_legacy_packet_seconds{type=\"move\"} mean 0.100 ms p99 - ms max - ms");
+        }
+
+        @Test
+        void consoleTable_shouldNameInvalidReasonsAndMissingServer_whenRunIsInvalid() {
+            var invalid = summary().toBuilder()
+                    .validity(RunValidity.INVALID)
+                    .invalidReasons(List.of(InvalidReason.GENERATOR_LAG))
+                    .server(null)
+                    .build();
+
+            var actual = writer.consoleTable(invalid);
+
+            assertThat(actual).contains(": INVALID [GENERATOR_LAG]").contains("server meters: none");
+        }
+    }
+
+    @Nested
+    class VerdictTable {
+
+        @Test
+        void verdictTable_shouldListEveryCriterionWithReason() {
+            var verdict = GateVerdict.builder()
+                    .scenario("load-roam")
+                    .baselineRunId("base")
+                    .validRunIds(List.of("a", "b"))
+                    .invalidRunIds(List.of("c"))
+                    .results(List.of(
+                            CriterionResult.builder()
+                                    .criterion(GateCriterion.VALID_RUNS)
+                                    .measured(2.0)
+                                    .threshold(3.0)
+                                    .passed(false)
+                                    .build(),
+                            CriterionResult.builder()
+                                    .criterion(GateCriterion.ENGINE_PASS_P99)
+                                    .threshold(50.0)
+                                    .passed(false)
+                                    .reason("no engine loop meters in runs [a]")
+                                    .build()))
+                    .build();
+
+            var actual = writer.verdictTable(verdict);
+
+            assertThat(actual)
+                    .contains("Gate load-roam against baseline base: FAIL")
+                    .contains("ignored invalid runs [c]")
+                    .containsPattern("VALID_RUNS\\s+-\\s+2\\.000\\s+3\\.000\\s+FAIL")
+                    .containsPattern(
+                            "ENGINE_PASS_P99\\s+-\\s+-\\s+50\\.000\\s+FAIL\\s+no engine loop meters in runs \\[a]");
+        }
+    }
+
+    private static RunSummary summary() {
+        return RunSummary.builder()
+                .runId(ReportWriter.runId("load-roam", STARTED_AT, 42))
+                .scenario("load-roam")
+                .protocol("in-memory")
+                .seed(42)
+                .injection(InjectionProfile.builder()
+                        .bots(20)
+                        .ramp(Duration.ofSeconds(10))
+                        .warmUp(Duration.ofSeconds(30))
+                        .steady(Duration.ofMinutes(5))
+                        .rampDown(Duration.ofSeconds(5))
+                        .build())
+                .startedAt(STARTED_AT)
+                .cpuAffinity("server 0-3, load bots 4-7")
+                .validity(RunValidity.VALID)
+                .invalidReasons(List.of())
+                .intents(Map.of(
+                        IntentKind.MOVE_TO,
+                        IntentStats.builder()
+                                .sent(1000)
+                                .acknowledged(997)
+                                .timeouts(2)
+                                .errors(1)
+                                .p50Millis(4)
+                                .p99Millis(11.5)
+                                .p999Millis(20)
+                                .maxMillis(25)
+                                .build()))
+                .generatorLagP99Millis(0.8)
+                .timeoutShare(0.002)
+                .rejectedShare(0.001)
+                .stoppedShare(0)
+                .server(ServerStats.builder()
+                        .loops(Map.of(
+                                "world-0",
+                                LoopStats.builder()
+                                        .passes(6000)
+                                        .passP50Millis(5.0)
+                                        .passP99Millis(20.0)
+                                        .overBudget(3)
+                                        .phaseMeanMillis(Map.of("input", 0.4, "tick", 2.5))
+                                        .inboxDepthMax(12.0)
+                                        .inboxDepthP99(4.0)
+                                        .build()))
+                        .legacyMeanMillis(Map.of(
+                                "l2nx_legacy_task_seconds{type=\"ai\"}",
+                                0.5,
+                                "l2nx_legacy_packet_seconds{type=\"move\"}",
+                                0.1))
+                        .legacyP99Millis(Map.of("l2nx_legacy_task_seconds{type=\"ai\"}", 5.0))
+                        .legacyMaxMillis(Map.of("l2nx_legacy_task_seconds{type=\"ai\"}", 7.0))
+                        .gcPauseP99Millis(3.0)
+                        .gcPauseMeanMillis(1.2)
+                        .processCpuMean(0.35)
+                        .threadsLiveMax(64.0)
+                        .build())
+                .build();
+    }
+}

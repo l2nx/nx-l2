@@ -50,6 +50,7 @@ lists what is open.
 - [#68](https://github.com/l2nx/nx-l2/issues/68) E0: load harness in a separate process, gate of the E6 cutover ([spec 009](specs/009-load-harness.md))
 - [#71](https://github.com/l2nx/nx-l2/issues/71) Load scenario replaying recorded sessions
 - [#72](https://github.com/l2nx/nx-l2/issues/72) Castle siege as a load scenario
+- [#75](https://github.com/l2nx/nx-l2/issues/75) REUSE licences check fails on main: ten files without SPDX information
 
 ## Done
 

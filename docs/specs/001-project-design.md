@@ -206,6 +206,9 @@ chronicles/
   essence/            app.l2nx.essence     stage 9, same four modules
   interlude/          app.l2nx.interlude   stage 10, same four modules
 tools/                data preparation from the operator's own client
+  load/
+    core              app.l2nx.load      load harness: load bots, scenarios, latency, server meters, report, gate (spec 009)
+    app               app.l2nx.load.app  command line: settings, load scenarios, run and gate commands
 build-logic/          Gradle convention plugins
 ```
 

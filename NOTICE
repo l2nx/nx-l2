@@ -11,3 +11,8 @@ GPL-3.0-or-later), as stated in each file's header or in REUSE.toml.
 The game and login servers migrate their databases with Liquibase (https://www.liquibase.com),
 which is licensed under the Functional Source License, Version 1.1, Apache 2.0 Future License
 (FSL-1.1-ALv2).
+
+The load harness parses the Prometheus exposition format with classes generated from metrics.proto of
+Prometheus client_model (https://github.com/prometheus/client_model), licensed under the Apache License 2.0:
+Copyright 2012-2015 The Prometheus Authors. This product includes software developed at SoundCloud Ltd.
+(https://soundcloud.com/).

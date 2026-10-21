@@ -1,0 +1,29 @@
+# SPDX-FileCopyrightText: 2026 L2NX contributors
+# SPDX-License-Identifier: Apache-2.0
+
+spring:
+  application:
+    name: load
+  main:
+    web-application-type: none
+    banner-mode: off
+
+l2nx:
+  load:
+    protocol: in-memory
+    bots: 100
+    ramp: 30s
+    warm-up: 30s
+    steady: 2m
+    ramp-down: 10s
+    seed: 1
+    repeats: 3
+    intent-timeout: 5s
+    scrape-timeout: 10s
+    output-dir: build/load
+    accounts:
+      prefix: load
+      password: load
+    in-memory:
+      step-delay: 10ms
+      ack-latency: 5ms
