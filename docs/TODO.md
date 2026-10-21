@@ -34,6 +34,7 @@ lists what is open.
 - [#45](https://github.com/l2nx/nx-l2/issues/45) Input runs against timers due up to one pass earlier (sub-tick order)
 - [#48](https://github.com/l2nx/nx-l2/issues/48) Real-client checks left open after moving the login connection to Netty
 - [#49](https://github.com/l2nx/nx-l2/issues/49) Move the stage 3 repositories into their feature slices
+- [#51](https://github.com/l2nx/nx-l2/issues/51) Replace key-value variable stores with typed owner state
 - [#53](https://github.com/l2nx/nx-l2/issues/53) Community board post cache loads a topic twice under a race
 - [#54](https://github.com/l2nx/nx-l2/issues/54) Dimensional Rift state races between player actions and its jump task
 - [#55](https://github.com/l2nx/nx-l2/issues/55) Pet.destroyItem never sends the disappeared message
