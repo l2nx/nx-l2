@@ -23,7 +23,7 @@ import app.l2nx.highfive.entity.actor.Playable;
 import app.l2nx.highfive.entity.item.instance.Item;
 import app.l2nx.highfive.handler.IItemHandler;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.SSQStatus;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.SSQStatus;
 
 /**
  * Item Handler for Seven Signs Record

@@ -30,8 +30,8 @@ import app.l2nx.highfive.entity.actor.templates.CreatureTemplate;
 import app.l2nx.highfive.entity.item.Weapon;
 import app.l2nx.highfive.entity.item.instance.Item;
 import app.l2nx.highfive.mechanics.skill.Skill;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.ShowTownMap;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.StaticObjectInfo;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.ShowTownMap;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.StaticObjectInfo;
 import lombok.Getter;
 import lombok.Setter;
 

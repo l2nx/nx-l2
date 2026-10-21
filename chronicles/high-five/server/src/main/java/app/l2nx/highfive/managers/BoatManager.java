@@ -28,7 +28,7 @@ import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.holders.creature.VehiclePathPoint;
 import app.l2nx.highfive.entity.actor.instance.Boat;
 import app.l2nx.highfive.entity.actor.templates.CreatureTemplate;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.ServerPacket;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.ServerPacket;
 import app.l2nx.highfive.util.StatSet;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;

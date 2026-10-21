@@ -17,15 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package app.l2nx.highfive.network.protocol.highfive.clientpackets;
+package app.l2nx.highfive.network.protocol.p267.clientpackets;
 
 import app.l2nx.highfive.data.xml.SkillData;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.mechanics.skill.Skill;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.ActionFailed;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.ValidateLocation;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.ActionFailed;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.ValidateLocation;
 import app.l2nx.highfive.util.LocationUtil;
 import lombok.extern.slf4j.Slf4j;
 

@@ -17,14 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package app.l2nx.highfive.network.protocol.highfive.clientpackets;
+package app.l2nx.highfive.network.protocol.p267.clientpackets;
 
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.groups.Party;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.ExAskJoinMPCC;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.SystemMessage;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.ExAskJoinMPCC;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
 
 /**
  * Format: (ch) S<br>

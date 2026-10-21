@@ -33,7 +33,7 @@ import app.l2nx.highfive.mechanics.script.Quest;
 import app.l2nx.highfive.mechanics.script.QuestState;
 import app.l2nx.highfive.mechanics.script.State;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.SystemMessage;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
 import java.util.Calendar;
 
 public class Q00695_DefendTheHallOfSuffering extends Quest {

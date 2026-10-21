@@ -33,7 +33,7 @@ import app.l2nx.highfive.handler.IActionClickHandler;
 import app.l2nx.highfive.mechanics.events.EventDispatcher;
 import app.l2nx.highfive.mechanics.events.EventType;
 import app.l2nx.highfive.mechanics.events.holders.actor.npc.OnNpcFirstTalk;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.MoveToPawn;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.MoveToPawn;
 
 public class NpcClick implements IActionClickHandler {
     /**

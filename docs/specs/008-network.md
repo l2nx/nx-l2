@@ -21,21 +21,20 @@ client protocol becomes an adapter in front of a game that knows no packets. Sta
 
 ## 2. Layout
 
-| Module / package                                 | Holds                                                                                                                         |
-| ------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------- |
-| `libs/network` (`app.l2nx.network`)              | bootstraps, transport selection, framing, cipher contract and handler, frame encoder, limits, metrics, the cipher primitives  |
-| `protocols/<id>` (`app.l2nx.protocol.<id>`)      | one wire protocol: opcodes, wire records with their codecs, the protocol's keys and frame cipher (§8 Wire codecs)             |
-| `engine/core` `session`                          | session queue, session states, command dispatch, `ClientPort` ([wiring-layout §4](003-engine-core/wiring-layout.md#4-layout)) |
-| `login/server` `protocol/<variant>/`             | the login server's side of one login protocol: handshake, decoder, a handler per client packet, accepted states               |
-| `libs/gslink` (`app.l2nx.gslink`)                | the GS-link contract: `.proto` (`l2nx.gslink.v1`), generated stubs, the shared-secret interceptors, `l2nx.gslink` settings    |
-| `login/server` `gslink`                          | login side of the GS-link: the gRPC service                                                                                   |
-| `chronicles/<c>/server` `login`                  | the game server's side of the login server as a slice: online accounts, server listing, `LoginPort`, the login commands       |
-| `chronicles/<c>/server` `network`                | game pipeline, version handshake, protocol registry, `gslink/` (the gRPC client of the GS-link, adapter of `LoginPort`)       |
-| `chronicles/<c>/server` `network/protocol/<id>/` | one client protocol adapter: wire records to commands, view events to wire records                                            |
+| Module / package                                                      | Holds                                                                                                                         |
+| --------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `libs/network` (`app.l2nx.network`)                                   | bootstraps, transport selection, framing, cipher contract and handler, frame encoder, limits, metrics, the cipher primitives  |
+| `protocols/{login,game}/<id>` (`app.l2nx.protocol.{login,game}.<id>`) | one wire protocol: opcodes, wire records with their codecs, the protocol's keys and frame cipher (§8 Wire codecs)             |
+| `engine/core` `session`                                               | session queue, session states, command dispatch, `ClientPort` ([wiring-layout §4](003-engine-core/wiring-layout.md#4-layout)) |
+| `login/server` `protocol/<variant>/`                                  | the login server's side of one login protocol: handshake, decoder, a handler per client packet, accepted states               |
+| `libs/gslink` (`app.l2nx.gslink`)                                     | the GS-link contract: `.proto` (`l2nx.gslink.v1`), generated stubs, the shared-secret interceptors, `l2nx.gslink` settings    |
+| `login/server` `gslink`                                               | login side of the GS-link: the gRPC service                                                                                   |
+| `chronicles/<c>/server` `login`                                       | the game server's side of the login server as a slice: online accounts, server listing, `LoginPort`, the login commands       |
+| `chronicles/<c>/server` `network`                                     | game pipeline, version handshake, protocol registry, `gslink/` (the gRPC client of the GS-link, adapter of `LoginPort`)       |
+| `chronicles/<c>/server` `network/protocol/<id>/`                      | one client protocol adapter: wire records to commands, view events to wire records                                            |
 
 `libs/network` knows no game rules and no protocol; it knows bytes, frames and the Lineage 2 cipher primitives
-(LE Blowfish, rolling XOR, XOR checksum). The keys, opcodes and layouts of a protocol live in its `protocols/<id>`
-module, which depends on `libs/network` and Netty buffers only, so the load harness uses it as the server does
+(LE Blowfish, rolling XOR, XOR checksum). The keys, opcodes and layouts of a protocol live in its `protocols/` module, which depends on `libs/network` and Netty buffers only, so the load harness uses it as the server does
 ([spec 009](009-load-harness.md)).
 
 ## 3. Configuration
@@ -271,14 +270,14 @@ and is rejected the same way when it is missing; the legacy list shrinks as pack
   the adapter. What its client cannot express is decided in its mapper.
 - **Completeness is tested:** every command a client can send has a handler, and every view event has a mapper or
   an explicit drop, in each adapter.
-- **The first adapter is `highfive`,** accepting protocol versions 267, 268, 271 and 273.
+- **The first adapter is `p267`,** the High Five client, accepting protocol versions 267, 268, 271 and 273.
 - **Further protocols** take their packet layouts from the Mobius builds of other chronicles and from a private
   reference server consulted for packet layouts and behaviour only, under the originality policy of
   [spec 001 §2](001-project-design.md#originality-policy).
 
 ### Wire codecs
 
-Each packet layout exists once, in `protocols/<id>`, and serves both sides: the servers and the load bots of
+Each packet layout exists once, in `protocols/`, and serves both sides: the servers and the load bots of
 [spec 009](009-load-harness.md). Packet libraries shared by servers and bots are built the same way elsewhere
 (MCProtocolLib, Velocity); a schema with generated codecs (Kaitai Struct, a DSL) does not fit Lineage 2's
 conditional fields and nested loops and has no Java writer.
@@ -294,12 +293,18 @@ conditional fields and nested loops and has no Java writer.
   modulus of the login protocol, the XOR keys of a game protocol) live in its module, over the primitives of
   `libs/network`. Each has both directions where both sides need them.
 - **Golden tests** per codec (bytes to record and back) live in the protocol module and serve both sides.
-- **Modules:** `protocols/c621` (login) and `protocols/highfive` (game 267 to 273). `highfive` codecs come with the
-  first migrated slices; until then its XOR keys and frame cipher stay in `libs/network`.
+- **Names follow the client protocol, not the chronicle.** A chronicle is content; a client protocol is the wire of
+  one client family, and clients of other families (Essence, Grand Crusade) are to play the same chronicle through
+  their own adapters. A login protocol is `protocols/login/<revision>`, named by the revision the login server sends
+  in `Init` (`c621`); a game protocol is `protocols/game/p<version>`, named by the first protocol version its client
+  sends (`p267` for 267 to 273; later `p140`, `p557`). Its server adapter carries the same id
+  (`network/protocol/p267`).
+- **Modules:** `protocols/login/c621` and `protocols/game/p267`. `p267` codecs come with the first migrated slices;
+  until then its XOR keys and frame cipher stay in `libs/network`.
 
 ### Legacy routes during the migration
 
-Packets not yet moved to ports pass through the `highfive` adapter as they are:
+Packets not yet moved to ports pass through the `p267` adapter as they are:
 
 - **Inbound:** a legacy packet runs its own `run()` from the same session queue, in order with commands.
   Coalescing (execution.md §3) is a property of command types and never applies to a legacy packet.
@@ -311,8 +316,8 @@ Packets not yet moved to ports pass through the `highfive` adapter as they are:
 - **Scripts** send packets directly (`NpcSay`, `SystemMessage`, `NpcHtmlMessage` and others in about 460 files);
   they move to domain calls on the facades (`say`, `showHtml`, `message`) with their slice in E10, and
   `sendPacket` leaves the facades at the end of E10.
-- **The gate:** legacy routes are inbound legacy opcodes in the `highfive` table (a pinned count) and references to
-  server packet classes outside `network/protocol/highfive/`, scripts included (a `FreezingArchRule` whose store
+- **The gate:** legacy routes are inbound legacy opcodes in the `p267` table (a pinned count) and references to
+  server packet classes outside `network/protocol/p267/`, scripts included (a `FreezingArchRule` whose store
   lists them, §13). Both may only fall; a migrated slice may not reference server packets. A test fails if the production
   configuration registers a second adapter while the count is above zero, and at start the server refuses a second
   adapter while any adapter has legacy inbound entries; tests may register one through a test profile.
@@ -340,7 +345,7 @@ Packets not yet moved to ports pass through the `highfive` adapter as they are:
   IO thread. A channel holds an executor slot for at most a batch of its tasks and then queues again behind the
   others (a fair semaphore), so a busy channel cannot starve logins; tasks the executor can no longer run after
   close go to the channel's rejection handler instead of running against a closing context.
-- **Codecs and handlers:** the records, the frame cipher and the credentials block are `protocols/c621`
+- **Codecs and handlers:** the records, the frame cipher and the credentials block are `protocols/login/c621`
   (§8 Wire codecs); `login/server` holds a handler per client record, which does what the packet means (RSA
   decrypt and account check for `RequestAuthLogin`), and sends server records. The login server has no ports or
   commands: it is one small process without slices, so the Netty idiom of a handler per message type suffices.
@@ -488,7 +493,7 @@ The network steps of the stop order of [spec 002](002-spring-boot-runtime.md#sto
 - **Adapter completeness** (§8) and the legacy-route gate: references to server packet classes outside the
   adapter are an ArchUnit `FreezingArchRule` with its violation store in the repository (it only shrinks, like the
   slice layout store of [wiring-layout §4](003-engine-core/wiring-layout.md#verification)); inbound legacy opcodes
-  of the `highfive` table are a pinned count that may only fall.
+  of the `p267` table are a pinned count that may only fall.
 - **JMH:** encode, broadcast fan-out, decode.
 - **End to end:** a real client logs in and plays at the end of the stage.
 
@@ -498,7 +503,7 @@ Stage 4 is done when:
 
 - both client connections run on Netty, the GS-link runs on gRPC, and the Mobius transport is gone;
 - the port framework exists (commands, handler registry, `ClientPort`, session states, `GameProtocolRegistry`)
-  with the `highfive` adapter and the legacy-route gate;
+  with the `p267` adapter and the legacy-route gate;
 - the first slice runs through ports: character selection (`AuthLogin`, `CharacterSelect`, `CharacterCreate`,
   `CharacterDelete`, `CharacterRestore`, `RequestRestart`), entering the world (`EnterWorld`), movement
   (`MoveToLocation`, `ValidatePosition`, `CannotMoveAnymore`) and chat (`Say2`), inbound and outbound. Until the

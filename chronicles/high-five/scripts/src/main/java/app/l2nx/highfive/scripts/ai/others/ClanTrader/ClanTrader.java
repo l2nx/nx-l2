@@ -25,7 +25,7 @@ import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.clan.ClanAccess;
 import app.l2nx.highfive.mechanics.script.Script;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.SystemMessage;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
 
 /**
  * Clan Trader AI.

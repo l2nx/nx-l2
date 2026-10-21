@@ -20,13 +20,13 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package app.l2nx.highfive.network.protocol.highfive.clientpackets;
+package app.l2nx.highfive.network.protocol.p267.clientpackets;
 
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.handler.BypassHandler;
 import app.l2nx.highfive.handler.IBypassHandler;
 import app.l2nx.highfive.mechanics.script.QuestState;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.TutorialCloseHtml;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.TutorialCloseHtml;
 
 public class RequestTutorialLinkHtml extends ClientPacket {
     private String bypass;

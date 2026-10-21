@@ -33,7 +33,7 @@ import app.l2nx.highfive.login.LoginService;
 import app.l2nx.highfive.login.system.OnlineAccounts;
 import app.l2nx.highfive.login.system.OnlineAccounts.PendingAuthentication;
 import app.l2nx.highfive.network.GameClient;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.CharSelectionInfo;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.CharSelectionInfo;
 import java.util.List;
 import java.util.UUID;
 import lombok.AccessLevel;

@@ -29,8 +29,8 @@ import app.l2nx.highfive.handler.IAdminCommandHandler;
 import app.l2nx.highfive.managers.CHSiegeManager;
 import app.l2nx.highfive.mechanics.siege.clanhalls.ClanHallSiegeEngine;
 import app.l2nx.highfive.mechanics.siege.clanhalls.SiegableHall;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.NpcHtmlMessage;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.SiegeInfo;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.NpcHtmlMessage;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.SiegeInfo;
 import java.util.Calendar;
 import lombok.extern.slf4j.Slf4j;
 

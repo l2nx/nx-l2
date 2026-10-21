@@ -33,7 +33,7 @@ import app.l2nx.highfive.mechanics.script.State;
 import app.l2nx.highfive.mechanics.siege.TerritoryWard;
 import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.network.NpcStringId;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.ExShowScreenMessage;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.ExShowScreenMessage;
 import app.l2nx.highfive.scripts.quests.Q00147_PathtoBecominganEliteMercenary.Q00147_PathtoBecominganEliteMercenary;
 import app.l2nx.highfive.scripts.quests.Q00148_PathtoBecominganExaltedMercenary.Q00148_PathtoBecominganExaltedMercenary;
 import app.l2nx.highfive.scripts.quests.Q00176_StepsForHonor.Q00176_StepsForHonor;

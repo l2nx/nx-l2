@@ -7,7 +7,7 @@ package app.l2nx.highfive.boot.architecture.protocol;
 import static com.tngtech.archunit.library.freeze.FreezingArchRule.freeze;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import app.l2nx.highfive.network.protocol.highfive.HighFiveAdapter;
+import app.l2nx.highfive.network.protocol.p267.P267Adapter;
 import com.tngtech.archunit.core.domain.JavaClasses;
 import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.junit.AnalyzeClasses;
@@ -29,7 +29,7 @@ class LegacyRouteArchitectureTest {
 
     @ArchTest
     static void legacyInboundOpcodes_shouldMatchThePin(JavaClasses classes) {
-        final int actual = new HighFiveAdapter().legacyInboundCount();
+        final int actual = new P267Adapter().legacyInboundCount();
 
         assertThat(actual)
                 .as("inbound opcodes of the highfive table served by legacy packets, now %d", actual)

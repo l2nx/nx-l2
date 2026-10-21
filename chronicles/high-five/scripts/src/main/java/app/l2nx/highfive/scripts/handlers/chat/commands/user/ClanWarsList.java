@@ -28,7 +28,7 @@ import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.clan.Clan;
 import app.l2nx.highfive.handler.IUserCommandHandler;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.SystemMessage;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
 import app.l2nx.highfive.repository.clan.model.WarOpponent;
 import java.util.List;
 

@@ -20,7 +20,7 @@
 package app.l2nx.highfive.entity.actor.holders.player;
 
 import app.l2nx.highfive.entity.actor.Player;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.RadarControl;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.RadarControl;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 

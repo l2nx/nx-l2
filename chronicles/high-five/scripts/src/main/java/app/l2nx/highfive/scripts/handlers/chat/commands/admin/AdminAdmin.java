@@ -31,7 +31,7 @@ import app.l2nx.highfive.handler.IAdminCommandHandler;
 import app.l2nx.highfive.mechanics.olympiad.Hero;
 import app.l2nx.highfive.mechanics.olympiad.Olympiad;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.NpcHtmlMessage;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.NpcHtmlMessage;
 import java.util.StringTokenizer;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.DateFormatUtils;

@@ -26,7 +26,7 @@
  */
 package app.l2nx.login.controller;
 
-import app.l2nx.protocol.c621.crypt.ScrambledModulus;
+import app.l2nx.protocol.login.c621.crypt.ScrambledModulus;
 import java.security.Key;
 import java.security.KeyPair;
 import java.security.interfaces.RSAPublicKey;

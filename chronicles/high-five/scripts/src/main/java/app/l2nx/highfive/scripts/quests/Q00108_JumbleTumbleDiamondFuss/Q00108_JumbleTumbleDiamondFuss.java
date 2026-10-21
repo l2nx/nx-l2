@@ -33,7 +33,7 @@ import app.l2nx.highfive.mechanics.script.QuestSound;
 import app.l2nx.highfive.mechanics.script.QuestState;
 import app.l2nx.highfive.mechanics.script.State;
 import app.l2nx.highfive.network.NpcStringId;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.SocialAction;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.SocialAction;
 import app.l2nx.highfive.scripts.ai.others.NewbieGuide.NewbieGuide;
 import app.l2nx.highfive.util.LocationUtil;
 import java.util.HashMap;

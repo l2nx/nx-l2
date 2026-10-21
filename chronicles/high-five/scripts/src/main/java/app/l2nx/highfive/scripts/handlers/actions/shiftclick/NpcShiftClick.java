@@ -32,7 +32,7 @@ import app.l2nx.highfive.entity.actor.enums.creature.InstanceType;
 import app.l2nx.highfive.entity.item.holders.Elementals;
 import app.l2nx.highfive.handler.IActionShiftHandler;
 import app.l2nx.highfive.managers.WalkingManager;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.NpcHtmlMessage;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.NpcHtmlMessage;
 import app.l2nx.highfive.scripts.handlers.bypass.npc.NpcViewMod;
 import java.util.Set;
 import java.util.stream.Collectors;

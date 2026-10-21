@@ -24,7 +24,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package app.l2nx.highfive.network.protocol.highfive.clientpackets;
+package app.l2nx.highfive.network.protocol.p267.clientpackets;
 
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.data.sql.OfflineTraderTable;
@@ -41,9 +41,9 @@ import app.l2nx.highfive.mechanics.variables.PlayerVariables;
 import app.l2nx.highfive.network.Disconnection;
 import app.l2nx.highfive.network.GameClient;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.ActionFailed;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.CharSelectionInfo;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.RestartResponse;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.ActionFailed;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.CharSelectionInfo;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.RestartResponse;
 import app.l2nx.highfive.taskmanagers.AttackStanceTaskManager;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;

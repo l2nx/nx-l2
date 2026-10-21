@@ -31,7 +31,7 @@ import app.l2nx.highfive.managers.GrandBossManager;
 import app.l2nx.highfive.managers.ScriptManager;
 import app.l2nx.highfive.managers.ZoneManager;
 import app.l2nx.highfive.mechanics.script.Quest;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.NpcHtmlMessage;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.NpcHtmlMessage;
 import app.l2nx.highfive.scripts.ai.bosses.Antharas.Antharas;
 import app.l2nx.highfive.scripts.ai.bosses.Baium.Baium;
 import app.l2nx.highfive.util.StatSet;

@@ -26,7 +26,7 @@ import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.Location;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.handler.AdminCommandHandler;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.ExServerPrimitive;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.ExServerPrimitive;
 import java.awt.Color;
 import java.io.BufferedWriter;
 import java.io.File;

@@ -24,12 +24,12 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package app.l2nx.highfive.network.protocol.highfive.clientpackets;
+package app.l2nx.highfive.network.protocol.p267.clientpackets;
 
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.enums.player.ShortcutType;
 import app.l2nx.highfive.entity.actor.holders.player.Shortcut;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.ShortcutRegister;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.ShortcutRegister;
 
 public class RequestShortcutReg extends ClientPacket {
     private ShortcutType type;

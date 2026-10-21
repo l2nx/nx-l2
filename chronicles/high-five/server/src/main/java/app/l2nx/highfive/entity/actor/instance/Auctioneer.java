@@ -36,7 +36,7 @@ import app.l2nx.highfive.entity.residences.ClanHallAuction;
 import app.l2nx.highfive.entity.residences.ClanHallAuction.Bidder;
 import app.l2nx.highfive.managers.ClanHallAuctionManager;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.NpcHtmlMessage;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.NpcHtmlMessage;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.util.Calendar;

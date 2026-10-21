@@ -30,8 +30,8 @@ import app.l2nx.highfive.managers.CoupleManager;
 import app.l2nx.highfive.mechanics.script.Script;
 import app.l2nx.highfive.mechanics.skill.CommonSkill;
 import app.l2nx.highfive.mechanics.skill.Skill;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.MagicSkillUse;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.NpcHtmlMessage;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.MagicSkillUse;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.NpcHtmlMessage;
 
 /**
  * Wedding AI.

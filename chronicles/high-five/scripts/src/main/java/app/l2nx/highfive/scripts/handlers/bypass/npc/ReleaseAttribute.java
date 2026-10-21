@@ -25,7 +25,7 @@ package app.l2nx.highfive.scripts.handlers.bypass.npc;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.handler.IBypassHandler;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.ExShowBaseAttributeCancelWindow;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.ExShowBaseAttributeCancelWindow;
 
 public class ReleaseAttribute implements IBypassHandler {
     private static final String[] COMMANDS = {"ReleaseAttribute"};

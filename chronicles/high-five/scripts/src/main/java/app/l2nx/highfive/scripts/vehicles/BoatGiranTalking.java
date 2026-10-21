@@ -24,8 +24,8 @@ import app.l2nx.highfive.entity.actor.instance.Boat;
 import app.l2nx.highfive.managers.BoatManager;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.enums.ChatType;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.CreatureSay;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.PlaySound;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.CreatureSay;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.PlaySound;
 import app.l2nx.highfive.threads.ThreadPool;
 import lombok.extern.slf4j.Slf4j;
 

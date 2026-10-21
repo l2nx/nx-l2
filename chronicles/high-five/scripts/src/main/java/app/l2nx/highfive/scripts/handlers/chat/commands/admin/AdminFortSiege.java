@@ -29,8 +29,8 @@ import app.l2nx.highfive.handler.IAdminCommandHandler;
 import app.l2nx.highfive.managers.FortManager;
 import app.l2nx.highfive.mechanics.siege.Fort;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.NpcHtmlMessage;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.SystemMessage;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.NpcHtmlMessage;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
 import java.util.List;
 import java.util.StringTokenizer;
 

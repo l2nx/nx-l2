@@ -20,7 +20,7 @@ import app.l2nx.highfive.config.ServerConfig;
 import app.l2nx.highfive.network.protocol.GameProtocolAdapter;
 import app.l2nx.highfive.network.protocol.GameProtocolProperties;
 import app.l2nx.highfive.network.protocol.GameProtocolRegistry;
-import app.l2nx.highfive.network.protocol.highfive.HighFiveAdapter;
+import app.l2nx.highfive.network.protocol.p267.P267Adapter;
 import java.io.DataInputStream;
 import java.net.Socket;
 import java.net.http.HttpResponse;
@@ -111,15 +111,15 @@ class HighFiveApplicationTest extends BootSmokeTest {
         }
 
         @Test
-        void protocolRegistry_shouldHoldOnlyTheHighFiveAdapter_whileLegacyRoutesRemain() {
+        void protocolRegistry_shouldHoldOnlyTheP267Adapter_whileLegacyRoutesRemain() {
             final List<GameProtocolAdapter> adapters = protocolRegistry.adapters();
             final int legacyRoutes = adapters.stream()
-                    .filter(adapter -> HighFiveAdapter.ID.equals(adapter.id()))
+                    .filter(adapter -> P267Adapter.ID.equals(adapter.id()))
                     .mapToInt(GameProtocolAdapter::legacyInboundCount)
                     .sum();
 
             assertThat(legacyRoutes).isPositive();
-            assertThat(adapters).extracting(GameProtocolAdapter::id).containsExactly(HighFiveAdapter.ID);
+            assertThat(adapters).extracting(GameProtocolAdapter::id).containsExactly(P267Adapter.ID);
             assertThat(context.getBean(GameProtocolProperties.class).allowLegacyWithMultipleAdapters())
                     .as("the production configuration never allows a second adapter beside legacy routes")
                     .isFalse();

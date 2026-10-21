@@ -5,7 +5,7 @@
 package app.l2nx.login.protocol.c621;
 
 import app.l2nx.login.network.LoginClient;
-import app.l2nx.protocol.c621.serverpackets.Init;
+import app.l2nx.protocol.login.c621.serverpackets.Init;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 

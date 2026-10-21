@@ -18,7 +18,7 @@ import app.l2nx.network.crypt.LittleEndianBlowfishCipher;
 import app.l2nx.network.crypt.XorChecksum;
 import app.l2nx.network.exec.BlockingTaskExecutor;
 import app.l2nx.network.test.TestChannels;
-import app.l2nx.protocol.c621.serverpackets.reason.LoginFailReason;
+import app.l2nx.protocol.login.c621.serverpackets.reason.LoginFailReason;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.netty.buffer.ByteBuf;

@@ -24,7 +24,7 @@ import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.mechanics.script.Quest;
 import app.l2nx.highfive.mechanics.script.QuestSound;
 import app.l2nx.highfive.mechanics.script.QuestState;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.RadarControl;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.RadarControl;
 import app.l2nx.highfive.scripts.quests.Q00238_SuccessFailureOfBusiness.Q00238_SuccessFailureOfBusiness;
 import app.l2nx.highfive.scripts.quests.Q00309_ForAGoodCause.Q00309_ForAGoodCause;
 import app.l2nx.highfive.util.ArrayUtil;

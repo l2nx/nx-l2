@@ -2,7 +2,7 @@
  * SPDX-FileCopyrightText: 2026 L2NX contributors
  * SPDX-License-Identifier: Apache-2.0
  */
-package app.l2nx.highfive.network.protocol.highfive;
+package app.l2nx.highfive.network.protocol.p267;
 
 import app.l2nx.engine.core.session.command.Command;
 import app.l2nx.highfive.config.DevelopmentConfig;
@@ -10,15 +10,15 @@ import app.l2nx.highfive.network.GameConnection;
 import app.l2nx.highfive.network.protocol.InboundDecoder;
 import app.l2nx.highfive.network.protocol.OpcodeTable;
 import app.l2nx.highfive.network.protocol.OpcodeTable.RouteKind;
-import app.l2nx.highfive.network.protocol.highfive.clientpackets.ClientPacket;
-import app.l2nx.highfive.network.protocol.highfive.clientpackets.ClientPackets;
-import app.l2nx.highfive.network.protocol.highfive.clientpackets.ExClientPackets;
-import app.l2nx.highfive.network.protocol.highfive.clientpackets.RequestBookMarkSlotInfo;
-import app.l2nx.highfive.network.protocol.highfive.clientpackets.RequestChangeBookMarkSlot;
-import app.l2nx.highfive.network.protocol.highfive.clientpackets.RequestDeleteBookMarkSlot;
-import app.l2nx.highfive.network.protocol.highfive.clientpackets.RequestModifyBookMarkSlot;
-import app.l2nx.highfive.network.protocol.highfive.clientpackets.RequestSaveBookMarkSlot;
-import app.l2nx.highfive.network.protocol.highfive.clientpackets.RequestTeleportBookMark;
+import app.l2nx.highfive.network.protocol.p267.clientpackets.ClientPacket;
+import app.l2nx.highfive.network.protocol.p267.clientpackets.ClientPackets;
+import app.l2nx.highfive.network.protocol.p267.clientpackets.ExClientPackets;
+import app.l2nx.highfive.network.protocol.p267.clientpackets.RequestBookMarkSlotInfo;
+import app.l2nx.highfive.network.protocol.p267.clientpackets.RequestChangeBookMarkSlot;
+import app.l2nx.highfive.network.protocol.p267.clientpackets.RequestDeleteBookMarkSlot;
+import app.l2nx.highfive.network.protocol.p267.clientpackets.RequestModifyBookMarkSlot;
+import app.l2nx.highfive.network.protocol.p267.clientpackets.RequestSaveBookMarkSlot;
+import app.l2nx.highfive.network.protocol.p267.clientpackets.RequestTeleportBookMark;
 import io.netty.buffer.ByteBuf;
 import java.util.function.Supplier;
 import lombok.extern.slf4j.Slf4j;
@@ -28,14 +28,14 @@ import lombok.extern.slf4j.Slf4j;
  * route. A ported packet leaves the enums, so a route is never both.
  */
 @Slf4j
-public final class HighFiveInbound {
+public final class P267Inbound {
     static final int EX_PREFIX = 0xD0;
     private static final int NET_PING_ANSWER = 0xB1;
     private static final int BOOKMARK = 0x51;
     private static final int BOOKMARK_PACKETS = 6;
     private static final InboundDecoder PING_ANSWER = (frame, connection) -> OpcodeTable.CONSUMED;
 
-    private HighFiveInbound() {}
+    private P267Inbound() {}
 
     /** Registration of the ported packets; lives only while {@link #build()} runs. */
     static final class Routes {
@@ -71,7 +71,7 @@ public final class HighFiveInbound {
             }
             if (packet.getPacketId() == BOOKMARK) {
                 // No supplier of its own: six packets hide behind a third id, each one a packet to migrate.
-                table.exLegacy(packet.getPacketId(), HighFiveInbound::bookmark, BOOKMARK_PACKETS);
+                table.exLegacy(packet.getPacketId(), P267Inbound::bookmark, BOOKMARK_PACKETS);
             } else if (packet.implemented()) {
                 table.exRoute(packet.getPacketId(), RouteKind.LEGACY, legacy(packet::newPacket));
             } else {

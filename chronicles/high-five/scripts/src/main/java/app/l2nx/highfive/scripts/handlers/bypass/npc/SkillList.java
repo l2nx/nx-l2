@@ -29,8 +29,8 @@ import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.enums.player.PlayerClass;
 import app.l2nx.highfive.entity.actor.instance.Folk;
 import app.l2nx.highfive.handler.IBypassHandler;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.ActionFailed;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.NpcHtmlMessage;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.ActionFailed;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.NpcHtmlMessage;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 

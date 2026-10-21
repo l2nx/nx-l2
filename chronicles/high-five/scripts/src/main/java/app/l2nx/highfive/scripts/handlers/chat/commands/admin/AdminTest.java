@@ -28,7 +28,7 @@ import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.handler.IAdminCommandHandler;
 import app.l2nx.highfive.mechanics.skill.Skill;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.MagicSkillUse;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.MagicSkillUse;
 import java.util.StringTokenizer;
 
 /**

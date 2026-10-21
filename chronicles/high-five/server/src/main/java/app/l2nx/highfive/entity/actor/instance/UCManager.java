@@ -33,7 +33,7 @@ import app.l2nx.highfive.mechanics.undergroundColiseum.UCArena;
 import app.l2nx.highfive.mechanics.undergroundColiseum.UCBestTeam;
 import app.l2nx.highfive.mechanics.undergroundColiseum.UCWaiting;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.NpcHtmlMessage;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.NpcHtmlMessage;
 import java.util.StringTokenizer;
 import lombok.extern.slf4j.Slf4j;
 

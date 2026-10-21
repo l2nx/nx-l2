@@ -38,7 +38,7 @@ import app.l2nx.highfive.entity.clan.Clan;
 import app.l2nx.highfive.entity.item.enums.ItemProcessType;
 import app.l2nx.highfive.entity.itemcontainer.Inventory;
 import app.l2nx.highfive.entity.zone.type.ClanHallZone;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.PledgeShowInfoUpdate;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.PledgeShowInfoUpdate;
 import app.l2nx.highfive.repository.residence.model.ResidenceFunction;
 import app.l2nx.highfive.threads.ThreadPool;
 import app.l2nx.highfive.util.StatSet;

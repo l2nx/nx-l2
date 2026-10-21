@@ -25,9 +25,9 @@ import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.Vehicle;
 import app.l2nx.highfive.entity.actor.enums.creature.InstanceType;
 import app.l2nx.highfive.entity.actor.templates.CreatureTemplate;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.VehicleDeparture;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.VehicleInfo;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.VehicleStarted;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.VehicleDeparture;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.VehicleInfo;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.VehicleStarted;
 
 /**
  * @author Maktakien, DS

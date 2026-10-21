@@ -28,8 +28,8 @@ import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.clan.Clan;
 import app.l2nx.highfive.handler.IAdminCommandHandler;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.GMViewPledgeInfo;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.SystemMessage;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.GMViewPledgeInfo;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
 import java.util.StringTokenizer;
 
 /**

@@ -42,7 +42,7 @@ import app.l2nx.highfive.entity.item.holders.Elementals;
 import app.l2nx.highfive.entity.itemcontainer.Inventory;
 import app.l2nx.highfive.entity.spawns.Spawn;
 import app.l2nx.highfive.handler.IBypassHandler;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.NpcHtmlMessage;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.NpcHtmlMessage;
 import app.l2nx.highfive.util.HtmlUtil;
 import java.text.DecimalFormat;
 import java.util.ArrayList;

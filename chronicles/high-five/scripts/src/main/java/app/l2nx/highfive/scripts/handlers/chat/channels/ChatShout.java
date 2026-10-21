@@ -29,7 +29,7 @@ import app.l2nx.highfive.entity.actor.holders.player.BlockList;
 import app.l2nx.highfive.handler.IChatHandler;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.enums.ChatType;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.CreatureSay;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.CreatureSay;
 
 /**
  * Shout chat handler.

@@ -31,7 +31,7 @@ import app.l2nx.highfive.mechanics.html.PageResult;
 import app.l2nx.highfive.mechanics.html.formatters.BypassParserFormatter;
 import app.l2nx.highfive.mechanics.html.pagehandlers.NextPrevPageHandler;
 import app.l2nx.highfive.mechanics.html.styles.ButtonsStyle;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.NpcHtmlMessage;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.NpcHtmlMessage;
 
 /**
  * @author Mobius

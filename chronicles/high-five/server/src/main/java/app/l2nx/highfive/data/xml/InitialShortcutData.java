@@ -30,7 +30,7 @@ import app.l2nx.highfive.entity.actor.holders.player.Macro;
 import app.l2nx.highfive.entity.actor.holders.player.MacroCmd;
 import app.l2nx.highfive.entity.actor.holders.player.Shortcut;
 import app.l2nx.highfive.entity.item.instance.Item;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.ShortcutRegister;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.ShortcutRegister;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.EnumMap;

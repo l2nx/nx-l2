@@ -35,7 +35,7 @@ import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.item.instance.Item;
 import app.l2nx.highfive.managers.ItemManager;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.SystemMessage;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
 import app.l2nx.highfive.repository.item.model.LotteryTicket;
 import app.l2nx.highfive.repository.minigame.LotteryRepository;
 import app.l2nx.highfive.repository.minigame.model.Lottery;

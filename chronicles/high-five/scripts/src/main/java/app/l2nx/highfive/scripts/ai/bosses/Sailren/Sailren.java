@@ -35,7 +35,7 @@ import app.l2nx.highfive.managers.GlobalVariablesManager;
 import app.l2nx.highfive.managers.ZoneManager;
 import app.l2nx.highfive.mechanics.script.Script;
 import app.l2nx.highfive.mechanics.skill.holders.SkillHolder;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.SpecialCamera;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.SpecialCamera;
 import lombok.extern.slf4j.Slf4j;
 
 /**

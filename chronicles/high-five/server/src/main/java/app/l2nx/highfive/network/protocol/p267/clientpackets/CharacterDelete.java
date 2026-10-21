@@ -24,7 +24,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package app.l2nx.highfive.network.protocol.highfive.clientpackets;
+package app.l2nx.highfive.network.protocol.p267.clientpackets;
 
 import app.l2nx.highfive.mechanics.events.Containers;
 import app.l2nx.highfive.mechanics.events.EventDispatcher;
@@ -32,9 +32,9 @@ import app.l2nx.highfive.mechanics.events.EventType;
 import app.l2nx.highfive.mechanics.events.holders.actor.player.OnPlayerDelete;
 import app.l2nx.highfive.network.GameClient;
 import app.l2nx.highfive.network.holders.CharacterInfoHolder;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.CharDeleteFail;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.CharDeleteSuccess;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.CharSelectionInfo;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.CharDeleteFail;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.CharDeleteSuccess;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.CharSelectionInfo;
 import lombok.extern.slf4j.Slf4j;
 
 /**

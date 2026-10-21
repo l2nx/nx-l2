@@ -17,12 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package app.l2nx.highfive.network.protocol.highfive.clientpackets;
+package app.l2nx.highfive.network.protocol.p267.clientpackets;
 
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.managers.FortManager;
 import app.l2nx.highfive.mechanics.siege.Fort;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.ExShowFortressSiegeInfo;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.ExShowFortressSiegeInfo;
 
 /**
  * @author KenM

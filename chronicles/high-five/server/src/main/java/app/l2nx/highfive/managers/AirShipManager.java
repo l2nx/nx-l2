@@ -31,7 +31,7 @@ import app.l2nx.highfive.entity.actor.holders.creature.VehiclePathPoint;
 import app.l2nx.highfive.entity.actor.instance.AirShip;
 import app.l2nx.highfive.entity.actor.instance.ControllableAirShip;
 import app.l2nx.highfive.entity.actor.templates.CreatureTemplate;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.ExAirShipTeleportList;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.ExAirShipTeleportList;
 import app.l2nx.highfive.repository.world.AirshipRepository;
 import app.l2nx.highfive.util.StatSet;
 import java.util.HashMap;

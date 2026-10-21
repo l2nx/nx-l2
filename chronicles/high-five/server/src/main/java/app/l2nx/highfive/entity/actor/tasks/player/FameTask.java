@@ -23,7 +23,7 @@ import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.config.custom.OfflineTradeConfig;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.SystemMessage;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
 
 /**
  * Task dedicated to reward player with fame while standing on siege zone.

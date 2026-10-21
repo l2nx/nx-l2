@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package app.l2nx.highfive.network.protocol.highfive.clientpackets;
+package app.l2nx.highfive.network.protocol.p267.clientpackets;
 
 import app.l2nx.highfive.config.custom.OfflinePlayConfig;
 import app.l2nx.highfive.config.custom.OfflineTradeConfig;
@@ -37,8 +37,8 @@ import app.l2nx.highfive.mechanics.events.returns.TerminateReturn;
 import app.l2nx.highfive.mechanics.olympiad.OlympiadManager;
 import app.l2nx.highfive.network.Disconnection;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.ActionFailed;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.LeaveWorld;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.ActionFailed;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.LeaveWorld;
 
 /**
  * @author Dezmond_snz

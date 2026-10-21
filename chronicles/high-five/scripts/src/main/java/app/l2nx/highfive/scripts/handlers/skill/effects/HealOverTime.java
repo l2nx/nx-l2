@@ -27,7 +27,7 @@ import app.l2nx.highfive.mechanics.conditions.Condition;
 import app.l2nx.highfive.mechanics.effects.AbstractEffect;
 import app.l2nx.highfive.mechanics.skill.AbnormalType;
 import app.l2nx.highfive.mechanics.skill.Skill;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.ExRegenMax;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.ExRegenMax;
 import app.l2nx.highfive.util.StatSet;
 
 /**

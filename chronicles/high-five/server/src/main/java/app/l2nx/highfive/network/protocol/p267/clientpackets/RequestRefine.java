@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package app.l2nx.highfive.network.protocol.highfive.clientpackets;
+package app.l2nx.highfive.network.protocol.p267.clientpackets;
 
 import app.l2nx.highfive.data.AugmentationData;
 import app.l2nx.highfive.entity.actor.Player;
@@ -25,9 +25,9 @@ import app.l2nx.highfive.entity.item.enums.ItemProcessType;
 import app.l2nx.highfive.entity.item.instance.Item;
 import app.l2nx.highfive.mechanics.options.Augmentation;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.ExVariationResult;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.InventoryUpdate;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.StatusUpdate;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.ExVariationResult;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.InventoryUpdate;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.StatusUpdate;
 
 /**
  * Format:(ch) dddd

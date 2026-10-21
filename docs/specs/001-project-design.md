@@ -194,8 +194,9 @@ engine/               Lineage 2 mechanics shared by every chronicle
   geo                 app.l2nx.engine.geo      movement / pathfinding / line-of-sight SPI + classic geodata
   adapter             app.l2nx.engine.adapter  L2NX adapter host
   core                app.l2nx.engine.core     partition runtime (spec 003); later what HF and Essence share
-protocols/            one wire protocol each: opcodes, wire records with their codecs, keys and framing (spec 008 §8)
-  c621                app.l2nx.protocol.c621   login protocol
+protocols/            one client wire protocol each, named by client protocol version (spec 008 §8)
+  login/c621          app.l2nx.protocol.login.c621   login protocol revision c621
+  game/p267           app.l2nx.protocol.game.p267    game protocol of the High Five client (267–273)
 login/
   server              app.l2nx.login       login logic, protocol variants, GS-link; Liquibase changelog
   boot                app.l2nx.login.boot  launcher; runtime files (config, data) in src/dist
@@ -363,7 +364,7 @@ constraints).
   and its codec; the client or launcher points at its port. There is no detection heuristic, and the server-list
   filter follows from the port.
 - **Layout inside `login/server`:** `protocol/<variant>/` (handshake, decoder, a handler per client packet) next to
-  the shared domain: accounts, bans, sessions, GS-link. The variant's wire records and cipher are `protocols/<variant>`.
+  the shared domain: accounts, bans, sessions, GS-link. The variant's wire records and cipher are `protocols/login/<variant>`.
 - **GS-link login↔game** runs on gRPC ([spec 008 §10](008-network.md#10-gs-link)) and is the same for every
   chronicle. A game server reports its chronicle when it registers.
 
@@ -371,7 +372,7 @@ constraints).
 
 Inside a chronicle, the protocol adapter is selected by the client protocol version: the client speaks first
 (`ProtocolVersion`), so the choice is deterministic. The game takes commands and emits view events through ports; an
-adapter in `server/.../network/protocol/<id>/` maps packets to them and back, so the game stays one and only the
+adapter in `server/.../network/protocol/<id>/`, named by the client protocol version (`p267`), maps packets to them and back, so the game stays one and only the
 clients differ ([spec 008 §8](008-network.md#8-ports-and-protocol-adapters)). The port framework and the High Five
 adapter come with stage 4; further client protocols come after the test server is live (stage 8).
 

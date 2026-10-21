@@ -27,7 +27,7 @@ import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.enums.creature.InstanceType;
 import app.l2nx.highfive.handler.IActionClickHandler;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.ActionFailed;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.ActionFailed;
 
 public class PlayerClick implements IActionClickHandler {
     private static final int CURSED_WEAPON_VICTIM_MIN_LEVEL = 21;

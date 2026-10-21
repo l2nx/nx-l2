@@ -15,7 +15,7 @@ import app.l2nx.highfive.login.FakeLoginPort.Call;
 import app.l2nx.highfive.login.system.OnlineAccounts;
 import app.l2nx.highfive.login.system.ServerListing;
 import app.l2nx.highfive.network.GameClient;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.LoginFail;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.LoginFail;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Nested;

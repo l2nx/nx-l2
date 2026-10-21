@@ -29,7 +29,7 @@ import app.l2nx.highfive.entity.cubic.CubicSkill;
 import app.l2nx.highfive.entity.cubic.CubicTargetType;
 import app.l2nx.highfive.mechanics.effects.EffectType;
 import app.l2nx.highfive.mechanics.skill.Skill;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.MagicSkillUse;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.MagicSkillUse;
 import app.l2nx.highfive.taskmanagers.AttackStanceTaskManager;
 import java.util.Collections;
 import java.util.concurrent.atomic.AtomicInteger;

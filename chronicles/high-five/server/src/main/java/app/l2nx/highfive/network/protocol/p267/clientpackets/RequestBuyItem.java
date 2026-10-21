@@ -20,7 +20,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package app.l2nx.highfive.network.protocol.highfive.clientpackets;
+package app.l2nx.highfive.network.protocol.p267.clientpackets;
 
 import static app.l2nx.highfive.entity.actor.Npc.INTERACTION_DISTANCE;
 
@@ -38,9 +38,9 @@ import app.l2nx.highfive.managers.PunishmentManager;
 import app.l2nx.highfive.mechanics.buylist.BuyListHolder;
 import app.l2nx.highfive.mechanics.buylist.Product;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.ActionFailed;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.ExBuySellList;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.StatusUpdate;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.ActionFailed;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.ExBuySellList;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.StatusUpdate;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;

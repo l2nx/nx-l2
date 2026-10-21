@@ -38,7 +38,7 @@ import app.l2nx.highfive.entity.item.instance.Item;
 import app.l2nx.highfive.entity.spawns.Spawn;
 import app.l2nx.highfive.mechanics.sevensigns.DimensionalRift;
 import app.l2nx.highfive.mechanics.sevensigns.DimensionalRiftRoom;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.NpcHtmlMessage;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.NpcHtmlMessage;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;

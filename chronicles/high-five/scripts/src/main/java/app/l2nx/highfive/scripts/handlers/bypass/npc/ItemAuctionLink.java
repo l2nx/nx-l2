@@ -31,7 +31,7 @@ import app.l2nx.highfive.entity.item.auction.ItemAuctionInstance;
 import app.l2nx.highfive.handler.IBypassHandler;
 import app.l2nx.highfive.managers.ItemAuctionManager;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.ExItemAuctionInfoPacket;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.ExItemAuctionInfoPacket;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.util.StringTokenizer;

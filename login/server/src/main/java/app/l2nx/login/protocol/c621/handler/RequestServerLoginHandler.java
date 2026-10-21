@@ -31,10 +31,10 @@ import app.l2nx.login.LoginServer;
 import app.l2nx.login.controller.LoginController;
 import app.l2nx.login.controller.SessionKey;
 import app.l2nx.login.network.LoginClient;
-import app.l2nx.protocol.c621.clientpackets.RequestServerLogin;
-import app.l2nx.protocol.c621.serverpackets.PlayOk;
-import app.l2nx.protocol.c621.serverpackets.reason.LoginFailReason;
-import app.l2nx.protocol.c621.serverpackets.reason.PlayFailReason;
+import app.l2nx.protocol.login.c621.clientpackets.RequestServerLogin;
+import app.l2nx.protocol.login.c621.serverpackets.PlayOk;
+import app.l2nx.protocol.login.c621.serverpackets.reason.LoginFailReason;
+import app.l2nx.protocol.login.c621.serverpackets.reason.PlayFailReason;
 
 public final class RequestServerLoginHandler {
     private RequestServerLoginHandler() {}

@@ -31,7 +31,7 @@ import app.l2nx.highfive.entity.actor.instance.Door;
 import app.l2nx.highfive.entity.clan.Clan;
 import app.l2nx.highfive.handler.IActionClickHandler;
 import app.l2nx.highfive.mechanics.siege.clanhalls.SiegableHall;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.ConfirmDlg;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.ConfirmDlg;
 
 public class DoorClick implements IActionClickHandler {
     @Override

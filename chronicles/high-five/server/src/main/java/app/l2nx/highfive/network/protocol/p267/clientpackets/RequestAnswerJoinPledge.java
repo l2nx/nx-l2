@@ -20,7 +20,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package app.l2nx.highfive.network.protocol.highfive.clientpackets;
+package app.l2nx.highfive.network.protocol.p267.clientpackets;
 
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.clan.Clan;
@@ -29,11 +29,11 @@ import app.l2nx.highfive.managers.FortManager;
 import app.l2nx.highfive.mechanics.siege.Castle;
 import app.l2nx.highfive.mechanics.siege.Fort;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.JoinPledge;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.PledgeShowInfoUpdate;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.PledgeShowMemberListAdd;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.PledgeShowMemberListAll;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.SystemMessage;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.JoinPledge;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.PledgeShowInfoUpdate;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.PledgeShowMemberListAdd;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.PledgeShowMemberListAll;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
 
 /**
  * @version $Revision: 1.4.2.1.2.3 $ $Date: 2005/03/27 15:29:30 $

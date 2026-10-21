@@ -33,10 +33,10 @@ import app.l2nx.highfive.mechanics.events.holders.actor.player.OnPlayerLogin;
 import app.l2nx.highfive.mechanics.events.listeners.ConsumerEventListener;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.enums.ChatType;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.ActionFailed;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.ConfirmDlg;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.CreatureSay;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.ExShowScreenMessage;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.ActionFailed;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.ConfirmDlg;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.CreatureSay;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.ExShowScreenMessage;
 import java.util.function.Consumer;
 
 /**

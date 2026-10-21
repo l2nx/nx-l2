@@ -39,7 +39,7 @@ import app.l2nx.highfive.entity.item.enums.ItemProcessType;
 import app.l2nx.highfive.entity.item.instance.Item;
 import app.l2nx.highfive.managers.ItemAuctionManager;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.SystemMessage;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
 import app.l2nx.highfive.repository.auction.model.ItemAuctionBidRow;
 import app.l2nx.highfive.repository.auction.model.ItemAuctionRow;
 import app.l2nx.highfive.threads.ThreadPool;

@@ -24,7 +24,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package app.l2nx.highfive.network.protocol.highfive.clientpackets;
+package app.l2nx.highfive.network.protocol.p267.clientpackets;
 
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.config.custom.DualboxCheckConfig;
@@ -49,11 +49,11 @@ import app.l2nx.highfive.mechanics.variables.PlayerVariables;
 import app.l2nx.highfive.network.Disconnection;
 import app.l2nx.highfive.network.GameClient;
 import app.l2nx.highfive.network.holders.CharacterInfoHolder;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.CharSelected;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.LeaveWorld;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.NpcHtmlMessage;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.SSQInfo;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.ServerClose;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.CharSelected;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.LeaveWorld;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.NpcHtmlMessage;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.SSQInfo;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.ServerClose;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

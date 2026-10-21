@@ -27,7 +27,7 @@ import app.l2nx.highfive.mechanics.script.Script;
 import app.l2nx.highfive.mechanics.siege.Siege;
 import app.l2nx.highfive.network.NpcStringId;
 import app.l2nx.highfive.network.enums.ChatType;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.NpcSay;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.NpcSay;
 
 /**
  * Castle Teleporter AI.

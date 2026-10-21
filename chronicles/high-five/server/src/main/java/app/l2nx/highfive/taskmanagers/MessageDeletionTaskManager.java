@@ -32,7 +32,7 @@ import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.managers.MailManager;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.holders.MailMessage;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.SystemMessage;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
 import app.l2nx.highfive.threads.ThreadPool;
 import java.util.Iterator;
 import java.util.Map;

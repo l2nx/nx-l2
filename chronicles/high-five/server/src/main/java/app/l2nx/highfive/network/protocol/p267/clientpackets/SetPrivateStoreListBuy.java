@@ -20,7 +20,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package app.l2nx.highfive.network.protocol.highfive.clientpackets;
+package app.l2nx.highfive.network.protocol.p267.clientpackets;
 
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.config.PlayerConfig;
@@ -30,9 +30,9 @@ import app.l2nx.highfive.entity.zone.ZoneId;
 import app.l2nx.highfive.managers.PunishmentManager;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.holders.TradeList;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.ActionFailed;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.PrivateStoreManageListBuy;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.PrivateStoreMsgBuy;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.ActionFailed;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.PrivateStoreManageListBuy;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.PrivateStoreMsgBuy;
 import app.l2nx.highfive.taskmanagers.AttackStanceTaskManager;
 
 /**

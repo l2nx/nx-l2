@@ -35,7 +35,7 @@ class LegacyRouteRulesTest {
                 new LegacyRouteRules(BROKEN).serverPacketReferences().evaluate(classes);
 
         assertThat(actual.getFailureReport().getDetails())
-                .containsExactly(BROKEN + ".login.Notice references " + BROKEN
-                        + ".network.protocol.highfive.serverpackets.Pong");
+                .containsExactly(
+                        BROKEN + ".login.Notice references " + BROKEN + ".network.protocol.p267.serverpackets.Pong");
     }
 }

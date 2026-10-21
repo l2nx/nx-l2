@@ -27,7 +27,7 @@ import app.l2nx.highfive.mechanics.script.QuestSound;
 import app.l2nx.highfive.mechanics.script.QuestState;
 import app.l2nx.highfive.network.NpcStringId;
 import app.l2nx.highfive.network.enums.ChatType;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.CreatureSay;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.CreatureSay;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;

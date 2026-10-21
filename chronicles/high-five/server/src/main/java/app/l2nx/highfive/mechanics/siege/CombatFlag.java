@@ -29,8 +29,8 @@ import app.l2nx.highfive.entity.item.enums.ItemProcessType;
 import app.l2nx.highfive.entity.item.instance.Item;
 import app.l2nx.highfive.managers.ItemManager;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.InventoryUpdate;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.SystemMessage;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.InventoryUpdate;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
 import lombok.Getter;
 
 public class CombatFlag {

@@ -23,7 +23,7 @@ import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.clan.ClanAccess;
 import app.l2nx.highfive.mechanics.script.Script;
-import app.l2nx.highfive.network.protocol.highfive.clientpackets.RequestAcquireSkill;
+import app.l2nx.highfive.network.protocol.p267.clientpackets.RequestAcquireSkill;
 
 /**
  * Support Unit Captain AI.

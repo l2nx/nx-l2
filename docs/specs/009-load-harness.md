@@ -17,7 +17,7 @@ E6 (world partition as single writer). Issue: [#68](https://github.com/l2nx/nx-l
   adapter per protocol maps them, the client-side mirror of the server's ports and adapters
   ([spec 008 §8](008-network.md#8-ports-and-protocol-adapters)). A new protocol or chronicle adds a client adapter
   and, when its content differs, scenarios; the core, the report and the gate stay.
-- **Each packet layout exists once.** Server and load bot share the wire codecs of `protocols/<id>`; no layout is
+- **Each packet layout exists once.** Server and load bot share the wire codecs of `protocols/`; no layout is
   written twice and cross-checked.
 - **Standard methodology:** latency from the intended send time (coordinated omission, HdrHistogram), a fixed
   population acting at a fixed rate, warm-up excluded, server meters read per window from Prometheus, repeated runs,
@@ -29,10 +29,10 @@ E6 (world partition as single writer). Issue: [#68](https://github.com/l2nx/nx-l
 
 | Module                     | Holds                                                                                                                                       |
 | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `protocols/c621`           | login protocol: wire records and codecs (moved out of `login/server` `protocol/c621`)                                                       |
-| `protocols/highfive`       | game protocol 267–273: wire records and codecs                                                                                              |
+| `protocols/login/c621`     | login protocol revision c621: wire records and codecs, frame cipher, credentials block                                                      |
+| `protocols/game/p267`      | game protocol of the High Five client (267–273): wire records and codecs                                                                    |
 | `tools/load/core`          | load bot model, the `ClientProtocol` port, action scheduler, injection profiles, latency recording, Prometheus window reading, report, gate |
-| `tools/load/protocol-<id>` | client adapter of one protocol: wire records to intents and observations; `protocol-highfive` pairs `c621` with `highfive`                  |
+| `tools/load/protocol-<id>` | client adapter of one client: wire records to intents and observations; `protocol-p267` pairs `login/c621` with `game/p267`                 |
 | `tools/load/app`           | Spring Boot command-line application: settings, load scenarios, seeding, the `run` and `gate` commands                                      |
 
 `tools/load/core` depends on neither Spring nor a chronicle nor `protocols/*`; the report and the gate are pure code there, so the command-line application only wires them. Server, login server, load bots and
@@ -44,11 +44,11 @@ The rule is [spec 008 §8 Wire codecs](008-network.md#wire-codecs); what the loa
 
 - **The record is its own codec:** a client packet's `encode` and a server packet's `read` are what a load bot
   uses, next to the `decode` and `write` the server uses. A legacy packet still used by legacy code calls them too.
-- **Keys and framing come with the protocol:** `protocols/c621` gives the load bot the client side of the login
+- **Keys and framing come with the protocol:** `protocols/login/c621` gives the load bot the client side of the login
   frame cipher and the credentials block encrypted with the scrambled RSA modulus from `Init`.
 - **Golden tests per codec** (bytes ↔ record) serve both sides.
-- **Who writes them:** `protocols/c621` holds the whole login protocol; the first `highfive` codecs come with the first migrated slices (character, movement, chat, message). Combat packets
-  stay legacy routes there, so E0 extracts their layouts into `protocols/highfive` codecs and points the legacy
+- **Who writes them:** `protocols/login/c621` holds the whole login protocol; the first `game/p267` codecs come with the first migrated slices (character, movement, chat, message). Combat packets
+  stay legacy routes there, so E0 extracts their layouts into `protocols/game/p267` codecs and points the legacy
   packets at them, without migrating a slice (§10, P3).
 
 ## 4. Load bot
@@ -173,13 +173,13 @@ The `gate` command compares the reports of a scenario with its baseline:
 
 ## 10. Stages
 
-| #   | Delivers                                                                                                                        | Needs                   |
-| --- | ------------------------------------------------------------------------------------------------------------------------------- | ----------------------- |
-| P0  | `tools/load/core`, window reading, gate, `app` on an in-memory protocol                                                         | —                       |
-| P1  | login part of `protocol-highfive`; `load-login-storm` up to `SERVER_LIST`                                                       | `protocols/c621`        |
-| P2  | game part: entering the world, `load-roam`, the integration test                                                                | first `highfive` codecs |
-| P3  | combat codecs (§3), `load-pve`, `load-crowd-pvp`, the trust checks, the legacy baseline (also E1's baseline repeated with bots) | P2                      |
-| P4  | dev portal page (§11)                                                                                                           | P3 numbers              |
+| #   | Delivers                                                                                                                        | Needs                    |
+| --- | ------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
+| P0  | `tools/load/core`, window reading, gate, `app` on an in-memory protocol                                                         | —                        |
+| P1  | login part of `protocol-p267`; `load-login-storm` up to `SERVER_LIST`                                                           | `protocols/login/c621`   |
+| P2  | game part: entering the world, `load-roam`, the integration test                                                                | first `game/p267` codecs |
+| P3  | combat codecs (§3), `load-pve`, `load-crowd-pvp`, the trust checks, the legacy baseline (also E1's baseline repeated with bots) | P2                       |
+| P4  | dev portal page (§11)                                                                                                           | P3 numbers               |
 
 ## 11. Dev portal page
 

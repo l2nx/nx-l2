@@ -17,7 +17,7 @@ import app.l2nx.network.codec.FrameEncoder;
 import app.l2nx.network.codec.Frames;
 import app.l2nx.network.config.NetworkProperties;
 import app.l2nx.network.exec.BlockingTaskExecutor;
-import app.l2nx.protocol.c621.crypt.LoginFrameCipher;
+import app.l2nx.protocol.login.c621.crypt.LoginFrameCipher;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelPipeline;
 import java.util.function.Consumer;

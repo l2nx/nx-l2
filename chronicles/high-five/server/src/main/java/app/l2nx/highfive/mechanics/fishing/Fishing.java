@@ -30,10 +30,10 @@ import app.l2nx.highfive.entity.item.enums.ItemProcessType;
 import app.l2nx.highfive.managers.FishingChampionshipManager;
 import app.l2nx.highfive.mechanics.script.Quest;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.ExFishingHpRegen;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.ExFishingStartCombat;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.PlaySound;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.SystemMessage;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.ExFishingHpRegen;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.ExFishingStartCombat;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.PlaySound;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
 import app.l2nx.highfive.threads.ThreadPool;
 import java.util.concurrent.Future;
 

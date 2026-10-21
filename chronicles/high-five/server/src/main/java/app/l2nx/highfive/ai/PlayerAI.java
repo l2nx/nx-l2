@@ -31,7 +31,7 @@ import app.l2nx.highfive.interfaces.ILocational;
 import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.mechanics.skill.targets.TargetType;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.SystemMessage;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
 import lombok.Getter;
 
 public class PlayerAI extends PlayableAI {

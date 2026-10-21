@@ -28,8 +28,8 @@ import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.handler.IBypassHandler;
 import app.l2nx.highfive.mechanics.buylist.BuyListHolder;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.ActionFailed;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.ShopPreviewList;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.ActionFailed;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.ShopPreviewList;
 import java.util.StringTokenizer;
 import lombok.extern.slf4j.Slf4j;
 

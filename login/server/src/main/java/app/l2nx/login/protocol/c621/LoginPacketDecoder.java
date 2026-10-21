@@ -11,7 +11,7 @@ import app.l2nx.network.channel.RateLimitedLog;
 import app.l2nx.network.channel.TailExceptionHandler;
 import app.l2nx.network.metrics.NetworkMetrics;
 import app.l2nx.network.metrics.model.DropReason;
-import app.l2nx.protocol.c621.clientpackets.LoginClientOpcode;
+import app.l2nx.protocol.login.c621.clientpackets.LoginClientOpcode;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;

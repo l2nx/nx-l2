@@ -22,7 +22,7 @@ package app.l2nx.highfive.entity.actor.tasks.npc.trap;
 import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.instance.Trap;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.SocialAction;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.SocialAction;
 import lombok.extern.slf4j.Slf4j;
 
 /**

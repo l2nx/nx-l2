@@ -20,16 +20,16 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package app.l2nx.highfive.network.protocol.highfive.clientpackets;
+package app.l2nx.highfive.network.protocol.p267.clientpackets;
 
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.groups.Party;
 import app.l2nx.highfive.entity.groups.matching.PartyMatchRoom;
 import app.l2nx.highfive.entity.groups.matching.PartyMatchRoomList;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.ExManagePartyRoomMember;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.JoinParty;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.SystemMessage;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.ExManagePartyRoomMember;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.JoinParty;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
 
 public class RequestAnswerJoinParty extends ClientPacket {
     private int response;

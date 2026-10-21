@@ -2,16 +2,16 @@
  * SPDX-FileCopyrightText: 2026 L2NX contributors
  * SPDX-License-Identifier: Apache-2.0
  */
-package app.l2nx.highfive.network.protocol.highfive;
+package app.l2nx.highfive.network.protocol.p267;
 
 import app.l2nx.engine.core.session.outbound.LegacyPacket;
 import app.l2nx.engine.core.session.outbound.ViewEvent;
 import app.l2nx.highfive.network.GameClient;
 import app.l2nx.highfive.network.protocol.GameProtocolAdapter;
 import app.l2nx.highfive.network.protocol.OpcodeTable;
-import app.l2nx.highfive.network.protocol.highfive.mapper.HighFiveMappers;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.ServerPacket;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.ServerPackets;
+import app.l2nx.highfive.network.protocol.p267.mapper.HighFiveMappers;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.ServerPacket;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.ServerPackets;
 import app.l2nx.network.codec.Frames;
 import app.l2nx.network.codec.PacketWriter;
 import io.netty.buffer.ByteBuf;
@@ -21,13 +21,13 @@ import java.util.Set;
 import org.springframework.stereotype.Component;
 
 @Component
-public final class HighFiveAdapter implements GameProtocolAdapter {
-    public static final String ID = "highfive";
+public final class P267Adapter implements GameProtocolAdapter {
+    public static final String ID = "p267";
 
     private static final int KEY_FRAME_SIZE = 24;
     private static final int PING_FRAME_SIZE = 5;
 
-    private final OpcodeTable inbound = HighFiveInbound.build();
+    private final OpcodeTable inbound = P267Inbound.build();
 
     @Override
     public String id() {

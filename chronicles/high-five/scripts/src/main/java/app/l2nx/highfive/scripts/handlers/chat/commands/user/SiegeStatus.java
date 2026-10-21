@@ -26,7 +26,7 @@ import app.l2nx.highfive.handler.IUserCommandHandler;
 import app.l2nx.highfive.managers.SiegeManager;
 import app.l2nx.highfive.mechanics.siege.Siege;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.NpcHtmlMessage;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.NpcHtmlMessage;
 
 /**
  * @author Tryskell

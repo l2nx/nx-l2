@@ -20,7 +20,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package app.l2nx.highfive.network.protocol.highfive.clientpackets;
+package app.l2nx.highfive.network.protocol.p267.clientpackets;
 
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.PlayerConfig;
@@ -30,9 +30,9 @@ import app.l2nx.highfive.entity.actor.instance.Boat;
 import app.l2nx.highfive.entity.item.type.WeaponType;
 import app.l2nx.highfive.managers.BoatManager;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.ActionFailed;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.MoveToLocationInVehicle;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.StopMoveInVehicle;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.ActionFailed;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.MoveToLocationInVehicle;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.StopMoveInVehicle;
 
 public class RequestMoveToLocationInVehicle extends ClientPacket {
     private int boatId;

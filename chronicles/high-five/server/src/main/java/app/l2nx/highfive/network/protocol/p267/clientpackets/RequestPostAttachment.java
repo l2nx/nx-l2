@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package app.l2nx.highfive.network.protocol.highfive.clientpackets;
+package app.l2nx.highfive.network.protocol.p267.clientpackets;
 
 import static app.l2nx.highfive.entity.itemcontainer.Inventory.ADENA_ID;
 
@@ -34,11 +34,11 @@ import app.l2nx.highfive.managers.MailManager;
 import app.l2nx.highfive.managers.PunishmentManager;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.holders.MailMessage;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.ExChangePostState;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.ExShowReceivedPostList;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.InventoryUpdate;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.StatusUpdate;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.SystemMessage;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.ExChangePostState;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.ExShowReceivedPostList;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.InventoryUpdate;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.StatusUpdate;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
 
 /**
  * @author Migi, DS

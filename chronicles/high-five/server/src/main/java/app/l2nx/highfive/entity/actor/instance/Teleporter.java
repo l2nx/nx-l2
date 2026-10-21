@@ -28,7 +28,7 @@ import app.l2nx.highfive.entity.actor.templates.NpcTemplate;
 import app.l2nx.highfive.entity.teleporter.TeleportHolder;
 import app.l2nx.highfive.managers.CastleManager;
 import app.l2nx.highfive.mechanics.skill.CommonSkill;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.NpcHtmlMessage;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.NpcHtmlMessage;
 import java.util.StringTokenizer;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;

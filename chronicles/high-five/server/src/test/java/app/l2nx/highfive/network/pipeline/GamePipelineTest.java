@@ -21,7 +21,7 @@ import app.l2nx.highfive.network.protocol.GameProtocolAdapter;
 import app.l2nx.highfive.network.protocol.GameProtocolProperties;
 import app.l2nx.highfive.network.protocol.GameProtocolRegistry;
 import app.l2nx.highfive.network.protocol.StubAdapter;
-import app.l2nx.highfive.network.protocol.highfive.HighFiveAdapter;
+import app.l2nx.highfive.network.protocol.p267.P267Adapter;
 import app.l2nx.network.channel.CloseReason;
 import app.l2nx.network.channel.Connections;
 import app.l2nx.network.codec.Frames;
@@ -132,8 +132,8 @@ class GamePipelineTest {
         }
 
         @Test
-        void version_shouldBeRefused_whenTheHighFiveAdapterDoesNotListTheRevision() {
-            channel = channel(Session.Limits.of(NetworkProperties.defaults()), Runnable::run, new HighFiveAdapter());
+        void version_shouldBeRefused_whenTheP267AdapterDoesNotListTheRevision() {
+            channel = channel(Session.Limits.of(NetworkProperties.defaults()), Runnable::run, new P267Adapter());
 
             channel.writeInbound(version(270));
             channel.runPendingTasks();
@@ -147,8 +147,8 @@ class GamePipelineTest {
         }
 
         @Test
-        void version_shouldSelectTheHighFiveAdapter_whenItListsTheRevision() {
-            channel = channel(Session.Limits.of(NetworkProperties.defaults()), Runnable::run, new HighFiveAdapter());
+        void version_shouldSelectTheP267Adapter_whenItListsTheRevision() {
+            channel = channel(Session.Limits.of(NetworkProperties.defaults()), Runnable::run, new P267Adapter());
 
             channel.writeInbound(version(271));
             channel.runPendingTasks();
@@ -156,7 +156,7 @@ class GamePipelineTest {
             final ByteBuf key = channel.readOutbound();
             assertThat((int) key.getUnsignedByte(key.readerIndex() + 3)).isEqualTo(1);
             key.release();
-            assertThat(GameConnection.of(channel).adapter()).isInstanceOf(HighFiveAdapter.class);
+            assertThat(GameConnection.of(channel).adapter()).isInstanceOf(P267Adapter.class);
             assertThat(channel.isOpen()).isTrue();
         }
 

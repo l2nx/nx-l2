@@ -32,7 +32,7 @@ import app.l2nx.highfive.mechanics.effects.EffectTickTask;
 import app.l2nx.highfive.mechanics.skill.enums.SkillFinishType;
 import app.l2nx.highfive.mechanics.stats.Formulas;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.SystemMessage;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
 import app.l2nx.highfive.threads.ThreadPool;
 import java.util.ArrayList;
 import java.util.List;

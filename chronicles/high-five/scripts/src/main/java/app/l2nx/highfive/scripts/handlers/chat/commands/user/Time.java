@@ -27,7 +27,7 @@ import app.l2nx.highfive.config.custom.ServerTimeConfig;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.handler.IUserCommandHandler;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.SystemMessage;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
 import app.l2nx.highfive.taskmanagers.GameTimeTaskManager;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;

@@ -28,7 +28,7 @@ import app.l2nx.highfive.entity.zone.ZoneId;
 import app.l2nx.highfive.entity.zone.ZoneType;
 import app.l2nx.highfive.managers.CastleManager;
 import app.l2nx.highfive.mechanics.siege.Castle;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.OnEventTrigger;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.OnEventTrigger;
 import lombok.Getter;
 
 /**

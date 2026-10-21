@@ -32,7 +32,7 @@ import app.l2nx.highfive.handler.IAdminCommandHandler;
 import app.l2nx.highfive.mechanics.html.PageBuilder;
 import app.l2nx.highfive.mechanics.html.PageResult;
 import app.l2nx.highfive.mechanics.html.styles.ButtonsStyle;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.NpcHtmlMessage;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.NpcHtmlMessage;
 import java.util.NoSuchElementException;
 import java.util.StringTokenizer;
 

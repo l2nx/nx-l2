@@ -26,7 +26,7 @@ import app.l2nx.highfive.entity.clan.ClanAccess;
 import app.l2nx.highfive.mechanics.script.Script;
 import app.l2nx.highfive.mechanics.skill.holders.SkillHolder;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.protocol.highfive.clientpackets.RequestAcquireSkill;
+import app.l2nx.highfive.network.protocol.p267.clientpackets.RequestAcquireSkill;
 import app.l2nx.highfive.scripts.handlers.skill.effects.CallPc;
 
 /**

@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package app.l2nx.highfive.network.protocol.highfive.clientpackets;
+package app.l2nx.highfive.network.protocol.p267.clientpackets;
 
 import app.l2nx.highfive.data.xml.SkillData;
 import app.l2nx.highfive.data.xml.SkillTreeData;
@@ -27,7 +27,7 @@ import app.l2nx.highfive.entity.clan.ClanAccess;
 import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.mechanics.skill.enums.AcquireSkillType;
 import app.l2nx.highfive.mechanics.skill.holders.SkillLearn;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.AcquireSkillInfo;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.AcquireSkillInfo;
 import lombok.extern.slf4j.Slf4j;
 
 /**

@@ -20,7 +20,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package app.l2nx.highfive.network.protocol.highfive.serverpackets;
+package app.l2nx.highfive.network.protocol.p267.serverpackets;
 
 import static app.l2nx.highfive.data.xml.MultisellData.PAGE_SIZE;
 

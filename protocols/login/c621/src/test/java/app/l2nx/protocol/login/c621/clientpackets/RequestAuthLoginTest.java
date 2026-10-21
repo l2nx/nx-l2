@@ -2,12 +2,12 @@
  * SPDX-FileCopyrightText: 2026 L2NX contributors
  * SPDX-License-Identifier: Apache-2.0
  */
-package app.l2nx.protocol.c621.clientpackets;
+package app.l2nx.protocol.login.c621.clientpackets;
 
-import static app.l2nx.protocol.c621.GoldenBytes.hex;
-import static app.l2nx.protocol.c621.GoldenBytes.pattern;
-import static app.l2nx.protocol.c621.GoldenBytes.read;
-import static app.l2nx.protocol.c621.GoldenBytes.written;
+import static app.l2nx.protocol.login.c621.GoldenBytes.hex;
+import static app.l2nx.protocol.login.c621.GoldenBytes.pattern;
+import static app.l2nx.protocol.login.c621.GoldenBytes.read;
+import static app.l2nx.protocol.login.c621.GoldenBytes.written;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 import static org.assertj.core.api.Assertions.assertThatNullPointerException;

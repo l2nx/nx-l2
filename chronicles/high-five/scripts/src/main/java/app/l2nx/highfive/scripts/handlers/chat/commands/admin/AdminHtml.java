@@ -23,7 +23,7 @@ import app.l2nx.highfive.cache.HtmCache;
 import app.l2nx.highfive.config.ServerConfig;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.handler.IAdminCommandHandler;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.NpcHtmlMessage;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.NpcHtmlMessage;
 import java.io.File;
 import java.util.StringTokenizer;
 

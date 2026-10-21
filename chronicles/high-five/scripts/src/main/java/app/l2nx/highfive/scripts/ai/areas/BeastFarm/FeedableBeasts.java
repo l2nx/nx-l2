@@ -28,7 +28,7 @@ import app.l2nx.highfive.mechanics.script.Script;
 import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.network.NpcStringId;
 import app.l2nx.highfive.network.enums.ChatType;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.NpcSay;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.NpcSay;
 import app.l2nx.highfive.scripts.quests.Q00020_BringUpWithLove.Q00020_BringUpWithLove;
 import app.l2nx.highfive.scripts.quests.Q00655_AGrandPlanForTamingWildBeasts.Q00655_AGrandPlanForTamingWildBeasts;
 import app.l2nx.highfive.util.ArrayUtil;

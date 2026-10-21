@@ -54,7 +54,7 @@ specific to Lineage 2, and every departure from a standard is a recorded decisio
 ## Layout
 
 The target layout; the repository has `libs/boot`, `libs/database`, `libs/gslink`, `libs/network`, `engine/core`,
-`protocols/c621`, `login/`, `chronicles/high-five/` and `tools/load/`.
+`protocols/login/c621`, `login/`, `chronicles/high-five/` and `tools/load/`.
 
 ```
 libs/          infrastructure with no Lineage 2 knowledge: boot, database, gslink (login-link transport), network, telemetry

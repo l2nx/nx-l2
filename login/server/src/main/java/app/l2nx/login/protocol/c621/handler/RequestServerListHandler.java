@@ -27,8 +27,8 @@
 package app.l2nx.login.protocol.c621.handler;
 
 import app.l2nx.login.network.LoginClient;
-import app.l2nx.protocol.c621.clientpackets.RequestServerList;
-import app.l2nx.protocol.c621.serverpackets.reason.LoginFailReason;
+import app.l2nx.protocol.login.c621.clientpackets.RequestServerList;
+import app.l2nx.protocol.login.c621.serverpackets.reason.LoginFailReason;
 
 public final class RequestServerListHandler {
     private RequestServerListHandler() {}

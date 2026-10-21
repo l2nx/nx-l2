@@ -29,7 +29,7 @@ import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.enums.creature.InstanceType;
 import app.l2nx.highfive.entity.actor.instance.StaticObject;
 import app.l2nx.highfive.handler.IActionClickHandler;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.NpcHtmlMessage;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.NpcHtmlMessage;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j

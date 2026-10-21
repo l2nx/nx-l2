@@ -2,7 +2,7 @@
  * SPDX-FileCopyrightText: 2026 L2NX contributors
  * SPDX-License-Identifier: Apache-2.0
  */
-package app.l2nx.protocol.c621;
+package app.l2nx.protocol.login.c621;
 
 import java.util.Arrays;
 import java.util.function.ToIntFunction;

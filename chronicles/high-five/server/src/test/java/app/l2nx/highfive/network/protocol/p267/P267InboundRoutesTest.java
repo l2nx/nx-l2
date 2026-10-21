@@ -2,14 +2,14 @@
  * SPDX-FileCopyrightText: 2026 L2NX contributors
  * SPDX-License-Identifier: Apache-2.0
  */
-package app.l2nx.highfive.network.protocol.highfive;
+package app.l2nx.highfive.network.protocol.p267;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 import app.l2nx.highfive.network.protocol.OpcodeTable.Route;
 import app.l2nx.highfive.network.protocol.OpcodeTable.RouteKind;
-import app.l2nx.highfive.network.protocol.highfive.clientpackets.ClientPackets;
-import app.l2nx.highfive.network.protocol.highfive.clientpackets.ExClientPackets;
+import app.l2nx.highfive.network.protocol.p267.clientpackets.ClientPackets;
+import app.l2nx.highfive.network.protocol.p267.clientpackets.ExClientPackets;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -19,18 +19,18 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 
 /** Every opcode a High Five client sends is a command decoder, a legacy route or an explicit ignore; none is unknown. */
-class HighFiveInboundRoutesTest {
+class P267InboundRoutesTest {
     private static final int NET_PING_ANSWER = 0xB1;
     // The bookmark entry has no supplier of its own: its six packets dispatch behind one extended opcode.
     private static final int BOOKMARK = 0x51;
 
-    private static final List<Route> ROUTES = new HighFiveAdapter().inboundRoutes();
+    private static final List<Route> ROUTES = new P267Adapter().inboundRoutes();
 
     @Test
     void everyClientPacket_shouldBeALegacyRouteOrAnIgnore_readBeforeAuthenticationOnlyWithoutAContext() {
         for (ClientPackets packet : ClientPackets.values()) {
             // The prefix is never a route of its own, should an entry on it ever return to the enum.
-            if (packet.getPacketId() == HighFiveInbound.EX_PREFIX) {
+            if (packet.getPacketId() == P267Inbound.EX_PREFIX) {
                 continue;
             }
             final RouteKind expected = packet.implemented() ? RouteKind.LEGACY : RouteKind.IGNORE;
@@ -44,7 +44,7 @@ class HighFiveInboundRoutesTest {
         for (ExClientPackets packet : ExClientPackets.values()) {
             final RouteKind expected =
                     (packet.implemented() || (packet.getPacketId() == BOOKMARK)) ? RouteKind.LEGACY : RouteKind.IGNORE;
-            assertThat(route(HighFiveInbound.EX_PREFIX, packet.getPacketId()))
+            assertThat(route(P267Inbound.EX_PREFIX, packet.getPacketId()))
                     .as("%s", packet)
                     .hasValueSatisfying(route -> {
                         assertThat(route.kind()).isEqualTo(expected);
@@ -113,7 +113,7 @@ class HighFiveInboundRoutesTest {
         if (route.exOpcode() == Route.NO_EX_OPCODE) {
             return Arrays.stream(ClientPackets.values()).anyMatch(packet -> packet.getPacketId() == route.opcode());
         }
-        return (route.opcode() == HighFiveInbound.EX_PREFIX)
+        return (route.opcode() == P267Inbound.EX_PREFIX)
                 && Arrays.stream(ExClientPackets.values()).anyMatch(packet -> packet.getPacketId() == route.exOpcode());
     }
 }

@@ -30,7 +30,7 @@ import app.l2nx.highfive.entity.actor.instance.Door;
 import app.l2nx.highfive.handler.IAdminCommandHandler;
 import app.l2nx.highfive.managers.CastleManager;
 import app.l2nx.highfive.mechanics.siege.Castle;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.ExServerPrimitive;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.ExServerPrimitive;
 import java.awt.Color;
 import java.util.HashSet;
 import java.util.Map;

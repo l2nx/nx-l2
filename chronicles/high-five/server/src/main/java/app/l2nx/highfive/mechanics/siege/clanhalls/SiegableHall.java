@@ -35,7 +35,7 @@ import app.l2nx.highfive.entity.zone.type.SiegeZone;
 import app.l2nx.highfive.managers.CHSiegeManager;
 import app.l2nx.highfive.mechanics.siege.SiegeClan;
 import app.l2nx.highfive.mechanics.siege.SiegeClanType;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.SiegeInfo;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.SiegeInfo;
 import app.l2nx.highfive.repository.residence.model.SiegableClanHallState;
 import app.l2nx.highfive.util.StatSet;
 import java.util.Calendar;

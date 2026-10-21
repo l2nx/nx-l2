@@ -24,9 +24,9 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package app.l2nx.protocol.c621.crypt;
+package app.l2nx.protocol.login.c621.crypt;
 
-import app.l2nx.protocol.c621.clientpackets.RequestAuthLogin;
+import app.l2nx.protocol.login.c621.clientpackets.RequestAuthLogin;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.CharacterCodingException;

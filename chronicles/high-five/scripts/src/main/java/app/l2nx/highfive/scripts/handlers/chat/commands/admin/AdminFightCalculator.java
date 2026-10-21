@@ -31,7 +31,7 @@ import app.l2nx.highfive.entity.actor.templates.NpcTemplate;
 import app.l2nx.highfive.handler.IAdminCommandHandler;
 import app.l2nx.highfive.mechanics.stats.Formulas;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.NpcHtmlMessage;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.NpcHtmlMessage;
 import java.util.List;
 import java.util.StringTokenizer;
 

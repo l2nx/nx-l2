@@ -28,7 +28,7 @@ import app.l2nx.highfive.entity.item.instance.Item;
 import app.l2nx.highfive.mechanics.options.Augmentation;
 import app.l2nx.highfive.mechanics.options.Options;
 import app.l2nx.highfive.mechanics.skill.holders.SkillHolder;
-import app.l2nx.highfive.network.protocol.highfive.clientpackets.AbstractRefinePacket;
+import app.l2nx.highfive.network.protocol.p267.clientpackets.AbstractRefinePacket;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;

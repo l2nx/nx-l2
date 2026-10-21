@@ -2,9 +2,9 @@
  * SPDX-FileCopyrightText: 2026 L2NX contributors
  * SPDX-License-Identifier: Apache-2.0
  */
-package app.l2nx.protocol.c621.clientpackets;
+package app.l2nx.protocol.login.c621.clientpackets;
 
-import app.l2nx.protocol.c621.CodeTable;
+import app.l2nx.protocol.login.c621.CodeTable;
 
 public enum LoginClientOpcode {
     REQUEST_AUTH_LOGIN(0x00),

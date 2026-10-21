@@ -33,9 +33,9 @@ import app.l2nx.highfive.managers.games.MonsterRaceManager;
 import app.l2nx.highfive.managers.games.MonsterRaceManager.HistoryInfo;
 import app.l2nx.highfive.managers.games.MonsterRaceManager.RaceState;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.ActionFailed;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.NpcHtmlMessage;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.SystemMessage;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.ActionFailed;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.NpcHtmlMessage;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
 import java.util.List;
 import java.util.Locale;
 

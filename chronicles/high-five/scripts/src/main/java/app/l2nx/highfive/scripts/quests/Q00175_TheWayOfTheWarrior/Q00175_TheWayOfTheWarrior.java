@@ -28,7 +28,7 @@ import app.l2nx.highfive.mechanics.script.Quest;
 import app.l2nx.highfive.mechanics.script.QuestState;
 import app.l2nx.highfive.mechanics.skill.holders.SkillHolder;
 import app.l2nx.highfive.network.NpcStringId;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.SocialAction;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.SocialAction;
 import app.l2nx.highfive.scripts.ai.others.NewbieGuide.NewbieGuide;
 
 /**

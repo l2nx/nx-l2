@@ -26,7 +26,7 @@ import app.l2nx.highfive.entity.clan.ClanAccess;
 import app.l2nx.highfive.mechanics.script.Script;
 import app.l2nx.highfive.mechanics.sevensigns.SevenSigns;
 import app.l2nx.highfive.mechanics.siege.Castle;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.NpcHtmlMessage;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.NpcHtmlMessage;
 import java.util.StringTokenizer;
 
 /**

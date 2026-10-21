@@ -32,8 +32,8 @@ import app.l2nx.highfive.entity.zone.ZoneId;
 import app.l2nx.highfive.geoengine.GeoEngine;
 import app.l2nx.highfive.handler.IItemHandler;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.Dice;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.SystemMessage;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.Dice;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
 import app.l2nx.highfive.util.LocationUtil;
 
 public class RollingDice implements IItemHandler {

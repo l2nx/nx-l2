@@ -6,7 +6,7 @@ package app.l2nx.highfive.network.protocol;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import app.l2nx.highfive.network.protocol.highfive.HighFiveAdapter;
+import app.l2nx.highfive.network.protocol.p267.P267Adapter;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -14,7 +14,7 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 class GameProtocolRegistryStartTest {
     private final ApplicationContextRunner runner = new ApplicationContextRunner()
             .withUserConfiguration(PropertiesConfiguration.class)
-            .withBean(HighFiveAdapter.class)
+            .withBean(P267Adapter.class)
             .withBean("secondAdapter", GameProtocolAdapter.class, () -> new StubAdapter("second", 1, 0))
             .withBean(GameProtocolRegistry.class);
 
@@ -34,7 +34,7 @@ class GameProtocolRegistryStartTest {
                 .run(context -> assertThat(
                                 context.getBean(GameProtocolRegistry.class).adapters())
                         .extracting(GameProtocolAdapter::id)
-                        .containsExactlyInAnyOrder(HighFiveAdapter.ID, "second"));
+                        .containsExactlyInAnyOrder(P267Adapter.ID, "second"));
     }
 
     @EnableConfigurationProperties(GameProtocolProperties.class)

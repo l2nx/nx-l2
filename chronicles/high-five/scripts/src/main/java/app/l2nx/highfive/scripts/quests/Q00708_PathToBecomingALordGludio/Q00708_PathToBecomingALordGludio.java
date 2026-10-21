@@ -31,7 +31,7 @@ import app.l2nx.highfive.mechanics.siege.Castle;
 import app.l2nx.highfive.mechanics.siege.Fort;
 import app.l2nx.highfive.network.NpcStringId;
 import app.l2nx.highfive.network.enums.ChatType;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.NpcSay;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.NpcSay;
 
 /**
  * Path to Becoming a Lord - Gludio (708)

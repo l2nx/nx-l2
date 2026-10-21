@@ -2,7 +2,7 @@
  * SPDX-FileCopyrightText: 2026 L2NX contributors
  * SPDX-License-Identifier: Apache-2.0
  */
-package app.l2nx.protocol.c621.clientpackets;
+package app.l2nx.protocol.login.c621.clientpackets;
 
 import app.l2nx.network.codec.PacketDecodeException;
 import io.netty.buffer.ByteBuf;

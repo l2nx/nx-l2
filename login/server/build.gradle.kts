@@ -5,7 +5,7 @@ plugins {
 dependencies {
     api(project(":libs:boot"))
     api(project(":libs:network"))
-    api(project(":protocols:c621"))
+    api(project(":protocols:login:c621"))
     implementation(project(":libs:database"))
     implementation(project(":libs:gslink"))
     implementation(libs.spring.boot.starter.grpc.server)

@@ -27,9 +27,9 @@ import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.zone.ZoneId;
 import app.l2nx.highfive.entity.zone.ZoneType;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.AbstractNpcInfo;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.FakePlayerInfo;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.ServerObjectInfo;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.AbstractNpcInfo;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.FakePlayerInfo;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.ServerObjectInfo;
 
 public class WaterZone extends ZoneType {
     public WaterZone(int id) {

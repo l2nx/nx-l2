@@ -28,7 +28,7 @@ import app.l2nx.highfive.mechanics.conditions.Condition;
 import app.l2nx.highfive.mechanics.effects.AbstractEffect;
 import app.l2nx.highfive.mechanics.effects.EffectFlag;
 import app.l2nx.highfive.mechanics.skill.Skill;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.InventoryUpdate;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.InventoryUpdate;
 import app.l2nx.highfive.util.StatSet;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;

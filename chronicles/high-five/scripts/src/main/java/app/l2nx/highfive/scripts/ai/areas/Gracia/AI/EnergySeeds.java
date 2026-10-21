@@ -42,7 +42,7 @@ import app.l2nx.highfive.mechanics.script.QuestState;
 import app.l2nx.highfive.mechanics.script.Script;
 import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.ActionFailed;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.ActionFailed;
 import app.l2nx.highfive.scripts.quests.Q00692_HowtoOpposeEvil.Q00692_HowtoOpposeEvil;
 import app.l2nx.highfive.threads.ThreadPool;
 import java.util.ArrayList;

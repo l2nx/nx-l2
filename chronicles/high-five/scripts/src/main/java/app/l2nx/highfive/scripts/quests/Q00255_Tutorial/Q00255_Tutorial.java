@@ -39,11 +39,11 @@ import app.l2nx.highfive.mechanics.script.Quest;
 import app.l2nx.highfive.mechanics.script.QuestSound;
 import app.l2nx.highfive.mechanics.script.QuestState;
 import app.l2nx.highfive.mechanics.script.State;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.PlaySound;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.TutorialCloseHtml;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.TutorialEnableClientEvent;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.TutorialShowHtml;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.TutorialShowQuestionMark;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.PlaySound;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.TutorialCloseHtml;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.TutorialEnableClientEvent;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.TutorialShowHtml;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.TutorialShowQuestionMark;
 import org.apache.commons.lang3.StringUtils;
 
 /**

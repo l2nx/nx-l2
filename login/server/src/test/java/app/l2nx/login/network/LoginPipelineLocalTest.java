@@ -33,7 +33,7 @@ import app.l2nx.network.exec.BlockingTaskExecutor;
 import app.l2nx.network.metrics.NetworkMetrics;
 import app.l2nx.network.metrics.model.DropReason;
 import app.l2nx.network.transport.NetworkEventLoops;
-import app.l2nx.protocol.c621.serverpackets.reason.LoginFailReason;
+import app.l2nx.protocol.login.c621.serverpackets.reason.LoginFailReason;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.netty.bootstrap.Bootstrap;

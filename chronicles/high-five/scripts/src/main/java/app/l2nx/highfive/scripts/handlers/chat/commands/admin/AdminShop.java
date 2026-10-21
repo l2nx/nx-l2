@@ -26,9 +26,9 @@ import app.l2nx.highfive.data.xml.BuyListData;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.handler.IAdminCommandHandler;
 import app.l2nx.highfive.mechanics.buylist.BuyListHolder;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.ActionFailed;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.BuyList;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.ExBuySellList;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.ActionFailed;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.BuyList;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.ExBuySellList;
 import lombok.extern.slf4j.Slf4j;
 
 /**

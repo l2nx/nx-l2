@@ -20,7 +20,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package app.l2nx.highfive.network.protocol.highfive.clientpackets;
+package app.l2nx.highfive.network.protocol.p267.clientpackets;
 
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.config.GeneralConfig;
@@ -32,9 +32,9 @@ import app.l2nx.highfive.entity.item.holders.Elementals;
 import app.l2nx.highfive.entity.item.instance.Item;
 import app.l2nx.highfive.managers.PunishmentManager;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.ExAttributeEnchantResult;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.InventoryUpdate;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.SystemMessage;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.ExAttributeEnchantResult;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.InventoryUpdate;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
 
 public class RequestExEnchantItemAttribute extends ClientPacket {
     private int objectId;

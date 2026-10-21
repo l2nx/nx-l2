@@ -24,7 +24,7 @@ import app.l2nx.highfive.entity.actor.Creature;
 import app.l2nx.highfive.entity.residences.AuctionableHall;
 import app.l2nx.highfive.entity.residences.ClanHall;
 import app.l2nx.highfive.entity.zone.ZoneId;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.AgitDecoInfo;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.AgitDecoInfo;
 import lombok.extern.slf4j.Slf4j;
 
 /**

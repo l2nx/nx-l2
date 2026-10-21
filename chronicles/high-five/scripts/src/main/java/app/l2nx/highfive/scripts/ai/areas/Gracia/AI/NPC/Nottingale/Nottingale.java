@@ -25,7 +25,7 @@ import app.l2nx.highfive.entity.clan.ClanAccess;
 import app.l2nx.highfive.managers.AirShipManager;
 import app.l2nx.highfive.mechanics.script.QuestState;
 import app.l2nx.highfive.mechanics.script.Script;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.RadarControl;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.RadarControl;
 import app.l2nx.highfive.scripts.quests.Q10273_GoodDayToFly.Q10273_GoodDayToFly;
 import java.util.HashMap;
 import java.util.Map;

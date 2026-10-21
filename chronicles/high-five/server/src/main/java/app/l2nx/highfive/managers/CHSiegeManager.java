@@ -34,7 +34,7 @@ import app.l2nx.highfive.entity.zone.type.ClanHallZone;
 import app.l2nx.highfive.mechanics.siege.clanhalls.ClanHallSiegeEngine;
 import app.l2nx.highfive.mechanics.siege.clanhalls.SiegableHall;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.SystemMessage;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
 import app.l2nx.highfive.repository.LegacyValues;
 import app.l2nx.highfive.repository.residence.SiegableClanHallStateRepository;
 import app.l2nx.highfive.repository.residence.model.SiegableClanHallState;

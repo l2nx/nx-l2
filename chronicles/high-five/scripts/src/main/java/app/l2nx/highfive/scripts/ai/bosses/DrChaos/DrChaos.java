@@ -31,9 +31,9 @@ import app.l2nx.highfive.entity.actor.instance.GrandBoss;
 import app.l2nx.highfive.managers.GrandBossManager;
 import app.l2nx.highfive.mechanics.script.Script;
 import app.l2nx.highfive.network.enums.ChatType;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.PlaySound;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.SocialAction;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.SpecialCamera;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.PlaySound;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.SocialAction;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.SpecialCamera;
 import app.l2nx.highfive.util.StatSet;
 
 /**

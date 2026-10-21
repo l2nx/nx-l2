@@ -25,7 +25,7 @@ package app.l2nx.highfive.mechanics.captcha;
 import app.l2nx.highfive.clock.ClockBridge;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.managers.CaptchaManager.PlayerData;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.PledgeCrest;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.PledgeCrest;
 import app.l2nx.highfive.util.DDSConverter;
 import java.awt.Color;
 import java.awt.Font;

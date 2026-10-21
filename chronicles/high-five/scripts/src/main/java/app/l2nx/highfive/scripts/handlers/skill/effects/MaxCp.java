@@ -29,7 +29,7 @@ import app.l2nx.highfive.mechanics.stats.Stat;
 import app.l2nx.highfive.mechanics.stats.functions.FuncAdd;
 import app.l2nx.highfive.mechanics.stats.functions.FuncMul;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.SystemMessage;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
 import app.l2nx.highfive.util.StatSet;
 import lombok.extern.slf4j.Slf4j;
 

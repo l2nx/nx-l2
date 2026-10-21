@@ -37,7 +37,7 @@ import app.l2nx.highfive.managers.TerritoryWarManager;
 import app.l2nx.highfive.mechanics.siege.Castle;
 import app.l2nx.highfive.mechanics.siege.Fort;
 import app.l2nx.highfive.mechanics.siege.clanhalls.SiegableHall;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.ActionFailed;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.ActionFailed;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j

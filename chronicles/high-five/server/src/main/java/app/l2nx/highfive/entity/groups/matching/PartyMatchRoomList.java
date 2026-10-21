@@ -21,7 +21,7 @@ package app.l2nx.highfive.entity.groups.matching;
 
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.ExClosePartyRoom;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.ExClosePartyRoom;
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;

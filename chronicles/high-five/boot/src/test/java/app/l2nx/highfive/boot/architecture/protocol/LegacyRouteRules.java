@@ -23,7 +23,7 @@ import lombok.RequiredArgsConstructor;
 final class LegacyRouteRules {
     static final LegacyRouteRules CHRONICLE = new LegacyRouteRules(SliceLayoutRules.CHRONICLE_ROOT);
 
-    private static final String ADAPTER = ".network.protocol.highfive";
+    private static final String ADAPTER = ".network.protocol.p267";
     private static final String SERVER_PACKETS = ADAPTER + ".serverpackets";
 
     private final String root;
@@ -36,7 +36,7 @@ final class LegacyRouteRules {
                 .and()
                 .resideOutsideOfPackage(root + ADAPTER + "..")
                 .should(notReferenceAServerPacket())
-                .as("only the highfive adapter references server packets");
+                .as("only the p267 adapter references server packets");
     }
 
     private ArchCondition<JavaClass> notReferenceAServerPacket() {

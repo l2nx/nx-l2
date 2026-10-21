@@ -28,7 +28,7 @@ import app.l2nx.highfive.entity.actor.Npc;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.clan.Clan;
 import app.l2nx.highfive.handler.IBypassHandler;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.NpcHtmlMessage;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.NpcHtmlMessage;
 
 public class TerritoryStatus implements IBypassHandler {
     private static final String[] COMMANDS = {"TerritoryStatus"};

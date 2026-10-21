@@ -4,7 +4,7 @@
  */
 package app.l2nx.architecture.fixture.broken.login;
 
-import app.l2nx.architecture.fixture.broken.network.protocol.highfive.serverpackets.Pong;
+import app.l2nx.architecture.fixture.broken.network.protocol.p267.serverpackets.Pong;
 import java.util.function.Supplier;
 
 public class Notice {

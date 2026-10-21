@@ -20,7 +20,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package app.l2nx.highfive.network.protocol.highfive.clientpackets;
+package app.l2nx.highfive.network.protocol.p267.clientpackets;
 
 import app.l2nx.highfive.config.PlayerConfig;
 import app.l2nx.highfive.entity.actor.Player;
@@ -28,10 +28,10 @@ import app.l2nx.highfive.entity.actor.enums.player.PrivateStoreType;
 import app.l2nx.highfive.entity.zone.ZoneId;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.holders.TradeList;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.ActionFailed;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.ExPrivateStoreSetWholeMsg;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.PrivateStoreManageListSell;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.PrivateStoreMsgSell;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.ActionFailed;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.ExPrivateStoreSetWholeMsg;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.PrivateStoreManageListSell;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.PrivateStoreMsgSell;
 import app.l2nx.highfive.taskmanagers.AttackStanceTaskManager;
 
 /**

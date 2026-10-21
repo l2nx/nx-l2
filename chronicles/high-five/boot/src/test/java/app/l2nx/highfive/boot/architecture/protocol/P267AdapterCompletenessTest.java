@@ -19,7 +19,7 @@ import app.l2nx.highfive.login.command.RegistrationResult;
 import app.l2nx.highfive.login.command.ReportCharacters;
 import app.l2nx.highfive.network.protocol.OpcodeTable.Route;
 import app.l2nx.highfive.network.protocol.OpcodeTable.RouteKind;
-import app.l2nx.highfive.network.protocol.highfive.HighFiveAdapter;
+import app.l2nx.highfive.network.protocol.p267.P267Adapter;
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.domain.JavaClasses;
 import com.tngtech.archunit.core.domain.JavaModifier;
@@ -36,8 +36,8 @@ import org.springframework.core.ResolvableType;
 @AnalyzeClasses(
         packages = {"app.l2nx.highfive", "app.l2nx.engine"},
         importOptions = ImportOption.DoNotIncludeTests.class)
-class HighFiveAdapterCompletenessTest {
-    private static final HighFiveAdapter ADAPTER = new HighFiveAdapter();
+class P267AdapterCompletenessTest {
+    private static final P267Adapter ADAPTER = new P267Adapter();
 
     @ArchTest
     static void everyCommand_shouldHaveExactlyOneHandler(JavaClasses classes) {
@@ -98,7 +98,7 @@ class HighFiveAdapterCompletenessTest {
 
     private static Map<Class<?>, List<Class<?>>> handlersByCommand(JavaClasses classes) {
         return concrete(classes, CommandHandler.class).stream()
-                .collect(Collectors.groupingBy(HighFiveAdapterCompletenessTest::commandOf));
+                .collect(Collectors.groupingBy(P267AdapterCompletenessTest::commandOf));
     }
 
     private static Class<?> commandOf(Class<?> handler) {

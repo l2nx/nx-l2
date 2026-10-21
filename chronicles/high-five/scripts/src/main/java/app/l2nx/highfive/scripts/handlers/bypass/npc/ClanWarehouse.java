@@ -34,11 +34,11 @@ import app.l2nx.highfive.entity.item.instance.Item;
 import app.l2nx.highfive.handler.IBypassHandler;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.enums.WarehouseListType;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.ActionFailed;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.NpcHtmlMessage;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.SortedWareHouseWithdrawalList;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.WareHouseDepositList;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.WareHouseWithdrawalList;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.ActionFailed;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.NpcHtmlMessage;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.SortedWareHouseWithdrawalList;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.WareHouseDepositList;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.WareHouseWithdrawalList;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j

@@ -31,7 +31,7 @@ import app.l2nx.highfive.mechanics.events.ListenerRegisterType;
 import app.l2nx.highfive.mechanics.events.listeners.AbstractEventListener;
 import app.l2nx.highfive.mechanics.script.Quest;
 import app.l2nx.highfive.mechanics.script.QuestTimer;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.NpcHtmlMessage;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.NpcHtmlMessage;
 import app.l2nx.highfive.scripting.ScriptEngine;
 import java.util.List;
 import java.util.Set;

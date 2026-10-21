@@ -32,7 +32,7 @@ import app.l2nx.highfive.managers.InstanceManager;
 import app.l2nx.highfive.mechanics.script.InstanceScript;
 import app.l2nx.highfive.mechanics.script.QuestState;
 import app.l2nx.highfive.mechanics.skill.holders.SkillHolder;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.MagicSkillUse;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.MagicSkillUse;
 import app.l2nx.highfive.scripts.quests.Q00129_PailakaDevilsLegacy.Q00129_PailakaDevilsLegacy;
 import java.util.ArrayList;
 import java.util.List;

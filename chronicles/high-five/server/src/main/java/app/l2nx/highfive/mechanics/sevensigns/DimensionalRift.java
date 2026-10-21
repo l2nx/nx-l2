@@ -32,7 +32,7 @@ import app.l2nx.highfive.managers.DimensionalRiftManager;
 import app.l2nx.highfive.managers.ScriptManager;
 import app.l2nx.highfive.mechanics.script.Quest;
 import app.l2nx.highfive.mechanics.script.QuestState;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.Earthquake;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.Earthquake;
 import app.l2nx.highfive.threads.ThreadPool;
 import java.util.ArrayList;
 import java.util.Collection;

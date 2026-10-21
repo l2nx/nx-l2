@@ -32,7 +32,7 @@ import app.l2nx.highfive.entity.item.type.ActionType;
 import app.l2nx.highfive.handler.IItemHandler;
 import app.l2nx.highfive.mechanics.skill.holders.SkillHolder;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.MagicSkillUse;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.MagicSkillUse;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j

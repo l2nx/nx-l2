@@ -30,7 +30,7 @@ import app.l2nx.highfive.entity.item.enums.ItemProcessType;
 import app.l2nx.highfive.handler.IAdminCommandHandler;
 import app.l2nx.highfive.managers.CursedWeaponsManager;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.NpcHtmlMessage;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.NpcHtmlMessage;
 import java.util.Collection;
 import java.util.StringTokenizer;
 import org.apache.commons.lang3.StringUtils;

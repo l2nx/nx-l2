@@ -24,7 +24,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package app.l2nx.highfive.network.protocol.highfive.clientpackets;
+package app.l2nx.highfive.network.protocol.p267.clientpackets;
 
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.data.holders.PrimeShopProductHolder;
@@ -34,9 +34,9 @@ import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.item.ItemTemplate;
 import app.l2nx.highfive.entity.item.enums.ItemProcessType;
 import app.l2nx.highfive.managers.PrimeShopManager;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.ExBrBuyProduct;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.ExBrGamePoint;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.StatusUpdate;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.ExBrBuyProduct;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.ExBrGamePoint;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.StatusUpdate;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;
 

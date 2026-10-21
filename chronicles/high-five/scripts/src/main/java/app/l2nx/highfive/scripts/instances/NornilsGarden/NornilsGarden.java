@@ -35,7 +35,7 @@ import app.l2nx.highfive.mechanics.script.QuestState;
 import app.l2nx.highfive.mechanics.script.State;
 import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.SystemMessage;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
 import app.l2nx.highfive.scripts.quests.Q00179_IntoTheLargeCavern.Q00179_IntoTheLargeCavern;
 import app.l2nx.highfive.util.ArrayUtil;
 import lombok.extern.slf4j.Slf4j;

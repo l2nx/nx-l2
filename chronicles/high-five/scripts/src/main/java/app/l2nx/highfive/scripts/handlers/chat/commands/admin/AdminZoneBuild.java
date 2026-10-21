@@ -26,8 +26,8 @@ import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.entity.actor.enums.player.PlayerAction;
 import app.l2nx.highfive.handler.IAdminCommandHandler;
 import app.l2nx.highfive.managers.ZoneBuildManager;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.ConfirmDlg;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.NpcHtmlMessage;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.ConfirmDlg;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.NpcHtmlMessage;
 import java.util.StringTokenizer;
 import org.apache.commons.lang3.StringUtils;
 

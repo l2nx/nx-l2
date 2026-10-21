@@ -125,7 +125,7 @@ Ports exist only at the outer edges that are a network or another process. Game 
 
 | Edge       | Into the game       | Out of the game                              | Adapter                                      |
 | ---------- | ------------------- | -------------------------------------------- | -------------------------------------------- |
-| client     | command and handler | view event to `ClientPort` (`engine/core`)   | `network/protocol/<id>/` (`HighFiveAdapter`) |
+| client     | command and handler | view event to `ClientPort` (`engine/core`)   | `network/protocol/<id>/` (`P267Adapter`) |
 | login link | command and handler | `LoginPort` (slice `login`)                  | `network/gslink/` (`LoginServerLink`)        |
 | database   | —                   | `@Repository` class in `<slice>/repository/` | the repository itself                        |
 | Kafka      | command and handler | a port in the owning slice                   | the L2NX adapter module (stage 5)            |

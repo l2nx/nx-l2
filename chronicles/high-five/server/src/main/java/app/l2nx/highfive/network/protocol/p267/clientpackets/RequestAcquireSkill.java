@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package app.l2nx.highfive.network.protocol.highfive.clientpackets;
+package app.l2nx.highfive.network.protocol.p267.clientpackets;
 
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.config.PlayerConfig;
@@ -47,11 +47,11 @@ import app.l2nx.highfive.mechanics.skill.enums.AcquireSkillType;
 import app.l2nx.highfive.mechanics.skill.holders.SkillHolder;
 import app.l2nx.highfive.mechanics.skill.holders.SkillLearn;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.AcquireSkillDone;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.AcquireSkillList;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.ExStorageMaxCount;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.PledgeSkillList;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.SystemMessage;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.AcquireSkillDone;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.AcquireSkillList;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.ExStorageMaxCount;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.PledgeSkillList;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;

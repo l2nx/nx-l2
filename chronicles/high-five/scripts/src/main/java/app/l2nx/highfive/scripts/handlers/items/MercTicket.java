@@ -32,7 +32,7 @@ import app.l2nx.highfive.managers.MercTicketManager;
 import app.l2nx.highfive.mechanics.sevensigns.SevenSigns;
 import app.l2nx.highfive.mechanics.siege.Castle;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.SystemMessage;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
 
 public class MercTicket implements IItemHandler {
     /**

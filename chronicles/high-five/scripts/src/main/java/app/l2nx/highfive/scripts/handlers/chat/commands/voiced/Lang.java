@@ -28,9 +28,9 @@ import app.l2nx.highfive.entity.World;
 import app.l2nx.highfive.entity.WorldObject;
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.handler.IVoicedCommandHandler;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.AbstractNpcInfo.NpcInfo;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.DeleteObject;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.NpcHtmlMessage;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.AbstractNpcInfo.NpcInfo;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.DeleteObject;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.NpcHtmlMessage;
 import app.l2nx.highfive.threads.ThreadPool;
 import java.util.StringTokenizer;
 

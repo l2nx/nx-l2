@@ -32,7 +32,7 @@ import app.l2nx.highfive.entity.zone.ZoneId;
 import app.l2nx.highfive.handler.CommunityBoardHandler;
 import app.l2nx.highfive.mechanics.olympiad.OlympiadManager;
 import app.l2nx.highfive.mechanics.skill.Skill;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.ExPrivateStoreSetWholeMsg;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.ExPrivateStoreSetWholeMsg;
 import app.l2nx.highfive.util.FormatUtil;
 import app.l2nx.highfive.util.HtmlUtil;
 import java.io.File;

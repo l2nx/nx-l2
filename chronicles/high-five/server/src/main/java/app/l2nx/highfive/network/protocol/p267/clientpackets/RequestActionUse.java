@@ -20,7 +20,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package app.l2nx.highfive.network.protocol.highfive.clientpackets;
+package app.l2nx.highfive.network.protocol.p267.clientpackets;
 
 import app.l2nx.highfive.ai.Action;
 import app.l2nx.highfive.ai.Intention;
@@ -51,14 +51,14 @@ import app.l2nx.highfive.mechanics.skill.holders.SkillHolder;
 import app.l2nx.highfive.network.NpcStringId;
 import app.l2nx.highfive.network.SystemMessageId;
 import app.l2nx.highfive.network.enums.ChatType;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.ActionFailed;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.ChairSit;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.ExAskCoupleAction;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.ExBasicActionList;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.NpcSay;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.RecipeShopManageList;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.SocialAction;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.SystemMessage;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.ActionFailed;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.ChairSit;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.ExAskCoupleAction;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.ExBasicActionList;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.NpcSay;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.RecipeShopManageList;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.SocialAction;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
 import app.l2nx.highfive.taskmanagers.AttackStanceTaskManager;
 import java.util.Arrays;
 import lombok.extern.slf4j.Slf4j;

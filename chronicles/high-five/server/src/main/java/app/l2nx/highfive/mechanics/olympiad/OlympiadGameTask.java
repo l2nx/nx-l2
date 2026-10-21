@@ -22,7 +22,7 @@ package app.l2nx.highfive.mechanics.olympiad;
 import app.l2nx.highfive.config.OlympiadConfig;
 import app.l2nx.highfive.entity.zone.type.OlympiadStadiumZone;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.SystemMessage;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
 import app.l2nx.highfive.threads.ThreadPool;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;

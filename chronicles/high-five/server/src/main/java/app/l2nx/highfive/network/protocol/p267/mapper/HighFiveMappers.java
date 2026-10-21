@@ -2,11 +2,11 @@
  * SPDX-FileCopyrightText: 2026 L2NX contributors
  * SPDX-License-Identifier: Apache-2.0
  */
-package app.l2nx.highfive.network.protocol.highfive.mapper;
+package app.l2nx.highfive.network.protocol.p267.mapper;
 
 import app.l2nx.engine.core.session.outbound.ViewEvent;
 import app.l2nx.highfive.network.GameClient;
-import app.l2nx.highfive.network.protocol.highfive.HighFiveAdapter;
+import app.l2nx.highfive.network.protocol.p267.P267Adapter;
 import app.l2nx.network.codec.Frames;
 import app.l2nx.network.codec.PacketWriter;
 import io.netty.buffer.ByteBuf;
@@ -58,7 +58,7 @@ public final class HighFiveMappers {
     }
 
     @SuppressWarnings("unchecked")
-    public static Object audienceKey(HighFiveAdapter adapter, ViewEvent event, GameClient viewer) {
+    public static Object audienceKey(P267Adapter adapter, ViewEvent event, GameClient viewer) {
         final OutboundMapper<ViewEvent> mapper = (OutboundMapper<ViewEvent>) BY_TYPE.get(event.getClass());
         if (mapper == null) {
             return null;

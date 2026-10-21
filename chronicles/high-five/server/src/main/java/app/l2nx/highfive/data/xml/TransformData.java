@@ -26,7 +26,7 @@ import app.l2nx.highfive.entity.actor.transform.Transform;
 import app.l2nx.highfive.entity.actor.transform.TransformLevelData;
 import app.l2nx.highfive.entity.actor.transform.TransformTemplate;
 import app.l2nx.highfive.mechanics.skill.holders.SkillHolder;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.ExBasicActionList;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.ExBasicActionList;
 import app.l2nx.highfive.util.StatSet;
 import java.io.File;
 import java.util.Map;

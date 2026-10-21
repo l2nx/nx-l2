@@ -44,7 +44,7 @@ class GameProtocolRegistryTest {
         }
 
         @Test
-        void constructor_shouldRefuseASecondAdapter_whenTheLegacyRoutesSitOutsideTheHighFiveAdapter() {
+        void constructor_shouldRefuseASecondAdapter_whenTheLegacyRoutesSitOutsideTheP267Adapter() {
             assertThatThrownBy(() -> new GameProtocolRegistry(
                             List.of(new StubAdapter("a", 267, 3), new StubAdapter("b", 140, 4)), STRICT))
                     .isInstanceOf(IllegalStateException.class)

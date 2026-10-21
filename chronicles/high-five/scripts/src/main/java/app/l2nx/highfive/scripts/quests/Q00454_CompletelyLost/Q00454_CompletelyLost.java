@@ -41,7 +41,7 @@ import app.l2nx.highfive.mechanics.script.QuestType;
 import app.l2nx.highfive.mechanics.script.State;
 import app.l2nx.highfive.network.NpcStringId;
 import app.l2nx.highfive.network.enums.ChatType;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.NpcSay;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.NpcSay;
 import app.l2nx.highfive.util.LocationUtil;
 
 /**

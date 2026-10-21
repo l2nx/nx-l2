@@ -25,7 +25,7 @@ import app.l2nx.highfive.entity.actor.instance.Monster;
 import app.l2nx.highfive.mechanics.script.Script;
 import app.l2nx.highfive.network.NpcStringId;
 import app.l2nx.highfive.network.enums.ChatType;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.NpcSay;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.NpcSay;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 

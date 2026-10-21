@@ -2,17 +2,17 @@
  * SPDX-FileCopyrightText: 2026 L2NX contributors
  * SPDX-License-Identifier: Apache-2.0
  */
-package app.l2nx.highfive.network.protocol.highfive;
+package app.l2nx.highfive.network.protocol.p267;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 import app.l2nx.highfive.network.GameConnection;
 import app.l2nx.highfive.network.protocol.OpcodeTable;
 import app.l2nx.highfive.network.protocol.OpcodeTable.RouteKind;
-import app.l2nx.highfive.network.protocol.highfive.clientpackets.ClientPackets;
-import app.l2nx.highfive.network.protocol.highfive.clientpackets.ExClientPackets;
-import app.l2nx.highfive.network.protocol.highfive.clientpackets.RequestBookMarkSlotInfo;
-import app.l2nx.highfive.network.protocol.highfive.clientpackets.RequestItemList;
+import app.l2nx.highfive.network.protocol.p267.clientpackets.ClientPackets;
+import app.l2nx.highfive.network.protocol.p267.clientpackets.ExClientPackets;
+import app.l2nx.highfive.network.protocol.p267.clientpackets.RequestBookMarkSlotInfo;
+import app.l2nx.highfive.network.protocol.p267.clientpackets.RequestItemList;
 import app.l2nx.network.config.NetworkProperties;
 import app.l2nx.network.crypt.GameFrameCipher;
 import io.netty.buffer.ByteBuf;
@@ -28,8 +28,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-class HighFiveAdapterTest {
-    private final HighFiveAdapter adapter = new HighFiveAdapter();
+class P267AdapterTest {
+    private final P267Adapter adapter = new P267Adapter();
     private final EmbeddedChannel channel = new EmbeddedChannel();
     private final GameConnection connection =
             new GameConnection(channel, new GameFrameCipher(), NetworkProperties.defaults());

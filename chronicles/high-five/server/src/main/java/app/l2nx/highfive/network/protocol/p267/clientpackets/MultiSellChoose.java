@@ -20,7 +20,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package app.l2nx.highfive.network.protocol.highfive.clientpackets;
+package app.l2nx.highfive.network.protocol.p267.clientpackets;
 
 import app.l2nx.highfive.config.GeneralConfig;
 import app.l2nx.highfive.config.PlayerConfig;
@@ -36,8 +36,8 @@ import app.l2nx.highfive.mechanics.multisell.Ingredient;
 import app.l2nx.highfive.mechanics.multisell.PreparedListContainer;
 import app.l2nx.highfive.mechanics.options.Augmentation;
 import app.l2nx.highfive.network.SystemMessageId;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.StatusUpdate;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.SystemMessage;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.StatusUpdate;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.SystemMessage;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;

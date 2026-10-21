@@ -7,7 +7,7 @@ package app.l2nx.login.protocol.c621;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
 
-import app.l2nx.protocol.c621.clientpackets.LoginClientOpcode;
+import app.l2nx.protocol.login.c621.clientpackets.LoginClientOpcode;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import org.junit.jupiter.api.Nested;

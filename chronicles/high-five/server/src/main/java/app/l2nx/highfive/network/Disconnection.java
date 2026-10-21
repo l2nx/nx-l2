@@ -24,7 +24,7 @@ package app.l2nx.highfive.network;
 
 import app.l2nx.highfive.entity.actor.Player;
 import app.l2nx.highfive.managers.AntiFeedManager;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.ServerPacket;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.ServerPacket;
 import app.l2nx.highfive.taskmanagers.AttackStanceTaskManager;
 import app.l2nx.highfive.threads.ThreadPool;
 import lombok.extern.slf4j.Slf4j;

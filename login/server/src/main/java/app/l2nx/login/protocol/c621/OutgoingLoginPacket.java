@@ -7,8 +7,8 @@ package app.l2nx.login.protocol.c621;
 import app.l2nx.login.network.LoginClient;
 import app.l2nx.network.codec.OutgoingPacket;
 import app.l2nx.network.codec.PacketWriter;
-import app.l2nx.protocol.c621.crypt.LoginFrameCipher;
-import app.l2nx.protocol.c621.serverpackets.LoginServerPacket;
+import app.l2nx.protocol.login.c621.crypt.LoginFrameCipher;
+import app.l2nx.protocol.login.c621.serverpackets.LoginServerPacket;
 
 public final class OutgoingLoginPacket extends OutgoingPacket<LoginClient> {
     private final LoginServerPacket packet;

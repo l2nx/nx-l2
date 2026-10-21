@@ -25,7 +25,7 @@ import app.l2nx.highfive.entity.item.instance.Item;
 import app.l2nx.highfive.mechanics.skill.Skill;
 import app.l2nx.highfive.mechanics.stats.functions.AbstractFunction;
 import app.l2nx.highfive.mechanics.stats.functions.FuncTemplate;
-import app.l2nx.highfive.network.protocol.highfive.serverpackets.SkillCoolTime;
+import app.l2nx.highfive.network.protocol.p267.serverpackets.SkillCoolTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
