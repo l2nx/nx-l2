@@ -32,7 +32,6 @@ lists what is open.
   between data load and port open
 - [#44](https://github.com/l2nx/nx-l2/issues/44) E6 part 2: record world passes for replay in production
 - [#45](https://github.com/l2nx/nx-l2/issues/45) E6 part 2: order input against due timers by arrival time (sub-tick)
-- [#47](https://github.com/l2nx/nx-l2/issues/47) Game server's fixed pool of 100 takes every PostgreSQL connection, so the login server cannot start after it
 - [#48](https://github.com/l2nx/nx-l2/issues/48) Real-client checks left open after moving the login connection to Netty
 - [#49](https://github.com/l2nx/nx-l2/issues/49) Move the stage 3 repositories into their feature slices
 - [#53](https://github.com/l2nx/nx-l2/issues/53) Community board post cache loads a topic twice under a race
@@ -50,6 +49,7 @@ lists what is open.
 
 ## Done
 
+- [#47](https://github.com/l2nx/nx-l2/issues/47) Game server's connection pool sized to fit `max_connections` ([spec 006](specs/006-database.md)).
 - [#18](https://github.com/l2nx/nx-l2/issues/18) Target architecture of the game code: package layout, tick model, ECS
   ([spec 003](specs/003-engine-core/spec.md)).
 - [#46](https://github.com/l2nx/nx-l2/issues/46) Timer wheel: a handler re-arming an overdue timer at its own deadline
