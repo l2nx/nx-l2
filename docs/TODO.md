@@ -47,7 +47,9 @@ lists what is open.
 - [#62](https://github.com/l2nx/nx-l2/issues/62) AutoSpawnDataTest sometimes sees no groups in the full test run
 - [#64](https://github.com/l2nx/nx-l2/issues/64) Bidders lose 10% when a clan hall sale is cancelled by the seller's dissolution
 - [#66](https://github.com/l2nx/nx-l2/issues/66) Siege flags of a dissolved clan stay until the siege ends
-- [#68](https://github.com/l2nx/nx-l2/issues/68) E0: bot load harness in a separate process, gate of the E6 cutover
+- [#68](https://github.com/l2nx/nx-l2/issues/68) E0: load harness in a separate process, gate of the E6 cutover ([spec 009](specs/009-load-harness.md))
+- [#71](https://github.com/l2nx/nx-l2/issues/71) Load scenario replaying recorded sessions
+- [#72](https://github.com/l2nx/nx-l2/issues/72) Castle siege as a load scenario
 
 ## Done
 
