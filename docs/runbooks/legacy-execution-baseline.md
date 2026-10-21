@@ -80,7 +80,6 @@ measured and E6 moves it too, so the bound may underestimate:
 
 - `GameTimeTaskManager`: its own thread, a 1 s loop that flips day and night (Shadow Sense on dark elves, the
   day/night event); the spawn change it hands to `ThreadPool` is measured.
-- `DimensionalRift`: a `java.util.Timer` thread per rift that spawns and unspawns its rooms and teleports the party.
 - `LoginServerLink`: the GS-link; the login server's messages (account authentication, kicks) act on game clients
   on gRPC's executor threads.
 - The network I/O threads of `libs/network`: packet parsing (`read()`) runs there, before the timed `run()`.
