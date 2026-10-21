@@ -2,5 +2,13 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
     "local>l2nx/renovate-config"
+  ],
+  "packageRules": [
+    {
+      "description": "protoc and protoc-gen-grpc-java must equal the protobuf-java and grpc-java runtime of the Spring Boot BOM; they move with Spring Boot, never alone",
+      "matchManagers": ["gradle"],
+      "matchPackageNames": ["com.google.protobuf:protoc", "io.grpc:protoc-gen-grpc-java"],
+      "enabled": false
+    }
   ]
 }
