@@ -53,6 +53,9 @@ lists what is open.
 - [#73](https://github.com/l2nx/nx-l2/issues/73) E10: move send-time side effects of legacy server packets into slice handlers
 - [#74](https://github.com/l2nx/nx-l2/issues/74) GrandBossDataTest fails depending on test order
 - [#76](https://github.com/l2nx/nx-l2/issues/76) Server list shows no character count for the account
+- [#78](https://github.com/l2nx/nx-l2/issues/78) SystemMessage writes the declared parameter count even when it skips a null parameter
+- [#79](https://github.com/l2nx/nx-l2/issues/79) Alliance chat ignores the block list
+- [#80](https://github.com/l2nx/nx-l2/issues/80) Restart into offline trade disconnects the trader just created when OfflineDisconnectSameAccount is on
 
 ## Done
 
