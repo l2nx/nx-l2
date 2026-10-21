@@ -30,8 +30,8 @@ lists what is open.
 - [#42](https://github.com/l2nx/nx-l2/issues/42) E7/E8: cadence settings for periodic systems (`l2nx.engine.cadence.*`)
 - [#43](https://github.com/l2nx/nx-l2/issues/43) E6 part 2: split `GameServer.start()` so the partition runtime starts
   between data load and port open
-- [#44](https://github.com/l2nx/nx-l2/issues/44) E6 part 2: record world passes for replay in production
-- [#45](https://github.com/l2nx/nx-l2/issues/45) E6 part 2: order input against due timers by arrival time (sub-tick)
+- [#44](https://github.com/l2nx/nx-l2/issues/44) Replay production incidents of the world loop
+- [#45](https://github.com/l2nx/nx-l2/issues/45) Input runs against timers due up to one pass earlier (sub-tick order)
 - [#48](https://github.com/l2nx/nx-l2/issues/48) Real-client checks left open after moving the login connection to Netty
 - [#49](https://github.com/l2nx/nx-l2/issues/49) Move the stage 3 repositories into their feature slices
 - [#53](https://github.com/l2nx/nx-l2/issues/53) Community board post cache loads a topic twice under a race
@@ -46,6 +46,7 @@ lists what is open.
 - [#62](https://github.com/l2nx/nx-l2/issues/62) AutoSpawnDataTest sometimes sees no groups in the full test run
 - [#64](https://github.com/l2nx/nx-l2/issues/64) Bidders lose 10% when a clan hall sale is cancelled by the seller's dissolution
 - [#66](https://github.com/l2nx/nx-l2/issues/66) Siege flags of a dissolved clan stay until the siege ends
+- [#68](https://github.com/l2nx/nx-l2/issues/68) E0: bot load harness in a separate process, gate of the E6 cutover
 
 ## Done
 
