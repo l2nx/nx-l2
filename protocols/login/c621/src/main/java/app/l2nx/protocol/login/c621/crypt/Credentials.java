@@ -115,6 +115,28 @@ public record Credentials(String user, String password) {
      *     character or an unpaired surrogate
      */
     public RequestAuthLogin encrypt(PublicKey key, Layout layout) throws GeneralSecurityException {
+        final byte[] plain = plain(layout);
+        final Cipher rsa = Cipher.getInstance(TRANSFORMATION);
+        rsa.init(Cipher.ENCRYPT_MODE, key);
+        final RequestAuthLogin.RequestAuthLoginBuilder packet =
+                RequestAuthLogin.builder().block1(rsa.doFinal(plain, 0, BLOCK));
+        if (layout == Layout.TWO_BLOCKS) {
+            packet.block2(rsa.doFinal(plain, BLOCK, BLOCK));
+        }
+        return packet.build();
+    }
+
+    /** Whether {@link #encrypt} can carry these credentials in the layout. */
+    public boolean fits(Layout layout) {
+        try {
+            plain(layout);
+            return true;
+        } catch (IllegalArgumentException e) {
+            return false;
+        }
+    }
+
+    private byte[] plain(Layout layout) {
         final byte[] userBytes = utf8("user", user);
         final byte[] passwordBytes = utf8("password", password);
         require("password", passwordBytes, PASSWORD_SIZE);
@@ -132,15 +154,7 @@ public record Credentials(String user, String password) {
             System.arraycopy(userBytes, 0, plain, ONE_BLOCK_USER, userBytes.length);
             System.arraycopy(passwordBytes, 0, plain, ONE_BLOCK_PASSWORD, passwordBytes.length);
         }
-
-        final Cipher rsa = Cipher.getInstance(TRANSFORMATION);
-        rsa.init(Cipher.ENCRYPT_MODE, key);
-        final RequestAuthLogin.RequestAuthLoginBuilder packet =
-                RequestAuthLogin.builder().block1(rsa.doFinal(plain, 0, BLOCK));
-        if (layout == Layout.TWO_BLOCKS) {
-            packet.block2(rsa.doFinal(plain, BLOCK, BLOCK));
-        }
-        return packet.build();
+        return plain;
     }
 
     /** Never prints the password. */

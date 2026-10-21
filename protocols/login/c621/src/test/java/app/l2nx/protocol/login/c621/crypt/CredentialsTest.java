@@ -255,6 +255,25 @@ class CredentialsTest {
     }
 
     @Nested
+    class Fits {
+        @ParameterizedTest(name = "{0}: [{1}] / [{2}] -> {3}")
+        @CsvSource({
+            "ONE_BLOCK, test1, secret, true",
+            "ONE_BLOCK, uuuuuuuuuuuuuu, secret, true",
+            "ONE_BLOCK, uuuuuuuuuuuuuuu, secret, false",
+            "TWO_BLOCKS, uuuuuuuuuuuuuuu, secret, true",
+            "ONE_BLOCK, тестовый, secret, false",
+            "ONE_BLOCK, test1, pppppppppppppppp, true",
+            "ONE_BLOCK, test1, ppppppppppppppppp, false",
+            "ONE_BLOCK, 'te\0st', secret, false",
+            "ONE_BLOCK, test1, 'pw\uD800', false"
+        })
+        void fits_shouldMatchWhatEncryptAccepts(Layout layout, String user, String password, boolean expected) {
+            assertThat(credentials(user, password).fits(layout)).isEqualTo(expected);
+        }
+    }
+
+    @Nested
     class Construct {
         @ParameterizedTest(name = "user {0}, password {1}")
         @CsvSource({"'', secret", "test1, ''", "'   ', secret", "test1, '  '"})
