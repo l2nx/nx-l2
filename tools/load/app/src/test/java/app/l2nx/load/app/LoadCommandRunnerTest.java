@@ -69,7 +69,8 @@ class LoadCommandRunnerTest {
                     "--l2nx.load.bots=20",
                     "--l2nx.load.ramp=200ms",
                     "--l2nx.load.warm-up=300ms",
-                    "--l2nx.load.steady=1500ms",
+                    // Longer than the action interval with its jitter, so every load bot acts in the window.
+                    "--l2nx.load.steady=3s",
                     "--l2nx.load.ramp-down=200ms",
                     "--l2nx.load.seed=42",
                     "--l2nx.load.event-loop-threads=2",
@@ -109,7 +110,7 @@ class LoadCommandRunnerTest {
             assertThat(summaries).hasSize(1);
             final RunSummary actual = reportWriter.readSummary(summaries.getFirst());
             assertThat(actual.server()).isNull();
-            assertThat(actual.intents().get(IntentKind.MOVE_TO).acknowledged()).isPositive();
+            assertThat(actual.reachedFinalState()).isEqualTo(5);
             assertThat(summaries.getFirst().resolveSibling(ReportWriter.METRICS_START_FILE))
                     .doesNotExist();
         }

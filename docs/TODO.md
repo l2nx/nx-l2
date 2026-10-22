@@ -59,6 +59,7 @@ lists what is open.
 
 ## Done
 
+- [#85](https://github.com/l2nx/nx-l2/issues/85) LoadCommandRunnerTest fails when no roaming action falls into the short steady window
 - [#62](https://github.com/l2nx/nx-l2/issues/62) AutoSpawnDataTest sometimes sees no groups in the full test run
 - [#60](https://github.com/l2nx/nx-l2/issues/60) Event item cleanup can delete rows of a container that loads during it
 - [#54](https://github.com/l2nx/nx-l2/issues/54) Dimensional Rift state races between player actions and its jump task
