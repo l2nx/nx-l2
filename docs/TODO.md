@@ -56,6 +56,38 @@ lists what is open.
 - [#82](https://github.com/l2nx/nx-l2/issues/82) Aborting an alt-mode craft during its final delay still finishes it
 - [#83](https://github.com/l2nx/nx-l2/issues/83) PostRepositoryTest sometimes cannot get a JDBC connection
 - [#84](https://github.com/l2nx/nx-l2/issues/84) Game server loses its login registration (hexid.txt) on every installDist
+- [#88](https://github.com/l2nx/nx-l2/issues/88) Layered rate limit for the login and game client protocols
+- [#89](https://github.com/l2nx/nx-l2/issues/89) Harden the network connection lifecycle: late init, idle, close reasons, write errors, shutdown deadline
+- [#90](https://github.com/l2nx/nx-l2/issues/90) Clean up libs/network: module boundaries, shared L2 pipeline, login transport leftovers and statics
+- [#91](https://github.com/l2nx/nx-l2/issues/91) Port the first client slice end to end before growing the port framework
+- [#92](https://github.com/l2nx/nx-l2/issues/92) Bind PlayOk to the game server the player selected
+- [#93](https://github.com/l2nx/nx-l2/issues/93) Make the login side of the GS-link thread-safe and keep database work off the stream
+- [#94](https://github.com/l2nx/nx-l2/issues/94) Harden GS-link failure handling: reconnect classification, malformed messages, shutdown, buffering, tests
+- [#95](https://github.com/l2nx/nx-l2/issues/95) Split account and registration logic out of GameServerLink
+- [#96](https://github.com/l2nx/nx-l2/issues/96) Hash account passwords with a salted adaptive algorithm
+- [#97](https://github.com/l2nx/nx-l2/issues/97) Bound the world lifecycle waits and merge the two game server lifecycles
+- [#98](https://github.com/l2nx/nx-l2/issues/98) Decide which Errors from a loop task stop the server
+- [#99](https://github.com/l2nx/nx-l2/issues/99) Keep the loop out of overload spirals: coalesce missed fixed-rate runs, time-budget the deadlines phase
+- [#100](https://github.com/l2nx/nx-l2/issues/100) Justify or replace the custom timer wheel and remove engine scaffolding without a consumer
+- [#101](https://github.com/l2nx/nx-l2/issues/101) Check ownership at runtime on the world state mutators
+- [#102](https://github.com/l2nx/nx-l2/issues/102) Close the gaps in the architecture rules: scheduled work, randomness and slice layout gates
+- [#103](https://github.com/l2nx/nx-l2/issues/103) Cut engine loop overhead and attribute heavy tasks in the meters
+- [#104](https://github.com/l2nx/nx-l2/issues/104) Set database statement, lock and connection timeouts and resize the pool for the single-writer loop
+- [#105](https://github.com/l2nx/nx-l2/issues/105) Update memory only after commit in mail and clan destruction
+- [#106](https://github.com/l2nx/nx-l2/issues/106) Save a character in one transaction
+- [#107](https://github.com/l2nx/nx-l2/issues/107) Enforce the repository handle contract and issue handles only on demand
+- [#108](https://github.com/l2nx/nx-l2/issues/108) Database config and value hygiene: default password, changelog paths, blank legacy text
+- [#109](https://github.com/l2nx/nx-l2/issues/109) Move alliance, couple and range rules into schema constraints
+- [#110](https://github.com/l2nx/nx-l2/issues/110) Test repository transactions and published database meters through Spring
+- [#111](https://github.com/l2nx/nx-l2/issues/111) Make the load gate trustworthy: outcome accounting, comparability, timeouts in latency, statistics, validity limits
+- [#112](https://github.com/l2nx/nx-l2/issues/112) Read server meters through Prometheus and record the actual meter window
+- [#113](https://github.com/l2nx/nx-l2/issues/113) Test the p267 login storm against the real login server
+- [#114](https://github.com/l2nx/nx-l2/issues/114) Load harness cleanup: p267 adapter measurement, speculative bot model, fail-fast CLI
+- [#115](https://github.com/l2nx/nx-l2/issues/115) Finish the bug classes of the Mobius batch: static config snapshots and equals/hashCode gaps
+- [#116](https://github.com/l2nx/nx-l2/issues/116) Small legacy fixes: fort contract reset, Quest logging, ended event item scan, captcha dedup
+- [#117](https://github.com/l2nx/nx-l2/issues/117) Isolate and de-mock the Mobius batch tests
+- [#118](https://github.com/l2nx/nx-l2/issues/118) Bring specs and comments in line with the code
+- [#119](https://github.com/l2nx/nx-l2/issues/119) Add slice and domain-event to the glossary and settle term mismatches
 
 ## Done
 
