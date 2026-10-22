@@ -53,8 +53,9 @@ The rule is [spec 008 §8 Wire codecs](008-network.md#wire-codecs); what the loa
 
 ## 4. Load bot
 
-- **Threads:** a Netty `EventLoopGroup` sized to the cores given to the harness. A load bot lives on the event loop of
-  its connection and all its logic runs there, so it holds no locks. Timers are the event loop's `schedule`.
+- **Threads:** a Netty `EventLoopGroup` sized to the cores given to the harness, on the transport `libs/network`
+  resolves (native epoll on Linux, NIO elsewhere). A load bot lives on the event loop of its connection and all its
+  logic runs there, so it holds no locks. Timers are the event loop's `schedule`.
 - **Lifecycle:** `LOGIN_CONNECT → LOGIN_AUTH → SERVER_LIST → GAME_CONNECT → CHARACTER_SELECT → ENTERING → IN_GAME →
 CLOSING → STOPPED`, the same for every protocol; `STOPPED` without a logout is a dropped connection.
 - **Intents** (sent): `Login`, `SelectServer`, `SelectCharacter`, `EnterWorld`, `MoveTo`, `Attack`, `UseSkill`,
@@ -116,7 +117,9 @@ window's start and end for the report.
 | `jvm.gc.pause`, `process.cpu.usage`, `jvm.threads.live`          | p99, mean, max                                                       |
 
 **Generator self-check:** the harness measures its own event loop lag (scheduled against actual action time). A p99
-lag above 10 ms marks the run invalid: the generator, not the server, was saturated.
+lag above 10 ms marks the run invalid: the generator, not the server, was saturated. The check is on the measured lag,
+not on the operating system, so a host whose timers cannot fire on time (Windows, 15.6 ms timer granularity by
+default) produces invalid runs by itself.
 
 **Profiling** (`--profile`): JFR on the server for the steady window through `jcmd <pid> JFR.start`, the recording
 kept with the run; async-profiler in wall-clock mode when installed.
@@ -146,9 +149,20 @@ The `gate` command compares the reports of a scenario with its baseline:
   not count; with fewer than three valid runs the gate fails with that reason.
 - Thresholds live in the gate settings. The baseline numbers and the method behind them are kept in
   `docs/runbooks/load-baseline.md`.
-- **Where it runs:** one machine, separate processes with CPU affinity set by the start script (server, load bots,
-  PostgreSQL on disjoint cores). The gate is relative to a baseline taken on the same machine; criteria 1 and 2 are
-  absolute because the engine measures them itself.
+- **Where it runs:** one machine, Linux, the way load generators and game servers run in production. The server,
+  the load harness and PostgreSQL are services of the compose profile `load`, each pinned to its own cores with
+  `cpuset` and limited with `cpus`; the harness uses Netty's native epoll transport, whose timers fire with
+  sub-millisecond precision. On a Windows or macOS workstation the same compose runs in Docker's Linux VM (WSL2 on
+  Windows); there the cpusets pin VM vCPUs that the host may still move, which a baseline taken in the same setup
+  absorbs. A native Windows run (`bootRun`) is for development: its timer granularity shows as generator lag and the
+  self-check marks the run invalid. Raising the process timer resolution (`timeBeginPeriod`) is not used: it is
+  Windows-only and measures a platform the server does not run on.
+- **Same scenario only:** the gate compares reports of one scenario and final state with a baseline of the same;
+  otherwise it fails with that reason and compares nothing.
+- **Comparable runs only:** the report records the environment (operating system and kernel, CPU model, logical
+  cores, the cpuset of each service, JVM version), and the gate fails when a report's environment differs from the
+  baseline's. The gate is relative to a baseline taken on the same machine; criteria 1 and 2 are absolute because the
+  engine measures them itself.
 - E6 lands on main after `load-crowd-pvp` passes the gate.
 
 ## 9. Tests and trust
